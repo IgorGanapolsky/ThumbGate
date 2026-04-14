@@ -18,7 +18,7 @@ function generateApiKey(): string {
 
 /**
  * POST /billing/checkout
- * Creates a Stripe Checkout session for the $49 one-time Pro purchase.
+ * Creates a Stripe Checkout session for the $19/mo Pro subscription.
  */
 export async function handleCheckout(
   request: Request,
@@ -45,7 +45,7 @@ export async function handleCheckout(
   }
 
   const session = await stripe.checkout.sessions.create({
-    mode: 'payment',
+    mode: 'subscription',
     payment_method_types: ['card'],
     line_items: [
       {
@@ -140,8 +140,8 @@ async function provisionApiKey(
       ? session.customer
       : session.customer?.id ?? 'unknown';
   const billingReferenceId =
-    typeof session.payment_intent === 'string'
-      ? session.payment_intent
+    typeof session.subscription === 'string'
+      ? session.subscription
       : session.id;
 
   const record: ApiKeyRecord = {

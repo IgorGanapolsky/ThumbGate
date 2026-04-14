@@ -124,7 +124,7 @@ const {
   finalizeSession: finalizeFeedbackSession,
 } = require('../../scripts/feedback-session');
 
-const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.4.0' };
+const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.4.1' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
@@ -434,12 +434,18 @@ async function callToolInner(name, args) {
         category: args.category,
         tags: Array.isArray(args.tags) ? args.tags : [],
       }));
-    case 'retrieve_lessons':
-      return toTextResult(retrieveRelevantLessons(
+    case 'retrieve_lessons': {
+      // Cross-encoder reranking: retrieve more candidates, then rerank for precision
+      const { retrieveWithRerankingSync } = require('../../scripts/cross-encoder-reranker');
+      return toTextResult(retrieveWithRerankingSync(
         args.toolName,
         args.actionContext || '',
-        { maxResults: Number(args.maxResults || 5) },
+        {
+          candidateCount: 20,
+          maxResults: Number(args.maxResults || 5),
+        },
       ));
+    }
     case 'search_thumbgate':
       enforceLimit('search_thumbgate');
       return toTextResult(searchThumbgate({

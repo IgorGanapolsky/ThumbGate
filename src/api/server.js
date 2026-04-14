@@ -1020,6 +1020,7 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
     '__AUTOMATION_REPORT_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json',
     '__GTM_PLAN_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md',
     '__GITHUB_URL__': 'https://github.com/IgorGanapolsky/ThumbGate',
+    '__POSTHOG_API_KEY__': runtimeConfig.posthogApiKey || '',
   });
 }
 
@@ -2153,6 +2154,11 @@ function getExpectedApiKey() {
   return configured;
 }
 
+function getExpectedOperatorKey() {
+  const key = String(process.env.THUMBGATE_OPERATOR_KEY || '').trim();
+  return key || null;
+}
+
 function isAuthorized(req, expected) {
   if (!expected) return true;
   const token = extractApiKey(req);
@@ -2202,6 +2208,19 @@ function extractApiKey(req) {
 function isStaticAdminAuthorized(req, expected) {
   if (!expected) return true;
   return extractApiKey(req) === expected;
+}
+
+/**
+ * Billing summary guard: accepts either the static admin key OR the operator key.
+ * The operator key (THUMBGATE_OPERATOR_KEY) allows read-only billing data access
+ * without exposing the full admin key to CLI clients.
+ */
+function isBillingSummaryAuthorized(req, expectedAdminKey, expectedOperatorKey) {
+  if (!expectedAdminKey && !expectedOperatorKey) return true;
+  const token = extractApiKey(req);
+  if (expectedAdminKey && token === expectedAdminKey) return true;
+  if (expectedOperatorKey && token === expectedOperatorKey) return true;
+  return false;
 }
 
 function extractTags(input) {
@@ -2318,6 +2337,7 @@ function resolveDocumentImportFilePath(inputPath, options = {}) {
 
 function createApiServer() {
   const expectedApiKey = getExpectedApiKey();
+  const expectedOperatorKey = getExpectedOperatorKey();
 
   return http.createServer(async (req, res) => {
     const parsed = new URL(req.url, 'http://localhost');
@@ -4540,14 +4560,14 @@ async function addContext(){
         return;
       }
 
-      // GET /v1/billing/summary — admin-only operational billing summary
+      // GET /v1/billing/summary — operator billing summary (admin key or operator key)
       if (req.method === 'GET' && pathname === '/v1/billing/summary') {
-        if (!isStaticAdminAuthorized(req, expectedApiKey)) {
+        if (!isBillingSummaryAuthorized(req, expectedApiKey, expectedOperatorKey)) {
           sendProblem(res, {
             type: PROBLEM_TYPES.FORBIDDEN,
             title: 'Forbidden',
             status: 403,
-            detail: 'Admin API key required for this endpoint.',
+            detail: 'Admin or operator API key required for this endpoint.',
           });
           return;
         }

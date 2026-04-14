@@ -192,7 +192,13 @@ function stripLessonPrefix(lessonText = '') {
 function formatLessonTimestamp(createdAt = '') {
   const parsed = new Date(createdAt);
   if (!Number.isFinite(parsed.getTime())) return '';
-  return parsed.toISOString().slice(0, 16).replace('T', ' ') + 'Z';
+  const mm = String(parsed.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(parsed.getUTCDate()).padStart(2, '0');
+  const yyyy = parsed.getUTCFullYear();
+  const HH = String(parsed.getUTCHours()).padStart(2, '0');
+  const MM = String(parsed.getUTCMinutes()).padStart(2, '0');
+  const ss = String(parsed.getUTCSeconds()).padStart(2, '0');
+  return `${mm}/${dd}/${yyyy} ${HH}:${MM}:${ss}`;
 }
 
 function buildStatusbarLessonLabel(lesson = {}) {
@@ -303,7 +309,26 @@ function getStatusbarLessonData() {
   if (!recent) return { hasLesson: false, text: null, link: null };
 
   const normalizedLesson = stripLessonPrefix(recent.lesson || '');
-  const truncated = normalizedLesson.length > 48 ? normalizedLesson.slice(0, 45) + '...' : normalizedLesson;
+
+  // Distill to actionable insight: prefer structured rule action, then
+  // whatToChange, then the lesson text itself. Raw user feedback
+  // ("are you sure?", "is this working?") is not useful in a statusbar.
+  let displayText = normalizedLesson;
+  if (recent.structuredRule && recent.structuredRule.action && recent.structuredRule.action.description) {
+    displayText = recent.structuredRule.action.description;
+  } else if (recent.whatToChange || recent.what_to_change) {
+    displayText = String(recent.whatToChange || recent.what_to_change);
+  }
+
+  // Clean up: strip noise prefixes, collapse whitespace
+  displayText = displayText
+    .replace(/^CRITICAL ERROR - User frustrated:\s*/i, '')
+    .replace(/^thumbs?\s*(up|down)\s*:?\s*/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Truncate to 60 chars (enough to be readable, short enough for statusbar)
+  const truncated = displayText.length > 60 ? displayText.slice(0, 57) + '...' : displayText;
 
   return {
     hasLesson: true,

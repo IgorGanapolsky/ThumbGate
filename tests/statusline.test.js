@@ -244,6 +244,59 @@ test('statusline follows the persisted active project when Claude is running fro
   }
 });
 
+test('local stats syncs Claude history for the persisted active project from transient cwd', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-local-stats-'));
+  const homeDir = path.join(tmpDir, 'home');
+  const projectDir = path.join(tmpDir, 'project-charlie');
+  const transientDir = path.join(tmpDir, '.npm', '_npx', 'thumbgate-published-cli-67890');
+  const feedbackDir = path.join(projectDir, '.thumbgate');
+  const historyPath = path.join(homeDir, '.claude', 'history.jsonl');
+  fs.mkdirSync(homeDir, { recursive: true });
+  fs.mkdirSync(transientDir, { recursive: true });
+  fs.mkdirSync(feedbackDir, { recursive: true });
+  fs.mkdirSync(path.dirname(historyPath), { recursive: true });
+  fs.writeFileSync(
+    historyPath,
+    `${JSON.stringify({
+      display: 'thumbs up',
+      timestamp: 1775750156301,
+      project: projectDir,
+      sessionId: 'session-local-stats',
+    })}\n`
+  );
+  writeActiveProjectState(projectDir, {
+    home: homeDir,
+    env: { ...process.env, HOME: homeDir },
+  });
+
+  const env = {
+    ...process.env,
+    HOME: homeDir,
+    USERPROFILE: homeDir,
+    PATH: SAFE_SYSTEM_PATH,
+    PWD: transientDir,
+    THUMBGATE_CLAUDE_HISTORY_PATH: historyPath,
+  };
+  delete env.THUMBGATE_FEEDBACK_DIR;
+  delete env.THUMBGATE_PROJECT_DIR;
+  delete env.CLAUDE_PROJECT_DIR;
+
+  try {
+    const out = execFileSync(process.execPath, [LOCAL_STATS_PATH], {
+      cwd: transientDir,
+      encoding: 'utf8',
+      env,
+      timeout: 5000,
+    });
+    const payload = JSON.parse(out);
+    assert.equal(payload.thumbs_up, '1');
+    assert.equal(payload.thumbs_down, '0');
+    assert.ok(fs.existsSync(path.join(feedbackDir, 'feedback-log.jsonl')), 'feedback log should be created in the active project');
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
 test('statusline resolves project feedback from Claude cwd instead of the runtime cwd', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-claude-cwd-'));
   const homeDir = path.join(tmpDir, 'home');
@@ -374,8 +427,9 @@ test('statusline preserves dashboard links under a tight width budget', () => {
     const plain = stripStatuslineFormatting(out).trim();
     assert.match(plain, /Dashboard/, 'should preserve the dashboard link label');
     assert.match(plain, /Lessons/, 'should preserve the lessons link label');
-    assert.match(plain, /Latest mistake \d{4}-\d{2}-\d{2} \d{2}:\d{2}Z:/, 'should clarify that the snippet is the latest mistake');
-    assert.match(plain, /http:\/\/localhost:3456\/lessons#lesson_/, 'should include a deep link to the latest lesson');
+    assert.match(plain, /Latest mistake \d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}:/, 'should clarify that the snippet is the latest mistake');
+    // localhost links are intentionally stripped from statusbar display — only real URLs shown
+    assert.doesNotMatch(plain, /http:\/\/localhost/, 'should NOT include localhost links in statusbar');
   } finally {
     if (previousFeedbackDir === undefined) {
       delete process.env.THUMBGATE_FEEDBACK_DIR;

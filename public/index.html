@@ -19,9 +19,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 __GOOGLE_SITE_VERIFICATION_META__
-<title>ThumbGate — Agent governance for AI coding workflows</title>
+<title>ThumbGate — Your AI agent just made that mistake again. One thumbs-down. It never happens again.</title>
 <meta name="description" content="CLI-first agent governance for teams shipping AI-generated changes. 👎 Thumbs down distills history-aware lessons from up to 8 prior entries and stays linked to a 60-second feedback session. 👍 Thumbs up reinforces safe patterns. Pre-action gates, workflow governance, shared lessons and org visibility, release confidence, and isolated execution guidance turn vibe coding mistakes into shared enforcement and proof-ready rollout.">
-<meta property="og:title" content="ThumbGate — Agent governance for AI coding workflows">
+<meta property="og:title" content="ThumbGate — Your AI agent just made that mistake again. One thumbs-down. It never happens again.">
 <meta property="og:description" content="CLI-first agent governance for teams shipping AI-generated changes. 👎 Thumbs down distills history-aware lessons from up to 8 prior entries and stays linked to a 60-second feedback session. 👍 Thumbs up reinforces safe patterns. Pre-action gates, workflow governance, shared lessons and org visibility, release confidence, and isolated execution guidance turn vibe coding mistakes into shared enforcement and proof-ready rollout.">
 <meta property="og:type" content="website">
 <meta name="keywords" content="ThumbGate, thumbgate, agent governance, AI coding workflow governance, workflow hardening sprint, pre-action gates, CLI-first agent safety, Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, approval policies, audit trail, release confidence, Docker Sandboxes, feedback enforcement, context engineering, AI authenticity, prevent AI slop, human-led AI, AI agent standards enforcement, brand authenticity AI">
@@ -402,6 +402,13 @@ __GA_BOOTSTRAP__
   .final-cta p { font-size: 15px; color: var(--text-muted); margin-bottom: 28px; }
   .final-cta .btn-pro, .final-cta .btn-team { display: inline-block; padding: 12px 32px; font-size: 15px; border-radius: 8px; margin: 0 6px; }
 
+  /* STICKY BOTTOM CTA BAR */
+  .sticky-cta { position: fixed; bottom: 0; left: 0; right: 0; z-index: 999; background: rgba(10,10,10,0.96); border-top: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; justify-content: center; gap: 12px; transform: translateY(100%); transition: transform 0.3s ease; backdrop-filter: blur(8px); }
+  .sticky-cta.visible { transform: translateY(0); }
+  .sticky-cta-text { font-size: 14px; color: var(--text-muted); }
+  .sticky-cta-text strong { color: var(--text); }
+  .sticky-cta .btn-pro { padding: 8px 20px; font-size: 13px; border-radius: 6px; white-space: nowrap; }
+
   /* FOOTER */
   footer { border-top: 1px solid var(--border); padding: 32px 0; }
   footer .container { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
@@ -425,6 +432,14 @@ __GA_BOOTSTRAP__
     .proof-bar .dot { display: none; }
   }
 </style>
+  <!-- PostHog Analytics -->
+  <script>
+    !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a=u._i.push([i,s,a]),u._i.push([i,s,a]),u.init=function(t,e,i){g(u,"capture"),u.push(["init",t,e,i])},u.capture=function(t,e,i,o){u.push(["capture",t,e,i,o])},u.identify=function(t,e,i){u.push(["identify",t,e,i])},u.alias=function(t,e){u.push(["alias",t,e])},u.people={set:function(t,e,i){u.push(["people.set",t,e,i])}},u.featureFlags={},u.onFeatureFlags=function(t){u.push(["onFeatureFlags",t])},u.toString=function(t){var e="posthog";return a&&a!==e&&(e+="."+a),t||(e+=" (stub)"),e},u.people.set_once=function(t,e,i){u.push(["people.set_once",t,e,i])},u.group=function(t,e,i){u.push(["group",t,e,i])},u.setPersonPropertiesForFlags=function(t){u.push(["setPersonPropertiesForFlags",t])},u.resetGroupPropertiesForFlags=function(t){u.push(["resetGroupPropertiesForFlags",t])},u.setGroupPropertiesForFlags=function(t){u.push(["setGroupPropertiesForFlags",t])},u.reloadFeatureFlags=function(){u.push(["reloadFeatureFlags"])},u.capture=function(t,e,i,o){u.push(["capture",t,e,i,o])},u.identify=function(t,e,i){u.push(["identify",t,e,i])},0===t.indexOf(".")){var s=t.substring(1);u=e[s]=[],u._i=[]}e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+  posthog.init('__POSTHOG_API_KEY__', {
+    api_host: 'https://us.i.posthog.com',
+    person_profiles: 'identified_only',
+  });
+  </script>
 </head>
 <body>
 
@@ -443,7 +458,7 @@ __GA_BOOTSTRAP__
       <a href="/learn">Learn</a>
       <a href="/compare">Compare</a>
       <a href="/dashboard">Dashboard Demo</a>
-      <a href="#workflow-sprint-intake" class="nav-cta">Start Sprint</a>
+      <a href="#workflow-sprint-intake" onclick="posthog.capture('workflow_sprint')" class="nav-cta">Start Sprint</a>
     </div>
   </div>
 </nav>
@@ -452,34 +467,38 @@ __GA_BOOTSTRAP__
 <section class="hero">
   <div class="container">
     <div class="hero-thumbs">👍👎</div>
-    <div class="hero-badge">● Workflow Hardening Sprint for teams shipping AI-generated changes</div>
-    <h1>Make one AI workflow<br>safe enough to ship team-wide.</h1>
+    <div class="hero-badge">● Your AI agent just made that mistake again</div>
+    <h1>Your AI agent just made<br>that mistake again.<br><span style="color:var(--cyan)">One thumbs-down.<br>It never happens again.</span></h1>
+    <p style="font-size:18px;color:var(--text-muted);max-width:560px;margin:0 auto 20px;line-height:1.6;">Session 1: your agent force-pushes, skips tests, or runs a DROP on prod.<br>You give it a 👎.<br><strong style="color:var(--text)">Session 2: gate fires. Action blocked before execution.</strong></p>
     <div class="hero-signals">
       <div class="signal-pill signal-down">👎 Repeated failure becomes enforcement before the next run</div>
-      <div class="signal-pill signal-up">👍 Safe pattern reinforced across the shared workflow</div>
-      <div class="signal-pill">🛡️ Human judgment gates every AI action — your standards, not AI slop</div>
+      <div class="signal-pill signal-up">✅ Safe pattern reinforced across the shared workflow</div>
+      <div class="signal-pill">🔁 Works with Claude Code · Cursor · Codex · Gemini · Amp</div>
     </div>
-    <p class="hero-persona">For consultancies, platform teams, and AI product teams with one workflow owner, one repeated failure, and one buyer who needs proof before a wider rollout.</p>
-    <p><strong>Best first paid motion:</strong> start with one repo, one workflow, and one repeat failure. ThumbGate turns the blocker into enforcement, routes risky runs toward isolated execution, and gives the buyer a proof-ready story around shared memory, approval boundaries, release confidence, and auditability.</p>
-    <div class="hero-actions">
-      <a href="#workflow-sprint-intake" class="btn-team">Start Workflow Hardening Sprint</a>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" class="btn-install-link" target="_blank" rel="noopener">Install Codex plugin</a>
-      <a href="/guide?utm_source=website&utm_medium=homepage_hero&utm_campaign=install_free" class="btn-pro-page btn-install-link">Install Free CLI</a>
-      <a href="/dashboard?utm_source=website&utm_medium=homepage_hero&utm_campaign=demo" class="btn-demo-link">Open dashboard demo</a>
+    <p class="hero-persona" style="display:none">For consultancies, platform teams, and AI product teams with one workflow owner, one repeated failure, and one buyer who needs proof before a wider rollout.</p>
+    <div class="hero-actions" style="margin-top:32px;">
+      <div class="hero-install" onclick="copyInstall(this)" title="Click to copy" style="margin-bottom:0;">
+        <span class="prompt">$</span>
+        <span class="cmd">npx thumbgate init</span>
+        <span class="copy-hint">click to copy</span>
+      </div>
+      <a href="/checkout/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_trial&cta_id=hero_start_trial" onclick="posthog.capture('hero_cta_click',{cta:'start_trial'})" class="btn-pro-page" style="font-size:16px;padding:14px 32px;margin-bottom:4px;">Start 7-day free trial — $19/mo</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener" class="btn-free" style="display:inline-flex;align-items:center;gap:6px;padding:11px 20px;border-radius:999px;">⭐ Star on GitHub</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/chatgpt/INSTALL.md" class="btn-install-link" target="_blank" rel="noopener" style="font-size:13px;color:var(--text-muted);text-decoration:none;padding:8px 14px;">Use in ChatGPT →</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" class="btn-install-link" target="_blank" rel="noopener" style="font-size:13px;color:var(--text-muted);text-decoration:none;padding:8px 14px;">Install Codex plugin →</a>
     </div>
-    <p class="hero-paid-note"><strong>Running Codex?</strong> Download the published plugin bundle or open the <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/codex-profile/INSTALL.md" target="_blank" rel="noopener">Codex install guide</a> for the repo-local profile and MCP path.</p>
-    <p class="hero-paid-note"><strong>Start free as an individual.</strong> Pro stays the self-serve lane for personal dashboard and DPO export. Team pricing anchors at <strong>$99/seat/mo with a 3-seat minimum</strong>, but the team path starts intake-first with the Workflow Hardening Sprint so buyers see proof before a wider rollout.</p>
-    <div class="hero-install" onclick="copyInstall(this)" title="Click to copy">
-      <span class="prompt">$</span>
-      <span class="cmd">npx thumbgate init</span>
-      <span class="copy-hint">click to copy</span>
-    </div>
+    <p style="font-size:13px;color:var(--text-muted);margin:16px auto 0;max-width:480px;">Free tier: 3 captures/day, unlimited enforcement. No cloud account needed.</p>
+    <p style="font-size:13px;color:var(--text-muted);margin:8px auto 28px;max-width:480px;">Team plan is intake-first — one workflow, one repeat failure, proof before wider rollout. Pro stays the solo side lane for gate debugger, DPO export, and personal dashboard. <a href="#pricing" style="color:var(--cyan);text-decoration:none;">See all plans →</a></p>
     <div class="proof-bar">
       <a href="/guide" rel="noopener">CLI-first setup guide →</a>
       <span class="dot"></span>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" target="_blank" rel="noopener">Claude plugin bundle →</a>
       <span class="dot"></span>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/CLAUDE_DESKTOP_EXTENSION.md" target="_blank" rel="noopener">Claude submission packet →</a>
+      <span class="dot"></span>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/.claude-plugin/README.md" target="_blank" rel="noopener">Claude marketplace install →</a>
+      <span class="dot"></span>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/chatgpt/INSTALL.md" target="_blank" rel="noopener">ChatGPT GPT Actions →</a>
       <span class="dot"></span>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" target="_blank" rel="noopener">Codex plugin download →</a>
       <span class="dot"></span>
@@ -490,6 +509,8 @@ __GA_BOOTSTRAP__
       <a href="https://blog.langchain.dev/continual-learning-for-ai-agents/" target="_blank" rel="noopener">Three-layer continual learning (LangChain) →</a>
       <span class="dot"></span>
       <a href="https://cloud.google.com/blog/topics/healthcare-life-sciences/ensuring-safety-and-quality-in-healthcare-qa-agents" target="_blank" rel="noopener">Google Cloud safety framework architecture →</a>
+      <span class="dot"></span>
+      <a href="https://www.nytimes.com/2026/04/06/technology/ai-cybersecurity.html" target="_blank" rel="noopener">NYT: AI agents as attack vectors (April 2026) →</a>
       <span class="dot"></span>
       <a href="https://www.producthunt.com/products/thumbgate" target="_blank" rel="noopener">Product Hunt →</a>
       <span class="dot"></span>
@@ -519,9 +540,14 @@ __GA_BOOTSTRAP__
         <p>Codex ships with a published standalone ThumbGate plugin bundle plus a repo-local plugin profile. Download the zip, extract it, and install without wiring MCP by hand.</p>
         <div class="card-arrow">Get the Codex plugin →</div>
       </a>
+      <a class="compat-card" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/chatgpt/INSTALL.md" target="_blank" rel="noopener">
+        <h3>💬 ChatGPT GPT Actions</h3>
+        <p>Regular users reply with 👍/👎 or "thumbs up/down" on ChatGPT answers, save the lesson, prevent repeated bad answers, and reinforce the answer patterns that worked.</p>
+        <div class="card-arrow">Use in ChatGPT →</div>
+      </a>
       <a class="compat-card" href="/guides/claude-desktop">
         <h3>🧩 Claude Desktop plugin</h3>
-        <p>Install the published <code>.mcpb</code> bundle today, point buyers at the submission packet, and keep the official directory story honest until Anthropic review is real.</p>
+        <p>Install the published <code>.mcpb</code> bundle today, point buyers at the submission packet, and let Claude Code users add the repo marketplace while the official directory review is still pending.</p>
         <div class="card-arrow">Get the Claude plugin →</div>
       </a>
       <a class="compat-card" href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/plugins" target="_blank" rel="noopener">
@@ -632,7 +658,7 @@ __GA_BOOTSTRAP__
 <!-- HOW IT WORKS -->
 <section class="how-it-works" id="how-it-works">
   <div class="container">
-    <div class="section-label">New in v1.4.0</div>
+    <div class="section-label">New in v1.4.1</div>
     <h2 class="section-title">Three steps to stop repeated AI failures</h2>
     <div class="steps">
       <div class="step">
@@ -763,10 +789,11 @@ __GA_BOOTSTRAP__
   "mcpServers": {
     "thumbgate": {
       "command": "npx",
-      "args": ["--yes", "thumbgate", "serve"]
+      "args": ["--yes", "--package", "thumbgate", "thumbgate", "serve"]
     }
   }
 }</pre>
+    <p style="color: #8b949e; max-width: 760px; margin: 16px auto 0;">Official directory review is separate. Claude Code users can install immediately with <code>/plugin marketplace add IgorGanapolsky/ThumbGate</code> and <code>/plugin install thumbgate@thumbgate-marketplace</code>.</p>
   </div>
 </section>
 
@@ -821,12 +848,8 @@ __GA_BOOTSTRAP__
           <li>Personal local dashboard — every Pro user gets a localhost dashboard without extra cloud setup</li>
           <li>Review-ready workflow support — we help you wire the riskiest flows first: migrations, force-pushes, deploys, and CI</li>
         </ul>
-        <a href="/checkout/pro?utm_source=website&utm_medium=homepage_pricing&utm_campaign=pro_pack&cta_id=homepage_pricing_trial&cta_placement=pricing&plan_id=pro&landing_path=%2F" class="btn-pro" style="display:none" id="pro-checkout-link">Start Free Trial — then $19/mo</a>
         <div class="trial-badge" style="background:var(--cyan);color:#000;display:inline-block;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;margin-bottom:12px;">7-DAY FREE TRIAL</div>
-        <div class="email-gate" style="margin-bottom:12px;">
-          <input type="email" id="pro-email" data-buyer-email placeholder="Your email to start trial" style="width:100%;padding:10px 14px;border:1px solid #333;border-radius:6px;background:#1a1a2e;color:#fff;font-size:14px;">
-        </div>
-        <button class="btn-pro" id="pro-trial-btn" onclick="handleProTrial()" style="width:100%;cursor:pointer;border:none;">Start 7-Day Free Trial</button>
+        <a href="/checkout/pro?utm_source=website&utm_medium=pricing_card&utm_campaign=pro_trial&cta_id=pricing_pro_trial&cta_placement=pricing&plan_id=pro&landing_path=%2F" class="btn-pro" onclick="posthog.capture('pricing_cta_click',{cta:'pro_trial',plan:'pro'})" style="display:block;width:100%;text-align:center;padding:12px;font-size:15px;">Start 7-Day Free Trial — $19/mo</a>
         <p style="font-size:11px;color:#666;margin-top:8px;">Solo Pro stays available for operators who want a personal dashboard and export-ready evidence without the team rollout motion.</p>
       </div>
       <div class="price-card team">
@@ -948,6 +971,7 @@ __GA_BOOTSTRAP__
     <h2>Start with one workflow you actually need to defend.</h2>
     <p>Use the workflow hardening sprint for team rollout. Install the free CLI if you are still evaluating alone. Pro remains the solo side lane for a personal dashboard and review-ready exports.</p>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <a href="/checkout/pro?utm_source=website&utm_medium=final_cta&utm_campaign=pro_trial&cta_id=final_pro_trial" onclick="posthog.capture('final_cta_click',{cta:'pro_trial'})" class="btn-pro" style="padding:12px 32px;font-size:15px;">Start 7-Day Free Trial — $19/mo</a>
       <a href="#workflow-sprint-intake" class="btn-team" style="background:var(--green);">Start Workflow Hardening Sprint</a>
       <a href="/guide?utm_source=website&utm_medium=homepage_final&utm_campaign=install_free" class="btn-pro btn-install-link">Install Free CLI</a>
     </div>
@@ -965,9 +989,32 @@ __GA_BOOTSTRAP__
       <a href="https://www.linkedin.com/in/igorganapolsky" target="_blank" rel="noopener">LinkedIn</a>
       <a href="/blog">Blog</a>
     </div>
-    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License · v1.4.0</span>
+    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License · v1.4.1</span>
   </div>
 </footer>
+
+<!-- STICKY BOTTOM CTA -->
+<div class="sticky-cta" id="sticky-cta">
+  <span class="sticky-cta-text"><strong>ThumbGate Pro</strong> — gate debugger, DPO export, personal dashboard</span>
+  <a href="/checkout/pro?utm_source=website&utm_medium=sticky_bar&utm_campaign=pro_trial&cta_id=sticky_pro_trial" onclick="posthog.capture('sticky_cta_click',{cta:'pro_trial'})" class="btn-pro">Start free trial — $19/mo</a>
+</div>
+<script>
+(function() {
+  var stickyCta = document.getElementById('sticky-cta');
+  var heroSection = document.querySelector('.hero');
+  if (!stickyCta || !heroSection) return;
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        stickyCta.classList.remove('visible');
+      } else {
+        stickyCta.classList.add('visible');
+      }
+    });
+  }, { threshold: 0 });
+  observer.observe(heroSection);
+})();
+</script>
 
 <script src="/js/buyer-intent.js"></script>
 <script>

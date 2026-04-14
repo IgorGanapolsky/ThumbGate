@@ -1,0 +1,134 @@
+name: Ralph Loop Audience Engagement
+
+# Ralph Mode is the always-on acquisition loop:
+# - hourly audience sensing and reply monitoring
+# - cache-backed state so CI does not forget handled replies
+# - Reddit remains draft-only; X replies still pass the social quality gate
+# - outbound campaign posts stay in the separate Ralph Mode workflow
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Ralph mode to run'
+        required: true
+        type: choice
+        default: all
+        options:
+          - all
+          - engage
+          - poll
+          - audit
+          - post
+      dry_run:
+        description: 'Detect and draft without live replies/posts'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ralph-loop-audience-state
+  cancel-in-progress: true
+
+jobs:
+  ralph-loop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+      ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
+      ZERNIO_INSTAGRAM_ACCOUNT_ID: ${{ secrets.ZERNIO_INSTAGRAM_ACCOUNT_ID }}
+      ZERNIO_LINKEDIN_ACCOUNT_ID: ${{ secrets.ZERNIO_LINKEDIN_ACCOUNT_ID }}
+      ZERNIO_PROFILE_ID: ${{ secrets.ZERNIO_PROFILE_ID }}
+      ZERNIO_REDDIT_ACCOUNT_ID: ${{ secrets.ZERNIO_REDDIT_ACCOUNT_ID }}
+      ZERNIO_TIKTOK_ACCOUNT_ID: ${{ secrets.ZERNIO_TIKTOK_ACCOUNT_ID }}
+      ZERNIO_YOUTUBE_ACCOUNT_ID: ${{ secrets.ZERNIO_YOUTUBE_ACCOUNT_ID }}
+      X_API_KEY: ${{ secrets.X_API_KEY }}
+      X_API_SECRET: ${{ secrets.X_API_SECRET }}
+      X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+      X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+      X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
+      X_USER_ID: ${{ secrets.X_USER_ID }}
+      X_USERNAME: ${{ secrets.X_USERNAME }}
+      TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
+      TWITTER_API_SECRET: ${{ secrets.TWITTER_API_SECRET }}
+      TWITTER_BEARER_TOKEN: ${{ secrets.TWITTER_BEARER_TOKEN }}
+      TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+      TWITTER_ACCESS_TOKEN_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
+      REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+      REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+      REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
+      REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
+      LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+      LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
+      PLAUSIBLE_API_KEY: ${{ secrets.PLAUSIBLE_API_KEY }}
+      PLAUSIBLE_SITE_ID: ${{ secrets.PLAUSIBLE_SITE_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Prepare Ralph state directories
+        run: mkdir -p .thumbgate .artifacts/ralph-loop
+
+      - name: Restore Ralph state
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .thumbgate/reply-monitor-state.json
+            .thumbgate/reply-drafts.jsonl
+            .thumbgate/social-launch-assets.json
+          key: ralph-loop-state-${{ github.run_id }}
+          restore-keys: |
+            ralph-loop-state-
+
+      - name: Run Ralph Loop
+        run: |
+          MODE="${{ github.event.inputs.mode }}"
+          if [ -z "$MODE" ]; then
+            MODE="all"
+          fi
+
+          DRY_RUN_FLAG=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            DRY_RUN_FLAG="--dry-run"
+          fi
+
+          node scripts/ralph-loop.js --mode="$MODE" $DRY_RUN_FLAG --artifact-dir=.artifacts/ralph-loop
+
+      - name: Upload Ralph evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ralph-loop-${{ github.run_id }}
+          path: |
+            .artifacts/ralph-loop/
+            .thumbgate/reply-drafts.jsonl
+            .thumbgate/social-launch-assets.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Save Ralph state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            .thumbgate/reply-monitor-state.json
+            .thumbgate/reply-drafts.jsonl
+            .thumbgate/social-launch-assets.json
+          key: ralph-loop-state-${{ github.run_id }}

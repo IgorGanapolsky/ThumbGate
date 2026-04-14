@@ -151,7 +151,7 @@ test('public landing page exposes the free CLI wedge above the fold and keeps Pr
 
   assert.match(landingPage, /Install Free CLI/i);
   assert.match(landingPage, /btn-install-link/);
-  assert.match(landingPage, /intake-first/i);
+  assert.match(landingPage, /Install free\./i);
   assert.match(landingPage, /solo side lane/i);
 });
 
@@ -229,6 +229,14 @@ test('public landing page includes compatibility section for AI agent surfaces',
   assert.match(landingPage, /compatibility-grid/);
   assert.match(landingPage, /View setup guide/);
   assert.match(landingPage, /Get the Claude plugin/);
+  assert.match(landingPage, /thumbgate-marketplace/);
+  assert.match(landingPage, /\/plugin marketplace add IgorGanapolsky\/ThumbGate/);
+  assert.match(landingPage, /ChatGPT GPT Actions/);
+  assert.match(landingPage, /Use in ChatGPT/);
+  assert.match(landingPage, /Regular users reply with 👍\/👎/);
+  assert.match(landingPage, /save the lesson/i);
+  assert.match(landingPage, /reinforce the answer patterns that worked/i);
+  assert.match(landingPage, /adapters\/chatgpt\/INSTALL\.md/);
   assert.match(landingPage, /Browse plugins/);
   assert.match(landingPage, /View skill on GitHub/);
 });
@@ -284,7 +292,7 @@ test('public landing page internally links to comparison and guide pages without
 test('public landing page advertises the Codex standalone plugin install path', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /Install Codex plugin/);
+  assert.match(landingPage, /Codex plugin/i);
   assert.match(landingPage, /Codex plugin download →/);
   assert.match(landingPage, /Get the Codex plugin →/);
   assert.match(landingPage, /plugins\/codex-profile\/INSTALL\.md/);

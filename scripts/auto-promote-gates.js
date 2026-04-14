@@ -6,8 +6,8 @@ const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
 
 const MAX_AUTO_GATES = 10;
-const WARN_THRESHOLD = 3; // 3+ repeated failures surface a warning gate
-const BLOCK_THRESHOLD = 5; // 5+ repeated failures hard-block the action
+const WARN_THRESHOLD = 2; // 2+ repeated failures surface a warning gate
+const BLOCK_THRESHOLD = 3; // 3+ repeated failures hard-block the action
 const WINDOW_DAYS = 30;
 
 const NEG_SIGNALS = new Set(['negative', 'negative_strong', 'down', 'thumbs_down']);
@@ -20,8 +20,10 @@ function getFeedbackLogPath() {
   const localClaude = path.join(process.cwd(), '.claude', 'memory', 'feedback', 'feedback-log.jsonl');
   if (fs.existsSync(localFallback)) return localFallback;
   if (fs.existsSync(localClaude)) return localClaude;
+  // Fall back to resolveFeedbackDir() for proper home-dir resolution
+  const resolved = path.join(resolveFeedbackDir(), 'feedback-log.jsonl');
+  if (fs.existsSync(resolved)) return resolved;
   return localFallback; // default even if doesn't exist
-  return path.join(resolveFeedbackDir(), 'feedback-log.jsonl');
 }
 
 function getAutoGatesPath() {

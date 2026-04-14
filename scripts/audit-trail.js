@@ -12,10 +12,12 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { resolveFeedbackDir } = require('./feedback-paths');
 const { ensureDir } = require('./fs-utils');
 
 const AUDIT_LOG_FILENAME = 'audit-trail.jsonl';
+const GATE_EVENTS_LOG_FILENAME = 'gate-events-log.jsonl';
 
 // ---------------------------------------------------------------------------
 // Paths
@@ -98,27 +100,34 @@ function sanitizeToolInput(toolInput) {
 // ---------------------------------------------------------------------------
 
 /**
- * Converts deny/warn audit events into ThumbGate feedback signal.
- * This is the core OpenShell insight: policy decisions ARE training signal.
+ * Converts deny/warn audit events into a separate gate-events log.
+ *
+ * IMPORTANT: Gate denials are NOT user feedback. Writing them to the main
+ * feedback-log.jsonl inflated user-facing stats ~18x (1,943 synthetic entries
+ * vs ~300 real). Gate events are now logged to gate-events-log.jsonl for
+ * internal analytics only — they never pollute thumbs-up/thumbs-down counts.
  */
 function auditToFeedback(auditRecord) {
   if (auditRecord.decision === 'allow') return null;
 
   try {
-    const feedbackLoop = require('./feedback-loop');
-    const signal = auditRecord.decision === 'deny' ? 'down' : 'down';
-    const context = `Gate "${auditRecord.gateId}" ${auditRecord.decision === 'deny' ? 'blocked' : 'warned'} tool "${auditRecord.toolName}": ${auditRecord.message || 'no message'}`;
-
-    return feedbackLoop.captureFeedback({
-      signal,
-      context,
-      what_went_wrong: `Agent attempted action blocked by policy gate: ${auditRecord.gateId}`,
-      what_to_change: auditRecord.message || 'Follow safety policy before attempting this action',
-      tags: ['audit-trail', 'auto-capture', `gate:${auditRecord.gateId}`, auditRecord.source].filter(Boolean),
-      title: `MISTAKE: Policy violation — ${auditRecord.gateId}`,
-    });
+    const { getFeedbackPaths } = require('./feedback-paths');
+    const { FEEDBACK_DIR } = getFeedbackPaths();
+    const gateLogPath = path.join(FEEDBACK_DIR, GATE_EVENTS_LOG_FILENAME);
+    ensureDir(path.dirname(gateLogPath));
+    const entry = {
+      id: `gate_${crypto.randomUUID()}`,
+      gateId: auditRecord.gateId,
+      decision: auditRecord.decision,
+      toolName: auditRecord.toolName,
+      message: auditRecord.message || null,
+      source: auditRecord.source || null,
+      timestamp: new Date().toISOString(),
+    };
+    fs.appendFileSync(gateLogPath, JSON.stringify(entry) + '\n');
+    return entry;
   } catch {
-    // Feedback capture failure should never break the audit trail
+    // Gate event logging failure should never break the audit trail
     return null;
   }
 }
@@ -316,6 +325,7 @@ module.exports = {
   getAuditLogPath,
   sanitizeToolInput,
   AUDIT_LOG_FILENAME,
+  GATE_EVENTS_LOG_FILENAME,
   CACHE_TUNE_STATE_FILENAME,
 };
 

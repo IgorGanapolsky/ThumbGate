@@ -1506,6 +1506,7 @@ function help() {
   console.log('  capture [flags]       Capture feedback (--feedback=up|down --context="..." --tags="...")');
   console.log('  stats                 Show feedback analytics + Revenue-at-Risk');
   console.log('  cfo                   Show hosted billing summary when configured, else local fallback JSON');
+  console.log('  billing:setup         Generate operator key + print Railway setup instructions');
   console.log('  repair-github-marketplace  Dry-run or apply legacy GitHub Marketplace amount repairs (--write)');
   console.log('  north-star            Show proof-backed workflow-run progress toward the North Star');
   console.log('  summary               Human-readable feedback summary');
@@ -1612,6 +1613,9 @@ switch (COMMAND) {
   case 'cfo':
   case 'revenue':
     cfo();
+    break;
+  case 'billing:setup':
+    require(path.join(PKG_ROOT, 'scripts', 'billing-setup'));
     break;
   case 'repair-github-marketplace':
     repairGithubMarketplace();

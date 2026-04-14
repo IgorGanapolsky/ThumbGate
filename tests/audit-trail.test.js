@@ -16,6 +16,7 @@ const {
   tuneCacheThreshold,
   sanitizeToolInput,
   AUDIT_LOG_FILENAME,
+  GATE_EVENTS_LOG_FILENAME,
   CACHE_TUNE_STATE_FILENAME,
 } = require('../scripts/audit-trail');
 
@@ -132,8 +133,8 @@ test('auditToFeedback skips allow decisions', () => {
   assert.equal(result, null);
 });
 
-test('auditToFeedback captures deny decisions as negative feedback', () => {
-  withTempDir(() => {
+test('auditToFeedback writes deny decisions to gate-events, not user feedback', () => {
+  withTempDir((tmpDir) => {
     const result = auditToFeedback({
       decision: 'deny',
       gateId: 'force-push',
@@ -142,9 +143,33 @@ test('auditToFeedback captures deny decisions as negative feedback', () => {
       source: 'gates-engine',
     });
 
-    // Feedback capture may reject due to schema validation (title format, etc.)
-    // but the function should not throw
-    assert.ok(result !== undefined);
+    assert.ok(result.id.startsWith('gate_'));
+    assert.equal(result.decision, 'deny');
+    assert.equal(result.gateId, 'force-push');
+    assert.equal(result.toolName, 'Bash');
+
+    const gateLogPath = path.join(tmpDir, GATE_EVENTS_LOG_FILENAME);
+    assert.ok(fs.existsSync(gateLogPath), 'gate event log should exist');
+    const entries = fs.readFileSync(gateLogPath, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0].decision, 'deny');
+    assert.equal(entries[0].gateId, 'force-push');
+    assert.equal(fs.existsSync(path.join(tmpDir, 'feedback-log.jsonl')), false, 'user feedback log should not be created');
+  });
+});
+
+test('auditToFeedback records warn decisions as gate events', () => {
+  withTempDir((tmpDir) => {
+    const result = auditToFeedback({
+      decision: 'warn',
+      gateId: 'slow-tool',
+      toolName: 'Bash',
+      source: 'tool-latency',
+    });
+
+    assert.equal(result.decision, 'warn');
+    const entries = fs.readFileSync(path.join(tmpDir, GATE_EVENTS_LOG_FILENAME), 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+    assert.equal(entries[0].source, 'tool-latency');
   });
 });
 
