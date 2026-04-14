@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "1.4.1",
+  "version": "1.4.3",
   "description": "Self-improving agent governance: type thumbs-up or thumbs-down on any AI agent action. ThumbGate turns every mistake into a prevention rule and blocks the pattern from repeating. One thumbs-down, never again. 33 pre-action gates, budget enforcement, and self-protection for Claude Code, Cursor, Codex, Gemini CLI, and Amp.",
   "homepage": "https://thumbgate-production.up.railway.app",
   "repository": {
