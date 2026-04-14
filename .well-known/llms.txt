@@ -1,4 +1,4 @@
-# ThumbGate — Pre-action gates for AI coding agents
+# ThumbGate — Type 👍 or 👎 on any AI agent action. Blocks the pattern from repeating. One thumbs-down, never again.
 # https://thumbgate-production.up.railway.app
 # https://github.com/IgorGanapolsky/ThumbGate
 # https://www.npmjs.com/package/thumbgate
