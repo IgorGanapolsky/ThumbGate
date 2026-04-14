@@ -182,7 +182,9 @@ function pkgVersion() {
 
 const HOME = process.env.HOME || process.env.USERPROFILE || '';
 const MCP_SERVER_NAME = 'thumbgate';
-const MCP_SERVER_NAMES = ['thumbgate', 'mcp-memory-gateway', 'rlhf'];
+// Legacy aliases are cleanup-only. Do not use them as active product or launch surfaces.
+const LEGACY_MCP_SERVER_NAMES = ['mcp-memory-gateway', 'rlhf'];
+const MCP_SERVER_NAMES = [MCP_SERVER_NAME, ...LEGACY_MCP_SERVER_NAMES];
 
 function mcpEntriesMatch(entry, expectedEntry) {
   return Boolean(
