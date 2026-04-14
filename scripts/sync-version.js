@@ -149,24 +149,21 @@ function syncVersion(opts) {
         changed = true;
       }
     }
-    const currentPluginVersion = claudeMarketplace.plugins && claudeMarketplace.plugins[0]
-      ? claudeMarketplace.plugins[0].version
-      : undefined;
+    const firstClaudeMarketplacePlugin = claudeMarketplace.plugins?.[0];
+    const currentPluginVersion = firstClaudeMarketplacePlugin?.version;
     if (currentPluginVersion !== version) {
       drifted.push({ file: claudeMarketplacePath, field: 'plugins[0].version', current: currentPluginVersion });
-      if (!checkOnly && claudeMarketplace.plugins && claudeMarketplace.plugins[0]) {
-        claudeMarketplace.plugins[0].version = version;
+      if (!checkOnly && firstClaudeMarketplacePlugin) {
+        firstClaudeMarketplacePlugin.version = version;
         changed = true;
       }
     }
-    const currentHomepage = claudeMarketplace.plugins && claudeMarketplace.plugins[0] && claudeMarketplace.plugins[0].metadata
-      ? claudeMarketplace.plugins[0].metadata.homepage
-      : undefined;
+    const currentHomepage = firstClaudeMarketplacePlugin?.metadata?.homepage;
     if (currentHomepage !== homepageUrl) {
       drifted.push({ file: claudeMarketplacePath, field: 'plugins[0].metadata.homepage', current: currentHomepage });
-      if (!checkOnly && claudeMarketplace.plugins && claudeMarketplace.plugins[0]) {
-        claudeMarketplace.plugins[0].metadata = claudeMarketplace.plugins[0].metadata || {};
-        claudeMarketplace.plugins[0].metadata.homepage = homepageUrl;
+      if (!checkOnly && firstClaudeMarketplacePlugin) {
+        firstClaudeMarketplacePlugin.metadata = firstClaudeMarketplacePlugin.metadata || {};
+        firstClaudeMarketplacePlugin.metadata.homepage = homepageUrl;
         changed = true;
       }
     }

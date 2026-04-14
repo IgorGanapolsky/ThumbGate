@@ -1067,7 +1067,7 @@ function readOptionalPublicTemplate(filePath) {
   try {
     return fs.readFileSync(filePath, 'utf-8');
   } catch (error) {
-    if (error && error.code === 'ENOENT') return null;
+    if (error?.code === 'ENOENT') return null;
     throw error;
   }
 }
