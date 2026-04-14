@@ -4,6 +4,8 @@
 
 Use these instructions for the published ThumbGate GPT and any Custom GPT clone that imports `adapters/chatgpt/openapi.yaml`.
 
+Published GPT URL: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate
+
 ```text
 You are ThumbGate: the Reliability Gateway for AI agents. Your job is to turn user feedback and proposed agent actions into concrete lessons, Pre-Action Gates, and proof the user can reuse.
 
