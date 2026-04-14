@@ -6,25 +6,123 @@
 
 'use strict';
 
-const Stripe = require('stripe');
-
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
-
-if (!STRIPE_SECRET_KEY) {
-  console.error('STRIPE_SECRET_KEY not set');
-  process.exit(1);
+function parseArgs(argv = []) {
+  return {
+    strict: argv.includes('--strict'),
+  };
 }
 
-const stripe = new Stripe(STRIPE_SECRET_KEY);
+function dollars(cents) {
+  return Number(cents || 0) / 100;
+}
 
-async function getLiveStatus() {
+function unavailableReport(status, gap) {
+  return {
+    generatedAt: new Date().toISOString(),
+    source: 'stripe_live_api',
+    status,
+    configured: false,
+    gaps: [gap],
+    balance: {
+      available: 0,
+      pending: 0,
+      currency: 'USD',
+    },
+    revenue: {
+      grossLifetime: 0,
+      refundedLifetime: 0,
+      netLifetime: 0,
+      today: 0,
+      todayChargeCount: 0,
+    },
+    charges: {
+      total: 0,
+      paid: 0,
+      refunded: 0,
+      failed: 0,
+    },
+    subscriptions: {
+      active: 0,
+      cancelled: 0,
+      total: 0,
+      mrr: 0,
+    },
+    checkout: {
+      completed: 0,
+      expired: 0,
+      total: 0,
+      conversionRate: '0%',
+    },
+    products: [],
+    activePrices: [],
+  };
+}
+
+function loadStripe(requireFn = require) {
+  return requireFn('stripe');
+}
+
+function createStripeClient(stripeFactory, secretKey) {
+  if (typeof stripeFactory !== 'function') {
+    throw new TypeError('Stripe SDK did not export a client factory');
+  }
+  return stripeFactory(secretKey);
+}
+
+async function getLiveStatus({
+  stripeClient = null,
+  stripeCtor = null,
+  secretKey = process.env.STRIPE_SECRET_KEY,
+  now = new Date(),
+} = {}) {
+  if (!secretKey && !stripeClient) {
+    return unavailableReport('missing_secret', 'STRIPE_SECRET_KEY is not set');
+  }
+
+  let stripe = stripeClient;
+  if (!stripe) {
+    let stripeFactory = stripeCtor;
+    try {
+      stripeFactory = stripeFactory || loadStripe();
+      stripe = createStripeClient(stripeFactory, secretKey);
+    } catch (error) {
+      return unavailableReport('missing_dependency', `Stripe SDK is unavailable: ${error.message}`);
+    }
+  }
+
+  if (
+    !stripe ||
+    !stripe.balance ||
+    typeof stripe.balance.retrieve !== 'function' ||
+    !stripe.charges ||
+    typeof stripe.charges.list !== 'function' ||
+    !stripe.subscriptions ||
+    typeof stripe.subscriptions.list !== 'function' ||
+    !stripe.products ||
+    typeof stripe.products.list !== 'function' ||
+    !stripe.prices ||
+    typeof stripe.prices.list !== 'function' ||
+    !stripe.checkout ||
+    !stripe.checkout.sessions ||
+    typeof stripe.checkout.sessions.list !== 'function'
+  ) {
+    return unavailableReport('missing_dependency', 'Stripe SDK did not create a client');
+  }
+
+  const balanceApi = stripe.balance;
+  const chargesApi = stripe.charges;
+  const subscriptionsApi = stripe.subscriptions;
+  const productsApi = stripe.products;
+  const pricesApi = stripe.prices;
+  const checkoutSessionsApi = stripe.checkout.sessions;
+
   const [balance, charges, subscriptions, products, prices, sessions] = await Promise.all([
-    stripe.balance.retrieve(),
-    stripe.charges.list({ limit: 100 }),
-    stripe.subscriptions.list({ limit: 100, status: 'all' }),
-    stripe.products.list({ limit: 20, active: true }),
-    stripe.prices.list({ limit: 20, active: true }),
-    stripe.checkout.sessions.list({ limit: 50 }),
+    balanceApi.retrieve(),
+    chargesApi.list({ limit: 100 }),
+    subscriptionsApi.list({ limit: 100, status: 'all' }),
+    productsApi.list({ limit: 20, active: true }),
+    pricesApi.list({ limit: 20, active: true }),
+    checkoutSessionsApi.list({ limit: 50 }),
   ]);
 
   const availableBalance = balance.available.reduce((sum, b) => sum + b.amount, 0);
@@ -43,7 +141,7 @@ async function getLiveStatus() {
   const completedSessions = sessions.data.filter(s => s.payment_status === 'paid');
   const expiredSessions = sessions.data.filter(s => s.status === 'expired');
 
-  const todayStart = new Date();
+  const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
   const todayCharges = paidCharges.filter(c => c.created * 1000 >= todayStart.getTime());
   const todayRevenue = todayCharges.reduce((sum, c) => sum + c.amount, 0);
@@ -51,16 +149,19 @@ async function getLiveStatus() {
   const report = {
     generatedAt: new Date().toISOString(),
     source: 'stripe_live_api',
+    status: 'ok',
+    configured: true,
+    gaps: [],
     balance: {
-      available: availableBalance / 100,
-      pending: pendingBalance / 100,
+      available: dollars(availableBalance),
+      pending: dollars(pendingBalance),
       currency: 'USD',
     },
     revenue: {
-      grossLifetime: grossRevenue / 100,
-      refundedLifetime: refundedAmount / 100,
-      netLifetime: (grossRevenue - refundedAmount) / 100,
-      today: todayRevenue / 100,
+      grossLifetime: dollars(grossRevenue),
+      refundedLifetime: dollars(refundedAmount),
+      netLifetime: dollars(grossRevenue - refundedAmount),
+      today: dollars(todayRevenue),
       todayChargeCount: todayCharges.length,
     },
     charges: {
@@ -73,7 +174,7 @@ async function getLiveStatus() {
       active: activeSubs.length,
       cancelled: cancelledSubs.length,
       total: subscriptions.data.length,
-      mrr: activeSubs.reduce((sum, s) => sum + (s.plan?.amount || 0), 0) / 100,
+      mrr: dollars(activeSubs.reduce((sum, s) => sum + (s.plan?.amount || 0), 0)),
     },
     checkout: {
       completed: completedSessions.length,
@@ -90,7 +191,7 @@ async function getLiveStatus() {
     })),
     activePrices: prices.data.map(p => ({
       id: p.id,
-      amount: p.unit_amount / 100,
+      amount: dollars(p.unit_amount),
       type: p.type,
       interval: p.recurring?.interval || 'one_time',
       product: p.product,
@@ -100,9 +201,13 @@ async function getLiveStatus() {
   return report;
 }
 
-async function main() {
+async function main(argv = process.argv.slice(2)) {
+  const options = parseArgs(argv);
   const report = await getLiveStatus();
   console.log(JSON.stringify(report, null, 2));
+  if (options.strict && report.status !== 'ok') {
+    process.exit(1);
+  }
 }
 
 if (require.main === module) {
@@ -112,4 +217,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { getLiveStatus };
+module.exports = { parseArgs, dollars, unavailableReport, getLiveStatus };
