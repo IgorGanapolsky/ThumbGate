@@ -9,7 +9,7 @@ try {
   Database = null;
 }
 
-const DEFAULT_DB_PATH = path.join(__dirname, 'db', 'social-analytics.db');
+const DEFAULT_DB_PATH = path.join(__dirname, 'db', 'analytics.sqlite');
 const SCHEMA_PATH = path.join(__dirname, 'db', 'schema.sql');
 
 class MemoryStatement {
@@ -221,6 +221,9 @@ function initDb(dbPath = DEFAULT_DB_PATH) {
     fs.mkdirSync(dir, { recursive: true });
   }
 
+  if (!Database) {
+    console.warn('⚠  better-sqlite3 not available — using in-memory fallback. Data will NOT persist.');
+  }
   const db = Database ? new Database(resolvedPath) : new MemoryDatabase();
   db.pragma('busy_timeout = 3000');
 

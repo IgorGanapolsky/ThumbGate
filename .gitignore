@@ -30,6 +30,9 @@ node_modules/
 .mcpregistry_registry_token
 .omx/
 scripts/social-analytics/db/social-analytics.db
+scripts/social-analytics/db/analytics.sqlite
+scripts/social-analytics/db/analytics.sqlite-wal
+scripts/social-analytics/db/analytics.sqlite-shm
 :memory:
 __pycache__/
 *.pyc
