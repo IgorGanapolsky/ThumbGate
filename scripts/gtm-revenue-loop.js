@@ -3,11 +3,11 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { spawnSync } = require('node:child_process');
 const { resolveHostedBillingConfig } = require('./hosted-config');
 const { getOperationalBillingSummary } = require('./operational-summary');
 const { ensureDir } = require('./fs-utils');
 
+const GITHUB_API_BASE_URL = 'https://api.github.com/';
 const COMMERCIAL_TRUTH_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md';
 const VERIFICATION_EVIDENCE_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
 
@@ -19,6 +19,57 @@ function getGoogleGenAI() {
   }
 }
 
+function readInlineOption(arg, name) {
+  const prefix = `${name}=`;
+  return arg.startsWith(prefix) ? arg.slice(prefix.length).trim() : null;
+}
+
+function readFollowingOption(argv, index) {
+  const nextArg = argv[index + 1];
+  if (!nextArg || nextArg.startsWith('--')) {
+    return { value: null, index };
+  }
+  return { value: String(nextArg).trim(), index: index + 1 };
+}
+
+function applyInlineOption(options, arg) {
+  const reportDir = readInlineOption(arg, '--report-dir');
+  if (reportDir !== null) {
+    options.reportDir = reportDir;
+    return true;
+  }
+
+  const maxTargets = readInlineOption(arg, '--max-targets');
+  if (maxTargets !== null) {
+    options.maxTargets = clampTargetCount(maxTargets);
+    return true;
+  }
+
+  return false;
+}
+
+const NAMED_OPTION_HANDLERS = {
+  '--write-docs': (options, _argv, index) => {
+    options.writeDocs = true;
+    return index;
+  },
+  '--report-dir': (options, argv, index) => {
+    const parsed = readFollowingOption(argv, index);
+    options.reportDir = parsed.value || options.reportDir;
+    return parsed.index;
+  },
+  '--max-targets': (options, argv, index) => {
+    const parsed = readFollowingOption(argv, index);
+    options.maxTargets = parsed.value ? clampTargetCount(parsed.value) : options.maxTargets;
+    return parsed.index;
+  },
+};
+
+function applyNamedOption(options, argv, index) {
+  const handler = NAMED_OPTION_HANDLERS[argv[index]];
+  return handler ? handler(options, argv, index) : null;
+}
+
 function parseArgs(argv = []) {
   const options = {
     maxTargets: 6,
@@ -28,31 +79,12 @@ function parseArgs(argv = []) {
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
-    if (arg === '--write-docs') {
-      options.writeDocs = true;
+    const namedOptionIndex = applyNamedOption(options, argv, index);
+    if (namedOptionIndex !== null) {
+      index = namedOptionIndex;
       continue;
     }
-
-    if (arg === '--report-dir' && argv[index + 1]) {
-      options.reportDir = String(argv[index + 1]).trim();
-      index += 1;
-      continue;
-    }
-
-    if (arg.startsWith('--report-dir=')) {
-      options.reportDir = arg.split('=').slice(1).join('=').trim();
-      continue;
-    }
-
-    if (arg === '--max-targets' && argv[index + 1]) {
-      options.maxTargets = clampTargetCount(argv[index + 1]);
-      index += 1;
-      continue;
-    }
-
-    if (arg.startsWith('--max-targets=')) {
-      options.maxTargets = clampTargetCount(arg.split('=').slice(1).join('='));
-    }
+    applyInlineOption(options, arg);
   }
 
   return options;
@@ -134,13 +166,14 @@ function deriveRevenueDirective(summary = {}, motionCatalog = buildMotionCatalog
   if (snapshot.paidOrders > 0 || snapshot.bookedRevenueCents > 0) {
     return {
       state: 'post-first-dollar',
-      objective: 'Scale the first-10-customers loop with proof-backed self-serve follow-up.',
-      primaryMotion: motionCatalog.pro.key,
-      secondaryMotion: motionCatalog.sprint.key,
-      headline: 'Revenue is proven. Double down on the self-serve/mo Pro CTA and use the sprint motion for expansion deals.',
+      objective: 'Scale the first-10-customers loop with direct workflow hardening and self-serve follow-up.',
+      primaryMotion: motionCatalog.sprint.key,
+      secondaryMotion: motionCatalog.pro.key,
+      headline: 'Revenue is proven. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.',
       actions: [
-        'Reply to every qualified builder lead with the Pro checkout path and the proof pack.',
-        'Use the Workflow Hardening Sprint only when a team already has one workflow owner and a rollout blocker.',
+        'Reply to every qualified lead with one offer: "I will harden one AI-agent workflow for you."',
+        'Use the proof pack after the buyer names the repeated workflow pain, not as the opener.',
+        'Route buyers who only want a tool to the Pro monthly/annual checkout after the pain is qualified.',
         'Publish only booked revenue and paid-order proof from the billing summary or named pilot agreements.',
       ],
     };
@@ -150,44 +183,72 @@ function deriveRevenueDirective(summary = {}, motionCatalog = buildMotionCatalog
     return {
       state: 'pipeline-active-no-revenue',
       objective: 'Convert existing interest into the first paid orders without inventing traction.',
-      primaryMotion: motionCatalog.pro.key,
-      secondaryMotion: motionCatalog.sprint.key,
-      headline: 'Interest exists but paid conversion is still zero. Push the Pro monthly/annual CTA to builders and reserve sprint outreach for team workflows.',
+      primaryMotion: motionCatalog.sprint.key,
+      secondaryMotion: motionCatalog.pro.key,
+      headline: 'Interest exists but paid conversion is still zero. Sell the Workflow Hardening Sprint first; Pro is self-serve follow-up.',
       actions: [
-        'Follow up on every checkout start or lead within one business day.',
-        'Use the Pro self-serve path as the default CTA unless the target clearly has team-level rollout pain.',
-        'Attach Commercial Truth and Verification Evidence in every outbound thread so the offer stays defensible.',
+        'Follow up on every checkout start or lead within one business day with one concrete workflow-hardening offer.',
+        'Track every lead as contacted -> replied -> call booked -> checkout or sprint intake -> paid.',
+        'Use Commercial Truth and Verification Evidence only after pain is confirmed to reduce buyer risk.',
       ],
     };
   }
 
   return {
     state: 'cold-start',
-    objective: 'Land the first 10 paying customers with a founder-led, proof-backed dual motion.',
-    primaryMotion: motionCatalog.pro.key,
-    secondaryMotion: motionCatalog.sprint.key,
-    headline: 'No verified revenue and no active pipeline. Run dual motion: Pro for individual builders, sprint for teams with one workflow problem.',
+    objective: 'Land the first 10 paying customers with founder-led workflow hardening.',
+    primaryMotion: motionCatalog.sprint.key,
+    secondaryMotion: motionCatalog.pro.key,
+    headline: 'No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.',
     actions: [
-      'Lead builder outreach with Pro at $19/mo or $149/yr and the direct checkout link.',
-      'Route platform or ops teams to the Workflow Hardening Sprint intake only when they fit the qualification bar.',
+      'Directly contact qualified buyers with: "I will harden one AI-agent workflow for you."',
+      'Use Pro at $19/mo or $149/yr only as the self-serve follow-up after the buyer asks for the tool path.',
+      'Track every lead as contacted -> replied -> call booked -> checkout or sprint intake -> paid.',
       'Treat stars, traffic, and model praise as noise until they become paid orders or named pilot agreements.',
     ],
   };
 }
 
-function runGhJson(endpoint) {
-  const result = spawnSync('gh', ['api', endpoint], {
-    encoding: 'utf8',
-    env: process.env,
-  });
+function buildGitHubApiHeaders(token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN) {
+  const headers = {
+    accept: 'application/vnd.github+json',
+    'user-agent': 'thumbgate-gtm-revenue-loop',
+    'x-github-api-version': '2022-11-28',
+  };
 
-  if (result.status !== 0) {
-    const detail = normalizeText(result.stderr) || normalizeText(result.stdout) || 'unknown gh api failure';
-    return { ok: false, error: detail, data: null };
+  if (normalizeText(token)) {
+    headers.authorization = `Bearer ${normalizeText(token)}`;
+  }
+
+  return headers;
+}
+
+async function fetchGitHubJson(endpoint, { fetchImpl = globalThis.fetch } = {}) {
+  if (typeof fetchImpl !== 'function') {
+    return { ok: false, error: 'global fetch is unavailable', data: null };
+  }
+
+  let response;
+  try {
+    const requestUrl = new URL(endpoint, GITHUB_API_BASE_URL);
+    response = await fetchImpl(requestUrl, {
+      headers: buildGitHubApiHeaders(),
+    });
+  } catch (err) {
+    return { ok: false, error: err?.message || String(err), data: null };
+  }
+
+  const responseText = await response.text();
+  if (!response.ok) {
+    return {
+      ok: false,
+      error: normalizeText(responseText) || `GitHub API request failed with ${response.status}`,
+      data: null,
+    };
   }
 
   try {
-    return { ok: true, error: '', data: JSON.parse(result.stdout) };
+    return { ok: true, error: '', data: JSON.parse(responseText) };
   } catch (err) {
     return { ok: false, error: err.message, data: null };
   }
@@ -207,7 +268,7 @@ function dedupeTargets(targets) {
   return unique;
 }
 
-function prospectTargets(maxTargets = 6) {
+async function prospectTargets(maxTargets = 6, { fetchImpl = globalThis.fetch } = {}) {
   const queries = [
     'search/repositories?q=MCP+Model+Context+Protocol+sort:updated',
     'search/repositories?q=Claude+Code+MCP+sort:updated',
@@ -216,16 +277,16 @@ function prospectTargets(maxTargets = 6) {
   const combined = [];
   const errors = [];
   for (const endpoint of queries) {
-    const response = runGhJson(endpoint);
+    const response = await fetchGitHubJson(endpoint, { fetchImpl });
     if (!response.ok) {
       errors.push(response.error);
       continue;
     }
 
-    const items = response.data && Array.isArray(response.data.items) ? response.data.items : [];
+    const items = Array.isArray(response.data?.items) ? response.data.items : [];
     for (const repo of items.slice(0, maxTargets * 2)) {
       combined.push({
-        username: repo.owner && repo.owner.login ? repo.owner.login : 'unknown',
+        username: repo.owner?.login || 'unknown',
         repoName: repo.name || 'unknown-repo',
         repoUrl: repo.html_url || '',
         description: normalizeText(repo.description) || 'No description provided.',
@@ -243,19 +304,19 @@ function prospectTargets(maxTargets = 6) {
 
 function selectOutreachMotion(target, motionCatalog = buildMotionCatalog()) {
   const haystack = `${normalizeText(target.repoName)} ${normalizeText(target.description)}`.toLowerCase();
-  const sprintSignals = /(platform|workflow|ops|compliance|audit|enterprise|production|reliability|rollout|incident|governance)/;
-  if (sprintSignals.test(haystack)) {
+  const proOnlySignals = /(awesome|list|example|template|demo|tutorial|course|personal|dotfiles|toy)/;
+  if (proOnlySignals.test(haystack)) {
     return {
-      key: motionCatalog.sprint.key,
-      label: motionCatalog.sprint.label,
-      reason: 'Target language suggests a team workflow or production rollout problem.',
+      key: motionCatalog.pro.key,
+      label: motionCatalog.pro.label,
+      reason: 'Target looks like a low-urgency self-serve/tooling fit, so Pro is the fallback CTA.',
     };
   }
 
   return {
-    key: motionCatalog.pro.key,
-    label: motionCatalog.pro.label,
-    reason: 'Target looks builder-led, so the self-serve/mo Pro CTA is the lowest-friction path.',
+    key: motionCatalog.sprint.key,
+    label: motionCatalog.sprint.label,
+    reason: 'Target can be approached with one concrete workflow-hardening offer before any generic Pro pitch.',
   };
 }
 
@@ -264,14 +325,14 @@ function buildFallbackMessage(target, selectedMotion, motionCatalog = buildMotio
   const repoRef = `\`${target.repoName}\``;
   if (selectedMotion.key === motionCatalog.sprint.key) {
     return [
-      `Hey @${target.username}, saw you're shipping ${repoRef}. If your production workflows are losing critical architectural context to auto-compaction, I am pitching a Workflow Hardening Sprint for one workflow, one owner, and one proof review: ${motion.cta}`,
-      `Commercial truth: ${motion.truth}. Proof pack: ${motion.proof}.`
+      `Hey @${target.username}, saw you're shipping ${repoRef}. I am looking for one AI-agent workflow to harden end-to-end this week: repeated failure, prevention gate, and a proof run.`,
+      `If ${repoRef} has one workflow that keeps breaking or losing context, I can harden that workflow for you: ${motion.cta}`
     ].join(' ');
   }
 
   return [
-    `Hey @${target.username}, saw you're building around ${repoRef}. If you're hitting "Claude amnesia" or losing architectural constraints to auto-compaction between sessions, the self-serve path is compaction-safe memory with ThumbGate ${motionCatalog.pro.label}: ${motion.cta}`,
-    `Commercial truth: ${motion.truth}. Proof pack: ${motion.proof}.`
+    `Hey @${target.username}, saw you're building around ${repoRef}. If you only want the self-serve path, ThumbGate Pro gives you compaction-safe memory and feedback-to-gate enforcement: ${motion.cta}`,
+    'If you have a painful workflow instead, I can harden one concrete workflow first.'
   ].join(' ');
 }
 
@@ -297,6 +358,8 @@ Reason: ${selectedMotion.reason}
 Write a short founder-style outreach note in 2 sentences max.
 Sound like a senior engineer, not a marketer.
 Use the recommended motion only.
+Do not lead with proof links. Proof is for after the buyer confirms pain.
+For sprint outreach, make the offer concrete: "I will harden one AI-agent workflow for you."
 `;
 }
 
@@ -381,59 +444,69 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
       motion: target.selectedMotion.key,
       motionLabel: target.selectedMotion.label,
       motionReason: target.selectedMotion.reason,
+      pipelineStage: 'targeted',
+      offer: target.selectedMotion.key === motionCatalog.sprint.key ? 'workflow_hardening_sprint' : 'pro_self_serve',
       cta: motionCatalog[target.selectedMotion.key].cta,
       message: target.message,
     })),
   };
 }
 
+function renderRevenueTargetMarkdown(target) {
+  return [
+    `### @${target.username} — ${target.repoName}`,
+    `- Pipeline stage: ${target.pipelineStage}`,
+    `- Offer: ${target.offer}`,
+    `- Repo: ${target.repoUrl || 'n/a'}`,
+    `- Motion: ${target.motionLabel}`,
+    `- Why: ${target.motionReason}`,
+    `- CTA: ${target.cta}`,
+    `- Outreach draft: ${target.message}`,
+    '',
+  ];
+}
+
 function renderRevenueLoopMarkdown(report) {
-  const lines = [];
-  lines.push('# GSD Revenue Loop');
-  lines.push('');
-  lines.push(`Status: ${report.directive.state}`);
-  lines.push(`Updated: ${report.generatedAt}`);
-  lines.push('');
-  lines.push('This report is an operator artifact for landing the first 10 paying customers. It is not proof of sent messages or booked revenue by itself.');
-  lines.push('');
-  lines.push('## Current Truth');
-  lines.push(`- Public self-serve offer: ${report.currentTruth.publicSelfServeOffer}`);
-  lines.push(`- Team/pilot motion: ${report.currentTruth.teamPilotOffer}`);
-  lines.push(`- Commercial truth: ${report.currentTruth.commercialTruthLink}`);
-  lines.push(`- Verification evidence: ${report.currentTruth.verificationEvidenceLink}`);
-  lines.push('');
-  lines.push('## Revenue Snapshot');
-  lines.push(`- Paid orders: ${report.snapshot.paidOrders}`);
-  lines.push(`- Booked revenue: $${(report.snapshot.bookedRevenueCents / 100).toFixed(2)}`);
-  lines.push(`- Checkout starts: ${report.snapshot.checkoutStarts}`);
-  lines.push(`- Unique leads: ${report.snapshot.uniqueLeads}`);
-  lines.push(`- Workflow sprint leads: ${report.snapshot.sprintLeads}`);
-  lines.push(`- Qualified sprint leads: ${report.snapshot.qualifiedSprintLeads}`);
-  lines.push(`- Billing source: ${report.source}${report.fallbackReason ? ` (${report.fallbackReason})` : ''}`);
-  lines.push('');
-  lines.push('## GSD Directive');
-  lines.push(`- Objective: ${report.directive.objective}`);
-  lines.push(`- Headline: ${report.directive.headline}`);
-  lines.push(`- Primary motion: ${report.directive.primaryMotion}`);
-  lines.push(`- Secondary motion: ${report.directive.secondaryMotion}`);
-  lines.push('');
-  lines.push('## Immediate Actions');
-  report.directive.actions.forEach((action) => lines.push(`- ${action}`));
-  lines.push('');
-  lines.push('## Target Queue');
-  if (report.targets.length === 0) {
-    lines.push('- No GitHub targets were discovered in this run. Re-run with authenticated `gh` access.');
-  } else {
-    report.targets.forEach((target) => {
-      lines.push(`### @${target.username} — ${target.repoName}`);
-      lines.push(`- Repo: ${target.repoUrl || 'n/a'}`);
-      lines.push(`- Motion: ${target.motionLabel}`);
-      lines.push(`- Why: ${target.motionReason}`);
-      lines.push(`- CTA: ${target.cta}`);
-      lines.push(`- Outreach draft: ${target.message}`);
-      lines.push('');
-    });
-  }
+  const fallbackReason = report.fallbackReason ? ` (${report.fallbackReason})` : '';
+  const targetLines = report.targets.length
+    ? report.targets.flatMap(renderRevenueTargetMarkdown)
+    : ['- No GitHub targets were discovered in this run. Re-run with authenticated `gh` access.'];
+  const lines = [
+    '# GSD Revenue Loop',
+    '',
+    `Status: ${report.directive.state}`,
+    `Updated: ${report.generatedAt}`,
+    '',
+    'This report is an operator artifact for landing the first 10 paying customers. It is not proof of sent messages or booked revenue by itself.',
+    'Outbound rule: do not treat posts as sales. A lead only moves when it is tracked as contacted, replied, call booked, checkout/sprint, or paid.',
+    '',
+    '## Current Truth',
+    `- Public self-serve offer: ${report.currentTruth.publicSelfServeOffer}`,
+    `- Team/pilot motion: ${report.currentTruth.teamPilotOffer}`,
+    `- Commercial truth: ${report.currentTruth.commercialTruthLink}`,
+    `- Verification evidence: ${report.currentTruth.verificationEvidenceLink}`,
+    '',
+    '## Revenue Snapshot',
+    `- Paid orders: ${report.snapshot.paidOrders}`,
+    `- Booked revenue: $${(report.snapshot.bookedRevenueCents / 100).toFixed(2)}`,
+    `- Checkout starts: ${report.snapshot.checkoutStarts}`,
+    `- Unique leads: ${report.snapshot.uniqueLeads}`,
+    `- Workflow sprint leads: ${report.snapshot.sprintLeads}`,
+    `- Qualified sprint leads: ${report.snapshot.qualifiedSprintLeads}`,
+    `- Billing source: ${report.source}${fallbackReason}`,
+    '',
+    '## GSD Directive',
+    `- Objective: ${report.directive.objective}`,
+    `- Headline: ${report.directive.headline}`,
+    `- Primary motion: ${report.directive.primaryMotion}`,
+    `- Secondary motion: ${report.directive.secondaryMotion}`,
+    '',
+    '## Immediate Actions',
+    ...report.directive.actions.map((action) => `- ${action}`),
+    '',
+    '## Target Queue',
+    ...targetLines,
+  ];
 
   return `${lines.join('\n').trim()}\n`;
 }
@@ -469,7 +542,9 @@ async function runRevenueLoop(options = {}) {
   const motionCatalog = buildMotionCatalog(links);
   const { source, summary, fallbackReason } = await getOperationalBillingSummary();
   const directive = deriveRevenueDirective(summary, motionCatalog);
-  const { targets, errors } = prospectTargets(options.maxTargets || 6);
+  const { targets, errors } = await prospectTargets(options.maxTargets || 6, {
+    fetchImpl: options.fetchImpl || globalThis.fetch,
+  });
   const enrichedTargets = await generateOutreachMessages(targets, motionCatalog);
   const report = buildRevenueLoopReport({
     source,
@@ -509,9 +584,14 @@ async function main(argv = process.argv.slice(2)) {
   }, null, 2));
 }
 
-if (require.main === module) {
+function isCliInvocation(argv = process.argv) {
+  const invokedPath = argv[1];
+  return invokedPath ? path.resolve(invokedPath) === __filename : false;
+}
+
+if (isCliInvocation()) {
   main().catch((err) => {
-    console.error(err && err.message ? err.message : err);
+    console.error(err?.message || err);
     process.exit(1);
   });
 }
@@ -525,6 +605,8 @@ module.exports = {
   buildRevenueLoopReport,
   clampTargetCount,
   deriveRevenueDirective,
+  fetchGitHubJson,
+  isCliInvocation,
   parseArgs,
   prospectTargets,
   renderRevenueLoopMarkdown,
