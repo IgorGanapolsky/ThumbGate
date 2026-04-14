@@ -148,7 +148,17 @@ function syncVersion(opts) {
         claudeMarketplace.version = version;
         changed = true;
       }
-    } 
+    }
+    const currentPluginVersion = claudeMarketplace.plugins && claudeMarketplace.plugins[0]
+      ? claudeMarketplace.plugins[0].version
+      : undefined;
+    if (currentPluginVersion !== version) {
+      drifted.push({ file: claudeMarketplacePath, field: 'plugins[0].version', current: currentPluginVersion });
+      if (!checkOnly && claudeMarketplace.plugins && claudeMarketplace.plugins[0]) {
+        claudeMarketplace.plugins[0].version = version;
+        changed = true;
+      }
+    }
     const currentHomepage = claudeMarketplace.plugins && claudeMarketplace.plugins[0] && claudeMarketplace.plugins[0].metadata
       ? claudeMarketplace.plugins[0].metadata.homepage
       : undefined;
