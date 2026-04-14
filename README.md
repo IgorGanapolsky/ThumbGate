@@ -1,6 +1,8 @@
 # ThumbGate
 
-**Thumbs up or thumbs down — and your AI coding agent never makes the same mistake twice.**
+**Stop AI agents before they make costly mistakes.**
+
+ThumbGate checks risky actions before they run, learns from thumbs-up/down feedback, and turns repeated failures into enforceable rules across Codex, Claude Code, Cursor, CLI, MCP, and automations.
 
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
@@ -38,7 +40,7 @@ Developers can import the prepared **[GPT Actions OpenAPI spec](adapters/chatgpt
 
 ## What problem does this solve?
 
-AI agents repeat mistakes. You fix the same problem in session after session — force-push to main, broken migrations, unauthorized file edits — because the agent has no memory of your feedback.
+Your AI agent deleted production data. You fixed it. Next session, it did it again. Force-pushes to main, broken migrations, unauthorized file edits — the agent has no memory of your feedback and keeps making the same expensive mistakes.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -56,11 +58,11 @@ AI agents repeat mistakes. You fix the same problem in session after session —
 └─────────────────────────────────────────────────────────────┘
 ```
 
-ThumbGate is the **control plane** for AI coding agents — turning your feedback into **enforced rules**, not suggestions.
+Your feedback becomes **enforced rules**, not suggestions. Fix it once — never see it again.
 
 ---
 
-## How It Works in 3 Steps
+## Make AI Stop Repeating Mistakes
 
 ```
   STEP 1              STEP 2                 STEP 3
@@ -282,6 +284,8 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 
 ## Pricing
 
+**Free gives feedback memory. Pro gives enforced gates.**
+
 ```
 ┌──────────────────┬──────────────────────────────┬──────────────────────┐
 │   FREE           │  TEAM  $99/seat/mo (min 3)   │  PRO  $19/mo · $149/yr│
@@ -343,13 +347,13 @@ Yes. It's MCP-compatible and works with Claude Code, Claude Desktop, Cursor, Cod
 ThumbGate can watch for failure signals (test failures, reverted edits, error patterns) and auto-generate prevention rules — no thumbs-down required. Your agent gets smarter every session.
 
 **Is it free?**
-Free tier: **3 daily feedback captures**, **5 daily lesson searches**, unlimited recall, enforced gates. History-aware distillation turns vague feedback into specific lessons. Pro is $19/mo or $149/yr for a personal dashboard and exports. Team rollout starts at $99/seat/mo (3-seat minimum) with shared hosted lesson DB, org dashboard, approval + audit proof, and isolated execution guidance.
+Free: **3 daily feedback captures**, **5 daily lesson searches**, unlimited recall, enforced gates, and history-aware distillation that turns vague feedback into specific lessons. Pro ($19/mo or $149/yr): automatic enforcement, persistent cross-tool gates, personal dashboard, and export-ready evidence. Team ($99/seat/mo, 3-seat minimum): shared hosted lesson DB, org dashboard, approval + audit proof, and support wiring it into real workflows.
 
 ---
 
 ## Enterprise Story
 
-ThumbGate is the control plane for AI coding agents:
+From smart assistant to safe, production-ready operator. ThumbGate is the control plane that makes it happen:
 
 - Feedback becomes enforcement — repeated failures stop at the gate instead of reappearing in review.
 - **Workflow Sentinel** scores blast radius before execution, so risky PR, release, and publish flows are visible early.
