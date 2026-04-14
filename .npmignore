@@ -1,0 +1,96 @@
+# ── Internal tooling — NOT shipped to npm ──────────────────────────
+
+# Social media automation
+scripts/social-analytics/
+scripts/social-pipeline.js
+scripts/social-post-hourly.js
+scripts/social-quality-gate.js
+scripts/social-reply-monitor.js
+scripts/post-everywhere.js
+scripts/post-to-x.js
+scripts/post-to-x-retry.sh
+scripts/ralph-loop.js
+scripts/ralph-mode-ci.js
+scripts/reddit-dm-outreach.js
+scripts/reddit-monitor-cron.sh
+scripts/weekly-auto-post.js
+
+# Marketing & growth
+scripts/marketing-experiment.js
+scripts/ai-search-visibility.js
+scripts/seo-gsd.js
+scripts/engagement-audit.js
+scripts/install-growth-automation.js
+scripts/generate-instagram-card.js
+scripts/utm-tracking.js
+scripts/funnel-analytics.js
+scripts/hf-papers.js
+scripts/obsidian-export.js
+
+# CI / build / deploy scripts
+scripts/prove-*.js
+scripts/build-*.js
+scripts/deploy-*.sh
+scripts/changeset-check.js
+scripts/check-congruence.js
+scripts/sync-version.js
+scripts/publish-decision.js
+scripts/deploy-policy.js
+
+# Budget / money monitoring (internal ops)
+scripts/budget-enforcer.js
+scripts/budget-guard.js
+scripts/money-watcher.js
+
+# Perplexity command center (internal ops)
+scripts/perplexity-command-center.js
+
+# Schedule manager (local cron, not runtime)
+scripts/schedule-manager.js
+
+# ── Non-runtime directories ──────────────────────────────────────
+
+# Tests
+tests/
+
+# Documentation
+docs/
+
+# Proof reports
+proof/
+
+# Planning
+docs/planning/
+
+# Workers (separate deploy target)
+workers/
+
+# Dot directories
+.agents/
+.artifacts/
+.changeset/
+.claude/
+.cursor-plugin/
+.github/
+.omx/
+.opencode/
+.rlhf/
+.thumbgate/
+.vscode/
+.planning/
+
+# Build artifacts
+coverage/
+dist/
+undefined/
+lib/
+
+# Config files not needed at runtime
+.env*
+!.env.example
+.dockerignore
+.eslintrc*
+.prettierrc*
+sonar-project.properties
+Dockerfile
+docker-compose*.yml

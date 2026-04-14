@@ -1,6 +1,6 @@
 # ThumbGate
 
-**Thumbs up or thumbs down — and your AI coding agent never makes the same mistake twice.**
+**Stop your AI agent from making costly mistakes — before they happen. One thumbs-down, and the mistake never repeats.**
 
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)

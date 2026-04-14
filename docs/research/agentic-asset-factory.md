@@ -19,7 +19,7 @@ When we generate a product (e.g., `TW-NEON-01`), we don't just create images. We
 
 **Directory Structure:**
 ```text
-packs/TW-NEON-01/
+config/packs/TW-NEON-01/
 ├── assets/                  # The generated visual assets (PNG/WEBP)
 ├── .thumbgate/
 │   ├── prevention-rules.md  # Brand-specific QA rules (e.g., "NEVER use pastels")

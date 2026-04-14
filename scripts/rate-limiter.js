@@ -22,7 +22,7 @@ const FREE_TIER_LIMITS = {
 
 const FREE_TIER_MAX_GATES = 5;
 
-const UPGRADE_MESSAGE = `Pro: ${PRO_PRICE_LABEL} — dashboard and DPO export: ${PRO_MONTHLY_PAYMENT_LINK}\n  Team: ${TEAM_PRICE_LABEL} after workflow qualification.`;
+const UPGRADE_MESSAGE = `Pro: ${PRO_PRICE_LABEL} — unlimited mistake prevention + dashboard: ${PRO_MONTHLY_PAYMENT_LINK}\n  Team: ${TEAM_PRICE_LABEL} — shared safety rules across your engineering team.`;
 
 function isProTier(authContext) {
   if (authContext && authContext.tier === 'pro') return true;
@@ -85,7 +85,7 @@ function checkLimit(action, authContext) {
   const current = usage.counts[action] || 0;
 
   if (current >= dailyLimit) {
-    return { allowed: false, message: `Free tier limit reached. Upgrade to Pro for unlimited: https://thumbgate-production.up.railway.app/pro\n${UPGRADE_MESSAGE}`, used: current, limit: dailyLimit };
+    return { allowed: false, message: `Free tier limit reached. Stop more mistakes with Pro — unlimited captures, auto-gate promotion, and team sharing: https://thumbgate-production.up.railway.app/pro\n${UPGRADE_MESSAGE}`, used: current, limit: dailyLimit };
   }
 
   // Increment

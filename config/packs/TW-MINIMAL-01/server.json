@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "pro-minimal-brand-manager": {
+      "command": "node",
+      "args": [
+        "../../../bin/cli.js",
+        "serve",
+        "--pack",
+        "config/packs/TW-MINIMAL-01"
+      ],
+      "env": {
+        "THUMBGATE_ALLOW_INSECURE": "true"
+      }
+    }
+  }
+}

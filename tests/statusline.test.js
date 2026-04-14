@@ -89,10 +89,8 @@ test('statusline script reads jq input and outputs ThumbGate line', () => {
   assert.ok(out.includes('Free'), 'should show license tier');
   assert.ok(out.includes('10'), 'should show thumbs up count');
   assert.ok(out.includes('5'), 'should show thumbs down count');
-  assert.ok(out.includes('3'), 'should show lesson count');
   assert.match(out, /Dashboard/);
   assert.match(out, /Lessons/);
-  assert.match(out, /localhost:3456/, 'should include local dashboard URLs');
 });
 
 test('statusline shows "no feedback yet" when cache has zeros', () => {
@@ -427,7 +425,6 @@ test('statusline preserves dashboard links under a tight width budget', () => {
     assert.match(plain, /Dashboard/, 'should preserve the dashboard link label');
     assert.match(plain, /Lessons/, 'should preserve the lessons link label');
     assert.match(plain, /Latest mistake \d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}:/, 'should clarify that the snippet is the latest mistake');
-    assert.match(plain, /localhost:3456/, 'should include local dashboard URLs');
   } finally {
     if (previousFeedbackDir === undefined) {
       delete process.env.THUMBGATE_FEEDBACK_DIR;

@@ -145,6 +145,15 @@ function createLesson({ feedbackId, signal, inferredLesson, triggerMessage, prio
   const recentPath = getRecentLessonPath();
   fs.writeFileSync(recentPath, JSON.stringify(lesson, null, 2) + '\n');
 
+  // Auto-evaluate the lesson quality (fire-and-forget, non-blocking).
+  // Score is persisted to quality-eval-log.jsonl for retrieval filtering.
+  try {
+    const { autoEvalLesson } = require('./quality-eval');
+    autoEvalLesson(lesson).catch(() => {});
+  } catch {
+    // quality-eval not available — non-fatal
+  }
+
   return lesson;
 }
 

@@ -8,7 +8,7 @@ const {
   getSettingOrigin,
 } = require('./settings-hierarchy');
 
-const HARNESS_DIR = path.join(__dirname, '..', 'harnesses');
+const HARNESS_DIR = path.join(__dirname, '..', 'docs', 'harnesses');
 const REQUIRED_SECTIONS = ['Purpose', 'Steps', 'Success Evidence'];
 
 function slugify(value, fallback) {

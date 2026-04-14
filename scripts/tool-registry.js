@@ -1053,6 +1053,38 @@ const TOOLS = [
       },
     },
   }),
+  readOnlyTool({
+    name: 'quality_eval',
+    description: 'Evaluate a single gate, lesson, or session using G-Eval methodology. Returns per-dimension scores (1-5) with chain-of-thought reasoning. Falls back to heuristics when the API is unavailable.',
+    inputSchema: {
+      type: 'object',
+      required: ['type', 'item'],
+      properties: {
+        type: { type: 'string', enum: ['gate', 'lesson', 'session'], description: 'What to evaluate' },
+        item: { type: 'object', description: 'The gate/lesson/session object to score' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'quality_eval_batch',
+    description: 'Evaluate multiple items of the same type in one call. Uses prompt caching to reduce cost across items sharing the same system prompt.',
+    inputSchema: {
+      type: 'object',
+      required: ['type', 'items'],
+      properties: {
+        type: { type: 'string', enum: ['gate', 'lesson', 'session'] },
+        items: { type: 'array', items: { type: 'object' }, description: 'Array of items to evaluate' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'quality_eval_summary',
+    description: 'Get aggregated quality evaluation statistics across all scored gates, lessons, and sessions. Shows per-type averages and per-dimension breakdowns.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  }),
 ];
 
 module.exports = {

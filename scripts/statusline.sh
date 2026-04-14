@@ -139,7 +139,11 @@ if [ -n "$_LESSON_JSON" ]; then
 fi
 
 # ── Colors ────────────────────────────────────────────────────────
-G='\033[32m'; R='\033[31m'; M='\033[35m'; C='\033[36m'; D='\033[90m'; BD='\033[1m'; RST='\033[0m'
+# Claude Code statusbar supports ANSI colors but does NOT support OSC 8
+# terminal hyperlinks. The statusbar renders in a constrained UI widget,
+# not a full terminal emulator, so links cannot be made clickable.
+# Use printf '%b' for output so \e sequences are interpreted.
+G='\e[32m'; R='\e[31m'; M='\e[35m'; C='\e[36m'; D='\e[90m'; BD='\e[1m'; RST='\e[0m'
 
 # Trend arrow
 case "${TREND}" in
@@ -149,12 +153,9 @@ esac
 inline_link() {
   local url="$1"
   local label="$2"
-  if [ -n "$url" ]; then
-    # OSC 8 terminal hyperlink: clickable in WezTerm, iTerm2, etc.
-    printf '\033]8;;%s\033\\%s\033]8;;\033\\' "$url" "$label"
-  else
-    printf '%s' "$label"
-  fi
+  # Claude Code statusbar does not support OSC 8 hyperlinks.
+  # Output plain text labels; URLs remain available via the local API.
+  printf '%s' "$label"
 }
 
 UP_ICON="👍"

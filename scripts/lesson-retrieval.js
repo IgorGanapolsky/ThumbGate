@@ -14,9 +14,10 @@
 
 const RECENCY_DECAY_DAYS = 30;
 const RERANK_CANDIDATE_POOL = 50; // bi-encoder retrieves this many; reranker picks topK
+const MIN_QUALITY_SCORE = 2.5; // lessons scoring below this in G-Eval are excluded from retrieval
 
 function retrieveRelevantLessons(toolName, actionContext, options = {}) {
-  const { maxResults = 5, feedbackDir } = options;
+  const { maxResults = 5, feedbackDir, skipQualityFilter } = options;
   const { getFeedbackPaths, readJSONL } = require('./feedback-loop');
   const { rerankLessons } = require('./lesson-reranker');
   const pathMod = require('path');
@@ -26,6 +27,26 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
 
   const memories = readJSONL(paths.MEMORY_LOG_PATH, { maxLines: 200 });
   if (memories.length === 0) return [];
+
+  // Quality gate: exclude lessons that scored below the threshold in G-Eval.
+  // Scores are indexed by lesson ID in quality-eval-log.jsonl.
+  if (!skipQualityFilter) {
+    const qualityScores = loadQualityScores(feedbackDir);
+    if (qualityScores.size > 0) {
+      const before = memories.length;
+      const filtered = memories.filter((mem) => {
+        // Match by lesson content text (eval log indexes by item.lesson)
+        const score = qualityScores.get(mem.content || mem.lesson);
+        // Keep lessons that haven't been evaluated yet (no score) or pass the threshold
+        return score === undefined || score >= MIN_QUALITY_SCORE;
+      });
+      // Only apply filter if it doesn't eliminate everything
+      if (filtered.length > 0) {
+        memories.length = 0;
+        memories.push(...filtered);
+      }
+    }
+  }
 
   const actionSig = buildActionSignature(toolName, actionContext);
 
@@ -131,6 +152,33 @@ function scoreRelevance(memory, toolName, actionContext, actionSig) {
   return score;
 }
 
+function loadQualityScores(feedbackDir) {
+  const fs = require('fs');
+  const pathMod = require('path');
+  const scores = new Map();
+  try {
+    const { resolveFeedbackDir } = require('./feedback-paths');
+    const dir = feedbackDir || resolveFeedbackDir({});
+    const logPath = pathMod.join(dir, 'quality-eval-log.jsonl');
+    if (!fs.existsSync(logPath)) return scores;
+    const lines = fs.readFileSync(logPath, 'utf8').trim().split('\n').filter(Boolean);
+    for (const line of lines) {
+      try {
+        const entry = JSON.parse(line);
+        if (entry.type === 'lesson' && entry.item && entry.item.lesson) {
+          // Index by lesson text since eval log stores the item, not the lesson ID
+          scores.set(entry.item.lesson, entry.average);
+        }
+      } catch {
+        // skip malformed lines
+      }
+    }
+  } catch {
+    // non-fatal — return empty map
+  }
+  return scores;
+}
+
 function extractPaths(text) {
   return [...new Set((text || '').match(/(?:src\/|scripts\/|tests\/)[^\s,)'"<>]+/g) || [])];
 }
@@ -140,6 +188,7 @@ function tokenize(text) {
 }
 
 module.exports = {
+  MIN_QUALITY_SCORE,
   retrieveRelevantLessons,
   scoreRelevance,
   buildActionSignature,

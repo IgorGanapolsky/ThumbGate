@@ -1,18 +1,19 @@
-# ThumbGate — Type 👍 or 👎 on any AI agent action. Blocks the pattern from repeating. One thumbs-down, never again.
+# ThumbGate — Stop AI from making costly mistakes before they happen
 # https://thumbgate-production.up.railway.app
 # https://github.com/IgorGanapolsky/ThumbGate
 # https://www.npmjs.com/package/thumbgate
 
-> ThumbGate makes AI coding agents self-improving. Every mistake becomes
-> a prevention rule that physically blocks the agent from repeating it.
-> Feedback-driven enforcement via PreToolUse hooks.
+> Stop your AI coding agent from repeating expensive mistakes.
+> One thumbs-down blocks the pattern before it runs again.
+> Prevent production data loss, catch bad commands before execution,
+> make every correction permanent.
 
-## What ThumbGate solves
+## What ThumbGate prevents
 
-- AI coding agents repeat the same mistakes across sessions
-- CLAUDE.md and .cursorrules files are suggestions agents can ignore
-- No memory between sessions means no learning from corrections
-- Teams have no shared safety rules across developers
+- AI agent deletes production data or force-pushes to main
+- Same mistake costs you hours every week across sessions
+- Rules in CLAUDE.md or .cursorrules get ignored by the model
+- No way to share safety rules across your engineering team
 
 ## How it works
 

@@ -17,16 +17,16 @@ function requirePro(
 ) {
   if (isProLicensedFn()) return true;
   const descriptions = {
-    'dpo-export': 'Export feedback as DPO training pairs for model fine-tuning',
-    'dpo-synthesis': 'Generate synthetic DPO pairs from existing feedback patterns',
-    'multi-hop-recall': 'Multi-hop recall — chain related lessons for deeper context',
-    'databricks-export': 'Export to Databricks ML pipeline format',
-    'dashboard-search': 'Search, filter, and edit lessons across all repos',
-    'multi-repo-sync': 'Sync prevention rules across multiple repositories',
-    'custom-gates': 'Create custom pre-action gates beyond the defaults',
-    'advanced-thompson': 'Advanced Thompson Sampling with custom priors and decay',
-    'rule-analytics': 'Analytics on which rules fire most and their block rates',
-    'team-sharing': 'Share lesson databases across team members',
+    'dpo-export': 'Fine-tune your model to stop repeating your team\'s specific mistakes',
+    'dpo-synthesis': 'Generate training data from your correction history automatically',
+    'multi-hop-recall': 'Catch complex failure patterns that span multiple steps',
+    'databricks-export': 'Feed correction data into your ML pipeline for continuous improvement',
+    'dashboard-search': 'Find and fix any lesson across all your repos instantly',
+    'multi-repo-sync': 'One fix in one repo prevents the same mistake everywhere',
+    'custom-gates': 'Block the exact patterns that cost your team the most time',
+    'advanced-thompson': 'Auto-tune which blocks are strict vs lenient per failure type',
+    'rule-analytics': 'See which mistakes cost the most and which gates save the most time',
+    'team-sharing': 'Every teammate benefits from every correction — no repeated work',
   };
   const desc = descriptions[featureName] || featureName;
   write(

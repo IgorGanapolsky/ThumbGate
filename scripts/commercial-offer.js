@@ -14,7 +14,7 @@ const TEAM_ANNUAL_PRICE_DOLLARS = 1188;
 const TEAM_MIN_SEATS = 3;
 
 const PRO_PRICE_LABEL = '$19/mo or $149/yr (individual)';
-const TEAM_PRICE_LABEL = '$99/seat/mo — Agent governance for engineering teams';
+const TEAM_PRICE_LABEL = '$99/seat/mo — Stop AI mistakes across your entire engineering team';
 
 function normalizePlanId(value) {
   const text = String(value || '').trim().toLowerCase();

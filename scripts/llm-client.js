@@ -33,15 +33,24 @@ function stripCodeFences(text) {
   return fenced ? fenced[1].trim() : text.trim();
 }
 
-async function callClaude({ systemPrompt, userPrompt, model, maxTokens } = {}) {
+async function callClaude({ systemPrompt, userPrompt, model, maxTokens, cacheSystemPrompt } = {}) {
   const client = getClient();
   if (!client) return null;
 
   try {
+    // When cacheSystemPrompt is true, use prompt caching to avoid resending
+    // the same system prompt on repeated calls (e.g. batch evaluations).
+    let system;
+    if (systemPrompt) {
+      system = cacheSystemPrompt
+        ? [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }]
+        : systemPrompt;
+    }
+
     const response = await client.messages.create({
       model: model || DEFAULT_MODEL,
       max_tokens: maxTokens || DEFAULT_MAX_TOKENS,
-      system: systemPrompt || undefined,
+      system,
       messages: [{ role: 'user', content: userPrompt }],
     });
 
