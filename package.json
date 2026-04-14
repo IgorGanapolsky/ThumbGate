@@ -47,6 +47,7 @@
     "scripts/belief-update.js",
     "scripts/billing-setup.js",
     "scripts/billing.js",
+    "scripts/bot-detection.js",
     "scripts/bot-detector.js",
     "scripts/build-metadata.js",
     "scripts/claude-feedback-sync.js",

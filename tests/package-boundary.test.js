@@ -58,6 +58,7 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'bin/cli.js',
     'bin/postinstall.js',
     'adapters/mcp/server-stdio.js',
+    'scripts/bot-detection.js',
     'scripts/feedback-loop.js',
     'scripts/gates-engine.js',
     'scripts/statusline.sh',
