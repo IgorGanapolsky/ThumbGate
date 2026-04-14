@@ -13,9 +13,9 @@
  * ffmpeg stitches them into MP4 via the video-autopilot CI workflow.
  *
  * Usage:
- *   node .artifacts/youtube-short/generate-slides.js
- *   node .artifacts/youtube-short/generate-slides.js --template=2
- *   node .artifacts/youtube-short/generate-slides.js --template=auto --out=/tmp
+ *   node scripts/social-analytics/generate-slides.js
+ *   node scripts/social-analytics/generate-slides.js --template=2
+ *   node scripts/social-analytics/generate-slides.js --template=auto --out=/tmp
  */
 
 const { execSync } = require('node:child_process');
@@ -37,7 +37,7 @@ const TEMPLATES = {
       { holdSeconds: 4, title: ['You told it not to.', 'It did it again.'], subtitle: 'Prompts are suggestions — not constraints.', lines: [], cta: null },
       { holdSeconds: 6, title: ['ThumbGate blocks it:'], subtitle: null, lines: ['→ Agent: git push --force origin main', '→ PreToolUse hook fires', '→ Gate #4: force-push to main', '✗ BLOCKED — rule auto-promoted', '  after 1 previous failure.'], cta: null },
       { holdSeconds: 5, title: ['The feedback loop:'], subtitle: null, lines: ['👎  bad action captured', '→ lesson written to SQLite DB', '→ prevention rule generated', '→ PreToolUse gate activated', '✓  same mistake: blocked forever'], cta: null },
-      { holdSeconds: 6, title: ['ThumbGate', 'v1.4.0'], subtitle: 'Free + Open Source', lines: [], cta: { line1: 'Try it free →', line2: 'github.com/IgorGanapolsky/ThumbGate' } },
+      { holdSeconds: 6, title: ['ThumbGate', 'v1.4.1'], subtitle: 'Live GPT + local gates', lines: [], cta: { line1: 'Try the GPT →', line2: 'chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate' } },
     ],
   },
 
@@ -49,7 +49,7 @@ const TEMPLATES = {
       { holdSeconds: 4, title: ['2 hours of rollback.', 'For a file it', '"cleaned up".'], subtitle: null, lines: [], cta: null },
       { holdSeconds: 6, title: ['Gate auto-created', 'after 1 failure:'], subtitle: null, lines: ['→ Agent: rm config/prod.json', '→ PreToolUse hook fires', '→ Pattern: rm config/*.json', '✗ BLOCKED — protected path', '  Add to .thumbgate/allowlist', '  to override explicitly.'], cta: null },
       { holdSeconds: 5, title: ['Every 👎 becomes', 'a permanent gate.'], subtitle: null, lines: ['1 failure  → warn gate', '3 failures → hard block', 'No config change required.', 'Automatic.'], cta: null },
-      { holdSeconds: 6, title: ['ThumbGate', 'v1.4.0'], subtitle: 'npx thumbgate serve', lines: [], cta: { line1: 'Install in 30s →', line2: 'github.com/IgorGanapolsky/ThumbGate' } },
+      { holdSeconds: 6, title: ['ThumbGate', 'v1.4.1'], subtitle: 'npx thumbgate serve', lines: [], cta: { line1: 'Try the GPT →', line2: 'chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate' } },
     ],
   },
 
@@ -61,7 +61,7 @@ const TEMPLATES = {
       { holdSeconds: 5, title: ['You re-explain.', 'It breaks the', 'same thing.', 'You fix it again.'], subtitle: 'Sound familiar?', lines: [], cta: null },
       { holdSeconds: 6, title: ['ThumbGate gives it', 'persistent memory:'], subtitle: null, lines: ['→ 👎 on bad action', '→ lesson stored in SQLite+FTS5', '→ retrieved next session', '→ gate blocks same mistake', '✓  learning that persists'], cta: null },
       { holdSeconds: 5, title: ['Session 1 vs 50:'], subtitle: null, lines: ['Session 1: same mistakes', 'Session 10: fewer mistakes', 'Session 50: gates block them', '  before you even see them.', 'Compounding prevention.'], cta: null },
-      { holdSeconds: 6, title: ['ThumbGate', 'v1.4.0'], subtitle: 'Works with Claude Code, Cursor, Codex CLI', lines: [], cta: { line1: 'Start learning →', line2: 'thumbgate-production.up.railway.app' } },
+      { holdSeconds: 6, title: ['ThumbGate', 'v1.4.1'], subtitle: 'Works with ChatGPT, Claude Code, Cursor, Codex CLI', lines: [], cta: { line1: 'Open the GPT →', line2: 'chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate' } },
     ],
   },
 
@@ -73,7 +73,7 @@ const TEMPLATES = {
       { holdSeconds: 6, title: ['Each gate has a', 'Beta distribution:'], subtitle: null, lines: ['Gate starts: Beta(1,1) = uniform', '👎 on trigger: alpha += 1', '👍 no issue:   beta  += 1', '→ High alpha = high-priority gate', '→ Rarely triggered = auto-demoted'], cta: null },
       { holdSeconds: 5, title: ['After ~20 cycles,', 'gates self-sort:'], subtitle: null, lines: ['force-push   → Beta(18,2)  HIGH', 'rm config    → Beta(12,3)  HIGH', 'npm audit    → Beta(2,15) demoted', '✓  signal rises, noise falls'], cta: null },
       { holdSeconds: 5, title: ['No tuning.', 'No config.', 'Self-correcting.'], subtitle: 'The gate ranking adapts to your codebase.', lines: [], cta: null },
-      { holdSeconds: 6, title: ['ThumbGate', 'v1.4.0'], subtitle: 'Thompson Sampling + LanceDB vector search', lines: [], cta: { line1: 'See the math →', line2: 'github.com/IgorGanapolsky/ThumbGate' } },
+      { holdSeconds: 6, title: ['ThumbGate', 'v1.4.1'], subtitle: 'Thompson Sampling + LanceDB vector search', lines: [], cta: { line1: 'Try the GPT →', line2: 'chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate' } },
     ],
   },
 
@@ -85,7 +85,7 @@ const TEMPLATES = {
       { holdSeconds: 5, title: ['Step 1:'], subtitle: null, lines: ['npx thumbgate serve', '', '✓  MCP server running on :3001', '✓  SQLite lesson DB initialised', '✓  PreToolUse hook active'], cta: null },
       { holdSeconds: 5, title: ['Step 2:'], subtitle: null, lines: ['Give a thumbs-down:', 'thumbgate feedback --down \\', '  "agent deleted prod config"', '', '→ Lesson captured + indexed'], cta: null },
       { holdSeconds: 5, title: ['Step 3:', '(automatic)'], subtitle: null, lines: ['→ Prevention rule generated', '→ Gate created: rm config/*', '→ Next time agent tries it:', '✗ BLOCKED before execution'], cta: null },
-      { holdSeconds: 6, title: ['ThumbGate', 'v1.4.0'], subtitle: 'Free. Open source. No sign-up.', lines: [], cta: { line1: 'npx thumbgate serve', line2: 'github.com/IgorGanapolsky/ThumbGate' } },
+      { holdSeconds: 6, title: ['ThumbGate', 'v1.4.1'], subtitle: 'Free. Open source. No sign-up.', lines: [], cta: { line1: 'Open the GPT first', line2: 'chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate' } },
     ],
   },
 
@@ -97,7 +97,7 @@ const TEMPLATES = {
       { holdSeconds: 4, title: ['After ThumbGate:'], subtitle: null, lines: ['Agent tries dangerous command', '✗ BLOCKED by PreToolUse gate', 'Gate was promoted from your 👎', '✓  Never reaches production'], cta: null },
       { holdSeconds: 5, title: ['The difference:'], subtitle: null, lines: ['CLAUDE.md   = suggestion', 'ThumbGate   = enforcement', '', 'Rules in files get ignored.', 'Gates cannot be ignored.'], cta: null },
       { holdSeconds: 5, title: ['What changes:'], subtitle: null, lines: ['→ mistakes blocked pre-execution', '→ lessons persist across sessions', '→ gates auto-promote from failures', '→ DPO export for fine-tuning', '✓  compounding safety over time'], cta: null },
-      { holdSeconds: 6, title: ['ThumbGate', 'v1.4.0'], subtitle: 'Free + Open Source', lines: [], cta: { line1: 'Try it free →', line2: 'github.com/IgorGanapolsky/ThumbGate' } },
+      { holdSeconds: 6, title: ['ThumbGate', 'v1.4.1'], subtitle: 'Free + Open Source', lines: [], cta: { line1: 'Try the GPT →', line2: 'chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate' } },
     ],
   },
 
@@ -193,14 +193,14 @@ print(f'Generated {len(SLIDES)} slides → {OUT_DIR}')
  */
 function pickTemplate(requestedId) {
   if (requestedId && requestedId !== 'auto') {
-    const id = parseInt(requestedId, 10);
+    const id = Number.parseInt(requestedId, 10);
     if (!TEMPLATES[id]) { console.error(`Unknown template id: ${id}`); process.exit(1); }
     return id;
   }
 
   // Try to pick least-recently-used from marketing DB
   try {
-    const db = require('../../scripts/social-analytics/db/marketing-db');
+    const db = require('./db/marketing-db');
     const recent = db.list({ type: 'video', days: 30, limit: 100 });
     const usedTemplates = new Set(
       recent.map(r => { try { return JSON.parse(r.extra_json || '{}').templateId; } catch { return null; } }).filter(Boolean)
@@ -213,7 +213,9 @@ function pickTemplate(requestedId) {
     for (const r of recent) {
       try { const t = JSON.parse(r.extra_json || '{}').templateId; if (t) templateCounts[t] = (templateCounts[t] || 0) + 1; } catch {}
     }
-    return allIds.sort((a, b) => (templateCounts[a] || 0) - (templateCounts[b] || 0))[0];
+    const sortedIds = [...allIds];
+    sortedIds.sort((a, b) => (templateCounts[a] || 0) - (templateCounts[b] || 0));
+    return sortedIds[0];
   } catch {
     // Fallback: round-robin by 4-hour block
     const block = Math.floor(Date.now() / (4 * 3600 * 1000));

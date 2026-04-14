@@ -2,13 +2,13 @@ name: Marketing Autopilot
 
 # Text content autopilot — fires every 4 hours.
 # Posts to X, LinkedIn, Threads, Bluesky via Zernio.
-# Posts to Reddit via password OAuth (direct API — bypasses karma gates).
+# Posts to Reddit via the configured OAuth publisher.
 # Posts Dev.to articles on a separate slower cadence.
 # Marketing DB dedup prevents double-posting within configured windows.
 
 on:
   schedule:
-    - cron: '0 */4 * * *'   # every 4 hours — offset from video-autopilot (which is also */4)
+    - cron: '15 */4 * * *'   # every 4 hours, offset from video-autopilot
   workflow_dispatch:
     inputs:
       action:
@@ -62,7 +62,7 @@ jobs:
       X_CLIENT_ID:                  ${{ secrets.X_CLIENT_ID }}
       X_CLIENT_SECRET:              ${{ secrets.X_CLIENT_SECRET }}
       X_USER_ID:                    ${{ secrets.X_USER_ID }}
-      # Reddit — password OAuth (direct API, no karma gate from CI)
+      # Reddit — configured OAuth publisher
       REDDIT_CLIENT_ID:             ${{ secrets.REDDIT_CLIENT_ID }}
       REDDIT_CLIENT_SECRET:         ${{ secrets.REDDIT_CLIENT_SECRET }}
       REDDIT_USERNAME:              ${{ secrets.REDDIT_USERNAME }}
@@ -72,6 +72,7 @@ jobs:
       LINKEDIN_PERSON_URN:          ${{ secrets.LINKEDIN_PERSON_URN }}
       # Dev.to
       DEVTO_API_KEY:                ${{ secrets.DEVTO_API_KEY }}
+      THUMBGATE_ANALYTICS_DB:       .thumbgate/marketing-analytics.sqlite
       # Content generation
       PERPLEXITY_API_KEY:           ${{ secrets.PERPLEXITY_API_KEY }}
       XAI_API_KEY:                  ${{ secrets.XAI_API_KEY }}
@@ -92,6 +93,17 @@ jobs:
 
       - name: Install deps
         run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Restore marketing DB cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .thumbgate/marketing-analytics.sqlite
+            .thumbgate/marketing-analytics.sqlite-shm
+            .thumbgate/marketing-analytics.sqlite-wal
+          key: marketing-db-${{ github.run_id }}
+          restore-keys: |
+            marketing-db-
 
       - name: Generate fresh content (AI-powered)
         if: |
@@ -122,7 +134,7 @@ jobs:
             $DRY_RUN_FLAG \
           || node scripts/post-to-x.js --scheduled $DRY_RUN_FLAG  # fallback to X-only
 
-      - name: Post to Reddit via password OAuth
+      - name: Post to Reddit via configured OAuth publisher
         if: |
           (github.event_name == 'schedule' ||
            github.event.inputs.action == 'reddit' ||
@@ -132,7 +144,7 @@ jobs:
         run: |
           DRY_RUN_FLAG=""
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then DRY_RUN_FLAG="--dry-run"; fi
-          # Reddit posts use password OAuth — works from CI (no karma restrictions in OAuth flow)
+          # Reddit posts use the configured publisher credentials.
           # Targets subreddits: r/ClaudeAI (link), r/LocalLLaMA (link), r/SideProject (text)
           node -e "
             const { loadLocalEnv } = require('./scripts/social-analytics/load-env');
@@ -144,8 +156,8 @@ jobs:
               {
                 subreddit: 'ClaudeAI',
                 kind: 'link',
-                title: 'ThumbGate v1.4.0: Pre-action safety gates for Claude Code',
-                url: 'https://github.com/IgorGanapolsky/ThumbGate',
+                title: 'ThumbGate v1.4.1: Pre-action safety gates for Claude Code',
+                url: 'https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate',
               },
               {
                 subreddit: 'SideProject',
@@ -155,8 +167,9 @@ jobs:
 
 It intercepts every tool call via PreToolUse hooks and checks it against lessons learned from past failures. 1 bad action = warning gate. 3 bad actions = hard block.
 
-v1.4.0 ships with Thompson Sampling for gate ranking and LanceDB for semantic lesson retrieval.
+v1.4.1 ships with Thompson Sampling for gate ranking and LanceDB for semantic lesson retrieval.
 
+Try the live GPT: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate
 Free + open source: https://github.com/IgorGanapolsky/ThumbGate
 npx thumbgate serve\`,
               },
@@ -199,7 +212,7 @@ npx thumbgate serve\`,
             const devto = require('./scripts/social-analytics/publishers/devto');
 
             const ARTICLE = {
-              title: 'ThumbGate v1.4.0: Pre-action Safety Gates for AI Coding Agents',
+              title: 'ThumbGate v1.4.1: Pre-action Safety Gates for AI Coding Agents',
               body_markdown: \`## The Problem
 
 Every new session, your AI coding agent forgets the mistakes it made last time. You told it not to force-push to main — it does it again. You told it not to delete prod config — same story.
@@ -217,7 +230,7 @@ ThumbGate intercepts every tool call **before** it executes via Claude Code's \\
 
 No config changes. No CLAUDE.md updates. Automatic.
 
-## v1.4.0 Highlights
+## v1.4.1 Highlights
 
 - **Thompson Sampling** for gate ranking — high-frequency failures rise, rare ones demote automatically
 - **LanceDB vector search** for semantic lesson retrieval across sessions
@@ -248,6 +261,7 @@ MIT license. No sign-up. No telemetry.
 
 - GitHub: https://github.com/IgorGanapolsky/ThumbGate
 - Live: https://thumbgate-production.up.railway.app
+- GPT: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate
 \`,
               tags: ['claudecode', 'ai', 'devtools', 'opensource'],
               canonical_url: 'https://github.com/IgorGanapolsky/ThumbGate',
@@ -268,7 +282,7 @@ MIT license. No sign-up. No telemetry.
               .then(r => {
                 console.log('devto published:', r.url);
                 db.record({ type: 'article', platform: 'devto', contentHash: hash,
-                  postUrl: r.url, campaign: 'autopilot', tags: ['devto', 'v1.4.0'] });
+                  postUrl: r.url, campaign: 'autopilot', tags: ['devto', 'v1.4.1'] });
               })
               .catch(e => {
                 console.error('devto failed:', e.message);
@@ -286,18 +300,10 @@ MIT license. No sign-up. No telemetry.
             --reply-relevant \
           || echo "::warning::X search-reply failed — non-fatal"
 
-      - name: Commit updated marketing DB
-        if: github.event.inputs.dry_run != 'true'
+      - name: Print marketing DB summary
+        if: always()
         run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add scripts/social-analytics/db/analytics.sqlite || true
-          if git diff --cached --quiet; then
-            echo "No DB changes."
-          else
-            git commit -m "chore: update marketing DB [skip ci]"
-            git push
-          fi
+          node -e "const db=require('./scripts/social-analytics/db/marketing-db'); console.log(JSON.stringify(db.summary(), null, 2));" || true
 
       - name: Upload artifacts
         if: always()

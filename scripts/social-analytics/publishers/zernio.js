@@ -27,6 +27,9 @@ loadLocalEnv();
 
 let _mktgDb = null;
 function getMktgDb() {
+  if (process.env.THUMBGATE_DEDUP_LOG_PATH && !process.env.THUMBGATE_ANALYTICS_DB) {
+    return null;
+  }
   if (_mktgDb) return _mktgDb;
   try {
     _mktgDb = require('../db/marketing-db');

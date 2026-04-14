@@ -9,7 +9,7 @@
  *
  * Usage:
  *   node scripts/social-analytics/post-video.js
- *   node scripts/social-analytics/post-video.js --campaign=v1.4.0 --dry-run
+ *   node scripts/social-analytics/post-video.js --campaign=v1.4.1 --dry-run
  *   node scripts/social-analytics/post-video.js --video=/path/to/custom.mp4
  *
  * Required env:
@@ -20,7 +20,7 @@
  *   ZERNIO_INSTAGRAM_ACCOUNT_ID
  */
 
-const { execSync } = require('node:child_process');
+const { execFileSync, execSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
@@ -52,25 +52,27 @@ const PLATFORM_COOLDOWN_HOURS = {
 const CAPTIONS = {
   tiktok: `Your AI agent deleted prod config because it "looked unused" 😬
 
-ThumbGate v1.4.0 intercepts BEFORE the action runs. Checks it against lessons from past failures. Blocks it permanently.
+ThumbGate v1.4.1 intercepts BEFORE the action runs. Checks it against lessons from past failures. Blocks it permanently.
 
 👎 feedback → lesson DB → prevention rule → physical gate
 
 Not a prompt. A block.
 
 npx thumbgate serve — free + open source
+Try the live GPT first: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate
 github.com/IgorGanapolsky/ThumbGate
 
 #ClaudeCode #AIAgents #DevTools #TechTok #Coding #SoftwareDev #AITools #Programming #DevTok`,
 
-  youtube: `ThumbGate v1.4.0: How to stop AI coding agents from repeating mistakes
+  youtube: `ThumbGate v1.4.1: How to stop AI coding agents from repeating mistakes
 
 Your agent force-pushed to main. Deleted prod config. Ran the wrong migration. You told it not to. Next session — same mistake.
 
 ThumbGate solves this with pre-action gates: every 👎 becomes a lesson, every lesson becomes a gate, every gate is enforced via PreToolUse hooks.
 
-v1.4.0: Thompson Sampling · LanceDB vector search · SQLite+FTS5 lesson DB
+v1.4.1: Thompson Sampling · LanceDB vector search · SQLite+FTS5 lesson DB
 
+Live GPT demo: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate
 Free + open source: https://github.com/IgorGanapolsky/ThumbGate
 npx thumbgate serve
 
@@ -78,16 +80,17 @@ npx thumbgate serve
 
   instagram: `AI agent deleted prod config because it "looked unused" 😬
 
-ThumbGate v1.4.0: pre-action safety gates that physically block known-bad patterns before they run.
+ThumbGate v1.4.1: pre-action safety gates that physically block known-bad patterns before they run.
 
 👎 → lesson DB → prevention rule → blocked forever
 
+Live GPT demo: chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate
 Free + open source. Link in bio 👆
 
 #AIAgents #ClaudeCode #DevTools #Coding #TechTok #SoftwareDev #AITools #MachineLearning #BuildInPublic`,
 };
 
-const YT_TITLE = 'ThumbGate v1.4.0: Stop AI Agents From Repeating Mistakes #shorts';
+const YT_TITLE = 'ThumbGate v1.4.1: Stop AI Agents From Repeating Mistakes #shorts';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -112,17 +115,13 @@ function requireKey() {
 }
 
 async function zernioUpload(apiKey, filePath) {
-  const FormData = (() => {
-    try { return require('form-data'); } catch { return null; }
-  })();
-
-  // Use curl as fallback (works through egress proxy)
-  const out = execSync(
-    `curl -s -X POST "${ZERNIO_BASE}/media" \
-      -H "Authorization: Bearer ${apiKey}" \
-      -F "files=@${filePath}"`,
-    { maxBuffer: 10 * 1024 * 1024 }
-  ).toString();
+  const out = execFileSync('curl', [
+    '-s',
+    '-X', 'POST',
+    `${ZERNIO_BASE}/media`,
+    '-H', `Authorization: Bearer ${apiKey}`,
+    '-F', `files=@${filePath}`,
+  ], { maxBuffer: 10 * 1024 * 1024 }).toString();
 
   const data = JSON.parse(out);
   const files = data.files || [];
@@ -139,14 +138,14 @@ async function zernioPost(apiKey, { platform, accountId, title, content, mediaUr
   };
   if (title) body.title = title;
 
-  const payload = JSON.stringify(body).replace(/'/g, "'\\''");
-  const out = execSync(
-    `curl -s -X POST "${ZERNIO_BASE}/posts" \
-      -H "Authorization: Bearer ${apiKey}" \
-      -H "Content-Type: application/json" \
-      -d '${payload}'`,
-    { maxBuffer: 5 * 1024 * 1024 }
-  ).toString();
+  const out = execFileSync('curl', [
+    '-s',
+    '-X', 'POST',
+    `${ZERNIO_BASE}/posts`,
+    '-H', `Authorization: Bearer ${apiKey}`,
+    '-H', 'Content-Type: application/json',
+    '-d', JSON.stringify(body),
+  ], { maxBuffer: 5 * 1024 * 1024 }).toString();
 
   return JSON.parse(out);
 }
@@ -155,13 +154,18 @@ async function zernioPost(apiKey, { platform, accountId, title, content, mediaUr
 // Video generation
 // ---------------------------------------------------------------------------
 
-function generateVideo(outDir, template = 'auto') {
-  const slidesScript = path.join(__dirname, '..', '..', '.artifacts', 'youtube-short', 'generate-slides.js');
+function generateVideo(outDir, template = 'auto', campaign = 'default') {
+  const slidesScript = path.join(__dirname, 'generate-slides.js');
   const concatFile = path.join(outDir, 'concat.txt');
   const videoOut = path.join(outDir, 'thumbgate-short.mp4');
 
   console.log('[post-video] Generating slides...');
-  execSync(`node ${slidesScript} --out=${outDir} --template=${template}`, { stdio: 'inherit' });
+  execFileSync(process.execPath, [
+    slidesScript,
+    `--out=${outDir}`,
+    `--template=${template}`,
+    `--campaign=${campaign}`,
+  ], { stdio: 'inherit' });
 
   // Build ffmpeg concat file from manifest
   const manifest = JSON.parse(fs.readFileSync(path.join(outDir, 'manifest.json'), 'utf8'));
@@ -188,104 +192,123 @@ function generateVideo(outDir, template = 'auto') {
 // Main
 // ---------------------------------------------------------------------------
 
-async function main() {
-  const opts = parseArgs(process.argv.slice(2));
-  const apiKey = requireKey();
-
-  const platforms = opts.platforms || ['tiktok', 'youtube', 'instagram'];
-  console.log(`[post-video] campaign=${opts.campaign} platforms=${platforms.join(',')} dryRun=${opts.dryRun}`);
-
-  // Generate or use provided video
+function prepareVideo(opts) {
   let videoPath = opts.videoPath;
   let templateId = opts.template;
   if (!videoPath) {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-video-'));
-    videoPath = generateVideo(tmpDir, opts.template);
+    videoPath = generateVideo(tmpDir, opts.template, opts.campaign);
     // Read back the chosen template id from manifest
     try {
       const manifest = JSON.parse(fs.readFileSync(path.join(tmpDir, 'manifest.json'), 'utf8'));
       templateId = String(manifest.templateId || opts.template);
     } catch {}
   }
+  return { videoPath, templateId };
+}
 
-  // Content hash includes templateId so each template gets its own dedup key
-  const baseHash = hashContent(`video::template-${templateId}::${opts.campaign}`);
-
-  // Upload once, reuse URL across platforms
-  let mediaUrl = null;
-
-  const results = [];
-
-  for (const platform of platforms) {
-    const caption = CAPTIONS[platform];
-    if (!caption) {
-      console.warn(`[post-video] No caption for platform: ${platform} — skipping`);
-      continue;
-    }
-
-    const contentHash = hashContent(`${baseHash}::${platform}`);
-    const cooldownHours = PLATFORM_COOLDOWN_HOURS[platform] || 4;
-    const cooldownDays = cooldownHours / 24;
-
-    // Dedup check — per-platform cooldown prevents over-posting
-    const existing = isDuplicate(platform, contentHash, cooldownDays);
-    if (existing) {
-      console.log(`[post-video] SKIP ${platform} — already posted (${existing.published_at}): ${existing.post_url}`);
-      results.push({ platform, status: 'skipped', reason: 'duplicate', existing });
-      continue;
-    }
-
-    if (opts.dryRun) {
-      console.log(`[post-video] DRY-RUN ${platform} — would post video`);
-      results.push({ platform, status: 'dry-run' });
-      continue;
-    }
-
-    // Upload video (once, reused)
-    if (!mediaUrl) {
-      console.log(`[post-video] Uploading video to Zernio...`);
-      mediaUrl = await zernioUpload(apiKey, videoPath);
-      console.log(`[post-video] Uploaded: ${mediaUrl}`);
-    }
-
-    console.log(`[post-video] Posting to ${platform}...`);
-    try {
-      const resp = await zernioPost(apiKey, {
-        platform,
-        accountId: ACCOUNTS[platform],
-        title: platform === 'youtube' ? YT_TITLE : undefined,
-        content: caption,
-        mediaUrl,
-      });
-
-      const pl = resp.post?.platforms?.[0] || {};
-      const status = pl.status || 'unknown';
-      const postUrl = pl.platformPostUrl || '';
-      const error = pl.errorMessage || resp.error || '';
-
-      if (status === 'published') {
-        console.log(`[post-video] ✓ ${platform}: ${postUrl}`);
-        record({ type: 'video', platform, contentHash, postUrl, campaign: opts.campaign,
-          tags: ['v1.4.0', 'short', opts.campaign],
-          extra: { mediaUrl, templateId, zernioPostId: resp.post?._id } });
-      } else {
-        console.error(`[post-video] ✗ ${platform}: ${error}`);
-        record({ type: 'video', platform, contentHash, status: 'failed', campaign: opts.campaign,
-          extra: { error } });
-      }
-
-      results.push({ platform, status, postUrl, error });
-    } catch (err) {
-      console.error(`[post-video] ✗ ${platform} error: ${err.message}`);
-      results.push({ platform, status: 'error', error: err.message });
-    }
+function buildPlatformPlan(platform, baseHash) {
+  const caption = CAPTIONS[platform];
+  if (!caption) {
+    console.warn(`[post-video] No caption for platform: ${platform} — skipping`);
+    return null;
   }
 
+  const contentHash = hashContent(`${baseHash}::${platform}`);
+  const cooldownHours = PLATFORM_COOLDOWN_HOURS[platform] || 4;
+  return { platform, caption, contentHash, cooldownDays: cooldownHours / 24 };
+}
+
+function duplicateResult(plan) {
+  const existing = isDuplicate(plan.platform, plan.contentHash, plan.cooldownDays);
+  if (!existing) return null;
+  console.log(`[post-video] SKIP ${plan.platform} — already posted (${existing.published_at}): ${existing.post_url}`);
+  return { platform: plan.platform, status: 'skipped', reason: 'duplicate', existing };
+}
+
+function recordPostOutcome({ plan, status, postUrl, error, campaign, mediaUrl, templateId, response }) {
+  if (status === 'published') {
+    console.log(`[post-video] ✓ ${plan.platform}: ${postUrl}`);
+    record({ type: 'video', platform: plan.platform, contentHash: plan.contentHash, postUrl, campaign,
+      tags: ['v1.4.1', 'short', campaign],
+      extra: { mediaUrl, templateId, zernioPostId: response.post?._id } });
+    return;
+  }
+
+  console.error(`[post-video] ✗ ${plan.platform}: ${error}`);
+  record({ type: 'video', platform: plan.platform, contentHash: plan.contentHash, status: 'failed', campaign,
+    extra: { error } });
+}
+
+async function processPlatform(plan, context) {
+  const duplicate = duplicateResult(plan);
+  if (duplicate) return duplicate;
+
+  if (context.dryRun) {
+    console.log(`[post-video] DRY-RUN ${plan.platform} — would post video`);
+    return { platform: plan.platform, status: 'dry-run' };
+  }
+
+  try {
+    if (!context.mediaUrl) {
+      console.log(`[post-video] Uploading video to Zernio...`);
+      context.mediaUrl = await zernioUpload(context.apiKey, context.videoPath);
+      console.log(`[post-video] Uploaded: ${context.mediaUrl}`);
+    }
+
+    console.log(`[post-video] Posting to ${plan.platform}...`);
+    const response = await zernioPost(context.apiKey, {
+      platform: plan.platform,
+      accountId: ACCOUNTS[plan.platform],
+      title: plan.platform === 'youtube' ? YT_TITLE : undefined,
+      content: plan.caption,
+      mediaUrl: context.mediaUrl,
+    });
+
+    const platformResult = response.post?.platforms?.[0] || {};
+    const status = platformResult.status || 'unknown';
+    const postUrl = platformResult.platformPostUrl || '';
+    const error = platformResult.errorMessage || response.error || '';
+    recordPostOutcome({ plan, status, postUrl, error, campaign: context.campaign,
+      mediaUrl: context.mediaUrl, templateId: context.templateId, response });
+    return { platform: plan.platform, status, postUrl, error };
+  } catch (err) {
+    console.error(`[post-video] ✗ ${plan.platform} error: ${err.message}`);
+    return { platform: plan.platform, status: 'error', error: err.message };
+  }
+}
+
+function statusIcon(status) {
+  if (status === 'published') return '✓';
+  if (['skipped', 'dry-run'].includes(status)) return '→';
+  return '✗';
+}
+
+function printSummary(results) {
   console.log('\n[post-video] Summary:');
   for (const r of results) {
-    const icon = r.status === 'published' ? '✓' : r.status === 'skipped' ? '→' : '✗';
+    const icon = statusIcon(r.status);
     console.log(`  ${icon} ${r.platform}: ${r.status}${r.postUrl ? ' — ' + r.postUrl : ''}${r.error ? ' — ' + r.error : ''}`);
   }
+}
+
+async function main() {
+  const opts = parseArgs(process.argv.slice(2));
+  const apiKey = opts.dryRun ? null : requireKey();
+  const platforms = opts.platforms || ['tiktok', 'youtube', 'instagram'];
+  console.log(`[post-video] campaign=${opts.campaign} platforms=${platforms.join(',')} dryRun=${opts.dryRun}`);
+
+  const { videoPath, templateId } = prepareVideo(opts);
+  const baseHash = hashContent(`video::template-${templateId}::${opts.campaign}`);
+  const context = { apiKey, campaign: opts.campaign, dryRun: opts.dryRun, mediaUrl: null, templateId, videoPath };
+  const plans = platforms.map(platform => buildPlatformPlan(platform, baseHash)).filter(Boolean);
+  const results = [];
+
+  for (const plan of plans) {
+    results.push(await processPlatform(plan, context));
+  }
+
+  printSummary(results);
 
   return results;
 }

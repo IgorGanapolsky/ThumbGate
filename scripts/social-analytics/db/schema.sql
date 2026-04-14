@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS marketing_posts (
   published_at  TEXT NOT NULL,
   status        TEXT NOT NULL DEFAULT 'published' CHECK(status IN ('published','failed','skipped','draft')),
   tags          TEXT,            -- JSON array
-  campaign      TEXT,            -- e.g. 'v1.4.0-launch', 'weekly-stats'
+  campaign      TEXT,            -- e.g. 'v1.4.1-launch', 'weekly-stats'
   extra_json    TEXT,            -- arbitrary metadata
   UNIQUE(platform, content_hash)
 );

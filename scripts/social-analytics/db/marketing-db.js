@@ -7,22 +7,25 @@
  * Tracks every post, video, article, and reply published to any platform
  * so we never double-post and can measure marketing effort over time.
  *
- * DB file: scripts/social-analytics/db/analytics.sqlite  (git-tracked schema,
- *          but the .sqlite file itself is git-ignored at runtime)
+ * DB file: .thumbgate/marketing-analytics.sqlite by default. The schema is
+ * tracked in this directory, but runtime SQLite files stay local/ignored.
  *
  * Usage:
  *   const db = require('./marketing-db');
  *   if (db.isDuplicate('twitter', contentHash)) return;
  *   const result = await publish(...);
- *   db.record({ type: 'post', platform: 'twitter', postUrl: result.url, contentHash, campaign: 'v1.4.0' });
+ *   db.record({ type: 'post', platform: 'twitter', postUrl: result.url, contentHash, campaign: 'v1.4.1' });
  */
 
 const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
 
+const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
+
 const DB_PATH = process.env.THUMBGATE_ANALYTICS_DB
-  || path.join(__dirname, 'analytics.sqlite');
+  ? path.resolve(process.env.THUMBGATE_ANALYTICS_DB)
+  : path.join(REPO_ROOT, '.thumbgate', 'marketing-analytics.sqlite');
 
 const SCHEMA_PATH = path.join(__dirname, 'schema.sql');
 
@@ -31,6 +34,7 @@ let _db = null;
 function getDb() {
   if (_db) return _db;
   const Database = require('better-sqlite3');
+  fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
   const isNew = !fs.existsSync(DB_PATH);
   _db = new Database(DB_PATH);
   _db.pragma('journal_mode = WAL');
@@ -47,7 +51,7 @@ function getDb() {
  * Normalises whitespace so minor edits don't bypass dedup.
  */
 function hashContent(content) {
-  const normalised = String(content).trim().replace(/\s+/g, ' ');
+  const normalised = String(content).trim().replaceAll(/\s+/g, ' ');
   return crypto.createHash('sha256').update(normalised).digest('hex').slice(0, 32);
 }
 
@@ -63,7 +67,7 @@ function isDuplicate(platform, contentHash, windowDays = 7) {
   const db = getDb();
   let row;
   if (windowDays > 0) {
-    const cutoff = new Date(Date.now() - windowDays * 86400_000).toISOString();
+    const cutoff = new Date(Date.now() - windowDays * 86_400_000).toISOString();
     row = db.prepare(`
       SELECT id, post_url, published_at, status FROM marketing_posts
       WHERE platform = ? AND content_hash = ? AND published_at >= ? AND status = 'published'
@@ -145,7 +149,7 @@ function list({ platform, type, campaign, limit = 50, days = 30 } = {}) {
   if (campaign) { conditions.push('campaign = ?'); params.push(campaign); }
   if (days > 0) {
     conditions.push('published_at >= ?');
-    params.push(new Date(Date.now() - days * 86400_000).toISOString());
+    params.push(new Date(Date.now() - days * 86_400_000).toISOString());
   }
 
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
