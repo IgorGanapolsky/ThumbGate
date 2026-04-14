@@ -184,6 +184,98 @@ npx thumbgate serve\`,
             })();
           " $DRY_RUN_FLAG || echo "::warning::Reddit posting failed"
 
+      - name: Publish Dev.to article (weekly cadence)
+        if: |
+          (github.event_name == 'schedule' ||
+           github.event.inputs.action == 'devto' ||
+           github.event.inputs.action == 'full') &&
+          env.DEVTO_API_KEY != ''
+        run: |
+          DRY_RUN_FLAG="${{ github.event.inputs.dry_run }}"
+          node -e "
+            const { loadLocalEnv } = require('./scripts/social-analytics/load-env');
+            loadLocalEnv();
+            const db = require('./scripts/social-analytics/db/marketing-db');
+            const devto = require('./scripts/social-analytics/publishers/devto');
+
+            const ARTICLE = {
+              title: 'ThumbGate v1.4.0: Pre-action Safety Gates for AI Coding Agents',
+              body_markdown: \`## The Problem
+
+Every new session, your AI coding agent forgets the mistakes it made last time. You told it not to force-push to main — it does it again. You told it not to delete prod config — same story.
+
+CLAUDE.md rules are suggestions. Agents ignore suggestions.
+
+## What ThumbGate Does
+
+ThumbGate intercepts every tool call **before** it executes via Claude Code's \\\`PreToolUse\\\` hooks. It checks the action against a lesson database built from past failures:
+
+- 👎 thumbs-down on a bad action → lesson written to SQLite+FTS5 DB
+- lesson → prevention rule generated automatically
+- rule → PreToolUse gate activated
+- gate fires on next attempt → **blocked before execution**
+
+No config changes. No CLAUDE.md updates. Automatic.
+
+## v1.4.0 Highlights
+
+- **Thompson Sampling** for gate ranking — high-frequency failures rise, rare ones demote automatically
+- **LanceDB vector search** for semantic lesson retrieval across sessions
+- **SQLite+FTS5** lesson store with full-text search
+- **DPO export** — every blocked action becomes a fine-tuning pair
+- **MCP server** — works with Claude Code, Cursor, Codex CLI
+
+## Install in 30 Seconds
+
+\\\`\\\`\\\`bash
+npx thumbgate serve
+\\\`\\\`\\\`
+
+That's it. The MCP server starts, hooks register, lesson DB initialises.
+
+## How Gates Escalate
+
+| Failures | Gate type |
+|----------|-----------|
+| 1 | Warn gate (agent sees warning, can proceed) |
+| 3+ | Hard block (action rejected before execution) |
+
+Gates auto-promote based on failure frequency. Thompson Sampling keeps signal-to-noise high.
+
+## Open Source
+
+MIT license. No sign-up. No telemetry.
+
+- GitHub: https://github.com/IgorGanapolsky/ThumbGate
+- Live: https://thumbgate-production.up.railway.app
+\`,
+              tags: ['claudecode', 'ai', 'devtools', 'opensource'],
+              canonical_url: 'https://github.com/IgorGanapolsky/ThumbGate',
+            };
+
+            const hash = db.hashContent(ARTICLE.title);
+            if (db.isDuplicate('devto', hash, 7)) {
+              console.log('SKIP devto — article posted within 7 days');
+              process.exit(0);
+            }
+
+            if ('$DRY_RUN_FLAG' === 'true') {
+              console.log('DRY-RUN devto — would post:', ARTICLE.title);
+              process.exit(0);
+            }
+
+            devto.publishArticle(ARTICLE)
+              .then(r => {
+                console.log('devto published:', r.url);
+                db.record({ type: 'article', platform: 'devto', contentHash: hash,
+                  postUrl: r.url, campaign: 'autopilot', tags: ['devto', 'v1.4.0'] });
+              })
+              .catch(e => {
+                console.error('devto failed:', e.message);
+                process.exit(1);
+              });
+          " || echo "::warning::Dev.to posting failed"
+
       - name: Search X and reply to relevant conversations
         if: |
           github.event_name == 'schedule' &&
