@@ -163,15 +163,17 @@ jobs:
                 subreddit: 'SideProject',
                 kind: 'self',
                 title: 'I built pre-action gates that physically block Claude Code from repeating mistakes',
-                text: \`After my AI agent force-pushed to main and wiped 3 PRs, I built ThumbGate.
-
-It intercepts every tool call via PreToolUse hooks and checks it against lessons learned from past failures. 1 bad action = warning gate. 3 bad actions = hard block.
-
-v1.4.1 ships with Thompson Sampling for gate ranking and LanceDB for semantic lesson retrieval.
-
-Try the live GPT: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate
-Free + open source: https://github.com/IgorGanapolsky/ThumbGate
-npx thumbgate serve\`,
+                text: [
+                  'After my AI agent force-pushed to main and wiped 3 PRs, I built ThumbGate.',
+                  '',
+                  'It intercepts every tool call via PreToolUse hooks and checks it against lessons learned from past failures. 1 bad action = warning gate. 3 bad actions = hard block.',
+                  '',
+                  'v1.4.1 ships with Thompson Sampling for gate ranking and LanceDB for semantic lesson retrieval.',
+                  '',
+                  'Try the live GPT: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate',
+                  'Free + open source: https://github.com/IgorGanapolsky/ThumbGate',
+                  'npx thumbgate serve',
+                ].join('\\n'),
               },
             ];
 
@@ -213,56 +215,57 @@ npx thumbgate serve\`,
 
             const ARTICLE = {
               title: 'ThumbGate v1.4.1: Pre-action Safety Gates for AI Coding Agents',
-              body_markdown: \`## The Problem
-
-Every new session, your AI coding agent forgets the mistakes it made last time. You told it not to force-push to main — it does it again. You told it not to delete prod config — same story.
-
-CLAUDE.md rules are suggestions. Agents ignore suggestions.
-
-## What ThumbGate Does
-
-ThumbGate intercepts every tool call **before** it executes via Claude Code's \\\`PreToolUse\\\` hooks. It checks the action against a lesson database built from past failures:
-
-- 👎 thumbs-down on a bad action → lesson written to SQLite+FTS5 DB
-- lesson → prevention rule generated automatically
-- rule → PreToolUse gate activated
-- gate fires on next attempt → **blocked before execution**
-
-No config changes. No CLAUDE.md updates. Automatic.
-
-## v1.4.1 Highlights
-
-- **Thompson Sampling** for gate ranking — high-frequency failures rise, rare ones demote automatically
-- **LanceDB vector search** for semantic lesson retrieval across sessions
-- **SQLite+FTS5** lesson store with full-text search
-- **DPO export** — every blocked action becomes a fine-tuning pair
-- **MCP server** — works with Claude Code, Cursor, Codex CLI
-
-## Install in 30 Seconds
-
-\\\`\\\`\\\`bash
-npx thumbgate serve
-\\\`\\\`\\\`
-
-That's it. The MCP server starts, hooks register, lesson DB initialises.
-
-## How Gates Escalate
-
-| Failures | Gate type |
-|----------|-----------|
-| 1 | Warn gate (agent sees warning, can proceed) |
-| 3+ | Hard block (action rejected before execution) |
-
-Gates auto-promote based on failure frequency. Thompson Sampling keeps signal-to-noise high.
-
-## Open Source
-
-MIT license. No sign-up. No telemetry.
-
-- GitHub: https://github.com/IgorGanapolsky/ThumbGate
-- Live: https://thumbgate-production.up.railway.app
-- GPT: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate
-\`,
+              body_markdown: [
+                '## The Problem',
+                '',
+                'Every new session, your AI coding agent forgets the mistakes it made last time. You told it not to force-push to main — it does it again. You told it not to delete prod config — same story.',
+                '',
+                'CLAUDE.md rules are suggestions. Agents ignore suggestions.',
+                '',
+                '## What ThumbGate Does',
+                '',
+                'ThumbGate intercepts every tool call **before** it executes via Claude Code\\'s PreToolUse hooks. It checks the action against a lesson database built from past failures:',
+                '',
+                '- 👎 thumbs-down on a bad action → lesson written to SQLite+FTS5 DB',
+                '- lesson → prevention rule generated automatically',
+                '- rule → PreToolUse gate activated',
+                '- gate fires on next attempt → **blocked before execution**',
+                '',
+                'No config changes. No CLAUDE.md updates. Automatic.',
+                '',
+                '## v1.4.1 Highlights',
+                '',
+                '- **Thompson Sampling** for gate ranking — high-frequency failures rise, rare ones demote automatically',
+                '- **LanceDB vector search** for semantic lesson retrieval across sessions',
+                '- **SQLite+FTS5** lesson store with full-text search',
+                '- **DPO export** — every blocked action becomes a fine-tuning pair',
+                '- **MCP server** — works with Claude Code, Cursor, Codex CLI',
+                '',
+                '## Install in 30 Seconds',
+                '',
+                '~~~bash',
+                'npx thumbgate serve',
+                '~~~',
+                '',
+                'That\\'s it. The MCP server starts, hooks register, lesson DB initialises.',
+                '',
+                '## How Gates Escalate',
+                '',
+                '| Failures | Gate type |',
+                '|----------|-----------|',
+                '| 1 | Warn gate (agent sees warning, can proceed) |',
+                '| 3+ | Hard block (action rejected before execution) |',
+                '',
+                'Gates auto-promote based on failure frequency. Thompson Sampling keeps signal-to-noise high.',
+                '',
+                '## Open Source',
+                '',
+                'MIT license. No sign-up. No telemetry.',
+                '',
+                '- GitHub: https://github.com/IgorGanapolsky/ThumbGate',
+                '- Live: https://thumbgate-production.up.railway.app',
+                '- GPT: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate',
+              ].join('\\n'),
               tags: ['claudecode', 'ai', 'devtools', 'opensource'],
               canonical_url: 'https://github.com/IgorGanapolsky/ThumbGate',
             };
