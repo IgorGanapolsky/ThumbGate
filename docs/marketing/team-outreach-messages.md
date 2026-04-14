@@ -1,36 +1,42 @@
-# Team Pilot Outreach Messages
+# Workflow Hardening Sprint Outreach Messages
 
-Copy-paste these into Reddit Chat. These are the 4 highest-value leads from comment engagement.
+These are the 4 highest-value leads from comment engagement. Track each one in the sales ledger before sending anything:
+
+```bash
+npm run sales:pipeline -- add --source reddit --channel reddit_dm --username <name> --pain "<specific pain hypothesis>"
+```
 
 Use them as part of the one-week discovery loop in [CUSTOMER_DISCOVERY_SPRINT.md](../CUSTOMER_DISCOVERY_SPRINT.md). The goal is not to sell on first touch. The goal is to learn whether the real buyer problem is team agent governance, approval boundaries, and rollout proof.
+
+First-touch rule: lead with one concrete offer, not generic Pro and not the proof pack.
+
+> I will harden one AI-agent workflow for you.
+
+Use [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) only after the buyer confirms the workflow pain.
 
 ---
 
 ## 1. Deep_Ad1959 (r/cursor — already in your DMs)
 
-> Your question about rollback rates when context changes is exactly the right one. Short answer: rarely, because Thompson Sampling auto-adjusts gate weights — gates that fire incorrectly in new contexts lose confidence and stop blocking on their own.
+> Your question about rollback rates when context changes is exactly the right one.
 
-> Bigger question: are you working solo or on a team? We're pivoting to "agent governance for engineering teams" — shared enforcement memory, CI gates, approval policies, audit trails. One developer's correction protects every agent on the team. If you're coordinating agent workflows across people, I'd love to get 15 minutes of your time to understand what safety looks like for your setup. No pitch — just trying to learn what teams actually need. Interested?
+> I am looking for one AI-agent workflow to harden end-to-end this week: repeated failure, prevention gate, and proof run. If you have one workflow where context drift or rollback risk keeps showing up, I can harden that workflow for you. Worth a 15-minute diagnostic?
 
 ---
 
 ## 2. game-of-kton (r/cursor — mentioned ACT-R engrams)
 
-> Your ACT-R engram work is fascinating — especially the conflict resolution for opposing facts and the decay model. That's a much more sophisticated approach than most people take with agent memory.
+> Your ACT-R engram work is fascinating — especially the conflict resolution for opposing facts and the decay model.
 
-> Quick question: is this a team project or solo? We're building "agent governance for engineering teams" — shared enforcement, CI integration, approval policies, audit trails. Your background with PreToolUse hooks and memory architecture means you'd have sharp feedback on what actually needs to exist at the team/CI level vs. the individual agent level.
-
-> Would you be open to a 15-min call? I'm specifically trying to learn from people who've built serious agent memory systems. No sales pitch — just want to understand the problem space better.
+> I am looking for one serious AI-agent workflow to harden end-to-end this week. If your memory system has one recurring failure mode — stale context, opposing facts, bad handoffs, or unsafe tool calls — I can turn that into a prevention gate and proof run. Open to a 15-minute diagnostic?
 
 ---
 
 ## 3. leogodin217 (r/ClaudeCode — mature sprint workflow)
 
-> Your arch-create → review → sprint → implement → review workflow is one of the most mature agent processes I've seen anyone describe. And the point about conflicting context docs being a killer problem — that's the exact pain we're building for.
+> Your arch-create → review → sprint → implement → review workflow is one of the most mature agent processes I've seen anyone describe.
 
-> Are you running this with a team or solo? We're focused on "workflow governance for engineering teams" — shared enforcement so one correction applies across every developer's agent, plus CI gates, approval policies, and audit trails. Your workflow would be a great test case since you already have the structured phases.
-
-> Would 15 minutes be useful? I want to understand what breaks when this workflow scales to a team. No pitch — just learning.
+> I am looking for one AI-agent workflow to harden end-to-end this week. Your workflow already has phases, review boundaries, and context risk, so it is a strong fit: pick one repeating failure and I will help turn it into an enforceable gate plus proof run. Worth 15 minutes?
 
 ---
 
@@ -38,6 +44,4 @@ Use them as part of the one-week discovery loop in [CUSTOMER_DISCOVERY_SPRINT.md
 
 > Appreciate the kind words on the Thompson Sampling approach. You nailed the core insight — most guardrails are brittle prompt hacks that break when context shifts.
 
-> Question: are you working on a team or solo? We're pivoting to "agent governance for engineering teams" — shared enforcement memory, CI gates, approval policies, audit trails. The Thompson Sampling approach scales well across multiple agents because each gate self-tunes per-context.
-
-> Would you be open to a 15-min call? Trying to learn what agent safety pain looks like for teams managing shared codebases. No commitment — just a conversation.
+> I am looking for one AI-agent workflow to harden end-to-end this week: repeated failure, prevention gate, and proof run. If you have a workflow where brittle guardrails keep failing, I can harden that workflow with you. Open to a 15-minute diagnostic?
