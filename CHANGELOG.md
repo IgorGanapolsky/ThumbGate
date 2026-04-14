@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.4.0
+
+### Minor Changes
+
+- **Cross-encoder BM25F reranker** (`scripts/lesson-reranker.js`): Two-stage retrieval pipeline — bi-encoder retrieves top-50 candidates, cross-encoder reranks by joint (query, lesson) scoring. Field weights give `whatWentWrong` (3.0×) priority over `tags` (0.4×). Includes synonym expansion ("deploy" ↔ "deployment/release/publish"), signal coherence (failure queries boost negative-signal lessons 1.2×), and tool name joint scoring (1.3× bonus for exact tool match). Wired into both the PreToolUse hook path and `search_lessons` MCP tool.
+
+- **`thumbgate explore`** (`scripts/explore.js`): Keyboard-driven TUI explorer — zero external dependencies. Four tabs (1–4 or Tab): Lessons · Gates · Stats · Rules. Navigate with ↑/↓ or j/k, filter with `/`, view detail with Enter, quit with `q`. Color-coded signal indicators, relative timestamps, terminal-resize aware.
+
+- **Schema-first CLI** (`scripts/cli-schema.js`): Single source of truth for all CLI commands. Every command declares its name, description, flags (with types), group, and MCP tool binding. `thumbgate help` is now generated from the schema with group headings and `[mcp:tool]` annotations — no more hardcoded console.log lines.
+
+- **`--json` on `stats` and `gate-stats`**: Both commands now output structured JSON when `--json` is passed. `stats --json` returns `{ total, positives, negatives, approvalRate, recentTrend, revenueAtRisk, topTags, recentActivity }`. `gate-stats --json` returns gate engine summary; add `--verbose` for the full gates array.
+
+- **`--local` / `--remote` flag on `lessons`**: `thumbgate lessons --remote` fetches from the hosted Railway instance at `GET /v1/lessons/search`. `--local` is the explicit default. Respects `THUMBGATE_API_URL` env var for custom deployments.
+
+- **Developer-first README**: Feature showcase (statusline, explore, searchable lessons, dashboard, 👍/👎, DPO export) leads the page. Tech Stack updated to include BM25F cross-encoder, TUI explorer, and schema-first CLI.
+
 ## 1.3.0
 
 ### Minor Changes

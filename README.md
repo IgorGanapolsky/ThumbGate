@@ -23,6 +23,10 @@ Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode** and any MCP
 |---------|-------------|
 | **👍 / 👎 Feedback capture** | One command to record what worked or what went wrong |
 | **Searchable lesson DB** | Every mistake is stored in SQLite + FTS5 — find any lesson instantly with `npx thumbgate lessons` |
+| **Cross-encoder reranking** | Field-weighted BM25F re-ranks lessons by joint (query, lesson) scoring — `whatWentWrong` carries 6× the weight of `tags` |
+| **`thumbgate explore`** | Keyboard-driven TUI — browse lessons, gates, stats, and rules without leaving the terminal |
+| **`--json` everywhere** | Every command outputs machine-readable JSON with `--json` — pipe to `jq`, scripts, or agents |
+| **`--local` / `--remote`** | Route any command to local SQLite or the hosted Railway instance: `thumbgate lessons --remote` |
 | **Auto-enforced gates** | Lessons become PreToolUse hooks that block the same mistake before it executes |
 | **Claude statusline** | Your most recent lesson surfaces in Claude Code's status bar every session |
 | **Local dashboard** | Browse lessons, feedback stats, and prevention rules at `localhost` |
@@ -91,7 +95,9 @@ Session 3:                           Session 3+:
 ```bash
 npx thumbgate init        # auto-detect your agent + wire hooks
 npx thumbgate doctor      # health check
-npx thumbgate lessons     # browse your searchable lesson DB
+npx thumbgate explore     # interactive TUI: browse lessons, gates, stats, rules
+npx thumbgate lessons     # search lesson DB (add --json for scripts, --remote for hosted)
+npx thumbgate stats       # feedback analytics + Revenue-at-Risk (--json supported)
 npx thumbgate dashboard   # open local dashboard
 ```
 
@@ -272,22 +278,22 @@ See [Release Confidence](docs/RELEASE_CONFIDENCE.md) for the full trust chain.
 ## Tech Stack
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  STORAGE          │  INTELLIGENCE     │  ENFORCEMENT     │
-│                   │                   │                  │
-│  SQLite + FTS5    │  MemAlign dual    │  PreToolUse      │
-│  LanceDB vectors  │    recall         │    hook engine   │
-│  JSONL logs       │  Thompson Sampling│  Gates config    │
-│  ContextFS        │                   │  Hook wiring     │
-├───────────────────┼───────────────────┼──────────────────┤
-│  INTERFACES       │  BILLING          │  EXECUTION       │
-│                   │                   │                  │
-│  MCP stdio        │  Stripe           │  Railway         │
-│  HTTP API         │                   │  Cloudflare      │
-│  CLI              │                   │    Workers       │
-│  Node.js >=18     │                   │  Docker          │
-│                   │                   │    Sandboxes     │
-└───────────────────┴───────────────────┴──────────────────┘
+┌──────────────────────┬──────────────────────┬──────────────────────┐
+│   STORAGE            │   INTELLIGENCE        │   ENFORCEMENT        │
+│                      │                       │                      │
+│  SQLite + FTS5       │  BM25F cross-encoder  │  PreToolUse hook     │
+│  LanceDB vectors     │  MemAlign dual recall │    engine            │
+│  JSONL logs          │  Thompson Sampling    │  Gates config        │
+│  ContextFS           │  Synonym expansion    │  Hook wiring         │
+├──────────────────────┼──────────────────────┼──────────────────────┤
+│   INTERFACES         │   BILLING             │   EXECUTION          │
+│                      │                       │                      │
+│  MCP stdio           │  Stripe               │  Railway             │
+│  HTTP API            │                       │  Cloudflare Workers  │
+│  CLI (schema-first)  │                       │  Docker Sandboxes    │
+│  TUI explorer        │                       │                      │
+│  Node.js >=18        │                       │                      │
+└──────────────────────┴──────────────────────┴──────────────────────┘
 ```
 
 ## Docs
