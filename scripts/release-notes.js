@@ -63,7 +63,7 @@ function isSafeChangesetPath(file) {
 function semverTagValue(tag) {
   const match = /^v(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/.exec(String(tag || '').trim());
   if (!match) return null;
-  return match.slice(1, 4).map((value) => Number(value));
+  return match.slice(1, 4).map(Number);
 }
 
 function compareSemverTagsDescending(a, b) {
@@ -158,7 +158,8 @@ function extractChangelogEntry(changelog, version) {
   if (start === -1) return '';
 
   const next = lines.findIndex((line, index) => index > start && changelogHeadingVersion(line));
-  return lines.slice(start, next === -1 ? undefined : next).join('\n').trim();
+  const end = next === -1 ? lines.length : next;
+  return lines.slice(start, end).join('\n').trim();
 }
 
 function groupChangesets(entries) {
@@ -175,14 +176,17 @@ function groupChangesets(entries) {
 
 function renderChangesetGroup(title, entries) {
   if (entries.length === 0) return '';
-  const lines = [`### ${title}`, ''];
-  for (const entry of entries) {
-    lines.push(`#### ${entry.file}`);
-    lines.push('');
-    lines.push(entry.summary.trim());
-    lines.push('');
-  }
-  return lines.join('\n').trim();
+  const renderedEntries = entries.map((entry) => [
+    `#### ${entry.file}`,
+    '',
+    entry.summary.trim(),
+  ].join('\n'));
+
+  return [
+    `### ${title}`,
+    '',
+    renderedEntries.join('\n\n'),
+  ].join('\n').trim();
 }
 
 function formatReleaseNotes({
@@ -202,7 +206,18 @@ function formatReleaseNotes({
     ? `https://github.com/${repoFullName}/compare/${previousTag}...${currentTag}`
     : `https://github.com/${repoFullName}/releases/tag/${currentTag}`;
   const groups = groupChangesets(changesets);
-  const sections = [
+  const renderedGroups = [
+    renderChangesetGroup('Major Changes', groups.major),
+    renderChangesetGroup('Minor Changes', groups.minor),
+    renderChangesetGroup('Patch Changes', groups.patch),
+  ].filter(Boolean);
+  const changesetBody = renderedGroups.length > 0
+    ? renderedGroups.join('\n\n')
+    : 'No changed `.changeset/*.md` entries were detected for this release range.';
+  const changelogBody = changelogEntry
+    || `No \`CHANGELOG.md\` section was found for ${version}; the release notes above were generated from the changed Changeset files.`;
+
+  return `${[
     `# ${packageName}@${version}`,
     '',
     '## Release Links',
@@ -210,37 +225,23 @@ function formatReleaseNotes({
     `- npm: ${npmUrl}`,
     `- GitHub Release: ${releaseUrl}`,
     `- Compare: ${compareUrl}`,
-    githubRunUrl ? `- Publish workflow: ${githubRunUrl}` : '',
+    githubRunUrl ? `- Publish workflow: ${githubRunUrl}` : null,
     `- Release ref: ${currentRef}`,
     '',
     '## Full Changeset Release Notes',
     '',
-  ].filter((line) => line !== '');
-
-  const renderedGroups = [
-    renderChangesetGroup('Major Changes', groups.major),
-    renderChangesetGroup('Minor Changes', groups.minor),
-    renderChangesetGroup('Patch Changes', groups.patch),
-  ].filter(Boolean);
-
-  if (renderedGroups.length > 0) {
-    sections.push(renderedGroups.join('\n\n'));
-  } else {
-    sections.push('No changed `.changeset/*.md` entries were detected for this release range.');
-  }
-
-  sections.push('');
-  sections.push('## CHANGELOG.md Entry');
-  sections.push('');
-  sections.push(changelogEntry || `No \`CHANGELOG.md\` section was found for ${version}; the release notes above were generated from the changed Changeset files.`);
-  sections.push('');
-  sections.push('## Verification Standard');
-  sections.push('');
-  sections.push('- Publish only runs from `main` after version sync, tests, and runtime proof pass.');
-  sections.push('- The npm package is smoke-tested after publish by installing `thumbgate@VERSION` in a clean runtime.');
-  sections.push('- GitHub Release notes are generated from Changesets, not only GitHub auto-generated PR titles.');
-
-  return `${sections.join('\n')}\n`;
+    changesetBody,
+    '',
+    '## CHANGELOG.md Entry',
+    '',
+    changelogBody,
+    '',
+    '## Verification Standard',
+    '',
+    '- Publish only runs from `main` after version sync, tests, and runtime proof pass.',
+    '- The npm package is smoke-tested after publish by installing `thumbgate@VERSION` in a clean runtime.',
+    '- GitHub Release notes are generated from Changesets, not only GitHub auto-generated PR titles.',
+  ].filter((line) => line !== null).join('\n')}\n`;
 }
 
 function buildReleaseNotes({
@@ -321,7 +322,7 @@ function runCli({
   return result;
 }
 
-if (require.main === module) {
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
   try {
     runCli();
   } catch (error) {
