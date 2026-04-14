@@ -30,7 +30,37 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Detect Sonar-relevant changes
+        id: sonar-scope
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" != "pull_request" ]]; then
+            echo "scan=true" >> "$GITHUB_OUTPUT"
+            echo "reason=full-analysis-event" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git diff --name-only "$BASE_SHA" "$HEAD_SHA" > /tmp/sonar-changed-files.txt
+          if grep -E '^(src/|scripts/|bin/|tests/|package(-lock)?\.json$|sonar-project\.properties$|\.github/workflows/sonarcloud\.yml$)' /tmp/sonar-changed-files.txt > /dev/null; then
+            echo "scan=true" >> "$GITHUB_OUTPUT"
+            echo "reason=sonar-surface-changed" >> "$GITHUB_OUTPUT"
+          else
+            echo "scan=false" >> "$GITHUB_OUTPUT"
+            echo "reason=non-sonar-surface-only" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip SonarCloud scan for non-Sonar PR
+        if: steps.sonar-scope.outputs.scan == 'false'
+        run: |
+          echo "No files in Sonar-scanned surfaces changed; required SonarCloud job exits successfully without scanner startup."
+
       - name: Setup Node
+        if: steps.sonar-scope.outputs.scan == 'true'
         uses: actions/setup-node@v6
         with:
           node-version: '20'
@@ -39,10 +69,20 @@ jobs:
             package-lock.json
             workers/package-lock.json
 
+      - name: Cache SonarCloud packages
+        if: steps.sonar-scope.outputs.scan == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
       - name: Install deps
+        if: steps.sonar-scope.outputs.scan == 'true'
         run: npm ci --onnxruntime-node-install-cuda=skip
 
       - name: Generate LCOV coverage report
+        if: steps.sonar-scope.outputs.scan == 'true'
         run: |
           rm -rf .coverage coverage
           mkdir -p .coverage/raw
@@ -63,18 +103,20 @@ jobs:
 
       - name: Read package version
         id: package-version
+        if: steps.sonar-scope.outputs.scan == 'true'
         run: |
           VERSION=$(node -p 'require("./package.json").version')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Build Sonar mainline analysis version
         id: sonar-mainline-version
+        if: steps.sonar-scope.outputs.scan == 'true'
         run: |
           SHORT_SHA=$(printf '%s' "$GITHUB_SHA" | cut -c1-12)
           echo "value=${{ steps.package-version.outputs.version }}+sha.$SHORT_SHA" >> "$GITHUB_OUTPUT"
 
       - name: Run SonarCloud scan (quality gate)
-        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        if: steps.sonar-scope.outputs.scan == 'true' && (github.event_name == 'pull_request' || github.event_name == 'merge_group')
         uses: SonarSource/sonarqube-scan-action@v7.1.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -85,7 +127,7 @@ jobs:
             -Dsonar.qualitygate.timeout=600
 
       - name: Run SonarCloud scan (default branch refresh)
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        if: steps.sonar-scope.outputs.scan == 'true' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         uses: SonarSource/sonarqube-scan-action@v7.1.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
