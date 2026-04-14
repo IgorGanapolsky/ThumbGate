@@ -118,7 +118,13 @@ In the Actions panel:
 
 1. Select **Authentication type: API Key**
 2. **Auth type**: Bearer
-3. **API Key**: paste your `THUMBGATE_API_KEY` value
+3. **API Key**: paste the raw `THUMBGATE_API_KEY` value only, without a `Bearer ` prefix
+
+Expected outbound header:
+
+```text
+Authorization: Bearer <THUMBGATE_API_KEY>
+```
 
 This is an owner setup field. Do not ask regular GPT users to provide an API key.
 
@@ -149,6 +155,14 @@ Expected response: `200 OK` with `{ "accepted": true, "status": "promoted" }`.
 
 If you only send a bare `thumbs up/down` style payload, expect `422` with `status: "clarification_required"` and a follow-up `prompt`.
 
+Before publishing or re-publishing the GPT, keep it private and verify these three private flows in GPT Builder:
+
+1. `Thumbs up: this answer gave exact commands, file paths, and tests`
+2. `Thumbs down: that answer ignored the requested auth setup`
+3. `Check this: git push --force`
+
+All three should call the action layer without a `401 Unauthorized` response. If any action test returns `401`, the GPT Builder secret is missing, stale, pasted with an extra `Bearer ` prefix, or pointed at a different backend key than Railway's `THUMBGATE_API_KEY`.
+
 ## Available Actions
 
 | Action | Method | Path | Description |
@@ -166,6 +180,7 @@ Full spec: `adapters/chatgpt/openapi.yaml`
 
 ## Troubleshooting
 
-- **401 Unauthorized**: Verify `THUMBGATE_API_KEY` is set and matches the Bearer token
+- **401 Unauthorized on action calls**: Verify the GPT Builder action uses **Authentication type: API Key**, **Auth type: Bearer**, and the raw `THUMBGATE_API_KEY` value. The backend must receive `Authorization: Bearer <key>`.
+- **401 Unauthorized when importing the schema**: Use `https://thumbgate-production.up.railway.app/openapi.yaml` after the public spec route is deployed, or fall back to `https://thumbgate-production.up.railway.app/openapi.json`.
 - **Connection refused**: Confirm Railway deployment is live (`curl https://<domain>/health`)
 - **Schema errors**: Ensure you are using the latest `openapi.yaml` (version 1.1.0+)
