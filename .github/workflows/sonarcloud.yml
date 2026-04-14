@@ -46,7 +46,7 @@ jobs:
           fi
 
           git diff --name-only "$BASE_SHA" "$HEAD_SHA" > /tmp/sonar-changed-files.txt
-          if grep -E '^(src/|scripts/|bin/|tests/|package(-lock)?\.json$|sonar-project\.properties$|\.github/workflows/sonarcloud\.yml$)' /tmp/sonar-changed-files.txt > /dev/null; then
+          if grep -E '^(src/|scripts/|bin/|package(-lock)?\.json$|sonar-project\.properties$|\.github/workflows/sonarcloud\.yml$)' /tmp/sonar-changed-files.txt > /dev/null; then
             echo "scan=true" >> "$GITHUB_OUTPUT"
             echo "reason=sonar-surface-changed" >> "$GITHUB_OUTPUT"
           else

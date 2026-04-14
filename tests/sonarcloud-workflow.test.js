@@ -41,7 +41,8 @@ test('SonarCloud workflow skips scanner startup for PRs outside scanned surfaces
   assert.match(workflow, /name: Detect Sonar-relevant changes/);
   assert.match(workflow, /id: sonar-scope/);
   assert.match(workflow, /git diff --name-only "\$BASE_SHA" "\$HEAD_SHA" > \/tmp\/sonar-changed-files\.txt/);
-  assert.match(workflow, /\^\(src\/\|scripts\/\|bin\/\|tests\/\|package\(-lock\)\?\\\.json\$\|sonar-project\\\.properties\$\|\\\.github\/workflows\/sonarcloud\\\.yml\$\)/);
+  assert.match(workflow, /\^\(src\/\|scripts\/\|bin\/\|package\(-lock\)\?\\\.json\$\|sonar-project\\\.properties\$\|\\\.github\/workflows\/sonarcloud\\\.yml\$\)/);
+  assert.doesNotMatch(workflow, /\|tests\/\|/);
   assert.match(workflow, /name: Skip SonarCloud scan for non-Sonar PR/);
   assert.match(workflow, /if: steps\.sonar-scope\.outputs\.scan == 'false'/);
   assert.match(workflow, /required SonarCloud job exits successfully without scanner startup/);
