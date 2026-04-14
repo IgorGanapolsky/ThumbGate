@@ -548,95 +548,99 @@ function runCli(argv = process.argv.slice(2)) {
     feedbackDir: options.feedbackDir,
   };
 
-  if (options.command === 'import' || options.command === 'import-gtm') {
-    if (!options.source) throw new Error('--source is required for import.');
-    const { report, sourcePath } = readRevenueLoopReport(options.source);
-    const result = importRevenueLoopReport(report, { ...stateOptions, sourcePath });
-    const leads = loadSalesLeads(stateOptions);
-    const reportPath = writeSalesPipelineReport({ outPath: options.out, leads });
-    return {
-      command: options.command,
-      imported: result.imported.length,
-      skipped: result.skipped.length,
-      statePath: getSalesPipelinePath(stateOptions),
-      reportPath,
-    };
-  }
+  switch (options.command) {
+    case 'import':
+    case 'import-gtm': {
+      if (!options.source) throw new Error('--source is required for import.');
+      const { report, sourcePath } = readRevenueLoopReport(options.source);
+      const result = importRevenueLoopReport(report, { ...stateOptions, sourcePath });
+      const leads = loadSalesLeads(stateOptions);
+      const reportPath = writeSalesPipelineReport({ outPath: options.out, leads });
+      return {
+        command: options.command,
+        imported: result.imported.length,
+        skipped: result.skipped.length,
+        statePath: getSalesPipelinePath(stateOptions),
+        reportPath,
+      };
+    }
 
-  if (options.command === 'advance') {
-    const result = advanceSalesLead({
-      leadId: options.lead || options.leadId,
-      stage: options.stage,
-      actor: options.actor,
-      channel: options.channel,
-      note: options.note,
-      url: options.url,
-      amountCents: options.amountCents,
-      currency: options.currency,
-      force: options.force,
-    }, stateOptions);
-    const leads = loadSalesLeads(stateOptions);
-    const reportPath = writeSalesPipelineReport({ outPath: options.out, leads });
-    return {
-      command: options.command,
-      leadId: result.lead.leadId,
-      stage: result.lead.stage,
-      unchanged: result.unchanged,
-      statePath: getSalesPipelinePath(stateOptions),
-      reportPath,
-    };
-  }
+    case 'advance': {
+      const result = advanceSalesLead({
+        leadId: options.lead || options.leadId,
+        stage: options.stage,
+        actor: options.actor,
+        channel: options.channel,
+        note: options.note,
+        url: options.url,
+        amountCents: options.amountCents,
+        currency: options.currency,
+        force: options.force,
+      }, stateOptions);
+      const leads = loadSalesLeads(stateOptions);
+      const reportPath = writeSalesPipelineReport({ outPath: options.out, leads });
+      return {
+        command: options.command,
+        leadId: result.lead.leadId,
+        stage: result.lead.stage,
+        unchanged: result.unchanged,
+        statePath: getSalesPipelinePath(stateOptions),
+        reportPath,
+      };
+    }
 
-  if (options.command === 'add') {
-    const lead = addSalesLead({
-      leadId: options.lead || options.leadId,
-      source: options.source,
-      channel: options.channel,
-      stage: options.stage,
-      offer: options.offer,
-      username: options.username,
-      name: options.name,
-      email: options.email,
-      contactUrl: options.contactUrl,
-      account: options.account,
-      repo: options.repo,
-      repoUrl: options.repoUrl,
-      description: options.description,
-      stars: options.stars,
-      pain: options.pain,
-      concreteOffer: options.concreteOffer,
-      proofTiming: options.proofTiming,
-      draft: options.draft,
-      cta: options.cta,
-      campaign: options.campaign,
-      utmSource: options.utmSource,
-      utmMedium: options.utmMedium,
-      utmCampaign: options.utmCampaign,
-      force: options.force,
-    }, stateOptions);
-    const leads = loadSalesLeads(stateOptions);
-    const reportPath = writeSalesPipelineReport({ outPath: options.out, leads });
-    return {
-      command: options.command,
-      leadId: lead.leadId,
-      stage: lead.stage,
-      statePath: getSalesPipelinePath(stateOptions),
-      reportPath,
-    };
-  }
+    case 'add': {
+      const lead = addSalesLead({
+        leadId: options.lead || options.leadId,
+        source: options.source,
+        channel: options.channel,
+        stage: options.stage,
+        offer: options.offer,
+        username: options.username,
+        name: options.name,
+        email: options.email,
+        contactUrl: options.contactUrl,
+        account: options.account,
+        repo: options.repo,
+        repoUrl: options.repoUrl,
+        description: options.description,
+        stars: options.stars,
+        pain: options.pain,
+        concreteOffer: options.concreteOffer,
+        proofTiming: options.proofTiming,
+        draft: options.draft,
+        cta: options.cta,
+        campaign: options.campaign,
+        utmSource: options.utmSource,
+        utmMedium: options.utmMedium,
+        utmCampaign: options.utmCampaign,
+        force: options.force,
+      }, stateOptions);
+      const leads = loadSalesLeads(stateOptions);
+      const reportPath = writeSalesPipelineReport({ outPath: options.out, leads });
+      return {
+        command: options.command,
+        leadId: lead.leadId,
+        stage: lead.stage,
+        statePath: getSalesPipelinePath(stateOptions),
+        reportPath,
+      };
+    }
 
-  if (options.command === 'report') {
-    const leads = loadSalesLeads(stateOptions);
-    const reportPath = writeSalesPipelineReport({ outPath: options.out, leads });
-    return {
-      command: options.command,
-      summary: summarizeSalesPipeline(leads),
-      statePath: getSalesPipelinePath(stateOptions),
-      reportPath,
-    };
-  }
+    case 'report': {
+      const leads = loadSalesLeads(stateOptions);
+      const reportPath = writeSalesPipelineReport({ outPath: options.out, leads });
+      return {
+        command: options.command,
+        summary: summarizeSalesPipeline(leads),
+        statePath: getSalesPipelinePath(stateOptions),
+        reportPath,
+      };
+    }
 
-  throw new Error(`Unknown sales pipeline command: ${options.command}`);
+    default:
+      throw new Error(`Unknown sales pipeline command: ${options.command}`);
+  }
 }
 
 if (require.main === module) {
