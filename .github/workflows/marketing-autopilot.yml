@@ -157,17 +157,19 @@ jobs:
             const db = require('./scripts/social-analytics/db/marketing-db');
             const reddit = require('./scripts/social-analytics/publishers/reddit');
 
+            const PRO_URL = 'https://thumbgate-production.up.railway.app/pro?utm_source=reddit&utm_medium=social&utm_campaign=autopilot';
+            const BUY_URL = 'https://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a?utm_source=reddit&utm_medium=social&utm_campaign=autopilot';
             const POSTS = [
               {
                 subreddit: 'ClaudeAI',
                 kind: 'link',
-                title: 'ThumbGate v1.4.1: Pre-action safety gates for Claude Code',
-                url: 'https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate',
+                title: 'ThumbGate v1.4.1: Pre-action safety gates that block Claude Code from repeating mistakes',
+                url: 'https://thumbgate-production.up.railway.app/pro?utm_source=reddit&utm_medium=social&utm_campaign=autopilot&utm_content=claudeai',
               },
               {
                 subreddit: 'SideProject',
                 kind: 'self',
-                title: 'I built pre-action gates that physically block Claude Code from repeating mistakes',
+                title: 'I built pre-action gates that physically block Claude Code from repeating mistakes — now with a Pro tier',
                 text: [
                   'After my AI agent force-pushed to main and wiped 3 PRs, I built ThumbGate.',
                   '',
@@ -175,9 +177,31 @@ jobs:
                   '',
                   'v1.4.1 ships with Thompson Sampling for gate ranking and LanceDB for semantic lesson retrieval.',
                   '',
-                  'Try the live GPT: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate',
+                  '**Free tier:** up to 5 gates, SQLite lesson DB, npx thumbgate serve',
+                  '**Pro ($19/mo):** unlimited gates, LanceDB vectors, DPO export, team sync, dashboard',
+                  '',
+                  '💳 Get Pro ($19/mo): ' + BUY_URL,
+                  'Pricing page: ' + PRO_URL,
                   'Free + open source: https://github.com/IgorGanapolsky/ThumbGate',
                   'npx thumbgate serve',
+                ].join('\\n'),
+              },
+              {
+                subreddit: 'LocalLLaMA',
+                kind: 'self',
+                title: 'ThumbGate: pre-action gates that stop AI agents from repeating the same mistakes',
+                text: [
+                  'Built a tool that intercepts every tool call before it executes and checks it against a lesson DB built from past failures.',
+                  '',
+                  'Works with Claude Code, Cursor, Codex CLI via MCP. Every thumbs-down on a bad action becomes a prevention rule automatically.',
+                  '',
+                  '- 1 bad action → warn gate',
+                  '- 3 bad actions → hard block',
+                  '- Thompson Sampling ranks gates by failure frequency',
+                  '- LanceDB for semantic lesson retrieval (Pro)',
+                  '',
+                  'Free: https://github.com/IgorGanapolsky/ThumbGate',
+                  '💳 Pro ($19/mo): ' + BUY_URL,
                 ].join('\\n'),
               },
             ];
@@ -221,7 +245,7 @@ jobs:
             const devto = require('./scripts/social-analytics/publishers/devto');
 
             const ARTICLE = {
-              title: 'ThumbGate v1.4.1: Pre-action Safety Gates for AI Coding Agents',
+              title: 'ThumbGate v1.4.1: Pre-action Safety Gates for AI Coding Agents (Free + Pro)',
               body_markdown: [
                 '## The Problem',
                 '',
@@ -265,16 +289,30 @@ jobs:
                 '',
                 'Gates auto-promote based on failure frequency. Thompson Sampling keeps signal-to-noise high.',
                 '',
+                '## Free vs Pro',
+                '',
+                '| Feature | Free | Pro ($19/mo) |',
+                '|---------|------|--------------|',
+                '| Gates | Up to 5 | Unlimited |',
+                '| Lesson DB | SQLite+FTS5 | SQLite + LanceDB vectors |',
+                '| DPO export | ❌ | ✅ |',
+                '| Team sync | ❌ | ✅ |',
+                '| Dashboard | Basic | Full analytics |',
+                '| Agents | Single | Multi-agent |',
+                '',
+                '👉 **[Get Pro — $19/month](https://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a?utm_source=devto&utm_medium=article&utm_campaign=autopilot)** | [Annual $149/yr](https://buy.stripe.com/3cI8wPfCYaPs2dzdKz3sI07?utm_source=devto&utm_medium=article&utm_campaign=autopilot)',
+                '',
                 '## Open Source',
                 '',
-                'MIT license. No sign-up. No telemetry.',
+                'MIT license. No sign-up required for the free tier. No telemetry.',
                 '',
                 '- GitHub: https://github.com/IgorGanapolsky/ThumbGate',
-                '- Live: https://thumbgate-production.up.railway.app',
+                '- Buy Pro ($19/mo): https://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a',
+                '- Pricing: https://thumbgate-production.up.railway.app/pro',
                 '- GPT: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate',
               ].join('\\n'),
               tags: ['claudecode', 'ai', 'devtools', 'opensource'],
-              canonical_url: 'https://github.com/IgorGanapolsky/ThumbGate',
+              canonical_url: 'https://thumbgate-production.up.railway.app/pro',
             };
 
             const hash = db.hashContent(ARTICLE.title);
