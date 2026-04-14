@@ -81,6 +81,9 @@ const {
   bootstrapInternalAgent,
 } = require('../../scripts/internal-agent-bootstrap');
 const {
+  classifyRequester,
+} = require('../../scripts/bot-detection');
+const {
   buildCloudflareSandboxPlan,
 } = require('../../scripts/cloudflare-dynamic-sandbox');
 const {
@@ -3481,6 +3484,45 @@ async function addContext(){
       const responseHeaders = journeyState.setCookieHeaders.length
         ? { 'Set-Cookie': journeyState.setCookieHeaders }
         : {};
+
+      // ── Bot guard ────────────────────────────────────────────────────
+      // Creating a Stripe Checkout session on every GET means crawlers,
+      // link-preview fetchers, and LLM scrapers inflate "sessions opened"
+      // while completions stay at zero. Serve bots an interstitial HTML
+      // page instead — no Stripe session created, no funnel pollution.
+      // The `?confirm=1` query param or POST below is the real-user path.
+      const botClassification = classifyRequester(req.headers);
+      const confirmParam = parsed && parsed.searchParams
+        ? parsed.searchParams.get('confirm')
+        : null;
+      const isConfirmedCheckout = confirmParam === '1'
+        || confirmParam === 'true'
+        || req.method === 'POST';
+      if (botClassification.isBot && !isConfirmedCheckout) {
+        appendBestEffortTelemetry(FEEDBACK_DIR, {
+          eventType: 'checkout_bot_deflected',
+          clientType: 'web',
+          traceId,
+          utmSource: analyticsMetadata.utmSource,
+          utmMedium: analyticsMetadata.utmMedium,
+          utmCampaign: analyticsMetadata.utmCampaign,
+          referrer: analyticsMetadata.referrer,
+          referrerHost: analyticsMetadata.referrerHost,
+          page: '/checkout/pro',
+          planId: analyticsMetadata.planId,
+          reason: botClassification.reason,
+        }, req.headers, 'checkout_bot_deflected');
+        const confirmUrl = new URL('/checkout/pro', hostedConfig.appOrigin);
+        if (parsed && parsed.searchParams) {
+          for (const [key, val] of parsed.searchParams.entries()) {
+            if (val != null) confirmUrl.searchParams.set(key, String(val));
+          }
+        }
+        confirmUrl.searchParams.set('confirm', '1');
+        const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>ThumbGate Pro — Confirm checkout</title><style>*{box-sizing:border-box}body{background:#0a0a0a;color:#e5e5e5;font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px}.card{background:#141414;border:1px solid #222;border-radius:16px;padding:48px 40px;max-width:460px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.5)}h1{margin:0 0 12px;font-size:22px;color:#22d3ee}p{color:#9ca3af;font-size:14px;line-height:1.55;margin:0 0 24px}.btn{display:inline-block;background:#22d3ee;color:#000;text-decoration:none;font-weight:700;padding:14px 32px;border-radius:999px;font-size:16px;cursor:pointer;border:none}.btn:hover{opacity:.9}.sub{margin-top:16px;font-size:12px;color:#6b7280}a.back{color:#6b7280;font-size:13px;text-decoration:underline}</style></head><body><div class="card"><h1>Continue to secure checkout</h1><p>You're one click from ThumbGate Pro at $19/mo. We create the payment session only after you confirm — keeps your path clean and our funnel honest.</p><a class="btn" href="${confirmUrl.pathname}${confirmUrl.search}" rel="noopener">Continue to Stripe →</a><div class="sub">Payments handled by Stripe. 7-day free trial. Cancel anytime.</div><div class="sub"><a class="back" href="/">← Back to homepage</a></div></div></body></html>`;
+        sendHtml(res, 200, html, responseHeaders);
+        return;
+      }
 
       appendBestEffortTelemetry(FEEDBACK_DIR, {
         eventType: 'checkout_bootstrap',
