@@ -94,6 +94,64 @@ function hookAlreadyPresent(hookArray, command) {
   );
 }
 
+/**
+ * pruneStaleFileHooks — Remove hook entries whose command references a shell
+ * script path that no longer exists on disk.
+ *
+ * Only paths that look like file references (contain a `/` or `\`, or end with
+ * `.sh`) are checked.  Pure command strings (node calls, npx invocations, etc.)
+ * are left untouched.
+ *
+ * @param {Array}  hookArray  - The array of hook-entry objects for one lifecycle.
+ * @param {string} [baseDir]  - Directory used to resolve relative paths
+ *                              (defaults to process.cwd()).
+ * @returns {{ hooks: Array, removedPaths: string[] }}
+ */
+function pruneStaleFileHooks(hookArray, baseDir) {
+  if (!Array.isArray(hookArray)) {
+    return { hooks: [], removedPaths: [] };
+  }
+
+  const resolveBase = baseDir || process.cwd();
+  const removedPaths = [];
+
+  const hooks = hookArray.filter((entry) => {
+    const entryHooks = Array.isArray(entry && entry.hooks) ? entry.hooks : [];
+    let shouldRemove = false;
+
+    for (const hook of entryHooks) {
+      const command = hook && typeof hook.command === 'string' ? hook.command : '';
+      if (!command) continue;
+
+      // Extract the first token as the potential script path.
+      const firstToken = command.split(/\s+/)[0];
+
+      // Only treat it as a file reference if it looks like a path.
+      const looksLikePath =
+        firstToken.includes('/') ||
+        firstToken.includes('\\') ||
+        firstToken.endsWith('.sh');
+
+      if (!looksLikePath) continue;
+
+      // Resolve the path (absolute or relative to baseDir).
+      const resolved = path.isAbsolute(firstToken)
+        ? firstToken
+        : path.resolve(resolveBase, firstToken);
+
+      if (!fs.existsSync(resolved)) {
+        removedPaths.push(firstToken);
+        shouldRemove = true;
+        break;
+      }
+    }
+
+    return !shouldRemove;
+  });
+
+  return { hooks, removedPaths };
+}
+
 function pruneLegacyHookEntries(hookArray, expectedCommand, legacyPattern) {
   if (!Array.isArray(hookArray)) {
     return { hooks: [], removed: false };
@@ -131,11 +189,77 @@ function syncClaudeStatusLine(settingsPath, desiredStatusLine, dryRun) {
   return true;
 }
 
+/**
+ * claudeProjectSettingsPath — returns the project-level .claude/settings.json
+ * path relative to the given base directory (defaults to CWD).
+ */
+function claudeProjectSettingsPath(baseDir) {
+  return path.join(baseDir || process.cwd(), '.claude', 'settings.json');
+}
+
+/**
+ * pruneStaleHooksInFile — reads a settings file, removes any hook entries that
+ * reference missing shell script files, and writes the file back if changed.
+ *
+ * @param {string}  filePath - Absolute path to the settings JSON file.
+ * @param {string}  baseDir  - Base directory for resolving relative script paths.
+ * @param {boolean} dryRun   - When true, changes are computed but not persisted.
+ * @returns {{ changed: boolean, removedPaths: string[] }}
+ */
+function pruneStaleHooksInFile(filePath, baseDir, dryRun) {
+  const settings = loadJsonFile(filePath);
+  if (!settings || !settings.hooks || typeof settings.hooks !== 'object') {
+    return { changed: false, removedPaths: [] };
+  }
+
+  const allRemovedPaths = [];
+  let changed = false;
+
+  for (const lifecycle of Object.keys(settings.hooks)) {
+    const { hooks, removedPaths } = pruneStaleFileHooks(settings.hooks[lifecycle], baseDir);
+    if (removedPaths.length > 0) {
+      settings.hooks[lifecycle] = hooks;
+      allRemovedPaths.push(...removedPaths);
+      changed = true;
+    }
+  }
+
+  if (changed && !dryRun) {
+    fs.writeFileSync(filePath, JSON.stringify(settings, null, 2) + '\n');
+  }
+
+  return { changed, removedPaths: allRemovedPaths };
+}
+
 function wireClaudeHooks(options) {
   const settingsPath = options.settingsPath || claudeSettingsPath();
   const sharedSettingsPath = options.sharedSettingsPath || claudeSharedSettingsPath();
+  const projectSettingsPath =
+    options.projectSettingsPath || claudeProjectSettingsPath(options.projectDir);
   const dryRun = options.dryRun || false;
+  const projectDir = options.projectDir || process.cwd();
   const desiredStatusLine = statuslineCommand();
+
+  // --- Step 0: clean up stale hooks from BOTH settings locations ---
+  const staleWarnings = [];
+
+  // User-level: ~/.claude/settings.local.json
+  const userStale = pruneStaleHooksInFile(settingsPath, projectDir, dryRun);
+  for (const p of userStale.removedPaths) {
+    const msg = `Removed stale hook referencing missing file: ${p}`;
+    console.warn(msg);
+    staleWarnings.push({ file: settingsPath, path: p });
+  }
+
+  // Project-level: $CWD/.claude/settings.json (takes precedence for some events)
+  if (fs.existsSync(projectSettingsPath)) {
+    const projStale = pruneStaleHooksInFile(projectSettingsPath, projectDir, dryRun);
+    for (const p of projStale.removedPaths) {
+      const msg = `Removed stale hook referencing missing file: ${p}`;
+      console.warn(msg);
+      staleWarnings.push({ file: projectSettingsPath, path: p });
+    }
+  }
 
   let settings = loadJsonFile(settingsPath) || {};
   settings.hooks = settings.hooks || {};
@@ -426,10 +550,13 @@ module.exports = {
   parseFlags,
   claudeSettingsPath,
   claudeSharedSettingsPath,
+  claudeProjectSettingsPath,
   codexConfigPath,
   geminiSettingsPath,
   syncClaudeStatusLine,
   forgeConfigPath,
+  pruneStaleFileHooks,
+  pruneStaleHooksInFile,
   CLAUDE_HOOKS,
   preToolHookCommand,
   userPromptHookCommand,
