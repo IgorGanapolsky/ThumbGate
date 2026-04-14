@@ -275,7 +275,7 @@
     "test:fs-utils": "node --test tests/fs-utils.test.js",
     "test:lesson-reranker": "node --test tests/lesson-reranker.test.js",
     "test:harness-selector": "node --test tests/harness-selector.test.js",
-    "test:perplexity": "node --test tests/perplexity-client.test.js tests/perplexity-command-center.test.js",
+    "test:perplexity": "node --test tests/perplexity-client.test.js tests/perplexity-command-center.test.js tests/perplexity-adapter.test.js",
     "perplexity:visibility": "node scripts/perplexity-command-center.js visibility",
     "perplexity:leads": "node scripts/perplexity-command-center.js leads",
     "perplexity:brief": "node scripts/perplexity-command-center.js brief",

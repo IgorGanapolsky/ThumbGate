@@ -7,3 +7,6 @@
 - `codex/config.toml`: example Codex MCP profile section using the same version-pinned portable launcher.
 - `amp/skills/thumbgate-feedback/SKILL.md`: Amp skill template.
 - `opencode/opencode.json`: portable OpenCode MCP profile using the same version-pinned portable launcher.
+- `perplexity/.mcp.json`: Claude Code config with ThumbGate + Perplexity MCP servers side-by-side.
+- `perplexity/config.toml`: Codex config with ThumbGate + Perplexity MCP servers.
+- `perplexity/opencode.json`: OpenCode config with ThumbGate + Perplexity MCP servers.
