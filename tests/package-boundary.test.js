@@ -68,8 +68,18 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'README.md',
     'LICENSE',
   ];
+  // public/ HTML files referenced by server.js MUST ship — the server reads them at
+  // runtime via LESSONS_PAGE_PATH etc. Excluding them causes the lessons UI to degrade
+  // to the stripped-down "packaged runtime" fallback.
+  const requiredPublicFiles = [
+    'public/lessons.html',
+    'public/index.html',
+  ];
   const forbiddenPrefixes = [
-    'public/',
+    'public/js/',
+    'public/learn/',
+    'public/guides/',
+    'public/compare/',
     'plugins/',
     '.claude-plugin/bundle/',
     'scripts/social-analytics/',
@@ -99,6 +109,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
 
   for (const file of requiredRuntimeFiles) {
     assert.ok(files.includes(file), `required runtime file must ship: ${file}`);
+  }
+  for (const file of requiredPublicFiles) {
+    assert.ok(files.includes(file), `required public HTML must ship (server.js reads it at runtime): ${file}`);
   }
   for (const prefix of forbiddenPrefixes) {
     assert.equal(files.some((file) => file.startsWith(prefix)), false, `must not ship ${prefix}`);
