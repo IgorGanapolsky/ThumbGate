@@ -18,7 +18,7 @@
     "guardrails",
     "workflow-hardening"
   ],
-  "skills": "skills",
+  "skills": "./skills/",
   "mcpServers": {
     "thumbgate": {
       "command": "npx",
