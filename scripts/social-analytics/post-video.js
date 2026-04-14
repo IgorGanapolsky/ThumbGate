@@ -42,6 +42,13 @@ const ACCOUNTS = {
   instagram: process.env.ZERNIO_INSTAGRAM_ACCOUNT_ID || '69bed6ad6cb7b8cf4c8b0865',
 };
 
+// Per-platform cooldown in hours — prevents over-posting even when CI fires every 4h
+const PLATFORM_COOLDOWN_HOURS = {
+  tiktok:    4,   // up to 6 videos/day — TikTok rewards frequency
+  instagram: 8,   // up to 3 Reels/day
+  youtube:   12,  // 1-2 Shorts/day
+};
+
 const CAPTIONS = {
   tiktok: `Your AI agent deleted prod config because it "looked unused" 😬
 
@@ -87,12 +94,13 @@ const YT_TITLE = 'ThumbGate v1.4.0: Stop AI Agents From Repeating Mistakes #shor
 // ---------------------------------------------------------------------------
 
 function parseArgs(argv) {
-  const opts = { dryRun: false, campaign: 'default', videoPath: null, platforms: null };
+  const opts = { dryRun: false, campaign: 'default', videoPath: null, platforms: null, template: 'auto' };
   for (const arg of argv) {
     if (arg === '--dry-run') opts.dryRun = true;
     else if (arg.startsWith('--campaign=')) opts.campaign = arg.slice(11);
     else if (arg.startsWith('--video=')) opts.videoPath = arg.slice(8);
     else if (arg.startsWith('--platforms=')) opts.platforms = arg.slice(12).split(',');
+    else if (arg.startsWith('--template=')) opts.template = arg.slice(11);
   }
   return opts;
 }
@@ -147,13 +155,13 @@ async function zernioPost(apiKey, { platform, accountId, title, content, mediaUr
 // Video generation
 // ---------------------------------------------------------------------------
 
-function generateVideo(outDir) {
+function generateVideo(outDir, template = 'auto') {
   const slidesScript = path.join(__dirname, '..', '..', '.artifacts', 'youtube-short', 'generate-slides.js');
   const concatFile = path.join(outDir, 'concat.txt');
   const videoOut = path.join(outDir, 'thumbgate-short.mp4');
 
   console.log('[post-video] Generating slides...');
-  execSync(`node ${slidesScript} --out=${outDir}`, { stdio: 'inherit' });
+  execSync(`node ${slidesScript} --out=${outDir} --template=${template}`, { stdio: 'inherit' });
 
   // Build ffmpeg concat file from manifest
   const manifest = JSON.parse(fs.readFileSync(path.join(outDir, 'manifest.json'), 'utf8'));
@@ -189,15 +197,19 @@ async function main() {
 
   // Generate or use provided video
   let videoPath = opts.videoPath;
+  let templateId = opts.template;
   if (!videoPath) {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-video-'));
-    videoPath = generateVideo(tmpDir);
+    videoPath = generateVideo(tmpDir, opts.template);
+    // Read back the chosen template id from manifest
+    try {
+      const manifest = JSON.parse(fs.readFileSync(path.join(tmpDir, 'manifest.json'), 'utf8'));
+      templateId = String(manifest.templateId || opts.template);
+    } catch {}
   }
 
-  // Content hash based on the slide script mtime — changes when slides change
-  const slidesScript = path.join(__dirname, '..', '..', '.artifacts', 'youtube-short', 'generate-slides.js');
-  const scriptMtime = fs.statSync(slidesScript).mtimeMs.toString();
-  const baseHash = hashContent(`video::${opts.campaign}::${scriptMtime}`);
+  // Content hash includes templateId so each template gets its own dedup key
+  const baseHash = hashContent(`video::template-${templateId}::${opts.campaign}`);
 
   // Upload once, reuse URL across platforms
   let mediaUrl = null;
@@ -212,9 +224,11 @@ async function main() {
     }
 
     const contentHash = hashContent(`${baseHash}::${platform}`);
+    const cooldownHours = PLATFORM_COOLDOWN_HOURS[platform] || 4;
+    const cooldownDays = cooldownHours / 24;
 
-    // Dedup check — don't re-post same video to same platform within 7 days
-    const existing = isDuplicate(platform, contentHash, 7);
+    // Dedup check — per-platform cooldown prevents over-posting
+    const existing = isDuplicate(platform, contentHash, cooldownDays);
     if (existing) {
       console.log(`[post-video] SKIP ${platform} — already posted (${existing.published_at}): ${existing.post_url}`);
       results.push({ platform, status: 'skipped', reason: 'duplicate', existing });
@@ -253,7 +267,7 @@ async function main() {
         console.log(`[post-video] ✓ ${platform}: ${postUrl}`);
         record({ type: 'video', platform, contentHash, postUrl, campaign: opts.campaign,
           tags: ['v1.4.0', 'short', opts.campaign],
-          extra: { mediaUrl, zernioPostId: resp.post?._id } });
+          extra: { mediaUrl, templateId, zernioPostId: resp.post?._id } });
       } else {
         console.error(`[post-video] ✗ ${platform}: ${error}`);
         record({ type: 'video', platform, contentHash, status: 'failed', campaign: opts.campaign,
