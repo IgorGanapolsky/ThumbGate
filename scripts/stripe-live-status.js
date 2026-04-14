@@ -62,6 +62,13 @@ function loadStripe(requireFn = require) {
   return requireFn('stripe');
 }
 
+function createStripeClient(stripeFactory, secretKey) {
+  if (typeof stripeFactory !== 'function') {
+    throw new TypeError('Stripe SDK did not export a client factory');
+  }
+  return stripeFactory(secretKey);
+}
+
 async function getLiveStatus({
   stripeClient = null,
   stripeCtor = null,
@@ -74,22 +81,48 @@ async function getLiveStatus({
 
   let stripe = stripeClient;
   if (!stripe) {
-    let Stripe = stripeCtor;
+    let stripeFactory = stripeCtor;
     try {
-      Stripe = Stripe || loadStripe();
+      stripeFactory = stripeFactory || loadStripe();
+      stripe = createStripeClient(stripeFactory, secretKey);
     } catch (error) {
       return unavailableReport('missing_dependency', `Stripe SDK is unavailable: ${error.message}`);
     }
-    stripe = new Stripe(secretKey);
   }
 
+  if (
+    !stripe ||
+    !stripe.balance ||
+    typeof stripe.balance.retrieve !== 'function' ||
+    !stripe.charges ||
+    typeof stripe.charges.list !== 'function' ||
+    !stripe.subscriptions ||
+    typeof stripe.subscriptions.list !== 'function' ||
+    !stripe.products ||
+    typeof stripe.products.list !== 'function' ||
+    !stripe.prices ||
+    typeof stripe.prices.list !== 'function' ||
+    !stripe.checkout ||
+    !stripe.checkout.sessions ||
+    typeof stripe.checkout.sessions.list !== 'function'
+  ) {
+    return unavailableReport('missing_dependency', 'Stripe SDK did not create a client');
+  }
+
+  const balanceApi = stripe.balance;
+  const chargesApi = stripe.charges;
+  const subscriptionsApi = stripe.subscriptions;
+  const productsApi = stripe.products;
+  const pricesApi = stripe.prices;
+  const checkoutSessionsApi = stripe.checkout.sessions;
+
   const [balance, charges, subscriptions, products, prices, sessions] = await Promise.all([
-    stripe.balance.retrieve(),
-    stripe.charges.list({ limit: 100 }),
-    stripe.subscriptions.list({ limit: 100, status: 'all' }),
-    stripe.products.list({ limit: 20, active: true }),
-    stripe.prices.list({ limit: 20, active: true }),
-    stripe.checkout.sessions.list({ limit: 50 }),
+    balanceApi.retrieve(),
+    chargesApi.list({ limit: 100 }),
+    subscriptionsApi.list({ limit: 100, status: 'all' }),
+    productsApi.list({ limit: 20, active: true }),
+    pricesApi.list({ limit: 20, active: true }),
+    checkoutSessionsApi.list({ limit: 50 }),
   ]);
 
   const availableBalance = balance.available.reduce((sum, b) => sum + b.amount, 0);

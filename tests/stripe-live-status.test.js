@@ -26,6 +26,17 @@ test('getLiveStatus returns a machine-readable missing-secret report', async () 
   assert.equal(report.revenue.netLifetime, 0);
 });
 
+test('getLiveStatus reports missing dependency when Stripe client shape is invalid', async () => {
+  const report = await getLiveStatus({
+    secretKey: 'sk_test_fake',
+    stripeCtor: () => null,
+  });
+
+  assert.equal(report.status, 'missing_dependency');
+  assert.equal(report.configured, false);
+  assert.deepEqual(report.gaps, ['Stripe SDK did not create a client']);
+});
+
 test('getLiveStatus summarizes live Stripe objects from an injected client', async () => {
   const now = new Date('2026-04-14T16:00:00Z');
   const stripeClient = {

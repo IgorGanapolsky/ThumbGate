@@ -149,7 +149,7 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
     hostedTrafficObserved,
     hostedRevenueObserved,
     runtimePresenceKnown,
-    hostedAuditMethod: hostedAudit && hostedAudit.auditMethod ? hostedAudit.auditMethod : 'unknown',
+    hostedAuditMethod: hostedAudit?.auditMethod || 'unknown',
     primaryIssue,
     gaps,
   };
@@ -167,33 +167,46 @@ function formatWindowBlock(label, summary = {}) {
   ];
 }
 
-function formatReport(report) {
-  const lines = [];
-  lines.push(`Revenue Status @ ${report.generatedAt}`);
-  lines.push(`Source: ${report.source}`);
-  lines.push(`Primary issue: ${report.diagnosis.primaryIssue}`);
-  lines.push(`Tracking implemented: ${report.diagnosis.trackingImplemented ? 'yes' : 'no'}`);
-  lines.push(`Telemetry ingress working: ${report.diagnosis.telemetryIngressWorking ? 'yes' : 'no'}`);
-  lines.push(`Hosted summary working: ${report.diagnosis.hostedSummaryWorking ? 'yes' : 'no'}`);
-  lines.push(`Hosted traffic observed: ${report.diagnosis.hostedTrafficObserved ? 'yes' : 'no'}`);
-  lines.push(`Hosted revenue observed: ${report.diagnosis.hostedRevenueObserved ? 'yes' : 'no'}`);
-  lines.push(`Hosted audit method: ${report.diagnosis.hostedAuditMethod}`);
-  lines.push(`Railway runtime inspected: ${report.diagnosis.runtimePresenceKnown ? 'yes' : 'no'}`);
-  lines.push('');
-  lines.push(`Public health: ${report.publicProbe.health.status} (${report.publicProbe.health.version || 'unknown version'})`);
-  lines.push(`Telemetry ping probe: ${report.publicProbe.telemetryPing.status}`);
-  lines.push(`Runtime flags: ${RUNTIME_KEYS.map((key) => {
+function formatRuntimeState({ value, runtimePresenceKnown }) {
+  if (value) return 'set';
+  return runtimePresenceKnown ? 'missing' : 'unknown';
+}
+
+function formatRuntimeFlags(report) {
+  return RUNTIME_KEYS.map((key) => {
     const value = report.hostedAudit.runtimePresence[key];
-    const state = report.diagnosis.runtimePresenceKnown ? (value ? 'set' : 'missing') : (value ? 'set' : 'unknown');
+    const state = formatRuntimeState({
+      value,
+      runtimePresenceKnown: report.diagnosis.runtimePresenceKnown,
+    });
     return `${key}=${state}`;
-  }).join(', ')}`);
-  lines.push('');
-  lines.push(...formatWindowBlock('Today', report.hostedAudit.summaries.today));
-  lines.push(...formatWindowBlock('30d', report.hostedAudit.summaries['30d']));
-  lines.push(...formatWindowBlock('Lifetime', report.hostedAudit.summaries.lifetime));
-  lines.push('');
-  lines.push(`30d attribution coverage: ${formatRatio(report.hostedAudit.summaries['30d'].dataQuality.attributionCoverage)}`);
-  lines.push(`30d telemetry coverage: ${formatRatio(report.hostedAudit.summaries['30d'].dataQuality.telemetryCoverage)}`);
+  }).join(', ');
+}
+
+function formatReport(report) {
+  const lines = [
+    `Revenue Status @ ${report.generatedAt}`,
+    `Source: ${report.source}`,
+    `Primary issue: ${report.diagnosis.primaryIssue}`,
+    `Tracking implemented: ${report.diagnosis.trackingImplemented ? 'yes' : 'no'}`,
+    `Telemetry ingress working: ${report.diagnosis.telemetryIngressWorking ? 'yes' : 'no'}`,
+    `Hosted summary working: ${report.diagnosis.hostedSummaryWorking ? 'yes' : 'no'}`,
+    `Hosted traffic observed: ${report.diagnosis.hostedTrafficObserved ? 'yes' : 'no'}`,
+    `Hosted revenue observed: ${report.diagnosis.hostedRevenueObserved ? 'yes' : 'no'}`,
+    `Hosted audit method: ${report.diagnosis.hostedAuditMethod}`,
+    `Railway runtime inspected: ${report.diagnosis.runtimePresenceKnown ? 'yes' : 'no'}`,
+    '',
+    `Public health: ${report.publicProbe.health.status} (${report.publicProbe.health.version || 'unknown version'})`,
+    `Telemetry ping probe: ${report.publicProbe.telemetryPing.status}`,
+    `Runtime flags: ${formatRuntimeFlags(report)}`,
+    '',
+    ...formatWindowBlock('Today', report.hostedAudit.summaries.today),
+    ...formatWindowBlock('30d', report.hostedAudit.summaries['30d']),
+    ...formatWindowBlock('Lifetime', report.hostedAudit.summaries.lifetime),
+    '',
+    `30d attribution coverage: ${formatRatio(report.hostedAudit.summaries['30d'].dataQuality.attributionCoverage)}`,
+    `30d telemetry coverage: ${formatRatio(report.hostedAudit.summaries['30d'].dataQuality.telemetryCoverage)}`,
+  ];
 
   if (report.diagnosis.gaps.length) {
     lines.push('');
@@ -535,8 +548,8 @@ async function generateRevenueStatusReport({
         hostedAuditMethod: 'local-fallback',
         primaryIssue: 'hosted_summary_access_or_config_gap',
         gaps: [
-          repoVarError && repoVarError.message,
-          hostedHttpError && hostedHttpError.message,
+          repoVarError?.message,
+          hostedHttpError?.message,
           error.message,
           fallback.fallbackReason,
         ].filter(Boolean),
