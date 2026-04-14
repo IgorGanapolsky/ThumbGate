@@ -28,14 +28,17 @@ function parseArgs(argv = []) {
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
+    const nextArg = argv[index + 1];
     if (arg === '--write-docs') {
       options.writeDocs = true;
       continue;
     }
 
-    if (arg === '--report-dir' && argv[index + 1]) {
-      options.reportDir = String(argv[index + 1]).trim();
-      index += 1;
+    if (arg === '--report-dir') {
+      if (nextArg) {
+        options.reportDir = String(nextArg).trim();
+        index += 1;
+      }
       continue;
     }
 
@@ -44,9 +47,11 @@ function parseArgs(argv = []) {
       continue;
     }
 
-    if (arg === '--max-targets' && argv[index + 1]) {
-      options.maxTargets = clampTargetCount(argv[index + 1]);
-      index += 1;
+    if (arg === '--max-targets') {
+      if (nextArg) {
+        options.maxTargets = clampTargetCount(nextArg);
+        index += 1;
+      }
       continue;
     }
 
@@ -203,7 +208,7 @@ async function fetchGitHubJson(endpoint, { fetchImpl = globalThis.fetch } = {}) 
       headers: buildGitHubApiHeaders(),
     });
   } catch (err) {
-    return { ok: false, error: err && err.message ? err.message : String(err), data: null };
+    return { ok: false, error: err?.message || String(err), data: null };
   }
 
   const responseText = await response.text();
@@ -251,10 +256,10 @@ async function prospectTargets(maxTargets = 6, { fetchImpl = globalThis.fetch } 
       continue;
     }
 
-    const items = response.data && Array.isArray(response.data.items) ? response.data.items : [];
+    const items = Array.isArray(response.data?.items) ? response.data.items : [];
     for (const repo of items.slice(0, maxTargets * 2)) {
       combined.push({
-        username: repo.owner && repo.owner.login ? repo.owner.login : 'unknown',
+        username: repo.owner?.login || 'unknown',
         repoName: repo.name || 'unknown-repo',
         repoUrl: repo.html_url || '',
         description: normalizeText(repo.description) || 'No description provided.',
@@ -429,56 +434,61 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
   };
 }
 
+function renderRevenueTargetMarkdown(target) {
+  return [
+    `### @${target.username} — ${target.repoName}`,
+    `- Pipeline stage: ${target.pipelineStage}`,
+    `- Offer: ${target.offer}`,
+    `- Repo: ${target.repoUrl || 'n/a'}`,
+    `- Motion: ${target.motionLabel}`,
+    `- Why: ${target.motionReason}`,
+    `- CTA: ${target.cta}`,
+    `- Outreach draft: ${target.message}`,
+    '',
+  ];
+}
+
 function renderRevenueLoopMarkdown(report) {
-  const lines = [];
-  lines.push('# GSD Revenue Loop');
-  lines.push('');
-  lines.push(`Status: ${report.directive.state}`);
-  lines.push(`Updated: ${report.generatedAt}`);
-  lines.push('');
-  lines.push('This report is an operator artifact for landing the first 10 paying customers. It is not proof of sent messages or booked revenue by itself.');
-  lines.push('Outbound rule: do not treat posts as sales. A lead only moves when it is tracked as contacted, replied, call booked, checkout/sprint, or paid.');
-  lines.push('');
-  lines.push('## Current Truth');
-  lines.push(`- Public self-serve offer: ${report.currentTruth.publicSelfServeOffer}`);
-  lines.push(`- Team/pilot motion: ${report.currentTruth.teamPilotOffer}`);
-  lines.push(`- Commercial truth: ${report.currentTruth.commercialTruthLink}`);
-  lines.push(`- Verification evidence: ${report.currentTruth.verificationEvidenceLink}`);
-  lines.push('');
-  lines.push('## Revenue Snapshot');
-  lines.push(`- Paid orders: ${report.snapshot.paidOrders}`);
-  lines.push(`- Booked revenue: $${(report.snapshot.bookedRevenueCents / 100).toFixed(2)}`);
-  lines.push(`- Checkout starts: ${report.snapshot.checkoutStarts}`);
-  lines.push(`- Unique leads: ${report.snapshot.uniqueLeads}`);
-  lines.push(`- Workflow sprint leads: ${report.snapshot.sprintLeads}`);
-  lines.push(`- Qualified sprint leads: ${report.snapshot.qualifiedSprintLeads}`);
-  lines.push(`- Billing source: ${report.source}${report.fallbackReason ? ` (${report.fallbackReason})` : ''}`);
-  lines.push('');
-  lines.push('## GSD Directive');
-  lines.push(`- Objective: ${report.directive.objective}`);
-  lines.push(`- Headline: ${report.directive.headline}`);
-  lines.push(`- Primary motion: ${report.directive.primaryMotion}`);
-  lines.push(`- Secondary motion: ${report.directive.secondaryMotion}`);
-  lines.push('');
-  lines.push('## Immediate Actions');
-  report.directive.actions.forEach((action) => lines.push(`- ${action}`));
-  lines.push('');
-  lines.push('## Target Queue');
-  if (report.targets.length === 0) {
-    lines.push('- No GitHub targets were discovered in this run. Re-run with authenticated `gh` access.');
-  } else {
-    report.targets.forEach((target) => {
-      lines.push(`### @${target.username} — ${target.repoName}`);
-      lines.push(`- Pipeline stage: ${target.pipelineStage}`);
-      lines.push(`- Offer: ${target.offer}`);
-      lines.push(`- Repo: ${target.repoUrl || 'n/a'}`);
-      lines.push(`- Motion: ${target.motionLabel}`);
-      lines.push(`- Why: ${target.motionReason}`);
-      lines.push(`- CTA: ${target.cta}`);
-      lines.push(`- Outreach draft: ${target.message}`);
-      lines.push('');
-    });
-  }
+  const fallbackReason = report.fallbackReason ? ` (${report.fallbackReason})` : '';
+  const targetLines = report.targets.length
+    ? report.targets.flatMap(renderRevenueTargetMarkdown)
+    : ['- No GitHub targets were discovered in this run. Re-run with authenticated `gh` access.'];
+  const lines = [
+    '# GSD Revenue Loop',
+    '',
+    `Status: ${report.directive.state}`,
+    `Updated: ${report.generatedAt}`,
+    '',
+    'This report is an operator artifact for landing the first 10 paying customers. It is not proof of sent messages or booked revenue by itself.',
+    'Outbound rule: do not treat posts as sales. A lead only moves when it is tracked as contacted, replied, call booked, checkout/sprint, or paid.',
+    '',
+    '## Current Truth',
+    `- Public self-serve offer: ${report.currentTruth.publicSelfServeOffer}`,
+    `- Team/pilot motion: ${report.currentTruth.teamPilotOffer}`,
+    `- Commercial truth: ${report.currentTruth.commercialTruthLink}`,
+    `- Verification evidence: ${report.currentTruth.verificationEvidenceLink}`,
+    '',
+    '## Revenue Snapshot',
+    `- Paid orders: ${report.snapshot.paidOrders}`,
+    `- Booked revenue: $${(report.snapshot.bookedRevenueCents / 100).toFixed(2)}`,
+    `- Checkout starts: ${report.snapshot.checkoutStarts}`,
+    `- Unique leads: ${report.snapshot.uniqueLeads}`,
+    `- Workflow sprint leads: ${report.snapshot.sprintLeads}`,
+    `- Qualified sprint leads: ${report.snapshot.qualifiedSprintLeads}`,
+    `- Billing source: ${report.source}${fallbackReason}`,
+    '',
+    '## GSD Directive',
+    `- Objective: ${report.directive.objective}`,
+    `- Headline: ${report.directive.headline}`,
+    `- Primary motion: ${report.directive.primaryMotion}`,
+    `- Secondary motion: ${report.directive.secondaryMotion}`,
+    '',
+    '## Immediate Actions',
+    ...report.directive.actions.map((action) => `- ${action}`),
+    '',
+    '## Target Queue',
+    ...targetLines,
+  ];
 
   return `${lines.join('\n').trim()}\n`;
 }
@@ -558,7 +568,7 @@ async function main(argv = process.argv.slice(2)) {
 
 if (require.main === module) {
   main().catch((err) => {
-    console.error(err && err.message ? err.message : err);
+    console.error(err?.message || err);
     process.exit(1);
   });
 }

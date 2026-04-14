@@ -87,11 +87,11 @@ function buildSalesLeadId(entry = {}) {
   if (explicit) return explicit;
 
   const source = normalizeText(entry.source, 80) || 'manual';
-  const username = normalizeText(entry.contact && entry.contact.username, 160)
+  const username = normalizeText(entry.contact?.username, 160)
     || normalizeText(entry.username, 160);
-  const repoName = normalizeText(entry.account && entry.account.repoName, 200)
+  const repoName = normalizeText(entry.account?.repoName, 200)
     || normalizeText(entry.repoName, 200);
-  const accountName = normalizeText(entry.account && entry.account.name, 200)
+  const accountName = normalizeText(entry.account?.name, 200)
     || normalizeText(entry.company, 200);
   const stableKey = [source, username, repoName || accountName].filter(Boolean).join(':');
 
@@ -121,12 +121,9 @@ function buildHistoryEntry({
   };
 }
 
-function sanitizeSalesLead(entry = {}) {
-  const createdAt = normalizeText(entry.createdAt, 64) || new Date().toISOString();
-  const updatedAt = normalizeText(entry.updatedAt, 64) || createdAt;
-  const stage = normalizeSalesStage(entry.stage, 'targeted');
-  const leadId = buildSalesLeadId(entry);
-  const history = Array.isArray(entry.history) && entry.history.length
+function normalizeLeadHistory(entry, stage, updatedAt) {
+  const hasHistory = Array.isArray(entry.history) ? entry.history.length > 0 : false;
+  return hasHistory
     ? entry.history.map((item) => buildHistoryEntry(item))
     : [buildHistoryEntry({
       toStage: stage,
@@ -135,55 +132,92 @@ function sanitizeSalesLead(entry = {}) {
       note: entry.note || 'Lead entered pipeline.',
       timestamp: updatedAt,
     })];
+}
+
+function normalizeLeadContact(entry = {}) {
+  const contact = entry.contact || {};
+  return {
+    username: normalizeText(contact.username, 160),
+    name: normalizeText(contact.name, 160),
+    email: normalizeText(contact.email, 320),
+    url: normalizeUrl(contact.url),
+  };
+}
+
+function normalizeLeadAccount(entry = {}) {
+  const account = entry.account || {};
+  return {
+    name: normalizeText(account.name, 200),
+    repoName: normalizeText(account.repoName, 200),
+    repoUrl: normalizeUrl(account.repoUrl),
+    description: normalizeText(account.description, 1000),
+    stars: normalizeInteger(account.stars, 0),
+    updatedAt: normalizeText(account.updatedAt, 64),
+  };
+}
+
+function normalizeLeadQualification(entry = {}) {
+  const qualification = entry.qualification || {};
+  return {
+    painHypothesis: normalizeText(qualification.painHypothesis, 1200),
+    concreteOffer: normalizeText(qualification.concreteOffer, 400)
+      || 'I will harden one AI-agent workflow for you.',
+    proofTiming: normalizeText(qualification.proofTiming, 240)
+      || 'Use proof pack only after the buyer confirms pain.',
+  };
+}
+
+function normalizeLeadOutbound(entry = {}) {
+  const outbound = entry.outbound || {};
+  return {
+    draft: normalizeText(outbound.draft, 2000),
+    cta: normalizeUrl(outbound.cta),
+    lastSentAt: normalizeText(outbound.lastSentAt, 64),
+    lastSentUrl: normalizeUrl(outbound.lastSentUrl),
+  };
+}
+
+function normalizeLeadRevenue(entry = {}) {
+  const revenue = entry.revenue || {};
+  return {
+    amountCents: Math.max(0, normalizeInteger(revenue.amountCents, 0)),
+    currency: normalizeText(revenue.currency, 16) || 'usd',
+    paidAt: normalizeText(revenue.paidAt, 64),
+  };
+}
+
+function normalizeLeadAttribution(entry = {}) {
+  const attribution = entry.attribution || {};
+  return {
+    sourceReport: normalizeText(attribution.sourceReport, 1000),
+    campaign: normalizeText(attribution.campaign, 160),
+    utmSource: normalizeText(attribution.utmSource, 120),
+    utmMedium: normalizeText(attribution.utmMedium, 120),
+    utmCampaign: normalizeText(attribution.utmCampaign, 160),
+  };
+}
+
+function sanitizeSalesLead(entry = {}) {
+  const createdAt = normalizeText(entry.createdAt, 64) || new Date().toISOString();
+  const updatedAt = normalizeText(entry.updatedAt, 64) || createdAt;
+  const stage = normalizeSalesStage(entry.stage, 'targeted');
+  const source = normalizeText(entry.source, 80) || 'manual';
 
   return {
-    leadId,
+    leadId: buildSalesLeadId(entry),
     createdAt,
     updatedAt,
     stage,
-    source: normalizeText(entry.source, 80) || 'manual',
-    channel: normalizeText(entry.channel, 80) || normalizeText(entry.source, 80) || 'manual',
+    source,
+    channel: normalizeText(entry.channel, 80) || source,
     offer: normalizeText(entry.offer, 120) || 'workflow_hardening_sprint',
-    contact: {
-      username: normalizeText(entry.contact && entry.contact.username, 160),
-      name: normalizeText(entry.contact && entry.contact.name, 160),
-      email: normalizeText(entry.contact && entry.contact.email, 320),
-      url: normalizeUrl(entry.contact && entry.contact.url),
-    },
-    account: {
-      name: normalizeText(entry.account && entry.account.name, 200),
-      repoName: normalizeText(entry.account && entry.account.repoName, 200),
-      repoUrl: normalizeUrl(entry.account && entry.account.repoUrl),
-      description: normalizeText(entry.account && entry.account.description, 1000),
-      stars: normalizeInteger(entry.account && entry.account.stars, 0),
-      updatedAt: normalizeText(entry.account && entry.account.updatedAt, 64),
-    },
-    qualification: {
-      painHypothesis: normalizeText(entry.qualification && entry.qualification.painHypothesis, 1200),
-      concreteOffer: normalizeText(entry.qualification && entry.qualification.concreteOffer, 400)
-        || 'I will harden one AI-agent workflow for you.',
-      proofTiming: normalizeText(entry.qualification && entry.qualification.proofTiming, 240)
-        || 'Use proof pack only after the buyer confirms pain.',
-    },
-    outbound: {
-      draft: normalizeText(entry.outbound && entry.outbound.draft, 2000),
-      cta: normalizeUrl(entry.outbound && entry.outbound.cta),
-      lastSentAt: normalizeText(entry.outbound && entry.outbound.lastSentAt, 64),
-      lastSentUrl: normalizeUrl(entry.outbound && entry.outbound.lastSentUrl),
-    },
-    revenue: {
-      amountCents: Math.max(0, normalizeInteger(entry.revenue && entry.revenue.amountCents, 0)),
-      currency: normalizeText(entry.revenue && entry.revenue.currency, 16) || 'usd',
-      paidAt: normalizeText(entry.revenue && entry.revenue.paidAt, 64),
-    },
-    attribution: {
-      sourceReport: normalizeText(entry.attribution && entry.attribution.sourceReport, 1000),
-      campaign: normalizeText(entry.attribution && entry.attribution.campaign, 160),
-      utmSource: normalizeText(entry.attribution && entry.attribution.utmSource, 120),
-      utmMedium: normalizeText(entry.attribution && entry.attribution.utmMedium, 120),
-      utmCampaign: normalizeText(entry.attribution && entry.attribution.utmCampaign, 160),
-    },
-    history,
+    contact: normalizeLeadContact(entry),
+    account: normalizeLeadAccount(entry),
+    qualification: normalizeLeadQualification(entry),
+    outbound: normalizeLeadOutbound(entry),
+    revenue: normalizeLeadRevenue(entry),
+    attribution: normalizeLeadAttribution(entry),
+    history: normalizeLeadHistory(entry, stage, updatedAt),
   };
 }
 
@@ -422,46 +456,52 @@ function summarizeSalesPipeline(leads = []) {
   };
 }
 
+function formatLeadContact(contact = {}) {
+  return contact.username ? `@${contact.username}` : (contact.email || 'n/a');
+}
+
+function renderLeadQueueEntry(lead) {
+  const repo = lead.account.repoUrl || lead.account.repoName || lead.account.name || 'n/a';
+  return [
+    `### ${lead.leadId}`,
+    `- Stage: ${lead.stage}`,
+    `- Offer: ${lead.offer}`,
+    `- Repo/account: ${repo}`,
+    `- Contact: ${formatLeadContact(lead.contact)}`,
+    `- Concrete offer: ${lead.qualification.concreteOffer}`,
+    `- Proof rule: ${lead.qualification.proofTiming}`,
+    `- Outreach draft: ${lead.outbound.draft || 'n/a'}`,
+    '',
+  ];
+}
+
 function renderSalesPipelineMarkdown({ leads = [], generatedAt = new Date().toISOString() } = {}) {
   const summary = summarizeSalesPipeline(leads);
-  const lines = [];
-  lines.push('# Sales Pipeline');
-  lines.push('');
-  lines.push(`Updated: ${generatedAt}`);
-  lines.push('');
-  lines.push('This is the first-dollar truth table. Posts are not sales; only stage movement counts.');
-  lines.push('');
-  lines.push('## Summary');
-  lines.push(`- Total leads: ${summary.total}`);
-  lines.push(`- Active leads: ${summary.active}`);
-  lines.push(`- Contacted: ${summary.contacted}`);
-  lines.push(`- Replied: ${summary.replies}`);
-  lines.push(`- Calls booked: ${summary.callsBooked}`);
-  lines.push(`- Paid: ${summary.paid}`);
-  lines.push(`- Booked revenue: $${(summary.bookedRevenueCents / 100).toFixed(2)}`);
-  lines.push('');
-  lines.push('## Stage Counts');
-  for (const stage of SALES_STAGE_FLOW) {
-    lines.push(`- ${stage}: ${summary.byStage[stage] || 0}`);
-  }
-  lines.push('');
-  lines.push('## Lead Queue');
-  if (!leads.length) {
-    lines.push('- No leads tracked yet. Import a GTM revenue loop JSON report first.');
-  } else {
-    for (const lead of leads) {
-      const repo = lead.account.repoUrl || lead.account.repoName || lead.account.name || 'n/a';
-      lines.push(`### ${lead.leadId}`);
-      lines.push(`- Stage: ${lead.stage}`);
-      lines.push(`- Offer: ${lead.offer}`);
-      lines.push(`- Repo/account: ${repo}`);
-      lines.push(`- Contact: ${lead.contact.username ? `@${lead.contact.username}` : (lead.contact.email || 'n/a')}`);
-      lines.push(`- Concrete offer: ${lead.qualification.concreteOffer}`);
-      lines.push(`- Proof rule: ${lead.qualification.proofTiming}`);
-      lines.push(`- Outreach draft: ${lead.outbound.draft || 'n/a'}`);
-      lines.push('');
-    }
-  }
+  const leadQueueLines = leads.length
+    ? leads.flatMap(renderLeadQueueEntry)
+    : ['- No leads tracked yet. Import a GTM revenue loop JSON report first.'];
+  const lines = [
+    '# Sales Pipeline',
+    '',
+    `Updated: ${generatedAt}`,
+    '',
+    'This is the first-dollar truth table. Posts are not sales; only stage movement counts.',
+    '',
+    '## Summary',
+    `- Total leads: ${summary.total}`,
+    `- Active leads: ${summary.active}`,
+    `- Contacted: ${summary.contacted}`,
+    `- Replied: ${summary.replies}`,
+    `- Calls booked: ${summary.callsBooked}`,
+    `- Paid: ${summary.paid}`,
+    `- Booked revenue: $${(summary.bookedRevenueCents / 100).toFixed(2)}`,
+    '',
+    '## Stage Counts',
+    ...SALES_STAGE_FLOW.map((stage) => `- ${stage}: ${summary.byStage[stage] || 0}`),
+    '',
+    '## Lead Queue',
+    ...leadQueueLines,
+  ];
   return `${lines.join('\n').trim()}\n`;
 }
 
@@ -474,21 +514,24 @@ function writeSalesPipelineReport({ outPath, leads }) {
 }
 
 function parseArgs(argv = []) {
-  const command = argv[0] && !argv[0].startsWith('--') ? argv[0] : 'report';
-  const args = argv[0] && !argv[0].startsWith('--') ? argv.slice(1) : argv;
+  const firstArg = argv[0];
+  const hasCommand = firstArg ? !firstArg.startsWith('--') : false;
+  const command = hasCommand ? firstArg : 'report';
+  const args = hasCommand ? argv.slice(1) : argv;
   const options = { command };
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (!arg.startsWith('--')) continue;
     const [rawKey, inlineValue] = arg.slice(2).split('=');
-    const key = rawKey.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+    const key = rawKey.replaceAll(/-([a-z])/g, (_, letter) => letter.toUpperCase());
     if (inlineValue !== undefined) {
       options[key] = inlineValue;
       continue;
     }
-    if (args[index + 1] && !args[index + 1].startsWith('--')) {
-      options[key] = args[index + 1];
+    const nextArg = args[index + 1];
+    if (nextArg ? !nextArg.startsWith('--') : false) {
+      options[key] = nextArg;
       index += 1;
       continue;
     }
@@ -596,12 +639,12 @@ function runCli(argv = process.argv.slice(2)) {
   throw new Error(`Unknown sales pipeline command: ${options.command}`);
 }
 
-if (require.main && require.main.filename === __filename) {
+if (require.main === module) {
   try {
     const result = runCli();
     console.log(JSON.stringify(result, null, 2));
   } catch (err) {
-    console.error(err && err.message ? err.message : err);
+    console.error(err?.message || err);
     process.exit(1);
   }
 }
