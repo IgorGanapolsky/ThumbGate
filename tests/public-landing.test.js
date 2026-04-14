@@ -33,6 +33,7 @@ test('public landing page routes Pro buyers through the hosted checkout surface'
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /\/checkout\/pro\?/);
+  assert.match(landingPage, /\/go\/pro\?utm_source=website/);
   assert.match(landingPage, /Free Trial|Upgrade to Pro/i);
   assert.doesNotMatch(landingPage, /gumroad\.com/);
 });
@@ -245,7 +246,7 @@ test('public landing page includes compatibility section for AI agent surfaces',
   assert.match(landingPage, /thumbgate-marketplace/);
   assert.match(landingPage, /\/plugin marketplace add IgorGanapolsky\/ThumbGate/);
   assert.match(landingPage, /ChatGPT GPT Actions/);
-  assert.match(landingPage, /https:\/\/chatgpt\.com\/g\/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate/);
+  assert.match(landingPage, /\/go\/gpt\?utm_source=website/);
   assert.match(landingPage, /Open ThumbGate GPT/);
   assert.match(landingPage, /Live ThumbGate GPT for ChatGPT/);
   assert.match(landingPage, /ChatGPT Entry Point/);
@@ -265,10 +266,16 @@ test('public landing page includes Plausible custom event tracking for all CTAs'
 
   // install_copy fires directly in copyInstall function
   assert.match(landingPage, /plausible\('install_copy'\)/);
+  assert.match(landingPage, /sendFirstPartyTelemetry\('install_copy'/);
+  assert.match(landingPage, /fetch\('\/v1\/telemetry\/ping'/);
+  assert.match(landingPage, /\/go\/gpt\?utm_source=website/);
+  assert.match(landingPage, /\/go\/install\?utm_source=website/);
+  assert.match(landingPage, /\/go\/github\?utm_source=website/);
 
   // trackClick wires up CTA events by selector and event name
   assert.match(landingPage, /trackClick\('.btn-pro', 'checkout_start'/);
-  assert.match(landingPage, /trackClick\('.btn-gpt-page', 'chatgpt_gpt_click'/);
+  assert.match(landingPage, /trackClick\('.btn-gpt-page:not\(.btn-install-hero\)', 'chatgpt_gpt_click'/);
+  assert.match(landingPage, /trackClick\('.btn-install-hero', 'install_guide_click'/);
   assert.match(landingPage, /trackClick\('.btn-install-link', 'install_guide_click'/);
   assert.match(landingPage, /trackClick\('.btn-team', 'workflow_sprint_intake_click'/);
   assert.match(landingPage, /trackClick\('.btn-free', 'install_click'/);
