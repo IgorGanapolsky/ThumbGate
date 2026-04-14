@@ -23,6 +23,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v6
         with:
@@ -32,10 +33,17 @@ jobs:
           # npm provenance on GitHub Actions is most reliable on current LTS.
           node-version: '24.x'
           registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
       - run: npm ci --onnxruntime-node-install-cuda=skip
-      - run: node scripts/sync-version.js --check
-      - run: npm test
-      - run: npm run prove:runtime
+      - name: Run release safety checks
+        run: |
+          node scripts/sync-version.js --check
+          npm run test:deployment
+          npm run test:postinstall
+          npm run prove:runtime
+      - name: Audit npm package boundary
+        run: npm pack --dry-run
       - name: Resolve package version
         id: package
         run: |
@@ -109,7 +117,7 @@ jobs:
         if: ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.publish_npm == 'true') || (github.event_name == 'release' && steps.npm.outputs.published == 'false')
         env:
           VERSION: ${{ steps.package.outputs.version }}
-        run: node scripts/prove-packaged-runtime.js --package-spec "thumbgate@${VERSION}" --expected-version "${VERSION}"
+        run: node scripts/prove-packaged-runtime.js --package-spec "thumbgate@${VERSION}" --expected-version "${VERSION}" --install-attempts 12 --install-delay-ms 10000
       - name: Ensure GitHub Release exists
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.ensure_release == 'true'
         env:
