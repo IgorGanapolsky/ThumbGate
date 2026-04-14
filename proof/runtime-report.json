@@ -1,0 +1,37 @@
+{
+  "phase": "12-interruptible-runtime",
+  "generatedAt": "2026-04-14T22:17:16.659Z",
+  "passed": 7,
+  "failed": 0,
+  "total": 7,
+  "requirements": {
+    "RUNTIME-01": {
+      "status": "pass",
+      "desc": "stage execution persists checkpointed state and stage history"
+    },
+    "RUNTIME-02": {
+      "status": "pass",
+      "desc": "pause requests yield a paused checkpoint and resume continues from the next stage"
+    },
+    "RUNTIME-03": {
+      "status": "pass",
+      "desc": "managed job files auto-resume through resumeManagedJobs without manual stage reconstruction"
+    },
+    "RUNTIME-04": {
+      "status": "pass",
+      "desc": "failed verification queues an auto-improvement experiment"
+    },
+    "RUNTIME-05": {
+      "status": "pass",
+      "desc": "schedule manager builds a managed async-job-runner command for job files"
+    },
+    "RUNTIME-06": {
+      "status": "pass",
+      "desc": "verify-run full includes the runtime proof lane and artifact"
+    },
+    "RUNTIME-07": {
+      "status": "pass",
+      "desc": "packaged thumbgate runtime boots local API and serves dashboard affordances"
+    }
+  }
+}
