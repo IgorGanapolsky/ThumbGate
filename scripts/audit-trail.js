@@ -114,7 +114,7 @@ function auditToFeedback(auditRecord) {
     const { getFeedbackPaths } = require('./feedback-paths');
     const { FEEDBACK_DIR } = getFeedbackPaths();
     const gateLogPath = path.join(FEEDBACK_DIR, GATE_EVENTS_LOG_FILENAME);
-    fs.mkdirSync(path.dirname(gateLogPath), { recursive: true });
+    ensureDir(path.dirname(gateLogPath));
     const entry = {
       id: `gate_${crypto.randomUUID()}`,
       gateId: auditRecord.gateId,
@@ -325,6 +325,7 @@ module.exports = {
   getAuditLogPath,
   sanitizeToolInput,
   AUDIT_LOG_FILENAME,
+  GATE_EVENTS_LOG_FILENAME,
   CACHE_TUNE_STATE_FILENAME,
 };
 
