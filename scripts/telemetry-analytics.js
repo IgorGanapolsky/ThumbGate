@@ -15,6 +15,21 @@ const {
 } = require('./feedback-paths');
 
 const TELEMETRY_FILE_NAME = 'telemetry-pings.jsonl';
+const MARKETING_CLICK_EVENT_TYPES = new Set([
+  'cta_click',
+  'checkout_start',
+  'checkout_bootstrap',
+  'chatgpt_gpt_open',
+  'chatgpt_gpt_click',
+  'install_guide_click',
+  'install_click',
+  'pro_page_click',
+  'pro_checkout_start',
+  'workflow_sprint_intake_click',
+  'demo_click',
+  'github_repo_click',
+  'community_landing_redirect',
+]);
 
 function shouldIncludeLegacyTelemetry() {
   if (
@@ -62,6 +77,10 @@ function normalizeInteger(value) {
 function safeRate(num, den) {
   if (!den) return 0;
   return Number((num / den).toFixed(4));
+}
+
+function isMarketingClickEvent(eventType) {
+  return MARKETING_CLICK_EVENT_TYPES.has(String(eventType || '').toLowerCase());
 }
 
 function getTelemetryPath(feedbackDir) {
@@ -288,6 +307,8 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     ctaId: pickFirstText(raw.ctaId),
     ctaPlacement: pickFirstText(raw.ctaPlacement),
     planId: pickFirstText(raw.planId),
+    linkSlug: pickFirstText(raw.linkSlug, raw.destinationSlug),
+    destinationPath: pickFirstText(raw.destinationPath),
     pipelineStatus: pickFirstText(raw.pipelineStatus, raw.workflowSprintStatus, raw.status),
     reasonCode,
     reasonDetail: pickFirstText(raw.reasonDetail, raw.reasonText, raw.otherReason, raw.notes),
@@ -365,6 +386,7 @@ function summarizeRecentEvents(events) {
       utmCampaign: entry.utmCampaign || null,
       ctaId: entry.ctaId || null,
       page: entry.page || null,
+      linkSlug: entry.linkSlug || null,
       reasonCode: entry.reasonCode || null,
       creator: entry.creator || null,
       community: entry.community || null,
@@ -474,7 +496,7 @@ function getTelemetrySummary(feedbackDir, options = {}) {
         if (entry.attributionTagged) attributedPageViews += 1;
       }
 
-      if ((entry.eventType || entry.event) === 'cta_click' || (entry.eventType || entry.event) === 'checkout_start' || (entry.eventType || entry.event) === 'checkout_bootstrap') {
+      if (isMarketingClickEvent(entry.eventType || entry.event)) {
         ctaClicks += 1;
         incrementCounter(ctaClicksBySource, entry.source);
         incrementCounter(ctaClicksByCampaign, entry.utmCampaign);
@@ -601,6 +623,10 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       pageViewsByTrafficChannel[channelKey] || 0
     );
   }
+  const installCopies = byEventType.install_copy || 0;
+  const gptOpens = (byEventType.chatgpt_gpt_open || 0) + (byEventType.chatgpt_gpt_click || 0);
+  const trialEmails = byEventType.trial_email_captured || 0;
+  const proConversions = checkoutPaidConfirmations;
 
   return {
     window: serializeAnalyticsWindow(analyticsWindow),
@@ -608,6 +634,19 @@ function getTelemetrySummary(feedbackDir, options = {}) {
     latestSeenAt,
     byClientType,
     byEventType,
+    conversionFunnel: {
+      landingViews: pageViews,
+      installCopies,
+      gptOpens,
+      checkoutStarts,
+      trialEmails,
+      proConversions,
+      landingToInstallCopyRate: safeRate(installCopies, pageViews),
+      landingToGptOpenRate: safeRate(gptOpens, pageViews),
+      landingToCheckoutRate: safeRate(checkoutStarts, pageViews),
+      checkoutToTrialEmailRate: safeRate(trialEmails, checkoutStarts),
+      checkoutToProConversionRate: safeRate(proConversions, checkoutStarts),
+    },
     web: {
       totalEvents: webEvents,
       uniqueVisitors: webVisitors.size,
@@ -712,6 +751,7 @@ function getTelemetryAnalytics(feedbackDir, options = {}) {
     latestSeenAt: summary.latestSeenAt,
     byClientType: summary.byClientType,
     byEventType: summary.byEventType,
+    conversionFunnel: summary.conversionFunnel,
     visitors: {
       totalEvents: summary.web.totalEvents,
       uniqueVisitors: summary.web.uniqueVisitors,

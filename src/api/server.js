@@ -227,6 +227,123 @@ const BUILD_METADATA = resolveBuildMetadata();
 const TERMINAL_JOB_STATUSES = new Set(['completed', 'failed', 'cancelled']);
 const IDLE_JOB_STATUSES = new Set(['queued', 'paused', 'resume_requested']);
 const JOB_CONTROL_ACTIONS = new Set(['pause', 'cancel', 'resume']);
+const TRACKED_LINK_QUERY_KEYS = [
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_content',
+  'utm_term',
+  'source',
+  'creator',
+  'creator_handle',
+  'community',
+  'subreddit',
+  'post_id',
+  'comment_id',
+  'campaign_variant',
+  'offer_code',
+  'acquisition_id',
+  'visitor_id',
+  'session_id',
+  'visitor_session_id',
+  'install_id',
+  'trace_id',
+  'cta_id',
+  'cta_placement',
+  'plan_id',
+  'billing_cycle',
+  'seat_count',
+  'landing_path',
+  'referrer_host',
+];
+const TRACKED_LINK_TARGETS = Object.freeze({
+  gpt: {
+    href: 'https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate',
+    external: true,
+    ctaId: 'go_gpt',
+    ctaPlacement: 'link_router',
+    eventType: 'chatgpt_gpt_open',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'link_router',
+      utm_campaign: 'chatgpt_gpt',
+    },
+  },
+  pro: {
+    path: '/checkout/pro',
+    ctaId: 'go_pro',
+    ctaPlacement: 'link_router',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'link_router',
+      utm_campaign: 'pro_upgrade',
+      plan_id: 'pro',
+      billing_cycle: 'monthly',
+    },
+    allowCustomerEmail: true,
+  },
+  install: {
+    path: '/guide',
+    ctaId: 'go_install',
+    ctaPlacement: 'link_router',
+    eventType: 'install_guide_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'link_router',
+      utm_campaign: 'install_free',
+      plan_id: 'free',
+    },
+  },
+  reddit: {
+    path: '/',
+    ctaId: 'go_reddit',
+    ctaPlacement: 'link_router',
+    eventType: 'community_landing_redirect',
+    defaults: {
+      utm_source: 'reddit',
+      utm_medium: 'organic_social',
+      utm_campaign: 'first_party_redirect',
+      campaign_variant: 'reddit_shortlink',
+    },
+  },
+  linkedin: {
+    path: '/',
+    ctaId: 'go_linkedin',
+    ctaPlacement: 'link_router',
+    eventType: 'community_landing_redirect',
+    defaults: {
+      utm_source: 'linkedin',
+      utm_medium: 'organic_social',
+      utm_campaign: 'first_party_redirect',
+      campaign_variant: 'linkedin_shortlink',
+    },
+  },
+  x: {
+    path: '/',
+    ctaId: 'go_x',
+    ctaPlacement: 'link_router',
+    eventType: 'community_landing_redirect',
+    defaults: {
+      utm_source: 'x',
+      utm_medium: 'organic_social',
+      utm_campaign: 'first_party_redirect',
+      campaign_variant: 'x_shortlink',
+    },
+  },
+  github: {
+    href: 'https://github.com/IgorGanapolsky/ThumbGate',
+    external: true,
+    ctaId: 'go_github',
+    ctaPlacement: 'link_router',
+    eventType: 'github_repo_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'link_router',
+      utm_campaign: 'github_repo',
+    },
+  },
+});
 
 // ---------------------------------------------------------------------------
 // Stripe event tracking helpers
@@ -839,6 +956,130 @@ function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneySt
       referrerHost: pickFirstText(params.get('referrer_host')),
     },
   };
+}
+
+function normalizeTrackedLinkSlug(value) {
+  return String(value || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+}
+
+function getTrackedLinkTarget(slug) {
+  const normalizedSlug = normalizeTrackedLinkSlug(slug);
+  return TRACKED_LINK_TARGETS[normalizedSlug]
+    ? { slug: normalizedSlug, ...TRACKED_LINK_TARGETS[normalizedSlug] }
+    : null;
+}
+
+function appendTrackedLinkQueryParams(destinationUrl, parsed, target) {
+  const params = parsed.searchParams;
+  for (const [key, value] of Object.entries(target.defaults || {})) {
+    if (!destinationUrl.searchParams.has(key)) {
+      appendQueryParam(destinationUrl, key, value);
+    }
+  }
+  for (const key of TRACKED_LINK_QUERY_KEYS) {
+    const value = params.get(key);
+    if (value && value.trim()) {
+      destinationUrl.searchParams.set(key, value.trim());
+    }
+  }
+  if (target.allowCustomerEmail) {
+    appendQueryParam(destinationUrl, 'customer_email', params.get('customer_email'));
+  }
+  if (!destinationUrl.searchParams.has('cta_id')) {
+    appendQueryParam(destinationUrl, 'cta_id', target.ctaId);
+  }
+  if (!destinationUrl.searchParams.has('cta_placement')) {
+    appendQueryParam(destinationUrl, 'cta_placement', target.ctaPlacement);
+  }
+  if (!destinationUrl.searchParams.has('landing_path')) {
+    appendQueryParam(destinationUrl, 'landing_path', `/go/${target.slug}`);
+  }
+}
+
+function buildTrackedLinkDestination(target, hostedConfig, parsed) {
+  const destinationUrl = target.href
+    ? new URL(target.href)
+    : new URL(target.path || '/', hostedConfig.appOrigin);
+  appendTrackedLinkQueryParams(destinationUrl, parsed, target);
+  return destinationUrl;
+}
+
+function buildTrackedLinkAttribution(target, parsed, req, journeyState, destinationUrl) {
+  const params = parsed.searchParams;
+  const referrer = pickFirstText(params.get('referrer'), req.headers.referer, req.headers.referrer);
+  const referrerHost = pickFirstText(params.get('referrer_host'), parseReferrerHost(referrer));
+  const source = pickFirstText(
+    params.get('source'),
+    params.get('utm_source'),
+    target.defaults && target.defaults.utm_source,
+    inferSource(referrerHost)
+  );
+
+  return {
+    eventType: target.eventType || 'cta_click',
+    clientType: 'web',
+    acquisitionId: journeyState.acquisitionId,
+    visitorId: journeyState.visitorId,
+    sessionId: journeyState.sessionId,
+    installId: pickFirstText(params.get('install_id')),
+    traceId: pickFirstText(params.get('trace_id')),
+    source,
+    utmSource: pickFirstText(params.get('utm_source'), source),
+    utmMedium: pickFirstText(params.get('utm_medium'), target.defaults && target.defaults.utm_medium, 'link_router'),
+    utmCampaign: pickFirstText(params.get('utm_campaign'), target.defaults && target.defaults.utm_campaign, 'first_party_redirect'),
+    utmContent: pickFirstText(params.get('utm_content')),
+    utmTerm: pickFirstText(params.get('utm_term')),
+    creator: pickFirstText(params.get('creator'), params.get('creator_handle')),
+    community: pickFirstText(params.get('community'), params.get('subreddit')),
+    postId: pickFirstText(params.get('post_id')),
+    commentId: pickFirstText(params.get('comment_id')),
+    campaignVariant: pickFirstText(params.get('campaign_variant'), target.defaults && target.defaults.campaign_variant),
+    offerCode: pickFirstText(params.get('offer_code')),
+    ctaId: pickFirstText(params.get('cta_id'), target.ctaId),
+    ctaPlacement: pickFirstText(params.get('cta_placement'), target.ctaPlacement),
+    planId: pickFirstText(params.get('plan_id'), target.defaults && target.defaults.plan_id),
+    landingPath: pickFirstText(params.get('landing_path'), `/go/${target.slug}`),
+    page: `/go/${target.slug}`,
+    referrer,
+    referrerHost,
+    destinationSlug: target.slug,
+    destinationPath: target.external ? destinationUrl.host : destinationUrl.pathname,
+  };
+}
+
+function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadRequest, slug }) {
+  const target = getTrackedLinkTarget(slug);
+  if (!target) {
+    sendJson(res, 404, {
+      error: 'Tracked link not found',
+      allowed: Object.keys(TRACKED_LINK_TARGETS),
+    }, {}, {
+      headOnly: isHeadRequest,
+    });
+    return;
+  }
+
+  const { FEEDBACK_DIR } = getFeedbackPaths();
+  const journeyState = resolveJourneyState(req, parsed);
+  const destinationUrl = buildTrackedLinkDestination(target, hostedConfig, parsed);
+  if (!isHeadRequest) {
+    appendBestEffortTelemetry(
+      FEEDBACK_DIR,
+      buildTrackedLinkAttribution(target, parsed, req, journeyState, destinationUrl),
+      req.headers,
+      `tracked_link_redirect:${target.slug}`
+    );
+  }
+
+  res.writeHead(302, {
+    ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
+    'Cache-Control': 'no-store',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'X-Robots-Tag': 'noindex,nofollow',
+    'X-ThumbGate-Link-Slug': target.slug,
+    Location: destinationUrl.toString(),
+  });
+  res.end();
 }
 
 function resolveCheckoutOfferSummary(metadata = {}) {
@@ -2697,6 +2938,34 @@ function createApiServer() {
               attribution,
             }) + '\n');
           }
+          const journeyState = resolveJourneyState(req, parsed);
+          appendBestEffortTelemetry(getFeedbackPaths().FEEDBACK_DIR, {
+            eventType: 'trial_email_captured',
+            clientType: 'web',
+            acquisitionId: journeyState.acquisitionId,
+            visitorId: journeyState.visitorId,
+            sessionId: journeyState.sessionId,
+            source: attribution.source || 'landing-page',
+            utmSource: attribution.source || null,
+            utmMedium: attribution.medium || 'newsletter',
+            utmCampaign: attribution.campaign || 'trial_email_capture',
+            utmContent: attribution.content || null,
+            utmTerm: attribution.term || null,
+            creator: attribution.creator || null,
+            community: attribution.community || null,
+            postId: attribution.postId || null,
+            commentId: attribution.commentId || null,
+            campaignVariant: attribution.campaignVariant || null,
+            offerCode: attribution.offerCode || null,
+            ctaId: 'trial_email',
+            ctaPlacement: landingPath === '/pro' ? 'pro_email_form' : 'homepage_email_form',
+            planId: 'pro',
+            pipelineStatus: duplicate ? 'duplicate' : 'accepted',
+            page: landingPath,
+            landingPath,
+            referrer: referrer || null,
+            referrerHost,
+          }, req.headers, 'trial_email_captured');
           if (wantsJson) {
             sendJson(res, 200, {
               accepted: true,
@@ -2750,6 +3019,19 @@ function createApiServer() {
     }
 
     // Public endpoints — no auth required
+    const trackedLinkMatch = pathname.match(/^\/go\/([^/]+)$/);
+    if (isGetLikeRequest && trackedLinkMatch) {
+      serveTrackedLinkRedirect({
+        req,
+        res,
+        parsed,
+        hostedConfig,
+        isHeadRequest,
+        slug: trackedLinkMatch[1],
+      });
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/robots.txt') {
       sendText(res, 200, renderRobotsTxt(hostedConfig), {
         'Content-Type': 'text/plain; charset=utf-8',
