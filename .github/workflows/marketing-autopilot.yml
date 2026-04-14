@@ -122,10 +122,13 @@ jobs:
           github.event_name == 'schedule' ||
           github.event.inputs.action == 'text-posts' ||
           github.event.inputs.action == 'full'
+        env:
+          INPUT_PLATFORMS: ${{ github.event.inputs.platforms || 'twitter,linkedin,threads,bluesky' }}
+          INPUT_DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: |
-          PLATFORMS="${{ github.event.inputs.platforms || 'twitter,linkedin,threads,bluesky' }}"
+          PLATFORMS="$INPUT_PLATFORMS"
           DRY_RUN_FLAG=""
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then DRY_RUN_FLAG="--dry-run"; fi
+          if [ "$INPUT_DRY_RUN" = "true" ]; then DRY_RUN_FLAG="--dry-run"; fi
           WEEK=$(date +%Y-W%V)
           HOUR=$(date +%H)
           node scripts/post-everywhere.js \
@@ -141,9 +144,11 @@ jobs:
            github.event.inputs.action == 'full') &&
           env.REDDIT_USERNAME != '' &&
           env.REDDIT_CLIENT_ID != ''
+        env:
+          INPUT_DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: |
           DRY_RUN_FLAG=""
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then DRY_RUN_FLAG="--dry-run"; fi
+          if [ "$INPUT_DRY_RUN" = "true" ]; then DRY_RUN_FLAG="--dry-run"; fi
           # Reddit posts use the configured publisher credentials.
           # Targets subreddits: r/ClaudeAI (link), r/LocalLLaMA (link), r/SideProject (text)
           node -e "
@@ -205,8 +210,10 @@ jobs:
            github.event.inputs.action == 'devto' ||
            github.event.inputs.action == 'full') &&
           env.DEVTO_API_KEY != ''
+        env:
+          INPUT_DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: |
-          DRY_RUN_FLAG="${{ github.event.inputs.dry_run }}"
+          DRY_RUN_FLAG="$INPUT_DRY_RUN"
           node -e "
             const { loadLocalEnv } = require('./scripts/social-analytics/load-env');
             loadLocalEnv();
@@ -276,7 +283,7 @@ jobs:
               process.exit(0);
             }
 
-            if ('$DRY_RUN_FLAG' === 'true') {
+            if (process.env.INPUT_DRY_RUN === 'true') {
               console.log('DRY-RUN devto — would post:', ARTICLE.title);
               process.exit(0);
             }
