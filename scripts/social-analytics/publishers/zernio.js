@@ -62,12 +62,15 @@ function saveDedupLog(log) {
 }
 
 function isDuplicate(content, platform) {
-  const db = getMktgDb();
-  if (db) {
-    const hash = db.hashContent(content);
-    return !!db.isDuplicate(platform, hash, 1); // 24-hour window
+  // Use marketing DB only when not in test mode (test mode sets THUMBGATE_DEDUP_LOG_PATH)
+  if (!process.env.THUMBGATE_DEDUP_LOG_PATH) {
+    const db = getMktgDb();
+    if (db) {
+      const hash = db.hashContent(content);
+      return !!db.isDuplicate(platform, hash, 1); // 24-hour window
+    }
   }
-  // fallback
+  // JSON log fallback (always used in tests)
   const log = loadDedupLog();
   const entry = log[buildDedupKey(content, platform)];
   if (!entry) return false;
