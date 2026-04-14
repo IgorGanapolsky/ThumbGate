@@ -59,6 +59,7 @@ test('package version matches MCP manifests', () => {
 
 test('public docs render the current package version', () => {
   const packageJson = readJson('package.json');
+  const readme = readText('README.md');
   const landingPage = readText('docs/landing-page.html');
   const mcpSubmission = readText('docs/mcp-hub-submission.md');
   const claudePluginReadme = readText('.claude-plugin/README.md');
@@ -73,6 +74,9 @@ test('public docs render the current package version', () => {
   const claudeDesktopPacket = readText('docs/CLAUDE_DESKTOP_EXTENSION.md');
   const productHuntKit = readText('docs/marketing/product-hunt-launch.md');
 
+  assert.match(readme, /Open ThumbGate GPT/);
+  assert.match(readme, /https:\/\/chatgpt\.com\/g\/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate/);
+  assert.match(readme, /hard enforcement for coding agents still runs locally after `npx thumbgate init`/i);
   assert.match(landingPage, /ThumbGate/);
   assert.match(landingPage, /AI agent reliability/i);
   assert.match(landingPage, /Claude Desktop extension/i);
@@ -84,6 +88,7 @@ test('public docs render the current package version', () => {
   assert.match(landingPage, /Workflow Hardening Fit Checker/i);
   assert.match(landingPage, /Claude Desktop extension path/i);
   assert.match(landingPage, /ChatGPT GPT Actions path/i);
+  assert.match(landingPage, /https:\/\/chatgpt\.com\/g\/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate/);
   assert.match(landingPage, /adapters\/chatgpt\/openapi\.yaml/i);
   assert.match(landingPage, /can AI fully satisfy this query without a click\?/i);
   assert.match(landingPage, /Run the hosted fit checker/i);
@@ -97,6 +102,8 @@ test('public docs render the current package version', () => {
   assert.match(claudePluginReadme, /npm run build:claude-mcpb/i);
   assert.match(claudePluginReadme, /npm run build:claude-review-zip/i);
   assert.match(chatgptInstall, /Explore GPTs/i);
+  assert.match(chatgptInstall, /https:\/\/chatgpt\.com\/g\/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate/);
+  assert.doesNotMatch(chatgptInstall, /URL has not been captured/i);
   assert.match(chatgptInstall, /Search for `ThumbGate`/);
   assert.match(chatgptInstall, /30-second user flow/);
   assert.match(chatgptInstall, /GPT profile card/);
@@ -114,6 +121,7 @@ test('public docs render the current package version', () => {
   assert.match(chatgptInstall, /https:\/\/thumbgate-production\.up\.railway\.app\/openapi\.yaml/);
   assert.match(chatgptInstall, /https:\/\/thumbgate-production\.up\.railway\.app\/privacy/);
   assert.match(chatgptInstructions, /Reliability Gateway for AI agents/i);
+  assert.match(chatgptInstructions, /https:\/\/chatgpt\.com\/g\/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate/);
   assert.match(chatgptInstructions, /Turn thumbs-down into prevention gates/);
   assert.match(chatgptInstructions, /Paste an AI action to check, or tell me what went right\/wrong/i);
   assert.match(chatgptInstructions, /Action check mode/);
@@ -124,6 +132,8 @@ test('public docs render the current package version', () => {
   assert.doesNotMatch(chatgptInstructions, /Setup Concierge/i);
   assert.doesNotMatch(chatgptInstructions, /AI safety gate/i);
   assert.match(gptStoreSubmission, /published-user-confirmed/);
+  assert.match(gptStoreSubmission, /https:\/\/chatgpt\.com\/g\/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate/);
+  assert.doesNotMatch(gptStoreSubmission, /URL has not been captured/i);
   assert.match(gptStoreSubmission, /Explore GPTs -> search ThumbGate/i);
   assert.match(gptStoreSubmission, /Turn thumbs-down into prevention gates/);
   assert.match(gptStoreSubmission, /Reliability Gateway/i);

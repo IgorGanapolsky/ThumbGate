@@ -241,10 +241,10 @@ test('public landing page includes compatibility section for AI agent surfaces',
   assert.match(landingPage, /thumbgate-marketplace/);
   assert.match(landingPage, /\/plugin marketplace add IgorGanapolsky\/ThumbGate/);
   assert.match(landingPage, /ChatGPT GPT Actions/);
-  assert.match(landingPage, /Use in ChatGPT/);
-  assert.match(landingPage, /Regular users reply with 👍\/👎/);
-  assert.match(landingPage, /save the lesson/i);
-  assert.match(landingPage, /reinforce the answer patterns that worked/i);
+  assert.match(landingPage, /https:\/\/chatgpt\.com\/g\/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate/);
+  assert.match(landingPage, /Open ThumbGate GPT/);
+  assert.match(landingPage, /capture thumbs-up\/down lessons/i);
+  assert.match(landingPage, /Real blocking for coding agents still runs locally/);
   assert.match(landingPage, /adapters\/chatgpt\/INSTALL\.md/);
   assert.match(landingPage, /Browse plugins/);
   assert.match(landingPage, /View skill on GitHub/);
