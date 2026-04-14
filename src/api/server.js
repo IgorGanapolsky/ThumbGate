@@ -5,6 +5,37 @@ const fs = require('fs');
 const path = require('path');
 const pkg = require('../../package.json');
 
+const POSTHOG_API_PATHS = new Set(['/capture', '/batch', '/decide', '/e', '/engage']);
+const POSTHOG_INGEST_HOST = 'us.i.posthog.com';
+const POSTHOG_STATIC_PATH_PREFIX = '/static/';
+
+function getPosthogProxyPath(pathname) {
+  return pathname.slice('/ingest'.length) || '/';
+}
+
+function isExactOrChildPath(pathname, basePath) {
+  return pathname === basePath || pathname.startsWith(`${basePath}/`);
+}
+
+function isAllowedPosthogProxyPath(pathname) {
+  if (pathname === '/') return true;
+  if (pathname.startsWith(POSTHOG_STATIC_PATH_PREFIX)) return true;
+  return Array.from(POSTHOG_API_PATHS).some((basePath) => isExactOrChildPath(pathname, basePath));
+}
+
+function buildPosthogProxyRequestOptions(req, posthogPath, search) {
+  return {
+    protocol: 'https:',
+    hostname: POSTHOG_INGEST_HOST,
+    path: `${posthogPath}${search || ''}`,
+    method: req.method,
+    headers: {
+      ...req.headers,
+      host: POSTHOG_INGEST_HOST,
+    },
+  };
+}
+
 const {
   captureFeedback,
   analyzeFeedback,
@@ -2353,6 +2384,29 @@ function createApiServer() {
     const requestFeedbackPaths = getRequestFeedbackPaths(req, parsed);
     const requestFeedbackDir = requestFeedbackPaths.FEEDBACK_DIR;
     const requestSafeDataDir = getSafeDataDir(req, parsed);
+
+    // PostHog reverse proxy -- bypasses ad blockers.
+    // Only allow known PostHog API paths to prevent SSRF (CodeQL js/request-forgery).
+    if (pathname.startsWith('/ingest')) {
+      const posthogPath = getPosthogProxyPath(pathname);
+      if (!isAllowedPosthogProxyPath(posthogPath)) {
+        res.writeHead(403, { 'Content-Type': 'text/plain' });
+        res.end('Forbidden');
+        return;
+      }
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        const proxyReq = https.request(buildPosthogProxyRequestOptions(req, posthogPath, parsed.search), (proxyRes) => {
+          res.writeHead(proxyRes.statusCode, proxyRes.headers);
+          proxyRes.pipe(res);
+        });
+        proxyReq.on('error', () => { res.writeHead(502); res.end(); });
+        if (body) proxyReq.write(body);
+        proxyReq.end();
+      });
+      return;
+    }
 
     // Public MCP endpoint — responds to Smithery registry scanning and MCP initialize
     // The initialize handshake is unauthenticated; subsequent tool calls require Bearer auth
@@ -5021,6 +5075,9 @@ module.exports = {
   startServer,
   __test__: {
     buildCheckoutFallbackUrl,
+    buildPosthogProxyRequestOptions,
+    getPosthogProxyPath,
+    isAllowedPosthogProxyPath,
     renderSitemapXml,
   },
 };
