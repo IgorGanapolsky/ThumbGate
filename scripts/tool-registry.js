@@ -541,6 +541,18 @@ const TOOLS = [
     },
   }),
   readOnlyTool({
+    name: 'reliability_triggered_skills',
+    description: 'Use Thompson Sampling reliability scores to identify weak categories and auto-generate targeted skills. Categories with low reliability (calibrated, below threshold) trigger scoped skill generation. Returns triggered categories, generated skills, and skipped categories with reasons.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        threshold: { type: 'number', description: 'Reliability threshold below which skill generation triggers (default 0.5)' },
+        dryRun: { type: 'boolean', description: 'If true, return results without writing skill files (default false)' },
+        minClusterSize: { type: 'number', description: 'Minimum feedback entries per skill cluster (default 2)' },
+      },
+    },
+  }),
+  readOnlyTool({
     name: 'recall',
     description: 'Recall relevant past feedback, memories, and prevention rules for the current task. Call this at the start of any task to inject past learnings into the conversation.',
     inputSchema: {

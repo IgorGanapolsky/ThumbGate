@@ -71,6 +71,7 @@ const { exportDatabricksBundle } = require('../../scripts/export-databricks-bund
 const { generateDashboard } = require('../../scripts/dashboard');
 const { getSettingsStatus } = require('../../scripts/settings-hierarchy');
 const { generateSkills } = require('../../scripts/skill-generator');
+const { generateReliabilityTriggeredSkills } = require('../../scripts/reliability-skill-bridge');
 const {
   loadModel,
   getReliability,
@@ -593,6 +594,12 @@ async function callToolInner(name, args) {
           return args.tags.some((tag) => entry.skillName.includes(String(tag)));
         }),
       });
+    case 'reliability_triggered_skills':
+      return toTextResult(generateReliabilityTriggeredSkills({
+        threshold: typeof args.threshold === 'number' ? args.threshold : undefined,
+        dryRun: args.dryRun === true,
+        minClusterSize: typeof args.minClusterSize === 'number' ? args.minClusterSize : undefined,
+      }));
     case 'recall':
       return buildRecallResponse(args);
     case 'unified_context': {

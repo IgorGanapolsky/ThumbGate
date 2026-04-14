@@ -114,6 +114,46 @@ Session 3:                     │  Session 3+:
 
 ---
 
+## Adaptive Intelligence: Thompson Sampling
+
+ThumbGate doesn't just block mistakes — it **learns which categories of work are unreliable** and automatically generates targeted skills to fix them.
+
+```
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│  Feedback    │───►│  Thompson    │───►│  Reliability  │───►│  Auto-Skill  │
+│  Signals     │    │  Sampling    │    │  Detection    │    │  Generation  │
+│              │    │              │    │              │    │              │
+│  👎 testing  │    │  Beta-       │    │  testing:     │    │  SKILL.md    │
+│  👎 testing  │    │  Bernoulli   │    │  reliability  │    │  with DO /   │
+│  👍 git      │    │  update per  │    │  = 0.3 ⚠️     │    │  INSTEAD     │
+│  👎 testing  │    │  category    │    │  git: 0.9 ✅  │    │  rules for   │
+│              │    │              │    │              │    │  testing      │
+└──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
+```
+
+**How it works:**
+
+1. **Every feedback signal** (thumbs up/down) updates a [Beta-Bernoulli model](https://en.wikipedia.org/wiki/Conjugate_prior#When_likelihood_function_is_a_discrete_distribution) with time-decay weighting (7-day half-life)
+2. **Per-category reliability** is tracked across 14 categories: `code_edit`, `git`, `testing`, `pr_review`, `security`, `architecture`, `debugging`, and more
+3. **Calibration gates** prevent premature action — categories need 5+ samples before reliability scores are trusted
+4. **Low reliability triggers skill generation** — when a calibrated category drops below 0.5 reliability, ThumbGate auto-generates DO/INSTEAD rules from the clustered failure patterns
+5. **Confidence tiers** (none → low → medium → high) tell you how much to trust each score
+
+```bash
+# See which categories are unreliable and what skills would be generated
+npx thumbgate reliability-skills --dry-run
+
+# Generate skills for all low-reliability categories
+npx thumbgate reliability-skills
+
+# Custom threshold (trigger at 0.7 instead of 0.5)
+npx thumbgate reliability-skills --threshold=0.7
+```
+
+The MCP tool `reliability_triggered_skills` exposes this to any connected agent — so your AI assistant can self-diagnose which areas it's weakest in and load the right guardrails automatically.
+
+---
+
 ## Get Started
 
 **Best first paid motion for teams:** the **Workflow Hardening Sprint** — qualify one repeated failure before committing to a full rollout. **[Start intake →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake)**
@@ -271,8 +311,9 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 │                      │                       │                      │
 │ SQLite + FTS5        │ MemAlign dual recall  │ PreToolUse hook      │
 │ LanceDB vectors      │ Thompson Sampling     │ engine               │
-│ JSONL logs           │ (adaptive lesson      │ Gates config         │
-│ File-based context   │  selection)           │ Hook wiring          │
+│ JSONL logs           │ Beta-Bernoulli per-   │ Gates config         │
+│ File-based context   │ category reliability  │ Hook wiring          │
+│                      │ → auto skill gen      │                      │
 │                      │                       │                      │
 │                      │                       │                      │
 ├──────────────────────┼──────────────────────┼──────────────────────┤
