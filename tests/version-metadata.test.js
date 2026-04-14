@@ -116,6 +116,9 @@ test('public docs render the current package version', () => {
   assert.match(chatgptInstall, /decisionControl\.executionMode: "blocked"/);
   assert.match(chatgptInstall, /Plain thumbs-up\/down feedback is the memory loop\. The decision endpoint is the gate loop\./);
   assert.match(chatgptInstall, /Check this agent action before it runs: git push --force --tags/i);
+  assert.match(chatgptInstall, /The GPT should feel like a feedback button that remembers/i);
+  assert.match(chatgptInstall, /Thumbs down: that answer ignored my request for exact commands/i);
+  assert.match(chatgptInstall, /Thumbs up: this answer gave file paths, commands, and tests/i);
   assert.match(chatgptInstall, /Paste the risky AI action before it runs, or tell me what went right\/wrong/i);
   assert.match(chatgptInstall, /native feedback buttons may send feedback to OpenAI/i);
   assert.match(chatgptInstall, /Regular GPT users should not need an API key, JSON payload, OpenAPI knowledge, or developer setup/i);
@@ -133,6 +136,9 @@ test('public docs render the current package version', () => {
   assert.match(chatgptInstructions, /Feedback capture mode/);
   assert.match(chatgptInstructions, /decisionControl\.executionMode/);
   assert.match(chatgptInstructions, /one signal becomes one remembered rule/i);
+  assert.match(chatgptInstructions, /feedback button that remembers/i);
+  assert.match(chatgptInstructions, /Thumbs down: that answer ignored my request for exact commands/i);
+  assert.match(chatgptInstructions, /Thumbs up: this answer gave file paths, commands, and tests/i);
   assert.match(chatgptInstructions, /public front door for ThumbGate/i);
   assert.match(chatgptInstructions, /Hard enforcement runs locally after `npx thumbgate init` where your agent actually executes/i);
   assert.match(chatgptInstructions, /Regular users should never need an API key, JSON payload, OpenAPI knowledge, or developer setup/i);
@@ -318,13 +324,13 @@ test('runtime hosted billing config defaults to the live pro price label', () =>
 
 test('runtime hosted billing config preserves absolute fallback checkout urls', () => {
   const previousFallback = process.env.THUMBGATE_CHECKOUT_FALLBACK_URL;
-  process.env.THUMBGATE_CHECKOUT_FALLBACK_URL = 'https://buy.stripe.com/5kQ4gzbmI9Lo6tPayn3sI06?utm_source=website&utm_medium=cta_button';
+  process.env.THUMBGATE_CHECKOUT_FALLBACK_URL = 'https://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a?utm_source=website&utm_medium=cta_button';
 
   try {
     const runtimeConfig = resolveHostedBillingConfig();
     assert.equal(
       runtimeConfig.checkoutFallbackUrl,
-      'https://buy.stripe.com/5kQ4gzbmI9Lo6tPayn3sI06?utm_source=website&utm_medium=cta_button'
+      'https://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a?utm_source=website&utm_medium=cta_button'
     );
   } finally {
     if (previousFallback === undefined) {

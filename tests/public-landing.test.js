@@ -169,6 +169,17 @@ test('public landing page exposes the free CLI wedge above the fold and keeps Pr
   assert.match(landingPage, /solo side lane/i);
 });
 
+test('public landing page gives cold users a first-dollar activation path', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /Block your first repeated AI mistake in 5 minutes/i);
+  assert.match(landingPage, /First-Dollar Activation Path/i);
+  assert.match(landingPage, /Prove one blocked repeat before asking anyone to buy/i);
+  assert.match(landingPage, /Native ChatGPT rating buttons are not the ThumbGate capture path/i);
+  assert.match(landingPage, /thumbs down: the answer ignored my request/i);
+  assert.match(landingPage, /Upgrade after one real blocked repeat/i);
+});
+
 test('public landing page Pro tier uses outcome-framed bullets that justify upgrade', () => {
   const landingPage = readLandingPage();
 
@@ -250,9 +261,10 @@ test('public landing page includes compatibility section for AI agent surfaces',
   assert.match(landingPage, /Open ThumbGate GPT/);
   assert.match(landingPage, /Live ThumbGate GPT for ChatGPT/);
   assert.match(landingPage, /ChatGPT Entry Point/);
-  assert.match(landingPage, /Open the GPT\. Check the action\. Turn the lesson into a gate\./);
+  assert.match(landingPage, /Open the GPT\. Give typed thumbs feedback\. Turn the lesson into a gate\./);
   assert.match(landingPage, /No, you do not have to chat inside the GPT forever/);
   assert.match(landingPage, /ChatGPT is the discovery and memory surface/);
+  assert.match(landingPage, /Do not rely on ChatGPT's native rating buttons for ThumbGate memory/);
   assert.match(landingPage, /Do I have to chat inside the ThumbGate GPT for enforcement\?/);
   assert.match(landingPage, /capture thumbs-up\/down lessons/i);
   assert.match(landingPage, /Real blocking for coding agents still runs locally/);

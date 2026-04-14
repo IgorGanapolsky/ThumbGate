@@ -2,4 +2,4 @@
 "thumbgate": patch
 ---
 
-Remove credit card requirement from 7-day free trial checkout — 100 sessions, 0 completions proved card-required trials kill conversion for developer tools.
+Switch CLI upgrade link to no-card 7-day trial — 2,478 cloners seeing card-required checkout was killing conversion.
