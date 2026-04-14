@@ -14,7 +14,7 @@ test('daily revenue loop audits hosted revenue truth before reporting', () => {
 
   assert.match(workflow, /name: Audit hosted revenue truth/);
   assert.match(workflow, /THUMBGATE_API_KEY: \$\{\{ secrets\.THUMBGATE_API_KEY \}\}/);
-  assert.match(workflow, /npm run revenue:status -- --json/);
+  assert.match(workflow, /node scripts\/revenue-status\.js --json/);
   assert.match(workflow, /SOURCE=\$\(node -p "require\('\.\/reports\/revenue\/revenue-status\.json'\)\.source"\)/);
   assert.match(workflow, /Hosted revenue truth fell back to local data; failing observability gate\./);
 });
@@ -24,7 +24,7 @@ test('daily revenue loop audits Stripe and Plausible with stored artifacts', () 
 
   assert.match(workflow, /name: Audit Stripe live status/);
   assert.match(workflow, /STRIPE_SECRET_KEY: \$\{\{ secrets\.STRIPE_SECRET_KEY \}\}/);
-  assert.match(workflow, /npm run stripe:live -- --strict/);
+  assert.match(workflow, /node scripts\/stripe-live-status\.js --strict/);
   assert.match(workflow, /name: Audit Plausible checkout attribution/);
   assert.match(workflow, /PLAUSIBLE_API_KEY: \$\{\{ secrets\.PLAUSIBLE_API_KEY \}\}/);
   assert.match(workflow, /PLAUSIBLE_SITE_ID: \$\{\{ secrets\.PLAUSIBLE_SITE_ID \}\}/);
