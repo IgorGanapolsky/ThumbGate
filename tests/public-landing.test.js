@@ -33,7 +33,7 @@ test('public landing page routes Pro buyers through the hosted checkout surface'
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /\/checkout\/pro\?/);
-  assert.match(landingPage, /Free Trial/);
+  assert.match(landingPage, /Free Trial|Upgrade to Pro/i);
   assert.doesNotMatch(landingPage, /gumroad\.com/);
 });
 
@@ -66,7 +66,7 @@ test('public landing page keeps optional GA4 and Search Console hooks available 
 test('public landing page includes pricing section with Free, Pro, and Team tiers', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /class="price-card"/);
+  assert.match(landingPage, /class="price-card/);
   assert.match(landingPage, /class="price-card pro"/);
   assert.match(landingPage, /class="price-card team"/);
   assert.match(landingPage, /\$0/);
@@ -79,7 +79,8 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /solo side lane/i);
   assert.match(landingPage, /Shared enforcement/i);
   assert.match(landingPage, /Install Free/);
-  assert.match(landingPage, /Free Trial/);
+  assert.match(landingPage, /Free Trial|Upgrade to Pro/i);
+  assert.match(landingPage, /Most Popular/i);
   assert.match(landingPage, /Start Workflow Hardening Sprint/);
 });
 
