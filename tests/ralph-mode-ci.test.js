@@ -8,6 +8,20 @@ const path = require('node:path');
 
 const ralphModePath = require.resolve('../scripts/ralph-mode-ci');
 
+function hasCanonicalRepoUrl(body) {
+  return [...body.matchAll(/https:\/\/[^\s)]+/g)].some(([rawHref]) => {
+    try {
+      const href = rawHref.replace(/[.,;:]+$/, '');
+      const url = new URL(href);
+      return url.protocol === 'https:'
+        && url.hostname === 'github.com'
+        && url.pathname === '/IgorGanapolsky/ThumbGate';
+    } catch {
+      return false;
+    }
+  });
+}
+
 function loadRalphMode(env = {}) {
   const previousEnv = { ...process.env };
   delete require.cache[ralphModePath];
@@ -244,7 +258,7 @@ test('Ralph Mode GitHub outreach uses canonical ThumbGate install copy', async (
 
   assert.equal(issueBodies.length, 2);
   assert.ok(issueBodies.every((body) => body.includes('Install with `npx thumbgate init`')));
-  assert.ok(issueBodies.every((body) => body.includes('https://github.com/IgorGanapolsky/ThumbGate')));
+  assert.ok(issueBodies.every(hasCanonicalRepoUrl));
   assert.ok(issueBodies.every((body) => !body.includes('smithery.ai')));
   assert.ok(issueBodies.every((body) => !body.includes('rlhf-loop')));
 });
