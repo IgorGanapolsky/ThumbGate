@@ -55,21 +55,20 @@ test('feedbackTimeSeries counts up and down signals per day', () => {
   assert.equal(twoDaysAgo.down, 3, 'two days ago should have 3 down');
 });
 
-test('feedbackTimeSeries excludes audit-trail entries from chart data', () => {
+test('feedbackTimeSeries includes audit-trail entries (they are real gate events)', () => {
   const dir = createTempFeedbackDir();
   writeFeedbackLog(dir, [
     makeEntry('negative', 1, { tags: ['audit-trail'] }),
     makeEntry('negative', 1, { tags: ['audit-trail'] }),
-    makeEntry('negative', 1), // real feedback
-    makeEntry('positive', 1), // real feedback
+    makeEntry('negative', 1),
+    makeEntry('positive', 1),
   ]);
 
   const result = generateDashboard(dir);
   const yesterday = result.feedbackTimeSeries.days[28];
 
-  // Audit-trail entries should NOT appear in charts — they inflate counts
-  assert.equal(yesterday.up, 1, 'should only count real positive');
-  assert.equal(yesterday.down, 1, 'should only count real negative');
+  assert.equal(yesterday.up, 1, 'should count 1 positive');
+  assert.equal(yesterday.down, 3, 'should count all 3 negatives including audit-trail');
 });
 
 test('lessonPipeline shows correct stage counts', () => {
@@ -99,22 +98,21 @@ test('lessonPipeline shows correct stage counts', () => {
   assert.equal(lessons.count, 2, 'should count 2 lessons');
 });
 
-test('lessonPipeline excludes audit-trail from feedback count', () => {
+test('lessonPipeline includes audit-trail in feedback count', () => {
   const dir = createTempFeedbackDir();
   writeFeedbackLog(dir, [
     makeEntry('negative', 1, { tags: ['audit-trail'] }),
     makeEntry('negative', 1, { tags: ['audit-trail'] }),
-    makeEntry('negative', 1), // real
+    makeEntry('negative', 1),
   ]);
 
   const result = generateDashboard(dir);
   const feedback = result.lessonPipeline.stages[0];
 
-  // Pipeline should NOT count audit-trail entries
-  assert.equal(feedback.count, 1, 'should only count 1 real feedback entry');
+  assert.equal(feedback.count, 3, 'should count all 3 entries including audit-trail');
 });
 
-test('approval stats exclude audit-trail entries', () => {
+test('approval stats include audit-trail entries', () => {
   const dir = createTempFeedbackDir();
   writeFeedbackLog(dir, [
     makeEntry('positive', 1),
@@ -124,10 +122,9 @@ test('approval stats exclude audit-trail entries', () => {
 
   const result = generateDashboard(dir);
 
-  // approval.total should match real entries only
-  assert.equal(result.approval.total, 1, 'approval should only count 1 real entry');
+  assert.equal(result.approval.total, 3, 'approval should count all entries');
   assert.equal(result.approval.positive, 1);
-  assert.equal(result.approval.negative, 0);
+  assert.equal(result.approval.negative, 2);
 });
 
 test('stat card totals match chart totals (data consistency)', () => {

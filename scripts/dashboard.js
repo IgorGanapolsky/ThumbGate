@@ -77,16 +77,15 @@ function toLocalDayKey(value) {
 // ---------------------------------------------------------------------------
 
 function computeApprovalStats(entries) {
-  const realEntries = entries.filter((e) => !isAuditTrailEntry(e));
-  const total = realEntries.length;
-  const positive = realEntries.filter((e) => e.signal === 'positive').length;
-  const negative = realEntries.filter((e) => e.signal === 'negative').length;
+  const total = entries.length;
+  const positive = entries.filter((e) => e.signal === 'positive').length;
+  const negative = entries.filter((e) => e.signal === 'negative').length;
   const approvalRate = total > 0 ? Math.round((positive / total) * 100) : 0;
 
   // 7-day trend
   const now = Date.now();
   const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
-  const recentEntries = realEntries.filter((e) => {
+  const recentEntries = entries.filter((e) => {
     const ts = e.timestamp ? new Date(e.timestamp).getTime() : 0;
     return ts >= sevenDaysAgo;
   });
@@ -283,7 +282,6 @@ function computeFeedbackTimeSeries(entries, dayCount = 30) {
 
   for (const entry of entries) {
     if (!entry.timestamp) continue;
-    if (isAuditTrailEntry(entry)) continue;
     const dayKey = toLocalDayKey(entry.timestamp);
     const bucket = dayMap.get(dayKey);
     if (!bucket) continue;
@@ -307,9 +305,8 @@ function computeLessonPipeline(feedbackDir, entries, gateStats) {
   const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
   const memories = readJSONL(memoryLogPath);
 
-  const realEntries = entries.filter((e) => !isAuditTrailEntry(e));
-  const totalFeedback = realEntries.length;
-  const totalNegative = realEntries.filter((e) => {
+  const totalFeedback = entries.length;
+  const totalNegative = entries.filter((e) => {
     const s = String(e.signal || e.feedback || '').toLowerCase();
     return ['down', 'negative', 'thumbs_down'].includes(s);
   }).length;
