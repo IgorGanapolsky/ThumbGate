@@ -1393,8 +1393,6 @@ function analyzeFeedback(logPath) {
   let totalNegative = 0;
 
   for (const entry of entries) {
-    if (isAuditTrailEntry(entry)) continue;
-
     if (entry.signal === 'positive') totalPositive++;
     if (entry.signal === 'negative') totalNegative++;
 
