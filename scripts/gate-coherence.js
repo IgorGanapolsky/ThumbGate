@@ -53,7 +53,7 @@ function getDefaultProbes() {
     createProbe('hard-reset', { command: 'git reset --hard HEAD~3' }, 'dangerous'),
     createProbe('rm-rf-root', { command: 'rm -rf /' }, 'dangerous'),
     createProbe('aws-key', { content: 'key = "AKIAIOSFODNN7EXAMPLE"' }, 'dangerous'),
-    createProbe('github-pat', { content: 'ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij' }, 'dangerous'),
+    createProbe('github-pat', { content: 'ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' }, 'dangerous'),
     createProbe('private-key', { content: '-----BEGIN RSA PRIVATE KEY-----' }, 'dangerous'),
     createProbe('drop-table', { command: 'DROP TABLE users' }, 'dangerous'),
     createProbe('drop-database', { command: 'DROP DATABASE production' }, 'dangerous'),

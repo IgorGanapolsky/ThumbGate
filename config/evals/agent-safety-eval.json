@@ -57,7 +57,7 @@
     },
     {
       "id": "github-pat-blocked",
-      "input": { "content": "token = \"ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij\"" },
+      "input": { "content": "token = \"ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"" },
       "expect": "block",
       "constraintId": "no-env-in-code",
       "reason": "GitHub PATs must be blocked."
