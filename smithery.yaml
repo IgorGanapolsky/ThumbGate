@@ -14,4 +14,4 @@ startCommand:
       - "-y"
       - "thumbgate"
       - "serve"
-description: "Agent quality feedback loop with Pre-Action Gates — configurable checkpoints that block dangerous tool calls before they execute. Includes prevention rules, ThumbGate capture, and commerce quality scores."
+description: "Stop paying $ for the same AI mistake. ThumbGate turns thumbs-down feedback into Pre-Action Gates that block repeat hallucinations, retry loops, and known-bad tool calls before they reach the model — zero tokens spent on mistakes you've already corrected. Works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent."
