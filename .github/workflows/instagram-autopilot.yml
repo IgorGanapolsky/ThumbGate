@@ -1,0 +1,95 @@
+name: Instagram Autopilot
+
+# Posts a ThumbGate Instagram static card once per day.
+# Complements video-autopilot.yml (which posts Reels) by covering the
+# Instagram feed with image content as well.
+#
+# Uses Zernio as the publisher. Requires:
+#   ZERNIO_API_KEY
+#   (Zernio must have an Instagram account connected under the same profile)
+#
+# Cadence: every 24h at 13:00 UTC (09:00 ET — peak engagement window).
+# Dedup: publishers/zernio.js enforces a 24h content-hash window via the
+# marketing DB, so a manual dispatch immediately after a scheduled run is
+# a safe no-op rather than a double-post.
+
+on:
+  schedule:
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+    inputs:
+      image_only:
+        description: 'Generate the card image only — do not publish'
+        required: false
+        type: boolean
+        default: false
+      dry_run:
+        description: 'Alias for image_only (kept for UI consistency)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: instagram-autopilot
+  cancel-in-progress: false
+
+jobs:
+  post-carousel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      ZERNIO_API_KEY:              ${{ secrets.ZERNIO_API_KEY }}
+      ZERNIO_INSTAGRAM_ACCOUNT_ID: ${{ secrets.ZERNIO_INSTAGRAM_ACCOUNT_ID }}
+      THUMBGATE_ANALYTICS_DB:      .thumbgate/marketing-analytics.sqlite
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
+      # sharp is an optional dep used only by generate-instagram-card.js;
+      # install it here so the card renderer works in CI.
+      - name: Install sharp (card renderer)
+        run: npm install --no-save sharp
+
+      - name: Restore marketing DB cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .thumbgate/marketing-analytics.sqlite
+            .thumbgate/marketing-analytics.sqlite-shm
+            .thumbgate/marketing-analytics.sqlite-wal
+          key: marketing-db-${{ github.run_id }}
+          restore-keys: |
+            marketing-db-
+
+      - name: Publish Instagram card
+        env:
+          INPUT_IMAGE_ONLY: ${{ github.event.inputs.image_only || github.event.inputs.dry_run }}
+        run: |
+          FLAGS=""
+          if [ "$INPUT_IMAGE_ONLY" = "true" ]; then
+            FLAGS="--image-only"
+          fi
+          node scripts/social-analytics/publish-instagram-thumbgate.js $FLAGS
+
+      - name: Upload generated card
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: instagram-card-${{ github.run_id }}
+          retention-days: 7
+          path: |
+            .thumbgate/instagram-card.png
