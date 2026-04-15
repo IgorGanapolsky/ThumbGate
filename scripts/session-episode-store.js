@@ -17,6 +17,7 @@
  * the longitudinal learning.
  */
 
+const crypto = require('node:crypto');
 const path = require('node:path');
 const { readJsonl, appendJsonl } = require('./fs-utils');
 const { resolveFeedbackDir } = require('./feedback-paths');
@@ -52,7 +53,7 @@ function buildEpisode({
   const errorFingerprints = extractErrorFingerprints(negativeEntries);
 
   return {
-    sessionId: sessionId || `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    sessionId: sessionId || `session_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
     recordedAt: now.toISOString(),
     hourOfDay: now.getHours(),
     dayOfWeek: now.getDay(),
