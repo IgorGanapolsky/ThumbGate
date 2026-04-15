@@ -229,7 +229,7 @@ async function postToYouTube(parsed, dryRun) {
  *
  * Caption = title + body (truncated to 2200 chars, Instagram's limit).
  */
-async function postToInstagram(parsed, dryRun) {
+async function postToInstagram(parsed, dryRun, deps = {}) {
   const caption = [parsed.title, parsed.body]
     .filter(Boolean)
     .join('\n\n')
@@ -244,12 +244,14 @@ async function postToInstagram(parsed, dryRun) {
   let imagePath = parsed.imagePath;
   if (!imagePath) {
     // Auto-generate ThumbGate card (requires sharp as optional dep).
-    const { generateInstagramCard } = require('./social-analytics/generate-instagram-card');
+    const generateInstagramCard = deps.generateInstagramCard
+      || require('./social-analytics/generate-instagram-card').generateInstagramCard;
     const defaultPath = path.resolve(__dirname, '..', '.thumbgate', 'instagram-card.png');
     imagePath = await generateInstagramCard(defaultPath);
   }
 
-  const { postThumbGateToInstagram } = require('./social-analytics/instagram-thumbgate-post');
+  const postThumbGateToInstagram = deps.postThumbGateToInstagram
+    || require('./social-analytics/instagram-thumbgate-post').postThumbGateToInstagram;
   return postThumbGateToInstagram({ caption, imagePath });
 }
 
@@ -267,7 +269,7 @@ const DISPATCHERS = {
   instagram: postToInstagram,
 };
 
-async function postEverywhere(filePath, { platforms, dryRun } = {}) {
+async function postEverywhere(filePath, { platforms, dryRun, deps = {} } = {}) {
   const parsed = parsePostFile(filePath);
   console.log(`[post-everywhere] Parsed: platform=${parsed.platform}, subreddit=${parsed.subreddit}, title="${parsed.title}"`);
 
@@ -314,7 +316,9 @@ async function postEverywhere(filePath, { platforms, dryRun } = {}) {
 
     try {
       console.log(`\n[post-everywhere] Posting to ${platform}...`);
-      results[platform] = await dispatcher(parsed, dryRun);
+      // Dispatchers that support dep injection (currently just Instagram) get
+      // the deps bag; others ignore the third arg.
+      results[platform] = await dispatcher(parsed, dryRun, deps[platform] || {});
       if (!dryRun) recordPost(dedupContent, platform);
       console.log(`[post-everywhere] ${platform}: OK`);
     } catch (err) {

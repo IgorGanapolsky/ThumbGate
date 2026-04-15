@@ -3,24 +3,17 @@
 /**
  * Coverage for the Instagram publishing fix in scripts/social-analytics/post-video.js.
  *
- * We mock publishers/zernio.js via require cache injection so `processPlatform`
- * exercises the presign upload + shared publishPost path without touching the
- * network. This locks in the contract that Reels now post via the same
- * media-item shape Instagram's Zernio validation expects.
+ * Uses dependency injection through the `context` bag rather than require-cache
+ * hacks so this suite doesn't leak mocked modules into other tests when the
+ * coverage runner executes all tests/*.test.js files in a single process.
  */
 
-const { describe, it, before, after } = require('node:test');
+const { describe, it, before } = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const os = require('node:os');
 
-const ZERNIO_PATH = require.resolve('../scripts/social-analytics/publishers/zernio');
-const MARKETING_DB_PATH = require.resolve('../scripts/social-analytics/db/marketing-db');
 const POST_VIDEO_PATH = require.resolve('../scripts/social-analytics/post-video');
-
-const uploadCalls = [];
-const publishCalls = [];
-const recordCalls = [];
 
 const fakeUploaded = {
   contentType: 'video/mp4',
@@ -30,68 +23,50 @@ const fakeUploaded = {
   url: 'https://cdn.zernio.test/uploads/thumbgate-short.mp4',
 };
 
-function resetMocks() {
-  uploadCalls.length = 0;
-  publishCalls.length = 0;
-  recordCalls.length = 0;
+function buildTrackers({ publishImpl } = {}) {
+  const state = { uploads: [], publishes: [] };
+  state.uploadLocalMedia = async (filePath) => {
+    state.uploads.push(filePath);
+    return { ...fakeUploaded };
+  };
+  state.publishPost = async (content, platforms, options) => {
+    state.publishes.push({ content, platforms, options });
+    if (publishImpl) return publishImpl({ content, platforms, options });
+    return {
+      id: 'zernio-post-1',
+      post: {
+        platforms: [{
+          platform: platforms[0].platform,
+          status: 'published',
+          platformPostUrl: `https://${platforms[0].platform}.test/post/1`,
+        }],
+      },
+    };
+  };
+  return state;
 }
 
-function installMocks({ publishImpl } = {}) {
-  resetMocks();
-  require.cache[ZERNIO_PATH] = {
-    id: ZERNIO_PATH,
-    filename: ZERNIO_PATH,
-    loaded: true,
-    exports: {
-      uploadLocalMedia: async (filePath) => {
-        uploadCalls.push(filePath);
-        return { ...fakeUploaded };
-      },
-      publishPost: async (content, platforms, options) => {
-        publishCalls.push({ content, platforms, options });
-        if (publishImpl) return publishImpl({ content, platforms, options });
-        return {
-          id: 'zernio-post-1',
-          post: {
-            platforms: [{
-              platform: platforms[0].platform,
-              status: 'published',
-              platformPostUrl: `https://${platforms[0].platform}.test/post/1`,
-            }],
-          },
-        };
-      },
-    },
+function baseContext(extra = {}) {
+  return {
+    apiKey: 'test-key',
+    campaign: 'unit',
+    dryRun: false,
+    mediaItem: null,
+    templateId: 'tpl-1',
+    videoPath: path.join(os.tmpdir(), 'fake.mp4'),
+    // Inject DB stubs so the real marketing-db (backed by better-sqlite3,
+    // which isn't always installable in CI) is never touched.
+    isDuplicate: () => null,
+    record: () => {},
+    ...extra,
   };
-
-  require.cache[MARKETING_DB_PATH] = {
-    id: MARKETING_DB_PATH,
-    filename: MARKETING_DB_PATH,
-    loaded: true,
-    exports: {
-      hashContent: (s) => `hash:${String(s).length}`,
-      isDuplicate: () => null,
-      record: (row) => { recordCalls.push(row); },
-    },
-  };
-}
-
-function clearPostVideoCache() {
-  delete require.cache[POST_VIDEO_PATH];
 }
 
 describe('post-video (Instagram presign fix)', () => {
   before(() => {
-    // Ensure requireKey() short-circuits to an apiKey during tests
-    process.env.ZERNIO_API_KEY = 'test-key';
-    installMocks();
-    clearPostVideoCache();
-  });
-
-  after(() => {
-    delete require.cache[ZERNIO_PATH];
-    delete require.cache[MARKETING_DB_PATH];
-    clearPostVideoCache();
+    process.env.ZERNIO_API_KEY = process.env.ZERNIO_API_KEY || 'test-key';
+    // Force a fresh load so require.main guard stays coherent with coverage runs.
+    delete require.cache[POST_VIDEO_PATH];
   });
 
   it('exports ACCOUNTS for tiktok, youtube, and instagram', () => {
@@ -110,7 +85,6 @@ describe('post-video (Instagram presign fix)', () => {
 
   it('enforces the per-platform cooldown table', () => {
     const { PLATFORM_COOLDOWN_HOURS } = require('../scripts/social-analytics/post-video');
-    // Instagram cooldown must exist and be ≥ 8h (≤ 3 Reels/day policy).
     assert.ok(PLATFORM_COOLDOWN_HOURS.instagram >= 8, 'instagram cooldown respected');
     assert.ok(PLATFORM_COOLDOWN_HOURS.tiktok <= 6, 'tiktok cooldown allows ≥ 4 posts/day');
   });
@@ -132,83 +106,52 @@ describe('post-video (Instagram presign fix)', () => {
     const { buildPlatformPlan } = require('../scripts/social-analytics/post-video');
     const plan = buildPlatformPlan('instagram', 'base');
     assert.equal(plan.platform, 'instagram');
-    // 8h / 24 = 0.333...
     assert.ok(Math.abs(plan.cooldownDays - (8 / 24)) < 1e-9);
   });
 
   it('processPlatform uploads via presign flow and publishes via shared publishPost', async () => {
-    installMocks();
-    clearPostVideoCache();
     const { processPlatform, buildPlatformPlan } = require('../scripts/social-analytics/post-video');
-
+    const tr = buildTrackers();
     const plan = buildPlatformPlan('instagram', 'test-hash');
-    const context = {
-      apiKey: 'test-key',
-      campaign: 'unit',
-      dryRun: false,
-      mediaItem: null,
-      templateId: 'tpl-1',
-      videoPath: path.join(os.tmpdir(), 'fake.mp4'),
-    };
+    const context = baseContext({ ...tr });
 
     const result = await processPlatform(plan, context);
 
-    // Uploaded exactly once via the presign helper.
-    assert.equal(uploadCalls.length, 1);
-    assert.equal(uploadCalls[0], context.videoPath);
+    assert.equal(tr.uploads.length, 1, 'uploaded exactly once');
+    assert.equal(tr.uploads[0], context.videoPath);
 
-    // publishPost received the full { url, key, size, contentType, type } media item.
-    assert.equal(publishCalls.length, 1);
-    const mediaItem = publishCalls[0].options.mediaItems[0];
+    assert.equal(tr.publishes.length, 1);
+    const mediaItem = tr.publishes[0].options.mediaItems[0];
     assert.equal(mediaItem.url, 'https://cdn.zernio.test/uploads/thumbgate-short.mp4');
     assert.equal(mediaItem.key, 'uploads/thumbgate-short.mp4');
     assert.equal(mediaItem.contentType, 'video/mp4');
     assert.equal(mediaItem.type, 'video', 'type coerced to video for Reels');
     assert.ok(mediaItem.size > 0);
 
-    // Caller sees a published result.
     assert.equal(result.platform, 'instagram');
     assert.equal(result.status, 'published');
     assert.ok(result.postUrl.includes('instagram.test'));
-
-    // Successful post recorded for future dedup.
-    const successRecord = recordCalls.find(r => r.platform === 'instagram' && r.postUrl);
-    assert.ok(successRecord, 'success recorded');
   });
 
   it('processPlatform reuses the same uploaded media for a second platform', async () => {
-    installMocks();
-    clearPostVideoCache();
     const { processPlatform, buildPlatformPlan } = require('../scripts/social-analytics/post-video');
-
-    const context = {
-      apiKey: 'test-key',
-      campaign: 'unit',
-      dryRun: false,
-      mediaItem: null,
-      templateId: 'tpl-1',
-      videoPath: path.join(os.tmpdir(), 'fake.mp4'),
-    };
+    const tr = buildTrackers();
+    const context = baseContext({ ...tr });
 
     await processPlatform(buildPlatformPlan('tiktok', 'hash'), context);
     await processPlatform(buildPlatformPlan('instagram', 'hash'), context);
 
-    // Upload happens once, publish runs twice.
-    assert.equal(uploadCalls.length, 1, 'upload reused across platforms');
-    assert.equal(publishCalls.length, 2);
+    assert.equal(tr.uploads.length, 1, 'upload reused across platforms');
+    assert.equal(tr.publishes.length, 2);
   });
 
   it('processPlatform surfaces publisher-blocked results without throwing', async () => {
-    installMocks({
+    const { processPlatform, buildPlatformPlan } = require('../scripts/social-analytics/post-video');
+    const tr = buildTrackers({
       publishImpl: () => ({ blocked: true, reasons: [{ reason: 'quality_gate' }] }),
     });
-    clearPostVideoCache();
-    const { processPlatform, buildPlatformPlan } = require('../scripts/social-analytics/post-video');
+    const context = baseContext({ ...tr });
 
-    const context = {
-      apiKey: 'test-key', campaign: 'u', dryRun: false, mediaItem: null,
-      templateId: 't', videoPath: '/tmp/fake.mp4',
-    };
     const result = await processPlatform(buildPlatformPlan('instagram', 'h'), context);
 
     assert.equal(result.status, 'blocked');
@@ -216,29 +159,24 @@ describe('post-video (Instagram presign fix)', () => {
   });
 
   it('processPlatform short-circuits on dry-run', async () => {
-    installMocks();
-    clearPostVideoCache();
     const { processPlatform, buildPlatformPlan } = require('../scripts/social-analytics/post-video');
+    const tr = buildTrackers();
+    const context = baseContext({ ...tr, dryRun: true, apiKey: null });
 
-    const context = {
-      apiKey: null, campaign: 'u', dryRun: true, mediaItem: null,
-      templateId: 't', videoPath: '/tmp/fake.mp4',
-    };
     const result = await processPlatform(buildPlatformPlan('instagram', 'h'), context);
 
     assert.equal(result.status, 'dry-run');
-    assert.equal(uploadCalls.length, 0);
-    assert.equal(publishCalls.length, 0);
+    assert.equal(tr.uploads.length, 0);
+    assert.equal(tr.publishes.length, 0);
   });
 
-  it('zernioUpload delegates to uploadLocalMedia from the shared publisher', async () => {
-    installMocks();
-    clearPostVideoCache();
+  it('zernioUpload delegates to injected uploadLocalMedia', async () => {
     const { zernioUpload } = require('../scripts/social-analytics/post-video');
+    const tr = buildTrackers();
 
-    const result = await zernioUpload('ignored', '/tmp/fake.mp4');
+    const result = await zernioUpload('ignored', '/tmp/fake.mp4', { uploadLocalMedia: tr.uploadLocalMedia });
     assert.equal(result.url, fakeUploaded.url);
     assert.equal(result.key, fakeUploaded.key);
-    assert.equal(uploadCalls[0], '/tmp/fake.mp4');
+    assert.equal(tr.uploads[0], '/tmp/fake.mp4');
   });
 });

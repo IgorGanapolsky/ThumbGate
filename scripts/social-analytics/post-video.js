@@ -29,7 +29,7 @@ const { loadLocalEnv } = require('./load-env');
 loadLocalEnv();
 
 const { hashContent, isDuplicate, record } = require('./db/marketing-db');
-const { publishPost, uploadLocalMedia } = require('./publishers/zernio');
+const zernioPublisher = require('./publishers/zernio');
 
 // ---------------------------------------------------------------------------
 // Config
@@ -120,8 +120,9 @@ function requireKey() {
  * Instagram in particular validates these fields — passing only { url, type }
  * (the previous direct /media multipart upload shape) caused silent rejection.
  */
-async function zernioUpload(_apiKey, filePath) {
-  return uploadLocalMedia(filePath);
+async function zernioUpload(_apiKey, filePath, deps = {}) {
+  const upload = deps.uploadLocalMedia || zernioPublisher.uploadLocalMedia;
+  return upload(filePath);
 }
 
 // ---------------------------------------------------------------------------
@@ -193,29 +194,29 @@ function buildPlatformPlan(platform, baseHash) {
   return { platform, caption, contentHash, cooldownDays: cooldownHours / 24 };
 }
 
-function duplicateResult(plan) {
-  const existing = isDuplicate(plan.platform, plan.contentHash, plan.cooldownDays);
+function duplicateResult(plan, isDuplicateFn = isDuplicate) {
+  const existing = isDuplicateFn(plan.platform, plan.contentHash, plan.cooldownDays);
   if (!existing) return null;
   console.log(`[post-video] SKIP ${plan.platform} — already posted (${existing.published_at}): ${existing.post_url}`);
   return { platform: plan.platform, status: 'skipped', reason: 'duplicate', existing };
 }
 
-function recordPostOutcome({ plan, status, postUrl, error, campaign, mediaUrl, templateId, response }) {
+function recordPostOutcome({ plan, status, postUrl, error, campaign, mediaUrl, templateId, response, recordFn = record }) {
   if (status === 'published') {
     console.log(`[post-video] ✓ ${plan.platform}: ${postUrl}`);
-    record({ type: 'video', platform: plan.platform, contentHash: plan.contentHash, postUrl, campaign,
+    recordFn({ type: 'video', platform: plan.platform, contentHash: plan.contentHash, postUrl, campaign,
       tags: ['v1.4.1', 'short', campaign],
       extra: { mediaUrl, templateId, zernioPostId: response.post?._id } });
     return;
   }
 
   console.error(`[post-video] ✗ ${plan.platform}: ${error}`);
-  record({ type: 'video', platform: plan.platform, contentHash: plan.contentHash, status: 'failed', campaign,
+  recordFn({ type: 'video', platform: plan.platform, contentHash: plan.contentHash, status: 'failed', campaign,
     extra: { error } });
 }
 
 async function processPlatform(plan, context) {
-  const duplicate = duplicateResult(plan);
+  const duplicate = duplicateResult(plan, context.isDuplicate);
   if (duplicate) return duplicate;
 
   if (context.dryRun) {
@@ -224,9 +225,12 @@ async function processPlatform(plan, context) {
   }
 
   try {
+    const uploadFn = context.uploadLocalMedia || zernioPublisher.uploadLocalMedia;
+    const publishFn = context.publishPost || zernioPublisher.publishPost;
+
     if (!context.mediaItem) {
       console.log(`[post-video] Uploading video to Zernio (presign flow)...`);
-      context.mediaItem = await zernioUpload(context.apiKey, context.videoPath);
+      context.mediaItem = await uploadFn(context.videoPath);
       console.log(`[post-video] Uploaded: ${context.mediaItem.url}`);
     }
 
@@ -235,7 +239,7 @@ async function processPlatform(plan, context) {
     // uploadLocalMedia infers type from extension, but .mp4 -> 'video' already;
     // this is defensive in case a caller overrides the extension inference.
     const mediaItems = [{ ...context.mediaItem, type: 'video' }];
-    const response = await publishPost(plan.caption, [
+    const response = await publishFn(plan.caption, [
       { platform: plan.platform, accountId: ACCOUNTS[plan.platform] },
     ], {
       mediaItems,
@@ -248,7 +252,8 @@ async function processPlatform(plan, context) {
         ? response.reasons.map(r => r.reason || String(r)).join(', ')
         : 'blocked';
       recordPostOutcome({ plan, status: 'blocked', postUrl: '', error: reasons, campaign: context.campaign,
-        mediaUrl: context.mediaItem.url, templateId: context.templateId, response });
+        mediaUrl: context.mediaItem.url, templateId: context.templateId, response,
+      recordFn: context.record });
       return { platform: plan.platform, status: 'blocked', error: reasons };
     }
 
@@ -259,7 +264,8 @@ async function processPlatform(plan, context) {
     const postUrl = platformResult.platformPostUrl || platformResult.postUrl || '';
     const error = platformResult.errorMessage || response.error || '';
     recordPostOutcome({ plan, status, postUrl, error, campaign: context.campaign,
-      mediaUrl: context.mediaItem.url, templateId: context.templateId, response });
+      mediaUrl: context.mediaItem.url, templateId: context.templateId, response,
+      recordFn: context.record });
     return { platform: plan.platform, status, postUrl, error };
   } catch (err) {
     console.error(`[post-video] ✗ ${plan.platform} error: ${err.message}`);
