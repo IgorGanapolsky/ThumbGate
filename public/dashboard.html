@@ -989,6 +989,7 @@ function loadDemo() {
   document.getElementById('statPositive').textContent = '37';
   document.getElementById('statNegative').textContent = '260';
   document.getElementById('statGates').textContent = '21';
+  setSelectedCard('all');
   // Demo: 260 negative-feedback events have produced ~180 actual gate blocks
   // and ~85 bot deflections on /checkout/pro. Kept as illustrative defaults
   // so the savings card never reads "0" in demo mode.
@@ -997,7 +998,6 @@ function loadDemo() {
   var dEl = document.getElementById('statDollarsSaved');
   if (tEl) tEl.textContent = demoSavings.tokensSavedDisplay;
   if (dEl) dEl.textContent = '≈ ' + demoSavings.dollarsSavedDisplay + ' saved';
-  setSelectedCard('all');
   // Sample memories — realistic scenarios from real agent-driven development
   var demoResults = [
     { signal: 'down', title: 'Claimed fix worked without running tests', context: 'Agent announced "fixed and pushed" but never ran the test suite. CI failed on 3 tests. Gate now requires test evidence before any completion claim.', tags: ['anti-lying', 'verification-gap', 'ci', 'trust-breach'], timestamp: '2025-06-22T10:20:00Z' },

@@ -1,10 +1,10 @@
 # ThumbGate
 
-**Stop paying for the same AI mistake twice.**
+**Stop your AI from making the same mistake twice.**
 
-Frontier LLMs are expensive. When your agent hallucinates, retries the same failing command, or repeats a known-bad tool call, *you* pay for every wasted token — input *and* output. ThumbGate is a local-first enforcement layer that blocks repeated mistakes **before** they hit the model, so your monthly Anthropic / OpenAI bill stops paying for the same lesson over and over.
+Repeated AI mistakes cost real money in tokens. Thumbs-down once — ThumbGate blocks that exact pattern on every future call, across every agent you use.
 
-Give an agent a thumbs-down once. ThumbGate turns that into a **Pre-Action Gate** that physically blocks the pattern on every future call — across every session, every model, every agent.
+Under the hood: your thumbs-down becomes a **Pre-Action Gate** that physically blocks the pattern **permanently** on every future call — across every session, every model, every agent. It is **self-improving agent governance**: every correction promotes a fresh prevention rule, and your library of Pre-Action Gates grows stronger with every lesson. Works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent. The monthly Anthropic / OpenAI bill stops paying for the same lesson over and over — local-first enforcement, zero tokens spent on repeats.
 
 > **Mission:** make AI coding affordable by making sure you never pay for the same mistake twice.
 
