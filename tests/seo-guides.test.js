@@ -68,7 +68,7 @@ describe('SEO guide and comparison pages', () => {
       it('mentions the current Pro and Team pricing', () => {
         html = html || fs.readFileSync(path.join(PUBLIC_DIR, file), 'utf-8');
         assert.ok(
-          html.includes('$19/mo') && html.includes('$149/yr') && html.includes('$99/seat/mo'),
+          html.includes('$19/mo') && html.includes('$149/yr') && html.includes('$49/seat/mo'),
           `${file} missing current Pro and Team pricing`
         );
       });

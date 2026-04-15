@@ -84,7 +84,7 @@ Each detected failure becomes a prevention rule. Your agent gets smarter every s
 
 If you want the personal local dashboard, DPO export, multi-hop recall, and proof-ready debugging for your own workflow, Pro is $19/mo or $149/yr.
 
-If this needs to protect a team, start with the Workflow Hardening Sprint. Team pricing anchors at $99/seat/mo with a 3-seat minimum after qualification."
+If this needs to protect a team, start with the Workflow Hardening Sprint. Team pricing anchors at $49/seat/mo with a 3-seat minimum after qualification."
 
 ---
 

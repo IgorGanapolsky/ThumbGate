@@ -2133,7 +2133,7 @@ test('billing checkout supports annual Pro and Team seat selection', async () =>
   assert.equal(teamBody.planId, 'team');
   assert.equal(teamBody.billingCycle, 'monthly');
   assert.equal(teamBody.seatCount, 3);
-  assert.equal(teamBody.price, 297);
+  assert.equal(teamBody.price, 147);
   assert.equal(teamBody.type, 'subscription');
 });
 

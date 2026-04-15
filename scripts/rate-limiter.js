@@ -11,23 +11,37 @@ const {
 
 const USAGE_FILE = path.join(process.env.HOME || '/tmp', '.thumbgate', 'usage-limits.json');
 
+// ──────────────────────────────────────────────────────────
+// NEW: Lifetime caps on free tier — users hit the wall fast
+// and must upgrade to keep using core features.
+// ──────────────────────────────────────────────────────────
 const FREE_TIER_LIMITS = {
-  capture_feedback: { daily: 3, label: 'feedback captures' },
-  search_lessons: { daily: 5, label: 'lesson searches' },
-  search_thumbgate: { daily: 5, label: 'ThumbGate searches' },
-  commerce_recall: { daily: 5, label: 'commerce recalls' },
-  export_dpo: { daily: 0, label: 'DPO exports (Pro only)' },
-  export_databricks: { daily: 0, label: 'Databricks exports (Pro only)' },
+  capture_feedback:   { daily: Infinity, lifetime: 3,  label: 'feedback captures' },
+  prevention_rules:   { daily: Infinity, lifetime: 1,  label: 'prevention rules generated' },
+  recall:             { daily: 0,        lifetime: 0,  label: 'recall queries (Pro only)' },
+  search_lessons:     { daily: 0,        lifetime: 0,  label: 'lesson searches (Pro only)' },
+  search_thumbgate:   { daily: 0,        lifetime: 0,  label: 'ThumbGate searches (Pro only)' },
+  commerce_recall:    { daily: 0,        lifetime: 0,  label: 'commerce recalls (Pro only)' },
+  export_dpo:         { daily: 0,        lifetime: 0,  label: 'DPO exports (Pro only)' },
+  export_databricks:  { daily: 0,        lifetime: 0,  label: 'Databricks exports (Pro only)' },
+  construct_context_pack: { daily: Infinity, lifetime: 3, label: 'context packs' },
 };
 
-const FREE_TIER_MAX_GATES = 5;
+const FREE_TIER_MAX_GATES = 1; // Down from 5 — one auto-promoted gate, then paywall
 
-const UPGRADE_MESSAGE = `Pro: ${PRO_PRICE_LABEL} — dashboard and DPO export: ${PRO_MONTHLY_PAYMENT_LINK}\n  Team: ${TEAM_PRICE_LABEL} after workflow qualification.`;
+const UPGRADE_MESSAGE = `Pro: ${PRO_PRICE_LABEL} — unlimited captures, recall, prevention rules, and dashboard: ${PRO_MONTHLY_PAYMENT_LINK}\n  Team: ${TEAM_PRICE_LABEL} after workflow qualification.`;
+
+const PAYWALL_MESSAGES = {
+  capture_feedback: 'You\'ve used all 3 free feedback captures. Your agent is still making mistakes — upgrade to Pro to capture every one and build real prevention rules.',
+  prevention_rules: 'Free tier includes 1 prevention rule. Your agents need more protection — upgrade to Pro for unlimited rules.',
+  recall: 'Recall is a Pro feature. Your past feedback is stored locally — upgrade to search and reuse it.',
+  search_lessons: 'Lesson search is a Pro feature. Upgrade to find patterns in your agent\'s mistakes.',
+  default: 'This feature requires Pro. Start a 7-day free trial — no credit card required.',
+};
 
 function isProTier(authContext) {
   if (authContext && authContext.tier === 'pro') return true;
   if (process.env.THUMBGATE_API_KEY || process.env.THUMBGATE_PRO_MODE === '1' || process.env.THUMBGATE_NO_RATE_LIMIT === '1') return true;
-  // Also check license file for real customer Pro verification
   try {
     const { isProLicensed } = require('./license');
     if (isProLicensed()) return true;
@@ -62,38 +76,79 @@ function todayKey() {
 
 /**
  * Check and increment usage for a given action.
+ * Now enforces LIFETIME limits in addition to daily limits.
  * Returns { allowed: true } or { allowed: false, message: string }
  */
 function checkLimit(action, authContext) {
   if (isProTier(authContext)) return { allowed: true };
 
   const limitEntry = FREE_TIER_LIMITS[action];
-  if (limitEntry == null) return { allowed: true }; // no limit for this action
+  if (limitEntry == null) return { allowed: true };
 
   const dailyLimit = typeof limitEntry === 'object' ? limitEntry.daily : limitEntry;
+  const lifetimeLimit = typeof limitEntry === 'object' ? limitEntry.lifetime : Infinity;
 
   const usage = loadUsage();
   const today = todayKey();
 
-  // Reset if different day
+  // Reset daily counts if different day
   if (usage.date !== today) {
     usage.date = today;
     usage.counts = {};
   }
 
   usage.counts = usage.counts || {};
-  const current = usage.counts[action] || 0;
+  usage.lifetime = usage.lifetime || {};
 
-  if (current >= dailyLimit) {
-    return { allowed: false, message: `Free tier limit reached. Upgrade to Pro for unlimited: https://thumbgate-production.up.railway.app/pro\n${UPGRADE_MESSAGE}`, used: current, limit: dailyLimit };
+  const dailyCurrent = usage.counts[action] || 0;
+  const lifetimeCurrent = usage.lifetime[action] || 0;
+
+  // Check lifetime limit first (the hard wall)
+  if (lifetimeLimit !== Infinity && lifetimeCurrent >= lifetimeLimit) {
+    const paywallMsg = PAYWALL_MESSAGES[action] || PAYWALL_MESSAGES.default;
+    return {
+      allowed: false,
+      message: `${paywallMsg}\n\n${UPGRADE_MESSAGE}`,
+      used: lifetimeCurrent,
+      limit: lifetimeLimit,
+      limitType: 'lifetime',
+    };
   }
 
-  // Increment
-  usage.counts[action] = current + 1;
+  // Check daily limit
+  if (dailyLimit !== Infinity && dailyCurrent >= dailyLimit) {
+    return {
+      allowed: false,
+      message: `Daily limit reached. ${UPGRADE_MESSAGE}`,
+      used: dailyCurrent,
+      limit: dailyLimit,
+      limitType: 'daily',
+    };
+  }
+
+  // Increment both counters
+  usage.counts[action] = dailyCurrent + 1;
+  usage.lifetime[action] = lifetimeCurrent + 1;
   saveUsage(usage);
 
-  const used = current + 1;
-  return { allowed: true, used, limit: dailyLimit, remaining: dailyLimit - used };
+  const remaining = lifetimeLimit === Infinity
+    ? Infinity
+    : lifetimeLimit - (lifetimeCurrent + 1);
+
+  // Warn when approaching limit
+  const warningThreshold = lifetimeLimit <= 3 ? 1 : Math.ceil(lifetimeLimit * 0.2);
+  const isNearLimit = remaining <= warningThreshold && remaining > 0;
+
+  return {
+    allowed: true,
+    used: lifetimeCurrent + 1,
+    limit: lifetimeLimit,
+    remaining,
+    limitType: 'lifetime',
+    warning: isNearLimit
+      ? `${remaining} free ${limitEntry.label} remaining. Upgrade to Pro for unlimited.`
+      : undefined,
+  };
 }
 
 /**
@@ -103,14 +158,11 @@ function getUsage(action, authContext) {
   if (isProTier(authContext)) return { count: 0, limit: Infinity, remaining: Infinity };
 
   const limitEntry = FREE_TIER_LIMITS[action];
-  const dailyLimit = limitEntry == null ? Infinity : (typeof limitEntry === 'object' ? limitEntry.daily : limitEntry);
+  const lifetimeLimit = limitEntry == null ? Infinity : (typeof limitEntry === 'object' ? (limitEntry.lifetime ?? Infinity) : Infinity);
   const usage = loadUsage();
-  const today = todayKey();
 
-  if (usage.date !== today) return { count: 0, limit: dailyLimit, remaining: dailyLimit };
-
-  const count = (usage.counts || {})[action] || 0;
-  return { count, limit: dailyLimit, remaining: Math.max(0, dailyLimit - count) };
+  const lifetimeCount = (usage.lifetime || {})[action] || 0;
+  return { count: lifetimeCount, limit: lifetimeLimit, remaining: Math.max(0, lifetimeLimit - lifetimeCount) };
 }
 
 module.exports = {
@@ -123,5 +175,6 @@ module.exports = {
   FREE_TIER_LIMITS,
   FREE_TIER_MAX_GATES,
   UPGRADE_MESSAGE,
+  PAYWALL_MESSAGES,
   USAGE_FILE,
 };

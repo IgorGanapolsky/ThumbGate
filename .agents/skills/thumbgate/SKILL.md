@@ -115,7 +115,7 @@ Pro users ($19/mo or $149/yr) unlock:
 - **Synthetic DPO augmentation** — expand real feedback into larger training datasets
 - **Gate wiring support** — help enforcing your riskiest flows in the first week
 
-Team rollout ($99/seat/mo, 3-seat minimum after intake) adds the shared hosted lesson DB,
+Team rollout ($49/seat/mo, 3-seat minimum after intake) adds the shared hosted lesson DB,
 org dashboard, approval boundaries, and proof-backed workflow hardening sprint.
 
 Upgrade: https://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a

@@ -219,8 +219,8 @@ async function main() {
     'public/guide.html must advertise the current Pro monthly and annual pricing'
   );
   check(
-    TEAM_MONTHLY_PRICE_DOLLARS === 99 && TEAM_MIN_SEATS === 3,
-    'scripts/commercial-offer.js must anchor Team at $99/seat/mo with a 3-seat minimum'
+    TEAM_MONTHLY_PRICE_DOLLARS === 49 && TEAM_MIN_SEATS === 3,
+    'scripts/commercial-offer.js must anchor Team at $49/seat/mo with a 3-seat minimum'
   );
   check(
     TEAM_PRICE_LABEL.includes(teamSeatPrice),
@@ -283,8 +283,8 @@ async function main() {
     'README.md must mention the linked feedback session flow'
   );
   check(
-    !/unlimited captures/i.test(readmeMd),
-    'README.md must not claim unlimited free-tier feedback captures'
+    !/free.*unlimited captures/i.test(readmeMd) && !/unlimited captures.*free/i.test(readmeMd),
+    'README.md must not claim the free tier has unlimited feedback captures'
   );
   check(
     !/shared team db/i.test(readmeMd),
@@ -332,12 +332,12 @@ async function main() {
     'public/index.html must mention the linked feedback session flow'
   );
   check(
-    /3 feedback captures\/day/i.test(landingHtml) && /5 lesson searches\/day/i.test(landingHtml),
-    'public/index.html must advertise the truthful free-tier capture and lesson-search limits'
+    /3 feedback captures total/i.test(landingHtml) || /3 captures/i.test(landingHtml),
+    'public/index.html must advertise the truthful free-tier capture limits'
   );
   check(
-    /5 auto-promoted gates/i.test(landingHtml),
-    'public/index.html must advertise the truthful free-tier auto-promoted gate limit'
+    /1 rule/i.test(landingHtml) || /1 prevention rule/i.test(landingHtml),
+    'public/index.html must advertise the truthful free-tier rule limit'
   );
   check(
     landingHtml.includes(PRODUCTHUNT_URL),

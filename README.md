@@ -149,7 +149,7 @@ Session 3:                     │  Session 3+:
 
 **Paid path for individual operators:** [ThumbGate Pro](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page) is the self-serve side lane for a personal dashboard and export-ready evidence.
 
-**Plain product line:** GPT preview = advice and checkpointing. Free local CLI (3 daily feedback captures, 5 daily lesson searches) = basic enforcement on one machine. Pro ($19/mo or $149/yr) = personal enforcement proof, dashboard, and exports. Team = shared hosted lesson DB, org dashboard, and shared enforcement so one correction protects every seat.
+**Plain product line:** GPT preview = advice and checkpointing. Free local CLI (3 feedback captures, 1 rule, 1 agent) = enough to prove the enforcement loop works. Pro ($19/mo or $149/yr) = uncapped captures, uncapped rules, personal dashboard, and exports. Team ($49/seat/mo, 3-seat min) = shared hosted lesson DB, org dashboard, and shared enforcement so one correction protects every seat.
 
 ---
 
@@ -273,7 +273,7 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 
 ```
 ┌──────────────────┬──────────────────────────────┬──────────────────────┐
-│   FREE           │  TEAM  $99/seat/mo (min 3)   │  PRO  $19/mo · $149/yr│
+│   FREE           │  TEAM  $49/seat/mo (min 3)   │  PRO  $19/mo · $149/yr│
 ├──────────────────┼──────────────────────────────┼──────────────────────┤
 │ Local CLI        │ Workflow Hardening Sprint     │ Personal dashboard   │
 │ Enforced gates   │ Shared hosted lesson DB       │ Export feedback data │
@@ -331,7 +331,7 @@ Yes. It's MCP-compatible and works with Claude Code, Claude Desktop, Cursor, Cod
 ThumbGate can watch for failure signals (test failures, reverted edits, error patterns) and auto-generate prevention rules — no thumbs-down required. Your agent gets smarter every session.
 
 **Is it free?**
-Free tier: **3 daily feedback captures**, **5 daily lesson searches**, unlimited recall, enforced gates. History-aware distillation turns vague feedback into specific lessons. Pro is $19/mo or $149/yr for a personal dashboard and exports. Team rollout starts at $99/seat/mo (3-seat minimum) with shared hosted lesson DB, org dashboard, approval + audit proof, and isolated execution guidance.
+Free tier: **3 feedback captures**, **1 prevention rule**, **1 agent** — enough to prove the enforcement loop works. History-aware distillation turns vague feedback into specific lessons. Pro is $19/mo or $149/yr for uncapped captures, uncapped rules, a personal dashboard and exports. Team rollout starts at $49/seat/mo (3-seat minimum) with shared hosted lesson DB, org dashboard, approval + audit proof, and isolated execution guidance.
 
 ---
 

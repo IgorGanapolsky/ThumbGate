@@ -115,8 +115,8 @@ test('E2E: public checkout -> paid local session -> usable dashboard key -> admi
   assert.equal(checkoutBody.localMode, true);
   assert.equal(checkoutBody.planId, 'team');
   assert.equal(checkoutBody.seatCount, 4);
-  assert.equal(checkoutBody.price, 396);
-  assert.equal(checkoutBody.priceLabel, '$99/seat/mo');
+  assert.equal(checkoutBody.price, 196);
+  assert.equal(checkoutBody.priceLabel, '$49/seat/mo');
   assert.ok(checkoutBody.sessionId);
   assert.ok(checkoutBody.traceId);
 

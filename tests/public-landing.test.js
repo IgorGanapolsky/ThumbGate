@@ -73,15 +73,15 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /\$0/);
   assert.match(landingPage, /\$19/);
   assert.match(landingPage, /\/mo/);
-  assert.match(landingPage, /\$99/);
+  assert.match(landingPage, /\$49/);
   assert.match(landingPage, /\/seat\/mo/);
-  assert.match(landingPage, /Forever free/);
-  assert.match(landingPage, /CLI-first local enforcement for one developer/i);
+  assert.match(landingPage, /See how it works/);
+  assert.match(landingPage, /3 captures.*1 rule.*1 agent/i);
   assert.match(landingPage, /solo side lane/i);
   assert.match(landingPage, /Shared enforcement/i);
   assert.match(landingPage, /Install Free/);
   assert.match(landingPage, /Free Trial|Upgrade to Pro/i);
-  assert.match(landingPage, /Most Popular/i);
+  assert.match(landingPage, /7-DAY FREE TRIAL/i);
   assert.match(landingPage, /Start Workflow Hardening Sprint/);
 });
 
@@ -191,13 +191,12 @@ test('public landing page Pro tier uses outcome-framed bullets that justify upgr
   assert.match(landingPage, /DPO training data export/i);
   assert.match(landingPage, /ready-to-use preference pairs for fine-tuning/i);
   assert.match(landingPage, /Personal local dashboard/i);
-  assert.match(landingPage, /export-ready evidence/i);
+  assert.match(landingPage, /Review-ready workflow support/i);
   // Persona targeting for Pro
   assert.match(landingPage, /individual operator/i);
-  assert.match(landingPage, /without starting the team rollout motion/i);
-  // Upgrade triggers
-  assert.match(landingPage, /Choose Pro when:/i);
-  assert.match(landingPage, /review-ready evidence/i);
+  // Model hardening and HuggingFace export
+  assert.match(landingPage, /Model Hardening Advisor/i);
+  assert.match(landingPage, /HuggingFace dataset export/i);
 });
 
 test('public landing page includes an explicit Team rollout lane with shared workflow intake', () => {
