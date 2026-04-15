@@ -452,6 +452,22 @@ __GA_BOOTSTRAP__
   .footer-links a:hover { color: var(--text); }
   .footer-copy { font-size: 12px; color: var(--text-muted); }
 
+  /* CONVERSION HIERARCHY — reduce visual weight of secondary sections */
+  .hero-secondary-ctas a { transition: opacity 0.15s; }
+  .hero-secondary-ctas a:hover { opacity: 1 !important; }
+  .hero-trust-bar { border-top: 1px solid var(--border); padding-top: 16px; }
+  
+  /* Make the terminal demo more prominent when placed after hero */
+  .code-section { padding: 40px 0 60px; }
+  .code-section .code-block { max-width: 720px; border: 1px solid rgba(34,211,238,0.2); }
+  
+  /* Reduce visual density of agent-specific sections */
+  #claude-code-section, #thumbgate-gpt { opacity: 0.92; }
+  #claude-code-section:hover, #thumbgate-gpt:hover { opacity: 1; }
+  
+  /* Simplify proof bar — make it less overwhelming */
+  .proof-bar { font-size: 11px; gap: 16px; opacity: 0.8; }
+  
   /* RESPONSIVE */
   @media (max-width: 700px) {
     .steps { grid-template-columns: 1fr; }
@@ -488,19 +504,19 @@ __GA_BOOTSTRAP__
     <a href="#" class="nav-logo"><span>👍👎</span> ThumbGate</a>
     <div class="nav-links">
       <a href="#how-it-works">How It Works</a>
-      <a href="#compatibility">Compatibility</a>
-      <a href="#compare-guides">Comparisons</a>
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
-      <a href="/guide">Setup Guide</a>
+      <a href="#compatibility" style="display:none;">Compatibility</a>
+      <a href="#compare-guides" style="display:none;">Comparisons</a>
+      <a href="/guide" style="display:none;">Setup Guide</a>
       <a href="/learn">Learn</a>
-      <a href="/compare">Compare</a>
-      <a href="/dashboard">Dashboard Demo</a>
-      <a href="#claude-code-section" class="nav-claude" onclick="posthog.capture('nav_claude_click')">Claude</a>
-      <a href="#workflow-sprint-intake" onclick="posthog.capture('workflow_sprint')">Start Sprint</a>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" target="_blank" rel="noopener" onclick="posthog.capture('nav_claude_extension_click',{cta:'install_claude_extension'})" class="nav-cta" style="background:#d97706;">Claude Extension</a>
-      <a href="/go/gpt?utm_source=website&utm_medium=nav&utm_campaign=chatgpt_gpt&cta_id=nav_open_gpt&cta_placement=nav" target="_blank" rel="noopener" onclick="posthog.capture('nav_cta_click',{cta:'open_gpt'})" class="nav-cta">Open GPT</a>
+      <a href="/compare" style="display:none;">Compare</a>
+      <a href="/dashboard" style="display:none;">Dashboard Demo</a>
+      <a href="#claude-code-section" class="nav-claude" onclick="posthog.capture('nav_claude_click')" style="display:none;">Claude</a>
+      <a href="#workflow-sprint-intake" onclick="posthog.capture('workflow_sprint')" style="display:none;">Start Sprint</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" target="_blank" rel="noopener" onclick="posthog.capture('nav_claude_extension_click',{cta:'install_claude_extension'})" class="nav-cta" style="background:#d97706;display:none;">Claude Extension</a>
+      <a href="/go/gpt?utm_source=website&utm_medium=nav&utm_campaign=chatgpt_gpt&cta_id=nav_open_gpt&cta_placement=nav" target="_blank" rel="noopener" onclick="posthog.capture('nav_cta_click',{cta:'open_gpt'})" class="nav-cta">Install Free</a>
     </div>
   </div>
 </nav>
@@ -510,8 +526,8 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="hero-thumbs">👍👎</div>
     <div class="hero-badge">● Block your first repeated AI mistake in 5 minutes</div>
-    <h1>Stop the same AI mistake<br>before it runs again.</h1>
-    <p style="font-size:18px;color:var(--text-muted);max-width:660px;margin:0 auto 20px;line-height:1.6;">Give your AI agent a <code>thumbs down</code> when it makes a mistake. ThumbGate captures it, distills a lesson, and blocks the pattern from ever repeating.<br><strong style="color:var(--text)">Works with Claude Code, Cursor, Codex, Gemini, Amp, and any MCP-compatible agent.</strong></p>
+    <h1>Stop expensive AI agent mistakes<br>before they happen.</h1>
+    <p style="font-size:18px;color:var(--text-muted);max-width:660px;margin:0 auto 20px;line-height:1.6;">Your AI agent keeps making the same mistake? Give it a <code>thumbs down</code>. ThumbGate turns that into a <strong style="color:var(--text)">permanent gate</strong> that blocks the pattern before the next tool call.<br><span style="color:var(--text-muted);font-size:15px;">Works with Claude Code, Cursor, Codex, Gemini, Amp, and any MCP-compatible agent.</span></p>
     <div class="hero-signals">
       <div class="signal-pill signal-down">👎 Prevent expensive mistakes: force-pushes, destructive SQL, bad deploys</div>
       <div class="signal-pill signal-up">✅ Fix it once, then block the repeat before the next tool call</div>
@@ -525,11 +541,19 @@ __GA_BOOTSTRAP__
         <span class="copy-hint">click to copy</span>
       </div>
       <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="posthog.capture('hero_install_click',{cta:'install_cli'})" class="btn-gpt-page btn-install-hero" style="font-size:18px;padding:16px 36px;">Install Free CLI</a>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('hero_claude_extension_click',{cta:'install_claude_extension'})" style="font-size:16px;padding:14px 28px;background:#d97706;color:#fff;box-shadow:0 0 0 1px rgba(217,119,6,0.32), 0 12px 32px rgba(217,119,6,0.18);">Install Claude Extension</a>
-      <a href="/go/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_upgrade&cta_id=hero_go_pro&cta_placement=hero&plan_id=pro&landing_path=%2F" onclick="posthog.capture('hero_pro_click',{cta:'go_pro'})" class="btn-pro-page" style="font-size:13px;padding:10px 18px;margin-bottom:4px;opacity:0.85;">Upgrade to Pro — $19/mo</a>
-      <a href="/go/github?utm_source=website&utm_medium=hero_cta&utm_campaign=github_repo&cta_id=hero_star_github&cta_placement=hero" target="_blank" rel="noopener" class="btn-free" style="display:inline-flex;align-items:center;gap:6px;padding:11px 20px;border-radius:999px;">⭐ Star on GitHub</a>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" class="btn-install-link" target="_blank" rel="noopener" onclick="posthog.capture('hero_codex_plugin_click',{cta:'install_codex_plugin'})" style="font-size:13px;color:var(--text-muted);text-decoration:none;padding:8px 14px;">Install Codex plugin →</a>
-      <a href="/go/gpt?utm_source=website&utm_medium=hero_cta&utm_campaign=chatgpt_gpt&cta_id=hero_open_gpt&cta_placement=hero" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('hero_cta_click',{cta:'open_gpt'})" style="font-size:13px;padding:10px 18px;background:transparent;border:1px solid var(--green);color:var(--green);">Open ThumbGate GPT</a>
+      <div class="hero-secondary-ctas" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:8px;opacity:0.7;">
+        <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('hero_claude_extension_click',{cta:'install_claude_extension'})" style="font-size:12px;padding:8px 16px;background:#d97706;color:#fff;box-shadow:none;">Install Claude Extension</a>
+        <a href="/go/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_upgrade&cta_id=hero_go_pro&cta_placement=hero&plan_id=pro&landing_path=%2F" onclick="posthog.capture('hero_pro_click',{cta:'go_pro'})" class="btn-pro-page" style="font-size:12px;padding:8px 16px;opacity:0.7;">Upgrade to Pro — $19/mo</a>
+        <a href="/go/github?utm_source=website&utm_medium=hero_cta&utm_campaign=github_repo&cta_id=hero_star_github&cta_placement=hero" target="_blank" rel="noopener" class="btn-free" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;font-size:12px;">⭐ Star on GitHub</a>
+        <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" class="btn-install-link" target="_blank" rel="noopener" onclick="posthog.capture('hero_codex_plugin_click',{cta:'install_codex_plugin'})" style="font-size:11px;color:var(--text-muted);text-decoration:none;padding:6px 10px;">Install Codex plugin →</a>
+        <a href="/go/gpt?utm_source=website&utm_medium=hero_cta&utm_campaign=chatgpt_gpt&cta_id=hero_open_gpt&cta_placement=hero" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('hero_cta_click',{cta:'open_gpt'})" style="font-size:11px;padding:6px 12px;background:transparent;border:1px solid rgba(74,222,128,0.3);color:var(--green);">Open ThumbGate GPT</a>
+      </div>
+    </div>
+    <div class="hero-trust-bar" style="display:flex;justify-content:center;flex-wrap:wrap;gap:20px;margin:20px auto 0;max-width:660px;font-size:12px;color:var(--text-muted);">
+      <span style="display:inline-flex;align-items:center;gap:4px;">🔓 MIT Open Source</span>
+      <span style="display:inline-flex;align-items:center;gap:4px;">⭐ 14 GitHub Stars</span>
+      <span style="display:inline-flex;align-items:center;gap:4px;">🛡️ Local-first — no cloud required</span>
+      <span style="display:inline-flex;align-items:center;gap:4px;">🔌 6 agent integrations</span>
     </div>
     <p style="font-size:13px;color:var(--text-muted);margin:16px auto 0;max-width:660px;">No, you do not have to chat inside the GPT forever. The GPT is advice and checkpointing; local hooks do the hard blocking for Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and MCP-compatible agents.</p>
     <details style="margin:20px auto 0;max-width:360px;text-align:center;" onclick="posthog.capture('hero_demo_open')">
@@ -583,6 +607,31 @@ __GA_BOOTSTRAP__
       <span class="dot"></span>
       <a href="#compatibility">Claude Code · Cursor · Codex · Gemini · Amp · OpenCode</a>
     </div>
+  </div>
+</section>
+
+<!-- CODE EXAMPLE — moved up for conversion: show the product immediately after hero -->
+<section class="code-section">
+  <div class="container">
+    <div class="code-block" style="box-shadow:0 0 40px rgba(34,211,238,0.08);">
+      <div class="code-header">
+        <div class="code-dot red"></div>
+        <div class="code-dot yellow"></div>
+        <div class="code-dot green"></div>
+        <span>terminal — see it work in 30 seconds</span>
+      </div>
+      <div class="code-body" style="font-size:14px;">
+        <div><span class="comment"># Install in 30 seconds</span></div>
+        <div><span class="fn">npx</span> thumbgate init</div>
+        <div>&nbsp;</div>
+        <div><span class="comment"># Your agent tries to delete production db...</span></div>
+        <div><span class="keyword">⛔ Gate blocked:</span> <span class="string">"Never run DROP on production tables"</span></div>
+        <div><span class="comment"># Rule auto-generated from your previous 👎</span></div>
+        <div>&nbsp;</div>
+        <div><span class="comment"># That's it. One thumbs-down = one permanent gate.</span></div>
+      </div>
+    </div>
+    <p style="text-align:center;margin-top:16px;font-size:14px;color:var(--text-muted);">This is the entire product in 2 lines. Install, give feedback, gates auto-generate.</p>
   </div>
 </section>
 
@@ -977,6 +1026,10 @@ __GA_BOOTSTRAP__
           <li>Review-ready workflow support — we help you wire the riskiest flows first: migrations, force-pushes, deploys, and CI</li>
         </ul>
         <div class="trial-badge" style="background:var(--cyan);color:#000;display:inline-block;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;margin-bottom:12px;">7-DAY FREE TRIAL</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <input type="email" id="pro-email" data-buyer-email placeholder="you@company.com" style="flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-raised);color:var(--text);font-size:14px;">
+          <a href="/go/pro?utm_source=website&utm_medium=pricing_card&utm_campaign=pro_upgrade&cta_id=pricing_pro_upgrade&cta_placement=pricing&plan_id=pro&landing_path=%2F" id="pro-checkout-link" class="btn-pro" onclick="handleProTrial();return false;" style="display:flex;align-items:center;padding:10px 20px;font-size:14px;white-space:nowrap;">Start Free Trial</a>
+        </div>
         <a href="/go/pro?utm_source=website&utm_medium=pricing_card&utm_campaign=pro_upgrade&cta_id=pricing_pro_upgrade&cta_placement=pricing&plan_id=pro&landing_path=%2F" class="btn-pro" onclick="posthog.capture('pricing_cta_click',{cta:'pro_upgrade',plan:'pro'})" style="display:block;width:100%;text-align:center;padding:12px;font-size:15px;">Upgrade to Pro — $19/mo</a>
         <p style="font-size:11px;color:#666;margin-top:8px;">Start with the free CLI. Upgrade after one real blocked repeat when you hit the 3 captures/day limit or need dashboard proof, DPO export, and export-ready evidence.</p>
       </div>
@@ -1011,7 +1064,9 @@ __GA_BOOTSTRAP__
     <div class="section-label">Team Pilot</div>
     <h2 class="section-title">Start with one repo, one workflow, one repeat failure</h2>
     <p style="color:var(--text-dim);max-width:720px;margin:0 auto 16px;">This is the fastest path to first paid value for teams. Start with one workflow, one owner, and one blocker. The intake is designed to prove that ThumbGate reduces review churn, rollout risk, or repeated agent mistakes before a wider rollout.</p>
-    <form class="team-form" action="/v1/intake/workflow-sprint" method="POST">
+    <details style="max-width:860px;margin:0 auto;">
+      <summary style="cursor:pointer;color:var(--green);font-size:16px;font-weight:600;text-align:center;padding:16px;border:1px solid rgba(74,222,128,0.3);border-radius:12px;list-style:none;">Open Team Pilot Intake Form →</summary>
+    <form class="team-form" action="/v1/intake/workflow-sprint" method="POST" style="margin-top:16px;">
       <input type="hidden" name="ctaId" value="workflow_sprint_intake">
       <input type="hidden" name="ctaPlacement" value="team_pricing">
       <input type="hidden" name="planId" value="team">
@@ -1026,6 +1081,7 @@ __GA_BOOTSTRAP__
         <button type="submit" class="btn-team">Start Team Pilot Intake</button>
       </div>
     </form>
+    </details>
   </div>
 </section>
 
@@ -1086,9 +1142,9 @@ __GA_BOOTSTRAP__
 <!-- NEWSLETTER SIGNUP -->
 <section class="compatibility" id="newsletter" style="padding: 48px 0;">
   <div class="container" style="text-align: center;">
-    <div class="section-label">Buyer Follow-Up</div>
-    <h2 class="section-title" style="margin-bottom: 16px;">Not ready to buy today? Keep the sprint brief, demo, and discovery notes one click away.</h2>
-    <p style="color: var(--text-dim); margin-bottom: 24px; max-width: 560px; margin-left: auto; margin-right: auto;">Save your work email for the workflow sprint brief, new gate patterns, and buyer-facing proof updates. If you later choose the solo Pro checkout, we keep that path prefilled on this device too.</p>
+    <div class="section-label">Stay Updated</div>
+    <h2 class="section-title" style="margin-bottom: 16px;">Get notified when we ship new gates and integrations.</h2>
+    <p style="color: var(--text-dim); margin-bottom: 24px; max-width: 560px; margin-left: auto; margin-right: auto;">Join the mailing list for new gate patterns, agent integration updates, and product news. If you later choose Pro, we keep checkout prefilled on this device.</p>
     <form action="/api/newsletter" method="POST" data-newsletter-form data-page="homepage" data-intent="buyer_follow_up" style="display: flex; gap: 8px; max-width: 480px; margin: 0 auto; flex-wrap: wrap; justify-content: center;">
       <input type="email" name="email" data-buyer-email placeholder="you@company.com" required style="flex: 1; min-width: 220px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-raised); color: var(--text); font-size: 15px;">
       <button type="submit" style="padding: 12px 24px; background: var(--cyan); color: #000; border: none; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer;">Get sprint brief + updates</button>
@@ -1101,17 +1157,19 @@ __GA_BOOTSTRAP__
 <section class="final-cta">
   <div class="container">
     <h2>Stop the same mistake before it runs again.</h2>
-    <p>Install free. No credit card. No signup. Hit your first gate in 60 seconds. Upgrade to Pro when you need the dashboard and exports.</p>
+    <p>Install free. No credit card. No signup. Hit your first gate in 60 seconds.</p>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;align-items:center;">
       <div class="hero-install" onclick="copyInstall(this)" title="Click to copy" style="margin-bottom:0;font-size:16px;padding:14px 24px;border:2px solid var(--cyan);">
         <span class="prompt">$</span>
         <span class="cmd">npx thumbgate init</span>
         <span class="copy-hint">click to copy</span>
       </div>
-      <a href="/go/install?utm_source=website&utm_medium=homepage_final&utm_campaign=install_free&cta_id=final_install_cli&cta_placement=final_cta" onclick="posthog.capture('final_install_click',{cta:'install_cli'})" class="btn-pro btn-install-link" style="padding:12px 32px;font-size:15px;">Install Free CLI</a>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('final_claude_extension_click',{cta:'install_claude_extension'})" style="padding:12px 28px;font-size:15px;background:#d97706;color:#fff;">Install Claude Extension</a>
-      <a href="/go/pro?utm_source=website&utm_medium=final_cta&utm_campaign=pro_upgrade&cta_id=final_go_pro&cta_placement=final_cta&plan_id=pro&landing_path=%2F" onclick="posthog.capture('final_pro_click',{cta:'go_pro'})" class="btn-pro" style="padding:10px 24px;font-size:13px;opacity:0.85;">Upgrade to Pro — $19/mo</a>
-      <a href="#workflow-sprint-intake" class="btn-team" style="background:var(--green);">Start Workflow Hardening Sprint</a>
+      <a href="/go/install?utm_source=website&utm_medium=homepage_final&utm_campaign=install_free&cta_id=final_install_cli&cta_placement=final_cta" onclick="posthog.capture('final_install_click',{cta:'install_cli'})" class="btn-pro btn-install-link" style="padding:14px 36px;font-size:16px;">Install Free CLI</a>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;align-items:center;margin-top:12px;opacity:0.7;">
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('final_claude_extension_click',{cta:'install_claude_extension'})" style="padding:8px 16px;font-size:12px;background:#d97706;color:#fff;">Install Claude Extension</a>
+      <a href="/go/pro?utm_source=website&utm_medium=final_cta&utm_campaign=pro_upgrade&cta_id=final_go_pro&cta_placement=final_cta&plan_id=pro&landing_path=%2F" onclick="posthog.capture('final_pro_click',{cta:'go_pro'})" class="btn-pro" style="padding:8px 16px;font-size:12px;opacity:0.85;">Upgrade to Pro — $19/mo</a>
+      <a href="#workflow-sprint-intake" class="btn-team" style="padding:8px 16px;font-size:12px;">Start Workflow Hardening Sprint</a>
     </div>
   </div>
 </section>
