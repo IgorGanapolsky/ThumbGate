@@ -85,7 +85,7 @@ PH wants you to line up 10+ hunters in advance. Start DMing today.
 
 - Cold outreach (20 targets/day): [docs/marketing/cold-outreach-sequence.md](docs/marketing/cold-outreach-sequence.md)
 - Target list: [docs/OUTREACH_TARGETS.md](docs/OUTREACH_TARGETS.md) — List A (consulting firms) first, highest ACV.
-- Team intake is your highest-value funnel at $99/seat/mo × 3-seat minimum = $297 MRR per close.
+- Team intake is your highest-value funnel at $49/seat/mo × 3-seat minimum = $147 MRR per close.
 
 ---
 

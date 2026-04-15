@@ -18,7 +18,7 @@
 These tiers are donation rails, not the canonical ThumbGate pricing surface. Current commercial truth remains:
 
 - Pro: `$19/mo or $149/yr` for individual operators.
-- Team: `$99/seat/mo` with a `3`-seat minimum after workflow qualification.
+- Team: `$49/seat/mo` with a `3`-seat minimum after workflow qualification.
 - GitHub Sponsors should not publish alternate Team pricing or lifetime Pro claims.
 
 ### $5/mo — Supporter
@@ -52,7 +52,7 @@ These tiers are donation rails, not the canonical ThumbGate pricing surface. Cur
 - Approval boundaries and rollout proof across operators
 - Support scope defined after the Workflow Hardening Sprint
 
-**Rationale:** GitHub Sponsors is too blunt for Team rollout. Team pricing starts at `$99/seat/mo` with a `3`-seat minimum and should be sold through intake so scope, seats, proof, and support boundaries are explicit.
+**Rationale:** GitHub Sponsors is too blunt for Team rollout. Team pricing starts at `$49/seat/mo` with a `3`-seat minimum and should be sold through intake so scope, seats, proof, and support boundaries are explicit.
 
 ---
 
@@ -120,7 +120,7 @@ Pro sponsors receive a `thumbgate-pro` license as part of their tier. Team buyer
 | Thompson Sampling bandit | Adaptive lesson retrieval | $19+/mo |
 | ContextFS context packs | `npm run feedback:rules` context assembly | $19+/mo |
 | DPO export for fine-tuning | `npm run feedback:export:dpo` | $19+/mo |
-| Team rollout | Shared lesson DB, org visibility, approval boundaries | Intake, then $99/seat/mo |
+| Team rollout | Shared lesson DB, org visibility, approval boundaries | Intake, then $49/seat/mo |
 | Minimum Team scope | Qualified workflow and at least 3 seats | Intake-led |
 
 ---

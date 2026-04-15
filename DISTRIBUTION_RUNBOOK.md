@@ -89,7 +89,7 @@ Never spend on a cold channel. Amplify what's already working.
 
 ## Outbound cadence (B2B Team plan — highest ACV)
 
-Target: 10 cold outreaches/day. Close ratio industry average ~2% → ~1 closed Team account/month = $297 MRR.
+Target: 10 cold outreaches/day. Close ratio industry average ~2% → ~1 closed Team account/month = $147 MRR.
 
 ```bash
 # Target list

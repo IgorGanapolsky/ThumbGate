@@ -561,7 +561,7 @@ __GA_BOOTSTRAP__
       <video src="/assets/tiktok-agent-memory.mp4" controls playsinline preload="metadata" style="margin-top:12px;width:100%;max-width:320px;border-radius:12px;border:1px solid var(--border);background:#000;"></video>
       <a href="/checkout/pro?utm_source=website&utm_medium=hero_demo&utm_campaign=pro_trial&cta_id=hero_post_demo" onclick="posthog.capture('hero_cta_click',{cta:'start_trial_post_demo'})" style="display:block;margin-top:14px;color:var(--cyan);font-size:14px;font-weight:700;text-decoration:none;">→ Start 7-day free trial</a>
     </details>
-    <p style="font-size:13px;color:var(--text-muted);margin:8px auto 28px;max-width:560px;">Free local CLI proves the enforcement loop on one machine. Pro adds personal enforcement proof, the gate debugger, DPO export, and a dashboard. Team shares the gates across seats. <a href="#pricing" style="color:var(--cyan);text-decoration:none;">See all plans →</a></p>
+    <p style="font-size:13px;color:var(--text-muted);margin:8px auto 28px;max-width:560px;">Your agent has no memory. Every session, the same wrong pattern runs. ThumbGate turns a single correction into a permanent block — before the next tool call fires. <a href="#pricing" style="color:var(--cyan);text-decoration:none;">See all plans →</a></p>
     <div class="first-gate-card" id="first-gate">
       <div class="section-label" style="text-align:left;margin-bottom:8px;">First-Dollar Activation Path</div>
       <h2>Prove one blocked repeat before asking anyone to buy.</h2>
@@ -972,21 +972,21 @@ __GA_BOOTSTRAP__
 <section class="pricing" id="pricing">
   <div class="container">
     <div class="section-label">Pricing</div>
-    <h2 class="section-title">Install free. Pro adds enforcement proof. Team shares it across seats.</h2>
+    <h2 class="section-title">Stop paying for agent mistakes you already fixed.</h2>
     <div class="pricing-grid">
       <div class="price-card free-highlight" style="border-color:var(--cyan);box-shadow:0 0 40px var(--cyan-dim), inset 0 1px 0 rgba(34,211,238,0.15);position:relative;">
-        <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--cyan);color:#000;padding:4px 16px;border-radius:100px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;">Most Popular</div>
         <div class="tier" style="color:var(--cyan);">Free</div>
         <div class="price">$0</div>
-        <div class="price-sub">Forever free · CLI-first local enforcement for one developer</div>
-        <p style="font-size:13px;color:#aaa;margin-bottom:16px;">For solo developers who want to stop the same agent mistake from showing up twice and prove one blocked repeat before a team rollout conversation exists.</p>
+        <div class="price-sub">See how it works. Hit the wall. Then decide.</div>
+        <p style="font-size:13px;color:#aaa;margin-bottom:16px;">3 captures, 1 rule, 1 agent. Enough to prove the enforcement loop works. When you need more, you will know.</p>
         <ul>
-          <li>3 feedback captures/day · 5 lesson searches/day · unlimited recall</li>
-          <li>5 auto-promoted gates plus the core safety policy</li>
+          <li><strong>3 feedback captures total</strong> (not per day)</li>
+          <li>1 prevention rule</li>
+          <li>1 agent</li>
+          <li>No recall or lesson search</li>
+          <li>No exports</li>
           <li>All MCP integrations (Claude Code, Cursor, Codex, etc.)</li>
           <li>PreToolUse hook blocking</li>
-          <li>Local SQLite lesson DB</li>
-          <li>Unified context assembly — one call gets session, lessons, guards, and code-graph</li>
           <li><a href="/guide" style="color:var(--cyan);text-decoration:underline;">Setup guide for all agents →</a></li>
         </ul>
         <div class="hero-install" onclick="copyInstall(this)" title="Click to copy" style="margin-bottom:12px;width:100%;justify-content:center;">
@@ -1000,9 +1000,9 @@ __GA_BOOTSTRAP__
         <div class="tier">Solo Pro</div>
         <div class="price">$19<span style="font-size:16px;color:var(--text-dim)">/mo</span></div>
         <div class="price-sub">or $149/yr (save 35%) · Personal dashboard + enforcement proof</div>
-        <p style="font-size:13px;color:var(--cyan);margin-bottom:16px;font-weight:500;">For an individual operator who wants the gate debugger, personal dashboard, proof-ready exports, and export-ready evidence without starting the team rollout motion.</p>
+        <p style="font-size:13px;color:var(--cyan);margin-bottom:16px;font-weight:500;">Unlimited captures, unlimited rules, full recall. $19/mo costs less than 20 minutes of re-fixing a mistake your agent already learned to avoid.</p>
         <div class="pro-upgrade-triggers" style="font-size:12px;color:#aaa;margin-bottom:12px;">
-          <strong style="color:#fff;">Choose Pro when:</strong> you want review-ready evidence, need your own dashboard, or need to show which mistakes were blocked.
+          <strong style="color:#fff;">No credit card required.</strong> 7-day free trial. Cancel anytime. Your rules and captures stay local.
         </div>
         <div class="dashboard-preview" style="margin-bottom:16px;border:1px solid #333;border-radius:8px;overflow:hidden;">
           <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);padding:16px;text-align:center;">
@@ -1031,15 +1031,15 @@ __GA_BOOTSTRAP__
           <a href="/go/pro?utm_source=website&utm_medium=pricing_card&utm_campaign=pro_upgrade&cta_id=pricing_pro_upgrade&cta_placement=pricing&plan_id=pro&landing_path=%2F" id="pro-checkout-link" class="btn-pro" onclick="handleProTrial();return false;" style="display:flex;align-items:center;padding:10px 20px;font-size:14px;white-space:nowrap;">Start Free Trial</a>
         </div>
         <a href="/go/pro?utm_source=website&utm_medium=pricing_card&utm_campaign=pro_upgrade&cta_id=pricing_pro_upgrade&cta_placement=pricing&plan_id=pro&landing_path=%2F" class="btn-pro" onclick="posthog.capture('pricing_cta_click',{cta:'pro_upgrade',plan:'pro'})" style="display:block;width:100%;text-align:center;padding:12px;font-size:15px;">Upgrade to Pro — $19/mo</a>
-        <p style="font-size:11px;color:#666;margin-top:8px;">Start with the free CLI. Upgrade after one real blocked repeat when you hit the 3 captures/day limit or need dashboard proof, DPO export, and export-ready evidence.</p>
+        <p style="font-size:11px;color:#666;margin-top:8px;">No credit card required. Cancel anytime. Your rules and captures stay local.</p>
       </div>
       <div class="price-card team">
         <div class="tier">Team</div>
-        <div class="price">$99<span style="font-size:16px;color:var(--text-dim)">/seat/mo</span></div>
-        <div class="price-sub">3-seat minimum · intake-led rollout for the first workflow</div>
-        <p style="font-size:13px;color:var(--green);margin-bottom:16px;font-weight:500;">For teams shipping AI-generated changes across shared repos who need one correction to protect every reviewer and runtime. This is the primary buying motion.</p>
+        <div class="price">$49<span style="font-size:16px;color:var(--text-dim)">/seat/mo</span></div>
+        <div class="price-sub">3-seat minimum · One engineer's correction protects the whole team</div>
+        <p style="font-size:13px;color:var(--green);margin-bottom:16px;font-weight:500;">When one engineer teaches the agent not to delete staging data, that lesson applies to every agent on the team. Stop paying the same mistake tax across different developers.</p>
         <div class="pro-upgrade-triggers" style="font-size:12px;color:#aaa;margin-bottom:12px;">
-          <strong style="color:#fff;">Best first paid motion:</strong> one workflow, one owner, one proof review. Qualify the blocker first, then expand into seats.
+          <strong style="color:#fff;">Previously $49/seat.</strong> Now $49/seat. Start with one repo, one workflow, one repeat failure.
         </div>
         <ul>
           <li>Workflow hardening sprint — map one painful workflow, one repeated failure, and one buyer proof review before wider rollout</li>
@@ -1053,7 +1053,7 @@ __GA_BOOTSTRAP__
           <li>Proof pack — attach verification evidence and rollout diagnostics so the buyer does not have to trust a demo</li>
         </ul>
         <a href="#workflow-sprint-intake" class="btn-team">Start Workflow Hardening Sprint</a>
-        <p style="font-size:11px;color:#666;margin-top:8px;">Team pricing anchors at $99/seat/mo with a 3-seat minimum after qualification. The first step is a 30-minute intake around one real blocker.</p>
+        <p style="font-size:11px;color:#666;margin-top:8px;">$49/seat/mo with a 3-seat minimum. Start with a 30-minute intake around one real blocker.</p>
       </div>
     </div>
   </div>
@@ -1133,7 +1133,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What does Pro cost?</div>
-        <div class="faq-a">Pro is $19/mo or $149/yr (save 35%) for individual operators. Team pricing anchors at $99/seat/mo with a 3-seat minimum, and team buyers start with the workflow sprint intake instead of a blind org-wide rollout.</div>
+        <div class="faq-a">Pro is $19/mo or $149/yr for individual operators. Team is $49/seat/mo with a 3-seat minimum. Both start with a 7-day free trial, no credit card required.</div>
       </div>
     </div>
   </div>
