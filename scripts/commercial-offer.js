@@ -9,12 +9,12 @@ const TEAM_MONTHLY_PRICE_ID = 'price_1TKLUhGGBpd520QYr5pgEZit';
 
 const PRO_MONTHLY_PRICE_DOLLARS = 19;
 const PRO_ANNUAL_PRICE_DOLLARS = 149;
-const TEAM_MONTHLY_PRICE_DOLLARS = 99;
-const TEAM_ANNUAL_PRICE_DOLLARS = 1188;
+const TEAM_MONTHLY_PRICE_DOLLARS = 49;
+const TEAM_ANNUAL_PRICE_DOLLARS = 588;
 const TEAM_MIN_SEATS = 3;
 
 const PRO_PRICE_LABEL = '$19/mo or $149/yr (individual)';
-const TEAM_PRICE_LABEL = '$99/seat/mo — Agent governance for engineering teams';
+const TEAM_PRICE_LABEL = '$49/seat/mo — Agent governance for engineering teams';
 
 function normalizePlanId(value) {
   const text = String(value || '').trim().toLowerCase();
