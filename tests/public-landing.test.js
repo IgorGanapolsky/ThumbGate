@@ -27,6 +27,7 @@ test('public landing page keeps FAQPage JSON-LD parity for SEO and GEO', () => {
   assert.match(landingPage, /behavioral immune system/i);
   assert.match(landingPage, /PreToolUse hook enforcement/i);
   assert.match(landingPage, /Thompson Sampling/i);
+  assert.match(landingPage, /prompt evaluation/i);
 });
 
 test('public landing page routes Pro buyers through the hosted checkout surface', () => {

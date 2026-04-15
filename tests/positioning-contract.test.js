@@ -28,6 +28,7 @@ test('README explains the product as self-improving agent enforcement', () => {
   assert.match(readme, /self-improv/i);
   assert.match(readme, /enforcement/i);
   assert.match(readme, /permanently/i);
+  assert.match(readme, /prompt evaluation/i);
 });
 
 test('public surfaces lead with outcomes instead of infrastructure abstractions', () => {
