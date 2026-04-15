@@ -539,13 +539,13 @@ __GA_BOOTSTRAP__
     </details>
     <p style="font-size:13px;color:var(--text-muted);margin:8px auto 28px;max-width:560px;">Free local CLI proves the enforcement loop on one machine. Pro adds personal enforcement proof, the gate debugger, DPO export, and a dashboard. Team shares the gates across seats. <a href="#pricing" style="color:var(--cyan);text-decoration:none;">See all plans →</a></p>
     <div class="first-gate-card" id="first-gate">
-      <div class="section-label" style="text-align:left;margin-bottom:8px;">Get Started in 60 Seconds</div>
+      <div class="section-label" style="text-align:left;margin-bottom:8px;">First-Dollar Activation Path</div>
       <h2>Prove one blocked repeat before asking anyone to buy.</h2>
       <p>The fastest path to value: one person, one repeated mistake, one gate that blocks it permanently.</p>
       <div class="first-gate-steps">
         <div class="first-gate-step">
           <strong>1. Install ThumbGate</strong>
-          <p>Run <code>npx thumbgate init</code> in your repo. Or install the <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" style="color:var(--cyan);">Claude Extension</a>, <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" style="color:var(--cyan);">Codex plugin</a>, or <a href="/go/gpt" style="color:var(--cyan);">open the GPT</a>.</p>
+          <p>Run <code>npx thumbgate init</code> in your repo. Or install the <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" style="color:var(--cyan);">Claude Extension</a>, <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" style="color:var(--cyan);">Codex plugin</a>, or <a href="/go/gpt" style="color:var(--cyan);">open the GPT</a>. Native ChatGPT rating buttons are not the ThumbGate capture path.</p>
         </div>
         <div class="first-gate-step">
           <strong>2. Give feedback</strong>
@@ -553,11 +553,10 @@ __GA_BOOTSTRAP__
         </div>
         <div class="first-gate-step">
           <strong>3. The gate blocks the repeat</strong>
-          <p>Next time the agent tries the same mistake, the PreToolUse hook fires and physically blocks it. No more fix-loops.</p>
+          <p>Next time the agent tries the same mistake, the PreToolUse hook fires and physically blocks it. Upgrade after one real blocked repeat when you need the dashboard and exports.</p>
         </div>
       </div>
-      <div class="first-gate-example">$ npx thumbgate init --agent claude-code
-✅ ThumbGate initialized. PreToolUse hooks active. Give feedback with 👍 or 👎.</div>
+      <div class="first-gate-example">thumbs down: the answer ignored my request for exact files and tests; next time include file paths, commands, and verification evidence.</div>
     </div>
     <div class="proof-bar">
       <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" target="_blank" rel="noopener" style="color:var(--cyan);font-weight:600;">Claude Extension →</a>
@@ -566,11 +565,19 @@ __GA_BOOTSTRAP__
       <span class="dot"></span>
       <a href="/guide" rel="noopener">CLI setup guide →</a>
       <span class="dot"></span>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" target="_blank" rel="noopener">Codex plugin →</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" target="_blank" rel="noopener">Codex plugin download →</a>
       <span class="dot"></span>
       <a href="/go/gpt?utm_source=website&utm_medium=proof_bar&utm_campaign=chatgpt_gpt&cta_id=proof_bar_open_gpt&cta_placement=proof_bar" target="_blank" rel="noopener">ThumbGate GPT →</a>
       <span class="dot"></span>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence →</a>
+      <span class="dot"></span>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/THUMBGATE_BENCH.md" target="_blank" rel="noopener">ThumbGate Bench →</a>
+      <span class="dot"></span>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/actions" target="_blank" rel="noopener">Proof-backed CI →</a>
+      <span class="dot"></span>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/actions" target="_blank" rel="noopener">CI and proof lanes →</a>
+      <span class="dot"></span>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/RELEASE_CONFIDENCE.md" target="_blank" rel="noopener">Release confidence →</a>
       <span class="dot"></span>
       <a href="https://www.producthunt.com/products/thumbgate" target="_blank" rel="noopener">Product Hunt →</a>
       <span class="dot"></span>
@@ -614,9 +621,9 @@ __GA_BOOTSTRAP__
 <section class="gpt-path" id="thumbgate-gpt">
   <div class="container">
     <div class="gpt-panel">
-      <div class="section-label" style="text-align:left;">Also Available · ThumbGate GPT for ChatGPT</div>
-      <h2>ChatGPT users: open the GPT, give feedback, enforce locally.</h2>
-      <p>The ThumbGate GPT is the ChatGPT entrypoint for checking proposed actions and capturing thumbs-up/down lessons. Hard enforcement still runs locally after <code>npx thumbgate init</code>.</p>
+      <div class="section-label" style="text-align:left;">ChatGPT Entry Point · Live ThumbGate GPT for ChatGPT</div>
+      <h2>Open the GPT. Give typed thumbs feedback. Turn the lesson into a gate.</h2>
+      <p>ThumbGate should meet users where they already ask AI for help. The live GPT is the lowest-friction way to capture a useful thumbs-up/down lesson, check a risky action, and prove the enforcement loop before installing anything.</p>
       <div class="gpt-steps">
         <div class="gpt-step">
           <strong>1. Try the live GPT</strong>
@@ -624,7 +631,7 @@ __GA_BOOTSTRAP__
         </div>
         <div class="gpt-step">
           <strong>2. Save the signal</strong>
-          <p>Reply in chat with <code>thumbs up:</code> or <code>thumbs down:</code> plus one concrete sentence.</p>
+          <p>Reply in chat with <code>thumbs up:</code> or <code>thumbs down:</code> plus one concrete sentence. Do not rely on ChatGPT's native rating buttons for ThumbGate memory.</p>
         </div>
         <div class="gpt-step">
           <strong>3. Enforce locally</strong>
@@ -647,8 +654,8 @@ __GA_BOOTSTRAP__
     <div class="compatibility-grid">
       <a class="compat-card" href="/guides/claude-desktop" style="border-color:rgba(217,119,6,0.3);background:linear-gradient(135deg, rgba(217,119,6,0.06) 0%, var(--bg-card) 100%);">
         <h3>🧩 Claude Desktop Extension</h3>
-        <p>Install the published <code>.mcpb</code> bundle today. Claude Code users can add the repo marketplace immediately with <code>/plugin marketplace add</code>. No waiting for directory approval.</p>
-        <div class="card-arrow" style="color:#d97706;">Get the Claude Extension →</div>
+        <p>Install the published Claude Desktop plugin <code>.mcpb</code> bundle today. Claude Code users can add the repo marketplace immediately with <code>/plugin marketplace add</code>. No waiting for directory approval.</p>
+        <div class="card-arrow" style="color:#d97706;">Get the Claude plugin →</div>
       </a>
       <a class="compat-card seo-card" href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/.claude/skills/thumbgate" target="_blank" rel="noopener">
         <h3>⚡ Claude Code Skill</h3>
