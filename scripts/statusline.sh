@@ -1,7 +1,7 @@
 #!/bin/bash
-# ThumbGate Status Line for Claude Code
+# ThumbGate Status Line for Claude Code and Codex
 # Shows ThumbGate feedback stats + package version/tier at a glance.
-# Installed by: npx thumbgate init --agent claude-code
+# Installed by: npx thumbgate init --agent claude-code|codex
 
 # Resolve script directory safely (CodeQL: no uncontrolled paths)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"

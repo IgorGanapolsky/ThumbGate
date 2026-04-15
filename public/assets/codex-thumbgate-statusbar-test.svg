@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="360" viewBox="0 0 1600 360" fill="none">
+  <rect width="1600" height="360" rx="24" fill="#050816"/>
+  <rect x="24" y="24" width="1552" height="312" rx="20" fill="#0B1220" stroke="#1F2A44"/>
+  <text x="56" y="72" fill="#A78BFA" font-family="SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace" font-size="28">OpenAI Codex v0.120.0 · published ThumbGate test lane</text>
+  <rect x="56" y="116" width="1488" height="96" rx="16" fill="#111827" stroke="#243041"/>
+  <text x="88" y="176" fill="#E5E7EB" font-family="SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace" font-size="28">gpt-5.4 xhigh fast · fix/codex-statusline · Context [     ] · 0 in · 0 out</text>
+  <text x="56" y="270" fill="#7DD3FC" font-family="SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace" font-size="24">Published branch installs ThumbGate PreToolUse, UserPromptSubmit, PostToolUse, SessionStart, and statusLine wiring.</text>
+  <text x="56" y="310" fill="#94A3B8" font-family="SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace" font-size="22">Current Codex CLI footer remains native on v0.120.0, so this is the reproducible test lane you can run after npx thumbgate init --agent codex.</text>
+</svg>

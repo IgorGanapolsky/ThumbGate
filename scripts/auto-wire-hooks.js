@@ -45,6 +45,23 @@ const CLAUDE_HOOKS = {
   },
 };
 
+const CODEX_HOOKS = {
+  PreToolUse: {
+    matcher: 'Bash',
+    hooks: [{ type: 'command', command: preToolHookCommand() }],
+  },
+  UserPromptSubmit: {
+    hooks: [{ type: 'command', command: userPromptHookCommand() }],
+  },
+  PostToolUse: {
+    matcher: 'mcp__thumbgate__feedback_stats|mcp__thumbgate__dashboard',
+    hooks: [{ type: 'command', command: cacheUpdateHookCommand() }],
+  },
+  SessionStart: {
+    hooks: [{ type: 'command', command: sessionStartHookCommand() }],
+  },
+};
+
 // --- Agent detection ---
 
 function detectAgent(flagAgent) {
@@ -341,39 +358,58 @@ function codexConfigPath() {
 function wireCodexHooks(options) {
   const configPath = options.settingsPath || codexConfigPath();
   const dryRun = options.dryRun || false;
+  const desiredStatusLine = statuslineCommand();
 
   let config = loadJsonFile(configPath) || {};
   config.hooks = config.hooks || {};
 
   const added = [];
-  const preToolCmd = preToolHookCommand();
-  const userPromptCmd = userPromptHookCommand();
+  const legacyPatterns = {
+    PreToolUse: /(generate-pretool-hook\.sh|\bgate-check\b)/,
+    UserPromptSubmit: /(hook-auto-capture\.sh|hook-auto-capture\b)/,
+    PostToolUse: /(hook-thumbgate-cache-updater|cache-update\b)/,
+    SessionStart: /(thumbgate_session_start\.sh|session-start\b)/,
+  };
 
-  const preToolPruned = pruneLegacyHookEntries(config.hooks.PreToolUse, preToolCmd, /(generate-pretool-hook\.sh|\bgate-check\b)/);
-  config.hooks.PreToolUse = preToolPruned.hooks;
-  const userPromptPruned = pruneLegacyHookEntries(config.hooks.UserPromptSubmit, userPromptCmd, /(hook-auto-capture\.sh|hook-auto-capture\b)/);
-  config.hooks.UserPromptSubmit = userPromptPruned.hooks;
+  for (const [lifecycle, hookDef] of Object.entries(CODEX_HOOKS)) {
+    const hookCommand = hookDef.hooks[0].command;
+    const pruned = pruneLegacyHookEntries(config.hooks[lifecycle], hookCommand, legacyPatterns[lifecycle]);
+    config.hooks[lifecycle] = pruned.hooks;
+    if (pruned.removed) {
+      added.push({ lifecycle, command: `${hookCommand} (replaced legacy ThumbGate hook)` });
+    }
 
-  if (!hookAlreadyPresent(config.hooks.PreToolUse, preToolCmd)) {
-    config.hooks.PreToolUse = config.hooks.PreToolUse || [];
-    config.hooks.PreToolUse.push({
-      matcher: 'Bash',
-      hooks: [{ type: 'command', command: preToolCmd }],
-    });
-    added.push({ lifecycle: 'PreToolUse', command: preToolCmd });
-  }
+    if (hookAlreadyPresent(config.hooks[lifecycle], hookCommand)) {
+      continue;
+    }
 
-  if (!hookAlreadyPresent(config.hooks.UserPromptSubmit, userPromptCmd)) {
-    config.hooks.UserPromptSubmit = config.hooks.UserPromptSubmit || [];
-    config.hooks.UserPromptSubmit.push({
-      hooks: [{ type: 'command', command: userPromptCmd }],
-    });
-    added.push({ lifecycle: 'UserPromptSubmit', command: userPromptCmd });
+    config.hooks[lifecycle] = config.hooks[lifecycle] || [];
+    const entry = { hooks: hookDef.hooks };
+    if (hookDef.matcher) {
+      entry.matcher = hookDef.matcher;
+    }
+    config.hooks[lifecycle].push(entry);
+    added.push({ lifecycle, command: hookCommand });
   }
 
   if (added.length === 0) {
+    if (!config.statusLine || config.statusLine.command !== desiredStatusLine) {
+      config.statusLine = { type: 'command', command: desiredStatusLine };
+      if (!dryRun) {
+        const dir = path.dirname(configPath);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
+      }
+      return {
+        changed: true,
+        settingsPath: configPath,
+        added: [{ lifecycle: 'statusLine', command: desiredStatusLine }],
+      };
+    }
     return { changed: false, settingsPath: configPath, added: [] };
   }
+
+  config.statusLine = { type: 'command', command: desiredStatusLine };
 
   if (!dryRun) {
     const dir = path.dirname(configPath);
@@ -381,6 +417,7 @@ function wireCodexHooks(options) {
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
   }
 
+  added.push({ lifecycle: 'statusLine', command: desiredStatusLine });
   return { changed: true, settingsPath: configPath, added };
 }
 

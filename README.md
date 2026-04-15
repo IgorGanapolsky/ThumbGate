@@ -100,6 +100,14 @@ Gates are distributed across all connected agents via MCP stdio protocol. One co
 
 Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode**, and any MCP-compatible agent.
 
+### Status bar proof
+
+![Claude Code ThumbGate footer](public/assets/claude-thumbgate-statusbar.svg)
+
+![Codex ThumbGate test lane](public/assets/codex-thumbgate-statusbar-test.svg)
+
+Claude renders the live ThumbGate footer today. `npx thumbgate init --agent codex` now installs the full Codex hook bundle and writes the ThumbGate `statusLine` target into `~/.codex/config.json` so you can test it on your local Codex build immediately.
+
 ### Install Codex Plugin
 
 Download the standalone Codex plugin bundle and follow the install guide:

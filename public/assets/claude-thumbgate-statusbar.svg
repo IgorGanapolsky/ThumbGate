@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="320" viewBox="0 0 1600 320" fill="none">
+  <rect width="1600" height="320" rx="24" fill="#050816"/>
+  <rect x="24" y="24" width="1552" height="272" rx="20" fill="#0B1220" stroke="#1F2A44"/>
+  <text x="56" y="72" fill="#7DD3FC" font-family="SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace" font-size="28">Claude Code · live ThumbGate footer</text>
+  <rect x="56" y="116" width="1488" height="108" rx="16" fill="#111827" stroke="#243041"/>
+  <text x="88" y="180" fill="#E5E7EB" font-family="SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace" font-size="28">ThumbGate v1.5.1 · Pro · 21👍 107👎 → · Dashboard · Lessons</text>
+  <text x="88" y="258" fill="#94A3B8" font-family="SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace" font-size="24">Latest mistake 04/15/2026 20:24:42: Treated user as QA instead of doing TDD. Went in circles ...</text>
+</svg>
