@@ -2754,6 +2754,61 @@ test('dashboard render-spec endpoint rejects unsupported views', async () => {
   assert.match(body.detail, /Unsupported dashboard render view/);
 });
 
+test('dashboard review-state endpoint persists a checkpoint and returns zero deltas immediately after marking reviewed', async () => {
+  const feedbackLogPath = path.join(tmpFeedbackDir, 'feedback-log.jsonl');
+  const reviewStatePath = path.join(tmpFeedbackDir, 'dashboard-review-state.json');
+
+  fs.writeFileSync(feedbackLogPath, [
+    JSON.stringify({
+      id: 'fb_review_state_1',
+      signal: 'negative',
+      context: 'Fresh issue before review checkpoint',
+      timestamp: '2026-04-15T12:00:00.000Z',
+    }),
+    '',
+  ].join('\n'));
+  fs.rmSync(reviewStatePath, { force: true });
+
+  const markRes = await fetch(apiUrl('/v1/dashboard/review-state'), {
+    method: 'POST',
+    headers: authHeader,
+  });
+  assert.equal(markRes.status, 200);
+  const markBody = await markRes.json();
+  assert.equal(markBody.ok, true);
+  assert.equal(markBody.reviewDelta.hasBaseline, true);
+  assert.equal(markBody.reviewDelta.feedbackAdded, 0);
+  assert.ok(markBody.reviewState.reviewedAt);
+  assert.equal(fs.existsSync(reviewStatePath), true);
+  const afterCheckpointTime = new Date(new Date(markBody.reviewState.reviewedAt).getTime() + 60_000).toISOString();
+
+  fs.writeFileSync(feedbackLogPath, [
+    JSON.stringify({
+      id: 'fb_review_state_1',
+      signal: 'negative',
+      context: 'Fresh issue before review checkpoint',
+      timestamp: '2026-04-15T12:00:00.000Z',
+    }),
+    JSON.stringify({
+      id: 'fb_review_state_2',
+      signal: 'negative',
+      context: 'New issue after review checkpoint',
+      timestamp: afterCheckpointTime,
+    }),
+    '',
+  ].join('\n'));
+
+  const getRes = await fetch(apiUrl('/v1/dashboard/review-state'), {
+    headers: authHeader,
+  });
+  assert.equal(getRes.status, 200);
+  const getBody = await getRes.json();
+  assert.equal(getBody.reviewDelta.hasBaseline, true);
+  assert.equal(getBody.reviewDelta.feedbackAdded, 1);
+  assert.equal(getBody.reviewDelta.negativeAdded, 1);
+  assert.match(getBody.reviewDelta.latestFeedback.title, /New issue after review checkpoint/i);
+});
+
 test('billing summary includes Stripe-reconciled revenue when live processor events are available', async () => {
   process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON = JSON.stringify([
     {

@@ -14,6 +14,9 @@ process.env._TEST_REVENUE_LEDGER_PATH = path.join(tmpDir, 'revenue-events.jsonl'
 
 const {
   generateDashboard,
+  buildReviewSnapshot,
+  readDashboardReviewState,
+  writeDashboardReviewState,
   computeApprovalStats,
   computeSessionTrend,
   printDashboard,
@@ -27,6 +30,7 @@ test.beforeEach(() => {
     'memory-log.jsonl',
     'diagnostic-log.jsonl',
     'audit-trail.jsonl',
+    'dashboard-review-state.json',
     'decision-journal.jsonl',
     'intervention-policy.json',
     'telemetry-pings.jsonl',
@@ -358,6 +362,73 @@ test('generateDashboard returns complete structure with data', () => {
   assert.equal(data.analytics.funnel.visitors, 0);
   assert.ok(data.predictive.upgradePropensity.pro.score >= 0);
   assert.equal(data.templateLibrary.total, 6);
+});
+
+test('generateDashboard reports only activity since the saved review checkpoint', () => {
+  const baselineTime = '2026-04-14T10:00:00.000Z';
+  const freshTime = '2026-04-15T10:00:00.000Z';
+
+  writeFeedbackLog([
+    {
+      id: 'fb_before',
+      signal: 'positive',
+      context: 'Already reviewed feedback',
+      timestamp: baselineTime,
+    },
+    {
+      id: 'fb_after_neg',
+      signal: 'negative',
+      context: 'New regression after the checkpoint',
+      timestamp: freshTime,
+    },
+    {
+      id: 'fb_after_pos',
+      signal: 'positive',
+      context: 'New passing verification',
+      timestamp: '2026-04-15T11:00:00.000Z',
+    },
+  ]);
+  writeMemoryLog([
+    {
+      id: 'mem_after',
+      title: 'MISTAKE: New regression after the checkpoint',
+      category: 'error',
+      timestamp: '2026-04-15T11:05:00.000Z',
+    },
+  ]);
+  writeAuditLog([
+    {
+      id: 'audit_after',
+      timestamp: '2026-04-15T11:10:00.000Z',
+      decision: 'deny',
+      gateId: 'evidence-before-done',
+    },
+  ]);
+
+  const snapshot = buildReviewSnapshot(tmpDir, {
+    feedbackEntries: [
+      { signal: 'positive', timestamp: baselineTime },
+    ],
+    memoryEntries: [],
+    auditEntries: [],
+    reviewedAt: '2026-04-14T12:00:00.000Z',
+    projectRoot: null,
+  });
+  writeDashboardReviewState(tmpDir, snapshot);
+
+  const saved = readDashboardReviewState(tmpDir);
+  assert.equal(saved.reviewedAt, '2026-04-14T12:00:00.000Z');
+
+  const data = generateDashboard(tmpDir);
+  assert.ok(data.reviewDelta);
+  assert.equal(data.reviewDelta.hasBaseline, true);
+  assert.equal(data.reviewDelta.feedbackAdded, 2);
+  assert.equal(data.reviewDelta.negativeAdded, 1);
+  assert.equal(data.reviewDelta.lessonsAdded, 1);
+  assert.equal(data.reviewDelta.blocksAdded, 1);
+  assert.match(data.reviewDelta.headline, /Since your last review/i);
+  assert.match(data.reviewDelta.latestFeedback.title, /New regression after the checkpoint/i);
+  assert.match(data.reviewDelta.latestLesson.title, /New regression after the checkpoint/i);
 });
 
 test('generateDashboard summarizes learned intervention policy from mixed evidence', () => {

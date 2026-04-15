@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 const { aggregateFailureDiagnostics } = require('./failure-diagnostics');
 const { AUDIT_LOG_FILENAME } = require('./audit-trail');
 const { getBillingSummary, loadFunnelLedger, loadResolvedRevenueEvents } = require('./billing');
@@ -26,6 +27,7 @@ const { computeDecisionMetrics } = require('./decision-journal');
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'default.json');
 const LANDING_PAGE_PATH = path.join(PROJECT_ROOT, 'public', 'index.html');
+const DASHBOARD_REVIEW_STATE_FILE = 'dashboard-review-state.json';
 
 // ---------------------------------------------------------------------------
 // Data readers
@@ -70,6 +72,170 @@ function toLocalDayKey(value) {
   const month = String(ts.getMonth() + 1).padStart(2, '0');
   const day = String(ts.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+function getDashboardReviewStatePath(feedbackDir) {
+  return path.join(feedbackDir, DASHBOARD_REVIEW_STATE_FILE);
+}
+
+function inferProjectRootFromFeedbackDir(feedbackDir) {
+  if (!feedbackDir) return null;
+  const resolved = path.resolve(feedbackDir);
+  return path.basename(resolved) === '.thumbgate' ? path.dirname(resolved) : null;
+}
+
+function readGitHead(projectRoot) {
+  if (!projectRoot || !fs.existsSync(path.join(projectRoot, '.git'))) return null;
+  try {
+    return execFileSync('git', ['rev-parse', 'HEAD'], {
+      cwd: projectRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+function findLatestTimestamp(entries) {
+  return entries.reduce((latest, entry) => {
+    const timestamp = normalizeText(entry && entry.timestamp);
+    if (!timestamp) return latest;
+    if (!latest) return timestamp;
+    return new Date(timestamp).getTime() > new Date(latest).getTime() ? timestamp : latest;
+  }, null);
+}
+
+function buildReviewSnapshot(feedbackDir, options = {}) {
+  const feedbackEntries = Array.isArray(options.feedbackEntries)
+    ? options.feedbackEntries
+    : readJSONL(path.join(feedbackDir, 'feedback-log.jsonl'));
+  const memoryEntries = Array.isArray(options.memoryEntries)
+    ? options.memoryEntries
+    : readJSONL(path.join(feedbackDir, 'memory-log.jsonl'));
+  const auditEntries = Array.isArray(options.auditEntries)
+    ? options.auditEntries
+    : readJSONL(path.join(feedbackDir, AUDIT_LOG_FILENAME));
+  const projectRoot = options.projectRoot === undefined
+    ? inferProjectRootFromFeedbackDir(feedbackDir)
+    : options.projectRoot;
+
+  return {
+    reviewedAt: options.reviewedAt || new Date().toISOString(),
+    feedbackCount: feedbackEntries.length,
+    positiveCount: feedbackEntries.filter((entry) => entry.signal === 'positive').length,
+    negativeCount: feedbackEntries.filter((entry) => entry.signal === 'negative').length,
+    lessonCount: memoryEntries.length,
+    blockedCount: auditEntries.filter((entry) => entry && entry.decision === 'deny').length,
+    warnedCount: auditEntries.filter((entry) => entry && entry.decision === 'warn').length,
+    latestFeedbackAt: findLatestTimestamp(feedbackEntries),
+    latestLessonAt: findLatestTimestamp(memoryEntries),
+    gitHead: readGitHead(projectRoot),
+  };
+}
+
+function readDashboardReviewState(feedbackDir) {
+  return readJsonFile(getDashboardReviewStatePath(feedbackDir));
+}
+
+function writeDashboardReviewState(feedbackDir, snapshot) {
+  fs.mkdirSync(feedbackDir, { recursive: true });
+  fs.writeFileSync(getDashboardReviewStatePath(feedbackDir), `${JSON.stringify(snapshot, null, 2)}\n`);
+  return snapshot;
+}
+
+function selectLatestRecord(entries, mapper) {
+  let latest = null;
+  let latestTime = -Infinity;
+  for (const entry of entries) {
+    const timestamp = normalizeText(entry && entry.timestamp);
+    if (!timestamp) continue;
+    const currentTime = new Date(timestamp).getTime();
+    if (Number.isNaN(currentTime) || currentTime < latestTime) continue;
+    latest = mapper(entry);
+    latestTime = currentTime;
+  }
+  return latest;
+}
+
+function summarizeReviewDelta(feedbackEntries, memoryEntries, auditEntries, baseline, currentSnapshot) {
+  const noBaselineSummary = {
+    hasBaseline: false,
+    reviewedAt: null,
+    previousHead: null,
+    currentHead: currentSnapshot.gitHead || null,
+    feedbackAdded: feedbackEntries.length,
+    negativeAdded: feedbackEntries.filter((entry) => entry.signal === 'negative').length,
+    lessonsAdded: memoryEntries.length,
+    blocksAdded: auditEntries.filter((entry) => entry && entry.decision === 'deny').length,
+    warnsAdded: auditEntries.filter((entry) => entry && entry.decision === 'warn').length,
+    headline: 'No review checkpoint yet. Mark the current dashboard as reviewed to start seeing only new changes.',
+    latestFeedback: selectLatestRecord(feedbackEntries, (entry) => ({
+      title: pickFirstText(entry.title, entry.context, entry.whatWentWrong, entry.whatWorked) || 'Feedback event',
+      timestamp: entry.timestamp,
+      signal: entry.signal || null,
+    })),
+    latestLesson: selectLatestRecord(memoryEntries, (entry) => ({
+      title: pickFirstText(entry.title, entry.content) || 'Lesson event',
+      timestamp: entry.timestamp,
+      category: entry.category || null,
+    })),
+  };
+
+  if (!baseline || !baseline.reviewedAt) return noBaselineSummary;
+
+  const reviewedAtMs = new Date(baseline.reviewedAt).getTime();
+  if (!Number.isFinite(reviewedAtMs)) return noBaselineSummary;
+
+  const isAfterBaseline = (entry) => {
+    const timestamp = entry && entry.timestamp ? new Date(entry.timestamp).getTime() : NaN;
+    return Number.isFinite(timestamp) && timestamp > reviewedAtMs;
+  };
+  const newFeedback = feedbackEntries.filter(isAfterBaseline);
+  const newLessons = memoryEntries.filter(isAfterBaseline);
+  const newAudit = auditEntries.filter(isAfterBaseline);
+  const reviewFeedback = newFeedback.some((entry) => entry.signal === 'negative')
+    ? newFeedback.filter((entry) => entry.signal === 'negative')
+    : newFeedback;
+  const feedbackAdded = newFeedback.length;
+  const negativeAdded = newFeedback.filter((entry) => entry.signal === 'negative').length;
+  const lessonsAdded = newLessons.length;
+  const blocksAdded = newAudit.filter((entry) => entry && entry.decision === 'deny').length;
+  const warnsAdded = newAudit.filter((entry) => entry && entry.decision === 'warn').length;
+  let headline = 'No new review activity since your last checkpoint.';
+
+  if (feedbackAdded || lessonsAdded || blocksAdded || warnsAdded) {
+    const parts = [];
+    if (feedbackAdded) parts.push(`${feedbackAdded} feedback event${feedbackAdded === 1 ? '' : 's'}`);
+    if (negativeAdded) parts.push(`${negativeAdded} negative`);
+    if (lessonsAdded) parts.push(`${lessonsAdded} lesson${lessonsAdded === 1 ? '' : 's'}`);
+    if (blocksAdded) parts.push(`${blocksAdded} gate block${blocksAdded === 1 ? '' : 's'}`);
+    if (warnsAdded) parts.push(`${warnsAdded} warning${warnsAdded === 1 ? '' : 's'}`);
+    headline = `Since your last review: ${parts.join(' · ')}.`;
+  }
+
+  return {
+    hasBaseline: true,
+    reviewedAt: baseline.reviewedAt,
+    previousHead: baseline.gitHead || null,
+    currentHead: currentSnapshot.gitHead || null,
+    feedbackAdded,
+    negativeAdded,
+    lessonsAdded,
+    blocksAdded,
+    warnsAdded,
+    headline,
+    latestFeedback: selectLatestRecord(reviewFeedback, (entry) => ({
+      title: pickFirstText(entry.title, entry.context, entry.whatWentWrong, entry.whatWorked) || 'Feedback event',
+      timestamp: entry.timestamp,
+      signal: entry.signal || null,
+    })),
+    latestLesson: selectLatestRecord(newLessons, (entry) => ({
+      title: pickFirstText(entry.title, entry.content) || 'Lesson event',
+      timestamp: entry.timestamp,
+      category: entry.category || null,
+    })),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -767,6 +933,17 @@ function generateDashboard(feedbackDir, options = {}) {
   const diagnosticLogPath = path.join(feedbackDir, 'diagnostic-log.jsonl');
   const entries = readJSONL(feedbackLogPath);
   const diagnosticEntries = readJSONL(diagnosticLogPath);
+  const memoryEntries = readJSONL(path.join(feedbackDir, 'memory-log.jsonl'));
+  const auditEntries = readJSONL(path.join(feedbackDir, AUDIT_LOG_FILENAME));
+  const reviewBaseline = options.reviewBaseline === undefined
+    ? readDashboardReviewState(feedbackDir)
+    : options.reviewBaseline;
+  const reviewSnapshot = buildReviewSnapshot(feedbackDir, {
+    feedbackEntries: entries,
+    memoryEntries,
+    auditEntries,
+    reviewedAt: options.now || new Date().toISOString(),
+  });
   const billingSummary = options.billingSummary || getBillingSummary(analyticsWindow);
 
   const approval = computeApprovalStats(entries);
@@ -843,6 +1020,7 @@ function generateDashboard(feedbackDir, options = {}) {
     gateStats,
     team,
   });
+  const reviewDelta = summarizeReviewDelta(entries, memoryEntries, auditEntries, reviewBaseline, reviewSnapshot);
 
   return {
     operational: {
@@ -872,6 +1050,7 @@ function generateDashboard(feedbackDir, options = {}) {
     templateLibrary,
     liveMetrics,
     predictive,
+    reviewDelta,
   };
 }
 
@@ -1137,6 +1316,9 @@ function printDashboard(data) {
 
 module.exports = {
   generateDashboard,
+  buildReviewSnapshot,
+  readDashboardReviewState,
+  writeDashboardReviewState,
   printDashboard,
   computeApprovalStats,
   computeDecisionMetrics,

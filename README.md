@@ -58,7 +58,7 @@ Session 2:  ⛔ Gate blocks the force-push.  Zero round-trip. +0 tokens
 Session 3+: Never happens again.                              +0 tokens
 ```
 
-One thumbs-down. The PreToolUse hook intercepts the call **before** it reaches the model — no input tokens, no output tokens, no retry loop. The dashboard tracks **tokens saved this week** as a live counter so you can see exactly what your prevention rules are worth.
+One thumbs-down. The PreToolUse hook intercepts the call **before** it reaches the model — no input tokens, no output tokens, no retry loop. The dashboard tracks **tokens saved this week** as a live counter so you can see exactly what your prevention rules are worth. Mark a review checkpoint once, and the dashboard narrows the next pass to only the feedback, lessons, and gate blocks that landed since your last review.
 
 ThumbGate doesn't make your agent smarter. It makes your agent *cheaper to be wrong with.*
 

@@ -71,6 +71,20 @@ test('dashboard includes team metrics and gate-template tabs powered by dashboar
   assert.match(dashboard, /highest-ROI guardrails/i);
 });
 
+test('dashboard includes incremental review checkpoint controls', () => {
+  const dashboard = readDashboard();
+
+  assert.match(dashboard, /id="reviewDeltaPanel"/);
+  assert.match(dashboard, /id="reviewCheckpointBtn"/);
+  assert.match(dashboard, /id="reviewDeltaHeadline"/);
+  assert.match(dashboard, /id="reviewDeltaCheckpoint"/);
+  assert.match(dashboard, /id="reviewDeltaLatest"/);
+  assert.match(dashboard, /function renderReviewDelta\(reviewDelta\)/);
+  assert.match(dashboard, /function markReviewed\(\)/);
+  assert.match(dashboard, /fetch\('\/v1\/dashboard\/review-state'/);
+  assert.match(dashboard, /Mark Current Dashboard Reviewed/);
+});
+
 test('dashboard defaults to the Total Feedback card highlight on first render', () => {
   const dashboard = readDashboard();
 

@@ -779,6 +779,31 @@ paths:
                 additionalProperties: true
         '401':
           description: Unauthorized
+  /v1/dashboard/review-state:
+    get:
+      operationId: getDashboardReviewState
+      responses:
+        '200':
+          description: Persisted dashboard review checkpoint and the current delta since that checkpoint
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '401':
+          description: Unauthorized
+    post:
+      operationId: markDashboardReviewed
+      responses:
+        '200':
+          description: Persist and return the current dashboard review checkpoint
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '401':
+          description: Unauthorized
   /v1/dashboard/render-spec:
     get:
       operationId: getDashboardRenderSpec
