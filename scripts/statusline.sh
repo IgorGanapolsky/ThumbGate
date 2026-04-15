@@ -158,16 +158,13 @@ osc_link() {
   return 0
 }
 
-UP_ICON="👍"
-DOWN_ICON="👎"
+UP_LINK="$(osc_link "$UP_URL" "👍")"
+DOWN_LINK="$(osc_link "$DOWN_URL" "👎")"
 DASHBOARD_LINK="$(osc_link "$DASHBOARD_URL" "$DASHBOARD_LABEL")"
 LESSONS_LINK="$(osc_link "$LESSONS_URL" "$LESSONS_LABEL")"
 LATEST_LESSON_LINK=""
 if [ -n "$LESSON_LABEL" ]; then
   _DISPLAY_LINK="$LESSON_LINK"
-  case "$_DISPLAY_LINK" in
-    *localhost*|*127.0.0.1*) _DISPLAY_LINK="" ;;
-  esac
   if [ -n "$LESSON_TEXT" ]; then
     LATEST_LESSON_LINK="$(osc_link "$_DISPLAY_LINK" "${LESSON_LABEL}: ${LESSON_TEXT}")"
   else
@@ -182,7 +179,7 @@ if [ "$UP" = "0" ] && [ "$DOWN" = "0" ]; then
   [ -n "$LATEST_LESSON_LINK" ] && LINE="${LINE} · ${D}${LATEST_LESSON_LINK}${RST}"
   printf '%b\n' "$LINE"
 else
-  LINE="${LINE} · ${G}${BD}${UP}${RST}${UP_ICON} ${R}${BD}${DOWN}${RST}${DOWN_ICON} ${ARROW}"
+  LINE="${LINE} · ${G}${BD}${UP}${RST}${UP_LINK} ${R}${BD}${DOWN}${RST}${DOWN_LINK} ${ARROW}"
 
   # Control Tower alerts (if any)
   [ "${SLO_V:-0}" -gt 0 ] && LINE="${LINE} ${R}${SLO_V} SLO${RST}"
