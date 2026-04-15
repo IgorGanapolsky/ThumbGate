@@ -9,9 +9,11 @@ name: Social Reply Monitor
 # .thumbgate/reply-drafts.jsonl for human review (per script policy).
 
 on:
-  schedule:
-    # Daily at 13:00 UTC (9am ET / 6am PT) — catches overnight replies before the team is on
-    - cron: '0 13 * * *'
+  # No schedule here by design. Scheduled reply monitoring runs inside
+  # Ralph Loop Audience Engagement (`ralph-loop.yml`, cron '17 * * * *'),
+  # which owns cached state between runs. This workflow is a manual
+  # fallback for ad-hoc dry-runs or platform-limited checks.
+  # See tests/ralph-loop.test.js:186 — the contract is enforced.
   workflow_dispatch:
     inputs:
       platform:

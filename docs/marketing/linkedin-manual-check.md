@@ -1,6 +1,6 @@
 # LinkedIn Manual Reply Check — daily 2-minute runbook
 
-**Status:** current — use this until the LinkedIn Community Management API is approved (see `linkedin-api-application.md`). Once approved, `reply-monitor.yml` auto-runs daily at 13:00 UTC and this runbook is deprecated.
+**Status:** current — use this until the LinkedIn Community Management API is approved (see `linkedin-api-application.md`). Scheduled reply monitoring already runs hourly inside Ralph Loop Audience Engagement (`ralph-loop.yml`, cron `17 * * * *`); it calls `social-reply-monitor.js` which is LinkedIn-blind today. Once the API is approved and `LINKEDIN_ACCESS_TOKEN`/`LINKEDIN_PERSON_URN` secrets are set, Ralph Loop picks up LinkedIn replies automatically and this runbook is deprecated.
 
 ## Why this runbook exists
 
@@ -52,10 +52,10 @@ Until (1) lands, (2) is the honest path. The goal is 2 minutes a day, not a hero
 
 ## When this runbook is deprecated
 
-Once the LinkedIn Community Management API approval lands and `LINKEDIN_ACCESS_TOKEN` + `LINKEDIN_PERSON_URN` are in GitHub secrets, the scheduled `reply-monitor.yml` workflow will auto-fetch comments, draft responses into `.thumbgate/reply-drafts.jsonl`, and upload the artifact. At that point:
+Once the LinkedIn Community Management API approval lands and `LINKEDIN_ACCESS_TOKEN` + `LINKEDIN_PERSON_URN` are in GitHub secrets, the hourly Ralph Loop Audience Engagement workflow (`ralph-loop.yml`) will auto-fetch comments via `social-reply-monitor.js`, draft responses into `.thumbgate/reply-drafts.jsonl`, and cache state between runs. At that point:
 
 1. Delete this runbook
-2. Update the weekly check to instead review the `reply-drafts-*.jsonl` artifacts from the CI runs
+2. Update the weekly check to instead review the `reply-drafts.jsonl` artifacts that Ralph Loop publishes
 3. Keep the "what not to do" list — that's evergreen
 
 ## Owner
