@@ -1234,9 +1234,82 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
     return sentinelResult;
   }
 
+  // RAG similarity auto-gate: check if this tool call is semantically similar
+  // to a previously-blocked pattern stored in LanceDB (threshold >0.8).
+  const ragResult = await evaluateRagSimilarityGate(toolName, toolInput);
+  if (ragResult) {
+    recordStat(ragResult.gate, 'block');
+    const auditRecord = recordAuditEvent({
+      toolName,
+      toolInput,
+      decision: 'deny',
+      gateId: ragResult.gate,
+      message: ragResult.message,
+      severity: ragResult.severity,
+      source: 'rag-similarity',
+    });
+    auditToFeedback(auditRecord);
+    return ragResult;
+  }
+
   // Audit trail: record allow (no gate matched)
   recordAuditEvent({ toolName, toolInput, decision: 'allow', source: 'gates-engine' });
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// RAG Similarity Auto-Gate — blocks tool calls that are semantically similar
+// (cosine similarity >0.8) to previously-blocked patterns in LanceDB.
+// ---------------------------------------------------------------------------
+
+const RAG_SIMILARITY_THRESHOLD = Number(process.env.THUMBGATE_RAG_THRESHOLD) || 0.8;
+
+async function evaluateRagSimilarityGate(toolName, toolInput) {
+  try {
+    const { searchSimilar } = require('./vector-store');
+
+    // Build a query string from the tool call context
+    const command = typeof toolInput === 'object'
+      ? (toolInput.command || toolInput.content || toolInput.file_path || '')
+      : String(toolInput || '');
+    const queryText = `${toolName} ${command}`.trim();
+    if (!queryText || queryText.length < 3) return null;
+
+    const results = await searchSimilar(queryText, 3);
+    if (!results || results.length === 0) return null;
+
+    // LanceDB returns results sorted by distance (lower = more similar).
+    // Convert distance to similarity: similarity = 1 - distance (for cosine).
+    for (const hit of results) {
+      const distance = hit._distance ?? hit.distance ?? 1;
+      const similarity = 1 - distance;
+
+      if (similarity >= RAG_SIMILARITY_THRESHOLD && hit.signal === 'down') {
+        return {
+          decision: 'deny',
+          gate: 'rag-similarity-autogate',
+          message: `Blocked: this action is ${(similarity * 100).toFixed(0)}% similar to a previously-reported failure. Context: "${(hit.context || hit.text || '').slice(0, 200)}"`,
+          severity: 'high',
+          reasoning: [
+            `RAG similarity score: ${similarity.toFixed(3)} (threshold: ${RAG_SIMILARITY_THRESHOLD})`,
+            `Matched feedback: ${hit.id || 'unknown'}`,
+            `Signal: ${hit.signal}`,
+          ],
+          ragMatch: {
+            similarity,
+            threshold: RAG_SIMILARITY_THRESHOLD,
+            matchedId: hit.id || null,
+            matchedText: (hit.text || '').slice(0, 300),
+          },
+        };
+      }
+    }
+
+    return null;
+  } catch {
+    // Vector store not available or no data — skip silently
+    return null;
+  }
 }
 
 function evaluateGates(toolName, toolInput, configPath) {
@@ -1797,6 +1870,8 @@ module.exports = {
   DEFAULT_PROTECTED_FILE_GLOBS,
   buildBehavioralContext,
   isHighRiskAction,
+  evaluateRagSimilarityGate,
+  RAG_SIMILARITY_THRESHOLD,
 };
 
 // ---------------------------------------------------------------------------

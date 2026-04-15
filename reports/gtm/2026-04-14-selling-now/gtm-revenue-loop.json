@@ -1,0 +1,193 @@
+{
+  "generatedAt": "2026-04-14T19:35:27.601Z",
+  "source": "local",
+  "fallbackReason": "Hosted operational summary is not configured.",
+  "objective": "First 10 paying customers",
+  "directive": {
+    "state": "pipeline-active-no-revenue",
+    "objective": "Convert existing interest into the first paid orders without inventing traction.",
+    "primaryMotion": "pro",
+    "secondaryMotion": "sprint",
+    "headline": "Interest exists but paid conversion is still zero. Push the Pro monthly/annual CTA to builders and reserve sprint outreach for team workflows.",
+    "actions": [
+      "Follow up on every checkout start or lead within one business day.",
+      "Use the Pro self-serve path as the default CTA unless the target clearly has team-level rollout pain.",
+      "Attach Commercial Truth and Verification Evidence in every outbound thread so the offer stays defensible."
+    ]
+  },
+  "currentTruth": {
+    "publicSelfServeOffer": "Pro at $19/mo or $149/yr",
+    "teamPilotOffer": "Workflow Hardening Sprint",
+    "commercialTruthLink": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+    "verificationEvidenceLink": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+  },
+  "snapshot": {
+    "paidOrders": 0,
+    "bookedRevenueCents": 0,
+    "checkoutStarts": 0,
+    "ctaClicks": 0,
+    "visitors": 5,
+    "uniqueLeads": 3,
+    "sprintLeads": 0,
+    "qualifiedSprintLeads": 0,
+    "latestPaidAt": null
+  },
+  "targets": [
+    {
+      "username": "antoinebou12",
+      "repoName": "uml-mcp",
+      "repoUrl": "https://github.com/antoinebou12/uml-mcp",
+      "description": "UML-MCP Server is a UML diagram generation tool based on MCP (Model Context Protocol), which can help users generate various types of UML diagrams through natural language description or directly writing PlantUML and Mermaid and Kroki",
+      "stars": 79,
+      "updatedAt": "2026-04-14T19:35:09Z",
+      "motion": "pro",
+      "motionLabel": "Pro at $19/mo or $149/yr",
+      "motionReason": "Target looks builder-led, so the self-serve/mo Pro CTA is the lowest-friction path.",
+      "cta": "https://thumbgate-production.up.railway.app/checkout/pro",
+      "message": "Hey @antoinebou12, saw you're building around `uml-mcp`. If you're hitting \"Claude amnesia\" or losing architectural constraints to auto-compaction between sessions, the self-serve path is compaction-safe memory with ThumbGate Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md."
+    },
+    {
+      "username": "arvoreeducacao",
+      "repoName": "arvore-mcp-servers",
+      "repoUrl": "https://github.com/arvoreeducacao/arvore-mcp-servers",
+      "description": "A collection of Model Context Protocol (MCP) servers developed by Arvore for seamless integration with AI assistants like Claude.",
+      "stars": 7,
+      "updatedAt": "2026-04-14T19:33:25Z",
+      "motion": "pro",
+      "motionLabel": "Pro at $19/mo or $149/yr",
+      "motionReason": "Target looks builder-led, so the self-serve/mo Pro CTA is the lowest-friction path.",
+      "cta": "https://thumbgate-production.up.railway.app/checkout/pro",
+      "message": "Hey @arvoreeducacao, saw you're building around `arvore-mcp-servers`. If you're hitting \"Claude amnesia\" or losing architectural constraints to auto-compaction between sessions, the self-serve path is compaction-safe memory with ThumbGate Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md."
+    },
+    {
+      "username": "Lflores15",
+      "repoName": "Kali-CTF-MCP",
+      "repoUrl": "https://github.com/Lflores15/Kali-CTF-MCP",
+      "description": "An all-in-one MCP (Model Context Protocol) server for CTF challenges and penetration testing. Combines and extends multiple open-source CTF tools with additional capabilities for crypto, web, pwn, and forensics — designed to give AI assistants like Claude full hands-on access to a Kali Linux environment.",
+      "stars": 0,
+      "updatedAt": "2026-04-14T19:33:01Z",
+      "motion": "pro",
+      "motionLabel": "Pro at $19/mo or $149/yr",
+      "motionReason": "Target looks builder-led, so the self-serve/mo Pro CTA is the lowest-friction path.",
+      "cta": "https://thumbgate-production.up.railway.app/checkout/pro",
+      "message": "Hey @Lflores15, saw you're building around `Kali-CTF-MCP`. If you're hitting \"Claude amnesia\" or losing architectural constraints to auto-compaction between sessions, the self-serve path is compaction-safe memory with ThumbGate Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md."
+    },
+    {
+      "username": "cdavis-code",
+      "repoName": "easy_mcp_workspace",
+      "repoUrl": "https://github.com/cdavis-code/easy_mcp_workspace",
+      "description": "A Dart code generator that transforms annotated functions into Model Context Protocol (MCP) servers",
+      "stars": 0,
+      "updatedAt": "2026-04-14T19:30:48Z",
+      "motion": "pro",
+      "motionLabel": "Pro at $19/mo or $149/yr",
+      "motionReason": "Target looks builder-led, so the self-serve/mo Pro CTA is the lowest-friction path.",
+      "cta": "https://thumbgate-production.up.railway.app/checkout/pro",
+      "message": "Hey @cdavis-code, saw you're building around `easy_mcp_workspace`. If you're hitting \"Claude amnesia\" or losing architectural constraints to auto-compaction between sessions, the self-serve path is compaction-safe memory with ThumbGate Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md."
+    },
+    {
+      "username": "salimbentounsi",
+      "repoName": "proximity",
+      "repoUrl": "https://github.com/salimbentounsi/proximity",
+      "description": "🔍 Scan MCP servers for security vulnerabilities with Proximity, ensuring your Model Context Protocol environment remains safe and secure.",
+      "stars": 0,
+      "updatedAt": "2026-04-14T19:30:15Z",
+      "motion": "pro",
+      "motionLabel": "Pro at $19/mo or $149/yr",
+      "motionReason": "Target looks builder-led, so the self-serve/mo Pro CTA is the lowest-friction path.",
+      "cta": "https://thumbgate-production.up.railway.app/checkout/pro",
+      "message": "Hey @salimbentounsi, saw you're building around `proximity`. If you're hitting \"Claude amnesia\" or losing architectural constraints to auto-compaction between sessions, the self-serve path is compaction-safe memory with ThumbGate Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md."
+    },
+    {
+      "username": "AnnieBabs",
+      "repoName": "Create-MCP",
+      "repoUrl": "https://github.com/AnnieBabs/Create-MCP",
+      "description": "🚀 Generate and extend production-ready Model Context Protocol (MCP) servers with a modern CLI tool that showcases all MCP features in one cohesive example.",
+      "stars": 5,
+      "updatedAt": "2026-04-14T19:26:21Z",
+      "motion": "sprint",
+      "motionLabel": "Workflow Hardening Sprint",
+      "motionReason": "Target language suggests a team workflow or production rollout problem.",
+      "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+      "message": "Hey @AnnieBabs, saw you're shipping `Create-MCP`. If your production workflows are losing critical architectural context to auto-compaction, I am pitching a Workflow Hardening Sprint for one workflow, one owner, and one proof review: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md."
+    },
+    {
+      "username": "janfincke",
+      "repoName": "early-mcp-server",
+      "repoUrl": "https://github.com/janfincke/early-mcp-server",
+      "description": "An unofficial Model Context Protocol (MCP) server that provides access to the EARLY app time tracking public API.",
+      "stars": 0,
+      "updatedAt": "2026-04-14T19:22:56Z",
+      "motion": "pro",
+      "motionLabel": "Pro at $19/mo or $149/yr",
+      "motionReason": "Target looks builder-led, so the self-serve/mo Pro CTA is the lowest-friction path.",
+      "cta": "https://thumbgate-production.up.railway.app/checkout/pro",
+      "message": "Hey @janfincke, saw you're building around `early-mcp-server`. If you're hitting \"Claude amnesia\" or losing architectural constraints to auto-compaction between sessions, the self-serve path is compaction-safe memory with ThumbGate Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md."
+    },
+    {
+      "username": "linuxfoundation",
+      "repoName": "lfx-mcp",
+      "repoUrl": "https://github.com/linuxfoundation/lfx-mcp",
+      "description": "LFX MCP (Model Context Protocol) Server",
+      "stars": 11,
+      "updatedAt": "2026-04-14T19:20:11Z",
+      "motion": "pro",
+      "motionLabel": "Pro at $19/mo or $149/yr",
+      "motionReason": "Target looks builder-led, so the self-serve/mo Pro CTA is the lowest-friction path.",
+      "cta": "https://thumbgate-production.up.railway.app/checkout/pro",
+      "message": "Hey @linuxfoundation, saw you're building around `lfx-mcp`. If you're hitting \"Claude amnesia\" or losing architectural constraints to auto-compaction between sessions, the self-serve path is compaction-safe memory with ThumbGate Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md."
+    },
+    {
+      "username": "genomoncology",
+      "repoName": "biomcp",
+      "repoUrl": "https://github.com/genomoncology/biomcp",
+      "description": "BioMCP: Biomedical Model Context Protocol",
+      "stars": 490,
+      "updatedAt": "2026-04-14T19:19:21Z",
+      "motion": "pro",
+      "motionLabel": "Pro at $19/mo or $149/yr",
+      "motionReason": "Target looks builder-led, so the self-serve/mo Pro CTA is the lowest-friction path.",
+      "cta": "https://thumbgate-production.up.railway.app/checkout/pro",
+      "message": "Hey @genomoncology, saw you're building around `biomcp`. If you're hitting \"Claude amnesia\" or losing architectural constraints to auto-compaction between sessions, the self-serve path is compaction-safe memory with ThumbGate Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md."
+    },
+    {
+      "username": "stacklok",
+      "repoName": "toolhive",
+      "repoUrl": "https://github.com/stacklok/toolhive",
+      "description": "ToolHive is an enterprise-grade platform for running and managing Model Context Protocol (MCP) servers.",
+      "stars": 1716,
+      "updatedAt": "2026-04-14T19:18:29Z",
+      "motion": "sprint",
+      "motionLabel": "Workflow Hardening Sprint",
+      "motionReason": "Target language suggests a team workflow or production rollout problem.",
+      "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+      "message": "Hey @stacklok, saw you're shipping `toolhive`. If your production workflows are losing critical architectural context to auto-compaction, I am pitching a Workflow Hardening Sprint for one workflow, one owner, and one proof review: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md."
+    },
+    {
+      "username": "r00tkit77",
+      "repoName": "cmdb_nvd_nessus_mcp_server",
+      "repoUrl": "https://github.com/r00tkit77/cmdb_nvd_nessus_mcp_server",
+      "description": "A Model Context Protocol (MCP) server for vulnerability intelligence automation with Agentic AI. This project combines a Configuration Management Database (CMDB) with real-time CVE ingestion from NIST NVD to identify potential exposure across our assets.",
+      "stars": 6,
+      "updatedAt": "2026-04-14T19:12:27Z",
+      "motion": "pro",
+      "motionLabel": "Pro at $19/mo or $149/yr",
+      "motionReason": "Target looks builder-led, so the self-serve/mo Pro CTA is the lowest-friction path.",
+      "cta": "https://thumbgate-production.up.railway.app/checkout/pro",
+      "message": "Hey @r00tkit77, saw you're building around `cmdb_nvd_nessus_mcp_server`. If you're hitting \"Claude amnesia\" or losing architectural constraints to auto-compaction between sessions, the self-serve path is compaction-safe memory with ThumbGate Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md."
+    },
+    {
+      "username": "zcebupelka",
+      "repoName": "graphql-mcp-bridge",
+      "repoUrl": "https://github.com/zcebupelka/graphql-mcp-bridge",
+      "description": "🌉 Connect GraphQL APIs seamlessly with the Model Context Protocol for enhanced data management and integration.",
+      "stars": 1,
+      "updatedAt": "2026-04-14T19:11:01Z",
+      "motion": "pro",
+      "motionLabel": "Pro at $19/mo or $149/yr",
+      "motionReason": "Target looks builder-led, so the self-serve/mo Pro CTA is the lowest-friction path.",
+      "cta": "https://thumbgate-production.up.railway.app/checkout/pro",
+      "message": "Hey @zcebupelka, saw you're building around `graphql-mcp-bridge`. If you're hitting \"Claude amnesia\" or losing architectural constraints to auto-compaction between sessions, the self-serve path is compaction-safe memory with ThumbGate Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md. Proof pack: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md."
+    }
+  ]
+}

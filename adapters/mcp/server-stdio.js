@@ -774,6 +774,58 @@ async function callToolInner(name, args) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Prompt Caching — annotate tool schemas with cache_control for Anthropic
+// models so the full tool catalog is cached after the first request.
+// ---------------------------------------------------------------------------
+
+let _cachedToolList = null;
+
+function getToolListWithCaching() {
+  if (_cachedToolList) return _cachedToolList;
+
+  const tools = TOOLS.map((tool, idx) => {
+    const cached = { ...tool };
+    // Mark the last tool with cache_control to pin the entire catalog
+    if (idx === TOOLS.length - 1) {
+      cached.cache_control = { type: 'ephemeral' };
+    }
+    return cached;
+  });
+
+  _cachedToolList = tools;
+  return _cachedToolList;
+}
+
+/**
+ * Invalidate the cached tool list (e.g. after dynamic tool registration).
+ */
+function invalidateToolCache() {
+  _cachedToolList = null;
+}
+
+// ---------------------------------------------------------------------------
+// Parallel MCP workflow support — batch multiple tool calls in a single
+// request/response cycle for latency reduction.
+// ---------------------------------------------------------------------------
+
+async function executeBatch(calls) {
+  const results = await Promise.allSettled(
+    calls.map(({ name, arguments: args }) =>
+      callTool(name, args).catch((err) => ({
+        content: [{ type: 'text', text: `Error: ${err.message}` }],
+        isError: true,
+      }))
+    )
+  );
+
+  return results.map((r, i) => ({
+    callId: calls[i].callId || null,
+    name: calls[i].name,
+    ...(r.status === 'fulfilled' ? r.value : { content: [{ type: 'text', text: `Error: ${r.reason?.message || 'unknown'}` }], isError: true }),
+  }));
+}
+
 async function handleRequest(message) {
   // Notifications have no id and expect no response
   if (message.id === undefined || message.id === null) {
@@ -782,13 +834,23 @@ async function handleRequest(message) {
   if (message.method === 'initialize') {
     return {
       protocolVersion: '2024-11-05',
-      capabilities: { tools: {} },
+      capabilities: {
+        tools: {},
+        caching: { supported: true },
+        batchCalls: { supported: true },
+      },
       serverInfo: SERVER_INFO,
     };
   }
   if (message.method === 'ping') return {};
-  if (message.method === 'tools/list') return { tools: TOOLS };
+  if (message.method === 'tools/list') return { tools: getToolListWithCaching() };
   if (message.method === 'tools/call') return callTool(message.params.name, message.params.arguments);
+  if (message.method === 'tools/call_batch') {
+    const calls = Array.isArray(message.params?.calls) ? message.params.calls : [];
+    if (calls.length === 0) throw new Error('tools/call_batch requires a non-empty calls array');
+    const results = await executeBatch(calls);
+    return { results };
+  }
   throw new Error(`Unsupported method: ${message.method}`);
 }
 
@@ -977,4 +1039,7 @@ module.exports = {
   callTool,
   startStdioServer,
   acquireLock,
+  getToolListWithCaching,
+  invalidateToolCache,
+  executeBatch,
 };
