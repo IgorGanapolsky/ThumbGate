@@ -1570,6 +1570,49 @@ describe('bin/cli.js', () => {
     fs.rmSync(isolatedHome, { recursive: true, force: true });
   });
 
+  test('init --wire-hooks accepts split --agent value and writes Codex hooks plus status line', () => {
+    const isolatedDir = makeTmpDir();
+    const isolatedHome = makeTmpDir();
+
+    const result = runCliSync(['init', '--wire-hooks', '--agent', 'codex'], {
+      cwd: isolatedDir,
+      env: {
+        ...process.env,
+        HOME: isolatedHome,
+        USERPROFILE: isolatedHome,
+        THUMBGATE_PUBLISH_STATE: 'unpublished',
+      },
+    });
+
+    assert.equal(result.status, 0, `hook wiring failed:\n${result.stderr}`);
+    const settingsPath = path.join(isolatedHome, '.codex', 'config.json');
+    const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    assert.match(result.stdout, /Added hooks for codex:/);
+    assert.equal(
+      settings.hooks.PreToolUse[0].hooks[0].command,
+      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} gate-check`
+    );
+    assert.equal(
+      settings.hooks.UserPromptSubmit[0].hooks[0].command,
+      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} hook-auto-capture`
+    );
+    assert.equal(
+      settings.hooks.PostToolUse[0].hooks[0].command,
+      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} cache-update`
+    );
+    assert.equal(
+      settings.hooks.SessionStart[0].hooks[0].command,
+      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} session-start`
+    );
+    assert.equal(
+      settings.statusLine.command,
+      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} statusline-render`
+    );
+
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+    fs.rmSync(isolatedHome, { recursive: true, force: true });
+  });
+
   test('init creates config.json with required fields', () => {
     const configPath = path.join(tmpDir, '.thumbgate', 'config.json');
     assert.ok(fs.existsSync(configPath), 'config.json should exist');
@@ -1806,6 +1849,16 @@ describe('bin/cli.js', () => {
     const content = fs.readFileSync(configPath, 'utf8');
     assertLocalTomlMcpBlock(content, HOME_MCP_SERVER_PATH);
     assert.doesNotMatch(content, /\/tmp\/disposable-worktree\/adapters\/mcp\/server-stdio\.js/);
+    const hooksPath = path.join(codexHome, 'config.json');
+    const hooksConfig = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
+    assert.equal(
+      hooksConfig.statusLine.command,
+      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} statusline-render`
+    );
+    assert.equal(
+      hooksConfig.hooks.PostToolUse[0].hooks[0].command,
+      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} cache-update`
+    );
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
     fs.rmSync(isolatedHome, { recursive: true, force: true });
@@ -1838,6 +1891,12 @@ describe('bin/cli.js', () => {
     const content = fs.readFileSync(configPath, 'utf8');
     assertLocalTomlMcpBlock(content, HOME_MCP_SERVER_PATH);
     assert.doesNotMatch(content, /disposable-worktree/);
+    const hooksPath = path.join(codexHome, 'config.json');
+    const hooksConfig = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
+    assert.equal(
+      hooksConfig.statusLine.command,
+      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} statusline-render`
+    );
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
     fs.rmSync(isolatedHome, { recursive: true, force: true });

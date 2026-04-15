@@ -32,9 +32,20 @@ The bundled marketplace catalog points at `./`, so the extracted directory is a 
 - Codex marketplace entry: `.agents/plugins/marketplace.json`
 - Manual install profile: `adapters/codex/config.toml`
 
-## Option 3: Manual MCP install
+## Option 3: Manual Codex install
 
-Add the MCP server block to your Codex config:
+Preferred path:
+
+```bash
+npx thumbgate init --agent codex
+```
+
+That now installs:
+
+- the ThumbGate MCP server in `~/.codex/config.toml`
+- Codex hooks plus the ThumbGate status line target in `~/.codex/config.json`
+
+If you only want the MCP server block manually, add it to your Codex config:
 
 ```bash
 cat adapters/codex/config.toml >> ~/.codex/config.toml
@@ -59,6 +70,23 @@ args = ["--yes", "--package", "thumbgate@1.5.0", "thumbgate", "serve"]
 
 The repo-local Codex app plugin ships the same runtime path through `plugins/codex-profile/.mcp.json`, so the manual config and plugin metadata stay aligned.
 
+The Codex status line and hook bundle live in `~/.codex/config.json`. `npx thumbgate init --agent codex` writes:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [{ "matcher": "Bash", "hooks": [{ "type": "command", "command": "npx --yes --package thumbgate@1.5.0 thumbgate gate-check" }] }],
+    "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "npx --yes --package thumbgate@1.5.0 thumbgate hook-auto-capture" }] }],
+    "PostToolUse": [{ "matcher": "mcp__thumbgate__feedback_stats|mcp__thumbgate__dashboard", "hooks": [{ "type": "command", "command": "npx --yes --package thumbgate@1.5.0 thumbgate cache-update" }] }],
+    "SessionStart": [{ "hooks": [{ "type": "command", "command": "npx --yes --package thumbgate@1.5.0 thumbgate session-start" }] }]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "npx --yes --package thumbgate@1.5.0 thumbgate statusline-render"
+  }
+}
+```
+
 ## Verify
 
 Start the MCP server manually to confirm it runs:
@@ -69,7 +97,7 @@ node adapters/mcp/server-stdio.js
 # Press Ctrl+C to stop
 ```
 
-Then restart Codex. The `thumbgate` MCP server will appear in the tool list.
+Then restart Codex. The `thumbgate` MCP server will appear in the tool list, and `~/.codex/config.json` will contain the ThumbGate hook bundle plus the `statusLine` command target for your local Codex build to exercise.
 
 ## Available Tools (via MCP)
 

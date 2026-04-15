@@ -307,21 +307,27 @@ describe('auto-wire-hooks', () => {
   // --- wireCodexHooks ---
 
   describe('wireCodexHooks', () => {
-    test('creates config and wires PreToolUse hook', () => {
+    test('creates config and wires the full Codex hook bundle plus status line', () => {
       const tmpDir = makeTmpDir();
       const settingsPath = path.join(tmpDir, '.codex', 'config.json');
 
       try {
         const result = wireCodexHooks({ settingsPath });
         assert.equal(result.changed, true);
-        assert.equal(result.added.length, 2);
+        assert.equal(result.added.length, 5);
         assert.equal(result.added[0].lifecycle, 'PreToolUse');
 
         const config = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
         assert.ok(config.hooks.PreToolUse);
         assert.ok(config.hooks.UserPromptSubmit);
+        assert.ok(config.hooks.PostToolUse);
+        assert.ok(config.hooks.SessionStart);
+        assert.ok(config.statusLine);
         assert.equal(config.hooks.PreToolUse[0].hooks[0].command, preToolHookCommand());
         assert.equal(config.hooks.UserPromptSubmit[0].hooks[0].command, userPromptHookCommand());
+        assert.equal(config.hooks.PostToolUse[0].hooks[0].command, require('../scripts/hook-runtime').cacheUpdateHookCommand());
+        assert.equal(config.hooks.SessionStart[0].hooks[0].command, sessionStartHookCommand());
+        assert.equal(config.statusLine.command, require('../scripts/hook-runtime').statuslineCommand());
       } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true });
       }
@@ -335,6 +341,72 @@ describe('auto-wire-hooks', () => {
         wireCodexHooks({ settingsPath });
         const result2 = wireCodexHooks({ settingsPath });
         assert.equal(result2.changed, false);
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    test('replaces legacy codex hooks and reports the replacement', () => {
+      const tmpDir = makeTmpDir();
+      const settingsDir = path.join(tmpDir, '.codex');
+      const settingsPath = path.join(settingsDir, 'config.json');
+
+      fs.mkdirSync(settingsDir, { recursive: true });
+      fs.writeFileSync(settingsPath, JSON.stringify({
+        hooks: {
+          PreToolUse: [{ hooks: [{ type: 'command', command: '/tmp/generate-pretool-hook.sh' }] }],
+        },
+      }, null, 2) + '\n');
+
+      try {
+        const result = wireCodexHooks({ settingsPath });
+        assert.equal(result.changed, true);
+        assert.ok(result.added.some((entry) => entry.command.includes('replaced legacy ThumbGate hook')));
+
+        const config = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+        assert.equal(config.hooks.PreToolUse.length, 1);
+        assert.equal(config.hooks.PreToolUse[0].hooks[0].command, preToolHookCommand());
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    test('updates only the codex status line when hooks are already present', () => {
+      const tmpDir = makeTmpDir();
+      const settingsDir = path.join(tmpDir, '.codex');
+      const settingsPath = path.join(settingsDir, 'config.json');
+
+      fs.mkdirSync(settingsDir, { recursive: true });
+
+      try {
+        wireCodexHooks({ settingsPath });
+        const seededConfig = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+        seededConfig.statusLine = { type: 'command', command: 'thumbgate statusline --old' };
+        fs.writeFileSync(settingsPath, JSON.stringify(seededConfig, null, 2) + '\n');
+
+        const result = wireCodexHooks({ settingsPath });
+        assert.equal(result.changed, true);
+        assert.deepStrictEqual(result.added, [{
+          lifecycle: 'statusLine',
+          command: require('../scripts/hook-runtime').statuslineCommand(),
+        }]);
+
+        const config = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+        assert.equal(config.statusLine.command, require('../scripts/hook-runtime').statuslineCommand());
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    test('dry-run for codex reports changes without writing config', () => {
+      const tmpDir = makeTmpDir();
+      const settingsPath = path.join(tmpDir, '.codex', 'config.json');
+
+      try {
+        const result = wireCodexHooks({ settingsPath, dryRun: true });
+        assert.equal(result.changed, true);
+        assert.equal(result.added.length, 5);
+        assert.equal(fs.existsSync(settingsPath), false);
       } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true });
       }

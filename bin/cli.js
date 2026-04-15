@@ -388,18 +388,29 @@ function setupClaude() {
 function setupCodex() {
   const configPath = path.join(HOME, '.codex', 'config.toml');
   const block = mcpSectionBlock(MCP_SERVER_NAME, 'home');
+  let configChanged = false;
   if (!fs.existsSync(configPath)) {
     fs.mkdirSync(path.dirname(configPath), { recursive: true });
     fs.writeFileSync(configPath, block);
     console.log('  Codex: created ~/.codex/config.toml');
-    return true;
+    configChanged = true;
+  } else {
+    const content = fs.readFileSync(configPath, 'utf8');
+    const updated = upsertCodexServerConfig(content);
+    if (updated.changed) {
+      fs.writeFileSync(configPath, updated.content);
+      console.log('  Codex: appended MCP server to ~/.codex/config.toml');
+      configChanged = true;
+    }
   }
-  const content = fs.readFileSync(configPath, 'utf8');
-  const updated = upsertCodexServerConfig(content);
-  if (!updated.changed) return false;
-  fs.writeFileSync(configPath, updated.content);
-  console.log('  Codex: appended MCP server to ~/.codex/config.toml');
-  return true;
+
+  const { wireCodexHooks } = require(path.join(PKG_ROOT, 'scripts', 'auto-wire-hooks'));
+  const hookResult = wireCodexHooks({});
+  if (hookResult.changed) {
+    console.log('  Codex: updated ~/.codex/config.json with hooks and status line');
+  }
+
+  return configChanged || hookResult.changed;
 }
 
 function setupGemini() {

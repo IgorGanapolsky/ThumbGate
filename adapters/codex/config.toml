@@ -1,4 +1,6 @@
 # Codex MCP profile (copy into ~/.codex/config.toml or merge section)
+# Preferred: run `npx thumbgate init --agent codex` to also wire
+# ~/.codex/config.json with the ThumbGate hooks and status line.
 [mcp_servers.thumbgate]
 command = "npx"
 args = ["--yes", "--package", "thumbgate@1.5.0", "thumbgate", "serve"]
