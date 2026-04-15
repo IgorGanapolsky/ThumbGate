@@ -15,6 +15,7 @@
  */
 
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 
 const ROOT = path.join(__dirname, '..');
@@ -27,7 +28,7 @@ const DEFAULT_SUITE = path.join(ROOT, 'bench', 'prompt-eval-suite.json');
 function simulateLessonDistillation(input) {
   // Use ThumbGate's actual captureFeedback logic to produce a lesson
   const { captureFeedback } = require('./feedback-loop');
-  const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'tg-eval-'));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-eval-'));
   const prevDir = process.env.THUMBGATE_FEEDBACK_DIR;
   process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
@@ -87,92 +88,85 @@ const PROMPT_SIMULATORS = {
 // Deterministic graders — check output against expected fields
 // ---------------------------------------------------------------------------
 
-function gradeOutput(output, expected) {
-  const checks = [];
-  const result = output || {};
-
-  // Handle rejection expectation
-  if (expected.shouldReject) {
-    const wasRejected = result.accepted === false
-      || result.status === 'rejected'
-      || (result.actionType === 'no-action');
-    checks.push({
-      criterion: 'shouldReject',
-      pass: wasRejected,
-      detail: wasRejected ? 'Correctly rejected vague input' : 'Should have rejected but accepted',
-    });
-    return checks;
+function firstString(...values) {
+  for (const value of values) {
+    if (typeof value === 'string') return value;
   }
+  return '';
+}
 
-  // Title checks
-  if (expected.hasTitle) {
-    const title = result.memoryRecord?.title
-      || result.title
-      || '';
+function addContainsChecks(checks, prefix, label, content, terms = []) {
+  for (const term of terms) {
+    const found = content.toLowerCase().includes(term.toLowerCase());
     checks.push({
-      criterion: 'hasTitle',
-      pass: title.length > 0,
-      detail: title ? `Title: "${title.slice(0, 60)}"` : 'Missing title',
+      criterion: `${prefix}:${term}`,
+      pass: found,
+      detail: found ? `${label} contains "${term}"` : `${label} missing "${term}"`,
     });
-
-    if (expected.titleContains) {
-      for (const term of expected.titleContains) {
-        const found = title.toLowerCase().includes(term.toLowerCase());
-        checks.push({
-          criterion: `titleContains:${term}`,
-          pass: found,
-          detail: found ? `Title contains "${term}"` : `Title missing "${term}"`,
-        });
-      }
-    }
   }
+}
 
-  // Content checks
-  if (expected.hasContent) {
-    const content = result.memoryRecord?.content
-      || result.content
-      || '';
-    checks.push({
-      criterion: 'hasContent',
-      pass: content.length > 0,
-      detail: content ? `Content length: ${content.length}` : 'Missing content',
-    });
+function handleRejectExpectation(checks, result, expected) {
+  if (!expected.shouldReject) return false;
 
-    if (expected.contentContains) {
-      for (const term of expected.contentContains) {
-        const found = content.toLowerCase().includes(term.toLowerCase());
-        checks.push({
-          criterion: `contentContains:${term}`,
-          pass: found,
-          detail: found ? `Content contains "${term}"` : `Content missing "${term}"`,
-        });
-      }
-    }
-  }
+  const wasRejected = result.accepted === false
+    || result.status === 'rejected'
+    || result.actionType === 'no-action';
+  checks.push({
+    criterion: 'shouldReject',
+    pass: wasRejected,
+    detail: wasRejected ? 'Correctly rejected vague input' : 'Should have rejected but accepted',
+  });
+  return true;
+}
 
-  // Category check
+function addTitleChecks(checks, result, expected) {
+  if (!expected.hasTitle) return;
+
+  const title = firstString(result.memoryRecord?.title, result.title);
+  checks.push({
+    criterion: 'hasTitle',
+    pass: title.length > 0,
+    detail: title ? `Title: "${title.slice(0, 60)}"` : 'Missing title',
+  });
+  addContainsChecks(checks, 'titleContains', 'Title', title, expected.titleContains);
+}
+
+function addContentChecks(checks, result, expected) {
+  if (!expected.hasContent) return;
+
+  const content = firstString(result.memoryRecord?.content, result.content);
+  checks.push({
+    criterion: 'hasContent',
+    pass: content.length > 0,
+    detail: content ? `Content length: ${content.length}` : 'Missing content',
+  });
+  addContainsChecks(checks, 'contentContains', 'Content', content, expected.contentContains);
+}
+
+function addCategoryChecks(checks, result, expected) {
   if (expected.category) {
-    const cat = result.memoryRecord?.category || result.category || '';
+    const category = firstString(result.memoryRecord?.category, result.category);
     checks.push({
       criterion: 'category',
-      pass: cat === expected.category,
-      detail: `Expected "${expected.category}", got "${cat}"`,
+      pass: category === expected.category,
+      detail: `Expected "${expected.category}", got "${category}"`,
     });
   }
 
-  // Importance check
   if (expected.importance) {
-    const imp = result.memoryRecord?.importance || result.importance || '';
+    const importance = firstString(result.memoryRecord?.importance, result.importance);
     checks.push({
       criterion: 'importance',
-      pass: imp === expected.importance,
-      detail: `Expected "${expected.importance}", got "${imp}"`,
+      pass: importance === expected.importance,
+      detail: `Expected "${expected.importance}", got "${importance}"`,
     });
   }
+}
 
-  // Domain check
+function addContextChecks(checks, result, expected) {
   if (expected.hasDomain) {
-    const domain = result.richContext?.domain || result.domain || '';
+    const domain = firstString(result.richContext?.domain, result.domain);
     checks.push({
       criterion: 'domain',
       pass: expected.domain ? domain === expected.domain : domain.length > 0,
@@ -180,54 +174,51 @@ function gradeOutput(output, expected) {
     });
   }
 
-  // Outcome check
   if (expected.hasOutcome) {
-    const outcome = result.richContext?.outcomeCategory || result.outcome || '';
+    const outcome = firstString(result.richContext?.outcomeCategory, result.outcome);
     checks.push({
       criterion: 'hasOutcome',
       pass: outcome.length > 0,
       detail: `Outcome: "${outcome}"`,
     });
-    if (expected.outcomeContains) {
-      for (const term of expected.outcomeContains) {
-        const found = outcome.toLowerCase().includes(term.toLowerCase());
-        checks.push({
-          criterion: `outcomeContains:${term}`,
-          pass: found,
-          detail: found ? `Outcome contains "${term}"` : `Outcome missing "${term}"`,
-        });
-      }
-    }
+    addContainsChecks(checks, 'outcomeContains', 'Outcome', outcome, expected.outcomeContains);
   }
+}
 
-  // Rule checks
-  if (expected.hasRule) {
-    checks.push({
-      criterion: 'hasRule',
-      pass: result.generated === true || !!result.rule,
-      detail: result.generated ? 'Rule generated' : 'No rule generated',
-    });
-  }
+function addRuleChecks(checks, result, expected) {
+  if (!expected.hasRule) return;
 
-  // Summary checks
-  if (expected.hasSummary) {
-    const summary = result.summary || '';
-    checks.push({
-      criterion: 'hasSummary',
-      pass: summary.length > 0,
-      detail: `Summary length: ${summary.length}`,
-    });
-    if (expected.summaryContains) {
-      for (const term of expected.summaryContains) {
-        const found = summary.toLowerCase().includes(term.toLowerCase());
-        checks.push({
-          criterion: `summaryContains:${term}`,
-          pass: found,
-          detail: found ? `Summary contains "${term}"` : `Summary missing "${term}"`,
-        });
-      }
-    }
-  }
+  checks.push({
+    criterion: 'hasRule',
+    pass: result.generated === true || !!result.rule,
+    detail: result.generated ? 'Rule generated' : 'No rule generated',
+  });
+}
+
+function addSummaryChecks(checks, result, expected) {
+  if (!expected.hasSummary) return;
+
+  const summary = firstString(result.summary);
+  checks.push({
+    criterion: 'hasSummary',
+    pass: summary.length > 0,
+    detail: `Summary length: ${summary.length}`,
+  });
+  addContainsChecks(checks, 'summaryContains', 'Summary', summary, expected.summaryContains);
+}
+
+function gradeOutput(output, expected) {
+  const checks = [];
+  const result = output || {};
+
+  if (handleRejectExpectation(checks, result, expected)) return checks;
+
+  addTitleChecks(checks, result, expected);
+  addContentChecks(checks, result, expected);
+  addCategoryChecks(checks, result, expected);
+  addContextChecks(checks, result, expected);
+  addRuleChecks(checks, result, expected);
+  addSummaryChecks(checks, result, expected);
 
   return checks;
 }
@@ -322,7 +313,17 @@ function runSuite(suitePath = DEFAULT_SUITE, options = {}) {
 // CLI
 // ---------------------------------------------------------------------------
 
-if (require.main === module) {
+function statusIcon(status) {
+  if (status === 'pass') return '\u2705';
+  if (status === 'skip') return '\u23ED';
+  return '\u274C';
+}
+
+function isCliInvocation() {
+  return Boolean(process.argv[1]) && path.resolve(process.argv[1]) === __filename;
+}
+
+if (isCliInvocation()) {
   const args = process.argv.slice(2);
   let suitePath = DEFAULT_SUITE;
   let json = false;
@@ -342,7 +343,7 @@ if (require.main === module) {
     console.log(`\n${report.suite}`);
     console.log('='.repeat(50));
     for (const r of report.results) {
-      const icon = r.status === 'pass' ? '\u2705' : r.status === 'skip' ? '\u23ED' : '\u274C';
+      const icon = statusIcon(r.status);
       console.log(`${icon} ${r.id} — ${r.score}% (${r.passCount || 0}/${r.totalChecks || 0})`);
       if (r.status === 'fail' || r.status === 'error') {
         for (const c of (r.checks || [])) {
