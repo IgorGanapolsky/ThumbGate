@@ -80,6 +80,8 @@ Before any agent action executes, ThumbGate's `PreToolUse` hook intercepts the c
 ### Layer 4: Multi-Agent Distribution
 Gates are distributed across all connected agents via MCP stdio protocol. One correction in Claude Code protects Cursor, Codex, Gemini CLI, and any MCP-compatible agent.
 
+Prompt engineering still matters, but it is only the starting point. ThumbGate adds prompt evaluation on top: proof lanes, benchmarks, and self-heal checks tell you whether your prompt and workflow actually held up under execution instead of leaving you to guess from vibes.
+
 ![Feedback Pipeline](docs/diagrams/feedback_pipeline.png)
 
 ![Agent Integration](docs/diagrams/agent_integration.png)
@@ -99,6 +101,14 @@ Gates are distributed across all connected agents via MCP stdio protocol. One co
 | **Any MCP agent** | `npx thumbgate serve` |
 
 Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode**, and any MCP-compatible agent.
+
+### Status bar proof
+
+![Claude Code ThumbGate footer](public/assets/claude-thumbgate-statusbar.svg)
+
+![Codex ThumbGate test lane](public/assets/codex-thumbgate-statusbar-test.svg)
+
+Claude renders the live ThumbGate footer today. `npx thumbgate init --agent codex` now installs the full Codex hook bundle and writes the ThumbGate `statusLine` target into `~/.codex/config.json` so you can test it on your local Codex build immediately.
 
 ### Install Codex Plugin
 
@@ -133,6 +143,7 @@ ThumbGate sells three concrete outcomes:
 - **Prevent expensive AI mistakes** — catch bad commands, destructive database actions, unsafe publishes, and risky API calls before they run.
 - **Make AI stop repeating mistakes** — fix it once, turn the lesson into a rule, and block the repeat before the next tool call lands.
 - **Turn AI into a reliable operator** — move from a smart assistant that apologizes after damage to a production-ready operator with checkpoints, proof, and enforcement.
+- **Measure prompts instead of rewriting them blindly** — use proof lanes, ThumbGate Bench, and `self-heal:check` to evaluate whether prompts and workflows actually improved behavior.
 
 ---
 

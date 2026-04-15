@@ -635,6 +635,24 @@ __GA_BOOTSTRAP__
   </div>
 </section>
 
+<section style="padding:28px 0 10px;">
+  <div class="container" style="max-width:1240px;">
+    <div class="section-label">Status bar proof</div>
+    <h2 style="text-align:center;margin-bottom:12px;">See the footer before you ship the next repeat.</h2>
+    <p style="text-align:center;font-size:16px;color:var(--text-muted);max-width:860px;margin:0 auto 28px;line-height:1.7;">Claude renders the live ThumbGate footer now. <code>npx thumbgate init --agent codex</code> installs the same Codex hook bundle and writes the ThumbGate <code>statusLine</code> target so you can test it on your local Codex build immediately.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;align-items:start;">
+      <figure style="margin:0;">
+        <img src="/assets/claude-thumbgate-statusbar.svg" alt="Claude Code terminal footer showing ThumbGate version, plan, thumbs up and thumbs down counts, dashboard, lessons, and latest mistake." style="width:100%;height:auto;display:block;border-radius:14px;border:1px solid var(--border);background:#050816;">
+        <figcaption style="margin-top:10px;font-size:14px;color:var(--text-muted);line-height:1.6;">Claude live footer with ThumbGate stats, links, and the latest mistake summary.</figcaption>
+      </figure>
+      <figure style="margin:0;">
+        <img src="/assets/codex-thumbgate-statusbar-test.svg" alt="OpenAI Codex terminal footer on the published ThumbGate test lane." style="width:100%;height:auto;display:block;border-radius:14px;border:1px solid var(--border);background:#050816;">
+        <figcaption style="margin-top:10px;font-size:14px;color:var(--text-muted);line-height:1.6;">Codex test lane after the published ThumbGate install path writes PreToolUse, UserPromptSubmit, PostToolUse, SessionStart, and the statusLine target.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
 <!-- CLAUDE CODE SECTION -->
 <section class="gpt-path" id="claude-code-section">
   <div class="container">
@@ -1129,7 +1147,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How are pre-action gates different from prompt rules?</div>
-        <div class="faq-a">Prompt rules are suggestions that agents can ignore. Pre-Action Gates are enforcement — they block the action before execution. Gates are auto-generated from your human-in-the-loop feedback and use Thompson Sampling to adapt over time.</div>
+        <div class="faq-a">Prompt rules are a starting point, not a finish line. Without prompt evaluation you do not know whether they still hold up under real tool use. ThumbGate adds the human-in-the-loop measurement loop and the enforcement layer: proof lanes, ThumbGate Bench, and self-heal checks show whether behavior improved, and Pre-Action Gates block the action before execution when it did not.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What does Pro cost?</div>

@@ -45,6 +45,23 @@ const CLAUDE_HOOKS = {
   },
 };
 
+const CODEX_HOOKS = {
+  PreToolUse: {
+    matcher: 'Bash',
+    hooks: [{ type: 'command', command: preToolHookCommand() }],
+  },
+  UserPromptSubmit: {
+    hooks: [{ type: 'command', command: userPromptHookCommand() }],
+  },
+  PostToolUse: {
+    matcher: 'mcp__thumbgate__feedback_stats|mcp__thumbgate__dashboard',
+    hooks: [{ type: 'command', command: cacheUpdateHookCommand() }],
+  },
+  SessionStart: {
+    hooks: [{ type: 'command', command: sessionStartHookCommand() }],
+  },
+};
+
 // --- Agent detection ---
 
 function detectAgent(flagAgent) {
@@ -338,49 +355,82 @@ function codexConfigPath() {
   return path.join(getHome(), '.codex', 'config.json');
 }
 
+function writeJsonFile(filePath, payload, dryRun) {
+  if (dryRun) {
+    return;
+  }
+
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(payload, null, 2) + '\n');
+}
+
+function upsertCodexHook(configHooks, lifecycle, hookDef, legacyPattern) {
+  const hookCommand = hookDef.hooks[0].command;
+  const pruned = pruneLegacyHookEntries(configHooks[lifecycle], hookCommand, legacyPattern);
+  configHooks[lifecycle] = pruned.hooks;
+
+  const added = [];
+  if (pruned.removed) {
+    added.push({ lifecycle, command: `${hookCommand} (replaced legacy ThumbGate hook)` });
+  }
+
+  if (hookAlreadyPresent(configHooks[lifecycle], hookCommand)) {
+    return added;
+  }
+
+  const entry = { hooks: hookDef.hooks };
+  if (hookDef.matcher) {
+    entry.matcher = hookDef.matcher;
+  }
+
+  configHooks[lifecycle] = configHooks[lifecycle] || [];
+  configHooks[lifecycle].push(entry);
+  added.push({ lifecycle, command: hookCommand });
+  return added;
+}
+
+function syncCodexStatusLine(config, desiredStatusLine) {
+  if (config.statusLine && config.statusLine.command === desiredStatusLine) {
+    return false;
+  }
+
+  config.statusLine = { type: 'command', command: desiredStatusLine };
+  return true;
+}
+
 function wireCodexHooks(options) {
   const configPath = options.settingsPath || codexConfigPath();
   const dryRun = options.dryRun || false;
+  const desiredStatusLine = statuslineCommand();
 
   let config = loadJsonFile(configPath) || {};
   config.hooks = config.hooks || {};
 
   const added = [];
-  const preToolCmd = preToolHookCommand();
-  const userPromptCmd = userPromptHookCommand();
+  const legacyPatterns = {
+    PreToolUse: /(generate-pretool-hook\.sh|\bgate-check\b)/,
+    UserPromptSubmit: /(hook-auto-capture\.sh|hook-auto-capture\b)/,
+    PostToolUse: /(hook-thumbgate-cache-updater|cache-update\b)/,
+    SessionStart: /(thumbgate_session_start\.sh|session-start\b)/,
+  };
 
-  const preToolPruned = pruneLegacyHookEntries(config.hooks.PreToolUse, preToolCmd, /(generate-pretool-hook\.sh|\bgate-check\b)/);
-  config.hooks.PreToolUse = preToolPruned.hooks;
-  const userPromptPruned = pruneLegacyHookEntries(config.hooks.UserPromptSubmit, userPromptCmd, /(hook-auto-capture\.sh|hook-auto-capture\b)/);
-  config.hooks.UserPromptSubmit = userPromptPruned.hooks;
-
-  if (!hookAlreadyPresent(config.hooks.PreToolUse, preToolCmd)) {
-    config.hooks.PreToolUse = config.hooks.PreToolUse || [];
-    config.hooks.PreToolUse.push({
-      matcher: 'Bash',
-      hooks: [{ type: 'command', command: preToolCmd }],
-    });
-    added.push({ lifecycle: 'PreToolUse', command: preToolCmd });
-  }
-
-  if (!hookAlreadyPresent(config.hooks.UserPromptSubmit, userPromptCmd)) {
-    config.hooks.UserPromptSubmit = config.hooks.UserPromptSubmit || [];
-    config.hooks.UserPromptSubmit.push({
-      hooks: [{ type: 'command', command: userPromptCmd }],
-    });
-    added.push({ lifecycle: 'UserPromptSubmit', command: userPromptCmd });
+  for (const [lifecycle, hookDef] of Object.entries(CODEX_HOOKS)) {
+    added.push(...upsertCodexHook(config.hooks, lifecycle, hookDef, legacyPatterns[lifecycle]));
   }
 
   if (added.length === 0) {
+    if (syncCodexStatusLine(config, desiredStatusLine)) {
+      writeJsonFile(configPath, config, dryRun);
+      return { changed: true, settingsPath: configPath, added: [{ lifecycle: 'statusLine', command: desiredStatusLine }] };
+    }
     return { changed: false, settingsPath: configPath, added: [] };
   }
 
-  if (!dryRun) {
-    const dir = path.dirname(configPath);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
-  }
+  syncCodexStatusLine(config, desiredStatusLine);
+  writeJsonFile(configPath, config, dryRun);
 
+  added.push({ lifecycle: 'statusLine', command: desiredStatusLine });
   return { changed: true, settingsPath: configPath, added };
 }
 
