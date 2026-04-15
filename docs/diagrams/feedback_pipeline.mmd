@@ -1,0 +1,31 @@
+sequenceDiagram
+    participant Dev as Developer
+    participant Agent as AI Agent
+    participant Hook as PreToolUse Hook
+    participant Gate as Gate Engine
+    participant FB as Feedback Store
+    participant Promo as Lesson Promoter
+    participant Config as Gate Config
+
+    Note over Dev,Config: Session 1 — Agent makes a mistake
+    Dev->>Agent: "Refactor the auth module"
+    Agent->>Hook: Tool call: Write(auth.js)
+    Hook->>Gate: Evaluate gates
+    Gate-->>Hook: PASS (no matching gate)
+    Hook-->>Agent: Approved
+    Agent->>Dev: Shows result (bad code)
+    Dev->>FB: 👎 Thumbs Down + reason
+    FB->>FB: Validate schema, score quality
+    FB->>FB: Store in JSONL + ContextFS
+    FB->>Promo: Analyze for promotion
+    Promo->>Config: Auto-promote to gate rule
+
+    Note over Dev,Config: Session 2 — Gate blocks the repeat
+    Dev->>Agent: "Refactor the auth module"
+    Agent->>Hook: Tool call: Write(auth.js)
+    Hook->>Gate: Evaluate gates
+    Gate->>Gate: Pattern match ✓
+    Gate->>Gate: Build reasoning chain
+    Gate-->>Hook: ⛔ BLOCK + explanation
+    Hook-->>Agent: Blocked with reason
+    Agent->>Dev: "Gate blocked: Never overwrite auth.js without tests"
