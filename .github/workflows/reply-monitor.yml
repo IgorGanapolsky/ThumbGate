@@ -9,6 +9,9 @@ name: Social Reply Monitor
 # .thumbgate/reply-drafts.jsonl for human review (per script policy).
 
 on:
+  schedule:
+    # Daily at 13:00 UTC (9am ET / 6am PT) — catches overnight replies before the team is on
+    - cron: '0 13 * * *'
   workflow_dispatch:
     inputs:
       platform:
@@ -52,6 +55,12 @@ jobs:
       REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
       REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
       REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
+      # LinkedIn — gated on Community Management API approval (see
+      # docs/marketing/linkedin-api-application.md). The stub logs a warning
+      # until the approved token is available; envs are wired so the moment
+      # approval lands, no workflow edit is needed.
+      LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+      LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
 
     steps:
       - name: Checkout
