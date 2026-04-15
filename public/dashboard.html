@@ -1197,16 +1197,25 @@ function renderPipeline(pipeline) {
     container.innerHTML = '<div class="empty">No pipeline data yet. Give some thumbs-up/down feedback to get started.</div>';
     return;
   }
+  var stageLinks = {
+    feedback: '/lessons',
+    lessons: '/lessons?category=error',
+    gates: '#tab-gates',
+    blocked: '#tab-gates',
+  };
   var html = '';
   for (var i = 0; i < stages.length; i++) {
     var s = stages[i];
     var colors = { feedback: 'var(--cyan)', lessons: 'var(--green)', gates: '#fbbf24', blocked: 'var(--red)' };
     var color = colors[s.id] || 'var(--cyan)';
-    html += '<div style="text-align:center;min-width:120px;cursor:pointer;" title="' + escAttr(s.detail || '') + '">';
+    var href = stageLinks[s.id] || '#';
+    var isTabLink = href.startsWith('#tab-');
+    var onclickAttr = isTabLink ? ' onclick="switchTab(\'' + href.slice(5) + '\');return false;"' : '';
+    html += '<a href="' + escAttr(href) + '"' + onclickAttr + ' style="text-align:center;min-width:120px;cursor:pointer;text-decoration:none;color:inherit;display:block;border-radius:12px;padding:16px 12px;transition:background 0.15s,transform 0.1s;" title="' + escAttr(s.detail || '') + '" onmouseover="this.style.background=\'rgba(34,211,238,0.08)\';this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.background=\'transparent\';this.style.transform=\'none\'">';
     html += '<div style="font-size:36px;font-weight:800;color:' + color + ';letter-spacing:-0.03em;">' + s.count + '</div>';
     html += '<div style="font-size:13px;font-weight:600;margin-top:4px;">' + escHtml(s.label) + '</div>';
     html += '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + escHtml(s.detail || '') + '</div>';
-    html += '</div>';
+    html += '</a>';
     if (i < stages.length - 1) {
       html += '<div style="font-size:24px;color:var(--text-muted);padding:0 8px;">→</div>';
     }
