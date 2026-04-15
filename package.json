@@ -464,7 +464,6 @@
     "test:harness-selector": "node --test tests/harness-selector.test.js",
     "test:thumbgate-bench": "node --test tests/thumbgate-bench.test.js",
     "thumbgate:bench": "node scripts/thumbgate-bench.js",
-    "eval:gates": "node scripts/prompt-eval.js"
     "test:perplexity": "node --test tests/perplexity-client.test.js tests/perplexity-command-center.test.js tests/perplexity-adapter.test.js",
     "perplexity:visibility": "node scripts/perplexity-command-center.js visibility",
     "perplexity:leads": "node scripts/perplexity-command-center.js leads",
