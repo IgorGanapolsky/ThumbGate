@@ -1,0 +1,36 @@
+graph LR
+    subgraph "Your Machine (Local-First)"
+        TG["ThumbGate\nMCP Server"]
+        DB[("ContextFS\n.thumbgate/")]
+        GC["Gate Config\ndefault.json"]
+    end
+
+    subgraph "Claude Code"
+        CC_PRE["PreToolUse\nHook"]
+        CC_POST["PostToolUse\nHook"]
+        CC_START["SessionStart\nHook"]
+    end
+
+    subgraph "Cursor"
+        CUR_MCP[".cursor/mcp.json"]
+    end
+
+    subgraph "OpenAI Codex"
+        CDX_TOML["agents.toml\n[mcp_servers.thumbgate]"]
+    end
+
+    subgraph "ChatGPT"
+        GPT_ACT["GPT Actions\nOpenAPI Spec"]
+    end
+
+    CC_PRE & CC_POST & CC_START -->|"stdio"| TG
+    CUR_MCP -->|"stdio"| TG
+    CDX_TOML -->|"stdio"| TG
+    GPT_ACT -->|"HTTPS"| TG
+
+    TG --> DB
+    TG --> GC
+    DB -->|"lessons"| GC
+
+    style TG fill:#ff6600,stroke:#cc4400,color:#fff
+    style DB fill:#336699,stroke:#224477,color:#fff

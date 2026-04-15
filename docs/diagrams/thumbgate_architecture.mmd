@@ -1,0 +1,75 @@
+graph TB
+    subgraph "AI Agent Layer"
+        A1["Claude Code"]
+        A2["Cursor"]
+        A3["OpenAI Codex"]
+        A4["ChatGPT"]
+        A5["ForgeCode"]
+    end
+
+    subgraph "Hook Interface"
+        H1["PreToolUse Hook"]
+        H2["PostToolUse Hook"]
+        H3["SessionStart Hook"]
+    end
+
+    subgraph "MCP Protocol Layer"
+        M1["JSON-RPC 2.0 / stdio"]
+        M2["40+ MCP Tools"]
+        M3["Rate Limiter"]
+    end
+
+    subgraph "Gate Engine"
+        G1["Pattern Matcher\n(regex + glob)"]
+        G2["Verdict Engine\n(block / warn / log)"]
+        G3["Reasoning Chain\nBuilder"]
+        G4["Stats Tracker"]
+    end
+
+    subgraph "Governance Layer"
+        GOV1["Task Scope\nEnforcement"]
+        GOV2["Protected File\nApproval System"]
+        GOV3["Branch Governance\n& Release Gates"]
+    end
+
+    subgraph "Security Layer"
+        S1["Secret Scanner"]
+        S2["Executable Hash\nVerification (SHA-256)"]
+        S3["MCP Policy\nAllowlists"]
+    end
+
+    subgraph "Feedback & Memory"
+        F1["Feedback Ingestion\n(JSONL)"]
+        F2["ContextFS\n7 Namespaces"]
+        F3["Lesson Promotion\nPipeline"]
+        F4["DPO Export\nfor Fine-tuning"]
+    end
+
+    subgraph "Orchestration"
+        O1["Intent Router"]
+        O2["Thompson Sampling\nAction Ranking"]
+        O3["Delegation Runtime"]
+    end
+
+    A1 & A2 & A3 & A4 & A5 --> H1 & H2 & H3
+    H1 & H2 & H3 --> M1
+    M1 --> M2
+    M2 --> M3
+    M3 --> G1
+    G1 --> G2
+    G2 --> G3
+    G2 --> G4
+    G1 --> GOV1 & GOV2 & GOV3
+    G1 --> S1 & S2 & S3
+    G2 -->|"thumbs down"| F1
+    F1 --> F2
+    F2 --> F3
+    F3 -->|"auto-promote"| G1
+    F2 --> F4
+    M2 --> O1
+    O1 --> O2
+    O1 --> O3
+
+    style G2 fill:#ff4444,stroke:#cc0000,color:#fff
+    style F3 fill:#44aa44,stroke:#008800,color:#fff
+    style M1 fill:#4488cc,stroke:#2266aa,color:#fff
