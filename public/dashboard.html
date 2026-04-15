@@ -219,6 +219,14 @@
     <div class="stat-card" data-card-action="savings" onclick="selectCard(this,'savings')" style="cursor:pointer;" title="Estimated tokens + dollars saved by your gates (Sonnet-blended pricing, conservative defaults)"><div class="stat-label">💸 Tokens Saved</div><div class="stat-value green" id="statTokensSaved">—</div><div class="stat-label" id="statDollarsSaved" style="margin-top:4px;color:var(--text-muted);text-transform:none;letter-spacing:0;">—</div></div>
   </div>
 
+  <!-- TOP BLOCKED GATES — the receipts panel: shows what's getting stopped and what it saved -->
+  <div class="panel" id="topBlockedPanel" style="margin-bottom:20px;">
+    <h3 style="margin:0 0 12px 0;font-size:14px;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);">🛑 Top Blocked Gates <span style="color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;">— since install, Sonnet-blended</span></h3>
+    <div id="topBlockedList" style="font-family:var(--mono,monospace);font-size:13px;line-height:1.8;">
+      <div style="color:var(--text-dim);">No blocks recorded yet. Your gates fire the moment an agent tries a known-bad tool call.</div>
+    </div>
+  </div>
+
   <!-- TABS -->
   <div class="tabs">
     <div class="tab active" onclick="switchTab('search')">🔍 Search Memories</div>
@@ -625,6 +633,25 @@ const TG_TOKEN_SAVINGS = (function() {
   return { compute, fmtDollars, fmtTokens };
 })();
 
+function renderTopBlockedGates(topBlocked) {
+  var el = document.getElementById('topBlockedList');
+  if (!el) return;
+  if (!Array.isArray(topBlocked) || !topBlocked.length) {
+    el.innerHTML = '<div style="color:var(--text-dim);">No blocks recorded yet. Your gates fire the moment an agent tries a known-bad tool call.</div>';
+    return;
+  }
+  var rows = topBlocked.slice(0, 6).map(function(g) {
+    var name = escHtml(g.name || g.id || 'gate');
+    var count = Number(g.blocked || 0);
+    var savings = TG_TOKEN_SAVINGS.compute(count, 0);
+    return '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;">' +
+      '<span style="color:#4ade80;">✅ ' + name + '</span>' +
+      '<span style="color:var(--text-muted);font-size:12px;white-space:nowrap;">blocked ' + count + '× · ≈ ' + savings.dollarsSavedDisplay + ' saved</span>' +
+      '</div>';
+  }).join('');
+  el.innerHTML = rows;
+}
+
 function renderDashboardData(data) {
   dashboardSnapshot = data;
   const gates = data.gates || data.activeGates || [];
@@ -644,6 +671,7 @@ function renderDashboardData(data) {
   const dEl = document.getElementById('statDollarsSaved');
   if (tEl) tEl.textContent = savings.tokensSavedDisplay;
   if (dEl) dEl.textContent = '≈ ' + savings.dollarsSavedDisplay + ' saved';
+  renderTopBlockedGates(topBlocked);
   if (!gates.length) {
     document.getElementById('gatesList').innerHTML = '<div class="empty">No active gates</div>';
   } else {
@@ -998,6 +1026,14 @@ function loadDemo() {
   var dEl = document.getElementById('statDollarsSaved');
   if (tEl) tEl.textContent = demoSavings.tokensSavedDisplay;
   if (dEl) dEl.textContent = '≈ ' + demoSavings.dollarsSavedDisplay + ' saved';
+  renderTopBlockedGates([
+    { name: 'gate:no-force-push', blocked: 47 },
+    { name: 'gate:no-drop-prod', blocked: 31 },
+    { name: 'gate:no-hallucinated-import', blocked: 28 },
+    { name: 'gate:no-secret-commit', blocked: 19 },
+    { name: 'gate:require-tests-before-done', blocked: 14 },
+    { name: 'gate:no-figma-claim-without-check', blocked: 9 },
+  ]);
   // Sample memories — realistic scenarios from real agent-driven development
   var demoResults = [
     { signal: 'down', title: 'Claimed fix worked without running tests', context: 'Agent announced "fixed and pushed" but never ran the test suite. CI failed on 3 tests. Gate now requires test evidence before any completion claim.', tags: ['anti-lying', 'verification-gap', 'ci', 'trust-breach'], timestamp: '2025-06-22T10:20:00Z' },
