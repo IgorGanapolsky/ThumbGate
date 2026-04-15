@@ -77,15 +77,16 @@ function toLocalDayKey(value) {
 // ---------------------------------------------------------------------------
 
 function computeApprovalStats(entries) {
-  const total = entries.length;
-  const positive = entries.filter((e) => e.signal === 'positive').length;
-  const negative = entries.filter((e) => e.signal === 'negative').length;
+  const realEntries = entries.filter((e) => !isAuditTrailEntry(e));
+  const total = realEntries.length;
+  const positive = realEntries.filter((e) => e.signal === 'positive').length;
+  const negative = realEntries.filter((e) => e.signal === 'negative').length;
   const approvalRate = total > 0 ? Math.round((positive / total) * 100) : 0;
 
   // 7-day trend
   const now = Date.now();
   const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
-  const recentEntries = entries.filter((e) => {
+  const recentEntries = realEntries.filter((e) => {
     const ts = e.timestamp ? new Date(e.timestamp).getTime() : 0;
     return ts >= sevenDaysAgo;
   });
@@ -282,6 +283,7 @@ function computeFeedbackTimeSeries(entries, dayCount = 30) {
 
   for (const entry of entries) {
     if (!entry.timestamp) continue;
+    if (isAuditTrailEntry(entry)) continue;
     const dayKey = toLocalDayKey(entry.timestamp);
     const bucket = dayMap.get(dayKey);
     if (!bucket) continue;
@@ -293,6 +295,10 @@ function computeFeedbackTimeSeries(entries, dayCount = 30) {
   return { dayCount, days };
 }
 
+function isAuditTrailEntry(entry) {
+  return Array.isArray(entry.tags) && entry.tags.includes('audit-trail');
+}
+
 // ---------------------------------------------------------------------------
 // Lesson pipeline (feedback → lesson → gate conversion)
 // ---------------------------------------------------------------------------
@@ -301,8 +307,9 @@ function computeLessonPipeline(feedbackDir, entries, gateStats) {
   const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
   const memories = readJSONL(memoryLogPath);
 
-  const totalFeedback = entries.length;
-  const totalNegative = entries.filter((e) => {
+  const realEntries = entries.filter((e) => !isAuditTrailEntry(e));
+  const totalFeedback = realEntries.length;
+  const totalNegative = realEntries.filter((e) => {
     const s = String(e.signal || e.feedback || '').toLowerCase();
     return ['down', 'negative', 'thumbs_down'].includes(s);
   }).length;
@@ -874,8 +881,14 @@ function collectAllFeedbackEntries(feedbackDir) {
 
   // Also check the project root's .thumbgate if feedbackDir is global
   // The MCP server often resolves to PROJECT_ROOT/.thumbgate for project-scoped feedback
+  // Skip this merge when feedbackDir is a temp/test directory (not ~/.thumbgate)
+  const homeThumbgate = path.join(process.env.HOME || '/tmp', '.thumbgate');
   const projectLocalDir = path.join(PROJECT_ROOT, '.thumbgate');
-  if (projectLocalDir !== feedbackDir && fs.existsSync(projectLocalDir)) {
+  if (
+    path.resolve(feedbackDir) === path.resolve(homeThumbgate) &&
+    projectLocalDir !== feedbackDir &&
+    fs.existsSync(projectLocalDir)
+  ) {
     mergeFrom(path.join(projectLocalDir, 'feedback-log.jsonl'));
   }
 
