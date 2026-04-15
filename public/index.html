@@ -19,12 +19,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 __GOOGLE_SITE_VERIFICATION_META__
-<title>ThumbGate — Stop AI agents before they make costly mistakes</title>
-<meta name="description" content="Stop expensive AI agent mistakes before they happen. 👎 Thumbs down becomes history-aware lessons and Pre-Action Gates; 👍 thumbs up reinforces safe patterns. ThumbGate checks risky commands, deploys, API calls, and file edits across ChatGPT, Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode with workflow governance, shared lessons and org visibility for safer vibe coding.">
-<meta property="og:title" content="ThumbGate — Stop AI agents before they make costly mistakes">
-<meta property="og:description" content="Stop expensive AI agent mistakes before they happen. 👎 Thumbs down becomes history-aware lessons and Pre-Action Gates; 👍 thumbs up reinforces safe patterns. ThumbGate checks risky commands, deploys, API calls, and file edits across ChatGPT, Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode with workflow governance, shared lessons and org visibility for safer vibe coding.">
+<title>ThumbGate — Stop paying for the same AI mistake twice</title>
+<meta name="description" content="Stop paying for the same AI mistake twice. ThumbGate turns 👍 thumbs up and 👎 thumbs down feedback into history-aware lessons and Pre-Action Gates that block repeat AI agent mistakes before they reach the model — self-improving agent governance with shared lessons and org visibility for Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode.">
+<meta property="og:title" content="ThumbGate — Stop paying for the same AI mistake twice">
+<meta property="og:description" content="Frontier LLMs are expensive and repeat mistakes cost real money. ThumbGate blocks known-bad AI agent actions before they hit the model — zero tokens spent on retries, hallucinations, or repeat commands. Fix it once, your bill never sees it again.">
 <meta property="og:type" content="website">
-<meta name="keywords" content="ThumbGate, thumbgate, agent governance, AI coding workflow governance, workflow hardening sprint, pre-action gates, CLI-first agent safety, Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, approval policies, audit trail, release confidence, Docker Sandboxes, feedback enforcement, context engineering, AI authenticity, prevent AI slop, human-led AI, AI agent standards enforcement, brand authenticity AI">
+<meta name="keywords" content="ThumbGate, thumbgate, save LLM tokens, reduce Claude API cost, reduce OpenAI cost, AI agent token savings, prevent LLM retries, prevent hallucination retries, stop AI token waste, pre-action gates, agent governance, Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, workflow hardening, context engineering, AI authenticity, brand authenticity AI">
 
 <!-- Privacy-friendly analytics by Plausible -->
 <script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
@@ -44,7 +44,7 @@ __GA_BOOTSTRAP__
   "@type": "SoftwareApplication",
   "name": "ThumbGate",
   "alternateName": "thumbgate",
-  "description": "ThumbGate stops costly AI agent mistakes before they happen. It checks risky commands, file edits, deploys, API calls, and other agent actions before execution, then turns thumbs-up/down feedback into Pre-Action Gates, workflow governance, shared lessons, org visibility, release confidence, and isolated execution guidance.",
+  "description": "ThumbGate stops you from paying for the same AI mistake twice. Frontier LLMs are expensive — and every repeated hallucination, retry loop, or known-bad tool call burns more tokens. ThumbGate's Pre-Action Gates intercept the call before it hits the model, so you spend zero tokens on mistakes you've already corrected once. Works with Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent.",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Cross-platform, Node.js >=18.18.0",
   "license": "https://opensource.org/licenses/MIT",
@@ -525,13 +525,38 @@ __GA_BOOTSTRAP__
 <section class="hero">
   <div class="container">
     <div class="hero-thumbs">👍👎</div>
-    <div class="hero-badge">● Block your first repeated AI mistake in 5 minutes</div>
-    <h1>Stop expensive AI agent mistakes<br>before they happen.</h1>
-    <p style="font-size:18px;color:var(--text-muted);max-width:660px;margin:0 auto 20px;line-height:1.6;">Your AI agent keeps making the same mistake? Give it a <code>thumbs down</code>. ThumbGate turns that into a <strong style="color:var(--text)">permanent gate</strong> that blocks the pattern before the next tool call.<br><span style="color:var(--text-muted);font-size:15px;">Works with Claude Code, Cursor, Codex, Gemini, Amp, and any MCP-compatible agent.</span></p>
+    <div class="hero-badge">● Your AI coding bill has a leak</div>
+    <h1>Stop paying $ for the same AI mistake.</h1>
+    <p style="font-size:18px;color:var(--text-muted);max-width:720px;margin:0 auto 20px;line-height:1.6;">Every retry loop, every hallucinated import, every "let me try a different approach" — those are billable tokens on every LLM vendor's bill. Thumbs-down once; ThumbGate blocks that exact mistake on every future call. Across Claude Code, Cursor, Codex, Gemini, Amp, OpenCode — any MCP-compatible agent, forever, including fast-moving vibe coding workflows.</p>
+    <a href="/dashboard" class="hero-dashboard-preview" style="display:block;max-width:620px;margin:0 auto 28px;background:linear-gradient(135deg,#0d1220 0%,#121a2e 100%);border:1px solid rgba(34,211,238,0.35);border-radius:12px;padding:20px 24px;box-shadow:0 0 48px rgba(34,211,238,0.15);font-family:var(--mono);text-align:left;text-decoration:none;color:inherit;" title="Open your live dashboard">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);">
+        <span>Your dashboard · <span style="color:#eab308;background:rgba(234,179,8,0.1);padding:2px 6px;border-radius:3px;letter-spacing:0.04em;">Sample</span></span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#4ade80;"><span style="width:6px;height:6px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px #4ade80;animation:pulse 1.6s ease-in-out infinite;"></span>enforcing</span>
+      </div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:4px;">💸 Tokens saved — since install (Sonnet-blended, conservative)</div>
+      <div id="hero-savings-counter" data-target="1247.82" style="font-size:44px;font-weight:700;color:#4ade80;letter-spacing:-0.02em;line-height:1;margin-bottom:18px;">$0.00</div>
+      <div style="font-size:12px;line-height:1.8;border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;">
+        <div style="color:#4ade80;">✅ gate:no-force-push — blocked 12×</div>
+        <div style="color:#4ade80;">✅ gate:no-hallucinated-import — blocked 8×</div>
+        <div style="color:#f87171;">❌ gate:no-drop-prod — FIRED · saved ~$3.40</div>
+        <div style="color:var(--text-muted);font-size:11px;margin-top:8px;">Sample shown. Your own dashboard tracks live feedback log + blocked calls from day one. <span style="color:var(--cyan);">Open dashboard →</span></div>
+      </div>
+    </a>
+    <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}</style>
+    <script>
+      (function(){
+        var el=document.getElementById('hero-savings-counter');
+        if(!el)return;
+        var target=parseFloat(el.getAttribute('data-target'))||0;
+        var start=null,dur=1800;
+        function tick(t){if(!start)start=t;var p=Math.min((t-start)/dur,1);var v=target*(1-Math.pow(1-p,3));el.textContent='$'+v.toFixed(2);if(p<1)requestAnimationFrame(tick);}
+        requestAnimationFrame(tick);
+      })();
+    </script>
     <div class="hero-signals">
-      <div class="signal-pill signal-down">👎 Prevent expensive mistakes: force-pushes, destructive SQL, bad deploys</div>
-      <div class="signal-pill signal-up">✅ Fix it once, then block the repeat before the next tool call</div>
-      <div class="signal-pill">🔁 Turn a smart assistant into a reliable operator</div>
+      <div class="signal-pill signal-down">Block repeat hallucinations before the model sees them</div>
+      <div class="signal-pill signal-up">Thumbs-down once, blocked forever, across every agent</div>
+      <div class="signal-pill">CLI-first workflow governance with a live tokens-saved counter</div>
     </div>
     <p class="hero-persona" style="display:none">For consultancies, platform teams, and AI product teams with one workflow owner, one repeated failure, and one buyer who needs proof before a wider rollout.</p>
     <div class="hero-actions" style="margin-top:32px;">
@@ -541,9 +566,9 @@ __GA_BOOTSTRAP__
         <span class="copy-hint">click to copy</span>
       </div>
       <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="posthog.capture('hero_install_click',{cta:'install_cli'})" class="btn-gpt-page btn-install-hero" style="font-size:18px;padding:16px 36px;">Install Free CLI</a>
+      <a href="/go/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_upgrade&cta_id=hero_go_pro&cta_placement=hero&plan_id=pro&landing_path=%2F" onclick="posthog.capture('hero_pro_click',{cta:'go_pro'})" class="btn-pro-page" style="font-size:18px;padding:16px 32px;background:linear-gradient(135deg,#f59e0b 0%,#ef4444 100%);color:#fff;font-weight:700;border-radius:10px;box-shadow:0 0 32px rgba(239,68,68,0.35);display:inline-flex;align-items:center;gap:8px;">Start 7-day Pro trial — $19/mo <span style="font-size:12px;opacity:0.85;font-weight:500;">→</span></a>
       <div class="hero-secondary-ctas" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:8px;opacity:0.7;">
         <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('hero_claude_extension_click',{cta:'install_claude_extension'})" style="font-size:12px;padding:8px 16px;background:#d97706;color:#fff;box-shadow:none;">Install Claude Extension</a>
-        <a href="/go/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_upgrade&cta_id=hero_go_pro&cta_placement=hero&plan_id=pro&landing_path=%2F" onclick="posthog.capture('hero_pro_click',{cta:'go_pro'})" class="btn-pro-page" style="font-size:12px;padding:8px 16px;opacity:0.7;">Upgrade to Pro — $19/mo</a>
         <a href="/go/github?utm_source=website&utm_medium=hero_cta&utm_campaign=github_repo&cta_id=hero_star_github&cta_placement=hero" target="_blank" rel="noopener" class="btn-free" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;font-size:12px;">⭐ Star on GitHub</a>
         <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" class="btn-install-link" target="_blank" rel="noopener" onclick="posthog.capture('hero_codex_plugin_click',{cta:'install_codex_plugin'})" style="font-size:11px;color:var(--text-muted);text-decoration:none;padding:6px 10px;">Install Codex plugin →</a>
         <a href="/go/gpt?utm_source=website&utm_medium=hero_cta&utm_campaign=chatgpt_gpt&cta_id=hero_open_gpt&cta_placement=hero" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('hero_cta_click',{cta:'open_gpt'})" style="font-size:11px;padding:6px 12px;background:transparent;border:1px solid rgba(74,222,128,0.3);color:var(--green);">Open ThumbGate GPT</a>
@@ -564,8 +589,8 @@ __GA_BOOTSTRAP__
     <p style="font-size:13px;color:var(--text-muted);margin:8px auto 28px;max-width:560px;">Your agent has no memory. Every session, the same wrong pattern runs. ThumbGate turns a single correction into a permanent block — before the next tool call fires. <a href="#pricing" style="color:var(--cyan);text-decoration:none;">See all plans →</a></p>
     <div class="first-gate-card" id="first-gate">
       <div class="section-label" style="text-align:left;margin-bottom:8px;">First-Dollar Activation Path</div>
-      <h2>Prove one blocked repeat before asking anyone to buy.</h2>
-      <p>The fastest path to value: one person, one repeated mistake, one gate that blocks it permanently.</p>
+      <h2>Block your first repeated AI mistake in 5 minutes.</h2>
+      <p>Prove one blocked repeat before asking anyone to buy. The fastest path to value: one person, one repeated mistake, one gate that blocks it permanently.</p>
       <div class="first-gate-steps">
         <div class="first-gate-step">
           <strong>1. Install ThumbGate</strong>
