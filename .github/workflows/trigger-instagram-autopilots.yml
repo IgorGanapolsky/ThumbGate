@@ -1,0 +1,46 @@
+name: Trigger Instagram Autopilots (one-off)
+
+# One-off workflow that fires the Video Autopilot and Instagram Autopilot
+# workflows on main after this PR merges. Intended to validate the Instagram
+# presign fix (#879) actually lands a Reel + static card on the grid without
+# waiting for the next cron slot.
+#
+# Fires exactly once on the merge commit that introduces / modifies this file
+# (path-scoped push trigger). A follow-up PR removes this workflow after it
+# runs.
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/trigger-instagram-autopilots.yml']
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch Video Autopilot
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          curl -fsSL -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/video-autopilot.yml/dispatches" \
+            -d '{"ref":"main","inputs":{"template":"auto","platforms":"tiktok,youtube,instagram","dry_run":"false"}}'
+          echo "Video Autopilot dispatched."
+
+      - name: Dispatch Instagram Autopilot
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          curl -fsSL -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/instagram-autopilot.yml/dispatches" \
+            -d '{"ref":"main","inputs":{"image_only":"false","dry_run":"false"}}'
+          echo "Instagram Autopilot dispatched."
