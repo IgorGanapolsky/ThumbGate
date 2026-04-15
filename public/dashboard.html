@@ -216,6 +216,15 @@
     <div class="stat-card" data-card-action="up" onclick="selectCard(this,'up')" style="cursor:pointer;" title="Show positive feedback"><div class="stat-label">👍 Positive</div><div class="stat-value green" id="statPositive">—</div></div>
     <div class="stat-card" data-card-action="down" onclick="selectCard(this,'down')" style="cursor:pointer;" title="Show negative feedback"><div class="stat-label">👎 Negative</div><div class="stat-value red" id="statNegative">—</div></div>
     <div class="stat-card" data-card-action="gates" onclick="selectCard(this,'gates')" style="cursor:pointer;" title="View active gates"><div class="stat-label">Active Gates</div><div class="stat-value cyan" id="statGates">—</div></div>
+    <div class="stat-card" data-card-action="savings" onclick="selectCard(this,'savings')" style="cursor:pointer;" title="Estimated tokens + dollars saved by your gates (Sonnet-blended pricing, conservative defaults)"><div class="stat-label">💸 Tokens Saved</div><div class="stat-value green" id="statTokensSaved">—</div><div class="stat-label" id="statDollarsSaved" style="margin-top:4px;color:var(--text-muted);text-transform:none;letter-spacing:0;">—</div></div>
+  </div>
+
+  <!-- TOP BLOCKED GATES — the receipts panel: shows what's getting stopped and what it saved -->
+  <div class="panel" id="topBlockedPanel" style="margin-bottom:20px;">
+    <h3 style="margin:0 0 12px 0;font-size:14px;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);">🛑 Top Blocked Gates <span style="color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;">— since install, Sonnet-blended</span></h3>
+    <div id="topBlockedList" style="font-family:var(--mono,monospace);font-size:13px;line-height:1.8;">
+      <div style="color:var(--text-dim);">No blocks recorded yet. Your gates fire the moment an agent tries a known-bad tool call.</div>
+    </div>
   </div>
 
   <!-- TABS -->
@@ -576,11 +585,93 @@ async function loadDashboardData() {
   await loadGeneratedView(currentGeneratedView);
 }
 
+// Token-cost savings helper — kept in lockstep with scripts/token-savings.js.
+// Mirror docs: ThumbGate's mission is "stop paying for the same AI mistake
+// twice." Every blocked tool call is tokens you didn't spend on a retry loop.
+// Numbers below are conservative; users can audit the math in the source file.
+const TG_TOKEN_SAVINGS = (function() {
+  const PRICES = {
+    'claude-sonnet-4-5': { input: 3.0, output: 15.0 },
+    'claude-opus-4-6':   { input: 15.0, output: 75.0 },
+    'claude-haiku-4-5':  { input: 0.80, output: 4.0 },
+  };
+  const MIX = { 'claude-sonnet-4-5': 0.80, 'claude-opus-4-6': 0.15, 'claude-haiku-4-5': 0.05 };
+  const AVG_IN = 2000, AVG_OUT = 600;
+  function fmtDollars(n) {
+    if (!isFinite(n)) return '$0.00';
+    if (n >= 1000) return '$' + Math.round(n).toLocaleString('en-US');
+    if (n >= 100)  return '$' + n.toFixed(0);
+    if (n >= 10)   return '$' + n.toFixed(1);
+    if (n >= 0.01) return '$' + n.toFixed(2);
+    if (n > 0)     return '$' + n.toFixed(4);
+    return '$0.00';
+  }
+  function fmtTokens(n) {
+    if (!isFinite(n) || n <= 0) return '0';
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return Math.round(n / 1e3) + 'K';
+    return String(Math.round(n));
+  }
+  function compute(blockedCalls, deflectedBots) {
+    const events = Math.max(0, blockedCalls || 0) + Math.max(0, deflectedBots || 0);
+    let inP = 0, outP = 0, w = 0;
+    for (const m in MIX) {
+      const wt = MIX[m]; if (!PRICES[m]) continue;
+      inP += PRICES[m].input * wt; outP += PRICES[m].output * wt; w += wt;
+    }
+    const blendedIn = w ? inP / w : 0, blendedOut = w ? outP / w : 0;
+    const tokensIn = events * AVG_IN, tokensOut = events * AVG_OUT;
+    const dollars = (tokensIn * blendedIn + tokensOut * blendedOut) / 1e6;
+    return {
+      tokensSavedTotal: tokensIn + tokensOut,
+      dollarsSaved: dollars,
+      tokensSavedDisplay: fmtTokens(tokensIn + tokensOut),
+      dollarsSavedDisplay: fmtDollars(dollars),
+    };
+  }
+  return { compute, fmtDollars, fmtTokens };
+})();
+
+function renderTopBlockedGates(topBlocked) {
+  var el = document.getElementById('topBlockedList');
+  if (!el) return;
+  if (!Array.isArray(topBlocked) || !topBlocked.length) {
+    el.innerHTML = '<div style="color:var(--text-dim);">No blocks recorded yet. Your gates fire the moment an agent tries a known-bad tool call.</div>';
+    return;
+  }
+  var rows = topBlocked.slice(0, 6).map(function(g) {
+    var name = escHtml(g.name || g.id || 'gate');
+    var count = Number(g.blocked || 0);
+    var savings = TG_TOKEN_SAVINGS.compute(count, 0);
+    return '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;">' +
+      '<span style="color:#4ade80;">✅ ' + name + '</span>' +
+      '<span style="color:var(--text-muted);font-size:12px;white-space:nowrap;">blocked ' + count + '× · ≈ ' + savings.dollarsSavedDisplay + ' saved</span>' +
+      '</div>';
+  }).join('');
+  el.innerHTML = rows;
+}
+
 function renderDashboardData(data) {
   dashboardSnapshot = data;
   const gates = data.gates || data.activeGates || [];
   const gateStats = data.gateStats || {};
   document.getElementById('statGates').textContent = gates.length || gateStats.totalGates || 0;
+
+  // Tokens-saved counter — sums blocked-gate hits + bot-deflected sessions.
+  // Falls back to 0 silently when the snapshot has no telemetry yet.
+  let blockedCalls = 0;
+  const team = data.team || {};
+  const topBlocked = Array.isArray(team.topBlockedGates) ? team.topBlockedGates : [];
+  for (const g of topBlocked) blockedCalls += Number(g.blocked || 0);
+  if (typeof gateStats.totalBlocks === 'number') blockedCalls = Math.max(blockedCalls, gateStats.totalBlocks);
+  const deflectedBots = Number((data.checkout && data.checkout.botDeflectedCount) || gateStats.botDeflectedCount || 0);
+  const savings = TG_TOKEN_SAVINGS.compute(blockedCalls, deflectedBots);
+  const tEl = document.getElementById('statTokensSaved');
+  const dEl = document.getElementById('statDollarsSaved');
+  if (tEl) tEl.textContent = savings.tokensSavedDisplay;
+  if (dEl) dEl.textContent = '≈ ' + savings.dollarsSavedDisplay + ' saved';
+  renderTopBlockedGates(topBlocked);
   if (!gates.length) {
     document.getElementById('gatesList').innerHTML = '<div class="empty">No active gates</div>';
   } else {
@@ -927,6 +1018,22 @@ function loadDemo() {
   document.getElementById('statNegative').textContent = '260';
   document.getElementById('statGates').textContent = '21';
   setSelectedCard('all');
+  // Demo: 260 negative-feedback events have produced ~180 actual gate blocks
+  // and ~85 bot deflections on /checkout/pro. Kept as illustrative defaults
+  // so the savings card never reads "0" in demo mode.
+  var demoSavings = TG_TOKEN_SAVINGS.compute(180, 85);
+  var tEl = document.getElementById('statTokensSaved');
+  var dEl = document.getElementById('statDollarsSaved');
+  if (tEl) tEl.textContent = demoSavings.tokensSavedDisplay;
+  if (dEl) dEl.textContent = '≈ ' + demoSavings.dollarsSavedDisplay + ' saved';
+  renderTopBlockedGates([
+    { name: 'gate:no-force-push', blocked: 47 },
+    { name: 'gate:no-drop-prod', blocked: 31 },
+    { name: 'gate:no-hallucinated-import', blocked: 28 },
+    { name: 'gate:no-secret-commit', blocked: 19 },
+    { name: 'gate:require-tests-before-done', blocked: 14 },
+    { name: 'gate:no-figma-claim-without-check', blocked: 9 },
+  ]);
   // Sample memories — realistic scenarios from real agent-driven development
   var demoResults = [
     { signal: 'down', title: 'Claimed fix worked without running tests', context: 'Agent announced "fixed and pushed" but never ran the test suite. CI failed on 3 tests. Gate now requires test evidence before any completion claim.', tags: ['anti-lying', 'verification-gap', 'ci', 'trust-breach'], timestamp: '2025-06-22T10:20:00Z' },

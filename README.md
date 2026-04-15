@@ -1,8 +1,16 @@
 # ThumbGate
 
-**Stop expensive AI agent mistakes before they happen.**
+**Your AI coding bill has a leak.**
 
-ThumbGate is a local-first enforcement layer for AI coding agents. When your agent makes a mistake, give it a thumbs-down. ThumbGate turns that feedback into **Pre-Action Gates** that physically block the same mistake from ever running again.
+**Stop paying $ for the same AI mistake.**
+
+Every retry loop, every hallucinated import, every *"let me try a different approach"* — those are billable tokens on every LLM vendor's bill. Thumbs-down once; ThumbGate blocks that exact mistake on every future call. Across Claude Code, Cursor, Codex, Gemini, Amp, OpenCode — any MCP-compatible agent, forever.
+
+Under the hood: your thumbs-down becomes a **Pre-Action Gate** that physically blocks the pattern **permanently** on every future call — across every session, every model, every agent. It is **self-improving agent governance**: every correction promotes a fresh prevention rule, and your library of Pre-Action Gates grows stronger with every lesson. Works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent. The monthly Anthropic / OpenAI bill stops paying for the same lesson over and over — local-first enforcement, zero tokens spent on repeats.
+
+> **Prevent expensive AI mistakes. Make AI stop repeating mistakes. Turn a smart assistant into a reliable operator.**
+
+> **Mission:** make AI coding affordable by making sure you never pay for the same mistake twice.
 
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
@@ -23,25 +31,36 @@ The buying question is simple: **what repeated AI mistake would be worth blockin
 
 ---
 
-## The Problem
+## The Problem — the bill nobody talks about
 
-AI agents repeat the same expensive mistakes across sessions. You fix it once, but the agent has no memory — so it does it again. And again.
+Frontier-model calls are not cheap. Sonnet 4.5 is ~$3 / 1M input tokens and ~$15 / 1M output tokens. Opus is 5× that. Every time your agent:
+
+- hallucinates a function name and you have to correct it,
+- retries the same failing tool call until it gives up,
+- regenerates a 4,000-token plan you already approved last session,
+- repeats a destructive command you blocked manually yesterday,
+
+…you are paying for that round-trip. *Twice if it retries. Three times if you re-prompt.* And the agent has no memory across sessions, so the meter resets every Monday.
 
 ```
-Session 1:  Agent force-pushes to main.     You fix it.
-Session 2:  Agent force-pushes again.       You fix it again.
-Session 3:  Same mistake. Again.            You lose 45 minutes.
+Session 1:  Agent force-pushes to main.     You fix it.    +4,200 tokens
+Session 2:  Agent force-pushes again.       You fix it.    +4,200 tokens
+Session 3:  Same mistake. Again.            You lose 45m.  +5,800 tokens
 ```
 
-## The Solution
+That's ~$0.21 in tokens just to fix the same mistake three times — multiplied by every developer, every repeated-mistake class, every week. The math gets ugly fast.
+
+## The Solution — fix it once, the bill never sees it again
 
 ```
-Session 1:  Agent force-pushes to main.     You 👎 it.
-Session 2:  ⛔ Gate blocks the force-push.  Agent uses safe push.
-Session 3+: Never happens again.
+Session 1:  Agent force-pushes to main.     You 👎 it.       +4,200 tokens
+Session 2:  ⛔ Gate blocks the force-push.  Zero round-trip. +0 tokens
+Session 3+: Never happens again.                              +0 tokens
 ```
 
-One thumbs-down. Permanently fixed.
+One thumbs-down. The PreToolUse hook intercepts the call **before** it reaches the model — no input tokens, no output tokens, no retry loop. The dashboard tracks **tokens saved this week** as a live counter so you can see exactly what your prevention rules are worth.
+
+ThumbGate doesn't make your agent smarter. It makes your agent *cheaper to be wrong with.*
 
 ---
 

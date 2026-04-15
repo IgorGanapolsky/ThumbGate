@@ -46,7 +46,7 @@ test('public surfaces lead with outcomes instead of infrastructure abstractions'
   assert.match(readme, /Prevent expensive AI mistakes/i);
   assert.match(readme, /Make AI stop repeating mistakes/i);
   assert.match(readme, /reliable operator/i);
-  assert.match(landingPage, /Stop AI agents before/i);
+  assert.match(landingPage, /Stop the same mistake before|paying Anthropic to watch/i);
   assert.match(gptInstructions, /Sell outcomes before infrastructure/i);
   assert.doesNotMatch(landingPage, /Global enforcement/i);
   assert.doesNotMatch(readme, /Behavior control system/i);
