@@ -18,6 +18,16 @@ Under the hood: your thumbs-down becomes a **Pre-Action Gate** that physically b
 
 ---
 
+## 🎬 90-second demo
+
+Watch the force-push scenario: agent tries to `git push --force`, one thumbs-down, next session it's blocked — zero tokens spent on the repeat.
+
+[**▶ Watch the 90-second demo**](https://thumbgate-production.up.railway.app/#demo?utm_source=github&utm_medium=readme&utm_campaign=demo_video) · [Script](docs/marketing/demo-video-script.md) · [ElevenLabs narration: `npm run demo:voiceover`](scripts/generate-demo-voiceover.js)
+
+<!-- Video embed lives on the landing page and YouTube. Script + voiceover automation ship with the repo so anyone can re-record. -->
+
+---
+
 ## First-dollar activation path
 
 If someone is not already bought into ThumbGate, do not lead with architecture. Lead with one repeated mistake.
