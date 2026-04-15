@@ -302,4 +302,18 @@ async function main() {
   return results;
 }
 
-main().catch(err => { console.error(err.message); process.exit(1); });
+module.exports = {
+  ACCOUNTS,
+  CAPTIONS,
+  PLATFORM_COOLDOWN_HOURS,
+  buildPlatformPlan,
+  duplicateResult,
+  parseArgs,
+  processPlatform,
+  zernioUpload,
+};
+
+// Only auto-run when executed directly (keeps module require()-able for tests).
+if (require.main === module) {
+  main().catch(err => { console.error(err.message); process.exit(1); });
+}
