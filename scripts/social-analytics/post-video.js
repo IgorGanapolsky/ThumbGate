@@ -29,12 +29,11 @@ const { loadLocalEnv } = require('./load-env');
 loadLocalEnv();
 
 const { hashContent, isDuplicate, record } = require('./db/marketing-db');
+const { publishPost, uploadLocalMedia } = require('./publishers/zernio');
 
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
-
-const ZERNIO_BASE = 'https://zernio.com/api/v1';
 
 const ACCOUNTS = {
   tiktok:    process.env.ZERNIO_TIKTOK_ACCOUNT_ID    || '69bee0fd6cb7b8cf4c8b2425',
@@ -114,40 +113,15 @@ function requireKey() {
   return k;
 }
 
-async function zernioUpload(apiKey, filePath) {
-  const out = execFileSync('curl', [
-    '-s',
-    '-X', 'POST',
-    `${ZERNIO_BASE}/media`,
-    '-H', `Authorization: Bearer ${apiKey}`,
-    '-F', `files=@${filePath}`,
-  ], { maxBuffer: 10 * 1024 * 1024 }).toString();
-
-  const data = JSON.parse(out);
-  const files = data.files || [];
-  if (!files.length) throw new Error(`Zernio upload failed: ${out}`);
-  return files[0].url;
-}
-
-async function zernioPost(apiKey, { platform, accountId, title, content, mediaUrl, mediaType = 'video' }) {
-  const body = {
-    content,
-    mediaItems: [{ url: mediaUrl, type: mediaType }],
-    platforms: [{ platform, accountId }],
-    publishNow: true,
-  };
-  if (title) body.title = title;
-
-  const out = execFileSync('curl', [
-    '-s',
-    '-X', 'POST',
-    `${ZERNIO_BASE}/posts`,
-    '-H', `Authorization: Bearer ${apiKey}`,
-    '-H', 'Content-Type: application/json',
-    '-d', JSON.stringify(body),
-  ], { maxBuffer: 5 * 1024 * 1024 }).toString();
-
-  return JSON.parse(out);
+/**
+ * Upload a local video via Zernio's presign flow.
+ * Returns the full media item object Zernio expects in subsequent /posts calls:
+ *   { url, key, size, contentType, type }
+ * Instagram in particular validates these fields — passing only { url, type }
+ * (the previous direct /media multipart upload shape) caused silent rejection.
+ */
+async function zernioUpload(_apiKey, filePath) {
+  return uploadLocalMedia(filePath);
 }
 
 // ---------------------------------------------------------------------------
@@ -250,27 +224,42 @@ async function processPlatform(plan, context) {
   }
 
   try {
-    if (!context.mediaUrl) {
-      console.log(`[post-video] Uploading video to Zernio...`);
-      context.mediaUrl = await zernioUpload(context.apiKey, context.videoPath);
-      console.log(`[post-video] Uploaded: ${context.mediaUrl}`);
+    if (!context.mediaItem) {
+      console.log(`[post-video] Uploading video to Zernio (presign flow)...`);
+      context.mediaItem = await zernioUpload(context.apiKey, context.videoPath);
+      console.log(`[post-video] Uploaded: ${context.mediaItem.url}`);
     }
 
     console.log(`[post-video] Posting to ${plan.platform}...`);
-    const response = await zernioPost(context.apiKey, {
-      platform: plan.platform,
-      accountId: ACCOUNTS[plan.platform],
-      title: plan.platform === 'youtube' ? YT_TITLE : undefined,
-      content: plan.caption,
-      mediaUrl: context.mediaUrl,
+    // Force video type (Instagram Reels / TikTok / YT Shorts all require video).
+    // uploadLocalMedia infers type from extension, but .mp4 -> 'video' already;
+    // this is defensive in case a caller overrides the extension inference.
+    const mediaItems = [{ ...context.mediaItem, type: 'video' }];
+    const response = await publishPost(plan.caption, [
+      { platform: plan.platform, accountId: ACCOUNTS[plan.platform] },
+    ], {
+      mediaItems,
+      // YouTube Shorts use `title`; other platforms ignore it.
+      firstComment: undefined,
     });
 
-    const platformResult = response.post?.platforms?.[0] || {};
-    const status = platformResult.status || 'unknown';
-    const postUrl = platformResult.platformPostUrl || '';
+    if (response && response.blocked) {
+      const reasons = Array.isArray(response.reasons)
+        ? response.reasons.map(r => r.reason || String(r)).join(', ')
+        : 'blocked';
+      recordPostOutcome({ plan, status: 'blocked', postUrl: '', error: reasons, campaign: context.campaign,
+        mediaUrl: context.mediaItem.url, templateId: context.templateId, response });
+      return { platform: plan.platform, status: 'blocked', error: reasons };
+    }
+
+    const platformResult = response.post?.platforms?.[0]
+      || (Array.isArray(response.platforms) ? response.platforms[0] : null)
+      || {};
+    const status = platformResult.status || (response.id ? 'published' : 'unknown');
+    const postUrl = platformResult.platformPostUrl || platformResult.postUrl || '';
     const error = platformResult.errorMessage || response.error || '';
     recordPostOutcome({ plan, status, postUrl, error, campaign: context.campaign,
-      mediaUrl: context.mediaUrl, templateId: context.templateId, response });
+      mediaUrl: context.mediaItem.url, templateId: context.templateId, response });
     return { platform: plan.platform, status, postUrl, error };
   } catch (err) {
     console.error(`[post-video] ✗ ${plan.platform} error: ${err.message}`);
@@ -300,7 +289,7 @@ async function main() {
 
   const { videoPath, templateId } = prepareVideo(opts);
   const baseHash = hashContent(`video::template-${templateId}::${opts.campaign}`);
-  const context = { apiKey, campaign: opts.campaign, dryRun: opts.dryRun, mediaUrl: null, templateId, videoPath };
+  const context = { apiKey, campaign: opts.campaign, dryRun: opts.dryRun, mediaItem: null, templateId, videoPath };
   const plans = platforms.map(platform => buildPlatformPlan(platform, baseHash)).filter(Boolean);
   const results = [];
 

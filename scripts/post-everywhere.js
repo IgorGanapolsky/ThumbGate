@@ -65,6 +65,7 @@ function parsePostFile(filePath) {
     title: null,
     body: null,
     comment: null,
+    imagePath: null,
     tags: [],
   };
 
@@ -89,6 +90,14 @@ function parsePostFile(filePath) {
   const titleLine = lines.find((l) => /^\*\*Title:\*\*/i.test(l.trim()));
   if (titleLine) {
     result.title = titleLine.replace(/^\*\*Title:\*\*\s*/i, '').trim();
+  }
+
+  // Optional image attachment (path relative to CWD or absolute).
+  // Used by the Instagram dispatcher and any future media-required platforms.
+  const imageLine = lines.find((l) => /^\*\*Image:\*\*/i.test(l.trim()));
+  if (imageLine) {
+    const raw = imageLine.replace(/^\*\*Image:\*\*\s*/i, '').trim();
+    if (raw) result.imagePath = path.isAbsolute(raw) ? raw : path.resolve(raw);
   }
 
   // Extract body — content between **Body:** and the next **Comment or --- separator
@@ -210,6 +219,40 @@ async function postToYouTube(parsed, dryRun) {
   return youtube.publishPost({ title, description: body });
 }
 
+/**
+ * Publish to Instagram via Zernio.
+ *
+ * Instagram requires media, so this dispatcher:
+ *   1. Uses parsed.imagePath if provided in the markdown metadata
+ *      (e.g. `**Image:** path/to/card.png`), OR
+ *   2. Falls back to auto-generating a ThumbGate card via sharp.
+ *
+ * Caption = title + body (truncated to 2200 chars, Instagram's limit).
+ */
+async function postToInstagram(parsed, dryRun) {
+  const caption = [parsed.title, parsed.body]
+    .filter(Boolean)
+    .join('\n\n')
+    .slice(0, 2200);
+  if (!caption) throw new Error('Instagram post requires title or body');
+
+  if (dryRun) {
+    console.log(`[dry-run] Instagram: "${caption.slice(0, 100)}..." (${caption.length} chars)`);
+    return { dryRun: true };
+  }
+
+  let imagePath = parsed.imagePath;
+  if (!imagePath) {
+    // Auto-generate ThumbGate card (requires sharp as optional dep).
+    const { generateInstagramCard } = require('./social-analytics/generate-instagram-card');
+    const defaultPath = path.resolve(__dirname, '..', '.thumbgate', 'instagram-card.png');
+    imagePath = await generateInstagramCard(defaultPath);
+  }
+
+  const { postThumbGateToInstagram } = require('./social-analytics/instagram-thumbgate-post');
+  return postThumbGateToInstagram({ caption, imagePath });
+}
+
 // ---------------------------------------------------------------------------
 // Main orchestrator
 // ---------------------------------------------------------------------------
@@ -221,6 +264,7 @@ const DISPATCHERS = {
   devto: postToDevTo,
   tiktok: postToTikTok,
   youtube: postToYouTube,
+  instagram: postToInstagram,
 };
 
 async function postEverywhere(filePath, { platforms, dryRun } = {}) {
