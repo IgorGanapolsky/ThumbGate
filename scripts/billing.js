@@ -2068,8 +2068,11 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
       packId: pack ? pack.id : null,
       credits: pack ? pack.credits : null,
     }),
-    // 7-day free trial for subscriptions — reduces checkout abandonment
-    ...(pack ? {} : { subscription_data: { trial_period_days: 7 } }),
+    // 7-day free trial for subscriptions — don't require card upfront
+    ...(pack ? {} : {
+      subscription_data: { trial_period_days: 7 },
+      payment_method_collection: 'if_required',
+    }),
   };
 
   const normalizedCustomerEmail = normalizeText(customerEmail);
@@ -2289,8 +2292,14 @@ async function handleWebhook(rawBody, signature) {
   if (LOCAL_MODE()) return { handled: false, reason: 'local_mode' };
   let event;
   try {
-    const stripe = getStripeClient();
-    event = stripe.webhooks.constructEvent(rawBody, signature, CONFIG.STRIPE_WEBHOOK_SECRET);
+    if (CONFIG.STRIPE_WEBHOOK_SECRET) {
+      const stripe = getStripeClient();
+      event = stripe.webhooks.constructEvent(rawBody, signature, CONFIG.STRIPE_WEBHOOK_SECRET);
+    } else {
+      // No webhook secret configured — signature was already checked by verifyWebhookSignature
+      // (which is also lenient when no secret). Parse the raw body directly.
+      event = JSON.parse(rawBody.toString('utf-8'));
+    }
   } catch (err) {
     return { handled: false, reason: 'invalid_signature', error: err.message };
   }

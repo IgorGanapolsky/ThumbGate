@@ -43,7 +43,7 @@ This avoids platform-specific rewrite cost and keeps the product under a small b
 ## Claude (MCP)
 
 - Use: `adapters/claude/.mcp.json`
-- Transport: local stdio MCP server launched via `npx -y thumbgate@1.4.3 serve`
+- Transport: local stdio MCP server launched via `npx -y thumbgate@1.5.0 serve`
 
 ## Claude Desktop Extensions
 
@@ -58,7 +58,7 @@ This avoids platform-specific rewrite cost and keeps the product under a small b
 - Release workflow: `.github/workflows/publish-claude-plugin.yml`
 - Latest direct download: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb`
 - Latest review packet zip: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-plugin-review.zip`
-- Local install path: `claude mcp add thumbgate -- npx -y thumbgate@1.4.3 serve`
+- Local install path: `claude mcp add thumbgate -- npx -y thumbgate@1.5.0 serve`
 - Promotion rule: treat directory inclusion as a discoverability lane, not customer proof
 
 Build the `.mcpb` for Claude Desktop review or direct installation with:
@@ -95,7 +95,7 @@ This lane is for Claude Code users who want Codex review, adversarial review, an
 - Repo-local Codex plugin manifest: `plugins/codex-profile/.codex-plugin/plugin.json`
 - Repo-local Codex MCP config: `plugins/codex-profile/.mcp.json`
 - Repo-local Codex marketplace: `.agents/plugins/marketplace.json`
-- Transport: local stdio MCP server launched via `npx -y thumbgate@1.4.3 serve`
+- Transport: local stdio MCP server launched via `npx -y thumbgate@1.5.0 serve`
 
 The standalone Codex bundle ships `.codex-plugin/plugin.json`, `.mcp.json`, `.agents/plugins/marketplace.json`, `config.toml`, and install docs in one zip. Stable releases publish `thumbgate-codex-plugin.zip`; prereleases publish `thumbgate-codex-plugin-next.zip`.
 

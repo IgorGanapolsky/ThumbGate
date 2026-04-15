@@ -21,10 +21,48 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Install dependencies
         run: npm ci --ignore-scripts
+
+      - name: Audit hosted revenue truth
+        id: revenue-status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          THUMBGATE_API_KEY: ${{ secrets.THUMBGATE_API_KEY }}
+        run: |
+          mkdir -p reports/revenue
+          node scripts/revenue-status.js --json | tee reports/revenue/revenue-status.json
+          SOURCE=$(node -p "require('./reports/revenue/revenue-status.json').source")
+          ISSUE=$(node -p "require('./reports/revenue/revenue-status.json').diagnosis.primaryIssue")
+          echo "source=$SOURCE" >> "$GITHUB_OUTPUT"
+          echo "primary_issue=$ISSUE" >> "$GITHUB_OUTPUT"
+          if [ "$SOURCE" = "local-fallback" ]; then
+            echo "Hosted revenue truth fell back to local data; failing observability gate."
+            exit 1
+          fi
+
+      - name: Audit Stripe live status
+        id: stripe-live
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: |
+          mkdir -p reports/revenue
+          node scripts/stripe-live-status.js --strict | tee reports/revenue/stripe-live.json
+          STATUS=$(node -p "require('./reports/revenue/stripe-live.json').status")
+          NET=$(node -p "require('./reports/revenue/stripe-live.json').revenue.netLifetime")
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          echo "net_lifetime=$NET" >> "$GITHUB_OUTPUT"
+
+      - name: Audit Plausible checkout attribution
+        id: plausible
+        env:
+          PLAUSIBLE_API_KEY: ${{ secrets.PLAUSIBLE_API_KEY }}
+          PLAUSIBLE_SITE_ID: ${{ secrets.PLAUSIBLE_SITE_ID }}
+        run: |
+          mkdir -p reports/revenue
+          npm run social:poll:plausible | tee reports/revenue/plausible.log
 
       - name: Check npm downloads
         id: npm
@@ -123,6 +161,10 @@ jobs:
           ## Production
           - Status: ${STATUS}
           - Version: ${VERSION}
+          - Revenue truth source: ${{ steps.revenue-status.outputs.source }}
+          - Revenue primary issue: ${{ steps.revenue-status.outputs.primary_issue }}
+          - Stripe status: ${{ steps.stripe-live.outputs.status }}
+          - Stripe net lifetime: ${{ steps.stripe-live.outputs.net_lifetime }}
 
           ## Workflow Status
           $(gh run list --repo IgorGanapolsky/ThumbGate --limit 5 --json name,conclusion,createdAt \
@@ -149,3 +191,10 @@ jobs:
             git commit -m "chore: daily revenue loop report ${DATE} [skip ci]"
             git push
           fi
+
+      - name: Upload revenue observability artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: revenue-observability-${{ github.run_id }}
+          path: reports/revenue/

@@ -30,11 +30,35 @@ test('README explains the product as self-improving agent enforcement', () => {
   assert.match(readme, /permanently/i);
 });
 
+test('public surfaces lead with outcomes instead of infrastructure abstractions', () => {
+  const readme = readText('README.md');
+  const landingPage = readText(path.join('public', 'index.html'));
+  const llms = readText(path.join('.well-known', 'llms.txt'));
+  const gptInstructions = readText(path.join('docs', 'chatgpt-gpt-instructions.md'));
+
+  for (const surface of [readme, landingPage, llms, gptInstructions]) {
+    assert.match(surface, /costly|expensive/i);
+    assert.match(surface, /before (?:they|it) (?:make|run|happen)|before execution/i);
+    assert.match(surface, /Pre-Action Gates/i);
+  }
+
+  assert.match(readme, /Prevent expensive AI mistakes/i);
+  assert.match(readme, /Make AI stop repeating mistakes/i);
+  assert.match(readme, /reliable operator/i);
+  assert.match(landingPage, /Stop AI agents before/i);
+  assert.match(gptInstructions, /Sell outcomes before infrastructure/i);
+  assert.doesNotMatch(landingPage, /Global enforcement/i);
+  assert.doesNotMatch(readme, /Behavior control system/i);
+});
+
 test('README keeps the business sprint-first while preserving the Pro side lane', () => {
   const readme = readText('README.md');
 
   assert.match(readme, /Best first paid motion for teams/i);
   assert.match(readme, /Best first technical motion/i);
+  assert.match(readme, /First-dollar activation path/i);
+  assert.match(readme, /what repeated AI mistake would be worth blocking before the next tool call/i);
+  assert.match(readme, /Native ChatGPT rating buttons are not the ThumbGate capture path/i);
   assert.match(readme, /CLI-first/i);
   assert.match(readme, /Workflow Hardening Sprint/i);
   assert.match(readme, /Paid path for individual operators/i);
@@ -80,7 +104,7 @@ test('LLM context keeps team pricing and CLI-first positioning aligned with comm
   const context = readText(path.join('public', 'llm-context.md'));
 
   assert.match(context, /Workflow Hardening Sprint/i);
-  assert.match(context, /\$99\/seat\/mo/i);
+  assert.match(context, /\$49\/seat\/mo/i);
   assert.match(context, /CLI-first/i);
   assert.match(context, /solo side lane/i);
   assert.doesNotMatch(context, /\$12\/seat\/mo/i);
@@ -184,6 +208,9 @@ test('first dollar playbook keeps the sales motion sprint-first and proof-backed
 
   assert.match(playbook, /Status: current/i);
   assert.match(playbook, /next repeatable dollar/i);
+  assert.match(playbook, /First-dollar activation ladder/i);
+  assert.match(playbook, /move a cold user from curiosity to one blocked repeat/i);
+  assert.match(playbook, /Do not claim ChatGPT's native rating buttons feed ThumbGate/i);
   assert.match(playbook, /Workflow Hardening Sprint/i);
   assert.match(playbook, /proof pack/i);
   assert.match(playbook, /named pilot agreement/i);

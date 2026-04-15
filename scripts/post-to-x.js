@@ -289,12 +289,12 @@ async function main() {
     }
   } else if (command === '--scheduled') {
     const tips = [
-      '🧠 Did you know? ThumbGate uses Thompson Sampling to decide which feedback signals matter most. Less noise, better training data.\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
-      '🛡️ AI agents repeat the same mistakes because they have no memory across sessions. ThumbGate fixes that with local-first feedback loops.\n\nnpx thumbgate init',
-      '📊 The learning curve dashboard shows your agent actually getting smarter — approval rate climbing, failure domains shrinking, prevention rules firing.\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
-      '🔄 Capture → Validate → Remember → Prevent → Export. Five phases to turn agent mistakes into training data.\n\nThumbGate — local-first ThumbGate for AI agents.\n\nnpx thumbgate init',
-      '💡 Prevention rules generated from repeated failures = an immune system for your AI agent. No cloud required.\n\nPro $19/mo or $149/yr → https://thumbgate-production.up.railway.app/checkout/pro',
-      '⚡ Works with Claude Code, Amp, Codex, Gemini CLI, Cursor. One install, all agents learn.\n\nnpx thumbgate init\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
+      '🧠 Did you know? ThumbGate uses Thompson Sampling to rank gates by failure frequency. High-signal mistakes rise, rare ones demote automatically.\n\nFree: npx thumbgate serve\n💳 Pro $19/mo: https://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a',
+      '🛡️ AI agents repeat the same mistakes because they have no memory across sessions. ThumbGate fixes that — every 👎 becomes a prevention gate automatically.\n\nFree tier: https://github.com/IgorGanapolsky/ThumbGate\n💳 Pro $19/mo: https://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a',
+      '📊 1 bad tool call → warn gate. 3 bad calls → hard block. ThumbGate intercepts via PreToolUse hooks before the damage happens.\n\nnpx thumbgate serve\n💳 Unlimited gates (Pro): https://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a',
+      '🔄 Capture → Validate → Remember → Prevent → Export. Five phases to turn agent mistakes into training data.\n\nFree + open source: https://github.com/IgorGanapolsky/ThumbGate\n💳 Pro $19/mo or $149/yr: https://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a',
+      '💡 Prevention rules generated from repeated failures = an immune system for your AI agent.\n\nFree: up to 5 gates, SQLite DB\nPro: unlimited gates, LanceDB vectors, DPO export, team sync\n\n💳 Get Pro $19/mo: https://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a',
+      '⚡ Works with Claude Code, Amp, Codex, Gemini CLI, Cursor. One MCP install, all agents learn from shared lessons.\n\nnpx thumbgate serve\nPricing: https://thumbgate-production.up.railway.app/pro\n💳 Pro: https://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a',
     ];
     const dayIndex = Math.floor(Date.now() / 86400000) % tips.length;
     const tip = tips[dayIndex];

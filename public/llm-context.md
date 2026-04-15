@@ -1,14 +1,17 @@
-# ThumbGate — Agent Governance for Engineering Teams
+# ThumbGate — Stop Costly AI Agent Mistakes Before They Run
 
 ## What ThumbGate Is
 
-ThumbGate is agent governance software for engineering teams that run AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode) on shared codebases. It enforces approval policies, captures and propagates lessons from agent mistakes, and physically blocks known-bad tool calls before they execute via PreToolUse hooks wired into the agent runtime. Unlike CLAUDE.md rules or .cursorrules files, which are suggestions the agent can ignore, ThumbGate enforcement operates at the tool-call level and cannot be bypassed by the agent. The business is enterprise-first: the best first paid motion is the Workflow Hardening Sprint for one workflow, while the local CLI stays free as the adoption wedge and Pro remains a solo side lane.
+ThumbGate prevents expensive AI mistakes before they happen. Engineering teams use it to check risky commands, file edits, deploys, payments, API calls, and other AI agent actions before execution across Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, ChatGPT Actions, CI, and MCP-compatible runtimes.
+
+The buyer outcome is simple: prevent expensive AI mistakes, make AI stop repeating mistakes, and turn a smart assistant into a reliable operator. ThumbGate does that by enforcing approval policies, capturing and propagating lessons from agent mistakes, and physically blocking known-bad tool calls before they execute via PreToolUse hooks wired into the agent runtime. Unlike CLAUDE.md rules or .cursorrules files, which are suggestions the agent can ignore, ThumbGate enforcement operates at the tool-call level and cannot be bypassed by the agent once the action is routed through ThumbGate. The business is enterprise-first: the best first paid motion is the Workflow Hardening Sprint for one workflow, while the local CLI stays free as the adoption wedge and Pro remains a solo side lane for personal enforcement proof.
 
 ## Problems ThumbGate Prevents
 
 - An AI coding agent force-pushes to the main branch, overwriting a teammate's commit
 - An agent deletes a production config file because the prompt said "clean up unused files"
 - An agent bypasses CI by committing with --no-verify after seeing test failures
+- An agent runs destructive SQL, bad publish commands, unsafe deploys, or costly API calls before a human sees the blast radius
 - An agent repeats the same database migration mistake across three pull requests because the lesson was never captured
 - One engineer gives a thumbs-down on a bad agent pattern; teammates running the same agent repeat the mistake because lessons are not shared
 - An agent modifies secrets or PII-bearing files because no approval policy was in place
@@ -81,9 +84,10 @@ This alignment means ThumbGate is not an experimental tool — it implements the
 
 ## Pricing
 
-- **Free**: Local CLI enforcement for individual developers. Includes 3 daily feedback captures, 5 lesson searches per day, unlimited recall, and PreToolUse hook blocking.
-- **Workflow Hardening Sprint / Team**: Team pricing anchors at $99/seat/mo with a 3-seat minimum after qualification. The first paid step is an intake-led sprint around one workflow, one repeated blocker, and one proof review.
-- **Pro**: $19/mo or $149/yr. Adds a personal local dashboard, DPO export for fine-tuning, and advanced data exports for solo operators who want a self-serve side lane.
+- **Free GPT**: Advice, checkpointing, setup help, and typed thumbs-up/down memory capture inside ChatGPT.
+- **Free local CLI**: Local enforcement for individual developers after install. Includes 3 daily feedback captures, 5 lesson searches per day, unlimited recall, and PreToolUse hook blocking.
+- **Workflow Hardening Sprint / Team**: Team pricing anchors at $49/seat/mo with a 3-seat minimum after qualification. The first paid step is an intake-led sprint around one workflow, one repeated blocker, and one proof review.
+- **Pro**: $19/mo or $149/yr. Adds personal enforcement proof, a local dashboard, DPO export for fine-tuning, a gate debugger, and advanced data exports for solo operators who want a self-serve side lane.
 
 ## How to Install
 

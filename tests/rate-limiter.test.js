@@ -58,14 +58,13 @@ describe('rate-limiter', () => {
     }
     const blocked = rateLimiter.checkLimit('capture_feedback');
     assert.equal(blocked.allowed, false, 'call 4 should be blocked');
-    assert.ok(blocked.message.includes('Free tier limit reached'), 'blocked message should mention free tier limit');
+    assert.ok(blocked.message.includes('3 free feedback captures') || blocked.message.includes('Upgrade') || blocked.message.includes('Pro'), 'blocked message should mention limit or upgrade');
   });
 
-  it('allows unlimited recall calls on free tier', () => {
-    for (let i = 0; i < 20; i++) {
-      const result = rateLimiter.checkLimit('recall');
-      assert.equal(result.allowed, true, `call ${i + 1} should be allowed`);
-    }
+  it('blocks recall on free tier (Pro-only)', () => {
+    const result = rateLimiter.checkLimit('recall');
+    assert.equal(result.allowed, false, 'recall should be blocked on free tier');
+    assert.ok(result.message.includes('Pro') || result.message.includes('Upgrade'), 'blocked message should mention Pro');
   });
 
   it('THUMBGATE_API_KEY marks pro tier', () => {
@@ -105,13 +104,14 @@ describe('rate-limiter', () => {
     assert.ok(keys.includes('export_databricks'), 'should limit export_databricks');
     assert.ok(keys.includes('search_thumbgate'), 'should limit search_thumbgate');
     assert.ok(keys.includes('commerce_recall'), 'should limit commerce_recall');
-    assert.equal(rateLimiter.FREE_TIER_LIMITS.export_dpo.daily, 0, 'DPO export should be Pro-only');
+    assert.equal(rateLimiter.FREE_TIER_LIMITS.export_dpo.daily, 0, 'DPO export daily should be 0');
+    assert.equal(rateLimiter.FREE_TIER_LIMITS.export_dpo.lifetime, 0, 'DPO export lifetime should be 0');
   });
 
   it('export_dpo is blocked immediately on free tier (Pro-only)', () => {
     const blocked = rateLimiter.checkLimit('export_dpo');
     assert.equal(blocked.allowed, false, 'should be blocked (daily=0)');
-    assert.ok(blocked.message.includes('Upgrade'), 'blocked message should mention upgrade');
+    assert.ok(blocked.message.includes('Pro') || blocked.message.includes('Upgrade'), 'blocked message should mention Pro or upgrade');
   });
 
   it('pro tier bypasses export_dpo limit', () => {

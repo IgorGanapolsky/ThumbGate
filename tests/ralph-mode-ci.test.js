@@ -2,8 +2,25 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 
 const ralphModePath = require.resolve('../scripts/ralph-mode-ci');
+
+function hasCanonicalRepoUrl(body) {
+  return [...body.matchAll(/https:\/\/[^\s)]+/g)].some(([rawHref]) => {
+    try {
+      const href = rawHref.replace(/[.,;:]+$/, '');
+      const url = new URL(href);
+      return url.protocol === 'https:'
+        && url.hostname === 'github.com'
+        && url.pathname === '/IgorGanapolsky/ThumbGate';
+    } catch {
+      return false;
+    }
+  });
+}
 
 function loadRalphMode(env = {}) {
   const previousEnv = { ...process.env };
@@ -167,6 +184,81 @@ test('Ralph Mode tweet angles advertise current Pro and Team pricing', () => {
 
   assert.match(joined, /\$19\/mo/);
   assert.match(joined, /\$149\/yr/);
-  assert.match(joined, /\$99\/seat\/mo/);
+  assert.match(joined, /\$49\/seat\/mo/);
   assert.doesNotMatch(joined, /\$49 once/);
+});
+
+test('Ralph Mode GitHub outreach uses canonical ThumbGate install copy', async () => {
+  const previousCwd = process.cwd();
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ralph-mode-ci-'));
+  process.chdir(tmpDir);
+
+  const subject = loadRalphMode({
+    DEVTO_API_KEY: '',
+    GH_TOKEN: 'gh-token',
+    LINKEDIN_ACCESS_TOKEN: '',
+    LINKEDIN_PERSON_URN: '',
+    PERPLEXITY_API_KEY: '',
+    X_ACCESS_TOKEN: '',
+    X_ACCESS_TOKEN_SECRET: '',
+    X_API_KEY: '',
+    X_API_SECRET: '',
+    X_BEARER_TOKEN: '',
+  });
+
+  const originalFetch = global.fetch;
+  const originalLog = console.log;
+  const issueBodies = [];
+  console.log = () => {};
+  global.fetch = async (url, options = {}) => {
+    const body = options.body ? JSON.parse(options.body) : null;
+    const pathname = new URL(url).pathname;
+
+    if (options.method === 'POST' && pathname.endsWith('/comments')) {
+      issueBodies.push(body.body);
+      return { json: async () => ({ id: 1 }) };
+    }
+
+    if (options.method === 'POST' && pathname.endsWith('/issues')) {
+      issueBodies.push(body.body);
+      return { json: async () => ({ number: 2 }) };
+    }
+
+    if (pathname === '/repos/leogodin217/leos_claude_starter/issues/1') {
+      return { json: async () => ({ comments: 1 }) };
+    }
+
+    if (pathname === '/repos/leogodin217/leos_claude_starter/issues/1/comments') {
+      return { json: async () => ([{ user: { login: 'builder' } }]) };
+    }
+
+    if (pathname.endsWith('/search/repositories')) {
+      return { json: async () => ({ items: [{ full_name: 'somebody/agent-safety', name: 'agent-safety', stargazers_count: 9 }] }) };
+    }
+
+    if (pathname.endsWith('/repos/IgorGanapolsky/ThumbGate')) {
+      return { json: async () => ({ stargazers_count: 42, forks_count: 7 }) };
+    }
+
+    if (pathname.endsWith('/pulls/4474')) {
+      return { json: async () => ({ state: 'open', merged: false }) };
+    }
+
+    return { json: async () => ({ comments: 0 }) };
+  };
+
+  try {
+    await subject.main();
+  } finally {
+    global.fetch = originalFetch;
+    console.log = originalLog;
+    process.chdir(previousCwd);
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+
+  assert.equal(issueBodies.length, 2);
+  assert.ok(issueBodies.every((body) => body.includes('Install with `npx thumbgate init`')));
+  assert.ok(issueBodies.every(hasCanonicalRepoUrl));
+  assert.ok(issueBodies.every((body) => !body.includes('smithery.ai')));
+  assert.ok(issueBodies.every((body) => !body.includes('rlhf-loop')));
 });

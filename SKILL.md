@@ -92,7 +92,7 @@ Bounded retrieval of relevant feedback history for the current task. The agent g
 | Dashboard | - | Yes | Yes |
 | DPO export | - | Yes | Yes |
 | Seats | 1 | 1 | Per-seat |
-| Price | $0 | $19/mo or $149/yr | $99/seat/mo |
+| Price | $0 | $19/mo or $149/yr | $49/seat/mo |
 
 Start a 7-day free trial of Pro: <https://thumbgate-production.up.railway.app/pro?utm_source=skill&utm_medium=agent_context&utm_campaign=pro_page>
 

@@ -81,6 +81,9 @@ const {
   bootstrapInternalAgent,
 } = require('../../scripts/internal-agent-bootstrap');
 const {
+  classifyRequester,
+} = require('../../scripts/bot-detection');
+const {
   buildCloudflareSandboxPlan,
 } = require('../../scripts/cloudflare-dynamic-sandbox');
 const {
@@ -227,6 +230,123 @@ const BUILD_METADATA = resolveBuildMetadata();
 const TERMINAL_JOB_STATUSES = new Set(['completed', 'failed', 'cancelled']);
 const IDLE_JOB_STATUSES = new Set(['queued', 'paused', 'resume_requested']);
 const JOB_CONTROL_ACTIONS = new Set(['pause', 'cancel', 'resume']);
+const TRACKED_LINK_QUERY_KEYS = [
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_content',
+  'utm_term',
+  'source',
+  'creator',
+  'creator_handle',
+  'community',
+  'subreddit',
+  'post_id',
+  'comment_id',
+  'campaign_variant',
+  'offer_code',
+  'acquisition_id',
+  'visitor_id',
+  'session_id',
+  'visitor_session_id',
+  'install_id',
+  'trace_id',
+  'cta_id',
+  'cta_placement',
+  'plan_id',
+  'billing_cycle',
+  'seat_count',
+  'landing_path',
+  'referrer_host',
+];
+const TRACKED_LINK_TARGETS = Object.freeze({
+  gpt: {
+    href: 'https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate',
+    external: true,
+    ctaId: 'go_gpt',
+    ctaPlacement: 'link_router',
+    eventType: 'chatgpt_gpt_open',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'link_router',
+      utm_campaign: 'chatgpt_gpt',
+    },
+  },
+  pro: {
+    path: '/checkout/pro',
+    ctaId: 'go_pro',
+    ctaPlacement: 'link_router',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'link_router',
+      utm_campaign: 'pro_upgrade',
+      plan_id: 'pro',
+      billing_cycle: 'monthly',
+    },
+    allowCustomerEmail: true,
+  },
+  install: {
+    path: '/guide',
+    ctaId: 'go_install',
+    ctaPlacement: 'link_router',
+    eventType: 'install_guide_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'link_router',
+      utm_campaign: 'install_free',
+      plan_id: 'free',
+    },
+  },
+  reddit: {
+    path: '/',
+    ctaId: 'go_reddit',
+    ctaPlacement: 'link_router',
+    eventType: 'community_landing_redirect',
+    defaults: {
+      utm_source: 'reddit',
+      utm_medium: 'organic_social',
+      utm_campaign: 'first_party_redirect',
+      campaign_variant: 'reddit_shortlink',
+    },
+  },
+  linkedin: {
+    path: '/',
+    ctaId: 'go_linkedin',
+    ctaPlacement: 'link_router',
+    eventType: 'community_landing_redirect',
+    defaults: {
+      utm_source: 'linkedin',
+      utm_medium: 'organic_social',
+      utm_campaign: 'first_party_redirect',
+      campaign_variant: 'linkedin_shortlink',
+    },
+  },
+  x: {
+    path: '/',
+    ctaId: 'go_x',
+    ctaPlacement: 'link_router',
+    eventType: 'community_landing_redirect',
+    defaults: {
+      utm_source: 'x',
+      utm_medium: 'organic_social',
+      utm_campaign: 'first_party_redirect',
+      campaign_variant: 'x_shortlink',
+    },
+  },
+  github: {
+    href: 'https://github.com/IgorGanapolsky/ThumbGate',
+    external: true,
+    ctaId: 'go_github',
+    ctaPlacement: 'link_router',
+    eventType: 'github_repo_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'link_router',
+      utm_campaign: 'github_repo',
+    },
+  },
+});
 
 // ---------------------------------------------------------------------------
 // Stripe event tracking helpers
@@ -841,6 +961,130 @@ function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneySt
   };
 }
 
+function normalizeTrackedLinkSlug(value) {
+  return String(value || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+}
+
+function getTrackedLinkTarget(slug) {
+  const normalizedSlug = normalizeTrackedLinkSlug(slug);
+  return TRACKED_LINK_TARGETS[normalizedSlug]
+    ? { slug: normalizedSlug, ...TRACKED_LINK_TARGETS[normalizedSlug] }
+    : null;
+}
+
+function appendTrackedLinkQueryParams(destinationUrl, parsed, target) {
+  const params = parsed.searchParams;
+  for (const [key, value] of Object.entries(target.defaults || {})) {
+    if (!destinationUrl.searchParams.has(key)) {
+      appendQueryParam(destinationUrl, key, value);
+    }
+  }
+  for (const key of TRACKED_LINK_QUERY_KEYS) {
+    const value = params.get(key);
+    if (value && value.trim()) {
+      destinationUrl.searchParams.set(key, value.trim());
+    }
+  }
+  if (target.allowCustomerEmail) {
+    appendQueryParam(destinationUrl, 'customer_email', params.get('customer_email'));
+  }
+  if (!destinationUrl.searchParams.has('cta_id')) {
+    appendQueryParam(destinationUrl, 'cta_id', target.ctaId);
+  }
+  if (!destinationUrl.searchParams.has('cta_placement')) {
+    appendQueryParam(destinationUrl, 'cta_placement', target.ctaPlacement);
+  }
+  if (!destinationUrl.searchParams.has('landing_path')) {
+    appendQueryParam(destinationUrl, 'landing_path', `/go/${target.slug}`);
+  }
+}
+
+function buildTrackedLinkDestination(target, hostedConfig, parsed) {
+  const destinationUrl = target.href
+    ? new URL(target.href)
+    : new URL(target.path || '/', hostedConfig.appOrigin);
+  appendTrackedLinkQueryParams(destinationUrl, parsed, target);
+  return destinationUrl;
+}
+
+function buildTrackedLinkAttribution(target, parsed, req, journeyState, destinationUrl) {
+  const params = parsed.searchParams;
+  const referrer = pickFirstText(params.get('referrer'), req.headers.referer, req.headers.referrer);
+  const referrerHost = pickFirstText(params.get('referrer_host'), parseReferrerHost(referrer));
+  const source = pickFirstText(
+    params.get('source'),
+    params.get('utm_source'),
+    target.defaults && target.defaults.utm_source,
+    inferSource(referrerHost)
+  );
+
+  return {
+    eventType: target.eventType || 'cta_click',
+    clientType: 'web',
+    acquisitionId: journeyState.acquisitionId,
+    visitorId: journeyState.visitorId,
+    sessionId: journeyState.sessionId,
+    installId: pickFirstText(params.get('install_id')),
+    traceId: pickFirstText(params.get('trace_id')),
+    source,
+    utmSource: pickFirstText(params.get('utm_source'), source),
+    utmMedium: pickFirstText(params.get('utm_medium'), target.defaults && target.defaults.utm_medium, 'link_router'),
+    utmCampaign: pickFirstText(params.get('utm_campaign'), target.defaults && target.defaults.utm_campaign, 'first_party_redirect'),
+    utmContent: pickFirstText(params.get('utm_content')),
+    utmTerm: pickFirstText(params.get('utm_term')),
+    creator: pickFirstText(params.get('creator'), params.get('creator_handle')),
+    community: pickFirstText(params.get('community'), params.get('subreddit')),
+    postId: pickFirstText(params.get('post_id')),
+    commentId: pickFirstText(params.get('comment_id')),
+    campaignVariant: pickFirstText(params.get('campaign_variant'), target.defaults && target.defaults.campaign_variant),
+    offerCode: pickFirstText(params.get('offer_code')),
+    ctaId: pickFirstText(params.get('cta_id'), target.ctaId),
+    ctaPlacement: pickFirstText(params.get('cta_placement'), target.ctaPlacement),
+    planId: pickFirstText(params.get('plan_id'), target.defaults && target.defaults.plan_id),
+    landingPath: pickFirstText(params.get('landing_path'), `/go/${target.slug}`),
+    page: `/go/${target.slug}`,
+    referrer,
+    referrerHost,
+    destinationSlug: target.slug,
+    destinationPath: target.external ? destinationUrl.host : destinationUrl.pathname,
+  };
+}
+
+function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadRequest, slug }) {
+  const target = getTrackedLinkTarget(slug);
+  if (!target) {
+    sendJson(res, 404, {
+      error: 'Tracked link not found',
+      allowed: Object.keys(TRACKED_LINK_TARGETS),
+    }, {}, {
+      headOnly: isHeadRequest,
+    });
+    return;
+  }
+
+  const { FEEDBACK_DIR } = getFeedbackPaths();
+  const journeyState = resolveJourneyState(req, parsed);
+  const destinationUrl = buildTrackedLinkDestination(target, hostedConfig, parsed);
+  if (!isHeadRequest) {
+    appendBestEffortTelemetry(
+      FEEDBACK_DIR,
+      buildTrackedLinkAttribution(target, parsed, req, journeyState, destinationUrl),
+      req.headers,
+      `tracked_link_redirect:${target.slug}`
+    );
+  }
+
+  res.writeHead(302, {
+    ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
+    'Cache-Control': 'no-store',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'X-Robots-Tag': 'noindex,nofollow',
+    'X-ThumbGate-Link-Slug': target.slug,
+    Location: destinationUrl.toString(),
+  });
+  res.end();
+}
+
 function resolveCheckoutOfferSummary(metadata = {}) {
   const planId = normalizePlanId(metadata.planId);
   const billingCycle = normalizeBillingCycle(metadata.billingCycle);
@@ -970,6 +1214,13 @@ function getPublicOrigin(req) {
   return `${proto}://${host}`;
 }
 
+function renderOpenApiYamlForRequest(yaml, req) {
+  return yaml.replace(
+    /servers:\n\s+- url: .+/m,
+    `servers:\n  - url: ${getPublicOrigin(req)}`
+  );
+}
+
 function getRequestHostHeader(req) {
   const forwardedHost = req.headers['x-forwarded-host'];
   if (Array.isArray(forwardedHost)) {
@@ -1063,38 +1314,131 @@ function loadProPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(PRO_PAGE_PATH, runtimeConfig, pageContext);
 }
 
-function loadDashboardPageHtml(req, expectedApiKey) {
-  const template = fs.readFileSync(DASHBOARD_PAGE_PATH, 'utf-8');
+function readOptionalPublicTemplate(filePath) {
+  try {
+    return fs.readFileSync(filePath, 'utf-8');
+  } catch (error) {
+    if (error?.code === 'ENOENT') return null;
+    throw error;
+  }
+}
+
+function resolveLocalPageBootstrap(req, expectedApiKey) {
   const forwardedHost = req.headers['x-forwarded-host'];
   const hostHeader = Array.isArray(forwardedHost)
     ? forwardedHost[0]
     : forwardedHost || req.headers.host || '';
   const localProBootstrap = process.env.THUMBGATE_PRO_MODE === '1' && Boolean(expectedApiKey) && isLoopbackHost(hostHeader);
-  // Developer override: auth is disabled (expectedApiKey===null), auto-connect with dummy key
   const devOverride = expectedApiKey === null && isLoopbackHost(hostHeader);
   const bootstrapActive = localProBootstrap || devOverride;
   const serializedBootstrapKey = JSON.stringify(localProBootstrap ? expectedApiKey : devOverride ? 'dev-override' : '').replace(/</g, '\\u003c');
 
+  return {
+    bootstrapActive,
+    serializedBootstrapKey,
+  };
+}
+
+function renderPackagedDashboardHtml({ bootstrapActive, serializedBootstrapKey }) {
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ThumbGate Dashboard</title>
+<style>
+:root { color-scheme: light dark; --bg:#0f172a; --panel:#111827; --text:#f8fafc; --muted:#94a3b8; --line:#334155; --accent:#22c55e; }
+body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:linear-gradient(135deg,#020617,#111827); color:var(--text); }
+main { max-width:920px; margin:0 auto; padding:48px 20px; }
+.panel { border:1px solid var(--line); border-radius:20px; background:rgba(15,23,42,.86); padding:28px; box-shadow:0 24px 80px rgba(0,0,0,.32); }
+.eyebrow { color:var(--accent); font-size:13px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; }
+h1 { font-size:clamp(32px,5vw,54px); line-height:1; margin:14px 0; }
+p { color:var(--muted); font-size:18px; line-height:1.6; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin-top:26px; }
+a { color:var(--text); text-decoration:none; }
+.card { display:block; border:1px solid var(--line); border-radius:16px; padding:18px; background:rgba(30,41,59,.7); }
+.card strong { display:block; margin-bottom:8px; }
+.card span { color:var(--muted); font-size:14px; line-height:1.5; }
+</style>
+<script>
+window.THUMBGATE_DASHBOARD_BOOTSTRAP = { enabled: ${bootstrapActive ? 'true' : 'false'}, apiKey: ${serializedBootstrapKey} };
+</script>
+</head>
+<body>
+<main>
+<section class="panel">
+<div class="eyebrow">Packaged runtime</div>
+<h1>ThumbGate is running locally.</h1>
+<p>This lightweight npm dashboard is bundled without marketing assets, so installs stay small while core feedback, lessons, and API routes remain available.</p>
+<div class="grid">
+<a class="card" href="/v1/dashboard"><strong>Dashboard JSON</strong><span>Inspect feedback totals, lesson counts, and Reliability Gateway health.</span></a>
+<a class="card" href="/lessons"><strong>Lessons</strong><span>Review remembered thumbs-up/down lessons and enforcement context.</span></a>
+<a class="card" href="/health"><strong>Health</strong><span>Verify the installed package version and runtime status.</span></a>
+</div>
+</section>
+</main>
+</body>
+</html>`;
+}
+
+function renderPackagedLessonsHtml({ bootstrapActive, serializedBootstrapKey }) {
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ThumbGate Lessons</title>
+<style>
+:root { color-scheme: light dark; --bg:#0f172a; --panel:#111827; --text:#f8fafc; --muted:#94a3b8; --line:#334155; --accent:#38bdf8; }
+body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:linear-gradient(135deg,#020617,#0f172a); color:var(--text); }
+main { max-width:920px; margin:0 auto; padding:48px 20px; }
+.panel { border:1px solid var(--line); border-radius:20px; background:rgba(15,23,42,.86); padding:28px; box-shadow:0 24px 80px rgba(0,0,0,.32); }
+.eyebrow { color:var(--accent); font-size:13px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; }
+h1 { font-size:clamp(32px,5vw,54px); line-height:1; margin:14px 0; }
+p { color:var(--muted); font-size:18px; line-height:1.6; }
+.actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:26px; }
+a { color:var(--text); text-decoration:none; border:1px solid var(--line); border-radius:999px; padding:12px 16px; background:rgba(30,41,59,.7); }
+</style>
+<script>
+window.THUMBGATE_LESSONS_BOOTSTRAP = { enabled: ${bootstrapActive ? 'true' : 'false'}, apiKey: ${serializedBootstrapKey} };
+</script>
+</head>
+<body>
+<main>
+<section class="panel">
+<div class="eyebrow">Packaged runtime</div>
+<h1>ThumbGate lessons are available.</h1>
+<p>The full hosted lessons UI is excluded from the npm tarball, but installed packages still expose the lesson APIs and detail pages needed for local agent feedback loops.</p>
+<div class="actions">
+<a href="/v1/lessons/search">Search lessons JSON</a>
+<a href="/v1/feedback/stats">Feedback stats JSON</a>
+<a href="/dashboard">Back to dashboard</a>
+</div>
+</section>
+</main>
+</body>
+</html>`;
+}
+
+function loadDashboardPageHtml(req, expectedApiKey) {
+  const bootstrap = resolveLocalPageBootstrap(req, expectedApiKey);
+  const template = readOptionalPublicTemplate(DASHBOARD_PAGE_PATH);
+  if (!template) return renderPackagedDashboardHtml(bootstrap);
+
   return fillTemplate(template, {
-    '__DASHBOARD_BOOTSTRAP_KEY__': serializedBootstrapKey,
-    '__DASHBOARD_BOOTSTRAP_ENABLED__': bootstrapActive ? 'true' : 'false',
+    '__DASHBOARD_BOOTSTRAP_KEY__': bootstrap.serializedBootstrapKey,
+    '__DASHBOARD_BOOTSTRAP_ENABLED__': bootstrap.bootstrapActive ? 'true' : 'false',
   });
 }
 
 function loadLessonsPageHtml(req, expectedApiKey) {
-  const template = fs.readFileSync(LESSONS_PAGE_PATH, 'utf-8');
-  const forwardedHost = req.headers['x-forwarded-host'];
-  const hostHeader = Array.isArray(forwardedHost)
-    ? forwardedHost[0]
-    : forwardedHost || req.headers.host || '';
-  const localProBootstrap = process.env.THUMBGATE_PRO_MODE === '1' && Boolean(expectedApiKey) && isLoopbackHost(hostHeader);
-  const devOverride = expectedApiKey === null && isLoopbackHost(hostHeader);
-  const bootstrapActive = localProBootstrap || devOverride;
-  const serializedBootstrapKey = JSON.stringify(localProBootstrap ? expectedApiKey : devOverride ? 'dev-override' : '').replace(/</g, '\\u003c');
+  const bootstrap = resolveLocalPageBootstrap(req, expectedApiKey);
+  const template = readOptionalPublicTemplate(LESSONS_PAGE_PATH);
+  if (!template) return renderPackagedLessonsHtml(bootstrap);
 
   return fillTemplate(template, {
-    '__LESSONS_BOOTSTRAP_KEY__': serializedBootstrapKey,
-    '__LESSONS_BOOTSTRAP_ENABLED__': bootstrapActive ? 'true' : 'false',
+    '__LESSONS_BOOTSTRAP_KEY__': bootstrap.serializedBootstrapKey,
+    '__LESSONS_BOOTSTRAP_ENABLED__': bootstrap.bootstrapActive ? 'true' : 'false',
   });
 }
 
@@ -2604,6 +2948,34 @@ function createApiServer() {
               attribution,
             }) + '\n');
           }
+          const journeyState = resolveJourneyState(req, parsed);
+          appendBestEffortTelemetry(getFeedbackPaths().FEEDBACK_DIR, {
+            eventType: 'trial_email_captured',
+            clientType: 'web',
+            acquisitionId: journeyState.acquisitionId,
+            visitorId: journeyState.visitorId,
+            sessionId: journeyState.sessionId,
+            source: attribution.source || 'landing-page',
+            utmSource: attribution.source || null,
+            utmMedium: attribution.medium || 'newsletter',
+            utmCampaign: attribution.campaign || 'trial_email_capture',
+            utmContent: attribution.content || null,
+            utmTerm: attribution.term || null,
+            creator: attribution.creator || null,
+            community: attribution.community || null,
+            postId: attribution.postId || null,
+            commentId: attribution.commentId || null,
+            campaignVariant: attribution.campaignVariant || null,
+            offerCode: attribution.offerCode || null,
+            ctaId: 'trial_email',
+            ctaPlacement: landingPath === '/pro' ? 'pro_email_form' : 'homepage_email_form',
+            planId: 'pro',
+            pipelineStatus: duplicate ? 'duplicate' : 'accepted',
+            page: landingPath,
+            landingPath,
+            referrer: referrer || null,
+            referrerHost,
+          }, req.headers, 'trial_email_captured');
           if (wantsJson) {
             sendJson(res, 200, {
               accepted: true,
@@ -2657,6 +3029,19 @@ function createApiServer() {
     }
 
     // Public endpoints — no auth required
+    const trackedLinkMatch = pathname.match(/^\/go\/([^/]+)$/);
+    if (isGetLikeRequest && trackedLinkMatch) {
+      serveTrackedLinkRedirect({
+        req,
+        res,
+        parsed,
+        hostedConfig,
+        isHeadRequest,
+        slug: trackedLinkMatch[1],
+      });
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/robots.txt') {
       sendText(res, 200, renderRobotsTxt(hostedConfig), {
         'Content-Type': 'text/plain; charset=utf-8',
@@ -3099,6 +3484,36 @@ async function addContext(){
       const responseHeaders = journeyState.setCookieHeaders.length
         ? { 'Set-Cookie': journeyState.setCookieHeaders }
         : {};
+
+      // ── Bot guard ────────────────────────────────────────────────────
+      // Creating a Stripe Checkout session on every GET means crawlers,
+      // link-preview fetchers, and LLM scrapers inflate "sessions opened"
+      // while completions stay at zero. Serve bots an interstitial HTML
+      // page instead — no Stripe session created, no funnel pollution.
+      // The `?confirm=1` query param or POST below is the real-user path.
+      const botClassification = classifyRequester(req.headers);
+      const confirmParam = parsed?.searchParams?.get('confirm') ?? null;
+      const isConfirmedCheckout = confirmParam === '1'
+        || confirmParam === 'true'
+        || req.method === 'POST';
+      if (botClassification.isBot && !isConfirmedCheckout) {
+        appendBestEffortTelemetry(FEEDBACK_DIR, {
+          eventType: 'checkout_bot_deflected',
+          clientType: 'web',
+          traceId,
+          utmSource: analyticsMetadata.utmSource,
+          utmMedium: analyticsMetadata.utmMedium,
+          utmCampaign: analyticsMetadata.utmCampaign,
+          referrer: analyticsMetadata.referrer,
+          referrerHost: analyticsMetadata.referrerHost,
+          page: '/checkout/pro',
+          planId: analyticsMetadata.planId,
+          reason: botClassification.reason,
+        }, req.headers, 'checkout_bot_deflected');
+        const html = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>ThumbGate Pro \u2014 Confirm checkout</title><style>*{box-sizing:border-box}body{background:#0a0a0a;color:#e5e5e5;font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px}.card{background:#141414;border:1px solid #222;border-radius:16px;padding:48px 40px;max-width:460px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.5)}h1{margin:0 0 12px;font-size:22px;color:#22d3ee}p{color:#9ca3af;font-size:14px;line-height:1.55;margin:0 0 24px}.btn{display:inline-block;background:#22d3ee;color:#000;text-decoration:none;font-weight:700;padding:14px 32px;border-radius:999px;font-size:16px;cursor:pointer;border:none}.btn:hover{opacity:.9}.sub{margin-top:16px;font-size:12px;color:#6b7280}a.back{color:#6b7280;font-size:13px;text-decoration:underline}</style></head><body><div class="card"><h1>Continue to secure checkout</h1><p>You\'re one click from ThumbGate Pro at $19/mo. We create the payment session only after you confirm \u2014 keeps your path clean and our funnel honest.</p><a class="btn" href="/checkout/pro?confirm=1" rel="noopener">Continue to Stripe \u2192</a><div class="sub">Payments handled by Stripe. 7-day free trial. Cancel anytime.</div><div class="sub"><a class="back" href="/">\u2190 Back to homepage</a></div></div></body></html>';
+        sendHtml(res, 200, html, responseHeaders);
+        return;
+      }
 
       appendBestEffortTelemetry(FEEDBACK_DIR, {
         eventType: 'checkout_bootstrap',
@@ -3581,18 +3996,23 @@ async function addContext(){
     }
 
     // Public OpenAPI spec — no auth required (needed for ChatGPT GPT Store import)
-    if (isGetLikeRequest && pathname === '/openapi.json') {
+    if (isGetLikeRequest && (pathname === '/openapi.json' || pathname === '/openapi.yaml')) {
       const specPath = path.join(__dirname, '../../adapters/chatgpt/openapi.yaml');
       try {
-        const yaml = fs.readFileSync(specPath, 'utf8');
+        const yaml = renderOpenApiYamlForRequest(fs.readFileSync(specPath, 'utf8'), req);
+        if (pathname === '/openapi.yaml') {
+          sendText(res, 200, yaml, {
+            'Content-Type': 'text/yaml; charset=utf-8',
+            'Access-Control-Allow-Origin': '*',
+          }, {
+            headOnly: isHeadRequest,
+          });
+          return;
+        }
         // Convert YAML to JSON inline (simple key:value conversion via js-yaml if available, else serve as-is)
         try {
           const jsYaml = require('js-yaml');
           const spec = jsYaml.load(yaml);
-          // Override server URL to current deployment
-          if (spec.servers && spec.servers[0]) {
-            spec.servers[0].url = `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`;
-          }
           sendJson(res, 200, spec, {
             'Access-Control-Allow-Origin': '*',
           }, {
@@ -5079,6 +5499,10 @@ module.exports = {
     getPosthogProxyPath,
     isAllowedPosthogProxyPath,
     renderSitemapXml,
+    renderPackagedDashboardHtml,
+    renderPackagedLessonsHtml,
+    readOptionalPublicTemplate,
+    resolveLocalPageBootstrap,
   },
 };
 

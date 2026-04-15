@@ -462,6 +462,93 @@ test('getTelemetryAnalytics keeps generic CTA clicks separate from checkout star
   assert.equal(analytics.ctas.clickToCheckoutRate, 0.5);
 });
 
+test('getTelemetryAnalytics exposes the first-party marketing conversion funnel', () => {
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'landing_page_view',
+    clientType: 'web',
+    acquisitionId: 'acq_funnel_1',
+    visitorId: 'visitor_funnel_1',
+    sessionId: 'session_funnel_1',
+    source: 'website',
+    utmSource: 'website',
+    utmCampaign: 'router_launch',
+    page: '/',
+  });
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'install_copy',
+    clientType: 'web',
+    acquisitionId: 'acq_funnel_1',
+    visitorId: 'visitor_funnel_1',
+    sessionId: 'session_funnel_1',
+    source: 'website',
+    utmSource: 'website',
+    utmCampaign: 'router_launch',
+    ctaId: 'install_copy',
+    page: '/',
+  });
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'chatgpt_gpt_open',
+    clientType: 'web',
+    acquisitionId: 'acq_funnel_1',
+    visitorId: 'visitor_funnel_1',
+    sessionId: 'session_funnel_1',
+    source: 'website',
+    utmSource: 'website',
+    utmCampaign: 'router_launch',
+    ctaId: 'go_gpt',
+    linkSlug: 'gpt',
+    page: '/go/gpt',
+  });
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'checkout_bootstrap',
+    clientType: 'web',
+    acquisitionId: 'acq_funnel_1',
+    visitorId: 'visitor_funnel_1',
+    sessionId: 'session_funnel_1',
+    source: 'website',
+    utmSource: 'website',
+    utmCampaign: 'router_launch',
+    ctaId: 'go_pro',
+    page: '/checkout/pro',
+  });
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'trial_email_captured',
+    clientType: 'web',
+    acquisitionId: 'acq_funnel_1',
+    visitorId: 'visitor_funnel_1',
+    sessionId: 'session_funnel_1',
+    source: 'website',
+    utmSource: 'website',
+    utmCampaign: 'router_launch',
+    ctaId: 'trial_email',
+    page: '/',
+  });
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'checkout_paid_confirmed',
+    clientType: 'web',
+    acquisitionId: 'acq_funnel_1',
+    visitorId: 'visitor_funnel_1',
+    sessionId: 'session_funnel_1',
+    source: 'website',
+    utmSource: 'website',
+    utmCampaign: 'router_launch',
+    traceId: 'trace_funnel_1',
+  });
+
+  const analytics = getTelemetryAnalytics(tmpDir);
+  assert.equal(analytics.conversionFunnel.landingViews, 1);
+  assert.equal(analytics.conversionFunnel.installCopies, 1);
+  assert.equal(analytics.conversionFunnel.gptOpens, 1);
+  assert.equal(analytics.conversionFunnel.checkoutStarts, 1);
+  assert.equal(analytics.conversionFunnel.trialEmails, 1);
+  assert.equal(analytics.conversionFunnel.proConversions, 1);
+  assert.equal(analytics.conversionFunnel.landingToInstallCopyRate, 1);
+  assert.equal(analytics.conversionFunnel.landingToGptOpenRate, 1);
+  assert.equal(analytics.conversionFunnel.checkoutToProConversionRate, 1);
+  assert.equal(analytics.ctas.byId.go_gpt, 1);
+  assert.equal(analytics.recent[0].eventType, 'checkout_paid_confirmed');
+});
+
 test('getTelemetryAnalytics summarizes reddit community and offer performance', () => {
   appendTelemetryEvent(tmpDir, {
     eventType: 'landing_page_view',

@@ -75,7 +75,7 @@ test('public docs render the current package version', () => {
   const productHuntKit = readText('docs/marketing/product-hunt-launch.md');
 
   assert.match(readme, /Open ThumbGate GPT/);
-  assert.match(readme, /https:\/\/chatgpt\.com\/g\/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate/);
+  assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app\/go\/gpt\?utm_source=github/);
   assert.match(readme, /ThumbGate GPT: start here/i);
   assert.match(readme, /No, users do not have to keep chatting inside the ThumbGate GPT to use ThumbGate/i);
   assert.match(readme, /hard enforcement layer still runs where the work happens/i);
@@ -111,12 +111,15 @@ test('public docs render the current package version', () => {
   assert.match(chatgptInstall, /GPT profile card/);
   assert.match(chatgptInstall, /Pre-action gate flow/);
   assert.match(chatgptInstall, /Reliability Gateway/i);
-  assert.match(chatgptInstall, /Turn thumbs-down into prevention gates/);
+  assert.match(chatgptInstall, /Stop costly AI mistakes before they run/);
   assert.match(chatgptInstall, /evaluateDecision/);
   assert.match(chatgptInstall, /decisionControl\.executionMode: "blocked"/);
   assert.match(chatgptInstall, /Plain thumbs-up\/down feedback is the memory loop\. The decision endpoint is the gate loop\./);
   assert.match(chatgptInstall, /Check this agent action before it runs: git push --force --tags/i);
-  assert.match(chatgptInstall, /Paste an AI action to check, or tell me what went right\/wrong/i);
+  assert.match(chatgptInstall, /The GPT should feel like a feedback button that remembers/i);
+  assert.match(chatgptInstall, /Thumbs down: that answer ignored my request for exact commands/i);
+  assert.match(chatgptInstall, /Thumbs up: this answer gave file paths, commands, and tests/i);
+  assert.match(chatgptInstall, /Paste the risky AI action before it runs, or tell me what went right\/wrong/i);
   assert.match(chatgptInstall, /native feedback buttons may send feedback to OpenAI/i);
   assert.match(chatgptInstall, /Regular GPT users should not need an API key, JSON payload, OpenAPI knowledge, or developer setup/i);
   assert.match(chatgptInstall, /Users do \*\*not\*\* have to keep chatting inside the ThumbGate GPT for enforcement/i);
@@ -126,12 +129,16 @@ test('public docs render the current package version', () => {
   assert.match(chatgptInstall, /https:\/\/thumbgate-production\.up\.railway\.app\/privacy/);
   assert.match(chatgptInstructions, /Reliability Gateway for AI agents/i);
   assert.match(chatgptInstructions, /https:\/\/chatgpt\.com\/g\/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate/);
-  assert.match(chatgptInstructions, /Turn thumbs-down into prevention gates/);
-  assert.match(chatgptInstructions, /Paste an AI action to check, or tell me what went right\/wrong/i);
+  assert.match(chatgptInstructions, /Stop costly AI mistakes before they run/);
+  assert.match(chatgptInstructions, /Paste the risky AI action before it runs, or tell me what went right\/wrong/i);
+  assert.match(chatgptInstructions, /Sell outcomes before infrastructure/i);
   assert.match(chatgptInstructions, /Action check mode/);
   assert.match(chatgptInstructions, /Feedback capture mode/);
   assert.match(chatgptInstructions, /decisionControl\.executionMode/);
   assert.match(chatgptInstructions, /one signal becomes one remembered rule/i);
+  assert.match(chatgptInstructions, /feedback button that remembers/i);
+  assert.match(chatgptInstructions, /Thumbs down: that answer ignored my request for exact commands/i);
+  assert.match(chatgptInstructions, /Thumbs up: this answer gave file paths, commands, and tests/i);
   assert.match(chatgptInstructions, /public front door for ThumbGate/i);
   assert.match(chatgptInstructions, /Hard enforcement runs locally after `npx thumbgate init` where your agent actually executes/i);
   assert.match(chatgptInstructions, /Regular users should never need an API key, JSON payload, OpenAPI knowledge, or developer setup/i);
@@ -141,9 +148,10 @@ test('public docs render the current package version', () => {
   assert.match(gptStoreSubmission, /https:\/\/chatgpt\.com\/g\/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate/);
   assert.doesNotMatch(gptStoreSubmission, /URL has not been captured/i);
   assert.match(gptStoreSubmission, /Explore GPTs -> search ThumbGate/i);
-  assert.match(gptStoreSubmission, /Turn thumbs-down into prevention gates/);
+  assert.match(gptStoreSubmission, /Stop costly AI mistakes before they run/);
   assert.match(gptStoreSubmission, /Reliability Gateway/i);
   assert.match(gptStoreSubmission, /one signal becomes one remembered rule/i);
+  assert.match(gptStoreSubmission, /prevent expensive AI mistakes/i);
   assert.match(gptStoreSubmission, /Pre-Action Gates/);
   assert.match(gptStoreSubmission, /POST \/v1\/decisions\/evaluate/);
   assert.match(gptStoreSubmission, /Action check mode/);
@@ -316,13 +324,13 @@ test('runtime hosted billing config defaults to the live pro price label', () =>
 
 test('runtime hosted billing config preserves absolute fallback checkout urls', () => {
   const previousFallback = process.env.THUMBGATE_CHECKOUT_FALLBACK_URL;
-  process.env.THUMBGATE_CHECKOUT_FALLBACK_URL = 'https://buy.stripe.com/5kQ4gzbmI9Lo6tPayn3sI06?utm_source=website&utm_medium=cta_button';
+  process.env.THUMBGATE_CHECKOUT_FALLBACK_URL = 'https://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a?utm_source=website&utm_medium=cta_button';
 
   try {
     const runtimeConfig = resolveHostedBillingConfig();
     assert.equal(
       runtimeConfig.checkoutFallbackUrl,
-      'https://buy.stripe.com/5kQ4gzbmI9Lo6tPayn3sI06?utm_source=website&utm_medium=cta_button'
+      'https://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a?utm_source=website&utm_medium=cta_button'
     );
   } finally {
     if (previousFallback === undefined) {
@@ -387,7 +395,7 @@ test('commercial truth sources stay aligned across public and historical docs', 
   const directoryGuide = readText('docs/marketing/mcp-directories.md');
 
   assert.match(commercialTruth, /Pro at \$19\/mo or \$149\/yr/);
-  assert.match(commercialTruth, /Team pricing anchor is \*\*\$99\/seat\/mo/i);
+  assert.match(commercialTruth, /Team pricing anchor is \*\*\$49\/seat\/mo/i);
   assert.match(commercialTruth, /auto-gate promotion/);
   assert.match(commercialTruth, /Do not treat GitHub stars, watchers, dependents, or npm download counts as customer or revenue proof/);
 

@@ -59,3 +59,19 @@ That command updates the root version, generates or updates `CHANGELOG.md`, and 
 - release coverage is enforced in CI before merge, not requested after a release goes sideways.
 
 This is the release narrative layer that sits on top of CI, proof artifacts, and publish gating. For the full trust chain, see [Release Confidence](RELEASE_CONFIDENCE.md).
+
+## Publish Email Follow-Through
+
+npm's native "Successfully published" email is controlled by npm and cannot be customized by this repository. ThumbGate compensates by making the email's linked GitHub Actions run and matching GitHub Release carry the complete customer-readable Changeset record.
+
+On publish, `.github/workflows/publish-npm.yml` runs `node scripts/release-notes.js` to:
+
+- collect the `.changeset/*.md` files changed since the previous release tag.
+- render the full Changeset summaries by SemVer impact.
+- fetch npm publish receipt metadata, including published timestamp, tarball URL, and shasum when available.
+- write the same release note into the GitHub Actions summary linked from the npm email.
+- upload `thumbgate-X.Y.Z-release-notes` as a GitHub Actions artifact on the linked publish run.
+- create or update the `vX.Y.Z` GitHub Release with those notes.
+- upload `thumbgate-X.Y.Z-release-notes.md` as a release asset for audit trails.
+
+The npm email remains short, but the first-party release artifact it points to now contains the full release notes and publish receipt metadata needed for audit review.

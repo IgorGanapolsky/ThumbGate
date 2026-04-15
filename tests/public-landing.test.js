@@ -33,7 +33,8 @@ test('public landing page routes Pro buyers through the hosted checkout surface'
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /\/checkout\/pro\?/);
-  assert.match(landingPage, /Free Trial/);
+  assert.match(landingPage, /\/go\/pro\?utm_source=website/);
+  assert.match(landingPage, /Free Trial|Upgrade to Pro/i);
   assert.doesNotMatch(landingPage, /gumroad\.com/);
 });
 
@@ -66,20 +67,21 @@ test('public landing page keeps optional GA4 and Search Console hooks available 
 test('public landing page includes pricing section with Free, Pro, and Team tiers', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /class="price-card"/);
+  assert.match(landingPage, /class="price-card/);
   assert.match(landingPage, /class="price-card pro"/);
   assert.match(landingPage, /class="price-card team"/);
   assert.match(landingPage, /\$0/);
   assert.match(landingPage, /\$19/);
   assert.match(landingPage, /\/mo/);
-  assert.match(landingPage, /\$99/);
+  assert.match(landingPage, /\$49/);
   assert.match(landingPage, /\/seat\/mo/);
-  assert.match(landingPage, /Forever free/);
-  assert.match(landingPage, /CLI-first local enforcement for one developer/i);
+  assert.match(landingPage, /See how it works/);
+  assert.match(landingPage, /3 captures.*1 rule.*1 agent/i);
   assert.match(landingPage, /solo side lane/i);
   assert.match(landingPage, /Shared enforcement/i);
   assert.match(landingPage, /Install Free/);
-  assert.match(landingPage, /Free Trial/);
+  assert.match(landingPage, /Free Trial|Upgrade to Pro/i);
+  assert.match(landingPage, /7-DAY FREE TRIAL/i);
   assert.match(landingPage, /Start Workflow Hardening Sprint/);
 });
 
@@ -150,8 +152,9 @@ test('public landing page hero features both thumbs up AND thumbs down prominent
   // Signal pills must show both
   assert.match(landingPage, /signal-pill signal-up/);
   assert.match(landingPage, /signal-pill signal-down/);
-  assert.match(landingPage, /Repeated failure becomes enforcement before the next run/i);
-  assert.match(landingPage, /Safe pattern reinforced across the shared workflow/i);
+  assert.match(landingPage, /Prevent expensive mistakes/i);
+  assert.match(landingPage, /Fix it once, then block the repeat/i);
+  assert.match(landingPage, /reliable operator/i);
   // Persona targeting
   assert.match(landingPage, /class="hero-persona"/);
   assert.match(landingPage, /product teams/i);
@@ -166,6 +169,17 @@ test('public landing page exposes the free CLI wedge above the fold and keeps Pr
   assert.match(landingPage, /solo side lane/i);
 });
 
+test('public landing page gives cold users a first-dollar activation path', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /Block your first repeated AI mistake in 5 minutes/i);
+  assert.match(landingPage, /First-Dollar Activation Path/i);
+  assert.match(landingPage, /Prove one blocked repeat before asking anyone to buy/i);
+  assert.match(landingPage, /Native ChatGPT rating buttons are not the ThumbGate capture path/i);
+  assert.match(landingPage, /thumbs down: the answer ignored my request/i);
+  assert.match(landingPage, /Upgrade after one real blocked repeat/i);
+});
+
 test('public landing page Pro tier uses outcome-framed bullets that justify upgrade', () => {
   const landingPage = readLandingPage();
 
@@ -177,13 +191,12 @@ test('public landing page Pro tier uses outcome-framed bullets that justify upgr
   assert.match(landingPage, /DPO training data export/i);
   assert.match(landingPage, /ready-to-use preference pairs for fine-tuning/i);
   assert.match(landingPage, /Personal local dashboard/i);
-  assert.match(landingPage, /export-ready evidence/i);
+  assert.match(landingPage, /Review-ready workflow support/i);
   // Persona targeting for Pro
   assert.match(landingPage, /individual operator/i);
-  assert.match(landingPage, /without starting the team rollout motion/i);
-  // Upgrade triggers
-  assert.match(landingPage, /Choose Pro when:/i);
-  assert.match(landingPage, /review-ready evidence/i);
+  // Model hardening and HuggingFace export
+  assert.match(landingPage, /Model Hardening Advisor/i);
+  assert.match(landingPage, /HuggingFace dataset export/i);
 });
 
 test('public landing page includes an explicit Team rollout lane with shared workflow intake', () => {
@@ -243,13 +256,14 @@ test('public landing page includes compatibility section for AI agent surfaces',
   assert.match(landingPage, /thumbgate-marketplace/);
   assert.match(landingPage, /\/plugin marketplace add IgorGanapolsky\/ThumbGate/);
   assert.match(landingPage, /ChatGPT GPT Actions/);
-  assert.match(landingPage, /https:\/\/chatgpt\.com\/g\/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate/);
+  assert.match(landingPage, /\/go\/gpt\?utm_source=website/);
   assert.match(landingPage, /Open ThumbGate GPT/);
   assert.match(landingPage, /Live ThumbGate GPT for ChatGPT/);
   assert.match(landingPage, /ChatGPT Entry Point/);
-  assert.match(landingPage, /Open the GPT\. Check the action\. Turn the lesson into a gate\./);
+  assert.match(landingPage, /Open the GPT\. Give typed thumbs feedback\. Turn the lesson into a gate\./);
   assert.match(landingPage, /No, you do not have to chat inside the GPT forever/);
   assert.match(landingPage, /ChatGPT is the discovery and memory surface/);
+  assert.match(landingPage, /Do not rely on ChatGPT's native rating buttons for ThumbGate memory/);
   assert.match(landingPage, /Do I have to chat inside the ThumbGate GPT for enforcement\?/);
   assert.match(landingPage, /capture thumbs-up\/down lessons/i);
   assert.match(landingPage, /Real blocking for coding agents still runs locally/);
@@ -263,10 +277,16 @@ test('public landing page includes Plausible custom event tracking for all CTAs'
 
   // install_copy fires directly in copyInstall function
   assert.match(landingPage, /plausible\('install_copy'\)/);
+  assert.match(landingPage, /sendFirstPartyTelemetry\('install_copy'/);
+  assert.match(landingPage, /fetch\('\/v1\/telemetry\/ping'/);
+  assert.match(landingPage, /\/go\/gpt\?utm_source=website/);
+  assert.match(landingPage, /\/go\/install\?utm_source=website/);
+  assert.match(landingPage, /\/go\/github\?utm_source=website/);
 
   // trackClick wires up CTA events by selector and event name
   assert.match(landingPage, /trackClick\('.btn-pro', 'checkout_start'/);
-  assert.match(landingPage, /trackClick\('.btn-gpt-page', 'chatgpt_gpt_click'/);
+  assert.match(landingPage, /trackClick\('.btn-gpt-page:not\(.btn-install-hero\)', 'chatgpt_gpt_click'/);
+  assert.match(landingPage, /trackClick\('.btn-install-hero', 'install_guide_click'/);
   assert.match(landingPage, /trackClick\('.btn-install-link', 'install_guide_click'/);
   assert.match(landingPage, /trackClick\('.btn-team', 'workflow_sprint_intake_click'/);
   assert.match(landingPage, /trackClick\('.btn-free', 'install_click'/);

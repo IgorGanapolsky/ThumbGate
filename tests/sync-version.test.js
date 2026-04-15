@@ -37,6 +37,25 @@ test('sync-version covers the Claude adapter launcher manifest', serial, () => {
   );
 });
 
+test('sync-version detects Claude marketplace nested plugin version drift', serial, () => {
+  const { syncVersion } = require('../scripts/sync-version');
+  const marketplacePath = path.join(ROOT, '.claude-plugin', 'marketplace.json');
+  const original = fs.readFileSync(marketplacePath, 'utf8');
+  const marketplace = JSON.parse(original);
+
+  try {
+    marketplace.plugins[0].version = '0.0.1';
+    fs.writeFileSync(marketplacePath, JSON.stringify(marketplace, null, 2) + '\n');
+    const result = syncVersion({ checkOnly: true });
+    assert.ok(
+      result.drifted.some((entry) => entry.file === '.claude-plugin/marketplace.json' && entry.field === 'plugins[0].version'),
+      `expected Claude marketplace nested plugin version drift, found: ${JSON.stringify(result.drifted)}`
+    );
+  } finally {
+    fs.writeFileSync(marketplacePath, original);
+  }
+});
+
 test('sync-version covers the MCP stdio server metadata file', serial, () => {
   const { syncVersion } = require('../scripts/sync-version');
   const result = syncVersion({ checkOnly: true });
@@ -105,6 +124,35 @@ test('sync-version detects public landing footer drift', serial, () => {
       result.drifted.some((entry) => entry.file === 'public/index.html' && entry.field === 'footer-version'),
       `expected footer drift, found: ${JSON.stringify(result.drifted)}`
     );
+  } finally {
+    fs.writeFileSync(publicIndexPath, original);
+  }
+});
+
+test('sync-version updates multiple public landing markers in one pass', serial, () => {
+  const { syncVersion } = require('../scripts/sync-version');
+  const { version } = require('../package.json');
+  const publicIndexPath = path.join(ROOT, 'public', 'index.html');
+  const original = fs.readFileSync(publicIndexPath, 'utf8');
+  const drifted = original
+    .replace(/New in v\d+\.\d+\.\d+:?/, 'New in v0.0.1')
+    .replace(/MIT License · v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/, 'MIT License · v0.0.1');
+
+  try {
+    fs.writeFileSync(publicIndexPath, drifted);
+    const result = syncVersion({ checkOnly: false });
+    assert.ok(
+      result.drifted.some((entry) => entry.file === 'public/index.html' && entry.field === 'hero-release-note'),
+      `expected hero drift, found: ${JSON.stringify(result.drifted)}`
+    );
+    assert.ok(
+      result.drifted.some((entry) => entry.file === 'public/index.html' && entry.field === 'footer-version'),
+      `expected footer drift, found: ${JSON.stringify(result.drifted)}`
+    );
+
+    const synced = fs.readFileSync(publicIndexPath, 'utf8');
+    assert.ok(synced.includes(`New in v${version}`), 'hero marker should be synced');
+    assert.ok(synced.includes(`MIT License · v${version}`), 'footer marker should be synced');
   } finally {
     fs.writeFileSync(publicIndexPath, original);
   }

@@ -178,7 +178,7 @@ const TWEET_ANGLES = [
   'Thompson Sampling for AI agent gates:\n\nEach gate: Beta(alpha, beta)\nCorrect block → alpha++ → tighter\nFalse positive → beta++ → relaxes\n\nNo thresholds. Gates converge on their own.\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
   'Google DeepMind: hidden prompt injections commandeer AI agents 86% of the time.\n\nThumbGate gates the action, not the prompt. PreToolUse hooks are the last defense.\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
   'Every AI agent framework ships memory. None ship enforcement.\n\nMemory: "Don\'t force-push to main"\nEnforcement: *physically blocked*\n\nThumbGate is the enforcement layer.\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
-  'ThumbGate Pro is $19/mo or $149/yr for solo AI agent operators.\n\nLocal dashboard, DPO export, self-distillation, SQL MCP gates, Thompson Sampling, and pre-action enforcement.\n\nTeam rollout starts with intake: $99/seat/mo.\n\nhttps://buy.stripe.com/5kQ4gzbmI9Lo6tPayn3sI06',
+  'ThumbGate Pro is $19/mo or $149/yr for solo AI agent operators.\n\nLocal dashboard, DPO export, self-distillation, SQL MCP gates, Thompson Sampling, and pre-action enforcement.\n\nTeam rollout starts with intake: $49/seat/mo.\n\nhttps://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a',
   'Context-stuffing: skip RAG entirely.\n\nDump ALL prevention rules into agent context at session start. 20-200 rules = 1K-10K tokens.\n\nInspired by Karpathy. Simpler. Faster.\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
   'The AI agent safety stack:\n\nGovernance: Paperclip\nOrchestration: iloom\nContext: RepoWise\nEnforcement: ThumbGate\n\nAll open source. All necessary.\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
 ];
@@ -281,7 +281,7 @@ async function main() {
           const comments = await ghApi('/repos/' + repo + '/issues/' + num + '/comments?per_page=1&page=' + issue.comments);
           const latest = comments[0];
           if (latest && latest.user.login !== 'IgorGanapolsky') {
-            const reply = 'Thanks for the response! ThumbGate adds PreToolUse enforcement — gates that block known-bad actions before execution. Thompson Sampling adapts confidence. Self-distillation auto-generates rules from outcomes.\n\n68 tools on [Smithery](https://smithery.ai/servers/rlhf-loop/thumbgate). Would love to explore integration.\n\nhttps://github.com/IgorGanapolsky/ThumbGate';
+            const reply = 'Thanks for the response! ThumbGate adds PreToolUse enforcement — gates that block known-bad actions before execution. Thompson Sampling adapts confidence. Self-distillation auto-generates rules from outcomes.\n\nInstall with `npx thumbgate init`. Would love to explore integration.\n\nhttps://github.com/IgorGanapolsky/ThumbGate';
             await ghPostComment(repo, num, reply);
             console.log('  Replied to @' + latest.user.login);
             report.ghIssues++;
@@ -309,7 +309,7 @@ async function main() {
         if (contacted.has(repo.full_name)) continue;
         if (repo.full_name.includes('IgorGanapolsky')) continue;
 
-        const body = 'Hey — noticed you\'re building in the AI agent safety space. [ThumbGate](https://github.com/IgorGanapolsky/ThumbGate) adds PreToolUse hooks that block known-bad actions before execution, with Thompson Sampling for adaptive gate confidence and self-distillation for auto-learning from outcomes.\n\n68 tools on [Smithery](https://smithery.ai/servers/rlhf-loop/thumbgate). Could be complementary — would love to explore integration.\n\nMIT licensed, free tier available.';
+        const body = 'Hey — noticed you\'re building in the AI agent safety space. [ThumbGate](https://github.com/IgorGanapolsky/ThumbGate) adds PreToolUse hooks that block known-bad actions before execution, with Thompson Sampling for adaptive gate confidence and self-distillation for auto-learning from outcomes.\n\nInstall with `npx thumbgate init`. Could be complementary — would love to explore integration.\n\nMIT licensed, free tier available.';
 
         try {
           await fetch('https://api.github.com/repos/' + repo.full_name + '/issues', {

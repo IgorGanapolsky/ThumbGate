@@ -73,9 +73,52 @@ jobs:
             .thumbgate/marketing-analytics.sqlite
             .thumbgate/marketing-analytics.sqlite-shm
             .thumbgate/marketing-analytics.sqlite-wal
-          key: marketing-db-${{ github.run_id }}
+          # v2 cache key — bumped 2026-04-15 to clear stuck Instagram
+          # dedup/cooldown state. After the presign fix (#879) the DB may
+          # still contain 'published' rows whose Instagram delivery actually
+          # failed downstream, causing every subsequent run to skip via
+          # 8h cooldown. Starting from a fresh DB lets us see real behaviour.
+          key: marketing-db-v2-${{ github.run_id }}
           restore-keys: |
-            marketing-db-
+            marketing-db-v2-
+
+      - name: Diagnostic — Zernio + marketing DB pre-flight
+        env:
+          GH_ZERNIO_API_KEY_LEN: ${{ secrets.ZERNIO_API_KEY && 'set' || 'MISSING' }}
+          GH_ZERNIO_IG_ACCT: ${{ secrets.ZERNIO_INSTAGRAM_ACCOUNT_ID && 'set' || 'MISSING' }}
+          GH_ZERNIO_TT_ACCT: ${{ secrets.ZERNIO_TIKTOK_ACCOUNT_ID && 'set' || 'MISSING' }}
+          GH_ZERNIO_YT_ACCT: ${{ secrets.ZERNIO_YOUTUBE_ACCOUNT_ID && 'set' || 'MISSING' }}
+        run: |
+          echo "=== SECRET PRESENCE ==="
+          echo "ZERNIO_API_KEY: $GH_ZERNIO_API_KEY_LEN"
+          echo "ZERNIO_INSTAGRAM_ACCOUNT_ID: $GH_ZERNIO_IG_ACCT"
+          echo "ZERNIO_TIKTOK_ACCOUNT_ID: $GH_ZERNIO_TT_ACCT"
+          echo "ZERNIO_YOUTUBE_ACCOUNT_ID: $GH_ZERNIO_YT_ACCT"
+          echo ""
+          echo "=== MARKETING DB SUMMARY (pre-run) ==="
+          node -e "try { const db=require('./scripts/social-analytics/db/marketing-db'); console.log(JSON.stringify(db.summary(), null, 2)); } catch(e){ console.log('(empty or unreadable:', e.message, ')'); }" || true
+          echo ""
+          echo "=== ZERNIO CONNECTED ACCOUNTS ==="
+          node -e "
+            (async () => {
+              try {
+                const { getConnectedAccounts } = require('./scripts/social-analytics/publishers/zernio');
+                const accts = await getConnectedAccounts();
+                console.log(JSON.stringify(accts.map(a => ({platform: a.platform, accountId: a.accountId, name: a.name, username: a.username})), null, 2));
+              } catch(e) {
+                console.log('getConnectedAccounts failed:', e.message);
+              }
+            })();
+          " || true
+          echo ""
+          echo "=== RECENT MARKETING_POSTS (pre-run) ==="
+          node -e "
+            try {
+              const { getDb } = require('./scripts/social-analytics/db/marketing-db');
+              const rows = getDb().prepare(\"SELECT platform, type, status, published_at, post_url, campaign FROM marketing_posts ORDER BY published_at DESC LIMIT 20\").all();
+              console.log(JSON.stringify(rows, null, 2));
+            } catch(e) { console.log('read failed:', e.message); }
+          " || true
 
       - name: Install Python + Pillow (slide renderer)
         run: pip install Pillow --quiet
@@ -84,11 +127,15 @@ jobs:
         run: sudo apt-get install -y ffmpeg --quiet
 
       - name: Generate slides + render + post to all video platforms
+        env:
+          INPUT_TEMPLATE: ${{ github.event.inputs.template || 'auto' }}
+          INPUT_PLATFORMS: ${{ github.event.inputs.platforms || 'tiktok,youtube,instagram' }}
+          INPUT_DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: |
-          TEMPLATE="${{ github.event.inputs.template || 'auto' }}"
-          PLATFORMS="${{ github.event.inputs.platforms || 'tiktok,youtube,instagram' }}"
+          TEMPLATE="$INPUT_TEMPLATE"
+          PLATFORMS="$INPUT_PLATFORMS"
           DRY_RUN_FLAG=""
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+          if [ "$INPUT_DRY_RUN" = "true" ]; then
             DRY_RUN_FLAG="--dry-run"
           fi
           WEEK=$(date +%Y-W%V)

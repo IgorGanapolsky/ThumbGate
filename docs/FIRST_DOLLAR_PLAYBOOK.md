@@ -1,7 +1,7 @@
 # First Dollar Playbook
 
 Status: current  
-Updated: April 9, 2026
+Updated: April 14, 2026
 
 Use [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md) for live pricing and traction claims. Use [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md) and [RELEASE_CONFIDENCE.md](RELEASE_CONFIDENCE.md) for engineering and package-publish proof.
 
@@ -15,6 +15,25 @@ The shortest honest path is:
 2. sell the **Workflow Hardening Sprint**
 3. attach the proof pack
 4. expand into Team rollout only after the first workflow proves out
+
+## Why broad launch activity did not create paying customers
+
+The failure mode is not missing infrastructure. It is weak demand capture:
+
+- Low-audience social posts create impressions, not buyer conversations.
+- Generic "agent memory" copy sounds replaceable by `CLAUDE.md`, `.cursorrules`, or another prompt file.
+- A GPT, plugin, npm package, and docs page are distribution surfaces, not revenue by themselves.
+- Revenue starts when one buyer names one repeated failure they already care about and agrees that blocking it before the next tool call is valuable.
+
+The first-dollar motion therefore has one job: move a cold user from curiosity to one blocked repeat.
+
+## First-dollar activation ladder
+
+1. **GPT proof:** send the user to the live ThumbGate GPT and ask for one bad answer, risky command, deploy, PR action, or agent plan they do not want repeated.
+2. **Typed feedback:** have them type `thumbs down:` or `thumbs up:` with one concrete sentence. Do not claim ChatGPT's native rating buttons feed ThumbGate.
+3. **Local enforcement:** install with `npx thumbgate init` where the agent executes, then show the saved lesson, generated rule, or blocked repeat.
+4. **Solo Pro trigger:** upgrade only after a real blocked repeat when the buyer needs more captures, the dashboard, DPO export, or proof-ready evidence.
+5. **Team trigger:** if there is a shared repo, review queue, deploy workflow, migration process, or release approval problem, convert to the Workflow Hardening Sprint.
 
 ## Operating thesis
 

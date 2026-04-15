@@ -54,7 +54,7 @@ The following block is appended to `~/.codex/config.toml`:
 ```toml
 [mcp_servers.thumbgate]
 command = "npx"
-args = ["--yes", "--package", "thumbgate@1.4.3", "thumbgate", "serve"]
+args = ["--yes", "--package", "thumbgate@1.5.0", "thumbgate", "serve"]
 ```
 
 The repo-local Codex app plugin ships the same runtime path through `plugins/codex-profile/.mcp.json`, so the manual config and plugin metadata stay aligned.

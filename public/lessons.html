@@ -817,8 +817,8 @@ function renderUpgradeWall(containerId) {
     '<div style="text-align:center;background:rgba(10,10,15,0.92);border:1px solid #333;border-radius:12px;padding:28px 36px;">' +
     '<div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:8px;">Unlock your full lessons</div>' +
     '<div style="color:#aaa;margin-bottom:16px;">Pro shows your real prevention rules, timeline, and insights.</div>' +
-    '<a href="https://buy.stripe.com/5kQ4gzbmI9Lo6tPayn3sI06" target="_blank" rel="noopener" ' +
-    'style="display:inline-block;background:#b85c2d;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700;">Upgrade to Pro — $19/mo</a>' +
+    '<a href="https://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a" target="_blank" rel="noopener" ' +
+    'style="display:inline-block;background:#b85c2d;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700;">Start 7-day free trial</a>' +
     '<div style="color:#666;font-size:12px;margin-top:10px;">npx thumbgate pro --activate --key=YOUR_KEY</div>' +
     '</div></div>';
   el.appendChild(wall);
@@ -898,17 +898,39 @@ loadLive().then(function() {
   // Default: highlight Active Rules card on page load
   highlightCard(0);
 
-  // Handle #feedbackId hash — scroll to and highlight the matching item
+  // Handle #hash — scroll to and highlight the matching item.
+  // IMPORTANT: querySelector finds elements in hidden tabs (display:none),
+  // but scrollIntoView silently fails on hidden elements. Always switch to
+  // the correct tab BEFORE querying.
   var hash = window.location.hash.replace('#', '');
   if (!hash) return;
-  // Try rule cards first
-  var el = document.querySelector('[data-rule-id="' + hash + '"]') ||
-           document.querySelector('[data-feedback-id="' + hash + '"]');
-  if (!el) {
-    // Search in timeline by switching tab
-    switchTab('timeline');
-    el = document.querySelector('[data-feedback-id="' + hash + '"]');
+  var el = null;
+
+  // For fb_* hashes (from statusbar links), prefer rules tab (has lesson context)
+  if (hash.indexOf('fb_') === 0 || hash.indexOf('lesson_') === 0) {
+    var matchedRule = allRules.find(function(r) {
+      return r.sourceFeedbackId === hash || r.id === hash;
+    });
+    if (matchedRule) {
+      switchTab('rules');
+      el = document.querySelector('[data-rule-id="' + matchedRule.id + '"]');
+    }
+    if (!el) {
+      switchTab('timeline');
+      el = document.querySelector('[data-feedback-id="' + hash + '"]');
+    }
   }
+
+  // For mem_* or other IDs, search within visible tabs only
+  if (!el) {
+    switchTab('rules');
+    el = document.querySelector('#tab-rules [data-rule-id="' + hash + '"]');
+  }
+  if (!el) {
+    switchTab('timeline');
+    el = document.querySelector('#tab-timeline [data-feedback-id="' + hash + '"]');
+  }
+
   if (el) {
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     el.style.borderColor = 'var(--cyan)';
