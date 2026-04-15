@@ -844,11 +844,55 @@ function resolveTeamWindowHours(analyticsWindow) {
 // Full dashboard data
 // ---------------------------------------------------------------------------
 
+function collectAllFeedbackEntries(feedbackDir) {
+  const entries = [];
+  const seen = new Set();
+
+  function mergeFrom(logPath) {
+    if (!fs.existsSync(logPath)) return;
+    for (const entry of readJSONL(logPath)) {
+      const id = entry.id || entry.feedbackId;
+      if (id && seen.has(id)) continue;
+      if (id) seen.add(id);
+      entries.push(entry);
+    }
+  }
+
+  // Primary: the passed feedbackDir (global ~/.thumbgate)
+  mergeFrom(path.join(feedbackDir, 'feedback-log.jsonl'));
+
+  // Project-local .thumbgate directories (e.g. repo/.thumbgate/feedback-log.jsonl)
+  // The MCP server may write to a project-scoped dir that differs from the global one.
+  const projectsDir = path.join(feedbackDir, 'projects');
+  if (fs.existsSync(projectsDir)) {
+    try {
+      for (const project of fs.readdirSync(projectsDir)) {
+        mergeFrom(path.join(projectsDir, project, 'feedback-log.jsonl'));
+      }
+    } catch { /* ignore read errors */ }
+  }
+
+  // Also check the project root's .thumbgate if feedbackDir is global
+  // The MCP server often resolves to PROJECT_ROOT/.thumbgate for project-scoped feedback
+  const projectLocalDir = path.join(PROJECT_ROOT, '.thumbgate');
+  if (projectLocalDir !== feedbackDir && fs.existsSync(projectLocalDir)) {
+    mergeFrom(path.join(projectLocalDir, 'feedback-log.jsonl'));
+  }
+
+  // Sort by timestamp for consistent ordering
+  entries.sort((a, b) => {
+    const ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+    const tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+    return ta - tb;
+  });
+
+  return entries;
+}
+
 function generateDashboard(feedbackDir, options = {}) {
   const analyticsWindow = resolveAnalyticsWindow(options.analyticsWindow || options);
-  const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
   const diagnosticLogPath = path.join(feedbackDir, 'diagnostic-log.jsonl');
-  const entries = readJSONL(feedbackLogPath);
+  const entries = collectAllFeedbackEntries(feedbackDir);
   const diagnosticEntries = readJSONL(diagnosticLogPath);
   const billingSummary = options.billingSummary || getBillingSummary(analyticsWindow);
 
