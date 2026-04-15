@@ -9,6 +9,7 @@
 <meta name="robots" content="noindex">
 <!-- Privacy-friendly analytics by Plausible -->
 <script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -226,6 +227,7 @@
     <div class="tab" onclick="switchTab('generated')">🧩 Generated Views</div>
     <div class="tab" onclick="switchTab('settings')">⚙️ Policy Origins</div>
     <div class="tab" onclick="switchTab('templates')">🧱 Gate Templates</div>
+    <div class="tab" onclick="switchTab('insights')">📊 Insights</div>
     <div class="tab" onclick="switchTab('export')">📦 Export</div>
   </div>
 
@@ -319,6 +321,74 @@
       <h2>Curated Gate Templates</h2>
       <div class="template-summary" id="templateSummary">Loading template library...</div>
       <div class="template-grid" id="templateLibrary"><div class="loading">Loading templates...</div></div>
+    </div>
+  </div>
+
+  <!-- INSIGHTS TAB -->
+  <div class="tab-content" id="tab-insights">
+    <div class="templates-section">
+      <h2>📊 Feedback Insights &amp; Lesson Pipeline</h2>
+      <p class="template-summary">How your thumbs-up/down signals turn into lessons that prevent repeat mistakes.</p>
+
+      <!-- Pipeline Flow -->
+      <div class="panel" style="margin-bottom:24px;">
+        <h3 style="margin-bottom:16px;">Feedback → Lesson Pipeline</h3>
+        <div id="pipelineFlow" style="display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:wrap;padding:12px 0;">
+          <div class="loading">Loading pipeline...</div>
+        </div>
+        <div id="pipelineRates" style="display:flex;gap:24px;justify-content:center;margin-top:16px;font-size:13px;color:var(--text-muted);"></div>
+      </div>
+
+      <!-- Charts -->
+      <div class="team-columns" style="margin-bottom:24px;">
+        <div class="panel">
+          <h3>Feedback Trend (30 days)</h3>
+          <div style="position:relative;height:260px;margin-top:12px;">
+            <canvas id="feedbackTrendChart"></canvas>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Lessons Generated (30 days)</h3>
+          <div style="position:relative;height:260px;margin-top:12px;">
+            <canvas id="lessonTrendChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gate Effectiveness -->
+      <div class="panel" style="margin-bottom:24px;">
+        <h3>Gate Effectiveness (14-day audit)</h3>
+        <div style="position:relative;height:280px;margin-top:12px;">
+          <canvas id="gateAuditChart"></canvas>
+        </div>
+      </div>
+
+      <!-- How It Works -->
+      <div class="panel">
+        <h3 style="margin-bottom:12px;">How ThumbGate Learns</h3>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;text-align:center;">
+          <div>
+            <div style="font-size:32px;margin-bottom:8px;">👎👍</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px;">1. You React</div>
+            <div style="font-size:12px;color:var(--text-muted);">Thumbs-down on a bad action, thumbs-up on a good one</div>
+          </div>
+          <div>
+            <div style="font-size:32px;margin-bottom:8px;">🧠</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px;">2. Lesson Distilled</div>
+            <div style="font-size:12px;color:var(--text-muted);">ThumbGate extracts what went wrong and how to avoid it</div>
+          </div>
+          <div>
+            <div style="font-size:32px;margin-bottom:8px;">🛡️</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px;">3. Gate Promoted</div>
+            <div style="font-size:12px;color:var(--text-muted);">Repeated lessons auto-promote into pre-action gates</div>
+          </div>
+          <div>
+            <div style="font-size:32px;margin-bottom:8px;">🚫</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px;">4. Mistake Blocked</div>
+            <div style="font-size:12px;color:var(--text-muted);">Gates intercept the same mistake before it happens again</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -574,6 +644,14 @@ async function loadGates() {
 async function loadDashboardData() {
   await loadGates();
   await loadGeneratedView(currentGeneratedView);
+  // Fetch full dashboard for insights charts
+  try {
+    var res = await fetch('/v1/dashboard', { headers: getHeaders() });
+    if (res.ok) {
+      var data = await res.json();
+      renderDashboardData(data);
+    }
+  } catch (e) { /* insights degrade gracefully */ }
 }
 
 function renderDashboardData(data) {
@@ -596,6 +674,7 @@ function renderDashboardData(data) {
   renderPredictive(data.predictive || {});
   renderSettingsStatus(data.settingsStatus || {});
   renderTemplates(data.templateLibrary || {});
+  renderInsights(data);
 }
 
 function renderGeneratedViewToolbar(spec) {
@@ -1094,6 +1173,217 @@ async function exportDpo() {
     status.textContent = '✗ ' + e.message;
     status.style.color = 'var(--red)';
   }
+}
+
+// ---------------------------------------------------------------------------
+// Insights tab: charts + pipeline
+// ---------------------------------------------------------------------------
+var feedbackChart = null;
+var lessonChart = null;
+var gateAuditChart = null;
+
+function renderInsights(data) {
+  renderPipeline(data.lessonPipeline || {});
+  renderFeedbackTrendChart(data.feedbackTimeSeries || {});
+  renderLessonTrendChart(data.feedbackTimeSeries || {});
+  renderGateAuditChartFromData(data.gateAudit || {});
+}
+
+function renderPipeline(pipeline) {
+  var stages = pipeline.stages || [];
+  var rates = pipeline.rates || {};
+  var container = document.getElementById('pipelineFlow');
+  if (!stages.length) {
+    container.innerHTML = '<div class="empty">No pipeline data yet. Give some thumbs-up/down feedback to get started.</div>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < stages.length; i++) {
+    var s = stages[i];
+    var colors = { feedback: 'var(--cyan)', lessons: 'var(--green)', gates: '#fbbf24', blocked: 'var(--red)' };
+    var color = colors[s.id] || 'var(--cyan)';
+    html += '<div style="text-align:center;min-width:120px;cursor:pointer;" title="' + escAttr(s.detail || '') + '">';
+    html += '<div style="font-size:36px;font-weight:800;color:' + color + ';letter-spacing:-0.03em;">' + s.count + '</div>';
+    html += '<div style="font-size:13px;font-weight:600;margin-top:4px;">' + escHtml(s.label) + '</div>';
+    html += '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + escHtml(s.detail || '') + '</div>';
+    html += '</div>';
+    if (i < stages.length - 1) {
+      html += '<div style="font-size:24px;color:var(--text-muted);padding:0 8px;">→</div>';
+    }
+  }
+  container.innerHTML = html;
+
+  var ratesHtml = '';
+  if (rates.feedbackToLesson !== undefined) {
+    ratesHtml += '<span>Feedback → Lesson: <strong style="color:var(--cyan);">' + rates.feedbackToLesson + '%</strong></span>';
+  }
+  if (rates.lessonToGate !== undefined) {
+    ratesHtml += '<span>Lesson → Gate: <strong style="color:#fbbf24;">' + rates.lessonToGate + '%</strong></span>';
+  }
+  document.getElementById('pipelineRates').innerHTML = ratesHtml;
+}
+
+function chartDefaults() {
+  return {
+    color: '#8b8b96',
+    borderColor: '#222225',
+    backgroundColor: 'transparent',
+  };
+}
+
+function renderFeedbackTrendChart(ts) {
+  var canvas = document.getElementById('feedbackTrendChart');
+  if (!canvas) return;
+  var days = ts.days || [];
+  if (feedbackChart) feedbackChart.destroy();
+
+  var labels = days.map(function(d) { return d.dayKey.slice(5); });
+  feedbackChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: '👍 Up',
+          data: days.map(function(d) { return d.up; }),
+          borderColor: '#4ade80',
+          backgroundColor: 'rgba(74,222,128,0.1)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 2,
+          pointHoverRadius: 5,
+        },
+        {
+          label: '👎 Down',
+          data: days.map(function(d) { return d.down; }),
+          borderColor: '#f87171',
+          backgroundColor: 'rgba(248,113,113,0.1)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 2,
+          pointHoverRadius: 5,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { labels: { color: '#e8e8ec', font: { size: 12 } } },
+        tooltip: { backgroundColor: '#161618', borderColor: '#222225', borderWidth: 1, titleColor: '#e8e8ec', bodyColor: '#8b8b96' },
+      },
+      scales: {
+        x: { ticks: { color: '#8b8b96', font: { size: 10 }, maxRotation: 45 }, grid: { color: 'rgba(34,34,37,0.5)' } },
+        y: { beginAtZero: true, ticks: { color: '#8b8b96', stepSize: 1 }, grid: { color: 'rgba(34,34,37,0.5)' } },
+      },
+    },
+  });
+}
+
+function renderLessonTrendChart(ts) {
+  var canvas = document.getElementById('lessonTrendChart');
+  if (!canvas) return;
+  var days = ts.days || [];
+  if (lessonChart) lessonChart.destroy();
+
+  var labels = days.map(function(d) { return d.dayKey.slice(5); });
+  var cumulativeLessons = [];
+  var runningTotal = 0;
+  for (var i = 0; i < days.length; i++) {
+    runningTotal += days[i].lessons || 0;
+    cumulativeLessons.push(runningTotal);
+  }
+
+  lessonChart = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Lessons/day',
+          data: days.map(function(d) { return d.lessons || 0; }),
+          backgroundColor: 'rgba(34,211,238,0.4)',
+          borderColor: '#22d3ee',
+          borderWidth: 1,
+          borderRadius: 3,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Cumulative',
+          data: cumulativeLessons,
+          type: 'line',
+          borderColor: '#4ade80',
+          backgroundColor: 'transparent',
+          tension: 0.3,
+          pointRadius: 0,
+          borderWidth: 2,
+          yAxisID: 'y1',
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { labels: { color: '#e8e8ec', font: { size: 12 } } },
+        tooltip: { backgroundColor: '#161618', borderColor: '#222225', borderWidth: 1, titleColor: '#e8e8ec', bodyColor: '#8b8b96' },
+      },
+      scales: {
+        x: { ticks: { color: '#8b8b96', font: { size: 10 }, maxRotation: 45 }, grid: { color: 'rgba(34,34,37,0.5)' } },
+        y: { beginAtZero: true, position: 'left', ticks: { color: '#22d3ee', stepSize: 1 }, grid: { color: 'rgba(34,34,37,0.5)' } },
+        y1: { beginAtZero: true, position: 'right', ticks: { color: '#4ade80' }, grid: { drawOnChartArea: false } },
+      },
+    },
+  });
+}
+
+function renderGateAuditChartFromData(gateAudit) {
+  var canvas = document.getElementById('gateAuditChart');
+  if (!canvas) return;
+  var days = gateAudit.days || [];
+  if (gateAuditChart) gateAuditChart.destroy();
+
+  var labels = days.map(function(d) { return (d.dayKey || '').slice(5); });
+  gateAuditChart = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: '🚫 Blocked',
+          data: days.map(function(d) { return d.deny || 0; }),
+          backgroundColor: 'rgba(248,113,113,0.6)',
+          borderRadius: 3,
+        },
+        {
+          label: '⚠️ Warned',
+          data: days.map(function(d) { return d.warn || 0; }),
+          backgroundColor: 'rgba(251,191,36,0.5)',
+          borderRadius: 3,
+        },
+        {
+          label: '✅ Allowed',
+          data: days.map(function(d) { return d.allow || 0; }),
+          backgroundColor: 'rgba(74,222,128,0.4)',
+          borderRadius: 3,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#e8e8ec', font: { size: 12 } } },
+        tooltip: { backgroundColor: '#161618', borderColor: '#222225', borderWidth: 1, titleColor: '#e8e8ec', bodyColor: '#8b8b96' },
+      },
+      scales: {
+        x: { stacked: true, ticks: { color: '#8b8b96', font: { size: 10 } }, grid: { color: 'rgba(34,34,37,0.5)' } },
+        y: { stacked: true, beginAtZero: true, ticks: { color: '#8b8b96', stepSize: 1 }, grid: { color: 'rgba(34,34,37,0.5)' } },
+      },
+    },
+  });
 }
 </script>
 </body>

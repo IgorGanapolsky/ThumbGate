@@ -263,6 +263,89 @@ function computePreventionImpact(feedbackDir, gateStats) {
 }
 
 // ---------------------------------------------------------------------------
+// Feedback time series (daily up/down for charts)
+// ---------------------------------------------------------------------------
+
+function computeFeedbackTimeSeries(entries, dayCount = 30) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = [];
+
+  for (let offset = dayCount - 1; offset >= 0; offset -= 1) {
+    const day = new Date(today);
+    day.setDate(today.getDate() - offset);
+    const dayKey = toLocalDayKey(day);
+    days.push({ dayKey, up: 0, down: 0, lessons: 0 });
+  }
+
+  const dayMap = new Map(days.map((d) => [d.dayKey, d]));
+
+  for (const entry of entries) {
+    if (!entry.timestamp) continue;
+    const dayKey = toLocalDayKey(entry.timestamp);
+    const bucket = dayMap.get(dayKey);
+    if (!bucket) continue;
+    const signal = String(entry.signal || entry.feedback || '').toLowerCase();
+    if (['up', 'positive', 'thumbs_up'].includes(signal)) bucket.up += 1;
+    else if (['down', 'negative', 'thumbs_down'].includes(signal)) bucket.down += 1;
+  }
+
+  return { dayCount, days };
+}
+
+// ---------------------------------------------------------------------------
+// Lesson pipeline (feedback → lesson → gate conversion)
+// ---------------------------------------------------------------------------
+
+function computeLessonPipeline(feedbackDir, entries, gateStats) {
+  const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
+  const memories = readJSONL(memoryLogPath);
+
+  const totalFeedback = entries.length;
+  const totalNegative = entries.filter((e) => {
+    const s = String(e.signal || e.feedback || '').toLowerCase();
+    return ['down', 'negative', 'thumbs_down'].includes(s);
+  }).length;
+  const totalPositive = totalFeedback - totalNegative;
+
+  const totalLessons = memories.filter((m) => m.category === 'error' || m.category === 'learning').length;
+  const errorLessons = memories.filter((m) => m.category === 'error').length;
+  const learningLessons = memories.filter((m) => m.category === 'learning').length;
+
+  const autoGatesPath = getAutoGatesPath();
+  const autoGates = readJsonFile(autoGatesPath);
+  const promotedGates = autoGates && Array.isArray(autoGates.gates) ? autoGates.gates.length : 0;
+
+  const feedbackToLessonRate = totalFeedback > 0
+    ? Math.round((totalLessons / totalFeedback) * 100) : 0;
+  const lessonToGateRate = totalLessons > 0
+    ? Math.min(100, Math.round((promotedGates / totalLessons) * 100)) : 0;
+  const totalBlocked = gateStats.blocked || 0;
+
+  // Populate lesson counts onto the time series if available
+  const lessonsByDay = new Map();
+  for (const m of memories) {
+    if (!m.timestamp) continue;
+    const dayKey = toLocalDayKey(m.timestamp);
+    if (dayKey) lessonsByDay.set(dayKey, (lessonsByDay.get(dayKey) || 0) + 1);
+  }
+
+  return {
+    stages: [
+      { id: 'feedback', label: 'Feedback Signals', count: totalFeedback, detail: `${totalPositive} up / ${totalNegative} down` },
+      { id: 'lessons', label: 'Lessons Distilled', count: totalLessons, detail: `${errorLessons} mistakes / ${learningLessons} good patterns` },
+      { id: 'gates', label: 'Gates Promoted', count: promotedGates, detail: `${lessonToGateRate}% of lessons become gates` },
+      { id: 'blocked', label: 'Actions Blocked', count: totalBlocked, detail: `Repeat mistakes prevented` },
+    ],
+    rates: {
+      feedbackToLesson: feedbackToLessonRate,
+      lessonToGate: lessonToGateRate,
+    },
+    lessonsByDay,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Session trend (last N sessions)
 // ---------------------------------------------------------------------------
 
@@ -831,6 +914,14 @@ function generateDashboard(feedbackDir, options = {}) {
     },
   };
 
+  const feedbackTimeSeries = computeFeedbackTimeSeries(entries, 30);
+  const lessonPipeline = computeLessonPipeline(feedbackDir, entries, gateStats);
+
+  // Merge lesson counts into feedbackTimeSeries days
+  for (const day of feedbackTimeSeries.days) {
+    day.lessons = lessonPipeline.lessonsByDay.get(day.dayKey) || 0;
+  }
+
   const team = generateOrgDashboard({
     windowHours: resolveTeamWindowHours(analyticsWindow),
     authContext: options.authContext,
@@ -872,6 +963,11 @@ function generateDashboard(feedbackDir, options = {}) {
     templateLibrary,
     liveMetrics,
     predictive,
+    feedbackTimeSeries,
+    lessonPipeline: {
+      stages: lessonPipeline.stages,
+      rates: lessonPipeline.rates,
+    },
   };
 }
 
