@@ -213,10 +213,10 @@
 
   <!-- STATS -->
   <div class="stats-grid" id="statsGrid">
-    <div class="stat-card" data-card-action="all" onclick="selectCard(this,'all')" style="cursor:pointer;" title="Show all feedback"><div class="stat-label">Total Feedback</div><div class="stat-value cyan" id="statTotal">—</div></div>
-    <div class="stat-card" data-card-action="up" onclick="selectCard(this,'up')" style="cursor:pointer;" title="Show positive feedback"><div class="stat-label">👍 Positive</div><div class="stat-value green" id="statPositive">—</div></div>
-    <div class="stat-card" data-card-action="down" onclick="selectCard(this,'down')" style="cursor:pointer;" title="Show negative feedback"><div class="stat-label">👎 Negative</div><div class="stat-value red" id="statNegative">—</div></div>
-    <div class="stat-card" data-card-action="gates" onclick="selectCard(this,'gates')" style="cursor:pointer;" title="View active gates"><div class="stat-label">Active Gates</div><div class="stat-value cyan" id="statGates">—</div></div>
+    <a class="stat-card" data-card-action="all" onclick="selectCard(this,'all')" href="/lessons" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view all feedback → Lessons page"><div class="stat-label">Total Feedback</div><div class="stat-value cyan" id="statTotal">—</div></a>
+    <a class="stat-card" data-card-action="up" onclick="selectCard(this,'up')" href="/lessons?signal=positive" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view positive feedback → Lessons page"><div class="stat-label">👍 Positive</div><div class="stat-value green" id="statPositive">—</div></a>
+    <a class="stat-card" data-card-action="down" onclick="selectCard(this,'down')" href="/lessons?signal=negative" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view negative feedback → Lessons page"><div class="stat-label">👎 Negative</div><div class="stat-value red" id="statNegative">—</div></a>
+    <a class="stat-card" data-card-action="gates" onclick="selectCard(this,'gates');return false;" href="#" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view active gates"><div class="stat-label">Active Gates</div><div class="stat-value cyan" id="statGates">—</div></a>
   </div>
 
   <!-- TABS -->
