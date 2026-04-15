@@ -355,6 +355,50 @@ function codexConfigPath() {
   return path.join(getHome(), '.codex', 'config.json');
 }
 
+function writeJsonFile(filePath, payload, dryRun) {
+  if (dryRun) {
+    return;
+  }
+
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(payload, null, 2) + '\n');
+}
+
+function upsertCodexHook(configHooks, lifecycle, hookDef, legacyPattern) {
+  const hookCommand = hookDef.hooks[0].command;
+  const pruned = pruneLegacyHookEntries(configHooks[lifecycle], hookCommand, legacyPattern);
+  configHooks[lifecycle] = pruned.hooks;
+
+  const added = [];
+  if (pruned.removed) {
+    added.push({ lifecycle, command: `${hookCommand} (replaced legacy ThumbGate hook)` });
+  }
+
+  if (hookAlreadyPresent(configHooks[lifecycle], hookCommand)) {
+    return added;
+  }
+
+  const entry = { hooks: hookDef.hooks };
+  if (hookDef.matcher) {
+    entry.matcher = hookDef.matcher;
+  }
+
+  configHooks[lifecycle] = configHooks[lifecycle] || [];
+  configHooks[lifecycle].push(entry);
+  added.push({ lifecycle, command: hookCommand });
+  return added;
+}
+
+function syncCodexStatusLine(config, desiredStatusLine) {
+  if (config.statusLine && config.statusLine.command === desiredStatusLine) {
+    return false;
+  }
+
+  config.statusLine = { type: 'command', command: desiredStatusLine };
+  return true;
+}
+
 function wireCodexHooks(options) {
   const configPath = options.settingsPath || codexConfigPath();
   const dryRun = options.dryRun || false;
@@ -372,50 +416,19 @@ function wireCodexHooks(options) {
   };
 
   for (const [lifecycle, hookDef] of Object.entries(CODEX_HOOKS)) {
-    const hookCommand = hookDef.hooks[0].command;
-    const pruned = pruneLegacyHookEntries(config.hooks[lifecycle], hookCommand, legacyPatterns[lifecycle]);
-    config.hooks[lifecycle] = pruned.hooks;
-    if (pruned.removed) {
-      added.push({ lifecycle, command: `${hookCommand} (replaced legacy ThumbGate hook)` });
-    }
-
-    if (hookAlreadyPresent(config.hooks[lifecycle], hookCommand)) {
-      continue;
-    }
-
-    config.hooks[lifecycle] = config.hooks[lifecycle] || [];
-    const entry = { hooks: hookDef.hooks };
-    if (hookDef.matcher) {
-      entry.matcher = hookDef.matcher;
-    }
-    config.hooks[lifecycle].push(entry);
-    added.push({ lifecycle, command: hookCommand });
+    added.push(...upsertCodexHook(config.hooks, lifecycle, hookDef, legacyPatterns[lifecycle]));
   }
 
   if (added.length === 0) {
-    if (!config.statusLine || config.statusLine.command !== desiredStatusLine) {
-      config.statusLine = { type: 'command', command: desiredStatusLine };
-      if (!dryRun) {
-        const dir = path.dirname(configPath);
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
-      }
-      return {
-        changed: true,
-        settingsPath: configPath,
-        added: [{ lifecycle: 'statusLine', command: desiredStatusLine }],
-      };
+    if (syncCodexStatusLine(config, desiredStatusLine)) {
+      writeJsonFile(configPath, config, dryRun);
+      return { changed: true, settingsPath: configPath, added: [{ lifecycle: 'statusLine', command: desiredStatusLine }] };
     }
     return { changed: false, settingsPath: configPath, added: [] };
   }
 
-  config.statusLine = { type: 'command', command: desiredStatusLine };
-
-  if (!dryRun) {
-    const dir = path.dirname(configPath);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
-  }
+  syncCodexStatusLine(config, desiredStatusLine);
+  writeJsonFile(configPath, config, dryRun);
 
   added.push({ lifecycle: 'statusLine', command: desiredStatusLine });
   return { changed: true, settingsPath: configPath, added };
