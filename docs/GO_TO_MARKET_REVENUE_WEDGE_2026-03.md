@@ -1,6 +1,6 @@
 # CTO Urgent Memo: High-ROI Revenue Opportunity (March 2026)
 
-> Historical research note: this memo captured a March 2026 packaging experiment. It is not current product truth. Current public pricing is Pro at `$19/mo or $149/yr`, and Team rollout anchors at `$99/seat/mo` with a `3`-seat minimum after workflow qualification. Use `docs/COMMERCIAL_TRUTH.md` as the canonical source.
+> Historical research note: this memo captured a March 2026 packaging experiment. It is not current product truth. Current public pricing is Pro at `$19/mo or $149/yr`, and Team rollout anchors at `$49/seat/mo` with a `3`-seat minimum after workflow qualification. Use `docs/COMMERCIAL_TRUTH.md` as the canonical source.
 
 ## The Opportunity: "Outcome-Based" Memory Packages
 While we wait for AWS Marketplace approval, we can generate revenue **today** by shifting from "Monthly Subscriptions" to **"Success-Based Memory Credits."**

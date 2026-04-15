@@ -178,7 +178,7 @@ const TWEET_ANGLES = [
   'Thompson Sampling for AI agent gates:\n\nEach gate: Beta(alpha, beta)\nCorrect block → alpha++ → tighter\nFalse positive → beta++ → relaxes\n\nNo thresholds. Gates converge on their own.\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
   'Google DeepMind: hidden prompt injections commandeer AI agents 86% of the time.\n\nThumbGate gates the action, not the prompt. PreToolUse hooks are the last defense.\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
   'Every AI agent framework ships memory. None ship enforcement.\n\nMemory: "Don\'t force-push to main"\nEnforcement: *physically blocked*\n\nThumbGate is the enforcement layer.\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
-  'ThumbGate Pro is $19/mo or $149/yr for solo AI agent operators.\n\nLocal dashboard, DPO export, self-distillation, SQL MCP gates, Thompson Sampling, and pre-action enforcement.\n\nTeam rollout starts with intake: $99/seat/mo.\n\nhttps://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a',
+  'ThumbGate Pro is $19/mo or $149/yr for solo AI agent operators.\n\nLocal dashboard, DPO export, self-distillation, SQL MCP gates, Thompson Sampling, and pre-action enforcement.\n\nTeam rollout starts with intake: $49/seat/mo.\n\nhttps://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a',
   'Context-stuffing: skip RAG entirely.\n\nDump ALL prevention rules into agent context at session start. 20-200 rules = 1K-10K tokens.\n\nInspired by Karpathy. Simpler. Faster.\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
   'The AI agent safety stack:\n\nGovernance: Paperclip\nOrchestration: iloom\nContext: RepoWise\nEnforcement: ThumbGate\n\nAll open source. All necessary.\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
 ];

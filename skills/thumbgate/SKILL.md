@@ -92,7 +92,7 @@ Bounded retrieval of relevant feedback history for the current task. The agent g
 | Dashboard | - | Yes | Yes |
 | DPO export | - | Yes | Yes |
 | Seats | 1 | 1 | Per-seat |
-| Price | $0 | $19/mo | $99/seat/mo |
+| Price | $0 | $19/mo | $49/seat/mo |
 
 Start a 7-day free trial of Pro: <https://buy.stripe.com/fZu9AT3Ug6zcdWh0XN3sI08>
 

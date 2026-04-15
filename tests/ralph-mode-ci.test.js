@@ -184,7 +184,7 @@ test('Ralph Mode tweet angles advertise current Pro and Team pricing', () => {
 
   assert.match(joined, /\$19\/mo/);
   assert.match(joined, /\$149\/yr/);
-  assert.match(joined, /\$99\/seat\/mo/);
+  assert.match(joined, /\$49\/seat\/mo/);
   assert.doesNotMatch(joined, /\$49 once/);
 });
 
