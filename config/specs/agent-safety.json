@@ -1,0 +1,65 @@
+{
+  "name": "agent-safety",
+  "description": "Proactive safety constraints for AI coding agents. Enforced before any action, not learned from failures.",
+  "version": "1",
+  "constraints": [
+    {
+      "id": "no-force-push",
+      "scope": "bash",
+      "deny": "git\\s+push\\s+.*(-f|--force)",
+      "reason": "Force push destroys remote history. Use incremental commits instead.",
+      "severity": "critical"
+    },
+    {
+      "id": "no-reset-hard",
+      "scope": "bash",
+      "deny": "git\\s+reset\\s+--hard",
+      "reason": "Hard reset discards uncommitted work. Stash or commit first.",
+      "severity": "critical"
+    },
+    {
+      "id": "no-rm-rf-root",
+      "scope": "bash",
+      "deny": "rm\\s+-rf\\s+(/|\\.\\.?/?\\.?$|~)",
+      "reason": "Recursive delete at root or parent directory is catastrophic.",
+      "severity": "critical"
+    },
+    {
+      "id": "no-env-in-code",
+      "scope": "content",
+      "deny": "(AKIA[A-Z0-9]{16}|sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{36}|-----BEGIN (RSA |EC )?PRIVATE KEY-----)",
+      "reason": "Secrets, API keys, and private keys must not appear in code or commits.",
+      "severity": "critical"
+    },
+    {
+      "id": "no-skip-hooks",
+      "scope": "bash",
+      "deny": "(--no-verify|--no-gpg-sign)",
+      "reason": "Skipping git hooks or GPG signing bypasses safety checks.",
+      "severity": "warning"
+    },
+    {
+      "id": "no-drop-table",
+      "scope": "any",
+      "deny": "DROP\\s+(TABLE|DATABASE|SCHEMA)\\s",
+      "reason": "Destructive database operations require explicit operator approval.",
+      "severity": "critical"
+    }
+  ],
+  "invariants": [
+    {
+      "id": "tests-before-commit",
+      "require": "npm\\s+test|node\\s+--test",
+      "before": "git\\s+commit",
+      "reason": "Tests must run before committing. Run npm test first.",
+      "severity": "warning"
+    },
+    {
+      "id": "tests-before-push",
+      "require": "npm\\s+test|node\\s+--test",
+      "before": "git\\s+push",
+      "reason": "Tests must pass before pushing to remote.",
+      "severity": "warning"
+    }
+  ]
+}
