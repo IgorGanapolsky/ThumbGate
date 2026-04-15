@@ -1,7 +1,7 @@
 {
   "name": "thumbgate",
   "version": "1.5.0",
-  "description": "Self-improving agent governance: type thumbs-up or thumbs-down on any AI agent action. ThumbGate turns every mistake into a prevention rule and blocks the pattern from repeating. One thumbs-down, never again. 33 pre-action gates, budget enforcement, and self-protection for Claude Code, Cursor, Codex, Gemini CLI, and Amp.",
+  "description": "Stop paying for the same AI mistake twice. ThumbGate blocks repeat hallucinations, retry loops, and known-bad tool calls before they reach the model — zero tokens spent on mistakes you've already corrected. Pre-Action Gates, prevention rules, and a live tokens-saved counter for Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent.",
   "homepage": "https://thumbgate-production.up.railway.app",
   "repository": {
     "type": "git",
