@@ -1147,7 +1147,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How are pre-action gates different from prompt rules?</div>
-        <div class="faq-a">Prompt rules are suggestions that agents can ignore. Pre-Action Gates are enforcement — they block the action before execution. Gates are auto-generated from your human-in-the-loop feedback and use Thompson Sampling to adapt over time.</div>
+        <div class="faq-a">Prompt rules are a starting point, not a finish line. Without prompt evaluation you do not know whether they still hold up under real tool use. ThumbGate adds the human-in-the-loop measurement loop and the enforcement layer: proof lanes, ThumbGate Bench, and self-heal checks show whether behavior improved, and Pre-Action Gates block the action before execution when it did not.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What does Pro cost?</div>
