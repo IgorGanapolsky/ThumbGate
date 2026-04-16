@@ -27,8 +27,8 @@ const AUDIO = path.join(__dirname, 'narration.mp3');
 
 const WIDTH = 1920;
 const HEIGHT = 1080;
-const TIMELINE_MS = 90_000;
-const TAIL_MS = 1_500;
+const TIMELINE_MS = 95_000;
+const TAIL_MS = 1_000;
 
 function parseArgs(argv) {
   const out = { out: DEFAULT_OUT };

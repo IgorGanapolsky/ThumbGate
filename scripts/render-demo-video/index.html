@@ -340,7 +340,10 @@
  * so the rendered video lines up exactly with the voiceover generated from
  * docs/marketing/demo-video-script.md.
  */
-const TIMELINE_MS = 90000;
+/* Timeline runs 95 s to give the Scene-5 narration tail ("…link in the description")
+ * room to finish. Scene cuts still fire at the scripted times (0/15/30/55/75);
+ * Scene 5 simply holds the install CTA on-screen from 75 s through 95 s. */
+const TIMELINE_MS = 95000;
 
 /* Scene 1 content — repeated identical failure on two days. */
 const s1Script = [
