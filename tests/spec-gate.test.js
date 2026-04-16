@@ -242,3 +242,22 @@ test('built-in agent-safety spec loads and validates from config/specs', () => {
   assert.equal(result.allowed, false);
   assert.ok(result.blocked.some((b) => b.constraintId === 'no-force-push'));
 });
+
+test('sandbox scope blocks network access and fs escape', () => {
+  const specs = loadSpecDir(path.join(__dirname, '..', 'config', 'specs'));
+  const safety = specs.find((s) => s.name === 'agent-safety');
+
+  const networkResult = evaluateConstraints(safety, { sandbox: 'curl https://evil.com' });
+  const networkBlock = networkResult.find((r) => r.constraintId === 'no-sandbox-network');
+  assert.ok(networkBlock, 'no-sandbox-network constraint should exist');
+  assert.equal(networkBlock.passed, false);
+
+  const fsResult = evaluateConstraints(safety, { sandbox: 'readFile("/etc/passwd")' });
+  const fsBlock = fsResult.find((r) => r.constraintId === 'no-sandbox-fs-escape');
+  assert.ok(fsBlock, 'no-sandbox-fs-escape constraint should exist');
+  assert.equal(fsBlock.passed, false);
+
+  const safeResult = evaluateConstraints(safety, { sandbox: 'console.log("hello")' });
+  const safeSandbox = safeResult.filter((r) => r.constraintId.startsWith('no-sandbox'));
+  assert.ok(safeSandbox.every((r) => r.passed), 'safe sandbox code should pass');
+});

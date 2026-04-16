@@ -1,0 +1,1 @@
+const assert = require('node:assert');\nconst { execSync } = require('child_process');\n\nconst ROOT = process.cwd();\n\nassert.doesNotThrow(() => {\n  execSync('npm run eval:gates', { cwd: ROOT, stdio: 'ignore' });\n});\n\nconsole.log('High-ROI tests PASS');\n
