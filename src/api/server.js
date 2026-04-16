@@ -1896,7 +1896,9 @@ function renderRobotsTxt(runtimeConfig) {
 function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
-    { path: '/pro', changefreq: 'weekly', priority: '0.9' },
+    // /pro consolidated into /#pro-pitch (2026-04-16) — removed from sitemap
+    // so search engines don't chase the 301 instead of indexing the canonical
+    // homepage directly.
     { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
   ];
@@ -3453,21 +3455,17 @@ async function addContext(){
     }
 
     if (isGetLikeRequest && pathname === '/pro') {
-      try {
-        servePublicMarketingPage({
-          req,
-          res,
-          parsed,
-          hostedConfig,
-          isHeadRequest,
-          renderHtml: loadProPageHtml,
-          extraTelemetry: {
-            pageType: 'pro_landing',
-          },
-        });
-      } catch (err) {
-        sendText(res, 500, err.message || 'Pro page unavailable');
-      }
+      // Consolidated: /pro content now lives inline on `/` as the #pro-pitch
+      // strip (hero-adjacent pricing card). 301 so external links (README,
+      // plugin manifests, guides, compare pages) pass link equity onto the
+      // single canonical landing page. Query string is preserved so UTM
+      // tracking from inbound campaigns still reaches GA/PostHog on `/`.
+      const redirectTarget = `/#pro-pitch${parsed.search || ''}`;
+      res.writeHead(301, {
+        Location: redirectTarget,
+        'Cache-Control': 'public, max-age=3600',
+      });
+      res.end();
       return;
     }
 
@@ -3591,7 +3589,7 @@ async function addContext(){
           version: pkg.version,
           status: 'ok',
           docs: 'https://github.com/IgorGanapolsky/ThumbGate',
-          endpoints: ['/health', '/dashboard', '/guide', '/compare', '/learn', '/pro', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/documents', '/v1/documents/import', '/v1/documents/{documentId}', '/v1/dashboard', '/v1/dashboard/render-spec', '/v1/decisions/evaluate', '/v1/decisions/outcome', '/v1/decisions/metrics', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
+          endpoints: ['/health', '/dashboard', '/guide', '/compare', '/learn', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/documents', '/v1/documents/import', '/v1/documents/{documentId}', '/v1/dashboard', '/v1/dashboard/render-spec', '/v1/decisions/evaluate', '/v1/decisions/outcome', '/v1/decisions/metrics', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
         }, {}, {
           headOnly: isHeadRequest,
         });

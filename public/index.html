@@ -635,6 +635,78 @@ __GA_BOOTSTRAP__
   </div>
 </section>
 
+<!-- PRO PITCH STRIP — dedicated Pro pricing card pulled above-the-fold so $19/mo doesn't get buried -->
+<style>
+  #pro-pitch .pro-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr); gap: 28px; align-items: stretch; }
+  #pro-pitch .pro-panel { background: linear-gradient(180deg, rgba(17,17,19,0.94) 0%, rgba(22,22,24,0.94) 100%); border: 1px solid var(--border); border-radius: 22px; box-shadow: 0 24px 64px rgba(0,0,0,0.28); }
+  #pro-pitch .pro-panel-copy { padding: 40px; }
+  #pro-pitch .pro-panel-aside { padding: 28px; display: flex; flex-direction: column; gap: 18px; }
+  #pro-pitch .pro-eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(34,211,238,0.2); background: var(--cyan-dim); color: var(--cyan); font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+  #pro-pitch .pro-h2 { margin: 18px 0 14px; font-size: clamp(28px, 4vw, 44px); line-height: 1.05; letter-spacing: -0.04em; }
+  #pro-pitch .pro-lead { margin: 0 0 18px; color: var(--text-muted); font-size: 17px; }
+  #pro-pitch .pro-proof { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 24px; }
+  #pro-pitch .pro-proof-pill { padding: 9px 12px; border-radius: 999px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); color: var(--text-muted); font-size: 13px; font-weight: 600; }
+  #pro-pitch .pro-note { font-size: 14px; color: var(--text-muted); margin: 8px 0 0; }
+  #pro-pitch .pro-note strong { color: var(--text); }
+  #pro-pitch .pro-card { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 18px; padding: 20px; }
+  #pro-pitch .pro-kicker { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--cyan); font-weight: 700; margin-bottom: 10px; }
+  #pro-pitch .pro-card h3 { margin: 0 0 8px; font-size: 20px; letter-spacing: -0.03em; }
+  #pro-pitch .pro-card p { margin: 0; color: var(--text-muted); font-size: 14px; }
+  #pro-pitch .pro-price-stack { display: grid; gap: 10px; margin-top: 14px; }
+  #pro-pitch .pro-price-line { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; border-radius: 16px; border: 1px solid var(--border); background: rgba(255,255,255,0.02); }
+  #pro-pitch .pro-price-line strong { font-size: 20px; letter-spacing: -0.03em; display: block; }
+  #pro-pitch .pro-price-line span { color: var(--text-muted); font-size: 13px; }
+  #pro-pitch .pro-btn-primary { display: inline-flex; align-items: center; gap: 8px; background: var(--cyan); color: #041016; padding: 11px 18px; border-radius: 999px; text-decoration: none; font-weight: 700; box-shadow: 0 0 0 1px rgba(34,211,238,0.28), 0 12px 32px rgba(34,211,238,0.18); transition: transform 0.15s, opacity 0.15s; }
+  #pro-pitch .pro-btn-primary:hover { transform: translateY(-1px); opacity: 0.94; }
+  #pro-pitch .pro-btn-secondary { display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border: 1px solid var(--border); color: var(--text); background: rgba(17,17,19,0.75); border-radius: 999px; text-decoration: none; font-weight: 700; transition: transform 0.15s, border-color 0.15s; }
+  #pro-pitch .pro-btn-secondary:hover { transform: translateY(-1px); border-color: var(--cyan); }
+  @media (max-width: 860px) {
+    #pro-pitch .pro-grid { grid-template-columns: 1fr; }
+    #pro-pitch .pro-panel-copy { padding: 28px; }
+  }
+</style>
+<section id="pro-pitch" style="padding: 40px 0 80px;">
+  <div class="container">
+    <div class="pro-grid">
+      <div class="pro-panel pro-panel-copy">
+        <div class="pro-eyebrow">Agent governance for engineering teams</div>
+        <h2 class="pro-h2">One correction protects every agent on your team.</h2>
+        <p class="pro-lead">ThumbGate prevents unsafe AI agent actions before they hit shared repos, CI pipelines, and production. When one developer flags a bad pattern, every agent on the team is permanently blocked from repeating it.</p>
+        <p class="pro-lead">Open-source core for individuals. Team plan for shared enforcement, CI gates, approval policies, and audit trails across your engineering org.</p>
+        <div class="pro-proof">
+          <div class="pro-proof-pill">Personal local dashboard</div>
+          <div class="pro-proof-pill">DPO export from real corrections</div>
+          <div class="pro-proof-pill">Review-ready evidence</div>
+          <div class="pro-proof-pill">Founder support on risky flows</div>
+        </div>
+        <p class="pro-note"><strong>Honest split:</strong> if local recall and gates are enough, stay on Free. Go Pro when you want your own dashboard, DPO training data export, and proof you can show on the next risky workflow review.</p>
+      </div>
+      <div class="pro-panel pro-panel-aside">
+        <div class="pro-card">
+          <div class="pro-kicker">What you are buying</div>
+          <h3>A faster operator loop</h3>
+          <p>See every blocked action, the gate that fired, the lesson behind it, and the export path that turns real thumbs-downs into reusable DPO pairs.</p>
+          <div class="pro-price-stack">
+            <div class="pro-price-line">
+              <div><strong>$19/mo</strong><span>Monthly Pro</span></div>
+              <a class="pro-btn-primary" href="/checkout/pro?utm_source=website&utm_medium=homepage_pro_strip&utm_campaign=pro_pack&cta_id=home_pro_monthly&cta_placement=pro_strip&plan_id=pro&landing_path=%2F" onclick="posthog.capture('home_pro_strip_click',{cta:'choose_monthly'})">Choose monthly</a>
+            </div>
+            <div class="pro-price-line">
+              <div><strong>$149/yr</strong><span>Save 35% annually</span></div>
+              <a class="pro-btn-secondary" href="/checkout/pro?utm_source=website&utm_medium=homepage_pro_strip&utm_campaign=pro_pack&cta_id=home_pro_annual&cta_placement=pro_strip&plan_id=pro&billing_cycle=annual&landing_path=%2F" onclick="posthog.capture('home_pro_strip_click',{cta:'choose_annual'})">Choose annual</a>
+            </div>
+          </div>
+        </div>
+        <div class="pro-card">
+          <div class="pro-kicker">Proof-backed, not vibes</div>
+          <h3>Specific paid outcomes</h3>
+          <p>Visual gate debugger, DPO export, auto-connect after activation, Model Hardening Advisor, and founder support for the risky flow you need to harden first.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- CODE EXAMPLE — moved up for conversion: show the product immediately after hero -->
 <section class="code-section">
   <div class="container">
