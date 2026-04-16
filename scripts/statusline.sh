@@ -152,7 +152,7 @@ osc_link() {
   local url="$1"
   local label="$2"
   case "$url" in
-    "") printf '%s' "$label" ;;
+    *localhost*|*127.0.0.1*|"") printf '%s' "$label" ;;
     *) printf '\033]8;;%s\007%s\033]8;;\007' "$url" "$label" ;;
   esac
   return 0
