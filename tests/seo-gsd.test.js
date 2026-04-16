@@ -68,8 +68,8 @@ test('renderSeoPageHtml includes structured data, thumbs messaging, proof links,
   assert.match(html, /👎 Thumbs down blocks repeated mistakes/);
   assert.match(html, /Verification evidence/);
   assert.match(html, /Automation proof/);
-  assert.match(html, /See ThumbGate Pro/);
-  assert.match(html, /\/pro\?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=compare_speclock/);
+  assert.match(html, /Go Pro — \$19\/mo/);
+  assert.match(html, /\/checkout\/pro\?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=compare_speclock&amp;cta_placement=seo_brief&amp;plan_id=pro/);
   assert.match(html, /ThumbGate vs SpecLock/);
 });
 

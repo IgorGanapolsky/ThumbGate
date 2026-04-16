@@ -841,8 +841,8 @@ function createPageSpec(blueprint, row) {
     faq: blueprint.faq,
     relatedPages,
     cta: {
-      label: 'See ThumbGate Pro',
-      href: `/pro?utm_source=website&utm_medium=seo_page&utm_campaign=${blueprint.path.split('/').filter(Boolean).join('_')}`,
+      label: 'Go Pro — $19/mo',
+      href: `/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=${blueprint.path.split('/').filter(Boolean).join('_')}&cta_placement=seo_brief&plan_id=pro`,
     },
     proofLinks: [
       { label: 'Verification evidence', href: PRODUCT.verificationUrl },
@@ -1165,6 +1165,16 @@ function renderSeoPageHtml(page, runtimeConfig = {}) {
       padding: 20px;
       position: sticky;
       top: 84px;
+      max-height: calc(100vh - 104px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    @media (max-width: 960px) {
+      .sidebar-card {
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
     }
     .proof-links {
       display: flex;
