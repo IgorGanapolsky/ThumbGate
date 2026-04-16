@@ -17,27 +17,35 @@ const {
   PRO_PRICE_LABEL,
   TEAM_PRICE_LABEL,
 } = require('../scripts/commercial-offer');
+
+// Tracked click-through path: /go/pro → /checkout/pro → Stripe.
+// This captures UTM attribution in our funnel before handing off to Stripe.
+const PRO_CTA_URL = 'https://thumbgate-production.up.railway.app/go/pro?utm_source=npm&utm_medium=postinstall&utm_campaign=first_dollar';
 const WORKFLOW_SPRINT_URL = 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake';
 
 process.stderr.write(`
-  ┌─────────────────────────────────────────────────────┐
+  ╭─────────────────────────────────────────────────────╮
+  │  ThumbGate installed.                               │
   │                                                     │
-  │   ThumbGate installed successfully.                 │
+  │  Every repeat-mistake your agent makes costs        │
+  │  tokens. ThumbGate blocks known-bad tool calls      │
+  │  BEFORE the model sees them — zero tokens spent     │
+  │  on mistakes you've already corrected.              │
   │                                                     │
-  │   Quick start:                                      │
-  │     npx thumbgate init                     │
-  │     npx thumbgate stats                    │
-  │                                                     │
-  │   Team rollout starts with the Workflow Hardening   │
-  │   Sprint: ${WORKFLOW_SPRINT_URL} │
-  │                                                     │
-  │   Solo side lane: Pro (personal local dashboard,    │
-  │   DPO export) — ${PRO_PRICE_LABEL}: │
-  │     ${PRO_MONTHLY_PAYMENT_LINK}       │
-  │   Team: ${TEAM_PRICE_LABEL} after intake. │
-  │                                                     │
-  │   Or run: npx thumbgate pro                │
-  │                                                     │
-  └─────────────────────────────────────────────────────┘
+  │  Start free:                                        │
+  │    npx thumbgate init                               │
+  │    npx thumbgate stats                              │
+  ╰─────────────────────────────────────────────────────╯
+
+  Pro — ${PRO_PRICE_LABEL}
+    personal local dashboard, DPO export
+    Upgrade: ${PRO_CTA_URL}
+    Direct:  ${PRO_MONTHLY_PAYMENT_LINK}
+
+  Team: ${TEAM_PRICE_LABEL}
+    Workflow Hardening Sprint intake:
+    ${WORKFLOW_SPRINT_URL}
+
+  Or run: npx thumbgate pro
 
 `);
