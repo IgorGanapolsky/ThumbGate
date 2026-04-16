@@ -1,0 +1,70 @@
+name: LinkedIn Post Dispatch
+
+# Publishes a first-party LinkedIn post (text-only or with a link-preview
+# article) as the authenticated member. This is the fallback when the
+# Community Management Comment API (requires sole-product approval) and the
+# Quote-Post reshare flow (requires write-access to another member's
+# share/ugcPost) are both blocked by LinkedIn's permission model.
+#
+# Required secrets:
+#   LINKEDIN_ACCESS_TOKEN  — w_member_social scope
+#   LINKEDIN_PERSON_URN    — urn:li:person:XXXX (author)
+
+on:
+  workflow_dispatch:
+    inputs:
+      commentary:
+        description: 'Post body (≤3000 chars, plain text, newlines ok)'
+        required: true
+        type: string
+      article_url:
+        description: 'Optional: URL to attach as a link-preview card (e.g. the post being referenced)'
+        required: false
+        type: string
+        default: ''
+      article_title:
+        description: 'Optional: Title text for the link-preview card'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linkedin-post-dispatch
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    env:
+      LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+      LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v6
+        with:
+          node-version: '18'
+
+      - name: Publish post
+        env:
+          COMMENTARY: ${{ github.event.inputs.commentary }}
+          ARTICLE_URL: ${{ github.event.inputs.article_url }}
+          ARTICLE_TITLE: ${{ github.event.inputs.article_title }}
+        run: |
+          if [ -n "$ARTICLE_URL" ] && [ -n "$ARTICLE_TITLE" ]; then
+            node scripts/social-analytics/publishers/linkedin.js \
+              --text="$COMMENTARY" \
+              --article-url="$ARTICLE_URL" \
+              --title="$ARTICLE_TITLE"
+          else
+            node scripts/social-analytics/publishers/linkedin.js \
+              --text="$COMMENTARY"
+          fi
