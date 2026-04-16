@@ -706,7 +706,7 @@ __GA_BOOTSTRAP__
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
         <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('claude_section_extension_click',{cta:'install_claude_extension'})" style="background:#d97706;color:#fff;">Download Claude Extension (.mcpb)</a>
-        <a href="/guides/claude-desktop" class="btn-free" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">Claude Desktop setup guide</a>
+        <a href="/guide.html" class="btn-free" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">Claude Desktop setup guide</a>
         <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/.claude-plugin/README.md" class="btn-free" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">Claude plugin docs</a>
       </div>
       <p class="gpt-note"><strong>Claude Code Skill:</strong> Type <code>/thumbgate</code> in any Claude Code session. Auto-triggers on “gate”, “feedback”, “block mistake”. Free skill on top of the same local gateway.</p>
@@ -751,33 +751,38 @@ __GA_BOOTSTRAP__
     <div class="compatibility-grid">
       <a class="compat-card" href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" target="_blank" rel="noopener" onclick="if(typeof posthog!=='undefined')posthog.capture('compat_claude_desktop_click',{cta:'download_claude_desktop'})" style="border-color:rgba(217,119,6,0.3);background:linear-gradient(135deg, rgba(217,119,6,0.06) 0%, var(--bg-card) 100%);">
         <h3>🧩 Claude Desktop Extension</h3>
-        <p>Install the published Claude Desktop plugin <code>.mcpb</code> bundle today. Claude Code users can add the repo marketplace immediately with <code>/plugin marketplace add</code>. No waiting for directory approval. <a href="/guides/claude-desktop" style="color:var(--text-muted);text-decoration:underline;" onclick="event.stopPropagation();">60-second setup guide →</a></p>
+        <p>Install the published Claude Desktop plugin <code>.mcpb</code> bundle today. Claude Code users can add the repo marketplace immediately with <code>/plugin marketplace add</code>. No waiting for directory approval. <a href="/guide.html" style="color:var(--text-muted);text-decoration:underline;" onclick="event.stopPropagation();">60-second setup guide →</a></p>
         <div class="card-arrow" style="color:#d97706;">Download .mcpb bundle →</div>
       </a>
-      <a class="compat-card seo-card" href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/.claude/skills/thumbgate" target="_blank" rel="noopener">
+      <a class="compat-card seo-card" href="/guides/claude-code-prevent-repeated-mistakes.html" rel="noopener">
         <h3>⚡ Claude Code Skill</h3>
         <p>Type <code>/thumbgate</code> in any Claude Code session. Auto-triggers on "gate", "feedback", "block mistake". Free skill on top of the same local gateway teams later harden into a shared workflow.</p>
-        <div class="card-arrow">View skill on GitHub →</div>
+        <div class="card-arrow">Read the Claude Code guide →</div>
       </a>
-      <a class="compat-card" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/claude-codex-bridge/INSTALL.md" target="_blank" rel="noopener">
+      <a class="compat-card" href="/guide.html" rel="noopener">
         <h3>🤖 AI CLIs</h3>
         <p>Claude Code, Codex, Gemini CLI, Amp, and OpenCode all use the same gateway and memory model. Any MCP-compatible agent gets pre-action gates, feedback memory, and enforcement out of the box.</p>
-        <div class="card-arrow">View setup guide →</div>
+        <div class="card-arrow">Open the setup guide →</div>
       </a>
       <a class="compat-card" href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" target="_blank" rel="noopener" onclick="if(typeof posthog!=='undefined')posthog.capture('compat_codex_plugin_click',{cta:'download_codex_plugin'})">
         <h3>🧩 Codex plugin</h3>
         <p>Codex ships with a published standalone ThumbGate plugin bundle plus a repo-local plugin profile. Download the zip, extract it, and install without wiring MCP by hand. <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/codex-profile/INSTALL.md" target="_blank" rel="noopener" style="color:var(--text-muted);text-decoration:underline;" onclick="event.stopPropagation();">Setup instructions →</a></p>
         <div class="card-arrow">Download the Codex plugin →</div>
       </a>
-      <a class="compat-card" href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/plugins/cursor-marketplace" target="_blank" rel="noopener">
+      <a class="compat-card" href="/guides/cursor-prevent-repeated-mistakes.html" rel="noopener">
         <h3>🎯 Cursor plugin</h3>
         <p>Drop the ThumbGate MCP config into <code>.cursor/mcp.json</code> and Cursor gets the same pre-action gates as Claude Code and Codex. Ships with bundled rules, commands, hooks, and agents.</p>
-        <div class="card-arrow">Install Cursor plugin →</div>
+        <div class="card-arrow">Read the Cursor guide →</div>
       </a>
-      <a class="compat-card" href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/plugins" target="_blank" rel="noopener">
+      <a class="compat-card" href="/guide.html" rel="noopener">
         <h3>✏️ Editor workflows</h3>
         <p>VS Code works when you run an MCP-compatible agent inside it (Continue, Cline, etc.). Any editor that speaks MCP stdio gets the same gateway.</p>
-        <div class="card-arrow">Browse plugins →</div>
+        <div class="card-arrow">Open the setup guide →</div>
+      </a>
+      <a class="compat-card" href="https://mcp.so/server/thumbgate" target="_blank" rel="noopener" onclick="if(typeof posthog!=='undefined')posthog.capture('compat_mcp_so_click',{cta:'view_mcp_directory'})">
+        <h3>🗂️ MCP Server Directory</h3>
+        <p>ThumbGate is listed on <code>mcp.so</code> — the largest public MCP server directory. Install via Smithery CLI, copy-paste config for your client, or verify it's a legitimate server before running it.</p>
+        <div class="card-arrow">View on mcp.so →</div>
       </a>
       <a class="compat-card" href="/go/gpt?utm_source=website&utm_medium=compatibility&utm_campaign=chatgpt_gpt&cta_id=compat_open_gpt&cta_placement=compatibility" target="_blank" rel="noopener">
         <h3>💬 ChatGPT GPT Actions</h3>
@@ -882,7 +887,7 @@ __GA_BOOTSTRAP__
 <!-- HOW IT WORKS -->
 <section class="how-it-works" id="how-it-works">
   <div class="container">
-    <div class="section-label">New in v1.5.7</div>
+    <div class="section-label">New in v1.5.8</div>
     <h2 class="section-title">Three steps to stop repeated AI failures</h2>
     <div class="steps">
       <div class="step">
@@ -1238,7 +1243,7 @@ __GA_BOOTSTRAP__
       <a href="https://www.linkedin.com/in/igorganapolsky" target="_blank" rel="noopener">LinkedIn</a>
       <a href="/blog">Blog</a>
     </div>
-    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License · v1.5.7</span>
+    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License · v1.5.8</span>
   </div>
 </footer>
 

@@ -191,6 +191,91 @@ describe('Pro tier bullets: code-backed claims', () => {
       );
     }
   });
+
+  test('every local /guide* link on a compat card resolves to a real public/ file', () => {
+    // Guards against a card pointing to /guides/claude-desktop when that HTML
+    // page doesn't exist — which is exactly the regression that produced a
+    // 404 on the "60-second setup guide" sub-link.
+    const cardBlocks = [...INDEX_HTML.matchAll(
+      /<a class="compat-card"[^>]*href="([^"]+)"[\s\S]*?<\/a>/g,
+    )];
+    for (const [, outerHref] of cardBlocks) {
+      if (!/^\/guide(s)?\//.test(outerHref) && !/^\/guide\.html/.test(outerHref)) continue;
+      const cleanPath = outerHref.split('#')[0].split('?')[0];
+      // /guide.html → public/guide.html, /guides/x.html → public/guides/x.html
+      const publicPath = path.join(ROOT, 'public', cleanPath.replace(/^\//, ''));
+      const publicPathWithHtml = publicPath.endsWith('.html') ? publicPath : `${publicPath}.html`;
+      assert.ok(
+        fs.existsSync(publicPath) || fs.existsSync(publicPathWithHtml),
+        `Compat card links to "${outerHref}" but neither ${publicPath} nor ${publicPathWithHtml} exists on disk`,
+      );
+    }
+  });
+
+  test('every local /guide* sub-link inside card body copy resolves to a real file', () => {
+    // Same guard but for the inline "60-second setup guide →" style sub-links
+    // inside card <p> bodies, not just the outer card href.
+    const innerLinks = [...INDEX_HTML.matchAll(
+      /<p[^>]*>[\s\S]*?<a href="(\/guide[^"]*)"[\s\S]*?<\/p>/g,
+    )];
+    for (const [, href] of innerLinks) {
+      const cleanPath = href.split('#')[0].split('?')[0];
+      const publicPath = path.join(ROOT, 'public', cleanPath.replace(/^\//, ''));
+      const publicPathWithHtml = publicPath.endsWith('.html') ? publicPath : `${publicPath}.html`;
+      assert.ok(
+        fs.existsSync(publicPath) || fs.existsSync(publicPathWithHtml),
+        `Inline card sub-link "${href}" has no matching file at ${publicPath} or ${publicPathWithHtml}`,
+      );
+    }
+  });
+
+  test('compat cards that do NOT promise a download must link to a guide or real directory — never to a GitHub source browser', () => {
+    // Rule: if the card does NOT promise a download, the outer href must be
+    //   (a) a local /guide.html or /guides/*.html page, or
+    //   (b) a real external directory/listing (mcp.so, chatgpt.com, npmjs.com,
+    //       pulsemcp.com, smithery.ai, cursor.directory), or
+    //   (c) an internal redirect like /go/gpt.
+    // It must NEVER point to a github.com /tree/ or /blob/ path — those are
+    // source-code browsers, not "listings." Hardening from the regression
+    // where every non-download card silently pointed at GitHub source.
+    const cardBlocks = [...INDEX_HTML.matchAll(
+      /<a class="compat-card"[^>]*href="([^"]+)"[^>]*>[\s\S]*?(<div class="card-arrow[^>]*>([\s\S]*?)<\/div>)[\s\S]*?<\/a>/g,
+    )];
+    const allowedExternalDirectories = [
+      'mcp.so',
+      'chatgpt.com',
+      'chat.openai.com',
+      'npmjs.com',
+      'pulsemcp.com',
+      'smithery.ai',
+      'cursor.directory',
+      'platform.openai.com',
+    ];
+    for (const [fullMatch, outerHref, , cardArrow] of cardBlocks) {
+      const cardText = fullMatch.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+      const promisesDownload =
+        /download the (zip|bundle|mcpb|extension|plugin)/i.test(cardText) ||
+        /^\s*(Download|Get the) .* (plugin|bundle|extension)/i.test(cardArrow);
+      if (promisesDownload) continue;
+
+      const isLocalGuide = /^\/guide(s)?(\.html|\/)/.test(outerHref);
+      const isInternalRedirect = /^\/go\//.test(outerHref);
+      const isAllowedDirectory = allowedExternalDirectories.some((d) =>
+        outerHref.includes(`://${d}`) || outerHref.includes(`://www.${d}`),
+      );
+
+      assert.ok(
+        isLocalGuide || isInternalRedirect || isAllowedDirectory,
+        `Non-download card (arrow: "${cardArrow.trim()}") has href "${outerHref}" — must link to /guide.html, /guides/*, /go/*, or a real external directory (mcp.so, chatgpt.com, npmjs.com, etc.), NOT a GitHub source browser`,
+      );
+
+      assert.doesNotMatch(
+        outerHref,
+        /github\.com\/[^/]+\/[^/]+\/(tree|blob)\//,
+        `Non-download card (arrow: "${cardArrow.trim()}") points at GitHub source browser "${outerHref}" — link to a guide page or real directory instead`,
+      );
+    }
+  });
 });
 
 describe('Team tier bullets: code-backed claims', () => {
