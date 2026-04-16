@@ -3,7 +3,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execFileSync } = require('child_process');
 const { aggregateFailureDiagnostics } = require('./failure-diagnostics');
 const { AUDIT_LOG_FILENAME } = require('./audit-trail');
 const { getBillingSummary, loadFunnelLedger, loadResolvedRevenueEvents } = require('./billing');
@@ -84,14 +83,64 @@ function inferProjectRootFromFeedbackDir(feedbackDir) {
   return path.basename(resolved) === '.thumbgate' ? path.dirname(resolved) : null;
 }
 
+function resolveGitDir(projectRoot) {
+  const gitPath = path.join(projectRoot, '.git');
+  if (!fs.existsSync(gitPath)) return null;
+  const stat = fs.statSync(gitPath);
+  if (stat.isDirectory()) return gitPath;
+  // Worktree / submodule: .git is a file like "gitdir: /path/to/real/gitdir".
+  if (stat.isFile()) {
+    const contents = fs.readFileSync(gitPath, 'utf8').trim();
+    const match = /^gitdir:\s*(.+)$/.exec(contents);
+    if (!match) return null;
+    const resolved = path.isAbsolute(match[1])
+      ? match[1]
+      : path.resolve(projectRoot, match[1]);
+    return fs.existsSync(resolved) ? resolved : null;
+  }
+  return null;
+}
+
 function readGitHead(projectRoot) {
-  if (!projectRoot || !fs.existsSync(path.join(projectRoot, '.git'))) return null;
+  if (!projectRoot) return null;
+  const gitDir = resolveGitDir(projectRoot);
+  if (!gitDir) return null;
   try {
-    return execFileSync('git', ['rev-parse', 'HEAD'], {
-      cwd: projectRoot,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim() || null;
+    // Read .git/HEAD directly instead of spawning `git rev-parse HEAD`.
+    // Avoids S4036 (PATH-resolved binary) and is faster: no subprocess.
+    const head = fs.readFileSync(path.join(gitDir, 'HEAD'), 'utf8').trim();
+    if (!head) return null;
+    // Detached HEAD: the file contains the raw SHA.
+    if (/^[0-9a-f]{40}$/i.test(head)) return head;
+    // Symbolic ref: "ref: refs/heads/<branch>" — resolve the ref file.
+    const match = /^ref:\s*(.+)$/.exec(head);
+    if (!match) return null;
+    const refName = match[1].trim();
+    // For worktrees, the commondir points to the main .git. Refs may live
+    // there rather than in the per-worktree gitdir.
+    const commonDirFile = path.join(gitDir, 'commondir');
+    let commonDir = gitDir;
+    if (fs.existsSync(commonDirFile)) {
+      const rel = fs.readFileSync(commonDirFile, 'utf8').trim();
+      commonDir = path.isAbsolute(rel) ? rel : path.resolve(gitDir, rel);
+    }
+    for (const base of [gitDir, commonDir]) {
+      const refPath = path.join(base, refName);
+      if (fs.existsSync(refPath)) {
+        const sha = fs.readFileSync(refPath, 'utf8').trim();
+        if (/^[0-9a-f]{40}$/i.test(sha)) return sha;
+      }
+    }
+    // Packed refs fallback.
+    const packed = path.join(commonDir, 'packed-refs');
+    if (!fs.existsSync(packed)) return null;
+    const lines = fs.readFileSync(packed, 'utf8').split(/\r?\n/);
+    for (const line of lines) {
+      if (line.startsWith('#') || line.startsWith('^')) continue;
+      const [sha, ref] = line.split(/\s+/);
+      if (ref === refName && /^[0-9a-f]{40}$/i.test(sha)) return sha;
+    }
+    return null;
   } catch {
     return null;
   }
