@@ -1518,6 +1518,71 @@ function buildBehavioralContext() {
   }
 }
 
+/**
+ * Build per-action lesson context: retrieve semantically-relevant lessons for this
+ * specific tool call and inject the top negative ones into hook output so the agent
+ * sees its past mistakes BEFORE executing the action (not after).
+ *
+ * This is the enforcement mechanism that turns ThumbGate from a passive log into an
+ * active governor. Without this, lessons stay in the DB and never get surfaced at
+ * decision time — so the agent repeats mistakes.
+ */
+function buildRelevantLessonContext(toolName, toolInput) {
+  if (!toolName) return null;
+
+  let retrieveRelevantLessons;
+  try {
+    ({ retrieveRelevantLessons } = require('./lesson-retrieval'));
+  } catch {
+    return null;
+  }
+
+  // Extract a searchable action context from the tool input
+  const actionContext = extractActionContext(toolName, toolInput);
+  if (!actionContext) return null;
+
+  try {
+    const lessons = retrieveRelevantLessons(toolName, actionContext, { maxResults: 3 });
+    // retrieveRelevantLessons already filters at relevanceScore > 0.1 internally;
+    // any negative lesson that survives retrieval is relevant enough to surface.
+    const negative = lessons.filter((l) => l.signal === 'negative');
+    if (negative.length === 0) return null;
+
+    const formatted = negative.map((l) => {
+      const title = (l.title || '').replace(/^MISTAKE:\s*/, '').slice(0, 140);
+      const advice = extractAvoidanceAdvice(l.content);
+      return advice ? `  • ${title}\n    → ${advice}` : `  • ${title}`;
+    });
+
+    return `[ThumbGate] Past mistakes relevant to this action — read before proceeding:\n${formatted.join('\n')}`;
+  } catch {
+    return null;
+  }
+}
+
+function extractActionContext(toolName, toolInput) {
+  if (!toolInput) return toolName;
+  const parts = [toolName];
+  if (toolInput.command) parts.push(String(toolInput.command).slice(0, 400));
+  if (toolInput.file_path) parts.push(String(toolInput.file_path));
+  if (toolInput.description) parts.push(String(toolInput.description).slice(0, 200));
+  if (toolInput.prompt) parts.push(String(toolInput.prompt).slice(0, 400));
+  if (toolInput.pattern) parts.push(String(toolInput.pattern).slice(0, 200));
+  return parts.filter(Boolean).join(' ');
+}
+
+function extractAvoidanceAdvice(content) {
+  if (!content) return null;
+  // Extract the "How to avoid:" section if present
+  const match = content.match(/How to avoid:\s*([^\n]+)/i);
+  if (match) return match[1].trim().slice(0, 220);
+  return null;
+}
+
+function mergeContextStrings(...ctxs) {
+  return ctxs.filter((c) => typeof c === 'string' && c.length > 0).join('\n\n') || null;
+}
+
 async function runAsync(input) {
   const secretGuard = evaluateSecretGuard(input);
   if (secretGuard) {
@@ -1545,7 +1610,9 @@ async function runAsync(input) {
   }
 
   const behavioralContext = buildBehavioralContext();
-  return formatOutput(result, behavioralContext);
+  const lessonContext = buildRelevantLessonContext(toolName, toolInput);
+  const combinedContext = mergeContextStrings(lessonContext, behavioralContext);
+  return formatOutput(result, combinedContext);
 }
 
 function run(input) {
@@ -1575,7 +1642,9 @@ function run(input) {
   }
 
   const behavioralContext = buildBehavioralContext();
-  return formatOutput(result, behavioralContext);
+  const lessonContext = buildRelevantLessonContext(toolName, toolInput);
+  const combinedContext = mergeContextStrings(lessonContext, behavioralContext);
+  return formatOutput(result, combinedContext);
 }
 
 // ---------------------------------------------------------------------------
@@ -1796,6 +1865,10 @@ module.exports = {
   PROTECTED_APPROVAL_TTL_MS,
   DEFAULT_PROTECTED_FILE_GLOBS,
   buildBehavioralContext,
+  buildRelevantLessonContext,
+  extractActionContext,
+  extractAvoidanceAdvice,
+  mergeContextStrings,
   isHighRiskAction,
 };
 

@@ -151,6 +151,14 @@ esac
 osc_link() {
   local url="$1"
   local label="$2"
+  # THUMBGATE_STATUSLINE_PLAIN=1 suppresses OSC 8 hyperlinks. Consumers that embed
+  # ThumbGate as a non-last row in a multi-line statusline should set this, because
+  # some agents (Claude Code) silently drop downstream rows when a preceding row
+  # contains OSC 8 sequences.
+  if [ "${THUMBGATE_STATUSLINE_PLAIN:-0}" = "1" ]; then
+    printf '%s' "$label"
+    return 0
+  fi
   case "$url" in
     "") printf '%s' "$label" ;;
     *) printf '\033]8;;%s\007%s\033]8;;\007' "$url" "$label" ;;
