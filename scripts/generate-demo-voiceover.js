@@ -119,7 +119,7 @@ async function main() {
   console.log(`  ffmpeg -i screen-recording.mov -i ${path.relative(ROOT, args.out)} -c:v copy -c:a aac -shortest public/assets/demo-v2.mp4`);
 }
 
-if (require.main === module) {
+if (require.main && require.main.filename === __filename) {
   main().catch((err) => {
     console.error(err.stack || err.message || err);
     process.exit(1);

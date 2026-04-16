@@ -3488,7 +3488,7 @@ async function addContext(){
     }
 
     if (isGetLikeRequest && pathname.startsWith('/assets/')) {
-      const rel = pathname.replace(/^\/assets\//, '').replace(/\?.*$/, '');
+      const rel = pathname.slice('/assets/'.length);
       const resolved = path.resolve(PUBLIC_ASSETS_DIR, rel);
       if (!resolved.startsWith(PUBLIC_ASSETS_DIR + path.sep) && resolved !== PUBLIC_ASSETS_DIR) {
         sendJson(res, 403, { error: 'Forbidden' });
