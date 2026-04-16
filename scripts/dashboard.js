@@ -89,13 +89,16 @@ function resolveGitDir(projectRoot) {
   const stat = fs.statSync(gitPath);
   if (stat.isDirectory()) return gitPath;
   // Worktree / submodule: .git is a file like "gitdir: /path/to/real/gitdir".
+  // Parse with startsWith+slice — no regex, so no ReDoS surface (S5852).
   if (stat.isFile()) {
     const contents = fs.readFileSync(gitPath, 'utf8').trim();
-    const match = /^gitdir:\s*(.+)$/.exec(contents);
-    if (!match) return null;
-    const resolved = path.isAbsolute(match[1])
-      ? match[1]
-      : path.resolve(projectRoot, match[1]);
+    const prefix = 'gitdir:';
+    if (!contents.startsWith(prefix)) return null;
+    const target = contents.slice(prefix.length).trim();
+    if (!target) return null;
+    const resolved = path.isAbsolute(target)
+      ? target
+      : path.resolve(projectRoot, target);
     return fs.existsSync(resolved) ? resolved : null;
   }
   return null;
@@ -113,9 +116,11 @@ function readGitHead(projectRoot) {
     // Detached HEAD: the file contains the raw SHA.
     if (/^[0-9a-f]{40}$/i.test(head)) return head;
     // Symbolic ref: "ref: refs/heads/<branch>" — resolve the ref file.
-    const match = /^ref:\s*(.+)$/.exec(head);
-    if (!match) return null;
-    const refName = match[1].trim();
+    // Parse with startsWith+slice — no regex, so no ReDoS surface (S5852).
+    const refPrefix = 'ref:';
+    if (!head.startsWith(refPrefix)) return null;
+    const refName = head.slice(refPrefix.length).trim();
+    if (!refName) return null;
     // For worktrees, the commondir points to the main .git. Refs may live
     // there rather than in the per-worktree gitdir.
     const commonDirFile = path.join(gitDir, 'commondir');
