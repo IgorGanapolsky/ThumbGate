@@ -1,7 +1,7 @@
 {
   "name": "thumbgate",
-  "description": "Type 👍 or 👎 on any agent action. ThumbGate captures it, distills a lesson, and blocks the pattern from repeating. One thumbs-down = the agent physically cannot make that mistake again. 33 pre-action gates, budget enforcement, self-protection, and NIST/SOC2 compliance tags.",
-  "version": "1.5.1",
+  "description": "Stop paying for the same AI mistake twice. Frontier LLMs are expensive — every repeat hallucination or retry loop burns tokens you're paying for. ThumbGate blocks known-bad tool calls *before* they reach the model. One 👎, the agent physically cannot make that mistake again. 33 pre-action gates, budget enforcement, self-protection, NIST/SOC2 compliance tags, and a live tokens-saved counter.",
+  "version": "1.5.0",
   "author": {
     "name": "Igor Ganapolsky"
   },

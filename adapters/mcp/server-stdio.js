@@ -3,7 +3,29 @@
 
 const fs = require('fs');
 const path = require('path');
+const promptCache = new Map();
 
+function getCachedPrompt(key) {
+  return promptCache.get(key);
+}
+
+function setCachedPrompt(key, prompt) {
+  promptCache.set(key, prompt);
+}
+
+// Tool schemas for Anthropic-style fine-grained calling
+const toolSchemas = {
+  exec: {
+    name: 'exec',
+    description: 'Run shell commands',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        command: { type: 'string' }
+      }
+    }
+  }
+};
 const {
   captureFeedback,
   feedbackSummary,

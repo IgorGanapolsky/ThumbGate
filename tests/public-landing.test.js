@@ -153,8 +153,8 @@ test('public landing page hero features both thumbs up AND thumbs down prominent
   // Signal pills must show both
   assert.match(landingPage, /signal-pill signal-up/);
   assert.match(landingPage, /signal-pill signal-down/);
-  assert.match(landingPage, /Prevent expensive mistakes/i);
-  assert.match(landingPage, /Fix it once, then block the repeat/i);
+  assert.match(landingPage, /Block repeat hallucinations/i);
+  assert.match(landingPage, /Thumbs-down once, blocked forever/i);
   assert.match(landingPage, /reliable operator/i);
   // Persona targeting
   assert.match(landingPage, /class="hero-persona"/);
