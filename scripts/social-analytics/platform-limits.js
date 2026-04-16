@@ -111,11 +111,21 @@ function truncateForPlatform(content, platform, options = {}) {
   const budget = Math.max(0, limit - ellipsisLen);
   const head = chars.slice(0, budget).join('');
 
-  // Prefer last whitespace boundary to avoid mid-word cuts.
-  const lastSpace = head.search(/\s\S*$/);
+  // Prefer last whitespace boundary to avoid mid-word cuts. We search
+  // character-by-character instead of using a regex to sidestep any
+  // backtracking concerns on adversarial input.
+  let lastSpace = -1;
+  for (let i = 0; i < head.length; i++) {
+    if (/\s/.test(head[i])) lastSpace = i;
+  }
   const cleaned = lastSpace > Math.floor(budget * 0.6) ? head.slice(0, lastSpace) : head;
 
-  return cleaned.replace(/[\s\p{P}]+$/u, '') + ellipsis;
+  // Strip trailing whitespace and punctuation, one codepoint at a time.
+  const trimmed = [...cleaned];
+  while (trimmed.length > 0 && /[\s\p{P}]/u.test(trimmed[trimmed.length - 1])) {
+    trimmed.pop();
+  }
+  return trimmed.join('') + ellipsis;
 }
 
 module.exports = {
