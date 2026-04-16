@@ -65,7 +65,7 @@ The following block is appended to `~/.codex/config.toml`:
 ```toml
 [mcp_servers.thumbgate]
 command = "npx"
-args = ["--yes", "--package", "thumbgate@1.5.5", "thumbgate", "serve"]
+args = ["--yes", "--package", "thumbgate@1.5.6", "thumbgate", "serve"]
 ```
 
 The repo-local Codex app plugin ships the same runtime path through `plugins/codex-profile/.mcp.json`, so the manual config and plugin metadata stay aligned.
@@ -75,14 +75,14 @@ The Codex status line and hook bundle live in `~/.codex/config.json`. `npx thumb
 ```json
 {
   "hooks": {
-    "PreToolUse": [{ "matcher": "Bash", "hooks": [{ "type": "command", "command": "npx --yes --package thumbgate@1.5.5 thumbgate gate-check" }] }],
-    "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "npx --yes --package thumbgate@1.5.5 thumbgate hook-auto-capture" }] }],
-    "PostToolUse": [{ "matcher": "mcp__thumbgate__feedback_stats|mcp__thumbgate__dashboard", "hooks": [{ "type": "command", "command": "npx --yes --package thumbgate@1.5.5 thumbgate cache-update" }] }],
-    "SessionStart": [{ "hooks": [{ "type": "command", "command": "npx --yes --package thumbgate@1.5.5 thumbgate session-start" }] }]
+    "PreToolUse": [{ "matcher": "Bash", "hooks": [{ "type": "command", "command": "npx --yes --package thumbgate@1.5.6 thumbgate gate-check" }] }],
+    "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "npx --yes --package thumbgate@1.5.6 thumbgate hook-auto-capture" }] }],
+    "PostToolUse": [{ "matcher": "mcp__thumbgate__feedback_stats|mcp__thumbgate__dashboard", "hooks": [{ "type": "command", "command": "npx --yes --package thumbgate@1.5.6 thumbgate cache-update" }] }],
+    "SessionStart": [{ "hooks": [{ "type": "command", "command": "npx --yes --package thumbgate@1.5.6 thumbgate session-start" }] }]
   },
   "statusLine": {
     "type": "command",
-    "command": "npx --yes --package thumbgate@1.5.5 thumbgate statusline-render"
+    "command": "npx --yes --package thumbgate@1.5.6 thumbgate statusline-render"
   }
 }
 ```

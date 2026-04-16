@@ -575,6 +575,7 @@ __GA_BOOTSTRAP__
         <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('hero_claude_extension_click',{cta:'install_claude_extension'})" style="font-size:12px;padding:8px 16px;background:#d97706;color:#fff;box-shadow:none;">Install Claude Extension</a>
         <a href="/go/github?utm_source=website&utm_medium=hero_cta&utm_campaign=github_repo&cta_id=hero_star_github&cta_placement=hero" target="_blank" rel="noopener" class="btn-free" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;font-size:12px;">⭐ Star on GitHub</a>
         <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" class="btn-install-link" target="_blank" rel="noopener" onclick="posthog.capture('hero_codex_plugin_click',{cta:'install_codex_plugin'})" style="font-size:11px;color:var(--text-muted);text-decoration:none;padding:6px 10px;">Install Codex plugin →</a>
+        <a href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/plugins/cursor-marketplace" class="btn-install-link" target="_blank" rel="noopener" onclick="posthog.capture('hero_cursor_plugin_click',{cta:'install_cursor_plugin'})" style="font-size:11px;color:var(--text-muted);text-decoration:none;padding:6px 10px;">Install Cursor plugin →</a>
         <a href="/go/gpt?utm_source=website&utm_medium=hero_cta&utm_campaign=chatgpt_gpt&cta_id=hero_open_gpt&cta_placement=hero" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('hero_cta_click',{cta:'open_gpt'})" style="font-size:11px;padding:6px 12px;background:transparent;border:1px solid rgba(74,222,128,0.3);color:var(--green);">Open ThumbGate GPT</a>
       </div>
     </div>
@@ -598,7 +599,7 @@ __GA_BOOTSTRAP__
       <div class="first-gate-steps">
         <div class="first-gate-step">
           <strong>1. Install ThumbGate</strong>
-          <p>Run <code>npx thumbgate init</code> in your repo. Or install the <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" style="color:var(--cyan);">Claude Extension</a>, <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" style="color:var(--cyan);">Codex plugin</a>, or <a href="/go/gpt" style="color:var(--cyan);">open the GPT</a>. Native ChatGPT rating buttons are not the ThumbGate capture path.</p>
+          <p>Run <code>npx thumbgate init</code> in your repo. Or install the <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" style="color:var(--cyan);">Claude Extension</a>, <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" style="color:var(--cyan);">Codex plugin</a>, <a href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/plugins/cursor-marketplace" style="color:var(--cyan);">Cursor plugin</a>, or <a href="/go/gpt" style="color:var(--cyan);">open the GPT</a>. Native ChatGPT rating buttons are not the ThumbGate capture path.</p>
         </div>
         <div class="first-gate-step">
           <strong>2. Give feedback</strong>
@@ -768,9 +769,14 @@ __GA_BOOTSTRAP__
         <p>Codex ships with a published standalone ThumbGate plugin bundle plus a repo-local plugin profile. Download the zip, extract it, and install without wiring MCP by hand.</p>
         <div class="card-arrow">Get the Codex plugin →</div>
       </a>
+      <a class="compat-card" href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/plugins/cursor-marketplace" target="_blank" rel="noopener">
+        <h3>🎯 Cursor plugin</h3>
+        <p>Drop the ThumbGate MCP config into <code>.cursor/mcp.json</code> and Cursor gets the same pre-action gates as Claude Code and Codex. Ships with bundled rules, commands, hooks, and agents.</p>
+        <div class="card-arrow">Install Cursor plugin →</div>
+      </a>
       <a class="compat-card" href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/plugins" target="_blank" rel="noopener">
         <h3>✏️ Editor workflows</h3>
-        <p>Cursor ships with a bundled marketplace plugin. VS Code works when you run an MCP-compatible agent inside it.</p>
+        <p>VS Code works when you run an MCP-compatible agent inside it (Continue, Cline, etc.). Any editor that speaks MCP stdio gets the same gateway.</p>
         <div class="card-arrow">Browse plugins →</div>
       </a>
       <a class="compat-card" href="/go/gpt?utm_source=website&utm_medium=compatibility&utm_campaign=chatgpt_gpt&cta_id=compat_open_gpt&cta_placement=compatibility" target="_blank" rel="noopener">
@@ -876,7 +882,7 @@ __GA_BOOTSTRAP__
 <!-- HOW IT WORKS -->
 <section class="how-it-works" id="how-it-works">
   <div class="container">
-    <div class="section-label">New in v1.5.5</div>
+    <div class="section-label">New in v1.5.6</div>
     <h2 class="section-title">Three steps to stop repeated AI failures</h2>
     <div class="steps">
       <div class="step">
@@ -1232,7 +1238,7 @@ __GA_BOOTSTRAP__
       <a href="https://www.linkedin.com/in/igorganapolsky" target="_blank" rel="noopener">LinkedIn</a>
       <a href="/blog">Blog</a>
     </div>
-    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License · v1.5.5</span>
+    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License · v1.5.6</span>
   </div>
 </footer>
 
