@@ -66,26 +66,25 @@ test('acquireLock: stale lock from dead PID — removes it and acquires new lock
   cleanupLock();
 });
 
-// ── Active lock (live PID, fresh): process.exit(1) ──────────────────
+// ── Active lock (live PID, fresh): coexist with per-session lock ─────
 
-test('acquireLock: lock held by active PID (fresh) — calls process.exit(1)', () => {
+test('acquireLock: lock held by active PID (fresh) — creates per-session lock and coexists', () => {
   const lockPath = path.join(tmpDir, '.mcp-server.lock');
   // Use current PID — guaranteed to be running; startedAt is NOW (not stale)
   fs.writeFileSync(lockPath, JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }));
 
-  // Mock process.exit to capture the call instead of actually exiting
-  const exitMock = mock.fn();
-  const origExit = process.exit;
-  process.exit = exitMock;
+  const { acquireLock } = freshRequire();
+  const result = acquireLock();
 
-  try {
-    const { acquireLock } = freshRequire();
-    acquireLock();
-    assert.strictEqual(exitMock.mock.calls.length, 1, 'process.exit should be called once');
-    assert.strictEqual(exitMock.mock.calls[0].arguments[0], 1, 'exit code should be 1');
-  } finally {
-    process.exit = origExit;
-  }
+  // Should return a session-scoped lock file instead of exiting
+  assert.ok(result.lockFile, 'should return a lock file path');
+  assert.ok(result.lockFile.includes(`mcp-server-${process.pid}.lock`), 'lock file should be per-session');
+  assert.ok(typeof result.cleanupLock === 'function', 'should return cleanup function');
+
+  // Original lock should still exist (not removed)
+  assert.ok(fs.existsSync(lockPath), 'original lock should remain');
+
+  result.cleanupLock();
 });
 
 // ── Orphaned lock (live PID, stale): reap and take over ─────────────

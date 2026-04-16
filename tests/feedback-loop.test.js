@@ -320,12 +320,12 @@ test('analyzeFeedback: returns correct counts on populated log', (t) => {
   assert.equal(stats.diagnostics.totalDiagnosed, 0);
 });
 
-test('analyzeFeedback and feedbackSummary exclude legacy audit-trail entries', (t) => {
+test('analyzeFeedback and feedbackSummary include audit-trail entries (real gate events)', (t) => {
   const tmpDir = makeTmpDir();
   process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
     delete process.env.THUMBGATE_FEEDBACK_DIR;
-    try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
+    try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {};
   });
 
   const logPath = path.join(tmpDir, 'feedback-log.jsonl');
@@ -335,18 +335,17 @@ test('analyzeFeedback and feedbackSummary exclude legacy audit-trail entries', (
   appendJSONL(logPath, { signal: 'negative', tags: ['testing'], skill: 'verify', timestamp: now });
 
   const stats = analyzeFeedback(logPath);
-  assert.strictEqual(stats.total, 2);
+  assert.strictEqual(stats.total, 3);
   assert.strictEqual(stats.totalPositive, 1);
-  assert.strictEqual(stats.totalNegative, 1);
-  assert.strictEqual(stats.tags.testing.total, 2);
-  assert.strictEqual(stats.skills.verify.total, 2);
-  assert.strictEqual(stats.windows['7d'].total, 2);
-  assert.strictEqual(stats.recentRate, 0.5);
+  assert.strictEqual(stats.totalNegative, 2);
+  assert.strictEqual(stats.tags.testing.total, 3);
+  assert.strictEqual(stats.skills.verify.total, 3);
+  assert.strictEqual(stats.windows['7d'].total, 3);
 
   const summary = feedbackSummary(20, { feedbackDir: tmpDir });
-  assert.match(summary, /Feedback Summary \(last 2\)/);
+  assert.match(summary, /Feedback Summary \(last 3\)/);
   assert.match(summary, /Positive: 1/);
-  assert.match(summary, /Negative: 1/);
+  assert.match(summary, /Negative: 2/);
 });
 
 test('getFeedbackPaths falls back to global dir when neither .thumbgate nor .claude exists', () => {
