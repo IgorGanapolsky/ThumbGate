@@ -894,8 +894,17 @@ function acquireLock() {
           process.stderr.write(`[thumbgate] Lock held by PID ${lockData.pid} is ${Math.round(lockAge / 60000)}m old (threshold: ${Math.round(LOCK_STALE_MS / 60000)}m). Reaping orphaned process.\n`);
           try { process.kill(lockData.pid, 'SIGTERM'); } catch { /* already gone */ }
         } else {
-          process.stderr.write(`[thumbgate] FATAL: another MCP server (PID ${lockData.pid}) is already serving ${feedbackDir}. Refusing to start — would cause SQLite lock contention.\n`);
-          process.exit(1);
+          // Another session's MCP server is running — coexist via per-session lock.
+          // Each Claude session communicates via its own stdio pipe and needs its own server.
+          // SQLite WAL mode handles concurrent access safely.
+          process.stderr.write(`[thumbgate] Another MCP server (PID ${lockData.pid}) is running for ${feedbackDir}. Starting concurrent session.\n`);
+          const sessionLockFile = path.join(feedbackDir, `.mcp-server-${process.pid}.lock`);
+          fs.writeFileSync(sessionLockFile, JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }));
+          const cleanupSessionLock = () => { try { fs.unlinkSync(sessionLockFile); } catch { /* already removed */ } };
+          process.on('exit', cleanupSessionLock);
+          process.on('SIGTERM', () => { cleanupSessionLock(); process.exit(0); });
+          process.on('SIGINT', () => { cleanupSessionLock(); process.exit(0); });
+          return { lockFile: sessionLockFile, cleanupLock: cleanupSessionLock };
         }
       }
       // Stale lock from a dead or reaped process — remove it
