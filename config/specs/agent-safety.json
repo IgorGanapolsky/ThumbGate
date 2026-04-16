@@ -44,6 +44,20 @@
       "deny": "DROP\\s+(TABLE|DATABASE|SCHEMA)\\s",
       "reason": "Destructive database operations require explicit operator approval.",
       "severity": "critical"
+    },
+    {
+      "id": "no-sandbox-network",
+      "scope": "sandbox",
+      "deny": "(curl|wget|fetch|http|net\\.connect|socket)\\s",
+      "reason": "Sandbox code must not make network requests. Use mocked endpoints.",
+      "severity": "critical"
+    },
+    {
+      "id": "no-sandbox-fs-escape",
+      "scope": "sandbox",
+      "deny": "(\\.\\./|/etc/|/var/|/usr/|/home/|process\\.env)",
+      "reason": "Sandbox code must not access paths outside the sandbox root.",
+      "severity": "critical"
     }
   ],
   "invariants": [

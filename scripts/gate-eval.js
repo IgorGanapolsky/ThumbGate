@@ -97,6 +97,7 @@ function validateEvalCase(raw) {
       command: normalizeText(input.command, 2000) || null,
       content: normalizeText(input.content, 5000) || null,
       action: normalizeText(input.action, 200) || null,
+      sandbox: normalizeText(input.sandbox, 2000) || null,
       sessionActions: Array.isArray(input.sessionActions) ? input.sessionActions : [],
     },
     expect,
