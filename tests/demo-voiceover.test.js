@@ -60,3 +60,98 @@ test('demo voiceover script refuses to run without an API key unless dry-run', (
   }
   assert.ok(threw, 'script must exit non-zero without ELEVENLABS_API_KEY');
 });
+
+test('parseArgs handles all supported flags', () => {
+  const { parseArgs, DEFAULT_OUT, DEFAULT_VOICE } = require('../scripts/generate-demo-voiceover.js');
+
+  const defaults = parseArgs(['node', 'script']);
+  assert.equal(defaults.out, DEFAULT_OUT);
+  assert.equal(defaults.voice, DEFAULT_VOICE);
+  assert.equal(defaults.text, null);
+  assert.equal(defaults.dryRun, false);
+
+  const withFlags = parseArgs([
+    'node', 'script',
+    '--out=public/assets/demo-v2.mp3',
+    '--voice=pNInz6obpgDQGcFmaJgB',
+    '--text=Custom narration here',
+    '--dry-run',
+  ]);
+  assert.match(withFlags.out, /demo-v2\.mp3$/);
+  assert.equal(withFlags.voice, 'pNInz6obpgDQGcFmaJgB');
+  assert.equal(withFlags.text, 'Custom narration here');
+  assert.equal(withFlags.dryRun, true);
+});
+
+test('extractVoiceoverFromScript returns empty when markdown has no voiceover blocks', () => {
+  const { extractVoiceoverFromScript } = require('../scripts/generate-demo-voiceover.js');
+  assert.equal(extractVoiceoverFromScript('# Hello\n\nNo voiceover here.\n'), '');
+  assert.equal(extractVoiceoverFromScript(''), '');
+});
+
+test('extractVoiceoverFromScript strips blockquote markers and surrounding quotes', () => {
+  const { extractVoiceoverFromScript } = require('../scripts/generate-demo-voiceover.js');
+  const md = [
+    '### Scene 1',
+    '',
+    '**Voiceover:**',
+    '',
+    '> "ThumbGate stops repeat mistakes."',
+    '> It is the shared memory layer.',
+    '',
+    '**Visual:** screen recording',
+  ].join('\n');
+  const result = extractVoiceoverFromScript(md);
+  assert.match(result, /ThumbGate stops repeat mistakes/);
+  assert.match(result, /shared memory layer/);
+  assert.doesNotMatch(result, /^>/m, 'blockquote markers must be stripped');
+  assert.doesNotMatch(result, /"/, 'wrapping quotes must be stripped');
+});
+
+test('synthesize posts JSON to ElevenLabs and returns audio buffer', async () => {
+  const { synthesize, MODEL_ID } = require('../scripts/generate-demo-voiceover.js');
+  const originalFetch = global.fetch;
+  const calls = [];
+  global.fetch = async (url, opts) => {
+    calls.push({ url, opts });
+    return {
+      ok: true,
+      status: 200,
+      arrayBuffer: async () => new Uint8Array([0x49, 0x44, 0x33, 0x04]).buffer, // "ID3" mp3 magic
+    };
+  };
+  try {
+    const buf = await synthesize({ text: 'hello', voice: 'voice-xyz', apiKey: 'test-key' });
+    assert.ok(Buffer.isBuffer(buf), 'returns a Buffer');
+    assert.equal(buf.length, 4);
+    assert.equal(calls.length, 1);
+    assert.match(calls[0].url, /\/v1\/text-to-speech\/voice-xyz$/);
+    assert.equal(calls[0].opts.method, 'POST');
+    assert.equal(calls[0].opts.headers['xi-api-key'], 'test-key');
+    const body = JSON.parse(calls[0].opts.body);
+    assert.equal(body.text, 'hello');
+    assert.equal(body.model_id, MODEL_ID);
+    assert.ok(body.voice_settings && typeof body.voice_settings.stability === 'number');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('synthesize throws with status and body excerpt on non-2xx response', async () => {
+  const { synthesize } = require('../scripts/generate-demo-voiceover.js');
+  const originalFetch = global.fetch;
+  global.fetch = async () => ({
+    ok: false,
+    status: 429,
+    text: async () => 'rate limit exceeded',
+    arrayBuffer: async () => new ArrayBuffer(0),
+  });
+  try {
+    await assert.rejects(
+      () => synthesize({ text: 'hi', voice: 'v', apiKey: 'k' }),
+      /ElevenLabs 429: rate limit exceeded/
+    );
+  } finally {
+    global.fetch = originalFetch;
+  }
+});

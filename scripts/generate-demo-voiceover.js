@@ -119,7 +119,11 @@ async function main() {
   console.log(`  ffmpeg -i screen-recording.mov -i ${path.relative(ROOT, args.out)} -c:v copy -c:a aac -shortest public/assets/demo-v2.mp4`);
 }
 
-main().catch((err) => {
-  console.error(err.stack || err.message || err);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(err.stack || err.message || err);
+    process.exit(1);
+  });
+}
+
+module.exports = { parseArgs, extractVoiceoverFromScript, synthesize, DEFAULT_OUT, DEFAULT_VOICE, MODEL_ID };
