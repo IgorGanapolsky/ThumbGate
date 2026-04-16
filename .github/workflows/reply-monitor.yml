@@ -9,6 +9,11 @@ name: Social Reply Monitor
 # .thumbgate/reply-drafts.jsonl for human review (per script policy).
 
 on:
+  # No schedule here by design. Scheduled reply monitoring runs inside
+  # Ralph Loop Audience Engagement (`ralph-loop.yml`, cron '17 * * * *'),
+  # which owns cached state between runs. This workflow is a manual
+  # fallback for ad-hoc dry-runs or platform-limited checks.
+  # See tests/ralph-loop.test.js:186 — the contract is enforced.
   workflow_dispatch:
     inputs:
       platform:
@@ -52,6 +57,12 @@ jobs:
       REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
       REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
       REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
+      # LinkedIn — gated on Community Management API approval (see
+      # docs/marketing/linkedin-api-application.md). The stub logs a warning
+      # until the approved token is available; envs are wired so the moment
+      # approval lands, no workflow edit is needed.
+      LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+      LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
 
     steps:
       - name: Checkout
