@@ -1,0 +1,78 @@
+#!/bin/bash
+# ThumbGate pre-commit hook — fast, fail-early guardrails.
+#
+# Activate for your local checkout:
+#   git config core.hooksPath .githooks
+#
+# Or run bin/install-hooks.sh to activate automatically.
+
+set -e
+
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+has_staged() {
+  git diff --cached --name-only --diff-filter=ACMR | grep -qE "$1"
+}
+
+# 1. Block commits if packaging references missing files OR HTML not in whitelist.
+# This catches the 1.5.0/1.5.1/1.5.3 regression class (HTML not in package.json "files").
+if has_staged '(package\.json|public/.*\.html|scripts/.*\.js)$'; then
+  echo -e "${YELLOW}ThumbGate pre-commit:${NC} validating public/ package parity..."
+  if ! node --test tests/public-package-parity.test.js >/dev/null 2>&1; then
+    echo -e "${RED}✗ public-package-parity test failed${NC}"
+    node --test tests/public-package-parity.test.js 2>&1 | grep -A3 "not ok" | head -20
+    exit 1
+  fi
+  echo -e "${GREEN}✓ package parity${NC}"
+fi
+
+# 2. Version sync — every version string across the repo must match package.json
+if has_staged '(package\.json|public/.*\.html|adapters/.*|plugins/.*|mcpize\.yaml|server-stdio\.js)$'; then
+  echo -e "${YELLOW}ThumbGate pre-commit:${NC} checking version sync..."
+  if ! node scripts/sync-version.js --check >/dev/null 2>&1; then
+    echo -e "${RED}✗ Version drift detected. Run: node scripts/sync-version.js${NC}"
+    node scripts/sync-version.js --check 2>&1 | tail -5
+    exit 1
+  fi
+  echo -e "${GREEN}✓ versions synced${NC}"
+fi
+
+# 3. Congruence — landing page / README text invariants
+if has_staged '(README\.md|public/index\.html|public/pro\.html|public/compare\.html|docs/COMMERCIAL_TRUTH\.md)$'; then
+  echo -e "${YELLOW}ThumbGate pre-commit:${NC} running congruence check..."
+  if ! node scripts/check-congruence.js >/dev/null 2>&1; then
+    echo -e "${RED}✗ Congruence check failed${NC}"
+    node scripts/check-congruence.js 2>&1 | tail -10
+    exit 1
+  fi
+  echo -e "${GREEN}✓ congruence${NC}"
+fi
+
+# 4. Landing-page-claims test — asserts every pricing bullet has code evidence
+if has_staged '(public/index\.html|scripts/rate-limiter\.js|src/api/server\.js)$'; then
+  if [ -f tests/landing-page-claims.test.js ]; then
+    echo -e "${YELLOW}ThumbGate pre-commit:${NC} landing page claims vs code..."
+    if ! node --test tests/landing-page-claims.test.js >/dev/null 2>&1; then
+      echo -e "${RED}✗ landing-page-claims failed — a pricing claim is unsupported by code${NC}"
+      node --test tests/landing-page-claims.test.js 2>&1 | grep -A3 "not ok" | head -15
+      exit 1
+    fi
+    echo -e "${GREEN}✓ claims${NC}"
+  fi
+fi
+
+# 5. Gates engine — regression guard when changing enforcement code
+if has_staged '(scripts/gates-engine\.js|scripts/rate-limiter\.js|scripts/feedback-loop\.js)$'; then
+  echo -e "${YELLOW}ThumbGate pre-commit:${NC} gate + feedback tests..."
+  if ! node --test tests/gate-stats.test.js tests/mcp-tools-gates.test.js >/dev/null 2>&1; then
+    echo -e "${RED}✗ Gate tests failed${NC}"
+    node --test tests/gate-stats.test.js tests/mcp-tools-gates.test.js 2>&1 | tail -10
+    exit 1
+  fi
+  echo -e "${GREEN}✓ gates${NC}"
+fi
+
+echo -e "${GREEN}ThumbGate pre-commit: all guards passed${NC}"

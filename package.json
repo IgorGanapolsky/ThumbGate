@@ -485,7 +485,9 @@
     "test:lesson-export-import": "node --test tests/lesson-export-import.test.js",
     "test:landing-page-claims": "node --test tests/landing-page-claims.test.js",
     "test:dashboard-deeplink-e2e": "node --test tests/dashboard-deeplink-e2e.test.js",
-    "test:public-package-parity": "node --test tests/public-package-parity.test.js"
+    "test:public-package-parity": "node --test tests/public-package-parity.test.js",
+    "prepare": "bash bin/install-hooks.sh >/dev/null 2>&1 || true",
+    "install:hooks": "bash bin/install-hooks.sh"
   },
   "keywords": [
     "mcp",
