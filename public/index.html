@@ -1053,12 +1053,11 @@ __GA_BOOTSTRAP__
         <p style="font-size:13px;color:#aaa;margin-bottom:16px;">3 captures, 1 rule, 1 agent. Enough to prove the enforcement loop works. When you need more, you will know.</p>
         <ul>
           <li><strong>3 feedback captures total</strong> (not per day)</li>
-          <li>1 prevention rule</li>
-          <li>1 agent</li>
+          <li>1 auto-promoted prevention rule</li>
           <li>No recall or lesson search</li>
-          <li>No exports</li>
-          <li>All MCP integrations (Claude Code, Cursor, Codex, etc.)</li>
-          <li>PreToolUse hook blocking</li>
+          <li>No exports (DPO, Databricks, HuggingFace)</li>
+          <li>All MCP integrations (Claude Code, Cursor, Codex, Gemini, Amp, any MCP agent)</li>
+          <li>PreToolUse hook blocking with built-in safety gates (force-push, destructive SQL, secrets)</li>
           <li><a href="/guide" style="color:var(--cyan);text-decoration:underline;">Setup guide for all agents →</a></li>
         </ul>
         <div class="hero-install" onclick="copyInstall(this)" title="Click to copy" style="margin-bottom:12px;width:100%;justify-content:center;">
@@ -1089,9 +1088,9 @@ __GA_BOOTSTRAP__
         </div>
         <ul>
           <li>Everything in Free, plus:</li>
-          <li><a href="/dashboard" style="color:var(--cyan);text-decoration:underline;">Visual gate debugger →</a> see every blocked action and the gate that fired so you can trust the system in minutes</li>
+          <li><a href="/dashboard#insights" style="color:var(--cyan);text-decoration:underline;">Visual gate debugger →</a> see every blocked action and the gate that fired so you can trust the system in minutes</li>
           <li>Auto-connect — activate once with your license key, then your running agents appear automatically on your local dashboard</li>
-          <li><a href="/dashboard" style="color:var(--cyan);text-decoration:underline;">DPO training data export →</a> turn real thumbs-downs into ready-to-use preference pairs for fine-tuning (LoRA / JSONL)</li>
+          <li><a href="/dashboard#export" style="color:var(--cyan);text-decoration:underline;">DPO training data export →</a> turn real thumbs-downs into ready-to-use preference pairs for fine-tuning (LoRA / JSONL)</li>
           <li><strong>HuggingFace dataset export</strong> — share PII-redacted agent traces as open training datasets (<code>npm run export:hf</code>)</li>
           <li><strong>Model Hardening Advisor</strong> — get recommendations on when and how to fine-tune your model to natively avoid recurring failures</li>
           <li>Personal local dashboard — every Pro user gets a localhost dashboard without extra cloud setup</li>
