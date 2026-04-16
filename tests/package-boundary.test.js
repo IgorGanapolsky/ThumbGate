@@ -103,9 +103,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     manifest.fileCount <= 220,
     `npm package should stay <= 220 files, got ${manifest.fileCount}`
   );
+  // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
+  // incremental review-delta demo content in public/dashboard.html landing
+  // inline with main's token-savings dashboard additions. Still well below
+  // the ~3 MB drift threshold where we'd need to actively trim assets.
   assert.ok(
-    manifest.unpackedSize <= 2_750_000,
-    `npm package should stay <= 2.75 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 2_850_000,
+    `npm package should stay <= 2.85 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
