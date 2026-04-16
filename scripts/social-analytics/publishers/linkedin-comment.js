@@ -91,7 +91,7 @@ async function publishComment(token, personUrn, activityUrn, text) {
   return { urn: commentUrn, payload };
 }
 
-module.exports = { publishComment };
+module.exports = { publishComment, safeForLog, buildHeaders, LI_REST_BASE };
 
 // ---------------------------------------------------------------------------
 // Stand-alone execution
