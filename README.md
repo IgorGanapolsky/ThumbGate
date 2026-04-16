@@ -225,10 +225,13 @@ npx thumbgate bench      # run reliability benchmark
 | Prevention rules | 1 | Unlimited | Unlimited |
 | Agent connections | 1 | Unlimited | Unlimited |
 | Personal dashboard | — | ✅ | ✅ |
-| Export feedback data | — | ✅ | ✅ |
+| DPO export (model fine-tuning) | — | ✅ | ✅ |
+| Team lesson export/import | — | ✅ | ✅ |
 | Shared hosted lesson DB | — | — | ✅ |
 | Org-wide dashboard | — | — | ✅ |
 | Approval + audit proof | — | — | ✅ |
+
+The free tier gives you 3 feedback captures, 1 rule, and 1 agent — enough to prove the enforcement loop works. Pro is $19/mo or $149/yr for unlimited everything plus a dashboard and history-aware lesson recall. Team is $49/seat/mo with shared hosted lesson DB, org dashboard, and shared enforcement. Pro and Team include open_feedback_session, append_feedback_context, and finalize_feedback_session for structured multi-turn feedback capture.
 
 **Best first paid motion for teams:** the **Workflow Hardening Sprint** — qualify one repeated failure before committing to a full rollout. **[Start intake →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake)**
 
@@ -237,6 +240,52 @@ npx thumbgate bench      # run reliability benchmark
 **Paid path for individual operators:** [ThumbGate Pro](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page) is the self-serve side lane for a personal dashboard and export-ready evidence.
 
 **[Start free](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme)** · **[See Pro](https://thumbgate-production.up.railway.app/pro?utm_source=github&utm_medium=readme)** · **[Team Sprint intake](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme#workflow-sprint-intake)**
+
+---
+
+## Team Lesson Sharing (Pro + Team)
+
+One team's hard-won lessons shouldn't stay trapped on one laptop. ThumbGate Pro and Team can export lessons as portable bundles and import them into any other ThumbGate instance — so a mistake caught by Team A becomes a prevention rule for Team B.
+
+**Export lessons from one project:**
+
+```bash
+curl -X POST http://localhost:3456/v1/lessons/export \
+  -H "Authorization: Bearer $THUMBGATE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"outputPath": "./lessons-export.json"}'
+```
+
+Filter by signal or tags:
+
+```bash
+curl -X POST http://localhost:3456/v1/lessons/export \
+  -H "Authorization: Bearer $THUMBGATE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"signal": "down", "tags": ["push-notifications", "ci"]}'
+```
+
+**Import into another team's ThumbGate:**
+
+```bash
+curl -X POST http://localhost:3456/v1/lessons/import \
+  -H "Authorization: Bearer $THUMBGATE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d @lessons-export.json
+```
+
+What happens on import:
+- **Deduplication** — lessons with the same ID or title+signal are skipped
+- **Provenance tracking** — every imported lesson is tagged `team-import` with original source project, export timestamp, and original ID
+- **No overwrite** — import is additive; existing lessons are never modified
+
+The export bundle includes full lesson metadata: signal, title, context, tags, failure type, skill, structured rules, and diagnosis. It's the same data you see in the lesson detail dashboard — portable as JSON.
+
+**Use cases:**
+- Share enforcement patterns across repos in the same org
+- Onboard a new team with pre-built lessons from a mature project
+- Export lessons before a project handoff so institutional knowledge transfers
+- Feed lessons from multiple teams into a centralized DPO training pipeline
 
 ---
 

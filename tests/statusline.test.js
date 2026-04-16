@@ -417,7 +417,7 @@ test('statusline emits OSC 8 hyperlinks for production (non-localhost) URLs', ()
   assert.doesNotMatch(plain, /https:\/\/thumbgate-production/, 'URLs should be in escape sequences, not visible text');
 });
 
-test('statusline does NOT emit OSC 8 hyperlinks for localhost URLs', () => {
+test('statusline emits OSC 8 hyperlinks for localhost URLs', () => {
   const out = runStatusline({
     thumbs_up: '3', thumbs_down: '1', lessons: '0', trend: 'stable'
   }, {
@@ -429,8 +429,8 @@ test('statusline does NOT emit OSC 8 hyperlinks for localhost URLs', () => {
       lessonsUrl: 'http://localhost:3456/lessons',
     })),
   });
-  assert.doesNotMatch(out, /\u001b]8;;http:\/\/localhost/,
-    'localhost URLs should not produce OSC 8 hyperlinks');
+  assert.match(out, /\u001b]8;;http:\/\/localhost/,
+    'localhost URLs should produce OSC 8 hyperlinks');
   assert.match(out, /Dashboard/);
   assert.match(out, /Lessons/);
 });

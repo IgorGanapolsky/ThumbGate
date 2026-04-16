@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.1
+
+### Minor Changes
+
+- Add **Insights tab** to the dashboard with interactive Chart.js charts:
+  - **Feedback Trend** (30-day line chart): daily thumbs-up/down signals over time
+  - **Lessons Generated** (bar + cumulative line): how many lessons were distilled each day
+  - **Gate Effectiveness** (stacked bar): 14-day audit of blocked/warned/allowed actions
+  - **Feedback → Lesson Pipeline**: clickable flow showing how signals convert to lessons, gates, and blocked actions with conversion rates
+  - **How ThumbGate Learns**: 4-step visual explainer (React → Distill → Promote → Block)
+- New backend functions: `computeFeedbackTimeSeries()` (30-day daily up/down/lesson counts) and `computeLessonPipeline()` (stage-by-stage conversion metrics)
+- Dashboard API (`/v1/dashboard`) now returns `feedbackTimeSeries` and `lessonPipeline` fields
+
 ## 1.5.0
 
 ### Minor Changes

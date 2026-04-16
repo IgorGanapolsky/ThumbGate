@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "name": "ThumbGate Prompt Evaluation",
+  "description": "Tests core ThumbGate prompts against expected outputs. Based on Anthropic prompt evaluation methodology: test against expected answers, compare versions, review outputs for errors.",
+  "evaluations": [
+    {
+      "id": "lesson-distill-negative-clear",
+      "prompt": "lesson-distillation",
+      "input": {
+        "signal": "negative",
+        "context": "Exited git worktree and switched branches in user's main repo",
+        "whatWentWrong": "Created a worktree but when the commit was empty, exited the worktree and ran git checkout on a different branch in the user's main repo. Violated explicit instruction to stay in worktree.",
+        "whatToChange": "When told to work in a worktree, NEVER exit and touch the main repo."
+      },
+      "expectedOutput": {
+        "hasTitle": true,
+        "titleContains": ["worktree", "branch"],
+        "hasContent": true,
+        "contentContains": ["NEVER", "worktree"],
+        "category": "error",
+        "importance": "high"
+      }
+    },
+    {
+      "id": "lesson-distill-negative-vague",
+      "prompt": "lesson-distillation",
+      "input": {
+        "signal": "negative",
+        "context": "thumbs down",
+        "whatWentWrong": "",
+        "whatToChange": ""
+      },
+      "expectedOutput": {
+        "shouldReject": true,
+        "rejectReason": "vague"
+      }
+    },
+    {
+      "id": "lesson-distill-positive",
+      "prompt": "lesson-distillation",
+      "input": {
+        "signal": "positive",
+        "context": "Used ThumbGate correctly - recall, capture_feedback, retrieve_lessons all called in parallel",
+        "whatWorked": "Called ThumbGate tools in parallel as required. Kept response concise."
+      },
+      "expectedOutput": {
+        "hasTitle": true,
+        "titleContains": ["ThumbGate", "parallel"],
+        "category": "learning",
+        "importance": "normal"
+      }
+    },
+    {
+      "id": "prevention-rule-repeated-mistake",
+      "prompt": "prevention-rule-generation",
+      "input": {
+        "pattern": "git-workflow",
+        "occurrences": 3,
+        "examples": [
+          "Switched branches in main repo instead of worktree",
+          "Exited worktree and touched main repo",
+          "Checked out different branch in user's workspace"
+        ]
+      },
+      "expectedOutput": {
+        "hasRule": true,
+        "ruleContains": ["worktree", "NEVER"],
+        "actionType": "block",
+        "confidence": { "min": 0.7 }
+      }
+    },
+    {
+      "id": "feedback-capture-enrichment",
+      "prompt": "feedback-enrichment",
+      "input": {
+        "signal": "negative",
+        "context": "Shipped broken charts with bogus data, used user as QA tester",
+        "tags": ["e2e-verification", "anti-lying"]
+      },
+      "expectedOutput": {
+        "hasDomain": true,
+        "domain": "testing",
+        "hasOutcome": true,
+        "outcomeContains": ["failure", "error"]
+      }
+    },
+    {
+      "id": "self-distill-session-summary",
+      "prompt": "self-distillation",
+      "input": {
+        "sessionFeedback": [
+          { "signal": "negative", "context": "Exited worktree" },
+          { "signal": "negative", "context": "Didn't use ThumbGate at session start" },
+          { "signal": "positive", "context": "Used ThumbGate correctly" },
+          { "signal": "negative", "context": "Showed bogus data" }
+        ]
+      },
+      "expectedOutput": {
+        "hasSummary": true,
+        "summaryContains": ["worktree", "ThumbGate"],
+        "identifiesPattern": true,
+        "suggestsImprovement": true
+      }
+    }
+  ]
+}
