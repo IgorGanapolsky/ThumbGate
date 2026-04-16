@@ -167,6 +167,30 @@ describe('Pro tier bullets: code-backed claims', () => {
       `DPO export must deep-link to export tab, got: ${m[1]}`,
     );
   });
+
+  test('compat cards that promise a download link directly to the asset', () => {
+    // Pattern: the outer <a class="compat-card"> href must match the card's verb.
+    // If the card-arrow says "Download" or the body text says "Download the zip /
+    // the bundle", the outer href MUST go to a releases download URL — not a
+    // guide page or INSTALL.md source file.
+    const cardBlocks = [...INDEX_HTML.matchAll(
+      /<a class="compat-card"[^>]*href="([^"]+)"[^>]*>[\s\S]*?(<div class="card-arrow[^>]*>([\s\S]*?)<\/div>)[\s\S]*?<\/a>/g,
+    )];
+    assert.ok(cardBlocks.length > 0, 'must find compat cards');
+
+    for (const [fullMatch, outerHref, , cardArrow] of cardBlocks) {
+      const cardText = fullMatch.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+      const promisesDownload =
+        /download the (zip|bundle|mcpb|extension|plugin)/i.test(cardText) ||
+        /^\s*(Download|Get the) .* (plugin|bundle|extension)/i.test(cardArrow);
+      if (!promisesDownload) continue;
+      assert.match(
+        outerHref,
+        /releases\/.*download\//,
+        `Card promises a download (arrow: "${cardArrow.trim()}") but href goes to "${outerHref}" — must link directly to the release asset`,
+      );
+    }
+  });
 });
 
 describe('Team tier bullets: code-backed claims', () => {
