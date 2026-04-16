@@ -219,6 +219,32 @@
     <a class="stat-card" data-card-action="gates" onclick="selectCard(this,'gates');return false;" href="#" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view active gates"><div class="stat-label">Active Gates</div><div class="stat-value cyan" id="statGates">—</div></a>
   </div>
 
+  <div class="panel" id="reviewDeltaPanel" style="margin-bottom:20px;">
+    <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+      <div>
+        <h3 style="margin:0 0 8px 0;font-size:14px;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);">🆕 Since Last Review</h3>
+        <p class="template-summary" id="reviewDeltaHeadline" style="margin-bottom:0;">No review checkpoint yet. Mark the current dashboard as reviewed to start seeing only new changes.</p>
+      </div>
+      <button class="btn-outline" id="reviewCheckpointBtn" onclick="markReviewed()">Mark Current Dashboard Reviewed</button>
+    </div>
+    <div class="generated-grid" id="reviewDeltaStats" style="margin-top:16px;">
+      <div class="team-card"><div class="team-kicker">New feedback</div><div class="team-value" id="reviewDeltaFeedback">0</div><div class="team-note">events since checkpoint</div></div>
+      <div class="team-card"><div class="team-kicker">New negatives</div><div class="team-value" id="reviewDeltaNegative">0</div><div class="team-note">fresh review risk</div></div>
+      <div class="team-card"><div class="team-kicker">New lessons</div><div class="team-value" id="reviewDeltaLessons">0</div><div class="team-note">promoted since checkpoint</div></div>
+      <div class="team-card"><div class="team-kicker">New blocks</div><div class="team-value" id="reviewDeltaBlocks">0</div><div class="team-note">gate hits since checkpoint</div></div>
+    </div>
+    <div class="team-columns" style="margin-top:16px;">
+      <div class="panel">
+        <h3>Checkpoint</h3>
+        <div id="reviewDeltaCheckpoint" class="template-summary" style="margin-bottom:0;">Waiting for dashboard data...</div>
+      </div>
+      <div class="panel">
+        <h3>Newest items</h3>
+        <div id="reviewDeltaLatest" class="template-summary" style="margin-bottom:0;">No new review activity yet.</div>
+      </div>
+    </div>
+  </div>
+
   <!-- TABS -->
   <div class="tabs">
     <div class="tab active" onclick="switchTab('search')">🔍 Search Memories</div>
@@ -706,8 +732,70 @@ async function loadDashboardData() {
   } catch (e) { /* insights degrade gracefully */ }
 }
 
+function formatReviewTimestamp(value) {
+  if (!value) return 'Not reviewed yet';
+  var date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString();
+}
+
+function renderReviewDelta(reviewDelta) {
+  var summary = reviewDelta || {};
+  var button = document.getElementById('reviewCheckpointBtn');
+  document.getElementById('reviewDeltaHeadline').textContent = summary.headline || 'No review checkpoint yet. Mark the current dashboard as reviewed to start seeing only new changes.';
+  document.getElementById('reviewDeltaFeedback').textContent = String(summary.feedbackAdded || 0);
+  document.getElementById('reviewDeltaNegative').textContent = String(summary.negativeAdded || 0);
+  document.getElementById('reviewDeltaLessons').textContent = String(summary.lessonsAdded || 0);
+  document.getElementById('reviewDeltaBlocks').textContent = String(summary.blocksAdded || 0);
+
+  var checkpointParts = [];
+  checkpointParts.push('<div><strong>Reviewed:</strong> ' + escHtml(formatReviewTimestamp(summary.reviewedAt)) + '</div>');
+  if (summary.previousHead || summary.currentHead) {
+    checkpointParts.push('<div style="margin-top:8px;"><strong>Git:</strong> ' + escHtml(summary.previousHead ? summary.previousHead.slice(0, 8) : 'none') + ' → ' + escHtml(summary.currentHead ? summary.currentHead.slice(0, 8) : 'none') + '</div>');
+  }
+  document.getElementById('reviewDeltaCheckpoint').innerHTML = checkpointParts.join('');
+
+  var latestBits = [];
+  if (summary.latestFeedback) {
+    latestBits.push('<div><strong>Feedback:</strong> ' + escHtml(summary.latestFeedback.title || 'Feedback event') + ' <span style="color:var(--text-muted);">(' + escHtml(formatReviewTimestamp(summary.latestFeedback.timestamp)) + ')</span></div>');
+  }
+  if (summary.latestLesson) {
+    latestBits.push('<div style="margin-top:8px;"><strong>Lesson:</strong> ' + escHtml(summary.latestLesson.title || 'Lesson event') + ' <span style="color:var(--text-muted);">(' + escHtml(formatReviewTimestamp(summary.latestLesson.timestamp)) + ')</span></div>');
+  }
+  document.getElementById('reviewDeltaLatest').innerHTML = latestBits.length
+    ? latestBits.join('')
+    : 'No new review activity yet.';
+
+  if (button) {
+    button.textContent = summary.hasBaseline ? 'Reset Review Baseline to Current State' : 'Mark Current Dashboard Reviewed';
+  }
+}
+
+async function markReviewed() {
+  var button = document.getElementById('reviewCheckpointBtn');
+  var previousLabel = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Saving...';
+  try {
+    var res = await fetch('/v1/dashboard/review-state', {
+      method: 'POST',
+      headers: getHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to save review checkpoint');
+    var body = await res.json();
+    renderReviewDelta(body.reviewDelta || {});
+  } catch (e) {
+    document.getElementById('reviewDeltaHeadline').textContent = e && e.message ? e.message : 'Failed to save review checkpoint';
+  } finally {
+    button.disabled = false;
+    if (button.textContent === 'Saving...') button.textContent = previousLabel;
+  }
+}
+
 function renderDashboardData(data) {
   dashboardSnapshot = data;
+  var reviewButton = document.getElementById('reviewCheckpointBtn');
+  if (reviewButton) reviewButton.disabled = false;
   const gates = data.gates || data.activeGates || [];
   const gateStats = data.gateStats || {};
   document.getElementById('statGates').textContent = gates.length || gateStats.totalGates || 0;
@@ -723,6 +811,7 @@ function renderDashboardData(data) {
   }
 
   renderTeam(data.team || {}, data.analytics || {});
+  renderReviewDelta(data.reviewDelta || {});
   renderPredictive(data.predictive || {});
   renderSettingsStatus(data.settingsStatus || {});
   renderTemplates(data.templateLibrary || {});
@@ -1058,6 +1147,44 @@ function loadDemo() {
   document.getElementById('statNegative').textContent = '260';
   document.getElementById('statGates').textContent = '21';
   setSelectedCard('all');
+  // Demo: 260 negative-feedback events have produced ~180 actual gate blocks
+  // and ~85 bot deflections on /checkout/pro. Kept as illustrative defaults
+  // so the savings card never reads "0" in demo mode.
+  var demoSavings = TG_TOKEN_SAVINGS.compute(180, 85);
+  var tEl = document.getElementById('statTokensSaved');
+  var dEl = document.getElementById('statDollarsSaved');
+  if (tEl) tEl.textContent = demoSavings.tokensSavedDisplay;
+  if (dEl) dEl.textContent = '≈ ' + demoSavings.dollarsSavedDisplay + ' saved';
+  renderTopBlockedGates([
+    { name: 'gate:no-force-push', blocked: 47 },
+    { name: 'gate:no-drop-prod', blocked: 31 },
+    { name: 'gate:no-hallucinated-import', blocked: 28 },
+    { name: 'gate:no-secret-commit', blocked: 19 },
+    { name: 'gate:require-tests-before-done', blocked: 14 },
+    { name: 'gate:no-figma-claim-without-check', blocked: 9 },
+  ]);
+  renderReviewDelta({
+    hasBaseline: true,
+    reviewedAt: '2025-06-18T09:00:00Z',
+    previousHead: '9f1a2c3d',
+    currentHead: '5c7e9b1a',
+    feedbackAdded: 6,
+    negativeAdded: 4,
+    lessonsAdded: 2,
+    blocksAdded: 5,
+    warnsAdded: 1,
+    headline: 'Since your last review: 6 feedback events · 4 negative · 2 lessons · 5 gate blocks.',
+    latestFeedback: {
+      title: 'Claimed fix worked without running tests',
+      timestamp: '2025-06-22T10:20:00Z'
+    },
+    latestLesson: {
+      title: 'MISTAKE: Claimed Figma compliance without visual verification',
+      timestamp: '2025-06-21T08:10:00Z'
+    }
+  });
+  document.getElementById('reviewCheckpointBtn').disabled = true;
+  document.getElementById('reviewCheckpointBtn').textContent = 'Connect to save your own review checkpoint';
   // Sample memories — realistic scenarios from real agent-driven development
   var demoResults = [
     { signal: 'down', title: 'Claimed fix worked without running tests', context: 'Agent announced "fixed and pushed" but never ran the test suite. CI failed on 3 tests. Gate now requires test evidence before any completion claim.', tags: ['anti-lying', 'verification-gap', 'ci', 'trust-breach'], timestamp: '2025-06-22T10:20:00Z' },

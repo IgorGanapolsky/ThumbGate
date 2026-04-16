@@ -152,6 +152,9 @@ const {
 } = require('../../scripts/decision-journal');
 const {
   generateDashboard,
+  buildReviewSnapshot,
+  readDashboardReviewState,
+  writeDashboardReviewState,
 } = require('../../scripts/dashboard');
 const {
   buildDashboardRenderSpec,
@@ -5515,6 +5518,36 @@ async function addContext(){
           authContext: { tier: 'pro' },
         });
         sendJson(res, 200, data);
+        return;
+      }
+
+      // GET /v1/dashboard/review-state -- incremental review baseline and deltas
+      if (req.method === 'GET' && pathname === '/v1/dashboard/review-state') {
+        const reviewState = readDashboardReviewState(requestFeedbackDir);
+        const data = generateDashboard(requestFeedbackDir, {
+          reviewBaseline: reviewState,
+          authContext: { tier: 'pro' },
+        });
+        sendJson(res, 200, {
+          reviewState,
+          reviewDelta: data.reviewDelta,
+        });
+        return;
+      }
+
+      // POST /v1/dashboard/review-state -- mark current dashboard state as reviewed
+      if (req.method === 'POST' && pathname === '/v1/dashboard/review-state') {
+        const snapshot = buildReviewSnapshot(requestFeedbackDir);
+        writeDashboardReviewState(requestFeedbackDir, snapshot);
+        const data = generateDashboard(requestFeedbackDir, {
+          reviewBaseline: snapshot,
+          authContext: { tier: 'pro' },
+        });
+        sendJson(res, 200, {
+          ok: true,
+          reviewState: snapshot,
+          reviewDelta: data.reviewDelta,
+        });
         return;
       }
 
