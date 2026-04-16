@@ -221,14 +221,19 @@ npx thumbgate bench      # run reliability benchmark
 | | Free | Pro ($19/mo) | Team ($49/seat/mo) |
 |---|---|---|---|
 | Local CLI + enforced gates | ✅ | ✅ | ✅ |
-| Feedback captures/day | 3 | Unlimited | Unlimited |
-| Prevention rules | 1 | Unlimited | Unlimited |
-| Agent connections | 1 | Unlimited | Unlimited |
+| Feedback captures (lifetime) | 3 | Unlimited | Unlimited |
+| Auto-promoted prevention rules | 1 | Unlimited | Unlimited |
+| MCP agent integrations | All | All | All |
 | Personal dashboard | — | ✅ | ✅ |
-| Export feedback data | — | ✅ | ✅ |
+| DPO export (model fine-tuning) | — | ✅ | ✅ |
+| Team lesson export/import | — | ✅ | ✅ |
 | Shared hosted lesson DB | — | — | ✅ |
 | Org-wide dashboard | — | — | ✅ |
 | Approval + audit proof | — | — | ✅ |
+
+The free tier gives you 3 lifetime feedback captures and 1 auto-promoted prevention rule — enough to prove the enforcement loop works. MCP integrations for all agents (Claude Code, Cursor, Codex, Gemini, Amp, OpenCode) ship free.
+
+Pro ($19/mo or $149/yr) lifts those caps and adds history-aware lesson recall, lesson search, DPO export, and a personal dashboard. Team ($49/seat/mo) adds a shared hosted lesson DB, org dashboard, and shared enforcement across the org. Pro and Team include `open_feedback_session`, `append_feedback_context`, and `finalize_feedback_session` for structured multi-turn feedback capture.
 
 **Best first paid motion for teams:** the **Workflow Hardening Sprint** — qualify one repeated failure before committing to a full rollout. **[Start intake →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake)**
 
@@ -240,12 +245,84 @@ npx thumbgate bench      # run reliability benchmark
 
 ---
 
+## Team Lesson Sharing (Pro + Team)
+
+One team's hard-won lessons shouldn't stay trapped on one laptop. ThumbGate Pro and Team can export lessons as portable bundles and import them into any other ThumbGate instance — so a mistake caught by Team A becomes a prevention rule for Team B.
+
+**Export lessons from one project:**
+
+```bash
+curl -X POST http://localhost:3456/v1/lessons/export \
+  -H "Authorization: Bearer $THUMBGATE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"outputPath": "./lessons-export.json"}'
+```
+
+Filter by signal or tags:
+
+```bash
+curl -X POST http://localhost:3456/v1/lessons/export \
+  -H "Authorization: Bearer $THUMBGATE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"signal": "down", "tags": ["push-notifications", "ci"]}'
+```
+
+**Import into another team's ThumbGate:**
+
+```bash
+curl -X POST http://localhost:3456/v1/lessons/import \
+  -H "Authorization: Bearer $THUMBGATE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d @lessons-export.json
+```
+
+What happens on import:
+- **Deduplication** — lessons with the same ID or title+signal are skipped
+- **Provenance tracking** — every imported lesson is tagged `team-import` with original source project, export timestamp, and original ID
+- **No overwrite** — import is additive; existing lessons are never modified
+
+The export bundle includes full lesson metadata: signal, title, context, tags, failure type, skill, structured rules, and diagnosis. It's the same data you see in the lesson detail dashboard — portable as JSON.
+
+**Use cases:**
+- Share enforcement patterns across repos in the same org
+- Onboard a new team with pre-built lessons from a mature project
+- Export lessons before a project handoff so institutional knowledge transfers
+- Feed lessons from multiple teams into a centralized DPO training pipeline
+
+---
+
+## DPO Export for Fine-Tuning (Pro + Team)
+
+Every thumbs-up and thumbs-down becomes a training signal. ThumbGate Pro exports your captured feedback as DPO (Direct Preference Optimization) pairs — ready to feed into a LoRA fine-tune so your model stops repeating known mistakes at the weight level, not just the gate level.
+
+**Export DPO pairs:**
+
+```bash
+curl -X POST http://localhost:3456/v1/dpo/export \
+  -H "Authorization: Bearer $THUMBGATE_API_KEY" \
+  -o dpo-pairs.jsonl
+```
+
+**What you get:** JSONL where each line is a preference pair:
+- `chosen` — the agent action you thumbed up
+- `rejected` — the action you thumbed down for the same task context
+- `prompt` — the originating user intent
+
+**Use cases:**
+- Fine-tune Llama 3 / Mistral / local models with a LoRA adapter trained on your real mistakes
+- Feed into RLAIF or KTO pipelines (KTO export also available via `/v1/kto/export`)
+- Build a model that natively avoids your team's known failure patterns — no gate at inference time needed
+
+**Why this matters:** Gates block mistakes. Fine-tuning prevents them from being attempted. Combine both for belt-and-suspenders governance.
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
 | **Storage** | SQLite + FTS5, LanceDB vectors, JSONL logs |
-| **Capture** | 3 feedback capture/day (free), unlimited (Pro) |
+| **Capture** | 3 feedback captures lifetime (free), unlimited (Pro) |
 | **Intelligence** | MemAlign dual recall, Thompson Sampling |
 | **Enforcement** | PreToolUse hook engine, Gates config |
 | **Interfaces** | MCP stdio, HTTP API, CLI (Node.js >=18) |
@@ -303,7 +380,9 @@ Those are suggestions the agent can ignore. ThumbGate gates are enforced — the
 If it supports MCP or pre-action hooks, yes. Claude Code, Claude Desktop, Cursor, Codex, Gemini CLI, Amp, OpenCode all work out of the box.
 
 **Is it free?**
-The free tier gives you 3 captures/day, 1 rule, and 1 agent — enough to prove the enforcement loop works. Pro is $19/mo or $149/yr for unlimited everything plus a dashboard. Team is $49/seat/mo with shared hosted lesson DB, org dashboard, and shared enforcement.
+The free tier gives you 3 lifetime feedback captures and 1 auto-promoted prevention rule — enough to prove the enforcement loop works. MCP integrations ship free for every agent.
+
+Pro ($19/mo or $149/yr) lifts those caps and adds history-aware lesson recall, lesson search, and a personal dashboard. Team ($49/seat/mo) adds a shared hosted lesson DB, org dashboard, and shared enforcement.
 
 ---
 

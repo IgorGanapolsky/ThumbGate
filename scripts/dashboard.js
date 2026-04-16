@@ -429,6 +429,93 @@ function computePreventionImpact(feedbackDir, gateStats) {
 }
 
 // ---------------------------------------------------------------------------
+// Feedback time series (daily up/down for charts)
+// ---------------------------------------------------------------------------
+
+function computeFeedbackTimeSeries(entries, dayCount = 30) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = [];
+
+  for (let offset = dayCount - 1; offset >= 0; offset -= 1) {
+    const day = new Date(today);
+    day.setDate(today.getDate() - offset);
+    const dayKey = toLocalDayKey(day);
+    days.push({ dayKey, up: 0, down: 0, lessons: 0 });
+  }
+
+  const dayMap = new Map(days.map((d) => [d.dayKey, d]));
+
+  for (const entry of entries) {
+    if (!entry.timestamp) continue;
+    const dayKey = toLocalDayKey(entry.timestamp);
+    const bucket = dayMap.get(dayKey);
+    if (!bucket) continue;
+    const signal = String(entry.signal || entry.feedback || '').toLowerCase();
+    if (['up', 'positive', 'thumbs_up'].includes(signal)) bucket.up += 1;
+    else if (['down', 'negative', 'thumbs_down'].includes(signal)) bucket.down += 1;
+  }
+
+  return { dayCount, days };
+}
+
+function isAuditTrailEntry(entry) {
+  return Array.isArray(entry.tags) && entry.tags.includes('audit-trail');
+}
+
+// ---------------------------------------------------------------------------
+// Lesson pipeline (feedback → lesson → gate conversion)
+// ---------------------------------------------------------------------------
+
+function computeLessonPipeline(feedbackDir, entries, gateStats) {
+  const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
+  const memories = readJSONL(memoryLogPath);
+
+  const totalFeedback = entries.length;
+  const totalNegative = entries.filter((e) => {
+    const s = String(e.signal || e.feedback || '').toLowerCase();
+    return ['down', 'negative', 'thumbs_down'].includes(s);
+  }).length;
+  const totalPositive = totalFeedback - totalNegative;
+
+  const totalLessons = memories.filter((m) => m.category === 'error' || m.category === 'learning').length;
+  const errorLessons = memories.filter((m) => m.category === 'error').length;
+  const learningLessons = memories.filter((m) => m.category === 'learning').length;
+
+  const autoGatesPath = getAutoGatesPath();
+  const autoGates = readJsonFile(autoGatesPath);
+  const promotedGates = autoGates && Array.isArray(autoGates.gates) ? autoGates.gates.length : 0;
+
+  const feedbackToLessonRate = totalFeedback > 0
+    ? Math.round((totalLessons / totalFeedback) * 100) : 0;
+  const lessonToGateRate = totalLessons > 0
+    ? Math.min(100, Math.round((promotedGates / totalLessons) * 100)) : 0;
+  const totalBlocked = gateStats.blocked || 0;
+
+  // Populate lesson counts onto the time series if available
+  const lessonsByDay = new Map();
+  for (const m of memories) {
+    if (!m.timestamp) continue;
+    const dayKey = toLocalDayKey(m.timestamp);
+    if (dayKey) lessonsByDay.set(dayKey, (lessonsByDay.get(dayKey) || 0) + 1);
+  }
+
+  return {
+    stages: [
+      { id: 'feedback', label: 'Feedback Signals', count: totalFeedback, detail: `${totalPositive} up / ${totalNegative} down` },
+      { id: 'lessons', label: 'Lessons Distilled', count: totalLessons, detail: `${errorLessons} mistakes / ${learningLessons} good patterns` },
+      { id: 'gates', label: 'Gates Promoted', count: promotedGates, detail: `${lessonToGateRate}% of lessons become gates` },
+      { id: 'blocked', label: 'Actions Blocked', count: totalBlocked, detail: `Repeat mistakes prevented` },
+    ],
+    rates: {
+      feedbackToLesson: feedbackToLessonRate,
+      lessonToGate: lessonToGateRate,
+    },
+    lessonsByDay,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Session trend (last N sessions)
 // ---------------------------------------------------------------------------
 
@@ -927,11 +1014,61 @@ function resolveTeamWindowHours(analyticsWindow) {
 // Full dashboard data
 // ---------------------------------------------------------------------------
 
+function collectAllFeedbackEntries(feedbackDir) {
+  const entries = [];
+  const seen = new Set();
+
+  function mergeFrom(logPath) {
+    if (!fs.existsSync(logPath)) return;
+    for (const entry of readJSONL(logPath)) {
+      const id = entry.id || entry.feedbackId;
+      if (id && seen.has(id)) continue;
+      if (id) seen.add(id);
+      entries.push(entry);
+    }
+  }
+
+  // Primary: the passed feedbackDir (global ~/.thumbgate)
+  mergeFrom(path.join(feedbackDir, 'feedback-log.jsonl'));
+
+  // Project-local .thumbgate directories (e.g. repo/.thumbgate/feedback-log.jsonl)
+  // The MCP server may write to a project-scoped dir that differs from the global one.
+  const projectsDir = path.join(feedbackDir, 'projects');
+  if (fs.existsSync(projectsDir)) {
+    try {
+      for (const project of fs.readdirSync(projectsDir)) {
+        mergeFrom(path.join(projectsDir, project, 'feedback-log.jsonl'));
+      }
+    } catch { /* ignore read errors */ }
+  }
+
+  // Also check the project root's .thumbgate if feedbackDir is global
+  // The MCP server often resolves to PROJECT_ROOT/.thumbgate for project-scoped feedback
+  // Skip this merge when feedbackDir is a temp/test directory (not ~/.thumbgate)
+  const homeThumbgate = path.join(process.env.HOME || '/tmp', '.thumbgate');
+  const projectLocalDir = path.join(PROJECT_ROOT, '.thumbgate');
+  if (
+    path.resolve(feedbackDir) === path.resolve(homeThumbgate) &&
+    projectLocalDir !== feedbackDir &&
+    fs.existsSync(projectLocalDir)
+  ) {
+    mergeFrom(path.join(projectLocalDir, 'feedback-log.jsonl'));
+  }
+
+  // Sort by timestamp for consistent ordering
+  entries.sort((a, b) => {
+    const ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+    const tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+    return ta - tb;
+  });
+
+  return entries;
+}
+
 function generateDashboard(feedbackDir, options = {}) {
   const analyticsWindow = resolveAnalyticsWindow(options.analyticsWindow || options);
-  const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
   const diagnosticLogPath = path.join(feedbackDir, 'diagnostic-log.jsonl');
-  const entries = readJSONL(feedbackLogPath);
+  const entries = collectAllFeedbackEntries(feedbackDir);
   const diagnosticEntries = readJSONL(diagnosticLogPath);
   const memoryEntries = readJSONL(path.join(feedbackDir, 'memory-log.jsonl'));
   const auditEntries = readJSONL(path.join(feedbackDir, AUDIT_LOG_FILENAME));
@@ -1008,6 +1145,26 @@ function generateDashboard(feedbackDir, options = {}) {
     },
   };
 
+  const feedbackTimeSeries = computeFeedbackTimeSeries(entries, 30);
+  const lessonPipeline = computeLessonPipeline(feedbackDir, entries, gateStats);
+
+  // Estimated token savings — computed from gate blocked counts using the
+  // conservative methodology in scripts/token-savings.js. This is the ONLY
+  // place "$ saved" appears that's backed by real gate-block data; the landing
+  // page hero uses a hardcoded sample number disclosed as "Sample".
+  let tokenSavings = null;
+  try {
+    const { computeTokenSavings } = require('./token-savings');
+    tokenSavings = computeTokenSavings({
+      blockedCalls: Number(gateStats.blocked) || 0,
+    });
+  } catch { /* module missing — skip */ }
+
+  // Merge lesson counts into feedbackTimeSeries days
+  for (const day of feedbackTimeSeries.days) {
+    day.lessons = lessonPipeline.lessonsByDay.get(day.dayKey) || 0;
+  }
+
   const team = generateOrgDashboard({
     windowHours: resolveTeamWindowHours(analyticsWindow),
     authContext: options.authContext,
@@ -1051,6 +1208,12 @@ function generateDashboard(feedbackDir, options = {}) {
     liveMetrics,
     predictive,
     reviewDelta,
+    feedbackTimeSeries,
+    tokenSavings,
+    lessonPipeline: {
+      stages: lessonPipeline.stages,
+      rates: lessonPipeline.rates,
+    },
   };
 }
 

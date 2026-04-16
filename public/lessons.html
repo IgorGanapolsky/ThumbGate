@@ -936,6 +936,22 @@ loadLive().then(function() {
     el.style.borderColor = 'var(--cyan)';
     el.style.boxShadow = '0 0 12px rgba(34,211,238,0.3)';
     setTimeout(function() { el.style.borderColor = ''; el.style.boxShadow = ''; }, 4000);
+  } else {
+    // Deep-link hash was provided but no matching lesson/feedback was found.
+    // Surface this to the user instead of silently loading the page top — the
+    // linked lesson may have been pruned, rotated, or the ID may be stale.
+    var banner = document.createElement('div');
+    banner.setAttribute('role', 'alert');
+    banner.style.cssText = 'margin:12px 0;padding:12px 16px;border:1px solid rgba(251,191,36,0.4);background:rgba(251,191,36,0.08);border-radius:10px;color:var(--text);font-size:13px;';
+    banner.innerHTML =
+      '<strong style="color:#fbbf24;">Lesson not found:</strong> ' +
+      '<code style="background:var(--bg-card);padding:2px 6px;border-radius:4px;font-size:12px;">' +
+      hash.replace(/[<>&"]/g, function(c) { return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]; }) +
+      '</code>' +
+      ' — this ID is not in the active lesson index. It may have been rotated or the statusbar link is stale. ' +
+      'Browse rules and timeline below to find what you were looking for.';
+    var container = document.querySelector('.container') || document.body;
+    container.insertBefore(banner, container.firstChild);
   }
 });
 </script>
