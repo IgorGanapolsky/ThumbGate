@@ -20,6 +20,13 @@
 
 const LI_REST_BASE = 'https://api.linkedin.com/rest';
 
+/* Strip CR/LF and other control chars from values before they hit console.log
+ * so attacker-controlled text (comment body, URN, error messages) cannot forge
+ * fake log lines. Addresses SonarCloud S5145/javascript:S6564 log-injection. */
+function safeForLog(value) {
+  return String(value ?? '').replace(/[\r\n\t\u0000-\u001f\u007f]+/g, ' ').slice(0, 500);
+}
+
 function buildHeaders(token) {
   return {
     Authorization: `Bearer ${token}`,
@@ -55,10 +62,10 @@ async function publishComment(token, personUrn, activityUrn, text) {
     message: { text },
   };
 
-  console.log(`[linkedin:comment] POST ${url}`);
-  console.log(`[linkedin:comment]   actor  = ${personUrn}`);
-  console.log(`[linkedin:comment]   object = ${activityUrn}`);
-  console.log(`[linkedin:comment]   text   = "${text.slice(0, 80)}${text.length > 80 ? '…' : ''}"`);
+  console.log(`[linkedin:comment] POST ${safeForLog(url)}`);
+  console.log(`[linkedin:comment]   actor  = ${safeForLog(personUrn)}`);
+  console.log(`[linkedin:comment]   object = ${safeForLog(activityUrn)}`);
+  console.log(`[linkedin:comment]   text   = "${safeForLog(text.slice(0, 80))}${text.length > 80 ? '…' : ''}"`);
 
   const res = await fetch(url, {
     method: 'POST',
@@ -80,7 +87,7 @@ async function publishComment(token, personUrn, activityUrn, text) {
     payload = {};
   }
   const commentUrn = payload?.$URN ?? payload?.urn ?? headerUrn ?? '(urn not returned)';
-  console.log(`[linkedin:comment] ✅ Created: ${commentUrn}`);
+  console.log(`[linkedin:comment] ✅ Created: ${safeForLog(commentUrn)}`);
   return { urn: commentUrn, payload };
 }
 
@@ -89,7 +96,7 @@ module.exports = { publishComment };
 // ---------------------------------------------------------------------------
 // Stand-alone execution
 // ---------------------------------------------------------------------------
-if (require.main && require.main.filename === __filename) {
+if (require.main?.filename === __filename) {
   const args = process.argv.slice(2);
   const getArg = (flag) => {
     const prefix = `${flag}=`;
@@ -113,9 +120,9 @@ if (require.main && require.main.filename === __filename) {
   (async () => {
     try {
       const { urn } = await publishComment(token, personUrn, activityUrn, text);
-      console.log(`[linkedin:comment] Done. Comment URN: ${urn}`);
+      console.log(`[linkedin:comment] Done. Comment URN: ${safeForLog(urn)}`);
     } catch (err) {
-      console.error('[linkedin:comment] Failed:', err.message);
+      console.error('[linkedin:comment] Failed:', safeForLog(err.message));
       process.exit(1);
     }
   })();
