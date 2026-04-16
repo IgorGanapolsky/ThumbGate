@@ -1,0 +1,53 @@
+name: LinkedIn Comment Engagement
+
+# Posts a comment on a specified LinkedIn activity (post) using the
+# authenticated member's token. Used for high-signal one-off engagements on
+# posts by prospects / thought leaders whose audience overlaps with ThumbGate's
+# ICP. Bulk / scheduled engagement still runs through Ralph Loop.
+#
+# Required secrets:
+#   LINKEDIN_ACCESS_TOKEN  — w_member_social scope
+#   LINKEDIN_PERSON_URN    — urn:li:person:XXXX (comment actor)
+
+on:
+  workflow_dispatch:
+    inputs:
+      activity_urn:
+        description: 'Target activity URN, e.g. urn:li:activity:7450534811640782848'
+        required: true
+        type: string
+      comment_text:
+        description: 'The comment body (keep <1000 chars, no hard URL to maximize reach)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linkedin-comment-engage-${{ github.event.inputs.activity_urn }}
+  cancel-in-progress: false
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    env:
+      LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+      LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v6
+        with:
+          node-version: '18'
+
+      - name: Post comment
+        run: |
+          node scripts/social-analytics/publishers/linkedin-comment.js \
+            --activity='${{ github.event.inputs.activity_urn }}' \
+            --text='${{ github.event.inputs.comment_text }}'
