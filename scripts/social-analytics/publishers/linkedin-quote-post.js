@@ -26,23 +26,7 @@
  *       --text="your commentary here"
  */
 
-const LI_REST_BASE = 'https://api.linkedin.com/rest';
-
-/* Strip CR/LF and other control chars from values before they hit console.log
- * so attacker-controlled text (commentary, URN, error messages) cannot forge
- * fake log lines. Addresses SonarCloud S5145/javascript:S6564 log-injection. */
-function safeForLog(value) {
-  return String(value ?? '').replace(/[\r\n\t\u0000-\u001f\u007f]+/g, ' ').slice(0, 500);
-}
-
-function buildHeaders(token) {
-  return {
-    Authorization: `Bearer ${token}`,
-    'LinkedIn-Version': '202601',
-    'X-Restli-Protocol-Version': '2.0.0',
-    'Content-Type': 'application/json',
-  };
-}
+const { safeForLog, buildHeaders, LI_REST_BASE } = require('./linkedin-comment');
 
 /**
  * Publishes a quote-post (reshare with commentary) on the authenticated
