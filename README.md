@@ -231,6 +231,8 @@ npx thumbgate bench      # run reliability benchmark
 | Org-wide dashboard | — | — | ✅ |
 | Approval + audit proof | — | — | ✅ |
 
+The free tier gives you 3 feedback captures, 1 rule, and 1 agent — enough to prove the enforcement loop works. Pro is $19/mo or $149/yr for unlimited everything plus a dashboard. Team is $49/seat/mo with shared hosted lesson DB, org dashboard, and shared enforcement.
+
 **Best first paid motion for teams:** the **Workflow Hardening Sprint** — qualify one repeated failure before committing to a full rollout. **[Start intake →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake)**
 
 **Best first technical motion:** install the CLI-first and let `init` wire hooks for the agent you already use.
