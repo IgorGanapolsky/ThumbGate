@@ -221,7 +221,58 @@ const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
 const COMPARE_DIR = path.resolve(__dirname, '../../public/compare');
+const PUBLIC_DIR = path.resolve(__dirname, '../../public');
+const PUBLIC_ASSETS_DIR = path.resolve(__dirname, '../../public/assets');
 const BUYER_INTENT_SCRIPT_PATH = path.resolve(__dirname, '../../public/js/buyer-intent.js');
+const STATIC_MIME_BY_EXT = Object.freeze({
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.mp3': 'audio/mpeg',
+  '.ogg': 'audio/ogg',
+  '.wav': 'audio/wav',
+  '.pdf': 'application/pdf',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.txt': 'text/plain; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+});
+
+function serveStaticFile(res, filePath, { headOnly = false, cacheSeconds = 86400 } = {}) {
+  const ext = path.extname(filePath).toLowerCase();
+  const contentType = STATIC_MIME_BY_EXT[ext] || 'application/octet-stream';
+  let stat;
+  try {
+    stat = fs.statSync(filePath);
+  } catch {
+    res.statusCode = 404;
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.end(JSON.stringify({ error: 'Not found' }));
+    return;
+  }
+  if (!stat.isFile()) {
+    res.statusCode = 404;
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.end(JSON.stringify({ error: 'Not found' }));
+    return;
+  }
+  res.statusCode = 200;
+  res.setHeader('Content-Type', contentType);
+  res.setHeader('Content-Length', stat.size);
+  res.setHeader('Cache-Control', `public, max-age=${cacheSeconds}, immutable`);
+  if (headOnly) {
+    res.end();
+    return;
+  }
+  fs.createReadStream(filePath).pipe(res);
+}
 const VISITOR_COOKIE_NAME = 'thumbgate_visitor_id';
 const SESSION_COOKIE_NAME = 'thumbgate_session_id';
 const ACQUISITION_COOKIE_NAME = 'thumbgate_acquisition_id';
@@ -3433,6 +3484,27 @@ async function addContext(){
         const html = fs.readFileSync(comparePath, 'utf-8');
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch { sendJson(res, 404, { error: 'Comparison not found' }); }
+      return;
+    }
+
+    if (isGetLikeRequest && pathname.startsWith('/assets/')) {
+      const rel = pathname.replace(/^\/assets\//, '').replace(/\?.*$/, '');
+      const resolved = path.resolve(PUBLIC_ASSETS_DIR, rel);
+      if (!resolved.startsWith(PUBLIC_ASSETS_DIR + path.sep) && resolved !== PUBLIC_ASSETS_DIR) {
+        sendJson(res, 403, { error: 'Forbidden' });
+        return;
+      }
+      serveStaticFile(res, resolved, { headOnly: isHeadRequest });
+      return;
+    }
+
+    if (isGetLikeRequest && (
+      pathname === '/favicon.ico'
+      || pathname === '/thumbgate-logo.png'
+      || pathname === '/og.png'
+      || pathname === '/apple-touch-icon.png'
+    )) {
+      serveStaticFile(res, path.join(PUBLIC_DIR, pathname.slice(1)), { headOnly: isHeadRequest });
       return;
     }
 
