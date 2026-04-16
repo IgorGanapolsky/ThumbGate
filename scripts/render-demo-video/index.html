@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>ThumbGate Explainer (offline render source)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@500;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0b0d12;
+    --panel:     #11141b;
+    --panel-2:   #161a23;
+    --border:    #232834;
+    --text:      #e7ebf2;
+    --muted:     #8b93a4;
+    --accent:    #7dd3fc;      /* ThumbGate-blue  */
+    --accent-2:  #a78bfa;      /* accent violet   */
+    --green:     #4ade80;
+    --red:       #ef4444;
+    --amber:     #f59e0b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 1920px; height: 1080px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    overflow: hidden;
+  }
+
+  /* Every scene is an absolutely-positioned full-frame layer.
+     `.active` controls visibility. Transitions driven by the JS timeline. */
+  .scene {
+    position: absolute; inset: 0;
+    padding: 80px 120px;
+    opacity: 0;
+    transition: opacity 600ms ease;
+    display: flex; flex-direction: column;
+    pointer-events: none;
+  }
+  .scene.active { opacity: 1; }
+
+  .scene-title {
+    font-size: 34px; font-weight: 800;
+    color: var(--text);
+    margin-bottom: 24px;
+    letter-spacing: -0.01em;
+  }
+  .scene-subtitle {
+    font-size: 22px; color: var(--muted);
+    margin-bottom: 48px;
+    max-width: 1400px; line-height: 1.4;
+  }
+
+  /* Terminal pane — used by most scenes */
+  .term {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px 36px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 24px; line-height: 1.55;
+    color: var(--text);
+    white-space: pre-wrap;
+    overflow: hidden;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.4);
+    position: relative;
+  }
+  .term-chrome {
+    position: absolute; top: 14px; left: 20px;
+    display: flex; gap: 8px;
+  }
+  .term-chrome span {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #3a3f4b;
+  }
+  .term-chrome span.r { background: #ff5f57; }
+  .term-chrome span.y { background: #febc2e; }
+  .term-chrome span.g { background: #28c840; }
+  .term-label {
+    position: absolute; top: 14px; right: 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px; color: var(--muted);
+  }
+  .term > pre { margin-top: 18px; }
+
+  .term .prompt { color: var(--accent); }
+  .term .cmd    { color: var(--text); }
+  .term .ok     { color: var(--green); }
+  .term .err    { color: var(--red); }
+  .term .muted  { color: var(--muted); }
+  .term .warn   { color: var(--amber); }
+  .term .hi     { color: var(--accent-2); }
+
+  .caret::after {
+    content: '▌';
+    color: var(--accent);
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* Scene 1 — split terminal */
+  .split {
+    flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 28px;
+  }
+
+  /* Gate-matched banner (Scene 3) */
+  .gate-banner {
+    position: absolute; left: 36px; right: 36px; top: 240px;
+    background: linear-gradient(180deg, rgba(239,68,68,0.18), rgba(239,68,68,0.06));
+    border: 1px solid rgba(239,68,68,0.55);
+    border-radius: 12px;
+    padding: 22px 28px;
+    font-family: 'JetBrains Mono', monospace; font-size: 22px;
+    transform: translateY(-30px); opacity: 0;
+    transition: transform 400ms cubic-bezier(.2,.8,.2,1), opacity 400ms ease;
+  }
+  .gate-banner.show { transform: translateY(0); opacity: 1; }
+  .gate-banner .title {
+    color: var(--red); font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; font-size: 18px; margin-bottom: 10px;
+  }
+  .gate-banner .row { color: var(--text); margin-top: 4px; }
+  .gate-banner .row .k { color: var(--muted); display: inline-block; width: 140px; }
+
+  /* Scene 4 dashboard */
+  .stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px;
+    margin-bottom: 36px;
+  }
+  .stat {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px 32px;
+    opacity: 0; transform: translateY(20px);
+    transition: opacity 500ms ease, transform 500ms ease;
+  }
+  .stat.show { opacity: 1; transform: translateY(0); }
+  .stat .label { color: var(--muted); font-size: 18px; font-weight: 500; }
+  .stat .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 56px; font-weight: 700; margin-top: 10px;
+    color: var(--text);
+  }
+  .stat .value.accent { color: var(--accent); }
+  .stat .value.green  { color: var(--green); }
+
+  .ledger {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 14px; padding: 22px 28px;
+    font-family: 'JetBrains Mono', monospace; font-size: 20px;
+    flex: 1; overflow: hidden;
+  }
+  .ledger-head {
+    display: grid; grid-template-columns: 2.2fr 0.8fr 0.8fr 1fr;
+    color: var(--muted); font-size: 16px; letter-spacing: 0.04em;
+    text-transform: uppercase; padding-bottom: 12px;
+    border-bottom: 1px solid var(--border); margin-bottom: 14px;
+  }
+  .ledger-row {
+    display: grid; grid-template-columns: 2.2fr 0.8fr 0.8fr 1fr;
+    padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+    opacity: 0; transform: translateX(-20px);
+    transition: opacity 500ms ease, transform 500ms ease;
+  }
+  .ledger-row.show { opacity: 1; transform: translateX(0); }
+  .ledger-row .ok { color: var(--green); }
+
+  /* Scene 5 install CTA */
+  .install-wrap {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 40px; text-align: center;
+  }
+  .install-cmd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 64px; font-weight: 700;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 56px;
+    color: var(--text);
+  }
+  .install-cmd .prompt { color: var(--accent); margin-right: 18px; }
+  .checks {
+    display: flex; flex-direction: column; gap: 16px;
+    font-family: 'JetBrains Mono', monospace; font-size: 28px;
+    color: var(--muted);
+  }
+  .check {
+    opacity: 0; transform: translateY(10px);
+    transition: opacity 400ms ease, transform 400ms ease;
+  }
+  .check.show { opacity: 1; transform: translateY(0); }
+  .check .ok { color: var(--green); margin-right: 14px; }
+
+  .brand {
+    position: absolute; top: 40px; left: 50%; transform: translateX(-50%);
+    font-family: 'Inter', sans-serif; font-weight: 800; font-size: 22px;
+    letter-spacing: 0.2em; color: var(--accent);
+  }
+  .url {
+    color: var(--muted); font-family: 'JetBrains Mono', monospace;
+    font-size: 24px; margin-top: 20px;
+  }
+
+  /* Bottom caption (visual overlay) */
+  .caption {
+    position: absolute; bottom: 44px; left: 50%; transform: translateX(-50%);
+    font-size: 24px; font-weight: 600;
+    color: var(--text);
+    background: rgba(17,20,27,0.88);
+    border: 1px solid var(--border);
+    padding: 14px 28px; border-radius: 999px;
+    backdrop-filter: blur(6px);
+  }
+</style>
+</head>
+<body>
+
+<!-- Scene 1: The Problem (0-15s) -->
+<section class="scene" id="s1">
+  <div class="brand">THUMBGATE</div>
+  <div class="scene-title">The same mistake. Twice. You paid for both.</div>
+  <div class="scene-subtitle">Monday: your agent overwrites a config file without checking it exists. Thursday: fresh session, same mistake.</div>
+  <div class="split">
+    <div class="term">
+      <div class="term-chrome"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="term-label">Monday · 2:14pm</div>
+      <pre id="s1-left"></pre>
+    </div>
+    <div class="term">
+      <div class="term-chrome"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="term-label">Thursday · 10:03am</div>
+      <pre id="s1-right"></pre>
+    </div>
+  </div>
+  <div class="caption" id="s1-cap" style="opacity:0;transition:opacity 400ms ease">Same failure. Different session. You paid for both retries.</div>
+</section>
+
+<!-- Scene 2: The Idea (15-30s) -->
+<section class="scene" id="s2">
+  <div class="brand">THUMBGATE</div>
+  <div class="scene-title">One thumbs-down → a Pre-Action Gate.</div>
+  <div class="scene-subtitle">ThumbGate extracts the <em>pattern</em> behind your correction and installs a small rule that fires before the next call leaves your machine.</div>
+  <div class="term">
+    <div class="term-chrome"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+    <div class="term-label">thumbgate · capture</div>
+    <pre id="s2-body"></pre>
+  </div>
+</section>
+
+<!-- Scene 3: The Gate Fires (30-55s) -->
+<section class="scene" id="s3">
+  <div class="brand">THUMBGATE</div>
+  <div class="scene-title">Watch the gate fire.</div>
+  <div class="scene-subtitle">Next session, the agent drafts the same bad call. The gate intercepts it before the round-trip to the model — zero tokens spent.</div>
+  <div class="term" style="position:relative">
+    <div class="term-chrome"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+    <div class="term-label">claude-code · session #47</div>
+    <pre id="s3-body"></pre>
+    <div class="gate-banner" id="s3-gate">
+      <div class="title">⛔ Pre-Action Gate matched</div>
+      <div class="row"><span class="k">tool</span>Write</div>
+      <div class="row"><span class="k">pattern</span>overwrite + no-existence-check</div>
+      <div class="row"><span class="k">confidence</span>0.91</div>
+      <div class="row"><span class="k">source</span>your 👎 on Monday 2:14pm</div>
+      <div class="row"><span class="k">cost saved</span>~4,200 input + ~12,000 retry tokens</div>
+    </div>
+  </div>
+</section>
+
+<!-- Scene 4: Dashboard (55-75s) -->
+<section class="scene" id="s4">
+  <div class="brand">THUMBGATE</div>
+  <div class="scene-title">Your team's shared memory, compounding.</div>
+  <div class="scene-subtitle">Every block is logged with pattern, confidence, and tokens saved. Quiet gates retire. Productive gates stay.</div>
+  <div class="stats">
+    <div class="stat" id="s4-stat1">
+      <div class="label">Lessons learned this week</div>
+      <div class="value accent">7</div>
+    </div>
+    <div class="stat" id="s4-stat2">
+      <div class="label">Gates active</div>
+      <div class="value">3</div>
+    </div>
+    <div class="stat" id="s4-stat3">
+      <div class="label">Tokens saved</div>
+      <div class="value green">42,700</div>
+    </div>
+  </div>
+  <div class="ledger">
+    <div class="ledger-head">
+      <div>Rule</div><div>Fired</div><div>Confidence</div><div>Saved</div>
+    </div>
+    <div class="ledger-row" id="s4-row1">
+      <div>destructive-write-no-existence-check</div>
+      <div>4×</div>
+      <div>0.91</div>
+      <div class="ok">~16,800 tok</div>
+    </div>
+    <div class="ledger-row" id="s4-row2">
+      <div>missing-error-boundary-in-react-route</div>
+      <div>2×</div>
+      <div>0.83</div>
+      <div class="ok">~6,400 tok</div>
+    </div>
+    <div class="ledger-row" id="s4-row3">
+      <div>pnpm-install-without-frozen-lockfile</div>
+      <div>3×</div>
+      <div>0.88</div>
+      <div class="ok">~9,100 tok</div>
+    </div>
+  </div>
+  <div class="caption">Local-first · SQLite on disk · nothing leaves your machine</div>
+</section>
+
+<!-- Scene 5: CTA (75-90s) -->
+<section class="scene" id="s5">
+  <div class="brand">THUMBGATE</div>
+  <div class="install-wrap">
+    <div class="install-cmd"><span class="prompt">$</span>npx thumbgate init</div>
+    <div class="checks">
+      <div class="check" id="s5-c1"><span class="ok">✓</span>Registered with Claude Code · Cursor · Codex · Gemini</div>
+      <div class="check" id="s5-c2"><span class="ok">✓</span>PreToolUse hook installed</div>
+      <div class="check" id="s5-c3"><span class="ok">✓</span>Ready — thumbs-down anything you don't want repeated</div>
+    </div>
+    <div class="url">thumbgate.dev · free to try</div>
+  </div>
+</section>
+
+<script>
+/*
+ * Timeline — drives the animation.
+ * Total runtime: 90,000 ms. Each cue fires at a fixed absolute timestamp
+ * so the rendered video lines up exactly with the voiceover generated from
+ * docs/marketing/demo-video-script.md.
+ */
+const TIMELINE_MS = 90000;
+
+/* Scene 1 content — repeated identical failure on two days. */
+const s1Script = [
+  { pane: 'L', delay: 300,  text: '$ claude edit config.json\n' },
+  { pane: 'L', delay: 1200, text: '[Write] /app/config.json (overwrite)\n' },
+  { pane: 'L', delay: 1600, text: 'Error: no existence check; previous config lost.\n', cls: 'err' },
+  { pane: 'L', delay: 2600, text: '→ you: 👎  "check before overwrite"\n', cls: 'warn' },
+
+  { pane: 'R', delay: 4200, text: '$ claude edit config.json\n' },
+  { pane: 'R', delay: 5100, text: '[Write] /app/config.json (overwrite)\n' },
+  { pane: 'R', delay: 5500, text: 'Error: no existence check; previous config lost.\n', cls: 'err' },
+  { pane: 'R', delay: 6400, text: '→ you: 👎  "check before overwrite"\n', cls: 'warn' },
+  { pane: 'R', delay: 7400, text: '\ntokens billed: 4,200 input + 12,000 retry\n', cls: 'muted' },
+];
+
+/* Scene 2 content — capture → rule extracted → gate installed. */
+const s2Script = [
+  { delay: 200,  text: '$ thumbgate capture --from-last-thumbs-down\n',            cls: 'cmd' },
+  { delay: 1800, text: '\n',                                                        cls: 'muted' },
+  { delay: 1800, text: '👎 Feedback captured.\n',                                    cls: 'warn' },
+  { delay: 2600, text: '  ├─ Parsing context …\n',                                   cls: 'muted' },
+  { delay: 3400, text: '  ├─ Pattern identified: destructive Write, no existence check.\n', cls: 'hi' },
+  { delay: 4600, text: '  └─ Installing Pre-Action Gate …\n',                        cls: 'muted' },
+  { delay: 6000, text: '\n',                                                         cls: 'muted' },
+  { delay: 6000, text: '✅ Gate active: destructive-write-no-existence-check\n',     cls: 'ok' },
+  { delay: 7000, text: '   fires on: any agent attempting a Write in this shape.\n', cls: 'muted' },
+];
+
+/* Scene 3 content — next session. Agent attempts bad call, gate intercepts, agent re-plans. */
+const s3Script = [
+  { delay: 200,  text: '$ claude "refresh the dev env config"\n',   cls: 'cmd' },
+  { delay: 1600, text: '\nagent · planning …\n',                    cls: 'muted' },
+  { delay: 2600, text: 'agent → tool call:\n',                      cls: 'muted' },
+  { delay: 3400, text: '  Write { path: "config.json", mode: "overwrite" }\n', cls: 'hi' },
+  /* banner drops in at 4400 — handled as a cue */
+  { delay: 8800, text: '\nagent · re-planning with gate context …\n', cls: 'muted' },
+  { delay: 10400, text: 'agent → tool call:\n',                         cls: 'muted' },
+  { delay: 11200, text: '  Read  { path: "config.json" }\n',            cls: 'ok' },
+  { delay: 12200, text: '  Write { path: "config.json", mode: "merge" }\n', cls: 'ok' },
+  { delay: 13600, text: '\n✅ done · 0 retry tokens billed\n',          cls: 'ok' },
+];
+
+function colorize(text, cls) {
+  if (!cls) return text.replace(/^\$/, '<span class="prompt">$</span>');
+  return `<span class="${cls}">${text.replace(/^\$/, '<span class=\"prompt\">$</span>')}</span>`;
+}
+
+function runTerminalScript(targetId, script, paneFilter) {
+  const el = document.getElementById(targetId);
+  script.forEach(cue => {
+    if (paneFilter && cue.pane !== paneFilter) return;
+    setTimeout(() => {
+      el.insertAdjacentHTML('beforeend', colorize(cue.text, cue.cls));
+    }, cue.delay);
+  });
+}
+
+function scheduleScene(id, startMs, endMs) {
+  setTimeout(() => document.getElementById(id).classList.add('active'), startMs);
+  setTimeout(() => document.getElementById(id).classList.remove('active'), endMs);
+}
+
+/* Scene 1 — 0-15s */
+scheduleScene('s1', 0, 15000);
+runTerminalScript('s1-left',  s1Script, 'L');
+runTerminalScript('s1-right', s1Script, 'R');
+setTimeout(() => document.getElementById('s1-cap').style.opacity = '1', 8200);
+
+/* Scene 2 — 15-30s */
+scheduleScene('s2', 15000, 30000);
+setTimeout(() => runTerminalScript('s2-body', s2Script, null), 15200);
+
+/* Scene 3 — 30-55s (longest; gate fires + safe retry) */
+scheduleScene('s3', 30000, 55000);
+setTimeout(() => runTerminalScript('s3-body', s3Script, null), 30200);
+setTimeout(() => document.getElementById('s3-gate').classList.add('show'), 30200 + 4400);
+setTimeout(() => document.getElementById('s3-gate').classList.remove('show'), 30200 + 9400);
+
+/* Scene 4 — 55-75s */
+scheduleScene('s4', 55000, 75000);
+setTimeout(() => document.getElementById('s4-stat1').classList.add('show'), 55600);
+setTimeout(() => document.getElementById('s4-stat2').classList.add('show'), 56200);
+setTimeout(() => document.getElementById('s4-stat3').classList.add('show'), 56800);
+setTimeout(() => document.getElementById('s4-row1').classList.add('show'), 57800);
+setTimeout(() => document.getElementById('s4-row2').classList.add('show'), 58600);
+setTimeout(() => document.getElementById('s4-row3').classList.add('show'), 59400);
+
+/* Scene 5 — 75-90s */
+scheduleScene('s5', 75000, TIMELINE_MS);
+setTimeout(() => document.getElementById('s5-c1').classList.add('show'), 76200);
+setTimeout(() => document.getElementById('s5-c2').classList.add('show'), 77000);
+setTimeout(() => document.getElementById('s5-c3').classList.add('show'), 77800);
+
+/* Signal completion to the headless renderer. */
+setTimeout(() => { window.__renderDone = true; }, TIMELINE_MS);
+</script>
+</body>
+</html>
