@@ -1473,8 +1473,21 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
   const context = merged.context || '';
   const whatWentWrong = merged.whatWentWrong || '';
   const whatWorked = merged.whatWorked || '';
+  const whatToChange = merged.whatToChange || '';
   const tags = Array.isArray(merged.tags) ? merged.tags.join(', ') : (merged.tags || '');
   const timestamp = merged.timestamp ? new Date(merged.timestamp).toLocaleString() : '';
+  const isoTimestamp = merged.timestamp || '';
+
+  // Technical metadata
+  const failureType = merged.failureType || null;
+  const skill = merged.skill || null;
+  const source = merged.source || fb.source || null;
+  const relatedFeedbackId = merged.relatedFeedbackId || null;
+  const promotedToMemory = !!mem.id || !!merged.promotedToMemory;
+  const feedbackEventId = fb.id || null;
+  const memoryRecordId = mem.id || null;
+  const guardrails = merged.guardrails || null;
+  const rubricScores = merged.rubricScores || null;
 
   // Structured rule
   const rule = merged.structuredRule || merged.rule || null;
@@ -1509,12 +1522,25 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
 
   let convoHtml = '';
   if (Array.isArray(convoWindow) && convoWindow.length > 0) {
-    const msgs = convoWindow.map((m) => {
-      const role = esc(m.role || 'unknown');
-      const content = esc(typeof m.content === 'string' ? m.content : JSON.stringify(m.content));
-      return `<div class="convo-msg"><span class="convo-role">${role}</span><span class="convo-content">${content}</span></div>`;
-    }).join('');
-    convoHtml = sectionCard('Conversation Window', `<div class="convo-list">${msgs}</div>`, 'convoWindow');
+    const seen = new Set();
+    const validMsgs = convoWindow.filter((m) => {
+      const text = m.content || m.text || '';
+      if (typeof text === 'string' ? text.trim().length === 0 : !text) return false;
+      const dedupeKey = (m.role || m.author || '') + '|' + (typeof text === 'string' ? text.trim() : JSON.stringify(text));
+      if (seen.has(dedupeKey)) return false;
+      seen.add(dedupeKey);
+      return true;
+    });
+    if (validMsgs.length > 0) {
+      const msgs = validMsgs.map((m) => {
+        const role = esc(m.role || m.author || 'system');
+        const content = esc(typeof (m.content || m.text) === 'string' ? (m.content || m.text) : JSON.stringify(m.content || m.text));
+        const ts = m.timestamp ? `<span style="color:var(--text-muted);font-size:10px;margin-left:8px">${esc(new Date(m.timestamp).toLocaleString())}</span>` : '';
+        const src = m.source ? `<span style="color:var(--text-muted);font-size:10px;margin-left:8px;opacity:0.6">${esc(m.source)}</span>` : '';
+        return `<div class="convo-msg"><span class="convo-role">${role}</span>${ts}${src}<div class="convo-content" style="margin-top:4px">${content}</div></div>`;
+      }).join('');
+      convoHtml = sectionCard('Conversation Window', `<div class="convo-list">${msgs}</div>`, 'convoWindow');
+    }
   }
 
   let reflectorHtml = '';
@@ -1560,6 +1586,51 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
     if (bayesian.uncertainty !== undefined) parts.push(`<tr><td class="label">Uncertainty</td><td>${esc(String(bayesian.uncertainty))}</td></tr>`);
     if (parts.length) bayesianHtml = sectionCard('Bayesian Belief', `<table class="detail-table">${parts.join('')}</table>`, 'bayesian');
   }
+
+  // Technical metadata section
+  const techParts = [];
+  techParts.push(`<tr><td class="label">Feedback Event ID</td><td><code>${esc(feedbackEventId || lessonId)}</code></td></tr>`);
+  if (memoryRecordId) techParts.push(`<tr><td class="label">Memory Record ID</td><td><code>${esc(memoryRecordId)}</code></td></tr>`);
+  techParts.push(`<tr><td class="label">Promoted to Memory</td><td>${promotedToMemory ? '<span style="color:var(--green)">✓ Yes</span>' : '<span style="color:var(--text-muted)">✗ No</span>'}</td></tr>`);
+  if (failureType) techParts.push(`<tr><td class="label">Failure Type</td><td><span style="color:${failureType === 'decision' ? 'var(--yellow)' : 'var(--purple)'};font-weight:600">${esc(failureType)}</span> <span style="color:var(--text-muted);font-size:11px">${failureType === 'decision' ? '(wrong tool/action chosen)' : '(right tool, bad params/output)'}</span></td></tr>`);
+  if (skill) techParts.push(`<tr><td class="label">Skill</td><td><code>${esc(skill)}</code></td></tr>`);
+  if (source) techParts.push(`<tr><td class="label">Source</td><td>${esc(source)}</td></tr>`);
+  if (relatedFeedbackId) techParts.push(`<tr><td class="label">Related Feedback</td><td><a href="/lessons/${esc(relatedFeedbackId)}" style="color:var(--cyan)">${esc(relatedFeedbackId)}</a></td></tr>`);
+  if (isoTimestamp) techParts.push(`<tr><td class="label">ISO Timestamp</td><td><code>${esc(isoTimestamp)}</code></td></tr>`);
+  const techMetadataHtml = sectionCard('Technical Metadata', `<table class="detail-table">${techParts.join('')}</table>`, 'techMetadata');
+
+  // What to Change section (for negative feedback)
+  let whatToChangeHtml = '';
+  if (whatToChange) {
+    whatToChangeHtml = sectionCard('What to Change', `<div style="padding:12px;background:var(--bg-raised);border-radius:8px;font-size:13px;color:var(--text-muted);white-space:pre-wrap">${esc(whatToChange)}</div>`, 'whatToChange');
+  }
+
+  // Guardrails section
+  let guardrailsHtml = '';
+  if (guardrails && typeof guardrails === 'object') {
+    const gParts = [];
+    if (guardrails.testsPassed !== undefined) gParts.push(`<tr><td class="label">Tests Passed</td><td>${guardrails.testsPassed ? '<span style="color:var(--green)">✓</span>' : '<span style="color:var(--red)">✗</span>'}</td></tr>`);
+    if (guardrails.pathSafety !== undefined) gParts.push(`<tr><td class="label">Path Safety</td><td>${guardrails.pathSafety ? '<span style="color:var(--green)">✓</span>' : '<span style="color:var(--red)">✗</span>'}</td></tr>`);
+    if (guardrails.budgetCompliant !== undefined) gParts.push(`<tr><td class="label">Budget Compliant</td><td>${guardrails.budgetCompliant ? '<span style="color:var(--green)">✓</span>' : '<span style="color:var(--red)">✗</span>'}</td></tr>`);
+    if (gParts.length) guardrailsHtml = sectionCard('Guardrails', `<table class="detail-table">${gParts.join('')}</table>`, 'guardrails');
+  }
+
+  // Rubric Scores section (from capture, distinct from rubric evaluation)
+  let rubricScoresHtml = '';
+  if (Array.isArray(rubricScores) && rubricScores.length > 0) {
+    const rows = rubricScores.map(s => `<tr><td class="label">${esc(s.criterion || '')}</td><td><span style="font-weight:700;color:${(s.score || 0) >= 0.7 ? 'var(--green)' : (s.score || 0) >= 0.4 ? 'var(--yellow)' : 'var(--red)'}">${esc(String(s.score || 0))}</span> <span style="color:var(--text-muted);font-size:11px">${s.judge ? 'by ' + esc(s.judge) : ''}</span>${s.evidence ? `<div style="margin-top:4px;font-size:12px;color:var(--text-muted)">${esc(s.evidence)}</div>` : ''}</td></tr>`).join('');
+    rubricScoresHtml = sectionCard('Rubric Scores', `<table class="detail-table">${rows}</table>`, 'rubricScores');
+  }
+
+  // Raw JSON (collapsible)
+  const rawJson = JSON.stringify(record, null, 2);
+  const rawJsonHtml = `<div class="detail-card" id="rawJson">
+    <h3 style="cursor:pointer" onclick="var el=document.getElementById('rawJsonContent');el.style.display=el.style.display==='none'?'block':'none';this.textContent=el.style.display==='none'?'Raw JSON ▸':'Raw JSON ▾'">Raw JSON ▸</h3>
+    <div id="rawJsonContent" style="display:none">
+      <button class="btn btn-secondary" style="margin-bottom:12px;padding:6px 16px;font-size:12px" onclick="navigator.clipboard.writeText(${esc(JSON.stringify(rawJson))}).then(()=>showToast('JSON copied!','success'))">📋 Copy JSON</button>
+      <pre style="background:var(--bg-raised);border:1px solid var(--border);border-radius:8px;padding:16px;font-size:11px;font-family:var(--mono);overflow-x:auto;max-height:600px;overflow-y:auto;color:var(--text-muted)">${esc(rawJson)}</pre>
+    </div>
+  </div>`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -1667,6 +1738,10 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
     </div>
   </div>
 
+  ${techMetadataHtml}
+  ${whatToChangeHtml}
+  ${guardrailsHtml}
+  ${rubricScoresHtml}
   ${structuredRuleHtml}
   ${convoHtml}
   ${reflectorHtml}
@@ -1674,6 +1749,7 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
   ${rubricHtml}
   ${synthesisHtml}
   ${bayesianHtml}
+  ${rawJsonHtml}
 
   <div class="actions-bar">
     <button class="btn btn-primary" onclick="saveChanges()">Save Changes</button>
@@ -4849,6 +4925,169 @@ async function addContext(){
           unpairedErrors: result.unpairedErrors.length,
           unpairedLearnings: result.unpairedLearnings.length,
           outputPath: paths.outputPath,
+        });
+        return;
+      }
+
+      // --- Team Lesson Export: POST /v1/lessons/export ---
+      if (req.method === 'POST' && pathname === '/v1/lessons/export') {
+        const body = await parseJsonBody(req);
+        const feedbackDir = requestSafeDataDir;
+        const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
+        const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
+        const memories = readJSONLLocal(memoryLogPath, { maxLines: 0 });
+        const feedbacks = readJSONLLocal(feedbackLogPath, { maxLines: 0 });
+
+        // Merge into unified lesson records
+        const lessonMap = new Map();
+        for (const rec of feedbacks) {
+          if (rec.id) lessonMap.set(rec.id, { feedbackEvent: rec, memoryRecord: null });
+        }
+        for (const rec of memories) {
+          if (rec.id) {
+            const existing = lessonMap.get(rec.id);
+            if (existing) { existing.memoryRecord = rec; }
+            else { lessonMap.set(rec.id, { feedbackEvent: null, memoryRecord: rec }); }
+          }
+        }
+
+        // Filter by tags/signal if requested
+        const filterTags = Array.isArray(body.tags) ? body.tags : [];
+        const filterSignal = body.signal || null; // 'up' | 'down' | null
+        let lessons = Array.from(lessonMap.values());
+        if (filterTags.length > 0) {
+          lessons = lessons.filter((l) => {
+            const merged = { ...(l.feedbackEvent || {}), ...(l.memoryRecord || {}) };
+            const tags = Array.isArray(merged.tags) ? merged.tags : [];
+            return filterTags.some((t) => tags.includes(t));
+          });
+        }
+        if (filterSignal) {
+          lessons = lessons.filter((l) => {
+            const merged = { ...(l.feedbackEvent || {}), ...(l.memoryRecord || {}) };
+            return normalizeLessonSignal(merged.signal) === filterSignal;
+          });
+        }
+
+        const bundle = {
+          version: '1.0.0',
+          exportedAt: new Date().toISOString(),
+          source: {
+            project: path.basename(feedbackDir),
+            hostname: require('os').hostname(),
+          },
+          lessonCount: lessons.length,
+          lessons: lessons.map((l) => {
+            const merged = { ...(l.feedbackEvent || {}), ...(l.memoryRecord || {}) };
+            return {
+              id: merged.id,
+              signal: normalizeLessonSignal(merged.signal),
+              title: merged.title || merged.context || '',
+              context: merged.context || '',
+              whatWentWrong: merged.whatWentWrong || '',
+              whatWorked: merged.whatWorked || '',
+              whatToChange: merged.whatToChange || '',
+              tags: Array.isArray(merged.tags) ? merged.tags : [],
+              timestamp: merged.timestamp || null,
+              failureType: merged.failureType || null,
+              skill: merged.skill || null,
+              structuredRule: merged.structuredRule || merged.rule || null,
+              diagnosis: merged.diagnosis || null,
+            };
+          }),
+        };
+
+        if (body.outputPath) {
+          const safePath = resolveSafePath(body.outputPath, { safeDataDir: requestSafeDataDir });
+          fs.mkdirSync(path.dirname(safePath), { recursive: true });
+          fs.writeFileSync(safePath, JSON.stringify(bundle, null, 2));
+        }
+
+        sendJson(res, 200, {
+          exported: bundle.lessonCount,
+          exportedAt: bundle.exportedAt,
+          source: bundle.source,
+          outputPath: body.outputPath || null,
+          bundle: body.inline !== false ? bundle : undefined,
+        });
+        return;
+      }
+
+      // --- Team Lesson Import: POST /v1/lessons/import ---
+      if (req.method === 'POST' && pathname === '/v1/lessons/import') {
+        const body = await parseJsonBody(req);
+        const bundle = body.bundle || body;
+        if (!bundle.lessons || !Array.isArray(bundle.lessons)) {
+          sendJson(res, 400, { error: 'Invalid bundle: missing lessons array' });
+          return;
+        }
+
+        const feedbackDir = requestSafeDataDir;
+        const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
+
+        // Load existing IDs for dedup
+        const existing = readJSONLLocal(feedbackLogPath, { maxLines: 0 });
+        const existingIds = new Set(existing.map((r) => r.id).filter(Boolean));
+        // Also dedup by title+signal content hash
+        const existingHashes = new Set(existing.map((r) => {
+          const t = (r.title || r.context || '').trim().toLowerCase();
+          const s = normalizeLessonSignal(r.signal);
+          return `${s}|${t}`;
+        }).filter((h) => h !== '|'));
+
+        let imported = 0;
+        let skippedDuplicate = 0;
+        const importedIds = [];
+
+        for (const lesson of bundle.lessons) {
+          // Skip if exact ID exists
+          if (lesson.id && existingIds.has(lesson.id)) {
+            skippedDuplicate++;
+            continue;
+          }
+          // Skip if same title+signal already exists (content dedup)
+          const contentHash = `${normalizeLessonSignal(lesson.signal)}|${(lesson.title || lesson.context || '').trim().toLowerCase()}`;
+          if (contentHash !== '|' && existingHashes.has(contentHash)) {
+            skippedDuplicate++;
+            continue;
+          }
+
+          // Create imported record with provenance
+          const importedRecord = {
+            id: `imported_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            signal: lesson.signal || 'down',
+            title: lesson.title || '',
+            context: lesson.context || '',
+            whatWentWrong: lesson.whatWentWrong || '',
+            whatWorked: lesson.whatWorked || '',
+            whatToChange: lesson.whatToChange || '',
+            tags: [...(Array.isArray(lesson.tags) ? lesson.tags : []), 'team-import'],
+            timestamp: new Date().toISOString(),
+            failureType: lesson.failureType || null,
+            skill: lesson.skill || null,
+            structuredRule: lesson.structuredRule || null,
+            diagnosis: lesson.diagnosis || null,
+            provenance: {
+              importedAt: new Date().toISOString(),
+              originalId: lesson.id || null,
+              source: bundle.source || null,
+              exportedAt: bundle.exportedAt || null,
+            },
+          };
+
+          fs.appendFileSync(feedbackLogPath, JSON.stringify(importedRecord) + '\n', 'utf8');
+          existingIds.add(importedRecord.id);
+          existingHashes.add(contentHash);
+          importedIds.push(importedRecord.id);
+          imported++;
+        }
+
+        sendJson(res, 200, {
+          imported,
+          skippedDuplicate,
+          total: bundle.lessons.length,
+          importedIds,
+          source: bundle.source || null,
         });
         return;
       }
