@@ -283,9 +283,13 @@ __GA_BOOTSTRAP__
   .hero p { font-size: 17px; color: var(--text-muted); max-width: 520px; margin: 0 auto 36px; line-height: 1.6; }
   .hero-persona { font-size: 15px; color: var(--cyan); max-width: 600px; margin: 0 auto 20px; line-height: 1.5; font-weight: 500; }
   .hero-signals { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin: 0 auto 28px; max-width: 760px; }
-  .signal-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-raised); font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+  .signal-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-raised); font-size: 13px; font-weight: 600; letter-spacing: -0.01em; text-decoration: none; cursor: pointer; transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease; }
+  .signal-pill:hover { transform: translateY(-1px); border-color: rgba(34, 211, 238, 0.5); background: rgba(34, 211, 238, 0.06); }
+  .signal-pill:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
   .signal-pill.signal-up { border-color: rgba(74, 222, 128, 0.28); color: #b8f7c8; background: rgba(74, 222, 128, 0.08); }
+  .signal-pill.signal-up:hover { border-color: rgba(74, 222, 128, 0.6); background: rgba(74, 222, 128, 0.14); }
   .signal-pill.signal-down { border-color: rgba(248, 113, 113, 0.28); color: #ffc0c0; background: rgba(248, 113, 113, 0.08); }
+  .signal-pill.signal-down:hover { border-color: rgba(248, 113, 113, 0.6); background: rgba(248, 113, 113, 0.14); }
   .hero-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin: 0 auto 16px; max-width: 760px; }
   .btn-pro-page { display: inline-flex; align-items: center; justify-content: center; padding: 11px 18px; background: var(--cyan); color: var(--bg); border-radius: 999px; text-decoration: none; font-size: 14px; font-weight: 700; box-shadow: 0 0 0 1px rgba(34,211,238,0.28), 0 12px 32px rgba(34,211,238,0.18); transition: opacity 0.15s, transform 0.15s; }
   .btn-pro-page:hover { opacity: 0.9; transform: translateY(-1px); }
@@ -583,9 +587,9 @@ __GA_BOOTSTRAP__
       })();
     </script>
     <div class="hero-signals">
-      <div class="signal-pill signal-down">Block repeat hallucinations before the model sees them</div>
-      <div class="signal-pill signal-up">Thumbs-down once, blocked forever, across every agent</div>
-      <div class="signal-pill">CLI-first workflow governance with a live tokens-saved counter</div>
+      <a class="signal-pill signal-down" href="#how-it-works" title="See how gate interception works">Block repeat hallucinations before the model sees them</a>
+      <a class="signal-pill signal-up" href="#how-it-works" title="See the one-thumbs-down enforcement loop">Thumbs-down once, blocked forever, across every agent</a>
+      <a class="signal-pill" href="#install" title="Install the CLI">CLI-first workflow governance with a live tokens-saved counter</a>
     </div>
     <p class="hero-persona" style="display:none">For consultancies, platform teams, and AI product teams with one workflow owner, one repeated failure, and one buyer who needs proof before a wider rollout.</p>
     <div class="hero-actions" style="margin-top:32px;">
@@ -600,6 +604,7 @@ __GA_BOOTSTRAP__
         <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('hero_claude_extension_click',{cta:'install_claude_extension'})" style="font-size:12px;padding:8px 16px;background:#d97706;color:#fff;box-shadow:none;">Install Claude Extension</a>
         <a href="/go/github?utm_source=website&utm_medium=hero_cta&utm_campaign=github_repo&cta_id=hero_star_github&cta_placement=hero" target="_blank" rel="noopener" class="btn-free" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;font-size:12px;">⭐ Star on GitHub</a>
         <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" class="btn-install-link" target="_blank" rel="noopener" onclick="posthog.capture('hero_codex_plugin_click',{cta:'install_codex_plugin'})" style="font-size:11px;color:var(--text-muted);text-decoration:none;padding:6px 10px;">Install Codex plugin →</a>
+        <a href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/plugins/cursor-marketplace" class="btn-install-link" target="_blank" rel="noopener" onclick="posthog.capture('hero_cursor_plugin_click',{cta:'install_cursor_plugin'})" style="font-size:11px;color:var(--text-muted);text-decoration:none;padding:6px 10px;">Install Cursor plugin →</a>
         <a href="/go/gpt?utm_source=website&utm_medium=hero_cta&utm_campaign=chatgpt_gpt&cta_id=hero_open_gpt&cta_placement=hero" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('hero_cta_click',{cta:'open_gpt'})" style="font-size:11px;padding:6px 12px;background:transparent;border:1px solid rgba(74,222,128,0.3);color:var(--green);">Open ThumbGate GPT</a>
       </div>
     </div>
@@ -623,7 +628,7 @@ __GA_BOOTSTRAP__
       <div class="first-gate-steps">
         <div class="first-gate-step">
           <strong>1. Install ThumbGate</strong>
-          <p>Run <code>npx thumbgate init</code> in your repo. Or install the <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" style="color:var(--cyan);">Claude Extension</a>, <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" style="color:var(--cyan);">Codex plugin</a>, or <a href="/go/gpt" style="color:var(--cyan);">open the GPT</a>. Native ChatGPT rating buttons are not the ThumbGate capture path.</p>
+          <p>Run <code>npx thumbgate init</code> in your repo. Or install the <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" style="color:var(--cyan);">Claude Extension</a>, <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" style="color:var(--cyan);">Codex plugin</a>, <a href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/plugins/cursor-marketplace" style="color:var(--cyan);">Cursor plugin</a>, or <a href="/go/gpt" style="color:var(--cyan);">open the GPT</a>. Native ChatGPT rating buttons are not the ThumbGate capture path.</p>
         </div>
         <div class="first-gate-step">
           <strong>2. Give feedback</strong>
@@ -730,7 +735,7 @@ __GA_BOOTSTRAP__
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
         <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('claude_section_extension_click',{cta:'install_claude_extension'})" style="background:#d97706;color:#fff;">Download Claude Extension (.mcpb)</a>
-        <a href="/guides/claude-desktop" class="btn-free" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">Claude Desktop setup guide</a>
+        <a href="/guide.html" class="btn-free" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">Claude Desktop setup guide</a>
         <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/.claude-plugin/README.md" class="btn-free" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">Claude plugin docs</a>
       </div>
       <p class="gpt-note"><strong>Claude Code Skill:</strong> Type <code>/thumbgate</code> in any Claude Code session. Auto-triggers on “gate”, “feedback”, “block mistake”. Free skill on top of the same local gateway.</p>
@@ -773,30 +778,40 @@ __GA_BOOTSTRAP__
     <div class="section-label">Compatibility</div>
     <h2 class="section-title">One gateway across the agent surfaces you already use</h2>
     <div class="compatibility-grid">
-      <a class="compat-card" href="/guides/claude-desktop" style="border-color:rgba(217,119,6,0.3);background:linear-gradient(135deg, rgba(217,119,6,0.06) 0%, var(--bg-card) 100%);">
+      <a class="compat-card" href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" target="_blank" rel="noopener" onclick="if(typeof posthog!=='undefined')posthog.capture('compat_claude_desktop_click',{cta:'download_claude_desktop'})" style="border-color:rgba(217,119,6,0.3);background:linear-gradient(135deg, rgba(217,119,6,0.06) 0%, var(--bg-card) 100%);">
         <h3>🧩 Claude Desktop Extension</h3>
-        <p>Install the published Claude Desktop plugin <code>.mcpb</code> bundle today. Claude Code users can add the repo marketplace immediately with <code>/plugin marketplace add</code>. No waiting for directory approval.</p>
-        <div class="card-arrow" style="color:#d97706;">Get the Claude plugin →</div>
+        <p>Install the published Claude Desktop plugin <code>.mcpb</code> bundle today. Claude Code users can add the repo marketplace immediately with <code>/plugin marketplace add</code>. No waiting for directory approval. <a href="/guide.html" style="color:var(--text-muted);text-decoration:underline;" onclick="event.stopPropagation();">60-second setup guide →</a></p>
+        <div class="card-arrow" style="color:#d97706;">Download .mcpb bundle →</div>
       </a>
-      <a class="compat-card seo-card" href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/.claude/skills/thumbgate" target="_blank" rel="noopener">
+      <a class="compat-card seo-card" href="/guides/claude-code-prevent-repeated-mistakes.html" rel="noopener">
         <h3>⚡ Claude Code Skill</h3>
         <p>Type <code>/thumbgate</code> in any Claude Code session. Auto-triggers on "gate", "feedback", "block mistake". Free skill on top of the same local gateway teams later harden into a shared workflow.</p>
-        <div class="card-arrow">View skill on GitHub →</div>
+        <div class="card-arrow">Read the Claude Code guide →</div>
       </a>
-      <a class="compat-card" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/claude-codex-bridge/INSTALL.md" target="_blank" rel="noopener">
+      <a class="compat-card" href="/guide.html" rel="noopener">
         <h3>🤖 AI CLIs</h3>
         <p>Claude Code, Codex, Gemini CLI, Amp, and OpenCode all use the same gateway and memory model. Any MCP-compatible agent gets pre-action gates, feedback memory, and enforcement out of the box.</p>
-        <div class="card-arrow">View setup guide →</div>
+        <div class="card-arrow">Open the setup guide →</div>
       </a>
-      <a class="compat-card" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/codex-profile/INSTALL.md" target="_blank" rel="noopener">
+      <a class="compat-card" href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" target="_blank" rel="noopener" onclick="if(typeof posthog!=='undefined')posthog.capture('compat_codex_plugin_click',{cta:'download_codex_plugin'})">
         <h3>🧩 Codex plugin</h3>
-        <p>Codex ships with a published standalone ThumbGate plugin bundle plus a repo-local plugin profile. Download the zip, extract it, and install without wiring MCP by hand.</p>
-        <div class="card-arrow">Get the Codex plugin →</div>
+        <p>Codex ships with a published standalone ThumbGate plugin bundle plus a repo-local plugin profile. Download the zip, extract it, and install without wiring MCP by hand. <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/codex-profile/INSTALL.md" target="_blank" rel="noopener" style="color:var(--text-muted);text-decoration:underline;" onclick="event.stopPropagation();">Setup instructions →</a></p>
+        <div class="card-arrow">Download the Codex plugin →</div>
       </a>
-      <a class="compat-card" href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/plugins" target="_blank" rel="noopener">
+      <a class="compat-card" href="/guides/cursor-prevent-repeated-mistakes.html" rel="noopener">
+        <h3>🎯 Cursor plugin</h3>
+        <p>Drop the ThumbGate MCP config into <code>.cursor/mcp.json</code> and Cursor gets the same pre-action gates as Claude Code and Codex. Ships with bundled rules, commands, hooks, and agents.</p>
+        <div class="card-arrow">Read the Cursor guide →</div>
+      </a>
+      <a class="compat-card" href="/guide.html" rel="noopener">
         <h3>✏️ Editor workflows</h3>
-        <p>Cursor ships with a bundled marketplace plugin. VS Code works when you run an MCP-compatible agent inside it.</p>
-        <div class="card-arrow">Browse plugins →</div>
+        <p>VS Code works when you run an MCP-compatible agent inside it (Continue, Cline, etc.). Any editor that speaks MCP stdio gets the same gateway.</p>
+        <div class="card-arrow">Open the setup guide →</div>
+      </a>
+      <a class="compat-card" href="https://mcp.so/server/thumbgate" target="_blank" rel="noopener" onclick="if(typeof posthog!=='undefined')posthog.capture('compat_mcp_so_click',{cta:'view_mcp_directory'})">
+        <h3>🗂️ MCP Server Directory</h3>
+        <p>ThumbGate is listed on <code>mcp.so</code> — the largest public MCP server directory. Install via Smithery CLI, copy-paste config for your client, or verify it's a legitimate server before running it.</p>
+        <div class="card-arrow">View on mcp.so →</div>
       </a>
       <a class="compat-card" href="/go/gpt?utm_source=website&utm_medium=compatibility&utm_campaign=chatgpt_gpt&cta_id=compat_open_gpt&cta_placement=compatibility" target="_blank" rel="noopener">
         <h3>💬 ChatGPT GPT Actions</h3>
@@ -901,7 +916,7 @@ __GA_BOOTSTRAP__
 <!-- HOW IT WORKS -->
 <section class="how-it-works" id="how-it-works">
   <div class="container">
-    <div class="section-label">New in v1.5.4</div>
+    <div class="section-label">New in v1.5.8</div>
     <h2 class="section-title">Three steps to stop repeated AI failures</h2>
     <div class="steps">
       <div class="step">
@@ -1257,7 +1272,7 @@ __GA_BOOTSTRAP__
       <a href="https://www.linkedin.com/in/igorganapolsky" target="_blank" rel="noopener">LinkedIn</a>
       <a href="/blog">Blog</a>
     </div>
-    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License · v1.5.4</span>
+    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License · v1.5.8</span>
   </div>
 </footer>
 

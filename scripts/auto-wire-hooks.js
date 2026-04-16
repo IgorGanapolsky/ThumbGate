@@ -71,6 +71,7 @@ function detectAgent(flagAgent) {
     if (['codex'].includes(normalized)) return 'codex';
     if (['gemini'].includes(normalized)) return 'gemini';
     if (['forge', 'forgecode', 'forge-code'].includes(normalized)) return 'forge';
+    if (['cursor'].includes(normalized)) return 'cursor';
     return null;
   }
 
@@ -80,7 +81,63 @@ function detectAgent(flagAgent) {
   if (fs.existsSync(path.join(home, '.codex'))) return 'codex';
   if (fs.existsSync(path.join(home, '.gemini'))) return 'gemini';
   if (fs.existsSync(path.join(process.cwd(), 'forge.yaml'))) return 'forge';
+  if (fs.existsSync(path.join(process.cwd(), '.cursor'))) return 'cursor';
   return null;
+}
+
+// --- Cursor wiring ---
+// Cursor uses .cursor/mcp.json in the project root. We write the ThumbGate MCP
+// server config there so Cursor picks up the server on next restart. Cursor's
+// native hook model is different from Claude Code's — we rely on the MCP
+// server's PreToolUse-equivalent enforcement via the gate-check tool.
+
+function cursorMcpConfigPath() {
+  return path.join(process.cwd(), '.cursor', 'mcp.json');
+}
+
+function wireCursorHooks(options = {}) {
+  const mcpPath = cursorMcpConfigPath();
+  const dir = path.dirname(mcpPath);
+  const thumbgateServer = {
+    command: 'npx',
+    args: ['--yes', '--package', 'thumbgate@latest', 'thumbgate', 'serve'],
+  };
+
+  let existing = { mcpServers: {} };
+  if (fs.existsSync(mcpPath)) {
+    try {
+      existing = JSON.parse(fs.readFileSync(mcpPath, 'utf8'));
+      if (!existing.mcpServers) existing.mcpServers = {};
+    } catch {
+      return { changed: false, error: `Could not parse ${mcpPath}` };
+    }
+  }
+
+  const before = JSON.stringify(existing.mcpServers.thumbgate || null);
+  existing.mcpServers.thumbgate = thumbgateServer;
+  const after = JSON.stringify(existing.mcpServers.thumbgate);
+
+  const addedEntry = {
+    lifecycle: 'mcpServers.thumbgate',
+    command: `${thumbgateServer.command} ${thumbgateServer.args.join(' ')}`,
+  };
+
+  if (options.dryRun) {
+    return {
+      changed: before !== after,
+      dryRun: true,
+      settingsPath: mcpPath,
+      added: before === after ? [] : [addedEntry],
+    };
+  }
+
+  if (before === after) {
+    return { changed: false, settingsPath: mcpPath, added: [] };
+  }
+
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(mcpPath, JSON.stringify(existing, null, 2) + '\n');
+  return { changed: true, settingsPath: mcpPath, added: [addedEntry] };
 }
 
 // --- Claude Code wiring ---
@@ -543,7 +600,7 @@ function wireHooks(options) {
   const agent = detectAgent(options.agent);
   if (!agent) {
     return {
-      error: 'Could not detect AI agent. Use --agent=claude-code|codex|gemini|forge',
+      error: 'Could not detect AI agent. Use --agent=claude-code|codex|gemini|forge|cursor',
       agent: null,
       changed: false,
     };
@@ -562,6 +619,9 @@ function wireHooks(options) {
       break;
     case 'forge':
       result = wireForgeHooks(options);
+      break;
+    case 'cursor':
+      result = wireCursorHooks(options);
       break;
     default:
       return { error: `Unsupported agent: ${agent}`, agent, changed: false };
