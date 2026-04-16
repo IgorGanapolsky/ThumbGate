@@ -581,11 +581,11 @@ __GA_BOOTSTRAP__
       <span style="display:inline-flex;align-items:center;gap:4px;">🔌 6 agent integrations</span>
     </div>
     <p style="font-size:13px;color:var(--text-muted);margin:16px auto 0;max-width:660px;">No, you do not have to chat inside the GPT forever. The GPT is advice and checkpointing; local hooks do the hard blocking for Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and MCP-compatible agents.</p>
-    <details style="margin:20px auto 0;max-width:360px;text-align:center;" onclick="posthog.capture('hero_demo_open')">
-      <summary style="cursor:pointer;color:var(--cyan);font-size:14px;list-style:none;padding:8px 0;">▶ Watch 60-second demo</summary>
-      <video src="/assets/tiktok-agent-memory.mp4" controls playsinline preload="metadata" style="margin-top:12px;width:100%;max-width:320px;border-radius:12px;border:1px solid var(--border);background:#000;"></video>
-      <a href="/checkout/pro?utm_source=website&utm_medium=hero_demo&utm_campaign=pro_trial&cta_id=hero_post_demo" onclick="posthog.capture('hero_cta_click',{cta:'start_trial_post_demo'})" style="display:block;margin-top:14px;color:var(--cyan);font-size:14px;font-weight:700;text-decoration:none;">→ Start 7-day free trial</a>
-    </details>
+    <div id="demo" style="margin:28px auto 0;max-width:560px;text-align:center;" onclick="posthog.capture('hero_demo_view')">
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;letter-spacing:0.04em;text-transform:uppercase;">▶ 90-second demo · force-push → 👎 → blocked</div>
+      <video src="/assets/tiktok-agent-memory.mp4" controls playsinline preload="metadata" poster="/assets/instagram-card.png" style="width:100%;max-width:560px;border-radius:12px;border:1px solid var(--border);background:#000;box-shadow:0 10px 40px rgba(0,0,0,0.4);"></video>
+      <a href="/checkout/pro?utm_source=website&utm_medium=hero_demo&utm_campaign=pro_trial&cta_id=hero_post_demo" onclick="posthog.capture('hero_cta_click',{cta:'start_trial_post_demo'})" style="display:inline-block;margin-top:14px;color:var(--cyan);font-size:14px;font-weight:700;text-decoration:none;">→ Start 7-day Pro trial</a>
+    </div>
     <p style="font-size:13px;color:var(--text-muted);margin:8px auto 28px;max-width:560px;">Your agent has no memory. Every session, the same wrong pattern runs. ThumbGate turns a single correction into a permanent block — before the next tool call fires. <a href="#pricing" style="color:var(--cyan);text-decoration:none;">See all plans →</a></p>
     <div class="first-gate-card" id="first-gate">
       <div class="section-label" style="text-align:left;margin-bottom:8px;">First-Dollar Activation Path</div>
