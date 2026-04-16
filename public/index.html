@@ -283,9 +283,13 @@ __GA_BOOTSTRAP__
   .hero p { font-size: 17px; color: var(--text-muted); max-width: 520px; margin: 0 auto 36px; line-height: 1.6; }
   .hero-persona { font-size: 15px; color: var(--cyan); max-width: 600px; margin: 0 auto 20px; line-height: 1.5; font-weight: 500; }
   .hero-signals { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin: 0 auto 28px; max-width: 760px; }
-  .signal-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-raised); font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+  .signal-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-raised); font-size: 13px; font-weight: 600; letter-spacing: -0.01em; text-decoration: none; cursor: pointer; transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease; }
+  .signal-pill:hover { transform: translateY(-1px); border-color: rgba(34, 211, 238, 0.5); background: rgba(34, 211, 238, 0.06); }
+  .signal-pill:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
   .signal-pill.signal-up { border-color: rgba(74, 222, 128, 0.28); color: #b8f7c8; background: rgba(74, 222, 128, 0.08); }
+  .signal-pill.signal-up:hover { border-color: rgba(74, 222, 128, 0.6); background: rgba(74, 222, 128, 0.14); }
   .signal-pill.signal-down { border-color: rgba(248, 113, 113, 0.28); color: #ffc0c0; background: rgba(248, 113, 113, 0.08); }
+  .signal-pill.signal-down:hover { border-color: rgba(248, 113, 113, 0.6); background: rgba(248, 113, 113, 0.14); }
   .hero-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin: 0 auto 16px; max-width: 760px; }
   .btn-pro-page { display: inline-flex; align-items: center; justify-content: center; padding: 11px 18px; background: var(--cyan); color: var(--bg); border-radius: 999px; text-decoration: none; font-size: 14px; font-weight: 700; box-shadow: 0 0 0 1px rgba(34,211,238,0.28), 0 12px 32px rgba(34,211,238,0.18); transition: opacity 0.15s, transform 0.15s; }
   .btn-pro-page:hover { opacity: 0.9; transform: translateY(-1px); }
@@ -554,9 +558,9 @@ __GA_BOOTSTRAP__
       })();
     </script>
     <div class="hero-signals">
-      <div class="signal-pill signal-down">Block repeat hallucinations before the model sees them</div>
-      <div class="signal-pill signal-up">Thumbs-down once, blocked forever, across every agent</div>
-      <div class="signal-pill">CLI-first workflow governance with a live tokens-saved counter</div>
+      <a class="signal-pill signal-down" href="#how-it-works" title="See how gate interception works">Block repeat hallucinations before the model sees them</a>
+      <a class="signal-pill signal-up" href="#how-it-works" title="See the one-thumbs-down enforcement loop">Thumbs-down once, blocked forever, across every agent</a>
+      <a class="signal-pill" href="#install" title="Install the CLI">CLI-first workflow governance with a live tokens-saved counter</a>
     </div>
     <p class="hero-persona" style="display:none">For consultancies, platform teams, and AI product teams with one workflow owner, one repeated failure, and one buyer who needs proof before a wider rollout.</p>
     <div class="hero-actions" style="margin-top:32px;">
