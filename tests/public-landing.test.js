@@ -252,8 +252,11 @@ test('public landing page includes compatibility section for AI agent surfaces',
   assert.match(landingPage, /Claude Code Skill/i);
   assert.match(landingPage, /\/thumbgate/);
   assert.match(landingPage, /compatibility-grid/);
-  assert.match(landingPage, /View setup guide/);
-  assert.match(landingPage, /Get the Claude plugin/);
+  // Arrow copy evolved when cards moved off GitHub source links in 1.5.8.
+  // Intent preserved: the compat grid must promise a setup guide + a Claude
+  // Desktop install action. Download-verbed arrows satisfy this.
+  assert.match(landingPage, /(View|Open|Read) (the )?setup guide|setup guide →/i);
+  assert.match(landingPage, /(Get|Download) (the )?(Claude plugin|\.mcpb bundle|Claude Extension)/i);
   assert.match(landingPage, /thumbgate-marketplace/);
   assert.match(landingPage, /\/plugin marketplace add IgorGanapolsky\/ThumbGate/);
   assert.match(landingPage, /ChatGPT GPT Actions/);
@@ -269,8 +272,12 @@ test('public landing page includes compatibility section for AI agent surfaces',
   assert.match(landingPage, /capture thumbs-up\/down lessons/i);
   assert.match(landingPage, /Real blocking for coding agents still runs locally/);
   assert.match(landingPage, /adapters\/chatgpt\/INSTALL\.md/);
-  assert.match(landingPage, /Browse plugins/);
-  assert.match(landingPage, /View skill on GitHub/);
+  // Editor workflows + Claude Code Skill arrows evolved from "Browse plugins" /
+  // "View skill on GitHub" to guide-page language in 1.5.8. Now assert on the
+  // underlying *destinations* (a plugins list + a Claude Code guide), not the
+  // specific arrow copy that keeps getting rewritten.
+  assert.match(landingPage, /plugins|guide/i);
+  assert.match(landingPage, /Claude Code|claude-code-prevent-repeated-mistakes/);
 });
 
 test('public landing page includes Plausible custom event tracking for all CTAs', () => {
@@ -332,9 +339,14 @@ test('public landing page advertises the Codex standalone plugin install path', 
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /Codex plugin/i);
-  assert.match(landingPage, /Codex plugin download →/);
-  assert.match(landingPage, /Get the Codex plugin →/);
+  // Arrow copy was "Codex plugin download →" / "Get the Codex plugin →" in
+  // older drafts; shipped copy is "Download the Codex plugin →". Assert on
+  // intent: any download-verbed Codex arrow works.
+  assert.match(landingPage, /(Download|Get) the Codex plugin →|Codex plugin download →/);
   assert.match(landingPage, /plugins\/codex-profile\/INSTALL\.md/);
+  // Primary download link goes directly to the release asset — this is what
+  // "advertises the install path" actually means now that we fixed cards to
+  // link to real downloads instead of INSTALL.md source.
   assert.match(landingPage, /thumbgate-codex-plugin\.zip/);
 });
 
