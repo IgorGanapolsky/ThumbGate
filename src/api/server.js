@@ -5126,7 +5126,7 @@ async function addContext(){
 
           // Create imported record with provenance
           const importedRecord = {
-            id: `imported_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            id: `imported_${Date.now()}_${require("crypto").randomBytes(4).toString("hex")}`,
             signal: lesson.signal || 'down',
             title: lesson.title || '',
             context: lesson.context || '',
