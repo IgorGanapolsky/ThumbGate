@@ -1163,18 +1163,16 @@ function renderSeoPageHtml(page, runtimeConfig = {}) {
     }
     .sidebar-card {
       padding: 20px;
+    }
+    /* Only the first sidebar card sticks. Stacking multiple stickies at the
+       same top offset makes them overlap each other on scroll. The related-
+       pages card flows normally below. */
+    .sidebar-card:first-child {
       position: sticky;
       top: 84px;
       max-height: calc(100vh - 104px);
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
-    }
-    @media (max-width: 960px) {
-      .sidebar-card {
-        position: static;
-        max-height: none;
-        overflow: visible;
-      }
     }
     .proof-links {
       display: flex;
@@ -1226,8 +1224,10 @@ function renderSeoPageHtml(page, runtimeConfig = {}) {
       .grid {
         grid-template-columns: 1fr;
       }
-      .sidebar-card {
+      .sidebar-card:first-child {
         position: static;
+        max-height: none;
+        overflow: visible;
       }
     }
   </style>
