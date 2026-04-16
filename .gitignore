@@ -42,3 +42,6 @@ test-vault-*/
 
 coverage/
 undefined/
+
+# Generated explainer-video artifacts (regenerable via scripts/render-demo-video/*)
+scripts/render-demo-video/narration.mp3
