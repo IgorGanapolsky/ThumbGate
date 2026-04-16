@@ -1,0 +1,54 @@
+name: LinkedIn Quote-Post Engagement
+
+# Publishes a quote-post (reshare with our commentary) on the authenticated
+# member's feed, referencing a target activity URN. Used when Community
+# Management API comment posting is not available on the LinkedIn app (see
+# linkedin-comment-engage.yml). The target author gets notified via the
+# reshare reference even though we are not commenting inline on their thread.
+#
+# Required secrets:
+#   LINKEDIN_ACCESS_TOKEN  — w_member_social scope (from "Share on LinkedIn" product)
+#   LINKEDIN_PERSON_URN    — urn:li:person:XXXX (post author)
+
+on:
+  workflow_dispatch:
+    inputs:
+      parent_urn:
+        description: 'Target activity URN to quote-post, e.g. urn:li:activity:7450534811640782848'
+        required: true
+        type: string
+      commentary:
+        description: 'Commentary body shown above the embedded post (keep <3000 chars)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linkedin-quote-post-engage-${{ github.event.inputs.parent_urn }}
+  cancel-in-progress: false
+
+jobs:
+  quote_post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    env:
+      LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+      LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v6
+        with:
+          node-version: '18'
+
+      - name: Publish quote-post
+        run: |
+          node scripts/social-analytics/publishers/linkedin-quote-post.js \
+            --parent='${{ github.event.inputs.parent_urn }}' \
+            --text='${{ github.event.inputs.commentary }}'
