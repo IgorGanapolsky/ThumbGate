@@ -19,6 +19,7 @@
     ".claude-plugin/marketplace.json",
     ".claude-plugin/plugin.json",
     ".well-known/",
+    "CHANGELOG.md",
     "LICENSE",
     "README.md",
     "adapters/amp/skills/thumbgate-feedback/SKILL.md",

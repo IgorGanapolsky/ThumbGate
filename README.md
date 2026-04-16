@@ -289,6 +289,32 @@ The export bundle includes full lesson metadata: signal, title, context, tags, f
 
 ---
 
+## DPO Export for Fine-Tuning (Pro + Team)
+
+Every thumbs-up and thumbs-down becomes a training signal. ThumbGate Pro exports your captured feedback as DPO (Direct Preference Optimization) pairs — ready to feed into a LoRA fine-tune so your model stops repeating known mistakes at the weight level, not just the gate level.
+
+**Export DPO pairs:**
+
+```bash
+curl -X POST http://localhost:3456/v1/dpo/export \
+  -H "Authorization: Bearer $THUMBGATE_API_KEY" \
+  -o dpo-pairs.jsonl
+```
+
+**What you get:** JSONL where each line is a preference pair:
+- `chosen` — the agent action you thumbed up
+- `rejected` — the action you thumbed down for the same task context
+- `prompt` — the originating user intent
+
+**Use cases:**
+- Fine-tune Llama 3 / Mistral / local models with a LoRA adapter trained on your real mistakes
+- Feed into RLAIF or KTO pipelines (KTO export also available via `/v1/kto/export`)
+- Build a model that natively avoids your team's known failure patterns — no gate at inference time needed
+
+**Why this matters:** Gates block mistakes. Fine-tuning prevents them from being attempted. Combine both for belt-and-suspenders governance.
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
