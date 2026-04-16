@@ -121,9 +121,9 @@ function validateInvariant(raw) {
 // Constraint Evaluation
 // ---------------------------------------------------------------------------
 
-function evaluateConstraints(spec, { tool, command, content } = {}) {
+function evaluateConstraints(spec, { tool, command, content, sandbox } = {}) {
   const results = [];
-  const input = buildEvaluationInput({ tool, command, content });
+  const input = buildEvaluationInput({ tool, command, content, sandbox });
 
   for (const constraint of spec.constraints) {
     const matched = matchConstraint(constraint, input);
@@ -267,12 +267,13 @@ function summarizeSpecAudit(entries) {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function buildEvaluationInput({ tool, command, content } = {}) {
+function buildEvaluationInput({ tool, command, content, sandbox } = {}) {
   return {
     bash: normalizeText(command, 2000) || '',
     content: normalizeText(content, 5000) || '',
     tool: normalizeText(tool, 80) || '',
-    combined: [command, content, tool].filter(Boolean).join(' '),
+    sandbox: normalizeText(sandbox, 2000) || '',
+    combined: [command, content, tool, sandbox].filter(Boolean).join(' '),
   };
 }
 
@@ -283,6 +284,7 @@ function matchConstraint(constraint, input) {
     if (scope === 'bash') return regex.test(input.bash);
     if (scope === 'content') return regex.test(input.content);
     if (scope === 'tool') return regex.test(input.tool);
+    if (scope === 'sandbox') return regex.test(input.sandbox);
     return regex.test(input.combined);
   } catch {
     return false;
