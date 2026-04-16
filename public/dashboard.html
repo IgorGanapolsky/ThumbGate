@@ -330,6 +330,21 @@
       <h2>📊 Feedback Insights &amp; Lesson Pipeline</h2>
       <p class="template-summary">How your thumbs-up/down signals turn into lessons that prevent repeat mistakes.</p>
 
+      <!-- Token Savings — computed from real gate-block counts -->
+      <div class="panel" id="tokenSavingsPanel" style="margin-bottom:24px;background:linear-gradient(135deg,rgba(74,222,128,0.04),rgba(34,211,238,0.03));border-color:rgba(74,222,128,0.25);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:240px;">
+            <h3 style="margin-bottom:6px;">💸 Estimated tokens saved</h3>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.55;">Computed from your real blocked-action count × 2,000 input + 600 output tokens per avoided retry, priced at a Sonnet-heavy blend (80% Sonnet 4.5 / 15% Opus 4.6 / 5% Haiku 4.5). Conservative estimate — actual savings may be higher.</div>
+          </div>
+          <div style="text-align:right;min-width:220px;">
+            <div id="tokenSavingsDollars" style="font-size:40px;font-weight:800;color:#4ade80;letter-spacing:-0.02em;line-height:1;">—</div>
+            <div id="tokenSavingsTokens" style="font-size:13px;color:var(--text-muted);margin-top:6px;">— tokens · from <span id="tokenSavingsBlocks">—</span> blocked calls</div>
+          </div>
+        </div>
+        <div id="tokenSavingsSource" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--text-muted);line-height:1.6;"></div>
+      </div>
+
       <!-- Pipeline Flow -->
       <div class="panel" style="margin-bottom:24px;">
         <h3 style="margin-bottom:16px;">Feedback → Lesson Pipeline</h3>
@@ -1220,10 +1235,47 @@ var lessonChart = null;
 var gateAuditChart = null;
 
 function renderInsights(data) {
+  renderTokenSavings(data.tokenSavings, data.gateStats || {});
   renderPipeline(data.lessonPipeline || {});
   renderFeedbackTrendChart(data.feedbackTimeSeries || {});
   renderLessonTrendChart(data.feedbackTimeSeries || {});
   renderGateAuditChartFromData(data.gateAudit || {});
+}
+
+/**
+ * Render token-savings panel from /v1/dashboard.tokenSavings.
+ * Only shows a dollar figure when it's backed by real gate blocks.
+ * Otherwise shows an honest "$0.00 — no blocks yet" state, NEVER
+ * a marketing placeholder.
+ */
+function renderTokenSavings(savings, gateStats) {
+  var panel = document.getElementById('tokenSavingsPanel');
+  if (!panel) return;
+  var dollarsEl = document.getElementById('tokenSavingsDollars');
+  var tokensEl = document.getElementById('tokenSavingsTokens');
+  var blocksEl = document.getElementById('tokenSavingsBlocks');
+  var sourceEl = document.getElementById('tokenSavingsSource');
+
+  if (!savings || typeof savings.dollarsSaved !== 'number') {
+    dollarsEl.textContent = '$0.00';
+    tokensEl.innerHTML = 'No blocked calls yet — estimate will appear after your first gate fires';
+    if (blocksEl) blocksEl.textContent = '0';
+    sourceEl.textContent = '';
+    return;
+  }
+
+  dollarsEl.textContent = savings.dollarsSavedDisplay || ('$' + Number(savings.dollarsSaved).toFixed(2));
+  tokensEl.innerHTML = (savings.tokensSavedDisplay || '0') + ' tokens · from <span id="tokenSavingsBlocks">' +
+    (savings.blockedCalls || 0) + '</span> blocked calls';
+
+  var mix = savings.modelMix || {};
+  var mixParts = [];
+  for (var m in mix) { mixParts.push(Math.round(mix[m] * 100) + '% ' + m); }
+  var blend = savings.blendedPricePer1M || { input: 0, output: 0 };
+  sourceEl.textContent =
+    'Methodology: blended ' + mixParts.join(' / ') +
+    ' at $' + blend.input.toFixed(2) + '/1M input + $' + blend.output.toFixed(2) + '/1M output. ' +
+    'Data source: actual blocked count from gate-stats.json. No sample numbers.';
 }
 
 function renderPipeline(pipeline) {

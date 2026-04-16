@@ -971,6 +971,18 @@ function generateDashboard(feedbackDir, options = {}) {
   const feedbackTimeSeries = computeFeedbackTimeSeries(entries, 30);
   const lessonPipeline = computeLessonPipeline(feedbackDir, entries, gateStats);
 
+  // Estimated token savings — computed from gate blocked counts using the
+  // conservative methodology in scripts/token-savings.js. This is the ONLY
+  // place "$ saved" appears that's backed by real gate-block data; the landing
+  // page hero uses a hardcoded sample number disclosed as "Sample".
+  let tokenSavings = null;
+  try {
+    const { computeTokenSavings } = require('./token-savings');
+    tokenSavings = computeTokenSavings({
+      blockedCalls: Number(gateStats.blocked) || 0,
+    });
+  } catch { /* module missing — skip */ }
+
   // Merge lesson counts into feedbackTimeSeries days
   for (const day of feedbackTimeSeries.days) {
     day.lessons = lessonPipeline.lessonsByDay.get(day.dayKey) || 0;
@@ -1018,6 +1030,7 @@ function generateDashboard(feedbackDir, options = {}) {
     liveMetrics,
     predictive,
     feedbackTimeSeries,
+    tokenSavings,
     lessonPipeline: {
       stages: lessonPipeline.stages,
       rates: lessonPipeline.rates,
