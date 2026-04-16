@@ -86,6 +86,31 @@ jobs:
       - name: Report publish no-op
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.skip_publish == 'true'
         run: echo "${{ steps.plan.outputs.reason }}"
+      - name: Guard against silent no-op when main has content changes since last publish
+        # Prevents the "1.5.2 already on npm, content changes don't ship" failure mode.
+        # If the published version already exists but main has meaningful source changes
+        # (README, HTML, scripts) since that tag, we should have bumped the version.
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.npm.outputs.published == 'true' && steps.plan.outputs.skip_publish == 'true'
+        env:
+          VERSION: ${{ steps.package.outputs.version }}
+        run: |
+          set -e
+          # Find the last release tag. If main has commits touching shipped content
+          # that aren't in that tag's tree, the author forgot to bump.
+          LAST_TAG=$(git describe --tags --abbrev=0 --match='v*' 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            echo "::notice::No prior release tag — cannot compare content drift."
+            exit 0
+          fi
+          # Count changes in shipped surfaces since that tag
+          SHIPPED_CHANGES=$(git diff --name-only "$LAST_TAG"..HEAD -- \
+            'public/*.html' 'scripts/*.js' 'src/**' 'bin/**' 'README.md' 'CHANGELOG.md' 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$SHIPPED_CHANGES" -gt 0 ]; then
+            echo "::error::Silent no-op detected: ${SHIPPED_CHANGES} shipped files changed since ${LAST_TAG} but package.json still says ${VERSION} (already on npm). Bump the version or tests won't verify the content ships."
+            git diff --name-only "$LAST_TAG"..HEAD -- 'public/*.html' 'scripts/*.js' 'src/**' 'bin/**' 'README.md' | head -20
+            exit 1
+          fi
+          echo "::notice::No shipped content changes since ${LAST_TAG} — no-op is legitimate."
       - name: Create release tag
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.create_tag == 'true'
         env:

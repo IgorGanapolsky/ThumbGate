@@ -1,0 +1,80 @@
+#!/bin/bash
+# ThumbGate pre-push hook — catches packaging + publish regressions before CI.
+#
+# Activate: git config core.hooksPath .githooks
+
+set -e
+
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+# Only run on branches that could hit main (skip drafts, dependabot branches)
+CURRENT=$(git rev-parse --abbrev-ref HEAD)
+case "$CURRENT" in
+  dependabot/*|wip/*|spike/*) exit 0 ;;
+esac
+
+# 1. npm pack --dry-run — catches missing HTML / script files BEFORE CI catches them
+echo -e "${YELLOW}pre-push:${NC} npm pack dry-run to detect missing files..."
+PACK_OUT=$(npm pack --dry-run --silent 2>&1)
+if echo "$PACK_OUT" | grep -qE "(error|ERR)"; then
+  echo -e "${RED}✗ npm pack reported errors${NC}"
+  echo "$PACK_OUT" | tail -20
+  exit 1
+fi
+
+# 2. Detect HTML <a href="..."> pointing to files NOT in the npm package
+echo -e "${YELLOW}pre-push:${NC} validating internal links in public/ HTML..."
+node -e '
+const fs = require("fs");
+const path = require("path");
+const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+const filesInPackage = new Set(pkg.files);
+let errors = [];
+
+const htmlFiles = pkg.files.filter(f => f.startsWith("public/") && f.endsWith(".html"));
+for (const htmlPath of htmlFiles) {
+  if (!fs.existsSync(htmlPath)) continue;
+  const html = fs.readFileSync(htmlPath, "utf8");
+  // Match href="/pro", "/compare", etc — internal paths pointing to top-level routes
+  const re = /href="\/([a-z][a-z0-9_-]*)"(?![^>]*target=)/gi;
+  let m;
+  while ((m = re.exec(html)) !== null) {
+    const route = m[1];
+    // Skip query/hash-only, external markers, known non-file routes
+    if (["", "checkout", "feedback", "go", "assets", "learn", "guides", "compare"].includes(route)) continue;
+    // Routes commonly backed by public/<route>.html
+    const candidate = `public/${route}.html`;
+    if (fs.existsSync(candidate) && !filesInPackage.has(candidate)) {
+      errors.push(`  ${htmlPath} links to /${route} but ${candidate} is NOT in package.json files`);
+    }
+  }
+}
+if (errors.length) {
+  console.error("Broken internal links in shipped HTML:\n" + errors.join("\n"));
+  process.exit(1);
+}
+' || exit 1
+
+# 3. Full repo test chain quick subset — DON'T run everything (would be too slow for pre-push)
+# Run only the regression-guard tests that protect against common mistakes
+if [ -f tests/public-package-parity.test.js ]; then
+  echo -e "${YELLOW}pre-push:${NC} running regression-guard tests..."
+  if ! node --test \
+      tests/public-package-parity.test.js \
+      tests/test-suite-parity.test.js \
+      $( [ -f tests/landing-page-claims.test.js ] && echo tests/landing-page-claims.test.js ) \
+      >/dev/null 2>&1; then
+    echo -e "${RED}✗ Regression-guard tests failed${NC}"
+    node --test \
+      tests/public-package-parity.test.js \
+      tests/test-suite-parity.test.js \
+      $( [ -f tests/landing-page-claims.test.js ] && echo tests/landing-page-claims.test.js ) \
+      2>&1 | grep -A3 "not ok" | head -20
+    exit 1
+  fi
+fi
+
+echo -e "${GREEN}pre-push: all guards passed${NC}"
