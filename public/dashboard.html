@@ -330,6 +330,21 @@
       <h2>📊 Feedback Insights &amp; Lesson Pipeline</h2>
       <p class="template-summary">How your thumbs-up/down signals turn into lessons that prevent repeat mistakes.</p>
 
+      <!-- Token Savings — computed from real gate-block counts -->
+      <div class="panel" id="tokenSavingsPanel" style="margin-bottom:24px;background:linear-gradient(135deg,rgba(74,222,128,0.04),rgba(34,211,238,0.03));border-color:rgba(74,222,128,0.25);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:240px;">
+            <h3 style="margin-bottom:6px;">💸 Estimated tokens saved</h3>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.55;">Computed from your real blocked-action count × 2,000 input + 600 output tokens per avoided retry, priced at a Sonnet-heavy blend (80% Sonnet 4.5 / 15% Opus 4.6 / 5% Haiku 4.5). Conservative estimate — actual savings may be higher.</div>
+          </div>
+          <div style="text-align:right;min-width:220px;">
+            <div id="tokenSavingsDollars" style="font-size:40px;font-weight:800;color:#4ade80;letter-spacing:-0.02em;line-height:1;">—</div>
+            <div id="tokenSavingsTokens" style="font-size:13px;color:var(--text-muted);margin-top:6px;">— tokens · from <span id="tokenSavingsBlocks">—</span> blocked calls</div>
+          </div>
+        </div>
+        <div id="tokenSavingsSource" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--text-muted);line-height:1.6;"></div>
+      </div>
+
       <!-- Pipeline Flow -->
       <div class="panel" style="margin-bottom:24px;">
         <h3 style="margin-bottom:16px;">Feedback → Lesson Pipeline</h3>
@@ -620,8 +635,45 @@ function setSource(el, source) {
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
   document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
-  document.querySelector('[onclick*="' + name + '"]').classList.add('active');
-  document.getElementById('tab-' + name).classList.add('active');
+  var tabEl = document.querySelector('[onclick*="' + name + '"]');
+  var contentEl = document.getElementById('tab-' + name);
+  if (tabEl) tabEl.classList.add('active');
+  if (contentEl) contentEl.classList.add('active');
+  // Sync URL hash so deep-links stay shareable without scroll jump
+  try {
+    if (('#' + name) !== window.location.hash) {
+      history.replaceState(null, '', '#' + name);
+    }
+  } catch (e) { /* ignore: older browsers or sandboxed frames */ }
+}
+
+/**
+ * Resolve deep-link tab target from URL hash or query string.
+ * Supports: /dashboard#insights, /dashboard?tab=gates, /dashboard#tab-export.
+ * Valid targets match tab-content ids (search, gates, team, generated,
+ * settings, templates, insights, export).
+ */
+function getDeepLinkTab() {
+  var valid = ['search', 'gates', 'team', 'generated', 'settings', 'templates', 'insights', 'export'];
+  var raw = (window.location.hash || '').replace(/^#/, '').replace(/^tab-/, '');
+  if (!raw) {
+    try {
+      var q = new URLSearchParams(window.location.search);
+      raw = (q.get('tab') || '').trim();
+    } catch (e) { raw = ''; }
+  }
+  return valid.indexOf(raw) >= 0 ? raw : null;
+}
+
+function applyDeepLinkTab() {
+  var target = getDeepLinkTab();
+  if (target) switchTab(target);
+}
+
+// Apply deep-link on initial load AND on hash change (so back/forward works)
+if (typeof window !== 'undefined') {
+  window.addEventListener('DOMContentLoaded', applyDeepLinkTab);
+  window.addEventListener('hashchange', applyDeepLinkTab);
 }
 
 async function loadGates() {
@@ -1027,19 +1079,17 @@ function loadDemo() {
     { signal: 'up', title: 'DPO export caught systematic failure pattern', context: 'Exported 47 preference pairs revealing that 80% of negative feedback involved claiming work was done without verification. Led to a new mandatory evidence gate.', tags: ['dpo-export', 'evidence-based', 'prevention', 'metric:ROI'], timestamp: '2025-06-05T10:15:00Z' }
   ];
   isDemo = true;
-  demoData = demoResults.slice(0, 3);
+  demoData = demoResults;
   var teaserHtml = demoData.map(renderResult).join('');
-  var upgradeWall = '<div style="position:relative;margin-top:8px;">' +
-    '<div style="filter:blur(4px);pointer-events:none;opacity:0.4;">' + demoResults.slice(3, 6).map(renderResult).join('') + '</div>' +
-    '<div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;">' +
-    '<div style="text-align:center;background:rgba(10,10,15,0.92);border:1px solid #333;border-radius:12px;padding:28px 36px;">' +
-    '<div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:8px;">Unlock your full dashboard</div>' +
-    '<div style="color:#aaa;margin-bottom:16px;">Pro shows your real feedback, gates, and lessons — not sample data.</div>' +
+  var upgradeBanner = '<div style="margin-bottom:12px;padding:12px 16px;background:linear-gradient(90deg,rgba(184,92,45,0.14),rgba(184,92,45,0.06));border:1px solid rgba(184,92,45,0.35);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">' +
+    '<div style="color:#ddd;font-size:14px;">' +
+    '<span style="color:#ffb98a;font-weight:700;">Live demo data below.</span> ' +
+    'Point ThumbGate at your own feedback to see <em>your</em> gates, lessons, and team signals — no signup required.' +
+    '</div>' +
     '<a href="https://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a" target="_blank" rel="noopener" ' +
-    'style="display:inline-block;background:#b85c2d;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700;">Start 7-day free trial</a>' +
-    '<div style="color:#666;font-size:12px;margin-top:10px;">npx thumbgate pro --activate --key=YOUR_KEY</div>' +
-    '</div></div></div>';
-  document.getElementById('searchResults').innerHTML = teaserHtml + upgradeWall;
+    'style="flex:none;background:#b85c2d;color:#fff;padding:8px 18px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;white-space:nowrap;">Go Pro — $19/mo</a>' +
+    '</div>';
+  document.getElementById('searchResults').innerHTML = upgradeBanner + teaserHtml;
   // Sample gates
   var demoGates = [
     { name: 'no-force-push', pattern: 'Block git push --force to main or master branches', action: 'block' },
@@ -1183,10 +1233,47 @@ var lessonChart = null;
 var gateAuditChart = null;
 
 function renderInsights(data) {
+  renderTokenSavings(data.tokenSavings, data.gateStats || {});
   renderPipeline(data.lessonPipeline || {});
   renderFeedbackTrendChart(data.feedbackTimeSeries || {});
   renderLessonTrendChart(data.feedbackTimeSeries || {});
   renderGateAuditChartFromData(data.gateAudit || {});
+}
+
+/**
+ * Render token-savings panel from /v1/dashboard.tokenSavings.
+ * Only shows a dollar figure when it's backed by real gate blocks.
+ * Otherwise shows an honest "$0.00 — no blocks yet" state, NEVER
+ * a marketing placeholder.
+ */
+function renderTokenSavings(savings, gateStats) {
+  var panel = document.getElementById('tokenSavingsPanel');
+  if (!panel) return;
+  var dollarsEl = document.getElementById('tokenSavingsDollars');
+  var tokensEl = document.getElementById('tokenSavingsTokens');
+  var blocksEl = document.getElementById('tokenSavingsBlocks');
+  var sourceEl = document.getElementById('tokenSavingsSource');
+
+  if (!savings || typeof savings.dollarsSaved !== 'number') {
+    dollarsEl.textContent = '$0.00';
+    tokensEl.innerHTML = 'No blocked calls yet — estimate will appear after your first gate fires';
+    if (blocksEl) blocksEl.textContent = '0';
+    sourceEl.textContent = '';
+    return;
+  }
+
+  dollarsEl.textContent = savings.dollarsSavedDisplay || ('$' + Number(savings.dollarsSaved).toFixed(2));
+  tokensEl.innerHTML = (savings.tokensSavedDisplay || '0') + ' tokens · from <span id="tokenSavingsBlocks">' +
+    (savings.blockedCalls || 0) + '</span> blocked calls';
+
+  var mix = savings.modelMix || {};
+  var mixParts = [];
+  for (var m in mix) { mixParts.push(Math.round(mix[m] * 100) + '% ' + m); }
+  var blend = savings.blendedPricePer1M || { input: 0, output: 0 };
+  sourceEl.textContent =
+    'Methodology: blended ' + mixParts.join(' / ') +
+    ' at $' + blend.input.toFixed(2) + '/1M input + $' + blend.output.toFixed(2) + '/1M output. ' +
+    'Data source: actual blocked count from gate-stats.json. No sample numbers.';
 }
 
 function renderPipeline(pipeline) {
