@@ -13,6 +13,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { tagUrlsInText } = require('../utm');
 const { loadLocalEnv } = require('../load-env');
+const { validateContentForPlatforms, truncateForPlatform } = require('../platform-limits');
 
 const ZERNIO_UTM = { source: 'zernio', medium: 'social', campaign: 'organic' };
 
@@ -355,14 +356,36 @@ async function publishPost(content, platforms, options = {}) {
     return { blocked: true, reasons: gateResult.findings };
   }
 
+  // Per-platform char-limit guard. Zernio blasts identical content to every
+  // connected platform, so a 315-char post silently fails at Bluesky's 300
+  // ceiling. Reject the over-limit targets up front with actionable detail.
+  const { valid: withinLimit, rejected: overLimit } = validateContentForPlatforms(content, normalizedPlatforms);
+  for (const r of overLimit) {
+    console.error(
+      `[zernio:publisher] BLOCKED ${r.platform} — content ${r.length} chars exceeds ${r.limit} by ${r.overBy}`,
+    );
+  }
+  if (withinLimit.length === 0) {
+    return {
+      blocked: true,
+      reasons: overLimit.map((r) => ({
+        reason: 'platform_char_limit_exceeded',
+        platform: r.platform,
+        limit: r.limit,
+        length: r.length,
+        overBy: r.overBy,
+      })),
+    };
+  }
+
   // Dedup: filter out platforms where identical content was posted in last 24h
-  const dedupedPlatforms = normalizedPlatforms.filter((p) => {
+  const dedupedPlatforms = withinLimit.filter((p) => {
     if (isDuplicate(content, p.platform)) {
       console.log(`[zernio:publisher] SKIPPED ${p.platform} — duplicate content within 24h`);
       return false;
     }
     return true;
-  });
+  }).map(({ platform, accountId }) => ({ platform, accountId }));
 
   if (dedupedPlatforms.length === 0) {
     console.log('[zernio:publisher] All platforms skipped (duplicate content)');
@@ -411,14 +434,34 @@ async function schedulePost(content, platforms, scheduledFor, timezone, options 
 
   content = tagUrlsInText(content, options.utm || ZERNIO_UTM);
 
+  // Per-platform char-limit guard — same reasoning as publishPost.
+  const { valid: withinLimit, rejected: overLimit } = validateContentForPlatforms(content, normalizedPlatforms);
+  for (const r of overLimit) {
+    console.error(
+      `[zernio:publisher] BLOCKED ${r.platform} schedule — content ${r.length} chars exceeds ${r.limit} by ${r.overBy}`,
+    );
+  }
+  if (withinLimit.length === 0) {
+    return {
+      blocked: true,
+      reasons: overLimit.map((r) => ({
+        reason: 'platform_char_limit_exceeded',
+        platform: r.platform,
+        limit: r.limit,
+        length: r.length,
+        overBy: r.overBy,
+      })),
+    };
+  }
+
   // Dedup: filter out platforms where identical content was scheduled in last 24h
-  const dedupedPlatforms = normalizedPlatforms.filter((p) => {
+  const dedupedPlatforms = withinLimit.filter((p) => {
     if (isDuplicate(content, p.platform)) {
       console.log(`[zernio:publisher] SKIPPED ${p.platform} schedule — duplicate content within 24h`);
       return false;
     }
     return true;
-  });
+  }).map(({ platform, accountId }) => ({ platform, accountId }));
 
   if (dedupedPlatforms.length === 0) {
     console.log('[zernio:publisher] All platforms skipped (duplicate content)');
