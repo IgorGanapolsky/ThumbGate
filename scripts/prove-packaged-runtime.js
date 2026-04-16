@@ -270,10 +270,14 @@ async function runPackagedRuntimeSmoke(options = {}) {
     if (!/(Lessons|Lessons…)/.test(readyStatusline)) {
       throw new Error(`Ready statusline missing lessons label: ${readyStatusline.trim()}`);
     }
-    if (readyStatusline.includes(`${origin}/dashboard`)) {
+    // Localhost URLs are intentionally hyperlinked via OSC8 for clickable
+    // dashboard/lessons links in the developer's terminal. Only flag external
+    // (non-localhost) origins as leaked URLs.
+    const isLocalOrigin = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+    if (!isLocalOrigin && readyStatusline.includes(`${origin}/dashboard`)) {
       throw new Error(`Ready statusline leaked dashboard URL: ${readyStatusline.trim()}`);
     }
-    if (readyStatusline.includes(`${origin}/lessons`)) {
+    if (!isLocalOrigin && readyStatusline.includes(`${origin}/lessons`)) {
       throw new Error(`Ready statusline leaked lessons URL: ${readyStatusline.trim()}`);
     }
     // Thumbs-up/down icons stay inline while dashboard + lessons remain compact
