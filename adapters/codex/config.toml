@@ -3,9 +3,9 @@
 # ~/.codex/config.json with the ThumbGate hooks and status line.
 [mcp_servers.thumbgate]
 command = "npx"
-args = ["--yes", "--package", "thumbgate@1.5.2", "thumbgate", "serve"]
+args = ["--yes", "--package", "thumbgate@1.5.4", "thumbgate", "serve"]
 
 # Hard PreToolUse hook for Codex
 [hooks.pre_tool_use]
 command = "npx"
-args = ["--yes", "--package", "thumbgate@1.5.2", "thumbgate", "gate-check"]
+args = ["--yes", "--package", "thumbgate@1.5.4", "thumbgate", "gate-check"]
