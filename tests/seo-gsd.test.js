@@ -36,7 +36,7 @@ test('buildThumbGateSeoPlan returns GSD stages and prioritizes comparison pages 
   assert.equal(plan.framework, 'GSD');
   assert.equal(plan.capture.totalKeywords, HIGH_ROI_QUERY_SEEDS.length);
   assert.ok(plan.capture.keywordRows.every((row) => typeof row.opportunityScore === 'number'));
-  assert.equal(plan.execute.pages.length, 9);
+  assert.equal(plan.execute.pages.length, 10);
   assert.equal(plan.execute.briefs[0].path, '/compare/speclock');
   assert.equal(plan.execute.briefs[1].path, '/compare/mem0');
   assert.equal(plan.review.recommendedOrder[0], '/compare/speclock');
@@ -54,6 +54,7 @@ test('renderPlanMarkdown names all five GSD stages and page briefs', () => {
   assert.match(markdown, /ThumbGate vs Mem0/);
   assert.match(markdown, /How to Stop AI Coding Agents From Repeating Mistakes \| ThumbGate/);
   assert.match(markdown, /Cursor Agent Guardrails \| Stop Repeated Mistakes with ThumbGate/);
+  assert.match(markdown, /Autoresearch Agent Safety \| Gates for Self-Improving Coding Agents/);
 });
 
 test('renderSeoPageHtml includes structured data, thumbs messaging, proof links, and the Pro CTA', () => {
@@ -86,6 +87,21 @@ test('page lookup and sitemap entries stay aligned', () => {
   });
 });
 
+test('Autoresearch safety page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/autoresearch-agent-safety');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/autoresearch-agent-safety');
+
+  assert.ok(page);
+  assert.equal(page.query, 'autoresearch agent safety');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-gates');
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/autoresearch-agent-safety',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
 test('writePlanOutputs persists machine-readable GSD artifacts', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'seo-gsd-outputs-'));
 
@@ -102,9 +118,10 @@ test('writePlanOutputs persists machine-readable GSD artifacts', () => {
     const execute = fs.readFileSync(files.execute, 'utf8');
 
     assert.equal(capture.totalKeywords, HIGH_ROI_QUERY_SEEDS.length);
-    assert.equal(pages.length, 9);
+    assert.equal(pages.length, 10);
     assert.ok(pages.some((page) => page.path === '/guides/codex-cli-guardrails'));
     assert.ok(pages.some((page) => page.path === '/guides/gemini-cli-feedback-memory'));
+    assert.ok(pages.some((page) => page.path === '/guides/autoresearch-agent-safety'));
     assert.match(execute, /# ThumbGate SEO\/GEO GSD Plan/);
     assert.match(execute, /Recommended publish order/);
   } finally {

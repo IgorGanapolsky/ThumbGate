@@ -16,6 +16,7 @@ The buyer outcome is simple: prevent expensive AI mistakes, make AI stop repeati
 - One engineer gives a thumbs-down on a bad agent pattern; teammates running the same agent repeat the mistake because lessons are not shared
 - An agent modifies secrets or PII-bearing files because no approval policy was in place
 - A team cannot audit which agent actions were blocked, approved, or overridden, making compliance reporting impossible
+- A self-improving Autoresearch-style loop promotes a benchmark win after skipping holdout tests, hiding failed runs, or editing the metric instead of improving the product
 
 ## How ThumbGate Works Technically
 
@@ -32,6 +33,8 @@ ThumbGate is built on Node.js >=18.18.0 and runs locally on each developer's mac
 **Shared Team Enforcement**: In team mode, lessons learned on one seat propagate to all seats via a shared lesson database. A pattern that caused a mistake for one engineer is immediately visible to every agent on every seat. The shared database is the single source of truth for team-wide enforcement rules.
 
 **CI Gate Integration**: ThumbGate can run as a CI step. Pull requests that contain agent-generated changes matching known failure signatures are blocked from merging until a human reviews and approves the exception.
+
+**Autoresearch Safety Pack**: ThumbGate gates self-improving coding loops before they promote a claimed improvement. The `autoresearch-brief` ContextFS template retrieves research history, learned rules, holdout expectations, proof requirements, and reward-hacking failures so the agent can search for better code without grading itself on missing evidence.
 
 **Audit Trail**: Every gate decision (blocked, approved, overridden) is logged with a timestamp, the triggering tool call, the matching lesson ID, and the identity of any human who approved an exception. This log is queryable and exportable for compliance reporting.
 
@@ -125,6 +128,7 @@ npx thumbgate dashboard
 - GitHub: https://github.com/IgorGanapolsky/ThumbGate
 - npm: https://www.npmjs.com/package/thumbgate
 - Documentation: https://thumbgate-production.up.railway.app/guide
+- Autoresearch safety guide: https://thumbgate-production.up.railway.app/guides/autoresearch-agent-safety
 - Comparison: https://thumbgate-production.up.railway.app/compare
 - Team sprint intake: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 
