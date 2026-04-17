@@ -6,6 +6,8 @@ const {
   parseWorktreePaths,
   publishedCliAvailable,
   portableMcpEntry,
+  codexAutoUpdateCliEntry,
+  codexAutoUpdateMcpEntry,
   localMcpEntry,
   resolveLocalServerPath,
   resolveStableSourceRoot,
@@ -32,6 +34,26 @@ describe('mcp-config', () => {
     assert.match(entry.args[1], /thumbgate/);
     assert.match(entry.args[1], /serve/);
     assert.match(entry.args[1], /\.thumbgate\/runtime/);
+  });
+
+  it('codexAutoUpdateMcpEntry returns a latest-resolving shell wrapper without the stale binary fast path', () => {
+    const entry = codexAutoUpdateMcpEntry();
+    assert.strictEqual(entry.command, 'sh');
+    assert.deepStrictEqual(entry.args.slice(0, 1), ['-lc']);
+    assert.match(entry.args[1], /thumbgate@latest/);
+    assert.match(entry.args[1], /thumbgate/);
+    assert.match(entry.args[1], /serve/);
+    assert.match(entry.args[1], /\.thumbgate\/runtime/);
+    assert.doesNotMatch(entry.args[1], /\[ -x /);
+  });
+
+  it('codexAutoUpdateCliEntry supports hook commands with the same latest-resolving policy', () => {
+    const entry = codexAutoUpdateCliEntry(['gate-check']);
+    assert.strictEqual(entry.command, 'sh');
+    assert.match(entry.args[1], /thumbgate@latest/);
+    assert.match(entry.args[1], /gate-check/);
+    assert.match(entry.args[1], /npm "install"/);
+    assert.doesNotMatch(entry.args[1], /\[ -x /);
   });
 
   it('localMcpEntry returns node command pointing to server-stdio.js', () => {

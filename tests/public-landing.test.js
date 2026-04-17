@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const landingPagePath = path.join(__dirname, '..', 'public', 'index.html');
+const codexPluginPagePath = path.join(__dirname, '..', 'public', 'codex-plugin.html');
 const buyerIntentScriptPath = path.join(__dirname, '..', 'public', 'js', 'buyer-intent.js');
 
 function readLandingPage() {
@@ -12,6 +13,10 @@ function readLandingPage() {
 
 function readBuyerIntentScript() {
   return fs.readFileSync(buyerIntentScriptPath, 'utf8');
+}
+
+function readCodexPluginPage() {
+  return fs.readFileSync(codexPluginPagePath, 'utf8');
 }
 
 test('public landing page keeps FAQPage JSON-LD parity for SEO and GEO', () => {
@@ -177,8 +182,22 @@ test('public landing page gives cold users a first-dollar activation path', () =
   assert.match(landingPage, /First-Dollar Activation Path/i);
   assert.match(landingPage, /Prove one blocked repeat before asking anyone to buy/i);
   assert.match(landingPage, /Native ChatGPT rating buttons are not the ThumbGate capture path/i);
+  assert.match(landingPage, /Give <code>thumbs up<\/code> when the agent follows your standards/i);
+  assert.match(landingPage, /thumbs up: this review named exact files/i);
   assert.match(landingPage, /thumbs down: the answer ignored my request/i);
   assert.match(landingPage, /Upgrade after one real blocked repeat/i);
+});
+
+test('public landing page proof bar uses individually clickable link chips', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /<nav class="proof-bar" aria-label="ThumbGate install and proof links">/);
+  assert.match(landingPage, /\.proof-bar a \{[^}]*min-height: 36px;[^}]*padding: 8px 12px;/);
+  assert.match(landingPage, /\.proof-bar a:hover, \.proof-bar a:focus-visible/);
+  assert.doesNotMatch(landingPage, /<span class="dot"><\/span>/);
+  assert.match(landingPage, /Claude Extension →/);
+  assert.match(landingPage, /Codex plugin setup →/);
+  assert.match(landingPage, /Verification evidence →/);
 });
 
 test('public landing page Pro tier uses outcome-framed bullets that justify upgrade', () => {
@@ -339,15 +358,24 @@ test('public landing page advertises the Codex standalone plugin install path', 
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /Codex plugin/i);
-  // Arrow copy was "Codex plugin download →" / "Get the Codex plugin →" in
-  // older drafts; shipped copy is "Download the Codex plugin →". Assert on
-  // intent: any download-verbed Codex arrow works.
-  assert.match(landingPage, /(Download|Get) the Codex plugin →|Codex plugin download →/);
-  assert.match(landingPage, /plugins\/codex-profile\/INSTALL\.md/);
-  // Primary download link goes directly to the release asset — this is what
-  // "advertises the install path" actually means now that we fixed cards to
-  // link to real downloads instead of INSTALL.md source.
+  assert.match(landingPage, /\/codex-plugin\?utm_source=website/);
+  assert.match(landingPage, /Open the Codex install page →/);
   assert.match(landingPage, /thumbgate-codex-plugin\.zip/);
+});
+
+test('public Codex plugin page explains install, direct download, and latest runtime policy', () => {
+  const codexPage = readCodexPluginPage();
+
+  assert.match(codexPage, /ThumbGate for Codex/);
+  assert.match(codexPage, /SoftwareApplication/);
+  assert.match(codexPage, /FAQPage/);
+  assert.match(codexPage, /thumbgate@latest/);
+  assert.match(codexPage, /npx thumbgate init --agent codex/);
+  assert.match(codexPage, /thumbgate-codex-plugin\.zip/);
+  assert.match(codexPage, /plugins\/codex-profile\/INSTALL\.md/);
+  assert.match(codexPage, /Pre-Action Gates/);
+  assert.match(codexPage, /Codex settings/);
+  assert.match(codexPage, /Bare "thumbs down" is intentionally too vague/);
 });
 
 test('public landing page FAQ defaults first item open for credibility', () => {
