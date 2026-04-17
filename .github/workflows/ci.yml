@@ -107,6 +107,7 @@ jobs:
       - name: Verify live GitHub About congruence on main
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
+          GITHUB_TOKEN: ${{ github.token }}
           THUMBGATE_GITHUB_ABOUT_VERIFY_ATTEMPTS: 6
           THUMBGATE_GITHUB_ABOUT_VERIFY_DELAY_MS: 5000
         run: npm run test:congruence:live
