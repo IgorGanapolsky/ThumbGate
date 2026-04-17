@@ -27,7 +27,7 @@ function savingEnv(keys) {
 }
 
 test('sendTrialWelcomeEmail returns {sent:false, reason:no_api_key} when RESEND_API_KEY is missing', async () => {
-  const restore = savingEnv(['RESEND_API_KEY', 'RESEND_FROM_EMAIL']);
+  const restore = savingEnv(['RESEND_API_KEY', 'RESEND_FROM_EMAIL', 'THUMBGATE_TRIAL_EMAIL_FROM']);
   delete process.env.RESEND_API_KEY;
   const { sendTrialWelcomeEmail } = freshMailer();
 
@@ -47,9 +47,10 @@ test('sendTrialWelcomeEmail returns {sent:false, reason:no_api_key} when RESEND_
 });
 
 test('sendTrialWelcomeEmail POSTs to Resend with correct headers and payload shape', async () => {
-  const restore = savingEnv(['RESEND_API_KEY', 'RESEND_FROM_EMAIL']);
+  const restore = savingEnv(['RESEND_API_KEY', 'RESEND_FROM_EMAIL', 'THUMBGATE_TRIAL_EMAIL_FROM']);
   process.env.RESEND_API_KEY = 're_test_123';
   process.env.RESEND_FROM_EMAIL = 'hello@thumbgate.app';
+  delete process.env.THUMBGATE_TRIAL_EMAIL_FROM;
   const { sendTrialWelcomeEmail } = freshMailer();
 
   let captured = null;
@@ -80,11 +81,15 @@ test('sendTrialWelcomeEmail POSTs to Resend with correct headers and payload sha
   const body = JSON.parse(captured.init.body);
   assert.deepEqual(body.to, ['igor@example.com']);
   assert.equal(body.from, 'hello@thumbgate.app');
-  assert.equal(body.subject, 'Welcome to ThumbGate Pro — your license key inside');
+  assert.equal(body.subject, 'Your 7-day ThumbGate Pro trial is live');
   assert.ok(body.html && body.html.includes('tg_09239a0a433649ba442467567af1825b'));
   assert.ok(body.text && body.text.includes('tg_09239a0a433649ba442467567af1825b'));
   assert.ok(body.html.includes('npx thumbgate pro --activate --key=tg_09239a0a433649ba442467567af1825b'));
   assert.ok(body.text.includes('npx thumbgate pro --activate --key=tg_09239a0a433649ba442467567af1825b'));
+  assert.ok(body.html.includes('Pre-Action Gates'));
+  assert.ok(body.text.includes('Pre-Action Gates'));
+  assert.ok(body.html.includes('Give one concrete thumbs up or thumbs down'));
+  assert.ok(body.text.includes('Give one concrete thumbs up or thumbs down'));
   // Parse the dashboard link out of the HTML and verify the URL components
   // explicitly. Substring-only checks trip CodeQL's
   // js/incomplete-url-substring-sanitization rule (evil.com/?x=...our-url...
@@ -103,9 +108,10 @@ test('sendTrialWelcomeEmail POSTs to Resend with correct headers and payload sha
 });
 
 test('sendTrialWelcomeEmail defaults RESEND_FROM_EMAIL to onboarding@resend.dev', async () => {
-  const restore = savingEnv(['RESEND_API_KEY', 'RESEND_FROM_EMAIL']);
+  const restore = savingEnv(['RESEND_API_KEY', 'RESEND_FROM_EMAIL', 'THUMBGATE_TRIAL_EMAIL_FROM']);
   process.env.RESEND_API_KEY = 're_test_123';
   delete process.env.RESEND_FROM_EMAIL;
+  delete process.env.THUMBGATE_TRIAL_EMAIL_FROM;
   const { sendTrialWelcomeEmail } = freshMailer();
 
   let captured = null;
@@ -122,6 +128,30 @@ test('sendTrialWelcomeEmail defaults RESEND_FROM_EMAIL to onboarding@resend.dev'
 
   const body = JSON.parse(captured.init.body);
   assert.equal(body.from, 'onboarding@resend.dev');
+  restore();
+});
+
+test('sendTrialWelcomeEmail prefers THUMBGATE_TRIAL_EMAIL_FROM for checkout trial sends', async () => {
+  const restore = savingEnv(['RESEND_API_KEY', 'RESEND_FROM_EMAIL', 'THUMBGATE_TRIAL_EMAIL_FROM']);
+  process.env.RESEND_API_KEY = 're_test_123';
+  process.env.RESEND_FROM_EMAIL = 'legacy@thumbgate.app';
+  process.env.THUMBGATE_TRIAL_EMAIL_FROM = 'ThumbGate <onboarding@resend.dev>';
+  const { sendTrialWelcomeEmail } = freshMailer();
+
+  let captured = null;
+  const fakeFetch = (url, init) => {
+    captured = { url, init };
+    return Promise.resolve({ ok: true, status: 200, text: async () => '{}' });
+  };
+
+  await sendTrialWelcomeEmail({
+    to: 'a@b.com',
+    licenseKey: 'tg_xyz',
+    fetchImpl: fakeFetch,
+  });
+
+  const body = JSON.parse(captured.init.body);
+  assert.equal(body.from, 'ThumbGate <onboarding@resend.dev>');
   restore();
 });
 
@@ -207,6 +237,9 @@ test('renderTrialWelcomeBodies embeds license key, activation command, dashboard
     'npx thumbgate pro --activate --key=tg_abc',
     'https://thumbgate-production.up.railway.app/dashboard',
     'ThumbGate Pro',
+    'Pre-Action Gates',
+    'Reliability Gateway blocks',
+    'Give one concrete thumbs up or thumbs down',
   ]) {
     assert.ok(html.includes(fragment), `html missing: ${fragment}`);
     assert.ok(text.includes(fragment), `text missing: ${fragment}`);

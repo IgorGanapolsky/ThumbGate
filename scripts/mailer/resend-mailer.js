@@ -24,7 +24,7 @@ function getApiKey() {
 }
 
 function getFromAddress() {
-  return process.env.RESEND_FROM_EMAIL || DEFAULT_FROM;
+  return process.env.THUMBGATE_TRIAL_EMAIL_FROM || process.env.RESEND_FROM_EMAIL || DEFAULT_FROM;
 }
 
 function isNonEmptyString(value) {
@@ -105,26 +105,36 @@ function escapeHtml(value) {
 
 function renderTrialWelcomeBodies({ licenseKey, customerId }) {
   const activationCommand = `npx thumbgate pro --activate --key=${licenseKey}`;
+  const headline = 'Your 7-day ThumbGate Pro trial is live.';
   const description =
-    'ThumbGate Pro adds pre-action gates, prevention rules, and lesson memory to your AI coding agent. ' +
-    'Every thumbs-down becomes a rule that blocks the same mistake from happening again.';
+    'ThumbGate turns thumbs up/down feedback into Pre-Action Gates that stop repeated AI coding mistakes before the next tool call. ' +
+    'It keeps lessons local and turns repeated mistakes into Reliability Gateway blocks.';
+  const exampleFeedback =
+    'thumbs down: the answer skipped exact files and tests; next time include paths, commands, and verification evidence.';
+  const proofUrl = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
 
   const text = [
-    `Welcome to ${PRODUCT_NAME}.`,
+    headline,
     '',
     description,
     '',
-    'Your license key:',
-    licenseKey,
-    '',
-    'Activate in any project:',
+    'Next 3 minutes:',
+    '1. Activate Pro locally:',
     activationCommand,
     '',
-    `Dashboard: ${DASHBOARD_URL}`,
+    `2. Open your dashboard: ${DASHBOARD_URL}`,
+    '',
+    '3. Give one concrete thumbs up or thumbs down:',
+    exampleFeedback,
+    '',
+    'Your trial key:',
+    licenseKey,
+    '',
+    `Verification evidence: ${proofUrl}`,
     '',
     customerId ? `Customer ID (for support): ${customerId}` : '',
     '',
-    `Need help? Reply to this email or write to ${SUPPORT_EMAIL}.`,
+    `Keep this key private. Questions? Reply to this email or write ${SUPPORT_EMAIL}.`,
   ].filter((line) => line !== undefined).join('\n');
 
   const safeKey = escapeHtml(licenseKey);
@@ -133,27 +143,49 @@ function renderTrialWelcomeBodies({ licenseKey, customerId }) {
 
   const html = `<!doctype html>
 <html>
-  <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.5;color:#111;max-width:560px;margin:0 auto;padding:24px;">
-    <h1 style="font-size:20px;margin:0 0 12px;">Welcome to ${PRODUCT_NAME}</h1>
-    <p style="margin:0 0 16px;">${escapeHtml(description)}</p>
+  <body style="margin:0;background:#f5f7fb;padding:28px 12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#17212b;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">Activate Pro in one command, open the dashboard, and start blocking repeated AI coding mistakes.</div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;max-width:640px;background:#ffffff;border:1px solid #d8e2ea;border-radius:8px;overflow:hidden;">
+            <tr>
+              <td style="background:#071115;padding:22px 26px;color:#e7fbff;">
+                <div style="font-size:13px;font-weight:700;letter-spacing:0;text-transform:uppercase;color:#73d4e9;">${PRODUCT_NAME}</div>
+                <h1 style="margin:12px 0 10px;font-size:28px;line-height:1.15;color:#ffffff;">${escapeHtml(headline)}</h1>
+                <p style="margin:0;font-size:15px;line-height:1.6;color:#c6d6de;">${escapeHtml(description)}</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:26px;">
+                <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#344451;">Run one command, open the dashboard, then give one concrete thumb signal. ThumbGate keeps the lesson local and turns repeated mistakes into Reliability Gateway blocks.</p>
+                <p style="margin:0 0 24px;">
+                  <a href="${DASHBOARD_URL}" style="display:inline-block;background:#45bfd8;color:#061015;text-decoration:none;font-weight:700;padding:12px 18px;border-radius:6px;">Open your dashboard</a>
+                </p>
 
-    <h2 style="font-size:15px;margin:24px 0 8px;">Your license key</h2>
-    <pre style="background:#f5f5f7;border:1px solid #e5e5ea;border-radius:6px;padding:12px;font-size:13px;overflow:auto;"><code>${safeKey}</code></pre>
+                <h2 style="margin:0 0 8px;font-size:17px;line-height:1.3;color:#17212b;">1. Activate Pro locally</h2>
+                <pre style="margin:0 0 22px;background:#081016;color:#d8f7e4;border:1px solid #23343d;border-radius:6px;padding:14px;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;"><code>${safeCmd}</code></pre>
 
-    <h2 style="font-size:15px;margin:24px 0 8px;">Activate in any project</h2>
-    <pre style="background:#0b0b0e;color:#e8e8ef;border-radius:6px;padding:12px;font-size:13px;overflow:auto;"><code>${safeCmd}</code></pre>
+                <h2 style="margin:0 0 8px;font-size:17px;line-height:1.3;color:#17212b;">2. Save your trial key</h2>
+                <pre style="margin:0 0 22px;background:#eef6f7;color:#0b343c;border:1px solid #c7e2e7;border-radius:6px;padding:14px;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;"><code>${safeKey}</code></pre>
 
-    <p style="margin:24px 0 16px;">
-      <a href="${DASHBOARD_URL}" style="display:inline-block;background:#0a84ff;color:#fff;text-decoration:none;padding:10px 16px;border-radius:6px;">Open your dashboard</a>
-    </p>
+                <h2 style="margin:0 0 8px;font-size:17px;line-height:1.3;color:#17212b;">3. Give one concrete thumbs up or thumbs down</h2>
+                <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#344451;">Start with the failure you most want your agent to stop repeating.</p>
+                <pre style="margin:0 0 24px;background:#f1fff2;color:#22602b;border:1px solid #bae7c0;border-radius:6px;padding:14px;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;"><code>${escapeHtml(exampleFeedback)}</code></pre>
 
-    ${safeCustomer ? `<p style="font-size:12px;color:#666;margin:16px 0 0;">Customer ID (for support): <code>${safeCustomer}</code></p>` : ''}
+                ${safeCustomer ? `<p style="font-size:12px;color:#7a8790;margin:0 0 12px;">Customer ID: <code>${safeCustomer}</code></p>` : ''}
 
-    <hr style="border:none;border-top:1px solid #e5e5ea;margin:32px 0 16px;">
-    <p style="font-size:12px;color:#666;margin:0;">
-      Need help? Reply to this email or write to
-      <a href="mailto:${SUPPORT_EMAIL}" style="color:#0a84ff;">${SUPPORT_EMAIL}</a>.
-    </p>
+                <p style="margin:0;font-size:13px;line-height:1.6;color:#526273;">
+                  Proof trail: <a href="${proofUrl}" style="color:#087a91;">verification evidence</a>.
+                  Keep this key private. Questions? Reply here or write
+                  <a href="mailto:${SUPPORT_EMAIL}" style="color:#087a91;">${SUPPORT_EMAIL}</a>.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>`;
 
@@ -171,7 +203,7 @@ async function sendTrialWelcomeEmail({ to, licenseKey, customerId, fetchImpl } =
   if (!isNonEmptyString(licenseKey)) throw new Error('sendTrialWelcomeEmail: `licenseKey` is required');
 
   const { html, text } = renderTrialWelcomeBodies({ licenseKey, customerId });
-  const subject = 'Welcome to ThumbGate Pro — your license key inside';
+  const subject = 'Your 7-day ThumbGate Pro trial is live';
 
   return sendEmail({ to, subject, html, text, fetchImpl });
 }
