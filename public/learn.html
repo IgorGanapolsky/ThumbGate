@@ -12,6 +12,8 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://thumbgate-production.up.railway.app/learn">
 <link rel="canonical" href="https://thumbgate-production.up.railway.app/learn">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/brand/thumbgate-mark.svg">
 
 <script type="application/ld+json">
 {
@@ -105,7 +107,8 @@
   nav { padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; gap: 1.5rem; align-items: center; }
   nav a { color: var(--muted); text-decoration: none; font-size: 0.9rem; }
   nav a:hover { color: var(--cyan); }
-  nav .brand { color: var(--text); font-weight: 700; font-size: 1.1rem; }
+  nav .brand { color: var(--text); font-weight: 700; font-size: 1.1rem; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+  nav .brand .logo-mark { width: 28px; height: 28px; display: block; }
   h1 { font-size: 2.2rem; line-height: 1.2; margin: 2rem 0 1rem; }
   h2 { font-size: 1.5rem; margin: 2.5rem 0 1rem; color: var(--cyan); }
   p { color: var(--text); margin-bottom: 0.75rem; }
@@ -175,7 +178,7 @@
 <body>
 
 <nav>
-  <a href="/" class="brand">👍👎 ThumbGate</a>
+  <a href="/" class="brand"><img src="/brand/thumbgate-mark.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
   <a href="/guide">Setup Guide</a>
   <a href="/learn">Learn</a>
   <a href="/dashboard">Dashboard</a>

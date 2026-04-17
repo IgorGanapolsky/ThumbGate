@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ThumbGate">
+  <title>ThumbGate</title>
+  <rect width="64" height="64" rx="12" fill="#0a1929"/>
+  <!-- Thumbs-up: stylized hand with extended thumb, geometric and flat.
+       Forearm + folded fingers form the base block; thumb projects up and left. -->
+  <g fill="#40e0d0">
+    <!-- Folded fingers block (the fist) -->
+    <path d="M20 30 h22 a4 4 0 0 1 4 4 v14 a4 4 0 0 1 -4 4 h-22 a4 4 0 0 1 -4 -4 v-14 a4 4 0 0 1 4 -4 z"/>
+    <!-- Thumb: vertical capsule rising above the fist -->
+    <path d="M28 12 a5 5 0 0 1 10 0 v16 a2 2 0 0 1 -2 2 h-6 a2 2 0 0 1 -2 -2 z"/>
+    <!-- Wrist/cuff accent -->
+    <rect x="18" y="50" width="26" height="4" rx="1.5" fill="#0a1929"/>
+  </g>
+</svg>

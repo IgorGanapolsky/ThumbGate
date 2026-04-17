@@ -1043,6 +1043,9 @@ function renderSeoPageHtml(page, runtimeConfig = {}) {
   <meta property="og:type" content="article" />
   <meta property="og:url" content="${escapeHtml(canonicalUrl)}" />
   <link rel="canonical" href="${escapeHtml(canonicalUrl)}" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/brand/thumbgate-og.svg" />
   <style>
     :root {
       --bg: #0a0a0b;
@@ -1084,7 +1087,12 @@ function renderSeoPageHtml(page, runtimeConfig = {}) {
     .brand {
       font-weight: 700;
       color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
     }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
     .hero { padding: 72px 0 32px; }
     .eyebrow {
       display: inline-flex;
@@ -1239,7 +1247,7 @@ ${renderWebPageJsonLd(page, { appOrigin })}
 <body>
   <div class="topbar">
     <div class="container">
-      <a class="brand" href="/">👍👎 ThumbGate</a>
+      <a class="brand" href="/"><img src="/brand/thumbgate-mark.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
       <a href="${escapeHtml(PRODUCT.verificationUrl)}" target="_blank" rel="noopener">Verification evidence</a>
     </div>
   </div>
