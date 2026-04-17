@@ -360,7 +360,7 @@ test('public landing page advertises the Codex standalone plugin install path', 
   assert.match(landingPage, /Codex plugin/i);
   assert.match(landingPage, /\/codex-plugin\?utm_source=website/);
   assert.match(landingPage, /Open the Codex install page →/);
-  assert.match(landingPage, /thumbgate-codex-plugin\.zip/);
+  assert.doesNotMatch(landingPage, /thumbgate-codex-plugin\.zip/);
 });
 
 test('public Codex plugin page explains install, direct download, and latest runtime policy', () => {
