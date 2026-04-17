@@ -599,6 +599,7 @@ async function sendTrialActivationEmail(params = {}, options = {}) {
         sessionId,
         customerEmail,
         planId,
+        source: params.source || 'checkout_session_status',
       });
     }
     return { status: 'skipped', reason: 'missing_resend_api_key', customerEmail, sessionId };
