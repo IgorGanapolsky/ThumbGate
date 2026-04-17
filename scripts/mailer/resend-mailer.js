@@ -15,12 +15,14 @@
  *    address, and a functional unsubscribe method.
  */
 
+const dns = require('node:dns').promises;
+
 const PRODUCT_NAME = 'ThumbGate Pro';
 const DASHBOARD_URL = 'https://thumbgate-production.up.railway.app/dashboard';
-const SUPPORT_EMAIL = 'hello@thumbgate.app';
+const DEFAULT_CONTACT_EMAIL = 'igor.ganapolsky@gmail.com';
 const DEFAULT_FROM = 'onboarding@resend.dev';
-const DEFAULT_REPLY_TO = 'hello@thumbgate.app';
-const DEFAULT_UNSUBSCRIBE_EMAIL = 'unsubscribe@thumbgate.app';
+const DEFAULT_REPLY_TO = DEFAULT_CONTACT_EMAIL;
+const DEFAULT_UNSUBSCRIBE_EMAIL = DEFAULT_CONTACT_EMAIL;
 const DEFAULT_BUSINESS_NAME = 'Max Smith KDP LLC';
 // CAN-SPAM requires a physical mailing address. Override via THUMBGATE_BUSINESS_ADDRESS.
 const DEFAULT_BUSINESS_ADDRESS = '2261 Market Street #4242, San Francisco, CA 94114';
@@ -28,6 +30,8 @@ const DEFAULT_BUSINESS_ADDRESS = '2261 Market Street #4242, San Francisco, CA 94
 const BRAND_MARK_URL = 'https://thumbgate-production.up.railway.app/thumbgate-icon.png';
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const TRIAL_LENGTH_DAYS = 7;
+const SENDER_DNS_CACHE_MS = 10 * 60 * 1000;
+const senderDnsCache = new Map();
 
 function getApiKey() {
   // Accept both `RESEND_API_KEY` (Railway default, matches provider docs) and
@@ -43,6 +47,10 @@ function getFromAddress() {
 
 function getReplyTo() {
   return process.env.THUMBGATE_TRIAL_EMAIL_REPLY_TO || DEFAULT_REPLY_TO;
+}
+
+function getSupportEmail() {
+  return process.env.THUMBGATE_SUPPORT_EMAIL || getReplyTo();
 }
 
 function getUnsubscribeEmail() {
@@ -61,11 +69,94 @@ function isNonEmptyString(value) {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
+function isTrueEnv(value) {
+  return /^(1|true|yes|on)$/i.test(String(value || '').trim());
+}
+
+function extractEmailAddress(value) {
+  const text = String(value || '').trim();
+  const angleMatch = text.match(/<([^<>@\s]+@[^<>\s]+)>/);
+  if (angleMatch) return angleMatch[1];
+  const bareMatch = text.match(/([^\s<>@]+@[^\s<>]+)/);
+  return bareMatch ? bareMatch[1] : '';
+}
+
+function getEmailDomain(value) {
+  const email = extractEmailAddress(value);
+  const at = email.lastIndexOf('@');
+  if (at === -1) return '';
+  return email.slice(at + 1).trim().replace(/[>),.;]+$/g, '').toLowerCase();
+}
+
+function splitCsv(value) {
+  return String(value || '')
+    .split(',')
+    .map((part) => part.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function getVerifiedSenderDomains() {
+  return new Set(splitCsv(process.env.THUMBGATE_VERIFIED_SENDER_DOMAINS));
+}
+
+function flattenTxt(records) {
+  return (records || []).map((chunks) => Array.isArray(chunks) ? chunks.join('') : String(chunks));
+}
+
+async function hasResendSenderDns(domain, { dnsResolver } = {}) {
+  if (!domain || domain === 'resend.dev') return true;
+  if (isTrueEnv(process.env.THUMBGATE_ALLOW_UNVERIFIED_SENDER)) return true;
+  if (getVerifiedSenderDomains().has(domain)) return true;
+
+  const resolver = dnsResolver || dns;
+  const cacheKey = dnsResolver ? null : domain;
+  if (cacheKey) {
+    const cached = senderDnsCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return cached.ready;
+  }
+
+  let ready = false;
+  try {
+    const [dkimRecords, mxRecords, spfRecords] = await Promise.all([
+      resolver.resolveTxt(`resend._domainkey.${domain}`),
+      resolver.resolveMx(`send.${domain}`),
+      resolver.resolveTxt(`send.${domain}`),
+    ]);
+    const dkim = flattenTxt(dkimRecords);
+    const spf = flattenTxt(spfRecords);
+    ready = dkim.some((record) => /^p=/i.test(record.trim())) &&
+      (mxRecords || []).some((record) => /feedback-smtp\..*amazonaws\.com\.?$/i.test(record.exchange || '')) &&
+      spf.some((record) => /include:amazonses\.com/i.test(record));
+  } catch (_) {
+    ready = false;
+  }
+
+  if (cacheKey) senderDnsCache.set(cacheKey, { ready, expiresAt: Date.now() + SENDER_DNS_CACHE_MS });
+  return ready;
+}
+
+async function resolveSenderAddress(requestedFrom, { dnsResolver } = {}) {
+  const from = requestedFrom || getFromAddress();
+  const domain = getEmailDomain(from);
+  const ready = await hasResendSenderDns(domain, { dnsResolver });
+  if (ready) return { from, senderFallback: null };
+
+  return {
+    from: DEFAULT_FROM,
+    senderFallback: {
+      requestedFrom: from,
+      fallbackFrom: DEFAULT_FROM,
+      domain,
+      reason: 'resend_dns_not_ready',
+    },
+  };
+}
+
 /**
  * Low-level send. Posts to the Resend API or no-ops when RESEND_API_KEY is
  * missing. Never throws on network errors; returns a structured result instead.
  */
-async function sendEmail({ to, subject, html, text, from, replyTo, fetchImpl } = {}) {
+async function sendEmail({ to, subject, html, text, from, replyTo, fetchImpl, dnsResolver } = {}) {
   if (!isNonEmptyString(to)) throw new Error('sendEmail: `to` is required');
   if (!isNonEmptyString(subject)) throw new Error('sendEmail: `subject` is required');
   if (!isNonEmptyString(html) && !isNonEmptyString(text)) {
@@ -79,8 +170,17 @@ async function sendEmail({ to, subject, html, text, from, replyTo, fetchImpl } =
     return { sent: false, reason: 'no_api_key' };
   }
 
+  const sender = await resolveSenderAddress(from || getFromAddress(), { dnsResolver });
+  if (sender.senderFallback) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[mailer] Sender domain ${sender.senderFallback.domain || '(unknown)'} is missing Resend DNS; ` +
+      `falling back to ${sender.senderFallback.fallbackFrom}`,
+    );
+  }
+
   const payload = {
-    from: from || getFromAddress(),
+    from: sender.from,
     to: Array.isArray(to) ? to : [to],
     subject,
     reply_to: replyTo || getReplyTo(),
@@ -117,7 +217,9 @@ async function sendEmail({ to, subject, html, text, from, replyTo, fetchImpl } =
       return { sent: false, reason: 'api_error', status: res.status, body: bodyJson || bodyText };
     }
 
-    return { sent: true, id: bodyJson && bodyJson.id ? bodyJson.id : null, status: res.status };
+    const result = { sent: true, id: bodyJson && bodyJson.id ? bodyJson.id : null, status: res.status };
+    if (sender.senderFallback) result.senderFallback = sender.senderFallback;
+    return result;
   } catch (err) {
     // eslint-disable-next-line no-console
     console.warn('[mailer] send failed:', err && err.message ? err.message : err);
@@ -177,6 +279,7 @@ function renderTrialWelcomeBodies({ licenseKey, customerId, customerName, trialE
   const exampleFeedback =
     'thumbs down: the answer skipped exact files and tests; next time include paths, commands, and verification evidence.';
   const proofUrl = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
+  const supportEmail = getSupportEmail();
   const unsubscribeEmail = getUnsubscribeEmail();
   const businessName = getBusinessName();
   const businessAddress = getBusinessAddress();
@@ -209,7 +312,7 @@ function renderTrialWelcomeBodies({ licenseKey, customerId, customerName, trialE
     '',
     postscript,
     '',
-    `Questions? Just reply to this email or write ${SUPPORT_EMAIL}.`,
+    `Questions? Just reply to this email or write ${supportEmail}.`,
     '',
     '— Igor, founder of ThumbGate',
     '',
@@ -226,6 +329,7 @@ function renderTrialWelcomeBodies({ licenseKey, customerId, customerName, trialE
   const safeDescription = escapeHtml(description);
   const safeExample = escapeHtml(exampleFeedback);
   const safePostscript = escapeHtml(postscript);
+  const safeSupportEmail = escapeHtml(supportEmail);
   const safeBusinessName = escapeHtml(businessName);
   const safeBusinessAddress = escapeHtml(businessAddress);
   const safeUnsubscribeEmail = escapeHtml(unsubscribeEmail);
@@ -285,7 +389,7 @@ function renderTrialWelcomeBodies({ licenseKey, customerId, customerName, trialE
                 <p style="margin:0 0 4px;font-size:14px;line-height:1.6;color:#17212b;">— Igor, founder of ThumbGate</p>
                 <p style="margin:0;font-size:13px;line-height:1.55;color:#526273;">
                   Questions? Just reply to this email or write
-                  <a href="mailto:${SUPPORT_EMAIL}" style="color:#087a91;">${SUPPORT_EMAIL}</a>.
+                  <a href="mailto:${safeSupportEmail}" style="color:#087a91;">${safeSupportEmail}</a>.
                 </p>
               </td>
             </tr>
@@ -321,7 +425,7 @@ function renderTrialWelcomeBodies({ licenseKey, customerId, customerName, trialE
  * Never throws on send failures (beyond input validation); the Stripe webhook
  * must keep working even if email breaks.
  */
-async function sendTrialWelcomeEmail({ to, licenseKey, customerId, customerName, trialEndAt, fetchImpl } = {}) {
+async function sendTrialWelcomeEmail({ to, licenseKey, customerId, customerName, trialEndAt, fetchImpl, dnsResolver } = {}) {
   if (!isNonEmptyString(to)) throw new Error('sendTrialWelcomeEmail: `to` is required');
   if (!isNonEmptyString(licenseKey)) throw new Error('sendTrialWelcomeEmail: `licenseKey` is required');
 
@@ -331,17 +435,19 @@ async function sendTrialWelcomeEmail({ to, licenseKey, customerId, customerName,
     ? `${name}, your ThumbGate Pro key is inside`
     : 'Your ThumbGate Pro key is inside';
 
-  return sendEmail({ to, subject, html, text, replyTo: getReplyTo(), fetchImpl });
+  return sendEmail({ to, subject, html, text, replyTo: getReplyTo(), fetchImpl, dnsResolver });
 }
 
 module.exports = {
   sendEmail,
   sendTrialWelcomeEmail,
   renderTrialWelcomeBodies,
+  _resolveSenderAddress: resolveSenderAddress,
+  _hasResendSenderDns: hasResendSenderDns,
   _constants: {
     PRODUCT_NAME,
     DASHBOARD_URL,
-    SUPPORT_EMAIL,
+    DEFAULT_CONTACT_EMAIL,
     DEFAULT_FROM,
     DEFAULT_REPLY_TO,
     DEFAULT_UNSUBSCRIBE_EMAIL,
