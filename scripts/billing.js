@@ -44,6 +44,7 @@ const {
   serializeAnalyticsWindow,
 } = require('./analytics-window');
 const { ensureParentDir } = require('./fs-utils');
+const mailer = require('./mailer');
 
 // ---------------------------------------------------------------------------
 // Config
@@ -2384,7 +2385,29 @@ async function handleWebhook(rawBody, signature) {
           attribution,
         });
       }
-      return { handled: true, action: 'provisioned_api_key', result };
+
+      // Send welcome email with the license key. Failures here must NEVER break
+      // the webhook flow — the key has already been provisioned and persisted.
+      const recipientEmail = session.customer_details?.email || session.customer_email || null;
+      let emailResult = { sent: false, reason: 'not_attempted' };
+      if (recipientEmail && result && result.key) {
+        try {
+          const mailerImpl = module.exports._mailer || mailer;
+          emailResult = await mailerImpl.sendTrialWelcomeEmail({
+            to: recipientEmail,
+            licenseKey: result.key,
+            customerId,
+          });
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.warn('[billing] trial welcome email failed:', err && err.message ? err.message : err);
+          emailResult = { sent: false, reason: 'exception', error: err && err.message ? err.message : String(err) };
+        }
+      } else if (!recipientEmail) {
+        emailResult = { sent: false, reason: 'no_recipient' };
+      }
+
+      return { handled: true, action: 'provisioned_api_key', result, email: emailResult };
     }
     case 'customer.subscription.deleted': {
       const sub = event.data.object;
@@ -2534,4 +2557,5 @@ module.exports = {
   _LOCAL_CHECKOUT_SESSIONS_PATH: () => CONFIG.LOCAL_CHECKOUT_SESSIONS_PATH,
   _LOCAL_MODE: () => LOCAL_MODE(),
   _withTimeout: withTimeout,
+  _mailer: null, // tests set this to a { sendTrialWelcomeEmail } stub
 };
