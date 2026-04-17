@@ -14,6 +14,7 @@ const crypto = require('node:crypto');
 const { tagUrlsInText } = require('../utm');
 const { loadLocalEnv } = require('../load-env');
 const { validateContentForPlatforms, truncateForPlatform } = require('../platform-limits');
+const { runStep, idempotencyKey } = require('../../durability/step');
 
 const ZERNIO_UTM = { source: 'zernio', medium: 'social', campaign: 'organic' };
 
@@ -223,18 +224,21 @@ function normalizePostResult(payload) {
   };
 }
 
-async function zernioFetch(method, endpoint, body = null) {
+async function zernioFetch(method, endpoint, body = null, fetchOptions = {}) {
   const apiKey = requireApiKey();
   const url = `${ZERNIO_BASE}${endpoint}`;
 
-  const options = {
-    method,
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
+  const headers = {
+    Authorization: `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
   };
+  // Pass an Idempotency-Key header when the caller supplies one. Safe-by-default
+  // for retried POSTs — Zernio (like Stripe) honors this to short-circuit dupes.
+  if (fetchOptions.idempotencyKey) {
+    headers['Idempotency-Key'] = fetchOptions.idempotencyKey;
+  }
 
+  const options = { method, headers };
   if (body !== null) {
     options.body = JSON.stringify(body);
   }
@@ -245,7 +249,9 @@ async function zernioFetch(method, endpoint, body = null) {
     const errorText = await res.text().catch(() => '');
     const payload = parseZernioErrorText(errorText);
     if (isZernioQuotaPayload(res.status, payload, errorText)) {
-      throw new ZernioQuotaError(payload?.error || 'Zernio post limit reached', {
+      // Quota is a permanent failure for this billing window; never burn
+      // retries on it. runStep honors the `nonRetryable` flag.
+      const qErr = new ZernioQuotaError(payload?.error || 'Zernio post limit reached', {
         billingPeriod: payload?.billingPeriod,
         current: Number(payload?.current),
         endpoint,
@@ -254,8 +260,12 @@ async function zernioFetch(method, endpoint, body = null) {
         planName: payload?.planName,
         status: res.status,
       });
+      qErr.nonRetryable = true;
+      throw qErr;
     }
-    throw new Error(`Zernio API ${res.status} for ${method} ${endpoint}: ${errorText}`);
+    const httpErr = new Error(`Zernio API ${res.status} for ${method} ${endpoint}: ${errorText}`);
+    httpErr.status = res.status; // lets defaultClassify see the status directly
+    throw httpErr;
   }
 
   return res.json();
@@ -394,13 +404,21 @@ async function publishPost(content, platforms, options = {}) {
 
   console.log(`[zernio:publisher] Publishing to ${dedupedPlatforms.length} platform(s): ${dedupedPlatforms.map((p) => p.platform).join(', ')}`);
 
-  const json = await zernioFetch('POST', '/posts', {
+  // Idempotency key derived from content + platform set. Identical publish
+  // requests retried within the same key window collapse to one Zernio post.
+  const publishKey = idempotencyKey('zernio.publishPost', content, dedupedPlatforms);
+
+  const json = await runStep('zernio.publishPost', {
+    retries: 3,
+    // Strip CR/LF from user-controlled error text to prevent log forging (S5145).
+    logger: (msg) => console.warn(String(msg).replace(/[\r\n]+/g, ' ')),
+  }, async () => zernioFetch('POST', '/posts', {
     content,
     firstComment: options.firstComment,
     mediaItems: options.mediaItems,
     publishNow: true,
     platforms: dedupedPlatforms,
-  });
+  }, { idempotencyKey: publishKey }));
 
   const data = normalizePostResult(json);
   // Record each platform to prevent future dupes
@@ -470,7 +488,15 @@ async function schedulePost(content, platforms, scheduledFor, timezone, options 
 
   console.log(`[zernio:publisher] Scheduling post for ${scheduledFor} (${timezone}) to ${dedupedPlatforms.length} platform(s)`);
 
-  const json = await zernioFetch('POST', '/posts', {
+  // Include scheduledFor + timezone in the key so that two schedules of the
+  // same content at different times get distinct idempotency slots.
+  const scheduleKey = idempotencyKey('zernio.schedulePost', content, dedupedPlatforms, scheduledFor, timezone);
+
+  const json = await runStep('zernio.schedulePost', {
+    retries: 3,
+    // Strip CR/LF from user-controlled error text to prevent log forging (S5145).
+    logger: (msg) => console.warn(String(msg).replace(/[\r\n]+/g, ' ')),
+  }, async () => zernioFetch('POST', '/posts', {
     content,
     firstComment: options.firstComment,
     mediaItems: options.mediaItems,
@@ -478,7 +504,7 @@ async function schedulePost(content, platforms, scheduledFor, timezone, options 
     platforms: dedupedPlatforms,
     scheduledFor,
     timezone,
-  });
+  }, { idempotencyKey: scheduleKey }));
 
   const data = normalizePostResult(json);
   for (const p of dedupedPlatforms) {

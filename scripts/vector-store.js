@@ -8,6 +8,7 @@ const {
   writeModelFitReport,
   resolveFeedbackDir,
 } = require('./local-model-profile');
+const { runStep } = require('./durability/step');
 
 const DEFAULT_FEEDBACK_DIR = resolveFeedbackDir();
 const DEFAULT_LANCE_DIR = path.join(DEFAULT_FEEDBACK_DIR, 'lancedb');
@@ -125,6 +126,9 @@ async function upsertFeedback(feedbackEvent) {
     feedbackEvent.whatWorked || '',
   ].filter(Boolean).join('. ');
 
+  // Embed is pure CPU/model work (transformers.js or stub) — deterministic
+  // for a given input, so no retry is needed here. Retry wraps the table
+  // write below, which is the actual I/O failure surface.
   const vector = await embed(textForEmbedding);
 
   const record = {
@@ -137,13 +141,23 @@ async function upsertFeedback(feedbackEvent) {
     context: feedbackEvent.context || '',
   };
 
-  const tableNames = await db.tableNames();
-  if (tableNames.includes(TABLE_NAME)) {
-    const table = await db.openTable(TABLE_NAME);
-    await table.add([record]);
-  } else {
-    await db.createTable(TABLE_NAME, [record]);
-  }
+  // Wrap the actual LanceDB write with retry. LanceDB is local-disk in our
+  // deployment but can fail on transient fs contention (EBUSY on Windows,
+  // lock timeouts on WSL, disk-full edge cases). `feedbackEvent.id` already
+  // acts as a stable row identity — re-running this step with the same
+  // event produces the same row, so retries are safe.
+  await runStep('vector-store.upsertFeedback', {
+    retries: 2,
+    logger: (msg) => console.warn(msg),
+  }, async () => {
+    const tableNames = await db.tableNames();
+    if (tableNames.includes(TABLE_NAME)) {
+      const table = await db.openTable(TABLE_NAME);
+      await table.add([record]);
+    } else {
+      await db.createTable(TABLE_NAME, [record]);
+    }
+  });
 }
 
 async function searchSimilar(queryText, limit = 5) {
