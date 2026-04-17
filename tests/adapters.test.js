@@ -14,6 +14,16 @@ const packageVersion = JSON.parse(fs.readFileSync(path.join(root, 'package.json'
 const explicitServeArgs = ['--yes', '--package', `thumbgate@${packageVersion}`, 'thumbgate', 'serve'];
 const explicitLatestServeArgs = ['--yes', '--package', 'thumbgate@latest', 'thumbgate', 'serve'];
 
+function assertCodexLatestShellEntry(entry) {
+  assert.equal(entry.command, 'sh');
+  assert.deepEqual(entry.args.slice(0, 1), ['-lc']);
+  assert.match(entry.args[1], /thumbgate@latest/);
+  assert.match(entry.args[1], /thumbgate/);
+  assert.match(entry.args[1], /serve/);
+  assert.match(entry.args[1], /\.thumbgate\/runtime/);
+  assert.doesNotMatch(entry.args[1], /\[ -x /);
+}
+
 test('adapter files exist', () => {
   const files = [
     'adapters/chatgpt/openapi.yaml',
@@ -81,12 +91,13 @@ test('codex config.toml contains mcp_servers section', () => {
   const content = fs.readFileSync(filePath, 'utf-8');
   assert.match(content, /\[mcp_servers\.thumbgate\]/, 'config.toml must contain canonical thumbgate section');
   
-  if (content.includes('command = "npx"')) {
-    assert.match(
-      content,
-      new RegExp(`args = \\["--yes", "--package", "thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}", "thumbgate", "serve"\\]`),
-      'config.toml must launch the version-pinned package serve entrypoint'
-    );
+  if (content.includes('thumbgate@latest')) {
+    assert.match(content, /command = "sh"/);
+    assert.match(content, /npm \\"install\\"/);
+    assert.match(content, /node_modules\/\.bin\/thumbgate/);
+    assert.doesNotMatch(content, /\[ -x /);
+  } else if (content.includes('command = "npx"')) {
+    assert.match(content, new RegExp(`thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
   } else {
     assert.match(content, /command = "node"/);
     assert.match(content, /"serve"/);
@@ -277,14 +288,19 @@ test('claude .mcp.json ThumbGate command is either npx or node', () => {
   }
 });
 
-test('codex config.toml uses either npx or node command', () => {
+test('codex config.toml uses npx, node, or latest-resolving shell command', () => {
   const filePath = path.join(root, 'adapters/codex/config.toml');
   const content = fs.readFileSync(filePath, 'utf-8');
   const usesNpx = content.includes('command = "npx"');
   const usesNode = content.includes('command = "node"');
-  assert.ok(usesNpx || usesNode, 'should use npx or node');
+  const usesShell = content.includes('command = "sh"');
+  assert.ok(usesNpx || usesNode || usesShell, 'should use npx, node, or sh');
   if (usesNode) {
     assert.match(content, /"serve"/, 'node command should include serve');
+  }
+  if (usesShell) {
+    assert.match(content, /thumbgate@latest/, 'shell command should resolve latest npm release');
+    assert.doesNotMatch(content, /\[ -x /, 'shell command should not prefer a stale installed runtime');
   }
 });
 
@@ -301,7 +317,7 @@ test('codex app plugin surface is present and aligned to ThumbGate metadata', ()
   assert.equal(pluginManifest.mcpServers, './.mcp.json');
   assert.ok(pluginEntry, 'codex plugin marketplace entry should exist');
   assert.equal(pluginEntry.source.path, './plugins/codex-profile');
-  assert.deepEqual(pluginConfig.mcpServers.thumbgate.args, explicitServeArgs);
+  assertCodexLatestShellEntry(pluginConfig.mcpServers.thumbgate);
 });
 
 test('Claude Codex bridge plugin surface is present and aligned to ThumbGate metadata', () => {

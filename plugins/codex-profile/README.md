@@ -9,11 +9,13 @@ ThumbGate now ships a standalone Codex plugin bundle in GitHub Releases, alongsi
 - Source plugin manifest: `plugins/codex-profile/.codex-plugin/plugin.json`
 - Source MCP config: `plugins/codex-profile/.mcp.json`
 - Manual install profile: `adapters/codex/config.toml`
+- Update policy: Codex resolves `thumbgate@latest` on MCP and hook startup; unpublished local source checkouts still fall back to the local server path
 
 ## What it does
 
 - adds ThumbGate's Pre-Action Gates to Codex workflows
 - captures thumbs-up/down feedback that survives session boundaries
+- auto-refreshes the Codex MCP/hook runtime from the latest npm release on startup
 - writes the ThumbGate status line target alongside the Codex hook bundle
 - reuses the same local-first MCP runtime as Claude, Cursor, Gemini, Amp, and OpenCode
 
@@ -49,12 +51,12 @@ That writes the MCP server block to `~/.codex/config.toml` and the Codex hook/st
 
 If you only need the MCP server manually, copy the MCP profile from `adapters/codex/config.toml` into `~/.codex/config.toml`.
 
-That profile launches:
+That profile launches the latest npm release instead of pinning a stale local runtime:
 
 ```toml
 [mcp_servers.thumbgate]
-command = "npx"
-args = ["--yes", "--package", "thumbgate@1.5.8", "thumbgate", "serve"]
+command = "sh"
+args = ["-lc", "mkdir -p \"$HOME/.thumbgate/runtime\" && npm \"install\" \"--prefix\" \"$HOME/.thumbgate/runtime\" \"--no-save\" \"--omit=dev\" \"thumbgate@latest\" >/dev/null 2>&1 && exec \"$HOME/.thumbgate/runtime/node_modules/.bin/thumbgate\" \"serve\""]
 ```
 
 ### Build from source
@@ -67,4 +69,4 @@ npm run build:codex-plugin
 
 ## Why this exists
 
-The Codex support story is no longer just "copy this config block." ThumbGate now has a direct-download Codex plugin bundle, a repo-local plugin surface, and a pinned manual MCP profile so release assets, install docs, and the runtime stay aligned.
+The Codex support story is no longer just "copy this config block." ThumbGate now has a direct-download Codex plugin bundle, a repo-local plugin surface, and an auto-updating manual MCP profile so release assets, install docs, and the runtime stay aligned with npm.

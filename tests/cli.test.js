@@ -66,6 +66,13 @@ function assertLocalTomlMcpBlock(content, expectedPath = MCP_SERVER_PATH) {
   assert.match(content, new RegExp(escapeRegExp(expectedPath)));
 }
 
+function assertLocalCodexPreToolHook(content) {
+  assert.match(content, /\[hooks\.pre_tool_use\]/);
+  assert.match(content, /command = "node"/);
+  assert.match(content, new RegExp(escapeRegExp(path.join(PKG_ROOT, 'bin', 'cli.js'))));
+  assert.match(content, /"gate-check"/);
+}
+
 function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -1848,6 +1855,7 @@ describe('bin/cli.js', () => {
     const configPath = path.join(codexHome, 'config.toml');
     const content = fs.readFileSync(configPath, 'utf8');
     assertLocalTomlMcpBlock(content, HOME_MCP_SERVER_PATH);
+    assertLocalCodexPreToolHook(content);
     assert.doesNotMatch(content, /\/tmp\/disposable-worktree\/adapters\/mcp\/server-stdio\.js/);
     const hooksPath = path.join(codexHome, 'config.json');
     const hooksConfig = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
@@ -1873,7 +1881,7 @@ describe('bin/cli.js', () => {
     fs.mkdirSync(codexHome, { recursive: true });
     fs.writeFileSync(
       configPath,
-      '[mcp_servers.thumbgate]\ncommand = "node"\nargs = ["/tmp/disposable-worktree/adapters/mcp/server-stdio.js"]\n'
+      '[hooks.pre_tool_use]\ncommand = "sh"\nargs = ["-lc", "npx --yes --package thumbgate@1.4.6 thumbgate gate-check"]\n\n[mcp_servers.thumbgate]\ncommand = "node"\nargs = ["/tmp/disposable-worktree/adapters/mcp/server-stdio.js"]\n'
     );
 
     const result = runCliSync(['init'], {
@@ -1890,7 +1898,9 @@ describe('bin/cli.js', () => {
 
     const content = fs.readFileSync(configPath, 'utf8');
     assertLocalTomlMcpBlock(content, HOME_MCP_SERVER_PATH);
+    assertLocalCodexPreToolHook(content);
     assert.doesNotMatch(content, /disposable-worktree/);
+    assert.doesNotMatch(content, /thumbgate@1\.4\.6/);
     const hooksPath = path.join(codexHome, 'config.json');
     const hooksConfig = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
     assert.equal(
