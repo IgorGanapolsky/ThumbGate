@@ -31,6 +31,12 @@ const BRAND_MARK_URL = 'https://thumbgate-production.up.railway.app/thumbgate-ic
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const TRIAL_LENGTH_DAYS = 7;
 const SENDER_DNS_CACHE_MS = 10 * 60 * 1000;
+const ANGLE_EMAIL_RE = /<([^<>@\s]+@[^<>\s]+)>/;
+const BARE_EMAIL_RE = /([^\s<>@]+@[^\s<>]+)/;
+const DKIM_PUBLIC_KEY_RE = /^p=/i;
+const AMAZON_SES_MX_RE = /feedback-smtp\..*amazonaws\.com\.?$/i;
+const AMAZON_SES_SPF_RE = /include:amazonses\.com/i;
+const TRAILING_EMAIL_DOMAIN_PUNCTUATION = new Set(['>', ')', ',', '.', ';']);
 const senderDnsCache = new Map();
 
 function getApiKey() {
@@ -75,9 +81,9 @@ function isTrueEnv(value) {
 
 function extractEmailAddress(value) {
   const text = String(value || '').trim();
-  const angleMatch = text.match(/<([^<>@\s]+@[^<>\s]+)>/);
+  const angleMatch = ANGLE_EMAIL_RE.exec(text);
   if (angleMatch) return angleMatch[1];
-  const bareMatch = text.match(/([^\s<>@]+@[^\s<>]+)/);
+  const bareMatch = BARE_EMAIL_RE.exec(text);
   return bareMatch ? bareMatch[1] : '';
 }
 
@@ -85,7 +91,11 @@ function getEmailDomain(value) {
   const email = extractEmailAddress(value);
   const at = email.lastIndexOf('@');
   if (at === -1) return '';
-  return email.slice(at + 1).trim().replace(/[>),.;]+$/g, '').toLowerCase();
+  let domain = email.slice(at + 1).trim();
+  while (domain && TRAILING_EMAIL_DOMAIN_PUNCTUATION.has(domain.at(-1))) {
+    domain = domain.slice(0, -1);
+  }
+  return domain.toLowerCase();
 }
 
 function splitCsv(value) {
@@ -103,36 +113,54 @@ function flattenTxt(records) {
   return (records || []).map((chunks) => Array.isArray(chunks) ? chunks.join('') : String(chunks));
 }
 
-async function hasResendSenderDns(domain, { dnsResolver } = {}) {
-  if (!domain || domain === 'resend.dev') return true;
-  if (isTrueEnv(process.env.THUMBGATE_ALLOW_UNVERIFIED_SENDER)) return true;
-  if (getVerifiedSenderDomains().has(domain)) return true;
+function getCachedSenderDnsReadiness(cacheKey) {
+  if (!cacheKey) return null;
+  const cached = senderDnsCache.get(cacheKey);
+  return cached && cached.expiresAt > Date.now() ? cached.ready : null;
+}
 
-  const resolver = dnsResolver || dns;
-  const cacheKey = dnsResolver ? null : domain;
-  if (cacheKey) {
-    const cached = senderDnsCache.get(cacheKey);
-    if (cached && cached.expiresAt > Date.now()) return cached.ready;
-  }
+function setCachedSenderDnsReadiness(cacheKey, ready) {
+  if (cacheKey) senderDnsCache.set(cacheKey, { ready, expiresAt: Date.now() + SENDER_DNS_CACHE_MS });
+  return ready;
+}
 
-  let ready = false;
+async function readResendDnsRecords(domain, resolver) {
   try {
     const [dkimRecords, mxRecords, spfRecords] = await Promise.all([
       resolver.resolveTxt(`resend._domainkey.${domain}`),
       resolver.resolveMx(`send.${domain}`),
       resolver.resolveTxt(`send.${domain}`),
     ]);
-    const dkim = flattenTxt(dkimRecords);
-    const spf = flattenTxt(spfRecords);
-    ready = dkim.some((record) => /^p=/i.test(record.trim())) &&
-      (mxRecords || []).some((record) => /feedback-smtp\..*amazonaws\.com\.?$/i.test(record.exchange || '')) &&
-      spf.some((record) => /include:amazonses\.com/i.test(record));
-  } catch (_) {
-    ready = false;
+    return { dkimRecords, mxRecords, spfRecords, errorCode: null };
+  } catch (error) {
+    return {
+      dkimRecords: [],
+      mxRecords: [],
+      spfRecords: [],
+      errorCode: error && error.code ? error.code : 'dns_lookup_failed',
+    };
   }
+}
 
-  if (cacheKey) senderDnsCache.set(cacheKey, { ready, expiresAt: Date.now() + SENDER_DNS_CACHE_MS });
-  return ready;
+function recordsHaveResendDns({ dkimRecords, mxRecords, spfRecords }) {
+  const dkim = flattenTxt(dkimRecords);
+  const spf = flattenTxt(spfRecords);
+  return dkim.some((record) => DKIM_PUBLIC_KEY_RE.exec(record.trim()) !== null) &&
+    (mxRecords || []).some((record) => AMAZON_SES_MX_RE.exec(record.exchange || '') !== null) &&
+    spf.some((record) => AMAZON_SES_SPF_RE.exec(record) !== null);
+}
+
+async function hasResendSenderDns(domain, { dnsResolver } = {}) {
+  if (!domain || domain === 'resend.dev') return true;
+  if (isTrueEnv(process.env.THUMBGATE_ALLOW_UNVERIFIED_SENDER)) return true;
+  if (getVerifiedSenderDomains().has(domain)) return true;
+
+  const cacheKey = dnsResolver ? null : domain;
+  const cached = getCachedSenderDnsReadiness(cacheKey);
+  if (cached !== null) return cached;
+
+  const records = await readResendDnsRecords(domain, dnsResolver || dns);
+  return setCachedSenderDnsReadiness(cacheKey, !records.errorCode && recordsHaveResendDns(records));
 }
 
 async function resolveSenderAddress(requestedFrom, { dnsResolver } = {}) {
@@ -152,16 +180,77 @@ async function resolveSenderAddress(requestedFrom, { dnsResolver } = {}) {
   };
 }
 
-/**
- * Low-level send. Posts to the Resend API or no-ops when RESEND_API_KEY is
- * missing. Never throws on network errors; returns a structured result instead.
- */
-async function sendEmail({ to, subject, html, text, from, replyTo, fetchImpl, dnsResolver } = {}) {
+function validateSendEmailInput({ to, subject, html, text }) {
   if (!isNonEmptyString(to)) throw new Error('sendEmail: `to` is required');
   if (!isNonEmptyString(subject)) throw new Error('sendEmail: `subject` is required');
   if (!isNonEmptyString(html) && !isNonEmptyString(text)) {
     throw new Error('sendEmail: at least one of `html` or `text` is required');
   }
+}
+
+function warnSenderFallback(senderFallback) {
+  if (!senderFallback) return;
+  // eslint-disable-next-line no-console
+  console.warn(
+    `[mailer] Sender domain ${senderFallback.domain || '(unknown)'} is missing Resend DNS; ` +
+    `falling back to ${senderFallback.fallbackFrom}`,
+  );
+}
+
+function buildEmailPayload({ to, subject, html, text, replyTo, sender }) {
+  const payload = {
+    from: sender.from,
+    to: Array.isArray(to) ? to : [to],
+    subject,
+    reply_to: replyTo || getReplyTo(),
+  };
+  if (isNonEmptyString(html)) payload.html = html;
+  if (isNonEmptyString(text)) payload.text = text;
+  return payload;
+}
+
+function parseJsonOrNull(bodyText) {
+  if (!bodyText) return null;
+  try {
+    return JSON.parse(bodyText);
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error;
+    return null;
+  }
+}
+
+async function postResendEmail({ fetcher, apiKey, payload }) {
+  const res = await fetcher(RESEND_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  const bodyText = typeof res.text === 'function' ? await res.text() : '';
+  return { res, bodyText, bodyJson: parseJsonOrNull(bodyText) };
+}
+
+function formatSendFailure(error) {
+  return error && error.message ? error.message : String(error);
+}
+
+function buildSendSuccess({ bodyJson, status, senderFallback }) {
+  return {
+    sent: true,
+    id: bodyJson?.id || null,
+    status,
+    ...(senderFallback ? { senderFallback } : {}),
+  };
+}
+
+/**
+ * Low-level send. Posts to the Resend API or no-ops when RESEND_API_KEY is
+ * missing. Never throws on network errors; returns a structured result instead.
+ */
+async function sendEmail({ to, subject, html, text, from, replyTo, fetchImpl, dnsResolver } = {}) {
+  validateSendEmailInput({ to, subject, html, text });
 
   const apiKey = getApiKey();
   if (!apiKey) {
@@ -171,22 +260,8 @@ async function sendEmail({ to, subject, html, text, from, replyTo, fetchImpl, dn
   }
 
   const sender = await resolveSenderAddress(from || getFromAddress(), { dnsResolver });
-  if (sender.senderFallback) {
-    // eslint-disable-next-line no-console
-    console.warn(
-      `[mailer] Sender domain ${sender.senderFallback.domain || '(unknown)'} is missing Resend DNS; ` +
-      `falling back to ${sender.senderFallback.fallbackFrom}`,
-    );
-  }
-
-  const payload = {
-    from: sender.from,
-    to: Array.isArray(to) ? to : [to],
-    subject,
-    reply_to: replyTo || getReplyTo(),
-  };
-  if (isNonEmptyString(html)) payload.html = html;
-  if (isNonEmptyString(text)) payload.text = text;
+  warnSenderFallback(sender.senderFallback);
+  const payload = buildEmailPayload({ to, subject, html, text, replyTo, sender });
 
   const fetcher = fetchImpl || globalThis.fetch;
   if (typeof fetcher !== 'function') {
@@ -196,34 +271,17 @@ async function sendEmail({ to, subject, html, text, from, replyTo, fetchImpl, dn
   }
 
   try {
-    const res = await fetcher(RESEND_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const bodyText = typeof res.text === 'function' ? await res.text() : '';
-    let bodyJson = null;
-    if (bodyText) {
-      try { bodyJson = JSON.parse(bodyText); } catch (_) { /* leave as text */ }
-    }
-
+    const { res, bodyText, bodyJson } = await postResendEmail({ fetcher, apiKey, payload });
     if (!res.ok) {
       // eslint-disable-next-line no-console
       console.warn(`[mailer] Resend returned ${res.status}:`, bodyText);
       return { sent: false, reason: 'api_error', status: res.status, body: bodyJson || bodyText };
     }
-
-    const result = { sent: true, id: bodyJson && bodyJson.id ? bodyJson.id : null, status: res.status };
-    if (sender.senderFallback) result.senderFallback = sender.senderFallback;
-    return result;
+    return buildSendSuccess({ bodyJson, status: res.status, senderFallback: sender.senderFallback });
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.warn('[mailer] send failed:', err && err.message ? err.message : err);
-    return { sent: false, reason: 'exception', error: err && err.message ? err.message : String(err) };
+    console.warn('[mailer] send failed:', formatSendFailure(err));
+    return { sent: false, reason: 'exception', error: formatSendFailure(err) };
   }
 }
 
