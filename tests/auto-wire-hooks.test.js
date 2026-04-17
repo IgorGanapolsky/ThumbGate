@@ -323,11 +323,11 @@ describe('auto-wire-hooks', () => {
         assert.ok(config.hooks.PostToolUse);
         assert.ok(config.hooks.SessionStart);
         assert.ok(config.statusLine);
-        assert.equal(config.hooks.PreToolUse[0].hooks[0].command, preToolHookCommand());
-        assert.equal(config.hooks.UserPromptSubmit[0].hooks[0].command, userPromptHookCommand());
-        assert.equal(config.hooks.PostToolUse[0].hooks[0].command, require('../scripts/hook-runtime').cacheUpdateHookCommand());
-        assert.equal(config.hooks.SessionStart[0].hooks[0].command, sessionStartHookCommand());
-        assert.equal(config.statusLine.command, require('../scripts/hook-runtime').statuslineCommand());
+        assert.equal(config.hooks.PreToolUse[0].hooks[0].command, require('../scripts/hook-runtime').codexPreToolHookCommand());
+        assert.equal(config.hooks.UserPromptSubmit[0].hooks[0].command, require('../scripts/hook-runtime').codexUserPromptHookCommand());
+        assert.equal(config.hooks.PostToolUse[0].hooks[0].command, require('../scripts/hook-runtime').codexCacheUpdateHookCommand());
+        assert.equal(config.hooks.SessionStart[0].hooks[0].command, require('../scripts/hook-runtime').codexSessionStartHookCommand());
+        assert.equal(config.statusLine.command, require('../scripts/hook-runtime').codexStatuslineCommand());
       } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true });
       }
@@ -365,7 +365,7 @@ describe('auto-wire-hooks', () => {
 
         const config = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
         assert.equal(config.hooks.PreToolUse.length, 1);
-        assert.equal(config.hooks.PreToolUse[0].hooks[0].command, preToolHookCommand());
+        assert.equal(config.hooks.PreToolUse[0].hooks[0].command, require('../scripts/hook-runtime').codexPreToolHookCommand());
       } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true });
       }
@@ -388,11 +388,11 @@ describe('auto-wire-hooks', () => {
         assert.equal(result.changed, true);
         assert.deepStrictEqual(result.added, [{
           lifecycle: 'statusLine',
-          command: require('../scripts/hook-runtime').statuslineCommand(),
+          command: require('../scripts/hook-runtime').codexStatuslineCommand(),
         }]);
 
         const config = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-        assert.equal(config.statusLine.command, require('../scripts/hook-runtime').statuslineCommand());
+        assert.equal(config.statusLine.command, require('../scripts/hook-runtime').codexStatuslineCommand());
       } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true });
       }

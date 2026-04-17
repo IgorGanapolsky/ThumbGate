@@ -23,6 +23,16 @@ function readJson(relativePath) {
   return JSON.parse(fs.readFileSync(path.join(root, relativePath), 'utf-8'));
 }
 
+function assertCodexLatestShellEntry(entry) {
+  assert.equal(entry.command, 'sh');
+  assert.deepEqual(entry.args.slice(0, 1), ['-lc']);
+  assert.match(entry.args[1], /thumbgate@latest/);
+  assert.match(entry.args[1], /\.thumbgate\/runtime/);
+  assert.match(entry.args[1], /thumbgate/);
+  assert.match(entry.args[1], /serve/);
+  assert.doesNotMatch(entry.args[1], /\[ -x /);
+}
+
 test('codex plugin marketplace points at the shipped codex profile', () => {
   const marketplace = readJson('.agents/plugins/marketplace.json');
   const plugin = readJson('plugins/codex-profile/.codex-plugin/plugin.json');
@@ -48,13 +58,15 @@ test('codex plugin manifest uses ThumbGate branding and local MCP config', () =>
   assert.equal(plugin.homepage, 'https://thumbgate-production.up.railway.app');
   assert.equal(plugin.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
   assert.equal(plugin.mcpServers, './.mcp.json');
-  assert.deepEqual(mcpConfig.mcpServers.thumbgate.args, ['--yes', '--package', `thumbgate@${packageJson.version}`, 'thumbgate', 'serve']);
+  assertCodexLatestShellEntry(mcpConfig.mcpServers.thumbgate);
   assert.match(readme, /standalone Codex plugin bundle/i);
+  assert.match(readme, /auto-refreshes the Codex MCP\/hook runtime/i);
   assert.match(readme, new RegExp(getCodexPluginLatestDownloadUrl(root).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(readme, /build:codex-plugin/i);
   assert.match(readme, /Pre-Action Gates/i);
   assert.match(install, /thumbgate-codex-plugin\.zip/i);
   assert.match(install, /build:codex-plugin/i);
+  assert.match(install, /thumbgate@latest/i);
   assert.match(install, /marketplace catalog points at `\.\/`/i);
 });
 
@@ -62,7 +74,8 @@ test('root README promotes the Codex plugin as a first-class install path', () =
   const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf-8');
 
   assert.match(readme, /Install Codex Plugin/);
-  assert.match(readme, /Download the standalone Codex plugin bundle/i);
+  assert.match(readme, /Open the Codex plugin install page/i);
+  assert.match(readme, /thumbgate-production\.up\.railway\.app\/codex-plugin/i);
   assert.match(readme, /plugins\/codex-profile\/INSTALL\.md/);
   assert.match(readme, new RegExp(getCodexPluginLatestDownloadUrl(root).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 });
@@ -101,13 +114,15 @@ test('codex plugin staging writes a standalone bundle with self-contained market
     const configToml = fs.readFileSync(configTomlPath, 'utf8');
 
     assert.equal(plugin.version, packageJson.version);
-    assert.deepEqual(mcpConfig.mcpServers.thumbgate.args, ['--yes', '--package', `thumbgate@${packageJson.version}`, 'thumbgate', 'serve']);
+    assertCodexLatestShellEntry(mcpConfig.mcpServers.thumbgate);
     assert.equal(marketplace.plugins[0].source.path, './');
     assert.match(readme, /thumbgate-codex-plugin\.zip/i);
     assert.match(readme, /build:codex-plugin/i);
     assert.match(readme, /self-contained plugin root/i);
+    assert.match(readme, /auto-updating manual MCP profile/i);
     assert.match(install, /standalone release bundle/i);
-    assert.match(configToml, new RegExp(`thumbgate@${packageJson.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+    assert.match(configToml, /thumbgate@latest/);
+    assert.doesNotMatch(configToml, /\[ -x /);
   } finally {
     fs.rmSync(outputDir, { recursive: true, force: true });
   }

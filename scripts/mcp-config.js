@@ -106,6 +106,17 @@ function portableMcpEntry(pkgVersion) {
   };
 }
 
+function codexAutoUpdateCliEntry(commandArgs = []) {
+  return {
+    command: 'sh',
+    args: ['-lc', publishedCliShellCommand('latest', commandArgs, { preferInstalled: false })],
+  };
+}
+
+function codexAutoUpdateMcpEntry() {
+  return codexAutoUpdateCliEntry(['serve']);
+}
+
 function localMcpEntry(pkgRoot, scope = 'project') {
   return {
     command: 'node',
@@ -201,4 +212,6 @@ module.exports = {
   resolveLocalServerPath,
   resolveMcpEntry,
   resolveStableSourceRoot,
+  codexAutoUpdateCliEntry,
+  codexAutoUpdateMcpEntry,
 };

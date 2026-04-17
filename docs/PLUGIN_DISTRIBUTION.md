@@ -90,14 +90,16 @@ This lane is for Claude Code users who want Codex review, adversarial review, an
 - Manual profile: `adapters/codex/config.toml`
 - Standalone Codex bundle build command: `npm run build:codex-plugin`
 - Standalone Codex release workflow: `.github/workflows/publish-codex-plugin.yml`
+- Standalone Codex install page: `https://thumbgate-production.up.railway.app/codex-plugin`
 - Standalone Codex latest download: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip`
 - Standalone Codex versioned asset pattern: `thumbgate-codex-plugin-v<VERSION>.zip`
 - Repo-local Codex plugin manifest: `plugins/codex-profile/.codex-plugin/plugin.json`
 - Repo-local Codex MCP config: `plugins/codex-profile/.mcp.json`
 - Repo-local Codex marketplace: `.agents/plugins/marketplace.json`
-- Transport: local stdio MCP server launched via `npx -y thumbgate@1.5.8 serve`
+- Transport: local stdio MCP server launched through `npm install --prefix ~/.thumbgate/runtime --no-save --omit=dev thumbgate@latest` followed by `~/.thumbgate/runtime/node_modules/.bin/thumbgate serve`
+- Update policy: Codex MCP and hook launchers resolve `thumbgate@latest` at startup instead of preferring a stale installed runtime binary; unpublished local source checkouts fall back to the local server path
 
-The standalone Codex bundle ships `.codex-plugin/plugin.json`, `.mcp.json`, `.agents/plugins/marketplace.json`, `config.toml`, and install docs in one zip. Stable releases publish `thumbgate-codex-plugin.zip`; prereleases publish `thumbgate-codex-plugin-next.zip`.
+The standalone Codex bundle ships `.codex-plugin/plugin.json`, `.mcp.json`, `.agents/plugins/marketplace.json`, `config.toml`, and install docs in one zip. Stable releases publish `thumbgate-codex-plugin.zip`; prereleases publish `thumbgate-codex-plugin-next.zip`. The bundle metadata remains versioned for marketplace review, while the runtime follows the latest npm release for active Codex installs.
 
 ## Cursor Plugins
 

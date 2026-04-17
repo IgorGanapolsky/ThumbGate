@@ -141,10 +141,11 @@ Claude renders the live ThumbGate footer today. `npx thumbgate init --agent code
 
 ### Install Codex Plugin
 
-Download the standalone Codex plugin bundle and follow the install guide:
+Open the Codex plugin install page or download the standalone bundle from GitHub Releases. The Codex launcher resolves `thumbgate@latest` when MCP and hooks start, so published npm fixes reach active Codex installs without hand-editing `~/.codex/config.toml`.
 
-1. Download: [thumbgate-codex-plugin.zip](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip)
-2. Follow: [plugins/codex-profile/INSTALL.md](plugins/codex-profile/INSTALL.md)
+1. Install page: [thumbgate-production.up.railway.app/codex-plugin](https://thumbgate-production.up.railway.app/codex-plugin)
+2. Direct zip: [thumbgate-codex-plugin.zip](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip)
+3. Follow: [plugins/codex-profile/INSTALL.md](plugins/codex-profile/INSTALL.md)
 
 ---
 
@@ -344,7 +345,7 @@ Every Changeset is tied to the exact `main` merge commit and generates Verificat
 
 - **[Open ThumbGate GPT](https://thumbgate-production.up.railway.app/go/gpt?utm_source=github&utm_medium=readme&utm_campaign=readme_gpt)** — ThumbGate GPT: start here. Paste agent actions, get advice + checkpointing. No, users do not have to keep chatting inside the ThumbGate GPT to use ThumbGate — the hard enforcement layer still runs where the work happens.
 - **[Claude Desktop Extension](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb)** — One-click install for Claude Desktop
-- **[Codex Plugin](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip)** — Standalone bundle for Codex CLI
+- **[Codex Plugin](https://thumbgate-production.up.railway.app/codex-plugin)** — Auto-updating standalone bundle and install page for Codex CLI
 - **[Perplexity Command Center](docs/PERPLEXITY_MAX_COMMAND_CENTER.md)** — AI-search visibility + lead discovery
 - **[ThumbGate Bench](docs/THUMBGATE_BENCH.md)** — Reliability benchmark for gate evaluation
 - **[Manus AI Skill](skills/thumbgate/SKILL.md)** — ThumbGate integration for Manus AI agents

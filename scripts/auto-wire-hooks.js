@@ -17,6 +17,11 @@ const fs = require('fs');
 const path = require('path');
 const {
   cacheUpdateHookCommand,
+  codexCacheUpdateHookCommand,
+  codexPreToolHookCommand,
+  codexSessionStartHookCommand,
+  codexStatuslineCommand,
+  codexUserPromptHookCommand,
   preToolHookCommand,
   sessionStartHookCommand,
   statuslineCommand,
@@ -48,17 +53,17 @@ const CLAUDE_HOOKS = {
 const CODEX_HOOKS = {
   PreToolUse: {
     matcher: 'Bash',
-    hooks: [{ type: 'command', command: preToolHookCommand() }],
+    hooks: [{ type: 'command', command: codexPreToolHookCommand() }],
   },
   UserPromptSubmit: {
-    hooks: [{ type: 'command', command: userPromptHookCommand() }],
+    hooks: [{ type: 'command', command: codexUserPromptHookCommand() }],
   },
   PostToolUse: {
     matcher: 'mcp__thumbgate__feedback_stats|mcp__thumbgate__dashboard',
-    hooks: [{ type: 'command', command: cacheUpdateHookCommand() }],
+    hooks: [{ type: 'command', command: codexCacheUpdateHookCommand() }],
   },
   SessionStart: {
-    hooks: [{ type: 'command', command: sessionStartHookCommand() }],
+    hooks: [{ type: 'command', command: codexSessionStartHookCommand() }],
   },
 };
 
@@ -459,7 +464,7 @@ function syncCodexStatusLine(config, desiredStatusLine) {
 function wireCodexHooks(options) {
   const configPath = options.settingsPath || codexConfigPath();
   const dryRun = options.dryRun || false;
-  const desiredStatusLine = statuslineCommand();
+  const desiredStatusLine = codexStatuslineCommand();
 
   let config = loadJsonFile(configPath) || {};
   config.hooks = config.hooks || {};

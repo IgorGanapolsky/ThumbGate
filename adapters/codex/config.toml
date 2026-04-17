@@ -2,10 +2,10 @@
 # Preferred: run `npx thumbgate init --agent codex` to also wire
 # ~/.codex/config.json with the ThumbGate hooks and status line.
 [mcp_servers.thumbgate]
-command = "npx"
-args = ["--yes", "--package", "thumbgate@1.5.8", "thumbgate", "serve"]
+command = "sh"
+args = ["-lc", "mkdir -p \"$HOME/.thumbgate/runtime\" && npm \"install\" \"--prefix\" \"$HOME/.thumbgate/runtime\" \"--no-save\" \"--omit=dev\" \"thumbgate@latest\" >/dev/null 2>&1 && exec \"$HOME/.thumbgate/runtime/node_modules/.bin/thumbgate\" \"serve\""]
 
 # Hard PreToolUse hook for Codex
 [hooks.pre_tool_use]
-command = "npx"
-args = ["--yes", "--package", "thumbgate@1.5.8", "thumbgate", "gate-check"]
+command = "sh"
+args = ["-lc", "mkdir -p \"$HOME/.thumbgate/runtime\" && npm \"install\" \"--prefix\" \"$HOME/.thumbgate/runtime\" \"--no-save\" \"--omit=dev\" \"thumbgate@latest\" >/dev/null 2>&1 && exec \"$HOME/.thumbgate/runtime/node_modules/.bin/thumbgate\" \"gate-check\""]

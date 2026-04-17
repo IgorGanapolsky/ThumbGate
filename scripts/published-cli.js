@@ -37,6 +37,14 @@ function publishedCliShellCommand(pkgVersion, commandArgs = [], options = {}) {
   const escapedArgs = commandArgs.map(shellQuote).join(' ');
   const fastPath = `[ -x ${shellQuote(runtimeBin)} ] && exec ${shellQuote(runtimeBin)}${escapedArgs ? ` ${escapedArgs}` : ''}`;
   const installPath = `mkdir -p ${shellQuote(prefixDir)} && exec npm ${publishedCliArgs(pkgVersion, commandArgs, { prefixDir }).map(shellQuote).join(' ')}`;
+  if (options.preferInstalled === false) {
+    const packageSpec = `thumbgate@${pkgVersion}`;
+    return [
+      `mkdir -p ${shellQuote(prefixDir)}`,
+      `npm "install" "--prefix" ${shellQuote(prefixDir)} "--no-save" "--omit=dev" ${shellQuote(packageSpec)} >/dev/null 2>&1`,
+      `exec ${shellQuote(runtimeBin)}${escapedArgs ? ` ${escapedArgs}` : ''}`,
+    ].join(' && ');
+  }
   return `${fastPath} || ${installPath}`;
 }
 
