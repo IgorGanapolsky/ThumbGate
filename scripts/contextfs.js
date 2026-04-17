@@ -90,7 +90,7 @@ const PACK_TEMPLATES = {
     namespaces: ['research', 'memoryLearning', 'rules'],
     maxItems: 12,
     maxChars: 10000,
-    queryPrefix: 'research benchmark experiment reliability',
+    queryPrefix: 'research benchmark experiment holdout proof reward hacking reliability',
   },
   'gtm-research': {
     namespaces: ['research', 'memoryLearning'],

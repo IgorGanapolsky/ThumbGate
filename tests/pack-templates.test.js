@@ -32,6 +32,14 @@ test('PACK_TEMPLATES has expected template names', () => {
   assert.ok(names.includes('gtm-research'));
 });
 
+test('autoresearch template prioritizes holdout proof and reward hacking prevention', () => {
+  const template = PACK_TEMPLATES['autoresearch-brief'];
+
+  assert.match(template.queryPrefix, /holdout/);
+  assert.match(template.queryPrefix, /proof/);
+  assert.match(template.queryPrefix, /reward hacking/);
+});
+
 test('listPackTemplates returns all template names', () => {
   const templates = listPackTemplates();
   assert.ok(Array.isArray(templates));

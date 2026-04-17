@@ -383,6 +383,20 @@ __GA_BOOTSTRAP__
   }
   .seo-card .card-arrow { font-size: 13px; color: var(--cyan); margin-top: 12px; font-weight: 500; }
 
+  /* AUTORESEARCH PACK */
+  .autoresearch-pack { padding: 0 0 80px; }
+  .autoresearch-panel { border: 1px solid rgba(34,211,238,0.28); border-radius: 8px; background: linear-gradient(180deg, rgba(17,17,19,0.98) 0%, rgba(10,18,20,0.98) 100%); padding: 28px; }
+  .autoresearch-panel h2 { font-size: 30px; line-height: 1.18; margin-bottom: 12px; }
+  .autoresearch-panel > p { color: var(--text-muted); line-height: 1.65; max-width: 860px; margin-bottom: 22px; }
+  .autoresearch-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 22px 0; }
+  .autoresearch-card { border: 1px solid var(--border); border-radius: 8px; background: rgba(10,10,11,0.62); padding: 18px; }
+  .autoresearch-card h3 { font-size: 16px; margin-bottom: 8px; }
+  .autoresearch-card p { color: var(--text-muted); font-size: 14px; line-height: 1.55; }
+  .autoresearch-cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 18px; }
+  .autoresearch-cta a { display: inline-flex; align-items: center; min-height: 40px; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 700; }
+  .autoresearch-cta .primary { background: var(--cyan); color: #041016; }
+  .autoresearch-cta .secondary { border: 1px solid var(--border); color: var(--text); }
+
   /* HOW IT WORKS */
   .how-it-works { padding: 80px 0; }
   .section-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--cyan); font-weight: 600; margin-bottom: 12px; text-align: center; }
@@ -494,6 +508,7 @@ __GA_BOOTSTRAP__
     .first-gate-steps { grid-template-columns: 1fr; }
     .gpt-steps { grid-template-columns: 1fr; }
     .seo-grid { grid-template-columns: 1fr; }
+    .autoresearch-grid { grid-template-columns: 1fr; }
     .pricing-grid { grid-template-columns: 1fr; }
     .team-form { grid-template-columns: 1fr; }
     .hero { padding: 72px 0 56px; }
@@ -525,6 +540,7 @@ __GA_BOOTSTRAP__
     <div class="nav-links">
       <a href="#how-it-works">How It Works</a>
       <a href="#pricing">Pricing</a>
+      <a href="/guides/autoresearch-agent-safety">Autoresearch</a>
       <a href="#faq">FAQ</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
       <a href="#compatibility" style="display:none;">Compatibility</a>
@@ -917,6 +933,40 @@ __GA_BOOTSTRAP__
         <p>Why Gemini CLI buyers start with memory and convert when they see how memory becomes real pre-action gates.</p>
         <div class="card-arrow">Read the Gemini guide →</div>
       </a>
+      <a class="seo-card" href="/guides/autoresearch-agent-safety">
+        <div class="seo-kicker">Autoresearch</div>
+        <h3>Autoresearch Safety for Self-Improving Agents</h3>
+        <p>Why benchmark-search loops need gates for holdout tests, proof trails, reward hacking, and unsafe promotions.</p>
+        <div class="card-arrow">Read the Autoresearch guide →</div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="autoresearch-pack" id="autoresearch-pack">
+  <div class="container">
+    <div class="autoresearch-panel">
+      <div class="section-label" style="text-align:left;">Autoresearch Safety Pack</div>
+      <h2>Stop self-improving coding loops from hacking the benchmark.</h2>
+      <p>Autoresearch loops run experiments, inspect metrics, and accept better variants. ThumbGate gives those loops a Reliability Gateway: Pre-Action Gates for skipped holdout tests, fake proof, reward hacking, unsafe edits, and promotion without verification evidence.</p>
+      <div class="autoresearch-grid">
+        <div class="autoresearch-card">
+          <h3>Guard the metric</h3>
+          <p>Require primary and holdout checks before an agent can call a variant better. Block cherry-picked runs and missing baselines.</p>
+        </div>
+        <div class="autoresearch-card">
+          <h3>Preserve proof trails</h3>
+          <p>Promotion needs commands, logs, changed files, and verification evidence so the win survives review instead of becoming a vague claim.</p>
+        </div>
+        <div class="autoresearch-card">
+          <h3>Ship into CI</h3>
+          <p>Start with templates for <code>npm test</code>, Playwright duration, bundle size, lint, and CI failures, then add Team gates for shared workflows.</p>
+        </div>
+      </div>
+      <div class="autoresearch-cta">
+        <a class="primary" href="/guides/autoresearch-agent-safety?utm_source=website&utm_medium=autoresearch_pack&utm_campaign=autoresearch_safety&cta_id=autoresearch_guide&cta_placement=autoresearch_pack">Read the Autoresearch guide</a>
+        <a class="secondary" href="/checkout/pro?utm_source=website&utm_medium=autoresearch_pack&utm_campaign=autoresearch_safety&cta_id=autoresearch_pro_trial&cta_placement=autoresearch_pack&plan_id=pro&landing_path=%2F">Start Pro trial</a>
+      </div>
     </div>
   </div>
 </section>

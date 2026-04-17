@@ -62,6 +62,12 @@ const HIGH_ROI_QUERY_SEEDS = [
     notes: 'Broader category demand that feeds comparison and guide pages.',
   },
   {
+    query: 'autoresearch agent safety',
+    businessValue: 89,
+    source: 'seed',
+    notes: 'Emerging self-improving agent query where ThumbGate can own the safety and proof-control wedge.',
+  },
+  {
     query: 'stop ai coding agents from repeating mistakes',
     businessValue: 88,
     source: 'seed',
@@ -92,6 +98,45 @@ const HIGH_ROI_QUERY_SEEDS = [
     notes: 'Integration page for Gemini CLI users who need memory plus enforcement.',
   },
 ];
+
+function guideBlueprint({
+  query,
+  path,
+  pillar,
+  title,
+  heroTitle,
+  heroSummary,
+  takeaways,
+  sections,
+  faq,
+  relatedPaths,
+}) {
+  return {
+    query,
+    path,
+    pageType: 'guide',
+    pillar,
+    title,
+    heroTitle,
+    heroSummary,
+    takeaways,
+    sections,
+    faq,
+    relatedPaths,
+  };
+}
+
+function paragraphs(heading, entries) {
+  return { heading, paragraphs: entries };
+}
+
+function bullets(heading, entries) {
+  return { heading, bullets: entries };
+}
+
+function answer(question, text) {
+  return { question, answer: text };
+}
 
 const PAGE_BLUEPRINTS = [
   {
@@ -484,6 +529,54 @@ const PAGE_BLUEPRINTS = [
     ],
     relatedPaths: ['/compare/mem0', '/guides/stop-repeated-ai-agent-mistakes'],
   },
+  guideBlueprint({
+    query: 'autoresearch agent safety',
+    path: '/guides/autoresearch-agent-safety',
+    pillar: 'pre-action-gates',
+    title: 'Autoresearch Agent Safety | Gates for Self-Improving Coding Agents',
+    heroTitle: 'Autoresearch Agent Safety for Self-Improving Coding Agents',
+    heroSummary: 'Autoresearch-style loops can search for better code, but they need gates for holdout tests, proof trails, reward hacking, and unsafe self-improvement.',
+    takeaways: [
+      'Self-improving coding loops need a control plane before they promote their own wins.',
+      'ThumbGate turns failed experiment reviews into prevention rules and pre-action gates.',
+      'The sales wedge is concrete: let the agent search, but gate the evidence before it accepts a variant.',
+    ],
+    sections: [
+      paragraphs(
+        'Why Autoresearch creates a new buying moment',
+        [
+          'Autoresearch-style systems run experiments, inspect results, and keep the variants that look better. That makes them powerful, but it also creates a trust gap for engineering teams.',
+          'If the loop can edit the benchmark, skip a holdout, hide a failed run, or promote without proof, the buyer needs enforcement before autonomy expands.',
+        ],
+      ),
+      bullets(
+        'Where ThumbGate fits',
+        [
+          'Block promotion when required primary and holdout checks are missing.',
+          'Require commands, changed files, logs, and verification evidence before a claimed improvement lands.',
+          'Capture thumbs-down reviews when an experiment cheats the metric, then promote the pattern into a prevention rule.',
+          'Use ContextFS packs and Thompson Sampling so recurring research failures get stricter over time.',
+        ],
+      ),
+      paragraphs(
+        'Starter harnesses that make the value visible',
+        [
+          'The first pack should wrap checks buyers already understand: npm test, lint, Playwright duration, bundle size, and CI status. Each one becomes a gate the buyer can see firing.',
+        ],
+      ),
+    ],
+    faq: [
+      answer(
+        'Why do Autoresearch-style agents need gates?',
+        'A self-improving loop can optimize the wrong signal, skip holdout tests, or promote a cherry-picked run. ThumbGate blocks known-bad promotion patterns before the agent accepts the variant.',
+      ),
+      answer(
+        'What does ThumbGate add to an Autoresearch loop?',
+        'ThumbGate adds structured thumbs-up/down feedback, prevention rules, Thompson Sampling, ContextFS proof packs, and pre-action gates for risky experiment and promotion steps.',
+      ),
+    ],
+    relatedPaths: ['/guides/pre-action-gates', '/guides/codex-cli-guardrails'],
+  }),
   {
     query: 'claude desktop extension plugin thumbgate',
     path: '/guides/claude-desktop',
@@ -651,6 +744,7 @@ function classifyIntent(query) {
   if (!normalized) return 'informational';
   if (/\b(vs|versus|alternative|compare|comparison|better than)\b/.test(normalized)) return 'comparison';
   if (/\b(price|pricing|buy|checkout|purchase|cost)\b/.test(normalized)) return 'transactional';
+  if (/\b(autoresearch|self-improving|benchmark|reward hacking|agent safety)\b/.test(normalized)) return 'commercial';
   if (/\b(claude code|cursor|codex|gemini|amp|opencode|integration|plugin|setup|install)\b/.test(normalized)) {
     return 'commercial';
   }
@@ -665,6 +759,7 @@ function inferPillar(query) {
   const normalized = normalizeText(query).toLowerCase();
   if (/\b(speclock|mem0|alternative|vs|compare|comparison)\b/.test(normalized)) return 'comparison';
   if (/\b(thumbs up|thumbs down|feedback|reinforce|mistake)\b/.test(normalized)) return 'feedback-loop';
+  if (/\b(autoresearch|self-improving|benchmark|reward hacking)\b/.test(normalized)) return 'pre-action-gates';
   if (/\b(pre-action gates|guardrails|block|prevent repeated mistakes|repeating mistakes)\b/.test(normalized)) return 'pre-action-gates';
   if (/\b(claude code|cursor|codex|gemini|amp|opencode|integration|plugin)\b/.test(normalized)) return 'agent-workflows';
   return 'ai-agent-reliability';
@@ -676,6 +771,7 @@ function inferPersona(query) {
   if (normalized.includes('cursor')) return 'cursor-builder';
   if (normalized.includes('codex')) return 'codex-builder';
   if (normalized.includes('gemini')) return 'gemini-builder';
+  if (normalized.includes('autoresearch') || normalized.includes('self-improving')) return 'ai-research-engineer';
   if (/\b(vs|alternative|compare)\b/.test(normalized)) return 'tool-evaluator';
   if (/\b(guardrails|pre-action gates)\b/.test(normalized)) return 'engineering-lead';
   return 'ai-engineer';

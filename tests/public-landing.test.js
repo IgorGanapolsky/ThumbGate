@@ -347,11 +347,25 @@ test('public landing page internally links to comparison and guide pages without
   assert.match(landingPage, /href="\/guides\/cursor-agent-guardrails"/);
   assert.match(landingPage, /href="\/guides\/codex-cli-guardrails"/);
   assert.match(landingPage, /href="\/guides\/gemini-cli-feedback-memory"/);
+  assert.match(landingPage, /href="\/guides\/autoresearch-agent-safety"/);
+  assert.match(landingPage, /Autoresearch Safety for Self-Improving Agents/);
   // No internal marketing jargon visible to customers
   assert.doesNotMatch(landingPage, /GSD Pages/);
   assert.doesNotMatch(landingPage, /Bottom of funnel/i);
   assert.doesNotMatch(landingPage, /Category creation/i);
   assert.doesNotMatch(landingPage, /convert.*search.*demand/i);
+});
+
+test('public landing page promotes the Autoresearch safety pack', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /id="autoresearch-pack"/);
+  assert.match(landingPage, /Autoresearch Safety Pack/);
+  assert.match(landingPage, /Stop self-improving coding loops from hacking the benchmark/);
+  assert.match(landingPage, /holdout tests/i);
+  assert.match(landingPage, /reward hacking/i);
+  assert.match(landingPage, /verification evidence/i);
+  assert.match(landingPage, /cta_id=autoresearch_pro_trial/);
 });
 
 test('public landing page advertises the Codex standalone plugin install path', () => {

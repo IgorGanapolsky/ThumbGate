@@ -126,6 +126,7 @@ async function run() {
           '/compare/mem0',
           '/guides/pre-action-gates',
           '/guides/claude-code-feedback',
+          '/guides/autoresearch-agent-safety',
         ]) {
           const loc = pathname === '/'
             ? '<loc>https://app.example.com/</loc>'
@@ -150,6 +151,7 @@ async function run() {
           '/compare/mem0',
           '/guides/pre-action-gates',
           '/guides/claude-code-feedback',
+          '/guides/autoresearch-agent-safety',
         ]) {
           if (!landingHtml.includes(`href="${pathname}"`)) {
             throw new Error(`Landing page missing internal link for ${pathname}`);

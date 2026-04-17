@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Autoresearch Agent Safety | Gates for Self-Improving Coding Agents</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Autoresearch-style coding loops need pre-action gates for holdout tests, proof trails, reward hacking, and unsafe self-improvement.">
+<meta name="keywords" content="autoresearch agent safety, self-improving coding agents, benchmark reward hacking, pre-action gates, ThumbGate, AI coding agent guardrails">
+<meta property="og:title" content="Autoresearch Agent Safety for Self-Improving Coding Agents">
+<meta property="og:description" content="Autoresearch-style loops are powerful, but they need gates before they promote a fake win. ThumbGate adds the Reliability Gateway.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate-production.up.railway.app/guides/autoresearch-agent-safety">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/guides/autoresearch-agent-safety">
+<link rel="llm-context" href="/public/llm-context.md" type="text/markdown">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Autoresearch Agent Safety for Self-Improving Coding Agents",
+  "description": "Autoresearch-style coding loops need pre-action gates for holdout tests, proof trails, reward hacking, and unsafe self-improvement.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate-production.up.railway.app"
+  },
+  "datePublished": "2026-04-17",
+  "dateModified": "2026-04-17",
+  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/guides/autoresearch-agent-safety",
+  "about": [
+    {"@type": "Thing", "name": "Autoresearch agent safety"},
+    {"@type": "Thing", "name": "self-improving coding agents"},
+    {"@type": "Thing", "name": "pre-action gates"},
+    {"@type": "Thing", "name": "reward hacking prevention"}
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Why do Autoresearch-style agents need gates?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A self-improving loop can optimize the wrong signal, skip holdout tests, or promote a cherry-picked run. ThumbGate blocks known-bad promotion patterns before the agent accepts the variant."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does ThumbGate add to an Autoresearch loop?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ThumbGate adds structured thumbs-up/down feedback, prevention rules, Thompson Sampling, ContextFS proof packs, and pre-action gates for risky experiment and promotion steps."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can this work with normal CI checks?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Start with gates around npm test, lint, Playwright duration, bundle size, and CI failures. The same rules can later harden Team workflows."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand">ThumbGate</a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / <a href="/guides/autoresearch-agent-safety">Guides</a> / Autoresearch Agent Safety</div>
+  <h1>Autoresearch Agent Safety for Self-Improving Coding Agents</h1>
+  <p style="color:var(--muted);">4 min read &middot; Designed for benchmark-search loops, CI agents, and coding automation</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> Autoresearch-style agents can search for better code, but the buying risk is trust. ThumbGate sells the missing control plane: gates that stop skipped holdout tests, fake proof, unsafe edits, and reward hacking before a loop promotes itself.</div>
+
+  <h2>The wedge</h2>
+  <p>Autoresearch turns coding agents into experiment runners. That is exciting because the loop can propose a patch, run a benchmark, inspect the result, and keep the improvement.</p>
+  <p>The risk is just as obvious: a loop that is rewarded for "better" can cheat the metric, overfit the benchmark, skip a holdout, hide a failure, or promote a variant without enough evidence. That is where ThumbGate belongs.</p>
+
+  <h2>What ThumbGate gates</h2>
+  <ul>
+    <li>Promotion without the agreed primary and holdout checks.</li>
+    <li>Claims of improvement without commands, changed files, logs, and verification evidence.</li>
+    <li>Benchmark edits that make the score easier instead of the product better.</li>
+    <li>Risky filesystem, deploy, SQL, git, or secret-touching actions inside the experiment loop.</li>
+    <li>Repeated failures captured from thumbs-down feedback and promoted into prevention rules.</li>
+  </ul>
+
+  <div class="callout">
+    <strong>Buyer promise:</strong> Let the agent search. Do not let it grade itself without a Reliability Gateway.
+  </div>
+
+  <h2>Starter harnesses that convert</h2>
+  <p>Start with the measurements teams already understand. Each one becomes a visible gate, not a vague promise.</p>
+  <ul>
+    <li><code>npm test</code> and coverage: block promotion when tests are skipped or coverage proof is missing.</li>
+    <li>Playwright duration: block a variant that improves one page while slowing the user path.</li>
+    <li>Bundle size: block growth without a signed exception and proof of value.</li>
+    <li>Lint and type checks: block "works on my branch" wins that fail shared quality bars.</li>
+    <li>CI failures: block merge or rollout when the exact run is still pending or red.</li>
+  </ul>
+
+  <h2>How to wire the pack</h2>
+  <pre><code>npx thumbgate init
+npm run feedback:rules
+npm run prove:automation</code></pre>
+  <p>Use <code>construct_context_pack</code> with the <code>autoresearch-brief</code> template before experiment runs. The pack gives the agent compact memory of previous research failures, rules, and proof expectations.</p>
+
+  <h2>Why this helps sell ThumbGate</h2>
+  <p>Autoresearch makes the value of ThumbGate easier to explain. The customer does not have to believe in abstract memory. They can see an agent about to promote a false win, then see ThumbGate block it with a reason and proof requirement.</p>
+  <p>That maps cleanly to Pro and Team: Pro is $19/mo or $149/yr for the personal dashboard and exports. Team is $49/seat/mo when the same experiment gates need shared review, hosted visibility, and workflow hardening.</p>
+
+  <h2>Frequently Asked Questions</h2>
+  <h3>Why do Autoresearch-style agents need gates?</h3>
+  <p>A self-improving loop can optimize the wrong signal, skip holdout tests, or promote a cherry-picked run. ThumbGate blocks known-bad promotion patterns before the agent accepts the variant.</p>
+
+  <h3>What does ThumbGate add to an Autoresearch loop?</h3>
+  <p>ThumbGate adds structured thumbs-up/down feedback, prevention rules, Thompson Sampling, ContextFS proof packs, and pre-action gates for risky experiment and promotion steps.</p>
+
+  <h3>Can this work with normal CI checks?</h3>
+  <p>Yes. Start with gates around npm test, lint, Playwright duration, bundle size, and CI failures. The same rules can later harden Team workflows.</p>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Build the first gated experiment loop</h2>
+    <p>Install locally, capture one thumbs-down when an agent skips proof, then let ThumbGate block the repeat before the next promotion.</p>
+    <div class="cta-install">$ npx thumbgate init</div>
+    <p style="margin-top:8px;"><a href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=autoresearch_agent_safety&amp;cta_placement=seo_brief&amp;plan_id=pro">Start Pro trial &rarr;</a></p>
+  </div>
+
+  <div class="related">
+    <h3>Related</h3>
+    <a href="/guides/pre-action-gates">What Are Pre-Action Gates? &rarr;</a>
+    <a href="/guides/codex-cli-guardrails">Codex CLI Guardrails &rarr;</a>
+    <a href="/compare/mem0">ThumbGate vs Mem0 &rarr;</a>
+    <a href="https://shopify.engineering/autoresearch" target="_blank" rel="noopener">Shopify Autoresearch article &rarr;</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span style="color:var(--muted)">Try it now:</span>
+  <code>npx thumbgate init</code>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+</div>
+</body>
+</html>

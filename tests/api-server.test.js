@@ -790,6 +790,7 @@ test('robots and sitemap endpoints publish crawl metadata for the canonical app 
   assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/compare\/mem0<\/loc>/);
   assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/guides\/pre-action-gates<\/loc>/);
   assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/guides\/claude-code-feedback<\/loc>/);
+  assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/guides\/autoresearch-agent-safety<\/loc>/);
   assert.match(sitemapBody, /<changefreq>weekly<\/changefreq>/);
   assert.match(sitemapBody, /<priority>0\.9<\/priority>/);
   assert.match(sitemapBody, /<priority>0\.8<\/priority>/);

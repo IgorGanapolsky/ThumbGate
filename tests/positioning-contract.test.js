@@ -73,6 +73,7 @@ test('README exposes prompt-shaped buyer questions with tracked guide links', ()
   assert.match(readme, /Workflow Hardening Sprint/i);
   assert.match(readme, /Popular buyer questions/i);
   assert.match(readme, /guides\/stop-repeated-ai-agent-mistakes\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
+  assert.match(readme, /guides\/autoresearch-agent-safety\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/cursor-agent-guardrails\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/codex-cli-guardrails\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/gemini-cli-feedback-memory\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
@@ -106,6 +107,8 @@ test('LLM context keeps team pricing and CLI-first positioning aligned with comm
 
   assert.match(context, /Workflow Hardening Sprint/i);
   assert.match(context, /\$49\/seat\/mo/i);
+  assert.match(context, /Autoresearch Safety Pack/i);
+  assert.match(context, /reward-hacking failures/i);
   assert.match(context, /CLI-first/i);
   assert.match(context, /solo side lane/i);
   assert.doesNotMatch(context, /\$12\/seat\/mo/i);
