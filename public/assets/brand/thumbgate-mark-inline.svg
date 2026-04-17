@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="tg-inline-title tg-inline-desc">
+  <title id="tg-inline-title">ThumbGate</title>
+  <desc id="tg-inline-desc">ThumbGate gate-and-signal mark, transparent background for inline use in site headers.</desc>
+  <defs>
+    <linearGradient id="tg-inline-cyan" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#0891b2"/>
+    </linearGradient>
+    <linearGradient id="tg-inline-signal" x1="10" y1="48" x2="52" y2="14" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4ade80"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+  </defs>
+  <!-- Gate body: rounded rect with two vertical bars (thumb up / thumb down gate pillars) -->
+  <path d="M10 14h44c4 0 7 3 7 7v22c0 4-3 7-7 7H10c-4 0-7-3-7-7V21c0-4 3-7 7-7Z" fill="none" stroke="url(#tg-inline-cyan)" stroke-width="3"/>
+  <path d="M18 22h6v20h-6V22Zm22 0h6v20h-6V22Z" fill="url(#tg-inline-cyan)"/>
+  <!-- Signal sweep through the gate -->
+  <path d="M6 46c7-14 16-22 27-24 5-1 9 0 12 1-6 3-11 7-15 12-4 6-11 9-24 11Z" fill="url(#tg-inline-signal)"/>
+  <!-- Status LEDs -->
+  <circle cx="50" cy="20" r="4" fill="#4ade80"/>
+  <circle cx="10" cy="44" r="3" fill="#fb7185"/>
+</svg>

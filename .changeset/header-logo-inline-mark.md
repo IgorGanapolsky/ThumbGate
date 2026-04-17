@@ -1,0 +1,5 @@
+---
+"thumbgate": patch
+---
+
+Fix header logo rendering as tiny iOS-launcher tile across all site surfaces. The existing `/assets/brand/thumbgate-mark.svg` is designed as an app-icon (full 512×512 canvas with a `#0a0d12` rounded-square backdrop filling the entire viewBox). When inlined in headers at 28–32px next to the wordmark it read as "a dark tile with a microscopic icon inside" rather than as a clean brand mark. Adds a new transparent full-bleed companion `/assets/brand/thumbgate-mark-inline.svg` and repoints every header `<img src=…>` (landing, dashboard, lessons, pro, learn hub + 5 learn articles, post-checkout success page, SEO-GSD generator — 12 surfaces) to the inline variant. `apple-touch-icon` / PWA / OG link tags intentionally still reference the app-icon tile — that is the correct asset for iOS home-screen bookmarks. Adds a regression-guard in `brand-assets.test.js` that fails if the app-icon tile is ever re-inlined in a header, and an inline-mark transparency assertion that blocks reintroducing a full-canvas dark rectangle.
