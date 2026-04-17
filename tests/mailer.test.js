@@ -27,8 +27,9 @@ function savingEnv(keys) {
 }
 
 test('sendTrialWelcomeEmail returns {sent:false, reason:no_api_key} when RESEND_API_KEY is missing', async () => {
-  const restore = savingEnv(['RESEND_API_KEY', 'RESEND_FROM_EMAIL']);
+  const restore = savingEnv(['RESEND_API_KEY', 'THUMBGATE_RESEND_API_KEY', 'RESEND_FROM_EMAIL']);
   delete process.env.RESEND_API_KEY;
+  delete process.env.THUMBGATE_RESEND_API_KEY;
   const { sendTrialWelcomeEmail } = freshMailer();
 
   let calls = 0;
@@ -43,6 +44,31 @@ test('sendTrialWelcomeEmail returns {sent:false, reason:no_api_key} when RESEND_
 
   assert.deepEqual(res, { sent: false, reason: 'no_api_key' });
   assert.equal(calls, 0, 'fetch must not be called when API key is missing');
+  restore();
+});
+
+test('sendTrialWelcomeEmail accepts THUMBGATE_RESEND_API_KEY as a fallback for the bare RESEND_API_KEY', async () => {
+  const restore = savingEnv(['RESEND_API_KEY', 'THUMBGATE_RESEND_API_KEY', 'RESEND_FROM_EMAIL']);
+  delete process.env.RESEND_API_KEY;
+  process.env.THUMBGATE_RESEND_API_KEY = 're_prefixed_fallback_key';
+  const { sendTrialWelcomeEmail } = freshMailer();
+
+  let captured = null;
+  const fakeFetch = async (url, init) => {
+    captured = { url, headers: init.headers };
+    return { ok: true, status: 200, text: async () => '{"id":"email_fallback_1"}' };
+  };
+
+  const res = await sendTrialWelcomeEmail({
+    to: 'fallback@example.com',
+    licenseKey: 'tg_fallback_key',
+    customerId: 'cus_fallback',
+    fetchImpl: fakeFetch,
+  });
+
+  assert.equal(res.sent, true, 'email must send when only THUMBGATE_RESEND_API_KEY is set');
+  assert.equal(captured.url, 'https://api.resend.com/emails');
+  assert.equal(captured.headers.Authorization, 'Bearer re_prefixed_fallback_key');
   restore();
 });
 
