@@ -410,7 +410,8 @@ async function publishPost(content, platforms, options = {}) {
 
   const json = await runStep('zernio.publishPost', {
     retries: 3,
-    logger: (msg) => console.warn(msg),
+    // Strip CR/LF from user-controlled error text to prevent log forging (S5145).
+    logger: (msg) => console.warn(String(msg).replace(/[\r\n]+/g, ' ')),
   }, async () => zernioFetch('POST', '/posts', {
     content,
     firstComment: options.firstComment,
@@ -493,7 +494,8 @@ async function schedulePost(content, platforms, scheduledFor, timezone, options 
 
   const json = await runStep('zernio.schedulePost', {
     retries: 3,
-    logger: (msg) => console.warn(msg),
+    // Strip CR/LF from user-controlled error text to prevent log forging (S5145).
+    logger: (msg) => console.warn(String(msg).replace(/[\r\n]+/g, ' ')),
   }, async () => zernioFetch('POST', '/posts', {
     content,
     firstComment: options.firstComment,

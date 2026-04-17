@@ -103,6 +103,28 @@ function idempotencyKey(...parts) {
  *                                   (may be passed directly as the callback shorthand)
  * @param {function({attempt:number}):Promise} fn  The actual work.
  */
+function errMessage(err) {
+  return err?.message ?? err;
+}
+
+function handleStepError({ err, attempt, retries, classify, backoffMs, name, onRetry, onFail, logger }) {
+  const verdict = classify(err);
+  const terminal = verdict === 'fail' || attempt >= retries;
+  if (terminal) {
+    if (typeof onFail === 'function') onFail({ name, attempt, err, verdict });
+    if (typeof logger === 'function') {
+      logger(`[step:${name}] FAIL attempt=${attempt} verdict=${verdict} err=${errMessage(err)}`);
+    }
+    return { terminal: true };
+  }
+  const waitMs = backoffMs[Math.min(attempt, backoffMs.length - 1)];
+  if (typeof onRetry === 'function') onRetry({ name, attempt, err, waitMs, verdict });
+  if (typeof logger === 'function') {
+    logger(`[step:${name}] RETRY attempt=${attempt} waitMs=${waitMs} err=${errMessage(err)}`);
+  }
+  return { terminal: false, waitMs };
+}
+
 async function runStep(name, options, fn) {
   if (typeof options === 'function') {
     fn = options;
@@ -130,21 +152,11 @@ async function runStep(name, options, fn) {
       return await fn({ attempt });
     } catch (err) {
       lastErr = err;
-      const verdict = classify(err);
-      const terminal = verdict === 'fail' || attempt >= retries;
-      if (terminal) {
-        if (typeof onFail === 'function') onFail({ name, attempt, err, verdict });
-        if (typeof logger === 'function') {
-          logger(`[step:${name}] FAIL attempt=${attempt} verdict=${verdict} err=${err && err.message || err}`);
-        }
-        throw err;
-      }
-      const wait = backoffMs[Math.min(attempt, backoffMs.length - 1)];
-      if (typeof onRetry === 'function') onRetry({ name, attempt, err, waitMs: wait, verdict });
-      if (typeof logger === 'function') {
-        logger(`[step:${name}] RETRY attempt=${attempt} waitMs=${wait} err=${err && err.message || err}`);
-      }
-      await sleepFn(wait);
+      const outcome = handleStepError({
+        err, attempt, retries, classify, backoffMs, name, onRetry, onFail, logger,
+      });
+      if (outcome.terminal) throw err;
+      await sleepFn(outcome.waitMs);
     }
   }
   throw lastErr;
