@@ -30,7 +30,11 @@ const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const TRIAL_LENGTH_DAYS = 7;
 
 function getApiKey() {
-  return process.env.RESEND_API_KEY || '';
+  // Accept both `RESEND_API_KEY` (Railway default, matches provider docs) and
+  // the `THUMBGATE_`-prefixed variant that `scripts/billing.js` already honors.
+  // Keeping the two readers in sync prevents a silent "skipped: no_api_key"
+  // regression if an operator sets only the prefixed name.
+  return process.env.RESEND_API_KEY || process.env.THUMBGATE_RESEND_API_KEY || '';
 }
 
 function getFromAddress() {
