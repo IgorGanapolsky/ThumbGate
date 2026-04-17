@@ -85,8 +85,20 @@ test('sendTrialWelcomeEmail POSTs to Resend with correct headers and payload sha
   assert.ok(body.text && body.text.includes('tg_09239a0a433649ba442467567af1825b'));
   assert.ok(body.html.includes('npx thumbgate pro --activate --key=tg_09239a0a433649ba442467567af1825b'));
   assert.ok(body.text.includes('npx thumbgate pro --activate --key=tg_09239a0a433649ba442467567af1825b'));
-  assert.ok(body.html.includes('https://thumbgate-production.up.railway.app/dashboard'));
-  assert.ok(body.text.includes('https://thumbgate-production.up.railway.app/dashboard'));
+  // Parse the dashboard link out of the HTML and verify the URL components
+  // explicitly. Substring-only checks trip CodeQL's
+  // js/incomplete-url-substring-sanitization rule (evil.com/?x=...our-url...
+  // would technically match). Parsing with URL() is unambiguous.
+  const hrefMatch = body.html.match(/href="([^"]+\/dashboard[^"]*)"/);
+  assert.ok(hrefMatch, 'dashboard href missing in html body');
+  const htmlDashUrl = new URL(hrefMatch[1]);
+  assert.equal(htmlDashUrl.host, 'thumbgate-production.up.railway.app');
+  assert.equal(htmlDashUrl.pathname, '/dashboard');
+  const textUrlMatch = body.text.match(/(https?:\/\/\S+\/dashboard\S*)/);
+  assert.ok(textUrlMatch, 'dashboard URL missing in text body');
+  const textDashUrl = new URL(textUrlMatch[1]);
+  assert.equal(textDashUrl.host, 'thumbgate-production.up.railway.app');
+  assert.equal(textDashUrl.pathname, '/dashboard');
   restore();
 });
 
