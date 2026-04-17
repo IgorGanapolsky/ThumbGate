@@ -53,22 +53,24 @@ function freshBilling() {
   return require('../scripts/billing');
 }
 
-function makeCheckoutCompletedEvent({ email, customerId, sessionId }) {
+function makeCheckoutCompletedEvent({ email, customerId, sessionId, name, trialEndUnix }) {
+  const obj = {
+    id: sessionId,
+    customer: customerId,
+    customer_details: { email, name: name || null },
+    amount_total: 1900,
+    currency: 'usd',
+    mode: 'subscription',
+    payment_status: 'paid',
+    metadata: { installId: 'install_test', traceId: 'trace_test' },
+  };
+  if (typeof trialEndUnix === 'number') {
+    obj.subscription = { trial_end: trialEndUnix };
+  }
   return {
     id: 'evt_' + Math.random().toString(36).slice(2),
     type: 'checkout.session.completed',
-    data: {
-      object: {
-        id: sessionId,
-        customer: customerId,
-        customer_details: { email },
-        amount_total: 1900,
-        currency: 'usd',
-        mode: 'subscription',
-        payment_status: 'paid',
-        metadata: { installId: 'install_test', traceId: 'trace_test' },
-      },
-    },
+    data: { object: obj },
   };
 }
 
@@ -90,10 +92,13 @@ test('handleWebhook invokes mailer.sendTrialWelcomeEmail with license key + cust
     },
   };
 
+  const trialEndUnix = Math.floor(Date.UTC(2026, 3, 24) / 1000);
   const event = makeCheckoutCompletedEvent({
     email: 'buyer@example.com',
     customerId: 'cus_test_happy',
     sessionId: 'cs_test_happy',
+    name: 'Ada Lovelace',
+    trialEndUnix,
   });
 
   const res = await billing.handleWebhook(Buffer.from(JSON.stringify(event)), null);
@@ -107,6 +112,13 @@ test('handleWebhook invokes mailer.sendTrialWelcomeEmail with license key + cust
   assert.equal(calls[0].to, 'buyer@example.com');
   assert.equal(calls[0].licenseKey, res.result.key);
   assert.equal(calls[0].customerId, 'cus_test_happy');
+  // New: the Stripe customer name flows through to the mailer for personalization.
+  assert.equal(calls[0].customerName, 'Ada Lovelace');
+  // New: trial expiry (from Stripe subscription.trial_end unix) flows through as a Date.
+  assert.ok(calls[0].trialEndAt instanceof Date, 'trialEndAt should be a Date');
+  assert.equal(calls[0].trialEndAt.getUTCFullYear(), 2026);
+  assert.equal(calls[0].trialEndAt.getUTCMonth(), 3); // April (0-indexed)
+  assert.equal(calls[0].trialEndAt.getUTCDate(), 24);
 
   billing._mailer = null;
 });
