@@ -1,22 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="tg-inline-title tg-inline-desc">
   <title id="tg-inline-title">ThumbGate</title>
-  <desc id="tg-inline-desc">ThumbGate gate-and-signal mark, transparent background for inline use in site headers.</desc>
+  <desc id="tg-inline-desc">ThumbGate TG gate monogram, transparent background for inline use in site headers.</desc>
   <defs>
-    <linearGradient id="tg-inline-cyan" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#22d3ee"/>
-      <stop offset="1" stop-color="#0891b2"/>
-    </linearGradient>
-    <linearGradient id="tg-inline-signal" x1="10" y1="48" x2="52" y2="14" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#4ade80"/>
+    <linearGradient id="tg-inline-frame" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8cf5d1"/>
       <stop offset="1" stop-color="#22d3ee"/>
     </linearGradient>
   </defs>
-  <!-- Gate body: rounded rect with two vertical bars (thumb up / thumb down gate pillars) -->
-  <path d="M10 14h44c4 0 7 3 7 7v22c0 4-3 7-7 7H10c-4 0-7-3-7-7V21c0-4 3-7 7-7Z" fill="none" stroke="url(#tg-inline-cyan)" stroke-width="3"/>
-  <path d="M18 22h6v20h-6V22Zm22 0h6v20h-6V22Z" fill="url(#tg-inline-cyan)"/>
-  <!-- Signal sweep through the gate -->
-  <path d="M6 46c7-14 16-22 27-24 5-1 9 0 12 1-6 3-11 7-15 12-4 6-11 9-24 11Z" fill="url(#tg-inline-signal)"/>
-  <!-- Status LEDs -->
-  <circle cx="50" cy="20" r="4" fill="#4ade80"/>
-  <circle cx="10" cy="44" r="3" fill="#fb7185"/>
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="#061015"/>
+  <rect x="9" y="9" width="46" height="46" rx="12" fill="#0b1820" stroke="url(#tg-inline-frame)" stroke-width="3.5"/>
+  <path d="M19 44V25c0-5.5 4.5-10 10-10h6c5.5 0 10 4.5 10 10v19" fill="none" stroke="#8cf5d1" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="32" y="39" text-anchor="middle" fill="#e7fbff" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Arial, sans-serif" font-size="19" font-weight="900">TG</text>
+  <rect x="18" y="44" width="28" height="4" rx="2" fill="#22d3ee"/>
 </svg>
