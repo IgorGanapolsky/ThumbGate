@@ -1753,7 +1753,7 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
 </head>
 <body>
 <nav><div class="container">
-  <a href="/dashboard" class="nav-logo"><img src="/assets/brand/thumbgate-mark.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/dashboard" class="nav-logo"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
   <div class="nav-links">
     <a href="/dashboard">Dashboard</a>
     <a href="/lessons">Lessons</a>
@@ -2143,7 +2143,7 @@ function renderCheckoutSuccessPage(runtimeConfig) {
 </head>
 <body>
   <main>
-    <a href="/" class="brand-header"><img src="/assets/brand/thumbgate-mark.svg" alt="ThumbGate" class="logo-mark" width="32" height="32"><span class="logo-text">ThumbGate</span></a>
+    <a href="/" class="brand-header"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="32" height="32"><span class="logo-text">ThumbGate</span></a>
     <span class="eyebrow">ThumbGate Pro</span>
     <h1>Your local Pro dashboard is ready.</h1>
     <p class="lead">This page verifies your Stripe session, provisions the key if needed, and gives you the exact command to save your license and launch your personal local dashboard.</p>
