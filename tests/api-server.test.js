@@ -868,6 +868,16 @@ test('success page serves hosted onboarding shell and records first-party teleme
   assert.match(body, /Your local Pro dashboard is ready\./);
   assert.match(body, /Launch your personal dashboard/);
   assert.match(body, /npx thumbgate pro --activate --key=/);
+  // Hosted API section explains value in plain English, not jargon.
+  assert.match(body, /Use ThumbGate from CI, teammates, and remote agents \(optional\)/);
+  assert.match(body, /CI jobs, GitHub Actions/);
+  assert.match(body, /shared memory/);
+  assert.match(body, /When you need this:/);
+  assert.match(body, /When you can skip this:/);
+  assert.match(body, /only use ThumbGate from your own laptop/);
+  assert.match(body, /How to set it up:/);
+  assert.match(body, /id="env-block"/);
+  assert.match(body, /id="curl-block"/);
   assert.match(body, /const sessionEndpoint = "https:\/\/billing\.example\.com\/v1\/billing\/session";/);
   assert.match(body, /\+ '\?sessionId=' \+ encodeURIComponent\(sessionId\)/);
   assert.match(body, /sendTelemetryOnce\('checkout_session_lookup_started'/);

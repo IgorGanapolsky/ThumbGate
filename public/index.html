@@ -19,6 +19,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 __GOOGLE_SITE_VERIFICATION_META__
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="alternate icon" type="image/svg+xml" href="/brand/thumbgate-mark.svg">
+<link rel="apple-touch-icon" href="/brand/thumbgate-mark.svg">
+<meta property="og:image" content="/brand/thumbgate-og.svg">
 <title>ThumbGate — Stop paying for the same AI mistake twice</title>
 <meta name="description" content="Stop paying for the same AI mistake twice. ThumbGate turns 👍 thumbs up and 👎 thumbs down feedback into history-aware lessons and Pre-Action Gates that block repeat AI agent mistakes before they reach the model — self-improving agent governance with shared lessons and org visibility for Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode.">
 <meta property="og:title" content="ThumbGate — Stop paying for the same AI mistake twice">
@@ -271,7 +275,9 @@ __GA_BOOTSTRAP__
   /* NAV */
   nav { position: sticky; top: 0; z-index: 50; background: rgba(10,10,11,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 14px 0; }
   nav .container { display: flex; justify-content: space-between; align-items: center; }
-  .nav-logo { font-weight: 700; font-size: 15px; letter-spacing: -0.02em; color: var(--text); text-decoration: none; }
+  .nav-logo { font-weight: 700; font-size: 15px; letter-spacing: -0.02em; color: var(--text); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+  .nav-logo .logo-mark { width: 28px; height: 28px; display: block; }
+  .nav-logo .logo-text { color: var(--text); }
   .nav-logo span { color: var(--cyan); }
   .nav-links { display: flex; gap: 24px; align-items: center; }
   .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; transition: color 0.15s; }
@@ -515,7 +521,7 @@ __GA_BOOTSTRAP__
 <!-- NAV -->
 <nav>
   <div class="container">
-    <a href="#" class="nav-logo"><span>👍👎</span> ThumbGate</a>
+    <a href="#" class="nav-logo"><img src="/brand/thumbgate-mark.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
     <div class="nav-links">
       <a href="#how-it-works">How It Works</a>
       <a href="#pricing">Pricing</a>

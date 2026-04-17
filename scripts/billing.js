@@ -50,6 +50,7 @@ const {
   serializeAnalyticsWindow,
 } = require('./analytics-window');
 const { ensureParentDir } = require('./fs-utils');
+const mailer = require('./mailer');
 
 // ---------------------------------------------------------------------------
 // Config
@@ -84,7 +85,7 @@ const CONFIG = {
     return process.env._TEST_TRIAL_EMAIL_LEDGER_PATH || process.env.THUMBGATE_TRIAL_EMAIL_LEDGER_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'trial-emails.jsonl');
   },
   RESEND_API_KEY: process.env.RESEND_API_KEY || process.env.THUMBGATE_RESEND_API_KEY || '',
-  TRIAL_EMAIL_FROM: process.env.THUMBGATE_TRIAL_EMAIL_FROM || process.env.RESEND_FROM || 'ThumbGate <onboarding@thumbgate-production.up.railway.app>',
+  TRIAL_EMAIL_FROM: process.env.THUMBGATE_TRIAL_EMAIL_FROM || process.env.RESEND_FROM_EMAIL || process.env.RESEND_FROM || 'onboarding@resend.dev',
   TRIAL_EMAIL_REPLY_TO: process.env.THUMBGATE_TRIAL_EMAIL_REPLY_TO || 'igor.ganapolsky@gmail.com',
   CREDIT_PACKS: {}
 };
@@ -562,6 +563,10 @@ async function sendTrialActivationEmail(params = {}, options = {}) {
   const customerEmail = normalizeEmail(params.customerEmail);
   const sessionId = normalizeText(params.sessionId);
   const apiKey = normalizeText(params.apiKey);
+  const injectedMailer = module.exports && module.exports._mailer;
+  const mailerTransport = !options.transport && injectedMailer && typeof injectedMailer.sendTrialWelcomeEmail === 'function'
+    ? injectedMailer
+    : null;
   const transport = options.transport || sendResendEmail;
   const planId = normalizeText(params.planId);
 
@@ -586,7 +591,7 @@ async function sendTrialActivationEmail(params = {}, options = {}) {
     };
   }
 
-  if (!CONFIG.RESEND_API_KEY && !options.transport) {
+  if (!CONFIG.RESEND_API_KEY && !options.transport && !mailerTransport) {
     const previousSkipped = findTrialEmailRecord({
       sessionId,
       customerEmail,
@@ -605,17 +610,43 @@ async function sendTrialActivationEmail(params = {}, options = {}) {
     return { status: 'skipped', reason: 'missing_resend_api_key', customerEmail, sessionId };
   }
 
-  const message = buildTrialActivationEmail({
-    customerEmail,
-    apiKey,
-    sessionId,
-    planId,
-    appOrigin: params.appOrigin,
-  });
-
   try {
-    const response = await transport(message, params);
-    const providerId = response && response.body ? response.body.id : null;
+    let providerId = null;
+    if (mailerTransport) {
+      const response = await mailerTransport.sendTrialWelcomeEmail({
+        to: customerEmail,
+        licenseKey: apiKey,
+        customerId: params.customerId,
+      });
+      if (!response || response.sent !== true) {
+        const reason = normalizeText(response && response.reason) || 'provider_error';
+        appendTrialEmailRecord({
+          status: reason === 'no_api_key' ? 'skipped' : 'failed',
+          reason,
+          sessionId,
+          customerEmail,
+          planId,
+          source: params.source || 'checkout_session_status',
+        });
+        return {
+          status: reason === 'no_api_key' ? 'skipped' : 'failed',
+          reason,
+          customerEmail,
+          sessionId,
+        };
+      }
+      providerId = response.id || response.providerId || null;
+    } else {
+      const message = buildTrialActivationEmail({
+        customerEmail,
+        apiKey,
+        sessionId,
+        planId,
+        appOrigin: params.appOrigin,
+      });
+      const response = await transport(message, params);
+      providerId = response && response.body ? response.body.id : response && response.id ? response.id : null;
+    }
     appendTrialEmailRecord({
       status: 'sent',
       sessionId,
@@ -626,9 +657,10 @@ async function sendTrialActivationEmail(params = {}, options = {}) {
     });
     return { status: 'sent', customerEmail, sessionId, providerId };
   } catch (err) {
+    const reason = mailerTransport ? 'exception' : 'provider_error';
     appendTrialEmailRecord({
       status: 'failed',
-      reason: 'provider_error',
+      reason,
       error: err && err.message ? err.message : 'Email provider failed',
       sessionId,
       customerEmail,
@@ -637,12 +669,29 @@ async function sendTrialActivationEmail(params = {}, options = {}) {
     });
     return {
       status: 'failed',
-      reason: 'provider_error',
+      reason,
       error: err && err.message ? err.message : 'Email provider failed',
       customerEmail,
       sessionId,
     };
   }
+}
+
+function trialEmailToWebhookEmailResult(trialEmail = {}) {
+  if (trialEmail.status === 'sent' || trialEmail.status === 'already_sent') {
+    return {
+      sent: true,
+      id: trialEmail.providerId || null,
+      providerId: trialEmail.providerId || null,
+    };
+  }
+  return {
+    sent: false,
+    reason: trialEmail.reason === 'missing_customer_email'
+      ? 'no_recipient'
+      : trialEmail.reason || trialEmail.status || 'unknown',
+    error: trialEmail.error || undefined,
+  };
 }
 
 function normalizeCurrency(value) {
@@ -2705,7 +2754,13 @@ async function handleWebhook(rawBody, signature) {
           attribution,
         });
       }
-      return { handled: true, action: 'provisioned_api_key', result, trialEmail };
+      return {
+        handled: true,
+        action: 'provisioned_api_key',
+        result,
+        trialEmail,
+        email: trialEmailToWebhookEmailResult(trialEmail),
+      };
     }
     case 'customer.subscription.deleted': {
       const sub = event.data.object;
@@ -2858,4 +2913,5 @@ module.exports = {
   _TRIAL_EMAIL_LEDGER_PATH: () => CONFIG.TRIAL_EMAIL_LEDGER_PATH,
   _LOCAL_MODE: () => LOCAL_MODE(),
   _withTimeout: withTimeout,
+  _mailer: null, // tests set this to a { sendTrialWelcomeEmail } stub
 };

@@ -1707,7 +1707,8 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
 .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
 nav { position: sticky; top: 0; z-index: 50; background: rgba(10,10,11,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 14px 0; }
 nav .container { display: flex; justify-content: space-between; align-items: center; }
-.nav-logo { font-weight: 700; font-size: 15px; color: var(--text); text-decoration: none; }
+.nav-logo { font-weight: 700; font-size: 15px; color: var(--text); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+.nav-logo .logo-mark { width: 28px; height: 28px; display: block; }
 .nav-links { display: flex; gap: 16px; align-items: center; }
 .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; }
 .nav-links a:hover { color: var(--text); }
@@ -1752,7 +1753,7 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
 </head>
 <body>
 <nav><div class="container">
-  <a href="/dashboard" class="nav-logo">👍👎 ThumbGate</a>
+  <a href="/dashboard" class="nav-logo"><img src="/brand/thumbgate-mark.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
   <div class="nav-links">
     <a href="/dashboard">Dashboard</a>
     <a href="/lessons">Lessons</a>
@@ -2123,11 +2124,26 @@ function renderCheckoutSuccessPage(runtimeConfig) {
       color: var(--muted);
       font-size: 14px;
     }
+    .brand-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px;
+      text-decoration: none;
+      color: var(--ink);
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: -0.01em;
+    }
+    .brand-header .logo-mark { width: 32px; height: 32px; display: block; }
   </style>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/brand/thumbgate-mark.svg">
 <script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
 </head>
 <body>
   <main>
+    <a href="/" class="brand-header"><img src="/brand/thumbgate-mark.svg" alt="ThumbGate" class="logo-mark" width="32" height="32"><span class="logo-text">ThumbGate</span></a>
     <span class="eyebrow">ThumbGate Pro</span>
     <h1>Your local Pro dashboard is ready.</h1>
     <p class="lead">This page verifies your Stripe session, provisions the key if needed, and gives you the exact command to save your license and launch your personal local dashboard.</p>
@@ -2147,11 +2163,26 @@ function renderCheckoutSuccessPage(runtimeConfig) {
     </div>
 
     <div class="card">
-      <h2>Hosted API setup (optional)</h2>
+      <h2>Use ThumbGate from CI, teammates, and remote agents (optional)</h2>
+      <p>The Hosted API lets anything that can make an HTTP request &mdash; CI jobs, GitHub Actions, teammates' laptops, scheduled cron, or agents running in Docker or Lambda &mdash; push feedback into the same memory pool your local dashboard already reads from.</p>
+
+      <p><strong>When you need this:</strong></p>
+      <ul>
+        <li>You run agents in CI/CD, GitHub Actions, or Docker containers and want their failures captured automatically.</li>
+        <li>Your team wants shared memory &mdash; every teammate's thumbs-down feeds the same prevention rules.</li>
+        <li>You dispatch agents from servers, Lambdas, or scheduled jobs that never touch your laptop.</li>
+      </ul>
+
+      <p><strong>When you can skip this:</strong></p>
+      <ul>
+        <li>You only use ThumbGate from your own laptop &mdash; the local dashboard already handles everything.</li>
+      </ul>
+
+      <p><strong>How to set it up:</strong></p>
       <ol>
-        <li>Copy the environment block below into your workflow runner.</li>
-        <li>Use the curl example to confirm the hosted API captures an event.</li>
-        <li>Keep your key private and rotate by repurchasing or contacting support if needed.</li>
+        <li>Copy the environment block below into your CI or server environment.</li>
+        <li>Use the curl example to confirm the hosted API captures an event end-to-end.</li>
+        <li>Treat the key like any other API secret &mdash; rotate via your billing portal if it leaks.</li>
       </ol>
       <pre id="env-block">Waiting for provisioning...</pre>
       <pre id="curl-block">Waiting for provisioning...</pre>

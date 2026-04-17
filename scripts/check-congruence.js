@@ -148,7 +148,11 @@ async function main() {
 
   // --- Brand congruence: "ThumbGate" must appear in all public surfaces ---
   const brandSurfaces = {
-    'public/index.html (nav)': landingHtml.includes('ThumbGate</a>'),
+    // Accept either the legacy wordmark-only nav ("ThumbGate</a>") or the
+    // current SVG-mark + `.logo-text` nav ("ThumbGate</span></a>").
+    'public/index.html (nav)':
+      landingHtml.includes('ThumbGate</a>')
+      || landingHtml.includes('class="logo-text">ThumbGate</span>'),
     'public/index.html (title)': landingHtml.includes('<title>ThumbGate'),
     'README.md (heading)': readmeMd.startsWith('# ThumbGate'),
     'package.json (description)': pkg.description.includes('ThumbGate'),
