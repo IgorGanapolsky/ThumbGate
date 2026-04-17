@@ -18,15 +18,19 @@ const testApiKeysPath = path.join(billingTestRoot, 'api-keys.json');
 const testFunnelLedgerPath = path.join(billingTestRoot, 'funnel-events.jsonl');
 const testRevenueLedgerPath = path.join(billingTestRoot, 'revenue-events.jsonl');
 const testLocalCheckoutSessionsPath = path.join(billingTestRoot, 'local-checkout-sessions.json');
+const testTrialEmailLedgerPath = path.join(billingTestRoot, 'trial-emails.jsonl');
 const testFeedbackDir = path.join(billingTestRoot, 'feedback');
 
 const savedApiKeysPath = process.env._TEST_API_KEYS_PATH;
 const savedFunnelPath = process.env._TEST_FUNNEL_LEDGER_PATH;
 const savedRevenuePath = process.env._TEST_REVENUE_LEDGER_PATH;
 const savedLocalCheckoutSessionsPath = process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH;
+const savedTrialEmailLedgerPath = process.env._TEST_TRIAL_EMAIL_LEDGER_PATH;
 const savedGithubPlanPricing = process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
 const savedStripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const savedStripePriceId = process.env.STRIPE_PRICE_ID;
+const savedResendApiKey = process.env.RESEND_API_KEY;
+const savedThumbGateResendApiKey = process.env.THUMBGATE_RESEND_API_KEY;
 const savedFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
 const savedTestStripeReconciledRevenueEvents = process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON;
 const savedTestLegacyFeedbackDir = process.env._TEST_LEGACY_FEEDBACK_DIR;
@@ -39,9 +43,12 @@ process.env._TEST_API_KEYS_PATH = testApiKeysPath;
 process.env._TEST_FUNNEL_LEDGER_PATH = testFunnelLedgerPath;
 process.env._TEST_REVENUE_LEDGER_PATH = testRevenueLedgerPath;
 process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = testLocalCheckoutSessionsPath;
+process.env._TEST_TRIAL_EMAIL_LEDGER_PATH = testTrialEmailLedgerPath;
 process.env.THUMBGATE_FEEDBACK_DIR = testFeedbackDir;
 process.env.STRIPE_SECRET_KEY = '';
 process.env.STRIPE_PRICE_ID = '';
+delete process.env.RESEND_API_KEY;
+delete process.env.THUMBGATE_RESEND_API_KEY;
 delete process.env._TEST_LEGACY_FEEDBACK_DIR;
 delete process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR;
 delete process.env.THUMBGATE_LEGACY_FEEDBACK_DIR;
@@ -58,10 +65,16 @@ after(() => {
   else process.env._TEST_REVENUE_LEDGER_PATH = savedRevenuePath;
   if (savedLocalCheckoutSessionsPath === undefined) delete process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH;
   else process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = savedLocalCheckoutSessionsPath;
+  if (savedTrialEmailLedgerPath === undefined) delete process.env._TEST_TRIAL_EMAIL_LEDGER_PATH;
+  else process.env._TEST_TRIAL_EMAIL_LEDGER_PATH = savedTrialEmailLedgerPath;
   if (savedGithubPlanPricing === undefined) delete process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
   else process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = savedGithubPlanPricing;
   if (savedFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
   else process.env.THUMBGATE_FEEDBACK_DIR = savedFeedbackDir;
+  if (savedResendApiKey === undefined) delete process.env.RESEND_API_KEY;
+  else process.env.RESEND_API_KEY = savedResendApiKey;
+  if (savedThumbGateResendApiKey === undefined) delete process.env.THUMBGATE_RESEND_API_KEY;
+  else process.env.THUMBGATE_RESEND_API_KEY = savedThumbGateResendApiKey;
   if (savedTestStripeReconciledRevenueEvents === undefined) delete process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON;
   else process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON = savedTestStripeReconciledRevenueEvents;
   if (savedTestLegacyFeedbackDir === undefined) delete process.env._TEST_LEGACY_FEEDBACK_DIR;
@@ -91,11 +104,13 @@ function requireFreshBilling(stripeKey = '') {
 }
 
 function clearBillingArtifacts() {
-  for (const target of [testApiKeysPath, testFunnelLedgerPath, testRevenueLedgerPath, testLocalCheckoutSessionsPath]) {
+  for (const target of [testApiKeysPath, testFunnelLedgerPath, testRevenueLedgerPath, testLocalCheckoutSessionsPath, testTrialEmailLedgerPath]) {
     if (fs.existsSync(target)) fs.rmSync(target, { force: true });
   }
   fs.rmSync(testFeedbackDir, { recursive: true, force: true });
   delete process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON;
+  delete process.env.RESEND_API_KEY;
+  delete process.env.THUMBGATE_RESEND_API_KEY;
 }
 
 function readLedgerEvents() {
@@ -195,7 +210,12 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(withEmail.customer_email, 'buyer@example.com');
     assert.equal(withoutEmail.mode, 'subscription');
     assert.equal(withoutEmail.payment_method_collection, 'if_required');
-    assert.equal(withoutEmail.line_items[0].price, billing.CONFIG.STRIPE_PRICE_ID_PRO_MONTHLY);
+    assert.equal(withoutEmail.metadata.priceId, billing.CONFIG.STRIPE_PRICE_ID_PRO_MONTHLY);
+    assert.equal(withoutEmail.line_items[0].price_data.unit_amount, 1900);
+    assert.equal(withoutEmail.line_items[0].price_data.recurring.interval, 'month');
+    assert.match(withoutEmail.line_items[0].price_data.product_data.images[0], /\/assets\/brand\/thumbgate-icon-512\.png$/);
+    assert.match(withoutEmail.branding_settings.logo.url, /\/assets\/brand\/thumbgate-logo-1200x360\.png$/);
+    assert.equal(Object.prototype.hasOwnProperty.call(withoutEmail.branding_settings, 'icon'), false);
     assert.equal(withoutEmail.line_items[0].quantity, 1);
   });
 
@@ -211,7 +231,9 @@ describe('billing.js — funnel ledger', () => {
         billingCycle: 'annual',
       },
     });
-    assert.equal(annual.line_items[0].price, billing.CONFIG.STRIPE_PRICE_ID_PRO_ANNUAL);
+    assert.equal(annual.metadata.priceId, billing.CONFIG.STRIPE_PRICE_ID_PRO_ANNUAL);
+    assert.equal(annual.line_items[0].price_data.unit_amount, 14900);
+    assert.equal(annual.line_items[0].price_data.recurring.interval, 'year');
     assert.equal(annual.line_items[0].quantity, 1);
     assert.equal(annual.payment_method_collection, 'if_required');
     assert.equal(annual.metadata.billingCycle, 'annual');
@@ -226,7 +248,9 @@ describe('billing.js — funnel ledger', () => {
         seatCount: 2,
       },
     });
-    assert.equal(team.line_items[0].price, billing.CONFIG.STRIPE_PRICE_ID_TEAM_MONTHLY);
+    assert.equal(team.metadata.priceId, billing.CONFIG.STRIPE_PRICE_ID_TEAM_MONTHLY);
+    assert.equal(team.line_items[0].price_data.unit_amount, 4900);
+    assert.equal(team.line_items[0].price_data.recurring.interval, 'month');
     assert.equal(team.line_items[0].quantity, 3);
     assert.equal(team.payment_method_collection, 'if_required');
     assert.equal(team.metadata.planId, 'team');
@@ -235,10 +259,49 @@ describe('billing.js — funnel ledger', () => {
 
   test('checkout session status preserves trace id for cross-service lookup', async () => {
     const billing = require('../scripts/billing');
-    const checkout = await billing.createCheckoutSession({ installId: 'inst_trace_lookup' });
+    const checkout = await billing.createCheckoutSession({
+      installId: 'inst_trace_lookup',
+      customerEmail: 'buyer@example.com',
+    });
     const session = await billing.getCheckoutSessionStatus(checkout.sessionId);
     assert.equal(session.found, true);
     assert.equal(session.traceId, checkout.traceId);
+    assert.equal(session.customerEmail, 'buyer@example.com');
+    assert.equal(session.trialEmail.status, 'skipped');
+    assert.equal(session.trialEmail.reason, 'missing_resend_api_key');
+  });
+
+  test('trial activation email includes the license command and records provider delivery', async () => {
+    process.env.THUMBGATE_RESEND_API_KEY = 're_test_provider_key';
+    const billing = requireFreshBilling('');
+    const delivered = [];
+    const result = await billing._sendTrialActivationEmail({
+      sessionId: 'cs_test_email_001',
+      customerEmail: 'Buyer@Example.com',
+      apiKey: 'tg_test_activation_key',
+      planId: 'pro',
+      appOrigin: 'https://thumbgate-production.up.railway.app',
+      source: 'unit_test',
+    }, {
+      transport: async (message) => {
+        delivered.push(message);
+        return { ok: true, body: { id: 'email_test_001' } };
+      },
+    });
+
+    assert.equal(result.status, 'sent');
+    assert.equal(result.customerEmail, 'buyer@example.com');
+    assert.equal(delivered.length, 1);
+    assert.match(delivered[0].text, /npx thumbgate pro --activate --key=tg_test_activation_key/);
+    assert.deepEqual(delivered[0].to, ['buyer@example.com']);
+
+    const rows = fs.readFileSync(testTrialEmailLedgerPath, 'utf-8')
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line));
+    assert.equal(rows[0].status, 'sent');
+    assert.equal(rows[0].providerId, 'email_test_001');
+    assert.equal(Object.prototype.hasOwnProperty.call(rows[0], 'apiKey'), false);
   });
 
   test('recordUsage emits activation only once', () => {

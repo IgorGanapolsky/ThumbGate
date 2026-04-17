@@ -16,7 +16,13 @@ function withTimeout(promise, ms = STRIPE_TIMEOUT_MS) {
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { createTraceId } = require('./hosted-config');
+const https = require('https');
+const {
+  DEFAULT_PUBLIC_APP_ORIGIN,
+  createTraceId,
+  joinPublicUrl,
+  normalizeOrigin,
+} = require('./hosted-config');
 const {
   getFeedbackPaths,
   getLegacyFeedbackDir,
@@ -74,6 +80,12 @@ const CONFIG = {
   get NEWSLETTER_SUBSCRIBERS_PATH() {
     return process.env._TEST_NEWSLETTER_SUBSCRIBERS_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'newsletter-subscribers.jsonl');
   },
+  get TRIAL_EMAIL_LEDGER_PATH() {
+    return process.env._TEST_TRIAL_EMAIL_LEDGER_PATH || process.env.THUMBGATE_TRIAL_EMAIL_LEDGER_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'trial-emails.jsonl');
+  },
+  RESEND_API_KEY: process.env.RESEND_API_KEY || process.env.THUMBGATE_RESEND_API_KEY || '',
+  TRIAL_EMAIL_FROM: process.env.THUMBGATE_TRIAL_EMAIL_FROM || process.env.RESEND_FROM || 'ThumbGate <onboarding@thumbgate-production.up.railway.app>',
+  TRIAL_EMAIL_REPLY_TO: process.env.THUMBGATE_TRIAL_EMAIL_REPLY_TO || 'igor.ganapolsky@gmail.com',
   CREDIT_PACKS: {}
 };
 
@@ -377,6 +389,259 @@ function normalizeText(value) {
   if (value === undefined || value === null) return null;
   const text = String(value).trim();
   return text || null;
+}
+
+function resolvePublicAppOrigin(appOrigin) {
+  return normalizeOrigin(appOrigin) || normalizeOrigin(process.env.THUMBGATE_PUBLIC_APP_ORIGIN) || DEFAULT_PUBLIC_APP_ORIGIN;
+}
+
+function resolveCheckoutBrandUrls(appOrigin) {
+  const origin = resolvePublicAppOrigin(appOrigin);
+  return {
+    icon: joinPublicUrl(origin, '/assets/brand/thumbgate-icon-512.png'),
+    logo: joinPublicUrl(origin, '/assets/brand/thumbgate-logo-1200x360.png'),
+  };
+}
+
+function buildCheckoutBrandingSettings(appOrigin) {
+  const brandUrls = resolveCheckoutBrandUrls(appOrigin);
+  return {
+    display_name: 'ThumbGate',
+    logo: {
+      type: 'url',
+      url: brandUrls.logo,
+    },
+    background_color: '#ffffff',
+    button_color: '#22d3ee',
+    border_style: 'rounded',
+    font_family: 'inter',
+  };
+}
+
+function buildCheckoutProductData({ name, description, appOrigin }) {
+  const brandUrls = resolveCheckoutBrandUrls(appOrigin);
+  return {
+    name,
+    description,
+    images: [brandUrls.icon],
+  };
+}
+
+function buildSubscriptionPriceData(checkoutSelection, appOrigin) {
+  const isTeam = checkoutSelection.planId === 'team';
+  const annual = checkoutSelection.billingCycle === 'annual';
+  const unitAmount = isTeam
+    ? TEAM_MONTHLY_PRICE_DOLLARS * 100
+    : (annual ? PRO_ANNUAL_PRICE_DOLLARS : PRO_MONTHLY_PRICE_DOLLARS) * 100;
+  return {
+    currency: 'usd',
+    unit_amount: unitAmount,
+    recurring: {
+      interval: annual ? 'year' : 'month',
+    },
+    product_data: buildCheckoutProductData({
+      name: isTeam ? 'ThumbGate Team' : 'ThumbGate Pro',
+      description: isTeam
+        ? 'Shared Pre-Action Gates, team governance, and workflow hardening for AI coding agents.'
+        : 'Local dashboard, DPO export, and Pre-Action Gates for AI coding agents.',
+      appOrigin,
+    }),
+  };
+}
+
+function normalizeEmail(value) {
+  const text = normalizeText(value);
+  if (!text || !text.includes('@')) return null;
+  return text.toLowerCase();
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function findTrialEmailRecord({ sessionId, customerEmail, statuses = null } = {}) {
+  const normalizedEmail = normalizeEmail(customerEmail);
+  const rows = loadJsonlRecords(CONFIG.TRIAL_EMAIL_LEDGER_PATH);
+  return rows.find((row) => {
+    if (!row || typeof row !== 'object') return false;
+    if (statuses && !statuses.includes(row.status)) return false;
+    if (sessionId && row.sessionId === sessionId) return true;
+    return normalizedEmail && row.customerEmail === normalizedEmail;
+  }) || null;
+}
+
+function appendTrialEmailRecord(payload) {
+  return appendJsonlRecord(CONFIG.TRIAL_EMAIL_LEDGER_PATH, {
+    timestamp: new Date().toISOString(),
+    provider: payload.provider || 'resend',
+    ...payload,
+  });
+}
+
+function buildTrialActivationEmail({ customerEmail, apiKey, sessionId, planId, appOrigin } = {}) {
+  const email = normalizeEmail(customerEmail);
+  const origin = resolvePublicAppOrigin(appOrigin);
+  const dashboardUrl = joinPublicUrl(origin, '/dashboard');
+  const docsUrl = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
+  const command = `npx thumbgate pro --activate --key=${apiKey || ''}`;
+  const subject = 'Your ThumbGate Pro trial is ready';
+  const intro = 'Your 7-day ThumbGate Pro trial is active. Save this key once, then launch your local dashboard.';
+  return {
+    from: CONFIG.TRIAL_EMAIL_FROM,
+    to: [email],
+    reply_to: CONFIG.TRIAL_EMAIL_REPLY_TO,
+    subject,
+    text: [
+      intro,
+      '',
+      command,
+      '',
+      `Dashboard: ${dashboardUrl}`,
+      `Verification evidence: ${docsUrl}`,
+      sessionId ? `Stripe session: ${sessionId}` : null,
+      planId ? `Plan: ${planId}` : null,
+    ].filter(Boolean).join('\n'),
+    html: [
+      '<div style="font-family:Inter,Arial,sans-serif;line-height:1.55;color:#111827">',
+      `<h1 style="margin:0 0 12px;font-size:24px">ThumbGate Pro is ready</h1>`,
+      `<p>${escapeHtml(intro)}</p>`,
+      `<pre style="background:#0b1117;color:#e6f7fb;padding:14px;border-radius:8px;white-space:pre-wrap">${escapeHtml(command)}</pre>`,
+      `<p><a href="${escapeHtml(dashboardUrl)}">Open dashboard</a> · <a href="${escapeHtml(docsUrl)}">Verification evidence</a></p>`,
+      sessionId ? `<p style="color:#6b7280;font-size:13px">Stripe session: ${escapeHtml(sessionId)}</p>` : '',
+      '</div>',
+    ].join(''),
+  };
+}
+
+function sendResendEmail(message) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify(message);
+    const req = https.request({
+      hostname: 'api.resend.com',
+      path: '/emails',
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${CONFIG.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+      },
+      timeout: 10000,
+    }, (res) => {
+      let responseBody = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { responseBody += chunk; });
+      res.on('end', () => {
+        let parsed = {};
+        try {
+          parsed = responseBody ? JSON.parse(responseBody) : {};
+        } catch {
+          parsed = { raw: responseBody };
+        }
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve({ ok: true, statusCode: res.statusCode, body: parsed });
+          return;
+        }
+        const err = new Error(parsed.message || parsed.error || `Resend API returned HTTP ${res.statusCode}`);
+        err.statusCode = res.statusCode;
+        err.body = parsed;
+        reject(err);
+      });
+    });
+    req.on('timeout', () => req.destroy(new Error('Resend API timeout')));
+    req.on('error', reject);
+    req.end(body);
+  });
+}
+
+async function sendTrialActivationEmail(params = {}, options = {}) {
+  const customerEmail = normalizeEmail(params.customerEmail);
+  const sessionId = normalizeText(params.sessionId);
+  const apiKey = normalizeText(params.apiKey);
+  const transport = options.transport || sendResendEmail;
+  const planId = normalizeText(params.planId);
+
+  if (!customerEmail) {
+    return { status: 'skipped', reason: 'missing_customer_email' };
+  }
+  if (!apiKey) {
+    return { status: 'skipped', reason: 'missing_api_key', customerEmail };
+  }
+
+  const previousSent = findTrialEmailRecord({
+    sessionId,
+    customerEmail,
+    statuses: ['sent'],
+  });
+  if (previousSent) {
+    return {
+      status: 'already_sent',
+      customerEmail,
+      sessionId: previousSent.sessionId || sessionId,
+      providerId: previousSent.providerId || null,
+    };
+  }
+
+  if (!CONFIG.RESEND_API_KEY && !options.transport) {
+    const previousSkipped = findTrialEmailRecord({
+      sessionId,
+      customerEmail,
+      statuses: ['skipped'],
+    });
+    if (!previousSkipped) {
+      appendTrialEmailRecord({
+        status: 'skipped',
+        reason: 'missing_resend_api_key',
+        sessionId,
+        customerEmail,
+        planId,
+      });
+    }
+    return { status: 'skipped', reason: 'missing_resend_api_key', customerEmail, sessionId };
+  }
+
+  const message = buildTrialActivationEmail({
+    customerEmail,
+    apiKey,
+    sessionId,
+    planId,
+    appOrigin: params.appOrigin,
+  });
+
+  try {
+    const response = await transport(message, params);
+    const providerId = response && response.body ? response.body.id : null;
+    appendTrialEmailRecord({
+      status: 'sent',
+      sessionId,
+      customerEmail,
+      planId,
+      providerId,
+      source: params.source || 'checkout_session_status',
+    });
+    return { status: 'sent', customerEmail, sessionId, providerId };
+  } catch (err) {
+    appendTrialEmailRecord({
+      status: 'failed',
+      reason: 'provider_error',
+      error: err && err.message ? err.message : 'Email provider failed',
+      sessionId,
+      customerEmail,
+      planId,
+      source: params.source || 'checkout_session_status',
+    });
+    return {
+      status: 'failed',
+      reason: 'provider_error',
+      error: err && err.message ? err.message : 'Email provider failed',
+      customerEmail,
+      sessionId,
+    };
+  }
 }
 
 function normalizeCurrency(value) {
@@ -1972,7 +2237,7 @@ function saveKeyStore(store) {
 // Core Exports
 // ---------------------------------------------------------------------------
 
-async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, installId, traceId, packId = null, metadata = {} } = {}) {
+async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, installId, traceId, packId = null, metadata = {}, appOrigin } = {}) {
   const resolvedTraceId = traceId || metadata.traceId || createTraceId('checkout');
   const baseCheckoutMetadata = sanitizeMetadata({
     ...metadata,
@@ -1995,9 +2260,12 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     const localSessionId = `test_session_${crypto.randomBytes(8).toString('hex')}`;
     const store = loadLocalCheckoutSessions();
     const pack = packId ? CONFIG.CREDIT_PACKS[packId] : null;
+    const localCustomerEmail = normalizeEmail(customerEmail);
     store.sessions[localSessionId] = {
       id: localSessionId,
       customer: `local_cus_${crypto.randomBytes(4).toString('hex')}`,
+      customer_email: localCustomerEmail,
+      customer_details: localCustomerEmail ? { email: localCustomerEmail } : null,
       metadata: { ...checkoutMetadata, packId: pack ? pack.id : null, credits: pack ? pack.credits : null },
       payment_status: 'paid',
       status: 'complete'
@@ -2022,8 +2290,19 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     customerEmail,
     checkoutMetadata,
     packId,
+    appOrigin,
   });
-  const session = await stripe.checkout.sessions.create(sessionPayload);
+  let session;
+  try {
+    session = await stripe.checkout.sessions.create(sessionPayload);
+  } catch (err) {
+    if (!sessionPayload.branding_settings || !String(err && err.message).includes('branding_settings')) {
+      throw err;
+    }
+    const fallbackPayload = { ...sessionPayload };
+    delete fallbackPayload.branding_settings;
+    session = await stripe.checkout.sessions.create(fallbackPayload);
+  }
 
   appendFunnelEvent({
     stage: 'acquisition',
@@ -2036,7 +2315,7 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
   return { sessionId: session.id, url: session.url, localMode: false, traceId: resolvedTraceId, metadata: checkoutMetadata };
 }
 
-function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, checkoutMetadata, packId = null } = {}) {
+function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, checkoutMetadata, packId = null, appOrigin } = {}) {
   const pack = packId ? CONFIG.CREDIT_PACKS[packId] : null;
   const checkoutSelection = pack ? null : resolveSubscriptionCheckoutSelection(checkoutMetadata);
   if (!pack && !checkoutSelection.priceId) {
@@ -2046,12 +2325,19 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
     ? [{
         price_data: {
           currency: pack.currency.toLowerCase(),
-          product_data: { name: pack.name },
+          product_data: buildCheckoutProductData({
+            name: pack.name,
+            description: 'ThumbGate usage credits for hosted agent governance.',
+            appOrigin,
+          }),
           unit_amount: pack.amountCents,
         },
         quantity: 1,
       }]
-    : [{ price: checkoutSelection.priceId, quantity: checkoutSelection.quantity }];
+    : [{
+        price_data: buildSubscriptionPriceData(checkoutSelection, appOrigin),
+        quantity: checkoutSelection.quantity,
+      }];
 
   const sessionPayload = {
     success_url: successUrl,
@@ -2059,6 +2345,7 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
     payment_method_types: ['card', 'link'],
     mode: pack ? 'payment' : 'subscription',
     line_items: lineItems,
+    branding_settings: buildCheckoutBrandingSettings(appOrigin),
     metadata: serializeStripeMetadata({
       ...checkoutMetadata,
       planId: pack ? checkoutMetadata.planId : checkoutSelection.planId,
@@ -2092,6 +2379,16 @@ async function getCheckoutSessionStatus(sessionId) {
       credits: session.metadata?.credits,
       source: 'local_checkout_lookup'
     });
+    const customerEmail = session.customer_details?.email || session.customer_email || '';
+    const trialEmail = await sendTrialActivationEmail({
+      sessionId,
+      customerId: session.customer,
+      customerEmail,
+      apiKey: provisioned.key,
+      planId: session.metadata?.planId || session.metadata?.packId || null,
+      appOrigin: process.env.THUMBGATE_PUBLIC_APP_ORIGIN,
+      source: 'local_checkout_lookup',
+    });
     return {
       found: true,
       localMode: true,
@@ -2100,6 +2397,7 @@ async function getCheckoutSessionStatus(sessionId) {
       paymentStatus: 'paid',
       status: 'complete',
       customerId: session.customer,
+      customerEmail,
       installId: session.metadata?.installId,
       traceId: session.metadata?.traceId || null,
       acquisitionId: session.metadata?.acquisitionId || null,
@@ -2112,6 +2410,7 @@ async function getCheckoutSessionStatus(sessionId) {
       referrerHost: session.metadata?.referrerHost || null,
       apiKey: provisioned.key,
       remainingCredits: provisioned.remainingCredits,
+      trialEmail,
     };
   }
 
@@ -2126,6 +2425,16 @@ async function getCheckoutSessionStatus(sessionId) {
     const installId = session.metadata?.installId || null;
     const credits = session.metadata?.credits ? parseInt(session.metadata.credits, 10) : null;
     const provisioned = provisionApiKey(session.customer, { installId, credits, source: 'stripe_checkout_session_lookup' });
+    const customerEmail = session.customer_details?.email || session.customer_email || '';
+    const trialEmail = await sendTrialActivationEmail({
+      sessionId,
+      customerId: session.customer,
+      customerEmail,
+      apiKey: provisioned.key,
+      planId: session.metadata?.planId || session.metadata?.packId || null,
+      appOrigin: process.env.THUMBGATE_PUBLIC_APP_ORIGIN,
+      source: 'stripe_checkout_session_lookup',
+    });
 
     return {
       found: true,
@@ -2134,7 +2443,7 @@ async function getCheckoutSessionStatus(sessionId) {
       paid: true,
       paymentStatus: session.payment_status,
       customerId: session.customer,
-      customerEmail: session.customer_details?.email || '',
+      customerEmail,
       installId,
       traceId,
       acquisitionId: session.metadata?.acquisitionId || null,
@@ -2147,6 +2456,7 @@ async function getCheckoutSessionStatus(sessionId) {
       referrerHost: session.metadata?.referrerHost || null,
       apiKey: provisioned.key,
       remainingCredits: provisioned.remainingCredits,
+      trialEmail,
     };
   } catch {
     return { found: false };
@@ -2312,12 +2622,22 @@ async function handleWebhook(rawBody, signature) {
       const traceId = session.metadata?.traceId || null;
       const credits = session.metadata?.credits ? parseInt(session.metadata.credits, 10) : null;
       const packId = session.metadata?.packId || null;
+      const customerEmail = session.customer_details?.email || session.customer_email || '';
 
       const attribution = extractAttribution(session.metadata);
       const result = provisionApiKey(customerId, {
         installId,
         credits,
         source: 'stripe_webhook_checkout_completed'
+      });
+      const trialEmail = await sendTrialActivationEmail({
+        sessionId: session.id,
+        customerId,
+        customerEmail,
+        apiKey: result.key,
+        planId: session.metadata?.planId || packId || null,
+        appOrigin: process.env.THUMBGATE_PUBLIC_APP_ORIGIN,
+        source: 'stripe_webhook_checkout_completed',
       });
       const funnelRecord = {
         stage: 'paid',
@@ -2384,7 +2704,7 @@ async function handleWebhook(rawBody, signature) {
           attribution,
         });
       }
-      return { handled: true, action: 'provisioned_api_key', result };
+      return { handled: true, action: 'provisioned_api_key', result, trialEmail };
     }
     case 'customer.subscription.deleted': {
       const sub = event.data.object;
@@ -2527,11 +2847,14 @@ function handleGithubWebhook(event) {
 module.exports = {
   CONFIG, createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
+  _buildTrialActivationEmail: buildTrialActivationEmail,
+  _sendTrialActivationEmail: sendTrialActivationEmail,
   _resolveSubscriptionCheckoutSelection: resolveSubscriptionCheckoutSelection,
   _API_KEYS_PATH: () => CONFIG.API_KEYS_PATH,
   _FUNNEL_LEDGER_PATH: () => CONFIG.FUNNEL_LEDGER_PATH,
   _REVENUE_LEDGER_PATH: () => CONFIG.REVENUE_LEDGER_PATH,
   _LOCAL_CHECKOUT_SESSIONS_PATH: () => CONFIG.LOCAL_CHECKOUT_SESSIONS_PATH,
+  _TRIAL_EMAIL_LEDGER_PATH: () => CONFIG.TRIAL_EMAIL_LEDGER_PATH,
   _LOCAL_MODE: () => LOCAL_MODE(),
   _withTimeout: withTimeout,
 };
