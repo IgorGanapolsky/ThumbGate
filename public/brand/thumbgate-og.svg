@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="ThumbGate">
+  <title>ThumbGate</title>
+  <rect width="1200" height="630" fill="#0a1929"/>
+  <!-- Mark, scaled and positioned -->
+  <g transform="translate(430 155) scale(5)">
+    <rect width="64" height="64" rx="12" fill="#0c2239"/>
+    <g fill="#40e0d0">
+      <path d="M20 30 h22 a4 4 0 0 1 4 4 v14 a4 4 0 0 1 -4 4 h-22 a4 4 0 0 1 -4 -4 v-14 a4 4 0 0 1 4 -4 z"/>
+      <path d="M28 12 a5 5 0 0 1 10 0 v16 a2 2 0 0 1 -2 2 h-6 a2 2 0 0 1 -2 -2 z"/>
+      <rect x="18" y="50" width="26" height="4" rx="1.5" fill="#0c2239"/>
+    </g>
+  </g>
+  <!-- Wordmark -->
+  <text x="600" y="540" text-anchor="middle" font-family="-apple-system, 'Segoe UI', system-ui, sans-serif" font-weight="700" font-size="72" fill="#f5f7fb" letter-spacing="-2">ThumbGate</text>
+  <text x="600" y="590" text-anchor="middle" font-family="-apple-system, 'Segoe UI', system-ui, sans-serif" font-weight="500" font-size="24" fill="#40e0d0" letter-spacing="1">Pre-action gates for AI coding agents</text>
+</svg>

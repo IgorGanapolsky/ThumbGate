@@ -466,7 +466,7 @@ test('no learn page references version numbers (evergreen content)', () => {
 
 test('no learn page has broken internal links', () => {
   const allFiles = [learnHubPath, ...fs.readdirSync(learnDir).filter(f => f.endsWith('.html')).map(f => path.join(learnDir, f))];
-  const validPaths = ['/learn', '/guide', '/dashboard', '/', '/learn/stop-ai-agent-force-push', '/learn/vibe-coding-safety-net', '/learn/mcp-pre-action-gates-explained', '/learn/agent-harness-pattern', '/learn/ai-agent-persistent-memory', '/learn/learn.css', '/guides/stop-repeated-ai-agent-mistakes', '/guides/cursor-agent-guardrails', '/guides/codex-cli-guardrails', '/guides/gemini-cli-feedback-memory'];
+  const validPaths = ['/learn', '/guide', '/dashboard', '/', '/learn/stop-ai-agent-force-push', '/learn/vibe-coding-safety-net', '/learn/mcp-pre-action-gates-explained', '/learn/agent-harness-pattern', '/learn/ai-agent-persistent-memory', '/learn/learn.css', '/favicon.svg', '/brand/thumbgate-mark.svg', '/guides/stop-repeated-ai-agent-mistakes', '/guides/cursor-agent-guardrails', '/guides/codex-cli-guardrails', '/guides/gemini-cli-feedback-memory'];
   for (const file of allFiles) {
     const html = readFile(file);
     const links = html.match(/href="(\/[^"#]*?)"/g) || [];

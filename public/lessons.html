@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ThumbGate — Lessons Learned</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/brand/thumbgate-mark.svg">
 <script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -22,7 +24,8 @@
   /* NAV */
   nav { position: sticky; top: 0; z-index: 50; background: rgba(10,10,11,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 14px 0; }
   nav .container { display: flex; justify-content: space-between; align-items: center; }
-  .nav-logo { font-weight: 700; font-size: 15px; color: var(--text); text-decoration: none; }
+  .nav-logo { font-weight: 700; font-size: 15px; color: var(--text); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+  .nav-logo .logo-mark { width: 28px; height: 28px; display: block; }
   .nav-links { display: flex; gap: 16px; align-items: center; }
   .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; }
   .nav-links a:hover { color: var(--text); }
@@ -185,7 +188,7 @@
 
 <nav>
   <div class="container">
-    <a href="/dashboard" class="nav-logo">👍👎 ThumbGate</a>
+    <a href="/dashboard" class="nav-logo"><img src="/brand/thumbgate-mark.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
     <div class="nav-links">
       <a href="/dashboard">Dashboard</a>
       <a href="/lessons" class="active">Lessons</a>
