@@ -20,6 +20,8 @@ test.before(async () => {
 });
 
 test.after(async () => {
+  handle.server.closeIdleConnections?.();
+  handle.server.closeAllConnections?.();
   await new Promise((resolve) => handle.server.close(resolve));
 });
 
@@ -29,6 +31,27 @@ test('GET /assets/instagram-card.png serves image/png without an API key', async
   assert.equal(res.headers.get('content-type'), 'image/png');
   assert.ok(Number(res.headers.get('content-length')) > 0, 'content-length must be non-zero');
   assert.match(res.headers.get('cache-control') || '', /max-age=/);
+});
+
+test('GET /thumbgate-logo.png serves the checkout-ready brand logo without an API key', async () => {
+  const res = await fetch(`${origin}/thumbgate-logo.png`);
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get('content-type'), 'image/png');
+  assert.ok(Number(res.headers.get('content-length')) > 0);
+});
+
+test('GET /thumbgate-icon.png and brand assets serve public Stripe images', async () => {
+  const [iconRes, checkoutIconRes, checkoutLogoRes] = await Promise.all([
+    fetch(`${origin}/thumbgate-icon.png`),
+    fetch(`${origin}/assets/brand/thumbgate-icon-512.png`),
+    fetch(`${origin}/assets/brand/thumbgate-logo-1200x360.png`),
+  ]);
+
+  for (const res of [iconRes, checkoutIconRes, checkoutLogoRes]) {
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get('content-type'), 'image/png');
+    assert.ok(Number(res.headers.get('content-length')) > 0);
+  }
 });
 
 test('GET /assets/tiktok-agent-memory.mp4 serves video/mp4 without an API key', async () => {

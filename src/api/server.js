@@ -2028,6 +2028,7 @@ function renderCheckoutSuccessPage(runtimeConfig) {
       --accent-dark: #8f451f;
       --card: #fffdf9;
       --success: #2f7d4b;
+      --warning: #8f451f;
       --radius: 14px;
     }
     * { box-sizing: border-box; }
@@ -2078,6 +2079,15 @@ function renderCheckoutSuccessPage(runtimeConfig) {
       color: var(--success);
       font-weight: 700;
       margin-bottom: 8px;
+    }
+    .email-status {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    .email-status.warning {
+      color: var(--warning);
+      font-weight: 700;
     }
     pre {
       white-space: pre-wrap;
@@ -2141,6 +2151,7 @@ function renderCheckoutSuccessPage(runtimeConfig) {
     <div class="card">
       <div class="status" id="status">Verifying payment and provisioning your key...</div>
       <p class="muted" id="summary">Do not close this tab until the key appears.</p>
+      <p class="email-status" id="email-status">Activation email pending checkout verification.</p>
       <pre id="key-block">Waiting for checkout session...</pre>
     </div>
 
@@ -2190,6 +2201,7 @@ function renderCheckoutSuccessPage(runtimeConfig) {
     const telemetryEndpoint = '/v1/telemetry/ping';
     const statusEl = document.getElementById('status');
     const summaryEl = document.getElementById('summary');
+    const emailStatusEl = document.getElementById('email-status');
     const keyBlock = document.getElementById('key-block');
     const envBlock = document.getElementById('env-block');
     const curlBlock = document.getElementById('curl-block');
@@ -2307,9 +2319,23 @@ function renderCheckoutSuccessPage(runtimeConfig) {
         sendTelemetryOnce('checkout_paid_confirmed');
         statusEl.textContent = 'ThumbGate Pro activated.';
         const resolvedTraceId = body.traceId || traceId || '';
+        const emailStatus = body.trialEmail || {};
+        const customerEmail = body.customerEmail || (emailStatus && emailStatus.customerEmail) || '';
         summaryEl.textContent = resolvedTraceId
           ? 'Your Pro key is ready. Save it once, launch your local dashboard, and keep the optional hosted snippet for team workflows. Trace: ' + resolvedTraceId + '.'
           : 'Your Pro key is ready. Save it once, launch your local dashboard, and keep the optional hosted snippet for team workflows.';
+        if (emailStatus.status === 'sent' || emailStatus.status === 'already_sent') {
+          emailStatusEl.className = 'email-status';
+          emailStatusEl.textContent = customerEmail
+            ? 'Activation email sent to ' + customerEmail + '.'
+            : 'Activation email sent.';
+        } else if (emailStatus.status === 'skipped' || emailStatus.status === 'failed') {
+          emailStatusEl.className = 'email-status warning';
+          emailStatusEl.textContent = 'Email delivery is not confirmed. Copy the key below now; this page is your activation source of truth.';
+        } else {
+          emailStatusEl.className = 'email-status warning';
+          emailStatusEl.textContent = 'Email delivery status is unknown. Copy the key below now.';
+        }
         keyBlock.textContent = body.apiKey || 'Provisioned, but no key was returned.';
         activateBlock.textContent = body.apiKey
           ? 'npx thumbgate pro --activate --key=' + body.apiKey
@@ -3621,6 +3647,7 @@ async function addContext(){
     if (isGetLikeRequest && (
       pathname === '/favicon.ico'
       || pathname === '/thumbgate-logo.png'
+      || pathname === '/thumbgate-icon.png'
       || pathname === '/og.png'
       || pathname === '/apple-touch-icon.png'
     )) {
@@ -3752,6 +3779,7 @@ async function addContext(){
           installId: bootstrapBody.installId,
           traceId,
           metadata: analyticsMetadata,
+          appOrigin: hostedConfig.appOrigin,
         });
 
         if (result.url) {
@@ -4376,6 +4404,7 @@ async function addContext(){
           installId: body.installId,
           traceId,
           metadata: analyticsMetadata,
+          appOrigin: hostedConfig.appOrigin,
         });
         sendJson(res, 200, {
           ...result,

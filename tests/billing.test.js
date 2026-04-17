@@ -9,6 +9,8 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const https = require('https');
+const { EventEmitter } = require('events');
 
 const { startServer } = require('../src/api/server');
 
@@ -18,15 +20,19 @@ const testApiKeysPath = path.join(billingTestRoot, 'api-keys.json');
 const testFunnelLedgerPath = path.join(billingTestRoot, 'funnel-events.jsonl');
 const testRevenueLedgerPath = path.join(billingTestRoot, 'revenue-events.jsonl');
 const testLocalCheckoutSessionsPath = path.join(billingTestRoot, 'local-checkout-sessions.json');
+const testTrialEmailLedgerPath = path.join(billingTestRoot, 'trial-emails.jsonl');
 const testFeedbackDir = path.join(billingTestRoot, 'feedback');
 
 const savedApiKeysPath = process.env._TEST_API_KEYS_PATH;
 const savedFunnelPath = process.env._TEST_FUNNEL_LEDGER_PATH;
 const savedRevenuePath = process.env._TEST_REVENUE_LEDGER_PATH;
 const savedLocalCheckoutSessionsPath = process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH;
+const savedTrialEmailLedgerPath = process.env._TEST_TRIAL_EMAIL_LEDGER_PATH;
 const savedGithubPlanPricing = process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
 const savedStripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const savedStripePriceId = process.env.STRIPE_PRICE_ID;
+const savedResendApiKey = process.env.RESEND_API_KEY;
+const savedThumbGateResendApiKey = process.env.THUMBGATE_RESEND_API_KEY;
 const savedFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
 const savedTestStripeReconciledRevenueEvents = process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON;
 const savedTestLegacyFeedbackDir = process.env._TEST_LEGACY_FEEDBACK_DIR;
@@ -39,9 +45,12 @@ process.env._TEST_API_KEYS_PATH = testApiKeysPath;
 process.env._TEST_FUNNEL_LEDGER_PATH = testFunnelLedgerPath;
 process.env._TEST_REVENUE_LEDGER_PATH = testRevenueLedgerPath;
 process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = testLocalCheckoutSessionsPath;
+process.env._TEST_TRIAL_EMAIL_LEDGER_PATH = testTrialEmailLedgerPath;
 process.env.THUMBGATE_FEEDBACK_DIR = testFeedbackDir;
 process.env.STRIPE_SECRET_KEY = '';
 process.env.STRIPE_PRICE_ID = '';
+delete process.env.RESEND_API_KEY;
+delete process.env.THUMBGATE_RESEND_API_KEY;
 delete process.env._TEST_LEGACY_FEEDBACK_DIR;
 delete process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR;
 delete process.env.THUMBGATE_LEGACY_FEEDBACK_DIR;
@@ -58,10 +67,16 @@ after(() => {
   else process.env._TEST_REVENUE_LEDGER_PATH = savedRevenuePath;
   if (savedLocalCheckoutSessionsPath === undefined) delete process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH;
   else process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH = savedLocalCheckoutSessionsPath;
+  if (savedTrialEmailLedgerPath === undefined) delete process.env._TEST_TRIAL_EMAIL_LEDGER_PATH;
+  else process.env._TEST_TRIAL_EMAIL_LEDGER_PATH = savedTrialEmailLedgerPath;
   if (savedGithubPlanPricing === undefined) delete process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
   else process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = savedGithubPlanPricing;
   if (savedFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
   else process.env.THUMBGATE_FEEDBACK_DIR = savedFeedbackDir;
+  if (savedResendApiKey === undefined) delete process.env.RESEND_API_KEY;
+  else process.env.RESEND_API_KEY = savedResendApiKey;
+  if (savedThumbGateResendApiKey === undefined) delete process.env.THUMBGATE_RESEND_API_KEY;
+  else process.env.THUMBGATE_RESEND_API_KEY = savedThumbGateResendApiKey;
   if (savedTestStripeReconciledRevenueEvents === undefined) delete process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON;
   else process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON = savedTestStripeReconciledRevenueEvents;
   if (savedTestLegacyFeedbackDir === undefined) delete process.env._TEST_LEGACY_FEEDBACK_DIR;
@@ -91,11 +106,13 @@ function requireFreshBilling(stripeKey = '') {
 }
 
 function clearBillingArtifacts() {
-  for (const target of [testApiKeysPath, testFunnelLedgerPath, testRevenueLedgerPath, testLocalCheckoutSessionsPath]) {
+  for (const target of [testApiKeysPath, testFunnelLedgerPath, testRevenueLedgerPath, testLocalCheckoutSessionsPath, testTrialEmailLedgerPath]) {
     if (fs.existsSync(target)) fs.rmSync(target, { force: true });
   }
   fs.rmSync(testFeedbackDir, { recursive: true, force: true });
   delete process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON;
+  delete process.env.RESEND_API_KEY;
+  delete process.env.THUMBGATE_RESEND_API_KEY;
 }
 
 function readLedgerEvents() {
@@ -106,6 +123,64 @@ function readLedgerEvents() {
 function readRevenueEvents() {
   if (!fs.existsSync(testRevenueLedgerPath)) return [];
   return fs.readFileSync(testRevenueLedgerPath, 'utf-8').split('\n').map((line) => line.trim()).filter(Boolean).map((line) => JSON.parse(line));
+}
+
+function readTrialEmailRows() {
+  if (!fs.existsSync(testTrialEmailLedgerPath)) return [];
+  return fs.readFileSync(testTrialEmailLedgerPath, 'utf-8')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
+}
+
+function installStripeMock(factory) {
+  const stripeModuleId = require.resolve('stripe');
+  const previous = require.cache[stripeModuleId];
+  delete require.cache[require.resolve('../scripts/billing')];
+  require.cache[stripeModuleId] = {
+    id: stripeModuleId,
+    filename: stripeModuleId,
+    loaded: true,
+    exports: factory,
+  };
+  return () => {
+    delete require.cache[require.resolve('../scripts/billing')];
+    if (previous) {
+      require.cache[stripeModuleId] = previous;
+    } else {
+      delete require.cache[stripeModuleId];
+    }
+  };
+}
+
+function installHttpsRequestMock(handler) {
+  const previous = https.request;
+  https.request = (options, callback) => {
+    const request = new EventEmitter();
+    request.end = (body) => {
+      handler({ options, body, callback, request });
+    };
+    request.destroy = (err) => {
+      process.nextTick(() => request.emit('error', err));
+    };
+    request.setTimeout = () => request;
+    return request;
+  };
+  return () => {
+    https.request = previous;
+  };
+}
+
+function emitHttpsResponse(callback, statusCode, payload) {
+  const response = new EventEmitter();
+  response.statusCode = statusCode;
+  response.setEncoding = () => {};
+  process.nextTick(() => {
+    callback(response);
+    response.emit('data', typeof payload === 'string' ? payload : JSON.stringify(payload));
+    response.emit('end');
+  });
 }
 
 function writeNewsletterSubscribers(entries) {
@@ -195,7 +270,12 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(withEmail.customer_email, 'buyer@example.com');
     assert.equal(withoutEmail.mode, 'subscription');
     assert.equal(withoutEmail.payment_method_collection, 'if_required');
-    assert.equal(withoutEmail.line_items[0].price, billing.CONFIG.STRIPE_PRICE_ID_PRO_MONTHLY);
+    assert.equal(withoutEmail.metadata.priceId, billing.CONFIG.STRIPE_PRICE_ID_PRO_MONTHLY);
+    assert.equal(withoutEmail.line_items[0].price_data.unit_amount, 1900);
+    assert.equal(withoutEmail.line_items[0].price_data.recurring.interval, 'month');
+    assert.match(withoutEmail.line_items[0].price_data.product_data.images[0], /\/assets\/brand\/thumbgate-icon-512\.png$/);
+    assert.match(withoutEmail.branding_settings.logo.url, /\/assets\/brand\/thumbgate-logo-1200x360\.png$/);
+    assert.equal(Object.prototype.hasOwnProperty.call(withoutEmail.branding_settings, 'icon'), false);
     assert.equal(withoutEmail.line_items[0].quantity, 1);
   });
 
@@ -211,7 +291,9 @@ describe('billing.js — funnel ledger', () => {
         billingCycle: 'annual',
       },
     });
-    assert.equal(annual.line_items[0].price, billing.CONFIG.STRIPE_PRICE_ID_PRO_ANNUAL);
+    assert.equal(annual.metadata.priceId, billing.CONFIG.STRIPE_PRICE_ID_PRO_ANNUAL);
+    assert.equal(annual.line_items[0].price_data.unit_amount, 14900);
+    assert.equal(annual.line_items[0].price_data.recurring.interval, 'year');
     assert.equal(annual.line_items[0].quantity, 1);
     assert.equal(annual.payment_method_collection, 'if_required');
     assert.equal(annual.metadata.billingCycle, 'annual');
@@ -226,7 +308,9 @@ describe('billing.js — funnel ledger', () => {
         seatCount: 2,
       },
     });
-    assert.equal(team.line_items[0].price, billing.CONFIG.STRIPE_PRICE_ID_TEAM_MONTHLY);
+    assert.equal(team.metadata.priceId, billing.CONFIG.STRIPE_PRICE_ID_TEAM_MONTHLY);
+    assert.equal(team.line_items[0].price_data.unit_amount, 4900);
+    assert.equal(team.line_items[0].price_data.recurring.interval, 'month');
     assert.equal(team.line_items[0].quantity, 3);
     assert.equal(team.payment_method_collection, 'if_required');
     assert.equal(team.metadata.planId, 'team');
@@ -235,10 +319,364 @@ describe('billing.js — funnel ledger', () => {
 
   test('checkout session status preserves trace id for cross-service lookup', async () => {
     const billing = require('../scripts/billing');
-    const checkout = await billing.createCheckoutSession({ installId: 'inst_trace_lookup' });
+    const checkout = await billing.createCheckoutSession({
+      installId: 'inst_trace_lookup',
+      customerEmail: 'buyer@example.com',
+    });
     const session = await billing.getCheckoutSessionStatus(checkout.sessionId);
     assert.equal(session.found, true);
     assert.equal(session.traceId, checkout.traceId);
+    assert.equal(session.customerEmail, 'buyer@example.com');
+    assert.equal(session.trialEmail.status, 'skipped');
+    assert.equal(session.trialEmail.reason, 'missing_resend_api_key');
+  });
+
+  test('trial activation email includes the license command and records provider delivery', async () => {
+    process.env.THUMBGATE_RESEND_API_KEY = 're_test_provider_key';
+    const billing = requireFreshBilling('');
+    const delivered = [];
+    const result = await billing._sendTrialActivationEmail({
+      sessionId: 'cs_test_email_001',
+      customerEmail: 'Buyer@Example.com',
+      apiKey: 'tg_test_activation_key',
+      planId: 'pro',
+      appOrigin: 'https://thumbgate-production.up.railway.app',
+      source: 'unit_test',
+    }, {
+      transport: async (message) => {
+        delivered.push(message);
+        return { ok: true, body: { id: 'email_test_001' } };
+      },
+    });
+
+    assert.equal(result.status, 'sent');
+    assert.equal(result.customerEmail, 'buyer@example.com');
+    assert.equal(delivered.length, 1);
+    assert.match(delivered[0].text, /npx thumbgate pro --activate --key=tg_test_activation_key/);
+    assert.deepEqual(delivered[0].to, ['buyer@example.com']);
+
+    const rows = fs.readFileSync(testTrialEmailLedgerPath, 'utf-8')
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line));
+    assert.equal(rows[0].status, 'sent');
+    assert.equal(rows[0].providerId, 'email_test_001');
+    assert.equal(Object.prototype.hasOwnProperty.call(rows[0], 'apiKey'), false);
+  });
+
+  test('trial activation email skips incomplete delivery inputs without ledger churn', async () => {
+    const billing = requireFreshBilling('');
+
+    const missingEmail = await billing._sendTrialActivationEmail({
+      sessionId: 'cs_missing_email',
+      customerEmail: '',
+      apiKey: 'tg_test_activation_key',
+    });
+    const missingKey = await billing._sendTrialActivationEmail({
+      sessionId: 'cs_missing_key',
+      customerEmail: 'buyer@example.com',
+      apiKey: '',
+    });
+
+    assert.deepEqual(missingEmail, { status: 'skipped', reason: 'missing_customer_email' });
+    assert.deepEqual(missingKey, {
+      status: 'skipped',
+      reason: 'missing_api_key',
+      customerEmail: 'buyer@example.com',
+    });
+    assert.deepEqual(readTrialEmailRows(), []);
+  });
+
+  test('trial activation email dedupes sent messages and records provider errors safely', async () => {
+    process.env.THUMBGATE_RESEND_API_KEY = 're_test_provider_key';
+    const billing = requireFreshBilling('');
+    const delivered = [];
+
+    const first = await billing._sendTrialActivationEmail({
+      sessionId: 'cs_test_email_dedupe',
+      customerEmail: 'buyer@example.com',
+      apiKey: 'tg_test_activation_key',
+      planId: 'pro',
+      source: 'unit_test',
+    }, {
+      transport: async (message) => {
+        delivered.push(message);
+        return { ok: true, body: { id: 'email_dedupe_001' } };
+      },
+    });
+    const second = await billing._sendTrialActivationEmail({
+      sessionId: 'cs_test_email_dedupe',
+      customerEmail: 'buyer@example.com',
+      apiKey: 'tg_test_activation_key',
+      planId: 'pro',
+      source: 'unit_test',
+    }, {
+      transport: async () => {
+        throw new Error('duplicate send attempted');
+      },
+    });
+    const failed = await billing._sendTrialActivationEmail({
+      sessionId: 'cs_test_email_failed',
+      customerEmail: 'fail@example.com',
+      apiKey: 'tg_failed_activation_key',
+      planId: 'pro',
+      source: 'unit_test',
+    }, {
+      transport: async () => {
+        throw new Error('provider rejected message');
+      },
+    });
+
+    assert.equal(first.status, 'sent');
+    assert.equal(second.status, 'already_sent');
+    assert.equal(second.providerId, 'email_dedupe_001');
+    assert.equal(failed.status, 'failed');
+    assert.equal(failed.reason, 'provider_error');
+    assert.equal(delivered.length, 1);
+
+    const rows = readTrialEmailRows();
+    assert.equal(rows.length, 2);
+    assert.equal(rows[0].status, 'sent');
+    assert.equal(rows[1].status, 'failed');
+    assert.equal(rows[1].error, 'provider rejected message');
+    assert.equal(Object.prototype.hasOwnProperty.call(rows[1], 'apiKey'), false);
+  });
+
+  test('trial activation email records missing provider once per checkout session', async () => {
+    const billing = requireFreshBilling('');
+
+    const first = await billing._sendTrialActivationEmail({
+      sessionId: 'cs_test_email_no_provider',
+      customerEmail: 'buyer@example.com',
+      apiKey: 'tg_test_activation_key',
+      planId: 'pro',
+    });
+    const second = await billing._sendTrialActivationEmail({
+      sessionId: 'cs_test_email_no_provider',
+      customerEmail: 'buyer@example.com',
+      apiKey: 'tg_test_activation_key',
+      planId: 'pro',
+    });
+
+    assert.equal(first.status, 'skipped');
+    assert.equal(first.reason, 'missing_resend_api_key');
+    assert.equal(second.status, 'skipped');
+    assert.equal(second.reason, 'missing_resend_api_key');
+
+    const rows = readTrialEmailRows();
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].status, 'skipped');
+    assert.equal(rows[0].reason, 'missing_resend_api_key');
+  });
+
+  test('trial activation email uses Resend transport and reports API errors', async () => {
+    process.env.THUMBGATE_RESEND_API_KEY = 're_test_provider_key';
+    const acceptedBodies = [];
+    let restoreHttps = installHttpsRequestMock(({ body, callback }) => {
+      acceptedBodies.push(JSON.parse(body));
+      emitHttpsResponse(callback, 202, { id: 'resend_email_001' });
+    });
+    let billing = requireFreshBilling('');
+    try {
+      const sent = await billing._sendTrialActivationEmail({
+        sessionId: 'cs_test_resend_success',
+        customerEmail: 'buyer@example.com',
+        apiKey: 'tg_resend_success',
+        planId: 'pro',
+      });
+
+      assert.equal(sent.status, 'sent');
+      assert.equal(sent.providerId, 'resend_email_001');
+      assert.equal(acceptedBodies.length, 1);
+      assert.deepEqual(acceptedBodies[0].to, ['buyer@example.com']);
+      assert.match(acceptedBodies[0].text, /npx thumbgate pro --activate --key=tg_resend_success/);
+    } finally {
+      restoreHttps();
+    }
+
+    restoreHttps = installHttpsRequestMock(({ callback }) => {
+      emitHttpsResponse(callback, 403, { message: 'domain is not verified' });
+    });
+    billing = requireFreshBilling('');
+    try {
+      const failed = await billing._sendTrialActivationEmail({
+        sessionId: 'cs_test_resend_failure',
+        customerEmail: 'fail@example.com',
+        apiKey: 'tg_resend_failure',
+        planId: 'pro',
+      });
+
+      assert.equal(failed.status, 'failed');
+      assert.equal(failed.reason, 'provider_error');
+      assert.equal(failed.error, 'domain is not verified');
+    } finally {
+      restoreHttps();
+    }
+  });
+
+  test('checkout session payload supports hosted credit packs with public product image', () => {
+    const billing = require('../scripts/billing');
+    billing.CONFIG.CREDIT_PACKS.test_pack = {
+      id: 'test_pack',
+      name: 'ThumbGate Credit Pack',
+      currency: 'USD',
+      amountCents: 5000,
+      credits: 1000,
+    };
+
+    const payload = billing._buildCheckoutSessionPayload({
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+      customerEmail: 'buyer@example.com',
+      checkoutMetadata: {
+        traceId: 'trace_credit_pack',
+        planId: 'credits',
+      },
+      packId: 'test_pack',
+      appOrigin: 'https://thumbgate-production.up.railway.app',
+    });
+
+    assert.equal(payload.mode, 'payment');
+    assert.equal(payload.customer_email, 'buyer@example.com');
+    assert.equal(payload.metadata.packId, 'test_pack');
+    assert.equal(payload.metadata.credits, '1000');
+    assert.equal(payload.line_items[0].price_data.currency, 'usd');
+    assert.equal(payload.line_items[0].price_data.unit_amount, 5000);
+    assert.equal(payload.line_items[0].price_data.product_data.name, 'ThumbGate Credit Pack');
+    assert.deepEqual(payload.line_items[0].price_data.product_data.images, [
+      'https://thumbgate-production.up.railway.app/assets/brand/thumbgate-icon-512.png',
+    ]);
+    assert.equal(Object.prototype.hasOwnProperty.call(payload, 'subscription_data'), false);
+
+    delete billing.CONFIG.CREDIT_PACKS.test_pack;
+  });
+
+  test('hosted checkout retries without unsupported branding settings', async () => {
+    const attempts = [];
+    const restoreStripe = installStripeMock(function Stripe() {
+      return {
+        checkout: {
+          sessions: {
+            create: async (payload) => {
+              attempts.push(payload);
+              if (attempts.length === 1) {
+                throw new Error('Received unknown parameter: branding_settings');
+              }
+              return { id: 'cs_live_fallback', url: 'https://checkout.stripe.com/c/pay/cs_live_fallback' };
+            },
+          },
+        },
+      };
+    });
+
+    try {
+      const billing = requireFreshBilling('sk_test_live_checkout');
+      const result = await billing.createCheckoutSession({
+        installId: 'inst_live_checkout',
+        customerEmail: 'buyer@example.com',
+        appOrigin: 'https://thumbgate-production.up.railway.app',
+      });
+
+      assert.equal(result.localMode, false);
+      assert.equal(result.sessionId, 'cs_live_fallback');
+      assert.equal(attempts.length, 2);
+      assert.ok(attempts[0].branding_settings);
+      assert.equal(Object.prototype.hasOwnProperty.call(attempts[1], 'branding_settings'), false);
+      assert.match(attempts[1].line_items[0].price_data.product_data.images[0], /thumbgate-icon-512\.png$/);
+    } finally {
+      restoreStripe();
+    }
+  });
+
+  test('hosted checkout status provisions key and exposes trial email delivery status', async () => {
+    const restoreStripe = installStripeMock(function Stripe() {
+      return {
+        checkout: {
+          sessions: {
+            retrieve: async (sessionId) => ({
+              id: sessionId,
+              customer: 'cus_live_status',
+              customer_details: { email: 'Buyer@Example.com' },
+              customer_email: null,
+              payment_status: 'paid',
+              status: 'complete',
+              metadata: {
+                installId: 'inst_live_status',
+                traceId: 'trace_live_status',
+                planId: 'pro',
+                credits: '25',
+                ctaId: 'install-free',
+                ctaPlacement: 'pricing',
+                landingPath: '/',
+                referrerHost: 'thumbgate.test',
+              },
+            }),
+          },
+        },
+      };
+    });
+
+    try {
+      const billing = requireFreshBilling('sk_test_live_status');
+      const status = await billing.getCheckoutSessionStatus('cs_live_status');
+
+      assert.equal(status.found, true);
+      assert.equal(status.localMode, false);
+      assert.equal(status.paid, true);
+      assert.equal(status.customerEmail, 'Buyer@Example.com');
+      assert.equal(status.installId, 'inst_live_status');
+      assert.equal(status.traceId, 'trace_live_status');
+      assert.equal(status.remainingCredits, 25);
+      assert.equal(status.trialEmail.status, 'skipped');
+      assert.equal(status.trialEmail.reason, 'missing_resend_api_key');
+    } finally {
+      restoreStripe();
+    }
+  });
+
+  test('stripe webhook provisions and reports skipped activation email when provider is missing', async () => {
+    const savedWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    process.env.STRIPE_WEBHOOK_SECRET = '';
+    const billing = requireFreshBilling('sk_test_webhook');
+    try {
+      const result = await billing.handleWebhook(Buffer.from(JSON.stringify({
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test_webhook_email',
+            customer: 'cus_webhook_email',
+            customer_email: null,
+            customer_details: { email: 'webhook@example.com' },
+            payment_status: 'paid',
+            mode: 'subscription',
+            amount_total: 1900,
+            currency: 'usd',
+            metadata: {
+              installId: 'inst_webhook_email',
+              traceId: 'trace_webhook_email',
+              planId: 'pro',
+              billingCycle: 'monthly',
+            },
+          },
+        },
+      })), null);
+
+      assert.equal(result.handled, true);
+      assert.equal(result.action, 'provisioned_api_key');
+      assert.ok(result.result.key.startsWith('tg_'));
+      assert.equal(result.trialEmail.status, 'skipped');
+      assert.equal(result.trialEmail.reason, 'missing_resend_api_key');
+
+      const rows = readTrialEmailRows();
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0].sessionId, 'cs_test_webhook_email');
+      assert.equal(rows[0].customerEmail, 'webhook@example.com');
+      assert.equal(rows[0].source, 'stripe_webhook_checkout_completed');
+      assert.equal(Object.prototype.hasOwnProperty.call(rows[0], 'apiKey'), false);
+    } finally {
+      if (savedWebhookSecret === undefined) delete process.env.STRIPE_WEBHOOK_SECRET;
+      else process.env.STRIPE_WEBHOOK_SECRET = savedWebhookSecret;
+    }
   });
 
   test('recordUsage emits activation only once', () => {
