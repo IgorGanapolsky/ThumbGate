@@ -1,25 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
   <title id="title">ThumbGate wordmark</title>
-  <desc id="desc">ThumbGate business wordmark with gate-and-signal mark.</desc>
+  <desc id="desc">ThumbGate wordmark with the TG gate monogram.</desc>
   <defs>
-    <linearGradient id="tg-cyan" x1="70" y1="70" x2="290" y2="290" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#22d3ee"/>
-      <stop offset="1" stop-color="#0891b2"/>
-    </linearGradient>
-    <linearGradient id="tg-signal" x1="112" y1="230" x2="252" y2="100" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#4ade80"/>
+    <linearGradient id="tg-frame" x1="47" y1="47" x2="205" y2="205" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8cf5d1"/>
       <stop offset="1" stop-color="#22d3ee"/>
     </linearGradient>
   </defs>
   <rect width="1200" height="360" rx="56" fill="#ffffff"/>
   <g transform="translate(54 54)">
-    <rect width="252" height="252" rx="56" fill="#0a0d12"/>
-    <path d="M62 66h128c18 0 32 14 32 32v98c0 18-14 32-32 32H62c-18 0-32-14-32-32V98c0-18 14-32 32-32Z" fill="#111827" stroke="url(#tg-cyan)" stroke-width="10"/>
-    <path d="M76 104h28v84H76v-84Zm72 0h28v84h-28v-84Z" fill="url(#tg-cyan)"/>
-    <path d="M60 208c26-46 56-72 91-78 16-3 28-1 37 4-20 10-37 24-50 41-14 18-38 29-78 33Z" fill="url(#tg-signal)"/>
-    <circle cx="194" cy="90" r="15" fill="#4ade80"/>
-    <circle cx="58" cy="202" r="11" fill="#fb7185"/>
+    <rect width="252" height="252" rx="56" fill="#061015"/>
+    <rect x="39" y="39" width="174" height="174" rx="41" fill="#0b1820" stroke="url(#tg-frame)" stroke-width="9"/>
+    <path d="M72 174V95c0-18 14-32 32-32h44c18 0 32 14 32 32v79" fill="none" stroke="#8cf5d1" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="126" y="152" text-anchor="middle" fill="#e7fbff" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Arial, sans-serif" font-size="66" font-weight="900" letter-spacing="-4">TG</text>
+    <rect x="69" y="169" width="114" height="14" rx="7" fill="#22d3ee"/>
   </g>
-  <text x="356" y="176" fill="#0a0d12" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="86" font-weight="800" letter-spacing="0">ThumbGate</text>
-  <text x="360" y="230" fill="#475569" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="32" font-weight="600" letter-spacing="0">Pre-Action Gates for AI coding agents</text>
+  <text x="356" y="176" fill="#061015" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Arial, sans-serif" font-size="86" font-weight="800" letter-spacing="0">ThumbGate</text>
+  <text x="360" y="230" fill="#475569" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Arial, sans-serif" font-size="32" font-weight="600" letter-spacing="0">Pre-Action Gates for AI coding agents</text>
 </svg>

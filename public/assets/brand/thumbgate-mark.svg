@@ -1,25 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
   <title id="title">ThumbGate mark</title>
-  <desc id="desc">A professional gate-and-signal monogram for ThumbGate.</desc>
+  <desc id="desc">A crisp TG gate monogram for ThumbGate.</desc>
   <defs>
-    <linearGradient id="tg-cyan" x1="96" y1="96" x2="416" y2="416" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#22d3ee"/>
-      <stop offset="1" stop-color="#0891b2"/>
-    </linearGradient>
-    <linearGradient id="tg-signal" x1="150" y1="344" x2="366" y2="146" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#4ade80"/>
+    <linearGradient id="tg-frame" x1="96" y1="96" x2="416" y2="416" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8cf5d1"/>
       <stop offset="1" stop-color="#22d3ee"/>
     </linearGradient>
-    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#020617" flood-opacity="0.18"/>
-    </filter>
   </defs>
-  <rect width="512" height="512" rx="112" fill="#0a0d12"/>
-  <g filter="url(#soft-shadow)">
-    <path d="M132 130h248c18 0 32 14 32 32v188c0 18-14 32-32 32H132c-18 0-32-14-32-32V162c0-18 14-32 32-32Z" fill="#111827" stroke="url(#tg-cyan)" stroke-width="16"/>
-    <path d="M172 184h48v144h-48V184Zm120 0h48v144h-48V184Z" fill="url(#tg-cyan)"/>
-    <path d="M154 358c42-78 92-122 150-132 25-4 44-2 58 7-34 17-62 40-83 69-23 31-62 50-125 56Z" fill="url(#tg-signal)"/>
-    <circle cx="360" cy="166" r="26" fill="#4ade80"/>
-    <circle cx="152" cy="348" r="18" fill="#fb7185"/>
-  </g>
+  <rect width="512" height="512" rx="112" fill="#061015"/>
+  <rect x="78" y="78" width="356" height="356" rx="84" fill="#0b1820" stroke="url(#tg-frame)" stroke-width="18"/>
+  <path d="M146 354V192c0-36 29-65 65-65h90c36 0 65 29 65 65v162" fill="none" stroke="#8cf5d1" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="256" y="310" text-anchor="middle" fill="#e7fbff" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Arial, sans-serif" font-size="132" font-weight="900" letter-spacing="-8">TG</text>
+  <rect x="140" y="344" width="232" height="28" rx="14" fill="#22d3ee"/>
 </svg>

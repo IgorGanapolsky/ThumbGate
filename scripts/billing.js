@@ -490,32 +490,96 @@ function buildTrialActivationEmail({ customerEmail, apiKey, sessionId, planId, a
   const dashboardUrl = joinPublicUrl(origin, '/dashboard');
   const docsUrl = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
   const command = `npx thumbgate pro --activate --key=${apiKey || ''}`;
-  const subject = 'Your ThumbGate Pro trial is ready';
-  const intro = 'Your 7-day ThumbGate Pro trial is active. Save this key once, then launch your local dashboard.';
+  const subject = 'Your 7-day ThumbGate Pro trial is live';
+  const preheader = 'Activate Pro in one command, open the dashboard, and start blocking repeated AI coding mistakes.';
+  const headline = 'Your 7-day ThumbGate Pro trial is live.';
+  const intro = 'ThumbGate turns thumbs up/down feedback into Pre-Action Gates that stop repeated AI coding mistakes before the next tool call. It keeps lessons local and turns repeated mistakes into Reliability Gateway blocks.';
+  const exampleFeedback = 'thumbs down: the answer skipped exact files and tests; next time include paths, commands, and verification evidence.';
+  const safeDashboardUrl = escapeHtml(dashboardUrl);
+  const safeDocsUrl = escapeHtml(docsUrl);
+  const safeCommand = escapeHtml(command);
+  const safeApiKey = escapeHtml(apiKey || '');
   return {
     from: CONFIG.TRIAL_EMAIL_FROM,
     to: [email],
     reply_to: CONFIG.TRIAL_EMAIL_REPLY_TO,
     subject,
     text: [
+      headline,
+      '',
       intro,
       '',
+      'Next 3 minutes:',
+      '1. Activate Pro locally:',
       command,
       '',
-      `Dashboard: ${dashboardUrl}`,
+      `2. Open your dashboard: ${dashboardUrl}`,
+      '',
+      '3. Give one concrete thumbs up or thumbs down:',
+      exampleFeedback,
+      '',
+      'Your trial key:',
+      apiKey,
+      '',
       `Verification evidence: ${docsUrl}`,
+      'Keep this key private. Questions? Reply to this email or write hello@thumbgate.app.',
       sessionId ? `Stripe session: ${sessionId}` : null,
       planId ? `Plan: ${planId}` : null,
     ].filter(Boolean).join('\n'),
-    html: [
-      '<div style="font-family:Inter,Arial,sans-serif;line-height:1.55;color:#111827">',
-      `<h1 style="margin:0 0 12px;font-size:24px">ThumbGate Pro is ready</h1>`,
-      `<p>${escapeHtml(intro)}</p>`,
-      `<pre style="background:#0b1117;color:#e6f7fb;padding:14px;border-radius:8px;white-space:pre-wrap">${escapeHtml(command)}</pre>`,
-      `<p><a href="${escapeHtml(dashboardUrl)}">Open dashboard</a> · <a href="${escapeHtml(docsUrl)}">Verification evidence</a></p>`,
-      sessionId ? `<p style="color:#6b7280;font-size:13px">Stripe session: ${escapeHtml(sessionId)}</p>` : '',
-      '</div>',
-    ].join(''),
+    html: `<!doctype html>
+<html>
+  <body style="margin:0;background:#f5f7fb;padding:28px 12px;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#17212b;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${escapeHtml(preheader)}</div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;max-width:640px;background:#ffffff;border:1px solid #d8e2ea;border-radius:8px;overflow:hidden;">
+            <tr>
+              <td style="background:#071115;padding:22px 26px;color:#e7fbff;">
+                <div style="font-size:13px;font-weight:700;letter-spacing:0;text-transform:uppercase;color:#73d4e9;">ThumbGate Pro</div>
+                <h1 style="margin:12px 0 10px;font-size:28px;line-height:1.15;color:#ffffff;">${escapeHtml(headline)}</h1>
+                <p style="margin:0;font-size:15px;line-height:1.6;color:#c6d6de;">${escapeHtml(intro)}</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:26px;">
+                <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#344451;">Run one command, open the dashboard, then give one concrete thumb signal. ThumbGate keeps the lesson local and turns repeated mistakes into Reliability Gateway blocks.</p>
+                <p style="margin:0 0 24px;">
+                  <a href="${safeDashboardUrl}" style="display:inline-block;background:#45bfd8;color:#061015;text-decoration:none;font-weight:700;padding:12px 18px;border-radius:6px;">Open your dashboard</a>
+                </p>
+
+                <h2 style="margin:0 0 8px;font-size:17px;line-height:1.3;color:#17212b;">1. Activate Pro locally</h2>
+                <pre style="margin:0 0 22px;background:#081016;color:#d8f7e4;border:1px solid #23343d;border-radius:6px;padding:14px;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;"><code>${safeCommand}</code></pre>
+
+                <h2 style="margin:0 0 8px;font-size:17px;line-height:1.3;color:#17212b;">2. Save your trial key</h2>
+                <pre style="margin:0 0 22px;background:#eef6f7;color:#0b343c;border:1px solid #c7e2e7;border-radius:6px;padding:14px;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;"><code>${safeApiKey}</code></pre>
+
+                <h2 style="margin:0 0 8px;font-size:17px;line-height:1.3;color:#17212b;">3. Give one concrete thumbs up or thumbs down</h2>
+                <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#344451;">Start with the failure you most want your agent to stop repeating.</p>
+                <pre style="margin:0 0 24px;background:#f1fff2;color:#22602b;border:1px solid #bae7c0;border-radius:6px;padding:14px;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;"><code>${escapeHtml(exampleFeedback)}</code></pre>
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:0 0 22px;">
+                  <tr>
+                    <td style="border:1px solid #d8e2ea;border-radius:8px;padding:14px;background:#fbfdff;">
+                      <strong style="display:block;margin:0 0 6px;font-size:14px;color:#17212b;">Why this matters now</strong>
+                      <span style="font-size:13px;line-height:1.55;color:#526273;">One correction should become a permanent pre-action block, not a note the next agent forgets.</span>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="margin:0;font-size:13px;line-height:1.6;color:#526273;">
+                  Proof trail: <a href="${safeDocsUrl}" style="color:#087a91;">verification evidence</a>.
+                  Keep this key private. Questions? Reply here or write <a href="mailto:hello@thumbgate.app" style="color:#087a91;">hello@thumbgate.app</a>.
+                </p>
+                ${sessionId ? `<p style="margin:12px 0 0;font-size:12px;line-height:1.5;color:#7a8790;">Stripe session: ${escapeHtml(sessionId)}</p>` : ''}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`,
   };
 }
 

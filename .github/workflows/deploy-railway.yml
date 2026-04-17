@@ -17,6 +17,8 @@ jobs:
       THUMBGATE_API_KEY: ${{ secrets.THUMBGATE_API_KEY }}
       STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
       STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      THUMBGATE_TRIAL_EMAIL_FROM: ${{ secrets.THUMBGATE_TRIAL_EMAIL_FROM || vars.THUMBGATE_TRIAL_EMAIL_FROM }}
       RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
       RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_ENVIRONMENT_ID }}
       RAILWAY_SERVICE: ${{ vars.RAILWAY_SERVICE }}
@@ -142,6 +144,12 @@ jobs:
           retry_railway "set THUMBGATE_BILLING_API_BASE_URL" railway variables set --skip-deploys THUMBGATE_BILLING_API_BASE_URL="$THUMBGATE_BILLING_API_BASE_URL" "${SERVICE_ARGS[@]}"
           retry_railway "set STRIPE_SECRET_KEY" railway variables set --skip-deploys STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" "${SERVICE_ARGS[@]}"
           retry_railway "set STRIPE_WEBHOOK_SECRET" railway variables set --skip-deploys STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET" "${SERVICE_ARGS[@]}"
+          if [ -n "$RESEND_API_KEY" ]; then
+            retry_railway "set RESEND_API_KEY" railway variables set --skip-deploys RESEND_API_KEY="$RESEND_API_KEY" "${SERVICE_ARGS[@]}"
+          fi
+          if [ -n "$THUMBGATE_TRIAL_EMAIL_FROM" ]; then
+            retry_railway "set THUMBGATE_TRIAL_EMAIL_FROM" railway variables set --skip-deploys THUMBGATE_TRIAL_EMAIL_FROM="$THUMBGATE_TRIAL_EMAIL_FROM" "${SERVICE_ARGS[@]}"
+          fi
           if [ -n "$THUMBGATE_FEEDBACK_DIR" ]; then
             retry_railway "set THUMBGATE_FEEDBACK_DIR" railway variables set --skip-deploys THUMBGATE_FEEDBACK_DIR="$THUMBGATE_FEEDBACK_DIR" "${SERVICE_ARGS[@]}"
           fi
