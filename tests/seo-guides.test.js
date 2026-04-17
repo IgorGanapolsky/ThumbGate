@@ -13,6 +13,7 @@ const GUIDE_FILES = [
   'guides/claude-code-prevent-repeated-mistakes.html',
   'guides/cursor-prevent-repeated-mistakes.html',
   'guides/codex-cli-guardrails.html',
+  'guides/autoresearch-agent-safety.html',
 ];
 
 const COMPARE_FILES = [
@@ -23,12 +24,12 @@ const COMPARE_FILES = [
 const ALL_FILES = [...GUIDE_FILES, ...COMPARE_FILES];
 
 describe('SEO guide and comparison pages', () => {
-  it('all 7 HTML files exist', () => {
+  it('all 8 HTML files exist', () => {
     for (const file of ALL_FILES) {
       const fullPath = path.join(PUBLIC_DIR, file);
       assert.ok(fs.existsSync(fullPath), `Missing file: ${file}`);
     }
-    assert.equal(ALL_FILES.length, 7);
+    assert.equal(ALL_FILES.length, 8);
   });
 
   for (const file of ALL_FILES) {
