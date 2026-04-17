@@ -22,7 +22,14 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { execSync, execFileSync } = require('child_process');
-const { resolveMcpEntry } = require(path.join(__dirname, '..', 'scripts', 'mcp-config'));
+const {
+  codexAutoUpdateCliEntry,
+  codexAutoUpdateMcpEntry,
+  isSourceCheckout,
+  publishedCliAvailable,
+  localMcpEntry,
+  resolveMcpEntry,
+} = require(path.join(__dirname, '..', 'scripts', 'mcp-config'));
 const { trackEvent } = require(path.join(__dirname, '..', 'scripts', 'cli-telemetry'));
 const {
   cacheUpdateHookCommand,
@@ -215,9 +222,38 @@ function canonicalMcpEntry(scope = 'project') {
   });
 }
 
+function canonicalCodexMcpEntry() {
+  const version = pkgVersion();
+  if (isSourceCheckout(PKG_ROOT) && !publishedCliAvailable(version)) {
+    return localMcpEntry(PKG_ROOT, 'home');
+  }
+  return codexAutoUpdateMcpEntry();
+}
+
+function canonicalCodexCliEntry(commandArgs) {
+  const version = pkgVersion();
+  if (isSourceCheckout(PKG_ROOT) && !publishedCliAvailable(version)) {
+    return {
+      command: 'node',
+      args: [path.join(PKG_ROOT, 'bin', 'cli.js'), ...commandArgs],
+    };
+  }
+  return codexAutoUpdateCliEntry(commandArgs);
+}
+
 function mcpSectionBlock(name = MCP_SERVER_NAME, scope = 'project') {
   const entry = canonicalMcpEntry(scope);
   return `[mcp_servers.${name}]\ncommand = "${entry.command}"\nargs = ${formatTomlStringArray(entry.args)}\n`;
+}
+
+function codexMcpSectionBlock(name = MCP_SERVER_NAME) {
+  const entry = canonicalCodexMcpEntry();
+  return `[mcp_servers.${name}]\ncommand = "${entry.command}"\nargs = ${formatTomlStringArray(entry.args)}\n`;
+}
+
+function codexPreToolHookSectionBlock() {
+  const entry = canonicalCodexCliEntry(['gate-check']);
+  return `[hooks.pre_tool_use]\ncommand = "${entry.command}"\nargs = ${formatTomlStringArray(entry.args)}\n`;
 }
 
 function mcpSectionRegex(name) {
@@ -227,8 +263,16 @@ function mcpSectionRegex(name) {
   );
 }
 
+function tomlSectionRegex(name) {
+  return new RegExp(
+    `^\\[${escapeRegExp(name)}\\]\\n(?:^(?!\\[).*(?:\\n|$))*`,
+    'm'
+  );
+}
+
 function upsertCodexServerConfig(content) {
-  const canonicalBlock = mcpSectionBlock(MCP_SERVER_NAME, 'home');
+  const canonicalBlock = codexMcpSectionBlock(MCP_SERVER_NAME);
+  const canonicalHookBlock = codexPreToolHookSectionBlock();
   const sections = MCP_SERVER_NAMES.map((name) => ({
     name,
     regex: mcpSectionRegex(name),
@@ -241,7 +285,7 @@ function upsertCodexServerConfig(content) {
     const prefix = content.trimEnd();
     return {
       changed: true,
-      content: `${prefix}${prefix ? '\n\n' : ''}${canonicalBlock}`,
+      content: `${prefix}${prefix ? '\n\n' : ''}${canonicalBlock}\n${canonicalHookBlock}`,
     };
   }
 
@@ -269,6 +313,19 @@ function upsertCodexServerConfig(content) {
   if (!canonicalPresent) {
     const prefix = nextContent.trimEnd();
     nextContent = `${prefix}${prefix ? '\n\n' : ''}${canonicalBlock}`;
+    changed = true;
+  }
+
+  const hookRegex = tomlSectionRegex('hooks.pre_tool_use');
+  if (hookRegex.test(nextContent)) {
+    const current = nextContent.match(hookRegex)[0];
+    if (current !== canonicalHookBlock) {
+      nextContent = nextContent.replace(hookRegex, canonicalHookBlock);
+      changed = true;
+    }
+  } else {
+    const prefix = nextContent.trimEnd();
+    nextContent = `${prefix}${prefix ? '\n\n' : ''}${canonicalHookBlock}`;
     changed = true;
   }
 
@@ -387,11 +444,10 @@ function setupClaude() {
 
 function setupCodex() {
   const configPath = path.join(HOME, '.codex', 'config.toml');
-  const block = mcpSectionBlock(MCP_SERVER_NAME, 'home');
   let configChanged = false;
   if (!fs.existsSync(configPath)) {
     fs.mkdirSync(path.dirname(configPath), { recursive: true });
-    fs.writeFileSync(configPath, block);
+    fs.writeFileSync(configPath, upsertCodexServerConfig('').content);
     console.log('  Codex: created ~/.codex/config.toml');
     configChanged = true;
   } else {

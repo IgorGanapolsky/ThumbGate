@@ -603,7 +603,7 @@ __GA_BOOTSTRAP__
       <div class="hero-secondary-ctas" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:8px;opacity:0.7;">
         <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('hero_claude_extension_click',{cta:'install_claude_extension'})" style="font-size:12px;padding:8px 16px;background:#d97706;color:#fff;box-shadow:none;">Install Claude Extension</a>
         <a href="/go/github?utm_source=website&utm_medium=hero_cta&utm_campaign=github_repo&cta_id=hero_star_github&cta_placement=hero" target="_blank" rel="noopener" class="btn-free" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;font-size:12px;">⭐ Star on GitHub</a>
-        <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" class="btn-install-link" target="_blank" rel="noopener" onclick="posthog.capture('hero_codex_plugin_click',{cta:'install_codex_plugin'})" style="font-size:11px;color:var(--text-muted);text-decoration:none;padding:6px 10px;">Install Codex plugin →</a>
+        <a href="/codex-plugin?utm_source=website&utm_medium=hero_cta&utm_campaign=codex_plugin&cta_id=hero_codex_plugin&cta_placement=hero" class="btn-install-link" onclick="posthog.capture('hero_codex_plugin_click',{cta:'install_codex_plugin'})" style="font-size:11px;color:var(--text-muted);text-decoration:none;padding:6px 10px;">Install Codex plugin →</a>
         <a href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/plugins/cursor-marketplace" class="btn-install-link" target="_blank" rel="noopener" onclick="posthog.capture('hero_cursor_plugin_click',{cta:'install_cursor_plugin'})" style="font-size:11px;color:var(--text-muted);text-decoration:none;padding:6px 10px;">Install Cursor plugin →</a>
         <a href="/go/gpt?utm_source=website&utm_medium=hero_cta&utm_campaign=chatgpt_gpt&cta_id=hero_open_gpt&cta_placement=hero" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('hero_cta_click',{cta:'open_gpt'})" style="font-size:11px;padding:6px 12px;background:transparent;border:1px solid rgba(74,222,128,0.3);color:var(--green);">Open ThumbGate GPT</a>
       </div>
@@ -628,7 +628,7 @@ __GA_BOOTSTRAP__
       <div class="first-gate-steps">
         <div class="first-gate-step">
           <strong>1. Install ThumbGate</strong>
-          <p>Run <code>npx thumbgate init</code> in your repo. Or install the <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" style="color:var(--cyan);">Claude Extension</a>, <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" style="color:var(--cyan);">Codex plugin</a>, <a href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/plugins/cursor-marketplace" style="color:var(--cyan);">Cursor plugin</a>, or <a href="/go/gpt" style="color:var(--cyan);">open the GPT</a>. Native ChatGPT rating buttons are not the ThumbGate capture path.</p>
+          <p>Run <code>npx thumbgate init</code> in your repo. Or install the <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" style="color:var(--cyan);">Claude Extension</a>, <a href="/codex-plugin" style="color:var(--cyan);">Codex plugin</a>, <a href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/plugins/cursor-marketplace" style="color:var(--cyan);">Cursor plugin</a>, or <a href="/go/gpt" style="color:var(--cyan);">open the GPT</a>. Native ChatGPT rating buttons are not the ThumbGate capture path.</p>
         </div>
         <div class="first-gate-step">
           <strong>2. Give feedback</strong>
@@ -648,7 +648,7 @@ __GA_BOOTSTRAP__
       <span class="dot"></span>
       <a href="/guide" rel="noopener">CLI setup guide →</a>
       <span class="dot"></span>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" target="_blank" rel="noopener">Codex plugin download →</a>
+      <a href="/codex-plugin?utm_source=website&utm_medium=proof_bar&utm_campaign=codex_plugin&cta_id=proof_bar_codex_plugin&cta_placement=proof_bar">Codex plugin setup →</a>
       <span class="dot"></span>
       <a href="/go/gpt?utm_source=website&utm_medium=proof_bar&utm_campaign=chatgpt_gpt&cta_id=proof_bar_open_gpt&cta_placement=proof_bar" target="_blank" rel="noopener">ThumbGate GPT →</a>
       <span class="dot"></span>
@@ -793,10 +793,10 @@ __GA_BOOTSTRAP__
         <p>Claude Code, Codex, Gemini CLI, Amp, and OpenCode all use the same gateway and memory model. Any MCP-compatible agent gets pre-action gates, feedback memory, and enforcement out of the box.</p>
         <div class="card-arrow">Open the setup guide →</div>
       </a>
-      <a class="compat-card" href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" target="_blank" rel="noopener" onclick="if(typeof posthog!=='undefined')posthog.capture('compat_codex_plugin_click',{cta:'download_codex_plugin'})">
+      <a class="compat-card" href="/codex-plugin?utm_source=website&utm_medium=compatibility&utm_campaign=codex_plugin&cta_id=compat_codex_plugin&cta_placement=compatibility" rel="noopener" onclick="if(typeof posthog!=='undefined')posthog.capture('compat_codex_plugin_click',{cta:'open_codex_plugin_page'})">
         <h3>🧩 Codex plugin</h3>
-        <p>Codex ships with a published standalone ThumbGate plugin bundle plus a repo-local plugin profile. Download the zip, extract it, and install without wiring MCP by hand. <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/codex-profile/INSTALL.md" target="_blank" rel="noopener" style="color:var(--text-muted);text-decoration:underline;" onclick="event.stopPropagation();">Setup instructions →</a></p>
-        <div class="card-arrow">Download the Codex plugin →</div>
+        <p>Codex gets a standalone ThumbGate plugin bundle, a repo-local plugin profile, and the same auto-updating MCP launcher. The runtime resolves <code>thumbgate@latest</code> when Codex starts, so npm fixes reach active installs. <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" target="_blank" rel="noopener" style="color:var(--text-muted);text-decoration:underline;" onclick="event.stopPropagation();">Direct zip →</a></p>
+        <div class="card-arrow">Open the Codex install page →</div>
       </a>
       <a class="compat-card" href="/guides/cursor-prevent-repeated-mistakes.html" rel="noopener">
         <h3>🎯 Cursor plugin</h3>

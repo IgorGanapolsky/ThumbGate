@@ -231,7 +231,7 @@ describe('Pro tier bullets: code-backed claims', () => {
 
   test('compat cards that do NOT promise a download must link to a guide or real directory — never to a GitHub source browser', () => {
     // Rule: if the card does NOT promise a download, the outer href must be
-    //   (a) a local /guide.html or /guides/*.html page, or
+    //   (a) a local /guide.html, /guides/*.html, or dedicated install page, or
     //   (b) a real external directory/listing (mcp.so, chatgpt.com, npmjs.com,
     //       pulsemcp.com, smithery.ai, cursor.directory), or
     //   (c) an internal redirect like /go/gpt.
@@ -259,14 +259,15 @@ describe('Pro tier bullets: code-backed claims', () => {
       if (promisesDownload) continue;
 
       const isLocalGuide = /^\/guide(s)?(\.html|\/)/.test(outerHref);
+      const isLocalInstallPage = /^\/codex-plugin(?:[?#]|$)/.test(outerHref);
       const isInternalRedirect = /^\/go\//.test(outerHref);
       const isAllowedDirectory = allowedExternalDirectories.some((d) =>
         outerHref.includes(`://${d}`) || outerHref.includes(`://www.${d}`),
       );
 
       assert.ok(
-        isLocalGuide || isInternalRedirect || isAllowedDirectory,
-        `Non-download card (arrow: "${cardArrow.trim()}") has href "${outerHref}" — must link to /guide.html, /guides/*, /go/*, or a real external directory (mcp.so, chatgpt.com, npmjs.com, etc.), NOT a GitHub source browser`,
+        isLocalGuide || isLocalInstallPage || isInternalRedirect || isAllowedDirectory,
+        `Non-download card (arrow: "${cardArrow.trim()}") has href "${outerHref}" — must link to /guide.html, /guides/*, /codex-plugin, /go/*, or a real external directory (mcp.so, chatgpt.com, npmjs.com, etc.), NOT a GitHub source browser`,
       );
 
       assert.doesNotMatch(

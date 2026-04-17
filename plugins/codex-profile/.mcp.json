@@ -1,13 +1,10 @@
 {
   "mcpServers": {
     "thumbgate": {
-      "command": "npx",
+      "command": "sh",
       "args": [
-        "--yes",
-        "--package",
-        "thumbgate@1.5.8",
-        "thumbgate",
-        "serve"
+        "-lc",
+        "mkdir -p \"$HOME/.thumbgate/runtime\" && npm \"install\" \"--prefix\" \"$HOME/.thumbgate/runtime\" \"--no-save\" \"--omit=dev\" \"thumbgate@latest\" >/dev/null 2>&1 && exec \"$HOME/.thumbgate/runtime/node_modules/.bin/thumbgate\" \"serve\""
       ]
     }
   }
