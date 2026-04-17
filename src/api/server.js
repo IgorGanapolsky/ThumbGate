@@ -1753,7 +1753,7 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
 </head>
 <body>
 <nav><div class="container">
-  <a href="/dashboard" class="nav-logo"><img src="/brand/thumbgate-mark.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/dashboard" class="nav-logo"><img src="/assets/brand/thumbgate-mark.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
   <div class="nav-links">
     <a href="/dashboard">Dashboard</a>
     <a href="/lessons">Lessons</a>
@@ -2137,13 +2137,13 @@ function renderCheckoutSuccessPage(runtimeConfig) {
     }
     .brand-header .logo-mark { width: 32px; height: 32px; display: block; }
   </style>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="apple-touch-icon" href="/brand/thumbgate-mark.svg">
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png">
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
 <script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
 </head>
 <body>
   <main>
-    <a href="/" class="brand-header"><img src="/brand/thumbgate-mark.svg" alt="ThumbGate" class="logo-mark" width="32" height="32"><span class="logo-text">ThumbGate</span></a>
+    <a href="/" class="brand-header"><img src="/assets/brand/thumbgate-mark.svg" alt="ThumbGate" class="logo-mark" width="32" height="32"><span class="logo-text">ThumbGate</span></a>
     <span class="eyebrow">ThumbGate Pro</span>
     <h1>Your local Pro dashboard is ready.</h1>
     <p class="lead">This page verifies your Stripe session, provisions the key if needed, and gives you the exact command to save your license and launch your personal local dashboard.</p>
