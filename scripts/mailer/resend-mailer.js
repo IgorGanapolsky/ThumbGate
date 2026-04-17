@@ -212,7 +212,7 @@ function renderTrialWelcomeBodies({ licenseKey, customerId, customerName, trialE
     '---',
     `You're getting this because you started a ${PRODUCT_NAME} trial. Don't want these emails? Unsubscribe: ${unsubscribeEmail}`,
     `${businessName} · ${businessAddress}`,
-  ].filter((line) => line !== undefined).join('\n');
+  ].join('\n');
 
   const safeKey = escapeHtml(licenseKey);
   const safeCmd = escapeHtml(activationCommand);
