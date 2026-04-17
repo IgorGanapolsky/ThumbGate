@@ -182,8 +182,22 @@ test('public landing page gives cold users a first-dollar activation path', () =
   assert.match(landingPage, /First-Dollar Activation Path/i);
   assert.match(landingPage, /Prove one blocked repeat before asking anyone to buy/i);
   assert.match(landingPage, /Native ChatGPT rating buttons are not the ThumbGate capture path/i);
+  assert.match(landingPage, /Give <code>thumbs up<\/code> when the agent follows your standards/i);
+  assert.match(landingPage, /thumbs up: this review named exact files/i);
   assert.match(landingPage, /thumbs down: the answer ignored my request/i);
   assert.match(landingPage, /Upgrade after one real blocked repeat/i);
+});
+
+test('public landing page proof bar uses individually clickable link chips', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /<nav class="proof-bar" aria-label="ThumbGate install and proof links">/);
+  assert.match(landingPage, /\.proof-bar a \{[^}]*min-height: 36px;[^}]*padding: 8px 12px;/);
+  assert.match(landingPage, /\.proof-bar a:hover, \.proof-bar a:focus-visible/);
+  assert.doesNotMatch(landingPage, /<span class="dot"><\/span>/);
+  assert.match(landingPage, /Claude Extension →/);
+  assert.match(landingPage, /Codex plugin setup →/);
+  assert.match(landingPage, /Verification evidence →/);
 });
 
 test('public landing page Pro tier uses outcome-framed bullets that justify upgrade', () => {
