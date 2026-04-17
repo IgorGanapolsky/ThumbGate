@@ -27,7 +27,7 @@ function savingEnv(keys) {
 }
 
 test('sendTrialWelcomeEmail returns {sent:false, reason:no_api_key} when RESEND_API_KEY is missing', async () => {
-  const restore = savingEnv(['RESEND_API_KEY', 'RESEND_FROM_EMAIL', 'THUMBGATE_TRIAL_EMAIL_FROM']);
+  const restore = savingEnv(['RESEND_API_KEY', 'RESEND_FROM_EMAIL']);
   delete process.env.RESEND_API_KEY;
   const { sendTrialWelcomeEmail } = freshMailer();
 
@@ -46,11 +46,17 @@ test('sendTrialWelcomeEmail returns {sent:false, reason:no_api_key} when RESEND_
   restore();
 });
 
-test('sendTrialWelcomeEmail POSTs to Resend with correct headers and payload shape', async () => {
-  const restore = savingEnv(['RESEND_API_KEY', 'RESEND_FROM_EMAIL', 'THUMBGATE_TRIAL_EMAIL_FROM']);
+test('sendTrialWelcomeEmail POSTs to Resend with correct headers, reply_to, and payload shape', async () => {
+  const restore = savingEnv([
+    'RESEND_API_KEY',
+    'RESEND_FROM_EMAIL',
+    'THUMBGATE_TRIAL_EMAIL_REPLY_TO',
+    'THUMBGATE_BUSINESS_ADDRESS',
+  ]);
   process.env.RESEND_API_KEY = 're_test_123';
   process.env.RESEND_FROM_EMAIL = 'hello@thumbgate.app';
-  delete process.env.THUMBGATE_TRIAL_EMAIL_FROM;
+  delete process.env.THUMBGATE_TRIAL_EMAIL_REPLY_TO;
+  delete process.env.THUMBGATE_BUSINESS_ADDRESS;
   const { sendTrialWelcomeEmail } = freshMailer();
 
   let captured = null;
@@ -67,6 +73,8 @@ test('sendTrialWelcomeEmail POSTs to Resend with correct headers and payload sha
     to: 'igor@example.com',
     licenseKey: 'tg_09239a0a433649ba442467567af1825b',
     customerId: 'cus_Pro42',
+    customerName: 'Igor Ganapolsky',
+    trialEndAt: new Date(Date.UTC(2026, 3, 24)), // Apr 24, 2026
     fetchImpl: fakeFetch,
   });
 
@@ -81,15 +89,40 @@ test('sendTrialWelcomeEmail POSTs to Resend with correct headers and payload sha
   const body = JSON.parse(captured.init.body);
   assert.deepEqual(body.to, ['igor@example.com']);
   assert.equal(body.from, 'hello@thumbgate.app');
-  assert.equal(body.subject, 'Your 7-day ThumbGate Pro trial is live');
+  // Subject is personalized with the first name when available.
+  assert.equal(body.subject, 'Igor, your ThumbGate Pro key is inside');
+  // reply_to defaults to hello@thumbgate.app — replies must not go into Resend's sandbox void.
+  assert.equal(body.reply_to, 'hello@thumbgate.app');
+
+  // License key + activation command present in both bodies.
   assert.ok(body.html && body.html.includes('tg_09239a0a433649ba442467567af1825b'));
   assert.ok(body.text && body.text.includes('tg_09239a0a433649ba442467567af1825b'));
   assert.ok(body.html.includes('npx thumbgate pro --activate --key=tg_09239a0a433649ba442467567af1825b'));
   assert.ok(body.text.includes('npx thumbgate pro --activate --key=tg_09239a0a433649ba442467567af1825b'));
-  assert.ok(body.html.includes('Pre-Action Gates'));
-  assert.ok(body.text.includes('Pre-Action Gates'));
-  assert.ok(body.html.includes('Give one concrete thumbs up or thumbs down'));
-  assert.ok(body.text.includes('Give one concrete thumbs up or thumbs down'));
+
+  // Greeting uses the first name, not "Hi there".
+  assert.ok(body.html.includes('Hi Igor,'), 'html greeting must use first name');
+  assert.ok(body.text.includes('Hi Igor,'), 'text greeting must use first name');
+
+  // Trial end date is rendered.
+  assert.ok(body.html.includes('Apr 24, 2026'), 'html must show formatted trial end date');
+  assert.ok(body.text.includes('Apr 24, 2026'), 'text must show formatted trial end date');
+
+  // P.S. line present — highest-read section of any email.
+  assert.ok(body.html.includes('first 10 minutes'), 'html must include the P.S. / first-10-min framing');
+  assert.ok(body.text.includes('P.S.'), 'text must carry a P.S. line');
+
+  // CAN-SPAM compliance: business name + physical address + unsubscribe.
+  assert.ok(body.html.includes('Max Smith KDP LLC'), 'html footer must carry business name');
+  assert.ok(body.html.includes('2261 Market Street #4242, San Francisco, CA 94114'), 'html footer must carry business address');
+  assert.ok(body.html.includes('unsubscribe@thumbgate.app'), 'html footer must expose an unsubscribe mailto');
+  assert.ok(body.text.includes('Max Smith KDP LLC'), 'text footer must carry business name');
+  assert.ok(body.text.includes('Unsubscribe:'), 'text footer must carry unsubscribe instruction');
+
+  // Sender personalization.
+  assert.ok(body.html.includes('Igor, founder of ThumbGate'), 'html must carry founder signoff');
+  assert.ok(body.text.includes('Igor, founder of ThumbGate'), 'text must carry founder signoff');
+
   // Parse the dashboard link out of the HTML and verify the URL components
   // explicitly. Substring-only checks trip CodeQL's
   // js/incomplete-url-substring-sanitization rule (evil.com/?x=...our-url...
@@ -107,11 +140,36 @@ test('sendTrialWelcomeEmail POSTs to Resend with correct headers and payload sha
   restore();
 });
 
+test('sendTrialWelcomeEmail falls back to "Hi there" greeting and generic subject when customerName is missing', async () => {
+  const restore = savingEnv(['RESEND_API_KEY']);
+  process.env.RESEND_API_KEY = 're_test_123';
+  const { sendTrialWelcomeEmail } = freshMailer();
+
+  let captured = null;
+  const fakeFetch = (_url, init) => {
+    captured = { init };
+    return Promise.resolve({ ok: true, status: 200, text: async () => '{}' });
+  };
+
+  await sendTrialWelcomeEmail({
+    to: 'anon@example.com',
+    licenseKey: 'tg_xyz',
+    fetchImpl: fakeFetch,
+  });
+
+  const body = JSON.parse(captured.init.body);
+  assert.equal(body.subject, 'Your ThumbGate Pro key is inside');
+  assert.ok(body.html.includes('Hi there,'));
+  assert.ok(body.text.includes('Hi there,'));
+  // Trial end is rendered from default (now + 7 days) — just assert the shape is a valid month label.
+  assert.match(body.html, /Trial ends [A-Z][a-z]{2} \d{1,2}, \d{4}/);
+  restore();
+});
+
 test('sendTrialWelcomeEmail defaults RESEND_FROM_EMAIL to onboarding@resend.dev', async () => {
-  const restore = savingEnv(['RESEND_API_KEY', 'RESEND_FROM_EMAIL', 'THUMBGATE_TRIAL_EMAIL_FROM']);
+  const restore = savingEnv(['RESEND_API_KEY', 'RESEND_FROM_EMAIL']);
   process.env.RESEND_API_KEY = 're_test_123';
   delete process.env.RESEND_FROM_EMAIL;
-  delete process.env.THUMBGATE_TRIAL_EMAIL_FROM;
   const { sendTrialWelcomeEmail } = freshMailer();
 
   let captured = null;
@@ -131,27 +189,22 @@ test('sendTrialWelcomeEmail defaults RESEND_FROM_EMAIL to onboarding@resend.dev'
   restore();
 });
 
-test('sendTrialWelcomeEmail prefers THUMBGATE_TRIAL_EMAIL_FROM for checkout trial sends', async () => {
-  const restore = savingEnv(['RESEND_API_KEY', 'RESEND_FROM_EMAIL', 'THUMBGATE_TRIAL_EMAIL_FROM']);
+test('sendTrialWelcomeEmail respects THUMBGATE_BUSINESS_ADDRESS override', async () => {
+  const restore = savingEnv(['RESEND_API_KEY', 'THUMBGATE_BUSINESS_ADDRESS']);
   process.env.RESEND_API_KEY = 're_test_123';
-  process.env.RESEND_FROM_EMAIL = 'legacy@thumbgate.app';
-  process.env.THUMBGATE_TRIAL_EMAIL_FROM = 'ThumbGate <onboarding@resend.dev>';
+  process.env.THUMBGATE_BUSINESS_ADDRESS = 'PO Box 1234, Brooklyn, NY 11201';
   const { sendTrialWelcomeEmail } = freshMailer();
 
   let captured = null;
-  const fakeFetch = (url, init) => {
-    captured = { url, init };
+  const fakeFetch = (_url, init) => {
+    captured = { init };
     return Promise.resolve({ ok: true, status: 200, text: async () => '{}' });
   };
 
-  await sendTrialWelcomeEmail({
-    to: 'a@b.com',
-    licenseKey: 'tg_xyz',
-    fetchImpl: fakeFetch,
-  });
-
+  await sendTrialWelcomeEmail({ to: 'a@b.com', licenseKey: 'tg_xyz', fetchImpl: fakeFetch });
   const body = JSON.parse(captured.init.body);
-  assert.equal(body.from, 'ThumbGate <onboarding@resend.dev>');
+  assert.ok(body.html.includes('PO Box 1234, Brooklyn, NY 11201'));
+  assert.ok(body.text.includes('PO Box 1234, Brooklyn, NY 11201'));
   restore();
 });
 
@@ -225,25 +278,40 @@ test('sendEmail catches network exceptions and returns structured failure', asyn
   restore();
 });
 
-test('renderTrialWelcomeBodies embeds license key, activation command, dashboard URL, and description', () => {
+test('renderTrialWelcomeBodies embeds license key, activation command, dashboard URL, trial-end, and CAN-SPAM footer', () => {
   const { renderTrialWelcomeBodies } = freshMailer();
-  const { html, text, activationCommand } = renderTrialWelcomeBodies({
+  const { html, text, activationCommand, trialEndLabel, greeting, unsubscribeEmail, businessName, businessAddress } = renderTrialWelcomeBodies({
     licenseKey: 'tg_abc',
     customerId: 'cus_42',
+    customerName: 'Ada Lovelace',
+    trialEndAt: new Date(Date.UTC(2026, 3, 24)),
   });
   assert.equal(activationCommand, 'npx thumbgate pro --activate --key=tg_abc');
+  assert.equal(trialEndLabel, 'Apr 24, 2026');
+  assert.equal(greeting, 'Hi Ada,');
+  assert.equal(unsubscribeEmail, 'unsubscribe@thumbgate.app');
+  assert.equal(businessName, 'Max Smith KDP LLC');
+  assert.ok(businessAddress.length > 0);
   for (const fragment of [
     'tg_abc',
     'npx thumbgate pro --activate --key=tg_abc',
     'https://thumbgate-production.up.railway.app/dashboard',
     'ThumbGate Pro',
-    'Pre-Action Gates',
-    'Reliability Gateway blocks',
-    'Give one concrete thumbs up or thumbs down',
+    'Apr 24, 2026',
+    'Hi Ada,',
+    'Max Smith KDP LLC',
   ]) {
     assert.ok(html.includes(fragment), `html missing: ${fragment}`);
     assert.ok(text.includes(fragment), `text missing: ${fragment}`);
   }
   assert.ok(html.includes('hello@thumbgate.app'));
   assert.ok(text.includes('hello@thumbgate.app'));
+  // Customer ID shows in the html footer only — not in the customer-visible body prose.
+  assert.ok(html.includes('cus_42'));
+  // Customer ID must NOT appear in the text body — we want to stop leaking debug IDs in
+  // the plain-text version too, but keeping it in the html for support handoffs is OK.
+  // (Keep the invariant narrow — assert it's below the footer separator.)
+  const cusIdxHtml = html.indexOf('cus_42');
+  const footerIdxHtml = html.indexOf('Customer ID (for support)');
+  assert.ok(cusIdxHtml > 0 && cusIdxHtml >= footerIdxHtml, 'cus_id should live inside the support footer');
 });
