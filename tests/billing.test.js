@@ -482,6 +482,7 @@ describe('billing.js — funnel ledger', () => {
       emitHttpsResponse(callback, 202, { id: 'resend_email_001' });
     });
     let billing = requireFreshBilling('');
+    billing._mailer = null;
     try {
       const sent = await billing._sendTrialActivationEmail({
         sessionId: 'cs_test_resend_success',
@@ -505,6 +506,7 @@ describe('billing.js — funnel ledger', () => {
       emitHttpsResponse(callback, 403, { message: 'domain is not verified' });
     });
     billing = requireFreshBilling('');
+    billing._mailer = null;
     try {
       const failed = await billing._sendTrialActivationEmail({
         sessionId: 'cs_test_resend_failure',

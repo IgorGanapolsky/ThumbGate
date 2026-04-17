@@ -484,6 +484,28 @@ function appendTrialEmailRecord(payload) {
   });
 }
 
+/**
+ * Resolve the trial expiry date for a Stripe checkout session.
+ *
+ * Prefers an explicit `subscription.trial_end` unix timestamp when the session
+ * embeds one (subscriptions with trial_period_days populate it). Falls back to
+ * the session's `expires_at`, and finally to now + 7 days. Always returns a
+ * Date; never throws.
+ */
+function computeTrialEndAt(session) {
+  const TRIAL_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+  if (session && session.subscription && typeof session.subscription === 'object') {
+    const trialEndUnix = session.subscription.trial_end;
+    if (typeof trialEndUnix === 'number' && trialEndUnix > 0) {
+      return new Date(trialEndUnix * 1000);
+    }
+  }
+  if (session && typeof session.trial_end === 'number' && session.trial_end > 0) {
+    return new Date(session.trial_end * 1000);
+  }
+  return new Date(Date.now() + TRIAL_DAYS_MS);
+}
+
 function buildTrialActivationEmail({ customerEmail, apiKey, sessionId, planId, appOrigin } = {}) {
   const email = normalizeEmail(customerEmail);
   const origin = resolvePublicAppOrigin(appOrigin);
@@ -681,19 +703,32 @@ async function sendTrialActivationEmail(params = {}, options = {}) {
         to: customerEmail,
         licenseKey: apiKey,
         customerId: params.customerId,
+        customerName: params.customerName,
+        trialEndAt: params.trialEndAt,
       });
       if (!response || response.sent !== true) {
-        const reason = normalizeText(response && response.reason) || 'provider_error';
-        appendTrialEmailRecord({
-          status: reason === 'no_api_key' ? 'skipped' : 'failed',
-          reason,
-          sessionId,
-          customerEmail,
-          planId,
-          source: params.source || 'checkout_session_status',
-        });
+        const rawReason = normalizeText(response && response.reason) || 'provider_error';
+        // Normalize the mailer module's `no_api_key` to billing.js's legacy
+        // `missing_resend_api_key` reason so downstream consumers (dashboards,
+        // tests, support tooling) see a stable vocabulary regardless of which
+        // transport produced the skip.
+        const reason = rawReason === 'no_api_key' ? 'missing_resend_api_key' : rawReason;
+        const isSkipped = reason === 'missing_resend_api_key';
+        const previousSkipped = isSkipped
+          ? findTrialEmailRecord({ sessionId, customerEmail, statuses: ['skipped'] })
+          : null;
+        if (!isSkipped || !previousSkipped) {
+          appendTrialEmailRecord({
+            status: isSkipped ? 'skipped' : 'failed',
+            reason,
+            sessionId,
+            customerEmail,
+            planId,
+            source: params.source || 'checkout_session_status',
+          });
+        }
         return {
-          status: reason === 'no_api_key' ? 'skipped' : 'failed',
+          status: isSkipped ? 'skipped' : 'failed',
           reason,
           customerEmail,
           sessionId,
@@ -2494,10 +2529,14 @@ async function getCheckoutSessionStatus(sessionId) {
       source: 'local_checkout_lookup'
     });
     const customerEmail = session.customer_details?.email || session.customer_email || '';
+    const customerName = session.customer_details?.name || null;
+    const trialEndAt = computeTrialEndAt(session);
     const trialEmail = await sendTrialActivationEmail({
       sessionId,
       customerId: session.customer,
       customerEmail,
+      customerName,
+      trialEndAt,
       apiKey: provisioned.key,
       planId: session.metadata?.planId || session.metadata?.packId || null,
       appOrigin: process.env.THUMBGATE_PUBLIC_APP_ORIGIN,
@@ -2540,10 +2579,14 @@ async function getCheckoutSessionStatus(sessionId) {
     const credits = session.metadata?.credits ? parseInt(session.metadata.credits, 10) : null;
     const provisioned = provisionApiKey(session.customer, { installId, credits, source: 'stripe_checkout_session_lookup' });
     const customerEmail = session.customer_details?.email || session.customer_email || '';
+    const customerName = session.customer_details?.name || null;
+    const trialEndAt = computeTrialEndAt(session);
     const trialEmail = await sendTrialActivationEmail({
       sessionId,
       customerId: session.customer,
       customerEmail,
+      customerName,
+      trialEndAt,
       apiKey: provisioned.key,
       planId: session.metadata?.planId || session.metadata?.packId || null,
       appOrigin: process.env.THUMBGATE_PUBLIC_APP_ORIGIN,
@@ -2737,6 +2780,8 @@ async function handleWebhook(rawBody, signature) {
       const credits = session.metadata?.credits ? parseInt(session.metadata.credits, 10) : null;
       const packId = session.metadata?.packId || null;
       const customerEmail = session.customer_details?.email || session.customer_email || '';
+      const customerName = session.customer_details?.name || null;
+      const trialEndAt = computeTrialEndAt(session);
 
       const attribution = extractAttribution(session.metadata);
       const result = provisionApiKey(customerId, {
@@ -2748,6 +2793,8 @@ async function handleWebhook(rawBody, signature) {
         sessionId: session.id,
         customerId,
         customerEmail,
+        customerName,
+        trialEndAt,
         apiKey: result.key,
         planId: session.metadata?.planId || packId || null,
         appOrigin: process.env.THUMBGATE_PUBLIC_APP_ORIGIN,
@@ -2977,5 +3024,9 @@ module.exports = {
   _TRIAL_EMAIL_LEDGER_PATH: () => CONFIG.TRIAL_EMAIL_LEDGER_PATH,
   _LOCAL_MODE: () => LOCAL_MODE(),
   _withTimeout: withTimeout,
-  _mailer: null, // tests set this to a { sendTrialWelcomeEmail } stub
+  // Default to the real Resend-backed mailer so production webhooks send the
+  // marketing-grade trial-welcome template. Tests overwrite this with a stub
+  // (freshBilling() re-requires the module so the default is restored between
+  // tests — see tests/billing-webhook-email.test.js).
+  _mailer: mailer,
 };
