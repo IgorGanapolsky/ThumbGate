@@ -83,6 +83,11 @@ const DEFAULT_PROTECTED_FILE_GLOBS = [
 ];
 const EDIT_LIKE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
 const HIGH_RISK_BASH_PATTERN = /\b(?:git\s+(?:add|commit|push)|gh\s+pr\s+(?:create|merge)|npm\s+publish|yarn\s+publish|pnpm\s+publish|rm\s+-rf)\b/i;
+const BOOSTED_RISK_BLOCK_SCORE = 0.8;
+const BOOSTED_RISK_MIN_EXAMPLES = 3;
+const PR_THREAD_RESOLUTION_ACTION = 'pr_thread_resolution_verified_after_commit';
+const PR_THREAD_RESOLUTION_CLAIM_PATTERN = '(?:thread|review|comment).*?(?:resolved|verified|checked|addressed|fixed)|(?:resolved|verified|checked|addressed|fixed).*?(?:thread|review|comment)';
+const PR_THREAD_RESOLUTION_REQUIRED_ACTIONS = ['pr_threads_checked', 'thread_resolution_verified'];
 
 // ---------------------------------------------------------------------------
 // Config loading
@@ -609,6 +614,218 @@ function isHighRiskAction(toolName, toolInput = {}, affectedFiles = []) {
   return false;
 }
 
+function normalizeRiskToken(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function singularizeRiskToken(token) {
+  const value = String(token || '').trim();
+  if (value.length > 3 && value.endsWith('ies')) return `${value.slice(0, -3)}y`;
+  if (value.length > 3 && value.endsWith('s')) return value.slice(0, -1);
+  return value;
+}
+
+function riskTokenVariants(token) {
+  const normalized = singularizeRiskToken(token);
+  const variants = new Set([token, normalized]);
+  const synonyms = {
+    comment: ['comment', 'comments', 'review', 'reviews', 'reply', 'replies', 'thread', 'threads'],
+    thread: ['thread', 'threads', 'review', 'reviews', 'comment', 'comments'],
+    bot: ['bot', 'bots', 'automation', 'automated', 'assistant', 'claude', 'codex'],
+    pr: ['pr', 'pull', 'pullrequest', 'pullrequests'],
+    file: ['file', 'files', 'path', 'paths'],
+    test: ['test', 'tests', 'ci', 'coverage', 'verify', 'verification'],
+  };
+  for (const candidate of [token, normalized]) {
+    for (const item of synonyms[candidate] || []) {
+      variants.add(item);
+      variants.add(singularizeRiskToken(item));
+    }
+  }
+  return [...variants].filter(Boolean);
+}
+
+function normalizeRiskTagEntry(entry) {
+  if (!entry) return null;
+  if (typeof entry === 'string') {
+    return { tag: entry };
+  }
+  if (typeof entry !== 'object') return null;
+  const tag = entry.tag || entry.key || entry.name || entry.domain || entry.label || entry.id;
+  if (!tag) return null;
+  return {
+    tag: String(tag),
+    count: Number(entry.count ?? entry.examples ?? entry.exampleCount ?? entry.total ?? entry.samples),
+    failures: Number(entry.failures ?? entry.failureCount),
+    riskRate: Number(entry.riskRate ?? entry.rate ?? entry.failureRate ?? entry.score ?? entry.riskScore),
+  };
+}
+
+function collectBoostedRiskTags(toolInput = {}) {
+  const boostedRisk = toolInput.boostedRisk && typeof toolInput.boostedRisk === 'object'
+    ? toolInput.boostedRisk
+    : {};
+  const sources = [
+    toolInput.highRiskTags,
+    toolInput.riskTags,
+    boostedRisk.highRiskTags,
+    boostedRisk.tags,
+    boostedRisk.highRiskDomains,
+  ];
+  const tags = [];
+  for (const source of sources) {
+    if (Array.isArray(source)) {
+      tags.push(...source.map(normalizeRiskTagEntry).filter(Boolean));
+    }
+  }
+  return tags;
+}
+
+function isBoostedRiskHigh(toolInput = {}) {
+  const boostedRisk = toolInput.boostedRisk && typeof toolInput.boostedRisk === 'object'
+    ? toolInput.boostedRisk
+    : {};
+  const level = String(boostedRisk.riskLevel || boostedRisk.level || boostedRisk.mode || '').toLowerCase();
+  if (/\b(?:high|critical|block|deny)\b/.test(level)) return true;
+
+  const riskScore = Number(boostedRisk.riskScore ?? boostedRisk.score ?? boostedRisk.riskRate ?? boostedRisk.failureRate ?? boostedRisk.baseRate);
+  if (Number.isFinite(riskScore) && riskScore >= BOOSTED_RISK_BLOCK_SCORE) return true;
+
+  const exampleCount = Number(boostedRisk.exampleCount ?? boostedRisk.count ?? boostedRisk.samples ?? boostedRisk.total);
+  const failureCount = Number(boostedRisk.failureCount ?? boostedRisk.failures);
+  if (
+    Number.isFinite(exampleCount) &&
+    exampleCount >= BOOSTED_RISK_MIN_EXAMPLES &&
+    Number.isFinite(failureCount) &&
+    failureCount / Math.max(exampleCount, 1) >= BOOSTED_RISK_BLOCK_SCORE
+  ) {
+    return true;
+  }
+
+  return collectBoostedRiskTags(toolInput).some((entry) => {
+    if (Number.isFinite(entry.riskRate) && entry.riskRate >= BOOSTED_RISK_BLOCK_SCORE) return true;
+    if (Number.isFinite(entry.count) && entry.count >= BOOSTED_RISK_MIN_EXAMPLES && !Number.isFinite(entry.riskRate)) return true;
+    if (
+      Number.isFinite(entry.count) &&
+      entry.count >= BOOSTED_RISK_MIN_EXAMPLES &&
+      Number.isFinite(entry.failures) &&
+      entry.failures / Math.max(entry.count, 1) >= BOOSTED_RISK_BLOCK_SCORE
+    ) {
+      return true;
+    }
+    return false;
+  });
+}
+
+function riskTagMatchesAction(tag, actionContext) {
+  const normalizedTag = normalizeRiskToken(tag);
+  const normalizedAction = normalizeRiskToken(actionContext);
+  if (!normalizedTag || !normalizedAction) return false;
+  const actionTokens = new Set(normalizedAction.split(/\s+/).filter(Boolean));
+  const tagTokens = normalizedTag.split(/\s+/).filter(Boolean);
+  return tagTokens.some((token) => riskTokenVariants(token).some((variant) => actionTokens.has(variant)));
+}
+
+function evaluateBoostedRiskTagGuard(toolName, toolInput = {}) {
+  const tags = collectBoostedRiskTags(toolInput);
+  if (tags.length === 0 || !isBoostedRiskHigh(toolInput)) return null;
+
+  const actionContext = extractActionContext(toolName, toolInput);
+  const matchedTag = tags.find((entry) => riskTagMatchesAction(entry.tag, actionContext));
+  if (!matchedTag) return null;
+
+  const matchText = toolInput.command || toolInput.file_path || toolInput.path || actionContext;
+  const message = `Boosted-risk history matched this action (${matchedTag.tag}). This pattern is denied by default until explicit evidence lowers the risk.`;
+  return {
+    decision: 'deny',
+    gate: 'boosted-risk-tag-default-deny',
+    message,
+    severity: 'critical',
+    reasoning: [
+      `High-risk tag "${matchedTag.tag}" matched "${String(matchText).slice(0, 120)}"`,
+      `Risk threshold: score >= ${BOOSTED_RISK_BLOCK_SCORE} or at least ${BOOSTED_RISK_MIN_EXAMPLES} examples`,
+      'Hook enforcement blocks this pre-tool call instead of relying on advisory recall',
+    ],
+  };
+}
+
+function isGitCommitCommand(toolName, toolInput = {}) {
+  return toolName === 'Bash' && /\bgit\s+commit\b/i.test(String(toolInput.command || ''));
+}
+
+function isProtectedBranchName(branchName) {
+  return /^(?:main|master|develop|dev|trunk|release)$/i.test(String(branchName || '').trim());
+}
+
+function detectBranchName(toolInput = {}, repoRoot = null) {
+  const inline = toolInput.branchName || toolInput.currentBranch || toolInput.branch || toolInput.headRefName;
+  if (inline) return String(inline).trim();
+  if (!repoRoot) return '';
+  return safeExecFileLines('git', ['rev-parse', '--abbrev-ref', 'HEAD'], repoRoot)[0] || '';
+}
+
+function hasPrBranchContext(toolInput = {}, repoRoot = null) {
+  if (toolInput.prNumber || toolInput.prUrl || toolInput.pullRequestNumber || toolInput.pullRequestUrl) {
+    return true;
+  }
+  const branchName = detectBranchName(toolInput, repoRoot);
+  return Boolean(branchName && !isProtectedBranchName(branchName));
+}
+
+function registerPrThreadResolutionClaimGate(toolName, toolInput = {}) {
+  if (!isGitCommitCommand(toolName, toolInput)) return null;
+  const repoRoot = resolveRepoRoot(toolInput);
+  if (!hasPrBranchContext(toolInput, repoRoot)) return null;
+
+  const branchName = detectBranchName(toolInput, repoRoot);
+  const claimGate = registerClaimGate(
+    PR_THREAD_RESOLUTION_CLAIM_PATTERN,
+    PR_THREAD_RESOLUTION_REQUIRED_ACTIONS,
+    'A PR-branch commit requires verified review-thread resolution before more tool calls or readiness claims.',
+  );
+  trackAction(PR_THREAD_RESOLUTION_ACTION, {
+    branchName: branchName || null,
+    repoRoot: repoRoot || null,
+    commandHash: crypto.createHash('sha256').update(String(toolInput.command || '')).digest('hex'),
+  });
+  return claimGate;
+}
+
+function isThreadResolutionSatisfied() {
+  return PR_THREAD_RESOLUTION_REQUIRED_ACTIONS.some((actionId) => (
+    hasAction(actionId) || isConditionSatisfied(actionId)
+  ));
+}
+
+function isThreadResolutionEvidenceAction(toolName, toolInput = {}) {
+  if (isGitCommitCommand(toolName, toolInput)) return true;
+  if (['recall', 'search_lessons', 'verify_claim', 'satisfy_gate', 'track_action'].includes(toolName)) return true;
+  if (toolName !== 'Bash') return false;
+  const command = String(toolInput.command || '');
+  return /\b(?:gate-satisfy|satisfy_gate|track_action|gh\s+pr\s+(?:view|checks|status)|gh\s+api\b.*(?:reviewThreads|reviews|comments|threads)|git\s+(?:status|diff|show))\b/i.test(command);
+}
+
+function evaluatePendingPrThreadResolutionGate(toolName, toolInput = {}) {
+  if (!hasAction(PR_THREAD_RESOLUTION_ACTION)) return null;
+  if (isThreadResolutionSatisfied()) return null;
+  if (isThreadResolutionEvidenceAction(toolName, toolInput)) return null;
+
+  const message = 'A git commit was made on a PR branch. Verify review threads are resolved before the next tool call.';
+  return {
+    decision: 'deny',
+    gate: 'pr-thread-resolution-verified-required',
+    message,
+    severity: 'critical',
+    reasoning: [
+      `Tracked action ${PR_THREAD_RESOLUTION_ACTION} is pending`,
+      'Satisfy pr_threads_checked or thread_resolution_verified with evidence before continuing',
+    ],
+  };
+}
+
 function isScopeEnforcedAction(toolName, toolInput = {}, affectedFiles = []) {
   if (EDIT_LIKE_TOOLS.has(toolName) && affectedFiles.length > 0) return true;
   if (toolName !== 'Bash') return false;
@@ -1116,6 +1333,38 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
   }
 
   const constraints = loadConstraints();
+  registerPrThreadResolutionClaimGate(toolName, toolInput);
+  const pendingThreadResolutionGate = evaluatePendingPrThreadResolutionGate(toolName, toolInput);
+  if (pendingThreadResolutionGate) {
+    recordStat(pendingThreadResolutionGate.gate, 'block');
+    const auditRecord = recordAuditEvent({
+      toolName,
+      toolInput,
+      decision: 'deny',
+      gateId: pendingThreadResolutionGate.gate,
+      message: pendingThreadResolutionGate.message,
+      severity: pendingThreadResolutionGate.severity,
+      source: 'gates-engine',
+    });
+    auditToFeedback(auditRecord);
+    return pendingThreadResolutionGate;
+  }
+
+  const boostedRiskGuard = evaluateBoostedRiskTagGuard(toolName, toolInput);
+  if (boostedRiskGuard) {
+    recordStat(boostedRiskGuard.gate, 'block');
+    const auditRecord = recordAuditEvent({
+      toolName,
+      toolInput,
+      decision: 'deny',
+      gateId: boostedRiskGuard.gate,
+      message: boostedRiskGuard.message,
+      severity: boostedRiskGuard.severity,
+      source: 'gates-engine',
+    });
+    auditToFeedback(auditRecord);
+    return boostedRiskGuard;
+  }
 
   // Fast-path: feedback/recall tools skip metric gates entirely (avoids Stripe API calls)
   const METRIC_SKIP_TOOLS = ['capture_feedback', 'feedback_stats', 'recall', 'feedback_summary', 'prevention_rules'];
@@ -1254,6 +1503,38 @@ function evaluateGates(toolName, toolInput, configPath) {
   }
 
   const constraints = loadConstraints();
+  registerPrThreadResolutionClaimGate(toolName, toolInput);
+  const pendingThreadResolutionGate = evaluatePendingPrThreadResolutionGate(toolName, toolInput);
+  if (pendingThreadResolutionGate) {
+    recordStat(pendingThreadResolutionGate.gate, 'block');
+    const auditRecord = recordAuditEvent({
+      toolName,
+      toolInput,
+      decision: 'deny',
+      gateId: pendingThreadResolutionGate.gate,
+      message: pendingThreadResolutionGate.message,
+      severity: pendingThreadResolutionGate.severity,
+      source: 'gates-engine',
+    });
+    auditToFeedback(auditRecord);
+    return pendingThreadResolutionGate;
+  }
+
+  const boostedRiskGuard = evaluateBoostedRiskTagGuard(toolName, toolInput);
+  if (boostedRiskGuard) {
+    recordStat(boostedRiskGuard.gate, 'block');
+    const auditRecord = recordAuditEvent({
+      toolName,
+      toolInput,
+      decision: 'deny',
+      gateId: boostedRiskGuard.gate,
+      message: boostedRiskGuard.message,
+      severity: boostedRiskGuard.severity,
+      source: 'gates-engine',
+    });
+    auditToFeedback(auditRecord);
+    return boostedRiskGuard;
+  }
 
   for (const gate of config.gates) {
     const matchDetails = matchGate(gate, toolName, toolInput);
@@ -1456,14 +1737,20 @@ function evaluateSecretGuard(input = {}) {
 // PreToolUse hook interface (stdin/stdout JSON)
 // ---------------------------------------------------------------------------
 
+function buildReminderOutput(context) {
+  return {
+    additionalContext: context,
+    systemReminder: context,
+    thumbgateSystemReminder: context,
+  };
+}
+
 function formatOutput(result, behavioralContext) {
   if (!result) {
     // No gate matched — inject behavioral context if available
     if (behavioralContext) {
       return JSON.stringify({
-        hookSpecificOutput: {
-          additionalContext: behavioralContext,
-        },
+        hookSpecificOutput: buildReminderOutput(behavioralContext),
       });
     }
     return JSON.stringify({});
@@ -1474,19 +1761,27 @@ function formatOutput(result, behavioralContext) {
     : '';
 
   if (result.decision === 'deny') {
+    const reminder = behavioralContext ? buildReminderOutput(behavioralContext) : {};
+    const reminderSuffix = behavioralContext ? `\n\nSystem reminder:\n${behavioralContext}` : '';
     return JSON.stringify({
       hookSpecificOutput: {
+        ...reminder,
         permissionDecision: 'deny',
-        permissionDecisionReason: `[GATE:${result.gate}] ${result.message}${reasoningSuffix}`,
+        permissionDecisionReason: `[GATE:${result.gate}] ${result.message}${reasoningSuffix}${reminderSuffix}`,
       },
     });
   }
 
   if (result.decision === 'warn') {
     const extra = behavioralContext ? `\n${behavioralContext}` : '';
+    const context = `[GATE:${result.gate}] WARNING: ${result.message}${reasoningSuffix}${extra}`;
     return JSON.stringify({
       hookSpecificOutput: {
-        additionalContext: `[GATE:${result.gate}] WARNING: ${result.message}${reasoningSuffix}${extra}`,
+        additionalContext: context,
+        ...(behavioralContext ? {
+          systemReminder: behavioralContext,
+          thumbgateSystemReminder: behavioralContext,
+        } : {}),
       },
     });
   }
@@ -1947,7 +2242,15 @@ module.exports = {
   extractActionContext,
   extractAvoidanceAdvice,
   mergeContextStrings,
+  buildReminderOutput,
   isHighRiskAction,
+  collectBoostedRiskTags,
+  isBoostedRiskHigh,
+  riskTagMatchesAction,
+  evaluateBoostedRiskTagGuard,
+  registerPrThreadResolutionClaimGate,
+  evaluatePendingPrThreadResolutionGate,
+  PR_THREAD_RESOLUTION_ACTION,
 };
 
 // ---------------------------------------------------------------------------
