@@ -1519,6 +1519,81 @@ function buildBehavioralContext() {
 }
 
 /**
+ * Build "recent mistakes" context by reading the tail of memory-log.jsonl.
+ * Surfaces the 3 most recent negative-signal memories (captured via
+ * capture_feedback) as a reminder on EVERY tool call — even when semantic
+ * retrieval returns nothing and there are no recurring patterns yet.
+ *
+ * This plugs the cold-start gap: a mistake captured seconds ago should
+ * surface on the very next tool call, not wait for the recurring-pattern
+ * threshold (≥2 occurrences) that buildBehavioralContext requires.
+ *
+ * @param {Object} [options]
+ * @param {number} [options.maxAgeMs=86400000] - Only include memories from the last 24h by default
+ * @param {number} [options.limit=3]
+ * @returns {string|null}
+ */
+function buildRecentCorrectiveActionsContext(options = {}) {
+  const maxAgeMs = typeof options.maxAgeMs === 'number' ? options.maxAgeMs : 24 * 60 * 60 * 1000;
+  const limit = typeof options.limit === 'number' ? options.limit : 3;
+
+  let resolveFeedbackDir;
+  try {
+    ({ resolveFeedbackDir } = require('./feedback-paths'));
+  } catch {
+    return null;
+  }
+
+  let feedbackDir;
+  try {
+    feedbackDir = resolveFeedbackDir({});
+  } catch {
+    return null;
+  }
+
+  const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
+  if (!fs.existsSync(memoryLogPath)) return null;
+
+  let raw;
+  try {
+    raw = fs.readFileSync(memoryLogPath, 'utf8');
+  } catch {
+    return null;
+  }
+
+  const lines = raw.split('\n').filter(Boolean);
+  if (lines.length === 0) return null;
+
+  const cutoff = Date.now() - maxAgeMs;
+  const recent = [];
+
+  // Walk from the tail backwards so we get the newest entries first
+  for (let i = lines.length - 1; i >= 0 && recent.length < limit; i--) {
+    try {
+      const entry = JSON.parse(lines[i]);
+      if (entry.category !== 'error' && entry.category !== 'learning') continue;
+      const ts = entry.timestamp ? Date.parse(entry.timestamp) : NaN;
+      if (!Number.isFinite(ts) || ts < cutoff) continue;
+      recent.push(entry);
+    } catch {
+      // skip malformed line
+    }
+  }
+
+  if (recent.length === 0) return null;
+
+  const formatted = recent.map((m) => {
+    const title = String(m.title || '').replace(/^MISTAKE:\s*/, '').slice(0, 140);
+    const content = String(m.content || '');
+    const avoidMatch = content.match(/How to avoid:\s*([^\n]+)/i);
+    const advice = avoidMatch ? avoidMatch[1].trim().slice(0, 220) : null;
+    return advice ? `  • ${title}\n    → ${advice}` : `  • ${title}`;
+  });
+
+  return `[ThumbGate] Recent mistakes (last 24h) — do NOT repeat:\n${formatted.join('\n')}`;
+}
+
+/**
  * Build per-action lesson context: retrieve semantically-relevant lessons for this
  * specific tool call and inject the top negative ones into hook output so the agent
  * sees its past mistakes BEFORE executing the action (not after).
@@ -1611,7 +1686,8 @@ async function runAsync(input) {
 
   const behavioralContext = buildBehavioralContext();
   const lessonContext = buildRelevantLessonContext(toolName, toolInput);
-  const combinedContext = mergeContextStrings(lessonContext, behavioralContext);
+  const recentContext = buildRecentCorrectiveActionsContext();
+  const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
   return formatOutput(result, combinedContext);
 }
 
@@ -1643,7 +1719,8 @@ function run(input) {
 
   const behavioralContext = buildBehavioralContext();
   const lessonContext = buildRelevantLessonContext(toolName, toolInput);
-  const combinedContext = mergeContextStrings(lessonContext, behavioralContext);
+  const recentContext = buildRecentCorrectiveActionsContext();
+  const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
   return formatOutput(result, combinedContext);
 }
 
@@ -1865,6 +1942,7 @@ module.exports = {
   PROTECTED_APPROVAL_TTL_MS,
   DEFAULT_PROTECTED_FILE_GLOBS,
   buildBehavioralContext,
+  buildRecentCorrectiveActionsContext,
   buildRelevantLessonContext,
   extractActionContext,
   extractAvoidanceAdvice,
