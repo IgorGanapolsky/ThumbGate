@@ -105,11 +105,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
-  // inline with main's token-savings dashboard additions. Still well below
-  // the ~3 MB drift threshold where we'd need to actively trim assets.
+  // inline with main's token-savings dashboard additions.
+  // Bumped 2.85 MB → 2.90 MB (2026-04-18) to accommodate
+  // buildRecentCorrectiveActionsContext in gates-engine.js + its tests.
+  // Still well below the ~3 MB drift threshold where we'd need to actively
+  // trim assets.
   assert.ok(
-    manifest.unpackedSize <= 2_850_000,
-    `npm package should stay <= 2.85 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 2_900_000,
+    `npm package should stay <= 2.90 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
