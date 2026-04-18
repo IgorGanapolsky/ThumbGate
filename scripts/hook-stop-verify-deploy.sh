@@ -8,7 +8,7 @@
 # Env vars:
 #   CLAUDE_STOP_REASON — why the agent stopped (set by Claude Code)
 # Marker file:
-#   /tmp/.thumbgate-last-deploy-verify — written by hook-verify-before-done.sh
+#   /tmp/.thumbgate-last-deploy-verify — written by scripts/hook-pre-tool-use.js
 # Exit code: Always 0 (informational only).
 
 PROD_URL="thumbgate-production.up.railway.app"

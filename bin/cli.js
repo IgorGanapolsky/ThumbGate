@@ -1591,19 +1591,53 @@ function sessionStart() {
   const { refreshStatuslineCache } = require(path.join(PKG_ROOT, 'scripts', 'hook-thumbgate-cache-updater'));
   refreshStatuslineCache(analyzeFeedback());
 
-  // Surface gate-program.md active rules so the agent starts aware of what is blocked.
+  // Build a top-level <system-reminder> block that Claude Code's SessionStart
+  // hook surfaces to the agent as first-class context — not buried stderr.
+  // Contract: emit JSON `{hookSpecificOutput:{hookEventName:"SessionStart",
+  // additionalContext:"..."}}` to stdout. Supported by Claude Code v0.4+.
+  const reminderLines = [];
+
+  // Active hard-block rules from gate-program.md
   try {
     const { readGateProgram, extractBlockPatterns } = require(path.join(PKG_ROOT, 'scripts', 'meta-agent-loop'));
     const gateProgram = readGateProgram();
     if (gateProgram) {
       const blockPatterns = extractBlockPatterns(gateProgram);
       if (blockPatterns.length > 0) {
-        process.stderr.write('\n[ThumbGate] Active hard-block rules from gate-program.md:\n');
-        blockPatterns.forEach((p, i) => process.stderr.write(`  ${i + 1}. ${p}\n`));
-        process.stderr.write('\n');
+        reminderLines.push('Active ThumbGate hard-block rules:');
+        blockPatterns.forEach((p, i) => reminderLines.push(`  ${i + 1}. ${p}`));
       }
     }
-  } catch (_) { /* gate-program awareness is best-effort */ }
+  } catch (_) { /* non-critical */ }
+
+  // Top high-risk tags — force agent to see them at session start, not opt-in
+  try {
+    const { getRiskSummary } = require(path.join(PKG_ROOT, 'scripts', 'risk-scorer'));
+    const summary = getRiskSummary();
+    if (summary && Array.isArray(summary.highRiskTags) && summary.highRiskTags.length > 0) {
+      if (reminderLines.length > 0) reminderLines.push('');
+      reminderLines.push('Top high-risk tags from prior failures:');
+      summary.highRiskTags.slice(0, 5).forEach((bucket, i) => {
+        const key = bucket && (bucket.key || bucket.tag);
+        const score = bucket && (bucket.risk || bucket.score || bucket.riskScore);
+        if (key) reminderLines.push(`  ${i + 1}. ${key} (risk=${score || '?'})`);
+      });
+    }
+  } catch (_) { /* non-critical */ }
+
+  if (reminderLines.length > 0) {
+    const additionalContext = ['<system-reminder>', ...reminderLines, '</system-reminder>'].join('\n');
+    try {
+      process.stdout.write(JSON.stringify({
+        hookSpecificOutput: {
+          hookEventName: 'SessionStart',
+          additionalContext,
+        },
+      }));
+    } catch (_) { /* stdout write failure is non-critical */ }
+    // Legacy stderr fallback for older Claude Code versions
+    process.stderr.write('\n[ThumbGate] ' + reminderLines.join('\n[ThumbGate] ') + '\n');
+  }
 }
 
 function installMcp() {
