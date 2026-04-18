@@ -135,12 +135,14 @@ test('formatOutput: appends behavioral context to warn results', () => {
   assert.ok(output.hookSpecificOutput.additionalContext.includes('[ThumbGate] Extra context'));
 });
 
-test('formatOutput: deny result ignores behavioral context', () => {
+test('formatOutput: deny result surfaces behavioral context as a system reminder', () => {
   const { formatOutput } = require('../scripts/gates-engine');
   const denyResult = { decision: 'deny', gate: 'test-gate', message: 'blocked', reasoning: [] };
   const output = JSON.parse(formatOutput(denyResult, '[ThumbGate] Extra context'));
   assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
-  assert.ok(!output.hookSpecificOutput.additionalContext);
+  assert.equal(output.hookSpecificOutput.additionalContext, '[ThumbGate] Extra context');
+  assert.equal(output.hookSpecificOutput.systemReminder, '[ThumbGate] Extra context');
+  assert.match(output.hookSpecificOutput.permissionDecisionReason, /Extra context/);
 });
 
 // ---------------------------------------------------------------------------

@@ -14,6 +14,7 @@ const {
   feedbackSummary,
   listEnforcementMatrix,
   appendDiagnosticRecord,
+  buildCorrectiveActionsReminder,
   getPendingBackgroundSideEffectCount,
   readJSONL,
   getFeedbackPaths,
@@ -137,6 +138,16 @@ test('captureFeedback: valid positive feedback returns accepted=true', (t) => {
     tags: ['verification', 'testing'],
   });
   assert.strictEqual(result.accepted, true);
+});
+
+test('buildCorrectiveActionsReminder: surfaces corrective actions as top-level reminder text', () => {
+  const reminder = buildCorrectiveActionsReminder([
+    { type: 'avoid_repeat', text: 'Check exact files and tests before claiming done.' },
+    { type: 'pre_action_block', text: 'Block git push until review threads are verified.' },
+  ]);
+  assert.match(reminder, /Corrective actions from prior lessons/);
+  assert.match(reminder, /avoid repeat/);
+  assert.match(reminder, /pre action block/);
 });
 
 test('captureFeedback: specific positive feedback without manual tags infers a domain tag', (t) => {

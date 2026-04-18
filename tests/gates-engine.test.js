@@ -46,6 +46,9 @@ const {
   loadClaimGates,
   registerClaimGate,
   verifyClaimEvidence,
+  evaluateBoostedRiskTagGuard,
+  evaluatePendingPrThreadResolutionGate,
+  PR_THREAD_RESOLUTION_ACTION,
   TTL_MS,
   SESSION_ACTION_TTL_MS,
   PROTECTED_APPROVAL_TTL_MS,
@@ -612,6 +615,13 @@ test('formatOutput returns additionalContext for warn result', () => {
   assert.ok(output.hookSpecificOutput.additionalContext.includes('Test warn message'));
 });
 
+test('formatOutput surfaces reminder payloads when context is injected', () => {
+  const output = JSON.parse(formatOutput(null, '[ThumbGate] lesson reminder'));
+  assert.equal(output.hookSpecificOutput.additionalContext, '[ThumbGate] lesson reminder');
+  assert.equal(output.hookSpecificOutput.systemReminder, '[ThumbGate] lesson reminder');
+  assert.equal(output.hookSpecificOutput.thumbgateSystemReminder, '[ThumbGate] lesson reminder');
+});
+
 test('formatOutput returns empty object for null result', () => {
   const output = JSON.parse(formatOutput(null));
   assert.deepEqual(output, {});
@@ -802,6 +812,20 @@ test('formatOutput includes reasoning in deny reason text', () => {
   assert.ok(output.hookSpecificOutput.permissionDecisionReason.includes('Reasoning:'));
   assert.ok(output.hookSpecificOutput.permissionDecisionReason.includes('Pattern matched'));
   assert.ok(output.hookSpecificOutput.permissionDecisionReason.includes('Manual rule'));
+});
+
+test('formatOutput includes reminder context in deny payloads', () => {
+  const output = JSON.parse(formatOutput({
+    decision: 'deny',
+    gate: 'test-gate',
+    message: 'Blocked for testing',
+    severity: 'critical',
+    reasoning: [],
+  }, '[ThumbGate] remember this prior failure'));
+  assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
+  assert.equal(output.hookSpecificOutput.additionalContext, '[ThumbGate] remember this prior failure');
+  assert.equal(output.hookSpecificOutput.systemReminder, '[ThumbGate] remember this prior failure');
+  assert.match(output.hookSpecificOutput.permissionDecisionReason, /remember this prior failure/);
 });
 
 test('formatOutput includes reasoning in warn context text', () => {
@@ -1290,6 +1314,58 @@ test('evaluateGates allows gh pr create after explicit approval even when bash m
     fs.rmSync(feedbackLog, { force: true });
     fs.rmSync(attributedFeedback, { force: true });
   }
+});
+
+test('evaluateBoostedRiskTagGuard denies matching high-risk tag actions', () => {
+  const result = evaluateBoostedRiskTagGuard('Bash', {
+    command: 'gh pr comment 123 --body "addressing bot review"',
+    boostedRisk: {
+      highRiskTags: [{ tag: 'bot-comments', count: 6, failures: 6, riskRate: 1 }],
+    },
+  });
+  assert.ok(result);
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.gate, 'boosted-risk-tag-default-deny');
+  assert.match(result.message, /bot-comments/);
+});
+
+test('evaluateGates blocks boostedRisk highRiskTags before advisory memory', () => {
+  const tmpConfig = makeTempPath('boosted-risk-empty-gates.json');
+  fs.writeFileSync(tmpConfig, JSON.stringify({ version: 1, gates: [] }));
+  const result = evaluateGates('Bash', {
+    command: 'gh pr comment 123 --body "thread fixed"',
+    boostedRisk: {
+      riskScore: 1,
+      exampleCount: 6,
+      highRiskTags: ['bot-comments'],
+    },
+  }, tmpConfig);
+  assert.ok(result);
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.gate, 'boosted-risk-tag-default-deny');
+});
+
+test('git commit on PR branch registers thread-resolution claim gate and blocks next non-evidence tool', () => {
+  cleanupStateFiles();
+  const tmpConfig = makeTempPath('pr-commit-empty-gates.json');
+  fs.writeFileSync(tmpConfig, JSON.stringify({ version: 1, gates: [] }));
+
+  const commitResult = evaluateGates('Bash', {
+    command: 'git commit -m "fix review feedback"',
+    branchName: 'fix/review-feedback',
+    prNumber: 123,
+  }, tmpConfig);
+  assert.equal(commitResult, null);
+  assert.ok(hasAction(PR_THREAD_RESOLUTION_ACTION));
+  assert.ok(loadClaimGates().claims.some((claim) => claim.requiredActions.includes('pr_threads_checked')));
+
+  const blocked = evaluatePendingPrThreadResolutionGate('Read', { file_path: 'README.md' });
+  assert.ok(blocked);
+  assert.equal(blocked.decision, 'deny');
+  assert.equal(blocked.gate, 'pr-thread-resolution-verified-required');
+
+  satisfyCondition('pr_threads_checked', 'reviewThreads first:50 returned 0 unresolved');
+  assert.equal(evaluatePendingPrThreadResolutionGate('Read', { file_path: 'README.md' }), null);
 });
 
 test('evaluateGates blocks raw GitHub auto-merge even after merge permission is satisfied', () => {

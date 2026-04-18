@@ -1265,6 +1265,8 @@ function captureFeedback(params) {
     feedbackSession = openSession(feedbackEvent.id, signal, inferredContext);
   } catch (_err) { /* non-critical */ }
 
+  const correctiveActionsReminder = buildCorrectiveActionsReminder(correctiveActions);
+
   // Build result immediately — all remaining side-effects are deferred
   const result = {
     accepted: true,
@@ -1274,6 +1276,10 @@ function captureFeedback(params) {
     memoryRecord,
     _captureMs,
     ...(correctiveActions.length > 0 && { correctiveActions }),
+    ...(correctiveActionsReminder && {
+      systemReminder: correctiveActionsReminder,
+      thumbgateSystemReminder: correctiveActionsReminder,
+    }),
     ...(reflection && { reflection }),
     ...(feedbackSession && { feedbackSession }),
     ...(synthesisResult && { synthesis: synthesisResult }),
@@ -1911,9 +1917,25 @@ function compactMemories() {
   };
 }
 
+function buildCorrectiveActionsReminder(correctiveActions = []) {
+  if (!Array.isArray(correctiveActions) || correctiveActions.length === 0) return null;
+  const lines = correctiveActions
+    .slice(0, 3)
+    .map((action) => {
+      const type = String(action.type || action.source || 'corrective_action').replace(/_/g, ' ');
+      const text = String(action.text || action.action || action.description || '').trim();
+      if (!text) return null;
+      return `  - ${type}: ${text.slice(0, 240)}`;
+    })
+    .filter(Boolean);
+  if (lines.length === 0) return null;
+  return `[ThumbGate] Corrective actions from prior lessons - apply before the next tool call:\n${lines.join('\n')}`;
+}
+
 module.exports = {
   captureFeedback,
   compactMemories,
+  buildCorrectiveActionsReminder,
   analyzeFeedback,
   buildPreventionRules,
   writePreventionRules,
