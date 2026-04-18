@@ -437,3 +437,66 @@ test('failOpen is silent by default and does not throw when debug flag is set', 
 // (feeding well-formed JSON and malformed JSON over fd 0). It is not
 // unit-testable here because fd 0 in this test process is the TTY, which
 // would block on fs.readFileSync(0).
+
+test('resolveGitBinary honors THUMBGATE_GIT_BIN override and caches the result', () => {
+  // Reset the module's internal cache by reloading.
+  delete require.cache[HOOK_PATH];
+  const prior = process.env.THUMBGATE_GIT_BIN;
+  process.env.THUMBGATE_GIT_BIN = '/custom/bin/git';
+  try {
+    const { resolveGitBinary } = require(HOOK_PATH);
+    assert.equal(resolveGitBinary(), '/custom/bin/git');
+    assert.equal(resolveGitBinary(), '/custom/bin/git');
+  } finally {
+    if (prior === undefined) delete process.env.THUMBGATE_GIT_BIN;
+    else process.env.THUMBGATE_GIT_BIN = prior;
+    delete require.cache[HOOK_PATH];
+  }
+  const { resolveGitBinary } = require(HOOK_PATH);
+  const resolved = resolveGitBinary();
+  assert.ok(typeof resolved === 'string' && resolved.length > 0);
+});
+
+test('hook-pre-tool-use registers auto-gate when THUMBGATE_AUTOGATE_PR_COMMITS=1 on a non-main branch', (t) => {
+  const { execFileSync } = require('node:child_process');
+  let branch = '';
+  try {
+    branch = execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
+      cwd: REPO_ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch { /* missing git */ }
+  if (!branch || branch === 'main' || branch === 'master' || branch === 'HEAD') {
+    t.skip(`current branch is '${branch}'; auto-gate requires a feature branch`);
+    return;
+  }
+  const res = runHook({
+    input: {
+      session_id: 'test',
+      hook_event_name: 'PreToolUse',
+      tool_name: 'Bash',
+      tool_input: { command: 'git commit -m "wip"' },
+    },
+    env: { THUMBGATE_AUTOGATE_PR_COMMITS: '1' },
+  });
+  assert.equal(res.status, 0);
+  assert.notEqual(res.parsed && res.parsed.decision, 'block');
+});
+
+test('hook-pre-tool-use does NOT register auto-gate on non-commit Bash commands even with autogate=1', () => {
+  const res = runHook({
+    input: {
+      session_id: 'test',
+      hook_event_name: 'PreToolUse',
+      tool_name: 'Bash',
+      tool_input: { command: 'ls -la' },
+    },
+    env: { THUMBGATE_AUTOGATE_PR_COMMITS: '1' },
+  });
+  assert.equal(res.status, 0);
+  const ctx = res.parsed
+    && res.parsed.hookSpecificOutput
+    && res.parsed.hookSpecificOutput.additionalContext;
+  if (ctx) {
+    assert.doesNotMatch(ctx, /auto-registered claim gate/);
+  }
+});

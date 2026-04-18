@@ -52,7 +52,7 @@ function failOpen(err) {
   // Expose through env flag for local debugging only; silent in production.
   if (process.env.THUMBGATE_HOOKS_DEBUG) {
     try {
-      process.stderr.write(`[thumbgate-hook] fail-open: ${err && err.message ? err.message : String(err)}\n`);
+      process.stderr.write(`[thumbgate-hook] fail-open: ${err?.message || String(err)}\n`);
     } catch {
       // stderr write itself failed; nothing further to do.
     }
@@ -350,7 +350,18 @@ function main() {
 // Only auto-invoke main() when the file is executed directly as a hook.
 // When required from a test, we skip this so exported helpers can be
 // unit-tested without the module calling process.exit(0).
-if (require.main === module) {
+function isEntryPoint() {
+  try {
+    const argv1 = process.argv[1];
+    if (!argv1) return false;
+    return fs.realpathSync(argv1) === fs.realpathSync(__filename);
+  } catch (err) {
+    failOpen(err);
+    return false;
+  }
+}
+
+if (isEntryPoint()) {
   try {
     main();
   } catch (err) {
