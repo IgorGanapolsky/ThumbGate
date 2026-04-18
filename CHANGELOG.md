@@ -1,5 +1,203 @@
 # Changelog
 
+## 1.6.0
+
+### Minor Changes
+
+- [#931](https://github.com/IgorGanapolsky/ThumbGate/pull/931) [`8161e51`](https://github.com/IgorGanapolsky/ThumbGate/commit/8161e5130c8112447327689dcf00bf8a5f407026) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Replace the `👍👎` emoji header logo with a crisp teal-on-navy `TG` gate monogram across every customer-facing surface (landing page, dashboard, lessons, Pro, Learn hub, Learn articles, SEO-GSD generated pages, and the post-checkout Context Gateway Activated page). Ships `public/assets/brand/thumbgate-mark.svg`, refreshed checkout PNGs, `public/thumbgate-icon.png`, and `public/og.png`; wires `rel="icon"`, `apple-touch-icon`, and `og:image` tags on the main pages so tab icons, Stripe thumbnails, and link previews render the brand consistently instead of OS-dependent Unicode glyphs or the old chart-like mark. Hero-thumbs decorative art on the landing page is preserved intentionally.
+
+- [#922](https://github.com/IgorGanapolsky/ThumbGate/pull/922) [`30cf554`](https://github.com/IgorGanapolsky/ThumbGate/commit/30cf554cb023982663d024f550b72b21d8c8d625) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Cursor plugin: fix broken promises and add real wiring. README claimed `npx thumbgate init --agent cursor` worked; it didn't. Added cursor detection + dispatcher + `wireCursorHooks` that writes `.cursor/mcp.json` with the ThumbGate MCP server (preserves other entries, idempotent). Added dedicated "🎯 Cursor plugin" card to the landing page Compatibility section with a real install URL. Added Cursor install link to the First-Dollar step 1 and hero secondary CTAs. 5 new tests guard the wiring. Also hardens landing-page pills into real `<a>` clickable links with hover/focus states.
+
+- [#909](https://github.com/IgorGanapolsky/ThumbGate/pull/909) [`a9e0f0d`](https://github.com/IgorGanapolsky/ThumbGate/commit/a9e0f0da30535e95c2311960681c58739a454244) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add Insights tab to dashboard with interactive Chart.js charts (feedback trend, lessons generated, gate effectiveness), clickable pipeline visualization, and data consistency fix across all stat paths.
+
+- [#902](https://github.com/IgorGanapolsky/ThumbGate/pull/902) [`94d3882`](https://github.com/IgorGanapolsky/ThumbGate/commit/94d38820541d05dfed391754d95ed45671fa3761) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add ElevenLabs-based demo voiceover automation (`scripts/generate-demo-voiceover.js`) that extracts narration from the canonical demo video script and synthesizes an mp3 via the ElevenLabs TTS API. Promote the landing page demo video out of the collapsed `<details>` into a visible inline hero embed, add a 90-second demo section to the top of `README.md`, and rewrite the Show HN launch draft around the token-cost mission. Schedule `reply-monitor.yml` daily at 13:00 UTC with LinkedIn environment passthrough, and ship two LinkedIn ops docs: a 2-minute daily manual-check runbook and a fully-drafted LinkedIn Community Management API application package.
+
+- [#926](https://github.com/IgorGanapolsky/ThumbGate/pull/926) [`d8d1047`](https://github.com/IgorGanapolsky/ThumbGate/commit/d8d10477a013609acaf69c8e9c14794f232ffe7d) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add lightweight durable-step helper (`scripts/durability/step.js`) inspired by Vercel Workflows' "use step" pattern. Wraps external I/O with uniform retry + idempotency semantics without pulling in a full durable-execution runtime:
+
+  - **`runStep(name, opts, fn)`** — retry with exponential backoff, classifying transient vs permanent errors (HTTP 429/5xx retry, 4xx bail, socket codes retry, `nonRetryable` flag bails immediately)
+  - **`idempotencyKey(...parts)`** — stable SHA-256-derived 32-char key for safe POST retry
+
+  Wired into three highest-leverage call sites:
+
+  1. **Zernio publisher** (`publishPost`, `schedulePost`) — adds `Idempotency-Key` header so retried POSTs collapse to one published post on Zernio's side. Plan-quota errors are tagged `nonRetryable` to avoid wasting retries on 402-equivalents.
+  2. **LanceDB vector write** (`upsertFeedback`) — survives transient filesystem contention (EBUSY / lock timeouts) with 2-retry backoff; embedding is pure CPU so not retried.
+  3. **Anthropic SDK call** (`callClaude`) — retries 429/5xx, bails on malformed-prompt / auth errors. Contract-preserving: callers still get `null` on permanent failure.
+
+  21 unit tests cover success/retry/exhaustion/nonRetryable paths and idempotency-key stability.
+
+  Not a Vercel Workflows migration — deliberately scoped to capture ~70% of the reliability benefit with ~60 lines of code and zero new infrastructure.
+
+- [#912](https://github.com/IgorGanapolsky/ThumbGate/pull/912) [`f1fccae`](https://github.com/IgorGanapolsky/ThumbGate/commit/f1fccaeefab882e5d6de193e0986d7f7cd3e2a4c) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - PreToolUse hook now injects semantically-relevant past negative lessons into `additionalContext` before every tool call. Turns ThumbGate from a passive log into an active governor: captured lessons surface at decision time so the agent sees its past mistakes BEFORE executing, not after. Shipped by default via `thumbgate init --agent claude-code|codex` — users already running that get the enforcement automatically on next hook invocation.
+
+- [#952](https://github.com/IgorGanapolsky/ThumbGate/pull/952) [`dadf4ba`](https://github.com/IgorGanapolsky/ThumbGate/commit/dadf4bae8cd328d032121ebe265733ffc84d9b38) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add `buildRecentCorrectiveActionsContext` to `scripts/gates-engine.js`: surfaces the 3 most recent captured mistakes (from `memory-log.jsonl`, last 24h) as `hookSpecificOutput.additionalContext` on every tool call. Plugs the cold-start gap where a just-captured mistake would otherwise wait for semantic match or the recurring-pattern threshold before reaching the agent's context.
+
+- [#889](https://github.com/IgorGanapolsky/ThumbGate/pull/889) [`bc79ae2`](https://github.com/IgorGanapolsky/ThumbGate/commit/bc79ae264d6f4813af84d536b7ddb963946914b9) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Reposition ThumbGate around a single sharp mission: **stop your AI from making the same mistake twice.** Repeated AI mistakes cost real money in tokens — one thumbs-down captures the lesson and ThumbGate blocks that exact pattern on every future call, across every agent.
+
+  - **New hero copy everywhere** — plain-English, pain-point-in-one-sentence, no buzzword cadence. Applied to landing page, README, meta/OG tags, JSON-LD, package.json, plugin.json, and `config/github-about.json`.
+  - **Live "💸 Tokens Saved" counter** on the dashboard. New `scripts/token-savings.js` helper (21 tests, Sonnet-blended default) turns blocked-gate + bot-deflection counts into a live token + dollar estimate. Swap in your own model mix to honestly reflect your Anthropic / OpenAI bill.
+  - **New ClawHub / OpenClaw distribution skill** — `dist/clawhub-skill/SKILL.md` — ready for `npm run clawhub:publish` once authenticated. Expands the distribution surface to the OpenClaw skill marketplace alongside the Claude Extension, Codex plugin, npm, and MCP marketplaces.
+  - **SEO blog post** `docs/marketing/blog-token-cost-mission.md` ranking on "save Claude tokens" / "reduce LLM cost" / "AI agent token waste."
+  - **Pre-validated social pack** `docs/marketing/token-cost-mission-social-pack.md` (X/Threads/LinkedIn/HN/Reddit/TikTok) under every platform's char limit.
+
+- [#922](https://github.com/IgorGanapolsky/ThumbGate/pull/922) [`30cf554`](https://github.com/IgorGanapolsky/ThumbGate/commit/30cf554cb023982663d024f550b72b21d8c8d625) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Real token-savings on the dashboard — no more hardcoded numbers. The Insights tab now shows `$ saved` computed from actual gate-stats.blocked count × conservative tokens/block × published Sonnet/Opus/Haiku prices. Zero blocks → shows $0.00 honestly (not a marketing placeholder). Methodology (input/output tokens per block, model mix, blended price) is disclosed inline. Landing page hero still uses the "Sample" demo — dashboard now uses real data.
+
+- [#931](https://github.com/IgorGanapolsky/ThumbGate/pull/931) [`8161e51`](https://github.com/IgorGanapolsky/ThumbGate/commit/8161e5130c8112447327689dcf00bf8a5f407026) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Send a branded welcome email with the license key and activation command whenever
+  `checkout.session.completed` fires. Uses Resend (`RESEND_API_KEY`) with
+  `onboarding@resend.dev` as the default sender so the webhook keeps working
+  without a verified domain. If the key is unset, the webhook logs a warning and
+  continues — the license key is always persisted regardless of email state.
+
+### Patch Changes
+
+- [#919](https://github.com/IgorGanapolsky/ThumbGate/pull/919) [`7be5cc6`](https://github.com/IgorGanapolsky/ThumbGate/commit/7be5cc628a4da37a93084347b1db569283647078) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix recurring regression: add `public/pro.html`, `public/blog.html`, `public/learn.html` to npm files whitelist so they actually ship. New `tests/public-package-parity.test.js` asserts (a) every HTML in `public/` is in whitelist, (b) every whitelist entry exists on disk, (c) no stale `$99/seat` Team pricing ships. Prevents the packaging-bug pattern that hit 1.5.0, 1.5.1, 1.5.3.
+
+- [#949](https://github.com/IgorGanapolsky/ThumbGate/pull/949) [`c8b31e9`](https://github.com/IgorGanapolsky/ThumbGate/commit/c8b31e9fe5fe685fa981b1230535b8f0b97b37fb) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add an Autoresearch Safety Pack acquisition wedge with a buyer guide, landing-page CTAs, LLM context, SEO/GEO seeds, and regression tests for self-improving agent safety discovery.
+
+- [#918](https://github.com/IgorGanapolsky/ThumbGate/pull/918) [`f063c1a`](https://github.com/IgorGanapolsky/ThumbGate/commit/f063c1a3723bafc1ef52ae5208fc67af3d36d702) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Version bump to 1.5.3 — publish the landing page congruence fixes, dashboard deep-linking, and README corrections that merged as [#914](https://github.com/IgorGanapolsky/ThumbGate/issues/914) after 1.5.2 had already been published from [#911](https://github.com/IgorGanapolsky/ThumbGate/issues/911).
+
+- [#858](https://github.com/IgorGanapolsky/ThumbGate/pull/858) [`204dbbe`](https://github.com/IgorGanapolsky/ThumbGate/commit/204dbbeb42c9140318b2907f9bea4156b67e390a) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Expose the ChatGPT Actions OpenAPI YAML import before bearer auth and document the GPT Builder bearer key setup.
+
+- [#869](https://github.com/IgorGanapolsky/ThumbGate/pull/869) [`5bac711`](https://github.com/IgorGanapolsky/ThumbGate/commit/5bac711e8ff8e232fc66b6da3abe8ec9a48841f7) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Deflect checkout crawlers and link-preview bots before creating Stripe sessions so revenue telemetry reflects real buyer intent.
+
+- [#932](https://github.com/IgorGanapolsky/ThumbGate/pull/932) [`bc9f0c0`](https://github.com/IgorGanapolsky/ThumbGate/commit/bc9f0c0b4052a58fe957e36cc7368d692aa268c6) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Replace stale checkout logo assets with ThumbGate brand marks and add activation email delivery instrumentation for trial provisioning.
+
+- [#877](https://github.com/IgorGanapolsky/ThumbGate/pull/877) [`1c7140e`](https://github.com/IgorGanapolsky/ThumbGate/commit/1c7140ec44f328bfa14d946984324631915260f9) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add prominent "Install Claude Extension →" CTA to the landing page hero section, matching the existing Codex plugin link. Links to the .mcpb bundle download with PostHog tracking.
+
+- [#922](https://github.com/IgorGanapolsky/ThumbGate/pull/922) [`30cf554`](https://github.com/IgorGanapolsky/ThumbGate/commit/30cf554cb023982663d024f550b72b21d8c8d625) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Compat cards that promise a download now link directly to the release asset instead of a docs/source page. Codex plugin card was linking to `INSTALL.md` source despite saying "download the zip"; Claude Desktop Extension card was linking to a guide page despite saying "install the .mcpb bundle today". Both now go straight to the `.zip` / `.mcpb` on GitHub Releases. Setup-instruction secondary links preserved inline. New test `landing-page-claims.test.js` guards against regression: any compat card with "Download" in the arrow MUST have href pointing at `releases/.../download/`.
+
+- [#935](https://github.com/IgorGanapolsky/ThumbGate/pull/935) [`1785ca9`](https://github.com/IgorGanapolsky/ThumbGate/commit/1785ca989f22642396baf804194bf8ff0f165bce) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Clarify the Codex plugin marketing card so it sends users to the install page and keeps MCP directory install copy on ThumbGate's npx path.
+
+- [#927](https://github.com/IgorGanapolsky/ThumbGate/pull/927) [`4742253`](https://github.com/IgorGanapolsky/ThumbGate/commit/4742253e2b3bd0d89d79881e54b343653d2f875d) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Codex MCP installs now resolve `thumbgate@latest` when Codex starts the MCP server or hook bundle, instead of preferring a stale already-installed runtime binary. The repo-local Codex plugin, standalone bundle config, README, landing page, and distribution docs now advertise the auto-updating Codex plugin path truthfully while preserving local source fallback for unpublished development builds.
+
+- [#895](https://github.com/IgorGanapolsky/ThumbGate/pull/895) [`fbc66c9`](https://github.com/IgorGanapolsky/ThumbGate/commit/fbc66c989c830acd2513ff77769627e2aa242919) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Wire the full Codex hook bundle during init and add the Codex status line target to the generated local config.
+
+- [#880](https://github.com/IgorGanapolsky/ThumbGate/pull/880) [`7ddf48f`](https://github.com/IgorGanapolsky/ThumbGate/commit/7ddf48f664dd113dc933006f46f2c78e905a66ac) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Landing page conversion overhaul: restructure visual hierarchy for conversion
+
+  - Hero: single dominant CTA (install command + Install Free CLI), secondary CTAs grouped and visually demoted
+  - Terminal demo: moved immediately after hero to show the product before any explanation
+  - Trust bar: added above-the-fold honest social proof (MIT, GitHub stars, local-first, 6 integrations)
+  - Hero headline: rewritten for clarity ("Stop expensive AI agent mistakes before they happen")
+  - Nav: simplified to 4 visible links (How It Works, Pricing, FAQ, GitHub) + Install Free CTA
+  - Enterprise intake form: collapsed behind a details/summary toggle to reduce page overwhelm
+  - Newsletter section: simplified headline, removed internal jargon ("Buyer Follow-Up" → "Stay Updated")
+  - Final CTA: simplified to 2 primary actions, secondary CTAs visually demoted
+  - CSS: added conversion hierarchy styles to reduce visual weight of secondary sections
+  - Pro pricing card: added email capture input (pro-email) for 7-day trial flow
+  - All 36 landing page tests pass
+
+- [#906](https://github.com/IgorGanapolsky/ThumbGate/pull/906) [`6db3ab1`](https://github.com/IgorGanapolsky/ThumbGate/commit/6db3ab1c09fd500d31b2d426c02540f0635e01e4) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Rewrite postinstall banner to drive first-dollar conversion. Lead with concrete token-waste pain point, add tracked `/go/pro` click-through (UTM: source=npm, medium=postinstall, campaign=first_dollar) alongside direct Stripe link, clean up ragged box formatting. Every npm install sees this banner — making it the highest-leverage conversion touchpoint.
+
+- [#924](https://github.com/IgorGanapolsky/ThumbGate/pull/924) [`3a8ec38`](https://github.com/IgorGanapolsky/ThumbGate/commit/3a8ec38b7b35cc384514e6f2054a09777c13d46e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Unlock the full dashboard demo (no blur-wall paywall), point GSD-brief CTAs directly at `/checkout/pro` instead of the homepage 301 hop, and fix the sticky sidebar overflow so long right-rails scroll internally on GSD-brief pages.
+
+- [#893](https://github.com/IgorGanapolsky/ThumbGate/pull/893) [`e699073`](https://github.com/IgorGanapolsky/ThumbGate/commit/e6990730014d4151837ee61e4d46544bb07d4712) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add decision-trace module for full gate evaluation observability. Logs passes, blocks, and near-misses (constraints that almost matched). Includes session trace summaries showing safety posture at a glance — inspired by Ethan Mollick's observation that operators need to see agent thinking traces.
+
+- [#910](https://github.com/IgorGanapolsky/ThumbGate/pull/910) [`b1c4c28`](https://github.com/IgorGanapolsky/ThumbGate/commit/b1c4c28bc54e982976f1955d60601468b3e2715a) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Replace the landing-page explainer video with a reproducible 90-second animated
+  walkthrough that actually explains the mechanism — same-mistake-different-session
+  pain, 👎 → Pre-Action Gate extraction, gate fires on the next bad call,
+  compounding token savings, one-line install. Adds an offline render pipeline
+  (`scripts/render-demo-video/`) that drives a scripted 1920×1080 HTML animation
+  through headless Playwright and muxes an ElevenLabs/`say` narration track —
+  byte-reproducible on every re-render, no live agent session required. New
+  npm scripts: `demo:narration`, `demo:render`, `demo:render:full`.
+
+- [#924](https://github.com/IgorGanapolsky/ThumbGate/pull/924) [`3a8ec38`](https://github.com/IgorGanapolsky/ThumbGate/commit/3a8ec38b7b35cc384514e6f2054a09777c13d46e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Replace legacy "MCP Memory Gateway" green logo in `docs/logo-400x400.png` with the proper ThumbGate brand mark (cyan thumbs-up + wordmark on dark background). Also detached the stale image from the Stripe Product (`prod_UE7SR5NFBkumEp`) so checkout no longer shows the legacy asset. Fixes CEO-reported "weird MCP logo on Stripe annual checkout" bug.
+
+- [#866](https://github.com/IgorGanapolsky/ThumbGate/pull/866) [`8a62372`](https://github.com/IgorGanapolsky/ThumbGate/commit/8a623727f45d41a73738d1db71f5d4f01a00316c) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix wire-hooks to clean stale project-level Claude Code hooks referencing missing files. Previously only cleaned user-level settings, leaving broken hooks in .claude/settings.json that caused "UserPromptSubmit hook error".
+
+- [#902](https://github.com/IgorGanapolsky/ThumbGate/pull/902) [`94d3882`](https://github.com/IgorGanapolsky/ThumbGate/commit/94d38820541d05dfed391754d95ed45671fa3761) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix: serve public static assets (`/assets/*`, `/favicon.ico`, `/thumbgate-logo.png`, `/og.png`, `/apple-touch-icon.png`) without requiring an API key. Before this change the landing page rendered but every image, video, and icon fell through to the `/v1/*` API-key guard and returned 401, leaving visitors with an empty video player and broken poster images. Adds path-traversal-safe asset routing with correct MIME types, `Cache-Control: public, max-age=86400, immutable`, and HEAD-request support. Covered by `tests/public-static-assets.test.js`.
+
+- [#903](https://github.com/IgorGanapolsky/ThumbGate/pull/903) [`689a9bd`](https://github.com/IgorGanapolsky/ThumbGate/commit/689a9bda46e0d584041ff33fd20d69e7ad073784) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add gate-coherence analyzer to detect pseudo-unification across enforcement layers. Runs 20 probes across spec-gate and gate-config layers, detects contradictions (one blocks, another allows), coverage gaps (dangerous input passes all layers), and false positives. Reports coherence score and grade (unified/divergent/over-blocking). Inspired by entropy-probing research on pseudo-unification in multimodal models.
+
+- [#898](https://github.com/IgorGanapolsky/ThumbGate/pull/898) [`bc67f55`](https://github.com/IgorGanapolsky/ThumbGate/commit/bc67f55199b4dc0512e0823142a808cb4ede0fe8) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add gate-eval module for systematic evaluation of gate effectiveness. Operators define eval suites (expected block/pass outcomes), run them against specs, get precision/recall/F1 metrics, compare spec versions A/B, and track effectiveness trends over time. Ships with 16-case agent-safety eval suite. Inspired by Anthropic's prompt evaluation framework.
+
+- [#941](https://github.com/IgorGanapolsky/ThumbGate/pull/941) [`fdcbb13`](https://github.com/IgorGanapolsky/ThumbGate/commit/fdcbb13b78f07c9cc858970789f62ab54572eecc) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix header logo rendering as tiny iOS-launcher tile across all site surfaces. The existing `/assets/brand/thumbgate-mark.svg` is designed as an app-icon (full 512×512 canvas with a `#0a0d12` rounded-square backdrop filling the entire viewBox). When inlined in headers at 28–32px next to the wordmark it read as "a dark tile with a microscopic icon inside" rather than as a clean brand mark. Adds a new transparent full-bleed companion `/assets/brand/thumbgate-mark-inline.svg` and repoints every header `<img src=…>` (landing, dashboard, lessons, pro, learn hub + 5 learn articles, post-checkout success page, SEO-GSD generator — 12 surfaces) to the inline variant. `apple-touch-icon` / PWA / OG link tags intentionally still reference the app-icon tile — that is the correct asset for iOS home-screen bookmarks. Adds a regression-guard in `brand-assets.test.js` that fails if the app-icon tile is ever re-inlined in a header, and an inline-mark transparency assertion that blocks reintroducing a full-canvas dark rectangle.
+
+- [#931](https://github.com/IgorGanapolsky/ThumbGate/pull/931) [`8161e51`](https://github.com/IgorGanapolsky/ThumbGate/commit/8161e5130c8112447327689dcf00bf8a5f407026) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Rewrite the post-checkout "Hosted API setup" section on the Context Gateway Activated page with a plain-English value prop: what it is, when teams and CI users need it, when solo-laptop users can skip it, then the setup steps. Fixes the feedback that customers finish checkout and see jargon with no explanation of why the Hosted API matters.
+
+- [#904](https://github.com/IgorGanapolsky/ThumbGate/pull/904) [`c5b5204`](https://github.com/IgorGanapolsky/ThumbGate/commit/c5b5204f75fc748641fee6e69e85cdb061dda8da) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add incremental dashboard review checkpoints so operators can mark the current state as reviewed and then see only new feedback, promoted lessons, and gate blocks that landed afterward. This ships the persisted review baseline, the dashboard checkpoint controls, and the `/v1/dashboard/review-state` API for reading and resetting the current checkpoint.
+
+- [#943](https://github.com/IgorGanapolsky/ThumbGate/pull/943) [`7ac112c`](https://github.com/IgorGanapolsky/ThumbGate/commit/7ac112c0c210dd1be2bd4e9a14e1892b803ae0e3) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Replace the header inline logo and legacy favicon SVGs with the TG gate monogram so checkout, dashboard, and marketing headers use the same professional ThumbGate identity.
+
+- [#879](https://github.com/IgorGanapolsky/ThumbGate/pull/879) [`5f3e1fc`](https://github.com/IgorGanapolsky/ThumbGate/commit/5f3e1fc7e842aa9d4602741b104b6dd024d2a070) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix Instagram publishing end-to-end. `post-video.js` now uses the Zernio presign upload flow + shared `publishPost`, matching the `{ url, key, size, contentType, type }` media-item shape Instagram requires (legacy `/media` multipart + minimal `{ url, type }` payload was silently rejected). Added `instagram` dispatcher to `post-everywhere.js` (previously a silent no-op). Added daily `instagram-autopilot.yml` workflow that posts a ThumbGate card via `publish-instagram-thumbgate.js`.
+
+- [#945](https://github.com/IgorGanapolsky/ThumbGate/pull/945) [`2f8e670`](https://github.com/IgorGanapolsky/ThumbGate/commit/2f8e670f6ac4020febc43cbf852bc9fade2b39d7) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Welcome email v2: consolidate the trial welcome email through the `scripts/mailer/resend-mailer.js` module and upgrade the template. Adds personalized greeting (first name from Stripe `customer_details.name`), explicit trial-end date (from Stripe `subscription.trial_end`), branded header mark, founder signoff, quickstart P.S., `reply_to: hello@thumbgate.app`, and a CAN-SPAM footer (business name, physical address, unsubscribe mailto) on every send. `handleWebhook` now threads `customerName` and `trialEndAt` through to the mailer. The legacy inline transport remains as a fallback and its `no_api_key` skip reason is normalized to `missing_resend_api_key` so dashboards and support tooling see a stable vocabulary regardless of which transport produced the skip.
+
+- [#878](https://github.com/IgorGanapolsky/ThumbGate/pull/878) [`927e3ca`](https://github.com/IgorGanapolsky/ThumbGate/commit/927e3cacd6eccb4a02fe68f5f2912bb4ab16d626) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat: Claude-first landing page overhaul
+
+  Restructures the entire landing page to prominently feature Claude plugin, Claude Extension, and Claude Code alongside (and above) the GPT promotion:
+
+  - Hero section: rewrites subtitle from GPT-first to agent-agnostic, adds "Install Claude Extension" as a primary amber CTA button
+  - New dedicated Claude Code section added before the ChatGPT GPT section
+  - Compatibility grid reordered: Claude Desktop Extension first, Claude Code Skill second, ChatGPT demoted to last
+  - First-Dollar Activation Path rewritten from GPT-centric to agent-agnostic install flow
+  - Proof bar reordered with Claude links first
+  - Final CTA adds Claude Extension button
+  - Nav bar adds Claude link and Claude Extension CTA
+  - GPT section renamed to "Also Available" to reduce GPT-first impression
+
+- [#914](https://github.com/IgorGanapolsky/ThumbGate/pull/914) [`e6c6012`](https://github.com/IgorGanapolsky/ThumbGate/commit/e6c60120cc88021e59517eed0184e39c17548456) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Landing page congruence fixes and dashboard deep-linking:
+
+  - Remove misleading "1 agent" Free tier bullet (no per-agent enforcement exists in rate-limiter)
+  - Rephrase Free tier bullets to match actual code behavior (1 auto-promoted prevention rule, built-in safety gates)
+  - Add hash-based deep-linking to dashboard: `/dashboard#insights`, `/dashboard#gates`, `/dashboard#export` now auto-switch tabs
+  - "Visual gate debugger" link on Pro tier now deep-links to `#insights` (was pointing to root `/dashboard`)
+  - "DPO training data export" link on Pro tier now deep-links to `#export`
+  - Add `public/dashboard.html`, `scripts/prompt-eval.js`, `bench/prompt-eval-suite.json`, `CHANGELOG.md` to npm files whitelist — these were missing, breaking the dashboard for users running `npx thumbgate pro`
+  - New tests: 19 landing-page-claims (code-backed claim audit), 3 dashboard-deeplink-e2e (real server + HTTP fetch + hash validation)
+
+- [#913](https://github.com/IgorGanapolsky/ThumbGate/pull/913) [`7dddb46`](https://github.com/IgorGanapolsky/ThumbGate/commit/7dddb46f0d0972a04d5cf22e0199f9110534e9ac) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add LinkedIn one-shot comment engagement: `publishComment` publisher
+  (`scripts/social-analytics/publishers/linkedin-comment.js`) that posts a comment
+  on a specified activity URN via the socialActions endpoint, plus a
+  `linkedin-comment-engage.yml` workflow_dispatch that runs it with the
+  `LINKEDIN_ACCESS_TOKEN` / `LINKEDIN_PERSON_URN` secrets. Used for
+  high-signal targeted engagements on prospect / thought-leader posts
+  whose audience overlaps ThumbGate's ICP; bulk / scheduled engagement
+  still flows through Ralph Loop.
+
+- [#924](https://github.com/IgorGanapolsky/ThumbGate/pull/924) [`3a8ec38`](https://github.com/IgorGanapolsky/ThumbGate/commit/3a8ec38b7b35cc384514e6f2054a09777c13d46e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add LinkedIn Post Dispatch workflow — first-party post publisher with optional article link-preview card. Fallback path when Comment API and Quote-Post reshare are blocked by LinkedIn's permission model.
+
+- [#920](https://github.com/IgorGanapolsky/ThumbGate/pull/920) [`bb7a1f8`](https://github.com/IgorGanapolsky/ThumbGate/commit/bb7a1f8935a8a462ba055813c5a40124509b3475) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add LinkedIn quote-post engagement pivot: `linkedin-quote-post.js` publisher + `linkedin-quote-post-engage.yml` workflow_dispatch. Publishes a standalone post on the authenticated member's feed with `reshareContext.parent` referencing the target activity URN, so we can engage with thought-leader posts when the Community Management API (`socialActions/{urn}/comments`) is not available on the app. Uses only `w_member_social` — already granted via the existing "Share on LinkedIn" product — no additional LinkedIn Developer Portal approvals required. The original author receives a mention-style notification through the reshare reference.
+
+- [#886](https://github.com/IgorGanapolsky/ThumbGate/pull/886) [`f72d242`](https://github.com/IgorGanapolsky/ThumbGate/commit/f72d2428a7481c949af7c7dafaa968fa84255f44) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Marketing assets and README overhaul: conversion-optimized README with architecture diagrams, SEO tutorial article, Manus AI skill, and technical architecture diagrams (MCP flow, feedback pipeline, agent integration).
+
+- [#863](https://github.com/IgorGanapolsky/ThumbGate/pull/863) [`2a048e2`](https://github.com/IgorGanapolsky/ThumbGate/commit/2a048e2f9d910da2b2689656109af2e2364f7ee1) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Wire Stripe pricing calls to action into the marketing autopilot and scheduled X revenue loop.
+
+- [#881](https://github.com/IgorGanapolsky/ThumbGate/pull/881) [`91e971d`](https://github.com/IgorGanapolsky/ThumbGate/commit/91e971daa57d69ec5ce8ab2e85f0ac349828dd15) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - fix(monetization): enforce lifetime free-tier caps, reduce Team pricing to $49/seat
+
+  - Rate limiter switched from daily resets to lifetime caps (3 captures, 1 rule, recall blocked)
+  - Team plan reduced from $99 to $49/seat/month with new Stripe price ID
+  - Landing page rewritten with pain-first copy, hard limits visible, updated CTAs
+
+- [#921](https://github.com/IgorGanapolsky/ThumbGate/pull/921) [`a97ef8e`](https://github.com/IgorGanapolsky/ThumbGate/commit/a97ef8e15448d5cbf8720a1c1167be085293a700) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add pre-commit + pre-push git hooks to catch regressions before CI. Hooks live in `.githooks/` (no new npm deps), auto-activate via `prepare` npm script, enforce: public/ HTML package parity, version sync, check-congruence, landing-page-claims, gates-engine regression tests, npm pack dry-run, internal link validation. Also adds CI publish-guard that fails when a merge leaves shipped content un-bumped (prevents the "1.5.2 already on npm, content didn't ship" silent no-op that forced 1.5.3/1.5.4).
+
+- [#917](https://github.com/IgorGanapolsky/ThumbGate/pull/917) [`d33b81f`](https://github.com/IgorGanapolsky/ThumbGate/commit/d33b81fbb9f66f108ca3ecf99bcee7680d3fc5ee) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Put the Pro pricing card INSIDE the homepage hero (between subtitle and dashboard preview) so `$19/mo` and `$149/yr` never get buried. The card shows both Monthly and Annual plans side-by-side with dedicated "Choose monthly / Choose annual" buttons and a "SAVE 35%" pill on annual — visible in pixel [#1](https://github.com/IgorGanapolsky/ThumbGate/issues/1) on any viewport, not hidden behind scroll. `/pro` is now a permanent `301` redirect to `/#pro-pitch` (the id of the in-hero pricing card), so every README, plugin manifest, guide, and compare page link still works and passes link equity onto a single canonical landing page. `/pro` also removed from the sitemap entry list and from the JSON root-endpoint listing so search engines index `/` directly instead of chasing the redirect.
+
+- [#896](https://github.com/IgorGanapolsky/ThumbGate/pull/896) [`cb1657f`](https://github.com/IgorGanapolsky/ThumbGate/commit/cb1657fbd2c655ee60464017362151d09d002b7a) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add prompt-evaluation positioning to the README and landing page so ThumbGate explains that prompt engineering is only the start, and proof lanes plus self-heal checks are how behavior gets measured and enforced.
+
+- [#929](https://github.com/IgorGanapolsky/ThumbGate/pull/929) [`29bb812`](https://github.com/IgorGanapolsky/ThumbGate/commit/29bb81213ee1e74c51ebba5e6cb94be87342fea9) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Make the landing-page proof-bar links individually clickable with padded hit targets and keyboard focus states, and show both thumbs-up reinforcement and thumbs-down correction examples in the first-dollar activation path.
+
+- [#857](https://github.com/IgorGanapolsky/ThumbGate/pull/857) [`2f3fa15`](https://github.com/IgorGanapolsky/ThumbGate/commit/2f3fa15e8fa644b8d6ad1ae8bee4f8f4ae0306a0) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix public landing page version synchronization so multiple release markers update in one pass.
+
+- [#911](https://github.com/IgorGanapolsky/ThumbGate/pull/911) [`1d36bab`](https://github.com/IgorGanapolsky/ThumbGate/commit/1d36babae12901b5d44dac85fee593d513968b6f) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Include `public/dashboard.html`, `scripts/prompt-eval.js`, and `bench/prompt-eval-suite.json` in the published npm package. The 1.5.1 release shipped without `dashboard.html`, breaking the local Pro dashboard for users who ran `npx thumbgate pro`. This patch restores the dashboard and ships the prompt evaluation framework.
+
+- [#868](https://github.com/IgorGanapolsky/ThumbGate/pull/868) [`e42391d`](https://github.com/IgorGanapolsky/ThumbGate/commit/e42391d90138140fc819d24afaa78457b85b486d) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Harden revenue observability by preferring hosted billing-summary truth over local fallback when `THUMBGATE_API_KEY` is available, adding machine-readable Stripe live status diagnostics, and wiring the daily revenue loop to audit hosted revenue, Stripe, and Plausible checkout attribution with artifacts.
+
+- [#855](https://github.com/IgorGanapolsky/ThumbGate/pull/855) [`69157d2`](https://github.com/IgorGanapolsky/ThumbGate/commit/69157d2c483f03bbfc6d8b6a4a403915ee2ac19e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a local sales pipeline ledger for first-dollar workflow hardening outbound, and update GTM targeting so direct outreach leads with the Workflow Hardening Sprint before self-serve Pro follow-up.
+
+- [#905](https://github.com/IgorGanapolsky/ThumbGate/pull/905) [`d3f7195`](https://github.com/IgorGanapolsky/ThumbGate/commit/d3f7195f911fd870fdc079df0823c3a8d42daa36) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add sandbox scope to spec-gate constraints for secure code execution environments. Adds 2 sandbox-specific constraints (no-sandbox-network, no-sandbox-fs-escape) to agent-safety spec. Also adds workflow-gate-checkpoint module for persisting gate state across long-running workflow restarts. Inspired by Vercel's Open Agents infrastructure.
+
+- [#888](https://github.com/IgorGanapolsky/ThumbGate/pull/888) [`9fcc0a0`](https://github.com/IgorGanapolsky/ThumbGate/commit/9fcc0a00aaf354964c5d795548482ab249963245) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add session health sensor and episodic session store for real-time and cross-session agent degradation detection. Tracks repeat errors, negative feedback density, stagnation, context amnesia, time-of-day risk, category risk, recurring errors, and feedback effectiveness trends.
+
+- [#892](https://github.com/IgorGanapolsky/ThumbGate/pull/892) [`86152fa`](https://github.com/IgorGanapolsky/ThumbGate/commit/86152fa0198f8ccff21d54257e809423eed8086a) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add spec-gate module for proactive correctness enforcement. Operators define specs (constraints + invariants) upfront as JSON; gates enforce them from session start, not just from learned failures. Ships with agent-safety spec covering force-push, secrets, destructive ops, and test-before-commit invariants.
+
+- [#939](https://github.com/IgorGanapolsky/ThumbGate/pull/939) [`adcc368`](https://github.com/IgorGanapolsky/ThumbGate/commit/adcc368adcb784b8ab4cd23355e75529e13cd4ac) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix broken logo on /success (Context Gateway Activated) page. After PR [#932](https://github.com/IgorGanapolsky/ThumbGate/issues/932) moved brand assets to `/assets/brand/`, the HTML templates from PR [#931](https://github.com/IgorGanapolsky/ThumbGate/issues/931) still referenced the legacy `/brand/thumbgate-mark.svg` path — which Railway's route guard now returns 401 for. Migrates all 15 customer-facing surfaces (landing, dashboard, lessons, pro, learn hub + 5 learn articles, post-checkout success page, SEO-GSD generator) to the correct `/assets/brand/thumbgate-mark.svg` path (serves 200). Also migrates favicon link from the 401ing `/favicon.svg` to the 200ing `/thumbgate-icon.png`, and `og:image` from `/brand/thumbgate-og.svg` to `/og.png`, with correct MIME types. Updates brand-assets test suite to pin the new paths so this can't regress.
+
+- [#865](https://github.com/IgorGanapolsky/ThumbGate/pull/865) [`81dac4e`](https://github.com/IgorGanapolsky/ThumbGate/commit/81dac4e7b65f5a1099d7f0b7376b3b01553e8091) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Enforce ThumbGate-only launch, GPT Actions, analytics, and outreach surfaces so legacy repository names cannot leak into active product guidance.
+
+- [#940](https://github.com/IgorGanapolsky/ThumbGate/pull/940) [`5a39d1c`](https://github.com/IgorGanapolsky/ThumbGate/commit/5a39d1c9fb15423a60c5c6263c05c6b0ad4ec8fe) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Polish the ThumbGate Pro trial email so checkout activation uses conversion-ready copy, a clear dashboard call to action, Pre-Action Gates positioning, and Resend sender configuration synced into Railway deploys.
+
+- [#924](https://github.com/IgorGanapolsky/ThumbGate/pull/924) [`3a8ec38`](https://github.com/IgorGanapolsky/ThumbGate/commit/3a8ec38b7b35cc384514e6f2054a09777c13d46e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Enforce per-platform character limits in the Zernio publisher before posting or scheduling. The previous path blasted identical content to every connected platform — a 315-char post silently failed at Bluesky's 300-char ceiling (CEO-reported post `69d939ba88955f0579e44fa7`, 2026-04-16). New `platform-limits.js` module maps canonical limits (Bluesky 300, X/Twitter 280, LinkedIn 3000, etc.) and rejects over-limit targets with actionable `{ reason, platform, limit, length, overBy }` detail rather than letting the provider eat the failure.
+
 ## 1.5.1
 
 ### Minor Changes
