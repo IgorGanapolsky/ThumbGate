@@ -116,7 +116,7 @@ test('hook-pre-tool-use exits 0 and does not block on benign Bash without flags'
 });
 
 test('hook-pre-tool-use tracks curl-to-prod marker file', () => {
-  const MARKER = '/tmp/.thumbgate-last-deploy-verify';
+  const { VERIFICATION_MARKER: MARKER } = require(HOOK_PATH);
   try { fs.unlinkSync(MARKER); } catch { /* missing is fine */ }
   const res = runHook({
     input: {
@@ -203,3 +203,237 @@ test('settings.json wires PreToolUse to node hook-pre-tool-use.js with Bash|Edit
   const cmd = entry.hooks[0].command;
   assert.match(cmd, /hook-pre-tool-use\.js/);
 });
+
+// ---------------------------------------------------------------------------
+// Unit tests on exported helpers in scripts/hook-pre-tool-use.js
+// These cover branches that the spawnSync-based integration tests above
+// cannot reach cheaply (risk scoring, lesson formatting, tag parsing,
+// optional-chain fallbacks).
+// ---------------------------------------------------------------------------
+
+test('isTrueEnv recognizes truthy forms and rejects everything else', () => {
+  const { isTrueEnv } = require(HOOK_PATH);
+  for (const v of ['1', 'true', 'TRUE', 'yes', 'Yes', 'on', 'ON']) {
+    assert.equal(isTrueEnv(v), true, `expected ${JSON.stringify(v)} to be truthy`);
+  }
+  for (const v of ['', '0', 'false', 'no', 'off', undefined, null, '   ']) {
+    assert.equal(isTrueEnv(v), false, `expected ${JSON.stringify(v)} to be falsy`);
+  }
+});
+
+test('extractActionContext handles Bash/Edit/Write and fallback shape', () => {
+  const { extractActionContext } = require(HOOK_PATH);
+  assert.equal(extractActionContext('Bash', { command: 'rm -rf /' }), 'rm -rf /');
+  assert.equal(extractActionContext('Bash', { cmd: 'echo hi' }), 'echo hi');
+  assert.equal(extractActionContext('Bash', null), '');
+  assert.equal(extractActionContext('Bash', 'not-an-object'), '');
+  const edit = extractActionContext('Edit', {
+    file_path: '/tmp/a.js',
+    old_string: 'foo',
+    new_string: 'bar',
+  });
+  assert.match(edit, /\/tmp\/a\.js.*foo.*bar/);
+  const write = extractActionContext('Write', {
+    file_path: '/tmp/b.js',
+    content: 'x'.repeat(5000),
+  });
+  assert.match(write, /\/tmp\/b\.js/);
+  assert.ok(write.length < 400, 'content must be truncated');
+  const unknown = extractActionContext('Unknown', { foo: 'bar' });
+  assert.ok(typeof unknown === 'string' && unknown.length > 0);
+});
+
+test('tagsForLesson extracts tags from arrays, JSON strings, and nested memory', () => {
+  const { tagsForLesson } = require(HOOK_PATH);
+  assert.deepEqual(tagsForLesson(null), []);
+  assert.deepEqual(tagsForLesson({}), []);
+  assert.deepEqual(tagsForLesson({ tags: ['a', 'b'] }), ['a', 'b']);
+  assert.deepEqual(tagsForLesson({ tags: '["c","d"]' }), ['c', 'd']);
+  assert.deepEqual(tagsForLesson({ tags: 'not-json' }), []);
+  assert.deepEqual(tagsForLesson({ memory: { tags: ['e'] } }), ['e']);
+  assert.deepEqual(tagsForLesson({ tags: [1, 2] }), ['1', '2']);
+});
+
+test('buildRiskByTagMap normalizes bucket shapes and skips missing keys', () => {
+  const { buildRiskByTagMap } = require(HOOK_PATH);
+  const map = buildRiskByTagMap([
+    { key: 'git', risk: 7 },
+    { tag: 'deploy', score: 6 },
+    { tag: 'low', riskScore: 2 },
+    { risk: 9 },
+    null,
+    { key: 'zero', risk: 0 },
+  ]);
+  assert.equal(map.get('git'), 7);
+  assert.equal(map.get('deploy'), 6);
+  assert.equal(map.get('low'), 2);
+  // Zero risk is still stored (finite) but will never exceed any positive
+  // threshold, so it has no blocking effect.
+  assert.equal(map.get('zero'), 0);
+  assert.equal(map.size, 4);
+});
+
+function stubRiskScorer(highRiskTags) {
+  const riskScorerPath = path.join(REPO_ROOT, 'scripts', 'risk-scorer.js');
+  const realMod = require.cache[riskScorerPath];
+  require.cache[riskScorerPath] = {
+    id: riskScorerPath,
+    filename: riskScorerPath,
+    loaded: true,
+    exports: { getRiskSummary: () => ({ highRiskTags }) },
+  };
+  return () => {
+    if (realMod) require.cache[riskScorerPath] = realMod;
+    else delete require.cache[riskScorerPath];
+  };
+}
+
+test('findBlockingRisk returns first lesson whose tag exceeds threshold', () => {
+  const hook = require(HOOK_PATH);
+  const restore = stubRiskScorer([
+    { key: 'force-push', risk: 8 },
+    { key: 'noise', risk: 1 },
+  ]);
+  try {
+    const res = hook.findBlockingRisk(
+      [
+        { tags: ['noise'], whatToChange: 'meh' },
+        { tags: ['force-push'], whatToChange: 'do not force-push' },
+      ],
+      5
+    );
+    assert.ok(res);
+    assert.equal(res.tag, 'force-push');
+    assert.equal(res.score, 8);
+    assert.match(res.lesson.whatToChange, /force-push/);
+    const none = hook.findBlockingRisk([{ tags: ['noise'] }], 5);
+    assert.equal(none, null);
+  } finally {
+    restore();
+  }
+});
+
+test('findBlockingRisk returns null when risk model is empty', () => {
+  const hook = require(HOOK_PATH);
+  const restore = stubRiskScorer([]);
+  try {
+    assert.equal(hook.findBlockingRisk([{ tags: ['x'] }], 5), null);
+  } finally {
+    restore();
+  }
+});
+
+test('formatLessonsAsReminder renders numbered lessons with tag suffixes and truncates long text', () => {
+  const { formatLessonsAsReminder } = require(HOOK_PATH);
+  const out = formatLessonsAsReminder(
+    [
+      { whatToChange: 'run npm test before push', tags: ['git', 'verification'] },
+      { howToAvoid: 'verify /health before saying deployed' },
+      { content: 'x'.repeat(500) },
+      { title: 'no-op' },
+      {},
+    ],
+    {}
+  );
+  assert.match(out, /^<system-reminder>/);
+  assert.match(out, /<\/system-reminder>$/);
+  assert.match(out, /1\. run npm test before push \[git, verification\]/);
+  assert.match(out, /2\. verify \/health before saying deployed/);
+  const third = out.split('\n').find((l) => l.startsWith('3.'));
+  assert.ok(third.length <= 304, `third lesson not truncated: ${third.length}`);
+});
+
+test('formatLessonsAsReminder appends auto-gate notice when extras.autogate is present', () => {
+  const { formatLessonsAsReminder } = require(HOOK_PATH);
+  const out = formatLessonsAsReminder([], {
+    autogate: { gate: 'thread-resolution-verified', branch: 'feat/foo' },
+  });
+  assert.match(out, /auto-registered claim gate "thread-resolution-verified"/);
+  assert.match(out, /branch feat\/foo/);
+  assert.match(out, /0 unresolved threads/);
+});
+
+test('resolveEffectiveInput falls back to legacy CLAUDE_TOOL_INPUT env string', () => {
+  const { resolveEffectiveInput } = require(HOOK_PATH);
+  assert.deepEqual(resolveEffectiveInput({ command: 'ls' }), { command: 'ls' });
+  const prior = process.env.CLAUDE_TOOL_INPUT;
+  process.env.CLAUDE_TOOL_INPUT = 'echo legacy';
+  try {
+    assert.deepEqual(resolveEffectiveInput(null), { command: 'echo legacy' });
+  } finally {
+    if (prior === undefined) delete process.env.CLAUDE_TOOL_INPUT;
+    else process.env.CLAUDE_TOOL_INPUT = prior;
+  }
+  delete process.env.CLAUDE_TOOL_INPUT;
+  assert.deepEqual(resolveEffectiveInput(null), {});
+});
+
+test('maybeBlockOnRisk returns null when THUMBGATE_HOOKS_ENFORCE is unset', () => {
+  const { maybeBlockOnRisk } = require(HOOK_PATH);
+  const prior = process.env.THUMBGATE_HOOKS_ENFORCE;
+  delete process.env.THUMBGATE_HOOKS_ENFORCE;
+  try {
+    assert.equal(maybeBlockOnRisk([{ tags: ['anything'] }]), null);
+  } finally {
+    if (prior !== undefined) process.env.THUMBGATE_HOOKS_ENFORCE = prior;
+  }
+});
+
+test('maybeBlockOnRisk returns a reason string when enforce=1 and a lesson tag is high-risk', () => {
+  const hook = require(HOOK_PATH);
+  const restore = stubRiskScorer([{ key: 'danger', risk: 9 }]);
+  const priorEnforce = process.env.THUMBGATE_HOOKS_ENFORCE;
+  const priorThresh = process.env.THUMBGATE_HOOKS_ENFORCE_THRESHOLD;
+  process.env.THUMBGATE_HOOKS_ENFORCE = '1';
+  delete process.env.THUMBGATE_HOOKS_ENFORCE_THRESHOLD;
+  try {
+    const reason = hook.maybeBlockOnRisk([
+      { tags: ['danger'], whatToChange: 'do not run dangerous thing' },
+    ]);
+    assert.ok(typeof reason === 'string');
+    assert.match(reason, /ThumbGate blocked/);
+    assert.match(reason, /danger/);
+    assert.match(reason, /risk=9/);
+  } finally {
+    if (priorEnforce === undefined) delete process.env.THUMBGATE_HOOKS_ENFORCE;
+    else process.env.THUMBGATE_HOOKS_ENFORCE = priorEnforce;
+    if (priorThresh !== undefined) process.env.THUMBGATE_HOOKS_ENFORCE_THRESHOLD = priorThresh;
+    restore();
+  }
+});
+
+test('trackCurlToProd writes marker for curl-to-prod and is silent otherwise', () => {
+  const { trackCurlToProd } = require(HOOK_PATH);
+  const { VERIFICATION_MARKER: MARKER } = require(HOOK_PATH);
+  try { fs.unlinkSync(MARKER); } catch { /* fine */ }
+  trackCurlToProd('Edit', { file_path: '/tmp/x' });
+  assert.equal(fs.existsSync(MARKER), false);
+  trackCurlToProd('Bash', { command: 'echo hi' });
+  assert.equal(fs.existsSync(MARKER), false);
+  trackCurlToProd('Bash', { command: 'curl -s https://example.com/health' });
+  assert.equal(fs.existsSync(MARKER), false);
+  trackCurlToProd('Bash', {
+    command: 'curl -s https://thumbgate-production.up.railway.app/health',
+  });
+  assert.ok(fs.existsSync(MARKER));
+});
+
+test('failOpen is silent by default and does not throw when debug flag is set', () => {
+  const { failOpen } = require(HOOK_PATH);
+  assert.doesNotThrow(() => failOpen(new Error('boom')));
+  assert.doesNotThrow(() => failOpen('plain string'));
+  assert.doesNotThrow(() => failOpen(undefined));
+  const prior = process.env.THUMBGATE_HOOKS_DEBUG;
+  process.env.THUMBGATE_HOOKS_DEBUG = '1';
+  try {
+    assert.doesNotThrow(() => failOpen(new Error('debug-path')));
+  } finally {
+    if (prior === undefined) delete process.env.THUMBGATE_HOOKS_DEBUG;
+    else process.env.THUMBGATE_HOOKS_DEBUG = prior;
+  }
+});
+
+// readStdinSync() is covered by the spawnSync-based integration tests above
+// (feeding well-formed JSON and malformed JSON over fd 0). It is not
+// unit-testable here because fd 0 in this test process is the TTY, which
+// would block on fs.readFileSync(0).

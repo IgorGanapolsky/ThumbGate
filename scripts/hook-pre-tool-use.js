@@ -27,21 +27,45 @@
 
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { execFileSync } = require('node:child_process');
 
 const PROD_URL = 'thumbgate-production.up.railway.app';
-const VERIFICATION_MARKER = '/tmp/.thumbgate-last-deploy-verify';
+// Use the OS-assigned temp dir (per-user on macOS; /tmp on Linux) so the
+// marker is not placed in a world-writable literal path. The companion
+// bash hook scripts/hook-stop-verify-deploy.sh reads ${TMPDIR:-/tmp} so
+// both resolve to the same location on each platform.
+const VERIFICATION_MARKER = path.join(os.tmpdir(), '.thumbgate-last-deploy-verify');
 const DEFAULT_RISK_THRESHOLD = 5;
 const MAX_LESSONS = 3;
+const MAX_LESSON_TEXT_LEN = 300;
+const MAX_ACTION_CONTEXT_LEN = 512;
+const MAX_WRITE_SNIPPET_LEN = 240;
+
+// Uniform swallow function for best-effort side paths.
+// The hook contract (see header) requires fail-open behavior: a bug in any
+// sub-step (I/O, DB load, git probe, JSON parse) must never prevent the
+// tool call from proceeding. Naming it makes every catch site explicit.
+function failOpen(err) {
+  // Expose through env flag for local debugging only; silent in production.
+  if (process.env.THUMBGATE_HOOKS_DEBUG) {
+    try {
+      process.stderr.write(`[thumbgate-hook] fail-open: ${err && err.message ? err.message : String(err)}\n`);
+    } catch {
+      // stderr write itself failed; nothing further to do.
+    }
+  }
+}
 
 function readStdinSync() {
   try {
     const data = fs.readFileSync(0, 'utf8');
-    if (!data || !data.trim()) return null;
+    if (!data?.trim()) return null;
     return JSON.parse(data);
-  } catch (_) {
+  } catch (err) {
+    failOpen(err);
     return null;
   }
 }
@@ -55,7 +79,9 @@ function isTrueEnv(value) {
 function respond(output) {
   try {
     process.stdout.write(JSON.stringify(output || {}));
-  } catch (_) { /* ignore serialization failure */ }
+  } catch (err) {
+    failOpen(err);
+  }
   process.exit(0);
 }
 
@@ -86,11 +112,13 @@ function allowWithContext(additionalContext) {
 
 function trackCurlToProd(toolName, toolInput) {
   if (toolName !== 'Bash') return;
-  const command = (toolInput && (toolInput.command || toolInput.cmd)) || '';
+  const command = toolInput?.command || toolInput?.cmd || '';
   if (/curl\b[^\n]*\b/i.test(command) && command.includes(PROD_URL)) {
     try {
       fs.writeFileSync(VERIFICATION_MARKER, new Date().toISOString());
-    } catch (_) { /* non-critical */ }
+    } catch (err) {
+      failOpen(err);
+    }
   }
 }
 
@@ -103,11 +131,11 @@ function extractActionContext(toolName, toolInput) {
       .join(' | ');
   }
   if (toolName === 'Write') {
-    return [toolInput.file_path, String(toolInput.content || '').slice(0, 240)]
+    return [toolInput.file_path, String(toolInput.content || '').slice(0, MAX_WRITE_SNIPPET_LEN)]
       .filter(Boolean)
       .join(' | ');
   }
-  return JSON.stringify(toolInput).slice(0, 512);
+  return JSON.stringify(toolInput).slice(0, MAX_ACTION_CONTEXT_LEN);
 }
 
 function retrieveLessons(toolName, actionContext) {
@@ -119,7 +147,8 @@ function retrieveLessons(toolName, actionContext) {
       maxResults: MAX_LESSONS,
     });
     return Array.isArray(results) ? results : [];
-  } catch (_) {
+  } catch (err) {
+    failOpen(err);
     return [];
   }
 }
@@ -131,37 +160,44 @@ function getHighRiskTags() {
     const summary = getRiskSummary();
     if (!summary || !Array.isArray(summary.highRiskTags)) return [];
     return summary.highRiskTags;
-  } catch (_) {
+  } catch (err) {
+    failOpen(err);
     return [];
   }
 }
 
 function tagsForLesson(lesson) {
   if (!lesson) return [];
-  const raw = lesson.tags || (lesson.memory && lesson.memory.tags) || [];
+  const raw = lesson.tags || lesson.memory?.tags || [];
   if (Array.isArray(raw)) return raw.map(String);
   if (typeof raw === 'string') {
     try {
       const parsed = JSON.parse(raw);
       return Array.isArray(parsed) ? parsed.map(String) : [];
-    } catch (_) { /* fall through */ }
+    } catch (err) {
+      failOpen(err);
+    }
   }
   return [];
+}
+
+function buildRiskByTagMap(riskTagBuckets) {
+  const riskByTag = new Map();
+  for (const bucket of riskTagBuckets) {
+    const key = bucket?.key || bucket?.tag;
+    if (!key) continue;
+    const score = Number(bucket.risk || bucket.score || bucket.riskScore || 0);
+    if (Number.isFinite(score)) riskByTag.set(String(key), score);
+  }
+  return riskByTag;
 }
 
 function findBlockingRisk(lessons, threshold) {
   const riskTagBuckets = getHighRiskTags();
   if (riskTagBuckets.length === 0) return null;
-  const riskByTag = new Map();
-  for (const bucket of riskTagBuckets) {
-    const key = bucket && (bucket.key || bucket.tag);
-    if (!key) continue;
-    const score = Number(bucket.risk || bucket.score || bucket.riskScore || 0);
-    if (Number.isFinite(score)) riskByTag.set(String(key), score);
-  }
+  const riskByTag = buildRiskByTagMap(riskTagBuckets);
   for (const lesson of lessons) {
-    const tags = tagsForLesson(lesson);
-    for (const tag of tags) {
+    for (const tag of tagsForLesson(lesson)) {
       const score = riskByTag.get(tag);
       if (typeof score === 'number' && score >= threshold) {
         return { tag, score, lesson };
@@ -171,13 +207,48 @@ function findBlockingRisk(lessons, threshold) {
   return null;
 }
 
+// Resolve git to a vetted absolute path instead of relying on $PATH lookup.
+// Falls back to bare 'git' only when none of the standard locations exist,
+// so users with custom installs still work. Result is cached.
+let cachedGitPath = null;
+function resolveGitBinary() {
+  if (cachedGitPath !== null) return cachedGitPath;
+  const override = process.env.THUMBGATE_GIT_BIN;
+  if (override) {
+    cachedGitPath = override;
+    return cachedGitPath;
+  }
+  const candidates = [
+    '/usr/bin/git',
+    '/usr/local/bin/git',
+    '/opt/homebrew/bin/git',
+    '/bin/git',
+  ];
+  for (const candidate of candidates) {
+    try {
+      if (fs.existsSync(candidate)) {
+        cachedGitPath = candidate;
+        return cachedGitPath;
+      }
+    } catch (err) {
+      failOpen(err);
+    }
+  }
+  cachedGitPath = 'git';
+  return cachedGitPath;
+}
+
 function currentGitBranch() {
   try {
-    return execSync('git rev-parse --abbrev-ref HEAD', {
+    // Safe: absolute binary path (no PATH lookup), fixed argv, no shell
+    // interpolation, no user input. Only used to decide whether to
+    // register a claim gate before allowing the commit through.
+    return execFileSync(resolveGitBinary(), ['rev-parse', '--abbrev-ref', 'HEAD'], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     }).trim();
-  } catch (_) {
+  } catch (err) {
+    failOpen(err);
     return '';
   }
 }
@@ -185,7 +256,7 @@ function currentGitBranch() {
 function maybeRegisterPrCommitGate(toolName, toolInput) {
   if (toolName !== 'Bash') return null;
   if (!isTrueEnv(process.env.THUMBGATE_AUTOGATE_PR_COMMITS)) return null;
-  const command = (toolInput && (toolInput.command || toolInput.cmd)) || '';
+  const command = toolInput?.command || toolInput?.cmd || '';
   if (!/\bgit\s+commit\b/.test(command)) return null;
   const branch = currentGitBranch();
   if (!branch || branch === 'main' || branch === 'master') return null;
@@ -198,75 +269,110 @@ function maybeRegisterPrCommitGate(toolName, toolInput) {
       `Before merging ${branch}, run 'gh pr view --json reviewThreads' and confirm 0 unresolved threads.`
     );
     return { branch, gate: 'thread-resolution-verified' };
-  } catch (_) {
+  } catch (err) {
+    failOpen(err);
     return null;
   }
 }
 
 function formatLessonsAsReminder(lessons, extras) {
-  const lines = ['<system-reminder>'];
-  lines.push('ThumbGate retrieved prior lessons relevant to this tool call.');
-  lines.push('REVIEW BEFORE PROCEEDING:');
+  const lines = [
+    '<system-reminder>',
+    'ThumbGate retrieved prior lessons relevant to this tool call.',
+    'REVIEW BEFORE PROCEEDING:',
+  ];
   lessons.forEach((lesson, idx) => {
     const text = lesson.whatToChange || lesson.howToAvoid || lesson.content || lesson.title || '';
     if (!text) return;
     const tags = tagsForLesson(lesson);
     const tagSuffix = tags.length ? ` [${tags.slice(0, 4).join(', ')}]` : '';
-    lines.push(`${idx + 1}. ${String(text).trim().slice(0, 300)}${tagSuffix}`);
+    lines.push(`${idx + 1}. ${String(text).trim().slice(0, MAX_LESSON_TEXT_LEN)}${tagSuffix}`);
   });
-  if (extras && extras.autogate) {
-    lines.push('');
-    lines.push(`ThumbGate auto-registered claim gate "${extras.autogate.gate}" on branch ${extras.autogate.branch}.`);
-    lines.push('You MUST satisfy this gate (show gh pr view output with 0 unresolved threads) before merging.');
+  if (extras?.autogate) {
+    lines.push(
+      '',
+      `ThumbGate auto-registered claim gate "${extras.autogate.gate}" on branch ${extras.autogate.branch}.`,
+      'You MUST satisfy this gate (show gh pr view output with 0 unresolved threads) before merging.'
+    );
   }
   lines.push('</system-reminder>');
   return lines.join('\n');
 }
 
+function resolveEffectiveInput(rawToolInput) {
+  if (rawToolInput) return rawToolInput;
+  if (process.env.CLAUDE_TOOL_INPUT) {
+    // Backward-compat: older hook convention used CLAUDE_TOOL_INPUT env string.
+    return { command: process.env.CLAUDE_TOOL_INPUT };
+  }
+  return {};
+}
+
+function maybeBlockOnRisk(lessons) {
+  if (!isTrueEnv(process.env.THUMBGATE_HOOKS_ENFORCE)) return null;
+  const rawThreshold = Number(process.env.THUMBGATE_HOOKS_ENFORCE_THRESHOLD || DEFAULT_RISK_THRESHOLD);
+  const threshold = Number.isFinite(rawThreshold) ? rawThreshold : DEFAULT_RISK_THRESHOLD;
+  const risk = findBlockingRisk(lessons, threshold);
+  if (!risk) return null;
+  return (
+    `ThumbGate blocked: this action matches high-risk tag "${risk.tag}" (risk=${risk.score}). `
+    + `Prior lesson: ${(risk.lesson.whatToChange || risk.lesson.title || '').toString().slice(0, MAX_WRITE_SNIPPET_LEN)}. `
+    + `Set THUMBGATE_HOOKS_ENFORCE=0 to override after you have addressed the lesson.`
+  );
+}
+
 function main() {
   const input = readStdinSync() || {};
   const toolName = input.tool_name || process.env.CLAUDE_TOOL_NAME || '';
-  const toolInput = input.tool_input || null;
-
-  // Backward-compat: older hook convention used CLAUDE_TOOL_INPUT env string.
-  let legacyToolInput = null;
-  if (!toolInput && process.env.CLAUDE_TOOL_INPUT) {
-    legacyToolInput = { command: process.env.CLAUDE_TOOL_INPUT };
-  }
-  const effectiveInput = toolInput || legacyToolInput || {};
+  const effectiveInput = resolveEffectiveInput(input.tool_input || null);
 
   try {
     trackCurlToProd(toolName, effectiveInput);
-  } catch (_) { /* non-critical */ }
+  } catch (err) {
+    failOpen(err);
+  }
 
   const actionContext = extractActionContext(toolName, effectiveInput);
   const lessons = retrieveLessons(toolName, actionContext);
 
-  if (isTrueEnv(process.env.THUMBGATE_HOOKS_ENFORCE)) {
-    const threshold = Number(process.env.THUMBGATE_HOOKS_ENFORCE_THRESHOLD || DEFAULT_RISK_THRESHOLD);
-    const risk = findBlockingRisk(lessons, Number.isFinite(threshold) ? threshold : DEFAULT_RISK_THRESHOLD);
-    if (risk) {
-      return block(
-        `ThumbGate blocked: this action matches high-risk tag "${risk.tag}" (risk=${risk.score}). `
-        + `Prior lesson: ${(risk.lesson.whatToChange || risk.lesson.title || '').toString().slice(0, 240)}. `
-        + `Set THUMBGATE_HOOKS_ENFORCE=0 to override after you have addressed the lesson.`
-      );
-    }
-  }
+  const blockReason = maybeBlockOnRisk(lessons);
+  if (blockReason) return block(blockReason);
 
   const autogate = maybeRegisterPrCommitGate(toolName, effectiveInput);
 
   if (lessons.length > 0 || autogate) {
-    const context = formatLessonsAsReminder(lessons, { autogate });
-    return allowWithContext(context);
+    return allowWithContext(formatLessonsAsReminder(lessons, { autogate }));
   }
 
   return allow();
 }
 
-try {
-  main();
-} catch (_) {
-  // Hook must never deadlock the agent. Fail open.
-  allow();
+// Only auto-invoke main() when the file is executed directly as a hook.
+// When required from a test, we skip this so exported helpers can be
+// unit-tested without the module calling process.exit(0).
+if (require.main === module) {
+  try {
+    main();
+  } catch (err) {
+    // Hook must never deadlock the agent. Fail open.
+    failOpen(err);
+    allow();
+  }
 }
+
+// Exported for unit tests. Not part of the hook stdin/stdout contract.
+module.exports = {
+  failOpen,
+  readStdinSync,
+  isTrueEnv,
+  trackCurlToProd,
+  extractActionContext,
+  tagsForLesson,
+  buildRiskByTagMap,
+  findBlockingRisk,
+  formatLessonsAsReminder,
+  resolveEffectiveInput,
+  maybeBlockOnRisk,
+  resolveGitBinary,
+  VERIFICATION_MARKER,
+};

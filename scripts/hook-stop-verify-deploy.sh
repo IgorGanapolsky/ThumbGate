@@ -8,11 +8,11 @@
 # Env vars:
 #   CLAUDE_STOP_REASON — why the agent stopped (set by Claude Code)
 # Marker file:
-#   /tmp/.thumbgate-last-deploy-verify — written by scripts/hook-pre-tool-use.js
+#   ${TMPDIR:-/tmp}/.thumbgate-last-deploy-verify — written by scripts/hook-pre-tool-use.js
 # Exit code: Always 0 (informational only).
 
 PROD_URL="thumbgate-production.up.railway.app"
-VERIFICATION_MARKER="/tmp/.thumbgate-last-deploy-verify"
+VERIFICATION_MARKER="${TMPDIR:-/tmp}/.thumbgate-last-deploy-verify"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 EXPECTED_VERSION="$(node -e "console.log(require(process.argv[1]).version)" "${REPO_ROOT}/package.json")"
