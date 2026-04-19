@@ -12,11 +12,11 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Bash",
+        "matcher": "Bash|Edit|Write",
         "hooks": [
           {
             "type": "command",
-            "command": "bash scripts/hook-verify-before-done.sh"
+            "command": "node scripts/hook-pre-tool-use.js"
           }
         ]
       }

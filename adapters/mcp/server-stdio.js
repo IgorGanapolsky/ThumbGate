@@ -146,7 +146,7 @@ const {
   finalizeSession: finalizeFeedbackSession,
 } = require('../../scripts/feedback-session');
 
-const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.6.0' };
+const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.7.0' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
@@ -199,6 +199,43 @@ function toTextResult(payload) {
   return {
     content: [{ type: 'text', text }],
   };
+}
+
+// Format corrective actions as a top-level <system-reminder> block so the
+// calling agent treats them as first-class guidance, not buried JSON.
+// Shape of `actions` varies: lesson-db.inferCorrectiveActions returns
+// {whatToChange, tags, timestamp}; lesson-search.buildSystemActions returns
+// {type, source, text}. Normalize to a single bulleted list.
+function formatCorrectiveActionsReminder(actions) {
+  if (!Array.isArray(actions) || actions.length === 0) return '';
+  const lines = ['<system-reminder>', 'ThumbGate surfaced prior lessons matching this failure.', 'REVIEW BEFORE YOUR NEXT ACTION:'];
+  actions.slice(0, 5).forEach((action, idx) => {
+    const text = (action && (action.whatToChange || action.text || action.message)) || '';
+    if (!text) return;
+    const tags = Array.isArray(action.tags) && action.tags.length > 0 ? ` [${action.tags.join(', ')}]` : '';
+    lines.push(`${idx + 1}. ${String(text).trim()}${tags}`);
+  });
+  lines.push('</system-reminder>', '');
+  return lines.join('\n');
+}
+
+// Wrap capture_feedback payloads so correctiveActions surface as a
+// top-level <system-reminder> text block appended alongside the JSON body.
+//
+// Ordering: JSON body is content[0] (preserves backward compatibility with
+// callers that parse content[0].text as JSON); the reminder is content[1]
+// so it still appears as a top-level block the agent must process — not
+// buried inside the JSON structure.
+function toCaptureFeedbackTextResult(result) {
+  const body = JSON.stringify(result, null, 2);
+  const blocks = [{ type: 'text', text: body }];
+  const reminder = result && Array.isArray(result.correctiveActions)
+    ? formatCorrectiveActionsReminder(result.correctiveActions)
+    : '';
+  if (reminder) {
+    blocks.push({ type: 'text', text: reminder });
+  }
+  return { content: blocks };
 }
 
 function formatContextPack(pack) {
@@ -447,7 +484,7 @@ async function callToolInner(name, args) {
   switch (name) {
     case 'capture_feedback':
 
-      return toTextResult(captureFeedback(args));
+      return toCaptureFeedbackTextResult(captureFeedback(args));
     case 'feedback_summary':
       return toTextResult(feedbackSummary(Number(args.recent || 20)));
     case 'search_lessons':
@@ -1008,4 +1045,6 @@ module.exports = {
   callTool,
   startStdioServer,
   acquireLock,
+  toCaptureFeedbackTextResult,
+  formatCorrectiveActionsReminder,
 };
