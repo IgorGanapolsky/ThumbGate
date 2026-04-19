@@ -35,3 +35,11 @@ test('workflow-gate-checkpoint module exports expected API', () => {
   assert.equal(typeof wgc.advanceCheckpoint, 'function');
   assert.equal(typeof wgc.shouldHaltWorkflow, 'function');
 });
+
+test('autonomous-workflow module exports expected API', () => {
+  const workflow = require('../scripts/autonomous-workflow');
+  assert.equal(typeof workflow.runAutonomousWorkflow, 'function');
+  assert.equal(typeof workflow.resumeAutonomousWorkflow, 'function');
+  assert.equal(typeof workflow.readWorkflowReport, 'function');
+  assert.equal(typeof workflow.writeWorkflowReport, 'function');
+});
