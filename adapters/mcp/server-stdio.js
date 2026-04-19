@@ -125,6 +125,8 @@ const {
   formatUnifiedContext,
 } = require('../../scripts/context-manager');
 const { exportHfDataset } = require('../../scripts/export-hf-dataset');
+const { distributeContextToAgents } = require('../../scripts/swarm-coordinator');
+const { buildSessionReport } = require('../../scripts/session-report');
 
 const PRO_CHECKOUT_URL = 'https://thumbgate-production.up.railway.app/checkout/pro';
 
@@ -736,6 +738,53 @@ async function callToolInner(name, args) {
     }
     case 'verify_claim':
       return toTextResult(verifyClaimEvidence(args.claim));
+    case 'require_evidence_for_claim': {
+      if (!args.claim || typeof args.claim !== 'string') {
+        throw new Error('claim is required and must be a string');
+      }
+      const verification = verifyClaimEvidence(args.claim);
+      const mode = args.mode === 'advisory' ? 'advisory' : 'blocking';
+      const hasMatchingChecks = Array.isArray(verification.checks) && verification.checks.length > 0;
+      const evidenceMissing = hasMatchingChecks && !verification.verified;
+      const blocking = mode === 'blocking' && evidenceMissing;
+      const missingActions = hasMatchingChecks
+        ? Array.from(new Set(verification.checks.flatMap((check) => check.missing || [])))
+        : [];
+      try {
+        const { recordAuditEvent } = require('../../scripts/audit-trail');
+        recordAuditEvent({
+          toolName: 'require_evidence_for_claim',
+          toolInput: { claim: args.claim, mode, sessionId: args.sessionId || null },
+          decision: blocking ? 'deny' : 'allow',
+          gateId: 'completion_claim',
+          message: blocking
+            ? `Completion claim blocked — missing evidence: ${missingActions.join(', ') || 'unknown'}`
+            : `Completion claim verified (${verification.verified ? 'evidence present' : 'no matching gate'})`,
+          source: 'completion-gate',
+        });
+      } catch { /* audit write must never break tool response */ }
+      return toTextResult({
+        claim: args.claim,
+        mode,
+        blocking,
+        verified: verification.verified,
+        matchedChecks: hasMatchingChecks,
+        missingActions,
+        checks: verification.checks,
+        sessionId: args.sessionId || null,
+      });
+    }
+    case 'distribute_context_to_agents':
+      return toTextResult(distributeContextToAgents({
+        query: args.query || '',
+        agents: args.agents,
+        maxItems: args.maxItems,
+        maxChars: args.maxChars,
+        namespaces: Array.isArray(args.namespaces) ? args.namespaces : [],
+        ttlMs: args.ttlMs,
+      }));
+    case 'session_report':
+      return toTextResult(buildSessionReport({ windowHours: args.windowHours }));
     case 'check_operational_integrity':
       return toTextResult(evaluateOperationalIntegrity({
         repoPath: args.repoPath,
