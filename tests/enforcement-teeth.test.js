@@ -482,6 +482,108 @@ test('hook-pre-tool-use registers auto-gate when THUMBGATE_AUTOGATE_PR_COMMITS=1
   assert.notEqual(res.parsed && res.parsed.decision, 'block');
 });
 
+// Helper: invoke a respond-style hook function while stubbing out the two
+// side-effecting primitives (process.stdout.write and process.exit) so we
+// can inspect the JSON payload without ending the test process.
+function captureRespond(fn) {
+  const origWrite = process.stdout.write.bind(process.stdout);
+  const origExit = process.exit;
+  const captured = [];
+  let exitCode = null;
+  process.stdout.write = (chunk, ...rest) => {
+    captured.push(String(chunk));
+    return true;
+  };
+  process.exit = (code) => { exitCode = code; throw new Error('__captured_exit__'); };
+  try {
+    try { fn(); } catch (err) {
+      if (err && err.message !== '__captured_exit__') throw err;
+    }
+  } finally {
+    process.stdout.write = origWrite;
+    process.exit = origExit;
+  }
+  return { payload: captured.join(''), exitCode };
+}
+
+test('block writes decision=block payload and exits 0', () => {
+  const { block } = require(HOOK_PATH);
+  const { payload, exitCode } = captureRespond(() => block('because reasons'));
+  const parsed = JSON.parse(payload);
+  assert.equal(parsed.decision, 'block');
+  assert.equal(parsed.reason, 'because reasons');
+  assert.equal(parsed.hookSpecificOutput.hookEventName, 'PreToolUse');
+  assert.equal(parsed.hookSpecificOutput.permissionDecision, 'deny');
+  assert.equal(parsed.hookSpecificOutput.permissionDecisionReason, 'because reasons');
+  assert.equal(exitCode, 0);
+});
+
+test('allowWithContext writes additionalContext and exits 0', () => {
+  const { allowWithContext } = require(HOOK_PATH);
+  const { payload, exitCode } = captureRespond(() => allowWithContext('reminder body'));
+  const parsed = JSON.parse(payload);
+  assert.equal(parsed.hookSpecificOutput.hookEventName, 'PreToolUse');
+  assert.equal(parsed.hookSpecificOutput.additionalContext, 'reminder body');
+  assert.equal(exitCode, 0);
+});
+
+test('allow writes empty object and exits 0', () => {
+  const { allow } = require(HOOK_PATH);
+  const { payload, exitCode } = captureRespond(() => allow());
+  assert.deepEqual(JSON.parse(payload), {});
+  assert.equal(exitCode, 0);
+});
+
+test('currentGitBranch returns a non-empty branch name inside this git checkout', () => {
+  const { currentGitBranch } = require(HOOK_PATH);
+  const branch = currentGitBranch();
+  // In a normal worktree it returns the branch; in a detached-HEAD CI run
+  // it returns 'HEAD'. Both are non-empty strings.
+  assert.ok(typeof branch === 'string' && branch.length > 0);
+});
+
+test('maybeRegisterPrCommitGate returns null when toolName is not Bash', () => {
+  const { maybeRegisterPrCommitGate } = require(HOOK_PATH);
+  assert.equal(maybeRegisterPrCommitGate('Edit', { command: 'git commit -m x' }), null);
+});
+
+test('maybeRegisterPrCommitGate returns null when autogate env is unset', () => {
+  const { maybeRegisterPrCommitGate } = require(HOOK_PATH);
+  const prior = process.env.THUMBGATE_AUTOGATE_PR_COMMITS;
+  delete process.env.THUMBGATE_AUTOGATE_PR_COMMITS;
+  try {
+    assert.equal(
+      maybeRegisterPrCommitGate('Bash', { command: 'git commit -m x' }),
+      null
+    );
+  } finally {
+    if (prior !== undefined) process.env.THUMBGATE_AUTOGATE_PR_COMMITS = prior;
+  }
+});
+
+test('maybeRegisterPrCommitGate returns null for non-commit Bash commands when autogate=1', () => {
+  const { maybeRegisterPrCommitGate } = require(HOOK_PATH);
+  const prior = process.env.THUMBGATE_AUTOGATE_PR_COMMITS;
+  process.env.THUMBGATE_AUTOGATE_PR_COMMITS = '1';
+  try {
+    assert.equal(maybeRegisterPrCommitGate('Bash', { command: 'ls -la' }), null);
+  } finally {
+    if (prior === undefined) delete process.env.THUMBGATE_AUTOGATE_PR_COMMITS;
+    else process.env.THUMBGATE_AUTOGATE_PR_COMMITS = prior;
+  }
+});
+
+test('isEntryPoint returns false when loaded as a library', () => {
+  const { isEntryPoint } = require(HOOK_PATH);
+  // The test runner is invoking us as a library, so argv[1] points at the
+  // test file, not the hook. isEntryPoint must return false.
+  assert.equal(isEntryPoint(), false);
+});
+
+// main() is exercised end-to-end by the spawnSync integration tests above
+// (which feed JSON via stdin); we cannot call it in-process because
+// readStdinSync() blocks on fs.readFileSync(0) when fd 0 is the TTY.
+
 test('hook-pre-tool-use does NOT register auto-gate on non-commit Bash commands even with autogate=1', () => {
   const res = runHook({
     input: {
