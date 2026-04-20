@@ -357,7 +357,8 @@ function pickBestCategory(model) {
   const means = argmaxPosteriors(model);
   const keys = Object.keys(means);
   if (keys.length === 0) return null;
-  keys.sort();
+  // Use localeCompare for deterministic, locale-aware alphabetical tie-break.
+  keys.sort((a, b) => a.localeCompare(b));
   let best = keys[0];
   for (const key of keys) {
     if (means[key] > means[best]) best = key;
