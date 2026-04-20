@@ -184,3 +184,70 @@ test('resumeAutonomousWorkflow completes a paused execution from the next stage'
     fs.rmSync(cwd, { recursive: true, force: true });
   }
 });
+
+test.test('normalizePlan handles array input', () => {
+  resetRuntimeModules();
+  const { normalizePlan } = require('../scripts/autonomous-workflow');
+  const plan = normalizePlan(['Step one', 'Step two', '', '  '], 'wf-1');
+  assert.equal(plan.workflowId, 'wf-1');
+  assert.equal(plan.steps.length, 2);
+  assert.equal(plan.steps[0].id, 'step_1');
+  assert.equal(plan.steps[0].description, 'Step one');
+  assert.equal(plan.steps[1].id, 'step_2');
+  assert.match(plan.summary, /Step one \| Step two/);
+});
+
+test.test('normalizePlan handles object input with string and object steps', () => {
+  resetRuntimeModules();
+  const { normalizePlan } = require('../scripts/autonomous-workflow');
+  const plan = normalizePlan({
+    summary: 'custom summary',
+    steps: [
+      'string step',
+      { id: 'explicit', description: 'object step' },
+      { summary: 'fallback-summary' },
+      null,
+      42,
+    ],
+  }, 'wf-2');
+  assert.equal(plan.workflowId, 'wf-2');
+  assert.equal(plan.summary, 'custom summary');
+  assert.equal(plan.steps.length, 3);
+  assert.equal(plan.steps[0].id, 'step_1');
+  assert.equal(plan.steps[0].description, 'string step');
+  assert.equal(plan.steps[1].id, 'explicit');
+  assert.equal(plan.steps[1].description, 'object step');
+  assert.equal(plan.steps[2].id, 'step_3');
+  assert.equal(plan.steps[2].description, 'fallback-summary');
+});
+
+test.test('normalizePlan falls back to string summary when input is not array/object', () => {
+  resetRuntimeModules();
+  const { normalizePlan } = require('../scripts/autonomous-workflow');
+  const plan = normalizePlan('only a summary', 'wf-3');
+  assert.equal(plan.workflowId, 'wf-3');
+  assert.equal(plan.summary, 'only a summary');
+  assert.equal(plan.steps.length, 1);
+  assert.equal(plan.steps[0].id, 'step_1');
+  assert.equal(plan.steps[0].description, 'only a summary');
+});
+
+test.test('normalizePlan returns empty steps when summary defaults kick in', () => {
+  resetRuntimeModules();
+  const { normalizePlan } = require('../scripts/autonomous-workflow');
+  const plan = normalizePlan(null, 'wf-4');
+  assert.equal(plan.summary, 'Execution plan ready');
+  // Default summary is not empty, so one step is generated
+  assert.equal(plan.steps.length, 1);
+});
+
+test.test('getWorkflowPaths derives sibling artifact paths inside the workflow root', () => {
+  resetRuntimeModules();
+  const { getWorkflowPaths } = require('../scripts/autonomous-workflow');
+  const paths = getWorkflowPaths('demo', '/tmp/proj');
+  assert.equal(paths.rootDir, '/tmp/proj/.thumbgate/autonomous-workflows/demo');
+  assert.equal(paths.checkpointPath, '/tmp/proj/.thumbgate/autonomous-workflows/demo/checkpoint.json');
+  assert.equal(paths.reportJsonPath, '/tmp/proj/.thumbgate/autonomous-workflows/demo/report.json');
+  assert.equal(paths.reportMdPath, '/tmp/proj/.thumbgate/autonomous-workflows/demo/report.md');
+  assert.equal(paths.planPath, '/tmp/proj/.thumbgate/autonomous-workflows/demo/plan.json');
+});
