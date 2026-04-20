@@ -24,14 +24,14 @@ function normalizeText(value) {
 }
 
 function slugify(value, fallback = 'workflow') {
-  // Split the leading/trailing dash strip into two anchored regex ops to avoid
-  // the disjunction-with-shared-character-class backtracking flagged by Sonar
-  // javascript:S5852. Each replace is linear.
-  const normalized = normalizeText(value)
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+/, '')
-    .replace(/-+$/, '');
+  // Avoid any `-+` quantifier in an edge-anchored regex (Sonar javascript:S5852
+  // still flags even the anchored form). Strip edge dashes with a linear scan.
+  const collapsed = normalizeText(value).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  let start = 0;
+  let end = collapsed.length;
+  while (start < end && collapsed.charCodeAt(start) === 45) start += 1;
+  while (end > start && collapsed.charCodeAt(end - 1) === 45) end -= 1;
+  const normalized = collapsed.slice(start, end);
   return normalized || fallback;
 }
 

@@ -179,7 +179,12 @@ function getStatuslineContext(options = {}) {
   return payload;
 }
 
-if (require.main === module) {
+function isCliInvocation(argv = process.argv) {
+  const invokedPath = argv[1];
+  return invokedPath ? path.resolve(invokedPath) === __filename : false;
+}
+
+if (isCliInvocation()) {
   try {
     process.stdout.write(JSON.stringify(getStatuslineContext()));
   } catch {
