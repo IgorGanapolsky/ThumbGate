@@ -1,0 +1,22 @@
+{
+  "$schema": "./enforcement.schema.json",
+  "description": "Loss matrix and enforcement knobs for the Bayes-optimal pre-tool-use gate. See scripts/bayes-optimal-gate.js for the decision math. Tags listed here mirror the canonical tags emitted by risk-scorer.buildPatternSummary. To disable tag-specific costs and fall back to a symmetric 1:1 decision, reduce any override to 1.0.",
+  "lossMatrix": {
+    "falseAllow": {
+      "default": 1.0,
+      "deploy-prod": 100.0,
+      "destructive": 50.0,
+      "secrets": 1000.0,
+      "force-push-main": 200.0,
+      "data-loss": 500.0,
+      "credentials": 800.0,
+      "rm-rf": 300.0,
+      "git-reset-hard": 100.0
+    },
+    "falseBlock": {
+      "default": 1.0
+    }
+  },
+  "bayesOptimalEnabled": true,
+  "bayesPosteriorFloor": 0.05
+}
