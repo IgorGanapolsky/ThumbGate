@@ -171,16 +171,16 @@ test('Ralph workflows are scheduled, stateful, and split outbound from reply eng
 
   assert.match(ralph, /name: Ralph Loop Audience Engagement/);
   assert.match(ralph, /cron: '17 \* \* \* \*'/);
-  assert.match(ralph, /actions\/cache\/restore@v4/);
-  assert.match(ralph, /actions\/cache\/save@v4/);
+  assert.match(ralph, /actions\/cache\/restore@v[45]/);
+  assert.match(ralph, /actions\/cache\/save@v[45]/);
   assert.match(ralph, /node scripts\/ralph-loop\.js --mode="\$MODE"/);
   assert.match(ralph, /\.thumbgate\/reply-monitor-state\.json/);
   assert.match(ralph, /\.thumbgate\/reply-drafts\.jsonl/);
   assert.match(ralph, /\.thumbgate\/social-launch-assets\.json/);
   assert.match(ralphMode, /name: Ralph Mode - 24\/7 Engagement Loop/);
   assert.match(ralphMode, /cron: '0 \*\/2 \* \* \*'/);
-  assert.match(ralphMode, /actions\/cache\/restore@v4/);
-  assert.match(ralphMode, /actions\/cache\/save@v4/);
+  assert.match(ralphMode, /actions\/cache\/restore@v[45]/);
+  assert.match(ralphMode, /actions\/cache\/save@v[45]/);
   assert.match(ralphMode, /\.thumbgate\/ralph-state\.json/);
   assert.match(ralphMode, /node scripts\/ralph-mode-ci\.js/);
   assert.doesNotMatch(replyMonitor, /^\s*schedule:/m);
