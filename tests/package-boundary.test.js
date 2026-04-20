@@ -162,9 +162,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 225 → 230 (2026-04-20) because the MCP server imports these files
   // at startup or through required startup modules. Omitting them crashes
   // published `thumbgate serve` with a closed MCP transport.
+  // Bumped 230 → 232 (2026-04-20) to ship the read-only operator artifact
+  // generator and its PR pulse dependency for published MCP/CLI runtimes.
   assert.ok(
-    manifest.fileCount <= 230,
-    `npm package should stay <= 230 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 232,
+    `npm package should stay <= 232 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -176,9 +178,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // requires at runtime, plus the config/enforcement.json loss-matrix shipped
   // alongside it. Still well below the ~3 MB drift threshold where we'd need
   // to actively trim assets.
+  // Bumped 2.95 MB → 2.97 MB (2026-04-20) for operator-artifacts.js plus the
+  // existing PR manager it composes for the read-only PR pulse.
   assert.ok(
-    manifest.unpackedSize <= 2_950_000,
-    `npm package should stay <= 2.95 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 2_970_000,
+    `npm package should stay <= 2.97 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

@@ -92,6 +92,20 @@ test('settings_status tool exists as a read-only visibility surface', () => {
   assert.match(settingsTool.description, /per-field origin metadata/i);
 });
 
+test('generate_operator_artifact exposes read-only decision pulses', () => {
+  const artifactTool = TOOLS.find((tool) => tool.name === 'generate_operator_artifact');
+  assert.ok(artifactTool, 'generate_operator_artifact tool must exist');
+  assert.equal(artifactTool.annotations.readOnlyHint, true);
+  assert.deepEqual(artifactTool.inputSchema.properties.type.enum, [
+    'pr-pulse',
+    'reliability-pulse',
+    'revenue-pulse',
+    'release-readiness',
+  ]);
+  assert.ok(artifactTool.inputSchema.properties.windowHours);
+  assert.ok(artifactTool.inputSchema.properties.format);
+});
+
 test('scope control tools expose the task-scope and protected-approval workflow', () => {
   const setScopeTool = TOOLS.find((tool) => tool.name === 'set_task_scope');
   const getScopeTool = TOOLS.find((tool) => tool.name === 'get_scope_state');
