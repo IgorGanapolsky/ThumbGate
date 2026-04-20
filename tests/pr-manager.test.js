@@ -311,6 +311,7 @@ test('PR Manager - managePrs merges ready open PRs discovered from the repo list
   const mockPr = {
     number: 282,
     title: 'Repo-wide ready PR',
+    baseRefName: 'main',
     mergeable: 'MERGEABLE',
     mergeStateStatus: 'CLEAN',
     isDraft: false,
@@ -334,7 +335,7 @@ test('PR Manager - managePrs merges ready open PRs discovered from the repo list
     },
     {
       status: 0,
-      stdout: 'merged',
+      stdout: 'commented',
       stderr: ''
     }
   ]);
@@ -345,7 +346,7 @@ test('PR Manager - managePrs merges ready open PRs discovered from the repo list
   assert.equal(result.prs[0].number, 282);
   assert.equal(result.prs[0].outcome.status, 'ready');
   assert.equal(result.prs[0].outcome.mergeRequested, true);
-  assert.match(result.prs[0].outcome.mergeMode, /merged|queued/);
+  assert.equal(result.prs[0].outcome.mergeMode, 'queued');
   assert.equal(result.prs[0].outcome.mergeCommit, undefined);
 });
 
@@ -396,6 +397,19 @@ test('PR Manager - performMerge never uses admin bypass', () => {
   assert.deepEqual(calls[0], ['pr', 'merge', '321', '--squash', '--delete-branch']);
   assert.ok(!calls[0].includes('--admin'));
   assert.ok(!calls[0].includes('--auto'));
+});
+
+test('PR Manager - performMerge requests /trunk merge for main-base PRs', () => {
+  const calls = [];
+  const runner = (args) => {
+    calls.push(args);
+    return { status: 0, stdout: 'commented', stderr: '' };
+  };
+
+  const result = performMerge({ number: 654, baseRefName: 'main' }, runner, { waitForMerge: false });
+  assert.equal(result.ok, true);
+  assert.equal(result.mode, 'queued');
+  assert.deepEqual(calls[0], ['pr', 'comment', '654', '--body', '/trunk merge']);
 });
 
 test('PR Manager - resolveBlockers falls back to statusCheckRollup when gh pr checks fails', async () => {

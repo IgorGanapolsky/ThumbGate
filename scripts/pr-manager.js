@@ -336,11 +336,40 @@ function waitForMergeCommit(prNumber, runner = runGh, options = {}) {
   };
 }
 
+function submitTrunkMergeRequest(prNumber, runner = runGh) {
+  const normalizedPrNumber = normalizePrNumber(prNumber, { allowEmpty: false });
+  const args = ['pr', 'comment', normalizedPrNumber, '--body', '/trunk merge'];
+  console.log(`[PR Manager] Requesting Trunk merge queue for PR #${normalizedPrNumber}...`);
+  const result = runner(args);
+  if (result.status !== 0) {
+    console.error(`[PR Manager] Queue request failed: ${formatGhError(result)}`);
+    return { ok: false, mode: 'failed', args, error: formatGhError(result) };
+  }
+
+  console.log(`[PR Manager] Queue request accepted for PR #${normalizedPrNumber} (/trunk merge).`);
+  return {
+    ok: true,
+    mode: 'queued',
+    args,
+    finalized: false,
+    merged: false,
+    reason: 'merge_commit_pending',
+  };
+}
+
 /**
  * Perform autonomous merge
  */
-function performMerge(prNumber, runner = runGh, options = {}) {
-  const normalizedPrNumber = normalizePrNumber(prNumber, { allowEmpty: false });
+function performMerge(prInput, runner = runGh, options = {}) {
+  const pr = (prInput && typeof prInput === 'object')
+    ? prInput
+    : { number: prInput, baseRefName: options.baseRefName || '' };
+  const normalizedPrNumber = normalizePrNumber(pr.number, { allowEmpty: false });
+
+  if (String(pr.baseRefName || '').toLowerCase() === 'main') {
+    return submitTrunkMergeRequest(normalizedPrNumber, runner);
+  }
+
   const args = ['pr', 'merge', normalizedPrNumber, '--squash', '--delete-branch'];
   console.log(`[PR Manager] Initiating protected squash merge for PR #${normalizedPrNumber}...`);
   const result = runner(args);
@@ -352,10 +381,10 @@ function performMerge(prNumber, runner = runGh, options = {}) {
       ? { finalized: false, merged: false, reason: 'merge_commit_pending' }
       : waitForMergeCommit(normalizedPrNumber, runner, options);
     return { ok: true, mode, args, ...mergeStatus };
-  } else {
-    console.error(`[PR Manager] Merge failed: ${formatGhError(result)}`);
-    return { ok: false, mode: 'failed', args, error: formatGhError(result) };
   }
+
+  console.error(`[PR Manager] Merge failed: ${formatGhError(result)}`);
+  return { ok: false, mode: 'failed', args, error: formatGhError(result) };
 }
 
 async function managePrs(prNumber = '', runner = runGh, options = {}) {
@@ -370,7 +399,7 @@ async function managePrs(prNumber = '', runner = runGh, options = {}) {
   for (const pr of prs) {
     const outcome = await resolveBlockers(pr, runner);
     if (outcome.status === 'ready') {
-      const mergeResult = performMerge(pr.number, runner, options);
+      const mergeResult = performMerge(pr, runner, options);
       outcome.mergeRequested = mergeResult.ok;
       outcome.mergeMode = mergeResult.mode;
       if (mergeResult.mergeCommit) {
