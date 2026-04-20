@@ -511,6 +511,7 @@ function buildTrialActivationEmail({ customerEmail, apiKey, sessionId, planId, a
   const origin = resolvePublicAppOrigin(appOrigin);
   const dashboardUrl = joinPublicUrl(origin, '/dashboard');
   const docsUrl = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
+  const supportEmail = process.env.THUMBGATE_SUPPORT_EMAIL || CONFIG.TRIAL_EMAIL_REPLY_TO || 'igor.ganapolsky@gmail.com';
   const command = `npx thumbgate pro --activate --key=${apiKey || ''}`;
   const subject = 'Your 7-day ThumbGate Pro trial is live';
   const preheader = 'Activate Pro in one command, open the dashboard, and start blocking repeated AI coding mistakes.';
@@ -519,6 +520,7 @@ function buildTrialActivationEmail({ customerEmail, apiKey, sessionId, planId, a
   const exampleFeedback = 'thumbs down: the answer skipped exact files and tests; next time include paths, commands, and verification evidence.';
   const safeDashboardUrl = escapeHtml(dashboardUrl);
   const safeDocsUrl = escapeHtml(docsUrl);
+  const safeSupportEmail = escapeHtml(supportEmail);
   const safeCommand = escapeHtml(command);
   const safeApiKey = escapeHtml(apiKey || '');
   return {
@@ -544,7 +546,7 @@ function buildTrialActivationEmail({ customerEmail, apiKey, sessionId, planId, a
       apiKey,
       '',
       `Verification evidence: ${docsUrl}`,
-      'Keep this key private. Questions? Reply to this email or write hello@thumbgate.app.',
+      `Keep this key private. Questions? Reply to this email or write ${supportEmail}.`,
       sessionId ? `Stripe session: ${sessionId}` : null,
       planId ? `Plan: ${planId}` : null,
     ].filter(Boolean).join('\n'),
@@ -591,7 +593,7 @@ function buildTrialActivationEmail({ customerEmail, apiKey, sessionId, planId, a
 
                 <p style="margin:0;font-size:13px;line-height:1.6;color:#526273;">
                   Proof trail: <a href="${safeDocsUrl}" style="color:#087a91;">verification evidence</a>.
-                  Keep this key private. Questions? Reply here or write <a href="mailto:hello@thumbgate.app" style="color:#087a91;">hello@thumbgate.app</a>.
+                  Keep this key private. Questions? Reply here or write <a href="mailto:${safeSupportEmail}" style="color:#087a91;">${safeSupportEmail}</a>.
                 </p>
                 ${sessionId ? `<p style="margin:12px 0 0;font-size:12px;line-height:1.5;color:#7a8790;">Stripe session: ${escapeHtml(sessionId)}</p>` : ''}
               </td>
