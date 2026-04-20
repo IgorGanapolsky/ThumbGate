@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.12.2
+
+### Patch Changes
+
+- [#998](https://github.com/IgorGanapolsky/ThumbGate/pull/998) [`a4bb1f3`](https://github.com/IgorGanapolsky/ThumbGate/commit/a4bb1f3e82a429cec98d4ff9ed4bafa083467847) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Ship all static MCP startup dependencies in the npm package so `thumbgate serve` does not crash with a closed transport.
+
 ## 1.12.1
 
 ### Patch Changes
