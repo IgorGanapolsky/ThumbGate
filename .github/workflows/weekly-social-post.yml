@@ -1,8 +1,8 @@
 name: Weekly Social Post
 
 # Runs the build-in-public weekly stats post every Monday at 14:00 UTC (9am ET).
-# Uses Zernio as the primary publisher (X, LinkedIn, Instagram, TikTok, YouTube)
-# with native X API as fallback.
+# Uses Zernio as the primary publisher (LinkedIn, Instagram, YouTube, Threads,
+# Bluesky). X/Twitter was dropped from distribution 2026-04-20.
 
 on:
   schedule:
@@ -39,11 +39,8 @@ jobs:
       ZERNIO_LINKEDIN_ACCOUNT_ID: ${{ secrets.ZERNIO_LINKEDIN_ACCOUNT_ID }}
       ZERNIO_YOUTUBE_ACCOUNT_ID: ${{ secrets.ZERNIO_YOUTUBE_ACCOUNT_ID }}
       ZERNIO_PROFILE_ID: ${{ secrets.ZERNIO_PROFILE_ID }}
-      # X (Twitter) — fallback publisher
-      X_API_KEY: ${{ secrets.X_API_KEY }}
-      X_API_SECRET: ${{ secrets.X_API_SECRET }}
-      X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
-      X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+      # X/Twitter fallback publisher was retired 2026-04-20. Zernio is the
+      # sole publisher; if it fails, the job surfaces the error and exits.
       # Dev.to — article publishing
       DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
       # Reddit

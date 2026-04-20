@@ -3,8 +3,9 @@ name: Ralph Loop Audience Engagement
 # Ralph Mode is the always-on acquisition loop:
 # - hourly audience sensing and reply monitoring
 # - cache-backed state so CI does not forget handled replies
-# - Reddit remains draft-only; X replies still pass the social quality gate
+# - Reddit remains draft-only; LinkedIn replies pass the social quality gate
 # - outbound campaign posts stay in the separate Ralph Mode workflow
+# - X/Twitter was retired from distribution 2026-04-20.
 
 on:
   schedule:
@@ -49,18 +50,8 @@ jobs:
       ZERNIO_REDDIT_ACCOUNT_ID: ${{ secrets.ZERNIO_REDDIT_ACCOUNT_ID }}
       ZERNIO_TIKTOK_ACCOUNT_ID: ${{ secrets.ZERNIO_TIKTOK_ACCOUNT_ID }}
       ZERNIO_YOUTUBE_ACCOUNT_ID: ${{ secrets.ZERNIO_YOUTUBE_ACCOUNT_ID }}
-      X_API_KEY: ${{ secrets.X_API_KEY }}
-      X_API_SECRET: ${{ secrets.X_API_SECRET }}
-      X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
-      X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
-      X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
-      X_USER_ID: ${{ secrets.X_USER_ID }}
-      X_USERNAME: ${{ secrets.X_USERNAME }}
-      TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
-      TWITTER_API_SECRET: ${{ secrets.TWITTER_API_SECRET }}
-      TWITTER_BEARER_TOKEN: ${{ secrets.TWITTER_BEARER_TOKEN }}
-      TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
-      TWITTER_ACCESS_TOKEN_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
+      # X/Twitter secrets retired 2026-04-20 — the publisher was quarantined
+      # and Ralph Loop no longer emits X replies or campaign posts.
       REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
       REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
       REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
