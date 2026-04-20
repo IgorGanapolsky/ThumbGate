@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
-const { spawnSync } = require('child_process');
+const fs = require('node:fs');
+const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 
 const { getRuntimeDir, resolveProjectDir } = require('./feedback-paths');
 
@@ -117,12 +117,12 @@ function inferWorkItemLabel(branchName = '') {
     return '';
   }
 
-  const explicitMatch = normalized.match(/(?:^|[/-])(AB#\d+)(?:$|[/-])/i);
+  const explicitMatch = /(?:^|[/-])(AB#\d+)(?:$|[/-])/i.exec(normalized);
   if (explicitMatch) {
     return explicitMatch[1].toUpperCase();
   }
 
-  const numericMatch = normalized.match(/(?:^|[/-])(\d{4,})(?:$|[/-])/);
+  const numericMatch = /(?:^|[/-])(\d{4,})(?:$|[/-])/.exec(normalized);
   if (!numericMatch) {
     return '';
   }

@@ -108,7 +108,7 @@ fi
 # ── ThumbGate package metadata ────────────────────────────────────────
 TG_VERSION="unknown"; TG_TIER="Free"
 _META_JSON=$(node "${SCRIPT_DIR}/statusline-meta.js" 2>/dev/null)
-if [ -n "$_META_JSON" ]; then
+if [[ -n "$_META_JSON" ]]; then
   eval "$(echo "$_META_JSON" | jq -r '
     @sh "TG_VERSION=\(.version // "unknown")",
     @sh "TG_TIER=\(.tier // "Free")"
@@ -118,7 +118,7 @@ fi
 # ── Repo context (branch / work item / PR) ───────────────────────────
 BRANCH_NAME=""; WORK_ITEM_LABEL=""; PR_LABEL=""
 _CONTEXT_JSON=$(node "${SCRIPT_DIR}/statusline-context.js" 2>/dev/null)
-if [ -n "$_CONTEXT_JSON" ]; then
+if [[ -n "$_CONTEXT_JSON" ]]; then
   eval "$(echo "$_CONTEXT_JSON" | jq -r '
     @sh "BRANCH_NAME=\(.branchName // "")",
     @sh "WORK_ITEM_LABEL=\(.workItemLabel // "")",
@@ -129,7 +129,7 @@ fi
 # ── Control Tower stats ──────────────────────────────────────────
 SLO_V="0"; AT_RISK="0"; ANOMALIES="0"
 _TOWER_JSON=$(node "${SCRIPT_DIR}/statusline-tower.js" 2>/dev/null)
-if [ -n "$_TOWER_JSON" ]; then
+if [[ -n "$_TOWER_JSON" ]]; then
   eval "$(echo "$_TOWER_JSON" | jq -r '
     @sh "SLO_V=\(.sloViolations // 0)",
     @sh "AT_RISK=\(.atRiskToolCount // 0)",
@@ -140,7 +140,7 @@ fi
 # ── Latest lesson (data available for extensions; not rendered in statusbar) ──
 LESSON_TEXT=""; LESSON_ID=""; LESSON_LABEL=""; LESSON_LINK=""
 _LESSON_JSON=$(node "${SCRIPT_DIR}/statusline-lesson.js" 2>/dev/null)
-if [ -n "$_LESSON_JSON" ]; then
+if [[ -n "$_LESSON_JSON" ]]; then
   eval "$(echo "$_LESSON_JSON" | jq -r '
     @sh "LESSON_TEXT=\(.text // "")",
     @sh "LESSON_ID=\(.lessonId // "")",
@@ -166,7 +166,7 @@ osc_link() {
   # ThumbGate as a non-last row in a multi-line statusline should set this, because
   # some agents (Claude Code) silently drop downstream rows when a preceding row
   # contains OSC 8 sequences.
-  if [ "${THUMBGATE_STATUSLINE_PLAIN:-0}" = "1" ]; then
+  if [[ "${THUMBGATE_STATUSLINE_PLAIN:-0}" = "1" ]]; then
     printf '%s' "$label"
     return 0
   fi
@@ -182,9 +182,9 @@ DOWN_LINK="$(osc_link "$DOWN_URL" "👎")"
 DASHBOARD_LINK="$(osc_link "$DASHBOARD_URL" "$DASHBOARD_LABEL")"
 LESSONS_LINK="$(osc_link "$LESSONS_URL" "$LESSONS_LABEL")"
 LATEST_LESSON_LINK=""
-if [ -n "$LESSON_LABEL" ]; then
+if [[ -n "$LESSON_LABEL" ]]; then
   _DISPLAY_LINK="$LESSON_LINK"
-  if [ -n "$LESSON_TEXT" ]; then
+  if [[ -n "$LESSON_TEXT" ]]; then
     LATEST_LESSON_LINK="$(osc_link "$_DISPLAY_LINK" "${LESSON_LABEL}: ${LESSON_TEXT}")"
   else
     LATEST_LESSON_LINK="$(osc_link "$_DISPLAY_LINK" "$LESSON_LABEL")"
@@ -193,25 +193,25 @@ fi
 
 # ── Output (single line) ─────────────────────────────────────────
 LINE=""
-[ -n "$BRANCH_NAME" ] && LINE="${BRANCH_NAME}"
-[ -n "$WORK_ITEM_LABEL" ] && LINE="${LINE:+${LINE} · }${WORK_ITEM_LABEL}"
+[[ -n "$BRANCH_NAME" ]] && LINE="${BRANCH_NAME}"
+[[ -n "$WORK_ITEM_LABEL" ]] && LINE="${LINE:+${LINE} · }${WORK_ITEM_LABEL}"
 LINE="${LINE:+${LINE} · }ThumbGate v${TG_VERSION} · ${TG_TIER}"
-if [ "$UP" = "0" ] && [ "$DOWN" = "0" ]; then
+if [[ "$UP" = "0" && "$DOWN" = "0" ]]; then
   LINE="${D}${LINE}${RST} · no feedback yet"
-  [ -n "$PR_LABEL" ] && LINE="${LINE} · ${D}${PR_LABEL}${RST}"
+  [[ -n "$PR_LABEL" ]] && LINE="${LINE} · ${D}${PR_LABEL}${RST}"
   LINE="${LINE} · ${C}${DASHBOARD_LINK}${RST} · ${M}${LESSONS_LINK}${RST}"
-  [ -n "$LATEST_LESSON_LINK" ] && LINE="${LINE} · ${D}${LATEST_LESSON_LINK}${RST}"
+  [[ -n "$LATEST_LESSON_LINK" ]] && LINE="${LINE} · ${D}${LATEST_LESSON_LINK}${RST}"
   printf '%b\n' "$LINE"
 else
   LINE="${LINE} · ${G}${BD}${UP}${RST}${UP_LINK} ${R}${BD}${DOWN}${RST}${DOWN_LINK} ${ARROW}"
 
   # Control Tower alerts (if any)
-  [ "${SLO_V:-0}" -gt 0 ] && LINE="${LINE} ${R}${SLO_V} SLO${RST}"
-  [ "${AT_RISK:-0}" -gt 0 ] && LINE="${LINE} ${R}${AT_RISK}⚠${RST}"
-  [ "${ANOMALIES:-0}" -gt 0 ] && LINE="${LINE} ${R}${ANOMALIES}☠${RST}"
-  [ -n "$PR_LABEL" ] && LINE="${LINE} · ${D}${PR_LABEL}${RST}"
+  [[ "${SLO_V:-0}" -gt 0 ]] && LINE="${LINE} ${R}${SLO_V} SLO${RST}"
+  [[ "${AT_RISK:-0}" -gt 0 ]] && LINE="${LINE} ${R}${AT_RISK}⚠${RST}"
+  [[ "${ANOMALIES:-0}" -gt 0 ]] && LINE="${LINE} ${R}${ANOMALIES}☠${RST}"
+  [[ -n "$PR_LABEL" ]] && LINE="${LINE} · ${D}${PR_LABEL}${RST}"
   LINE="${LINE} · ${C}${DASHBOARD_LINK}${RST} · ${M}${LESSONS_LINK}${RST}"
-  [ -n "$LATEST_LESSON_LINK" ] && LINE="${LINE} · ${D}${LATEST_LESSON_LINK}${RST}"
+  [[ -n "$LATEST_LESSON_LINK" ]] && LINE="${LINE} · ${D}${LATEST_LESSON_LINK}${RST}"
 
   printf '%b\n' "$LINE"
 fi
