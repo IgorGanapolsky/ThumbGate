@@ -75,6 +75,7 @@ test('tools/list returns all configured tools', async () => {
   assert.equal(result.tools.length, TOOLS.length);
   assert.ok(result.tools.some((tool) => tool.name === 'run_autoresearch'));
   assert.ok(result.tools.some((tool) => tool.name === 'plan_multimodal_retrieval'));
+  assert.ok(result.tools.some((tool) => tool.name === 'plan_context_footprint'));
   for (const tool of result.tools) {
     const annotations = tool.annotations || {};
     const hasReadOnlyHint = annotations.readOnlyHint === true;
@@ -106,6 +107,36 @@ test('plan_multimodal_retrieval returns a visual proof retrieval rollout plan', 
   assert.equal(payload.deployment.defaultEmbeddingDim, 512);
   assert.ok(payload.deployment.matryoshkaDimensions.some((entry) => entry.dim === 128));
   assert.ok(payload.thumbgateUseCases.some((useCase) => useCase.includes('proof artifact')));
+});
+
+test('plan_context_footprint returns progressive discovery and compaction savings', async () => {
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 33,
+    method: 'tools/call',
+    params: {
+      name: 'plan_context_footprint',
+      arguments: {
+        entries: [
+          { id: 'anchor', signal: 'negative', context: 'keep proof', whatWentWrong: 'force push' },
+          { id: 'e1', signal: 'negative', context: 'x'.repeat(500), whatWentWrong: 'same repeated failure' },
+          { id: 'e2', signal: 'negative', context: 'x'.repeat(500), whatWentWrong: 'same repeated failure' },
+        ],
+        anchors: [
+          { id: 'anchor', signal: 'negative', context: 'keep proof', whatWentWrong: 'force push' },
+        ],
+        perEntryMaxChars: 80,
+        targetReduction: 0.22,
+      },
+    },
+  });
+
+  const payload = JSON.parse(result.content[0].text);
+  assert.equal(payload.name, 'thumbgate-context-footprint');
+  assert.equal(payload.mcpToolDiscovery.qualityContract.behaviorPreserved, true);
+  assert.ok(payload.mcpToolDiscovery.footprint.savings.estimatedTokens > 0);
+  assert.equal(payload.feedbackContext.qualityContract.anchorsPreserved, true);
+  assert.ok(payload.feedbackContext.footprint.savings.estimatedTokens > 0);
 });
 
 test('list_harnesses tool returns the natural-language harness catalog', async () => {
