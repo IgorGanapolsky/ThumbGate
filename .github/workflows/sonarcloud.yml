@@ -120,7 +120,7 @@ jobs:
           SHORT_SHA=$(printf '%s' "$GITHUB_SHA" | cut -c1-12)
           echo "value=${{ steps.package-version.outputs.version }}+sha.$SHORT_SHA" >> "$GITHUB_OUTPUT"
 
-      - name: Run SonarCloud scan (quality gate)
+      - name: Run SonarCloud scan (pull request / merge queue)
         if: steps.sonar-scope.outputs.scan == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]') && (github.event_name == 'pull_request' || github.event_name == 'merge_group')
         uses: SonarSource/sonarqube-scan-action@v7.1.0
         env:
@@ -128,8 +128,14 @@ jobs:
         with:
           args: >
             -Dsonar.projectVersion=${{ steps.package-version.outputs.version }}
-            -Dsonar.qualitygate.wait=true
-            -Dsonar.qualitygate.timeout=600
+
+      - name: Check SonarCloud quality gate
+        if: steps.sonar-scope.outputs.scan == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]') && (github.event_name == 'pull_request' || github.event_name == 'merge_group')
+        uses: SonarSource/sonarqube-quality-gate-action@v1.2.0
+        with:
+          pollingTimeoutSec: 600
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       - name: Run SonarCloud scan (default branch refresh)
         if: steps.sonar-scope.outputs.scan == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
