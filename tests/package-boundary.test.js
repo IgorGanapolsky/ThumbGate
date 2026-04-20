@@ -164,9 +164,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // published `thumbgate serve` with a closed MCP transport.
   // Bumped 230 → 232 (2026-04-20) to ship the read-only operator artifact
   // generator and its PR pulse dependency for published MCP/CLI runtimes.
+  // Bumped 232 → 233 (2026-04-20) to ship scripts/rule-validator.js, the
+  // Autogenesis-inspired pre-promotion validator that feedback-loop.js
+  // requires at captureFeedback time before writing synthesized-rules.jsonl.
   assert.ok(
-    manifest.fileCount <= 232,
-    `npm package should stay <= 232 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 233,
+    `npm package should stay <= 233 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

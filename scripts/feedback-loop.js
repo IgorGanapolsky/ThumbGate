@@ -1210,14 +1210,49 @@ function captureFeedback(params) {
       const merged = mergeIntoExisting(MEMORY_LOG_PATH, similar.match, memoryRecord, feedbackEvent);
       synthesisResult = { action: 'merged', existingId: similar.match.id, similarity: similar.similarity, occurrences: merged.occurrences };
 
-      // Auto-promote if threshold reached
+      // Auto-promote if threshold reached, but only after the rule
+      // validator (scripts/rule-validator.js) confirms the proposed trigger
+      // matches the seed lesson and has acceptable precision on recent
+      // overlapping-tag events. This plugs the Autogenesis "validate
+      // before integrate" phase that was missing from the original
+      // promotion path — previously every threshold-crossing lesson
+      // shipped a rule regardless of whether it would over-block positives.
       if (shouldAutoPromote(merged)) {
         const rule = synthesizePreventionRule(merged);
-        synthesisResult.autoPromoted = true;
+        let validation = null;
+        try {
+          const { validateProposedRule } = require('./rule-validator');
+          // Sample the last 50 memory events across both signals. Using
+          // memory-log rather than feedback-log because memory records
+          // carry the richer title/content fields the validator scores
+          // against, and findSimilarLesson already reads this file.
+          const recentEvents = readJSONL(MEMORY_LOG_PATH).slice(-50);
+          validation = validateProposedRule(rule, {
+            seedLesson: merged,
+            recentEvents,
+          });
+          rule.validation = validation;
+        } catch (_valErr) {
+          // Validator failure must not block the existing pipeline; fall
+          // back to the legacy "promote unconditionally" behavior.
+          validation = { shouldPromote: true, reason: 'validator_error', error: _valErr.message };
+          rule.validation = validation;
+        }
+
         synthesisResult.preventionRule = rule;
-        // Store the synthesized rule
-        const rulesPath = path.join(path.dirname(MEMORY_LOG_PATH), 'synthesized-rules.jsonl');
-        appendJSONLLocal(rulesPath, rule);
+        synthesisResult.validation = validation;
+        if (validation.shouldPromote) {
+          synthesisResult.autoPromoted = true;
+          // Store the synthesized rule
+          const rulesPath = path.join(path.dirname(MEMORY_LOG_PATH), 'synthesized-rules.jsonl');
+          appendJSONLLocal(rulesPath, rule);
+        } else {
+          // Park rejected rules in a side log so operators can audit them.
+          synthesisResult.autoPromoted = false;
+          synthesisResult.rejectionReason = validation.reason;
+          const rejectedPath = path.join(path.dirname(MEMORY_LOG_PATH), 'rejected-rules.jsonl');
+          appendJSONLLocal(rejectedPath, rule);
+        }
       }
     } else {
       // No similar lesson — check exact duplicate, then store
