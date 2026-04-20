@@ -7,7 +7,11 @@
  * Usage:
  *   node scripts/post-everywhere.js docs/marketing/reddit-cursor-post.md
  *   node scripts/post-everywhere.js docs/marketing/reddit-cursor-post.md --dry-run
- *   node scripts/post-everywhere.js docs/marketing/reddit-cursor-post.md --platforms=reddit,x,devto
+ *   node scripts/post-everywhere.js docs/marketing/reddit-cursor-post.md --platforms=reddit,linkedin,threads
+ *
+ * Active channels (2026-04-20 onward): reddit, linkedin, threads, bluesky,
+ * instagram, youtube. X/Twitter was dropped from the default distribution
+ * loop on 2026-04-20; its publisher module was retired.
  *
  * Post file format (markdown with metadata):
  *   # Reddit Post: r/cursor
@@ -34,10 +38,10 @@ const { isDuplicate, recordPost } = require('./social-analytics/publishers/zerni
 function getPublisher(platform) {
   const publishers = {
     reddit: () => require('./social-analytics/publishers/reddit.js'),
-    x: () => require('./post-to-x.js'),
     linkedin: () => require('./social-analytics/publishers/linkedin.js'),
     devto: () => require('./social-analytics/publishers/devto.js'),
     threads: () => require('./social-analytics/publishers/threads.js'),
+    bluesky: () => require('./social-analytics/publishers/zernio.js'),
     instagram: () => require('./social-analytics/publishers/instagram.js'),
     tiktok: () => require('./social-analytics/publishers/tiktok.js'),
     youtube: () => require('./social-analytics/publishers/youtube.js'),
@@ -69,14 +73,18 @@ function parsePostFile(filePath) {
     tags: [],
   };
 
-  // Detect platform from header
+  // Detect platform from header. X/Twitter was retired 2026-04-20 and is no
+  // longer mapped — any such header falls through to the default platform list.
   const header = lines[0] || '';
   if (/reddit/i.test(header)) result.platform = 'reddit';
   else if (/obsidian/i.test(header)) result.platform = 'reddit'; // Obsidian posts go to Reddit
   else if (/locallama/i.test(header)) result.platform = 'reddit';
   else if (/programming/i.test(header)) result.platform = 'reddit';
-  else if (/twitter|x\.com/i.test(header)) result.platform = 'x';
   else if (/linkedin/i.test(header)) result.platform = 'linkedin';
+  else if (/threads/i.test(header)) result.platform = 'threads';
+  else if (/bluesky|bsky/i.test(header)) result.platform = 'bluesky';
+  else if (/instagram/i.test(header)) result.platform = 'instagram';
+  else if (/youtube/i.test(header)) result.platform = 'youtube';
   else if (/dev\.to/i.test(header)) result.platform = 'devto';
 
   // Extract subreddit
@@ -152,19 +160,6 @@ async function postToReddit(parsed, dryRun) {
   }
 
   return postData;
-}
-
-async function postToX(parsed, dryRun) {
-  const text = parsed.title ? `${parsed.title}\n\n${(parsed.body || '').slice(0, 240)}` : parsed.body;
-  if (!text) throw new Error('X post requires title or body');
-
-  if (dryRun) {
-    console.log(`[dry-run] X/Twitter: "${text.slice(0, 100)}..." (${text.length} chars)`);
-    return { dryRun: true };
-  }
-
-  const x = getPublisher('x');
-  return x.postTweet(text);
 }
 
 async function postToLinkedIn(parsed, dryRun) {
@@ -255,18 +250,46 @@ async function postToInstagram(parsed, dryRun, deps = {}) {
   return postThumbGateToInstagram({ caption, imagePath });
 }
 
+async function postToThreads(parsed, dryRun) {
+  const text = [parsed.title, parsed.body].filter(Boolean).join('\n\n').slice(0, 500);
+  if (!text) throw new Error('Threads post requires title or body');
+
+  if (dryRun) {
+    console.log(`[dry-run] Threads: "${text.slice(0, 100)}..." (${text.length} chars)`);
+    return { dryRun: true };
+  }
+
+  const threads = getPublisher('threads');
+  return threads.publishPost({ text });
+}
+
+async function postToBluesky(parsed, dryRun) {
+  const text = [parsed.title, parsed.body].filter(Boolean).join('\n\n').slice(0, 300);
+  if (!text) throw new Error('Bluesky post requires title or body');
+
+  if (dryRun) {
+    console.log(`[dry-run] Bluesky: "${text.slice(0, 100)}..." (${text.length} chars)`);
+    return { dryRun: true };
+  }
+
+  // Bluesky posts route through Zernio's aggregator.
+  const zernio = getPublisher('bluesky');
+  return zernio.publishPost({ text, platform: 'bluesky' });
+}
+
 // ---------------------------------------------------------------------------
 // Main orchestrator
 // ---------------------------------------------------------------------------
 
 const DISPATCHERS = {
   reddit: postToReddit,
-  x: postToX,
   linkedin: postToLinkedIn,
   devto: postToDevTo,
   tiktok: postToTikTok,
   youtube: postToYouTube,
   instagram: postToInstagram,
+  threads: postToThreads,
+  bluesky: postToBluesky,
 };
 
 async function postEverywhere(filePath, { platforms, dryRun, deps = {} } = {}) {
@@ -286,8 +309,9 @@ async function postEverywhere(filePath, { platforms, dryRun, deps = {} } = {}) {
   // Determine which platforms to post to.
   // Default excludes devto — high-volume Dev.to posting is counterproductive (0 engagement on 427 posts).
   // Use --platforms=devto explicitly for monthly cross-posts only.
-  const DEFAULT_PLATFORMS = ['reddit', 'x', 'linkedin', 'tiktok', 'youtube'];
-  const targetPlatforms = platforms || (parsed.platform ? [parsed.platform] : DEFAULT_PLATFORMS);
+  // X/Twitter was removed from DEFAULT_PLATFORMS on 2026-04-20; current focus
+  // is Reddit, LinkedIn, Threads, Bluesky, Instagram, YouTube.
+  const targetPlatforms = platforms || (parsed.platform ? [parsed.platform] : Array.from(DEFAULT_PLATFORMS));
 
   // Preserve original body/comment so each platform gets a fresh UTM tag
   const originalBody = parsed.body;
@@ -330,7 +354,16 @@ async function postEverywhere(filePath, { platforms, dryRun, deps = {} } = {}) {
   return results;
 }
 
-module.exports = { postEverywhere, parsePostFile };
+const DEFAULT_PLATFORMS = Object.freeze([
+  'reddit',
+  'linkedin',
+  'threads',
+  'bluesky',
+  'instagram',
+  'youtube',
+]);
+
+module.exports = { postEverywhere, parsePostFile, DEFAULT_PLATFORMS, DISPATCHERS };
 
 // ---------------------------------------------------------------------------
 // CLI
@@ -350,7 +383,7 @@ if (require.main === module) {
   const platforms = platformsArg ? platformsArg.split(',').map((p) => p.trim()) : null;
 
   if (!filePath) {
-    console.error('Usage: node scripts/post-everywhere.js <post-file.md> [--dry-run] [--platforms=reddit,x,devto]');
+    console.error('Usage: node scripts/post-everywhere.js <post-file.md> [--dry-run] [--platforms=reddit,linkedin,threads,bluesky,instagram,youtube]');
     process.exit(1);
   }
 
