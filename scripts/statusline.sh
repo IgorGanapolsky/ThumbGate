@@ -115,6 +115,17 @@ if [ -n "$_META_JSON" ]; then
   ' 2>/dev/null)"
 fi
 
+# ── Repo context (branch / work item / PR) ───────────────────────────
+BRANCH_NAME=""; WORK_ITEM_LABEL=""; PR_LABEL=""
+_CONTEXT_JSON=$(node "${SCRIPT_DIR}/statusline-context.js" 2>/dev/null)
+if [ -n "$_CONTEXT_JSON" ]; then
+  eval "$(echo "$_CONTEXT_JSON" | jq -r '
+    @sh "BRANCH_NAME=\(.branchName // "")",
+    @sh "WORK_ITEM_LABEL=\(.workItemLabel // "")",
+    @sh "PR_LABEL=\(.prLabel // "")"
+  ' 2>/dev/null)"
+fi
+
 # ── Control Tower stats ──────────────────────────────────────────
 SLO_V="0"; AT_RISK="0"; ANOMALIES="0"
 _TOWER_JSON=$(node "${SCRIPT_DIR}/statusline-tower.js" 2>/dev/null)
@@ -181,9 +192,14 @@ if [ -n "$LESSON_LABEL" ]; then
 fi
 
 # ── Output (single line) ─────────────────────────────────────────
-LINE="ThumbGate v${TG_VERSION} · ${TG_TIER}"
+LINE=""
+[ -n "$BRANCH_NAME" ] && LINE="${BRANCH_NAME}"
+[ -n "$WORK_ITEM_LABEL" ] && LINE="${LINE:+${LINE} · }${WORK_ITEM_LABEL}"
+LINE="${LINE:+${LINE} · }ThumbGate v${TG_VERSION} · ${TG_TIER}"
 if [ "$UP" = "0" ] && [ "$DOWN" = "0" ]; then
-  LINE="${D}${LINE} · no feedback yet${RST} · ${C}${DASHBOARD_LINK}${RST} · ${M}${LESSONS_LINK}${RST}"
+  LINE="${D}${LINE}${RST} · no feedback yet"
+  [ -n "$PR_LABEL" ] && LINE="${LINE} · ${D}${PR_LABEL}${RST}"
+  LINE="${LINE} · ${C}${DASHBOARD_LINK}${RST} · ${M}${LESSONS_LINK}${RST}"
   [ -n "$LATEST_LESSON_LINK" ] && LINE="${LINE} · ${D}${LATEST_LESSON_LINK}${RST}"
   printf '%b\n' "$LINE"
 else
@@ -193,6 +209,7 @@ else
   [ "${SLO_V:-0}" -gt 0 ] && LINE="${LINE} ${R}${SLO_V} SLO${RST}"
   [ "${AT_RISK:-0}" -gt 0 ] && LINE="${LINE} ${R}${AT_RISK}⚠${RST}"
   [ "${ANOMALIES:-0}" -gt 0 ] && LINE="${LINE} ${R}${ANOMALIES}☠${RST}"
+  [ -n "$PR_LABEL" ] && LINE="${LINE} · ${D}${PR_LABEL}${RST}"
   LINE="${LINE} · ${C}${DASHBOARD_LINK}${RST} · ${M}${LESSONS_LINK}${RST}"
   [ -n "$LATEST_LESSON_LINK" ] && LINE="${LINE} · ${D}${LATEST_LESSON_LINK}${RST}"
 
