@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const DEFAULT_WINDOW_HOURS = 24;
 const MAX_WINDOW_HOURS = 24 * 30;
@@ -64,6 +64,10 @@ function formatCurrency(cents) {
 
 function compactList(items, limit = 5) {
   return (Array.isArray(items) ? items : []).filter(Boolean).slice(0, limit);
+}
+
+function getErrorMessage(error) {
+  return String(error?.message || error);
 }
 
 function artifactBase(type, options = {}) {
@@ -283,6 +287,81 @@ function classifyPr(pr, checks) {
   return { state: 'pending', blockers: [pr.mergeStateStatus || 'unknown_state'] };
 }
 
+function createPrRow(pr, checks, classification) {
+  return {
+    number: pr.number,
+    title: pr.title,
+    url: pr.url,
+    draft: Boolean(pr.isDraft),
+    mergeStateStatus: pr.mergeStateStatus || null,
+    reviewDecision: pr.reviewDecision || null,
+    state: classification.state,
+    blockers: classification.blockers,
+    checkCount: checks.length,
+  };
+}
+
+function groupPrRows(rows) {
+  return {
+    ready: rows.filter((row) => row.state === 'ready'),
+    blocked: rows.filter((row) => row.state === 'blocked'),
+    pending: rows.filter((row) => row.state === 'pending'),
+    drafts: rows.filter((row) => row.state === 'draft'),
+  };
+}
+
+function getPrPulseStatus(groups) {
+  if (groups.blocked.length > 0) return 'blocked';
+  if (groups.ready.length > 0) return 'actionable';
+  if (groups.pending.length > 0) return 'watch';
+  return 'healthy';
+}
+
+function getPrPulseDecision(groups) {
+  if (groups.ready.length > 0) {
+    return {
+      label: 'Submit ready PRs through protected merge path',
+      rationale: 'Terminal checks and merge state are clean for at least one open PR.',
+    };
+  }
+  if (groups.blocked.length > 0) {
+    return {
+      label: 'Fix PR blockers',
+      rationale: 'One or more PRs have failing checks, draft state, or merge-state blockers.',
+    };
+  }
+  if (groups.pending.length > 0) {
+    return {
+      label: 'Wait for terminal checks',
+      rationale: 'Checks are still running; merging now would violate the protected path.',
+    };
+  }
+  return {
+    label: 'No PR action',
+    rationale: 'No open PRs require operator action.',
+  };
+}
+
+function formatPrNumbers(rows) {
+  return rows.map((row) => `#${row.number}`).join(', ');
+}
+
+function formatBlockedPrs(rows) {
+  return rows.map((row) => {
+    const blocker = row.blockers[0] || 'blocked';
+    return `#${row.number} (${blocker})`;
+  }).join(', ');
+}
+
+function buildPrNextActions(groups) {
+  return compactList([
+    groups.ready.length > 0 ? `Run npm run pr:manage for PR(s): ${formatPrNumbers(groups.ready)}.` : null,
+    groups.blocked.length > 0 ? `Unblock PR(s): ${formatBlockedPrs(groups.blocked)}.` : null,
+    groups.pending.length > 0 ? `Recheck pending PR(s): ${formatPrNumbers(groups.pending)}.` : null,
+    groups.drafts.length > 0 ? `Leave draft PR(s) alone until marked ready: ${formatPrNumbers(groups.drafts)}.` : null,
+  ], 4);
+}
+
 async function buildPrPulseArtifact(options = {}) {
   const type = 'pr-pulse';
   const artifact = artifactBase(type, options);
@@ -302,56 +381,30 @@ async function buildPrPulseArtifact(options = {}) {
         checks = await prClient.getPrChecks(number);
       } catch (err) {
         checks = [];
-        checkError = String(err && err.message ? err.message : err);
+        checkError = getErrorMessage(err);
       }
     }
     const classification = checkError
       ? { state: 'blocked', blockers: [checkError] }
       : classifyPr(pr, checks);
-    rows.push({
-      number,
-      title: pr.title,
-      url: pr.url,
-      draft: Boolean(pr.isDraft),
-      mergeStateStatus: pr.mergeStateStatus || null,
-      reviewDecision: pr.reviewDecision || null,
-      state: classification.state,
-      blockers: classification.blockers,
-      checkCount: checks.length,
-    });
+    rows.push(createPrRow(pr, checks, classification));
   }
 
-  const ready = rows.filter((row) => row.state === 'ready');
-  const blocked = rows.filter((row) => row.state === 'blocked');
-  const pending = rows.filter((row) => row.state === 'pending');
-  const drafts = rows.filter((row) => row.state === 'draft');
+  const groups = groupPrRows(rows);
+  const decision = getPrPulseDecision(groups);
 
   artifact.metrics = {
     open: rows.length,
-    ready: ready.length,
-    blocked: blocked.length,
-    pending: pending.length,
-    draft: drafts.length,
+    ready: groups.ready.length,
+    blocked: groups.blocked.length,
+    pending: groups.pending.length,
+    draft: groups.drafts.length,
   };
-  artifact.status = blocked.length > 0 ? 'blocked' : ready.length > 0 ? 'actionable' : pending.length > 0 ? 'watch' : 'healthy';
-  artifact.summary = `${rows.length} open PR(s): ${ready.length} ready, ${blocked.length} blocked, ${pending.length} pending, ${drafts.length} draft.`;
-  artifact.decision.label = ready.length > 0 ? 'Submit ready PRs through protected merge path'
-    : blocked.length > 0 ? 'Fix PR blockers'
-      : pending.length > 0 ? 'Wait for terminal checks'
-        : 'No PR action';
-  artifact.decision.rationale = ready.length > 0
-    ? 'Terminal checks and merge state are clean for at least one open PR.'
-    : blocked.length > 0
-      ? 'One or more PRs have failing checks, draft state, or merge-state blockers.'
-      : pending.length > 0
-        ? 'Checks are still running; merging now would violate the protected path.'
-        : 'No open PRs require operator action.';
-  artifact.decision.nextActions = compactList([
-    ready.length > 0 ? `Run npm run pr:manage for PR(s): ${ready.map((row) => `#${row.number}`).join(', ')}.` : null,
-    blocked.length > 0 ? `Unblock PR(s): ${blocked.map((row) => `#${row.number} (${row.blockers[0] || 'blocked'})`).join(', ')}.` : null,
-    pending.length > 0 ? `Recheck pending PR(s): ${pending.map((row) => `#${row.number}`).join(', ')}.` : null,
-    drafts.length > 0 ? `Leave draft PR(s) alone until marked ready: ${drafts.map((row) => `#${row.number}`).join(', ')}.` : null,
-  ], 4);
+  artifact.status = getPrPulseStatus(groups);
+  artifact.summary = `${rows.length} open PR(s): ${groups.ready.length} ready, ${groups.blocked.length} blocked, ${groups.pending.length} pending, ${groups.drafts.length} draft.`;
+  artifact.decision.label = decision.label;
+  artifact.decision.rationale = decision.rationale;
+  artifact.decision.nextActions = buildPrNextActions(groups);
   artifact.sections = [
     {
       title: 'Open PRs',
@@ -361,8 +414,8 @@ async function buildPrPulseArtifact(options = {}) {
   ];
   artifact.evidence = [
     buildEvidence('openPrs', rows.length),
-    buildEvidence('readyPrs', ready.map((row) => `#${row.number}`).join(', ') || 'none'),
-    buildEvidence('blockedPrs', blocked.map((row) => `#${row.number}`).join(', ') || 'none'),
+    buildEvidence('readyPrs', formatPrNumbers(groups.ready) || 'none'),
+    buildEvidence('blockedPrs', formatPrNumbers(groups.blocked) || 'none'),
   ];
   return artifact;
 }
@@ -398,7 +451,7 @@ function buildReleaseReadinessArtifact(options = {}) {
     artifact.decision.label = 'Hold release until readiness blockers are cleared';
     artifact.decision.rationale = 'Release work needs a loaded gate config and no unresolved readiness warnings.';
     artifact.decision.nextActions = compactList([
-      !gateConfigLoaded ? 'Restore the gate config before release work.' : null,
+      gateConfigLoaded ? null : 'Restore the gate config before release work.',
       warnings[0] ? `Resolve readiness warning: ${warnings[0]}` : null,
       auditWarnings > 0 ? `Clear ${auditWarnings} gate audit warning(s).` : null,
       'Run the clean-worktree verification suite before publishing.',
@@ -530,7 +583,11 @@ module.exports = {
   normalizeWindowHours,
 };
 
-if (require.main === module) {
+function isDirectCli() {
+  return Boolean(process.argv[1] && path.resolve(process.argv[1]) === __filename);
+}
+
+if (isDirectCli()) {
   const args = process.argv.slice(2);
   const typeArg = args.find((arg) => arg.startsWith('--type='));
   const windowArg = args.find((arg) => arg.startsWith('--window-hours='));
@@ -545,7 +602,7 @@ if (require.main === module) {
     }
     process.stdout.write(`${JSON.stringify(artifact, null, 2)}\n`);
   }).catch((err) => {
-    console.error(err && err.message ? err.message : err);
+    console.error(getErrorMessage(err));
     process.exit(1);
   });
 }
