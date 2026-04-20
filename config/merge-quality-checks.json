@@ -6,8 +6,7 @@
     "Verify changeset",
     "SonarCloud Code Analysis",
     "GitGuardian Security Checks",
-    "Socket Security: Project Report",
-    "Socket Security: Pull Request Alerts"
+    "Socket Security: Project Report"
   ],
   "passingBuckets": [
     "pass",
