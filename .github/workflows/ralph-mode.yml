@@ -32,7 +32,7 @@ jobs:
         run: mkdir -p .thumbgate .artifacts/ralph-mode
 
       - name: Restore Ralph Mode state
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: .thumbgate/ralph-state.json
           key: ralph-mode-state-${{ github.run_id }}
@@ -62,7 +62,7 @@ jobs:
 
       - name: Save Ralph Mode state
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: .thumbgate/ralph-state.json
           key: ralph-mode-state-${{ github.run_id }}
