@@ -310,6 +310,14 @@ function resolveEffectiveInput(rawToolInput) {
 
 function maybeBlockOnRisk(lessons) {
   if (!isTrueEnv(process.env.THUMBGATE_HOOKS_ENFORCE)) return null;
+
+  // Bayes-optimal path: cost-weighted argmax over {block, allow} using a
+  // loss matrix that can make a single `deploy-prod`-tagged lesson veto
+  // the call on its own. Falls back transparently to the legacy threshold
+  // rule when disabled or when the scorer has no signal yet.
+  const bayesReason = maybeBlockViaBayesOptimal(lessons);
+  if (bayesReason) return bayesReason;
+
   const rawThreshold = Number(process.env.THUMBGATE_HOOKS_ENFORCE_THRESHOLD || DEFAULT_RISK_THRESHOLD);
   const threshold = Number.isFinite(rawThreshold) ? rawThreshold : DEFAULT_RISK_THRESHOLD;
   const risk = findBlockingRisk(lessons, threshold);
@@ -319,6 +327,96 @@ function maybeBlockOnRisk(lessons) {
     + `Prior lesson: ${(risk.lesson.whatToChange || risk.lesson.title || '').toString().slice(0, MAX_WRITE_SNIPPET_LEN)}. `
     + `Set THUMBGATE_HOOKS_ENFORCE=0 to override after you have addressed the lesson.`
   );
+}
+
+// Bayes-optimal enforcement is opt-in today: set
+// `THUMBGATE_HOOKS_BAYES_OPTIMAL=1` (or `bayesOptimalEnabled: true` in
+// `config/enforcement.json`) to flip the decision rule from threshold-on-
+// heuristic to cost-weighted argmax. The path is defensively fail-open: any
+// exception inside the Bayes layer returns null and lets the legacy rule run.
+function maybeBlockViaBayesOptimal(lessons) {
+  try {
+    if (!isBayesOptimalEnabled()) return null;
+
+    const pkgRoot = path.resolve(__dirname, '..');
+    const riskScorer = require(path.join(pkgRoot, 'scripts', 'risk-scorer'));
+    const bayes = require(path.join(pkgRoot, 'scripts', 'bayes-optimal-gate'));
+
+    const summary = riskScorer.getRiskSummary();
+    if (!summary) return null;
+
+    const rateMap = bayes.buildRiskRateMap(summary.highRiskTags);
+    if (rateMap.size === 0) return null;
+
+    const lossMatrix = bayes.loadLossMatrix();
+    let worst = null;
+    for (const lesson of lessons || []) {
+      const tags = tagsForLesson(lesson);
+      if (tags.length === 0) continue;
+      const posterior = bayes.computeBayesPosterior({
+        tags,
+        riskByTag: rateMap,
+        baseRate: summary.baseRate,
+      });
+      const decision = bayes.bayesOptimalDecision(posterior, tags, lossMatrix);
+      if (decision.decision !== 'block') continue;
+      const dominantTag = findDominantTag(tags, lossMatrix);
+      const candidate = { lesson, tags, posterior, decision, dominantTag };
+      if (!worst || decision.expectedLoss.allow > worst.decision.expectedLoss.allow) {
+        worst = candidate;
+      }
+    }
+    if (!worst) return null;
+
+    const { lesson, dominantTag, posterior, decision } = worst;
+    const lessonText = (lesson.whatToChange || lesson.title || '').toString().slice(0, MAX_WRITE_SNIPPET_LEN);
+    return (
+      `ThumbGate blocked (Bayes-optimal): P(harmful|tags) = ${posterior.pHarmful}; `
+      + `dominant tag "${dominantTag}" — E[loss|allow]=${decision.expectedLoss.allow} vs E[loss|block]=${decision.expectedLoss.block}. `
+      + `Prior lesson: ${lessonText}. `
+      + `Override via THUMBGATE_HOOKS_BAYES_OPTIMAL=0 or adjust config/enforcement.json.`
+    );
+  } catch (err) {
+    failOpen(err);
+    return null;
+  }
+}
+
+function isBayesOptimalEnabled() {
+  if (process.env.THUMBGATE_HOOKS_BAYES_OPTIMAL !== undefined) {
+    return isTrueEnv(process.env.THUMBGATE_HOOKS_BAYES_OPTIMAL);
+  }
+  try {
+    const pkgRoot = path.resolve(__dirname, '..');
+    const configPath = path.join(pkgRoot, 'config', 'enforcement.json');
+    if (!fs.existsSync(configPath)) return false;
+    const raw = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    return Boolean(raw?.bayesOptimalEnabled);
+  } catch (err) {
+    failOpen(err);
+    return false;
+  }
+}
+
+// Pick the tag whose false-allow cost dominates the decision, for the
+// operator-facing block message. When nothing overrides `default`, we
+// just return the first normalized tag so the reason stays explainable.
+function findDominantTag(tags, lossMatrix) {
+  let best = { tag: null, cost: -Infinity };
+  for (const tag of tags || []) {
+    const key = String(tag || '').trim().toLowerCase();
+    if (!key) continue;
+    const cost = Number(lossMatrix?.falseAllow?.[key]);
+    if (Number.isFinite(cost) && cost > best.cost) {
+      best = { tag: key, cost };
+    }
+  }
+  if (best.tag) return best.tag;
+  for (const tag of tags || []) {
+    const key = String(tag || '').trim().toLowerCase();
+    if (key) return key;
+  }
+  return '(unknown)';
 }
 
 function main() {
@@ -390,6 +488,9 @@ module.exports = {
   formatLessonsAsReminder,
   resolveEffectiveInput,
   maybeBlockOnRisk,
+  maybeBlockViaBayesOptimal,
+  isBayesOptimalEnabled,
+  findDominantTag,
   resolveGitBinary,
   isEntryPoint,
   main,

@@ -4,6 +4,8 @@
 const fs = require('fs');
 const path = require('path');
 const { getAutoGatesPath } = require('./auto-promote-gates');
+const { computeBayesErrorRate } = require('./bayes-optimal-gate');
+const { sequencePathFor } = require('./risk-scorer');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const MANUAL_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'default.json');
@@ -55,6 +57,14 @@ function calculateStats() {
   const estimatedMinutesSaved = (totalBlocked + totalWarned) * 15;
   const estimatedHoursSaved = (estimatedMinutesSaved / 60).toFixed(1);
 
+  // Bayes error rate: irreducible error floor of the current scorer given its
+  // feature set (tag signatures). If this is near zero, the scorer is already
+  // close to optimal — threshold tuning won't help, and new features are the
+  // only lever. If this is high, the feature set can't discriminate the signal
+  // and we should add features (file path, recency, commit context) rather
+  // than tune thresholds. Null when no feedback sequences have been recorded.
+  const bayesErrorRate = tryComputeBayesErrorRate();
+
   return {
     totalGates: allGates.length,
     manualGates: manualGates.length,
@@ -66,8 +76,24 @@ function calculateStats() {
     topBlocked,
     lastPromotion,
     estimatedHoursSaved,
+    bayesErrorRate,
     gates: allGates,
   };
+}
+
+function tryComputeBayesErrorRate() {
+  try {
+    const seqPath = sequencePathFor();
+    if (!fs.existsSync(seqPath)) return null;
+    const rows = fs.readFileSync(seqPath, 'utf8')
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => { try { return JSON.parse(line); } catch { return null; } })
+      .filter(Boolean);
+    return computeBayesErrorRate(rows);
+  } catch {
+    return null;
+  }
 }
 
 function formatLastPromotion(promo) {
@@ -94,7 +120,16 @@ function formatStats(stats) {
   lines.push(`  Top blocked gate: ${stats.topBlocked ? `${stats.topBlocked.id} (${stats.topBlocked.occurrences || 0} blocks)` : 'none'}`);
   lines.push(`  Last promotion: ${formatLastPromotion(stats.lastPromotion)}`);
   lines.push(`  Estimated time saved: ~${stats.estimatedHoursSaved} hours`);
+  lines.push(`  Bayes error rate: ${formatBayesErrorRate(stats.bayesErrorRate)}`);
   return lines.join('\n');
+}
+
+function formatBayesErrorRate(rate) {
+  if (rate === null || rate === undefined) return 'n/a (no feedback sequences yet)';
+  const pct = (rate * 100).toFixed(1);
+  if (rate < 0.02) return `${pct}% — scorer is near-optimal; add features, don't tune thresholds`;
+  if (rate < 0.10) return `${pct}% — scorer has modest headroom`;
+  return `${pct}% — high irreducible error; the feature set can't discriminate`;
 }
 
 if (require.main === module) {
@@ -111,6 +146,8 @@ module.exports = {
   calculateStats,
   formatStats,
   formatLastPromotion,
+  formatBayesErrorRate,
   loadGatesFile,
+  tryComputeBayesErrorRate,
   MANUAL_GATES_PATH,
 };
