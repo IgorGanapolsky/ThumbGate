@@ -457,7 +457,7 @@ test('CI workflow supports merge queue and cancels stale non-main runs', () => {
   assert.match(workflow, /group:\s*ci-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.ref\s*\}\}/);
   assert.match(workflow, /cancel-in-progress:\s*\$\{\{\s*github\.ref != 'refs\/heads\/main'\s*\}\}/);
   assert.match(workflow, /name: Check operational integrity[\s\S]*?GH_TOKEN:\s*\$\{\{\s*github\.token\s*\}\}[\s\S]*?npm run ops:integrity:ci/);
-  assert.match(workflow, /name: Check branch protection congruence[\s\S]*?GH_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT \|\| github\.token\s*\}\}[\s\S]*?npm run branch-protection:check/);
+  assert.match(workflow, /name: Check branch protection congruence[\s\S]*?if:\s*github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.user\.login != 'dependabot\[bot\]'[\s\S]*?GH_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT \|\| github\.token\s*\}\}[\s\S]*?npm run branch-protection:check/);
 });
 
 test('CI workflow gives the full suite enough runtime budget', () => {
@@ -499,6 +499,7 @@ test('SonarCloud workflow refreshes main and stamps scans with the package versi
   assert.match(workflow, /cancel-in-progress:\s*\$\{\{\s*github\.ref != 'refs\/heads\/main'\s*\}\}/);
   assert.match(workflow, /name:\s*SonarCloud Code Analysis/);
   assert.match(workflow, /fetch-depth:\s*0/);
+  assert.match(workflow, /name:\s*Skip SonarCloud scan for Dependabot PRs/);
   assert.match(workflow, /npm ci --onnxruntime-node-install-cuda=skip/);
   assert.match(workflow, /Generate LCOV coverage report[\s\S]*?NODE_V8_COVERAGE=\.coverage\/raw node scripts\/test-coverage\.js/);
   assert.match(workflow, /npx c8 report[\s\S]*?--reporter=lcov/);
@@ -515,7 +516,9 @@ test('SonarCloud workflow waits on quality gates only for PR and merge-queue sca
 
   assert.ok(qualityGateStep, 'quality gate step should exist');
   assert.ok(defaultBranchStep, 'default branch refresh step should exist');
+  assert.match(workflow, /github\.event\.pull_request\.user\.login == 'dependabot\[bot\]'/);
   assert.match(qualityGateStep[0], /github\.event_name == 'pull_request' \|\| github\.event_name == 'merge_group'/);
+  assert.match(qualityGateStep[0], /!\(github\.event_name == 'pull_request' && github\.event\.pull_request\.user\.login == 'dependabot\[bot\]'\)/);
   assert.match(qualityGateStep[0], /uses:\s*SonarSource\/sonarqube-scan-action@v7\.1\.0/);
   assert.match(workflow, /SONAR_TOKEN:\s*\$\{\{\s*secrets\.SONAR_TOKEN\s*\}\}/);
   assert.match(qualityGateStep[0], /-Dsonar\.projectVersion=\$\{\{\s*steps\.package-version\.outputs\.version\s*\}\}/);
@@ -578,6 +581,11 @@ test('Dependabot auto-merge trusts the pull request author instead of the trigge
   assert.match(workflow, /group:\s*dependabot-automerge-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.run_id\s*\}\}/);
   assert.match(workflow, /jobs:\s+dependabot-automerge:\s+name:\s*dependabot-automerge/s);
   assert.match(workflow, /THUMBGATE_MAIN_MERGE_PROVIDER:\s*trunk/);
+  assert.match(workflow, /name:\s*Checkout trusted base workflow tools/);
+  assert.match(workflow, /name:\s*Checkout Dependabot head/);
+  assert.match(workflow, /name:\s*Add generated changeset for manifest-only dependency bumps/);
+  assert.match(workflow, /node scripts\/dependabot-changeset\.js --title "\$PR_TITLE" --output "\$output_path"/);
+  assert.match(workflow, /git -C \.dependabot-head push origin "HEAD:\$\{HEAD_REF\}"/);
   assert.match(workflow, /gh api "repos\/\$\{GITHUB_REPOSITORY\}\/issues\/\$\{PR_NUMBER\}\/comments"/);
   assert.match(workflow, /-f body='\/trunk merge'/);
   assert.doesNotMatch(workflow, /gh pr checks "\$PR_URL"/);

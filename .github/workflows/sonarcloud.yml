@@ -59,8 +59,13 @@ jobs:
         run: |
           echo "No files in Sonar-scanned surfaces changed; required SonarCloud job exits successfully without scanner startup."
 
+      - name: Skip SonarCloud scan for Dependabot PRs
+        if: steps.sonar-scope.outputs.scan == 'true' && github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]'
+        run: |
+          echo "Dependabot pull requests do not receive SONAR_TOKEN-backed quality gate access; skipping SonarCloud and relying on CI plus CodeQL."
+
       - name: Setup Node
-        if: steps.sonar-scope.outputs.scan == 'true'
+        if: steps.sonar-scope.outputs.scan == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]')
         uses: actions/setup-node@v6
         with:
           node-version: '20'
@@ -70,19 +75,19 @@ jobs:
             workers/package-lock.json
 
       - name: Cache SonarCloud packages
-        if: steps.sonar-scope.outputs.scan == 'true'
-        uses: actions/cache@v4
+        if: steps.sonar-scope.outputs.scan == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]')
+        uses: actions/cache@v5
         with:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
       - name: Install deps
-        if: steps.sonar-scope.outputs.scan == 'true'
+        if: steps.sonar-scope.outputs.scan == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]')
         run: npm ci --onnxruntime-node-install-cuda=skip
 
       - name: Generate LCOV coverage report
-        if: steps.sonar-scope.outputs.scan == 'true'
+        if: steps.sonar-scope.outputs.scan == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]')
         run: |
           rm -rf .coverage coverage
           mkdir -p .coverage/raw
@@ -103,20 +108,20 @@ jobs:
 
       - name: Read package version
         id: package-version
-        if: steps.sonar-scope.outputs.scan == 'true'
+        if: steps.sonar-scope.outputs.scan == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]')
         run: |
           VERSION=$(node -p 'require("./package.json").version')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Build Sonar mainline analysis version
         id: sonar-mainline-version
-        if: steps.sonar-scope.outputs.scan == 'true'
+        if: steps.sonar-scope.outputs.scan == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]')
         run: |
           SHORT_SHA=$(printf '%s' "$GITHUB_SHA" | cut -c1-12)
           echo "value=${{ steps.package-version.outputs.version }}+sha.$SHORT_SHA" >> "$GITHUB_OUTPUT"
 
       - name: Run SonarCloud scan (quality gate)
-        if: steps.sonar-scope.outputs.scan == 'true' && (github.event_name == 'pull_request' || github.event_name == 'merge_group')
+        if: steps.sonar-scope.outputs.scan == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]') && (github.event_name == 'pull_request' || github.event_name == 'merge_group')
         uses: SonarSource/sonarqube-scan-action@v7.1.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -127,7 +132,7 @@ jobs:
             -Dsonar.qualitygate.timeout=600
 
       - name: Run SonarCloud scan (default branch refresh)
-        if: steps.sonar-scope.outputs.scan == 'true' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        if: steps.sonar-scope.outputs.scan == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         uses: SonarSource/sonarqube-scan-action@v7.1.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
