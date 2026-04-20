@@ -109,34 +109,38 @@ function buildStatus(db, options = {}) {
 }
 
 function renderStatus(status) {
-  const lines = [];
-  lines.push('=== Zernio Social Status ===');
-  lines.push(`Generated: ${status.generatedAt}`);
-  lines.push(`Window:    last ${status.windowHours}h (since ${status.cutoffDate})`);
-  lines.push(`Healthy:   ${status.healthyPlatforms}/${status.expectedPlatforms} platforms`);
-  lines.push(`Total rows: ${status.totalRows}`);
-  lines.push('');
-  lines.push('Platform      Rows(24h)  Last fetched at');
-  lines.push('----------    ---------  ----------------------------');
-  for (const row of status.perPlatform) {
+  const header = [
+    '=== Zernio Social Status ===',
+    `Generated: ${status.generatedAt}`,
+    `Window:    last ${status.windowHours}h (since ${status.cutoffDate})`,
+    `Healthy:   ${status.healthyPlatforms}/${status.expectedPlatforms} platforms`,
+    `Total rows: ${status.totalRows}`,
+    '',
+    'Platform      Rows(24h)  Last fetched at',
+    '----------    ---------  ----------------------------',
+  ];
+
+  const rows = status.perPlatform.map((row) => {
     const platform = row.platform.padEnd(13);
     const count = String(row.rows_24h).padStart(9);
     const fetched = row.last_fetched_at || '(never)';
     const marker = row.status === 'OK' ? '✅' : '❌';
-    lines.push(`${marker} ${platform} ${count}  ${fetched}`);
-  }
-  lines.push('');
-  if (!status.healthy) {
-    lines.push('❌ NO DATA in the last 24h.');
-    lines.push('   Likely causes:');
-    lines.push('     • ZERNIO_API_KEY missing or revoked');
-    lines.push('     • Zernio 402 "Analytics add-on required" paywall');
-    lines.push('     • No accounts connected in Zernio dashboard');
-    lines.push('   Run: node scripts/social-analytics/pollers/zernio.js');
-  } else {
-    lines.push('✅ Zernio analytics are flowing.');
-  }
-  return lines.join('\n');
+    return `${marker} ${platform} ${count}  ${fetched}`;
+  });
+
+  const footer = status.healthy
+    ? ['', '✅ Zernio analytics are flowing.']
+    : [
+        '',
+        '❌ NO DATA in the last 24h.',
+        '   Likely causes:',
+        '     • ZERNIO_API_KEY missing or revoked',
+        '     • Zernio 402 "Analytics add-on required" paywall',
+        '     • No accounts connected in Zernio dashboard',
+        '   Run: node scripts/social-analytics/pollers/zernio.js',
+      ];
+
+  return [...header, ...rows, ...footer].join('\n');
 }
 
 function main() {
@@ -144,7 +148,7 @@ function main() {
   try {
     const status = buildStatus(db);
     console.log(renderStatus(status));
-    if (!status.healthy) {
+    if (status.healthy !== true) {
       process.exitCode = 1;
     }
   } finally {
@@ -152,7 +156,11 @@ function main() {
   }
 }
 
-if (require.main === module) {
+// Use filename comparison instead of `require.main === module` because
+// SonarCloud's S3403 rule flags the latter as a type-mismatch, even though
+// it's the idiomatic Node check.
+const isEntrypoint = !!require.main && require.main.filename === __filename;
+if (isEntrypoint) {
   main();
 }
 
