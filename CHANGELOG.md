@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.12.1
+
+### Patch Changes
+
+- [#990](https://github.com/IgorGanapolsky/ThumbGate/pull/990) [`6698e44`](https://github.com/IgorGanapolsky/ThumbGate/commit/6698e449d4e234b22bd6c772eba70b090237c5ce) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a structural local-only gate that blocks remote git, PR, release, and publish actions before configurable gate evaluation.
+
+  Update published Claude Code MCP installers to resolve `thumbgate@latest` without reusing stale installed runtime binaries.
+
+- [#980](https://github.com/IgorGanapolsky/ThumbGate/pull/980) [`81f81b4`](https://github.com/IgorGanapolsky/ThumbGate/commit/81f81b48a5cc3bfc66bd91e576c3f34fad7e86db) Thanks [@dependabot](https://github.com/apps/dependabot)! - Add the release note required for the `@anthropic-ai/sdk` 0.90.0 dependency bump so manifest-only Dependabot updates pass ThumbGate's release hygiene checks.
+
 ## 1.12.0
 
 ### Minor Changes
