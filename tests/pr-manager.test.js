@@ -319,6 +319,28 @@ test('PR Manager - managePrs returns noop when there are no open PRs', async () 
   assert.deepEqual(result.prs, []);
 });
 
+test('PR Manager - managePrs returns noop when an explicit PR number is already merged', async () => {
+  const runner = createRunner([
+    {
+      status: 0,
+      stdout: JSON.stringify({
+        number: 1009,
+        state: 'MERGED',
+        title: 'Merged release PR',
+        mergeable: 'UNKNOWN',
+        mergeStateStatus: 'UNKNOWN',
+        isDraft: false,
+        statusCheckRollup: []
+      }),
+      stderr: ''
+    }
+  ]);
+
+  const result = await managePrs('1009', runner, { waitForMerge: false });
+  assert.equal(result.status, 'noop');
+  assert.deepEqual(result.prs, []);
+});
+
 test('PR Manager - managePrs merges ready open PRs discovered from the repo list', async () => {
   const mockPr = {
     number: 282,

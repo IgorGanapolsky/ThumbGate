@@ -163,7 +163,8 @@ function isOpenPr(pr) {
 
 function loadManagedPrs(prNumber = '', runner = runGh) {
   if (prNumber) {
-    return [getPrStatus(prNumber, runner)];
+    const explicitPr = getPrStatus(prNumber, runner);
+    return isOpenPr(explicitPr) ? [explicitPr] : [];
   }
 
   const currentBranchPr = getPrStatus('', runner);
