@@ -1670,6 +1670,32 @@ function dashboard() {
     });
 }
 
+function artifacts() {
+  const argv = process.argv.slice(3);
+  const args = parseArgs(argv);
+  const positionalType = argv.find((arg) => !arg.startsWith('--'));
+  const {
+    generateOperatorArtifact,
+    formatArtifactMarkdown,
+  } = require(path.join(PKG_ROOT, 'scripts', 'operator-artifacts'));
+
+  generateOperatorArtifact({
+    type: args.type || positionalType || 'reliability-pulse',
+    windowHours: args['window-hours'] || args.window,
+  })
+    .then((artifact) => {
+      if (args.json) {
+        console.log(JSON.stringify(artifact, null, 2));
+        return;
+      }
+      process.stdout.write(formatArtifactMarkdown(artifact));
+    })
+    .catch((err) => {
+      console.error(err && err.message ? err.message : err);
+      process.exit(1);
+    });
+}
+
 function gateStats() {
   const args = parseArgs(process.argv.slice(3));
   const { calculateStats, formatStats } = require(path.join(PKG_ROOT, 'scripts', 'gate-stats'));
@@ -2087,6 +2113,10 @@ switch (COMMAND) {
   }
   case 'dashboard':
     dashboard();
+    break;
+  case 'artifact':
+  case 'artifacts':
+    artifacts();
     break;
   case 'analytics': {
     const { run: runAnalytics } = require(path.join(PKG_ROOT, 'scripts', 'analytics-report'));

@@ -75,7 +75,7 @@ test('findCommand returns undefined for unknown name', () => {
 
 test('core commands are all registered in schema', () => {
   const required = ['capture', 'lessons', 'stats', 'gate-stats', 'explore',
-    'rules', 'doctor', 'export-dpo', 'init', 'serve', 'dashboard'];
+    'artifacts', 'rules', 'doctor', 'export-dpo', 'init', 'serve', 'dashboard'];
   for (const name of required) {
     assert.ok(findCommand(name), `${name} must be in CLI_COMMANDS`);
   }
@@ -100,6 +100,16 @@ test('gate-stats command has --json flag', () => {
   const cmd = findCommand('gate-stats');
   const flagNames = cmd.flags.map((f) => f.name);
   assert.ok(flagNames.includes('json'), 'gate-stats must have --json flag');
+});
+
+test('artifacts command is bound to the operator artifact MCP tool', () => {
+  const cmd = findCommand('artifact');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'artifacts');
+  assert.equal(cmd.mcpTool, 'generate_operator_artifact');
+  assert.ok(flagNames.includes('type'), 'artifacts must have --type flag');
+  assert.ok(flagNames.includes('window-hours'), 'artifacts must have --window-hours flag');
+  assert.ok(flagNames.includes('json'), 'artifacts must have --json flag');
 });
 
 // ---------------------------------------------------------------------------

@@ -78,6 +78,18 @@ const CLI_COMMANDS = [
     ],
   },
   {
+    name: 'artifacts',
+    aliases: ['artifact'],
+    description: 'Operator decision artifacts - PR, reliability, revenue, and release pulses',
+    group: 'discovery',
+    mcpTool: 'generate_operator_artifact',
+    flags: [
+      { name: 'type', type: 'string', description: 'pr-pulse | reliability-pulse | revenue-pulse | release-readiness' },
+      { name: 'window-hours', type: 'number', description: 'Lookback window in hours (default 24)' },
+      { name: 'json', type: 'boolean', description: 'Output as JSON' },
+    ],
+  },
+  {
     name: 'summary',
     description: 'Human-readable feedback summary',
     group: 'discovery',
