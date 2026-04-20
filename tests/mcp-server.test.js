@@ -224,6 +224,27 @@ test('settings_status tool returns resolved settings with origin metadata', asyn
   assert.ok(payload.origins.some((entry) => entry.path === 'mcp.defaultProfile'));
 });
 
+test('generate_operator_artifact returns a decision-ready reliability pulse over MCP', async () => {
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 34,
+    method: 'tools/call',
+    params: {
+      name: 'generate_operator_artifact',
+      arguments: {
+        type: 'reliability-pulse',
+        windowHours: 24,
+      },
+    },
+  });
+
+  const payload = JSON.parse(result.content[0].text);
+  assert.equal(payload.type, 'reliability-pulse');
+  assert.ok(payload.decision.label);
+  assert.ok(Array.isArray(payload.decision.nextActions));
+  assert.ok(payload.evidence.some((entry) => entry.label === 'session_report.windowHours'));
+});
+
 test('run_harness tool executes a natural-language harness over MCP', async () => {
   delete require.cache[RUNNER_PATH];
   delete require.cache[HARNESS_PATH];
