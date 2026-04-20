@@ -366,10 +366,12 @@ module.exports = {
   collectEvidenceArtifacts,
   getWorkflowPaths,
   normalizePlan,
+  parseArgs,
   readWorkflowReport,
   recordAutonomousWorkflowRun,
   resumeAutonomousWorkflow,
   runAutonomousWorkflow,
+  slugify,
   writeWorkflowPlan,
   writeWorkflowReport,
 };

@@ -164,3 +164,38 @@ test('getStatuslineContext short-circuits via _TEST env override', () => {
   });
   assert.deepEqual(result, fixture);
 });
+
+test('getStatuslineContext runs the full path and writes the cache when no TEST override', () => {
+  const home = makeTmpHome();
+  try {
+    // Stub gh/git binaries as absent by forcing env that points at a non-existent THUMBGATE_GIT_BIN.
+    // With no executables resolvable, branchName/prNumber fall through to empty strings.
+    const env = {
+      HOME: home,
+      THUMBGATE_STATUSLINE_BRANCH: 'feature/AB#1234-demo',
+      THUMBGATE_STATUSLINE_PR_NUMBER: '99',
+      THUMBGATE_RUNTIME_DIR: path.join(home, '.thumbgate'),
+    };
+    const result = getStatuslineContext({ env, cwd: home, homeDir: home });
+    assert.equal(result.branchName, 'feature/AB#1234-demo');
+    assert.equal(result.workItemLabel, 'AB#1234');
+    assert.equal(result.prNumber, '99');
+    assert.equal(result.prLabel, 'PR #99');
+    assert.ok(result.updatedAt);
+
+    // Cache was written
+    const cached = readContextCache({ env, home });
+    assert.ok(cached);
+    assert.equal(cached.prNumber, '99');
+
+    // Second call with cache hit should reuse prNumber when cache is fresh
+    const second = getStatuslineContext({
+      env: { ...env, THUMBGATE_STATUSLINE_PR_NUMBER: '' },
+      cwd: home,
+      homeDir: home,
+    });
+    assert.equal(second.prNumber, '99', 'should reuse fresh cached prNumber');
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});

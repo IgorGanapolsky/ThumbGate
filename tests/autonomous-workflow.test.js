@@ -251,3 +251,26 @@ test.test('getWorkflowPaths derives sibling artifact paths inside the workflow r
   assert.equal(paths.reportMdPath, '/tmp/proj/.thumbgate/autonomous-workflows/demo/report.md');
   assert.equal(paths.planPath, '/tmp/proj/.thumbgate/autonomous-workflows/demo/plan.json');
 });
+
+test.test('slugify strips leading and trailing dashes without regex backtracking', () => {
+  resetRuntimeModules();
+  const { slugify } = require('../scripts/autonomous-workflow');
+  assert.equal(slugify('Hello, World!'), 'hello-world');
+  assert.equal(slugify('---foo---bar---'), 'foo-bar');
+  assert.equal(slugify(''), 'workflow');
+  assert.equal(slugify('', 'my-fallback'), 'my-fallback');
+  assert.equal(slugify('---'), 'workflow');
+  assert.equal(slugify(null), 'workflow');
+  assert.equal(slugify(undefined), 'workflow');
+  assert.equal(slugify(42), '42');
+});
+
+test.test('parseArgs extracts flags and key=value pairs from argv', () => {
+  resetRuntimeModules();
+  const { parseArgs } = require('../scripts/autonomous-workflow');
+  const args = parseArgs(['--file=workflow.json', '--resume', 'positional', '--key=value=with=equals']);
+  assert.equal(args.file, 'workflow.json');
+  assert.equal(args.resume, true);
+  assert.equal(args.key, 'value=with=equals');
+  assert.equal(args.positional, undefined);
+});
