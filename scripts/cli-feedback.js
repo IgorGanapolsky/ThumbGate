@@ -73,8 +73,7 @@ function processInlineFeedback({ signal, context, chatHistory, whatWentWrong, wh
  */
 function formatCliOutput(result) {
   const lines = [];
-  const feedbackSignal = result.feedbackResult
-    && (result.feedbackResult.signal || (result.feedbackResult.feedbackEvent && result.feedbackResult.feedbackEvent.signal));
+  const feedbackSignal = result.feedbackResult?.signal || result.feedbackResult?.feedbackEvent?.signal;
   const isDown = ['down', 'negative', 'thumbs_down'].includes(feedbackSignal);
 
   // Header
