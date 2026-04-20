@@ -189,13 +189,13 @@ function publishedCliAvailable(pkgVersion) {
 
 function resolveMcpEntry({ pkgRoot, pkgVersion, scope = 'project', targetDir = pkgRoot }) {
   if (!isSourceCheckout(pkgRoot)) {
-    return portableMcpEntry(pkgVersion);
+    return codexAutoUpdateMcpEntry();
   }
   if (scope === 'home' && publishedCliAvailable(pkgVersion)) {
-    return portableMcpEntry(pkgVersion);
+    return codexAutoUpdateMcpEntry();
   }
   if (scope === 'project' && !isSameCheckoutFamily(pkgRoot, targetDir) && publishedCliAvailable(pkgVersion)) {
-    return portableMcpEntry(pkgVersion);
+    return codexAutoUpdateMcpEntry();
   }
   return localMcpEntry(pkgRoot, scope);
 }
