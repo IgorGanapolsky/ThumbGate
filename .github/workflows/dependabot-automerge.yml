@@ -29,6 +29,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout trusted base workflow tools
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - name: Auto-approve update
         continue-on-error: true
         uses: actions/github-script@v9
@@ -62,6 +67,55 @@ jobs:
               event: "APPROVE",
               body: "Auto-approved Dependabot update.",
             });
+
+      - name: Checkout Dependabot head
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: ${{ github.token }}
+          path: .dependabot-head
+
+      - name: Add generated changeset for manifest-only dependency bumps
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+
+          mapfile -t changed_files < <(gh pr diff "$PR_URL" --name-only)
+          if [ "${#changed_files[@]}" -eq 0 ]; then
+            echo "No changed files detected for $PR_URL"
+            exit 0
+          fi
+
+          for file in "${changed_files[@]}"; do
+            case "$file" in
+              package.json|package-lock.json) ;;
+              *)
+                echo "Skipping generated changeset because $file is outside manifest-only dependency bumps."
+                exit 0
+                ;;
+            esac
+          done
+
+          output_path=".dependabot-head/.changeset/dependabot-pr-${PR_NUMBER}.md"
+          node scripts/dependabot-changeset.js --title "$PR_TITLE" --output "$output_path" >/tmp/dependabot-changeset-path.txt
+
+          if git -C .dependabot-head diff --quiet -- "$output_path"; then
+            echo "Generated changeset already matches $output_path"
+            exit 0
+          fi
+
+          git -C .dependabot-head config user.name 'github-actions[bot]'
+          git -C .dependabot-head config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C .dependabot-head add "$output_path"
+          git -C .dependabot-head commit -m "chore: add changeset for dependabot PR #${PR_NUMBER}"
+          git -C .dependabot-head push origin "HEAD:${HEAD_REF}"
 
       - name: Request merge automation
         env:
