@@ -1620,6 +1620,68 @@ describe('bin/cli.js', () => {
     fs.rmSync(isolatedHome, { recursive: true, force: true });
   });
 
+  test('init repairs a stale Codex config without requiring a separate wire-hooks command', () => {
+    const isolatedDir = makeTmpDir();
+    const isolatedHome = makeTmpDir();
+    const codexDir = path.join(isolatedHome, '.codex');
+    const settingsPath = path.join(codexDir, 'config.json');
+
+    fs.mkdirSync(codexDir, { recursive: true });
+    fs.writeFileSync(settingsPath, JSON.stringify({
+      hooks: {
+        PreToolUse: [{
+          matcher: 'Bash',
+          hooks: [{
+            type: 'command',
+            command: `mkdir -p ${JSON.stringify(path.join(isolatedHome, '.thumbgate', 'runtime'))} && exec ${JSON.stringify(path.join(isolatedHome, '.thumbgate', 'runtime', 'node_modules', '.bin', 'thumbgate'))} gate-check`,
+          }],
+        }],
+        UserPromptSubmit: [{
+          hooks: [{
+            type: 'command',
+            command: `mkdir -p ${JSON.stringify(path.join(isolatedHome, '.thumbgate', 'runtime'))} && exec ${JSON.stringify(path.join(isolatedHome, '.thumbgate', 'runtime', 'node_modules', '.bin', 'thumbgate'))} hook-auto-capture`,
+          }],
+        }],
+      },
+    }, null, 2) + '\n');
+
+    const result = runCliSync(['init'], {
+      cwd: isolatedDir,
+      env: {
+        ...process.env,
+        HOME: isolatedHome,
+        USERPROFILE: isolatedHome,
+        THUMBGATE_PUBLISH_STATE: 'unpublished',
+      },
+    });
+
+    assert.equal(result.status, 0, `init failed:\n${result.stderr}`);
+    const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    assert.equal(
+      settings.hooks.PreToolUse[0].hooks[0].command,
+      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} gate-check`
+    );
+    assert.equal(
+      settings.hooks.UserPromptSubmit[0].hooks[0].command,
+      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} hook-auto-capture`
+    );
+    assert.equal(
+      settings.hooks.PostToolUse[0].hooks[0].command,
+      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} cache-update`
+    );
+    assert.equal(
+      settings.hooks.SessionStart[0].hooks[0].command,
+      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} session-start`
+    );
+    assert.equal(
+      settings.statusLine.command,
+      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} statusline-render`
+    );
+
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+    fs.rmSync(isolatedHome, { recursive: true, force: true });
+  });
+
   test('init creates config.json with required fields', () => {
     const configPath = path.join(tmpDir, '.thumbgate', 'config.json');
     assert.ok(fs.existsSync(configPath), 'config.json should exist');
