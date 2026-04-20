@@ -28,9 +28,8 @@ jobs:
     timeout-minutes: 15
 
     env:
-      # X (Twitter)
-      X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
-      X_USER_ID: ${{ secrets.X_USER_ID }}
+      # X/Twitter analytics polling retired 2026-04-20 — the publisher was
+      # quarantined and we no longer maintain an X presence to poll.
       # Reddit
       REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
       REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
