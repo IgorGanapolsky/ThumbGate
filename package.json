@@ -566,7 +566,7 @@
     "node": ">=18.18.0"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.88.0",
+    "@anthropic-ai/sdk": "^0.90.0",
     "@google/genai": "^1.49.0",
     "@huggingface/transformers": "^4.0.1",
     "@lancedb/lancedb": "^0.27.2",
@@ -574,7 +574,7 @@
     "better-sqlite3": "^12.9.0",
     "dotenv": "^17.4.2",
     "playwright-core": "^1.59.1",
-    "stripe": "^22.0.1"
+    "stripe": "^22.0.2"
   },
   "overrides": {
     "express@4.22.1": {
