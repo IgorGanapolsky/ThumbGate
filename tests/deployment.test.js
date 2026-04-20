@@ -396,6 +396,8 @@ test('Publish to NPM workflow uses the tested publish-decision guardrail', () =>
   assert.match(workflow, /DEFAULT_BRANCH:\s*main/);
   assert.match(workflow, /steps\.plan\.outputs\.skip_publish == 'true'/);
   assert.match(workflow, /steps\.plan\.outputs\.publish_npm == 'true'/);
+  assert.match(workflow, /'package\.json'\s+'package-lock\.json'\s+'server\.json'/);
+  assert.match(workflow, /'adapters\/\*\*'\s+'plugins\/\*\*'/);
   assert.match(workflow, /npm publish --tag "\$\{\{\s*steps\.plan\.outputs\.npm_tag \|\| 'latest'\s*\}\}" --provenance/);
   assert.match(workflow, /--install-attempts 12 --install-delay-ms 10000/);
 });
