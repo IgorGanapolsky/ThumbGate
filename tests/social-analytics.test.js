@@ -319,25 +319,35 @@ describe('social-analytics UTM builder', () => {
 });
 
 describe('social-analytics poll-all', () => {
-  const { POLLERS } = require('../scripts/social-analytics/poll-all');
+  const {
+    POLLERS,
+    LEGACY_POLLERS,
+  } = require('../scripts/social-analytics/poll-all');
 
-  it('registers all 10 platform pollers', () => {
-    assert.equal(POLLERS.length, 10);
+  // 2026-04-20: POLLERS narrowed to the Zernio-canonical stack (github,
+  // plausible, zernio). The 7 direct-API pollers (instagram, tiktok, linkedin,
+  // x, reddit, threads, youtube) moved to LEGACY_POLLERS and only activate
+  // via THUMBGATE_USE_DIRECT_POLLERS=1. The combined pool still covers the
+  // original 10 platforms.
+  it('default POLLERS is the Zernio-canonical list (github + plausible + zernio)', () => {
+    assert.equal(POLLERS.length, 3);
     const names = POLLERS.map((p) => p.name);
-    assert.ok(names.includes('github'));
-    assert.ok(names.includes('instagram'));
-    assert.ok(names.includes('tiktok'));
-    assert.ok(names.includes('linkedin'));
-    assert.ok(names.includes('x'));
-    assert.ok(names.includes('reddit'));
-    assert.ok(names.includes('threads'));
-    assert.ok(names.includes('youtube'));
-    assert.ok(names.includes('plausible'));
-    assert.ok(names.includes('zernio'));
+    assert.deepEqual(names.sort(), ['github', 'plausible', 'zernio']);
+  });
+
+  it('LEGACY_POLLERS + POLLERS still covers all 10 original platforms', () => {
+    const all = [...POLLERS, ...LEGACY_POLLERS].map((p) => p.name);
+    assert.equal(all.length, 10);
+    for (const name of [
+      'github', 'instagram', 'tiktok', 'linkedin', 'x',
+      'reddit', 'threads', 'youtube', 'plausible', 'zernio',
+    ]) {
+      assert.ok(all.includes(name), `missing poller: ${name}`);
+    }
   });
 
   it('each poller has envRequired array', () => {
-    for (const p of POLLERS) {
+    for (const p of [...POLLERS, ...LEGACY_POLLERS]) {
       assert.ok(Array.isArray(p.envRequired), `${p.name} missing envRequired`);
       assert.ok(p.envRequired.length > 0, `${p.name} has empty envRequired`);
     }
