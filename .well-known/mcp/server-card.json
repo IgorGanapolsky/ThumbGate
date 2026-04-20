@@ -8,6 +8,7 @@
     "manifestUrl": "https://thumbgate-production.up.railway.app/.well-known/mcp.json",
     "toolIndexUrl": "https://thumbgate-production.up.railway.app/.well-known/mcp/tools.json",
     "toolSchemaUrlTemplate": "https://thumbgate-production.up.railway.app/.well-known/mcp/tools/{name}.json",
+    "footprintUrl": "https://thumbgate-production.up.railway.app/.well-known/mcp/footprint.json",
     "skillsUrl": "https://thumbgate-production.up.railway.app/.well-known/mcp/skills.json",
     "applicationsUrl": "https://thumbgate-production.up.railway.app/.well-known/mcp/applications.json"
   }
