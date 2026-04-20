@@ -374,7 +374,7 @@ function generate(options = {}) {
   return { outPath, bytes: Buffer.byteLength(html), version, nowDate };
 }
 
-if (require.main === module) {
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
   try {
     const result = generate();
     console.log(`wrote ${result.outPath} (${result.bytes} bytes) · version ${result.version} · dated ${result.nowDate}`);

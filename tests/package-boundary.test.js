@@ -183,9 +183,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // to actively trim assets.
   // Bumped 2.95 MB → 2.97 MB (2026-04-20) for operator-artifacts.js plus the
   // existing PR manager it composes for the read-only PR pulse.
+  // Bumped 2.97 MB → 2.98 MB (2026-04-20) to ship public/numbers.html
+  // (~12 KB) — first-party data transparency page served at /numbers.
   assert.ok(
-    manifest.unpackedSize <= 2_970_000,
-    `npm package should stay <= 2.97 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 2_980_000,
+    `npm package should stay <= 2.98 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
