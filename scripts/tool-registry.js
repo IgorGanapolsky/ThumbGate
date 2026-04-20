@@ -1042,6 +1042,45 @@ const TOOLS = [
     },
   }),
   readOnlyTool({
+    name: 'require_evidence_for_claim',
+    description: 'Leader-Agent completion gate. Before any agent declares done/fixed/shipped/resolved, require tracked evidence. Blocking response when evidence missing; callers honor the blocking flag to stop completion claims.',
+    inputSchema: {
+      type: 'object',
+      required: ['claim'],
+      properties: {
+        claim: { type: 'string', description: 'The completion claim text to verify (e.g. "Fix shipped", "Tests passing")' },
+        mode: { type: 'string', enum: ['blocking', 'advisory'], description: 'blocking (default) returns blocking=true when evidence missing; advisory returns blocking=false' },
+        sessionId: { type: 'string', description: 'Optional session id to associate with the gate decision' },
+      },
+    },
+  }),
+  destructiveTool({
+    name: 'distribute_context_to_agents',
+    description: 'Leader-Agent swarm coordinator. Constructs one context pack and distributes it to N worker agents (perplexity-bug-resolver, codex-reviewer, grok-x-intelligence, etc.), recording provenance per agent. Replaces N independent context derivations with a single shared pack.',
+    inputSchema: {
+      type: 'object',
+      required: ['agents'],
+      properties: {
+        query: { type: 'string', description: 'Context query used to construct the pack' },
+        agents: { type: 'array', items: { type: 'string' }, description: 'Agent names that should receive the pack' },
+        maxItems: { type: 'number', description: 'Max items in the constructed pack (default 8)' },
+        maxChars: { type: 'number', description: 'Max characters in the constructed pack (default 6000)' },
+        namespaces: { type: 'array', items: { type: 'string' }, description: 'Optional contextfs namespaces to source from' },
+        ttlMs: { type: 'number', description: 'Optional pack TTL in milliseconds (default 15 minutes)' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'session_report',
+    description: 'Unified observability rollup. Aggregates feedback stats, gate stats, and recent context/provenance events over a time window in one call. Replaces separate dashboard/gate_stats/feedback_stats calls with a single LangSmith-style report.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        windowHours: { type: 'number', description: 'Lookback window in hours (default 24, max 720)' },
+      },
+    },
+  }),
+  readOnlyTool({
     name: 'context_stuff_lessons',
     description: 'Dump ALL prevention lessons into a single text block for context-window injection. Bypasses RAG/search — returns every lesson sorted by confidence. For most projects (20-200 lessons), fits in 1K-10K tokens.',
     inputSchema: {

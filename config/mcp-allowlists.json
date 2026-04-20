@@ -52,6 +52,9 @@
       "get_reliability_rules",
       "describe_reliability_entity",
       "report_product_issue",
+      "require_evidence_for_claim",
+      "distribute_context_to_agents",
+      "session_report",
       "perplexity_search",
       "perplexity_ask",
       "perplexity_research",
@@ -81,7 +84,9 @@
       "feedback_stats",
       "feedback_summary",
       "estimate_uncertainty",
-      "report_product_issue"
+      "report_product_issue",
+      "require_evidence_for_claim",
+      "session_report"
     ],
     "commerce": [
       "capture_feedback",
@@ -129,6 +134,8 @@
       "describe_semantic_entity",
       "get_reliability_rules",
       "describe_reliability_entity",
+      "require_evidence_for_claim",
+      "session_report",
       "perplexity_search",
       "perplexity_ask"
     ],
@@ -158,6 +165,8 @@
       "describe_semantic_entity",
       "get_reliability_rules",
       "describe_reliability_entity",
+      "require_evidence_for_claim",
+      "session_report",
       "perplexity_search",
       "perplexity_ask"
     ],
