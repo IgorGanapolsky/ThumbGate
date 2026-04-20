@@ -36,7 +36,12 @@ const SENDER_DNS_CACHE_MS = 10 * 60 * 1000;
 const ANGLE_EMAIL_RE = /<([^<>@\s]{1,64}@[^<>@\s]{1,255})>/;
 const BARE_EMAIL_RE = /([^\s<>@]{1,64}@[^\s<>@]{1,255})/;
 const DKIM_PUBLIC_KEY_RE = /^p=/i;
-const AMAZON_SES_MX_RE = /feedback-smtp\..*amazonaws\.com\.?$/i;
+// Resend fronts outbound mail with Amazon SES; the MX for send.<domain> points
+// at feedback-smtp.<region>.amazonses.com. Earlier revisions of this regex
+// mistakenly matched `amazonaws.com`, so the positive branch never fired in
+// production. Matching `amazonses.com` (optionally with a trailing dot) is
+// what Resend's DNS setup wizard actually publishes.
+const AMAZON_SES_MX_RE = /feedback-smtp\..*amazonses\.com\.?$/i;
 const AMAZON_SES_SPF_RE = /include:amazonses\.com/i;
 const TRAILING_EMAIL_DOMAIN_PUNCTUATION = new Set(['>', ')', ',', '.', ';']);
 const senderDnsCache = new Map();
@@ -504,6 +509,11 @@ module.exports = {
   renderTrialWelcomeBodies,
   _resolveSenderAddress: resolveSenderAddress,
   _hasResendSenderDns: hasResendSenderDns,
+  _recordsHaveResendDns: recordsHaveResendDns,
+  _getCachedSenderDnsReadiness: getCachedSenderDnsReadiness,
+  _setCachedSenderDnsReadiness: setCachedSenderDnsReadiness,
+  _senderDnsCache: senderDnsCache,
+  _SENDER_DNS_CACHE_MS: SENDER_DNS_CACHE_MS,
   _constants: {
     PRODUCT_NAME,
     DASHBOARD_URL,
