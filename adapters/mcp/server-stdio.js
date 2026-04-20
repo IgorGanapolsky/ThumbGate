@@ -122,6 +122,7 @@ const {
 } = require('../../scripts/natural-language-harness');
 const { runLoop: runAutoresearchLoop } = require('../../scripts/autoresearch-runner');
 const { TOOLS } = require('../../scripts/tool-registry');
+const { buildContextFootprintReport } = require('../../scripts/context-footprint');
 const { reflect: reflectOnFeedback } = require('../../scripts/reflector-agent');
 const { submitProductIssue } = require('../../scripts/product-feedback');
 const {
@@ -493,6 +494,7 @@ async function callTool(name, args = {}) {
 }
 
 async function callToolInner(name, args) {
+  args = args || {};
   // Semantic Aliases for high-level branding alignment
   if (name === 'capture_memory_feedback') name = 'capture_feedback';
   if (name === 'get_reliability_rules') name = 'prevention_rules';
@@ -868,6 +870,17 @@ async function callToolInner(name, args) {
       return toTextResult(runHarness(args.harness, args.inputs || {}, { jobId: args.jobId }));
     case 'plan_multimodal_retrieval':
       return toTextResult(buildMultimodalRetrievalPlan(args));
+    case 'plan_context_footprint':
+      return toTextResult(buildContextFootprintReport({
+        tools: TOOLS,
+        entries: Array.isArray(args.entries) ? args.entries : undefined,
+        anchors: Array.isArray(args.anchors) ? args.anchors : undefined,
+        schemaUrlTemplate: args.schemaUrlTemplate || '/.well-known/mcp/tools/{name}.json',
+        targetReduction: args.targetReduction,
+        windowSize: args.windowSize,
+        perEntryMaxChars: args.perEntryMaxChars,
+        totalMaxChars: args.totalMaxChars,
+      }));
     case 'run_autoresearch': {
       const iterations = Math.max(1, Math.min(5, Number(args.iterations || 1)));
       const timeoutMs = Math.max(1000, Math.min(600000, Number(args.timeoutMs || 120000)));

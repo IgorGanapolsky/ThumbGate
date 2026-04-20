@@ -578,6 +578,9 @@ test('public server card exposes MCP tool schemas for directory scanners', async
     assert.ok(tool.inputSchema);
   }
   assert.equal(body.discovery.toolIndexUrl, 'https://app.example.com/.well-known/mcp/tools.json');
+  assert.equal(body.discovery.footprintUrl, 'https://app.example.com/.well-known/mcp/footprint.json');
+  assert.equal(body.footprint.mcpToolDiscovery.qualityContract.behaviorPreserved, true);
+  assert.ok(body.footprint.mcpToolDiscovery.footprint.savings.estimatedTokens > 0);
   assert.ok(Array.isArray(body.skills));
   assert.ok(Array.isArray(body.applications));
   assert.match(body.proof.verificationEvidenceUrl, /VERIFICATION_EVIDENCE\.md/);
@@ -594,14 +597,36 @@ test('public MCP discovery manifest exposes progressive tool, skill, and app loa
   assert.deepEqual(body.transport.unauthenticatedDiscovery, ['initialize', 'tools/list']);
   assert.equal(body.discovery.toolIndexUrl, 'https://app.example.com/.well-known/mcp/tools.json');
   assert.equal(body.discovery.toolSchemaUrlTemplate, 'https://app.example.com/.well-known/mcp/tools/{name}.json');
+  assert.equal(body.discovery.footprintUrl, 'https://app.example.com/.well-known/mcp/footprint.json');
   assert.match(body.discovery.progressive.tokenStrategy, /Do not preload every inputSchema/);
   assert.ok(body.primaryFlows.some((flow) => flow.name === 'capture-to-gate'));
   assert.ok(body.primaryFlows.some((flow) => flow.name === 'metric-autoresearch' && flow.tools.includes('run_autoresearch')));
   assert.ok(body.primaryFlows.some((flow) => flow.name === 'visual-proof-retrieval' && flow.tools.includes('plan_multimodal_retrieval')));
+  assert.ok(body.primaryFlows.some((flow) => flow.name === 'context-footprint-optimizer' && flow.tools.includes('plan_context_footprint')));
   assert.ok(body.skills.some((skill) => skill.name === 'thumbgate'));
   assert.ok(body.skills.some((skill) => skill.name === 'visual-proof-retrieval'));
+  assert.ok(body.skills.some((skill) => skill.name === 'context-footprint-optimizer'));
   assert.ok(body.applications.some((app) => app.name === 'dashboard'));
+  assert.ok(body.footprint.mcpToolDiscovery.footprint.savings.reductionRatio > 0);
   assert.match(body.proof.verificationEvidenceUrl, /VERIFICATION_EVIDENCE\.md/);
+});
+
+test('public MCP footprint report quantifies progressive discovery savings', async () => {
+  const res = await fetch(apiUrl('/.well-known/mcp/footprint.json'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /application\/json/);
+
+  const body = await res.json();
+  assert.equal(body.name, 'thumbgate-context-footprint');
+  assert.equal(typeof body.version, 'string');
+  assert.equal(body.mcpToolDiscovery.kind, 'mcp-tool-discovery');
+  assert.equal(body.mcpToolDiscovery.qualityContract.behaviorPreserved, true);
+  assert.equal(
+    body.mcpToolDiscovery.qualityContract.schemaUrlTemplate,
+    'https://app.example.com/.well-known/mcp/tools/{name}.json',
+  );
+  assert.ok(body.mcpToolDiscovery.footprint.savings.estimatedTokens > 0);
+  assert.ok(body.recommendations.some((item) => item.includes('construct_context_pack')));
 });
 
 test('public MCP tool index supports just-in-time per-tool schema loading', async () => {
@@ -651,6 +676,7 @@ test('public MCP skills and applications are machine-readable for agent onboardi
   const applications = await applicationsRes.json();
   assert.ok(skills.skills.some((skill) => skill.name === 'workflow-hardening-sprint'));
   assert.ok(skills.skills.some((skill) => skill.name === 'visual-proof-retrieval'));
+  assert.ok(skills.skills.some((skill) => skill.name === 'context-footprint-optimizer'));
   assert.ok(skills.skills.every((skill) => Array.isArray(skill.recommendedFlow)));
   assert.ok(applications.applications.some((app) => app.name === 'workflow-sprint-intake'));
   assert.ok(applications.applications.every((app) => app.url.startsWith('https://app.example.com/')));
