@@ -127,7 +127,7 @@ test('local_only constraint blocks git writes', (t) => {
     repoPath: harness.repoDir,
   });
   assert.ok(result, 'should block gh pr create when local_only=true');
-  assert.strictEqual(result.gate, 'local-only-git-writes');
+  assert.strictEqual(result.gate, 'local-only-remote-side-effect');
 });
 
 test('gh pr create requires explicit permission', (t) => {
@@ -187,7 +187,7 @@ test('evaluateGates blocks git push when local_only=true', (t) => {
   });
   assert.ok(result, 'should block git push when local_only=true');
   assert.strictEqual(result.decision, 'deny');
-  assert.strictEqual(result.gate, 'local-only-git-writes');
+  assert.strictEqual(result.gate, 'local-only-remote-side-effect');
 });
 
 test('evaluateGates with Edit tool input uses file_path', (t) => {
