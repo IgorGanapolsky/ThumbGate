@@ -10,6 +10,7 @@ const {
   assertSafeStatusContext,
   diffContexts,
   normalizeContexts,
+  parseRestRuleId,
   runCli,
   resolveGhBinary,
   syncBranchProtection,
@@ -98,6 +99,114 @@ test('syncBranchProtection --check reports drift when main is missing SonarCloud
   assert.ok(result.diff.missing.includes('SonarCloud Code Analysis'));
 });
 
+test('syncBranchProtection falls back to REST branch protection when GraphQL returns no rules', () => {
+  const runner = createRunner([
+    {
+      status: 0,
+      stdout: JSON.stringify({
+        data: {
+          repository: {
+            branchProtectionRules: {
+              nodes: []
+            }
+          }
+        }
+      }),
+      stderr: ''
+    },
+    {
+      status: 0,
+      stdout: JSON.stringify({
+        required_status_checks: {
+          contexts: [
+            'test',
+            'CodeQL',
+            'Analyze JavaScript (javascript-typescript)',
+            'Verify changeset',
+            'SonarCloud Code Analysis',
+            'GitGuardian Security Checks',
+            'Socket Security: Project Report'
+          ]
+        }
+      }),
+      stderr: ''
+    }
+  ]);
+
+  const result = syncBranchProtection({ check: true, repo: 'IgorGanapolsky/ThumbGate', branch: 'main' }, runner);
+  assert.equal(result.ok, true);
+  assert.equal(result.ruleId, 'rest:IgorGanapolsky/ThumbGate#main');
+  assert.deepEqual(result.diff, { missing: [], unexpected: [] });
+});
+
+test('parseRestRuleId validates REST fallback rule ids', () => {
+  assert.deepEqual(parseRestRuleId('rest:IgorGanapolsky/ThumbGate#main'), {
+    owner: 'IgorGanapolsky',
+    name: 'ThumbGate',
+    branch: 'main'
+  });
+  assert.equal(parseRestRuleId('BPR_123'), null);
+  assert.throws(() => parseRestRuleId('rest:IgorGanapolsky/ThumbGate#../main'), /Unsafe branch pattern/);
+});
+
+test('syncBranchProtection updates REST-backed branch protection when GraphQL has no rule', () => {
+  const calls = [];
+  const runner = createRunner([
+    {
+      status: 0,
+      stdout: JSON.stringify({
+        data: {
+          repository: {
+            branchProtectionRules: {
+              nodes: []
+            }
+          }
+        }
+      }),
+      stderr: ''
+    },
+    {
+      status: 0,
+      stdout: JSON.stringify({
+        required_status_checks: {
+          contexts: ['test', 'CodeQL']
+        }
+      }),
+      stderr: ''
+    },
+    {
+      status: 0,
+      stdout: JSON.stringify({
+        contexts: [
+          'test',
+          'CodeQL',
+          'Analyze JavaScript (javascript-typescript)',
+          'Verify changeset',
+          'SonarCloud Code Analysis',
+          'GitGuardian Security Checks',
+          'Socket Security: Project Report'
+        ]
+      }),
+      stderr: ''
+    }
+  ]);
+  const recordingRunner = (args) => {
+    calls.push(args);
+    return runner(args);
+  };
+
+  const result = syncBranchProtection({ repo: 'IgorGanapolsky/ThumbGate', branch: 'main' }, recordingRunner);
+  const patchCall = calls.find((args) => args.includes('PATCH'));
+
+  assert.equal(result.ok, true);
+  assert.equal(result.updated, true);
+  assert.equal(result.ruleId, 'rest:IgorGanapolsky/ThumbGate#main');
+  assert.ok(patchCall, 'expected REST PATCH branch-protection call');
+  assert.ok(patchCall.includes('repos/IgorGanapolsky/ThumbGate/branches/main/protection/required_status_checks'));
+  assert.ok(patchCall.includes('contexts[]=Socket Security: Project Report'));
+  assert.equal(patchCall.includes('contexts[]=Socket Security: Pull Request Alerts'), false);
+});
+
 test('syncBranchProtection updates main branch protection to the configured quality checks', () => {
   const runner = createRunner([
     {
@@ -136,8 +245,7 @@ test('syncBranchProtection updates main branch protection to the configured qual
                 'Verify changeset',
                 'SonarCloud Code Analysis',
                 'GitGuardian Security Checks',
-                'Socket Security: Project Report',
-                'Socket Security: Pull Request Alerts'
+                'Socket Security: Project Report'
               ]
             }
           }
@@ -172,6 +280,11 @@ test('syncBranchProtection throws when the protected branch rule does not exist'
         }
       }),
       stderr: ''
+    },
+    {
+      status: 1,
+      stdout: '',
+      stderr: 'Not Found'
     }
   ]);
 

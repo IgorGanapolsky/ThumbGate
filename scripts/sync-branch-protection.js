@@ -8,6 +8,7 @@ const MERGE_QUALITY_CHECKS = require('../config/merge-quality-checks.json');
 
 const DEFAULT_REPO = process.env.GITHUB_REPOSITORY || 'IgorGanapolsky/ThumbGate';
 const DEFAULT_BRANCH = process.env.DEFAULT_BRANCH || 'main';
+const REST_RULE_ID_RE = /^rest:([^/]+)\/([^#]+)#(.+)$/;
 const FIXED_GH_BINARIES = [
   '/usr/bin/gh',
   '/usr/local/bin/gh',
@@ -156,7 +157,30 @@ function normalizeContexts(contexts = []) {
   }).filter(Boolean))].sort((left, right) => left.localeCompare(right));
 }
 
-function loadBranchProtectionRule(repo, runner = runGh) {
+function loadRestBranchProtectionRule(repo, branch, runner = runGh) {
+  const { owner, name } = splitRepo(repo);
+  const safeBranch = assertSafeBranchPattern(branch);
+  const result = runner([
+    'api',
+    `repos/${owner}/${name}/branches/${safeBranch}/protection`,
+  ]);
+
+  if (result.status !== 0) {
+    return [];
+  }
+
+  const payload = JSON.parse(result.stdout || '{}');
+  const requiredStatusChecks = payload.required_status_checks || null;
+
+  return [{
+    id: `rest:${owner}/${name}#${safeBranch}`,
+    pattern: safeBranch,
+    requiresStatusChecks: Boolean(requiredStatusChecks),
+    requiredStatusCheckContexts: requiredStatusChecks?.contexts || [],
+  }];
+}
+
+function loadBranchProtectionRule(repo, runner = runGh, branch = DEFAULT_BRANCH) {
   const { owner, name } = splitRepo(repo);
   const query = `
     query BranchProtectionRules($owner: String!, $name: String!) {
@@ -191,7 +215,8 @@ function loadBranchProtectionRule(repo, runner = runGh) {
   }
 
   const payload = JSON.parse(result.stdout || '{}');
-  return payload.data?.repository?.branchProtectionRules?.nodes || [];
+  const rules = payload.data?.repository?.branchProtectionRules?.nodes || [];
+  return rules.length > 0 ? rules : loadRestBranchProtectionRule(repo, branch, runner);
 }
 
 function findBranchProtectionRule(rules, branch) {
@@ -208,9 +233,53 @@ function diffContexts(actual, expected) {
   };
 }
 
+function parseRestRuleId(ruleId) {
+  const match = REST_RULE_ID_RE.exec(String(ruleId || ''));
+  if (!match) {
+    return null;
+  }
+  return {
+    owner: assertSafeRepoSegment(match[1], 'owner'),
+    name: assertSafeRepoSegment(match[2], 'name'),
+    branch: assertSafeBranchPattern(match[3]),
+  };
+}
+
 function updateBranchProtectionRule(ruleId, requiredStatusCheckContexts, runner = runGh) {
-  const safeRuleId = assertSafeRuleId(ruleId);
+  const restRule = parseRestRuleId(ruleId);
   const contexts = normalizeContexts(requiredStatusCheckContexts);
+
+  if (restRule) {
+    const args = [
+      'api',
+      '--method',
+      'PATCH',
+      `repos/${restRule.owner}/${restRule.name}/branches/${restRule.branch}/protection/required_status_checks`,
+      '-H',
+      'Accept: application/vnd.github+json',
+      '-F',
+      'strict=true',
+    ];
+    for (const context of contexts) {
+      args.push('-F', `contexts[]=${context}`);
+    }
+
+    const result = runner(args);
+
+    if (result.status !== 0) {
+      throw new Error(`Failed to update branch protection: ${formatGhError(result)}`);
+    }
+
+    const payload = JSON.parse(result.stdout || '{}');
+    return {
+      id: ruleId,
+      pattern: restRule.branch,
+      requiresStatusChecks: true,
+      requiredStatusCheckContexts: payload.contexts || contexts,
+    };
+  }
+
+  const safeRuleId = assertSafeRuleId(ruleId);
   const mutation = `
     mutation UpdateBranchProtectionRule($ruleId: ID!, $contexts: [String!]) {
       updateBranchProtectionRule(input: {
@@ -253,7 +322,7 @@ function syncBranchProtection(options = {}, runner = runGh) {
   const repo = options.repo || DEFAULT_REPO;
   const branch = assertSafeBranchPattern(options.branch || DEFAULT_BRANCH);
   const expectedContexts = normalizeContexts(MERGE_QUALITY_CHECKS.requiredStatusCheckContexts);
-  const rules = loadBranchProtectionRule(repo, runner);
+  const rules = loadBranchProtectionRule(repo, runner, branch);
   const rule = findBranchProtectionRule(rules, branch);
 
   if (!rule) {
@@ -330,7 +399,9 @@ module.exports = {
   diffContexts,
   findBranchProtectionRule,
   loadBranchProtectionRule,
+  loadRestBranchProtectionRule,
   normalizeContexts,
+  parseRestRuleId,
   parseArgs,
   resolveGhBinary,
   runCli,
