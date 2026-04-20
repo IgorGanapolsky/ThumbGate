@@ -2326,6 +2326,9 @@ module.exports = {
   evaluateBoostedRiskTagGuard,
   registerPrThreadResolutionClaimGate,
   evaluatePendingPrThreadResolutionGate,
+  getLocalOnlyScopeSources,
+  isRemoteSideEffectCommand,
+  evaluateLocalOnlyRemoteSideEffectGate,
   PR_THREAD_RESOLUTION_ACTION,
 };
 

@@ -1,6 +1,8 @@
 'use strict';
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
+const fs = require('node:fs');
+const os = require('node:os');
 const path = require('path');
 const {
   parseWorktreePaths,
@@ -67,6 +69,24 @@ describe('mcp-config', () => {
     } finally {
       delete process.env.THUMBGATE_PUBLISH_STATE;
       delete process.env.THUMBGATE_PUBLISHED_CLI_STATE;
+    }
+  });
+
+  it('resolveMcpEntry uses a latest-resolving launcher outside source checkouts', () => {
+    const pkgRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-non-source-'));
+    try {
+      const entry = resolveMcpEntry({
+        pkgRoot,
+        pkgVersion: '1.2.3',
+        scope: 'project',
+        targetDir: pkgRoot,
+      });
+
+      assert.strictEqual(entry.command, 'sh');
+      assert.match(entry.args[1], /thumbgate@latest/);
+      assert.doesNotMatch(entry.args[1], /thumbgate@1\.2\.3/);
+    } finally {
+      fs.rmSync(pkgRoot, { recursive: true, force: true });
     }
   });
 
