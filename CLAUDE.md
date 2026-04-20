@@ -97,7 +97,8 @@ curl -s https://thumbgate-production.up.railway.app/dashboard | grep 'ThumbGate 
 7. After merge, verify `main` CI on the exact merge commit, not just the latest branch run.
 8. Delete the feature branch after merge. Archive unique orphan branches before deleting them.
 9. For `main`, merge submission is Trunk-managed: request `/trunk merge` and let the queue finish asynchronously. Do not build helper workflows that poll their own required check or block on the final merge commit.
-10. Never persist secrets, PATs, or copied credentials into tracked repo files, PR bodies, or local memory notes.
+10. `npm run pr:manage` is the queue conductor: suppress duplicate Trunk submissions while a draft `trunk-merge/pr-*` shadow PR exists, prioritize release and workflow lanes ahead of dependency and feature lanes, and prefer queue backpressure over multiple simultaneous `main` submissions.
+11. Never persist secrets, PATs, or copied credentials into tracked repo files, PR bodies, or local memory notes.
 
 **NEVER say "done" or "pushed" without showing `gh pr view` output first.**
 
