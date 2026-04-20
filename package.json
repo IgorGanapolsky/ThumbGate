@@ -269,7 +269,7 @@
     "test:multi-hop-recall": "node --test tests/multi-hop-recall.test.js",
     "test:synthetic-dpo": "node --test tests/synthetic-dpo.test.js",
     "test:thumbgate-skill": "node --test tests/thumbgate-skill.test.js",
-    "test:statusline": "node --test tests/claude-feedback-sync.test.js tests/statusline.test.js tests/statusline-links.test.js",
+    "test:statusline": "node --test tests/claude-feedback-sync.test.js tests/statusline.test.js tests/statusline-context.test.js tests/statusline-links.test.js",
     "test:memory-dedup": "node --test tests/memory-dedup.test.js",
     "test:lesson-db": "node --test tests/lesson-db.test.js",
     "test:lesson-rotation": "node --test tests/lesson-rotation.test.js",
