@@ -10,6 +10,8 @@
 
 - [#980](https://github.com/IgorGanapolsky/ThumbGate/pull/980) [`81f81b4`](https://github.com/IgorGanapolsky/ThumbGate/commit/81f81b48a5cc3bfc66bd91e576c3f34fad7e86db) Thanks [@dependabot](https://github.com/apps/dependabot)! - Add the release note required for the `@anthropic-ai/sdk` 0.90.0 dependency bump so manifest-only Dependabot updates pass ThumbGate's release hygiene checks.
 
+- [#978](https://github.com/IgorGanapolsky/ThumbGate/pull/978) [`ff75751`](https://github.com/IgorGanapolsky/ThumbGate/commit/ff757516701c38d884c77bad7d535e7e29030f0b) Thanks [@dependabot](https://github.com/apps/dependabot)! - Add the release note required for the `stripe` 22.0.2 dependency bump so manifest-only Dependabot updates pass ThumbGate's release hygiene checks.
+
 ## 1.12.0
 
 ### Minor Changes
