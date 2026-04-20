@@ -102,12 +102,19 @@ jobs:
             echo "::notice::No prior release tag — cannot compare content drift."
             exit 0
           fi
-          # Count changes in shipped surfaces since that tag
+          # Count changes in shipped surfaces since that tag. Include package
+          # manifests because package boundary changes alter the npm tarball
+          # even when runtime source files are unchanged.
           SHIPPED_CHANGES=$(git diff --name-only "$LAST_TAG"..HEAD -- \
-            'public/*.html' 'scripts/*.js' 'src/**' 'bin/**' 'README.md' 'CHANGELOG.md' 2>/dev/null | wc -l | tr -d ' ')
+            'package.json' 'package-lock.json' 'server.json' \
+            'adapters/**' 'plugins/**' 'public/*.html' 'scripts/*.js' \
+            'src/**' 'bin/**' 'README.md' 'CHANGELOG.md' 2>/dev/null | wc -l | tr -d ' ')
           if [ "$SHIPPED_CHANGES" -gt 0 ]; then
             echo "::error::Silent no-op detected: ${SHIPPED_CHANGES} shipped files changed since ${LAST_TAG} but package.json still says ${VERSION} (already on npm). Bump the version or tests won't verify the content ships."
-            git diff --name-only "$LAST_TAG"..HEAD -- 'public/*.html' 'scripts/*.js' 'src/**' 'bin/**' 'README.md' | head -20
+            git diff --name-only "$LAST_TAG"..HEAD -- \
+              'package.json' 'package-lock.json' 'server.json' \
+              'adapters/**' 'plugins/**' 'public/*.html' 'scripts/*.js' \
+              'src/**' 'bin/**' 'README.md' 'CHANGELOG.md' | head -20
             exit 1
           fi
           echo "::notice::No shipped content changes since ${LAST_TAG} — no-op is legitimate."
