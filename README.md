@@ -15,6 +15,7 @@ Under the hood: your thumbs-down becomes a **Pre-Action Gate** that physically b
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![SafeSkill 56/100](https://img.shields.io/badge/SafeSkill-56%2F100_Use%20with%20Caution-orange)](https://safeskill.dev/scan/igorganapolsky-thumbgate)
 
 ---
 
