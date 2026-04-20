@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.10.1
+
+### Patch Changes
+
+- [#961](https://github.com/IgorGanapolsky/ThumbGate/pull/961) [`7149291`](https://github.com/IgorGanapolsky/ThumbGate/commit/714929162a9a2886f6df3a8c9c977596e7f8a6b1) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix mailer sender-DNS regex to match Resend's actual SES MX host (`amazonses.com`, not `amazonaws.com`), and add granular unit tests for `hasResendSenderDns`, `resolveSenderAddress`, `recordsHaveResendDns`, and the 10-minute `senderDnsCache` TTL. The regex bug meant the positive branch of sender-domain verification never matched in production — every send through a custom domain fell back to `onboarding@resend.dev` even after DNS was correctly configured.
+
 ## 1.10.0
 
 ### Minor Changes
