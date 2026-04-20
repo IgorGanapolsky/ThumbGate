@@ -39,6 +39,17 @@ X/Twitter was retired from active distribution 2026-04-20. The `scripts/post-to-
 
 Default platform list enforced by `scripts/post-everywhere.js` (`DEFAULT_PLATFORMS`). Tests in `tests/post-everywhere-channels.test.js` pin the list — keep them green.
 
+## Social stack: Zernio canonical
+
+All social publishing and analytics route through Zernio (`https://zernio.com/api/v1`). Zernio holds the OAuth connections for every focus channel (Reddit, LinkedIn, Bluesky, Threads, Instagram, YouTube, TikTok), which removes the need to maintain eight separate token rotations + poller implementations.
+
+- **Analytics** — `scripts/social-analytics/poll-all.js` runs three pollers by default: `github`, `plausible`, `zernio`. The per-platform direct pollers (`reddit`, `linkedin`, `x`, `threads`, `instagram`, `youtube`, `tiktok`) are retained in `LEGACY_POLLERS` and only activate when `THUMBGATE_USE_DIRECT_POLLERS=1`. Treat that env flag as an emergency fallback, not steady state.
+- **CEO visibility** — `npm run social:zernio:status` (or `node scripts/social-analytics/zernio-status.js`) prints per-platform row counts for the last 24h and exits non-zero when zero rows ingested. This surfaces Zernio 402 / auth / rate-limit failures loudly; previously they went silent for weeks.
+- **Reply monitoring** — disabled for Zernio-native channels until Zernio exposes an inbound/comments API. Do not resurrect direct-API reply monitors without CEO approval. Legacy reply monitor (`scripts/social-reply-monitor.js`) still works for Reddit/X/LinkedIn when their env is present but is not wired into CI.
+- **Publishing** — `scripts/post-everywhere.js` still defers to per-platform dispatchers; Zernio-backed dispatchers are the preferred path where `ZERNIO_API_KEY` is present.
+
+Regression guard: `tests/zernio-canonical-pollers.test.js` pins the active POLLERS list. `tests/zernio-status.test.js` pins the status-report contract. Keep both green.
+
 ## Files You Must Not Commit
 
 | Pattern | Why |
