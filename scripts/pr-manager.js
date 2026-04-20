@@ -11,6 +11,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const { isTrunkMergeHeadRef, planMergeConductor } = require('./merge-conductor');
 const PR_FIELDS = 'number,state,mergeable,mergeStateStatus,statusCheckRollup,reviewDecision,isDraft,title,url,headRefOid,baseRefName,mergeCommit,mergedAt,mergedBy';
 const PR_CHECK_FIELDS = 'bucket,name,state,workflow,link,event';
 const MERGE_QUALITY_CHECKS = JSON.parse(
@@ -219,11 +220,28 @@ function sleep(ms) {
  */
 async function resolveBlockers(pr, runner = runGh) {
   const title = pr.title || 'Untitled PR';
+  const state = String(pr.state || 'OPEN').toUpperCase();
   const mergeState = pr.mergeStateStatus || 'UNKNOWN';
   const mergeable = pr.mergeable || 'UNKNOWN';
 
   console.log(`[PR Manager] Diagnosing PR #${pr.number}: "${title}"`);
-  console.log(`[PR Manager] Merge State: ${mergeState} | Mergeable: ${mergeable}`);
+  console.log(`[PR Manager] State: ${state} | Merge State: ${mergeState} | Mergeable: ${mergeable}`);
+
+  if (state === 'MERGED') {
+    console.log('[PR Manager] PR already merged. Recording no-op outcome.');
+    return {
+      status: 'noop',
+      reason: 'already_merged',
+      mergeCommit: pr.mergeCommit && pr.mergeCommit.oid ? pr.mergeCommit.oid : undefined,
+      mergedAt: pr.mergedAt || null,
+      mergedBy: pr.mergedBy && pr.mergedBy.login ? pr.mergedBy.login : null,
+    };
+  }
+
+  if (state === 'CLOSED') {
+    console.log('[PR Manager] PR already closed without merge automation work remaining.');
+    return { status: 'skipped', reason: 'closed' };
+  }
 
   if (pr.isDraft) {
     console.log('[PR Manager] PR is a draft. Skipping.');
@@ -336,11 +354,105 @@ function waitForMergeCommit(prNumber, runner = runGh, options = {}) {
   };
 }
 
+function getRepositorySlug(runner = runGh) {
+  const result = runner(['repo', 'view', '--json', 'nameWithOwner']);
+  if (result.status !== 0) {
+    throw new Error(`Failed to resolve repository slug: ${formatGhError(result)}`);
+  }
+
+  const parsed = JSON.parse(result.stdout || '{}');
+  if (!parsed.nameWithOwner) {
+    throw new Error('Failed to resolve repository slug: missing nameWithOwner');
+  }
+
+  return parsed.nameWithOwner;
+}
+
+function requestTrunkMerge(prNumber, runner = runGh, options = {}) {
+  const normalizedPrNumber = normalizePrNumber(prNumber, { allowEmpty: false });
+  const repository = String(options.repository || '').trim() || getRepositorySlug(runner);
+  const listArgs = [
+    'api',
+    `repos/${repository}/issues/${normalizedPrNumber}/comments`,
+    '--jq',
+    '.[] | select(.user.login == "github-actions[bot]" and .body == "/trunk merge") | .id',
+  ];
+  const existing = runner(listArgs);
+  if (existing.status !== 0) {
+    throw new Error(`Failed to inspect existing Trunk requests: ${formatGhError(existing)}`);
+  }
+
+  const existingCommentId = String(existing.stdout || '').trim().split('\n').find(Boolean) || '';
+  if (existingCommentId) {
+    console.log(`[PR Manager] Trunk merge request already exists for PR #${normalizedPrNumber}.`);
+    return {
+      ok: true,
+      mode: 'queued',
+      provider: 'trunk',
+      existingCommentId,
+      args: listArgs,
+      finalized: false,
+      merged: false,
+      reason: 'trunk_merge_requested',
+    };
+  }
+
+  const postArgs = [
+    'api',
+    `repos/${repository}/issues/${normalizedPrNumber}/comments`,
+    '--method',
+    'POST',
+    '-f',
+    'body=/trunk merge',
+  ];
+  const created = runner(postArgs);
+  if (created.status !== 0) {
+    console.error(`[PR Manager] Trunk merge request failed: ${formatGhError(created)}`);
+    return {
+      ok: false,
+      mode: 'failed',
+      provider: 'trunk',
+      args: postArgs,
+      error: formatGhError(created),
+    };
+  }
+
+  console.log(`[PR Manager] Requested Trunk merge for PR #${normalizedPrNumber}.`);
+  return {
+    ok: true,
+    mode: 'queued',
+    provider: 'trunk',
+    args: postArgs,
+    finalized: false,
+    merged: false,
+    reason: 'trunk_merge_requested',
+  };
+}
+
+function resolveMergeProvider(options = {}) {
+  const explicitProvider = String(options.mergeProvider || '').trim().toLowerCase();
+  if (explicitProvider) {
+    return explicitProvider;
+  }
+
+  if (String(options.baseRefName || '').trim() === 'main') {
+    return String(process.env.THUMBGATE_MAIN_MERGE_PROVIDER || 'trunk').trim().toLowerCase() || 'trunk';
+  }
+
+  return 'github';
+}
+
 /**
  * Perform autonomous merge
  */
 function performMerge(prNumber, runner = runGh, options = {}) {
   const normalizedPrNumber = normalizePrNumber(prNumber, { allowEmpty: false });
+  const provider = resolveMergeProvider(options);
+
+  if (provider === 'trunk') {
+    return requestTrunkMerge(normalizedPrNumber, runner, options);
+  }
+
   const args = ['pr', 'merge', normalizedPrNumber, '--squash', '--delete-branch'];
   console.log(`[PR Manager] Initiating protected squash merge for PR #${normalizedPrNumber}...`);
   const result = runner(args);
@@ -360,17 +472,56 @@ function performMerge(prNumber, runner = runGh, options = {}) {
 
 async function managePrs(prNumber = '', runner = runGh, options = {}) {
   const prs = loadManagedPrs(prNumber, runner).filter(Boolean);
+  const targetedPrNumber = normalizePrNumber(prNumber);
 
   if (prs.length === 0) {
     console.log('[PR Manager] No open pull requests found.');
     return { status: 'noop', prs: [] };
   }
 
+  const diagnosed = [];
+  const repoWideBlockedByConductor = new Map();
+  if (!targetedPrNumber) {
+    for (const pr of prs) {
+      if (isTrunkMergeHeadRef(pr.headRefName)) {
+        diagnosed.push({
+          pr,
+          outcome: { status: 'skipped', reason: 'trunk_shadow_pr' },
+        });
+        continue;
+      }
+
+      diagnosed.push({
+        pr,
+        outcome: await resolveBlockers(pr, runner),
+      });
+    }
+
+    const conductor = planMergeConductor(diagnosed, options);
+    for (const [number, entry] of conductor.blockedByNumber.entries()) {
+      repoWideBlockedByConductor.set(number, entry.outcome);
+    }
+  }
+
   const results = [];
   for (const pr of prs) {
-    const outcome = await resolveBlockers(pr, runner);
+    let outcome;
+    if (targetedPrNumber) {
+      outcome = await resolveBlockers(pr, runner);
+    } else {
+      const diagnosedEntry = diagnosed.find((entry) => entry.pr.number === pr.number);
+      outcome = diagnosedEntry ? diagnosedEntry.outcome : { status: 'pending', reason: 'missing_diagnosis' };
+    }
+
+    if (repoWideBlockedByConductor.has(pr.number)) {
+      outcome = repoWideBlockedByConductor.get(pr.number);
+    }
+
     if (outcome.status === 'ready') {
-      const mergeResult = performMerge(pr.number, runner, options);
+      const mergeResult = performMerge(pr.number, runner, {
+        ...options,
+        baseRefName: pr.baseRefName,
+      });
       outcome.mergeRequested = mergeResult.ok;
       outcome.mergeMode = mergeResult.mode;
       if (mergeResult.mergeCommit) {
@@ -408,12 +559,14 @@ module.exports = {
   assertSafeGhArgs,
   getPrStatus,
   getPrChecks,
+  getRepositorySlug,
   listOpenPrs,
   isOpenPr,
   loadManagedPrs,
   normalizePrNumber,
   resolveBlockers,
   resolveGhBinary,
+  requestTrunkMerge,
   waitForMergeCommit,
   performMerge,
   managePrs,

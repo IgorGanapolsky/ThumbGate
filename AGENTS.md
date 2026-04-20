@@ -61,6 +61,7 @@ On explicit user preference signals (`up/down`, `correct/wrong`, or subjective "
 - Merge ready PRs autonomously once required checks are green and no actionable comments remain.
 - Pending CI checks and `REVIEW_REQUIRED` are blockers, not mergeable states; do not admin-merge around them.
 - `main` is Trunk-managed. Automation should submit `/trunk merge` and exit; do not long-poll helper workflow checks or wait inside the workflow for a final merge commit.
+- `npm run pr:manage` is the merge conductor. It must suppress duplicate `/trunk merge` submissions when a draft `trunk-merge/pr-*` shadow PR already exists, prioritize release and workflow lanes ahead of dependency and feature traffic, and apply queue backpressure instead of over-submitting to `main`.
 - Never use raw `gh pr merge --auto`; use `npm run pr:manage` after all critical quality checks have terminal success.
 - Verify `main` CI on the exact merge commit before claiming the work is finished.
 - Delete disposable worktrees and stale merged local branches after merge.
