@@ -87,7 +87,7 @@ jobs:
         run: mkdir -p .thumbgate .artifacts/ralph-loop
 
       - name: Restore Ralph state
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: |
             .thumbgate/reply-monitor-state.json
@@ -125,7 +125,7 @@ jobs:
 
       - name: Save Ralph state
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: |
             .thumbgate/reply-monitor-state.json
