@@ -83,6 +83,7 @@ const DEFAULT_PROTECTED_FILE_GLOBS = [
 ];
 const EDIT_LIKE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
 const HIGH_RISK_BASH_PATTERN = /\b(?:git\s+(?:add|commit|push)|gh\s+pr\s+(?:create|merge)|npm\s+publish|yarn\s+publish|pnpm\s+publish|rm\s+-rf)\b/i;
+const REMOTE_SIDE_EFFECT_BASH_PATTERN = /\b(?:git\s+push\b|gh\s+pr\s+(?:create|merge|close|reopen|ready|edit)\b|gh\s+release\s+(?:create|delete|edit|upload)\b|npm\s+publish\b|yarn\s+publish\b|pnpm\s+publish\b)\b/i;
 const BOOSTED_RISK_BLOCK_SCORE = 0.8;
 const BOOSTED_RISK_MIN_EXAMPLES = 3;
 const PR_THREAD_RESOLUTION_ACTION = 'pr_thread_resolution_verified_after_commit';
@@ -826,6 +827,59 @@ function evaluatePendingPrThreadResolutionGate(toolName, toolInput = {}) {
   };
 }
 
+function getLocalOnlyScopeSources(governanceState = {}, constraints = {}) {
+  const sources = [];
+  if (governanceState.taskScope && governanceState.taskScope.localOnly) {
+    sources.push('task scope');
+  }
+  if (governanceState.branchGovernance && governanceState.branchGovernance.localOnly) {
+    sources.push('branch governance');
+  }
+  if (constraints.local_only && constraints.local_only.value === true) {
+    sources.push('local_only constraint');
+  }
+  return sources;
+}
+
+function isRemoteSideEffectCommand(toolName, toolInput = {}) {
+  if (toolName !== 'Bash') return false;
+  return REMOTE_SIDE_EFFECT_BASH_PATTERN.test(String(toolInput.command || ''));
+}
+
+function evaluateLocalOnlyRemoteSideEffectGate(toolName, toolInput = {}, governanceState = {}, constraints = {}) {
+  if (!isRemoteSideEffectCommand(toolName, toolInput)) return null;
+  const sources = getLocalOnlyScopeSources(governanceState, constraints);
+  if (sources.length === 0) return null;
+
+  const command = String(toolInput.command || '').trim();
+  return {
+    decision: 'deny',
+    gate: 'local-only-remote-side-effect',
+    message: 'Task scope is local-only; remote git, PR, release, and publish actions are blocked until the local-only scope is cleared or explicitly changed.',
+    severity: 'critical',
+    reasoning: [
+      `Local-only source: ${sources.join(', ')}`,
+      `Blocked command: ${command.slice(0, 160)}`,
+      'Remote side effects are denied before configurable gates so wrapped commands cannot bypass local-only work boundaries',
+    ],
+  };
+}
+
+function recordStructuralGateBlock(toolName, toolInput, result) {
+  recordStat(result.gate, 'block');
+  const auditRecord = recordAuditEvent({
+    toolName,
+    toolInput,
+    decision: 'deny',
+    gateId: result.gate,
+    message: result.message,
+    severity: result.severity,
+    source: 'gates-engine',
+  });
+  auditToFeedback(auditRecord);
+  return result;
+}
+
 function isScopeEnforcedAction(toolName, toolInput = {}, affectedFiles = []) {
   if (EDIT_LIKE_TOOLS.has(toolName) && affectedFiles.length > 0) return true;
   if (toolName !== 'Bash') return false;
@@ -1333,7 +1387,18 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
   }
 
   const constraints = loadConstraints();
+  const governanceState = loadGovernanceState();
   registerPrThreadResolutionClaimGate(toolName, toolInput);
+  const localOnlyRemoteSideEffectGate = evaluateLocalOnlyRemoteSideEffectGate(
+    toolName,
+    toolInput,
+    governanceState,
+    constraints,
+  );
+  if (localOnlyRemoteSideEffectGate) {
+    return recordStructuralGateBlock(toolName, toolInput, localOnlyRemoteSideEffectGate);
+  }
+
   const pendingThreadResolutionGate = evaluatePendingPrThreadResolutionGate(toolName, toolInput);
   if (pendingThreadResolutionGate) {
     recordStat(pendingThreadResolutionGate.gate, 'block');
@@ -1445,7 +1510,7 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
   }
 
   const sentinelReport = evaluateWorkflowSentinel(toolName, toolInput, {
-    governanceState: loadGovernanceState(),
+    governanceState,
   });
   const sentinelDecision = recordSentinelDecision(sentinelReport, toolName, toolInput);
   const memoryGuard = evaluateMemoryGuard(toolName, toolInput);
@@ -1503,7 +1568,18 @@ function evaluateGates(toolName, toolInput, configPath) {
   }
 
   const constraints = loadConstraints();
+  const governanceState = loadGovernanceState();
   registerPrThreadResolutionClaimGate(toolName, toolInput);
+  const localOnlyRemoteSideEffectGate = evaluateLocalOnlyRemoteSideEffectGate(
+    toolName,
+    toolInput,
+    governanceState,
+    constraints,
+  );
+  if (localOnlyRemoteSideEffectGate) {
+    return recordStructuralGateBlock(toolName, toolInput, localOnlyRemoteSideEffectGate);
+  }
+
   const pendingThreadResolutionGate = evaluatePendingPrThreadResolutionGate(toolName, toolInput);
   if (pendingThreadResolutionGate) {
     recordStat(pendingThreadResolutionGate.gate, 'block');
@@ -1587,7 +1663,7 @@ function evaluateGates(toolName, toolInput, configPath) {
   }
 
   const sentinelReport = evaluateWorkflowSentinel(toolName, toolInput, {
-    governanceState: loadGovernanceState(),
+    governanceState,
   });
   const sentinelDecision = recordSentinelDecision(sentinelReport, toolName, toolInput);
   const memoryGuard = evaluateMemoryGuard(toolName, toolInput);

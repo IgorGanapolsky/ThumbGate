@@ -9,6 +9,7 @@ const {
   codexAutoUpdateCliEntry,
   codexAutoUpdateMcpEntry,
   localMcpEntry,
+  resolveMcpEntry,
   resolveLocalServerPath,
   resolveStableSourceRoot,
   isSourceCheckout,
@@ -45,6 +46,28 @@ describe('mcp-config', () => {
     assert.match(entry.args[1], /serve/);
     assert.match(entry.args[1], /\.thumbgate\/runtime/);
     assert.doesNotMatch(entry.args[1], /\[ -x /);
+  });
+
+  it('resolveMcpEntry uses a latest-resolving launcher for published external installs', () => {
+    process.env.THUMBGATE_PUBLISH_STATE = 'published';
+    process.env.THUMBGATE_PUBLISHED_CLI_STATE = 'available';
+    try {
+      const entry = resolveMcpEntry({
+        pkgRoot: path.resolve(__dirname, '..'),
+        pkgVersion: '1.2.3',
+        scope: 'project',
+        targetDir: path.join(path.sep, 'tmp', 'external-thumbgate-consumer'),
+      });
+
+      assert.strictEqual(entry.command, 'sh');
+      assert.match(entry.args[1], /thumbgate@latest/);
+      assert.match(entry.args[1], /npm "install"/);
+      assert.doesNotMatch(entry.args[1], /\[ -x /);
+      assert.doesNotMatch(entry.args[1], /thumbgate@1\.2\.3/);
+    } finally {
+      delete process.env.THUMBGATE_PUBLISH_STATE;
+      delete process.env.THUMBGATE_PUBLISHED_CLI_STATE;
+    }
   });
 
   it('codexAutoUpdateCliEntry supports hook commands with the same latest-resolving policy', () => {

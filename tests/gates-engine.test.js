@@ -315,6 +315,54 @@ test('evaluateGates returns deny for git push', () => {
   assert.ok(result.message.includes('review threads'));
 });
 
+test('evaluateGates blocks wrapped git push when task scope is local-only', () => {
+  cleanupStateFiles();
+  const repoPath = createPushTestRepo();
+  setTaskScope({ summary: 'fix local Android build', allowedPaths: ['**'], localOnly: true });
+  satisfyCondition('pr_threads_checked', '0 unresolved threads');
+  const result = evaluateGates('Bash', { command: `cd ${repoPath} && git push origin feature/x`, repoPath });
+  assert.ok(result);
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.gate, 'local-only-remote-side-effect');
+  assert.ok(result.message.includes('local-only'));
+});
+
+test('evaluateGates blocks gh pr create when task scope is local-only', () => {
+  cleanupStateFiles();
+  setTaskScope({ summary: 'fix local Android build', allowedPaths: ['**'], localOnly: true });
+  const result = evaluateGates('Bash', { command: 'gh pr create --title fix --body body' });
+  assert.ok(result);
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.gate, 'local-only-remote-side-effect');
+});
+
+test('evaluateGates blocks remote side effects from local_only constraint alone', () => {
+  cleanupStateFiles();
+  setConstraint('local_only', true);
+  const result = evaluateGates('Bash', { command: 'gh pr merge 42 --merge' });
+  assert.ok(result);
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.gate, 'local-only-remote-side-effect');
+});
+
+test('evaluateGates allows local read commands when task scope is local-only', () => {
+  cleanupStateFiles();
+  setTaskScope({ summary: 'inspect local Android build', allowedPaths: ['**'], localOnly: true });
+  const result = evaluateGates('Bash', { command: 'git status --short' });
+  assert.equal(result, null);
+});
+
+test('evaluateGatesAsync blocks wrapped git push when task scope is local-only', async () => {
+  cleanupStateFiles();
+  const repoPath = createPushTestRepo();
+  setTaskScope({ summary: 'fix local Android build', allowedPaths: ['**'], localOnly: true });
+  satisfyCondition('pr_threads_checked', '0 unresolved threads');
+  const result = await evaluateGatesAsync('Bash', { command: `npm test && git push origin feature/x`, repoPath });
+  assert.ok(result);
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.gate, 'local-only-remote-side-effect');
+});
+
 test('evaluateGates returns deny for force push', () => {
   cleanupStateFiles();
   const repoPath = createPushTestRepo();
