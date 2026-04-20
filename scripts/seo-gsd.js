@@ -44,6 +44,12 @@ const HIGH_ROI_QUERY_SEEDS = [
     notes: 'Category-defining query that explains the core wedge.',
   },
   {
+    query: 'ai agent harness optimization',
+    businessValue: 94,
+    source: 'seed',
+    notes: 'Fresh harness-engineering demand that maps directly to ThumbGate progressive disclosure, pre-action gates, and workflow audits.',
+  },
+  {
     query: 'thumbs up thumbs down feedback for ai coding agents',
     businessValue: 95,
     source: 'seed',
@@ -287,6 +293,55 @@ const PAGE_BLUEPRINTS = [
       },
     ],
     relatedPaths: ['/compare/speclock', '/guides/claude-code-feedback'],
+  },
+  {
+    query: 'ai agent harness optimization',
+    path: '/guides/agent-harness-optimization',
+    pageType: 'guide',
+    pillar: 'pre-action-gates',
+    title: 'AI Agent Harness Optimization | Progressive Disclosure + Pre-Action Gates',
+    heroTitle: 'AI Agent Harness Optimization That Blocks Repeat Failures',
+    heroSummary: 'A better harness keeps global instructions lean, loads MCP schemas only when needed, and turns feedback into pre-action gates. ThumbGate makes that workflow measurable and enforceable.',
+    takeaways: [
+      'Harness optimization is the control layer around the model: context, tools, guardrails, and feedback.',
+      'Progressive disclosure keeps agents out of prompt bloat while preserving proof and tool access.',
+      'ThumbGate adds a concrete audit path and Pre-Action Gates so harness lessons become runtime enforcement.',
+    ],
+    sections: [
+      {
+        heading: 'What changed',
+        paragraphs: [
+          'The model is no longer the whole system. The harness decides which instructions, tools, context packs, and approval rules the model sees before it acts.',
+          'When a team stuffs every rule into a global prompt, the agent loses reasoning room. When it routes work through lean discovery surfaces, the agent can fetch the exact tool schema, lesson, or harness only when the task requires it.',
+        ],
+      },
+      {
+        heading: 'How ThumbGate improves the harness',
+        bullets: [
+          'Scores global agent docs so AGENTS.md, CLAUDE.md, and GEMINI.md stay lean instead of becoming unreviewable prompt bundles.',
+          'Publishes progressive MCP discovery through lightweight indexes and per-tool schema URLs.',
+          'Selects specialized gate harnesses for deploy, code-edit, and database-write actions instead of loading every gate for every workflow.',
+          'Turns thumbs-down feedback into prevention rules, then into hard Pre-Action Gates that block repeated mistakes.',
+        ],
+      },
+      {
+        heading: 'Where this creates ROI',
+        paragraphs: [
+          'For acquisition, this page names the buyer category: AI agent harness optimization. For conversion, the CLI audit gives a concrete first action. For retention, the same audit keeps local instructions and MCP surfaces from drifting back into bloat.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'What is an AI agent harness?',
+        answer: 'An AI agent harness is the runtime layer around the model: context loading, tool calls, guardrails, approval boundaries, memory, and verification. ThumbGate focuses on the enforcement part of that harness.',
+      },
+      {
+        question: 'How does ThumbGate optimize a harness?',
+        answer: 'ThumbGate keeps global instructions lean, supports progressive MCP discovery, selects workflow-specific gate harnesses, and converts feedback into Pre-Action Gates that block known-bad actions before execution.',
+      },
+    ],
+    relatedPaths: ['/guides/pre-action-gates', '/guides/codex-cli-guardrails'],
   },
   {
     query: 'stop ai coding agents from repeating mistakes',
@@ -749,7 +804,7 @@ function classifyIntent(query) {
     return 'commercial';
   }
   if (/\b(what is|how to|guide|best practices|why)\b/.test(normalized)) return 'informational';
-  if (/\b(guardrails|pre-action gates|feedback|prevent repeated mistakes|repeating mistakes|memory)\b/.test(normalized)) {
+  if (/\b(guardrails|pre-action gates|feedback|prevent repeated mistakes|repeating mistakes|memory|harness optimization)\b/.test(normalized)) {
     return 'commercial';
   }
   return 'informational';
@@ -759,7 +814,7 @@ function inferPillar(query) {
   const normalized = normalizeText(query).toLowerCase();
   if (/\b(speclock|mem0|alternative|vs|compare|comparison)\b/.test(normalized)) return 'comparison';
   if (/\b(thumbs up|thumbs down|feedback|reinforce|mistake)\b/.test(normalized)) return 'feedback-loop';
-  if (/\b(autoresearch|self-improving|benchmark|reward hacking)\b/.test(normalized)) return 'pre-action-gates';
+  if (/\b(autoresearch|self-improving|benchmark|reward hacking|harness optimization)\b/.test(normalized)) return 'pre-action-gates';
   if (/\b(pre-action gates|guardrails|block|prevent repeated mistakes|repeating mistakes)\b/.test(normalized)) return 'pre-action-gates';
   if (/\b(claude code|cursor|codex|gemini|amp|opencode|integration|plugin)\b/.test(normalized)) return 'agent-workflows';
   return 'ai-agent-reliability';
@@ -1139,6 +1194,7 @@ function renderSeoPageHtml(page, runtimeConfig = {}) {
   <meta property="og:type" content="article" />
   <meta property="og:url" content="${escapeHtml(canonicalUrl)}" />
   <link rel="canonical" href="${escapeHtml(canonicalUrl)}" />
+  <link rel="llm-context" href="/public/llm-context.md" type="text/markdown" />
   <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
   <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
   <meta property="og:image" content="/og.png" />

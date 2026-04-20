@@ -108,6 +108,16 @@ const CLI_COMMANDS = [
     ],
   },
   {
+    name: 'harness-audit',
+    aliases: ['harness'],
+    description: 'Score global docs, MCP discovery, and specialized gate harnesses',
+    group: 'discovery',
+    flags: [
+      { name: 'json', type: 'boolean', description: 'Output as JSON' },
+      { name: 'doc-token-budget', type: 'number', description: 'Global docs budget (default 9000)' },
+    ],
+  },
+  {
     name: 'lesson-health',
     aliases: ['stale'],
     description: 'Report on stale lessons (>60d inactive) with optional auto-archive',

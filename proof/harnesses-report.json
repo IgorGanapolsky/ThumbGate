@@ -1,0 +1,38 @@
+{
+  "phase": "23-natural-language-harnesses",
+  "timestamp": "2026-04-20T23:25:06.930Z",
+  "passed": 6,
+  "failed": 0,
+  "requirements": {
+    "HARNESS-01": {
+      "id": "HARNESS-01",
+      "desc": "natural-language harness specs load and validate with required sections",
+      "passed": true
+    },
+    "HARNESS-02": {
+      "id": "HARNESS-02",
+      "desc": "rendered harness plans substitute inputs into natural-language steps",
+      "passed": true
+    },
+    "HARNESS-03": {
+      "id": "HARNESS-03",
+      "desc": "harness plans compile into executable async-job-runner stages",
+      "passed": true
+    },
+    "HARNESS-04": {
+      "id": "HARNESS-04",
+      "desc": "runHarness executes a harness through the runtime with checkpoints and verification",
+      "passed": true
+    },
+    "HARNESS-05": {
+      "id": "HARNESS-05",
+      "desc": "MCP surfaces expose list_harnesses and run_harness operations",
+      "passed": true
+    },
+    "HARNESS-06": {
+      "id": "HARNESS-06",
+      "desc": "full verification includes the harness proof lane and artifact",
+      "passed": true
+    }
+  }
+}

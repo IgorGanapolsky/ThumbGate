@@ -9,6 +9,7 @@ const PUBLIC_DIR = path.resolve(__dirname, '..', 'public');
 
 const GUIDE_FILES = [
   'guides/pre-action-gates.html',
+  'guides/agent-harness-optimization.html',
   'guides/stop-repeated-ai-agent-mistakes.html',
   'guides/claude-code-prevent-repeated-mistakes.html',
   'guides/cursor-prevent-repeated-mistakes.html',
@@ -24,12 +25,12 @@ const COMPARE_FILES = [
 const ALL_FILES = [...GUIDE_FILES, ...COMPARE_FILES];
 
 describe('SEO guide and comparison pages', () => {
-  it('all 8 HTML files exist', () => {
+  it('all 9 HTML files exist', () => {
     for (const file of ALL_FILES) {
       const fullPath = path.join(PUBLIC_DIR, file);
       assert.ok(fs.existsSync(fullPath), `Missing file: ${file}`);
     }
-    assert.equal(ALL_FILES.length, 8);
+    assert.equal(ALL_FILES.length, 9);
   });
 
   for (const file of ALL_FILES) {
@@ -75,4 +76,16 @@ describe('SEO guide and comparison pages', () => {
       });
     });
   }
+
+  it('agent harness optimization guide links machine-readable harness proof', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/agent-harness-optimization.html'),
+      'utf-8'
+    );
+
+    assert.ok(
+      html.includes('proof/harnesses-report.json'),
+      'agent harness guide should link machine-readable harness proof'
+    );
+  });
 });
