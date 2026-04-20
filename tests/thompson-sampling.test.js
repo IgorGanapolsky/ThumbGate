@@ -15,6 +15,8 @@ const {
   isCalibrated,
   getCalibration,
   samplePosteriors,
+  argmaxPosteriors,
+  pickBestCategory,
   DECAY_FLOOR,
   MIN_SAMPLES_THRESHOLD,
   DEFAULT_CATEGORIES,
@@ -345,5 +347,80 @@ describe('dual-signal failureType', () => {
     const rel = getReliability(model);
     assert.ok(rel['git:decision'].reliability < 0.3, `decision reliability should be low, got ${rel['git:decision'].reliability}`);
     assert.ok(rel['git:execution'].reliability > 0.7, `execution reliability should be high, got ${rel['git:execution'].reliability}`);
+  });
+});
+
+describe('argmaxPosteriors (production/exploit mode)', () => {
+  it('returns the posterior mean α/(α+β) for each category', () => {
+    const model = {
+      categories: {
+        'a': { alpha: 9, beta: 1 }, // strong positive
+        'b': { alpha: 1, beta: 9 }, // strong negative
+        'c': { alpha: 5, beta: 5 }, // neutral
+      },
+    };
+    const means = argmaxPosteriors(model);
+    assert.ok(Math.abs(means.a - 0.9) < 1e-9);
+    assert.ok(Math.abs(means.b - 0.1) < 1e-9);
+    assert.ok(Math.abs(means.c - 0.5) < 1e-9);
+  });
+
+  it('guards against zero/negative α or β', () => {
+    const model = {
+      categories: {
+        'ok': { alpha: 2, beta: 8 },
+        'degen': { alpha: 0, beta: 0 },
+        'negative': { alpha: -5, beta: -5 },
+      },
+    };
+    const means = argmaxPosteriors(model);
+    assert.ok(Number.isFinite(means.ok), 'finite for normal input');
+    assert.ok(Number.isFinite(means.degen), 'finite for all-zero input (0.01/0.02 = 0.5)');
+    assert.ok(Number.isFinite(means.negative), 'finite for negative input — clamped to 0.01');
+    assert.equal(means.degen, 0.5);
+  });
+
+  it('returns {} for a model with no categories', () => {
+    assert.deepEqual(argmaxPosteriors({}), {});
+    assert.deepEqual(argmaxPosteriors({ categories: {} }), {});
+  });
+
+  it('is deterministic across calls (no sampling) — the whole point of exploit mode', () => {
+    const model = { categories: { 'a': { alpha: 3, beta: 7 }, 'b': { alpha: 7, beta: 3 } } };
+    const first = argmaxPosteriors(model);
+    const second = argmaxPosteriors(model);
+    const third = argmaxPosteriors(model);
+    assert.deepEqual(first, second);
+    assert.deepEqual(second, third);
+  });
+});
+
+describe('pickBestCategory', () => {
+  it('picks the category with the highest posterior mean', () => {
+    const model = {
+      categories: {
+        'decisions': { alpha: 2, beta: 8 },
+        'execution': { alpha: 9, beta: 1 },
+        'identity': { alpha: 5, beta: 5 },
+      },
+    };
+    assert.equal(pickBestCategory(model), 'execution');
+  });
+
+  it('breaks ties deterministically by lexicographic order', () => {
+    const model = {
+      categories: {
+        'bravo': { alpha: 5, beta: 5 },
+        'alpha': { alpha: 5, beta: 5 },
+        'charlie': { alpha: 5, beta: 5 },
+      },
+    };
+    // All three have mean 0.5; lexicographically-first wins.
+    assert.equal(pickBestCategory(model), 'alpha');
+  });
+
+  it('returns null for a model with no categories', () => {
+    assert.equal(pickBestCategory({}), null);
+    assert.equal(pickBestCategory({ categories: {} }), null);
   });
 });
