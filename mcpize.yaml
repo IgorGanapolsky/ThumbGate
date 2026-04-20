@@ -1,6 +1,6 @@
 # mcpize configuration for ThumbGate
 project: "thumbgate"
-version: "1.13.0"
+version: "1.13.1"
 start_command: "npx -y thumbgate serve"
 mcp_profile: "default"
 description: "Agent quality feedback loop with Pre-Action Gates engine — blocks dangerous tool calls before execution, generates prevention rules from failures, and captures ThumbGate signals."
