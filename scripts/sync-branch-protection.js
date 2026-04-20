@@ -8,6 +8,7 @@ const MERGE_QUALITY_CHECKS = require('../config/merge-quality-checks.json');
 
 const DEFAULT_REPO = process.env.GITHUB_REPOSITORY || 'IgorGanapolsky/ThumbGate';
 const DEFAULT_BRANCH = process.env.DEFAULT_BRANCH || 'main';
+const REST_RULE_ID_RE = /^rest:([^/]+)\/([^#]+)#(.+)$/;
 const FIXED_GH_BINARIES = [
   '/usr/bin/gh',
   '/usr/local/bin/gh',
@@ -233,7 +234,7 @@ function diffContexts(actual, expected) {
 }
 
 function parseRestRuleId(ruleId) {
-  const match = String(ruleId || '').match(/^rest:([^/]+)\/([^#]+)#(.+)$/);
+  const match = REST_RULE_ID_RE.exec(String(ruleId || ''));
   if (!match) {
     return null;
   }
