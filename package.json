@@ -397,6 +397,7 @@
     "profile:route": "node scripts/profile-router.js",
     "social:poll:zernio": "node scripts/social-analytics/pollers/zernio.js",
     "social:publish:zernio": "node scripts/social-analytics/publishers/zernio.js",
+    "social:zernio:status": "node scripts/social-analytics/zernio-status.js",
     "test:zernio": "node --test tests/zernio-integration.test.js",
     "test:platform-limits": "node --test tests/platform-limits.test.js",
     "test:durability-step": "node --test tests/durability-step.test.js",
