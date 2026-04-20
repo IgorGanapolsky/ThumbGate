@@ -492,6 +492,11 @@ test('public HEAD routes stay unauthenticated and side-effect free', async () =>
   assert.match(String(cardRes.headers.get('content-type')), /application\/json/);
   assert.equal(await cardRes.text(), '');
 
+  const discoveryRes = await fetch(apiUrl('/.well-known/mcp.json'), { method: 'HEAD' });
+  assert.equal(discoveryRes.status, 200);
+  assert.match(String(discoveryRes.headers.get('content-type')), /application\/json/);
+  assert.equal(await discoveryRes.text(), '');
+
   const healthRes = await fetch(apiUrl('/health'), { method: 'HEAD' });
   assert.equal(healthRes.status, 200);
   assert.match(String(healthRes.headers.get('content-type')), /application\/json/);
@@ -572,6 +577,83 @@ test('public server card exposes MCP tool schemas for directory scanners', async
     assert.equal(typeof tool.inputSchema, 'object');
     assert.ok(tool.inputSchema);
   }
+  assert.equal(body.discovery.toolIndexUrl, 'https://app.example.com/.well-known/mcp/tools.json');
+  assert.ok(Array.isArray(body.skills));
+  assert.ok(Array.isArray(body.applications));
+  assert.match(body.proof.verificationEvidenceUrl, /VERIFICATION_EVIDENCE\.md/);
+});
+
+test('public MCP discovery manifest exposes progressive tool, skill, and app loading', async () => {
+  const res = await fetch(apiUrl('/.well-known/mcp.json'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /application\/json/);
+
+  const body = await res.json();
+  assert.equal(body.name, 'thumbgate');
+  assert.equal(body.transport.endpoint, 'https://app.example.com/mcp');
+  assert.deepEqual(body.transport.unauthenticatedDiscovery, ['initialize', 'tools/list']);
+  assert.equal(body.discovery.toolIndexUrl, 'https://app.example.com/.well-known/mcp/tools.json');
+  assert.equal(body.discovery.toolSchemaUrlTemplate, 'https://app.example.com/.well-known/mcp/tools/{name}.json');
+  assert.match(body.discovery.progressive.tokenStrategy, /Do not preload every inputSchema/);
+  assert.ok(body.primaryFlows.some((flow) => flow.name === 'capture-to-gate'));
+  assert.ok(body.primaryFlows.some((flow) => flow.name === 'metric-autoresearch' && flow.tools.includes('run_autoresearch')));
+  assert.ok(body.primaryFlows.some((flow) => flow.name === 'visual-proof-retrieval' && flow.tools.includes('plan_multimodal_retrieval')));
+  assert.ok(body.skills.some((skill) => skill.name === 'thumbgate'));
+  assert.ok(body.skills.some((skill) => skill.name === 'visual-proof-retrieval'));
+  assert.ok(body.applications.some((app) => app.name === 'dashboard'));
+  assert.match(body.proof.verificationEvidenceUrl, /VERIFICATION_EVIDENCE\.md/);
+});
+
+test('public MCP tool index supports just-in-time per-tool schema loading', async () => {
+  const indexRes = await fetch(apiUrl('/.well-known/mcp/tools.json'));
+  assert.equal(indexRes.status, 200);
+  const index = await indexRes.json();
+  assert.ok(index.count > 0);
+  assert.ok(Array.isArray(index.tools));
+
+  const captureFeedback = index.tools.find((tool) => tool.name === 'capture_feedback');
+  assert.ok(captureFeedback);
+  assert.equal(captureFeedback.schemaUrl, 'https://app.example.com/.well-known/mcp/tools/capture_feedback.json');
+  assert.equal(captureFeedback.inputSchema, undefined);
+  assert.ok(index.tools.some((tool) => tool.name === 'run_autoresearch'));
+  assert.ok(index.tools.some((tool) => tool.name === 'plan_multimodal_retrieval'));
+
+  const schemaRes = await fetch(apiUrl('/.well-known/mcp/tools/capture_feedback.json'));
+  assert.equal(schemaRes.status, 200);
+  const schema = await schemaRes.json();
+  assert.equal(schema.name, 'capture_feedback');
+  assert.equal(schema.inputSchema.type, 'object');
+  assert.ok(schema.inputSchema.required.includes('signal'));
+
+  const autoresearchSchemaRes = await fetch(apiUrl('/.well-known/mcp/tools/run_autoresearch.json'));
+  assert.equal(autoresearchSchemaRes.status, 200);
+  const autoresearchSchema = await autoresearchSchemaRes.json();
+  assert.equal(autoresearchSchema.name, 'run_autoresearch');
+  assert.equal(autoresearchSchema.inputSchema.properties.iterations.type, 'number');
+
+  const multimodalSchemaRes = await fetch(apiUrl('/.well-known/mcp/tools/plan_multimodal_retrieval.json'));
+  assert.equal(multimodalSchemaRes.status, 200);
+  const multimodalSchema = await multimodalSchemaRes.json();
+  assert.equal(multimodalSchema.name, 'plan_multimodal_retrieval');
+  assert.equal(multimodalSchema.inputSchema.properties.evidenceTypes.type, 'array');
+});
+
+test('public MCP skills and applications are machine-readable for agent onboarding', async () => {
+  const [skillsRes, applicationsRes] = await Promise.all([
+    fetch(apiUrl('/.well-known/mcp/skills.json')),
+    fetch(apiUrl('/.well-known/mcp/applications.json')),
+  ]);
+
+  assert.equal(skillsRes.status, 200);
+  assert.equal(applicationsRes.status, 200);
+
+  const skills = await skillsRes.json();
+  const applications = await applicationsRes.json();
+  assert.ok(skills.skills.some((skill) => skill.name === 'workflow-hardening-sprint'));
+  assert.ok(skills.skills.some((skill) => skill.name === 'visual-proof-retrieval'));
+  assert.ok(skills.skills.every((skill) => Array.isArray(skill.recommendedFlow)));
+  assert.ok(applications.applications.some((app) => app.name === 'workflow-sprint-intake'));
+  assert.ok(applications.applications.every((app) => app.url.startsWith('https://app.example.com/')));
 });
 
 test('root seeds journey cookies, injects server telemetry IDs, and records landing telemetry server-side', async () => {

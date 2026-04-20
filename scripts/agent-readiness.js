@@ -24,6 +24,7 @@ const WRITE_CAPABLE_TOOLS = new Set([
   'approve_protected_action',
   'track_action',
   'register_claim_gate',
+  'run_autoresearch',
 ]);
 
 const BOOTSTRAP_FILES = [
