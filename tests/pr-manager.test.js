@@ -5,6 +5,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   assertSafeGhArgs,
+  buildGhEnv,
   getPrChecks,
   getPrStatus,
   isOpenPr,
@@ -222,6 +223,17 @@ test('PR Manager - resolveGhBinary uses only fixed executable locations', () => 
   assert.equal(result, '/usr/local/bin/gh');
   assert.equal(calls[0][0], '/usr/bin/gh');
   assert.equal(calls[1][0], '/usr/local/bin/gh');
+});
+
+test('PR Manager - buildGhEnv promotes GH_PAT into GH_TOKEN when needed', () => {
+  const env = buildGhEnv({ PATH: '/usr/bin', GH_PAT: 'pat-token' });
+  assert.equal(env.GH_TOKEN, 'pat-token');
+  assert.equal(env.PATH, '/usr/bin');
+});
+
+test('PR Manager - buildGhEnv preserves explicit GH_TOKEN', () => {
+  const env = buildGhEnv({ GH_PAT: 'pat-token', GH_TOKEN: 'preferred-token' });
+  assert.equal(env.GH_TOKEN, 'preferred-token');
 });
 
 test('PR Manager - loadManagedPrs falls back to open PR list when branch has no PR', () => {

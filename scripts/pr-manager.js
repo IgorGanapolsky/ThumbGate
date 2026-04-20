@@ -90,9 +90,18 @@ function resolveGhBinary(options = {}) {
   throw new Error(`Unable to locate GH CLI in fixed paths: ${candidates.join(', ')}`);
 }
 
+function buildGhEnv(baseEnv = process.env) {
+  const env = { ...baseEnv };
+  if (!env.GH_TOKEN && !env.GITHUB_TOKEN && env.GH_PAT) {
+    env.GH_TOKEN = env.GH_PAT;
+  }
+  return env;
+}
+
 function runGh(args, options = {}) {
   return spawnSync(resolveGhBinary(options), assertSafeGhArgs(args), {
     encoding: 'utf-8',
+    env: buildGhEnv(options.env || process.env),
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 }
@@ -435,6 +444,7 @@ if (require.main === module) {
 
 module.exports = {
   assertSafeGhArgs,
+  buildGhEnv,
   getPrStatus,
   getPrChecks,
   listOpenPrs,
