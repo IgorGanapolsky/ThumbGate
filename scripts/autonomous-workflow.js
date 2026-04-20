@@ -24,10 +24,14 @@ function normalizeText(value) {
 }
 
 function slugify(value, fallback = 'workflow') {
+  // Split the leading/trailing dash strip into two anchored regex ops to avoid
+  // the disjunction-with-shared-character-class backtracking flagged by Sonar
+  // javascript:S5852. Each replace is linear.
   const normalized = normalizeText(value)
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
   return normalized || fallback;
 }
 
