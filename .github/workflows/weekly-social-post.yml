@@ -64,7 +64,7 @@ jobs:
         run: npm ci --onnxruntime-node-install-cuda=skip
 
       - name: Restore marketing DB cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             .thumbgate/marketing-analytics.sqlite
