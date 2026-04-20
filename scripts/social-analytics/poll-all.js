@@ -7,11 +7,38 @@ loadLocalEnv({ envPath: path.resolve(__dirname, '..', '..', '.env') });
 
 const { initDb } = require('./store');
 
+/**
+ * Canonical pollers (2026-04-20+): Zernio is the single social-stack abstraction.
+ *
+ * Why the trim:
+ *   - Direct per-platform pollers (reddit, linkedin, x, threads, instagram, youtube, tiktok)
+ *     require separate OAuth apps, tokens, and rate-limit handling. Most were silently
+ *     skipping on missing env for months while dashboards still looked "green."
+ *   - Zernio's /analytics endpoints cover every connected account through one API key,
+ *     and its unified model maps cleanly to our engagement_metrics schema.
+ *   - github + plausible remain direct because they are not social publishers and
+ *     Zernio does not cover them.
+ *
+ * To re-enable direct pollers temporarily (e.g. to debug a Zernio outage), set
+ * THUMBGATE_USE_DIRECT_POLLERS=1. This surfaces the legacy list without making it
+ * the default contract.
+ *
+ * See CLAUDE.md § Social stack: Zernio canonical before broadening this list.
+ */
 const POLLERS = [
   { name: 'github', module: './pollers/github', envRequired: ['GITHUB_TOKEN'] },
-  // Direct Instagram Graph API poller. Requires INSTAGRAM_ACCESS_TOKEN + INSTAGRAM_USER_ID.
-  // When those are absent, Instagram engagement data is still captured via the Zernio poller
-  // below (getConnectedAccounts returns Instagram accounts when Zernio is connected to IG).
+  // PLAUSIBLE_SITE_ID defaults to thumbgate-production.up.railway.app if not set.
+  { name: 'plausible', module: './pollers/plausible', envRequired: ['PLAUSIBLE_API_KEY'] },
+  // Zernio covers all connected social accounts (Reddit, LinkedIn, Bluesky, Threads,
+  // Instagram, YouTube, TikTok) via a unified API. This is the canonical social poller.
+  { name: 'zernio', module: './pollers/zernio', envRequired: ['ZERNIO_API_KEY'] },
+];
+
+/**
+ * Legacy direct-API pollers. Off by default. Activated only when
+ * THUMBGATE_USE_DIRECT_POLLERS=1 — treat as emergency fallback, not steady state.
+ */
+const LEGACY_POLLERS = [
   { name: 'instagram', module: './pollers/instagram', envRequired: ['INSTAGRAM_ACCESS_TOKEN', 'INSTAGRAM_USER_ID'] },
   { name: 'tiktok', module: './pollers/tiktok', envRequired: ['TIKTOK_ACCESS_TOKEN'] },
   { name: 'linkedin', module: './pollers/linkedin', envRequired: ['LINKEDIN_ACCESS_TOKEN', 'LINKEDIN_PERSON_URN'] },
@@ -19,12 +46,14 @@ const POLLERS = [
   { name: 'reddit', module: './pollers/reddit', envRequired: ['REDDIT_CLIENT_ID', 'REDDIT_CLIENT_SECRET', 'REDDIT_USERNAME', 'REDDIT_PASSWORD'] },
   { name: 'threads', module: './pollers/threads', envRequired: ['THREADS_ACCESS_TOKEN', 'THREADS_USER_ID'] },
   { name: 'youtube', module: './pollers/youtube', envRequired: ['YOUTUBE_API_KEY', 'YOUTUBE_CHANNEL_ID'] },
-  // PLAUSIBLE_SITE_ID defaults to thumbgate-production.up.railway.app if not set.
-  { name: 'plausible', module: './pollers/plausible', envRequired: ['PLAUSIBLE_API_KEY'] },
-  // Zernio covers all connected social accounts (including Instagram) via its unified API.
-  // Instagram posts published via Zernio will have their engagement metrics captured here.
-  { name: 'zernio', module: './pollers/zernio', envRequired: ['ZERNIO_API_KEY'] },
 ];
+
+function activePollers() {
+  if (process.env.THUMBGATE_USE_DIRECT_POLLERS === '1') {
+    return [...POLLERS, ...LEGACY_POLLERS];
+  }
+  return POLLERS;
+}
 
 function hasEnv(keys) {
   return keys.every((k) => process.env[k]);
@@ -34,7 +63,9 @@ async function pollAll(options = {}) {
   const db = initDb(options.dbPath);
   const results = { succeeded: [], skipped: [], failed: [] };
 
-  for (const poller of POLLERS) {
+  const pollers = activePollers();
+
+  for (const poller of pollers) {
     if (!hasEnv(poller.envRequired)) {
       console.log(`⏭  ${poller.name}: skipped (missing env: ${poller.envRequired.filter((k) => !process.env[k]).join(', ')})`);
       results.skipped.push(poller.name);
@@ -80,6 +111,11 @@ async function pollAll(options = {}) {
 async function main() {
   console.log('=== Social Analytics Poll All ===');
   console.log(`Time: ${new Date().toISOString()}`);
+  if (process.env.THUMBGATE_USE_DIRECT_POLLERS === '1') {
+    console.log('Mode: DIRECT (legacy per-platform pollers enabled)');
+  } else {
+    console.log('Mode: ZERNIO-CANONICAL (github + plausible + zernio)');
+  }
   console.log('');
 
   const results = await pollAll();
@@ -104,4 +140,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { pollAll, POLLERS };
+module.exports = { pollAll, POLLERS, LEGACY_POLLERS, activePollers };
