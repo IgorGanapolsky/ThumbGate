@@ -11,6 +11,7 @@ const {
   calculateStats,
   formatStats,
   formatLastPromotion,
+  formatBayesErrorRate,
   loadGatesFile,
 } = require('../scripts/gate-stats');
 
@@ -129,4 +130,62 @@ test('formatStats: handles no top blocked gate', () => {
   const output = formatStats(stats);
   assert.ok(output.includes('Top blocked gate: none'));
   assert.ok(output.includes('Last promotion: none'));
+});
+
+// -- formatBayesErrorRate --
+
+test('formatBayesErrorRate: returns n/a for null or undefined', () => {
+  assert.ok(formatBayesErrorRate(null).includes('n/a'));
+  assert.ok(formatBayesErrorRate(undefined).includes('n/a'));
+});
+
+test('formatBayesErrorRate: labels near-zero error as near-optimal', () => {
+  const out = formatBayesErrorRate(0.005);
+  assert.ok(out.includes('near-optimal'));
+  assert.ok(out.includes('0.5%'));
+});
+
+test('formatBayesErrorRate: labels moderate error as modest headroom', () => {
+  const out = formatBayesErrorRate(0.05);
+  assert.ok(out.includes('modest headroom'));
+  assert.ok(out.includes('5.0%'));
+});
+
+test('formatBayesErrorRate: labels high error as irreducible', () => {
+  const out = formatBayesErrorRate(0.25);
+  assert.ok(out.includes('high irreducible error'));
+  assert.ok(out.includes('25.0%'));
+});
+
+// -- calculateStats emits bayesErrorRate alongside existing fields --
+
+test('calculateStats: includes bayesErrorRate in output (null is a valid value)', () => {
+  const stats = calculateStats();
+  assert.ok('bayesErrorRate' in stats, 'calculateStats must emit bayesErrorRate');
+  // Value can be null (no feedback sequences yet) or a number in [0, 0.5].
+  if (stats.bayesErrorRate !== null) {
+    assert.ok(typeof stats.bayesErrorRate === 'number');
+    assert.ok(stats.bayesErrorRate >= 0);
+    assert.ok(stats.bayesErrorRate <= 0.5);
+  }
+});
+
+test('formatStats renders the Bayes error rate line', () => {
+  const stats = {
+    totalGates: 0,
+    manualGates: 0,
+    autoPromotedGates: 0,
+    blockGates: 0,
+    warnGates: 0,
+    totalBlocked: 0,
+    totalWarned: 0,
+    topBlocked: null,
+    lastPromotion: null,
+    estimatedHoursSaved: '0.0',
+    bayesErrorRate: 0.03,
+    gates: [],
+  };
+  const output = formatStats(stats);
+  assert.ok(output.includes('Bayes error rate'), 'formatter must render the bayesErrorRate line');
+  assert.ok(output.includes('3.0%'));
 });

@@ -324,6 +324,47 @@ function samplePosteriors(model) {
   return samples;
 }
 
+/**
+ * Production/exploit-mode counterpart to `samplePosteriors`. Instead of
+ * drawing a random sample from each Beta posterior (which deliberately
+ * explores), return the posterior *mean* α/(α+β) for each category. Picking
+ * argmax over these means is the Bayes-optimal action under 0-1 loss when
+ * we only care about expected reward and do not need exploration.
+ *
+ * When to use which:
+ *   - `samplePosteriors` in training / learning mode — we want to try
+ *     under-sampled arms.
+ *   - `argmaxPosteriors` in production / hot-path mode — we want the
+ *     best-known lesson right now. The caller can still choose to mix the
+ *     two (e.g. ε-greedy) but that's out of scope here.
+ */
+function argmaxPosteriors(model) {
+  const means = {};
+  for (const [cat, params] of Object.entries(model.categories || {})) {
+    const alpha = Math.max(Number(params.alpha) || 0, 0.01);
+    const beta = Math.max(Number(params.beta) || 0, 0.01);
+    means[cat] = alpha / (alpha + beta);
+  }
+  return means;
+}
+
+/**
+ * Pick the single category with the highest posterior mean. Ties broken by
+ * lexicographic order for determinism. Returns `null` when no categories
+ * are present.
+ */
+function pickBestCategory(model) {
+  const means = argmaxPosteriors(model);
+  const keys = Object.keys(means);
+  if (keys.length === 0) return null;
+  keys.sort();
+  let best = keys[0];
+  for (const key of keys) {
+    if (means[key] > means[best]) best = key;
+  }
+  return best;
+}
+
 // ---------------------------------------------------------------------------
 // Internal: Marsaglia-Tsang Gamma Sampling (2000)
 // ---------------------------------------------------------------------------
@@ -410,6 +451,8 @@ module.exports = {
   isCalibrated,
   getCalibration,
   samplePosteriors,
+  argmaxPosteriors,
+  pickBestCategory,
   HALF_LIFE_DAYS,
   DECAY_FLOOR,
   MIN_SAMPLES_THRESHOLD,
