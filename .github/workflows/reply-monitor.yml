@@ -1,9 +1,11 @@
 name: Social Reply Monitor
 
-# Monitors Reddit, X.com, and LinkedIn for replies to ThumbGate posts and
-# generates contextual responses. Scheduled audience engagement now lives in
-# Ralph Loop Audience Engagement, which restores cache-backed state between CI
-# runs. Keep this workflow as an explicit manual fallback only.
+# Monitors Reddit and LinkedIn for replies to ThumbGate posts and generates
+# contextual responses. X/Twitter monitoring was deprecated 2026-04-20 — the
+# platform is no longer part of our distribution strategy. Scheduled audience
+# engagement now lives in Ralph Loop Audience Engagement, which restores
+# cache-backed state between CI runs. Keep this workflow as an explicit manual
+# fallback only.
 #
 # Reddit replies are NEVER auto-posted — they are saved to
 # .thumbgate/reply-drafts.jsonl for human review (per script policy).
@@ -23,7 +25,6 @@ on:
         options:
           - ''
           - reddit
-          - x
           - linkedin
       dry_run:
         description: 'Dry run — detect replies but do not post responses'
@@ -44,14 +45,8 @@ jobs:
     timeout-minutes: 10
 
     env:
-      # X (Twitter) — OAuth 1.0a for posting replies
-      X_API_KEY: ${{ secrets.X_API_KEY }}
-      X_API_SECRET: ${{ secrets.X_API_SECRET }}
-      X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
-      X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
-      # X Bearer token — used to fetch owned tweets for reply detection
-      X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
-      X_USER_ID: ${{ secrets.X_USER_ID }}
+      # X/Twitter reply monitoring was retired 2026-04-20. The publisher was
+      # quarantined; keeping this workflow limited to Reddit + LinkedIn only.
       # Reddit — for inbox monitoring (replies are draft-only, never auto-posted)
       REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
       REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
