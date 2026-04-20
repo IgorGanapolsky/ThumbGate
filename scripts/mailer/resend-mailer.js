@@ -31,8 +31,10 @@ const BRAND_MARK_URL = 'https://thumbgate-production.up.railway.app/thumbgate-ic
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const TRIAL_LENGTH_DAYS = 7;
 const SENDER_DNS_CACHE_MS = 10 * 60 * 1000;
-const ANGLE_EMAIL_RE = /<([^<>@\s]+@[^<>\s]+)>/;
-const BARE_EMAIL_RE = /([^\s<>@]+@[^\s<>]+)/;
+// Bounded to RFC 5321 limits (local-part ≤ 64, domain ≤ 255) to prevent
+// super-linear backtracking on malformed input (Sonar javascript:S5852).
+const ANGLE_EMAIL_RE = /<([^<>@\s]{1,64}@[^<>@\s]{1,255})>/;
+const BARE_EMAIL_RE = /([^\s<>@]{1,64}@[^\s<>@]{1,255})/;
 const DKIM_PUBLIC_KEY_RE = /^p=/i;
 const AMAZON_SES_MX_RE = /feedback-smtp\..*amazonaws\.com\.?$/i;
 const AMAZON_SES_SPF_RE = /include:amazonses\.com/i;
