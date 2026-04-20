@@ -107,6 +107,9 @@ const {
   searchThumbgate,
 } = require('../../scripts/thumbgate-search');
 const {
+  buildMultimodalRetrievalPlan,
+} = require('../../scripts/multimodal-retrieval-plan');
+const {
   importDocument,
   listImportedDocuments,
   readImportedDocument,
@@ -117,6 +120,7 @@ const {
   listHarnesses,
   runHarness,
 } = require('../../scripts/natural-language-harness');
+const { runLoop: runAutoresearchLoop } = require('../../scripts/autoresearch-runner');
 const { TOOLS } = require('../../scripts/tool-registry');
 const { reflect: reflectOnFeedback } = require('../../scripts/reflector-agent');
 const { submitProductIssue } = require('../../scripts/product-feedback');
@@ -148,7 +152,7 @@ const {
   finalizeSession: finalizeFeedbackSession,
 } = require('../../scripts/feedback-session');
 
-const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.7.0' };
+const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.8.0' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
@@ -193,6 +197,17 @@ function resolveImportDocumentPath(targetPath) {
     throw new Error(`Path does not exist: ${resolved}`);
   }
 
+  return resolved;
+}
+
+function resolveWorkspaceCwd(targetPath) {
+  if (!targetPath) return undefined;
+  const workspaceRoot = path.resolve(process.cwd());
+  const resolved = path.resolve(workspaceRoot, String(targetPath));
+  const relative = path.relative(workspaceRoot, resolved);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    throw new Error(`cwd must stay within ${workspaceRoot}`);
+  }
   return resolved;
 }
 
@@ -851,6 +866,36 @@ async function callToolInner(name, args) {
       return toTextResult({ harnesses: listHarnesses({ tag: args.tag }) });
     case 'run_harness':
       return toTextResult(runHarness(args.harness, args.inputs || {}, { jobId: args.jobId }));
+    case 'plan_multimodal_retrieval':
+      return toTextResult(buildMultimodalRetrievalPlan(args));
+    case 'run_autoresearch': {
+      const iterations = Math.max(1, Math.min(5, Number(args.iterations || 1)));
+      const timeoutMs = Math.max(1000, Math.min(600000, Number(args.timeoutMs || 120000)));
+      const holdoutCommands = Array.isArray(args.holdoutCommands)
+        ? args.holdoutCommands.filter((command) => typeof command === 'string' && command.trim())
+        : [];
+      const result = await runAutoresearchLoop({
+        iterations,
+        targetName: args.targetName || undefined,
+        nextValue: Number.isFinite(args.nextValue) ? args.nextValue : undefined,
+        testCommand: args.testCommand || 'npm test',
+        holdoutCommands,
+        timeoutMs,
+        cwd: resolveWorkspaceCwd(args.cwd),
+        researchQuery: args.researchQuery || null,
+        paperLimit: Math.max(1, Math.min(10, Number(args.paperLimit || 5))),
+      });
+      return toTextResult({
+        ...result,
+        controls: {
+          iterations,
+          timeoutMs,
+          holdoutCommands,
+          maxIterationsPerCall: 5,
+          maxTimeoutMs: 600000,
+        },
+      });
+    }
     case 'open_feedback_session':
       return toTextResult(openFeedbackSession(args.feedbackEventId, args.signal, args.initialContext));
     case 'append_feedback_context':

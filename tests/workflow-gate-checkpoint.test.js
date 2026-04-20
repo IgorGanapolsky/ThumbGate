@@ -22,9 +22,12 @@ test('createCheckpoint generates valid checkpoint with defaults', () => {
   assert.ok(cp.checkpointId.startsWith('wfcp_'));
   assert.ok(cp.workflowId.startsWith('wf_'));
   assert.equal(cp.step, 0);
+  assert.equal(cp.phase, 'intent');
+  assert.equal(cp.status, 'running');
   assert.ok(cp.timestamp);
   assert.deepEqual(cp.sessionActions, []);
   assert.deepEqual(cp.evaluationHistory, []);
+  assert.deepEqual(cp.evidence, []);
   assert.equal(cp.gateState.blockedCount, 0);
 });
 
@@ -32,14 +35,28 @@ test('createCheckpoint accepts custom values', () => {
   const cp = createCheckpoint({
     workflowId: 'wf_custom',
     step: 5,
+    phase: 'verify',
+    status: 'completed',
     sessionActions: ['npm test', 'git add .'],
     activeSpecs: ['agent-safety'],
+    intent: { summary: 'Ship release' },
+    plan: { summary: 'Run verification' },
+    report: { status: 'completed' },
+    evidence: ['proof/runtime-report.json'],
+    metadata: { owner: 'automation' },
     gateState: { blockedCount: 2, nearMissCount: 1, totalChecked: 10, safetyPosture: 'cautious' },
   });
 
   assert.equal(cp.workflowId, 'wf_custom');
   assert.equal(cp.step, 5);
+  assert.equal(cp.phase, 'verify');
+  assert.equal(cp.status, 'completed');
   assert.equal(cp.sessionActions.length, 2);
+  assert.equal(cp.intent.summary, 'Ship release');
+  assert.equal(cp.plan.summary, 'Run verification');
+  assert.equal(cp.report.status, 'completed');
+  assert.deepEqual(cp.evidence, ['proof/runtime-report.json']);
+  assert.equal(cp.metadata.owner, 'automation');
   assert.equal(cp.gateState.blockedCount, 2);
   assert.equal(cp.gateState.safetyPosture, 'cautious');
 });
@@ -79,13 +96,23 @@ test('advanceCheckpoint increments step and merges state', () => {
   const next = advanceCheckpoint(cp, {
     newActions: ['git commit -m "fix"'],
     newEvaluations: [{ allowed: true }],
+    phase: 'report',
+    status: 'completed',
+    report: { status: 'completed' },
+    evidence: ['proof/runtime-report.json'],
+    metadata: { reportWritten: true },
     gateState: { blockedCount: 0, nearMissCount: 1, totalChecked: 3, safetyPosture: 'cautious' },
   });
 
   assert.equal(next.step, 3);
   assert.equal(next.workflowId, 'wf_advance');
+  assert.equal(next.phase, 'report');
+  assert.equal(next.status, 'completed');
   assert.equal(next.sessionActions.length, 2);
   assert.equal(next.evaluationHistory.length, 1);
+  assert.equal(next.report.status, 'completed');
+  assert.deepEqual(next.evidence, ['proof/runtime-report.json']);
+  assert.equal(next.metadata.reportWritten, true);
   assert.equal(next.gateState.blockedCount, 1); // 1 + 0
   assert.equal(next.gateState.nearMissCount, 1); // 0 + 1
   assert.equal(next.gateState.totalChecked, 8); // 5 + 3
@@ -142,6 +169,7 @@ test('formatCheckpoint produces readable output', () => {
   const output = formatCheckpoint(cp);
   assert.ok(output.includes('wf_fmt'));
   assert.ok(output.includes('Step: 7'));
+  assert.ok(output.includes('Phase: intent'));
   assert.ok(output.includes('blocked=2'));
   assert.ok(output.includes('posture=cautious'));
 });

@@ -73,6 +73,8 @@ test('tools/list returns all configured tools', async () => {
   const result = await handleRequest({ jsonrpc: '2.0', id: 1, method: 'tools/list' });
   assert.equal(Array.isArray(result.tools), true);
   assert.equal(result.tools.length, TOOLS.length);
+  assert.ok(result.tools.some((tool) => tool.name === 'run_autoresearch'));
+  assert.ok(result.tools.some((tool) => tool.name === 'plan_multimodal_retrieval'));
   for (const tool of result.tools) {
     const annotations = tool.annotations || {};
     const hasReadOnlyHint = annotations.readOnlyHint === true;
@@ -80,6 +82,30 @@ test('tools/list returns all configured tools', async () => {
     assert.equal(hasReadOnlyHint || hasDestructiveHint, true, `${tool.name} must declare a safety annotation`);
     assert.equal(hasReadOnlyHint && hasDestructiveHint, false, `${tool.name} must not claim both readOnlyHint and destructiveHint`);
   }
+});
+
+test('plan_multimodal_retrieval returns a visual proof retrieval rollout plan', async () => {
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 32,
+    method: 'tools/call',
+    params: {
+      name: 'plan_multimodal_retrieval',
+      arguments: {
+        goal: 'retrieve dashboard proof screenshots for launch claims',
+        evidenceTypes: ['screenshots', 'pdf pages', 'proof artifacts'],
+        corpusItems: 1200,
+        maxEmbeddingDim: 512,
+        latencyBudgetMs: 500,
+      },
+    },
+  });
+
+  const payload = JSON.parse(result.content[0].text);
+  assert.equal(payload.evaluation.primaryMetric, 'NDCG@10');
+  assert.equal(payload.deployment.defaultEmbeddingDim, 512);
+  assert.ok(payload.deployment.matryoshkaDimensions.some((entry) => entry.dim === 128));
+  assert.ok(payload.thumbgateUseCases.some((useCase) => useCase.includes('proof artifact')));
 });
 
 test('list_harnesses tool returns the natural-language harness catalog', async () => {
@@ -201,6 +227,39 @@ test('run_harness tool executes a natural-language harness over MCP', async () =
     delete require.cache[HARNESS_PATH];
     delete require.cache[VERIFICATION_PATH];
   }
+});
+
+test('run_autoresearch tool executes a bounded metric loop over MCP', async () => {
+  const metricScript = [
+    'console.log("ℹ tests 1");',
+    'console.log("ℹ pass 1");',
+    'console.log("ℹ fail 0");',
+  ].join(' ');
+
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 31,
+    method: 'tools/call',
+    params: {
+      name: 'run_autoresearch',
+      arguments: {
+        iterations: 1,
+        targetName: 'half_life_days',
+        nextValue: 8,
+        testCommand: `${JSON.stringify(process.execPath)} -e ${JSON.stringify(metricScript)}`,
+        holdoutCommands: [`${JSON.stringify(process.execPath)} -e ${JSON.stringify(metricScript)}`],
+        timeoutMs: 30000,
+      },
+    },
+  });
+
+  const payload = JSON.parse(result.content[0].text);
+  assert.equal(payload.results.length, 1);
+  assert.equal(payload.controls.iterations, 1);
+  assert.equal(payload.controls.maxIterationsPerCall, 5);
+  assert.equal(payload.results[0].target.name, 'half_life_days');
+  assert.ok(payload.results[0].baselineEvaluation);
+  assert.ok(payload.results[0].candidateEvaluation);
 });
 
 test('capture_feedback tool can be called', async () => {

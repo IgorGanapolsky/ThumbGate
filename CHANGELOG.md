@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.8.0
+
+### Minor Changes
+
+- [#954](https://github.com/IgorGanapolsky/ThumbGate/pull/954) [`d48608e`](https://github.com/IgorGanapolsky/ThumbGate/commit/d48608ea2f7956aa4d513878b8d5e7d82596f213) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Enforcement teeth: move ThumbGate's PreToolUse path from advisory to preventive.
+
+  - `capture_feedback` now surfaces `correctiveActions` as a top-level `<system-reminder>` block in the MCP response (content[1]) alongside the JSON body (content[0]), so prior lessons reach the calling agent as first-class context instead of buried JSON.
+  - Replaces the no-op `scripts/hook-verify-before-done.sh` with `scripts/hook-pre-tool-use.js` (matcher expanded to `Bash|Edit|Write`). The new hook: (1) preserves the existing curl-to-prod timestamp tracking; (2) calls `retrieveWithRerankingSync` against the about-to-run tool and injects matched lessons via `hookSpecificOutput.additionalContext`; (3) opt-in via `THUMBGATE_HOOKS_ENFORCE=1`, blocks tool calls with `decision:"block"` when a matched lesson carries a high-risk tag at/above threshold (default 5, configurable via `THUMBGATE_HOOKS_ENFORCE_THRESHOLD`); (4) opt-in via `THUMBGATE_AUTOGATE_PR_COMMITS=1`, auto-registers a `thread-resolution-verified` claim gate when `git commit` runs on a non-main branch.
+  - `bin/cli.js session-start` now emits top ThumbGate hard-block rules and top high-risk tags as a structured `hookSpecificOutput.additionalContext` reminder (with stderr fallback for older Claude Code versions), so session start forces the agent to see current enforcement state rather than relying on opt-in `recall`.
+  - Every enforcement path fails open: malformed hook stdin, missing risk model, or any uncaught exception in the hook exits 0 with no block, ensuring a bug never deadlocks the agent. Flags default to OFF so the first misfiring regex can be corrected in the same session that shipped it.
+
+- Add a canonical autonomous control-plane workflow to ThumbGate itself.
+
+  - Add `scripts/autonomous-workflow.js`, a durable `intent -> plan -> execute -> verify -> report` runner built on top of the existing async job runtime, workflow checkpoints, and proof-backed workflow logs.
+  - Extend `scripts/workflow-gate-checkpoint.js` so checkpoints can persist workflow phase, status, plan, intent, evidence, report metadata, and merged workflow-level metadata across restarts.
+  - Persist evidence-backed workflow artifacts under `.thumbgate/autonomous-workflows/<workflowId>/` and record proof-backed workflow runs only when verification accepts the output and artifacts exist.
+  - Wire package scripts and package contents so the autonomous runner ships in the npm tarball and stays covered by high-ROI and workflow checkpoint tests.
+
+### Patch Changes
+
+- [#951](https://github.com/IgorGanapolsky/ThumbGate/pull/951) [`3270c2a`](https://github.com/IgorGanapolsky/ThumbGate/commit/3270c2ab90eb51a7a1f59df87dbdc8cb16172327) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Hard-enforce pre-tool prevention signals: matching high-risk boosted tags now block risky actions, PR-branch git commits register a required thread-resolution verification gate before the next unsafe tool call, and corrective actions surface as top-level reminders instead of being buried in JSON.
+
 ## 1.6.0
 
 ### Minor Changes

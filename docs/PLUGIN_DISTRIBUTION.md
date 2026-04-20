@@ -43,7 +43,7 @@ This avoids platform-specific rewrite cost and keeps the product under a small b
 ## Claude (MCP)
 
 - Use: `adapters/claude/.mcp.json`
-- Transport: local stdio MCP server launched via `npx -y thumbgate@1.7.0 serve`
+- Transport: local stdio MCP server launched via `npx -y thumbgate@1.8.0 serve`
 
 ## Claude Desktop Extensions
 
@@ -58,7 +58,7 @@ This avoids platform-specific rewrite cost and keeps the product under a small b
 - Release workflow: `.github/workflows/publish-claude-plugin.yml`
 - Latest direct download: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb`
 - Latest review packet zip: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-plugin-review.zip`
-- Local install path: `claude mcp add thumbgate -- npx -y thumbgate@1.7.0 serve`
+- Local install path: `claude mcp add thumbgate -- npx -y thumbgate@1.8.0 serve`
 - Promotion rule: treat directory inclusion as a discoverability lane, not customer proof
 
 Build the `.mcpb` for Claude Desktop review or direct installation with:
