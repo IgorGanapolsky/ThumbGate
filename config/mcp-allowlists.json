@@ -58,6 +58,7 @@
       "require_evidence_for_claim",
       "distribute_context_to_agents",
       "session_report",
+      "generate_operator_artifact",
       "perplexity_search",
       "perplexity_ask",
       "perplexity_research",
@@ -91,7 +92,8 @@
       "estimate_uncertainty",
       "report_product_issue",
       "require_evidence_for_claim",
-      "session_report"
+      "session_report",
+      "generate_operator_artifact"
     ],
     "commerce": [
       "capture_feedback",
@@ -143,6 +145,7 @@
       "describe_reliability_entity",
       "require_evidence_for_claim",
       "session_report",
+      "generate_operator_artifact",
       "perplexity_search",
       "perplexity_ask"
     ],
@@ -176,6 +179,7 @@
       "describe_reliability_entity",
       "require_evidence_for_claim",
       "session_report",
+      "generate_operator_artifact",
       "perplexity_search",
       "perplexity_ask"
     ],
@@ -194,7 +198,8 @@
       "verify_claim",
       "check_operational_integrity",
       "workflow_sentinel",
-      "settings_status"
+      "settings_status",
+      "generate_operator_artifact"
     ]
   }
 }

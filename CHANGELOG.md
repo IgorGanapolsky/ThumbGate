@@ -1,5 +1,42 @@
 # Changelog
 
+## 1.14.0
+
+### Minor Changes
+
+- [#1093](https://github.com/IgorGanapolsky/ThumbGate/pull/1093) [`f0453e4`](https://github.com/IgorGanapolsky/ThumbGate/commit/f0453e45a4a2052d16322509b9941fe768997dd1) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add decision-ready operator artifact pulses for PR health, Reliability Gateway state, revenue prioritization, and release readiness.
+
+  The new `thumbgate artifacts` CLI command and `generate_operator_artifact` MCP tool expose typed JSON or Markdown summaries so agents can progressively load high-level decisions instead of stitching together low-level telemetry calls.
+
+### Patch Changes
+
+- [#979](https://github.com/IgorGanapolsky/ThumbGate/pull/979) [`0f56b0d`](https://github.com/IgorGanapolsky/ThumbGate/commit/0f56b0d508dbd0701d002df9e6feabafbb3a1a65) Thanks [@dependabot](https://github.com/apps/dependabot)! - Add the release note required for the `@huggingface/transformers` 4.1.0 dependency bump so manifest-only Dependabot updates pass ThumbGate's release hygiene checks.
+
+## 1.13.0
+
+### Minor Changes
+
+- [#1059](https://github.com/IgorGanapolsky/ThumbGate/pull/1059) [`095cb8c`](https://github.com/IgorGanapolsky/ThumbGate/commit/095cb8c289546ccf7a957664d8d01c64ccd07aa3) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat(analytics): Zernio as canonical social stack; trim direct-API pollers to opt-in fallback
+
+  `scripts/social-analytics/poll-all.js` now runs only `github + plausible + zernio`
+  by default. The seven direct-API pollers (reddit, linkedin, x, threads,
+  instagram, youtube, tiktok) move to a `LEGACY_POLLERS` list that activates
+  only when `THUMBGATE_USE_DIRECT_POLLERS=1`.
+
+  Adds `scripts/social-analytics/zernio-status.js` (npm run `social:zernio:status`)
+  which reads the local `engagement_metrics` SQLite table, reports per-platform
+  row counts for the last 24h, and exits non-zero when zero rows ingested —
+  making silent Zernio 402 / auth / rate-limit failures CEO-visible.
+
+  Zernio holds the OAuth connections for every focus channel, so maintaining
+  eight separate token rotations + direct pollers was duplicate infrastructure
+  that silently skipped on missing env for months. The emergency fallback flag
+  preserves the old behavior without making it the default contract.
+
+### Patch Changes
+
+- Ship the Zernio social analytics runtime scripts in a new npm package version so main does not silently skip publish verification after analytics changes.
+
 ## 1.12.2
 
 ### Patch Changes
