@@ -96,6 +96,22 @@ test('statusline script reads jq input and outputs ThumbGate line', () => {
   assert.doesNotMatch(out, /Lessons \(http:\/\/localhost:3456\/lessons\)/);
 });
 
+test('statusline includes branch, inferred work item, and PR context when available', () => {
+  const out = runStatusline({
+    thumbs_up: '39', thumbs_down: '239', lessons: '8', trend: 'stable'
+  }, {
+    _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify(linkFixture()),
+    _TEST_THUMBGATE_STATUSLINE_CONTEXT_JSON: JSON.stringify({
+      branchName: 'bugfix/1663699-account-profile-hardening',
+      workItemLabel: 'AB#1663699',
+      prLabel: 'PR #768',
+    }),
+  });
+  const plain = stripStatuslineFormatting(out);
+  assert.match(plain, /bugfix\/1663699-account-profile-hardening · AB#1663699 · ThumbGate v/);
+  assert.match(plain, /PR #768/);
+});
+
 test('statusline shows "no feedback yet" when cache has zeros', () => {
   const out = runStatusline({
     thumbs_up: '0', thumbs_down: '0', lessons: '0', trend: '?'

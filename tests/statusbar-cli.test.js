@@ -131,12 +131,15 @@ test('statusline-lesson.js falls back to the latest success when no mistakes exi
 test('statusline.sh uses CLI commands and local lesson context for feedback', () => {
   const sh = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'statusline.sh'), 'utf-8');
   assert.ok(!sh.includes('feedback/quick?signal='), 'should NOT have browser URL for feedback');
+  assert.ok(sh.includes('statusline-context.js'), 'should reference statusline repo context helper');
   assert.ok(sh.includes('statusline-meta.js'), 'should reference statusline metadata helper');
   assert.ok(sh.includes('statusline-tower.js'), 'should reference tower helper');
   assert.ok(sh.includes('statusline-lesson.js'), 'should reference lesson helper');
   assert.ok(sh.includes('LESSON_TEXT'), 'should support latest lesson snippets in output');
   assert.ok(sh.includes('LESSON_LABEL'), 'should support latest lesson labels in output');
   assert.ok(sh.includes('LESSON_LINK'), 'should support latest lesson deep links in output');
+  assert.ok(sh.includes('BRANCH_NAME'), 'should support repo branch context');
+  assert.ok(sh.includes('PR_LABEL'), 'should support active pull request context');
   assert.ok(sh.includes('TG_VERSION'), 'should show package version');
   assert.ok(sh.includes('TG_TIER'), 'should show license tier');
 });
