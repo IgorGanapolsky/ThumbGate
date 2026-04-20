@@ -132,6 +132,10 @@ const {
 const { exportHfDataset } = require('../../scripts/export-hf-dataset');
 const { distributeContextToAgents } = require('../../scripts/swarm-coordinator');
 const { buildSessionReport } = require('../../scripts/session-report');
+const {
+  generateOperatorArtifact,
+  formatArtifactMarkdown,
+} = require('../../scripts/operator-artifacts');
 
 const PRO_CHECKOUT_URL = 'https://thumbgate-production.up.railway.app/checkout/pro';
 
@@ -153,7 +157,7 @@ const {
   finalizeSession: finalizeFeedbackSession,
 } = require('../../scripts/feedback-session');
 
-const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.12.2' };
+const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.14.0' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
@@ -802,6 +806,16 @@ async function callToolInner(name, args) {
       }));
     case 'session_report':
       return toTextResult(buildSessionReport({ windowHours: args.windowHours }));
+    case 'generate_operator_artifact': {
+      const artifact = await generateOperatorArtifact({
+        type: args.type,
+        windowHours: args.windowHours,
+      });
+      if (args.format === 'markdown') {
+        return toTextResult(formatArtifactMarkdown(artifact));
+      }
+      return toTextResult(artifact);
+    }
     case 'check_operational_integrity':
       return toTextResult(evaluateOperationalIntegrity({
         repoPath: args.repoPath,
