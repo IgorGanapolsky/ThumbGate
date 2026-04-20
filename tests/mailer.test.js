@@ -27,8 +27,9 @@ function savingEnv(keys) {
 }
 
 test('sendTrialWelcomeEmail returns {sent:false, reason:no_api_key} when RESEND_API_KEY is missing', async () => {
-  const restore = savingEnv(['RESEND_API_KEY', 'RESEND_FROM_EMAIL']);
+  const restore = savingEnv(['RESEND_API_KEY', 'THUMBGATE_RESEND_API_KEY', 'RESEND_FROM_EMAIL']);
   delete process.env.RESEND_API_KEY;
+  delete process.env.THUMBGATE_RESEND_API_KEY;
   const { sendTrialWelcomeEmail } = freshMailer();
 
   let calls = 0;
@@ -46,15 +47,42 @@ test('sendTrialWelcomeEmail returns {sent:false, reason:no_api_key} when RESEND_
   restore();
 });
 
+test('sendTrialWelcomeEmail accepts THUMBGATE_RESEND_API_KEY as a fallback for the bare RESEND_API_KEY', async () => {
+  const restore = savingEnv(['RESEND_API_KEY', 'THUMBGATE_RESEND_API_KEY', 'RESEND_FROM_EMAIL']);
+  delete process.env.RESEND_API_KEY;
+  process.env.THUMBGATE_RESEND_API_KEY = 're_prefixed_fallback_key';
+  const { sendTrialWelcomeEmail } = freshMailer();
+
+  let captured = null;
+  const fakeFetch = async (url, init) => {
+    captured = { url, headers: init.headers };
+    return { ok: true, status: 200, text: async () => '{"id":"email_fallback_1"}' };
+  };
+
+  const res = await sendTrialWelcomeEmail({
+    to: 'fallback@example.com',
+    licenseKey: 'tg_fallback_key',
+    customerId: 'cus_fallback',
+    fetchImpl: fakeFetch,
+  });
+
+  assert.equal(res.sent, true, 'email must send when only THUMBGATE_RESEND_API_KEY is set');
+  assert.equal(captured.url, 'https://api.resend.com/emails');
+  assert.equal(captured.headers.Authorization, 'Bearer re_prefixed_fallback_key');
+  restore();
+});
+
 test('sendTrialWelcomeEmail POSTs to Resend with correct headers, reply_to, and payload shape', async () => {
   const restore = savingEnv([
     'RESEND_API_KEY',
     'RESEND_FROM_EMAIL',
     'THUMBGATE_TRIAL_EMAIL_REPLY_TO',
+    'THUMBGATE_VERIFIED_SENDER_DOMAINS',
     'THUMBGATE_BUSINESS_ADDRESS',
   ]);
   process.env.RESEND_API_KEY = 're_test_123';
   process.env.RESEND_FROM_EMAIL = 'hello@thumbgate.app';
+  process.env.THUMBGATE_VERIFIED_SENDER_DOMAINS = 'thumbgate.app';
   delete process.env.THUMBGATE_TRIAL_EMAIL_REPLY_TO;
   delete process.env.THUMBGATE_BUSINESS_ADDRESS;
   const { sendTrialWelcomeEmail } = freshMailer();
@@ -91,8 +119,8 @@ test('sendTrialWelcomeEmail POSTs to Resend with correct headers, reply_to, and 
   assert.equal(body.from, 'hello@thumbgate.app');
   // Subject is personalized with the first name when available.
   assert.equal(body.subject, 'Igor, your ThumbGate Pro key is inside');
-  // reply_to defaults to hello@thumbgate.app — replies must not go into Resend's sandbox void.
-  assert.equal(body.reply_to, 'hello@thumbgate.app');
+  // reply_to defaults to a deliverable operator inbox until thumbgate.app is registered.
+  assert.equal(body.reply_to, 'igor.ganapolsky@gmail.com');
 
   // License key + activation command present in both bodies.
   assert.ok(body.html && body.html.includes('tg_09239a0a433649ba442467567af1825b'));
@@ -115,7 +143,7 @@ test('sendTrialWelcomeEmail POSTs to Resend with correct headers, reply_to, and 
   // CAN-SPAM compliance: business name + physical address + unsubscribe.
   assert.ok(body.html.includes('Max Smith KDP LLC'), 'html footer must carry business name');
   assert.ok(body.html.includes('2261 Market Street #4242, San Francisco, CA 94114'), 'html footer must carry business address');
-  assert.ok(body.html.includes('unsubscribe@thumbgate.app'), 'html footer must expose an unsubscribe mailto');
+  assert.ok(body.html.includes('igor.ganapolsky@gmail.com'), 'html footer must expose a deliverable unsubscribe mailto');
   assert.ok(body.text.includes('Max Smith KDP LLC'), 'text footer must carry business name');
   assert.ok(body.text.includes('Unsubscribe:'), 'text footer must carry unsubscribe instruction');
 
@@ -184,6 +212,48 @@ test('sendTrialWelcomeEmail defaults RESEND_FROM_EMAIL to onboarding@resend.dev'
     fetchImpl: fakeFetch,
   });
 
+  const body = JSON.parse(captured.init.body);
+  assert.equal(body.from, 'onboarding@resend.dev');
+  restore();
+});
+
+test('sendTrialWelcomeEmail falls back to resend.dev when configured sender lacks Resend DNS', async () => {
+  const restore = savingEnv([
+    'RESEND_API_KEY',
+    'RESEND_FROM_EMAIL',
+    'THUMBGATE_TRIAL_EMAIL_FROM',
+    'THUMBGATE_VERIFIED_SENDER_DOMAINS',
+    'THUMBGATE_ALLOW_UNVERIFIED_SENDER',
+  ]);
+  process.env.RESEND_API_KEY = 're_test_123';
+  process.env.RESEND_FROM_EMAIL = 'ThumbGate <onboarding@thumbgate.app>';
+  delete process.env.THUMBGATE_TRIAL_EMAIL_FROM;
+  delete process.env.THUMBGATE_VERIFIED_SENDER_DOMAINS;
+  delete process.env.THUMBGATE_ALLOW_UNVERIFIED_SENDER;
+  const { sendTrialWelcomeEmail } = freshMailer();
+
+  const dnsResolver = {
+    resolveTxt: async () => { throw Object.assign(new Error('queryTxt ENOTFOUND'), { code: 'ENOTFOUND' }); },
+    resolveMx: async () => { throw Object.assign(new Error('queryMx ENOTFOUND'), { code: 'ENOTFOUND' }); },
+  };
+
+  let captured = null;
+  const fakeFetch = (_url, init) => {
+    captured = { init };
+    return Promise.resolve({ ok: true, status: 200, text: async () => '{"id":"email_safe"}' });
+  };
+
+  const res = await sendTrialWelcomeEmail({
+    to: 'safe@example.com',
+    licenseKey: 'tg_safe',
+    fetchImpl: fakeFetch,
+    dnsResolver,
+  });
+
+  assert.equal(res.sent, true);
+  assert.equal(res.id, 'email_safe');
+  assert.equal(res.senderFallback.reason, 'resend_dns_not_ready');
+  assert.equal(res.senderFallback.domain, 'thumbgate.app');
   const body = JSON.parse(captured.init.body);
   assert.equal(body.from, 'onboarding@resend.dev');
   restore();
@@ -289,7 +359,7 @@ test('renderTrialWelcomeBodies embeds license key, activation command, dashboard
   assert.equal(activationCommand, 'npx thumbgate pro --activate --key=tg_abc');
   assert.equal(trialEndLabel, 'Apr 24, 2026');
   assert.equal(greeting, 'Hi Ada,');
-  assert.equal(unsubscribeEmail, 'unsubscribe@thumbgate.app');
+  assert.equal(unsubscribeEmail, 'igor.ganapolsky@gmail.com');
   assert.equal(businessName, 'Max Smith KDP LLC');
   assert.ok(businessAddress.length > 0);
   for (const fragment of [
@@ -304,8 +374,8 @@ test('renderTrialWelcomeBodies embeds license key, activation command, dashboard
     assert.ok(html.includes(fragment), `html missing: ${fragment}`);
     assert.ok(text.includes(fragment), `text missing: ${fragment}`);
   }
-  assert.ok(html.includes('hello@thumbgate.app'));
-  assert.ok(text.includes('hello@thumbgate.app'));
+  assert.ok(html.includes('igor.ganapolsky@gmail.com'));
+  assert.ok(text.includes('igor.ganapolsky@gmail.com'));
   // Customer ID shows in the html footer only — not in the customer-visible body prose.
   assert.ok(html.includes('cus_42'));
   // Customer ID must NOT appear in the text body — we want to stop leaking debug IDs in
