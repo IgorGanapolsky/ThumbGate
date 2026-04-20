@@ -94,7 +94,7 @@ Bounded retrieval of relevant feedback history for the current task. The agent g
 | Seats | 1 | 1 | Per-seat |
 | Price | $0 | $19/mo | $49/seat/mo |
 
-Start a 7-day free trial of Pro: <https://buy.stripe.com/fZu9AT3Ug6zcdWh0XN3sI08>
+Start a 7-day free trial of Pro: <https://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a>
 
 ## Compatibility
 
