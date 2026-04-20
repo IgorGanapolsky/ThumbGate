@@ -118,14 +118,21 @@ jobs:
           fi
           node scripts/social-analytics/poll-all.js 2>&1 || echo "Poll failed (non-fatal)"
 
-      - name: Check social reply monitor
+      - name: Check social reply monitor (Reddit + LinkedIn)
         if: github.event.inputs.dry_run != 'true'
         env:
           ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
-          X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
+          REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+          LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
         run: |
-          if [ -z "$X_BEARER_TOKEN" ]; then
-            echo "Skipping reply monitor: X_BEARER_TOKEN not set"
+          # X/Twitter reply monitoring retired 2026-04-20. Guard on Reddit creds
+          # so the job no-ops cleanly when the repo lacks reply-loop secrets.
+          if [ -z "$REDDIT_CLIENT_ID" ] && [ -z "$LINKEDIN_ACCESS_TOKEN" ]; then
+            echo "Skipping reply monitor: no Reddit or LinkedIn credentials configured"
             exit 0
           fi
           timeout 60 node scripts/social-reply-monitor.js --once 2>&1 || echo "Reply monitor done"
