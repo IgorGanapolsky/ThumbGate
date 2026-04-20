@@ -24,6 +24,52 @@ function npmPackFiles() {
   return npmPackManifest().files;
 }
 
+function resolveRelativeRequire(fromFile, specifier) {
+  if (!specifier.startsWith('.')) return null;
+  const basePath = path.resolve(path.dirname(fromFile), specifier);
+  const candidates = [
+    basePath,
+    `${basePath}.js`,
+    path.join(basePath, 'index.js'),
+  ];
+
+  return candidates.find((candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile()) || null;
+}
+
+function collectStaticRuntimeDependencies(entryFile, packagedFiles) {
+  const packaged = new Set(packagedFiles);
+  const seen = new Set();
+  const missing = new Set();
+
+  function toPackagePath(filePath) {
+    return path.relative(root, filePath).split(path.sep).join('/');
+  }
+
+  function visit(filePath) {
+    const packagePath = toPackagePath(filePath);
+    if (seen.has(packagePath)) return;
+    seen.add(packagePath);
+
+    const source = fs.readFileSync(filePath, 'utf8');
+    const requirePattern = /require\(['"](\.{1,2}\/[^'"]+)['"]\)/g;
+    let match;
+    while ((match = requirePattern.exec(source)) !== null) {
+      const resolved = resolveRelativeRequire(filePath, match[1]);
+      if (!resolved || !resolved.startsWith(root)) continue;
+
+      const dependencyPath = toPackagePath(resolved);
+      if (!packaged.has(dependencyPath)) {
+        missing.add(`${packagePath} -> ${dependencyPath}`);
+        continue;
+      }
+      visit(resolved);
+    }
+  }
+
+  visit(path.join(root, entryFile));
+  return [...missing].sort();
+}
+
 test('npm package excludes generated runtime state from included directories', () => {
   const runtimeDb = path.join(root, 'scripts', 'social-analytics', 'db', 'package-leak-test.sqlite');
   const pycacheDir = path.join(root, 'scripts', '__pycache__');
@@ -49,6 +95,13 @@ test('npm package excludes generated runtime state from included directories', (
   }
 });
 
+test('npm package ships static dependencies needed for MCP server startup', () => {
+  const files = npmPackFiles();
+  const missing = collectStaticRuntimeDependencies('adapters/mcp/server-stdio.js', files);
+
+  assert.deepEqual(missing, []);
+});
+
 test('npm package ships a slim runtime boundary instead of repo/dev surfaces', () => {
   const manifest = npmPackManifest();
   const files = manifest.files;
@@ -61,8 +114,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'scripts/bot-detection.js',
     'scripts/feedback-loop.js',
     'scripts/gates-engine.js',
+    'scripts/hf-papers.js',
+    'scripts/session-report.js',
     'scripts/statusline.sh',
     'scripts/statusline-meta.js',
+    'scripts/swarm-coordinator.js',
     'scripts/tool-registry.js',
     'skills/thumbgate/SKILL.md',
     '.claude-plugin/plugin.json',
@@ -103,9 +159,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // the autonomous control-plane runner (#956) and progressive-discovery
   // MCP tool (#960), plus this branch's scripts/bayes-optimal-gate.js —
   // combined net of +4 runtime script files shipped to the tarball.
+  // Bumped 225 → 230 (2026-04-20) because the MCP server imports these files
+  // at startup or through required startup modules. Omitting them crashes
+  // published `thumbgate serve` with a closed MCP transport.
   assert.ok(
-    manifest.fileCount <= 225,
-    `npm package should stay <= 225 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 230,
+    `npm package should stay <= 230 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
