@@ -134,6 +134,25 @@ const TOOLS = [
       },
     },
   }),
+  readOnlyTool({
+    name: 'plan_multimodal_retrieval',
+    description: 'Plan a high-ROI multimodal retrieval rollout for screenshots, PDF pages, dashboard captures, and proof artifacts without starting GPU training.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        goal: { type: 'string', description: 'Business or workflow objective for visual/document retrieval.' },
+        evidenceTypes: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Evidence surfaces to include, such as screenshots, pdf_pages, proof_artifacts, dashboards, or videos.',
+        },
+        corpusItems: { type: 'number', description: 'Estimated number of visual artifacts or document pages to index.' },
+        maxEmbeddingDim: { type: 'number', description: 'Maximum embedding dimension to budget for Matryoshka-style truncation planning.' },
+        latencyBudgetMs: { type: 'number', description: 'Target retrieval latency budget for agent recall.' },
+        useReranker: { type: 'boolean', description: 'Whether to include a multimodal reranker stage after initial embedding retrieval.' },
+      },
+    },
+  }),
   destructiveTool({
     name: 'import_document',
     description: 'Import a local policy or runbook document into ThumbGate, normalize it for search, and propose provenance-backed gate candidates.',
@@ -869,6 +888,24 @@ const TOOLS = [
         harness: { type: 'string', description: 'Harness id or file basename to execute.' },
         inputs: { type: 'object', description: 'Optional input overrides for template variables.' },
         jobId: { type: 'string', description: 'Optional stable job id for the resulting runtime.' },
+      },
+    },
+  }),
+  destructiveTool({
+    name: 'run_autoresearch',
+    description: 'Run a bounded metric-improvement loop: measure a baseline, test a hypothesis, require primary and holdout checks, then keep or discard the candidate mutation with proof.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        iterations: { type: 'number', description: 'Number of iterations to run. Capped at 5 per call; default 1.' },
+        targetName: { type: 'string', enum: ['half_life_days', 'decay_floor', 'prevention_min_occurrences', 'verification_max_retries', 'dpo_beta'], description: 'Optional evolution target to mutate.' },
+        nextValue: { type: 'number', description: 'Optional explicit candidate value for the target.' },
+        testCommand: { type: 'string', description: 'Primary metric command. Defaults to npm test.' },
+        holdoutCommands: { type: 'array', items: { type: 'string' }, description: 'Additional checks required before a candidate can be kept.' },
+        timeoutMs: { type: 'number', description: 'Per-command timeout in milliseconds. Capped at 600000; default 120000.' },
+        cwd: { type: 'string', description: 'Optional workspace directory for the evaluation commands.' },
+        researchQuery: { type: 'string', description: 'Optional research query used to build an autoresearch context brief.' },
+        paperLimit: { type: 'number', description: 'Maximum research papers to ingest when researchQuery is set. Capped at 10; default 5.' },
       },
     },
   }),

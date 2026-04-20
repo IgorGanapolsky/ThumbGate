@@ -10,6 +10,7 @@ process.env.THUMBGATE_API_KEY = 'test-api-key';
 process.env._TEST_API_KEYS_PATH = path.join(tmp, 'api-keys.json');
 
 const { startServer } = require('../src/api/server');
+const root = path.join(__dirname, '..');
 
 let handle;
 let origin = '';
@@ -78,4 +79,10 @@ test('GET /assets/../server.js is rejected (no path traversal)', async () => {
   const res = await fetch(`${origin}/assets/..%2fapi%2fserver.js`);
   assert.ok([403, 404].includes(res.status), `expected 403 or 404, got ${res.status}`);
   assert.notEqual(res.status, 200);
+});
+
+test('packaged well-known MCP server card is valid JSON', () => {
+  const payload = JSON.parse(fs.readFileSync(path.join(root, '.well-known/mcp/server-card.json'), 'utf8'));
+  assert.equal(payload.name, 'thumbgate');
+  assert.equal(typeof payload.version, 'string');
 });
