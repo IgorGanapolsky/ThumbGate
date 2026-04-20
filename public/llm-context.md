@@ -127,6 +127,7 @@ npx thumbgate dashboard
 
 - Agent discovery manifest: https://thumbgate-production.up.railway.app/.well-known/mcp.json
 - Progressive MCP tool index: https://thumbgate-production.up.railway.app/.well-known/mcp/tools.json
+- Context footprint report: https://thumbgate-production.up.railway.app/.well-known/mcp/footprint.json
 - ThumbGate skill manifests: https://thumbgate-production.up.railway.app/.well-known/mcp/skills.json
 - ThumbGate MCP applications: https://thumbgate-production.up.railway.app/.well-known/mcp/applications.json
 - GitHub: https://github.com/IgorGanapolsky/ThumbGate

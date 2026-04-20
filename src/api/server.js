@@ -209,6 +209,9 @@ const {
 const { sendProblem, PROBLEM_TYPES } = require('../../scripts/problem-detail');
 const { TOOLS: MCP_TOOLS } = require('../../scripts/tool-registry');
 const {
+  buildContextFootprintReport,
+} = require('../../scripts/context-footprint');
+const {
   findSeoPageByPath,
   renderSeoPageHtml,
   THUMBGATE_SEO_SITEMAP_ENTRIES,
@@ -567,6 +570,13 @@ function getToolDiscoveryIndex(hostedConfig) {
   }));
 }
 
+function getContextFootprintReport(hostedConfig) {
+  return buildContextFootprintReport({
+    tools: MCP_TOOLS,
+    schemaUrlTemplate: buildPublicUrl(hostedConfig, '/.well-known/mcp/tools/{name}.json'),
+  });
+}
+
 function getMcpSkillManifests(hostedConfig) {
   return [
     {
@@ -609,6 +619,21 @@ function getMcpSkillManifests(hostedConfig) {
         'Require artifact links before using retrieved evidence in claims.',
       ],
       contextUrl: buildPublicUrl(hostedConfig, '/public/llm-context.md'),
+      proofUrl: VERIFICATION_EVIDENCE_URL,
+    },
+    {
+      name: 'context-footprint-optimizer',
+      title: 'Context Footprint Optimizer',
+      description: 'Measure MCP schema payloads and feedback-context packs before spending model context on them.',
+      triggers: ['context compression', 'token savings', 'progressive discovery', 'MCP schema loading', 'context budget'],
+      recommendedFlow: [
+        'Measure full schema or memory payload footprint.',
+        'Load the slim index first, then fetch only selected tool schemas.',
+        'Compact feedback context with anchors for proof-critical lessons.',
+        'Record estimated token savings next to the workflow evidence.',
+      ],
+      contextUrl: buildPublicUrl(hostedConfig, '/public/llm-context.md'),
+      footprintUrl: buildPublicUrl(hostedConfig, '/.well-known/mcp/footprint.json'),
       proofUrl: VERIFICATION_EVIDENCE_URL,
     },
   ];
@@ -671,6 +696,7 @@ function getMcpDiscoveryManifest(hostedConfig) {
       serverCardUrl: buildPublicUrl(hostedConfig, '/.well-known/mcp/server-card.json'),
       toolIndexUrl: buildPublicUrl(hostedConfig, '/.well-known/mcp/tools.json'),
       toolSchemaUrlTemplate: buildPublicUrl(hostedConfig, '/.well-known/mcp/tools/{name}.json'),
+      footprintUrl: buildPublicUrl(hostedConfig, '/.well-known/mcp/footprint.json'),
       skillsUrl: buildPublicUrl(hostedConfig, '/.well-known/mcp/skills.json'),
       applicationsUrl: buildPublicUrl(hostedConfig, '/.well-known/mcp/applications.json'),
       llmsTxtUrl: buildPublicUrl(hostedConfig, '/.well-known/llms.txt'),
@@ -705,9 +731,15 @@ function getMcpDiscoveryManifest(hostedConfig) {
         description: 'Plan screenshot/PDF/proof-artifact retrieval before investing in multimodal finetuning.',
         tools: ['plan_multimodal_retrieval', 'search_thumbgate', 'construct_context_pack', 'require_evidence_for_claim'],
       },
+      {
+        name: 'context-footprint-optimizer',
+        description: 'Measure MCP schema and feedback-context footprint before loading large manifests into model context.',
+        tools: ['plan_context_footprint', 'construct_context_pack', 'context_provenance'],
+      },
     ],
     skills: getMcpSkillManifests(hostedConfig),
     applications: getMcpApplications(hostedConfig),
+    footprint: getContextFootprintReport(hostedConfig),
     proof: {
       verificationEvidenceUrl: VERIFICATION_EVIDENCE_URL,
       llmContextUrl: buildPublicUrl(hostedConfig, '/public/llm-context.md'),
@@ -4086,6 +4118,17 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/.well-known/mcp/footprint.json') {
+      sendJson(res, 200, {
+        name: 'thumbgate',
+        version: pkg.version,
+        ...getContextFootprintReport(hostedConfig),
+      }, {}, {
+        headOnly: isHeadRequest,
+      });
+      return;
+    }
+
     if (isGetLikeRequest && pathname.startsWith('/.well-known/mcp/tools/') && pathname.endsWith('.json')) {
       const encodedToolName = pathname.slice('/.well-known/mcp/tools/'.length, -'.json'.length);
       let toolName = encodedToolName;
@@ -4156,6 +4199,7 @@ async function addContext(){
         version: pkg.version,
         transport: discoveryManifest.transport,
         discovery: discoveryManifest.discovery,
+        footprint: discoveryManifest.footprint,
         tools: getServerCardTools(),
         skills: getMcpSkillManifests(hostedConfig),
         applications: getMcpApplications(hostedConfig),

@@ -153,6 +153,45 @@ const TOOLS = [
       },
     },
   }),
+  readOnlyTool({
+    name: 'plan_context_footprint',
+    description: 'Estimate MCP schema and feedback-context footprint before loading large manifests into an agent prompt. Reports progressive-discovery savings, context compaction savings, and proof-preserving recommendations.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        entries: {
+          type: 'array',
+          description: 'Optional feedback/context entries to compact and measure.',
+          items: { type: 'object' },
+        },
+        anchors: {
+          type: 'array',
+          description: 'Optional entries that must survive compaction.',
+          items: { type: 'object' },
+        },
+        schemaUrlTemplate: {
+          type: 'string',
+          description: 'Template for progressive MCP tool schema URLs, using {name}.',
+        },
+        targetReduction: {
+          type: 'number',
+          description: 'Target footprint reduction as a ratio or percentage. Default: 0.22.',
+        },
+        windowSize: {
+          type: 'number',
+          description: 'Feedback compaction recency window.',
+        },
+        perEntryMaxChars: {
+          type: 'number',
+          description: 'Maximum characters retained per large feedback field.',
+        },
+        totalMaxChars: {
+          type: 'number',
+          description: 'Optional total character budget for compacted feedback entries.',
+        },
+      },
+    },
+  }),
   destructiveTool({
     name: 'import_document',
     description: 'Import a local policy or runbook document into ThumbGate, normalize it for search, and propose provenance-backed gate candidates.',
