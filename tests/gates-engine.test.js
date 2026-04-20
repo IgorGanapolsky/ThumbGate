@@ -48,6 +48,9 @@ const {
   verifyClaimEvidence,
   evaluateBoostedRiskTagGuard,
   evaluatePendingPrThreadResolutionGate,
+  getLocalOnlyScopeSources,
+  isRemoteSideEffectCommand,
+  evaluateLocalOnlyRemoteSideEffectGate,
   PR_THREAD_RESOLUTION_ACTION,
   TTL_MS,
   SESSION_ACTION_TTL_MS,
@@ -313,6 +316,106 @@ test('evaluateGates returns deny for git push', () => {
   assert.equal(result.decision, 'deny');
   assert.equal(result.gate, 'push-without-thread-check');
   assert.ok(result.message.includes('review threads'));
+});
+
+test('evaluateGates blocks wrapped git push when task scope is local-only', () => {
+  cleanupStateFiles();
+  const repoPath = createPushTestRepo();
+  setTaskScope({ summary: 'fix local Android build', allowedPaths: ['**'], localOnly: true });
+  satisfyCondition('pr_threads_checked', '0 unresolved threads');
+  const result = evaluateGates('Bash', { command: `cd ${repoPath} && git push origin feature/x`, repoPath });
+  assert.ok(result);
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.gate, 'local-only-remote-side-effect');
+  assert.ok(result.message.includes('local-only'));
+});
+
+test('evaluateGates blocks gh pr create when task scope is local-only', () => {
+  cleanupStateFiles();
+  setTaskScope({ summary: 'fix local Android build', allowedPaths: ['**'], localOnly: true });
+  const result = evaluateGates('Bash', { command: 'gh pr create --title fix --body body' });
+  assert.ok(result);
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.gate, 'local-only-remote-side-effect');
+});
+
+test('evaluateGates blocks remote side effects from local_only constraint alone', () => {
+  cleanupStateFiles();
+  setConstraint('local_only', true);
+  const result = evaluateGates('Bash', { command: 'gh pr merge 42 --merge' });
+  assert.ok(result);
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.gate, 'local-only-remote-side-effect');
+});
+
+test('evaluateGates blocks remote publish actions when branch governance is local-only', () => {
+  cleanupStateFiles();
+  setBranchGovernance({ branchName: 'feature/local-only', localOnly: true, prRequired: false });
+  const result = evaluateGates('Bash', { command: 'gh release create v1.2.3 --generate-notes' });
+  assert.ok(result);
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.gate, 'local-only-remote-side-effect');
+  assert.match(result.reasoning.join('\n'), /branch governance/);
+});
+
+test('evaluateGates allows local read commands when task scope is local-only', () => {
+  cleanupStateFiles();
+  setTaskScope({ summary: 'inspect local Android build', allowedPaths: ['**'], localOnly: true });
+  const result = evaluateGates('Bash', { command: 'git status --short' });
+  assert.equal(result, null);
+});
+
+test('getLocalOnlyScopeSources reports every active local-only source', () => {
+  const sources = getLocalOnlyScopeSources(
+    {
+      taskScope: { localOnly: true },
+      branchGovernance: { localOnly: true },
+    },
+    { local_only: { value: true } },
+  );
+  assert.deepEqual(sources, ['task scope', 'branch governance', 'local_only constraint']);
+});
+
+test('isRemoteSideEffectCommand recognizes remote release and publish actions only for Bash', () => {
+  assert.equal(isRemoteSideEffectCommand('Bash', { command: 'gh release upload v1.2.3 dist.tgz' }), true);
+  assert.equal(isRemoteSideEffectCommand('Bash', { command: 'pnpm publish --access public' }), true);
+  assert.equal(isRemoteSideEffectCommand('Bash', { command: 'git status --short' }), false);
+  assert.equal(isRemoteSideEffectCommand('Write', { command: 'git push origin main' }), false);
+});
+
+test('evaluateLocalOnlyRemoteSideEffectGate returns null without a local-only boundary', () => {
+  const result = evaluateLocalOnlyRemoteSideEffectGate(
+    'Bash',
+    { command: 'npm publish' },
+    { taskScope: { localOnly: false } },
+    {},
+  );
+  assert.equal(result, null);
+});
+
+test('evaluateLocalOnlyRemoteSideEffectGate includes source and trimmed command reasoning', () => {
+  const result = evaluateLocalOnlyRemoteSideEffectGate(
+    'Bash',
+    { command: `gh pr edit 42 --body ${'x'.repeat(220)}` },
+    { branchGovernance: { localOnly: true } },
+    {},
+  );
+  assert.ok(result);
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.gate, 'local-only-remote-side-effect');
+  assert.match(result.reasoning[0], /branch governance/);
+  assert.ok(result.reasoning[1].length < 190);
+});
+
+test('evaluateGatesAsync blocks wrapped git push when task scope is local-only', async () => {
+  cleanupStateFiles();
+  const repoPath = createPushTestRepo();
+  setTaskScope({ summary: 'fix local Android build', allowedPaths: ['**'], localOnly: true });
+  satisfyCondition('pr_threads_checked', '0 unresolved threads');
+  const result = await evaluateGatesAsync('Bash', { command: `npm test && git push origin feature/x`, repoPath });
+  assert.ok(result);
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.gate, 'local-only-remote-side-effect');
 });
 
 test('evaluateGates returns deny for force push', () => {
