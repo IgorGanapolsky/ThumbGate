@@ -31,6 +31,14 @@ ThumbGate is the only active source of truth. Use `IgorGanapolsky/ThumbGate`, np
 
 Do not use `mcp-memory-gateway`, `rlhf`, old RLHF-loop paths, or similarly named local worktrees/remotes as active product context. Those strings are legacy migration aliases only when cleanup code or tests intentionally remove old config keys.
 
+## Distribution Channel Focus
+
+Active outbound channels (2026-04-20 onward): **Reddit, LinkedIn, Threads, Bluesky, Instagram, YouTube.**
+
+X/Twitter was retired from active distribution 2026-04-20. The `scripts/post-to-x*.js` and `scripts/x-autonomous-marketing.js` modules remain on disk for potential future use but are no longer wired into any scheduled workflow, `post-everywhere` default, or reply-monitor CI env surface. Do not add new features that re-introduce X as a primary channel without CEO approval.
+
+Default platform list enforced by `scripts/post-everywhere.js` (`DEFAULT_PLATFORMS`). Tests in `tests/post-everywhere-channels.test.js` pin the list — keep them green.
+
 ## Files You Must Not Commit
 
 | Pattern | Why |
