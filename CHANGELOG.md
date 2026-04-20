@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.10.0
+
+### Minor Changes
+
+- [#963](https://github.com/IgorGanapolsky/ThumbGate/pull/963) [`289fc4f`](https://github.com/IgorGanapolsky/ThumbGate/commit/289fc4f27ce36ce7300381b65b39cd919c8fe002) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add Bayes-optimal decision layer for the pre-tool-use gate. The legacy gate blocks when any matched lesson tag has a heuristic risk score ≥ a single global threshold — a "threshold-on-heuristic" rule that cannot express asymmetric misclassification costs (e.g., false-allowing a `deploy-prod`-tagged call is orders of magnitude more expensive than false-blocking a lint fix). The new layer computes `P(harmful | tags)` via a clipped Bayes-factor update over the trained scorer's probability and per-tag empirical risk rates, then picks the action that minimizes expected loss under a configurable loss matrix. The gate also now exposes a Bayes-error-rate metric (the irreducible floor of the current feature set) on `gate-stats` — a stopping rule for threshold tuning. The decision path is opt-in via `THUMBGATE_HOOKS_BAYES_OPTIMAL=1` or `bayesOptimalEnabled: true` in `config/enforcement.json`, and fails open back to the legacy rule on any error. Thompson Sampling gains an `argmaxPosteriors` + `pickBestCategory` exploit-mode counterpart to `samplePosteriors` for hot-path selection without exploration noise.
+
+- [#960](https://github.com/IgorGanapolsky/ThumbGate/pull/960) [`b479da1`](https://github.com/IgorGanapolsky/ThumbGate/commit/b479da1964a32b461589be1d45c7d960e1dbe6c3) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add high-ROI MCP agent-discovery and research-loop surfaces.
+
+  - Publish progressive MCP discovery manifests under `.well-known/mcp`, including a compact tool index, per-tool schema URLs, skill manifests, and application manifests so AI agents and crawlers can load ThumbGate without stuffing every tool into context.
+  - Add `run_autoresearch` as a bounded MCP tool for Shopify-style baseline, hypothesis, holdout, and keep/discard loops around revenue and reliability metrics.
+  - Add `plan_multimodal_retrieval` so operators can plan screenshot, PDF, dashboard, and proof-artifact retrieval using multimodal sentence-transformer guidance, Matryoshka-style dimensions, reranker metrics, and hard-negative holdouts before spending GPU time.
+
 ## 1.9.0
 
 ### Minor Changes
