@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.11.1
+
+### Patch Changes
+
+- [#993](https://github.com/IgorGanapolsky/ThumbGate/pull/993) [`e2a1af1`](https://github.com/IgorGanapolsky/ThumbGate/commit/e2a1af1a296d62744eac746ca8acaba7cd8d1c94) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Repair stale Codex hook/statusline wiring automatically when the ThumbGate Codex MCP server starts, and cover the legacy two-hook config shape with regression tests.
+
+- [#985](https://github.com/IgorGanapolsky/ThumbGate/pull/985) [`d11547a`](https://github.com/IgorGanapolsky/ThumbGate/commit/d11547a4393fc438ba1448561e560927f4ca530c) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Automate Dependabot release hygiene by generating changesets for manifest-only dependency PRs and skipping branch-protection or SonarCloud checks that bot tokens cannot satisfy.
+
+- [#976](https://github.com/IgorGanapolsky/ThumbGate/pull/976) [`0e3153a`](https://github.com/IgorGanapolsky/ThumbGate/commit/0e3153ad80cad311ecf7f810bba12c19ed946321) Thanks [@dependabot](https://github.com/apps/dependabot)! - Add the release note required for the `@changesets/cli` 2.31.0 dependency bump so manifest-only Dependabot updates pass ThumbGate's release hygiene checks.
+
 ## 1.11.0
 
 ### Minor Changes
