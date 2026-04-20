@@ -84,12 +84,12 @@ describe('mcp-config', () => {
 
       assert.strictEqual(entry.command, 'sh');
       assert.match(entry.args[1], /thumbgate@latest/);
+      assert.match(entry.args[1], /npm "install"/);
       assert.doesNotMatch(entry.args[1], /thumbgate@1\.2\.3/);
     } finally {
       fs.rmSync(pkgRoot, { recursive: true, force: true });
     }
   });
-
   it('codexAutoUpdateCliEntry supports hook commands with the same latest-resolving policy', () => {
     const entry = codexAutoUpdateCliEntry(['gate-check']);
     assert.strictEqual(entry.command, 'sh');

@@ -348,6 +348,16 @@ test('evaluateGates blocks remote side effects from local_only constraint alone'
   assert.equal(result.gate, 'local-only-remote-side-effect');
 });
 
+test('evaluateGates blocks remote publish actions when branch governance is local-only', () => {
+  cleanupStateFiles();
+  setBranchGovernance({ branchName: 'feature/local-only', localOnly: true, prRequired: false });
+  const result = evaluateGates('Bash', { command: 'gh release create v1.2.3 --generate-notes' });
+  assert.ok(result);
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.gate, 'local-only-remote-side-effect');
+  assert.match(result.reasoning.join('\n'), /branch governance/);
+});
+
 test('evaluateGates allows local read commands when task scope is local-only', () => {
   cleanupStateFiles();
   setTaskScope({ summary: 'inspect local Android build', allowedPaths: ['**'], localOnly: true });
