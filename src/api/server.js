@@ -552,6 +552,169 @@ function getServerCardTools() {
   }));
 }
 
+function buildPublicUrl(hostedConfig, pathname) {
+  return `${hostedConfig.appOrigin}${pathname}`;
+}
+
+const VERIFICATION_EVIDENCE_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
+
+function getToolDiscoveryIndex(hostedConfig) {
+  return MCP_TOOLS.map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    annotations: tool.annotations || {},
+    schemaUrl: buildPublicUrl(hostedConfig, `/.well-known/mcp/tools/${encodeURIComponent(tool.name)}.json`),
+  }));
+}
+
+function getMcpSkillManifests(hostedConfig) {
+  return [
+    {
+      name: 'thumbgate',
+      title: 'ThumbGate Pre-Action Gates',
+      description: 'Capture feedback, recall lessons, generate rules, and block repeated agent mistakes before tool execution.',
+      triggers: ['thumbgate', 'pre-action gates', 'prevent repeated AI mistakes', 'agent feedback', 'PreToolUse hooks'],
+      recommendedFlow: [
+        'Recall lessons before risky work.',
+        'Plan high-risk actions with checkpoints.',
+        'Capture concrete thumbs-down/up feedback.',
+        'Inspect prevention_rules after repeats.',
+      ],
+      installCommand: 'npx thumbgate init',
+      contextUrl: buildPublicUrl(hostedConfig, '/public/llm-context.md'),
+      proofUrl: VERIFICATION_EVIDENCE_URL,
+    },
+    {
+      name: 'workflow-hardening-sprint',
+      title: 'Workflow Hardening Sprint',
+      description: 'Turn one repeated agent failure into an enforced gate with proof and rollout evidence.',
+      triggers: ['workflow hardening', 'team rollout', 'agent governance', 'approval boundary', 'audit trail'],
+      recommendedFlow: [
+        'Pick one costly repeated failure.',
+        'Import the policy or runbook.',
+        'Ship the gate with dashboard proof.',
+      ],
+      intakeUrl: buildPublicUrl(hostedConfig, '/#workflow-sprint-intake'),
+      proofUrl: VERIFICATION_EVIDENCE_URL,
+    },
+    {
+      name: 'visual-proof-retrieval',
+      title: 'Visual Proof Retrieval',
+      description: 'Use screenshots, PDF pages, dashboard captures, and proof artifacts as searchable evidence for agent-governance claims.',
+      triggers: ['visual document retrieval', 'multimodal embeddings', 'screenshots', 'PDF evidence', 'proof artifacts'],
+      recommendedFlow: [
+        'Plan the corpus and Matryoshka dimension budget.',
+        'Baseline text-only retrieval before finetuning.',
+        'Evaluate NDCG@10 on visual hard negatives.',
+        'Require artifact links before using retrieved evidence in claims.',
+      ],
+      contextUrl: buildPublicUrl(hostedConfig, '/public/llm-context.md'),
+      proofUrl: VERIFICATION_EVIDENCE_URL,
+    },
+  ];
+}
+
+function getMcpApplications(hostedConfig) {
+  return [
+    {
+      name: 'dashboard',
+      title: 'ThumbGate Dashboard',
+      description: 'Review feedback, gates, blocked actions, funnel metrics, and proof.',
+      url: buildPublicUrl(hostedConfig, '/dashboard'),
+      useWhen: 'Need proof before approving more autonomy.',
+    },
+    {
+      name: 'lessons',
+      title: 'Lessons',
+      description: 'Browse promoted lessons and corrective actions.',
+      url: buildPublicUrl(hostedConfig, '/lessons'),
+      useWhen: 'Need human-approved context before risk.',
+    },
+    {
+      name: 'guide',
+      title: 'Setup Guide',
+      description: 'Install ThumbGate for Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and MCP agents.',
+      url: buildPublicUrl(hostedConfig, '/guide'),
+      useWhen: 'Need setup without searching the repo.',
+    },
+    {
+      name: 'workflow-sprint-intake',
+      title: 'Workflow Hardening Sprint Intake',
+      description: 'Submit a repeated agent failure for a proof-backed sprint.',
+      url: buildPublicUrl(hostedConfig, '/#workflow-sprint-intake'),
+      useWhen: 'Ready to convert mistakes into gates.',
+    },
+  ];
+}
+
+function getMcpDiscoveryManifest(hostedConfig) {
+  return {
+    schemaVersion: '2026-04-20',
+    name: 'thumbgate',
+    title: 'ThumbGate',
+    version: pkg.version,
+    description: 'Pre-Action Gates for AI coding agents: feedback, recall, prevention rules, and tool-call blocking.',
+    homepage: hostedConfig.appOrigin,
+    repository: 'https://github.com/IgorGanapolsky/ThumbGate',
+    package: {
+      registry: 'npm',
+      name: 'thumbgate',
+      installCommand: 'npx thumbgate init',
+    },
+    transport: {
+      type: 'streamable-http',
+      endpoint: buildPublicUrl(hostedConfig, '/mcp'),
+      unauthenticatedDiscovery: ['initialize', 'tools/list'],
+      authenticatedMethods: ['tools/call'],
+    },
+    discovery: {
+      serverCardUrl: buildPublicUrl(hostedConfig, '/.well-known/mcp/server-card.json'),
+      toolIndexUrl: buildPublicUrl(hostedConfig, '/.well-known/mcp/tools.json'),
+      toolSchemaUrlTemplate: buildPublicUrl(hostedConfig, '/.well-known/mcp/tools/{name}.json'),
+      skillsUrl: buildPublicUrl(hostedConfig, '/.well-known/mcp/skills.json'),
+      applicationsUrl: buildPublicUrl(hostedConfig, '/.well-known/mcp/applications.json'),
+      llmsTxtUrl: buildPublicUrl(hostedConfig, '/.well-known/llms.txt'),
+      progressive: {
+        pattern: 'Load manifest, inspect tools.json, fetch one tool schema only when needed.',
+        tokenStrategy: 'Do not preload every inputSchema. Use per-tool schema URLs.',
+      },
+    },
+    primaryFlows: [
+      {
+        name: 'capture-to-gate',
+        description: 'Capture feedback, retrieve lessons, generate rules, enforce a gate.',
+        tools: ['capture_feedback', 'search_lessons', 'prevention_rules', 'gate_stats'],
+      },
+      {
+        name: 'safe-autonomous-work',
+        description: 'Plan high-risk work, recall lessons, diagnose failures.',
+        tools: ['plan_intent', 'recall', 'diagnose_failure', 'feedback_summary'],
+      },
+      {
+        name: 'team-rollout-proof',
+        description: 'Show dashboard evidence, metrics, and sprint proof.',
+        tools: ['dashboard', 'get_business_metrics', 'construct_context_pack'],
+      },
+      {
+        name: 'metric-autoresearch',
+        description: 'Run bounded baseline -> hypothesis -> holdout loops with keep/discard proof.',
+        tools: ['get_business_metrics', 'construct_context_pack', 'run_autoresearch', 'require_evidence_for_claim'],
+      },
+      {
+        name: 'visual-proof-retrieval',
+        description: 'Plan screenshot/PDF/proof-artifact retrieval before investing in multimodal finetuning.',
+        tools: ['plan_multimodal_retrieval', 'search_thumbgate', 'construct_context_pack', 'require_evidence_for_claim'],
+      },
+    ],
+    skills: getMcpSkillManifests(hostedConfig),
+    applications: getMcpApplications(hostedConfig),
+    proof: {
+      verificationEvidenceUrl: VERIFICATION_EVIDENCE_URL,
+      llmContextUrl: buildPublicUrl(hostedConfig, '/public/llm-context.md'),
+    },
+  };
+}
+
 function createHttpError(statusCode, message) {
   const err = new Error(message);
   err.statusCode = statusCode;
@@ -3904,7 +4067,85 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/.well-known/mcp.json') {
+      sendJson(res, 200, getMcpDiscoveryManifest(hostedConfig), {}, {
+        headOnly: isHeadRequest,
+      });
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/.well-known/mcp/tools.json') {
+      sendJson(res, 200, {
+        name: 'thumbgate',
+        version: pkg.version,
+        count: MCP_TOOLS.length,
+        tools: getToolDiscoveryIndex(hostedConfig),
+      }, {}, {
+        headOnly: isHeadRequest,
+      });
+      return;
+    }
+
+    if (isGetLikeRequest && pathname.startsWith('/.well-known/mcp/tools/') && pathname.endsWith('.json')) {
+      const encodedToolName = pathname.slice('/.well-known/mcp/tools/'.length, -'.json'.length);
+      let toolName = encodedToolName;
+      try {
+        toolName = decodeURIComponent(encodedToolName);
+      } catch (_err) {
+        sendJson(res, 400, {
+          error: 'invalid_tool_name',
+          toolIndexUrl: buildPublicUrl(hostedConfig, '/.well-known/mcp/tools.json'),
+        }, {}, {
+          headOnly: isHeadRequest,
+        });
+        return;
+      }
+      const tool = MCP_TOOLS.find((candidate) => candidate.name === toolName);
+      if (!tool) {
+        sendJson(res, 404, {
+          error: 'tool_not_found',
+          toolName,
+          toolIndexUrl: buildPublicUrl(hostedConfig, '/.well-known/mcp/tools.json'),
+        }, {}, {
+          headOnly: isHeadRequest,
+        });
+        return;
+      }
+      sendJson(res, 200, {
+        name: tool.name,
+        description: tool.description,
+        annotations: tool.annotations || {},
+        inputSchema: tool.inputSchema,
+      }, {}, {
+        headOnly: isHeadRequest,
+      });
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/.well-known/mcp/skills.json') {
+      sendJson(res, 200, {
+        name: 'thumbgate',
+        version: pkg.version,
+        skills: getMcpSkillManifests(hostedConfig),
+      }, {}, {
+        headOnly: isHeadRequest,
+      });
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/.well-known/mcp/applications.json') {
+      sendJson(res, 200, {
+        name: 'thumbgate',
+        version: pkg.version,
+        applications: getMcpApplications(hostedConfig),
+      }, {}, {
+        headOnly: isHeadRequest,
+      });
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/.well-known/mcp/server-card.json') {
+      const discoveryManifest = getMcpDiscoveryManifest(hostedConfig);
       sendJson(res, 200, {
         serverInfo: {
           name: 'thumbgate',
@@ -3913,7 +4154,12 @@ async function addContext(){
         name: 'thumbgate',
         description: 'Pre-action gates that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks. Works with Claude Code, Codex, Gemini, Amp, Cursor, OpenCode, and any MCP-compatible agent.',
         version: pkg.version,
+        transport: discoveryManifest.transport,
+        discovery: discoveryManifest.discovery,
         tools: getServerCardTools(),
+        skills: getMcpSkillManifests(hostedConfig),
+        applications: getMcpApplications(hostedConfig),
+        proof: discoveryManifest.proof,
         repository: 'https://github.com/IgorGanapolsky/ThumbGate',
         homepage: hostedConfig.appOrigin,
       }, {}, {

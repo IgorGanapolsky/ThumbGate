@@ -65,6 +65,15 @@ test('sync-version covers the MCP stdio server metadata file', serial, () => {
   );
 });
 
+test('sync-version covers public MCP discovery manifests', serial, () => {
+  const { syncVersion } = require('../scripts/sync-version');
+  const result = syncVersion({ checkOnly: true });
+  assert.ok(
+    result.targets.includes('.well-known/mcp/server-card.json'),
+    '.well-known/mcp/server-card.json should be a sync target'
+  );
+});
+
 test('sync-version no longer tracks an embedded pro package manifest', serial, () => {
   const { syncVersion } = require('../scripts/sync-version');
   const result = syncVersion({ checkOnly: true });

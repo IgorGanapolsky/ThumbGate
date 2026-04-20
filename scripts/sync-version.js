@@ -106,18 +106,25 @@ function syncVersion(opts) {
   }
   targets.push('server.json');
 
-  // 3. .well-known/mcp/server-card.json
-  const cardPath = '.well-known/mcp/server-card.json';
-  if (fs.existsSync(path.join(PROJECT_ROOT, cardPath))) {
-    const card = readJson(cardPath);
-    if (card.version !== version) {
-      drifted.push({ file: cardPath, field: 'version', current: card.version });
-      if (!checkOnly) {
-        card.version = version;
-        writeJson(cardPath, card);
+  // 3. .well-known MCP discovery surfaces
+  for (const cardPath of [
+    '.well-known/mcp.json',
+    '.well-known/mcp/server-card.json',
+    '.well-known/mcp/tools.json',
+    '.well-known/mcp/skills.json',
+    '.well-known/mcp/applications.json',
+  ]) {
+    if (fs.existsSync(path.join(PROJECT_ROOT, cardPath))) {
+      const card = readJson(cardPath);
+      if (card.version !== version) {
+        drifted.push({ file: cardPath, field: 'version', current: card.version });
+        if (!checkOnly) {
+          card.version = version;
+          writeJson(cardPath, card);
+        }
       }
+      targets.push(cardPath);
     }
-    targets.push(cardPath);
   }
 
   // 4. .claude-plugin/plugin.json

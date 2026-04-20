@@ -74,6 +74,7 @@ function scoreSuite(params) {
  * @param {string} [opts.testCommand] - Override test command (default: npm test)
  * @param {string[]} [opts.holdoutCommands] - Optional holdout commands required for acceptance
  * @param {number} [opts.timeoutMs] - Test timeout in ms (default: 120000)
+ * @param {string} [opts.cwd] - Working directory for evaluation commands
  * @param {string} [opts.researchQuery] - Optional external research query
  * @param {number} [opts.paperLimit] - Max papers to ingest for research context
  * @param {Function} [opts.fetchImpl] - Optional fetch implementation override
@@ -100,6 +101,7 @@ async function runIteration(opts = {}) {
     primaryCommands: [testCommand],
     holdoutCommands: options.holdoutCommands || [],
     timeoutMs,
+    cwd: options.cwd,
     hypothesisSuffix: research ? `Research query: ${research.query}` : null,
     additionalMetrics: {
       researchQuery: research ? research.query : null,
@@ -120,8 +122,12 @@ async function runIteration(opts = {}) {
  *
  * @param {object} params
  * @param {number} params.iterations - Number of experiments to run
+ * @param {string} [params.targetName] - Force a specific mutation target
+ * @param {number} [params.nextValue] - Force the candidate value instead of a random neighbor
  * @param {string} [params.testCommand] - Override test command
+ * @param {string[]} [params.holdoutCommands] - Optional holdout commands required for acceptance
  * @param {number} [params.timeoutMs] - Per-iteration timeout
+ * @param {string} [params.cwd] - Working directory for evaluation commands
  * @param {string} [params.researchQuery] - Optional external research query
  * @param {number} [params.paperLimit] - Max papers to ingest for research context
  * @param {Function} [params.fetchImpl] - Optional fetch implementation override
@@ -136,9 +142,12 @@ async function runLoop(params) {
     console.log(`\n[autoresearch] Iteration ${i + 1}/${iterations}`);
     try {
       const result = await runIteration({
+        targetName: params.targetName,
+        nextValue: Number.isFinite(params.nextValue) ? params.nextValue : undefined,
         testCommand: params.testCommand,
         holdoutCommands: params.holdoutCommands,
         timeoutMs: params.timeoutMs,
+        cwd: params.cwd,
         researchQuery: params.researchQuery,
         paperLimit: params.paperLimit,
         fetchImpl: params.fetchImpl,
@@ -183,9 +192,12 @@ if (require.main === module) {
     const holdoutCommands = args.holdout ? [args.holdout] : [];
     runLoop({
       iterations,
+      targetName: args.target || null,
+      nextValue: args['next-value'] !== undefined ? Number(args['next-value']) : undefined,
       testCommand,
       holdoutCommands,
       timeoutMs,
+      cwd: args.cwd || undefined,
       researchQuery: args['research-query'] || null,
       paperLimit,
     }).catch((error) => {
@@ -199,7 +211,7 @@ if (require.main === module) {
     });
   } else {
     console.log(`Usage:
-  node scripts/autoresearch-runner.js --run [--iterations=5] [--test-command="npm test"] [--holdout="npm run self-heal:check"] [--timeout=120000] [--research-query="rank fusion"] [--paper-limit=5]
+  node scripts/autoresearch-runner.js --run [--iterations=5] [--target=half_life_days] [--next-value=8] [--test-command="npm test"] [--holdout="npm run self-heal:check"] [--timeout=120000] [--research-query="rank fusion"] [--paper-limit=5]
   node scripts/autoresearch-runner.js --targets`);
   }
 }

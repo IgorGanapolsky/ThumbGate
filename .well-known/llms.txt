@@ -46,6 +46,10 @@ npx thumbgate init --agent claude-code
 
 ## Links
 
+- Agent discovery: https://thumbgate-production.up.railway.app/.well-known/mcp.json
+- Progressive tool index: https://thumbgate-production.up.railway.app/.well-known/mcp/tools.json
+- Agent skills: https://thumbgate-production.up.railway.app/.well-known/mcp/skills.json
+- MCP applications: https://thumbgate-production.up.railway.app/.well-known/mcp/applications.json
 - Documentation: https://thumbgate-production.up.railway.app/guide
 - Dashboard: https://thumbgate-production.up.railway.app/dashboard
 - GitHub: https://github.com/IgorGanapolsky/ThumbGate
