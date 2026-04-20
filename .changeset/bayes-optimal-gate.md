@@ -1,0 +1,5 @@
+---
+'thumbgate': minor
+---
+
+Add Bayes-optimal decision layer for the pre-tool-use gate. The legacy gate blocks when any matched lesson tag has a heuristic risk score ≥ a single global threshold — a "threshold-on-heuristic" rule that cannot express asymmetric misclassification costs (e.g., false-allowing a `deploy-prod`-tagged call is orders of magnitude more expensive than false-blocking a lint fix). The new layer computes `P(harmful | tags)` via a clipped Bayes-factor update over the trained scorer's probability and per-tag empirical risk rates, then picks the action that minimizes expected loss under a configurable loss matrix. The gate also now exposes a Bayes-error-rate metric (the irreducible floor of the current feature set) on `gate-stats` — a stopping rule for threshold tuning. The decision path is opt-in via `THUMBGATE_HOOKS_BAYES_OPTIMAL=1` or `bayesOptimalEnabled: true` in `config/enforcement.json`, and fails open back to the legacy rule on any error. Thompson Sampling gains an `argmaxPosteriors` + `pickBestCategory` exploit-mode counterpart to `samplePosteriors` for hot-path selection without exploration noise.
