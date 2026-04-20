@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "1.14.0",
+  "version": "1.14.1",
   "description": "Self-improving agent governance: type thumbs-up or thumbs-down on any AI agent action. ThumbGate turns every mistake into a prevention rule and blocks the pattern from repeating. One thumbs-down, never again. 33 pre-action gates, budget enforcement, and self-protection for Claude Code, Cursor, Codex, Gemini CLI, and Amp.",
   "homepage": "https://thumbgate-production.up.railway.app",
   "repository": {
@@ -579,13 +579,14 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",
-    "@google/genai": "^1.49.0",
+    "@google/genai": "1.49.0",
     "@huggingface/transformers": "^4.1.0",
     "@lancedb/lancedb": "^0.27.2",
     "apache-arrow": "^18.1.0",
     "better-sqlite3": "^12.9.0",
     "dotenv": "^17.4.2",
     "playwright-core": "^1.59.1",
+    "protobufjs": "^7.5.5",
     "stripe": "^22.0.2"
   },
   "overrides": {
