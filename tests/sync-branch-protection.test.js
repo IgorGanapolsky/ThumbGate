@@ -125,7 +125,8 @@ test('syncBranchProtection falls back to REST branch protection when GraphQL ret
             'Verify changeset',
             'SonarCloud Code Analysis',
             'GitGuardian Security Checks',
-            'Socket Security: Project Report'
+            'Socket Security: Project Report',
+            'Socket Security: Pull Request Alerts'
           ]
         }
       }),
@@ -184,7 +185,8 @@ test('syncBranchProtection updates REST-backed branch protection when GraphQL ha
           'Verify changeset',
           'SonarCloud Code Analysis',
           'GitGuardian Security Checks',
-          'Socket Security: Project Report'
+          'Socket Security: Project Report',
+          'Socket Security: Pull Request Alerts'
         ]
       }),
       stderr: ''
@@ -204,7 +206,7 @@ test('syncBranchProtection updates REST-backed branch protection when GraphQL ha
   assert.ok(patchCall, 'expected REST PATCH branch-protection call');
   assert.ok(patchCall.includes('repos/IgorGanapolsky/ThumbGate/branches/main/protection/required_status_checks'));
   assert.ok(patchCall.includes('contexts[]=Socket Security: Project Report'));
-  assert.equal(patchCall.includes('contexts[]=Socket Security: Pull Request Alerts'), false);
+  assert.ok(patchCall.includes('contexts[]=Socket Security: Pull Request Alerts'));
 });
 
 test('syncBranchProtection updates main branch protection to the configured quality checks', () => {
@@ -245,7 +247,8 @@ test('syncBranchProtection updates main branch protection to the configured qual
                 'Verify changeset',
                 'SonarCloud Code Analysis',
                 'GitGuardian Security Checks',
-                'Socket Security: Project Report'
+                'Socket Security: Project Report',
+                'Socket Security: Pull Request Alerts'
               ]
             }
           }
