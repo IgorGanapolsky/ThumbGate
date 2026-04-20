@@ -1157,6 +1157,22 @@ const TOOLS = [
     },
   }),
   readOnlyTool({
+    name: 'generate_operator_artifact',
+    description: 'Dynamic operator artifact generator. Turns ThumbGate PR, reliability, revenue, and release data into a decision-ready pulse with metrics, evidence, and next actions.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        type: {
+          type: 'string',
+          enum: ['pr-pulse', 'reliability-pulse', 'revenue-pulse', 'release-readiness'],
+          description: 'Artifact to generate. Defaults to reliability-pulse.',
+        },
+        windowHours: { type: 'number', description: 'Lookback window in hours (default 24, max 720)' },
+        format: { type: 'string', enum: ['json', 'markdown'], description: 'Response format. Defaults to json.' },
+      },
+    },
+  }),
+  readOnlyTool({
     name: 'context_stuff_lessons',
     description: 'Dump ALL prevention lessons into a single text block for context-window injection. Bypasses RAG/search — returns every lesson sorted by confidence. For most projects (20-200 lessons), fits in 1K-10K tokens.',
     inputSchema: {
