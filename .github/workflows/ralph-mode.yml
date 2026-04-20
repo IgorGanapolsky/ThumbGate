@@ -39,13 +39,9 @@ jobs:
           restore-keys: |
             ralph-mode-state-
 
-      - name: Ralph Mode - X + LinkedIn + GitHub + dev.to
+      - name: Ralph Mode - LinkedIn + GitHub + dev.to + Zernio (Instagram, YouTube, Threads, Bluesky)
         env:
-          X_API_KEY: ${{ secrets.X_API_KEY }}
-          X_API_SECRET: ${{ secrets.X_API_SECRET }}
-          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
-          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
-          X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
+          # X/Twitter retired 2026-04-20 — secrets no longer injected.
           LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
           LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
           DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
