@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.9.0
+
+### Minor Changes
+
+- [#957](https://github.com/IgorGanapolsky/ThumbGate/pull/957) [`68b3de3`](https://github.com/IgorGanapolsky/ThumbGate/commit/68b3de3c00ec861ee5709e5667535f6f6ddd2586) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Agentic-engineering Leader Agent endpoints: completion gate, swarm coordinator, and unified observability.
+
+  Adds three MCP tools that lift ThumbGate from a bag of primitives into a Leader-Agent coordination layer (per the LangChain agentic-engineering framing — worker agents consume, leader endpoints coordinate and verify):
+
+  - `require_evidence_for_claim` — completion gate. Wraps `verifyClaimEvidence` with a first-class `blocking` boolean and mode (`blocking` default, `advisory`). Records the decision to the audit trail under `gateId: completion_claim`. Agents call this before declaring done/fixed/shipped; hooks honor the blocking flag to stop evidence-free completion claims.
+  - `distribute_context_to_agents` — swarm coordinator. Constructs one context pack via `constructContextPack` and records a `context_pack_distributed` provenance event per named agent (dedup'd, capped at `MAX_AGENTS=32`, TTL defaults to 15 minutes). Replaces N independent context derivations by auto-agents (perplexity-bug-resolver, codex-reviewer, grok-x-intelligence, etc.) with one shared pack.
+  - `session_report` — unified observability rollup. Aggregates feedback stats, gate stats, and windowed provenance into a single LangSmith-style report. `windowHours` clamps to `[1, 720]`; invalid/missing input falls back to the 24h default. Errors in any section are isolated via a per-section `errors` map so one broken source doesn't sink the report.
+
+  Exposed in `default`, `essential`, `readonly`, and `dispatch` MCP profiles. No OpenAPI surface changes (MCP-only). Ships with 24 new tests across `tests/swarm-coordinator.test.js`, `tests/session-report.test.js`, and `tests/require-evidence-gate.test.js`; regression runs clean across `test:api` (834), `test:gates` (198), `test:tool-registry` (11), `test:proof` (96), `test:deployment` (55), `test:e2e` (29), `test:workflow` (98), `test:schema` (8), and `test:mcp-config` (9).
+
+### Patch Changes
+
+- [#925](https://github.com/IgorGanapolsky/ThumbGate/pull/925) [`e0c89bc`](https://github.com/IgorGanapolsky/ThumbGate/commit/e0c89bc4015bf37e6eb23aefdc9146fde1858304) Thanks [@dependabot](https://github.com/apps/dependabot)! - Bump transitive dependency `protobufjs` from 7.5.4 to 7.5.5 (security/bugfix release). Lockfile-only change via Dependabot.
+
+- [#947](https://github.com/IgorGanapolsky/ThumbGate/pull/947) [`b326963`](https://github.com/IgorGanapolsky/ThumbGate/commit/b3269631fcfdf2093a5c0a12ad6f331ce0b053b5) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Mailer module now accepts `THUMBGATE_RESEND_API_KEY` as a fallback for the bare `RESEND_API_KEY`, matching the dual-read behavior already implemented in `scripts/billing.js`. Prevents a silent "skipped: no_api_key" regression if an operator sets only the prefixed variable name. Adds a positive unit test that sends with only the prefixed variant set.
+
+- Fix repo bootstrap so worktree checkouts can create local MCP wiring and info exclude entries without failing on `.git` pointer files.
+
 ## 1.8.0
 
 ### Minor Changes

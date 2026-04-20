@@ -219,6 +219,131 @@ test('ensure-repo-bootstrap writes canonical ThumbGate runtime surfaces', () => 
   }
 });
 
+test('ensure-repo-bootstrap supports worktree-style .git files', () => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-worktree-bootstrap-'));
+  const tmpRepo = path.join(tmpRoot, 'repo');
+  const worktreeGitDir = path.join(tmpRoot, 'gitdir', 'worktrees', 'repo');
+  const commonGitDir = path.join(tmpRoot, 'gitdir');
+  fs.mkdirSync(tmpRepo, { recursive: true });
+  fs.mkdirSync(worktreeGitDir, { recursive: true });
+  fs.mkdirSync(path.join(commonGitDir, 'info'), { recursive: true });
+  fs.writeFileSync(path.join(tmpRepo, '.git'), `gitdir: ${worktreeGitDir}\n`);
+  fs.writeFileSync(path.join(worktreeGitDir, 'commondir'), '../..\n');
+
+  try {
+    const raw = execFileSync('node', [path.join(root, 'scripts', 'ensure-repo-bootstrap.js'), tmpRepo], {
+      encoding: 'utf8',
+    });
+    const result = JSON.parse(raw);
+    const mcpConfig = JSON.parse(fs.readFileSync(path.join(tmpRepo, '.mcp.json'), 'utf8'));
+    const infoExclude = fs.readFileSync(path.join(commonGitDir, 'info', 'exclude'), 'utf8');
+
+    assert.equal(result.updatedMcpJson, true);
+    assert.equal(result.updatedInfoExclude, true);
+    assert.equal(mcpConfig.mcpServers.thumbgate.command, 'npx');
+    assert.deepEqual(mcpConfig.mcpServers.thumbgate.args, ['-y', 'thumbgate@latest', 'serve']);
+    assert.equal(infoExclude.includes('.thumbgate/'), true);
+    assert.equal(infoExclude.includes('.mcp.json'), true);
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test('ensure-repo-bootstrap is idempotent for an already bootstrapped repo', () => {
+  const tmpRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-bootstrap-idempotent-'));
+  const claudeDir = path.join(tmpRepo, '.claude');
+  const gitInfoDir = path.join(tmpRepo, '.git', 'info');
+  fs.mkdirSync(path.join(tmpRepo, '.thumbgate'), { recursive: true });
+  fs.mkdirSync(claudeDir, { recursive: true });
+  fs.mkdirSync(gitInfoDir, { recursive: true });
+  fs.writeFileSync(path.join(tmpRepo, '.mcp.json'), JSON.stringify({
+    mcpServers: {
+      thumbgate: { command: 'npx', args: ['-y', 'thumbgate@latest', 'serve'] },
+    },
+  }, null, 2) + '\n');
+  fs.writeFileSync(path.join(claudeDir, 'settings.json'), JSON.stringify({ mcpServers: {} }, null, 2));
+  fs.writeFileSync(path.join(gitInfoDir, 'exclude'), '.mcp.json\n.thumbgate/\n');
+
+  try {
+    const raw = execFileSync('node', [path.join(root, 'scripts', 'ensure-repo-bootstrap.js'), tmpRepo], {
+      encoding: 'utf8',
+    });
+    const result = JSON.parse(raw);
+
+    assert.equal(result.createdThumbgateDir, false);
+    assert.equal(result.updatedMcpJson, false);
+    assert.equal(result.updatedClaudeSettings, false);
+    assert.equal(result.updatedInfoExclude, false);
+  } finally {
+    fs.rmSync(tmpRepo, { recursive: true, force: true });
+  }
+});
+
+test('ensure-repo-bootstrap writes worktree excludes beside gitdir when commondir is absent', () => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-worktree-local-exclude-'));
+  const tmpRepo = path.join(tmpRoot, 'repo');
+  const worktreeGitDir = path.join(tmpRoot, 'gitdir', 'worktrees', 'repo');
+  fs.mkdirSync(tmpRepo, { recursive: true });
+  fs.mkdirSync(worktreeGitDir, { recursive: true });
+  fs.writeFileSync(path.join(tmpRepo, '.git'), `gitdir: ${worktreeGitDir}\n`);
+
+  try {
+    const raw = execFileSync('node', [path.join(root, 'scripts', 'ensure-repo-bootstrap.js'), tmpRepo], {
+      encoding: 'utf8',
+    });
+    const result = JSON.parse(raw);
+    const infoExclude = fs.readFileSync(path.join(worktreeGitDir, 'info', 'exclude'), 'utf8');
+
+    assert.equal(result.updatedInfoExclude, true);
+    assert.equal(infoExclude.includes('.thumbgate/'), true);
+    assert.equal(infoExclude.includes('.mcp.json'), true);
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test('ensure-repo-bootstrap falls back to repo-local .git info when git metadata is absent', () => {
+  const tmpRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-bootstrap-no-git-'));
+
+  try {
+    const raw = execFileSync('node', [path.join(root, 'scripts', 'ensure-repo-bootstrap.js'), tmpRepo], {
+      encoding: 'utf8',
+    });
+    const result = JSON.parse(raw);
+    const infoExclude = fs.readFileSync(path.join(tmpRepo, '.git', 'info', 'exclude'), 'utf8');
+
+    assert.equal(result.updatedInfoExclude, true);
+    assert.equal(infoExclude.includes('.thumbgate/'), true);
+    assert.equal(infoExclude.includes('.mcp.json'), true);
+  } finally {
+    fs.rmSync(tmpRepo, { recursive: true, force: true });
+  }
+});
+
+test('ensure-repo-bootstrap treats an empty worktree commondir as local gitdir state', () => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-worktree-empty-common-'));
+  const tmpRepo = path.join(tmpRoot, 'repo');
+  const worktreeGitDir = path.join(tmpRoot, 'gitdir', 'worktrees', 'repo');
+  fs.mkdirSync(tmpRepo, { recursive: true });
+  fs.mkdirSync(worktreeGitDir, { recursive: true });
+  fs.writeFileSync(path.join(tmpRepo, '.git'), `gitdir: ${worktreeGitDir}\n`);
+  fs.writeFileSync(path.join(worktreeGitDir, 'commondir'), '\n');
+
+  try {
+    const raw = execFileSync('node', [path.join(root, 'scripts', 'ensure-repo-bootstrap.js'), tmpRepo], {
+      encoding: 'utf8',
+    });
+    const result = JSON.parse(raw);
+    const infoExclude = fs.readFileSync(path.join(worktreeGitDir, 'info', 'exclude'), 'utf8');
+
+    assert.equal(result.updatedInfoExclude, true);
+    assert.equal(infoExclude.includes('.thumbgate/'), true);
+    assert.equal(infoExclude.includes('.mcp.json'), true);
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
 test('chatgpt openapi.yaml contains /v1/feedback/capture path', () => {
   const filePath = path.join(root, 'adapters/chatgpt/openapi.yaml');
   const content = fs.readFileSync(filePath, 'utf-8');

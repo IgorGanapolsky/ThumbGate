@@ -45,6 +45,57 @@ function mergeThumbgateEntry(entry = {}) {
   };
 }
 
+function resolveGitDir(repoRoot) {
+  const gitEntryPath = path.join(repoRoot, '.git');
+  let stat;
+  try {
+    stat = fs.statSync(gitEntryPath);
+  } catch {
+    return null;
+  }
+
+  if (stat.isDirectory()) {
+    return gitEntryPath;
+  }
+
+  if (!stat.isFile()) {
+    return null;
+  }
+
+  const pointer = fs.readFileSync(gitEntryPath, 'utf8').trim();
+  const prefix = 'gitdir:';
+  if (!pointer.startsWith(prefix)) {
+    return null;
+  }
+
+  const target = pointer.slice(prefix.length).trim();
+  if (!target) {
+    return null;
+  }
+
+  return path.resolve(repoRoot, target);
+}
+
+function resolveExcludeBaseDir(repoRoot) {
+  const gitDir = resolveGitDir(repoRoot);
+  if (!gitDir) {
+    return path.join(repoRoot, '.git');
+  }
+
+  const commonDirFile = path.join(gitDir, 'commondir');
+  try {
+    const commonDirValue = fs.readFileSync(commonDirFile, 'utf8').trim();
+    if (!commonDirValue) {
+      return gitDir;
+    }
+    return path.isAbsolute(commonDirValue)
+      ? commonDirValue
+      : path.resolve(gitDir, commonDirValue);
+  } catch {
+    return gitDir;
+  }
+}
+
 function ensureMcpJson(repoRoot) {
   const filePath = path.join(repoRoot, '.mcp.json');
   const existing = readJson(filePath);
@@ -78,7 +129,7 @@ function ensureClaudeSettings(repoRoot) {
 }
 
 function ensureInfoExclude(repoRoot) {
-  const excludePath = path.join(repoRoot, '.git', 'info', 'exclude');
+  const excludePath = path.join(resolveExcludeBaseDir(repoRoot), 'info', 'exclude');
   let current = '';
   try {
     current = fs.readFileSync(excludePath, 'utf8');
