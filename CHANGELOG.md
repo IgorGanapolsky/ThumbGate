@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.11.0
+
+### Minor Changes
+
+- [#986](https://github.com/IgorGanapolsky/ThumbGate/pull/986) [`3b4dabf`](https://github.com/IgorGanapolsky/ThumbGate/commit/3b4dabfe777f0b034499609ced20c0eb98f7a362) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a context footprint optimizer for MCP agents, including a read-only `plan_context_footprint` tool and a public `.well-known/mcp/footprint.json` report that quantifies progressive schema-loading savings.
+
 ## 1.10.1
 
 ### Patch Changes
