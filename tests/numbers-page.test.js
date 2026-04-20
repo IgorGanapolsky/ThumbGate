@@ -105,9 +105,12 @@ describe('generate-numbers-page renderer', () => {
       html.includes('"sameAs"'),
       'expected sameAs array for authorship',
     );
-    assert.ok(
-      html.includes('https://github.com/IgorGanapolsky'),
-      'expected GitHub profile in sameAs',
+    // Anchor the profile URL inside a quoted JSON-LD value to avoid CodeQL
+    // "incomplete URL substring sanitization" (js/incomplete-url-substring-sanitization).
+    assert.match(
+      html,
+      /"https:\/\/github\.com\/IgorGanapolsky"/,
+      'expected GitHub profile as a quoted JSON-LD value in sameAs',
     );
   });
 
