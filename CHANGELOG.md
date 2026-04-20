@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.13.0
+
+### Minor Changes
+
+- [#1059](https://github.com/IgorGanapolsky/ThumbGate/pull/1059) [`095cb8c`](https://github.com/IgorGanapolsky/ThumbGate/commit/095cb8c289546ccf7a957664d8d01c64ccd07aa3) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat(analytics): Zernio as canonical social stack; trim direct-API pollers to opt-in fallback
+
+  `scripts/social-analytics/poll-all.js` now runs only `github + plausible + zernio`
+  by default. The seven direct-API pollers (reddit, linkedin, x, threads,
+  instagram, youtube, tiktok) move to a `LEGACY_POLLERS` list that activates
+  only when `THUMBGATE_USE_DIRECT_POLLERS=1`.
+
+  Adds `scripts/social-analytics/zernio-status.js` (npm run `social:zernio:status`)
+  which reads the local `engagement_metrics` SQLite table, reports per-platform
+  row counts for the last 24h, and exits non-zero when zero rows ingested —
+  making silent Zernio 402 / auth / rate-limit failures CEO-visible.
+
+  Zernio holds the OAuth connections for every focus channel, so maintaining
+  eight separate token rotations + direct pollers was duplicate infrastructure
+  that silently skipped on missing env for months. The emergency fallback flag
+  preserves the old behavior without making it the default contract.
+
+### Patch Changes
+
+- Ship the Zernio social analytics runtime scripts in a new npm package version so main does not silently skip publish verification after analytics changes.
+
 ## 1.12.2
 
 ### Patch Changes
