@@ -99,9 +99,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'scripts/build-codex-plugin.js',
   ];
 
+  // File-count ceiling bumped 220 → 225 (2026-04-19) after main picked up
+  // the autonomous control-plane runner (#956) and progressive-discovery
+  // MCP tool (#960), plus this branch's scripts/bayes-optimal-gate.js —
+  // combined net of +4 runtime script files shipped to the tarball.
   assert.ok(
-    manifest.fileCount <= 220,
-    `npm package should stay <= 220 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 225,
+    `npm package should stay <= 225 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
