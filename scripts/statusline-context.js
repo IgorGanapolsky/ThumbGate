@@ -12,6 +12,11 @@ const FIXED_GH_BINARIES = [
   '/usr/local/bin/gh',
   '/opt/homebrew/bin/gh',
 ];
+const FIXED_GIT_BINARIES = [
+  '/usr/bin/git',
+  '/usr/local/bin/git',
+  '/opt/homebrew/bin/git',
+];
 
 const CONTEXT_CACHE_MAX_AGE_MS = 120000;
 
@@ -59,6 +64,25 @@ function resolveGhBinary(accessSync = fs.accessSync) {
   return null;
 }
 
+function resolveGitBinary(options = {}) {
+  const env = options.env || process.env;
+  const configuredBinary = String(env.THUMBGATE_GIT_BIN || '').trim();
+  const candidates = configuredBinary
+    ? [configuredBinary, ...FIXED_GIT_BINARIES]
+    : FIXED_GIT_BINARIES;
+
+  for (const candidate of candidates) {
+    try {
+      fs.accessSync(candidate, fs.constants.X_OK);
+      return candidate;
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+}
+
 function runCommand(command, args, options = {}) {
   const result = spawnSync(command, args, {
     cwd: options.cwd,
@@ -79,7 +103,12 @@ function getBranchName(projectDir) {
     return '';
   }
 
-  return runCommand('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { cwd: projectDir, timeoutMs: 300 });
+  const gitBinary = resolveGitBinary();
+  if (!gitBinary) {
+    return '';
+  }
+
+  return runCommand(gitBinary, ['rev-parse', '--abbrev-ref', 'HEAD'], { cwd: projectDir, timeoutMs: 300 });
 }
 
 function inferWorkItemLabel(branchName = '') {
@@ -168,5 +197,6 @@ module.exports = {
   isFreshCache,
   readContextCache,
   resolveGhBinary,
+  resolveGitBinary,
   writeContextCache,
 };
