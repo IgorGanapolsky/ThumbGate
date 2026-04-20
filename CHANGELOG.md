@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.14.0
+
+### Minor Changes
+
+- [#1093](https://github.com/IgorGanapolsky/ThumbGate/pull/1093) [`f0453e4`](https://github.com/IgorGanapolsky/ThumbGate/commit/f0453e45a4a2052d16322509b9941fe768997dd1) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add decision-ready operator artifact pulses for PR health, Reliability Gateway state, revenue prioritization, and release readiness.
+
+  The new `thumbgate artifacts` CLI command and `generate_operator_artifact` MCP tool expose typed JSON or Markdown summaries so agents can progressively load high-level decisions instead of stitching together low-level telemetry calls.
+
+### Patch Changes
+
+- [#979](https://github.com/IgorGanapolsky/ThumbGate/pull/979) [`0f56b0d`](https://github.com/IgorGanapolsky/ThumbGate/commit/0f56b0d508dbd0701d002df9e6feabafbb3a1a65) Thanks [@dependabot](https://github.com/apps/dependabot)! - Add the release note required for the `@huggingface/transformers` 4.1.0 dependency bump so manifest-only Dependabot updates pass ThumbGate's release hygiene checks.
+
 ## 1.13.0
 
 ### Minor Changes
