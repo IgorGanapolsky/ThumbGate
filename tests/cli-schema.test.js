@@ -75,10 +75,18 @@ test('findCommand returns undefined for unknown name', () => {
 
 test('core commands are all registered in schema', () => {
   const required = ['capture', 'lessons', 'stats', 'gate-stats', 'explore',
-    'artifacts', 'rules', 'doctor', 'export-dpo', 'init', 'serve', 'dashboard'];
+    'artifacts', 'rules', 'doctor', 'harness-audit', 'export-dpo', 'init', 'serve', 'dashboard'];
   for (const name of required) {
     assert.ok(findCommand(name), `${name} must be in CLI_COMMANDS`);
   }
+});
+
+test('harness-audit command exposes JSON and token budget flags', () => {
+  const cmd = findCommand('harness');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'harness-audit');
+  assert.ok(flagNames.includes('json'), 'harness-audit must have --json flag');
+  assert.ok(flagNames.includes('doc-token-budget'), 'harness-audit must expose doc budget control');
 });
 
 test('lessons command has --json, --local, --remote flags', () => {

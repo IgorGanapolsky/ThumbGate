@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Agent Harness Optimization | ThumbGate</title>
+  <meta name="description" content="Optimize AI agent harnesses with progressive disclosure, MCP tool indexes, specialized gate harnesses, and ThumbGate Pre-Action Gates.">
+  <meta property="og:title" content="AI Agent Harness Optimization | ThumbGate">
+  <meta property="og:description" content="Keep global prompts lean, load MCP schemas on demand, and turn harness lessons into Pre-Action Gates.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://thumbgate-production.up.railway.app/guides/agent-harness-optimization">
+  <link rel="canonical" href="https://thumbgate-production.up.railway.app/guides/agent-harness-optimization">
+  <link rel="llm-context" href="/public/llm-context.md" type="text/markdown">
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png">
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "AI Agent Harness Optimization That Blocks Repeat Failures",
+  "description": "How ThumbGate optimizes AI agent harnesses with progressive disclosure, MCP discovery, specialized gate harnesses, and Pre-Action Gates.",
+  "about": ["AI agent harness optimization", "progressive disclosure", "Pre-Action Gates", "MCP tools", "ThumbGate"],
+  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/guides/agent-harness-optimization",
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate-production.up.railway.app"
+  }
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is an AI agent harness?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "An AI agent harness is the runtime layer around the model: context loading, tool calls, guardrails, approval boundaries, memory, and verification."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does ThumbGate optimize a harness?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ThumbGate keeps global instructions lean, supports progressive MCP discovery, selects workflow-specific gate harnesses, and converts feedback into Pre-Action Gates."
+      }
+    }
+  ]
+}
+  </script>
+  <style>
+    :root { --bg:#0a0a0b; --panel:#161618; --line:#222225; --text:#e8e8ec; --muted:#a1a1aa; --cyan:#22d3ee; --green:#4ade80; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar { border-bottom: 1px solid var(--line); background: rgba(10,10,11,.9); }
+    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; padding-bottom: 14px; }
+    .brand { color: var(--text); font-weight: 800; }
+    .hero { padding: 72px 0 28px; }
+    .eyebrow { color: var(--cyan); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    h1 { max-width: 760px; margin: 12px 0 16px; font-size: clamp(34px, 5vw, 56px); line-height: 1.06; }
+    .hero p { max-width: 760px; color: var(--muted); font-size: 18px; }
+    .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 24px; padding-bottom: 72px; }
+    .card { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 24px; margin-bottom: 18px; }
+    .card h2 { margin-top: 0; }
+    .card p, .card li { color: var(--muted); }
+    .price { color: var(--green); font-weight: 800; }
+    .cta { display: inline-flex; margin-top: 14px; padding: 12px 16px; border-radius: 8px; background: var(--cyan); color: #061014; font-weight: 800; }
+    @media (max-width: 840px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <a class="brand" href="/">ThumbGate</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md">Verification evidence</a>
+    </div>
+  </header>
+  <main class="container">
+    <section class="hero">
+      <div class="eyebrow">Harness optimization</div>
+      <h1>AI agent harness optimization that blocks repeat failures</h1>
+      <p>A better harness keeps global instructions lean, loads MCP schemas only when needed, and turns feedback into Pre-Action Gates. ThumbGate makes that workflow measurable and enforceable.</p>
+    </section>
+    <section class="grid">
+      <div>
+        <section class="card">
+          <h2>Why harnesses matter</h2>
+          <p>The model is not the whole system. The harness decides which instructions, tools, context packs, approval rules, and verification gates the agent sees before it acts. When every rule lives in one global prompt, the agent burns attention on context it does not need.</p>
+          <p>ThumbGate keeps the harness in the useful zone: short discovery docs, progressive MCP tool loading, workflow-specific gate harnesses, and hard enforcement when a known-bad action tries to repeat.</p>
+        </section>
+        <section class="card">
+          <h2>What ThumbGate audits</h2>
+          <ul>
+            <li>Global AGENTS.md, CLAUDE.md, and GEMINI.md token pressure.</li>
+            <li>Progressive MCP discovery through lightweight tool indexes and schema URLs.</li>
+            <li>Specialized deploy, code-edit, and database-write gate harnesses.</li>
+            <li>Feedback-to-enforcement coverage through thumbs-down prevention rules and Pre-Action Gates.</li>
+          </ul>
+        </section>
+        <section class="card">
+          <h2>Run the audit</h2>
+          <p><code>npx thumbgate harness-audit</code></p>
+          <p>The audit gives teams a first concrete action before they buy: see whether the current agent setup is compounding useful context or compounding instruction bloat.</p>
+        </section>
+        <section class="card">
+          <h2>FAQ</h2>
+          <details open>
+            <summary>What is an AI agent harness?</summary>
+            <p>The runtime layer around the model: context loading, tool calls, guardrails, approval boundaries, memory, and verification.</p>
+          </details>
+          <details>
+            <summary>How does ThumbGate optimize a harness?</summary>
+            <p>ThumbGate keeps global instructions lean, supports progressive MCP discovery, selects workflow-specific gate harnesses, and converts feedback into Pre-Action Gates.</p>
+          </details>
+        </section>
+      </div>
+      <aside>
+        <section class="card">
+          <h2>Start with proof</h2>
+          <p>Free local CLI installs the enforcement loop. Pro is <span class="price">$19/mo</span> or <span class="price">$149/yr</span>. Team starts at <span class="price">$49/seat/mo</span> after intake.</p>
+          <p><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/harnesses-report.json">Machine-readable harness proof</a></p>
+          <a class="cta" href="/go/install?utm_source=guide&utm_medium=harness_optimization&utm_campaign=agent_harness_optimization">Install Free CLI</a>
+        </section>
+        <section class="card">
+          <h2>Related</h2>
+          <p><a href="/guides/pre-action-gates">What are Pre-Action Gates?</a></p>
+          <p><a href="/guides/codex-cli-guardrails">Codex CLI guardrails</a></p>
+          <p><a href="/compare/mem0">ThumbGate vs Mem0</a></p>
+        </section>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>
