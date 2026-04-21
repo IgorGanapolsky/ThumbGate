@@ -147,6 +147,28 @@
       "compliance": ["NIST-CM-5", "SOC2-CC8.1", "CWE-863"]
     },
     {
+      "id": "git-reset-hard",
+      "layer": "Execution",
+      "trigger": "Bash:git_reset_hard",
+      "toolNames": ["Bash"],
+      "pattern": "(?:^|[;&|]\\s*)git\\s+reset\\s+--hard\\b",
+      "action": "block",
+      "message": "git reset --hard is blocked because it can destroy uncommitted work. Stash or use a non-destructive restore path with explicit user approval.",
+      "severity": "critical",
+      "compliance": ["NIST-CM-5", "SOC2-CC8.1", "CWE-863"]
+    },
+    {
+      "id": "git-clean-force",
+      "layer": "Execution",
+      "trigger": "Bash:git_clean_force",
+      "toolNames": ["Bash"],
+      "pattern": "(?:^|[;&|]\\s*)git\\s+clean\\s+(?:-[^\\s]*f[^\\s]*|--force)\\b",
+      "action": "block",
+      "message": "git clean --force is blocked because it can delete untracked user work. Inventory files and get explicit approval before destructive cleanup.",
+      "severity": "critical",
+      "compliance": ["NIST-CM-5", "SOC2-CC8.1", "CWE-863"]
+    },
+    {
       "id": "protected-branch-push",
       "layer": "Execution",
       "trigger": "Bash:protected_push",
@@ -154,6 +176,17 @@
       "action": "block",
       "message": "Direct push to protected branch. Use feature branches and PRs.",
       "severity": "critical"
+    },
+    {
+      "id": "rm-rf-home-or-root",
+      "layer": "Execution",
+      "trigger": "Bash:rm_rf_home_or_root",
+      "toolNames": ["Bash"],
+      "pattern": "(?:^|[;&|]\\s*)rm\\s+-(?=[^\\s]*r)(?=[^\\s]*f)[^\\s]+\\s+(?:/|/\\*|~(?:/[^\\s]*)?|\\$HOME(?:/[^\\s]*)?)(?:\\s|$)",
+      "action": "block",
+      "message": "Broad rm -rf against root or home is blocked. Use a narrow, reviewed path and explicit approval for destructive deletes.",
+      "severity": "critical",
+      "compliance": ["NIST-CM-5", "SOC2-CC8.1", "CWE-732"]
     },
     {
       "id": "env-file-edit",
