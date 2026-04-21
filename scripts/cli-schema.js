@@ -134,6 +134,18 @@ const CLI_COMMANDS = [
       { name: 'doc-token-budget', type: 'number', description: 'Global docs budget (default 9000)' },
     ],
   }),
+  discoveryCommand({
+    name: 'native-messaging-audit',
+    aliases: ['bridge-audit'],
+    description: 'Audit local browser native messaging hosts and AI browser bridges',
+    mcpTool: 'native_messaging_audit',
+    flags: [
+      jsonFlag(),
+      { name: 'platform', type: 'string', description: 'Override platform detection (darwin | linux | win32)' },
+      { name: 'home-dir', type: 'string', description: 'Override home directory for manifest discovery' },
+      { name: 'ai-only', type: 'boolean', description: 'Only report AI/browser bridge manifests' },
+    ],
+  }),
   {
     name: 'lesson-health',
     aliases: ['stale'],

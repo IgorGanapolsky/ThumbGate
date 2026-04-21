@@ -119,6 +119,36 @@ test('agent harness optimization page is discoverable and commercially classifie
   });
 });
 
+test('browser automation safety page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/browser-automation-safety');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/browser-automation-safety');
+
+  assert.ok(page);
+  assert.equal(page.query, 'browser automation safety');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-gates');
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/browser-automation-safety',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
+test('native messaging host security page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/native-messaging-host-security');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/native-messaging-host-security');
+
+  assert.ok(page);
+  assert.equal(page.query, 'native messaging host security');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-gates');
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/native-messaging-host-security',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
 test('writePlanOutputs persists machine-readable GSD artifacts', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'seo-gsd-outputs-'));
 
@@ -139,6 +169,8 @@ test('writePlanOutputs persists machine-readable GSD artifacts', () => {
     assert.ok(pages.some((page) => page.path === '/guides/agent-harness-optimization'));
     assert.ok(pages.some((page) => page.path === '/guides/codex-cli-guardrails'));
     assert.ok(pages.some((page) => page.path === '/guides/gemini-cli-feedback-memory'));
+    assert.ok(pages.some((page) => page.path === '/guides/browser-automation-safety'));
+    assert.ok(pages.some((page) => page.path === '/guides/native-messaging-host-security'));
     assert.ok(pages.some((page) => page.path === '/guides/autoresearch-agent-safety'));
     assert.match(execute, /# ThumbGate SEO\/GEO GSD Plan/);
     assert.match(execute, /Recommended publish order/);

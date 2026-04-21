@@ -126,6 +126,8 @@ async function run() {
           '/compare/mem0',
           '/guides/pre-action-gates',
           '/guides/agent-harness-optimization',
+          '/guides/browser-automation-safety',
+          '/guides/native-messaging-host-security',
           '/guides/claude-code-feedback',
           '/guides/autoresearch-agent-safety',
         ]) {
@@ -152,6 +154,8 @@ async function run() {
           '/compare/mem0',
           '/guides/pre-action-gates',
           '/guides/agent-harness-optimization',
+          '/guides/browser-automation-safety',
+          '/guides/native-messaging-host-security',
           '/guides/claude-code-feedback',
           '/guides/autoresearch-agent-safety',
         ]) {
