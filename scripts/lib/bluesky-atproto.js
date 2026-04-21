@@ -29,7 +29,7 @@ function atprotoRequest(method, host, urlPath, opts = {}) {
   const requestFn = opts.request || https.request;
   return new Promise((resolve, reject) => {
     const payload = opts.body ? JSON.stringify(opts.body) : null;
-    const headers = { ...(opts.headers || {}) };
+    const headers = opts.headers ? { ...opts.headers } : {};
     if (payload) {
       headers['Content-Type'] = 'application/json';
       headers['Content-Length'] = Buffer.byteLength(payload);
@@ -137,7 +137,7 @@ function sanitizeForLog(value) {
   if (value == null) return '';
   const str = String(value);
   // eslint-disable-next-line no-control-regex
-  return str.replace(/[\x00-\x1f\x7f]/g, '?').slice(0, 200);
+  return str.replaceAll(/[\x00-\x1f\x7f]/g, '?').slice(0, 200);
 }
 
 module.exports = {
