@@ -225,6 +225,7 @@ const GUIDE_PAGE_PATH = path.resolve(__dirname, '../../public/guide.html');
 const CODEX_PLUGIN_PAGE_PATH = path.resolve(__dirname, '../../public/codex-plugin.html');
 const COMPARE_PAGE_PATH = path.resolve(__dirname, '../../public/compare.html');
 const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
+const NUMBERS_PAGE_PATH = path.resolve(__dirname, '../../public/numbers.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
 const COMPARE_DIR = path.resolve(__dirname, '../../public/compare');
@@ -3773,6 +3774,16 @@ async function addContext(){
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch {
         sendJson(res, 404, { error: 'Learn page not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/numbers' || pathname === '/numbers.html')) {
+      try {
+        const html = fs.readFileSync(NUMBERS_PAGE_PATH, 'utf-8');
+        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      } catch {
+        sendJson(res, 404, { error: 'Numbers page not found' });
       }
       return;
     }

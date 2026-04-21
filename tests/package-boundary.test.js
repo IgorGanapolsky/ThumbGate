@@ -167,9 +167,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 232 → 234 (2026-04-20) for the cross-session canonical-hash
   // module (`scripts/lesson-canonical.js`) required at runtime by
   // lesson-synthesis / lesson-db / feedback-loop, plus one-file headroom.
+  // Bumped 234 → 236 (2026-04-20) after rebase onto main that landed #1100:
+  // this branch adds public/numbers.html (first-party data transparency page
+  // served at /numbers) on top of lesson-canonical.js already on main. Two
+  // extra file slots: numbers.html + one-file headroom.
   assert.ok(
-    manifest.fileCount <= 234,
-    `npm package should stay <= 234 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 236,
+    `npm package should stay <= 236 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -187,9 +191,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // loss-matrix expansion in config/enforcement.json, the contextfs
   // summarize-then-expand selector, and feedback-loop / lesson-db
   // canonical-dedup wiring that together added ~8 KB to the tarball.
+  // Bumped 2.99 MB → 3.01 MB (2026-04-20) after rebase onto #1100: adds
+  // public/numbers.html (~12 KB) on top of main's post-#1100 baseline.
   assert.ok(
-    manifest.unpackedSize <= 2_990_000,
-    `npm package should stay <= 2.99 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_010_000,
+    `npm package should stay <= 3.01 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
