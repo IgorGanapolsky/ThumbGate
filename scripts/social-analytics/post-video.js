@@ -49,6 +49,10 @@ const PLATFORM_COOLDOWN_HOURS = {
 };
 
 const CAPTIONS = {
+  // Primary CTA routes through the production landing page so the funnel
+  // ledger attributes views → installs → paid. GitHub is kept as secondary
+  // proof ("open source") but no longer the primary click target, because
+  // clicks on github.com never touch our funnel tracker.
   tiktok: `Your AI agent deleted prod config because it "looked unused" 😬
 
 ThumbGate v1.4.1 intercepts BEFORE the action runs. Checks it against lessons from past failures. Blocks it permanently.
@@ -57,9 +61,8 @@ ThumbGate v1.4.1 intercepts BEFORE the action runs. Checks it against lessons fr
 
 Not a prompt. A block.
 
-npx thumbgate serve — free + open source
-Try the live GPT first: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate
-github.com/IgorGanapolsky/ThumbGate
+See what it's blocked this week: https://thumbgate-production.up.railway.app/numbers
+Source (MIT): https://github.com/IgorGanapolsky/ThumbGate
 
 #ClaudeCode #AIAgents #DevTools #TechTok #Coding #SoftwareDev #AITools #Programming #DevTok`,
 
@@ -71,8 +74,8 @@ ThumbGate solves this with pre-action gates: every 👎 becomes a lesson, every 
 
 v1.4.1: Thompson Sampling · LanceDB vector search · SQLite+FTS5 lesson DB
 
-Live GPT demo: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate
-Free + open source: https://github.com/IgorGanapolsky/ThumbGate
+See this week's blocked actions + token savings: https://thumbgate-production.up.railway.app/numbers
+Source (MIT): https://github.com/IgorGanapolsky/ThumbGate
 npx thumbgate serve
 
 #ClaudeCode #AIAgents #DevTools #Shorts`,

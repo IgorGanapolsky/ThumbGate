@@ -97,6 +97,7 @@ const {
   samplePosteriors,
 } = require('../../scripts/thompson-sampling');
 const {
+  appendFunnelEvent,
   createCheckoutSession,
   getCheckoutSessionStatus,
   provisionApiKey,
@@ -2162,6 +2163,37 @@ function servePublicMarketingPage({
     'landing_page_view'
   );
 
+  // Funnel-ledger write (2026-04-21): populate funnel-events.jsonl with a
+  // discovery-stage event on every landing-page view so UTM-tagged social
+  // traffic becomes visible in `npm run feedback:summary` and
+  // `bin/cli.js cfo --today`. Prior to this wire, landing views wrote only
+  // to telemetry-pings.jsonl (invisible to the CEO-facing revenue surface),
+  // leaving funnel-events.jsonl empty despite 404 published Zernio posts.
+  // Best-effort: wrapped in try/catch so a billing-ledger hiccup never
+  // breaks a page render.
+  try {
+    appendFunnelEvent({
+      stage: 'discovery',
+      event: 'landing_view',
+      installId: journeyState.visitorId || null,
+      traceId: journeyState.acquisitionId || null,
+      evidence: landingAttribution.landingPath || 'landing_view',
+      metadata: {
+        page: extraTelemetry.pageType || landingAttribution.page || 'landing',
+        utmSource: landingAttribution.utmSource || null,
+        utmMedium: landingAttribution.utmMedium || null,
+        utmCampaign: landingAttribution.utmCampaign || null,
+        utmContent: landingAttribution.utmContent || null,
+        utmTerm: landingAttribution.utmTerm || null,
+        referrerHost: landingAttribution.referrerHost || null,
+        sessionId: journeyState.sessionId || null,
+      },
+    });
+  } catch {
+    // Funnel ledger is best-effort on page render; telemetry-pings remains
+    // the authoritative observability path if the ledger write fails.
+  }
+
   if (isSeoAttributionSource(landingAttribution.source)) {
     appendBestEffortTelemetry(FEEDBACK_DIR, {
       eventType: 'seo_landing_view',
@@ -3779,9 +3811,19 @@ async function addContext(){
     }
 
     if (isGetLikeRequest && (pathname === '/numbers' || pathname === '/numbers.html')) {
+      // Route through servePublicMarketingPage so landing_page_view telemetry
+      // + funnel-events.jsonl `discovery/landing_view` get captured with UTM
+      // attribution — critical for Zernio social CTAs that target /numbers.
       try {
-        const html = fs.readFileSync(NUMBERS_PAGE_PATH, 'utf-8');
-        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(NUMBERS_PAGE_PATH, 'utf-8'),
+          extraTelemetry: { pageType: 'numbers' },
+        });
       } catch {
         sendJson(res, 404, { error: 'Numbers page not found' });
       }
