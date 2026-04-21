@@ -93,25 +93,36 @@ const NEGATIVE_STAKEHOLDER_KEYWORDS = [
  * @param {string} role role name (usually derived from the file basename)
  * @returns {{ role: string, sections: Record<string, Array<{date: string|null, text: string}>> }}
  */
+// Strict ISO-like date stamp: exactly 12 chars `[YYYY-MM-DD]`.
+// Uses character-class-only sub-patterns (no backtracking) — chosen to satisfy
+// SonarCloud S5852 (super-linear regex runtime) on user-supplied memory files.
+const DATE_STAMP_RE = /^\[(\d{4}-\d{2}-\d{2})\](.*)$/;
+
 function startEntryFromBullet(body) {
-  const dateMatch = /^\[(\d{4}-\d{2}-\d{2})\]\s*(.*)$/.exec(body);
-  return dateMatch
-    ? { date: dateMatch[1], text: dateMatch[2].trim() }
-    : { date: null, text: body.trim() };
+  const dateMatch = DATE_STAMP_RE.exec(body);
+  if (dateMatch) {
+    return { date: dateMatch[1], text: dateMatch[2].trim() };
+  }
+  return { date: null, text: body.trim() };
 }
 
 function classifyParsedLine(line) {
-  const headingMatch = /^##\s+(.+?)\s*$/.exec(line);
-  if (headingMatch) {
-    return { kind: 'heading', value: headingMatch[1].trim().toLowerCase() };
+  // Heading: `## <name>`. String-level check avoids SonarCloud S5852 false-
+  // positive on `/^##\s+(.+?)\s*$/` (lazy quantifier + trailing whitespace).
+  if (line.startsWith('## ') || line.startsWith('##\t')) {
+    const name = line.slice(2).trim();
+    if (name.length > 0) {
+      return { kind: 'heading', value: name.toLowerCase() };
+    }
   }
-  const bulletMatch = /^[-*]\s+(.*)$/.exec(line);
-  if (bulletMatch) {
-    return { kind: 'bullet', value: bulletMatch[1] };
+  // Bullet: `-` or `*` followed by at least one whitespace char.
+  if (line.length >= 2 && (line.startsWith('- ') || line.startsWith('* ')
+      || line.startsWith('-\t') || line.startsWith('*\t'))) {
+    return { kind: 'bullet', value: line.slice(2) };
   }
-  const continuation = /^\s{2,}(\S.*)$/.exec(line);
-  if (continuation) {
-    return { kind: 'continuation', value: continuation[1].trim() };
+  // Continuation: two or more leading spaces/tabs, then a non-whitespace char.
+  if ((line.startsWith('  ') || line.startsWith('\t')) && line.trim() !== '') {
+    return { kind: 'continuation', value: line.trim() };
   }
   if (line.trim() === '') {
     return { kind: 'blank' };
