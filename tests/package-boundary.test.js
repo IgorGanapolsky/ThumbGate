@@ -183,9 +183,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // to actively trim assets.
   // Bumped 2.95 MB → 2.97 MB (2026-04-20) for operator-artifacts.js plus the
   // existing PR manager it composes for the read-only PR pulse.
+  // Bumped 2.97 MB → 3.00 MB (2026-04-20) after this branch rebased onto #1105's
+  // hard-block destructive local actions gate (gates-engine.js expansion + new
+  // test fixtures shipped via the runtime surface), pushing unpackedSize to
+  // 2,970,865 — 865 B above the previous ceiling. 30 KB headroom to avoid
+  // rebase-flapping on the next main merge.
   assert.ok(
-    manifest.unpackedSize <= 2_970_000,
-    `npm package should stay <= 2.97 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_000_000,
+    `npm package should stay <= 3.00 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
