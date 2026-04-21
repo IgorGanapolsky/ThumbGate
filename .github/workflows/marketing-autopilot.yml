@@ -151,7 +151,7 @@ jobs:
             const reddit = require('./scripts/social-analytics/publishers/reddit');
 
             const PRO_URL = 'https://thumbgate-production.up.railway.app/pro?utm_source=reddit&utm_medium=social&utm_campaign=autopilot';
-            const BUY_URL = 'https://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a?utm_source=reddit&utm_medium=social&utm_campaign=autopilot';
+            const BUY_URL = 'https://thumbgate-production.up.railway.app/go/pro?src=reddit&c=autopilot';
             const POSTS = [
               {
                 subreddit: 'ClaudeAI',
@@ -293,14 +293,14 @@ jobs:
                 '| Dashboard | Basic | Full analytics |',
                 '| Agents | Single | Multi-agent |',
                 '',
-                '👉 **[Get Pro — $19/month](https://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a?utm_source=devto&utm_medium=article&utm_campaign=autopilot)** | [Annual $149/yr](https://buy.stripe.com/3cI8wPfCYaPs2dzdKz3sI07?utm_source=devto&utm_medium=article&utm_campaign=autopilot)',
+                '👉 **[Get Pro — $19/month](https://thumbgate-production.up.railway.app/go/pro?src=devto&c=autopilot)** | [Annual $149/yr](https://buy.stripe.com/3cI8wPfCYaPs2dzdKz3sI07?utm_source=devto&utm_medium=article&utm_campaign=autopilot)',
                 '',
                 '## Open Source',
                 '',
                 'MIT license. No sign-up required for the free tier. No telemetry.',
                 '',
                 '- GitHub: https://github.com/IgorGanapolsky/ThumbGate',
-                '- Buy Pro ($19/mo): https://buy.stripe.com/7sYcN5bmIf5IcSd8qf3sI0a',
+                '- Buy Pro ($19/mo): https://thumbgate-production.up.railway.app/go/pro?src=devto&c=autopilot',
                 '- Pricing: https://thumbgate-production.up.railway.app/pro',
                 '- GPT: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate',
               ].join('\\n'),

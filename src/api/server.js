@@ -3935,6 +3935,38 @@ async function addContext(){
       return;
     }
 
+    // ── /go/:slug attribution redirector ────────────────────────────────
+    // Public entrypoint for outbound links. Accepts ?src=<channel> and
+    // 302s to the real checkout with UTM params attached, so every README,
+    // SKILL doc, and post link is attributable in Plausible + Stripe.
+    // Accepted slugs: pro | team | audit. Unknown slugs 302 to "/".
+    if (isGetLikeRequest && pathname.startsWith('/go/')) {
+      const slug = pathname.slice(4).replace(/\/+$/, '').toLowerCase();
+      const targets = {
+        pro: '/checkout/pro',
+        team: '/checkout/team',
+        audit: '/checkout/audit',
+      };
+      const target = targets[slug] || '/';
+      const src = (parsed?.searchParams?.get('src') || 'unknown')
+        .toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 32) || 'unknown';
+      const campaign = (parsed?.searchParams?.get('c') || 'acquisition')
+        .toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 48) || 'acquisition';
+      const content = (parsed?.searchParams?.get('ct') || '')
+        .toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 48);
+      const q = new URLSearchParams({
+        confirm: '1',
+        utm_source: src,
+        utm_medium: 'link',
+        utm_campaign: campaign,
+      });
+      if (content) q.set('utm_content', content);
+      const location = target === '/' ? '/' : `${target}?${q.toString()}`;
+      res.writeHead(302, { Location: location, 'Cache-Control': 'no-store' });
+      res.end();
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/checkout/pro') {
       if (isHeadRequest) {
         sendText(res, 200, '', {}, {
