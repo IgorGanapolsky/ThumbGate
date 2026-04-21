@@ -10,6 +10,7 @@ const {
   createSession,
   parseAtUri,
   isTransientAtprotoError,
+  sanitizeForLog,
   DEFAULT_PDS_HOST,
 } = require('../scripts/lib/bluesky-atproto');
 
@@ -211,6 +212,17 @@ test('parseAtUri returns null for malformed inputs', () => {
   assert.equal(parseAtUri('not-a-uri'), null);
   assert.equal(parseAtUri('at://did:plc:abc'), null);
   assert.equal(parseAtUri('at://did:plc:abc/app.bsky.feed.post'), null);
+});
+
+test('sanitizeForLog strips control chars and truncates long input', () => {
+  assert.equal(sanitizeForLog('hello\nworld'), 'hello?world');
+  assert.equal(sanitizeForLog('tab\there'), 'tab?here');
+  assert.equal(sanitizeForLog('bell\x07!'), 'bell?!');
+  assert.equal(sanitizeForLog(null), '');
+  assert.equal(sanitizeForLog(undefined), '');
+  assert.equal(sanitizeForLog(42), '42');
+  const long = 'x'.repeat(500);
+  assert.equal(sanitizeForLog(long).length, 200);
 });
 
 test('isTransientAtprotoError detects common upstream failures', () => {

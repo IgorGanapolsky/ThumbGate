@@ -29,15 +29,11 @@ function atprotoRequest(method, host, urlPath, opts = {}) {
   const requestFn = opts.request || https.request;
   return new Promise((resolve, reject) => {
     const payload = opts.body ? JSON.stringify(opts.body) : null;
-    const headers = {
-      ...(opts.headers || {}),
-      ...(payload
-        ? {
-            'Content-Type': 'application/json',
-            'Content-Length': Buffer.byteLength(payload),
-          }
-        : {}),
-    };
+    const headers = { ...(opts.headers || {}) };
+    if (payload) {
+      headers['Content-Type'] = 'application/json';
+      headers['Content-Length'] = Buffer.byteLength(payload);
+    }
     const req = requestFn(
       { host, path: urlPath, method, headers },
       (res) => {
@@ -67,11 +63,11 @@ function atprotoRequest(method, host, urlPath, opts = {}) {
  * user returns 502 UpstreamFailure. Returns null if the didDoc is malformed.
  */
 function resolvePdsHost(didDoc) {
-  const services = didDoc && Array.isArray(didDoc.service) ? didDoc.service : [];
+  const services = Array.isArray(didDoc?.service) ? didDoc.service : [];
   const pds = services.find(
     (s) => s && (s.id === '#atproto_pds' || s.type === 'AtprotoPersonalDataServer'),
   );
-  if (!pds || !pds.serviceEndpoint) return null;
+  if (!pds?.serviceEndpoint) return null;
   try {
     return new URL(pds.serviceEndpoint).host;
   } catch {
@@ -101,7 +97,7 @@ async function createSession({ env = process.env, request: requestFn } = {}) {
     { body: { identifier, password }, request: requestFn },
   );
   if (res.status !== 200 || !res.json.accessJwt) {
-    const detail = res.json && res.json.error ? res.json.error : 'unknown';
+    const detail = res.json?.error || 'unknown';
     throw new Error(`Bluesky auth failed (status=${res.status}): ${detail}`);
   }
   return {
@@ -128,8 +124,20 @@ function parseAtUri(uri) {
  * that case so the orchestrator doesn't mark the run as a hard failure.
  */
 function isTransientAtprotoError(err) {
-  const msg = String((err && err.message) || '');
+  const msg = String(err?.message || '');
   return /\b(502|503|504|UpstreamFailure|ECONNRESET|ETIMEDOUT|ENOTFOUND)\b/.test(msg);
+}
+
+/**
+ * Sanitize a user-controlled string for log lines. Strips CR/LF and other
+ * control characters so attacker handles / post text can't forge log entries
+ * (CWE-117 / SonarCloud S5145). Truncates at 200 chars to keep logs readable.
+ */
+function sanitizeForLog(value) {
+  if (value == null) return '';
+  const str = String(value);
+  // eslint-disable-next-line no-control-regex
+  return str.replace(/[\x00-\x1f\x7f]/g, '?').slice(0, 200);
 }
 
 module.exports = {
@@ -139,4 +147,5 @@ module.exports = {
   createSession,
   parseAtUri,
   isTransientAtprotoError,
+  sanitizeForLog,
 };

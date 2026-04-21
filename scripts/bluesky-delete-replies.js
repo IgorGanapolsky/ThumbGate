@@ -25,12 +25,13 @@ const {
   atprotoRequest,
   createSession,
   parseAtUri,
+  sanitizeForLog,
 } = require('./lib/bluesky-atproto');
 
 const STATE_FILE = path.resolve(__dirname, '..', '.thumbgate', 'reply-monitor-state.json');
 const DRY_RUN = process.argv.includes('--dry-run');
 
-async function deleteRecord(session, uri) {
+async function deleteRecord(session, uri, { request } = {}) {
   const parts = parseAtUri(uri);
   if (!parts) throw new Error(`bad uri: ${uri}`);
   if (parts.did !== session.did) {
@@ -43,6 +44,7 @@ async function deleteRecord(session, uri) {
     {
       headers: { Authorization: `Bearer ${session.accessJwt}` },
       body: { repo: session.did, collection: parts.collection, rkey: parts.rkey },
+      request,
     },
   );
   if (status !== 200) {
@@ -61,13 +63,21 @@ function saveState(state) {
   fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
 }
 
-async function run() {
-  const session = await createSession();
-  console.log(`authenticated as @${session.handle} (${session.did})`);
+async function run({
+  sessionFactory = createSession,
+  loadState: loadStateFn = loadState,
+  saveState: saveStateFn = saveState,
+  deleteRecord: deleteRecordFn = deleteRecord,
+  dryRun = DRY_RUN,
+} = {}) {
+  const session = await sessionFactory();
+  console.log(
+    `authenticated as @${sanitizeForLog(session.handle)} (${sanitizeForLog(session.did)})`,
+  );
 
-  const state = loadState();
-  const bluesky = (state.repliedTo && state.repliedTo.bluesky) || {};
-  const targets = Object.entries(bluesky).filter(([, v]) => v && v.postedUri);
+  const state = loadStateFn();
+  const bluesky = state.repliedTo?.bluesky || {};
+  const targets = Object.entries(bluesky).filter(([, v]) => v?.postedUri);
 
   if (targets.length === 0) {
     console.log('no posted replies found to delete.');
@@ -76,10 +86,10 @@ async function run() {
 
   console.log(`found ${targets.length} posted replies to delete:`);
   for (const [parentUri, v] of targets) {
-    console.log(`  ${v.postedUri}  (parent ${parentUri})`);
+    console.log(`  ${sanitizeForLog(v.postedUri)}  (parent ${sanitizeForLog(parentUri)})`);
   }
 
-  if (DRY_RUN) {
+  if (dryRun) {
     console.log('\n[dry-run] no deletes performed.');
     return { deleted: 0, failed: 0 };
   }
@@ -88,25 +98,31 @@ async function run() {
   let failed = 0;
   for (const [parentUri, v] of targets) {
     try {
-      await deleteRecord(session, v.postedUri);
-      console.log(`deleted ${v.postedUri}`);
+      await deleteRecordFn(session, v.postedUri);
+      console.log(`deleted ${sanitizeForLog(v.postedUri)}`);
       delete bluesky[parentUri];
       deleted++;
     } catch (err) {
-      console.error(`delete-failed ${v.postedUri}: ${err.message}`);
+      console.error(
+        `delete-failed ${sanitizeForLog(v.postedUri)}: ${sanitizeForLog(err.message)}`,
+      );
       failed++;
     }
   }
 
   state.repliedTo = state.repliedTo || {};
   state.repliedTo.bluesky = bluesky;
-  saveState(state);
+  saveStateFn(state);
 
   console.log(`\n[bluesky-delete-replies] deleted=${deleted} failed=${failed}`);
   return { deleted, failed };
 }
 
-if (require.main === module) {
+const isMainModule =
+  typeof process.argv[1] === 'string' &&
+  path.resolve(process.argv[1]) === path.resolve(__filename);
+
+if (isMainModule) {
   run()
     .then((r) => process.exit(r.failed > 0 ? 1 : 0))
     .catch((err) => {

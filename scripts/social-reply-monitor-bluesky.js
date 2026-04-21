@@ -28,6 +28,7 @@ const {
   atprotoRequest,
   createSession,
   isTransientAtprotoError,
+  sanitizeForLog,
   DEFAULT_PDS_HOST,
 } = require('./lib/bluesky-atproto');
 
@@ -73,7 +74,7 @@ async function listNotifications(session, limit = 40) {
 }
 
 function extractPostText(notification) {
-  const rec = notification && notification.record;
+  const rec = notification?.record;
   if (!rec) return '';
   if (typeof rec.text === 'string') return rec.text;
   return '';
@@ -81,26 +82,34 @@ function extractPostText(notification) {
 
 function buildReplyContext(notification) {
   const text = extractPostText(notification);
-  const reply = notification.record && notification.record.reply;
+  const reply = notification.record?.reply;
   return {
     platform: 'bluesky',
-    author: (notification.author && notification.author.handle) || 'unknown',
+    author: notification.author?.handle || 'unknown',
     isQuestion: /\?/.test(text),
     notificationUri: notification.uri,
     notificationCid: notification.cid,
-    rootUri: (reply && reply.root && reply.root.uri) || notification.uri,
-    rootCid: (reply && reply.root && reply.root.cid) || notification.cid,
+    rootUri: reply?.root?.uri || notification.uri,
+    rootCid: reply?.root?.cid || notification.cid,
     parentUri: notification.uri,
     parentCid: notification.cid,
   };
 }
 
-async function monitor() {
-  const session = await createSession();
-  const state = loadState();
+async function monitor({
+  sessionFactory = createSession,
+  listNotifications: listFn = listNotifications,
+  generateReply: generateReplyFn = generateReply,
+  saveDraft: saveDraftFn = saveDraft,
+  saveState: saveStateFn = saveState,
+  loadState: loadStateFn = loadState,
+  dryRun = DRY_RUN,
+} = {}) {
+  const session = await sessionFactory();
+  const state = loadStateFn();
   state.repliedTo.bluesky = state.repliedTo.bluesky || {};
 
-  const notifications = await listNotifications(session);
+  const notifications = await listFn(session);
   const actionable = notifications.filter((n) => ['reply', 'mention', 'quote'].includes(n.reason));
 
   let queued = 0;
@@ -108,13 +117,13 @@ async function monitor() {
 
   for (const n of actionable) {
     if (state.repliedTo.bluesky[n.uri]) { skipped += 1; continue; }
-    if (n.author && n.author.handle === session.handle) { skipped += 1; continue; }
+    if (n.author?.handle === session.handle) { skipped += 1; continue; }
 
     const text = extractPostText(n);
     if (!text) { skipped += 1; continue; }
 
     const context = buildReplyContext(n);
-    const reply = await generateReply(text, context);
+    const reply = await generateReplyFn(text, context);
     if (!reply) { skipped += 1; continue; }
 
     const draft = {
@@ -126,7 +135,7 @@ async function monitor() {
         reason: n.reason,
         indexedAt: n.indexedAt,
         authorHandle: context.author,
-        authorDid: n.author && n.author.did,
+        authorDid: n.author?.did,
       },
       incomingText: text,
       draftReply: reply,
@@ -137,37 +146,43 @@ async function monitor() {
       autoPost: false,
     };
 
-    if (DRY_RUN) {
-      console.log(`[dry-run] would queue ${n.reason} from @${context.author}`);
-      console.log(`  in:  ${text.slice(0, 120)}`);
-      console.log(`  out: ${String(reply).slice(0, 120)}`);
+    if (dryRun) {
+      console.log(
+        `[dry-run] would queue ${sanitizeForLog(n.reason)} from @${sanitizeForLog(context.author)}`,
+      );
+      console.log(`  in:  ${sanitizeForLog(text.slice(0, 120))}`);
+      console.log(`  out: ${sanitizeForLog(String(reply).slice(0, 120))}`);
     } else {
-      saveDraft(draft);
+      saveDraftFn(draft);
       state.repliedTo.bluesky[n.uri] = { queuedAt: draft.createdAt, reason: n.reason };
       queued += 1;
     }
   }
 
-  if (!DRY_RUN) {
+  if (!dryRun) {
     state.lastCheck.bluesky = new Date().toISOString();
-    saveState(state);
+    saveStateFn(state);
   }
 
   console.log(
-    `[bluesky-monitor] notifications=${notifications.length} actionable=${actionable.length} queued=${queued} skipped=${skipped} dryRun=${DRY_RUN}`,
+    `[bluesky-monitor] notifications=${notifications.length} actionable=${actionable.length} queued=${queued} skipped=${skipped} dryRun=${dryRun}`,
   );
   return { notifications: notifications.length, actionable: actionable.length, queued, skipped };
 }
 
-if (require.main === module) {
+const isMainModule =
+  typeof process.argv[1] === 'string' &&
+  path.resolve(process.argv[1]) === path.resolve(__filename);
+
+if (isMainModule) {
   monitor().catch((err) => {
     if (isTransientAtprotoError(err)) {
       console.warn(
-        `[bluesky-monitor] transient upstream error — will retry next tick: ${err.message}`,
+        `[bluesky-monitor] transient upstream error — will retry next tick: ${sanitizeForLog(err.message)}`,
       );
       process.exit(0);
     }
-    console.error(`[bluesky-monitor] FAIL: ${err.message}`);
+    console.error(`[bluesky-monitor] FAIL: ${sanitizeForLog(err.message)}`);
     process.exit(1);
   });
 }
