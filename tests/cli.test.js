@@ -624,6 +624,27 @@ describe('bin/cli.js', () => {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
 
+  test('hook-auto-capture renders thumbs down for down feedback', () => {
+    const feedbackDir = makeTmpDir();
+    const result = runCliSync(['hook-auto-capture'], {
+      env: {
+        ...process.env,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        CLAUDE_USER_PROMPT: 'thumbs down This response skipped the required verification',
+        THUMBGATE_NO_NUDGE: '1',
+      },
+    });
+
+    assert.equal(result.status, 0, `hook-auto-capture failed:\n${result.stderr}`);
+    assert.match(result.stdout, /Thumbs down recorded/);
+    assert.doesNotMatch(result.stdout, /Thumbs up recorded/);
+
+    const cache = JSON.parse(fs.readFileSync(path.join(feedbackDir, 'statusline_cache.json'), 'utf8'));
+    assert.equal(cache.thumbs_down, '1');
+    assert.equal(cache.total_feedback, '1');
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  });
+
   test('statusline-render syncs missed Claude feedback even when the cache is still fresh', () => {
     const projectDir = makeTmpDir();
     const feedbackDir = path.join(projectDir, '.thumbgate');
