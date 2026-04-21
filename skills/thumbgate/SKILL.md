@@ -94,7 +94,7 @@ Bounded retrieval of relevant feedback history for the current task. The agent g
 | Seats | 1 | 1 | Per-seat |
 | Price | $0 | $19/mo | $49/seat/mo |
 
-Start a 7-day free trial of Pro: <https://thumbgate-production.up.railway.app/go/pro?src=skill>
+Start a 7-day free trial of Pro: <https://thumbgate-production.up.railway.app/go/pro?utm_source=skill>
 
 ## Compatibility
 

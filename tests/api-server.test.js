@@ -432,6 +432,41 @@ test('root serves the landing page by default', async () => {
   assert.doesNotMatch(body, /mailto:/i);
 });
 
+test('/go/pro 302 redirects to /checkout/pro with caller-provided UTM params preserved', async () => {
+  const res = await fetch(apiUrl('/go/pro?utm_source=reddit&utm_campaign=autopilot&utm_content=zero_tokens'), { redirect: 'manual' });
+  assert.equal(res.status, 302);
+  assert.equal(res.headers.get('cache-control'), 'no-store');
+  assert.equal(res.headers.get('x-thumbgate-link-slug'), 'pro');
+  assert.equal(res.headers.get('x-robots-tag'), 'noindex,nofollow');
+  const location = res.headers.get('location');
+  assert.ok(location, 'sets Location header');
+  const url = new URL(location);
+  assert.equal(url.pathname, '/checkout/pro');
+  assert.equal(url.searchParams.get('utm_source'), 'reddit');
+  assert.equal(url.searchParams.get('utm_campaign'), 'autopilot');
+  assert.equal(url.searchParams.get('utm_content'), 'zero_tokens');
+  assert.equal(url.searchParams.get('cta_id'), 'go_pro');
+});
+
+test('/go/pro falls back to default UTM attribution when no params are supplied', async () => {
+  const res = await fetch(apiUrl('/go/pro'), { redirect: 'manual' });
+  assert.equal(res.status, 302);
+  const url = new URL(res.headers.get('location'));
+  assert.equal(url.pathname, '/checkout/pro');
+  assert.equal(url.searchParams.get('utm_source'), 'website');
+  assert.equal(url.searchParams.get('utm_medium'), 'link_router');
+  assert.equal(url.searchParams.get('utm_campaign'), 'pro_upgrade');
+  assert.equal(url.searchParams.get('plan_id'), 'pro');
+});
+
+test('/go/:slug returns 404 JSON for slugs not registered in TRACKED_LINK_TARGETS', async () => {
+  const res = await fetch(apiUrl('/go/malicious?utm_source=x'), { redirect: 'manual' });
+  assert.equal(res.status, 404);
+  const body = await res.json();
+  assert.equal(body.error, 'Tracked link not found');
+  assert.ok(Array.isArray(body.allowed) && body.allowed.includes('pro'), 'advertises allowed slug list');
+});
+
 test('privacy policy route covers collection, sharing, retention, and contact details', async () => {
   const res = await fetch(apiUrl('/privacy'));
   assert.equal(res.status, 200);
