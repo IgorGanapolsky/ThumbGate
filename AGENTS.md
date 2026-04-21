@@ -62,6 +62,7 @@ On explicit user preference signals (`up/down`, `correct/wrong`, or subjective "
 - Pending CI checks and `REVIEW_REQUIRED` are blockers, not mergeable states; do not admin-merge around them.
 - `main` is Trunk-managed. Automation should submit `/trunk merge` and exit; do not long-poll helper workflow checks or wait inside the workflow for a final merge commit.
 - Never use raw `gh pr merge --auto`; use `npm run pr:manage` after all critical quality checks have terminal success.
+- Enterprise Managed User restrictions can block GraphQL PR create/merge mutations. Local `gh` write flows must honor `GH_TOKEN` with `GH_PAT` fallback, and workflow write steps should prefer `${{ secrets.GH_PAT || github.token }}`.
 - Verify `main` CI on the exact merge commit before claiming the work is finished.
 - Delete disposable worktrees and stale merged local branches after merge.
 - If a closed-unmerged branch still contains unique local commits, archive it before deletion.

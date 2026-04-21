@@ -98,6 +98,7 @@ curl -s https://thumbgate-production.up.railway.app/dashboard | grep 'ThumbGate 
 8. Delete the feature branch after merge. Archive unique orphan branches before deleting them.
 9. For `main`, merge submission is Trunk-managed: request `/trunk merge` and let the queue finish asynchronously. Do not build helper workflows that poll their own required check or block on the final merge commit.
 10. Never persist secrets, PATs, or copied credentials into tracked repo files, PR bodies, or local memory notes.
+11. Enterprise Managed User accounts may reject GraphQL PR creation or merge mutations. For local `gh` writes, prefer `GH_TOKEN` and fall back from `GH_PAT` automatically. In GitHub Actions write steps, prefer `${{ secrets.GH_PAT || github.token }}`.
 
 **NEVER say "done" or "pushed" without showing `gh pr view` output first.**
 
