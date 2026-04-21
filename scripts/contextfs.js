@@ -605,6 +605,137 @@ function selectFlatContextItems(candidates, maxItems, maxChars) {
   };
 }
 
+/* ── Summarize-then-expand selection ───────────────────────────────
+ *
+ * Two-pass retrieval that front-loads recall, then spends remaining char
+ * budget on depth for the highest-scoring candidates.
+ *
+ *   Pass 1 — breadth. Walk the ranked candidate list and add each as a
+ *   compact "summary tier" item: title + one-line hint drawn from the
+ *   structured fields (whatToChange / whatWentWrong / first content line).
+ *   A summary is small and bounded (SUMMARY_HINT_MAX chars), so many fit in
+ *   a fraction of the budget. Stops when maxItems or a summary-reservation
+ *   budget cap (SUMMARY_RESERVE_FRACTION of maxChars) is hit — this protects
+ *   enough headroom for Pass 2 to actually do something.
+ *
+ *   Pass 2 — depth. Walk the selected list top-down and try to upgrade each
+ *   summary to the full structured context. The upgrade cost is the delta
+ *   between full doc chars and the summary we already accounted for; if it
+ *   fits under the *overall* maxChars, swap the summary for the full item
+ *   and tag it tier='expanded'. Stop when the budget is exhausted.
+ *
+ * Rationale: the flat selector overcommits chars on the first few full-size
+ * hits and silently drops the tail. Summarize-then-expand means a consumer
+ * always knows which docs matched (full roster of titles), and the model
+ * sees full context for the top answers.
+ *
+ * The option is wired into constructContextPack via `strategy` or the
+ * explicit `summarizeThenExpand` flag. Default behavior is unchanged so
+ * existing callers / tests don't shift.
+ */
+
+const SUMMARY_HINT_MAX = 160;
+const SUMMARY_RESERVE_FRACTION = 0.35;
+
+function buildSummaryContext(doc) {
+  const full = buildStructuredContext(doc);
+  // Priority: explicit whatToChange > whatWentWrong > reasoning > first
+  // non-empty content line. We truncate aggressively because a summary's
+  // purpose is to fit dozens per pack, not to win a precision test.
+  const hint = (
+    full.whatToChange
+    || full.whatWentWrong
+    || full.reasoning
+    || (doc.content || '').split('\n').map((l) => l.trim()).find(Boolean)
+    || ''
+  ).slice(0, SUMMARY_HINT_MAX);
+  return {
+    rawContent: hint,
+    reasoning: null,
+    whatWentWrong: null,
+    whatToChange: null,
+    rubricFailure: null,
+  };
+}
+
+function measureSummaryChars(doc) {
+  const hint = buildSummaryContext(doc).rawContent;
+  return `${doc.title || ''}\n${hint}`.length;
+}
+
+function selectSummarizeThenExpand(candidates, maxItems, maxChars) {
+  // Pass 1 — breadth. Pack summaries greedily under a share of the budget.
+  const summaryBudget = Math.max(
+    Math.floor(maxChars * SUMMARY_RESERVE_FRACTION),
+    measureSummaryChars({ title: '', content: '' }) + 1,
+  );
+  const selected = [];
+  let usedChars = 0;
+  let skippedByMaxChars = 0;
+
+  for (const item of candidates) {
+    if (selected.length >= maxItems) break;
+
+    const summaryLen = measureSummaryChars(item.doc);
+    if (usedChars + summaryLen > summaryBudget) {
+      skippedByMaxChars += 1;
+      continue;
+    }
+
+    selected.push({
+      id: item.doc.id,
+      namespace: item.doc.namespace,
+      title: item.doc.title,
+      structuredContext: buildSummaryContext(item.doc),
+      tags: item.doc.tags || [],
+      score: item.score,
+      tier: 'summary',
+      _doc: item.doc,
+      _summaryLen: summaryLen,
+    });
+    usedChars += summaryLen;
+  }
+
+  // Pass 2 — depth. Upgrade top-ranked summaries to full items while the
+  // overall char budget can absorb the delta. Walks in current (score) order
+  // so the most relevant docs are expanded first.
+  let expandedCount = 0;
+  for (const entry of selected) {
+    const fullLen = measureDocumentChars(entry._doc);
+    const delta = fullLen - entry._summaryLen;
+    if (delta <= 0) continue; // already at or under summary size; leave it.
+    if (usedChars + delta > maxChars) continue;
+
+    entry.structuredContext = buildStructuredContext(entry._doc);
+    entry.tier = 'expanded';
+    usedChars += delta;
+    expandedCount += 1;
+  }
+
+  // Strip the private helpers before returning — they're builder-only state.
+  const items = selected.map(({ _doc, _summaryLen, ...rest }) => rest);
+
+  return {
+    items,
+    usedChars,
+    skippedByMaxChars,
+    retrieval: {
+      strategy: 'summarize-then-expand',
+      themeCount: 0,
+      semanticCount: 0,
+      selectedThemes: [],
+      selectedSemanticGroups: [],
+      representativeCount: items.length,
+      expandedEpisodes: expandedCount,
+      summaryCount: items.length - expandedCount,
+      summaryBudget,
+      queryCoverage: null,
+      initialCoverage: null,
+      coverageTarget: null,
+    },
+  };
+}
+
 /* ── Memex-style Indexed Memory ────────────────────────────────── */
 
 const MEMEX_INDEX_FILE = 'memex-index.jsonl';
@@ -750,17 +881,38 @@ function constructMemexPack({ query = '', maxItems = 8, maxChars = 6000, namespa
   return pack;
 }
 
-function constructContextPack({ query = '', maxItems = 8, maxChars = 6000, namespaces = [] } = {}) {
+function constructContextPack({
+  query = '',
+  maxItems = 8,
+  maxChars = 6000,
+  namespaces = [],
+  strategy = null,
+  summarizeThenExpand = false,
+} = {}) {
   const normalizedNamespaces = normalizeNamespaces(namespaces);
   const tokens = tokenizeQuery(query);
   const sourceHash = getSourceHash(normalizedNamespaces);
 
-  const cacheHit = findSemanticCacheHit({
-    query,
-    namespaces: normalizedNamespaces,
-    maxItems,
-    maxChars,
-  });
+  // Resolve the effective strategy. Explicit `strategy` wins; otherwise
+  // `summarizeThenExpand: true` flips the flag. Default remains auto
+  // (flat | hierarchical) so callers that don't opt in keep their cached
+  // packs addressable.
+  const effectiveStrategy = strategy
+    || (summarizeThenExpand ? 'summarize-then-expand' : null);
+
+  // Skip the semantic cache for summarize-then-expand packs. The cache key
+  // is (namespaces, maxItems, maxChars) — it doesn't include the strategy,
+  // so a cached flat pack would be served to an STE caller (and vice versa)
+  // with the wrong shape. Cheaper to recompute than to extend the cache key
+  // and invalidate every entry on disk.
+  const cacheHit = effectiveStrategy === 'summarize-then-expand'
+    ? null
+    : findSemanticCacheHit({
+      query,
+      namespaces: normalizedNamespaces,
+      maxItems,
+      maxChars,
+    });
 
   if (cacheHit) {
     const packId = `pack_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -796,25 +948,51 @@ function constructContextPack({ query = '', maxItems = 8, maxChars = 6000, names
     .sort((a, b) => b.score - a.score);
 
   const hierarchicalRetrievalEnabled = shouldUseHierarchicalRetrieval(normalizedNamespaces);
-  const selection = hierarchicalRetrievalEnabled
-    ? retrieveHierarchicalDocuments({
+  let selection;
+  if (effectiveStrategy === 'summarize-then-expand') {
+    // Explicit opt-in: bypass the hierarchical path entirely. The
+    // summarize-then-expand selector assumes a flat ranked list where each
+    // item is a single episode, and mixing it with theme-based hierarchical
+    // retrieval would double-compress the top-of-list.
+    selection = selectSummarizeThenExpand(candidates, maxItems, maxChars);
+  } else if (hierarchicalRetrievalEnabled) {
+    selection = retrieveHierarchicalDocuments({
       documents: candidates.map((candidate) => candidate.doc),
       query,
       maxItems,
       maxChars,
       scorer: scoreDocument,
       measureDocument: measureDocumentChars,
-    })
-    : selectFlatContextItems(candidates, maxItems, maxChars);
+    });
+  } else {
+    selection = selectFlatContextItems(candidates, maxItems, maxChars);
+  }
 
-  const selected = selection.items.map((doc) => ({
-    id: doc.id,
-    namespace: doc.namespace,
-    title: doc.title,
-    structuredContext: buildStructuredContext(doc),
-    tags: doc.tags || [],
-    score: scoreDocument(doc, tokens),
-  }));
+  // The flat + hierarchical paths emit raw docs; summarize-then-expand emits
+  // fully-shaped items that already carry structuredContext and a `tier`
+  // marker. Detect the shape so we don't double-canonicalize STE items
+  // (which would re-expand every summary into full content).
+  const selected = selection.items.map((item) => {
+    if (item && item.structuredContext) {
+      return {
+        id: item.id,
+        namespace: item.namespace,
+        title: item.title,
+        structuredContext: item.structuredContext,
+        tags: item.tags || [],
+        score: typeof item.score === 'number' ? item.score : scoreDocument(item, tokens),
+        ...(item.tier ? { tier: item.tier } : {}),
+      };
+    }
+    return {
+      id: item.id,
+      namespace: item.namespace,
+      title: item.title,
+      structuredContext: buildStructuredContext(item),
+      tags: item.tags || [],
+      score: scoreDocument(item, tokens),
+    };
+  });
   const usedChars = selection.usedChars;
   const skippedByMaxChars = selection.skippedByMaxChars;
 
@@ -848,19 +1026,23 @@ function constructContextPack({ query = '', maxItems = 8, maxChars = 6000, names
   };
 
   appendJsonl(contextFsPath(NAMESPACES.provenance, 'packs.jsonl'), pack);
-  appendSemanticCacheEntry({
-    id: `cache_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-    timestamp: nowIso(),
-    key: buildSemanticCacheKey({
-      namespaces: normalizedNamespaces,
-      maxItems,
-      maxChars,
-    }),
-    query,
-    tokens,
-    sourceHash,
-    pack,
-  });
+  // Symmetric with the cache read: don't persist STE packs into the shared
+  // semantic cache because the cache key is strategy-agnostic.
+  if (effectiveStrategy !== 'summarize-then-expand') {
+    appendSemanticCacheEntry({
+      id: `cache_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      timestamp: nowIso(),
+      key: buildSemanticCacheKey({
+        namespaces: normalizedNamespaces,
+        maxItems,
+        maxChars,
+      }),
+      query,
+      tokens,
+      sourceHash,
+      pack,
+    });
+  }
   recordProvenance({
     type: 'context_pack_constructed',
     packId,
