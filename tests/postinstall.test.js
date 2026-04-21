@@ -40,7 +40,7 @@ describe('postinstall banner', () => {
   it('includes checkout URL in stderr output', () => {
     const { stderr, exitCode } = runPostinstall();
     assert.equal(exitCode, 0);
-    const checkoutUrl = extractHttpUrls(stderr).find((candidate) => new URL(candidate).host === 'buy.stripe.com');
+    const checkoutUrl = extractHttpUrls(stderr).find((candidate) => candidate === PRO_MONTHLY_PAYMENT_LINK);
     assert.equal(checkoutUrl, PRO_MONTHLY_PAYMENT_LINK, 'should include checkout URL');
     assert.ok(stderr.includes('ThumbGate'), 'should mention ThumbGate');
     assert.ok(stderr.includes('npx thumbgate'), 'should include quick start');
