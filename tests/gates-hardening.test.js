@@ -50,7 +50,7 @@ function createHarness() {
   execSync('git config commit.gpgsign false', { cwd: repoDir, stdio: 'ignore' });
   fs.writeFileSync(filePath, 'base\n');
   execSync('git add safe-file.txt', { cwd: repoDir, stdio: 'ignore' });
-  execSync('git commit -m "init"', { cwd: repoDir, stdio: 'ignore' });
+  execSync('git commit --no-verify -m "init"', { cwd: repoDir, stdio: 'ignore' });
   fs.writeFileSync(filePath, 'changed\n');
 
   const gates = require('../scripts/gates-engine');

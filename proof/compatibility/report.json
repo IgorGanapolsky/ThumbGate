@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-06T15:30:43.554Z",
+  "generatedAt": "2026-04-21T19:08:04.165Z",
   "checks": [
     {
       "name": "api.healthz",
@@ -73,8 +73,8 @@
       "name": "api.context.construct",
       "passed": true,
       "details": {
-        "packId": "pack_1775489445547_su9va2",
-        "items": 3
+        "packId": "pack_1776798484363_0fjc9o",
+        "items": 2
       }
     },
     {
@@ -117,7 +117,7 @@
       "name": "mcp.tools.list",
       "passed": true,
       "details": {
-        "tools": 50
+        "tools": 75
       }
     },
     {
@@ -132,7 +132,7 @@
       "passed": true,
       "details": {
         "rootCauseCategory": "intent_plan_misalignment",
-        "toolSchemaCount": 41
+        "toolSchemaCount": 57
       }
     },
     {
@@ -153,7 +153,7 @@
       "name": "mcp.tools.call.get_business_metrics",
       "passed": true,
       "details": {
-        "generatedAt": "2026-04-06T15:30:45.736Z"
+        "generatedAt": "2026-04-21T19:08:06.373Z"
       }
     },
     {
@@ -167,7 +167,7 @@
       "name": "mcp.tools.call.recall.codegraph",
       "passed": true,
       "details": {
-        "contentLength": 1150
+        "contentLength": 865
       }
     },
     {
@@ -236,8 +236,8 @@
       "name": "mcp.policy.profile_differentiation",
       "passed": true,
       "details": {
-        "defaultTools": 41,
-        "lockedTools": 10
+        "defaultTools": 61,
+        "lockedTools": 16
       }
     }
   ],
