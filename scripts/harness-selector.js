@@ -16,8 +16,10 @@
  */
 
 const path = require('path');
+const fs = require('fs');
 
 const HARNESS_DIR = path.join(__dirname, '..', 'config', 'gates');
+const ROOT_DIR = path.join(__dirname, '..');
 
 const HARNESSES = Object.freeze({
   deploy: path.join(HARNESS_DIR, 'deploy.json'),
@@ -113,6 +115,132 @@ function getHarnessPath(name) {
   return HARNESSES[name] ?? null;
 }
 
+function estimateTokenCount(text, charsPerToken = 4) {
+  const payload = String(text || '');
+  const divisor = Math.max(1, Number(charsPerToken) || 4);
+  return Math.ceil(Buffer.byteLength(payload, 'utf8') / divisor);
+}
+
+function readIfExists(filePath) {
+  try {
+    return fs.readFileSync(filePath, 'utf8');
+  } catch {
+    return '';
+  }
+}
+
+function readJsonIfExists(filePath) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function collectDefaultHarnessAuditInputs(rootDir = ROOT_DIR) {
+  const globalDocNames = ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md'];
+  const globalDocs = globalDocNames.map((name) => {
+    const content = readIfExists(path.join(rootDir, name));
+    return {
+      name,
+      chars: Buffer.byteLength(content, 'utf8'),
+      estimatedTokens: estimateTokenCount(content),
+      exists: content.length > 0,
+    };
+  });
+  const toolIndex = readJsonIfExists(path.join(rootDir, '.well-known', 'mcp', 'tools.json'));
+  const tools = Array.isArray(toolIndex && toolIndex.tools) ? toolIndex.tools : [];
+
+  return {
+    globalDocs,
+    mcpToolCount: tools.length,
+    progressiveToolIndexPresent: tools.some((tool) => typeof tool.schemaUrl === 'string'),
+    specializedHarnesses: listHarnesses(),
+  };
+}
+
+function scoreHarnessAudit(inputs = {}, options = {}) {
+  const globalDocs = Array.isArray(inputs.globalDocs) ? inputs.globalDocs : [];
+  const totalDocTokens = globalDocs.reduce((sum, doc) => sum + Number(doc.estimatedTokens || 0), 0);
+  const totalDocChars = globalDocs.reduce((sum, doc) => sum + Number(doc.chars || 0), 0);
+  const docTokenBudget = Number(options.docTokenBudget || 9000);
+  const docsOverBudget = totalDocTokens > docTokenBudget;
+  const mcpToolCount = Number(inputs.mcpToolCount || 0);
+  const progressiveToolIndexPresent = Boolean(inputs.progressiveToolIndexPresent);
+  const specializedHarnesses = Array.isArray(inputs.specializedHarnesses) ? inputs.specializedHarnesses : [];
+  const hasSpecializedHarnesses = specializedHarnesses.length >= 3;
+  const missingDocs = globalDocs.filter((doc) => doc.exists === false).map((doc) => doc.name);
+  const observations = [];
+  const recommendations = [];
+
+  let score = 100;
+  if (docsOverBudget) {
+    const overageRatio = totalDocTokens / docTokenBudget;
+    score -= Math.min(35, Math.ceil((overageRatio - 1) * 22));
+    observations.push(`Global agent docs use about ${totalDocTokens} tokens against a ${docTokenBudget} token harness budget.`);
+    recommendations.push('Move verbose runbooks into skills, guides, or tool help, then leave AGENTS.md/CLAUDE.md as short discovery pointers.');
+  } else {
+    observations.push(`Global agent docs stay within the ${docTokenBudget} token harness budget.`);
+  }
+
+  if (!progressiveToolIndexPresent && mcpToolCount > 12) {
+    score -= 25;
+    observations.push(`${mcpToolCount} MCP tools appear preload-only, which can push agents toward instruction bloat.`);
+    recommendations.push('Expose a lightweight MCP tool index with per-tool schema URLs so agents fetch schemas only when needed.');
+  } else if (progressiveToolIndexPresent) {
+    observations.push('Progressive MCP tool discovery is available through schema URLs.');
+  }
+
+  if (!hasSpecializedHarnesses) {
+    score -= 18;
+    observations.push('Fewer than three specialized gate harnesses are available for risky workflows.');
+    recommendations.push('Add workflow-specific harnesses for deploy, code-edit, and database-write actions so default gates stay lean.');
+  } else {
+    observations.push(`Specialized harnesses are available: ${specializedHarnesses.join(', ')}.`);
+  }
+
+  if (missingDocs.length > 0) {
+    score -= Math.min(12, missingDocs.length * 4);
+    recommendations.push(`Restore missing global discovery docs or remove stale references: ${missingDocs.join(', ')}.`);
+  }
+
+  if (recommendations.length === 0) {
+    recommendations.push('Keep using Research -> Plan -> Implement prompts and delegate only subtasks whose summaries are enough for the main context.');
+  } else {
+    recommendations.push('Use Research -> Plan -> Implement prompts so implementation starts after the harness has isolated only the needed context.');
+  }
+
+  const normalizedScore = Math.max(0, Math.min(100, score));
+  const status = normalizedScore >= 85 ? 'compounding' : normalizedScore >= 65 ? 'watch' : 'bloated';
+
+  return {
+    name: 'thumbgate-harness-optimization-audit',
+    status,
+    score: normalizedScore,
+    roiPriority: normalizedScore < 85 ? 'conversion' : 'retention',
+    totals: {
+      globalDocChars: totalDocChars,
+      globalDocEstimatedTokens: totalDocTokens,
+      mcpToolCount,
+      specializedHarnessCount: specializedHarnesses.length,
+    },
+    signals: {
+      docsOverBudget,
+      progressiveToolIndexPresent,
+      hasSpecializedHarnesses,
+      missingDocs,
+    },
+    observations,
+    recommendations,
+  };
+}
+
+function buildHarnessOptimizationAudit(options = {}) {
+  const rootDir = options.rootDir || ROOT_DIR;
+  const inputs = options.inputs || collectDefaultHarnessAuditInputs(rootDir);
+  return scoreHarnessAudit(inputs, options);
+}
+
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
@@ -140,6 +268,10 @@ module.exports = {
   selectHarnessName,
   listHarnesses,
   getHarnessPath,
+  estimateTokenCount,
+  collectDefaultHarnessAuditInputs,
+  scoreHarnessAudit,
+  buildHarnessOptimizationAudit,
   extractCommandText,
   HARNESSES,
   DEPLOY_PATTERNS,

@@ -72,6 +72,20 @@ ThumbGate implements continual learning across all three layers identified by La
 
 This three-layer architecture means ThumbGate improves agent behavior at every level: context injection for immediate effect, harness-level rules for session-wide enforcement, and model-level export for permanent behavioral change.
 
+## AI Agent Harness Optimization
+
+ThumbGate improves an AI agent harness by reducing prompt bloat and converting operator feedback into runtime enforcement. The harness is the layer around the model that decides which instructions, tools, context packs, approval rules, and verification gates are available before an agent acts.
+
+The high-ROI pattern is progressive disclosure:
+
+- Keep global files such as AGENTS.md, CLAUDE.md, and GEMINI.md lean enough for a human to review.
+- Put long workflow guidance into skills, guides, CLI help, or ContextFS packs that agents retrieve only when relevant.
+- Publish lightweight MCP indexes with per-tool schema URLs instead of preloading every tool schema into the prompt.
+- Select specialized gate harnesses for deploy, code-edit, and database-write workflows instead of loading every gate for every tool call.
+- Capture thumbs-down feedback from harness failures and promote repeated patterns into Pre-Action Gates.
+
+The CLI command `npx thumbgate harness-audit` scores global docs, progressive MCP discovery, and specialized harness coverage so teams can see whether their agent setup is compounding useful context or compounding instruction bloat.
+
 ## Enterprise Safety Framework Alignment
 
 ThumbGate's architecture maps directly to the enterprise safety framework pattern recommended by Google Cloud for agentic AI workflows (April 2026). Google Cloud's reference architecture routes every agent action through a Safety Framework gate before execution, with unsafe actions producing a canned response and safe actions proceeding to the Agentic Workflow, followed by a Quality Framework check on the output.

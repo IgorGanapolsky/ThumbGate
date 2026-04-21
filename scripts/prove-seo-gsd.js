@@ -125,6 +125,7 @@ async function run() {
           '/compare/speclock',
           '/compare/mem0',
           '/guides/pre-action-gates',
+          '/guides/agent-harness-optimization',
           '/guides/claude-code-feedback',
           '/guides/autoresearch-agent-safety',
         ]) {
@@ -150,6 +151,7 @@ async function run() {
           '/compare/speclock',
           '/compare/mem0',
           '/guides/pre-action-gates',
+          '/guides/agent-harness-optimization',
           '/guides/claude-code-feedback',
           '/guides/autoresearch-agent-safety',
         ]) {

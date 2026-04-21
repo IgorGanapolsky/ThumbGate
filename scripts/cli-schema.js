@@ -10,6 +10,27 @@
  * Groups: capture | discovery | gates | export | ops | advanced
  */
 
+function jsonFlag() {
+  return { name: 'json', type: 'boolean', description: 'Output as JSON' };
+}
+
+function discoveryCommand({
+  name,
+  aliases = [],
+  description,
+  mcpTool,
+  flags = [],
+}) {
+  return {
+    name,
+    aliases,
+    description,
+    group: 'discovery',
+    ...(mcpTool ? { mcpTool } : {}),
+    flags,
+  };
+}
+
 const CLI_COMMANDS = [
   // -------------------------------------------------------------------------
   // Capture
@@ -99,14 +120,20 @@ const CLI_COMMANDS = [
       { name: 'json',   type: 'boolean', description: 'Output as JSON' },
     ],
   },
-  {
+  discoveryCommand({
     name: 'doctor',
     description: 'Audit runtime isolation, bootstrap context, and permission tier',
-    group: 'discovery',
+    flags: [jsonFlag()],
+  }),
+  discoveryCommand({
+    name: 'harness-audit',
+    aliases: ['harness'],
+    description: 'Score global docs, MCP discovery, and specialized gate harnesses',
     flags: [
-      { name: 'json', type: 'boolean', description: 'Output as JSON' },
+      jsonFlag(),
+      { name: 'doc-token-budget', type: 'number', description: 'Global docs budget (default 9000)' },
     ],
-  },
+  }),
   {
     name: 'lesson-health',
     aliases: ['stale'],
