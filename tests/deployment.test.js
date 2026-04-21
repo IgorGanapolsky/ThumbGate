@@ -511,21 +511,26 @@ test('SonarCloud workflow refreshes main and stamps scans with the package versi
   assert.match(workflow, /-Dsonar\.projectVersion=\$\{\{\s*steps\.sonar-mainline-version\.outputs\.value\s*\}\}/);
 });
 
-test('SonarCloud workflow waits on quality gates only for PR and merge-queue scans', () => {
+test('SonarCloud workflow polls quality gates only for PR and merge-queue scans', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'sonarcloud.yml'), 'utf8');
-  const qualityGateStep = workflow.match(/- name: Run SonarCloud scan \(quality gate\)[\s\S]*?(?=\n\n      - name: Run SonarCloud scan \(default branch refresh\))/);
+  const pullRequestScanStep = workflow.match(/- name: Run SonarCloud scan \(pull request \/ merge queue\)[\s\S]*?(?=\n\n      - name: Check SonarCloud quality gate)/);
+  const qualityGateStep = workflow.match(/- name: Check SonarCloud quality gate[\s\S]*?(?=\n\n      - name: Run SonarCloud scan \(default branch refresh\))/);
   const defaultBranchStep = workflow.match(/- name: Run SonarCloud scan \(default branch refresh\)[\s\S]*$/);
 
+  assert.ok(pullRequestScanStep, 'pull request scan step should exist');
   assert.ok(qualityGateStep, 'quality gate step should exist');
   assert.ok(defaultBranchStep, 'default branch refresh step should exist');
   assert.match(workflow, /github\.event\.pull_request\.user\.login == 'dependabot\[bot\]'/);
+  assert.match(workflow, /SONAR_TOKEN:\s*\$\{\{\s*secrets\.SONAR_TOKEN\s*\}\}/);
+  assert.match(pullRequestScanStep[0], /github\.event_name == 'pull_request' \|\| github\.event_name == 'merge_group'/);
+  assert.match(pullRequestScanStep[0], /!\(github\.event_name == 'pull_request' && github\.event\.pull_request\.user\.login == 'dependabot\[bot\]'\)/);
+  assert.match(pullRequestScanStep[0], /uses:\s*SonarSource\/sonarqube-scan-action@v7\.1\.0/);
+  assert.match(pullRequestScanStep[0], /-Dsonar\.projectVersion=\$\{\{\s*steps\.package-version\.outputs\.version\s*\}\}/);
+  assert.doesNotMatch(pullRequestScanStep[0], /qualitygate\.wait=true/);
   assert.match(qualityGateStep[0], /github\.event_name == 'pull_request' \|\| github\.event_name == 'merge_group'/);
   assert.match(qualityGateStep[0], /!\(github\.event_name == 'pull_request' && github\.event\.pull_request\.user\.login == 'dependabot\[bot\]'\)/);
-  assert.match(qualityGateStep[0], /uses:\s*SonarSource\/sonarqube-scan-action@v7\.1\.0/);
-  assert.match(workflow, /SONAR_TOKEN:\s*\$\{\{\s*secrets\.SONAR_TOKEN\s*\}\}/);
-  assert.match(qualityGateStep[0], /-Dsonar\.projectVersion=\$\{\{\s*steps\.package-version\.outputs\.version\s*\}\}/);
-  assert.match(qualityGateStep[0], /-Dsonar\.qualitygate\.wait=true/);
-  assert.match(qualityGateStep[0], /-Dsonar\.qualitygate\.timeout=600/);
+  assert.match(qualityGateStep[0], /uses:\s*SonarSource\/sonarqube-quality-gate-action@v1\.2\.0/);
+  assert.match(qualityGateStep[0], /pollingTimeoutSec:\s*600/);
   assert.doesNotMatch(defaultBranchStep[0], /qualitygate\.wait=true/);
 });
 
