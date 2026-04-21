@@ -45,3 +45,6 @@ undefined/
 
 # Generated explainer-video artifacts (regenerable via scripts/render-demo-video/*)
 scripts/render-demo-video/narration.mp3
+
+# Marketing artifacts (local-only, contain large PNGs and local creds)
+.marketing/

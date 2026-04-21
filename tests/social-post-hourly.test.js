@@ -3,6 +3,8 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 
 const {
+  DAILY_ANGLES,
+  generatePost,
   handlePostFailure,
   isCliEntrypoint,
   isNonFatalPostFailure,
@@ -91,4 +93,34 @@ test('daily social poster detects its CLI entrypoint by filename', () => {
   assert.equal(isCliEntrypoint({ filename: scriptPath }), true);
   assert.equal(isCliEntrypoint({ filename: __filename }), false);
   assert.equal(isCliEntrypoint(null), false);
+});
+
+// Funnel-attribution regression guard (2026-04-21): every daily post that
+// ships a CTA link must route traffic through thumbgate-production so the
+// funnel ledger (scripts/funnel/*) can capture view → install → paid. An
+// earlier variant routed all CTAs at github.com only, producing 0 funnel
+// events across 404 published posts. Do not regress.
+test('every angle with a CTA links to thumbgate-production, not only github', () => {
+  const ctaAngles = ['horror-story', 'tip', 'product-demo'];
+  const landingDomain = 'thumbgate-production.up.railway.app';
+
+  for (const angle of DAILY_ANGLES) {
+    const content = generatePost(angle);
+    // Every angle known to contain a CTA link must reach the tracked domain.
+    if (ctaAngles.includes(angle)) {
+      assert.ok(
+        content.includes(landingDomain),
+        `angle "${angle}" must include ${landingDomain} for funnel attribution; got:\n${content}`
+      );
+    }
+    // No angle should emit a github.com link as the only outbound destination.
+    const hasGithub = content.includes('github.com/IgorGanapolsky/ThumbGate');
+    const hasLanding = content.includes(landingDomain);
+    if (hasGithub) {
+      assert.ok(
+        hasLanding,
+        `angle "${angle}" links to github.com without also linking to the tracked landing page; add a ${landingDomain} CTA:\n${content}`
+      );
+    }
+  }
 });

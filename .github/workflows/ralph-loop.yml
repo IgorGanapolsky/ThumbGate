@@ -58,6 +58,10 @@ jobs:
       REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
       LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
       LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
+      # Bluesky reply monitor (AT Protocol direct). Drafts are queued to
+      # .thumbgate/reply-drafts.jsonl for human review — never auto-posts.
+      BLUESKY_HANDLE: ${{ secrets.BLUESKY_HANDLE }}
+      BLUESKY_APP_PASSWORD: ${{ secrets.BLUESKY_APP_PASSWORD }}
       PLAUSIBLE_API_KEY: ${{ secrets.PLAUSIBLE_API_KEY }}
       PLAUSIBLE_SITE_ID: ${{ secrets.PLAUSIBLE_SITE_ID }}
 
