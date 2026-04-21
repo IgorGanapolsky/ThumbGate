@@ -16,20 +16,23 @@
  * Usage:
  *   node scripts/social-reply-monitor-bluesky.js            # poll + queue drafts
  *   node scripts/social-reply-monitor-bluesky.js --dry-run  # poll, log what would be queued
- *   node scripts/social-reply-monitor-bluesky.js --once     # single pass (default, no --loop yet)
  *
  * State: .thumbgate/reply-monitor-state.json — tracks replied-to notification URIs.
  */
 
-const fs = require('fs');
-const path = require('path');
-const https = require('https');
+const fs = require('node:fs');
+const path = require('node:path');
 const { loadLocalEnv } = require('./social-analytics/load-env');
 const { generateReply } = require('./social-reply-monitor');
+const {
+  atprotoRequest,
+  createSession,
+  isTransientAtprotoError,
+  DEFAULT_PDS_HOST,
+} = require('./lib/bluesky-atproto');
 
 loadLocalEnv();
 
-const PDS_HOST = 'bsky.social';
 const STATE_FILE = path.resolve(__dirname, '..', '.thumbgate', 'reply-monitor-state.json');
 const DRAFT_FILE = path.resolve(__dirname, '..', '.thumbgate', 'reply-drafts.jsonl');
 
@@ -55,65 +58,14 @@ function saveDraft(draft) {
   fs.appendFileSync(DRAFT_FILE, JSON.stringify(draft) + '\n');
 }
 
-function request(method, host, pathUrl, { headers = {}, body } = {}) {
-  return new Promise((resolve, reject) => {
-    const payload = body ? JSON.stringify(body) : null;
-    const req = https.request({
-      host,
-      path: pathUrl,
-      method,
-      headers: {
-        ...headers,
-        ...(payload ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) } : {}),
-      },
-    }, (res) => {
-      let buf = '';
-      res.on('data', (c) => { buf += c; });
-      res.on('end', () => {
-        try {
-          const json = buf ? JSON.parse(buf) : {};
-          resolve({ status: res.statusCode, json });
-        } catch (e) {
-          resolve({ status: res.statusCode, json: {}, raw: buf });
-        }
-      });
-    });
-    req.on('error', reject);
-    if (payload) req.write(payload);
-    req.end();
-  });
-}
-
-function pdsHostFromDidDoc(didDoc) {
-  const svc = didDoc && Array.isArray(didDoc.service) ? didDoc.service : [];
-  const pds = svc.find((s) => s && (s.id === '#atproto_pds' || s.type === 'AtprotoPersonalDataServer'));
-  if (!pds || !pds.serviceEndpoint) return null;
-  try {
-    return new URL(pds.serviceEndpoint).host;
-  } catch { return null; }
-}
-
-async function createSession() {
-  const identifier = process.env.BLUESKY_HANDLE;
-  const password = process.env.BLUESKY_APP_PASSWORD;
-  if (!identifier || !password) {
-    throw new Error('Missing BLUESKY_HANDLE or BLUESKY_APP_PASSWORD');
-  }
-  const { status, json } = await request('POST', PDS_HOST, '/xrpc/com.atproto.server.createSession', {
-    body: { identifier, password },
-  });
-  if (status !== 200 || !json.accessJwt) {
-    throw new Error(`Bluesky auth failed (status=${status}): ${json.error || 'unknown'}`);
-  }
-  const pdsHost = pdsHostFromDidDoc(json.didDoc) || PDS_HOST;
-  return { accessJwt: json.accessJwt, did: json.did, handle: json.handle, pdsHost };
-}
-
 async function listNotifications(session, limit = 40) {
-  const host = session.pdsHost || PDS_HOST;
-  const { status, json } = await request('GET', host, `/xrpc/app.bsky.notification.listNotifications?limit=${limit}`, {
-    headers: { Authorization: `Bearer ${session.accessJwt}` },
-  });
+  const host = session.pdsHost || DEFAULT_PDS_HOST;
+  const { status, json } = await atprotoRequest(
+    'GET',
+    host,
+    `/xrpc/app.bsky.notification.listNotifications?limit=${limit}`,
+    { headers: { Authorization: `Bearer ${session.accessJwt}` } },
+  );
   if (status !== 200) {
     throw new Error(`listNotifications failed on ${host}: ${status} ${json.error || ''}`);
   }
@@ -125,6 +77,22 @@ function extractPostText(notification) {
   if (!rec) return '';
   if (typeof rec.text === 'string') return rec.text;
   return '';
+}
+
+function buildReplyContext(notification) {
+  const text = extractPostText(notification);
+  const reply = notification.record && notification.record.reply;
+  return {
+    platform: 'bluesky',
+    author: (notification.author && notification.author.handle) || 'unknown',
+    isQuestion: /\?/.test(text),
+    notificationUri: notification.uri,
+    notificationCid: notification.cid,
+    rootUri: (reply && reply.root && reply.root.uri) || notification.uri,
+    rootCid: (reply && reply.root && reply.root.cid) || notification.cid,
+    parentUri: notification.uri,
+    parentCid: notification.cid,
+  };
 }
 
 async function monitor() {
@@ -145,18 +113,7 @@ async function monitor() {
     const text = extractPostText(n);
     if (!text) { skipped += 1; continue; }
 
-    const context = {
-      platform: 'bluesky',
-      author: (n.author && n.author.handle) || 'unknown',
-      isQuestion: /\?/.test(text),
-      notificationUri: n.uri,
-      notificationCid: n.cid,
-      rootUri: (n.record && n.record.reply && n.record.reply.root && n.record.reply.root.uri) || n.uri,
-      rootCid: (n.record && n.record.reply && n.record.reply.root && n.record.reply.root.cid) || n.cid,
-      parentUri: n.uri,
-      parentCid: n.cid,
-    };
-
+    const context = buildReplyContext(n);
     const reply = await generateReply(text, context);
     if (!reply) { skipped += 1; continue; }
 
@@ -196,19 +153,18 @@ async function monitor() {
     saveState(state);
   }
 
-  console.log(`[bluesky-monitor] notifications=${notifications.length} actionable=${actionable.length} queued=${queued} skipped=${skipped} dryRun=${DRY_RUN}`);
+  console.log(
+    `[bluesky-monitor] notifications=${notifications.length} actionable=${actionable.length} queued=${queued} skipped=${skipped} dryRun=${DRY_RUN}`,
+  );
   return { notifications: notifications.length, actionable: actionable.length, queued, skipped };
-}
-
-function isTransient(err) {
-  const msg = String(err && err.message || '');
-  return /\b(502|503|504|UpstreamFailure|ECONNRESET|ETIMEDOUT|ENOTFOUND)\b/.test(msg);
 }
 
 if (require.main === module) {
   monitor().catch((err) => {
-    if (isTransient(err)) {
-      console.warn(`[bluesky-monitor] transient upstream error — will retry next tick: ${err.message}`);
+    if (isTransientAtprotoError(err)) {
+      console.warn(
+        `[bluesky-monitor] transient upstream error — will retry next tick: ${err.message}`,
+      );
       process.exit(0);
     }
     console.error(`[bluesky-monitor] FAIL: ${err.message}`);
@@ -216,4 +172,10 @@ if (require.main === module) {
   });
 }
 
-module.exports = { monitor, createSession, listNotifications };
+module.exports = {
+  monitor,
+  createSession,
+  listNotifications,
+  extractPostText,
+  buildReplyContext,
+};
