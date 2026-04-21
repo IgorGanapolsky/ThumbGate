@@ -744,6 +744,42 @@ test('run blocks git push via stdin-like input', () => {
   cleanupStateFiles();
 });
 
+test('run blocks destructive local git cleanup by default', () => {
+  cleanupStateFiles();
+  const resetOutput = JSON.parse(run({
+    tool_name: 'Bash',
+    tool_input: { command: 'git reset --hard HEAD' },
+  }));
+  assert.equal(resetOutput.hookSpecificOutput.permissionDecision, 'deny');
+  assert.match(resetOutput.hookSpecificOutput.permissionDecisionReason, /git-reset-hard/);
+
+  const cleanOutput = JSON.parse(run({
+    tool_name: 'Bash',
+    tool_input: { command: 'git clean -fd' },
+  }));
+  assert.equal(cleanOutput.hookSpecificOutput.permissionDecision, 'deny');
+  assert.match(cleanOutput.hookSpecificOutput.permissionDecisionReason, /git-clean-force/);
+  cleanupStateFiles();
+});
+
+test('run blocks broad rm -rf against root or home by default', () => {
+  cleanupStateFiles();
+  const rootOutput = JSON.parse(run({
+    tool_name: 'Bash',
+    tool_input: { command: 'rm -rf /' },
+  }));
+  assert.equal(rootOutput.hookSpecificOutput.permissionDecision, 'deny');
+  assert.match(rootOutput.hookSpecificOutput.permissionDecisionReason, /rm-rf-home-or-root/);
+
+  const homeOutput = JSON.parse(run({
+    tool_name: 'Bash',
+    tool_input: { command: 'rm -rf $HOME/tmp' },
+  }));
+  assert.equal(homeOutput.hookSpecificOutput.permissionDecision, 'deny');
+  assert.match(homeOutput.hookSpecificOutput.permissionDecisionReason, /rm-rf-home-or-root/);
+  cleanupStateFiles();
+});
+
 test('run passes through non-matching commands', () => {
   const output = JSON.parse(run({
     tool_name: 'Bash',
