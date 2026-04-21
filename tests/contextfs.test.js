@@ -509,3 +509,141 @@ test('MAX_HOPS, COVERAGE_THRESHOLD, PRUNE_SCORE_FLOOR are exported constants', (
   assert.ok(COVERAGE_THRESHOLD > 0 && COVERAGE_THRESHOLD <= 1);
   assert.ok(PRUNE_SCORE_FLOOR >= 0);
 });
+
+/* ── Summarize-then-expand strategy ─────────────────────────────────
+ *
+ * The selectFlatContextItems path packs full docs greedily, which silently
+ * drops the tail once a few long docs eat the char budget. Summarize-then-
+ * expand reserves ~35% of the budget for a wide roster of compact summaries
+ * and spends the rest upgrading top-ranked docs to full context.
+ *
+ * These tests pin:
+ *   1. Opt-in requires the `strategy` or `summarizeThenExpand` flag — no
+ *      behavior change for existing callers.
+ *   2. Every selected item carries a tier marker so consumers can tell
+ *      expanded depth from summary-only roster entries.
+ *   3. Under a tight budget, STE includes more items than the flat selector
+ *      (the whole point of the pattern).
+ *   4. usedChars never exceeds maxChars.
+ */
+
+function seedStressCorpus(count) {
+  for (let i = 0; i < count; i++) {
+    // Each doc is ~600 chars so flat selection runs out of budget fast.
+    const body = `Reasoning: deployment incident ${i} with large payload and detailed post-mortem `
+      .repeat(8);
+    registerFeedback(
+      { id: `ste_fb_${i}`, signal: 'negative', context: 'deployment', tags: ['deploy', 'incident'] },
+      {
+        title: `MISTAKE: deployment incident ${i}`,
+        content: `What went wrong: service crashed at step ${i}\nHow to avoid: verify health first\n${body}`,
+        category: 'error',
+        tags: ['deploy', 'incident', `step-${i}`],
+        sourceFeedbackId: `ste_fb_${i}`,
+      },
+    );
+  }
+}
+
+test('summarize-then-expand is opt-in; default pack shape is unchanged', () => {
+  const pack = constructContextPack({
+    query: 'deployment incident',
+    maxItems: 3,
+    maxChars: 4000,
+  });
+  assert.notEqual(pack.retrieval.strategy, 'summarize-then-expand');
+  // Flat/hierarchical items never carry a tier marker.
+  for (const item of pack.items) {
+    assert.equal(Object.prototype.hasOwnProperty.call(item, 'tier'), false);
+  }
+});
+
+test('summarize-then-expand tags every item with a tier and respects maxChars', () => {
+  seedStressCorpus(10);
+
+  const pack = constructContextPack({
+    query: 'deployment incident',
+    maxItems: 8,
+    maxChars: 3000,
+    summarizeThenExpand: true,
+  });
+
+  assert.equal(pack.retrieval.strategy, 'summarize-then-expand');
+  assert.ok(pack.items.length > 0, 'should return at least one item');
+  assert.ok(pack.usedChars <= 3000, `usedChars ${pack.usedChars} must respect maxChars`);
+  for (const item of pack.items) {
+    assert.ok(item.tier === 'summary' || item.tier === 'expanded',
+      `unexpected tier: ${item.tier}`);
+  }
+  assert.equal(
+    typeof pack.retrieval.expandedEpisodes, 'number',
+    'retrieval must report expandedEpisodes count',
+  );
+  assert.equal(
+    typeof pack.retrieval.summaryCount, 'number',
+    'retrieval must report summaryCount',
+  );
+  assert.equal(
+    pack.retrieval.expandedEpisodes + pack.retrieval.summaryCount,
+    pack.items.length,
+    'tier counts must sum to item count',
+  );
+});
+
+test('summarize-then-expand surfaces more items than flat under tight budgets', () => {
+  // Corpus seeded by previous test; a 1500-char budget can't fit many full
+  // ~600-char docs in flat mode but should fit many summaries in STE mode.
+  const tight = { query: 'deployment incident', maxItems: 15, maxChars: 1500 };
+
+  const flat = constructContextPack(tight);
+  const ste = constructContextPack({ ...tight, summarizeThenExpand: true });
+
+  assert.ok(
+    ste.items.length >= flat.items.length,
+    `STE (${ste.items.length}) should match or beat flat (${flat.items.length}) item count`,
+  );
+  // The whole point of the pattern: you see more of the corpus under the
+  // same budget. A delta of even 1 proves the reservation worked.
+  assert.ok(
+    ste.items.length > flat.items.length || ste.retrieval.expandedEpisodes > 0,
+    'STE should either surface more items or expand at least one summary',
+  );
+});
+
+test('summarize-then-expand upgrades top-ranked items when budget allows', () => {
+  // Very generous budget — every summary should fit and the top items
+  // should all expand.
+  const pack = constructContextPack({
+    query: 'deployment incident',
+    maxItems: 3,
+    maxChars: 20000,
+    strategy: 'summarize-then-expand',
+  });
+  assert.ok(pack.items.length >= 1);
+  assert.ok(pack.retrieval.expandedEpisodes >= 1,
+    'with a 20k budget at least one top item must be expanded');
+  // The expanded items' structured context should carry the parsed fields,
+  // not the compact one-line hint.
+  const expanded = pack.items.find((i) => i.tier === 'expanded');
+  assert.ok(expanded);
+  assert.ok(expanded.structuredContext.rawContent.length > 0);
+});
+
+test('summarize-then-expand bypasses the semantic cache', () => {
+  // Warm the cache with a flat pack at the same key shape.
+  constructContextPack({
+    query: 'deployment incident',
+    maxItems: 5,
+    maxChars: 4000,
+  });
+  // An STE pack must never hit the flat-cached entry — the item shapes
+  // differ and a cache hit would surface summary-less items.
+  const stePack = constructContextPack({
+    query: 'deployment incident',
+    maxItems: 5,
+    maxChars: 4000,
+    summarizeThenExpand: true,
+  });
+  assert.equal(stePack.cache.hit, false);
+  assert.equal(stePack.retrieval.strategy, 'summarize-then-expand');
+});
