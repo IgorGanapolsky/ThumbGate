@@ -1167,6 +1167,15 @@ function captureFeedback(params) {
     timestamp: now,
   };
 
+  // Stamp a cross-session canonical hash on every memory record so future
+  // captures can short-circuit dedup without re-canonicalizing legacy entries.
+  // See scripts/lesson-canonical.js for the normalization contract.
+  try {
+    const { canonicalHash } = require('./lesson-canonical');
+    const hash = canonicalHash(memoryRecord);
+    if (hash) memoryRecord.canonicalHash = hash;
+  } catch (_canonErr) { /* canonical hashing is non-blocking */ }
+
   // Bayesian Belief Update (Project Bayes)
   try {
     const { updateBelief, shouldPrune } = require('./belief-update');

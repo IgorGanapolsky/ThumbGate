@@ -164,9 +164,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // published `thumbgate serve` with a closed MCP transport.
   // Bumped 230 → 232 (2026-04-20) to ship the read-only operator artifact
   // generator and its PR pulse dependency for published MCP/CLI runtimes.
+  // Bumped 232 → 234 (2026-04-20) for the cross-session canonical-hash
+  // module (`scripts/lesson-canonical.js`) required at runtime by
+  // lesson-synthesis / lesson-db / feedback-loop, plus one-file headroom.
   assert.ok(
-    manifest.fileCount <= 232,
-    `npm package should stay <= 232 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 234,
+    `npm package should stay <= 234 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -180,9 +183,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // to actively trim assets.
   // Bumped 2.95 MB → 2.97 MB (2026-04-20) for operator-artifacts.js plus the
   // existing PR manager it composes for the read-only PR pulse.
+  // Bumped 2.97 MB → 2.99 MB (2026-04-20) for scripts/lesson-canonical.js,
+  // loss-matrix expansion in config/enforcement.json, the contextfs
+  // summarize-then-expand selector, and feedback-loop / lesson-db
+  // canonical-dedup wiring that together added ~8 KB to the tarball.
   assert.ok(
-    manifest.unpackedSize <= 2_970_000,
-    `npm package should stay <= 2.97 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 2_990_000,
+    `npm package should stay <= 2.99 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
