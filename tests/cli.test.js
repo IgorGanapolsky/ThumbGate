@@ -885,8 +885,11 @@ describe('bin/cli.js', () => {
       env: unlicensedProEnv(testHomeDir),
     });
     assert.strictEqual(result.status, 0);
-    const checkoutUrl = extractHttpUrls(result.stdout).find((candidate) => new URL(candidate).host === 'buy.stripe.com');
-    assert.equal(checkoutUrl, PRO_MONTHLY_PAYMENT_LINK, 'Pro command should include the live Stripe checkout URL');
+    const expectedHost = new URL(PRO_MONTHLY_PAYMENT_LINK).host;
+    const checkoutUrl = extractHttpUrls(result.stdout).find((candidate) => {
+      try { return new URL(candidate).host === expectedHost; } catch { return false; }
+    });
+    assert.equal(checkoutUrl, PRO_MONTHLY_PAYMENT_LINK, 'Pro command should include the attributed Pro checkout URL');
     assert.ok(result.stdout.includes('$19/mo or $149/yr'), 'Pro command should include current pricing');
     assert.ok(result.stdout.includes('Legacy launcher'), 'Pro command should still mention legacy launcher path');
   });
