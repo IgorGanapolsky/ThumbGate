@@ -345,6 +345,71 @@ describe('lesson-db', () => {
       const id = upsertLesson(dedupDb, fb, makeMemoryRecord());
       assert.ok(id); // should insert, not dedup
     });
+
+    it('findDuplicate falls back to canonical hash when text drift defeats exact match', () => {
+      // Seed a lesson with one phrasing.
+      const seedDb = initDB(tmpDbPath());
+      try {
+        const seedEvt = makeFeedbackEvent({
+          whatToChange: 'Never force-push to main!!',
+          tags: ['git', 'main'],
+        });
+        upsertLesson(seedDb, seedEvt, makeMemoryRecord());
+        assert.equal(getStats(seedDb).total, 1);
+
+        // Exact-match path misses (different punctuation/stop words).
+        const exact = findDuplicate(seedDb, 'never FORCE PUSH the main.', ['main', 'git']);
+        assert.equal(exact, null);
+
+        // Canonical fallback path hits — both phrasings collapse to the same
+        // canonical signature after lowercase + punctuation strip + stop-word
+        // drop + sort.
+        const drifted = makeFeedbackEvent({
+          whatToChange: 'never FORCE PUSH the main.',
+          tags: ['main', 'git'],
+        });
+        const match = findDuplicate(
+          seedDb,
+          drifted.whatToChange,
+          drifted.tags,
+          { feedbackEvent: drifted, signal: 'negative' },
+        );
+        assert.ok(match, 'canonical fallback should find paraphrased duplicate');
+        assert.ok(match.id);
+      } finally {
+        seedDb.close();
+      }
+    });
+
+    it('findDuplicate canonical fallback respects signal polarity', () => {
+      const polarityDb = initDB(tmpDbPath());
+      try {
+        // Seed a POSITIVE lesson about force-push.
+        const positiveEvt = makeFeedbackEvent({
+          signal: 'positive',
+          whatToChange: 'force push worked great',
+          whatWorked: 'force push worked great',
+          tags: ['git'],
+        });
+        upsertLesson(polarityDb, positiveEvt, makeMemoryRecord({ importance: 'medium' }));
+
+        // A NEGATIVE lesson with the same canonical content must NOT merge.
+        const negativeEvt = makeFeedbackEvent({
+          signal: 'negative',
+          whatToChange: 'Force-push worked great!',
+          tags: ['git'],
+        });
+        const match = findDuplicate(
+          polarityDb,
+          negativeEvt.whatToChange,
+          negativeEvt.tags,
+          { feedbackEvent: negativeEvt, signal: 'negative' },
+        );
+        assert.equal(match, null, 'signal polarity mismatch must reject canonical collapse');
+      } finally {
+        polarityDb.close();
+      }
+    });
   });
 
   describe('compactLessons', () => {
