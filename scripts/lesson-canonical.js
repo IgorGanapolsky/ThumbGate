@@ -80,8 +80,10 @@ function canonicalizeText(input) {
   // 5. Sort to make the signature order-invariant for bag-of-words dedup.
   //    Two lessons that discuss the same tokens in different sentence order
   //    must collapse. This loses sequence signal but our target is dedup,
-  //    not classification.
-  stemmed.sort();
+  //    not classification. Explicit localeCompare keeps the sort stable
+  //    across Node versions that default to implementation-defined
+  //    comparison for non-ASCII tokens (SonarCloud S2871).
+  stemmed.sort((a, b) => a.localeCompare(b));
   return stemmed.join(' ');
 }
 
@@ -91,7 +93,7 @@ function normalizeTags(tags) {
     tags
       .map((t) => String(t || '').trim().toLowerCase())
       .filter(Boolean),
-  )].sort();
+  )].sort((a, b) => a.localeCompare(b));
 }
 
 /**
