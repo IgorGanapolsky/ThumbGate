@@ -75,7 +75,6 @@
     "scripts/context-engine.js",
     "scripts/contextfs.js",
     "scripts/conversation-context.js",
-    "scripts/creator-campaigns.js",
     "scripts/cross-encoder-reranker.js",
     "scripts/context-footprint.js",
     "scripts/codex-self-heal.js",

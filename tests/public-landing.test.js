@@ -354,6 +354,8 @@ test('public landing page internally links to comparison and guide pages without
   assert.match(landingPage, /href="\/compare\/mem0"/);
   assert.match(landingPage, /href="\/guides\/pre-action-gates"/);
   assert.match(landingPage, /href="\/guides\/agent-harness-optimization"/);
+  assert.match(landingPage, /href="\/guides\/ai-search-topical-presence"/);
+  assert.match(landingPage, /href="\/guides\/relational-knowledge-ai-recommendations"/);
   assert.match(landingPage, /href="\/guides\/claude-code-feedback"/);
   assert.match(landingPage, /href="\/guides\/stop-repeated-ai-agent-mistakes"/);
   assert.match(landingPage, /href="\/guides\/cursor-agent-guardrails"/);
@@ -362,6 +364,8 @@ test('public landing page internally links to comparison and guide pages without
   assert.match(landingPage, /href="\/guides\/autoresearch-agent-safety"/);
   assert.match(landingPage, /Autoresearch Safety for Self-Improving Agents/);
   assert.match(landingPage, /AI Agent Harness Optimization/);
+  assert.match(landingPage, /AI Search Topical Presence/);
+  assert.match(landingPage, /Relational Knowledge in AI Recommendations/);
   // No internal marketing jargon visible to customers
   assert.doesNotMatch(landingPage, /GSD Pages/);
   assert.doesNotMatch(landingPage, /Bottom of funnel/i);
