@@ -93,6 +93,32 @@ const NEGATIVE_STAKEHOLDER_KEYWORDS = [
  * @param {string} role role name (usually derived from the file basename)
  * @returns {{ role: string, sections: Record<string, Array<{date: string|null, text: string}>> }}
  */
+function startEntryFromBullet(body) {
+  const dateMatch = /^\[(\d{4}-\d{2}-\d{2})\]\s*(.*)$/.exec(body);
+  return dateMatch
+    ? { date: dateMatch[1], text: dateMatch[2].trim() }
+    : { date: null, text: body.trim() };
+}
+
+function classifyParsedLine(line) {
+  const headingMatch = /^##\s+(.+?)\s*$/.exec(line);
+  if (headingMatch) {
+    return { kind: 'heading', value: headingMatch[1].trim().toLowerCase() };
+  }
+  const bulletMatch = /^[-*]\s+(.*)$/.exec(line);
+  if (bulletMatch) {
+    return { kind: 'bullet', value: bulletMatch[1] };
+  }
+  const continuation = /^\s{2,}(\S.*)$/.exec(line);
+  if (continuation) {
+    return { kind: 'continuation', value: continuation[1].trim() };
+  }
+  if (line.trim() === '') {
+    return { kind: 'blank' };
+  }
+  return { kind: 'other' };
+}
+
 function parseMemoryFile(content, role) {
   const sections = {
     mistakes: [],
@@ -100,51 +126,36 @@ function parseMemoryFile(content, role) {
     stakeholder_feedback: [],
     session_log: [],
   };
-  let currentSection = null;
-  let currentEntry = null;
+  const state = { section: null, entry: null };
+
+  const flush = () => {
+    if (state.entry && state.section) {
+      sections[state.section].push(state.entry);
+    }
+    state.entry = null;
+  };
+
   const lines = String(content || '').split(/\r?\n/);
   for (const raw of lines) {
-    const line = raw.trimEnd();
-    const headingMatch = /^##\s+(.+?)\s*$/.exec(line);
-    if (headingMatch) {
-      // Flush whatever we were building before switching section.
-      if (currentEntry && currentSection) {
-        sections[currentSection].push(currentEntry);
-      }
-      currentEntry = null;
-      const normalized = headingMatch[1].trim().toLowerCase();
-      currentSection = SECTION_HEADINGS[normalized] || null;
+    const parsed = classifyParsedLine(raw.trimEnd());
+    if (parsed.kind === 'heading') {
+      flush();
+      state.section = SECTION_HEADINGS[parsed.value] || null;
       continue;
     }
-    if (!currentSection) continue;
+    if (!state.section) continue;
 
-    const bulletMatch = /^[-*]\s+(.*)$/.exec(line);
-    if (bulletMatch) {
-      if (currentEntry) sections[currentSection].push(currentEntry);
-      const body = bulletMatch[1];
-      const dateMatch = /^\[(\d{4}-\d{2}-\d{2})\]\s*(.*)$/.exec(body);
-      currentEntry = dateMatch
-        ? { date: dateMatch[1], text: dateMatch[2].trim() }
-        : { date: null, text: body.trim() };
-      continue;
-    }
-
-    const continuation = /^\s{2,}(\S.*)$/.exec(line);
-    if (continuation && currentEntry) {
-      currentEntry.text = `${currentEntry.text} ${continuation[1].trim()}`.trim();
-      continue;
-    }
-
-    // Blank / unrelated line — close the current entry so further prose
-    // doesn't accidentally merge into it.
-    if (line.trim() === '' && currentEntry) {
-      sections[currentSection].push(currentEntry);
-      currentEntry = null;
+    if (parsed.kind === 'bullet') {
+      flush();
+      state.entry = startEntryFromBullet(parsed.value);
+    } else if (parsed.kind === 'continuation' && state.entry) {
+      state.entry.text = `${state.entry.text} ${parsed.value}`.trim();
+    } else if (parsed.kind === 'blank' && state.entry) {
+      // Blank line closes the current entry so further prose doesn't merge in.
+      flush();
     }
   }
-  if (currentEntry && currentSection) {
-    sections[currentSection].push(currentEntry);
-  }
+  flush();
 
   // Strip fully-empty entries (e.g. a bullet with no text).
   for (const key of Object.keys(sections)) {
@@ -203,6 +214,73 @@ function defaultReadFile(p) {
  * entry we record the error and keep going — partial imports are more useful
  * than bailing on the first bad line.
  */
+function invokeCapture(captureFn, classification, entry, role) {
+  return captureFn({
+    signal: classification.signal,
+    context: classification.context,
+    whatWentWrong: classification.whatWentWrong,
+    whatWorked: classification.whatWorked,
+    tags: classification.tags,
+    source: 'architect-kit-memory-bridge',
+    role,
+    originalDate: entry.date,
+  });
+}
+
+function processEntry({ section, entry, role, dryRun, captureFn, summary, perRole }) {
+  summary.totalEntries += 1;
+  const classification = classifyEntry({ section, text: entry.text, role });
+  if (!classification) {
+    summary.skipped += 1;
+    return;
+  }
+  if (dryRun || !captureFn) {
+    summary.captured += 1;
+    perRole.captured += 1;
+    return;
+  }
+  try {
+    const result = invokeCapture(captureFn, classification, entry, role);
+    if (result?.accepted === false) {
+      summary.skipped += 1;
+      perRole.errors.push({ text: entry.text, reason: result.reason || 'not accepted' });
+    } else {
+      summary.captured += 1;
+      perRole.captured += 1;
+    }
+  } catch (err) {
+    summary.errors.push({ role, section, text: entry.text, message: err.message });
+    perRole.errors.push({ text: entry.text, reason: err.message });
+  }
+}
+
+function buildPerRole(role, parsed) {
+  return {
+    role,
+    mistakes: parsed.sections.mistakes.length,
+    learnings: parsed.sections.learnings.length,
+    stakeholder_feedback: parsed.sections.stakeholder_feedback.length,
+    session_log_skipped: parsed.sections.session_log.length,
+    captured: 0,
+    errors: [],
+  };
+}
+
+function processFile({ file, dir, readFileFn, dryRun, captureFn, summary }) {
+  const role = path.basename(file, '.md');
+  const content = readFileFn(path.join(dir, file));
+  const parsed = parseMemoryFile(content, role);
+  const perRole = buildPerRole(role, parsed);
+
+  for (const [section, entries] of Object.entries(parsed.sections)) {
+    for (const entry of entries) {
+      processEntry({ section, entry, role, dryRun, captureFn, summary, perRole });
+    }
+  }
+  summary.filesImported += 1;
+  summary.perRole[role] = perRole;
+}
+
 function importDirectory({
   dir,
   roleFilter = null,
@@ -233,58 +311,7 @@ function importDirectory({
   };
 
   for (const file of targets) {
-    const role = path.basename(file, '.md');
-    const content = readFileFn(path.join(dir, file));
-    const parsed = parseMemoryFile(content, role);
-    const perRole = {
-      role,
-      mistakes: parsed.sections.mistakes.length,
-      learnings: parsed.sections.learnings.length,
-      stakeholder_feedback: parsed.sections.stakeholder_feedback.length,
-      session_log_skipped: parsed.sections.session_log.length,
-      captured: 0,
-      errors: [],
-    };
-
-    for (const [section, entries] of Object.entries(parsed.sections)) {
-      for (const entry of entries) {
-        summary.totalEntries += 1;
-        const classification = classifyEntry({ section, text: entry.text, role });
-        if (!classification) {
-          summary.skipped += 1;
-          continue;
-        }
-        if (dryRun || !captureFn) {
-          summary.captured += 1;
-          perRole.captured += 1;
-          continue;
-        }
-        try {
-          const result = captureFn({
-            signal: classification.signal,
-            context: classification.context,
-            whatWentWrong: classification.whatWentWrong,
-            whatWorked: classification.whatWorked,
-            tags: classification.tags,
-            source: 'architect-kit-memory-bridge',
-            role,
-            originalDate: entry.date,
-          });
-          if (result && result.accepted === false) {
-            summary.skipped += 1;
-            perRole.errors.push({ text: entry.text, reason: result.reason || 'not accepted' });
-          } else {
-            summary.captured += 1;
-            perRole.captured += 1;
-          }
-        } catch (err) {
-          summary.errors.push({ role, section, text: entry.text, message: err.message });
-          perRole.errors.push({ text: entry.text, reason: err.message });
-        }
-      }
-    }
-    summary.filesImported += 1;
-    summary.perRole[role] = perRole;
+    processFile({ file, dir, readFileFn, dryRun, captureFn, summary });
   }
   return summary;
 }
