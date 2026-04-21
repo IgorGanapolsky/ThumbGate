@@ -54,6 +54,9 @@ test('renderPlanMarkdown names all five GSD stages and page briefs', () => {
   assert.match(markdown, /ThumbGate vs SpecLock/);
   assert.match(markdown, /ThumbGate vs Mem0/);
   assert.match(markdown, /AI Agent Harness Optimization \| Progressive Disclosure \+ Pre-Action Gates/);
+  assert.match(markdown, /OpenAI Agents SDK Guardrails \| ThumbGate Pre-Action Gates/);
+  assert.match(markdown, /Codex Chronicle Memory Guardrails \| ThumbGate Screen-Aware Enforcement/);
+  assert.match(markdown, /Cloudflare Sandbox for AI Coding Agents \| ThumbGate Control Plane/);
   assert.match(markdown, /How to Stop AI Coding Agents From Repeating Mistakes \| ThumbGate/);
   assert.match(markdown, /Cursor Agent Guardrails \| Stop Repeated Mistakes with ThumbGate/);
   assert.match(markdown, /Autoresearch Agent Safety \| Gates for Self-Improving Coding Agents/);
@@ -119,6 +122,51 @@ test('agent harness optimization page is discoverable and commercially classifie
   });
 });
 
+test('OpenAI Agents SDK guide is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/openai-agents-sdk-guardrails');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/openai-agents-sdk-guardrails');
+
+  assert.ok(page);
+  assert.equal(page.query, 'openai agents sdk guardrails');
+  assert.equal(page.pageType, 'integration');
+  assert.equal(page.pillar, 'agent-workflows');
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/openai-agents-sdk-guardrails',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
+test('Codex Chronicle guide is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/codex-chronicle-memory-guardrails');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/codex-chronicle-memory-guardrails');
+
+  assert.ok(page);
+  assert.equal(page.query, 'codex chronicle memory guardrails');
+  assert.equal(page.pageType, 'integration');
+  assert.equal(page.pillar, 'agent-workflows');
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/codex-chronicle-memory-guardrails',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
+test('Cloudflare Sandbox guide is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/cloudflare-sandbox-ai-coding-agents');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/cloudflare-sandbox-ai-coding-agents');
+
+  assert.ok(page);
+  assert.equal(page.query, 'cloudflare sandbox ai coding agents');
+  assert.equal(page.pageType, 'integration');
+  assert.equal(page.pillar, 'agent-workflows');
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/cloudflare-sandbox-ai-coding-agents',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
 test('writePlanOutputs persists machine-readable GSD artifacts', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'seo-gsd-outputs-'));
 
@@ -137,6 +185,9 @@ test('writePlanOutputs persists machine-readable GSD artifacts', () => {
     assert.equal(capture.totalKeywords, HIGH_ROI_QUERY_SEEDS.length);
     assert.equal(pages.length, PAGE_BLUEPRINTS.length);
     assert.ok(pages.some((page) => page.path === '/guides/agent-harness-optimization'));
+    assert.ok(pages.some((page) => page.path === '/guides/openai-agents-sdk-guardrails'));
+    assert.ok(pages.some((page) => page.path === '/guides/codex-chronicle-memory-guardrails'));
+    assert.ok(pages.some((page) => page.path === '/guides/cloudflare-sandbox-ai-coding-agents'));
     assert.ok(pages.some((page) => page.path === '/guides/codex-cli-guardrails'));
     assert.ok(pages.some((page) => page.path === '/guides/gemini-cli-feedback-memory'));
     assert.ok(pages.some((page) => page.path === '/guides/autoresearch-agent-safety'));

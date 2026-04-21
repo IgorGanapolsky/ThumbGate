@@ -1,0 +1,39 @@
+{
+  "generatedAt": "2026-04-21T16:35:31.217Z",
+  "checks": [
+    {
+      "id": "CFW-01",
+      "passed": true,
+      "evidence": "cloudflare sandbox planner + API tests passed"
+    },
+    {
+      "id": "CFW-02",
+      "passed": true,
+      "evidence": "worker sandbox route tests passed"
+    },
+    {
+      "id": "CFW-03",
+      "passed": true,
+      "evidence": "provider=cloudflare_dynamic_worker; shouldDispatch=true; route=/sandbox/execute"
+    },
+    {
+      "id": "CFW-04",
+      "passed": true,
+      "evidence": "signatureReady=true; verified=true"
+    },
+    {
+      "id": "CFW-05",
+      "passed": true,
+      "evidence": "provider=railway_control_plane; shouldDispatch=false"
+    },
+    {
+      "id": "CFW-06",
+      "passed": true,
+      "evidence": "bindings=MEMORY_KV,GATES_KV"
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 0
+  }
+}

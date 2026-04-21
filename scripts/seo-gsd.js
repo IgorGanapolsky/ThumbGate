@@ -29,83 +29,70 @@ const HIGH_ROI_QUERY_SEEDS = [
     query: 'thumbgate vs speclock',
     businessValue: 100,
     source: 'seed',
-    notes: 'Bottom-of-funnel comparison against manual spec alternatives.',
   },
   {
     query: 'thumbgate vs mem0',
     businessValue: 98,
     source: 'seed',
-    notes: 'Bottom-of-funnel comparison against memory-only tooling.',
   },
   {
     query: 'pre-action gates for ai coding agents',
     businessValue: 96,
     source: 'seed',
-    notes: 'Category-defining query that explains the core wedge.',
   },
-  querySeed(
-    'ai agent harness optimization',
-    94,
-    'Fresh harness-engineering demand that maps directly to ThumbGate progressive disclosure, pre-action gates, and workflow audits.',
-  ),
+  querySeed('ai agent harness optimization', 94),
+  querySeed('openai agents sdk guardrails', 93),
+  querySeed('codex chronicle memory guardrails', 92),
   {
     query: 'thumbs up thumbs down feedback for ai coding agents',
     businessValue: 95,
     source: 'seed',
-    notes: 'Differentiates the explicit feedback loop and aligns with the brand.',
   },
+  querySeed('cloudflare sandbox ai coding agents', 91),
   {
     query: 'claude code feedback memory',
     businessValue: 92,
     source: 'seed',
-    notes: 'Agent-specific workflow page with high compatibility intent.',
   },
   {
     query: 'ai coding agent guardrails',
     businessValue: 90,
     source: 'seed',
-    notes: 'Broader category demand that feeds comparison and guide pages.',
   },
   {
     query: 'autoresearch agent safety',
     businessValue: 89,
     source: 'seed',
-    notes: 'Emerging self-improving agent query where ThumbGate can own the safety and proof-control wedge.',
   },
   {
     query: 'stop ai coding agents from repeating mistakes',
     businessValue: 88,
     source: 'seed',
-    notes: 'Problem-led copy that maps to landing-page positioning.',
   },
   {
     query: 'cursor prevent repeated mistakes',
     businessValue: 87,
     source: 'seed',
-    notes: 'High-intent Cursor workflow page for developers already feeling repeat-failure pain.',
   },
   {
     query: 'claude code prevent repeated mistakes',
     businessValue: 86,
     source: 'seed',
-    notes: 'High-intent pain query for Claude Code buyers.',
   },
   {
     query: 'codex cli guardrails',
     businessValue: 84,
     source: 'seed',
-    notes: 'Guardrail-focused page for Codex CLI buyers who want prevention, not just memory.',
   },
   {
     query: 'gemini cli feedback memory',
     businessValue: 82,
     source: 'seed',
-    notes: 'Integration page for Gemini CLI users who need memory plus enforcement.',
   },
 ];
 
-function querySeed(query, businessValue, notes) {
-  return { query, businessValue, source: 'seed', notes };
+function querySeed(query, businessValue) {
+  return { query, businessValue, source: 'seed' };
 }
 
 function guideBlueprint({
@@ -155,6 +142,15 @@ function preActionGuide(slug, content) {
   });
 }
 
+function integrationGuide(slug, content) {
+  return {
+    ...content,
+    path: `/guides/${slug}`,
+    pageType: 'integration',
+    pillar: 'agent-workflows',
+  };
+}
+
 const HARNESS_OPTIMIZATION_QUERY = 'ai agent harness optimization';
 const HARNESS_OPTIMIZATION_GUIDE_SPEC = Object.freeze({
   slug: 'agent-harness-optimization',
@@ -162,36 +158,36 @@ const HARNESS_OPTIMIZATION_GUIDE_SPEC = Object.freeze({
     query: HARNESS_OPTIMIZATION_QUERY,
     title: 'AI Agent Harness Optimization | Progressive Disclosure + Pre-Action Gates',
     heroTitle: 'AI Agent Harness Optimization That Blocks Repeat Failures',
-    heroSummary: 'A better harness keeps global instructions lean, loads MCP schemas only when needed, and turns feedback into pre-action gates. ThumbGate makes that workflow measurable and enforceable.',
+    heroSummary: 'Keep global instructions lean, load tools on demand, and turn repeated mistakes into pre-action gates.',
   },
   takeaways: [
-    'Harness optimization is the control layer around the model: context, tools, guardrails, and feedback.',
-    'Progressive disclosure keeps agents out of prompt bloat while preserving proof and tool access.',
-    'ThumbGate adds a concrete audit path and Pre-Action Gates so harness lessons become runtime enforcement.',
+    'The harness decides context, tools, and approvals.',
+    'Progressive disclosure beats global prompt bloat.',
+    'ThumbGate audits the setup and enforces lessons.',
   ],
   sections: [
     ['paragraphs', 'What changed', [
-      'The model is no longer the whole system. The harness decides which instructions, tools, context packs, and approval rules the model sees before it acts.',
-      'When a team stuffs every rule into a global prompt, the agent loses reasoning room. When it routes work through lean discovery surfaces, the agent can fetch the exact tool schema, lesson, or harness only when the task requires it.',
+      'The harness now matters as much as the model.',
+      'Lean discovery surfaces keep reasoning room open and fetch detail only when needed.',
     ]],
     ['bullets', 'How ThumbGate improves the harness', [
-      'Scores global agent docs so AGENTS.md, CLAUDE.md, and GEMINI.md stay lean instead of becoming unreviewable prompt bundles.',
-      'Publishes progressive MCP discovery through lightweight indexes and per-tool schema URLs.',
-      'Selects specialized gate harnesses for deploy, code-edit, and database-write actions instead of loading every gate for every workflow.',
-      'Turns thumbs-down feedback into prevention rules, then into hard Pre-Action Gates that block repeated mistakes.',
+      'Scores global docs so they stay lean.',
+      'Supports progressive MCP discovery.',
+      'Loads specialized gate harnesses by workflow.',
+      'Turns thumbs-down feedback into hard gates.',
     ]],
     ['paragraphs', 'Where this creates ROI', [
-      'For acquisition, this page names the buyer category: AI agent harness optimization. For conversion, the CLI audit gives a concrete first action. For retention, the same audit keeps local instructions and MCP surfaces from drifting back into bloat.',
+      'It names the buyer category, gives a concrete CLI audit, and keeps the harness from drifting back into bloat.',
     ]],
   ],
   faq: [
     [
       'What is an AI agent harness?',
-      'An AI agent harness is the runtime layer around the model: context loading, tool calls, guardrails, approval boundaries, memory, and verification. ThumbGate focuses on the enforcement part of that harness.',
+      'It is the runtime layer around the model: context, tools, approvals, memory, and verification.',
     ],
     [
       'How does ThumbGate optimize a harness?',
-      'ThumbGate keeps global instructions lean, supports progressive MCP discovery, selects workflow-specific gate harnesses, and converts feedback into Pre-Action Gates that block known-bad actions before execution.',
+      'It keeps docs lean, supports progressive discovery, selects workflow-specific gates, and blocks known-bad actions before execution.',
     ],
   ],
   relatedPaths: ['/guides/pre-action-gates', '/guides/codex-cli-guardrails'],
@@ -201,15 +197,165 @@ function buildSectionFromSpec(kind, heading, entries) {
   return kind === 'bullets' ? bullets(heading, entries) : paragraphs(heading, entries);
 }
 
-function buildHarnessOptimizationGuide() {
-  return preActionGuide(HARNESS_OPTIMIZATION_GUIDE_SPEC.slug, {
-    ...HARNESS_OPTIMIZATION_GUIDE_SPEC.meta,
-    takeaways: HARNESS_OPTIMIZATION_GUIDE_SPEC.takeaways,
-    sections: HARNESS_OPTIMIZATION_GUIDE_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
-    faq: HARNESS_OPTIMIZATION_GUIDE_SPEC.faq.map(([question, text]) => answer(question, text)),
-    relatedPaths: HARNESS_OPTIMIZATION_GUIDE_SPEC.relatedPaths,
+function buildFaqFromSpec(entries) {
+  return entries.map(([question, text]) => answer(question, text));
+}
+
+function buildGuideFromSpec(buildGuide, spec) {
+  return buildGuide(spec.slug, {
+    ...spec.meta,
+    takeaways: spec.takeaways,
+    sections: spec.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+    faq: buildFaqFromSpec(spec.faq),
+    relatedPaths: spec.relatedPaths,
+    extraProofLinks: spec.extraProofLinks || [],
   });
 }
+
+function buildHarnessOptimizationGuide() {
+  return buildGuideFromSpec(preActionGuide, HARNESS_OPTIMIZATION_GUIDE_SPEC);
+}
+
+const OPENAI_AGENTS_SDK_GUIDE_SPEC = Object.freeze({
+  slug: 'openai-agents-sdk-guardrails',
+  meta: {
+    query: 'openai agents sdk guardrails',
+    title: 'OpenAI Agents SDK Guardrails | ThumbGate Pre-Action Gates',
+    heroTitle: 'OpenAI Agents SDK Guardrails That Enforce Before Execution',
+    heroSummary: 'OpenAI Agents SDK gives teams the harness and runtime. ThumbGate adds policy, memory, and pre-action enforcement before risky work runs.',
+  },
+  takeaways: [
+    'OpenAI brings the harness and runtime.',
+    'ThumbGate adds the policy decision before execution.',
+    'That makes the buyer story clearer and more auditable.',
+  ],
+  sections: [
+    ['paragraphs', 'What OpenAI shipped', [
+      'The Agents SDK gives teams a stronger agent harness and execution layer.',
+      'That makes it easier to add reliability controls above the runtime instead of rebuilding the runtime itself.',
+    ]],
+    ['bullets', 'Where ThumbGate fits', [
+      'Capture thumbs-up and thumbs-down feedback.',
+      'Promote repeated failures into prevention rules.',
+      'Block known-bad tool calls before repetition.',
+      'Publish proof of the feedback-to-enforcement loop.',
+    ]],
+    ['paragraphs', 'Why this creates ROI', [
+      'It gives us a timely acquisition page, a clearer policy-layer position, and a hardening story for long-running agent workflows.',
+    ]],
+  ],
+  faq: [
+    [
+      'Does ThumbGate replace OpenAI Agents SDK?',
+      'No. OpenAI provides the harness and execution foundation. ThumbGate provides enforcement.',
+    ],
+    [
+      'Why add ThumbGate if OpenAI already added sandbox execution?',
+      'Sandboxing contains code after execution starts. ThumbGate decides whether the risky action should run at all.',
+    ],
+  ],
+  relatedPaths: ['/guides/agent-harness-optimization', '/guides/cloudflare-sandbox-ai-coding-agents'],
+  extraProofLinks: [
+    {
+      label: 'Machine-readable harness proof',
+      href: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/harnesses-report.json',
+    },
+  ],
+});
+
+const CODEX_CHRONICLE_GUIDE_SPEC = Object.freeze({
+  slug: 'codex-chronicle-memory-guardrails',
+  meta: {
+    query: 'codex chronicle memory guardrails',
+    title: 'Codex Chronicle Memory Guardrails | ThumbGate Screen-Aware Enforcement',
+    heroTitle: 'Codex Chronicle Makes Memory Better. ThumbGate Makes It Safer.',
+    heroSummary: 'Codex Chronicle brings recent screen context into memory. ThumbGate turns that richer context into searchable lessons, approval boundaries, and pre-action gates before risky work runs.',
+  },
+  takeaways: [
+    'Chronicle improves short-horizon memory from what is on screen.',
+    'ThumbGate turns memory into policy and enforcement.',
+    'The buyer story is simple: richer context in, safer actions out.',
+  ],
+  sections: [
+    ['paragraphs', 'Why Chronicle matters', [
+      'Screen-aware memory reduces re-explaining what the developer is already looking at, which makes bug triage, handoffs, and follow-up work faster.',
+      'That is useful for velocity, but memory still needs a control layer when the same risky pattern appears again.',
+    ]],
+    ['bullets', 'What ThumbGate adds on top', [
+      'Capture explicit thumbs-up and thumbs-down corrections.',
+      'Promote repeated failures into prevention rules.',
+      'Gate risky tool calls before the next repeat lands.',
+      'Keep the evidence trail local-first and auditable.',
+    ]],
+    ['paragraphs', 'Where this creates ROI', [
+      'This gives us a timely Codex memory page for search and AI answers while keeping ThumbGate positioned as the enforcement layer instead of another memory store.',
+    ]],
+  ],
+  faq: [
+    [
+      'Does ThumbGate replace Codex Chronicle?',
+      'No. Chronicle improves context gathering. ThumbGate decides what should be remembered as a lesson, what needs approval, and what should be blocked before execution.',
+    ],
+    [
+      'Why add enforcement if screen-aware memory is already better?',
+      'Better memory helps the model notice context. ThumbGate makes the lesson operational by turning repeated mistakes into live gates.',
+    ],
+  ],
+  relatedPaths: ['/guides/codex-cli-guardrails', '/compare/mem0'],
+  extraProofLinks: [
+    {
+      label: 'Machine-readable local intelligence proof',
+      href: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/local-intelligence-report.json',
+    },
+  ],
+});
+
+const CLOUDFLARE_SANDBOX_GUIDE_SPEC = Object.freeze({
+  slug: 'cloudflare-sandbox-ai-coding-agents',
+  meta: {
+    query: 'cloudflare sandbox ai coding agents',
+    title: 'Cloudflare Sandbox for AI Coding Agents | ThumbGate Control Plane',
+    heroTitle: 'Cloudflare Sandbox for AI Coding Agents Needs a Control Plane',
+    heroSummary: 'Cloudflare Sandbox gives AI agents isolated compute. ThumbGate adds the control plane that decides when risky work should run and how the lesson becomes a gate.',
+  },
+  takeaways: [
+    'Containment alone is not policy.',
+    'ThumbGate adds policy and shared lessons above isolated execution.',
+    'The sell is simple: gate first, isolate second.',
+  ],
+  sections: [
+    ['paragraphs', 'Why Cloudflare Sandbox matters', [
+      'Cloudflare Sandbox gives agents a durable isolated lane for code execution.',
+      'That is useful when teams want separation between model-generated code and sensitive systems.',
+    ]],
+    ['bullets', 'What ThumbGate adds on top', [
+      'Workflow Sentinel scores blast radius before dispatch.',
+      'Pre-Action Gates stop known-bad commands early.',
+      'Signed dispatch preserves audit context.',
+      'Shared thumbs-down lessons make the next run safer.',
+    ]],
+    ['paragraphs', 'Where this helps us sell', [
+      'This page speaks to buyers who already understand isolated execution and now need the control plane above it.',
+    ]],
+  ],
+  faq: [
+    [
+      'Does ThumbGate replace Cloudflare Sandbox?',
+      'No. Cloudflare is the isolated compute lane. ThumbGate decides whether risky work should go there and what should be blocked.',
+    ],
+    [
+      'Why pair policy with isolated execution?',
+      'Isolation limits blast radius after a run starts. ThumbGate prevents known-bad actions before they run.',
+    ],
+  ],
+  relatedPaths: ['/guides/openai-agents-sdk-guardrails', '/guides/pre-action-gates'],
+  extraProofLinks: [
+    {
+      label: 'Machine-readable Cloudflare sandbox proof',
+      href: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/cloudflare-sandbox-report.json',
+    },
+  ],
+});
 
 const PAGE_BLUEPRINTS = [
   {
@@ -362,6 +508,8 @@ const PAGE_BLUEPRINTS = [
     relatedPaths: ['/compare/speclock', '/guides/claude-code-feedback'],
   },
   buildHarnessOptimizationGuide(),
+  buildGuideFromSpec(integrationGuide, OPENAI_AGENTS_SDK_GUIDE_SPEC),
+  buildGuideFromSpec(integrationGuide, CODEX_CHRONICLE_GUIDE_SPEC),
   {
     query: 'stop ai coding agents from repeating mistakes',
     path: '/guides/stop-repeated-ai-agent-mistakes',
@@ -603,6 +751,7 @@ const PAGE_BLUEPRINTS = [
     ],
     relatedPaths: ['/compare/mem0', '/guides/stop-repeated-ai-agent-mistakes'],
   },
+  buildGuideFromSpec(integrationGuide, CLOUDFLARE_SANDBOX_GUIDE_SPEC),
   guideBlueprint({
     query: 'autoresearch agent safety',
     path: '/guides/autoresearch-agent-safety',
@@ -822,6 +971,7 @@ function classifyIntent(query) {
   if (/\b(claude code|cursor|codex|gemini|amp|opencode|integration|plugin|setup|install)\b/.test(normalized)) {
     return 'commercial';
   }
+  if (/\b(openai agents sdk|cloudflare sandbox|sandbox sdk|agent cloud)\b/.test(normalized)) return 'commercial';
   if (/\b(what is|how to|guide|best practices|why)\b/.test(normalized)) return 'informational';
   if (/\b(guardrails|pre-action gates|feedback|prevent repeated mistakes|repeating mistakes|memory|harness optimization)\b/.test(normalized)) {
     return 'commercial';
@@ -834,6 +984,7 @@ function inferPillar(query) {
   if (/\b(speclock|mem0|alternative|vs|compare|comparison)\b/.test(normalized)) return 'comparison';
   if (/\b(thumbs up|thumbs down|feedback|reinforce|mistake)\b/.test(normalized)) return 'feedback-loop';
   if (/\b(autoresearch|self-improving|benchmark|reward hacking|harness optimization)\b/.test(normalized)) return 'pre-action-gates';
+  if (/\b(openai agents sdk|cloudflare sandbox|sandbox sdk|agent cloud|codex chronicle)\b/.test(normalized)) return 'agent-workflows';
   if (/\b(pre-action gates|guardrails|block|prevent repeated mistakes|repeating mistakes)\b/.test(normalized)) return 'pre-action-gates';
   if (/\b(claude code|cursor|codex|gemini|amp|opencode|integration|plugin)\b/.test(normalized)) return 'agent-workflows';
   return 'ai-agent-reliability';
@@ -845,6 +996,7 @@ function inferPersona(query) {
   if (normalized.includes('cursor')) return 'cursor-builder';
   if (normalized.includes('codex')) return 'codex-builder';
   if (normalized.includes('gemini')) return 'gemini-builder';
+  if (normalized.includes('openai agents sdk') || normalized.includes('cloudflare sandbox')) return 'agent-platform-builder';
   if (normalized.includes('autoresearch') || normalized.includes('self-improving')) return 'ai-research-engineer';
   if (/\b(vs|alternative|compare)\b/.test(normalized)) return 'tool-evaluator';
   if (/\b(guardrails|pre-action gates)\b/.test(normalized)) return 'engineering-lead';
@@ -854,6 +1006,7 @@ function inferPersona(query) {
 function inferPageType(intent, query) {
   const normalized = normalizeText(query).toLowerCase();
   if (intent === 'comparison') return 'comparison';
+  if (/\b(openai agents sdk|cloudflare sandbox|sandbox sdk|agent cloud)\b/.test(normalized)) return 'integration';
   if (/\b(claude code|cursor|codex|gemini|amp|opencode|integration|plugin)\b/.test(normalized)) return 'integration';
   if (/\b(guide|how to|what is|best practices)\b/.test(normalized)) return 'guide';
   return intent === 'transactional' ? 'money-page' : 'guide';
@@ -1018,6 +1171,7 @@ function createPageSpec(blueprint, row) {
       { label: 'Verification evidence', href: PRODUCT.verificationUrl },
       { label: 'Automation proof', href: PRODUCT.automationUrl },
       { label: 'GitHub repository', href: PRODUCT.repoUrl },
+      ...(Array.isArray(blueprint.extraProofLinks) ? blueprint.extraProofLinks : []),
     ],
     changefreq: blueprint.pageType === 'comparison' ? 'weekly' : 'monthly',
     priority: blueprint.pageType === 'comparison' ? '0.9' : '0.8',
@@ -1343,9 +1497,6 @@ function renderSeoPageHtml(page, runtimeConfig = {}) {
     .sidebar-card {
       padding: 20px;
     }
-    /* Only the first sidebar card sticks. Stacking multiple stickies at the
-       same top offset makes them overlap each other on scroll. The related-
-       pages card flows normally below. */
     .sidebar-card:first-child {
       position: sticky;
       top: 84px;
@@ -1454,6 +1605,7 @@ ${renderWebPageJsonLd(page, { appOrigin })}
           <p><strong>Opportunity score:</strong> ${page.opportunityScore}</p>
           <p><strong>Primary persona:</strong> ${escapeHtml(page.persona)}</p>
           <p><strong>Keyword cluster:</strong> ${escapeHtml(page.keywordCluster.join(', '))}</p>
+          <p><strong>Pricing:</strong> Free local CLI wedge, Pro at $19/mo or $149/yr, and Team from $49/seat/mo after intake.</p>
           <div class="proof-links">${proofLinks}</div>
           <a class="cta-button" href="${escapeHtml(page.cta.href)}" target="_blank" rel="noopener">${escapeHtml(page.cta.label)}</a>
         </div>

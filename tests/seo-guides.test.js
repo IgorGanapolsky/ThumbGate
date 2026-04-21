@@ -10,6 +10,9 @@ const PUBLIC_DIR = path.resolve(__dirname, '..', 'public');
 const GUIDE_FILES = [
   'guides/pre-action-gates.html',
   'guides/agent-harness-optimization.html',
+  'guides/openai-agents-sdk-guardrails.html',
+  'guides/codex-chronicle-memory-guardrails.html',
+  'guides/cloudflare-sandbox-ai-coding-agents.html',
   'guides/stop-repeated-ai-agent-mistakes.html',
   'guides/claude-code-prevent-repeated-mistakes.html',
   'guides/cursor-prevent-repeated-mistakes.html',
@@ -25,12 +28,12 @@ const COMPARE_FILES = [
 const ALL_FILES = [...GUIDE_FILES, ...COMPARE_FILES];
 
 describe('SEO guide and comparison pages', () => {
-  it('all 9 HTML files exist', () => {
+  it('all 12 HTML files exist', () => {
     for (const file of ALL_FILES) {
       const fullPath = path.join(PUBLIC_DIR, file);
       assert.ok(fs.existsSync(fullPath), `Missing file: ${file}`);
     }
-    assert.equal(ALL_FILES.length, 9);
+    assert.equal(ALL_FILES.length, 12);
   });
 
   for (const file of ALL_FILES) {
@@ -86,6 +89,30 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(
       html.includes('proof/harnesses-report.json'),
       'agent harness guide should link machine-readable harness proof'
+    );
+  });
+
+  it('Cloudflare Sandbox guide links machine-readable sandbox proof', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/cloudflare-sandbox-ai-coding-agents.html'),
+      'utf-8'
+    );
+
+    assert.ok(
+      html.includes('proof/cloudflare-sandbox-report.json'),
+      'Cloudflare sandbox guide should link machine-readable sandbox proof'
+    );
+  });
+
+  it('Codex Chronicle guide links machine-readable local intelligence proof', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/codex-chronicle-memory-guardrails.html'),
+      'utf-8'
+    );
+
+    assert.ok(
+      html.includes('proof/local-intelligence-report.json'),
+      'Codex Chronicle guide should link machine-readable local intelligence proof'
     );
   });
 });

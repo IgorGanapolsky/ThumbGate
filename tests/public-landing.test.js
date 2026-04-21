@@ -343,12 +343,18 @@ test('public landing page internally links to comparison and guide pages without
   assert.match(landingPage, /href="\/compare\/mem0"/);
   assert.match(landingPage, /href="\/guides\/pre-action-gates"/);
   assert.match(landingPage, /href="\/guides\/agent-harness-optimization"/);
+  assert.match(landingPage, /href="\/guides\/openai-agents-sdk-guardrails"/);
+  assert.match(landingPage, /href="\/guides\/codex-chronicle-memory-guardrails"/);
+  assert.match(landingPage, /href="\/guides\/cloudflare-sandbox-ai-coding-agents"/);
   assert.match(landingPage, /href="\/guides\/claude-code-feedback"/);
   assert.match(landingPage, /href="\/guides\/stop-repeated-ai-agent-mistakes"/);
   assert.match(landingPage, /href="\/guides\/cursor-agent-guardrails"/);
   assert.match(landingPage, /href="\/guides\/codex-cli-guardrails"/);
   assert.match(landingPage, /href="\/guides\/gemini-cli-feedback-memory"/);
   assert.match(landingPage, /href="\/guides\/autoresearch-agent-safety"/);
+  assert.match(landingPage, /OpenAI Agents SDK Guardrails/);
+  assert.match(landingPage, /Codex Chronicle Memory Guardrails/);
+  assert.match(landingPage, /Cloudflare Sandbox Needs a Control Plane/);
   assert.match(landingPage, /Autoresearch Safety for Self-Improving Agents/);
   assert.match(landingPage, /AI Agent Harness Optimization/);
   // No internal marketing jargon visible to customers

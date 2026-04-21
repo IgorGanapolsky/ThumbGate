@@ -126,6 +126,9 @@ async function run() {
           '/compare/mem0',
           '/guides/pre-action-gates',
           '/guides/agent-harness-optimization',
+          '/guides/openai-agents-sdk-guardrails',
+          '/guides/codex-chronicle-memory-guardrails',
+          '/guides/cloudflare-sandbox-ai-coding-agents',
           '/guides/claude-code-feedback',
           '/guides/autoresearch-agent-safety',
         ]) {
@@ -152,6 +155,9 @@ async function run() {
           '/compare/mem0',
           '/guides/pre-action-gates',
           '/guides/agent-harness-optimization',
+          '/guides/openai-agents-sdk-guardrails',
+          '/guides/codex-chronicle-memory-guardrails',
+          '/guides/cloudflare-sandbox-ai-coding-agents',
           '/guides/claude-code-feedback',
           '/guides/autoresearch-agent-safety',
         ]) {

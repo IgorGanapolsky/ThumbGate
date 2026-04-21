@@ -15,7 +15,6 @@
     "thumbgate": "bin/cli.js"
   },
   "files": [
-    ".claude-plugin/README.md",
     ".claude-plugin/marketplace.json",
     ".claude-plugin/plugin.json",
     ".well-known/",

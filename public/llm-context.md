@@ -86,6 +86,25 @@ The high-ROI pattern is progressive disclosure:
 
 The CLI command `npx thumbgate harness-audit` scores global docs, progressive MCP discovery, and specialized harness coverage so teams can see whether their agent setup is compounding useful context or compounding instruction bloat.
 
+## OpenAI Agents SDK + Codex Chronicle + Cloudflare Sandbox
+
+OpenAI's April 15, 2026 Agents SDK update made a sharper distinction between the harness and the compute lane: model-native harnesses, native sandbox execution, manifest-based workspaces, and durable snapshotting for long-running runs. Codex Chronicle extends the context layer with recent screen context. Cloudflare Sandbox adds isolated compute, file operations, backup and restore, and signed bridges that let non-Worker clients drive the sandbox.
+
+ThumbGate fits above those layers:
+
+- OpenAI Agents SDK improves the harness and execution foundation.
+- Codex Chronicle improves short-horizon context gathering from what the operator is already looking at.
+- Cloudflare Sandbox improves isolated compute and resumability.
+- ThumbGate improves the policy decision before risky work starts.
+
+The combined story is stronger than any one layer alone:
+
+- **Before execution**: Workflow Sentinel scores blast radius, approval boundaries decide who must sign off, and Pre-Action Gates block known-bad actions before the sandbox receives them.
+- **During execution**: isolated lanes keep model-generated code away from broader host credentials and shared workflow state.
+- **After execution**: thumbs-up/down feedback becomes searchable lessons, prevention rules, and proof-backed gates for the next run.
+
+This is the right commercial framing for ThumbGate: not the sandbox runtime itself, but the enforcement and memory layer that makes sandboxed agent execution safer, more auditable, and more reusable across a team.
+
 ## Enterprise Safety Framework Alignment
 
 ThumbGate's architecture maps directly to the enterprise safety framework pattern recommended by Google Cloud for agentic AI workflows (April 2026). Google Cloud's reference architecture routes every agent action through a Safety Framework gate before execution, with unsafe actions producing a canned response and safe actions proceeding to the Agentic Workflow, followed by a Quality Framework check on the output.
@@ -148,8 +167,15 @@ npx thumbgate dashboard
 - npm: https://www.npmjs.com/package/thumbgate
 - Documentation: https://thumbgate-production.up.railway.app/guide
 - Autoresearch safety guide: https://thumbgate-production.up.railway.app/guides/autoresearch-agent-safety
+- OpenAI Agents SDK guardrails guide: https://thumbgate-production.up.railway.app/guides/openai-agents-sdk-guardrails
+- Codex Chronicle memory guardrails guide: https://thumbgate-production.up.railway.app/guides/codex-chronicle-memory-guardrails
+- Cloudflare Sandbox guide: https://thumbgate-production.up.railway.app/guides/cloudflare-sandbox-ai-coding-agents
 - Comparison: https://thumbgate-production.up.railway.app/compare
 - Team sprint intake: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+## Codex Chronicle + ThumbGate
+
+Codex Chronicle improves Codex memory by using recent screen context, which lowers the amount of context the operator has to restate. That is helpful, but it does not replace enforcement. ThumbGate is the layer that turns explicit corrections into searchable lessons, approval boundaries, and pre-action gates when a risky pattern appears again.
 
 ## How ThumbGate Promotes AI Authenticity
 
