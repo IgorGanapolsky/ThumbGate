@@ -1475,6 +1475,32 @@ function gateStats() {
   console.log('\n' + formatStats(stats) + '\n');
 }
 
+function harnessAudit() {
+  const args = parseArgs(process.argv.slice(3));
+  const { buildHarnessOptimizationAudit } = require(path.join(PKG_ROOT, 'scripts', 'harness-selector'));
+  const audit = buildHarnessOptimizationAudit({
+    rootDir: CWD,
+    docTokenBudget: args['doc-token-budget'],
+  });
+
+  if (args.json) {
+    console.log(JSON.stringify(audit, null, 2));
+    return;
+  }
+
+  console.log('\nThumbGate Harness Optimization Audit');
+  console.log(`Status : ${audit.status}`);
+  console.log(`Score  : ${audit.score}/100`);
+  console.log(`Docs   : ~${audit.totals.globalDocEstimatedTokens} tokens across global agent docs`);
+  console.log(`MCP    : ${audit.totals.mcpToolCount} indexed tools; progressive discovery ${audit.signals.progressiveToolIndexPresent ? 'on' : 'missing'}`);
+  console.log(`Gates  : ${audit.totals.specializedHarnessCount} specialized harnesses`);
+  console.log('\nRecommendations:');
+  for (const recommendation of audit.recommendations) {
+    console.log(`  - ${recommendation}`);
+  }
+  console.log('');
+}
+
 function optimize() {
   const { optimize: doOptimize } = require(path.join(PKG_ROOT, 'scripts', 'optimize-context'));
   doOptimize();
@@ -1968,6 +1994,10 @@ switch (COMMAND) {
     break;
   case 'rules':
     rules();
+    break;
+  case 'harness-audit':
+  case 'harness':
+    harnessAudit();
     break;
   case 'optimize':
     optimize();
