@@ -221,6 +221,99 @@ function buildHarnessOptimizationGuide() {
   });
 }
 
+const BROWSER_BRIDGE_GUIDE_SPECS = Object.freeze([
+  {
+    slug: 'browser-automation-safety',
+    meta: {
+      query: 'browser automation safety',
+      title: 'Browser Automation Safety | Prompt Injection, Permissions, and Pre-Action Gates',
+      heroTitle: 'Browser automation safety needs explicit approval boundaries',
+      heroSummary: 'Browser agents can click, type, and navigate for you, but they also widen prompt-injection and cross-app integration risk. ThumbGate adds approval boundaries, auditability, and a native messaging audit before those bridges turn into silent blast-radius expansion.',
+    },
+    takeaways: [
+      'Browser automation is useful because it has real permissions, which is exactly why it needs governance.',
+      'Prompt injection becomes more dangerous when an extension can reach a local executable through a browser bridge.',
+      'ThumbGate gives teams a first action now: audit native messaging hosts, then require explicit approval before browser-use connectors expand.',
+    ],
+    sections: [
+      ['paragraphs', 'Why browser-use changes the threat model', [
+        'Browser agents do not just read text. They can click buttons, fill forms, switch tabs, and sometimes bridge into local binaries. That means the blast radius is no longer only "bad output" but "real actions on live websites and local systems."',
+        'Once browser automation enters the stack, prompt injection stops being an abstract model weakness and becomes a workflow-governance problem. The right control is not more prompt advice. It is a hard boundary around what the agent is allowed to connect, install, and execute.',
+      ]],
+      ['bullets', 'What to audit first', [
+        'Which browser extensions hold automation permissions such as debugger, tabs, downloads, and nativeMessaging.',
+        'Whether the desktop app or CLI has registered native messaging hosts for browsers you did not explicitly connect.',
+        'Whether host manifests point to live local binaries and whether those binaries sit outside the browser sandbox.',
+        'Whether browser-use runs default to ask-before-acting or silently expand capability before a human approves them.',
+      ]],
+      ['paragraphs', 'How ThumbGate fits', [
+        'ThumbGate is the approval and enforcement layer around browser-use. Start by running npx thumbgate native-messaging-audit. Then gate future connector installs, record who approved them, and turn browser-bridge mistakes into Pre-Action Gates before the same pattern repeats.',
+      ]],
+    ],
+    faq: [
+      [
+        'Why is browser automation riskier than ordinary chat?',
+        'Because the agent can take real actions in a browser and may also reach local executables through native messaging bridges. That turns prompt injection and permission drift into operational risk, not just output-quality risk.',
+      ],
+      [
+        'What should a team do before enabling browser-use broadly?',
+        'Audit native messaging hosts, review extension permissions, keep ask-before-acting enabled by default, and require explicit approval for any cross-app connector that expands the agent runtime beyond the browser sandbox.',
+      ],
+    ],
+    relatedPaths: ['/guides/native-messaging-host-security', '/guides/pre-action-gates'],
+  },
+  {
+    slug: 'native-messaging-host-security',
+    meta: {
+      query: 'native messaging host security',
+      title: 'Native Messaging Host Security | Audit Browser Bridges Before They Expand',
+      heroTitle: 'Native messaging host security for AI browser bridges',
+      heroSummary: 'Native messaging hosts let browser extensions talk to local executables. That can be useful, but it also creates a persistent bridge outside the browser sandbox. ThumbGate audits those registrations and helps teams require explicit approval before they become part of the workflow.',
+    },
+    takeaways: [
+      'Native messaging is a real local capability boundary, not a harmless implementation detail.',
+      'A manifest can pre-authorize extension origins long before a human operator understands the blast radius.',
+      'ThumbGate turns native messaging review into an auditable operator workflow instead of an invisible local side effect.',
+    ],
+    sections: [
+      ['paragraphs', 'What native messaging hosts actually do', [
+        'A native messaging host is a local manifest that tells a browser extension which executable it may launch on the operator machine. That bridge sits outside the browser sandbox, so it deserves the same review discipline teams use for deploy credentials or production write access.',
+        'The risk is not only the host binary itself. It is the combination of extension permissions, allowed origins, and whether the host remains registered for browsers the operator did not intentionally connect.',
+      ]],
+      ['bullets', 'Signals ThumbGate audits', [
+        'Manifest files under browser-specific NativeMessagingHosts directories on macOS and Linux.',
+        'Allowed extension origins and extension-id fan-out per host registration.',
+        'Host binaries that are missing on disk, which leaves stale or broken registrations behind.',
+        'AI/browser bridge manifests registered for browsers not detected in the usual local install paths.',
+      ]],
+      ['paragraphs', 'The fastest operator action', [
+        'Run npx thumbgate native-messaging-audit --json in the repo or workstation you govern. Review every AI browser bridge, remove anything you did not intentionally integrate, and keep browser-use in ask-before-acting mode until connector scope is explicit and revocable.',
+      ]],
+    ],
+    faq: [
+      [
+        'Why does native messaging deserve a separate security review?',
+        'Because it lets a browser extension hand work to a local executable outside the browser sandbox. That is a different trust boundary than ordinary page automation or side-panel UI access.',
+      ],
+      [
+        'How does ThumbGate help with native messaging host security?',
+        'ThumbGate audits known host locations, highlights AI/browser bridges, flags stale or missing host binaries, and gives teams an enforcement layer so future connector expansion requires explicit approval.',
+      ],
+    ],
+    relatedPaths: ['/guides/browser-automation-safety', '/guides/pre-action-gates'],
+  },
+]);
+
+function buildBrowserBridgeGuide(spec) {
+  return preActionGuide(spec.slug, {
+    ...spec.meta,
+    takeaways: spec.takeaways,
+    sections: spec.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+    faq: spec.faq.map(([question, text]) => answer(question, text)),
+    relatedPaths: spec.relatedPaths,
+  });
+}
+
 const PAGE_BLUEPRINTS = [
   {
     query: 'thumbgate vs speclock',
@@ -613,102 +706,7 @@ const PAGE_BLUEPRINTS = [
     ],
     relatedPaths: ['/compare/mem0', '/guides/stop-repeated-ai-agent-mistakes'],
   },
-  guideBlueprint({
-    query: 'browser automation safety',
-    path: '/guides/browser-automation-safety',
-    pillar: 'pre-action-gates',
-    title: 'Browser Automation Safety | Prompt Injection, Permissions, and Pre-Action Gates',
-    heroTitle: 'Browser automation safety needs explicit approval boundaries',
-    heroSummary: 'Browser agents can click, type, and navigate for you, but they also widen prompt-injection and cross-app integration risk. ThumbGate adds approval boundaries, auditability, and a native messaging audit before those bridges turn into silent blast-radius expansion.',
-    takeaways: [
-      'Browser automation is useful because it has real permissions, which is exactly why it needs governance.',
-      'Prompt injection becomes more dangerous when an extension can reach a local executable through a browser bridge.',
-      'ThumbGate gives teams a first action now: audit native messaging hosts, then require explicit approval before browser-use connectors expand.',
-    ],
-    sections: [
-      paragraphs(
-        'Why browser-use changes the threat model',
-        [
-          'Browser agents do not just read text. They can click buttons, fill forms, switch tabs, and sometimes bridge into local binaries. That means the blast radius is no longer only "bad output" but "real actions on live websites and local systems."',
-          'Once browser automation enters the stack, prompt injection stops being an abstract model weakness and becomes a workflow-governance problem. The right control is not more prompt advice. It is a hard boundary around what the agent is allowed to connect, install, and execute.',
-        ],
-      ),
-      bullets(
-        'What to audit first',
-        [
-          'Which browser extensions hold automation permissions such as debugger, tabs, downloads, and nativeMessaging.',
-          'Whether the desktop app or CLI has registered native messaging hosts for browsers you did not explicitly connect.',
-          'Whether host manifests point to live local binaries and whether those binaries sit outside the browser sandbox.',
-          'Whether browser-use runs default to ask-before-acting or silently expand capability before a human approves them.',
-        ],
-      ),
-      paragraphs(
-        'How ThumbGate fits',
-        [
-          'ThumbGate is the approval and enforcement layer around browser-use. Start by running npx thumbgate native-messaging-audit. Then gate future connector installs, record who approved them, and turn browser-bridge mistakes into Pre-Action Gates before the same pattern repeats.',
-        ],
-      ),
-    ],
-    faq: [
-      answer(
-        'Why is browser automation riskier than ordinary chat?',
-        'Because the agent can take real actions in a browser and may also reach local executables through native messaging bridges. That turns prompt injection and permission drift into operational risk, not just output-quality risk.'
-      ),
-      answer(
-        'What should a team do before enabling browser-use broadly?',
-        'Audit native messaging hosts, review extension permissions, keep ask-before-acting enabled by default, and require explicit approval for any cross-app connector that expands the agent runtime beyond the browser sandbox.'
-      ),
-    ],
-    relatedPaths: ['/guides/native-messaging-host-security', '/guides/pre-action-gates'],
-  }),
-  guideBlueprint({
-    query: 'native messaging host security',
-    path: '/guides/native-messaging-host-security',
-    pillar: 'pre-action-gates',
-    title: 'Native Messaging Host Security | Audit Browser Bridges Before They Expand',
-    heroTitle: 'Native messaging host security for AI browser bridges',
-    heroSummary: 'Native messaging hosts let browser extensions talk to local executables. That can be useful, but it also creates a persistent bridge outside the browser sandbox. ThumbGate audits those registrations and helps teams require explicit approval before they become part of the workflow.',
-    takeaways: [
-      'Native messaging is a real local capability boundary, not a harmless implementation detail.',
-      'A manifest can pre-authorize extension origins long before a human operator understands the blast radius.',
-      'ThumbGate turns native messaging review into an auditable operator workflow instead of an invisible local side effect.',
-    ],
-    sections: [
-      paragraphs(
-        'What native messaging hosts actually do',
-        [
-          'A native messaging host is a local manifest that tells a browser extension which executable it may launch on the operator machine. That bridge sits outside the browser sandbox, so it deserves the same review discipline teams use for deploy credentials or production write access.',
-          'The risk is not only the host binary itself. It is the combination of extension permissions, allowed origins, and whether the host remains registered for browsers the operator did not intentionally connect.',
-        ],
-      ),
-      bullets(
-        'Signals ThumbGate audits',
-        [
-          'Manifest files under browser-specific NativeMessagingHosts directories on macOS and Linux.',
-          'Allowed extension origins and extension-id fan-out per host registration.',
-          'Host binaries that are missing on disk, which leaves stale or broken registrations behind.',
-          'AI/browser bridge manifests registered for browsers not detected in the usual local install paths.',
-        ],
-      ),
-      paragraphs(
-        'The fastest operator action',
-        [
-          'Run npx thumbgate native-messaging-audit --json in the repo or workstation you govern. Review every AI browser bridge, remove anything you did not intentionally integrate, and keep browser-use in ask-before-acting mode until connector scope is explicit and revocable.',
-        ],
-      ),
-    ],
-    faq: [
-      answer(
-        'Why does native messaging deserve a separate security review?',
-        'Because it lets a browser extension hand work to a local executable outside the browser sandbox. That is a different trust boundary than ordinary page automation or side-panel UI access.'
-      ),
-      answer(
-        'How does ThumbGate help with native messaging host security?',
-        'ThumbGate audits known host locations, highlights AI/browser bridges, flags stale or missing host binaries, and gives teams an enforcement layer so future connector expansion requires explicit approval.'
-      ),
-    ],
-    relatedPaths: ['/guides/browser-automation-safety', '/guides/pre-action-gates'],
-  }),
+  ...BROWSER_BRIDGE_GUIDE_SPECS.map(buildBrowserBridgeGuide),
   guideBlueprint({
     query: 'autoresearch agent safety',
     path: '/guides/autoresearch-agent-safety',

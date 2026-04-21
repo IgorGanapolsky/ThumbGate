@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 
 const ROOT = path.join(__dirname, '..');
 
@@ -137,10 +137,10 @@ function listJsonFiles(dirPath) {
 function guessVendor(manifestPath, manifest) {
   const haystack = [
     manifestPath,
-    manifest && manifest.name,
-    manifest && manifest.description,
-    manifest && manifest.path,
-    ...(Array.isArray(manifest && manifest.allowed_origins) ? manifest.allowed_origins : []),
+    manifest?.name,
+    manifest?.description,
+    manifest?.path,
+    ...(Array.isArray(manifest?.allowed_origins) ? manifest.allowed_origins : []),
   ]
     .filter(Boolean)
     .join(' ');
@@ -159,8 +159,8 @@ function isAiVendor(vendor) {
 }
 
 function extractExtensionId(origin) {
-  const match = String(origin || '').match(/^chrome-extension:\/\/([^/]+)/i);
-  return match ? match[1] : null;
+  const match = /^chrome-extension:\/\/([^/]+)/i.exec(String(origin || ''));
+  return match?.[1] || null;
 }
 
 function readManifest(filePath) {
@@ -267,56 +267,77 @@ function shouldIncludeEntry(entry, options = {}) {
   return entry.aiBridge;
 }
 
+function getAllowedOrigins(manifest) {
+  return Array.isArray(manifest?.allowed_origins)
+    ? manifest.allowed_origins.filter((origin) => typeof origin === 'string' && origin.trim())
+    : [];
+}
+
+function buildManifestEntry(target, manifestPath, auditOptions) {
+  const { parsed, parseError } = readManifest(manifestPath);
+  const allowedOrigins = getAllowedOrigins(parsed);
+  const hostPath = typeof parsed?.path === 'string' ? parsed.path : null;
+  const vendor = guessVendor(manifestPath, parsed);
+  const entry = {
+    browser: target.displayName,
+    browserKey: target.key,
+    manifestPath,
+    manifestDir: path.join(auditOptions.homeDir, ...target.manifestDirParts),
+    hostName: typeof parsed?.name === 'string' ? parsed.name : null,
+    hostPath,
+    hostPathExists: hostPath ? fs.existsSync(hostPath) : false,
+    allowedOrigins,
+    allowedOriginsCount: allowedOrigins.length,
+    extensionIds: allowedOrigins.map(extractExtensionId).filter(Boolean),
+    vendor,
+    aiBridge: isAiVendor(vendor),
+    browserInstalledGuess: guessBrowserInstalled(target, auditOptions),
+    parseError,
+  };
+  return {
+    ...entry,
+    findings: analyzeManifestEntry(entry),
+  };
+}
+
+function collectTargetEntries(target, auditOptions, options) {
+  const manifestDir = path.join(auditOptions.homeDir, ...target.manifestDirParts);
+  return listJsonFiles(manifestDir)
+    .map((manifestPath) => buildManifestEntry(target, manifestPath, auditOptions))
+    .filter((entry) => shouldIncludeEntry(entry, options));
+}
+
+function buildAuditOptions(options = {}) {
+  return {
+    platform: normalizePlatform(options.platform),
+    homeDir: path.resolve(options.homeDir || os.homedir()),
+    explicitHomeDir: typeof options.homeDir === 'string' && options.homeDir.trim().length > 0,
+  };
+}
+
+function buildWindowsAudit(auditOptions) {
+  return {
+    platform: auditOptions.platform,
+    homeDir: auditOptions.homeDir,
+    entries: [],
+    notes: ['Windows native messaging is registry-based; this file audit focuses on macOS and Linux host manifests.'],
+  };
+}
+
 function collectNativeMessagingEntries(options = {}) {
-  const platform = normalizePlatform(options.platform);
-  const homeDir = path.resolve(options.homeDir || os.homedir());
-  const explicitHomeDir = typeof options.homeDir === 'string' && options.homeDir.trim().length > 0;
-  const targets = getBrowserTargets(platform);
-  const entries = [];
-
-  if (platform === 'win32') {
-    return {
-      platform,
-      homeDir,
-      entries,
-      notes: ['Windows native messaging is registry-based; this file audit focuses on macOS and Linux host manifests.'],
-    };
+  const auditOptions = buildAuditOptions(options);
+  if (auditOptions.platform === 'win32') {
+    return buildWindowsAudit(auditOptions);
   }
 
-  for (const target of targets) {
-    const manifestDir = path.join(homeDir, ...target.manifestDirParts);
-    for (const manifestPath of listJsonFiles(manifestDir)) {
-      const { parsed, parseError } = readManifest(manifestPath);
-      const allowedOrigins = Array.isArray(parsed && parsed.allowed_origins)
-        ? parsed.allowed_origins.filter((origin) => typeof origin === 'string' && origin.trim())
-        : [];
-      const extensionIds = allowedOrigins.map(extractExtensionId).filter(Boolean);
-      const hostPath = parsed && typeof parsed.path === 'string' ? parsed.path : null;
-      const vendor = guessVendor(manifestPath, parsed);
-      const entry = {
-        browser: target.displayName,
-        browserKey: target.key,
-        manifestPath,
-        manifestDir,
-        hostName: parsed && typeof parsed.name === 'string' ? parsed.name : null,
-        hostPath,
-        hostPathExists: hostPath ? fs.existsSync(hostPath) : false,
-        allowedOrigins,
-        allowedOriginsCount: allowedOrigins.length,
-        extensionIds,
-        vendor,
-        aiBridge: isAiVendor(vendor),
-        browserInstalledGuess: guessBrowserInstalled(target, { platform, homeDir, explicitHomeDir }),
-        parseError,
-      };
-      entry.findings = analyzeManifestEntry(entry);
-      if (shouldIncludeEntry(entry, options)) {
-        entries.push(entry);
-      }
-    }
-  }
-
-  return { platform, homeDir, entries, notes: [] };
+  const entries = getBrowserTargets(auditOptions.platform)
+    .flatMap((target) => collectTargetEntries(target, auditOptions, options));
+  return {
+    platform: auditOptions.platform,
+    homeDir: auditOptions.homeDir,
+    entries,
+    notes: [],
+  };
 }
 
 function summarizeFindings(entries) {
@@ -386,46 +407,41 @@ function buildNativeMessagingAudit(options = {}) {
   };
 }
 
+function appendBlock(lines, heading, entries) {
+  if (entries.length === 0) return;
+  lines.push('', heading, ...entries);
+}
+
+function formatFindingLine(finding) {
+  return `  - [${finding.severity}] ${finding.browser}: ${finding.message}`;
+}
+
+function formatManifestLines(entry) {
+  const lines = [
+    `  - ${entry.browser} -> ${entry.hostName || path.basename(entry.manifestPath)}`,
+    `    manifest: ${entry.manifestPath}`,
+  ];
+  if (entry.hostPath) {
+    lines.push(`    host: ${entry.hostPath}${entry.hostPathExists ? '' : ' (missing)'}`);
+  }
+  if (entry.allowedOriginsCount > 0) {
+    lines.push(`    allowed origins: ${entry.allowedOriginsCount}`);
+  }
+  return lines;
+}
+
 function formatNativeMessagingAudit(report) {
-  const lines = [];
-  lines.push('ThumbGate Native Messaging Audit');
-  lines.push(`Status : ${report.status}`);
-  lines.push(`Hosts  : ${report.summary.manifestCount} manifest${report.summary.manifestCount === 1 ? '' : 's'} across ${report.summary.browsersCovered} browser${report.summary.browsersCovered === 1 ? '' : 's'}`);
-  lines.push(`AI     : ${report.summary.aiBridgeCount} AI browser bridge${report.summary.aiBridgeCount === 1 ? '' : 's'}`);
+  const lines = [
+    'ThumbGate Native Messaging Audit',
+    `Status : ${report.status}`,
+    `Hosts  : ${report.summary.manifestCount} manifest${report.summary.manifestCount === 1 ? '' : 's'} across ${report.summary.browsersCovered} browser${report.summary.browsersCovered === 1 ? '' : 's'}`,
+    `AI     : ${report.summary.aiBridgeCount} AI browser bridge${report.summary.aiBridgeCount === 1 ? '' : 's'}`,
+  ];
+  appendBlock(lines, 'Findings:', report.findings.map(formatFindingLine));
+  appendBlock(lines, 'Registered manifests:', report.manifests.flatMap(formatManifestLines));
+  appendBlock(lines, 'Recommendations:', report.recommendations.map((recommendation) => `  - ${recommendation}`));
   if (report.notes.length > 0) {
-    lines.push('');
-    for (const note of report.notes) {
-      lines.push(`Note   : ${note}`);
-    }
-  }
-
-  if (report.findings.length > 0) {
-    lines.push('');
-    lines.push('Findings:');
-    for (const finding of report.findings) {
-      lines.push(`  - [${finding.severity}] ${finding.browser}: ${finding.message}`);
-    }
-  }
-
-  if (report.manifests.length > 0) {
-    lines.push('');
-    lines.push('Registered manifests:');
-    for (const entry of report.manifests) {
-      lines.push(`  - ${entry.browser} -> ${entry.hostName || path.basename(entry.manifestPath)}`);
-      lines.push(`    manifest: ${entry.manifestPath}`);
-      if (entry.hostPath) {
-        lines.push(`    host: ${entry.hostPath}${entry.hostPathExists ? '' : ' (missing)'}`);
-      }
-      if (entry.allowedOriginsCount > 0) {
-        lines.push(`    allowed origins: ${entry.allowedOriginsCount}`);
-      }
-    }
-  }
-
-  lines.push('');
-  lines.push('Recommendations:');
-  for (const recommendation of report.recommendations) {
-    lines.push(`  - ${recommendation}`);
+    lines.splice(4, 0, '', ...report.notes.map((note) => `Note   : ${note}`));
   }
   lines.push('');
   return `${lines.join('\n')}`;
@@ -453,12 +469,20 @@ function parseArgs(argv) {
   return args;
 }
 
+function parseBooleanFlag(value) {
+  return value === true || value === 'true';
+}
+
+function isMainModule() {
+  return Boolean(process.argv[1] && path.resolve(process.argv[1]) === __filename);
+}
+
 function main(argv = process.argv.slice(2)) {
   const args = parseArgs(argv);
   const report = buildNativeMessagingAudit({
     homeDir: args['home-dir'],
     platform: args.platform,
-    aiOnly: args['ai-only'] === true,
+    aiOnly: parseBooleanFlag(args['ai-only']),
   });
 
   if (args.json) {
@@ -469,11 +493,11 @@ function main(argv = process.argv.slice(2)) {
   process.stdout.write(formatNativeMessagingAudit(report));
 }
 
-if (require.main === module) {
+if (isMainModule()) {
   try {
     main();
   } catch (error) {
-    console.error(error && error.message ? error.message : error);
+    console.error(error?.message || error);
     process.exit(1);
   }
 }
