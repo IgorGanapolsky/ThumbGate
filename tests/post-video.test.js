@@ -184,4 +184,31 @@ describe('post-video (Instagram presign fix)', () => {
     assert.equal(result.key, fakeUploaded.key);
     assert.equal(tr.uploads[0], '/tmp/fake.mp4');
   });
+
+  // Funnel-attribution regression guard (2026-04-21): TikTok / YouTube / Instagram
+  // captions MUST include the tracked landing page as the primary CTA. An earlier
+  // variant pointed only at github.com, which never touches our funnel tracker and
+  // produced 0 funnel events across 404 published posts. Do not regress.
+  it('video captions link to thumbgate-production for funnel attribution', () => {
+    const { CAPTIONS } = require('../scripts/social-analytics/post-video');
+    const landingDomain = 'thumbgate-production.up.railway.app';
+
+    // TikTok and YouTube include raw URLs, so they must include the tracked domain.
+    assert.ok(
+      CAPTIONS.tiktok.includes(landingDomain),
+      `tiktok caption must link to ${landingDomain}:\n${CAPTIONS.tiktok}`
+    );
+    assert.ok(
+      CAPTIONS.youtube.includes(landingDomain),
+      `youtube caption must link to ${landingDomain}:\n${CAPTIONS.youtube}`
+    );
+
+    // Instagram uses "link in bio" (IG strips inline URLs) — no landing-page
+    // assertion there, but we still forbid github.com as the only outbound
+    // reference. As of 2026-04-21 IG caption contains no outbound URL at all.
+    assert.ok(
+      !/^https?:\/\/github\.com\/IgorGanapolsky\/ThumbGate/m.test(CAPTIONS.instagram),
+      `instagram caption must not use github.com as the sole bare-URL CTA:\n${CAPTIONS.instagram}`
+    );
+  });
 });

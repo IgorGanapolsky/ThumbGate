@@ -201,9 +201,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 3.01 MB → 3.02 MB (2026-04-20) after rebase onto #1092: adds
   // scripts/rule-validator.js (~5 KB) on top of main's post-#1092 baseline.
   // 10 KB headroom prevents rebase-flapping on the next main merge.
+  // Bumped 3.02 MB → 3.04 MB (2026-04-21) to accommodate the /numbers +
+  // landing-view funnel-ledger wire in src/api/server.js (appendFunnelEvent
+  // destructure + ~30-line try/catch inside servePublicMarketingPage + the
+  // /numbers route swap to servePublicMarketingPage). Net ≈ 1.4 KB; 20 KB
+  // ceiling bump preserves the usual rebase-flap headroom.
   assert.ok(
-    manifest.unpackedSize <= 3_020_000,
-    `npm package should stay <= 3.02 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_040_000,
+    `npm package should stay <= 3.04 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
