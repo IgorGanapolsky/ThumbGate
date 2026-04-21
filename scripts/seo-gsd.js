@@ -294,10 +294,9 @@ const PAGE_BLUEPRINTS = [
     ],
     relatedPaths: ['/compare/speclock', '/guides/claude-code-feedback'],
   },
-  {
+  guideBlueprint({
     query: 'ai agent harness optimization',
     path: '/guides/agent-harness-optimization',
-    pageType: 'guide',
     pillar: 'pre-action-gates',
     title: 'AI Agent Harness Optimization | Progressive Disclosure + Pre-Action Gates',
     heroTitle: 'AI Agent Harness Optimization That Blocks Repeat Failures',
@@ -308,41 +307,26 @@ const PAGE_BLUEPRINTS = [
       'ThumbGate adds a concrete audit path and Pre-Action Gates so harness lessons become runtime enforcement.',
     ],
     sections: [
-      {
-        heading: 'What changed',
-        paragraphs: [
-          'The model is no longer the whole system. The harness decides which instructions, tools, context packs, and approval rules the model sees before it acts.',
-          'When a team stuffs every rule into a global prompt, the agent loses reasoning room. When it routes work through lean discovery surfaces, the agent can fetch the exact tool schema, lesson, or harness only when the task requires it.',
-        ],
-      },
-      {
-        heading: 'How ThumbGate improves the harness',
-        bullets: [
-          'Scores global agent docs so AGENTS.md, CLAUDE.md, and GEMINI.md stay lean instead of becoming unreviewable prompt bundles.',
-          'Publishes progressive MCP discovery through lightweight indexes and per-tool schema URLs.',
-          'Selects specialized gate harnesses for deploy, code-edit, and database-write actions instead of loading every gate for every workflow.',
-          'Turns thumbs-down feedback into prevention rules, then into hard Pre-Action Gates that block repeated mistakes.',
-        ],
-      },
-      {
-        heading: 'Where this creates ROI',
-        paragraphs: [
-          'For acquisition, this page names the buyer category: AI agent harness optimization. For conversion, the CLI audit gives a concrete first action. For retention, the same audit keeps local instructions and MCP surfaces from drifting back into bloat.',
-        ],
-      },
+      paragraphs('What changed', [
+        'The model is no longer the whole system. The harness decides which instructions, tools, context packs, and approval rules the model sees before it acts.',
+        'When a team stuffs every rule into a global prompt, the agent loses reasoning room. When it routes work through lean discovery surfaces, the agent can fetch the exact tool schema, lesson, or harness only when the task requires it.',
+      ]),
+      bullets('How ThumbGate improves the harness', [
+        'Scores global agent docs so AGENTS.md, CLAUDE.md, and GEMINI.md stay lean instead of becoming unreviewable prompt bundles.',
+        'Publishes progressive MCP discovery through lightweight indexes and per-tool schema URLs.',
+        'Selects specialized gate harnesses for deploy, code-edit, and database-write actions instead of loading every gate for every workflow.',
+        'Turns thumbs-down feedback into prevention rules, then into hard Pre-Action Gates that block repeated mistakes.',
+      ]),
+      paragraphs('Where this creates ROI', [
+        'For acquisition, this page names the buyer category: AI agent harness optimization. For conversion, the CLI audit gives a concrete first action. For retention, the same audit keeps local instructions and MCP surfaces from drifting back into bloat.',
+      ]),
     ],
     faq: [
-      {
-        question: 'What is an AI agent harness?',
-        answer: 'An AI agent harness is the runtime layer around the model: context loading, tool calls, guardrails, approval boundaries, memory, and verification. ThumbGate focuses on the enforcement part of that harness.',
-      },
-      {
-        question: 'How does ThumbGate optimize a harness?',
-        answer: 'ThumbGate keeps global instructions lean, supports progressive MCP discovery, selects workflow-specific gate harnesses, and converts feedback into Pre-Action Gates that block known-bad actions before execution.',
-      },
+      answer('What is an AI agent harness?', 'An AI agent harness is the runtime layer around the model: context loading, tool calls, guardrails, approval boundaries, memory, and verification. ThumbGate focuses on the enforcement part of that harness.'),
+      answer('How does ThumbGate optimize a harness?', 'ThumbGate keeps global instructions lean, supports progressive MCP discovery, selects workflow-specific gate harnesses, and converts feedback into Pre-Action Gates that block known-bad actions before execution.'),
     ],
     relatedPaths: ['/guides/pre-action-gates', '/guides/codex-cli-guardrails'],
-  },
+  }),
   {
     query: 'stop ai coding agents from repeating mistakes',
     path: '/guides/stop-repeated-ai-agent-mistakes',
