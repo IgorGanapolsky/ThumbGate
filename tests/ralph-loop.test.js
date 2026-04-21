@@ -52,10 +52,16 @@ test('buildRalphSteps keeps hourly all mode focused on sensing, replying, and au
     'poll-analytics',
     'sync-launch-assets',
     'reply-monitor',
+    'reply-monitor-bluesky',
     'engagement-audit',
   ]);
   assert.match(steps.find((step) => step.id === 'sync-launch-assets').skipReason, /ZERNIO_API_KEY/);
   assert.deepEqual(steps.find((step) => step.id === 'reply-monitor').args.slice(-1), ['--dry-run']);
+  // Bluesky reply monitor uses direct AT Protocol (Zernio has no inbound API as
+  // of 2026-04-21). Gated on BLUESKY_HANDLE + BLUESKY_APP_PASSWORD; drafts-only.
+  const bluesky = steps.find((step) => step.id === 'reply-monitor-bluesky');
+  assert.deepEqual(bluesky.args.slice(-1), ['--dry-run']);
+  assert.match(bluesky.skipReason, /BLUESKY_HANDLE|BLUESKY_APP_PASSWORD/);
   assert.equal(ids.includes('daily-social-post'), false);
 });
 

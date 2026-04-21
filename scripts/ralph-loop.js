@@ -161,15 +161,30 @@ function buildRalphSteps(options = {}, env = process.env) {
     if (dryRun) {
       replyArgs.push('--dry-run');
     }
-    steps.push(makeNodeStep(
-      'reply-monitor',
-      'scripts/social-reply-monitor.js',
-      replyArgs,
-      {
-        stage: 'engage',
-        description: 'Checks Reddit, X, and LinkedIn reply surfaces with platform-safe posting and draft rules.',
-      }
-    ));
+    // Bluesky reply monitor: Zernio has no inbound/comments API, so we poll AT
+    // Protocol directly. This only queues drafts to .thumbgate/reply-drafts.jsonl
+    // — never auto-posts. Human review required before send.
+    steps.push(
+      makeNodeStep(
+        'reply-monitor',
+        'scripts/social-reply-monitor.js',
+        replyArgs,
+        {
+          stage: 'engage',
+          description: 'Checks Reddit, X, and LinkedIn reply surfaces with platform-safe posting and draft rules.',
+        }
+      ),
+      makeNodeStep(
+        'reply-monitor-bluesky',
+        'scripts/social-reply-monitor-bluesky.js',
+        replyArgs,
+        {
+          stage: 'engage',
+          description: 'Polls Bluesky notifications via AT Protocol and queues draft replies for human review (never auto-posts).',
+          requiredEnvAll: ['BLUESKY_HANDLE', 'BLUESKY_APP_PASSWORD'],
+        }
+      ),
+    );
   }
 
   if (mode === 'post') {
