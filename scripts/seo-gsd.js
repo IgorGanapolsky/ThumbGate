@@ -156,53 +156,58 @@ function preActionGuide(slug, content) {
 }
 
 const HARNESS_OPTIMIZATION_QUERY = 'ai agent harness optimization';
-const HARNESS_OPTIMIZATION_COPY = Object.freeze({
-  query: HARNESS_OPTIMIZATION_QUERY,
-  title: 'AI Agent Harness Optimization | Progressive Disclosure + Pre-Action Gates',
-  heroTitle: 'AI Agent Harness Optimization That Blocks Repeat Failures',
-  heroSummary: 'A better harness keeps global instructions lean, loads MCP schemas only when needed, and turns feedback into pre-action gates. ThumbGate makes that workflow measurable and enforceable.',
+const HARNESS_OPTIMIZATION_GUIDE_SPEC = Object.freeze({
+  slug: 'agent-harness-optimization',
+  meta: {
+    query: HARNESS_OPTIMIZATION_QUERY,
+    title: 'AI Agent Harness Optimization | Progressive Disclosure + Pre-Action Gates',
+    heroTitle: 'AI Agent Harness Optimization That Blocks Repeat Failures',
+    heroSummary: 'A better harness keeps global instructions lean, loads MCP schemas only when needed, and turns feedback into pre-action gates. ThumbGate makes that workflow measurable and enforceable.',
+  },
+  takeaways: [
+    'Harness optimization is the control layer around the model: context, tools, guardrails, and feedback.',
+    'Progressive disclosure keeps agents out of prompt bloat while preserving proof and tool access.',
+    'ThumbGate adds a concrete audit path and Pre-Action Gates so harness lessons become runtime enforcement.',
+  ],
+  sections: [
+    ['paragraphs', 'What changed', [
+      'The model is no longer the whole system. The harness decides which instructions, tools, context packs, and approval rules the model sees before it acts.',
+      'When a team stuffs every rule into a global prompt, the agent loses reasoning room. When it routes work through lean discovery surfaces, the agent can fetch the exact tool schema, lesson, or harness only when the task requires it.',
+    ]],
+    ['bullets', 'How ThumbGate improves the harness', [
+      'Scores global agent docs so AGENTS.md, CLAUDE.md, and GEMINI.md stay lean instead of becoming unreviewable prompt bundles.',
+      'Publishes progressive MCP discovery through lightweight indexes and per-tool schema URLs.',
+      'Selects specialized gate harnesses for deploy, code-edit, and database-write actions instead of loading every gate for every workflow.',
+      'Turns thumbs-down feedback into prevention rules, then into hard Pre-Action Gates that block repeated mistakes.',
+    ]],
+    ['paragraphs', 'Where this creates ROI', [
+      'For acquisition, this page names the buyer category: AI agent harness optimization. For conversion, the CLI audit gives a concrete first action. For retention, the same audit keeps local instructions and MCP surfaces from drifting back into bloat.',
+    ]],
+  ],
+  faq: [
+    [
+      'What is an AI agent harness?',
+      'An AI agent harness is the runtime layer around the model: context loading, tool calls, guardrails, approval boundaries, memory, and verification. ThumbGate focuses on the enforcement part of that harness.',
+    ],
+    [
+      'How does ThumbGate optimize a harness?',
+      'ThumbGate keeps global instructions lean, supports progressive MCP discovery, selects workflow-specific gate harnesses, and converts feedback into Pre-Action Gates that block known-bad actions before execution.',
+    ],
+  ],
+  relatedPaths: ['/guides/pre-action-gates', '/guides/codex-cli-guardrails'],
 });
 
-const HARNESS_OPTIMIZATION_TAKEAWAYS = [
-  'Harness optimization is the control layer around the model: context, tools, guardrails, and feedback.',
-  'Progressive disclosure keeps agents out of prompt bloat while preserving proof and tool access.',
-  'ThumbGate adds a concrete audit path and Pre-Action Gates so harness lessons become runtime enforcement.',
-];
-
-const HARNESS_OPTIMIZATION_SECTIONS = [
-  paragraphs('What changed', [
-    'The model is no longer the whole system. The harness decides which instructions, tools, context packs, and approval rules the model sees before it acts.',
-    'When a team stuffs every rule into a global prompt, the agent loses reasoning room. When it routes work through lean discovery surfaces, the agent can fetch the exact tool schema, lesson, or harness only when the task requires it.',
-  ]),
-  bullets('How ThumbGate improves the harness', [
-    'Scores global agent docs so AGENTS.md, CLAUDE.md, and GEMINI.md stay lean instead of becoming unreviewable prompt bundles.',
-    'Publishes progressive MCP discovery through lightweight indexes and per-tool schema URLs.',
-    'Selects specialized gate harnesses for deploy, code-edit, and database-write actions instead of loading every gate for every workflow.',
-    'Turns thumbs-down feedback into prevention rules, then into hard Pre-Action Gates that block repeated mistakes.',
-  ]),
-  paragraphs('Where this creates ROI', [
-    'For acquisition, this page names the buyer category: AI agent harness optimization. For conversion, the CLI audit gives a concrete first action. For retention, the same audit keeps local instructions and MCP surfaces from drifting back into bloat.',
-  ]),
-];
-
-const HARNESS_OPTIMIZATION_FAQ = [
-  answer(
-    'What is an AI agent harness?',
-    'An AI agent harness is the runtime layer around the model: context loading, tool calls, guardrails, approval boundaries, memory, and verification. ThumbGate focuses on the enforcement part of that harness.',
-  ),
-  answer(
-    'How does ThumbGate optimize a harness?',
-    'ThumbGate keeps global instructions lean, supports progressive MCP discovery, selects workflow-specific gate harnesses, and converts feedback into Pre-Action Gates that block known-bad actions before execution.',
-  ),
-];
+function buildSectionFromSpec(kind, heading, entries) {
+  return kind === 'bullets' ? bullets(heading, entries) : paragraphs(heading, entries);
+}
 
 function buildHarnessOptimizationGuide() {
-  return preActionGuide('agent-harness-optimization', {
-    ...HARNESS_OPTIMIZATION_COPY,
-    takeaways: HARNESS_OPTIMIZATION_TAKEAWAYS,
-    sections: HARNESS_OPTIMIZATION_SECTIONS,
-    faq: HARNESS_OPTIMIZATION_FAQ,
-    relatedPaths: ['/guides/pre-action-gates', '/guides/codex-cli-guardrails'],
+  return preActionGuide(HARNESS_OPTIMIZATION_GUIDE_SPEC.slug, {
+    ...HARNESS_OPTIMIZATION_GUIDE_SPEC.meta,
+    takeaways: HARNESS_OPTIMIZATION_GUIDE_SPEC.takeaways,
+    sections: HARNESS_OPTIMIZATION_GUIDE_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+    faq: HARNESS_OPTIMIZATION_GUIDE_SPEC.faq.map(([question, text]) => answer(question, text)),
+    relatedPaths: HARNESS_OPTIMIZATION_GUIDE_SPEC.relatedPaths,
   });
 }
 
