@@ -9,6 +9,8 @@ const {
   extractCommandText,
   listHarnesses,
   getHarnessPath,
+  scoreHarnessAudit,
+  buildHarnessOptimizationAudit,
   HARNESSES,
   CODE_EDIT_TOOL_NAMES,
 } = require('../scripts/harness-selector');
@@ -259,5 +261,52 @@ describe('CODE_EDIT_TOOL_NAMES', () => {
   it('does not include Bash or Read', () => {
     assert.ok(!CODE_EDIT_TOOL_NAMES.has('Bash'));
     assert.ok(!CODE_EDIT_TOOL_NAMES.has('Read'));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Harness optimization audit
+// ---------------------------------------------------------------------------
+
+describe('harness optimization audit', () => {
+  it('flags bloated global docs without progressive MCP discovery', () => {
+    const audit = scoreHarnessAudit({
+      globalDocs: [
+        { name: 'AGENTS.md', chars: 42000, estimatedTokens: 10500, exists: true },
+      ],
+      mcpToolCount: 30,
+      progressiveToolIndexPresent: false,
+      specializedHarnesses: ['deploy'],
+    });
+
+    assert.equal(audit.status, 'bloated');
+    assert.equal(audit.signals.docsOverBudget, true);
+    assert.ok(audit.recommendations.some((line) => line.includes('Move verbose runbooks')));
+    assert.ok(audit.recommendations.some((line) => line.includes('lightweight MCP tool index')));
+  });
+
+  it('recognizes progressive disclosure and specialized gate harnesses', () => {
+    const audit = scoreHarnessAudit({
+      globalDocs: [
+        { name: 'AGENTS.md', chars: 4000, estimatedTokens: 1000, exists: true },
+        { name: 'CLAUDE.md', chars: 4000, estimatedTokens: 1000, exists: true },
+      ],
+      mcpToolCount: 40,
+      progressiveToolIndexPresent: true,
+      specializedHarnesses: ['deploy', 'code-edit', 'db-write'],
+    });
+
+    assert.equal(audit.status, 'compounding');
+    assert.equal(audit.signals.progressiveToolIndexPresent, true);
+    assert.equal(audit.signals.hasSpecializedHarnesses, true);
+  });
+
+  it('buildHarnessOptimizationAudit reads the current repo and returns a score', () => {
+    const audit = buildHarnessOptimizationAudit();
+
+    assert.equal(audit.name, 'thumbgate-harness-optimization-audit');
+    assert.ok(Number.isInteger(audit.score));
+    assert.ok(audit.totals.specializedHarnessCount >= 3);
+    assert.ok(audit.recommendations.length >= 1);
   });
 });
