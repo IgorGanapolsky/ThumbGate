@@ -188,9 +188,11 @@ function upsertLesson(db, feedbackEvent, memoryRecord) {
   const skill = feedbackEvent.skill || null;
   const whatToChange = feedbackEvent.whatToChange || null;
 
-  // Rule 2: dedup — if an existing lesson has the same whatToChange and shares tags, skip
+  // Rule 2: dedup — if an existing lesson has the same whatToChange and shares tags, skip.
+  // Passes the feedback event + memoryRecord through so findDuplicate can fall back to
+  // canonical-hash matching when punctuation/wording drift breaks the exact string path.
   if (whatToChange && whatToChange.trim()) {
-    const duplicate = findDuplicate(db, whatToChange, tags);
+    const duplicate = findDuplicate(db, whatToChange, tags, { feedbackEvent, memoryRecord, signal });
     if (duplicate) {
       // Bump importance if the new one is higher priority
       const PRIORITY = { critical: 4, high: 3, medium: 2, low: 1 };
@@ -231,23 +233,82 @@ function upsertLesson(db, feedbackEvent, memoryRecord) {
 /**
  * Find an existing lesson with identical whatToChange and overlapping tags.
  * Returns the existing row or null.
+ *
+ * Two-layer match:
+ *   1. Exact case-insensitive text match on `whatToChange` + tag overlap.
+ *      This is the original behavior — fast, index-friendly, catches verbatim
+ *      re-captures of the same feedback from the same session.
+ *   2. Canonical-hash fallback (optional). When the caller passes `opts` with
+ *      `feedbackEvent`/`memoryRecord`, we compute the incoming record's cross-
+ *      session canonical hash and scan recent lessons of the same signal.
+ *      This defeats the common drift cases the exact path misses: punctuation
+ *      changes, stop-word edits, casing, and trailing plurals.
+ *
+ * The fallback is gated on `opts` so existing callers that only have
+ * `(db, whatToChange, tags)` still work unchanged.
  */
-function findDuplicate(db, whatToChange, tags) {
+function findDuplicate(db, whatToChange, tags, opts = null) {
   if (!whatToChange || !whatToChange.trim()) return null;
 
-  // Exact match on whatToChange text (normalized)
+  // Layer 1: exact match on whatToChange text (normalized)
   const normalized = whatToChange.trim().toLowerCase();
   const candidates = db.prepare(
     `SELECT id, importance, tags FROM lessons WHERE LOWER(TRIM(whatToChange)) = ?`,
   ).all(normalized);
 
-  if (candidates.length === 0) return null;
+  if (candidates.length > 0) {
+    for (const c of candidates) {
+      if (tags.length === 0) return c; // no tags to compare = text match is enough
+      const cTags = safeParseTags(c.tags);
+      if (tags.some((t) => cTags.includes(t))) return c;
+    }
+  }
 
-  // If any candidate shares at least one tag, it's a duplicate
-  for (const c of candidates) {
-    if (tags.length === 0) return c; // no tags to compare = text match is enough
-    const cTags = safeParseTags(c.tags);
-    if (tags.some((t) => cTags.includes(t))) return c;
+  // Layer 2: canonical-hash fallback. Only runs when the caller supplied a
+  // full record so we have title/content/whatWentWrong available — scanning
+  // just `whatToChange` would miss records promoted under a different schema.
+  if (opts && (opts.feedbackEvent || opts.memoryRecord)) {
+    try {
+      const { canonicalHash } = require('./lesson-canonical');
+      // Build a synthetic lesson record from whatever the caller passed so the
+      // canonical hasher sees the same signature findCanonicalDuplicate uses.
+      const incoming = {
+        ...(opts.memoryRecord || {}),
+        whatToChange: opts.feedbackEvent?.whatToChange || opts.memoryRecord?.whatToChange || whatToChange,
+        whatWentWrong: opts.feedbackEvent?.whatWentWrong || opts.memoryRecord?.whatWentWrong || null,
+        whatWorked: opts.feedbackEvent?.whatWorked || opts.memoryRecord?.whatWorked || null,
+        tags,
+        signal: opts.signal || opts.memoryRecord?.signal || null,
+      };
+      const incomingHash = canonicalHash(incoming);
+      if (incomingHash) {
+        // Scan lessons of the same signal. Tags differ across schemas so we
+        // canonical-match row-by-row rather than hoping for a JSON array match.
+        const signalFilter = opts.signal || null;
+        const rows = signalFilter
+          ? db.prepare(
+              `SELECT id, importance, tags, whatToChange, whatWentWrong, whatWorked
+                 FROM lessons WHERE signal = ? AND pruned = 0`,
+            ).all(signalFilter)
+          : db.prepare(
+              `SELECT id, importance, tags, whatToChange, whatWentWrong, whatWorked
+                 FROM lessons WHERE pruned = 0`,
+            ).all();
+        for (const row of rows) {
+          const rowRecord = {
+            whatToChange: row.whatToChange,
+            whatWentWrong: row.whatWentWrong,
+            whatWorked: row.whatWorked,
+            tags: safeParseTags(row.tags),
+          };
+          if (canonicalHash(rowRecord) === incomingHash) {
+            return { id: row.id, importance: row.importance, tags: row.tags };
+          }
+        }
+      }
+    } catch (_canonErr) {
+      // Canonical fallback is best-effort — never break the upsert path.
+    }
   }
 
   return null;

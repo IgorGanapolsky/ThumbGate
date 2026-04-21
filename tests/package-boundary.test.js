@@ -164,9 +164,21 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // published `thumbgate serve` with a closed MCP transport.
   // Bumped 230 → 232 (2026-04-20) to ship the read-only operator artifact
   // generator and its PR pulse dependency for published MCP/CLI runtimes.
+  // Bumped 232 → 234 (2026-04-20) for the cross-session canonical-hash
+  // module (`scripts/lesson-canonical.js`) required at runtime by
+  // lesson-synthesis / lesson-db / feedback-loop, plus one-file headroom.
+  // Bumped 234 → 236 (2026-04-20) after rebase onto main that landed #1100:
+  // this branch adds public/numbers.html (first-party data transparency page
+  // served at /numbers) on top of lesson-canonical.js already on main. Two
+  // extra file slots: numbers.html + one-file headroom.
+  // Bumped 236 → 238 (2026-04-20) after rebase onto main that landed #1092
+  // (numbers.html): this branch adds scripts/rule-validator.js
+  // (Autogenesis-inspired pre-promotion validator that feedback-loop.js
+  // requires at captureFeedback time) on top of main's post-#1092 baseline.
+  // Two extra file slots: rule-validator.js + one-file headroom.
   assert.ok(
-    manifest.fileCount <= 232,
-    `npm package should stay <= 232 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 238,
+    `npm package should stay <= 238 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -180,9 +192,18 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // to actively trim assets.
   // Bumped 2.95 MB → 2.97 MB (2026-04-20) for operator-artifacts.js plus the
   // existing PR manager it composes for the read-only PR pulse.
+  // Bumped 2.97 MB → 2.99 MB (2026-04-20) for scripts/lesson-canonical.js,
+  // loss-matrix expansion in config/enforcement.json, the contextfs
+  // summarize-then-expand selector, and feedback-loop / lesson-db
+  // canonical-dedup wiring that together added ~8 KB to the tarball.
+  // Bumped 2.99 MB → 3.01 MB (2026-04-20) after rebase onto #1100: adds
+  // public/numbers.html (~12 KB) on top of main's post-#1100 baseline.
+  // Bumped 3.01 MB → 3.02 MB (2026-04-20) after rebase onto #1092: adds
+  // scripts/rule-validator.js (~5 KB) on top of main's post-#1092 baseline.
+  // 10 KB headroom prevents rebase-flapping on the next main merge.
   assert.ok(
-    manifest.unpackedSize <= 2_970_000,
-    `npm package should stay <= 2.97 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_020_000,
+    `npm package should stay <= 3.02 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
