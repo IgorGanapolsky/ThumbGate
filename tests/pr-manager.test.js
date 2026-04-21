@@ -5,6 +5,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   assertSafeGhArgs,
+  buildGhEnv,
   getPrChecks,
   getPrStatus,
   isOpenPr,
@@ -224,6 +225,17 @@ test('PR Manager - resolveGhBinary uses only fixed executable locations', () => 
   assert.equal(calls[1][0], '/usr/local/bin/gh');
 });
 
+test('PR Manager - buildGhEnv promotes GH_PAT into GH_TOKEN when needed', () => {
+  const env = buildGhEnv({ PATH: '/usr/bin', GH_PAT: 'pat-token' });
+  assert.equal(env.GH_TOKEN, 'pat-token');
+  assert.equal(env.PATH, '/usr/bin');
+});
+
+test('PR Manager - buildGhEnv preserves explicit GH_TOKEN', () => {
+  const env = buildGhEnv({ GH_PAT: 'pat-token', GH_TOKEN: 'preferred-token' });
+  assert.equal(env.GH_TOKEN, 'preferred-token');
+});
+
 test('PR Manager - loadManagedPrs falls back to open PR list when branch has no PR', () => {
   const mockPr = {
     number: 281,
@@ -307,10 +319,33 @@ test('PR Manager - managePrs returns noop when there are no open PRs', async () 
   assert.deepEqual(result.prs, []);
 });
 
+test('PR Manager - managePrs returns noop when an explicit PR number is already merged', async () => {
+  const runner = createRunner([
+    {
+      status: 0,
+      stdout: JSON.stringify({
+        number: 1009,
+        state: 'MERGED',
+        title: 'Merged release PR',
+        mergeable: 'UNKNOWN',
+        mergeStateStatus: 'UNKNOWN',
+        isDraft: false,
+        statusCheckRollup: []
+      }),
+      stderr: ''
+    }
+  ]);
+
+  const result = await managePrs('1009', runner, { waitForMerge: false });
+  assert.equal(result.status, 'noop');
+  assert.deepEqual(result.prs, []);
+});
+
 test('PR Manager - managePrs merges ready open PRs discovered from the repo list', async () => {
   const mockPr = {
     number: 282,
     title: 'Repo-wide ready PR',
+    baseRefName: 'main',
     mergeable: 'MERGEABLE',
     mergeStateStatus: 'CLEAN',
     isDraft: false,
@@ -334,7 +369,7 @@ test('PR Manager - managePrs merges ready open PRs discovered from the repo list
     },
     {
       status: 0,
-      stdout: 'merged',
+      stdout: 'commented',
       stderr: ''
     }
   ]);
@@ -345,7 +380,7 @@ test('PR Manager - managePrs merges ready open PRs discovered from the repo list
   assert.equal(result.prs[0].number, 282);
   assert.equal(result.prs[0].outcome.status, 'ready');
   assert.equal(result.prs[0].outcome.mergeRequested, true);
-  assert.match(result.prs[0].outcome.mergeMode, /merged|queued/);
+  assert.equal(result.prs[0].outcome.mergeMode, 'queued');
   assert.equal(result.prs[0].outcome.mergeCommit, undefined);
 });
 
@@ -396,6 +431,19 @@ test('PR Manager - performMerge never uses admin bypass', () => {
   assert.deepEqual(calls[0], ['pr', 'merge', '321', '--squash', '--delete-branch']);
   assert.ok(!calls[0].includes('--admin'));
   assert.ok(!calls[0].includes('--auto'));
+});
+
+test('PR Manager - performMerge requests /trunk merge for main-base PRs', () => {
+  const calls = [];
+  const runner = (args) => {
+    calls.push(args);
+    return { status: 0, stdout: 'commented', stderr: '' };
+  };
+
+  const result = performMerge({ number: 654, baseRefName: 'main' }, runner, { waitForMerge: false });
+  assert.equal(result.ok, true);
+  assert.equal(result.mode, 'queued');
+  assert.deepEqual(calls[0], ['pr', 'comment', '654', '--body', '/trunk merge']);
 });
 
 test('PR Manager - resolveBlockers falls back to statusCheckRollup when gh pr checks fails', async () => {
