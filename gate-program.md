@@ -58,7 +58,7 @@ from repeating the same mistake.
 - Protected branches: `main`
 - Test command: `npm test` (1634 tests, expect 0 failures)
 - Deployment: Railway auto-deploy from `main` via Docker
-- Verification endpoint: `https://thumbgate-production.up.railway.app/health`
+- Verification endpoint: `https://thumbgate.ai/health`
 
 ---
 

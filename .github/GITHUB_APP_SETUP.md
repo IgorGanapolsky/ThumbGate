@@ -35,12 +35,12 @@ https://github.com/apps/new?state=manifest&manifest=<paste-base64-here>
 1. Go to: https://github.com/settings/apps/new
 2. Fill in from manifest:
    - **GitHub App name**: ThumbGate
-   - **Homepage URL**: https://thumbgate-production.up.railway.app
-   - **Webhook URL**: https://thumbgate-production.up.railway.app/webhooks/github
+   - **Homepage URL**: https://thumbgate.ai
+   - **Webhook URL**: https://thumbgate.ai/webhooks/github
    - **Webhook active**: ✓ Checked
-   - **Redirect URL**: https://thumbgate-production.up.railway.app/github/callback
+   - **Redirect URL**: https://thumbgate.ai/github/callback
    - **Callback URLs**: (add both from manifest)
-   - **Setup URL**: https://thumbgate-production.up.railway.app/setup
+   - **Setup URL**: https://thumbgate.ai/setup
    - **Public app**: ✓ Checked
    - **Permissions**: See below
    - **Events**: See below

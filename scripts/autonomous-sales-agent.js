@@ -6,7 +6,7 @@
  * 1. read the current commercial snapshot
  * 2. pick the correct motion (Pro vs Workflow Hardening Sprint)
  * 3. generate operator-ready outreach artifacts
- * Canonical app origin remains https://thumbgate-production.up.railway.app.
+ * Canonical app origin remains https://thumbgate.ai.
  */
 
 'use strict';

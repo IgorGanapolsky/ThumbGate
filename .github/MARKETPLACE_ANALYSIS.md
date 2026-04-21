@@ -4,7 +4,7 @@
 **Product**: ThumbGate
 **npm**: thumbgate
 **Repo**: IgorGanapolsky/thumbgate
-**Live URL**: https://thumbgate-production.up.railway.app
+**Live URL**: https://thumbgate.ai
 
 ---
 

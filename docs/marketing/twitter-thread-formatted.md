@@ -13,7 +13,7 @@ I built a fix. 🧵
 Thumbs-up/down feedback → stored locally → queried before every action → repeated failures auto-blocked.
 
 Pro ($19/mo or $149/yr):
-https://thumbgate-production.up.railway.app/checkout/pro
+https://thumbgate.ai/checkout/pro
 
 ---
 
@@ -49,7 +49,7 @@ This does all three.
 ---
 
 **7/7:** Free self-hosted: npx thumbgate serve
-Pro ($19/mo or $149/yr): https://thumbgate-production.up.railway.app/checkout/pro
+Pro ($19/mo or $149/yr): https://thumbgate.ai/checkout/pro
 GitHub: https://github.com/IgorGanapolsky/ThumbGate
 
 npm install thumbgate

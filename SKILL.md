@@ -94,7 +94,7 @@ Bounded retrieval of relevant feedback history for the current task. The agent g
 | Seats | 1 | 1 | Per-seat |
 | Price | $0 | $19/mo or $149/yr | $49/seat/mo |
 
-Start a 7-day free trial of Pro: <https://thumbgate-production.up.railway.app/pro?utm_source=skill&utm_medium=agent_context&utm_campaign=pro_page>
+Start a 7-day free trial of Pro: <https://thumbgate.ai/pro?utm_source=skill&utm_medium=agent_context&utm_campaign=pro_page>
 
 ## Compatibility
 
@@ -111,4 +111,4 @@ ThumbGate works with any MCP-compatible agent:
 
 - NPM: [thumbgate](https://www.npmjs.com/package/thumbgate)
 - Repository: [IgorGanapolsky/ThumbGate](https://github.com/IgorGanapolsky/ThumbGate)
-- Dashboard: <https://thumbgate-production.up.railway.app/dashboard>
+- Dashboard: <https://thumbgate.ai/dashboard>

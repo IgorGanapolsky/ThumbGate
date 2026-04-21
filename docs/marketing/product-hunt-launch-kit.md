@@ -1,7 +1,7 @@
 # ThumbGate — Product Hunt Launch Kit
 
-**Status:** Ready to submit  
-**Recommended launch day:** Saturday (dev tools consistently see higher engagement on weekends)  
+**Status:** Ready to submit
+**Recommended launch day:** Saturday (dev tools consistently see higher engagement on weekends)
 **Live listing:** https://www.producthunt.com/products/thumbgate
 
 ---
@@ -87,24 +87,24 @@ What agent are you running on? Happy to share setup tips for your specific stack
 ## 6. Screenshot List (capture these 5 assets)
 
 ### Screenshot 1: Hero — Problem/Solution Split
-**What to capture:** Split screen composition.  
-Left panel: Terminal showing an AI agent force-pushing to main (red output, no gate).  
-Right panel: ThumbGate blocking the same command — `[gate] BLOCKED: git push --force (rule: no-force-push, confidence: 0.94)`.  
-Overlay text: "Thumbs down a mistake. It never happens again."  
+**What to capture:** Split screen composition.
+Left panel: Terminal showing an AI agent force-pushing to main (red output, no gate).
+Right panel: ThumbGate blocking the same command — `[gate] BLOCKED: git push --force (rule: no-force-push, confidence: 0.94)`.
+Overlay text: "Thumbs down a mistake. It never happens again."
 **Purpose:** Instant visual proof of the core value prop. This is the thumbnail — make it high contrast.
 
 ### Screenshot 2: Feedback-to-Gate Flow Diagram
-**What to capture:** Horizontal 5-step flow on a dark background:  
-`👎 Feedback → Validate → Extract Lesson → Generate Rule → Gate Blocks`  
-Each step has a brief subtitle (1 line). Use green/amber/red color coding. No clutter.  
+**What to capture:** Horizontal 5-step flow on a dark background:
+`👎 Feedback → Validate → Extract Lesson → Generate Rule → Gate Blocks`
+Each step has a brief subtitle (1 line). Use green/amber/red color coding. No clutter.
 **Purpose:** Explains the mechanism at a glance for visitors who won't read the description.
 
 ### Screenshot 3: Live Dashboard
-**What to capture:** Browser screenshot of https://thumbgate-production.up.railway.app/dashboard showing the enforcement matrix, active gate count, and feedback stats panel.  
+**What to capture:** Browser screenshot of https://thumbgate.ai/dashboard showing the enforcement matrix, active gate count, and feedback stats panel.
 **Purpose:** Social proof that the product is real and actively running. Shows Pro value.
 
 ### Screenshot 4: Terminal Install + Gate Firing
-**What to capture:** Real terminal session showing:  
+**What to capture:** Real terminal session showing:
 ```
 $ npx thumbgate init --agent claude-code
 [thumbgate] Agent detected: claude-code
@@ -119,8 +119,8 @@ $ git push --force
 
 ### Screenshot 5: Pricing Tiers
 **What to capture:** Clean pricing comparison — Free vs Pro ($19/mo or $149/yr) vs Team ($49/seat/mo).
-Pull from https://thumbgate-production.up.railway.app/#pricing  
-Highlight "Free forever" tier prominently to reduce friction on PH visitors.  
+Pull from https://thumbgate.ai/#pricing
+Highlight "Free forever" tier prominently to reduce friction on PH visitors.
 **Purpose:** Removes the "how much does this cost?" friction before visitors click through.
 
 ---
@@ -237,7 +237,7 @@ If you have any email list (even a small one from waitlist signups or early user
 - The Product Hunt link
 - A discount code for Pro (e.g., `PH2026` for 30% off first month)
 
-UTM link: `https://thumbgate-production.up.railway.app/?utm_source=email&utm_medium=newsletter&utm_campaign=thumbgate-launch`
+UTM link: `https://thumbgate.ai/?utm_source=email&utm_medium=newsletter&utm_campaign=thumbgate-launch`
 
 ### What NOT to Do
 
@@ -340,12 +340,12 @@ Featured on Awesome MCP Servers. The 724 installs/week is 7.4x the closest compa
 
 | Channel | Link |
 |---------|------|
-| Product Hunt listing | `https://thumbgate-production.up.railway.app/?utm_source=producthunt&utm_medium=listing&utm_campaign=thumbgate-launch` |
-| Twitter/X | `https://thumbgate-production.up.railway.app/?utm_source=twitter&utm_medium=post&utm_campaign=thumbgate-launch` |
-| Reddit | `https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=post&utm_campaign=thumbgate-launch` |
-| LinkedIn | `https://thumbgate-production.up.railway.app/?utm_source=linkedin&utm_medium=post&utm_campaign=thumbgate-launch` |
-| Email / newsletter | `https://thumbgate-production.up.railway.app/?utm_source=email&utm_medium=newsletter&utm_campaign=thumbgate-launch` |
-| HN Show HN | `https://thumbgate-production.up.railway.app/?utm_source=hackernews&utm_medium=community_post&utm_campaign=thumbgate-launch` |
+| Product Hunt listing | `https://thumbgate.ai/?utm_source=producthunt&utm_medium=listing&utm_campaign=thumbgate-launch` |
+| Twitter/X | `https://thumbgate.ai/?utm_source=twitter&utm_medium=post&utm_campaign=thumbgate-launch` |
+| Reddit | `https://thumbgate.ai/?utm_source=reddit&utm_medium=post&utm_campaign=thumbgate-launch` |
+| LinkedIn | `https://thumbgate.ai/?utm_source=linkedin&utm_medium=post&utm_campaign=thumbgate-launch` |
+| Email / newsletter | `https://thumbgate.ai/?utm_source=email&utm_medium=newsletter&utm_campaign=thumbgate-launch` |
+| HN Show HN | `https://thumbgate.ai/?utm_source=hackernews&utm_medium=community_post&utm_campaign=thumbgate-launch` |
 
 ---
 
@@ -353,12 +353,12 @@ Featured on Awesome MCP Servers. The 724 installs/week is 7.4x the closest compa
 
 | Asset | Link |
 |-------|------|
-| Landing page | https://thumbgate-production.up.railway.app |
-| Live dashboard | https://thumbgate-production.up.railway.app/dashboard |
-| Pricing | https://thumbgate-production.up.railway.app/#pricing |
+| Landing page | https://thumbgate.ai |
+| Live dashboard | https://thumbgate.ai/dashboard |
+| Pricing | https://thumbgate.ai/#pricing |
 | GitHub | https://github.com/IgorGanapolsky/ThumbGate |
 | npm | https://www.npmjs.com/package/thumbgate |
-| Pro checkout | https://thumbgate-production.up.railway.app/checkout/pro?plan_id=pro&billing_cycle=monthly&utm_source=producthunt&utm_medium=listing&utm_campaign=thumbgate-launch |
+| Pro checkout | https://thumbgate.ai/checkout/pro?plan_id=pro&billing_cycle=monthly&utm_source=producthunt&utm_medium=listing&utm_campaign=thumbgate-launch |
 | Install command | `npx thumbgate init` |
 | Claude Desktop bundle | https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb |
 

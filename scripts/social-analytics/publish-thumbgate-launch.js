@@ -13,7 +13,7 @@ const { THUMBGATE_CAPTION } = require('./instagram-thumbgate-post');
 const { resolveHostedBillingConfig } = require('../hosted-config');
 
 const APP_ORIGIN = resolveHostedBillingConfig({
-  requestOrigin: 'https://thumbgate-production.up.railway.app',
+  requestOrigin: 'https://thumbgate.ai',
 }).appOrigin;
 const DEFAULT_TIMEZONE = 'America/New_York';
 const LAUNCH_CAMPAIGN = 'first_customer_push';

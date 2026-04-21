@@ -76,7 +76,7 @@ The operating goal is not "more awareness." The goal is the next booked workflow
 
 ## Core Links
 
-- Product: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Product: https://thumbgate.ai/#workflow-sprint-intake
 - Sprint brief: [WORKFLOW_HARDENING_SPRINT.md](WORKFLOW_HARDENING_SPRINT.md)
 - Proof pack: [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md)
 - Execution brief: [FIRST_DOLLAR_PLAYBOOK.md](FIRST_DOLLAR_PLAYBOOK.md)

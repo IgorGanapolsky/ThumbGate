@@ -13,7 +13,7 @@ const path = require('path');
 const { resolveHostedBillingConfig } = require('./hosted-config');
 
 const APP_ORIGIN = resolveHostedBillingConfig({
-  requestOrigin: 'https://thumbgate-production.up.railway.app',
+  requestOrigin: 'https://thumbgate.ai',
 }).appOrigin;
 const SPRINT_LINK = `${APP_ORIGIN}/#workflow-sprint-intake`;
 const COMMERCIAL_TRUTH_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md';

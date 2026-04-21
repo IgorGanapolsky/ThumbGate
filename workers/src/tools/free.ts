@@ -157,7 +157,7 @@ async function handleCaptureFeedback(
     const rl = await checkRateLimit(env, ownerId, 'capture_feedback', dailyLimit);
     if (!rl.allowed) {
       return textResult(
-        `Free tier limit reached. Upgrade to Pro for unlimited: https://thumbgate-production.up.railway.app/pro — ${rl.remaining} captures remaining. Resets at ${rl.resetAt}.`,
+        `Free tier limit reached. Upgrade to Pro for unlimited: https://thumbgate.ai/pro — ${rl.remaining} captures remaining. Resets at ${rl.resetAt}.`,
         true,
       );
     }
@@ -200,7 +200,7 @@ async function handleRecall(
     const rl = await checkRateLimit(env, ownerId, 'recall', dailyLimit);
     if (!rl.allowed) {
       return textResult(
-        `Free tier limit reached. Upgrade to Pro for unlimited: https://thumbgate-production.up.railway.app/pro — Resets at ${rl.resetAt}.`,
+        `Free tier limit reached. Upgrade to Pro for unlimited: https://thumbgate.ai/pro — Resets at ${rl.resetAt}.`,
         true,
       );
     }

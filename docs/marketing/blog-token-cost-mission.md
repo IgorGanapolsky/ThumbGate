@@ -108,7 +108,7 @@ npx thumbgate capture "Never run --force push to main"
 
 That single command creates a gate. Next time any agent tries `git push --force` against main, the hook fires and zero tokens get spent on the model's attempt.
 
-Dashboard with live tokens-saved counter: <https://thumbgate-production.up.railway.app/dashboard>
+Dashboard with live tokens-saved counter: <https://thumbgate.ai/dashboard>
 
 Repo (MIT, open source): <https://github.com/IgorGanapolsky/ThumbGate>
 

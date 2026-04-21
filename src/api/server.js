@@ -1460,9 +1460,44 @@ function appendBestEffortTelemetry(feedbackDir, payload, headers, context) {
   }
 }
 
+const CANONICAL_PUBLIC_HOST = 'thumbgate.ai';
+const CANONICAL_PUBLIC_ALIASES = new Set([
+  'www.thumbgate.ai',
+  'usethumbgate.com',
+  'www.usethumbgate.com',
+]);
+
+function normalizeHostName(hostValue) {
+  const rawHost = String(hostValue || '').split(',')[0].trim();
+  if (!rawHost) {
+    return '';
+  }
+
+  const hostWithoutPort = rawHost.startsWith('[')
+    ? rawHost.slice(1).split(']')[0]
+    : rawHost.split(':')[0];
+  return hostWithoutPort.toLowerCase();
+}
+
+function normalizePublicHostHeader(hostValue) {
+  const rawHost = String(hostValue || '').split(',')[0].trim();
+  if (!rawHost) {
+    return '';
+  }
+
+  const normalizedHost = normalizeHostName(rawHost);
+  if (!normalizedHost) {
+    return '';
+  }
+
+  return CANONICAL_PUBLIC_ALIASES.has(normalizedHost)
+    ? CANONICAL_PUBLIC_HOST
+    : rawHost;
+}
+
 function getPublicOrigin(req) {
   const proto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() || 'http';
-  const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim() || 'localhost';
+  const host = normalizePublicHostHeader(req.headers['x-forwarded-host'] || req.headers.host) || 'localhost';
   return `${proto}://${host}`;
 }
 
@@ -1482,16 +1517,24 @@ function getRequestHostHeader(req) {
 }
 
 function isLoopbackHost(hostValue) {
-  const rawHost = String(hostValue || '').split(',')[0].trim();
-  if (!rawHost) {
+  const normalized = normalizeHostName(hostValue);
+  if (!normalized) {
     return false;
   }
-
-  const hostWithoutPort = rawHost.startsWith('[')
-    ? rawHost.slice(1).split(']')[0]
-    : rawHost.split(':')[0];
-  const normalized = hostWithoutPort.toLowerCase();
   return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '::1';
+}
+
+function buildCanonicalMarketingRedirect(req) {
+  const normalizedHost = normalizeHostName(getRequestHostHeader(req));
+  if (!CANONICAL_PUBLIC_ALIASES.has(normalizedHost)) {
+    return '';
+  }
+
+  const proto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() || 'https';
+  const requestUrl = new URL(req.url || '/', `${proto}://${CANONICAL_PUBLIC_HOST}`);
+  requestUrl.protocol = `${proto}:`;
+  requestUrl.host = CANONICAL_PUBLIC_HOST;
+  return requestUrl.toString();
 }
 
 function wantsJson(req, parsed) {
@@ -1946,7 +1989,7 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
   .actions-bar { flex-direction: column; }
 }
 </style>
-<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
 </head>
 <body>
 <nav><div class="container">
@@ -2367,7 +2410,7 @@ function renderCheckoutSuccessPage(runtimeConfig) {
   </style>
   <link rel="icon" type="image/png" href="/thumbgate-icon.png">
   <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
-<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
 </head>
 <body>
   <main>
@@ -2679,7 +2722,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
       margin-top: 12px;
     }
   </style>
-<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
 </head>
 <body>
   <main>
@@ -2852,7 +2895,7 @@ function renderWorkflowSprintIntakeResultPage(runtimeConfig, { title, detail, le
       border: 1px solid var(--line);
     }
   </style>
-<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
 </head>
 <body>
   <main>
@@ -3138,6 +3181,12 @@ function createApiServer() {
     const pathname = parsed.pathname;
     const isHeadRequest = req.method === 'HEAD';
     const isGetLikeRequest = req.method === 'GET' || isHeadRequest;
+    const canonicalMarketingRedirect = isGetLikeRequest ? buildCanonicalMarketingRedirect(req) : '';
+    if (canonicalMarketingRedirect) {
+      res.writeHead(308, { Location: canonicalMarketingRedirect });
+      res.end();
+      return;
+    }
     const publicOrigin = getPublicOrigin(req);
     const hostedConfig = resolveHostedBillingConfig({ requestOrigin: publicOrigin });
     if (!isProjectSelectionAllowed(req, parsed)) {
@@ -4608,7 +4657,7 @@ async function addContext(){
 <p>Last updated: 2026-03-11</p>
 <h2>Data Collection</h2>
 <p>The self-hosted version stores workflow data locally on your machine. Local feedback, memory entries, proof artifacts, and context packs stay in your project files unless you explicitly point the system at a hosted endpoint.</p>
-<p>The hosted tier (thumbgate-production.up.railway.app) stores feedback signals, memory entries, and related workflow metadata associated with your API key.</p>
+<p>The hosted tier (thumbgate.ai) stores feedback signals, memory entries, and related workflow metadata associated with your API key.</p>
 <p>Optional CLI telemetry is best-effort and covers install or usage metadata needed to understand adoption and failures. You can disable it with <code>THUMBGATE_NO_TELEMETRY=1</code>.</p>
 <h2>Data Stored</h2><ul>
 <li>Feedback signals (thumbs up/down) with context you provide</li>
@@ -6252,9 +6301,11 @@ module.exports = {
   startServer,
   __test__: {
     buildCheckoutFallbackUrl,
+    buildCanonicalMarketingRedirect,
     buildPosthogProxyRequestOptions,
     getPosthogProxyPath,
     isAllowedPosthogProxyPath,
+    normalizePublicHostHeader,
     renderSitemapXml,
     renderPackagedDashboardHtml,
     renderPackagedLessonsHtml,

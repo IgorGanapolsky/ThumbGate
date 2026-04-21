@@ -64,7 +64,7 @@ test('README keeps the business sprint-first while preserving the Pro side lane'
   assert.match(readme, /Workflow Hardening Sprint/i);
   assert.match(readme, /Paid path for individual operators/i);
   assert.match(readme, /self-serve side lane/i);
-  assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app\/pro\?utm_source=github&utm_medium=readme&utm_campaign=pro_page/);
+  assert.match(readme, /https:\/\/thumbgate\.ai\/pro\?utm_source=github&utm_medium=readme&utm_campaign=pro_page/);
 });
 
 test('README exposes prompt-shaped buyer questions with tracked guide links', () => {

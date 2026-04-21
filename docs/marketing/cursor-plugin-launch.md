@@ -27,7 +27,7 @@ Keep these terms in the body, tags, or follow-up copy:
 - Name: `ThumbGate`
 - Description: `👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.`
 - Repository URL: `https://github.com/IgorGanapolsky/ThumbGate`
-- Homepage: `https://thumbgate-production.up.railway.app`
+- Homepage: `https://thumbgate.ai`
 
 ## Surface notes
 

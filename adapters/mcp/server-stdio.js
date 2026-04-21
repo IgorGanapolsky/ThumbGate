@@ -137,13 +137,13 @@ const {
   formatArtifactMarkdown,
 } = require('../../scripts/operator-artifacts');
 
-const PRO_CHECKOUT_URL = 'https://thumbgate-production.up.railway.app/checkout/pro';
+const PRO_CHECKOUT_URL = 'https://thumbgate.ai/checkout/pro';
 
 function enforceLimit(action) {
   const limit = checkLimit(action);
   if (!limit.allowed) {
     const err = new Error(
-      `Free tier limit reached. Upgrade to Pro for unlimited: https://thumbgate-production.up.railway.app/pro\n${UPGRADE_MESSAGE}\nUpgrade now: ${PRO_CHECKOUT_URL}`
+      `Free tier limit reached. Upgrade to Pro for unlimited: https://thumbgate.ai/pro\n${UPGRADE_MESSAGE}\nUpgrade now: ${PRO_CHECKOUT_URL}`
     );
     err.errorCategory = 'rate_limit';
     err.isRetryable = false;
@@ -302,8 +302,8 @@ function buildRecallResponse(args = {}) {
   if (!limit.allowed) {
     text += '\n\n---\n';
     text += 'Upgrade to Context Gateway for unlimited recall, shared workflow memory, and hosted rollout.\n';
-    text += 'Hosted API: https://thumbgate-production.up.railway.app\n';
-    text += 'Pro pack: https://thumbgate-production.up.railway.app/checkout/pro';
+    text += 'Hosted API: https://thumbgate.ai\n';
+    text += 'Pro pack: https://thumbgate.ai/checkout/pro';
   }
 
   return toTextResult(text);

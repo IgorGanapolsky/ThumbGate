@@ -23,7 +23,7 @@ const PLAUSIBLE_BASE = 'https://plausible.io/api/v1';
  */
 async function plausibleQuery(endpoint, params = {}) {
   const apiKey = process.env.PLAUSIBLE_API_KEY;
-  const siteId = process.env.PLAUSIBLE_SITE_ID || 'thumbgate-production.up.railway.app';
+  const siteId = process.env.PLAUSIBLE_SITE_ID || 'thumbgate.ai';
 
   if (!apiKey) throw new Error('PLAUSIBLE_API_KEY is not set');
 
@@ -152,7 +152,7 @@ async function getFunnelMetrics(period = '7d') {
  * @returns {Promise<object>} Summary of stored results.
  */
 async function pollPlausible(db) {
-  const siteId = process.env.PLAUSIBLE_SITE_ID || 'thumbgate-production.up.railway.app';
+  const siteId = process.env.PLAUSIBLE_SITE_ID || 'thumbgate.ai';
   if (!process.env.PLAUSIBLE_API_KEY) throw new Error('PLAUSIBLE_API_KEY is not set');
 
   const period = '7d';

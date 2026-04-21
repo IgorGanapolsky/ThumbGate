@@ -19,8 +19,8 @@ const DEFAULT_AGENT_MODEL = process.env.PERPLEXITY_AGENT_MODEL || 'openai/gpt-5.
 const PRODUCT = {
   name: 'ThumbGate',
   repo: 'https://github.com/IgorGanapolsky/ThumbGate',
-  site: 'https://thumbgate-production.up.railway.app',
-  checkout: 'https://thumbgate-production.up.railway.app/checkout/pro',
+  site: 'https://thumbgate.ai',
+  checkout: 'https://thumbgate.ai/checkout/pro',
   promise: 'turn thumbs-up/down feedback into pre-action gates that stop AI agents from repeating mistakes',
 };
 

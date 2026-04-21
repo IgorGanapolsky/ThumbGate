@@ -18,7 +18,7 @@ node bin/cli.js cfo --today
 npm run feedback:stats
 
 # PostHog dashboard
-open "https://thumbgate-production.up.railway.app/dashboard"
+open "https://thumbgate.ai/dashboard"
 
 # Open PRs / CI health
 gh run list --branch main --limit 3

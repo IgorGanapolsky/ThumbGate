@@ -14,8 +14,8 @@ Before applying, verify your LinkedIn Developer app has:
 - [ ] **Sign In with LinkedIn using OpenID Connect** enabled (prerequisite product)
 - [ ] **Share on LinkedIn** enabled (prerequisite product)
 - [ ] **App logo** uploaded (128x128 minimum, use `public/thumbgate-logo.png` or the favicon)
-- [ ] **Privacy policy URL** filled in: `https://thumbgate-production.up.railway.app/privacy`
-- [ ] **Terms of service URL** filled in: `https://thumbgate-production.up.railway.app/terms`
+- [ ] **Privacy policy URL** filled in: `https://thumbgate.ai/privacy`
+- [ ] **Terms of service URL** filled in: `https://thumbgate.ai/terms`
 
 If any of these are missing, fix them first. LinkedIn rejects incomplete applications without review.
 

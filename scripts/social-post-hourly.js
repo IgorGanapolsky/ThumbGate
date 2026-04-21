@@ -61,10 +61,10 @@ function generatePost(angle) {
   // Primary CTA routes through the production landing page so the funnel
   // ledger (scripts/funnel/*) can attribute views → installs → paid. Links
   // passed through `tagUrlsInText` auto-inject utm_source=zernio etc. because
-  // thumbgate-production.up.railway.app is in TRACKABLE_DOMAINS.
+  // thumbgate.ai is in TRACKABLE_DOMAINS.
   // Earlier versions pointed at GitHub, which is un-tracked by our funnel and
   // invisible in revenue attribution — see 2026-04-21 distribution audit.
-  const LANDING = 'https://thumbgate-production.up.railway.app/numbers';
+  const LANDING = 'https://thumbgate.ai/numbers';
   const REPO = 'https://github.com/IgorGanapolsky/ThumbGate';
 
   switch (angle) {

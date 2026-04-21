@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-const _DEFAULT_TELEMETRY_HOST = 'https://thumbgate-production.up.railway.app';
+const _DEFAULT_TELEMETRY_HOST = 'https://thumbgate.ai';
 // Respect THUMBGATE_API_URL so test environments can point to a local stub
 const TELEMETRY_ENDPOINT = `${process.env.THUMBGATE_API_URL || _DEFAULT_TELEMETRY_HOST}/v1/telemetry/ping`;
 const INSTALL_ID_PATH = path.join(process.env.HOME || process.env.USERPROFILE || '.', '.thumbgate', 'install-id');

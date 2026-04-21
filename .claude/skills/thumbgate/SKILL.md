@@ -115,7 +115,7 @@ Pro users ($19/mo or $149/yr) unlock:
 Team rollout ($49/seat/mo, 3-seat minimum after intake) adds the shared hosted lesson DB,
 org dashboard, approval boundaries, and proof-backed workflow hardening sprint.
 
-Upgrade: https://thumbgate-production.up.railway.app/go/pro?utm_source=skill
+Upgrade: https://thumbgate.ai/go/pro?utm_source=skill
 
 ## Detailed Reference
 

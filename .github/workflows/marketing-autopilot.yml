@@ -150,14 +150,14 @@ jobs:
             const db = require('./scripts/social-analytics/db/marketing-db');
             const reddit = require('./scripts/social-analytics/publishers/reddit');
 
-            const PRO_URL = 'https://thumbgate-production.up.railway.app/pro?utm_source=reddit&utm_medium=social&utm_campaign=autopilot';
-            const BUY_URL = 'https://thumbgate-production.up.railway.app/go/pro?utm_source=reddit&utm_campaign=autopilot';
+            const PRO_URL = 'https://thumbgate.ai/pro?utm_source=reddit&utm_medium=social&utm_campaign=autopilot';
+            const BUY_URL = 'https://thumbgate.ai/go/pro?utm_source=reddit&utm_campaign=autopilot';
             const POSTS = [
               {
                 subreddit: 'ClaudeAI',
                 kind: 'link',
                 title: 'ThumbGate v1.4.1: Pre-action safety gates that block Claude Code from repeating mistakes',
-                url: 'https://thumbgate-production.up.railway.app/pro?utm_source=reddit&utm_medium=social&utm_campaign=autopilot&utm_content=claudeai',
+                url: 'https://thumbgate.ai/pro?utm_source=reddit&utm_medium=social&utm_campaign=autopilot&utm_content=claudeai',
               },
               {
                 subreddit: 'SideProject',
@@ -293,19 +293,19 @@ jobs:
                 '| Dashboard | Basic | Full analytics |',
                 '| Agents | Single | Multi-agent |',
                 '',
-                '👉 **[Get Pro — $19/month](https://thumbgate-production.up.railway.app/go/pro?utm_source=devto&utm_campaign=autopilot)** | [Annual $149/yr](https://buy.stripe.com/3cI8wPfCYaPs2dzdKz3sI07?utm_source=devto&utm_medium=article&utm_campaign=autopilot)',
+                '👉 **[Get Pro — $19/month](https://thumbgate.ai/go/pro?utm_source=devto&utm_campaign=autopilot)** | [Annual $149/yr](https://buy.stripe.com/3cI8wPfCYaPs2dzdKz3sI07?utm_source=devto&utm_medium=article&utm_campaign=autopilot)',
                 '',
                 '## Open Source',
                 '',
                 'MIT license. No sign-up required for the free tier. No telemetry.',
                 '',
                 '- GitHub: https://github.com/IgorGanapolsky/ThumbGate',
-                '- Buy Pro ($19/mo): https://thumbgate-production.up.railway.app/go/pro?utm_source=devto&utm_campaign=autopilot',
-                '- Pricing: https://thumbgate-production.up.railway.app/pro',
+                '- Buy Pro ($19/mo): https://thumbgate.ai/go/pro?utm_source=devto&utm_campaign=autopilot',
+                '- Pricing: https://thumbgate.ai/pro',
                 '- GPT: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate',
               ].join('\\n'),
               tags: ['claudecode', 'ai', 'devtools', 'opensource'],
-              canonical_url: 'https://thumbgate-production.up.railway.app/pro',
+              canonical_url: 'https://thumbgate.ai/pro',
             };
 
             const hash = db.hashContent(ARTICLE.title);

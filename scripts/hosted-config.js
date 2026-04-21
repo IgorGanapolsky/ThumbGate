@@ -7,7 +7,7 @@ const {
   PRO_PRICE_LABEL,
 } = require('./commercial-offer');
 
-const DEFAULT_PUBLIC_APP_ORIGIN = 'https://thumbgate-production.up.railway.app';
+const DEFAULT_PUBLIC_APP_ORIGIN = 'https://thumbgate.ai';
 const DEFAULT_CHECKOUT_FALLBACK_URL = PRO_MONTHLY_PAYMENT_LINK;
 const DEFAULT_PRO_PRICE_DOLLARS = PRO_MONTHLY_PRICE_DOLLARS;
 const DEFAULT_PRO_PRICE_LABEL = PRO_PRICE_LABEL;

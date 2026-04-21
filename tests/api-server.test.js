@@ -583,13 +583,13 @@ test('public openapi yaml advertises forwarded https origin for hosted imports',
   const res = await fetch(apiUrl('/openapi.yaml'), {
     headers: {
       'x-forwarded-proto': 'https',
-      'x-forwarded-host': 'thumbgate-production.up.railway.app',
+      'x-forwarded-host': 'thumbgate.ai',
     },
   });
   assert.equal(res.status, 200);
 
   const body = await res.text();
-  assert.match(body, /servers:\n  - url: https:\/\/thumbgate-production\.up\.railway\.app/);
+  assert.match(body, /servers:\n  - url: https:\/\/thumbgate\.ai/);
 });
 
 test('public server card exposes MCP tool schemas for directory scanners', async () => {
@@ -3130,9 +3130,32 @@ test('readOptionalPublicTemplate returns content for existing file', () => {
 
 test('resolveLocalPageBootstrap returns inactive bootstrap for non-loopback host', () => {
   const { resolveLocalPageBootstrap } = __test__;
-  const fakeReq = { headers: { host: 'thumbgate-production.up.railway.app' } };
+  const fakeReq = { headers: { host: 'thumbgate.ai' } };
   const result = resolveLocalPageBootstrap(fakeReq, 'test-key');
   assert.strictEqual(result.bootstrapActive, false);
+});
+
+test('normalizePublicHostHeader collapses purchased alias domains to the canonical host', () => {
+  const { normalizePublicHostHeader } = __test__;
+  assert.equal(normalizePublicHostHeader('usethumbgate.com'), 'thumbgate.ai');
+  assert.equal(normalizePublicHostHeader('www.usethumbgate.com'), 'thumbgate.ai');
+  assert.equal(normalizePublicHostHeader('www.thumbgate.ai'), 'thumbgate.ai');
+  assert.equal(normalizePublicHostHeader('thumbgate.ai'), 'thumbgate.ai');
+});
+
+test('buildCanonicalMarketingRedirect preserves path and query on alias host redirects', () => {
+  const { buildCanonicalMarketingRedirect } = __test__;
+  const fakeReq = {
+    url: '/pro?utm_source=reddit',
+    headers: {
+      host: 'usethumbgate.com',
+      'x-forwarded-proto': 'https',
+    },
+  };
+  assert.equal(
+    buildCanonicalMarketingRedirect(fakeReq),
+    'https://thumbgate.ai/pro?utm_source=reddit'
+  );
 });
 
 test('rejects external output path by default', async () => {

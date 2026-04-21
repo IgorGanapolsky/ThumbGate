@@ -66,7 +66,7 @@ function applyAttributionParams(url, attribution = {}) {
 }
 
 function buildCreatorCampaignLinks(options = {}, runtimeConfig = resolveHostedBillingConfig({
-  requestOrigin: 'https://thumbgate-production.up.railway.app',
+  requestOrigin: 'https://thumbgate.ai',
 })) {
   const creator = normalizeCreatorHandle(options.creator || options.handle);
   if (!creator) {

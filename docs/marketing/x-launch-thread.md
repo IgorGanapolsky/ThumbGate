@@ -137,7 +137,7 @@ If you own one Claude workflow and want it hardened:
 - the proof pack is one click away
 - the ask stays narrow: one workflow, one proof review
 
-https://thumbgate-production.up.railway.app/?utm_source=x&utm_medium=organic_social&utm_campaign=claude_workflow_hardening_march_2026&utm_content=thread&campaign_variant=workflow_hardening_sprint&offer_code=X-SPRINT#workflow-sprint-intake
+https://thumbgate.ai/?utm_source=x&utm_medium=organic_social&utm_campaign=claude_workflow_hardening_march_2026&utm_content=thread&campaign_variant=workflow_hardening_sprint&offer_code=X-SPRINT#workflow-sprint-intake
 
 #ClaudeCode #MCP #AICoding
 ```

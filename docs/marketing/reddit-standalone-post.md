@@ -9,7 +9,7 @@ The core issue with agents today is **repetition of known failures**. You thumbs
 2. Converting failures into "Semantic Firewall Rules" (prevention rules).
 3. Using Bayesian uncertainty estimation to block actions when the agent is "hallucinating" confidence.
 
-Try free for 7 days (no credit card): https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_standalone_post
+Try free for 7 days (no credit card): https://thumbgate.ai/?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_standalone_post
 
 Source code (MIT licensed, free OSS): https://github.com/IgorGanapolsky/ThumbGate
 

@@ -81,7 +81,7 @@ If the user asks for a summary of recent feedback patterns, call GET /v1/feedbac
 If the user asks for prevention rules, call POST /v1/feedback/rules.
 If the user asks for DPO export, call POST /v1/dpo/export.
 
-API base URL: https://thumbgate-production.up.railway.app
+API base URL: https://thumbgate.ai
 Authentication: Bearer token configured once by the GPT owner in GPT Builder. Regular users should never be asked for API keys.
 ```
 
@@ -106,7 +106,7 @@ To import into GPT Builder:
 1. Open GPT Builder → Actions → Add Action
 2. Paste the contents of `adapters/chatgpt/openapi.yaml`
 3. Set authentication to: **API Key** → **Bearer** → paste the dedicated `THUMBGATE_API_KEY` once as the GPT owner
-4. Server URL: `https://thumbgate-production.up.railway.app`
+4. Server URL: `https://thumbgate.ai`
 5. Verification evidence: `https://github.com/IgorGanapolsky/thumbgate/blob/main/docs/VERIFICATION_EVIDENCE.md`
 
 Do not ask regular GPT users for API keys, JSON payloads, or OpenAPI details.
@@ -120,7 +120,7 @@ info:
   description: Capture feedback from AI coding agents, generate prevention rules, and export DPO training pairs.
   version: 1.2.0
 servers:
-  - url: https://thumbgate-production.up.railway.app
+  - url: https://thumbgate.ai
     description: Context Gateway hosted API
 paths:
   /v1/feedback/capture:
@@ -232,7 +232,7 @@ A simple icon: blue feedback loop arrow (circular) with a thumbs-up/thumbs-down 
 ## Privacy Policy URL
 
 ```
-https://thumbgate-production.up.railway.app/privacy
+https://thumbgate.ai/privacy
 ```
 
 ---

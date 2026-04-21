@@ -39,7 +39,7 @@ npx thumbgate init --agent claude-code
 
 MIT licensed. Pro is $19/mo or $149/yr for individual operators, while Team rollout stays intake-first for buyers who want hosted analytics and shared lessons.
 
-Landing: https://thumbgate-production.up.railway.app/?utm_source=hackernews&utm_medium=community_post&utm_campaign=first_customer_push&utm_content=show_hn&community=ShowHN&campaign_variant=technical_launch
+Landing: https://thumbgate.ai/?utm_source=hackernews&utm_medium=community_post&utm_campaign=first_customer_push&utm_content=show_hn&community=ShowHN&campaign_variant=technical_launch
 GitHub: https://github.com/IgorGanapolsky/ThumbGate
 
 Happy to answer questions about the gate engine or how prevention rules are generated.
@@ -80,7 +80,7 @@ Works with Claude Code, Codex, Gemini, Amp, and Cursor. MIT licensed, fully open
 
 There's an optional Pro tier ($19/mo or $149/yr) for the personal local dashboard, exports, and advanced gate workflows, but everything described above works locally for free.
 
-Landing: https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=claudeai_post&community=ClaudeAI&campaign_variant=founder_story&offer_code=REDDIT-EARLY
+Landing: https://thumbgate.ai/?utm_source=reddit&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=claudeai_post&community=ClaudeAI&campaign_variant=founder_story&offer_code=REDDIT-EARLY
 GitHub: https://github.com/IgorGanapolsky/ThumbGate
 
 ---
@@ -109,7 +109,7 @@ npx thumbgate init
 
 The core is open source and MIT licensed. There's a Pro tier at $19/mo or $149/yr if you want the personal local dashboard and exports.
 
-Landing: https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=vibecoding_post&community=vibecoding&campaign_variant=results_story&offer_code=REDDIT-EARLY
+Landing: https://thumbgate.ai/?utm_source=reddit&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=vibecoding_post&community=vibecoding&campaign_variant=results_story&offer_code=REDDIT-EARLY
 GitHub: https://github.com/IgorGanapolsky/ThumbGate
 
 ---
@@ -165,7 +165,7 @@ Pro ($19/mo or $149/yr) adds a searchable personal local dashboard to query and 
 
 But captures, recalls, gates, and blocking all work on the free local path. No cloud account required.
 
-Landing: https://thumbgate-production.up.railway.app/?utm_source=x&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=launch_thread_cta&creator=IgorGanapolsky&campaign_variant=founder_story
+Landing: https://thumbgate.ai/?utm_source=x&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=launch_thread_cta&creator=IgorGanapolsky&campaign_variant=founder_story
 GitHub: github.com/IgorGanapolsky/ThumbGate
 
 #MCP #AIcoding #vibecoding

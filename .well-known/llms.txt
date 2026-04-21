@@ -1,5 +1,5 @@
 # ThumbGate — Stop AI agents before they make costly mistakes.
-# https://thumbgate-production.up.railway.app
+# https://thumbgate.ai
 # https://github.com/IgorGanapolsky/ThumbGate
 # https://www.npmjs.com/package/thumbgate
 
@@ -46,16 +46,16 @@ npx thumbgate init --agent claude-code
 
 ## Links
 
-- Agent discovery: https://thumbgate-production.up.railway.app/.well-known/mcp.json
-- Progressive tool index: https://thumbgate-production.up.railway.app/.well-known/mcp/tools.json
-- Context footprint report: https://thumbgate-production.up.railway.app/.well-known/mcp/footprint.json
-- Agent skills: https://thumbgate-production.up.railway.app/.well-known/mcp/skills.json
-- MCP applications: https://thumbgate-production.up.railway.app/.well-known/mcp/applications.json
-- Documentation: https://thumbgate-production.up.railway.app/guide
-- Dashboard: https://thumbgate-production.up.railway.app/dashboard
+- Agent discovery: https://thumbgate.ai/.well-known/mcp.json
+- Progressive tool index: https://thumbgate.ai/.well-known/mcp/tools.json
+- Context footprint report: https://thumbgate.ai/.well-known/mcp/footprint.json
+- Agent skills: https://thumbgate.ai/.well-known/mcp/skills.json
+- MCP applications: https://thumbgate.ai/.well-known/mcp/applications.json
+- Documentation: https://thumbgate.ai/guide
+- Dashboard: https://thumbgate.ai/dashboard
 - GitHub: https://github.com/IgorGanapolsky/ThumbGate
 - npm: https://www.npmjs.com/package/thumbgate
-- Full LLM context: https://thumbgate-production.up.railway.app/public/llm-context.md
+- Full LLM context: https://thumbgate.ai/public/llm-context.md
 
 ## Compared to alternatives
 

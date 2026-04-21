@@ -100,7 +100,7 @@ Optional hosted path:
       "command": "npx",
       "args": ["--yes", "--package", "thumbgate", "thumbgate", "serve"],
       "env": {
-        "THUMBGATE_BASE_URL": "https://thumbgate-production.up.railway.app",
+        "THUMBGATE_BASE_URL": "https://thumbgate.ai",
         "THUMBGATE_API_KEY": "tg_YOUR_KEY_HERE"
       }
     }
@@ -146,7 +146,7 @@ ThumbGate: ⛔ Budget exceeded: 501/500 actions used. Session budget exhausted.
 
 ## Privacy Policy
 
-For complete privacy information, see: https://thumbgate-production.up.railway.app/privacy
+For complete privacy information, see: https://thumbgate.ai/privacy
 
 ### Data Collection
 

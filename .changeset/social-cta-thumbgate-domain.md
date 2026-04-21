@@ -11,7 +11,7 @@ funnel tracker. Attribution blindness: 4 lifetime installs across 404
 posts was the result.
 
 Primary CTA in every Zernio-published angle/caption now routes through
-`https://thumbgate-production.up.railway.app/numbers`. `tagUrlsInText`
+`https://thumbgate.ai/numbers`. `tagUrlsInText`
 auto-injects `utm_source=zernio&utm_medium=social&utm_campaign=organic`
 because the landing domain is already in `TRACKABLE_DOMAINS`. GitHub is
 retained as a secondary "Source (MIT)" reference for credibility.

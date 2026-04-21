@@ -406,7 +406,7 @@ test('statusline shows booting labels while the local dashboard is coming online
 });
 
 test('statusline emits OSC 8 hyperlinks for production (non-localhost) URLs', () => {
-  const PROD = 'https://thumbgate-production.up.railway.app';
+  const PROD = 'https://thumbgate.ai';
   const out = runStatusline({
     thumbs_up: '6', thumbs_down: '2', lessons: '1', trend: 'stable'
   }, {
@@ -421,16 +421,16 @@ test('statusline emits OSC 8 hyperlinks for production (non-localhost) URLs', ()
     })),
   });
   // OSC 8 opening: \e]8;;URL\a
-  assert.match(out, /\u001b]8;;https:\/\/thumbgate-production\.up\.railway\.app\/dashboard\u0007Dashboard\u001b]8;;\u0007/,
+  assert.match(out, /\u001b]8;;https:\/\/thumbgate\.ai\/dashboard\u0007Dashboard\u001b]8;;\u0007/,
     'Dashboard should be wrapped in an OSC 8 hyperlink');
-  assert.match(out, /\u001b]8;;https:\/\/thumbgate-production\.up\.railway\.app\/lessons\u0007Lessons\u001b]8;;\u0007/,
+  assert.match(out, /\u001b]8;;https:\/\/thumbgate\.ai\/lessons\u0007Lessons\u001b]8;;\u0007/,
     'Lessons should be wrapped in an OSC 8 hyperlink');
 
   // Verify plain text after stripping still shows labels
   const plain = stripStatuslineFormatting(out);
   assert.match(plain, /Dashboard/);
   assert.match(plain, /Lessons/);
-  assert.doesNotMatch(plain, /https:\/\/thumbgate-production/, 'URLs should be in escape sequences, not visible text');
+  assert.doesNotMatch(plain, /https:\/\/thumbgate\.ai/, 'URLs should be in escape sequences, not visible text');
 });
 
 test('statusline emits OSC 8 hyperlinks for localhost URLs', () => {

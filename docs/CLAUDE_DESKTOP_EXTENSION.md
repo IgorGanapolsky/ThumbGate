@@ -39,7 +39,7 @@ For this repo, that means:
 - Claude bundle icon: [../.claude-plugin/bundle/icon.png](../.claude-plugin/bundle/icon.png)
 - Claude bundle build script: [../scripts/build-claude-mcpb.js](../scripts/build-claude-mcpb.js)
 - Local install config example: [../adapters/claude/.mcp.json](../adapters/claude/.mcp.json)
-- Privacy policy URL: `https://thumbgate-production.up.railway.app/privacy`
+- Privacy policy URL: `https://thumbgate.ai/privacy`
 - Security policy: [../SECURITY.md](../SECURITY.md)
 - Proof pack: [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md)
 - Public server metadata: [../server.json](../server.json)
@@ -96,7 +96,7 @@ This repo now enforces that contract in the MCP tool registry and test suite:
 
 ### 2. Privacy policy
 
-- Public privacy route exists at `https://thumbgate-production.up.railway.app/privacy`
+- Public privacy route exists at `https://thumbgate.ai/privacy`
 - The Claude extension README links directly to it
 - The generated bundle manifest now includes `privacy_policies`
 

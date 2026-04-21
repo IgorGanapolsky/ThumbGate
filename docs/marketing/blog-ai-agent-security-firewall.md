@@ -132,7 +132,7 @@ This installs the PreToolUse hook into your Claude Code settings and generates a
 
 The hook reads this config on every tool invocation. Add patterns. Adjust thresholds. Gates are just JSON -- commit them, review them, share them.
 
-Full setup guide: https://thumbgate-production.up.railway.app/guide
+Full setup guide: https://thumbgate.ai/guide
 
 ## The bigger picture
 
@@ -156,6 +156,6 @@ AI authenticity enforcement is not a feature you add to an agent -- it's a layer
 
 **Try it: `npx thumbgate init`**
 
-Setup guide and full documentation: https://thumbgate-production.up.railway.app/guide
+Setup guide and full documentation: https://thumbgate.ai/guide
 
 GitHub: [github.com/IgorGanapolsky/ThumbGate](https://github.com/IgorGanapolsky/ThumbGate)

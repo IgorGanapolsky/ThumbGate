@@ -223,8 +223,8 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /secrets\.THUMBGATE_API_KEY/);
   assert.match(workflow, /RESEND_API_KEY:\s*\$\{\{\s*secrets\.RESEND_API_KEY\s*\}\}/);
   assert.match(workflow, /THUMBGATE_TRIAL_EMAIL_FROM:\s*\$\{\{\s*secrets\.THUMBGATE_TRIAL_EMAIL_FROM\s*\|\|\s*vars\.THUMBGATE_TRIAL_EMAIL_FROM\s*\}\}/);
-  assert.match(workflow, /vars\.THUMBGATE_PUBLIC_APP_ORIGIN \|\| 'https:\/\/thumbgate-production\.up\.railway\.app'/);
-  assert.match(workflow, /vars\.THUMBGATE_BILLING_API_BASE_URL \|\| vars\.THUMBGATE_PUBLIC_APP_ORIGIN \|\| 'https:\/\/thumbgate-production\.up\.railway\.app'/);
+  assert.match(workflow, /vars\.THUMBGATE_PUBLIC_APP_ORIGIN \|\| 'https:\/\/thumbgate\.ai'/);
+  assert.match(workflow, /vars\.THUMBGATE_BILLING_API_BASE_URL \|\| vars\.THUMBGATE_PUBLIC_APP_ORIGIN \|\| 'https:\/\/thumbgate\.ai'/);
   assert.match(workflow, /THUMBGATE_PUBLIC_APP_ORIGIN/);
   assert.match(workflow, /THUMBGATE_BILLING_API_BASE_URL/);
   assert.match(workflow, /railway variables set --skip-deploys THUMBGATE_API_KEY=/);

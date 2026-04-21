@@ -158,12 +158,12 @@ test('sendTrialWelcomeEmail POSTs to Resend with correct headers, reply_to, and 
   const hrefMatch = body.html.match(/href="([^"]+\/dashboard[^"]*)"/);
   assert.ok(hrefMatch, 'dashboard href missing in html body');
   const htmlDashUrl = new URL(hrefMatch[1]);
-  assert.equal(htmlDashUrl.host, 'thumbgate-production.up.railway.app');
+  assert.equal(htmlDashUrl.host, 'thumbgate.ai');
   assert.equal(htmlDashUrl.pathname, '/dashboard');
   const textUrlMatch = body.text.match(/(https?:\/\/\S+\/dashboard\S*)/);
   assert.ok(textUrlMatch, 'dashboard URL missing in text body');
   const textDashUrl = new URL(textUrlMatch[1]);
-  assert.equal(textDashUrl.host, 'thumbgate-production.up.railway.app');
+  assert.equal(textDashUrl.host, 'thumbgate.ai');
   assert.equal(textDashUrl.pathname, '/dashboard');
   restore();
 });
@@ -365,7 +365,7 @@ test('renderTrialWelcomeBodies embeds license key, activation command, dashboard
   for (const fragment of [
     'tg_abc',
     'npx thumbgate pro --activate --key=tg_abc',
-    'https://thumbgate-production.up.railway.app/dashboard',
+    'https://thumbgate.ai/dashboard',
     'ThumbGate Pro',
     'Apr 24, 2026',
     'Hi Ada,',

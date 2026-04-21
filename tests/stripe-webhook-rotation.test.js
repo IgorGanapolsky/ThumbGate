@@ -77,7 +77,7 @@ test('stripe webhook rotation form encoding keeps array fields compatible with S
     description: 'ThumbGate billing webhook',
   });
 
-  assert.match(encoded, /url=https%3A%2F%2Fthumbgate-production\.up\.railway\.app%2Fv1%2Fbilling%2Fwebhook/);
+  assert.match(encoded, /url=https%3A%2F%2Fthumbgate\.ai%2Fv1%2Fbilling%2Fwebhook/);
   assert.match(encoded, /enabled_events%5B%5D=checkout\.session\.completed/);
   assert.match(encoded, /enabled_events%5B%5D=customer\.subscription\.deleted/);
   assert.match(encoded, /description=ThumbGate%20billing%20webhook/);

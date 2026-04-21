@@ -1,17 +1,17 @@
 {
   "name": "ThumbGate",
   "description": "Human-in-the-loop enforcement for AI coding agents with pre-action gates that block repeated mistakes.",
-  "url": "https://thumbgate-production.up.railway.app",
+  "url": "https://thumbgate.ai",
   "hook_attributes": {
-    "url": "https://thumbgate-production.up.railway.app/webhooks/github",
+    "url": "https://thumbgate.ai/webhooks/github",
     "active": true
   },
-  "redirect_url": "https://thumbgate-production.up.railway.app/github/callback",
+  "redirect_url": "https://thumbgate.ai/github/callback",
   "callback_urls": [
-    "https://thumbgate-production.up.railway.app/github/callback",
-    "https://thumbgate-production.up.railway.app/auth/github"
+    "https://thumbgate.ai/github/callback",
+    "https://thumbgate.ai/auth/github"
   ],
-  "setup_url": "https://thumbgate-production.up.railway.app/setup",
+  "setup_url": "https://thumbgate.ai/setup",
   "public": true,
   "default_permissions": {
     "contents": "read",

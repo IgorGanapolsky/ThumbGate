@@ -104,8 +104,8 @@ Your CLAUDE.md file has 50 rules. Your AI agent ignores half of them.
 ThumbGate adds physical enforcement via PreToolUse hooks — every mistake becomes a prevention rule that blocks the action next time.
 
 🔗 GitHub: https://github.com/IgorGanapolsky/ThumbGate
-🔗 Pro ($19/mo or $149/yr): https://thumbgate-production.up.railway.app/checkout/pro
-🔗 Team workflow sprint intake: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+🔗 Pro ($19/mo or $149/yr): https://thumbgate.ai/checkout/pro
+🔗 Team workflow sprint intake: https://thumbgate.ai/#workflow-sprint-intake
 🔗 npm: npm install thumbgate
 
 Install: npx thumbgate init --agent claude-code

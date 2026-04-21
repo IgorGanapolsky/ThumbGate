@@ -10,13 +10,13 @@ Every line is a copy-paste action. Do them in order. Total time: ~45 minutes.
 
 ```bash
 # 1. Landing page loads
-curl -sS https://thumbgate-production.up.railway.app/ | grep -q 'ThumbGate' && echo "✅ landing up" || echo "❌ landing DOWN"
+curl -sS https://thumbgate.ai/ | grep -q 'ThumbGate' && echo "✅ landing up" || echo "❌ landing DOWN"
 
 # 2. Checkout endpoint responds
-curl -sS -o /dev/null -w "%{http_code}\n" https://thumbgate-production.up.railway.app/checkout/pro
+curl -sS -o /dev/null -w "%{http_code}\n" https://thumbgate.ai/checkout/pro
 
 # 3. Health endpoint returns current version
-curl -sS https://thumbgate-production.up.railway.app/health | head -c 200
+curl -sS https://thumbgate.ai/health | head -c 200
 ```
 
 If any of those fail: STOP and fix before posting. You do not want to land traffic on a broken funnel.

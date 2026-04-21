@@ -66,7 +66,7 @@ If you prefer the hosted API instead of a local MCP server:
 ```python
 import httpx
 
-API = "https://thumbgate-production.up.railway.app"
+API = "https://thumbgate.ai"
 KEY = "your_api_key"
 headers = {"Authorization": f"Bearer {KEY}", "Content-Type": "application/json"}
 

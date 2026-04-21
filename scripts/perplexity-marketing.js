@@ -34,7 +34,7 @@ const PRODUCT = {
   name: 'ThumbGate',
   npm: 'thumbgate',
   repo: 'https://github.com/IgorGanapolsky/ThumbGate',
-  checkout: 'https://thumbgate-production.up.railway.app/checkout/pro',
+  checkout: 'https://thumbgate.ai/checkout/pro',
   sponsor: 'https://github.com/sponsors/IgorGanapolsky',
   coffee: 'https://buymeacoffee.com/igorganapolsky',
   tagline: 'Local-first memory and feedback pipeline for AI agents. Captures thumbs-up/down signals, promotes reusable memories, generates prevention rules from repeated failures, and exports KTO/DPO pairs for fine-tuning.',

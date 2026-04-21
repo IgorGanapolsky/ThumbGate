@@ -79,7 +79,7 @@ same thing as a hook that physically intercepts the call.
 
 Repo: https://github.com/IgorGanapolsky/ThumbGate
 npm:  https://www.npmjs.com/package/thumbgate
-Live: https://thumbgate-production.up.railway.app/dashboard
+Live: https://thumbgate.ai/dashboard
 ```
 
 Word count: ~370. Well under HN's soft 2000-char comfort zone, long enough to actually explain the thing.

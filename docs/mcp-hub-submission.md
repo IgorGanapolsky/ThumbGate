@@ -79,7 +79,7 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
       "command": "npx",
       "args": ["-y", "thumbgate@1.14.1", "serve"],
       "env": {
-        "THUMBGATE_BASE_URL": "https://thumbgate-production.up.railway.app",
+        "THUMBGATE_BASE_URL": "https://thumbgate.ai",
         "THUMBGATE_API_KEY": "tg_YOUR_KEY_HERE"
       }
     }
@@ -88,7 +88,7 @@ Optional manual config (`~/.claude/claude_desktop_config.json` or `.claude/setti
 ```
 
 Hosted API access is currently pilot/by-request rather than a public self-serve monthly subscription.
-Current self-serve commercial offer: Pro ($19/mo or $149/yr): https://thumbgate-production.up.railway.app/checkout/pro
+Current self-serve commercial offer: Pro ($19/mo or $149/yr): https://thumbgate.ai/checkout/pro
 Team rollout pricing anchor: $49/seat/mo (min 3 seats), intake-first on the landing page.
 Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 

@@ -409,7 +409,7 @@ test('E2E: learn hub and article pages serve live over HTTP', async (t) => {
   const learnHtml = await learnRes.text();
   assert.match(learnHtml, /CollectionPage/);
   assert.match(learnHtml, /Persistent Memory Across Sessions/);
-  assert.match(learnHtml, /data-domain="thumbgate-production\.up\.railway\.app"/);
+  assert.match(learnHtml, /data-domain="thumbgate\.ai"/);
 
   const articleRes = await fetch(apiUrl(port, '/learn/agent-harness-pattern'));
   assert.equal(articleRes.status, 200);

@@ -62,7 +62,7 @@ function buildSocialLinks(baseUrl, campaign) {
  * Known trackable domains — URLs matching these will have UTM params injected.
  */
 const TRACKABLE_DOMAINS = [
-  'thumbgate-production.up.railway.app',
+  'thumbgate.ai',
   'github.com/IgorGanapolsky/ThumbGate',
   'github.com/IgorGanapolsky/thumbgate',
 ];

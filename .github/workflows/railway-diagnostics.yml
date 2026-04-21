@@ -40,7 +40,7 @@ jobs:
       RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
       RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_ENVIRONMENT_ID }}
       RAILWAY_SERVICE: ${{ vars.RAILWAY_SERVICE }}
-      RAILWAY_HEALTHCHECK_URL: ${{ vars.RAILWAY_HEALTHCHECK_URL || 'https://thumbgate-production.up.railway.app/health' }}
+      RAILWAY_HEALTHCHECK_URL: ${{ vars.RAILWAY_HEALTHCHECK_URL || 'https://thumbgate.ai/health' }}
       RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS: ${{ vars.RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS || '5' }}
       RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS: ${{ vars.RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS || '20' }}
       RAILWAY_LOG_LINES: ${{ github.event.inputs.log_lines || '200' }}

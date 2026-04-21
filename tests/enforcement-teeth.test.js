@@ -123,7 +123,7 @@ test('hook-pre-tool-use tracks curl-to-prod marker file', () => {
       session_id: 'test',
       hook_event_name: 'PreToolUse',
       tool_name: 'Bash',
-      tool_input: { command: 'curl -s https://thumbgate-production.up.railway.app/health' },
+      tool_input: { command: 'curl -s https://thumbgate.ai/health' },
     },
   });
   assert.equal(res.status, 0);
@@ -413,7 +413,7 @@ test('trackCurlToProd writes marker for curl-to-prod and is silent otherwise', (
   trackCurlToProd('Bash', { command: 'curl -s https://example.com/health' });
   assert.equal(fs.existsSync(MARKER), false);
   trackCurlToProd('Bash', {
-    command: 'curl -s https://thumbgate-production.up.railway.app/health',
+    command: 'curl -s https://thumbgate.ai/health',
   });
   assert.ok(fs.existsSync(MARKER));
 });

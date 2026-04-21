@@ -45,7 +45,7 @@ ThumbGate's mission: stop paying for the same AI mistake twice.
 
 One 👎 → permanent gate → 0 tokens on the repeat. Forever.
 
-→ thumbgate-production.up.railway.app
+→ thumbgate.ai
 ```
 
 ### B — story hook (489 chars)
@@ -57,7 +57,7 @@ So I built ThumbGate. One thumbs-down on the wrong tool call → a Pre-Action Ga
 
 Mission: stop paying for the same AI mistake twice.
 
-→ thumbgate-production.up.railway.app
+→ thumbgate.ai
 ```
 
 ---
@@ -79,7 +79,7 @@ Mission: stop paying for the same AI mistake twice.
 
 Open source, MIT, runs against Claude Code / Cursor / Codex / Gemini / Amp / OpenCode and any MCP-compatible agent.
 
-→ thumbgate-production.up.railway.app
+→ thumbgate.ai
 → npm i -g thumbgate
 
 What's the worst repeat-mistake your agent makes that you wish you could just block forever? Reply below.
@@ -129,7 +129,7 @@ The dashboard has a live "tokens saved this week" counter so you can see the act
 MIT licensed. Works with Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent.
 
 Repo: https://github.com/IgorGanapolsky/ThumbGate
-Live dashboard: https://thumbgate-production.up.railway.app/dashboard
+Live dashboard: https://thumbgate.ai/dashboard
 
 Honest feedback wanted — especially from people running agent loops at scale. What's your worst repeat-mistake?
 ```
@@ -159,7 +159,7 @@ VO: "Live counter on the dashboard. Real dollar savings. Every gate, every block
 
 VO: "ThumbGate. Open source. Free CLI. Install in five minutes."
 
-[0:55–1:00] CTA card: thumbgate-production.up.railway.app
+[0:55–1:00] CTA card: thumbgate.ai
 ```
 
 ---

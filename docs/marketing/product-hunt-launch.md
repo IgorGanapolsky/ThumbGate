@@ -18,10 +18,10 @@ Developer Tools, Artificial Intelligence, Open Source
 Free + Open Source (Pro $19/mo or $149/yr for individual operators; Team rollout intake-first)
 
 ## Links
-- **Website:** https://thumbgate-production.up.railway.app
+- **Website:** https://thumbgate.ai
 - **GitHub:** https://github.com/IgorGanapolsky/ThumbGate
 - **npm:** https://www.npmjs.com/package/thumbgate
-- **Live Dashboard:** https://thumbgate-production.up.railway.app/dashboard
+- **Live Dashboard:** https://thumbgate.ai/dashboard
 - **Product Hunt:** https://www.producthunt.com/products/thumbgate
 - **Claude plugin bundle:** https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb
 - **Claude plugin guide:** https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/CLAUDE_DESKTOP_EXTENSION.md
@@ -87,7 +87,7 @@ $ npx thumbgate serve
 ```
 
 ### Image 4: Dashboard
-**Concept:** Screenshot of live dashboard at https://thumbgate-production.up.railway.app/dashboard showing enforcement matrix, gate stats, and feedback summary.
+**Concept:** Screenshot of live dashboard at https://thumbgate.ai/dashboard showing enforcement matrix, gate stats, and feedback summary.
 
 ### Image 5: Agent Compatibility
 **Concept:** Logo grid showing supported agents: Claude Code, Cursor, Codex, Gemini, Amp, OpenCode. Center text: "One install. Every agent." with `npx thumbgate init` command.
@@ -144,10 +144,10 @@ Claude plugin: https://github.com/IgorGanapolsky/ThumbGate/releases/latest/downl
 
 ## UTM-Tracked Links for Distribution
 
-> **Note:** Use these links in all social posts and the PH listing to track referral sources in Plausible. View analytics at: https://plausible.io/thumbgate-production.up.railway.app
+> **Note:** Use these links in all social posts and the PH listing to track referral sources in Plausible. View analytics at: https://plausible.io/thumbgate.ai
 
 ### ProductHunt → Landing Page
-https://thumbgate-production.up.railway.app/?utm_source=producthunt&utm_medium=listing&utm_campaign=thumbgate-launch
+https://thumbgate.ai/?utm_source=producthunt&utm_medium=listing&utm_campaign=thumbgate-launch
 
 ### ProductHunt → GitHub
 https://github.com/IgorGanapolsky/ThumbGate?utm_source=producthunt&utm_medium=listing&utm_campaign=thumbgate-launch
@@ -159,19 +159,19 @@ https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/codex-profile/INST
 https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/CLAUDE_DESKTOP_EXTENSION.md?utm_source=producthunt&utm_medium=listing&utm_campaign=thumbgate-launch
 
 ### Reddit → Landing Page
-https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=post&utm_campaign=thumbgate-launch
+https://thumbgate.ai/?utm_source=reddit&utm_medium=post&utm_campaign=thumbgate-launch
 
 ### Twitter/X → Landing Page
-https://thumbgate-production.up.railway.app/?utm_source=twitter&utm_medium=post&utm_campaign=thumbgate-launch
+https://thumbgate.ai/?utm_source=twitter&utm_medium=post&utm_campaign=thumbgate-launch
 
 ### LinkedIn → Landing Page
-https://thumbgate-production.up.railway.app/?utm_source=linkedin&utm_medium=post&utm_campaign=thumbgate-launch
+https://thumbgate.ai/?utm_source=linkedin&utm_medium=post&utm_campaign=thumbgate-launch
 
 ### npm README → Landing Page
-https://thumbgate-production.up.railway.app/?utm_source=npm&utm_medium=readme&utm_campaign=thumbgate-launch
+https://thumbgate.ai/?utm_source=npm&utm_medium=readme&utm_campaign=thumbgate-launch
 
 ### Direct / Newsletter
-https://thumbgate-production.up.railway.app/?utm_source=email&utm_medium=newsletter&utm_campaign=thumbgate-launch
+https://thumbgate.ai/?utm_source=email&utm_medium=newsletter&utm_campaign=thumbgate-launch
 
 ## Attribution note
 

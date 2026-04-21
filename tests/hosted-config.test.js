@@ -44,10 +44,10 @@ describe('hosted-config', () => {
 
   it('resolveHostedBillingConfig uses ThumbGate env names only', () => {
     const config = resolveHostedBillingConfig({}, {
-      THUMBGATE_PUBLIC_APP_ORIGIN: 'https://thumbgate-production.up.railway.app',
-      THUMBGATE_BILLING_API_BASE_URL: 'https://thumbgate-production.up.railway.app',
+      THUMBGATE_PUBLIC_APP_ORIGIN: 'https://thumbgate.ai',
+      THUMBGATE_BILLING_API_BASE_URL: 'https://thumbgate.ai',
     });
-    assert.strictEqual(config.appOrigin, 'https://thumbgate-production.up.railway.app');
-    assert.strictEqual(config.billingApiBaseUrl, 'https://thumbgate-production.up.railway.app');
+    assert.strictEqual(config.appOrigin, 'https://thumbgate.ai');
+    assert.strictEqual(config.billingApiBaseUrl, 'https://thumbgate.ai');
   });
 });

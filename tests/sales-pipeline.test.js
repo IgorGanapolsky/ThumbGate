@@ -37,7 +37,7 @@ function makeReport() {
         motion: 'sprint',
         motionLabel: 'Workflow Hardening Sprint',
         motionReason: 'Target can be approached with one concrete workflow-hardening offer.',
-        cta: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+        cta: 'https://thumbgate.ai/#workflow-sprint-intake',
         message: 'I can harden one AI-agent workflow for you.',
       },
     ],

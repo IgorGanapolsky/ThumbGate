@@ -18,7 +18,7 @@
 const dns = require('node:dns').promises;
 
 const PRODUCT_NAME = 'ThumbGate Pro';
-const DASHBOARD_URL = 'https://thumbgate-production.up.railway.app/dashboard';
+const DASHBOARD_URL = 'https://thumbgate.ai/dashboard';
 const DEFAULT_CONTACT_EMAIL = 'igor.ganapolsky@gmail.com';
 const DEFAULT_FROM = 'onboarding@resend.dev';
 const DEFAULT_REPLY_TO = DEFAULT_CONTACT_EMAIL;
@@ -27,7 +27,7 @@ const DEFAULT_BUSINESS_NAME = 'Max Smith KDP LLC';
 // CAN-SPAM requires a physical mailing address. Override via THUMBGATE_BUSINESS_ADDRESS.
 const DEFAULT_BUSINESS_ADDRESS = '2261 Market Street #4242, San Francisco, CA 94114';
 // Hosted PNG that email clients (Gmail, Outlook) will proxy. SVG is stripped from most email HTML.
-const BRAND_MARK_URL = 'https://thumbgate-production.up.railway.app/thumbgate-icon.png';
+const BRAND_MARK_URL = 'https://thumbgate.ai/thumbgate-icon.png';
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const TRIAL_LENGTH_DAYS = 7;
 const SENDER_DNS_CACHE_MS = 10 * 60 * 1000;

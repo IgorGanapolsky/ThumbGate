@@ -1,7 +1,7 @@
 ---
 name: thumbgate
 description: Stop your AI from making the same mistake twice. Pre-Action Gates that block repeat hallucinations, retry loops, and known-bad tool calls before they reach the model — zero tokens spent on mistakes you've already corrected. Works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent.
-homepage: https://thumbgate-production.up.railway.app
+homepage: https://thumbgate.ai
 metadata: {"clawdbot":{"emoji":"🧰","requires":{"bins":["thumbgate"]},"install":[{"id":"npm","kind":"npm","module":"thumbgate","bins":["thumbgate"],"label":"Install ThumbGate (npm)"}]}}
 ---
 
@@ -12,7 +12,7 @@ metadata: {"clawdbot":{"emoji":"🧰","requires":{"bins":["thumbgate"]},"install
 Repeated AI mistakes cost real money in tokens. Thumbs-down once — ThumbGate blocks that exact pattern on every future call, across every agent you use.
 
 - **npm:** `thumbgate`
-- **Dashboard:** https://thumbgate-production.up.railway.app/dashboard
+- **Dashboard:** https://thumbgate.ai/dashboard
 - **Repo:** https://github.com/IgorGanapolsky/ThumbGate (MIT)
 
 ## Quick Start
@@ -53,4 +53,4 @@ thumbgate dashboard                                    # open the local dashboar
 - **Pro ($19/mo or $149/yr)** — unlimited captures + rules, personal local dashboard, DPO export.
 - **Team ($49/seat/mo)** — shared hosted lesson DB, org dashboard, workflow governance.
 
-Dashboard + live tokens-saved counter: https://thumbgate-production.up.railway.app/dashboard
+Dashboard + live tokens-saved counter: https://thumbgate.ai/dashboard

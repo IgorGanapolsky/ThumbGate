@@ -26,7 +26,7 @@ This project uses a local-first **Reliability Gateway** operational loop.
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:
   - Repository: `IgorGanapolsky/ThumbGate`
   - npm package: `thumbgate`
-  - Production API: `https://thumbgate-production.up.railway.app`
+  - Production API: `https://thumbgate.ai`
 - Do not cite `mcp-memory-gateway`, `rlhf`, or old RLHF-loop paths as active product, repo, remote, package, analytics, Smithery, or publishing surfaces.
 - Legacy names may appear only inside migration cleanup code or tests that remove old config keys. Public docs, GPT Actions guidance, launch copy, outreach, and PR text must be ThumbGate-only.
 

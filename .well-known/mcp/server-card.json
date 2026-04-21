@@ -2,14 +2,14 @@
   "name": "thumbgate",
   "version": "1.14.1",
   "description": "ThumbGate — 👍👎 feedback that teaches your AI agent. Thumbs down a mistake, it never happens again.",
-  "homepage": "https://thumbgate-production.up.railway.app",
+  "homepage": "https://thumbgate.ai",
   "transport": "stdio",
   "discovery": {
-    "manifestUrl": "https://thumbgate-production.up.railway.app/.well-known/mcp.json",
-    "toolIndexUrl": "https://thumbgate-production.up.railway.app/.well-known/mcp/tools.json",
-    "toolSchemaUrlTemplate": "https://thumbgate-production.up.railway.app/.well-known/mcp/tools/{name}.json",
-    "footprintUrl": "https://thumbgate-production.up.railway.app/.well-known/mcp/footprint.json",
-    "skillsUrl": "https://thumbgate-production.up.railway.app/.well-known/mcp/skills.json",
-    "applicationsUrl": "https://thumbgate-production.up.railway.app/.well-known/mcp/applications.json"
+    "manifestUrl": "https://thumbgate.ai/.well-known/mcp.json",
+    "toolIndexUrl": "https://thumbgate.ai/.well-known/mcp/tools.json",
+    "toolSchemaUrlTemplate": "https://thumbgate.ai/.well-known/mcp/tools/{name}.json",
+    "footprintUrl": "https://thumbgate.ai/.well-known/mcp/footprint.json",
+    "skillsUrl": "https://thumbgate.ai/.well-known/mcp/skills.json",
+    "applicationsUrl": "https://thumbgate.ai/.well-known/mcp/applications.json"
   }
 }

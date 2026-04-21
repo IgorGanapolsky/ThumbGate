@@ -19,8 +19,8 @@ Open https://railway.app → ThumbGate project → Variables. Add:
 
 ```
 THUMBGATE_METRICS_SOURCE=hosted
-THUMBGATE_BILLING_API_BASE_URL=https://thumbgate-production.up.railway.app
-THUMBGATE_PUBLIC_APP_ORIGIN=https://thumbgate-production.up.railway.app
+THUMBGATE_BILLING_API_BASE_URL=https://thumbgate.ai
+THUMBGATE_PUBLIC_APP_ORIGIN=https://thumbgate.ai
 ```
 
 Then generate an operator key locally and add it to Railway:
@@ -42,8 +42,8 @@ Redeploy (Railway auto-redeploys on variable change; takes 2–5 min).
 
 ```bash
 EXPECTED_VERSION="$(node -p "require('./package.json').version")"
-curl -s https://thumbgate-production.up.railway.app/health | grep "\"version\":\"${EXPECTED_VERSION}\""
-curl -s https://thumbgate-production.up.railway.app/v1/billing/summary \
+curl -s https://thumbgate.ai/health | grep "\"version\":\"${EXPECTED_VERSION}\""
+curl -s https://thumbgate.ai/v1/billing/summary \
   -H "Authorization: Bearer $(cat ~/.config/thumbgate/operator.json | jq -r .operatorKey)" \
   | jq '.summary.revenue.bookedRevenueCents'
 node bin/cli.js cfo --today | head -5
@@ -69,7 +69,7 @@ The checkout works today without these env vars because the code has embedded fa
 If not already done:
 
 1. Stripe Dashboard → Developers → Webhooks → Add endpoint
-2. Endpoint URL: `https://thumbgate-production.up.railway.app/v1/billing/webhook`
+2. Endpoint URL: `https://thumbgate.ai/v1/billing/webhook`
 3. Events to send:
    - `checkout.session.completed`
    - `customer.subscription.created`

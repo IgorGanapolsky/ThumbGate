@@ -27,7 +27,7 @@ const { initDb } = require('./store');
  */
 const POLLERS = [
   { name: 'github', module: './pollers/github', envRequired: ['GITHUB_TOKEN'] },
-  // PLAUSIBLE_SITE_ID defaults to thumbgate-production.up.railway.app if not set.
+  // PLAUSIBLE_SITE_ID defaults to thumbgate.ai if not set.
   { name: 'plausible', module: './pollers/plausible', envRequired: ['PLAUSIBLE_API_KEY'] },
   // Zernio covers all connected social accounts (Reddit, LinkedIn, Bluesky, Threads,
   // Instagram, YouTube, TikTok) via a unified API. This is the canonical social poller.

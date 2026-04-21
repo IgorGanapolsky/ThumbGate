@@ -6,7 +6,7 @@
     "name": "Igor Ganapolsky",
     "url": "https://github.com/IgorGanapolsky"
   },
-  "homepage": "https://thumbgate-production.up.railway.app",
+  "homepage": "https://thumbgate.ai",
   "repository": "https://github.com/IgorGanapolsky/ThumbGate",
   "license": "MIT",
   "keywords": [
@@ -29,8 +29,8 @@
       "Interactive",
       "Write"
     ],
-    "websiteURL": "https://thumbgate-production.up.railway.app",
-    "privacyPolicyURL": "https://thumbgate-production.up.railway.app/privacy",
+    "websiteURL": "https://thumbgate.ai",
+    "privacyPolicyURL": "https://thumbgate.ai/privacy",
     "termsOfServiceURL": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/LICENSE",
     "defaultPrompt": [
       "Load ThumbGate skill packs before a risky Codex task.",

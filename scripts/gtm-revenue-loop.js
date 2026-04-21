@@ -104,7 +104,7 @@ function normalizeText(value) {
 }
 
 function buildRevenueLinks(config = resolveHostedBillingConfig({
-  requestOrigin: 'https://thumbgate-production.up.railway.app',
+  requestOrigin: 'https://thumbgate.ai',
 })) {
   const appOrigin = config.appOrigin;
   return {

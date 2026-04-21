@@ -10,7 +10,7 @@ info:
     When the explanation is specific enough, ThumbGate infers a domain tag if
     the caller omitted manual tags so the feedback can still promote cleanly.
 servers:
-  - url: https://thumbgate-production.up.railway.app
+  - url: https://thumbgate.ai
 security:
   - bearerAuth: []
 components:

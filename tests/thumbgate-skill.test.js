@@ -55,7 +55,7 @@ describe('thumbgate-skill', () => {
     assert.ok(content.includes('Pro Features'), 'has Pro section');
     assert.ok(content.includes('Multi-hop recall'), 'mentions multi-hop recall');
     assert.ok(content.includes('Synthetic DPO'), 'mentions synthetic DPO');
-    assert.match(content, /https:\/\/thumbgate-production\.up\.railway\.app\/go\/pro[^\s)]*/, 'has attributed checkout link');
+    assert.match(content, /https:\/\/thumbgate\.ai\/go\/pro[^\s)]*/, 'has attributed checkout link');
     assert.ok(content.includes('$19/mo or $149/yr'), 'mentions current Pro pricing');
     assert.ok(content.includes('$49/seat/mo'), 'mentions current Team pricing');
     assert.doesNotMatch(content, /founder[- ]license/i, 'does not mention retired founder-license positioning');

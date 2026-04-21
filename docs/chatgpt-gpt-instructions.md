@@ -55,7 +55,7 @@ If the user asks for a summary of recent feedback patterns, call GET /v1/feedbac
 If the user asks for prevention rules, call POST /v1/feedback/rules.
 If the user asks for DPO export, call POST /v1/dpo/export.
 
-API base URL: https://thumbgate-production.up.railway.app
+API base URL: https://thumbgate.ai
 Authentication: Bearer token configured once by the GPT owner in GPT Builder. Regular users should never be asked for API keys.
 ```
 

@@ -81,7 +81,7 @@ jobs:
       - name: Check production health
         id: health
         run: |
-          HEALTH=$(curl -s https://thumbgate-production.up.railway.app/health || echo '{"status":"unreachable"}')
+          HEALTH=$(curl -s https://thumbgate.ai/health || echo '{"status":"unreachable"}')
           echo "health=$HEALTH" >> "$GITHUB_OUTPUT"
           echo "Production: $HEALTH"
 

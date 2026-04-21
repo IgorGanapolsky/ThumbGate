@@ -101,8 +101,8 @@ test('getStatuslineLinks falls back to command hints when no local Pro bootstrap
   });
 
   assert.equal(result.state, 'unavailable');
-  assert.equal(result.dashboardUrl, 'https://thumbgate-production.up.railway.app/dashboard');
-  assert.equal(result.lessonsUrl, 'https://thumbgate-production.up.railway.app/lessons');
+  assert.equal(result.dashboardUrl, 'https://thumbgate.ai/dashboard');
+  assert.equal(result.lessonsUrl, 'https://thumbgate.ai/lessons');
   assert.match(result.dashboardLabel, /Dashboard/);
 });
 
@@ -118,8 +118,8 @@ test('getStatuslineLinks never bootstraps or links to non-local origins', async 
   });
 
   assert.equal(result.state, 'unavailable');
-  assert.equal(result.dashboardUrl, 'https://thumbgate-production.up.railway.app/dashboard');
-  assert.equal(result.lessonsUrl, 'https://thumbgate-production.up.railway.app/lessons');
+  assert.equal(result.dashboardUrl, 'https://thumbgate.ai/dashboard');
+  assert.equal(result.lessonsUrl, 'https://thumbgate.ai/lessons');
   assert.deepEqual(launches, []);
 });
 

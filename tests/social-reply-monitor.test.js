@@ -12,7 +12,7 @@ const {
 
 test('isRevenueRelevantXTweet focuses on ThumbGate launch and monetization tweets', () => {
   assert.equal(isRevenueRelevantXTweet({ text: 'ThumbGate blocks repeated mistakes before they run.' }), true);
-  assert.equal(isRevenueRelevantXTweet({ text: 'Start Pro: https://thumbgate-production.up.railway.app/checkout/pro' }), true);
+  assert.equal(isRevenueRelevantXTweet({ text: 'Start Pro: https://thumbgate.ai/checkout/pro' }), true);
   assert.equal(isRevenueRelevantXTweet({ text: 'Totally unrelated personal update.' }), false);
 });
 

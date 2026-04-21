@@ -21,7 +21,7 @@ const path = require('node:path');
 const os = require('node:os');
 
 const LOCAL_CONFIG_PATH = path.join(os.homedir(), '.config', 'thumbgate', 'operator.json');
-const PROD_URL = 'https://thumbgate-production.up.railway.app';
+const PROD_URL = 'https://thumbgate.ai';
 
 function generateOperatorKey() {
   return `tg_op_${crypto.randomBytes(20).toString('hex')}`;

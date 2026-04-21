@@ -363,7 +363,7 @@ test('cursor marketplace plugin keeps metadata versioned while runtime tracks th
   assert.equal(marketplace.plugins[0].name, pluginManifest.name);
   assert.equal(pluginManifest.version, packageVersion);
   assert.deepEqual(pluginConfig.mcpServers.thumbgate.args, explicitLatestServeArgs);
-  assert.equal(pluginManifest.homepage, 'https://thumbgate-production.up.railway.app');
+  assert.equal(pluginManifest.homepage, 'https://thumbgate.ai');
   assert.equal(pluginManifest.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
 });
 
@@ -386,9 +386,9 @@ test('claude plugin metadata stays aligned with the released package and install
   assert.ok(pluginManifest.keywords.includes('pre-action-gates'));
   assert.ok(pluginManifest.keywords.includes('ai-agent-safety'));
   assert.ok(marketplaceEntry.metadata.keywords.includes('pre-action-gates'));
-  assert.equal(pluginManifest.homepage, 'https://thumbgate-production.up.railway.app');
+  assert.equal(pluginManifest.homepage, 'https://thumbgate.ai');
   assert.equal(pluginManifest.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
-  assert.equal(marketplaceEntry.metadata.homepage, 'https://thumbgate-production.up.railway.app');
+  assert.equal(marketplaceEntry.metadata.homepage, 'https://thumbgate.ai');
   assert.match(readme, /Privacy Policy/i);
   assert.match(readme, /Data Collection/i);
   assert.match(readme, /Support/i);
@@ -436,7 +436,7 @@ test('codex app plugin surface is present and aligned to ThumbGate metadata', ()
   const pluginEntry = marketplace.plugins.find((plugin) => plugin.name === pluginManifest.name);
 
   assert.equal(pluginManifest.version, packageVersion);
-  assert.equal(pluginManifest.homepage, 'https://thumbgate-production.up.railway.app');
+  assert.equal(pluginManifest.homepage, 'https://thumbgate.ai');
   assert.equal(pluginManifest.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
   assert.equal(pluginManifest.interface.displayName, 'ThumbGate for Codex');
   assert.equal(pluginManifest.mcpServers, './.mcp.json');
@@ -451,7 +451,7 @@ test('Claude Codex bridge plugin surface is present and aligned to ThumbGate met
   const readme = fs.readFileSync(path.join(root, 'plugins/claude-codex-bridge/README.md'), 'utf-8');
 
   assert.equal(pluginManifest.version, packageVersion);
-  assert.equal(pluginManifest.homepage, 'https://thumbgate-production.up.railway.app');
+  assert.equal(pluginManifest.homepage, 'https://thumbgate.ai');
   assert.equal(pluginManifest.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
   assert.equal(pluginManifest.name, 'codex-bridge');
   assert.deepEqual(pluginConfig.mcpServers.thumbgate.args, explicitServeArgs);

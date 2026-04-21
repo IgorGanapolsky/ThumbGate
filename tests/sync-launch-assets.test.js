@@ -28,7 +28,7 @@ test('buildLaunchAssetState groups launch and campaign posts by marker and platf
       _id: 'launch_x_1',
       status: 'published',
       createdAt: '2026-04-06T19:00:00.000Z',
-      content: 'https://thumbgate-production.up.railway.app/?utm_content=launch_post_twitter',
+      content: 'https://thumbgate.ai/?utm_content=launch_post_twitter',
       platforms: [{ platform: 'twitter' }],
     },
     {
@@ -36,7 +36,7 @@ test('buildLaunchAssetState groups launch and campaign posts by marker and platf
       status: 'scheduled',
       createdAt: '2026-04-06T19:10:00.000Z',
       scheduledFor: '2026-04-07T10:15:00.000Z',
-      content: 'https://thumbgate-production.up.railway.app/?utm_content=campaign_proof_pack',
+      content: 'https://thumbgate.ai/?utm_content=campaign_proof_pack',
       platforms: [{ platform: 'instagram' }],
     },
     {
@@ -44,7 +44,7 @@ test('buildLaunchAssetState groups launch and campaign posts by marker and platf
       status: 'scheduled',
       createdAt: '2026-04-06T18:10:00.000Z',
       scheduledFor: '2026-04-07T10:15:00.000Z',
-      content: 'https://thumbgate-production.up.railway.app/?utm_content=campaign_proof_pack',
+      content: 'https://thumbgate.ai/?utm_content=campaign_proof_pack',
       platforms: [{ platform: 'instagram' }],
     },
   ]);
@@ -66,7 +66,7 @@ test('syncLaunchAssets writes a durable launch asset registry', async () => {
         _id: 'launch_li_1',
         status: 'published',
         createdAt: '2026-04-06T19:01:00.000Z',
-        content: 'https://thumbgate-production.up.railway.app/?utm_content=launch_post_linkedin',
+        content: 'https://thumbgate.ai/?utm_content=launch_post_linkedin',
         platforms: [{ platform: 'linkedin' }],
       },
       {
@@ -74,7 +74,7 @@ test('syncLaunchAssets writes a durable launch asset registry', async () => {
         status: 'scheduled',
         createdAt: '2026-04-06T19:02:00.000Z',
         scheduledFor: '2026-04-07T18:45:00.000Z',
-        content: 'https://thumbgate-production.up.railway.app/?utm_content=campaign_checkout_path',
+        content: 'https://thumbgate.ai/?utm_content=campaign_checkout_path',
         platforms: [{ platform: 'twitter' }],
       },
     ]),

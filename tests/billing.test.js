@@ -340,7 +340,7 @@ describe('billing.js — funnel ledger', () => {
       customerEmail: 'Buyer@Example.com',
       apiKey: 'tg_test_activation_key',
       planId: 'pro',
-      appOrigin: 'https://thumbgate-production.up.railway.app',
+      appOrigin: 'https://thumbgate.ai',
       source: 'unit_test',
     }, {
       transport: async (message) => {
@@ -542,7 +542,7 @@ describe('billing.js — funnel ledger', () => {
         planId: 'credits',
       },
       packId: 'test_pack',
-      appOrigin: 'https://thumbgate-production.up.railway.app',
+      appOrigin: 'https://thumbgate.ai',
     });
 
     assert.equal(payload.mode, 'payment');
@@ -553,7 +553,7 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(payload.line_items[0].price_data.unit_amount, 5000);
     assert.equal(payload.line_items[0].price_data.product_data.name, 'ThumbGate Credit Pack');
     assert.deepEqual(payload.line_items[0].price_data.product_data.images, [
-      'https://thumbgate-production.up.railway.app/assets/brand/thumbgate-icon-512.png',
+      'https://thumbgate.ai/assets/brand/thumbgate-icon-512.png',
     ]);
     assert.equal(Object.prototype.hasOwnProperty.call(payload, 'subscription_data'), false);
 
@@ -583,7 +583,7 @@ describe('billing.js — funnel ledger', () => {
       const result = await billing.createCheckoutSession({
         installId: 'inst_live_checkout',
         customerEmail: 'buyer@example.com',
-        appOrigin: 'https://thumbgate-production.up.railway.app',
+        appOrigin: 'https://thumbgate.ai',
       });
 
       assert.equal(result.localMode, false);

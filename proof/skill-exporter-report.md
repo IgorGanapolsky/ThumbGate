@@ -44,7 +44,7 @@ Pure local file transformation — no external APIs required.
   "version": "0.8.5",
   "description": "Reviews pull requests with ThumbGate memory and gates",
   "author": { "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky" },
-  "homepage": "https://thumbgate-production.up.railway.app",
+  "homepage": "https://thumbgate.ai",
   "repository": "https://github.com/IgorGanapolsky/ThumbGate",
   "license": "MIT",
   "keywords": ["codex", "codex-plugin", "thumbgate", "pr-reviewer", "pr-review", "code-quality"],

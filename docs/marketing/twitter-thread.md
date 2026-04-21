@@ -84,8 +84,8 @@ npm install thumbgate
 
 GitHub: github.com/IgorGanapolsky/ThumbGate
 npm: npmjs.com/package/thumbgate
-Pro ($19/mo or $149/yr): https://thumbgate-production.up.railway.app/checkout/pro
-Hosted demo: thumbgate-production.up.railway.app
+Pro ($19/mo or $149/yr): https://thumbgate.ai/checkout/pro
+Hosted demo: thumbgate.ai
 
 #DevTools #MCP
 

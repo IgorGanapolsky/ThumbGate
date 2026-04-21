@@ -39,7 +39,7 @@ Then give your agent a thumbs down next time it messes up. ThumbGate will do the
 I've been using this for 2 weeks—Claude Code hasn't repeated a single mistake I've marked down. Would love to hear if it works the same way for you.
 
 Repo: https://github.com/IgorGanapolsky/ThumbGate
-Tracked landing: https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=claudeai_post&community=ClaudeAI&campaign_variant=founder_story&offer_code=REDDIT-EARLY
+Tracked landing: https://thumbgate.ai/?utm_source=reddit&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=claudeai_post&community=ClaudeAI&campaign_variant=founder_story&offer_code=REDDIT-EARLY
 
 ---
 
@@ -87,7 +87,7 @@ npx thumbgate init --agent cursor
 Then hit thumbs down next time Cursor repeats a mistake. It won't happen again.
 
 Repo: https://github.com/IgorGanapolsky/ThumbGate
-Tracked landing: https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=cursor_post&community=cursor&campaign_variant=workflow_pain&offer_code=REDDIT-EARLY
+Tracked landing: https://thumbgate.ai/?utm_source=reddit&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=cursor_post&community=cursor&campaign_variant=workflow_pain&offer_code=REDDIT-EARLY
 
 ---
 
@@ -139,7 +139,7 @@ npx thumbgate init --agent claude-code
 **Try it:**
 Give Claude Code a thumbs down next time it repeats a mistake. ThumbGate will block that pattern in the next session.
 
-Landing: https://thumbgate-production.up.railway.app/?utm_source=hackernews&utm_medium=community_post&utm_campaign=first_customer_push&utm_content=show_hn&community=ShowHN&campaign_variant=technical_launch
+Landing: https://thumbgate.ai/?utm_source=hackernews&utm_medium=community_post&utm_campaign=first_customer_push&utm_content=show_hn&community=ShowHN&campaign_variant=technical_launch
 GitHub: https://github.com/IgorGanapolsky/ThumbGate
 
 ---
@@ -200,11 +200,11 @@ Give Claude Code a thumbs down, watch the prevention rule appear, and see the sa
 
 On the workflows I had explicitly marked down, it stopped the repeats that kept wasting my time.
 
-https://thumbgate-production.up.railway.app/?utm_source=x&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=launch_thread&creator=IgorGanapolsky&campaign_variant=founder_story
+https://thumbgate.ai/?utm_source=x&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=launch_thread&creator=IgorGanapolsky&campaign_variant=founder_story
 
 **Tweet 7:**
 Repo: https://github.com/IgorGanapolsky/ThumbGate
-Tracked landing: https://thumbgate-production.up.railway.app/?utm_source=x&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=launch_thread_cta&creator=IgorGanapolsky&campaign_variant=founder_story
+Tracked landing: https://thumbgate.ai/?utm_source=x&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=launch_thread_cta&creator=IgorGanapolsky&campaign_variant=founder_story
 
 Built by @IgorGanapolsky. If you're tired of your AI agent making the same mistakes over and over—this is for you.
 
@@ -218,10 +218,10 @@ npx thumbgate init --agent claude-code
 ```
 
 **Checkout/Pricing Link:**
-https://thumbgate-production.up.railway.app/checkout/pro?plan_id=pro&billing_cycle=monthly&utm_source=x&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=thread_direct_checkout&creator=IgorGanapolsky
+https://thumbgate.ai/checkout/pro?plan_id=pro&billing_cycle=monthly&utm_source=x&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=thread_direct_checkout&creator=IgorGanapolsky
 
 **Landing Page:**
-https://thumbgate-production.up.railway.app/?utm_source=direct&utm_medium=manual_link&utm_campaign=first_customer_push&utm_content=launch_assets
+https://thumbgate.ai/?utm_source=direct&utm_medium=manual_link&utm_campaign=first_customer_push&utm_content=launch_assets
 
 **GitHub:**
 https://github.com/IgorGanapolsky/ThumbGate

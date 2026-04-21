@@ -93,7 +93,7 @@ function renderNumbersPage(input) {
     applicationCategory: 'DeveloperApplication',
     operatingSystem: 'Cross-platform, Node.js >=18.18.0',
     softwareVersion: version,
-    url: 'https://thumbgate-production.up.railway.app/numbers',
+    url: 'https://thumbgate.ai/numbers',
     dateModified: nowDate,
     creator: {
       '@type': 'Person',
@@ -112,7 +112,7 @@ function renderNumbersPage(input) {
     name: 'ThumbGate Live Operational Metrics',
     description:
       'First-party operational metrics from the ThumbGate pre-action gate runtime: active gates, blocked AI agent actions, estimated token savings, and Bayes error rate of the intervention scorer.',
-    url: 'https://thumbgate-production.up.railway.app/numbers',
+    url: 'https://thumbgate.ai/numbers',
     license: 'https://opensource.org/licenses/MIT',
     creator: softwareLd.creator,
     dateModified: nowDate,
@@ -181,12 +181,12 @@ function renderNumbersPage(input) {
 <meta property="og:title" content="ThumbGate — The Numbers">
 <meta property="og:description" content="Live first-party operational metrics: gates, blocks, token savings, and scorer calibration. Regenerated on every release.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://thumbgate-production.up.railway.app/numbers">
+<meta property="og:url" content="https://thumbgate.ai/numbers">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="canonical" href="https://thumbgate-production.up.railway.app/numbers">
+<link rel="canonical" href="https://thumbgate.ai/numbers">
 <link rel="icon" type="image/png" href="/thumbgate-icon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
 
 <script type="application/ld+json">
 ${JSON.stringify(softwareLd, null, 2)}

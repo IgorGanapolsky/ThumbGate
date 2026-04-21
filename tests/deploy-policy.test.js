@@ -37,8 +37,8 @@ test('deploy policy passes when required vars and fresh secrets are present', ()
     RAILWAY_TOKEN_ROTATED_AT: isoDaysAgo(10),
     RAILWAY_PROJECT_ID: 'proj_123',
     RAILWAY_ENVIRONMENT_ID: 'env_123',
-    RAILWAY_HEALTHCHECK_URL: 'https://thumbgate-production.up.railway.app/health',
-    THUMBGATE_PUBLIC_APP_ORIGIN: 'https://thumbgate-production.up.railway.app',
+    RAILWAY_HEALTHCHECK_URL: 'https://thumbgate.ai/health',
+    THUMBGATE_PUBLIC_APP_ORIGIN: 'https://thumbgate.ai',
     THUMBGATE_BILLING_API_BASE_URL: 'https://billing.example.com',
   }, {
     profiles: ['runtime', 'billing', 'deploy'],
@@ -54,7 +54,7 @@ test('deploy policy infers canonical hosted config when billing vars are omitted
     RAILWAY_TOKEN_ROTATED_AT: isoDaysAgo(1),
     RAILWAY_PROJECT_ID: 'proj_123',
     RAILWAY_ENVIRONMENT_ID: 'env_123',
-    RAILWAY_HEALTHCHECK_URL: 'https://thumbgate-production.up.railway.app/health',
+    RAILWAY_HEALTHCHECK_URL: 'https://thumbgate.ai/health',
   }, {
     profiles: ['deploy'],
   });
@@ -73,8 +73,8 @@ test('deploy policy resolves canonical ThumbGate env names', () => {
 
 test('deploy policy ignores unknown alias env names', () => {
   assert.equal(resolveEnvValue('THUMBGATE_API_KEY', { LEGACY_API_KEY: 'legacy_live_key' }), '');
-  assert.equal(resolveEnvValue('THUMBGATE_PUBLIC_APP_ORIGIN', {}), 'https://thumbgate-production.up.railway.app');
-  assert.equal(resolveEnvValue('THUMBGATE_BILLING_API_BASE_URL', {}), 'https://thumbgate-production.up.railway.app');
+  assert.equal(resolveEnvValue('THUMBGATE_PUBLIC_APP_ORIGIN', {}), 'https://thumbgate.ai');
+  assert.equal(resolveEnvValue('THUMBGATE_BILLING_API_BASE_URL', {}), 'https://thumbgate.ai');
 });
 
 test('deploy policy fails stale Stripe secret timestamps', () => {
@@ -83,7 +83,7 @@ test('deploy policy fails stale Stripe secret timestamps', () => {
     STRIPE_SECRET_KEY_ROTATED_AT: isoDaysAgo(120),
     STRIPE_WEBHOOK_SECRET: 'whsec_example',
     STRIPE_WEBHOOK_SECRET_ROTATED_AT: isoDaysAgo(3),
-    THUMBGATE_PUBLIC_APP_ORIGIN: 'https://thumbgate-production.up.railway.app',
+    THUMBGATE_PUBLIC_APP_ORIGIN: 'https://thumbgate.ai',
     THUMBGATE_BILLING_API_BASE_URL: 'https://billing.example.com',
   }, {
     profiles: ['billing'],

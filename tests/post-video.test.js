@@ -191,7 +191,7 @@ describe('post-video (Instagram presign fix)', () => {
   // produced 0 funnel events across 404 published posts. Do not regress.
   it('video captions link to thumbgate-production for funnel attribution', () => {
     const { CAPTIONS } = require('../scripts/social-analytics/post-video');
-    const landingDomain = 'thumbgate-production.up.railway.app';
+    const landingDomain = 'thumbgate.ai';
 
     // TikTok and YouTube include raw URLs, so they must include the tracked domain.
     assert.ok(

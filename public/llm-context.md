@@ -139,17 +139,17 @@ npx thumbgate dashboard
 
 ## Additional Resources
 
-- Agent discovery manifest: https://thumbgate-production.up.railway.app/.well-known/mcp.json
-- Progressive MCP tool index: https://thumbgate-production.up.railway.app/.well-known/mcp/tools.json
-- Context footprint report: https://thumbgate-production.up.railway.app/.well-known/mcp/footprint.json
-- ThumbGate skill manifests: https://thumbgate-production.up.railway.app/.well-known/mcp/skills.json
-- ThumbGate MCP applications: https://thumbgate-production.up.railway.app/.well-known/mcp/applications.json
+- Agent discovery manifest: https://thumbgate.ai/.well-known/mcp.json
+- Progressive MCP tool index: https://thumbgate.ai/.well-known/mcp/tools.json
+- Context footprint report: https://thumbgate.ai/.well-known/mcp/footprint.json
+- ThumbGate skill manifests: https://thumbgate.ai/.well-known/mcp/skills.json
+- ThumbGate MCP applications: https://thumbgate.ai/.well-known/mcp/applications.json
 - GitHub: https://github.com/IgorGanapolsky/ThumbGate
 - npm: https://www.npmjs.com/package/thumbgate
-- Documentation: https://thumbgate-production.up.railway.app/guide
-- Autoresearch safety guide: https://thumbgate-production.up.railway.app/guides/autoresearch-agent-safety
-- Comparison: https://thumbgate-production.up.railway.app/compare
-- Team sprint intake: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Documentation: https://thumbgate.ai/guide
+- Autoresearch safety guide: https://thumbgate.ai/guides/autoresearch-agent-safety
+- Comparison: https://thumbgate.ai/compare
+- Team sprint intake: https://thumbgate.ai/#workflow-sprint-intake
 
 ## How ThumbGate Promotes AI Authenticity
 

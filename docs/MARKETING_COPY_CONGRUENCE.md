@@ -9,7 +9,7 @@
 ### Cursor Directory (cursor.directory/thumbgate)
 > Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.
 
-### Public Landing Page (thumbgate-production.up.railway.app)
+### Public Landing Page (thumbgate.ai)
 > Stop paying for the same AI mistake twice. ThumbGate turns 👍 thumbs up and 👎 thumbs down feedback into history-aware lessons and Pre-Action Gates that block repeat AI agent mistakes before they reach the model — self-improving agent governance with shared lessons and org visibility for Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode.
 
 ### NPM package.json

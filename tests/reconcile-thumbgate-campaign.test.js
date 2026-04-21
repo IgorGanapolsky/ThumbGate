@@ -41,7 +41,7 @@ test('reconcileCampaignState writes canonical state and cancels duplicates', asy
       {
         _id: 'proof_x_1',
         status: 'scheduled',
-        content: 'https://thumbgate-production.up.railway.app/?utm_content=campaign_proof_pack',
+        content: 'https://thumbgate.ai/?utm_content=campaign_proof_pack',
         createdAt: '2026-04-06T19:00:00.000Z',
         scheduledFor: '2026-04-07T14:15:00.000Z',
         platforms: [{ platform: 'twitter' }],
@@ -49,7 +49,7 @@ test('reconcileCampaignState writes canonical state and cancels duplicates', asy
       {
         _id: 'proof_x_2',
         status: 'scheduled',
-        content: 'https://thumbgate-production.up.railway.app/?utm_content=campaign_proof_pack',
+        content: 'https://thumbgate.ai/?utm_content=campaign_proof_pack',
         createdAt: '2026-04-06T19:10:00.000Z',
         scheduledFor: '2026-04-07T14:15:00.000Z',
         platforms: [{ platform: 'twitter' }],
@@ -57,7 +57,7 @@ test('reconcileCampaignState writes canonical state and cancels duplicates', asy
       {
         _id: 'checkout_linkedin_1',
         status: 'scheduled',
-        content: 'https://thumbgate-production.up.railway.app/?utm_content=campaign_checkout_path',
+        content: 'https://thumbgate.ai/?utm_content=campaign_checkout_path',
         createdAt: '2026-04-06T19:20:00.000Z',
         scheduledFor: '2026-04-07T22:45:00.000Z',
         platforms: [{ platform: 'linkedin' }],

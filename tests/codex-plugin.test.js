@@ -55,7 +55,7 @@ test('codex plugin manifest uses ThumbGate branding and local MCP config', () =>
 
   assert.equal(plugin.name, 'codex-profile');
   assert.equal(plugin.interface.displayName, 'ThumbGate for Codex');
-  assert.equal(plugin.homepage, 'https://thumbgate-production.up.railway.app');
+  assert.equal(plugin.homepage, 'https://thumbgate.ai');
   assert.equal(plugin.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
   assert.equal(plugin.mcpServers, './.mcp.json');
   assertCodexLatestShellEntry(mcpConfig.mcpServers.thumbgate);
@@ -75,7 +75,7 @@ test('root README promotes the Codex plugin as a first-class install path', () =
 
   assert.match(readme, /Install Codex Plugin/);
   assert.match(readme, /Open the Codex plugin install page/i);
-  assert.match(readme, /thumbgate-production\.up\.railway\.app\/codex-plugin/i);
+  assert.match(readme, /thumbgate\.ai\/codex-plugin/i);
   assert.match(readme, /plugins\/codex-profile\/INSTALL\.md/);
   assert.match(readme, new RegExp(getCodexPluginLatestDownloadUrl(root).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 });

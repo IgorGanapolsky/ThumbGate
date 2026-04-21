@@ -21,7 +21,7 @@ const {
 } = require('../scripts/distribution-surfaces');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
-const CANONICAL_APP_ORIGIN = 'https://thumbgate-production.up.railway.app';
+const CANONICAL_APP_ORIGIN = 'https://thumbgate.ai';
 const CURRENT_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/ThumbGate';
 const PRO_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/thumbgate-pro';
 
@@ -75,7 +75,7 @@ test('public docs render the current package version', () => {
   const productHuntKit = readText('docs/marketing/product-hunt-launch.md');
 
   assert.match(readme, /Open ThumbGate GPT/);
-  assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app\/go\/gpt\?utm_source=github/);
+  assert.match(readme, /https:\/\/thumbgate\.ai\/go\/gpt\?utm_source=github/);
   assert.match(readme, /ThumbGate GPT: start here/i);
   assert.match(readme, /No, users do not have to keep chatting inside the ThumbGate GPT to use ThumbGate/i);
   assert.match(readme, /hard enforcement layer still runs where the work happens/i);
@@ -125,8 +125,8 @@ test('public docs render the current package version', () => {
   assert.match(chatgptInstall, /Users do \*\*not\*\* have to keep chatting inside the ThumbGate GPT for enforcement/i);
   assert.match(chatgptInstall, /every landing page, README, social post, and plugin listing should point to the live GPT/i);
   assert.match(chatgptInstall, /This is an owner setup field/i);
-  assert.match(chatgptInstall, /https:\/\/thumbgate-production\.up\.railway\.app\/openapi\.yaml/);
-  assert.match(chatgptInstall, /https:\/\/thumbgate-production\.up\.railway\.app\/privacy/);
+  assert.match(chatgptInstall, /https:\/\/thumbgate\.ai\/openapi\.yaml/);
+  assert.match(chatgptInstall, /https:\/\/thumbgate\.ai\/privacy/);
   assert.match(chatgptInstructions, /Reliability Gateway for AI agents/i);
   assert.match(chatgptInstructions, /https:\/\/chatgpt\.com\/g\/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate/);
   assert.match(chatgptInstructions, /Stop costly AI mistakes before they run/);
@@ -162,7 +162,7 @@ test('public docs render the current package version', () => {
   assert.match(gptStoreSubmission, /Never make regular users write JSON/);
   assert.match(gptStoreSubmission, /Regular users should never be asked for API keys/);
   assert.match(gptStoreSubmission, /Only show feedback IDs when the user asks for technical details/i);
-  assert.match(gptStoreSubmission, /https:\/\/thumbgate-production\.up\.railway\.app\/privacy/);
+  assert.match(gptStoreSubmission, /https:\/\/thumbgate\.ai\/privacy/);
   assert.match(gptStoreSubmission, /Category set to Programming \/ Productivity/);
   assert.match(gptStoreSubmission, /Turn this mistake into a ThumbGate rule/i);
   assert.match(claudePluginReadme, new RegExp(getClaudePluginLatestDownloadUrl(PROJECT_ROOT).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
@@ -269,7 +269,7 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.equal(codexPlugin.repository, CURRENT_REPOSITORY_URL);
   assert.doesNotMatch(claudeReadme, /github\.com\/IgorGanapolsky\/thumbgate/);
 
-  assert.match(twitterThread, /Hosted demo: thumbgate-production\.up\.railway\.app/);
+  assert.match(twitterThread, /Hosted demo: thumbgate\.ai/);
   assert.match(twitterThread, /engineering validation, not customer proof/i);
   assert.doesNotMatch(twitterThread, /us-central1\.run\.app/);
 });
@@ -376,7 +376,7 @@ test('active GTM scripts and reports point to the canonical offer without foundi
   for (const artifact of [outreachTargets, xAutomationReport, githubOutreach, xAutomation, autonomousSales]) {
     assert.doesNotMatch(artifact, /buy\.stripe\.com/);
     assert.doesNotMatch(artifact, /founding users today/i);
-    assert.match(artifact, /thumbgate-production\.up\.railway\.app/);
+    assert.match(artifact, /thumbgate\.ai/);
     assert.doesNotMatch(artifact, /Always-On/i);
     assert.doesNotMatch(artifact, /Mistake-Free/i);
   }

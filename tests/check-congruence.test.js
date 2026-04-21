@@ -74,9 +74,9 @@ test('launch content commercial copy stays aligned with the current free and Pro
 test('launch content uses tracked landing links for community distribution', () => {
   const launchContent = execSync('sed -n \'1,260p\' docs/marketing/launch-content.md', { cwd: ROOT, encoding: 'utf-8' });
 
-  assert.match(launchContent, /thumbgate-production\.up\.railway\.app\/\?utm_source=reddit/i);
-  assert.match(launchContent, /thumbgate-production\.up\.railway\.app\/\?utm_source=hackernews/i);
-  assert.match(launchContent, /thumbgate-production\.up\.railway\.app\/\?utm_source=x/i);
+  assert.match(launchContent, /thumbgate\.ai\/\?utm_source=reddit/i);
+  assert.match(launchContent, /thumbgate\.ai\/\?utm_source=hackernews/i);
+  assert.match(launchContent, /thumbgate\.ai\/\?utm_source=x/i);
   assert.doesNotMatch(launchContent, /buy\.stripe\.com/i);
 });
 

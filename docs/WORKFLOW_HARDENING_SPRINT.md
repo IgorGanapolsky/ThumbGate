@@ -62,7 +62,7 @@ Only move forward when the buyer has:
 
 Primary intake:
 
-- https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- https://thumbgate.ai/#workflow-sprint-intake
 
 Email fallback:
 

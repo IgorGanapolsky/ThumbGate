@@ -32,7 +32,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 
-const PROD_URL = 'thumbgate-production.up.railway.app';
+const PROD_URL = 'thumbgate.ai';
 // Use the OS-assigned temp dir (per-user on macOS; /tmp on Linux) so the
 // marker is not placed in a world-writable literal path. The companion
 // bash hook scripts/hook-stop-verify-deploy.sh reads ${TMPDIR:-/tmp} so

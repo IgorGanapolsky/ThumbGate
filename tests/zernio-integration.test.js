@@ -273,7 +273,7 @@ describe('zernio publisher', () => {
     };
 
     const result = await publishToAllPlatforms(
-      'Hello from all platforms with enough characters to pass the quality gate https://thumbgate-production.up.railway.app/?utm_content=bulk_publish_test'
+      'Hello from all platforms with enough characters to pass the quality gate https://thumbgate.ai/?utm_content=bulk_publish_test'
     );
 
     assert.equal(result.published.length, 2);

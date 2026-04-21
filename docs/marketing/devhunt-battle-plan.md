@@ -22,7 +22,7 @@
 **Pricing:** Freemium (Free + Pro $19/mo + Team $49/seat/mo)
 
 **URLs:**
-- Homepage: https://thumbgate-production.up.railway.app
+- Homepage: https://thumbgate.ai
 - GitHub: https://github.com/IgorGanapolsky/ThumbGate
 - npm: https://www.npmjs.com/package/thumbgate
 

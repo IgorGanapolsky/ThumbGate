@@ -11,7 +11,7 @@ const { getHomeDir, getRuntimeDir, resolveProjectDir } = require('./feedback-pat
 const { resolveProKey } = require('./pro-local-dashboard');
 
 const DEFAULT_ORIGIN = 'http://localhost:3456';
-const PROD_ORIGIN = 'https://thumbgate-production.up.railway.app';
+const PROD_ORIGIN = 'https://thumbgate.ai';
 const DEFAULT_TIMEOUT_MS = 150;
 const DEFAULT_BOOT_GRACE_MS = 5000;
 const PKG_ROOT = path.join(__dirname, '..');

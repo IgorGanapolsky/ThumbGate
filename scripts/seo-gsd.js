@@ -10,7 +10,7 @@ const PRODUCT = {
   name: 'ThumbGate',
   npm: 'thumbgate',
   repoUrl: 'https://github.com/IgorGanapolsky/ThumbGate',
-  homepageUrl: 'https://thumbgate-production.up.railway.app',
+  homepageUrl: 'https://thumbgate.ai',
   verificationUrl: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
   automationUrl: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json',
   compatibility: ['Claude Code', 'Cursor', 'Codex', 'Gemini', 'Amp', 'OpenCode'],

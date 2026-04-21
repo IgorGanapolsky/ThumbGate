@@ -102,7 +102,7 @@ test('daily social poster detects its CLI entrypoint by filename', () => {
 // events across 404 published posts. Do not regress.
 test('every angle with a CTA links to thumbgate-production, not only github', () => {
   const ctaAngles = ['horror-story', 'tip', 'product-demo'];
-  const landingDomain = 'thumbgate-production.up.railway.app';
+  const landingDomain = 'thumbgate.ai';
 
   for (const angle of DAILY_ANGLES) {
     const content = generatePost(angle);

@@ -61,7 +61,7 @@ ThumbGate v1.4.1 intercepts BEFORE the action runs. Checks it against lessons fr
 
 Not a prompt. A block.
 
-See what it's blocked this week: https://thumbgate-production.up.railway.app/numbers
+See what it's blocked this week: https://thumbgate.ai/numbers
 Source (MIT): https://github.com/IgorGanapolsky/ThumbGate
 
 #ClaudeCode #AIAgents #DevTools #TechTok #Coding #SoftwareDev #AITools #Programming #DevTok`,
@@ -74,7 +74,7 @@ ThumbGate solves this with pre-action gates: every 👎 becomes a lesson, every 
 
 v1.4.1: Thompson Sampling · LanceDB vector search · SQLite+FTS5 lesson DB
 
-See this week's blocked actions + token savings: https://thumbgate-production.up.railway.app/numbers
+See this week's blocked actions + token savings: https://thumbgate.ai/numbers
 Source (MIT): https://github.com/IgorGanapolsky/ThumbGate
 npx thumbgate serve
 

@@ -90,7 +90,7 @@ function generateReply(thread) {
 - Verify AI actions before execution
 - Capture lessons from failures to block similar mistakes
 
-Learn more: https://thumbgate-production.up.railway.app/dashboard
+Learn more: https://thumbgate.ai/dashboard
 `;
 }
 

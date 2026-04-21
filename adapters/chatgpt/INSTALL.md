@@ -87,8 +87,8 @@ Paste the risky AI action before it runs, or tell me what went right/wrong. I ca
 ## Prerequisites
 
 - A ChatGPT Plus or Team account (Custom GPTs require a paid plan)
-- ThumbGate API running at `https://thumbgate-production.up.railway.app`
-- Privacy policy URL: `https://thumbgate-production.up.railway.app/privacy`
+- ThumbGate API running at `https://thumbgate.ai`
+- Privacy policy URL: `https://thumbgate.ai/privacy`
 - Owner-managed `THUMBGATE_API_KEY` for one-time GPT Builder Actions auth
 
 Regular GPT users should not need an API key, JSON payload, OpenAPI knowledge, or developer setup. They should only see the action-checking path, the thumbs-up/down memory loop, and the handoff to local enforcement when they need hard blocking.
@@ -105,7 +105,7 @@ Regular GPT users should not need an API key, JSON payload, OpenAPI knowledge, o
 2. Click **Create new action**
 3. Click **Import from URL** — paste your hosted spec URL:
    ```
-   https://thumbgate-production.up.railway.app/openapi.yaml
+   https://thumbgate.ai/openapi.yaml
    ```
    Or click **Upload file** and select:
    ```
@@ -134,7 +134,7 @@ In the imported spec, confirm the `servers.url` points to your deployed API:
 
 ```yaml
 servers:
-  - url: https://thumbgate-production.up.railway.app
+  - url: https://thumbgate.ai
 ```
 
 If you uploaded the file, edit the server URL in the GPT Actions editor.
@@ -181,6 +181,6 @@ Full spec: `adapters/chatgpt/openapi.yaml`
 ## Troubleshooting
 
 - **401 Unauthorized on action calls**: Verify the GPT Builder action uses **Authentication type: API Key**, **Auth type: Bearer**, and the raw `THUMBGATE_API_KEY` value. The backend must receive `Authorization: Bearer <key>`.
-- **401 Unauthorized when importing the schema**: Use `https://thumbgate-production.up.railway.app/openapi.yaml` after the public spec route is deployed, or fall back to `https://thumbgate-production.up.railway.app/openapi.json`.
+- **401 Unauthorized when importing the schema**: Use `https://thumbgate.ai/openapi.yaml` after the public spec route is deployed, or fall back to `https://thumbgate.ai/openapi.json`.
 - **Connection refused**: Confirm Railway deployment is live (`curl https://<domain>/health`)
 - **Schema errors**: Ensure you are using the latest `openapi.yaml` (version 1.1.0+)

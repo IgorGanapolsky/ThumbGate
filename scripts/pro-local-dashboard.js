@@ -4,7 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const DEFAULT_PRO_API = 'https://thumbgate-production.up.railway.app';
+const DEFAULT_PRO_API = 'https://thumbgate.ai';
 const CREATOR_BYPASS_VALUE = process.env.THUMBGATE_DEV_SECRET || '';
 const CREATOR_BYPASS_ENV = 'THUMBGATE_DEV_BYPASS';
 const CREATOR_SYNTHETIC_KEY = process.env.THUMBGATE_DEV_KEY || '';

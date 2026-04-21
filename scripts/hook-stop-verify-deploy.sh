@@ -11,7 +11,7 @@
 #   ${TMPDIR:-/tmp}/.thumbgate-last-deploy-verify — written by scripts/hook-pre-tool-use.js
 # Exit code: Always 0 (informational only).
 
-PROD_URL="thumbgate-production.up.railway.app"
+PROD_URL="thumbgate.ai"
 VERIFICATION_MARKER="${TMPDIR:-/tmp}/.thumbgate-last-deploy-verify"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"

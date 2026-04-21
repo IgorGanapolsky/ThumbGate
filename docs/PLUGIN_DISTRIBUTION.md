@@ -36,8 +36,8 @@ This avoids platform-specific rewrite cost and keeps the product under a small b
 - Install guide: `adapters/chatgpt/INSTALL.md`
 - Submission pack: `docs/gpt-store-submission.md`
 - Auth: bearer token (`Authorization: Bearer <key>`)
-- Base URL: `https://thumbgate-production.up.railway.app`
-- Privacy policy: `https://thumbgate-production.up.railway.app/privacy`
+- Base URL: `https://thumbgate.ai`
+- Privacy policy: `https://thumbgate.ai/privacy`
 - Promotion rule: say "GPT Actions" or "Custom GPT", not legacy ChatGPT plugin.
 
 ## Claude (MCP)
@@ -90,7 +90,7 @@ This lane is for Claude Code users who want Codex review, adversarial review, an
 - Manual profile: `adapters/codex/config.toml`
 - Standalone Codex bundle build command: `npm run build:codex-plugin`
 - Standalone Codex release workflow: `.github/workflows/publish-codex-plugin.yml`
-- Standalone Codex install page: `https://thumbgate-production.up.railway.app/codex-plugin`
+- Standalone Codex install page: `https://thumbgate.ai/codex-plugin`
 - Standalone Codex latest download: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip`
 - Standalone Codex versioned asset pattern: `thumbgate-codex-plugin-v<VERSION>.zip`
 - Repo-local Codex plugin manifest: `plugins/codex-profile/.codex-plugin/plugin.json`

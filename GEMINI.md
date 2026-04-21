@@ -20,7 +20,7 @@ ThumbGate is the only active product and repository context:
 
 - Repository: `IgorGanapolsky/ThumbGate`
 - npm package: `thumbgate`
-- Production API: `https://thumbgate-production.up.railway.app`
+- Production API: `https://thumbgate.ai`
 
 Do not use `mcp-memory-gateway`, `rlhf`, old RLHF-loop paths, or similarly named local worktrees/remotes as launch, GPT Actions, publishing, analytics, or source-of-truth context. They are legacy cleanup aliases only when migration code/tests intentionally remove old config keys.
 

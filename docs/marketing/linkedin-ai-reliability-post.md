@@ -54,7 +54,7 @@ That is the conversation I want to have more often.
 ```text
 Workflow Hardening Sprint intake + proof pack:
 
-https://thumbgate-production.up.railway.app/?utm_source=linkedin&utm_medium=organic_social&utm_campaign=claude_workflow_hardening_march_2026&utm_content=founder_post&campaign_variant=workflow_hardening_sprint&offer_code=LINKEDIN-SPRINT#workflow-sprint-intake
+https://thumbgate.ai/?utm_source=linkedin&utm_medium=organic_social&utm_campaign=claude_workflow_hardening_march_2026&utm_content=founder_post&campaign_variant=workflow_hardening_sprint&offer_code=LINKEDIN-SPRINT#workflow-sprint-intake
 ```
 
 ## Carousel Caption

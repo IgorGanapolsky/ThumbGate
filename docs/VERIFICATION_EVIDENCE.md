@@ -35,7 +35,7 @@ npm run test:coverage       # Coverage report
 
 # Paid tier — authenticated REST API
 curl -H "Authorization: Bearer YOUR_KEY" \
-  "https://thumbgate-production.up.railway.app/v1/search?q=test+failure"
+  "https://thumbgate.ai/v1/search?q=test+failure"
 ```
 
 ---
@@ -398,8 +398,8 @@ tmp=$(mktemp -d) && THUMBGATE_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm r
 npm run self-heal:check
 git diff --check
 gh run view 23355558359 --repo IgorGanapolsky/thumbgate --log-failed
-curl -sS https://thumbgate-production.up.railway.app/health
-sleep 90 && curl -sS https://thumbgate-production.up.railway.app/health
+curl -sS https://thumbgate.ai/health
+sleep 90 && curl -sS https://thumbgate.ai/health
 ```
 
 Observed result:
@@ -493,8 +493,8 @@ tmp=$(mktemp -d) && THUMBGATE_AUTOMATION_PROOF_DIR="$tmp/proof-automation" npm r
 npm run self-heal:check
 npm run revenue:status -- --json
 railway variable set -s thumbgate -e production \
-  THUMBGATE_PUBLIC_APP_ORIGIN=https://thumbgate-production.up.railway.app \
-  THUMBGATE_BILLING_API_BASE_URL=https://thumbgate-production.up.railway.app --json
+  THUMBGATE_PUBLIC_APP_ORIGIN=https://thumbgate.ai \
+  THUMBGATE_BILLING_API_BASE_URL=https://thumbgate.ai --json
 git diff --check
 ```
 
@@ -573,7 +573,7 @@ Observed result:
 - `git diff --check` exited `0`.
 - Root-cause proof from the failed post-merge deploy run on `main`:
   - Railway variable sync timed out once at `https://backboard.railway.com/graphql/v2`, then succeeded on rerun.
-  - The remaining deploy failure was the health verifier receiving a transient `502` from `https://thumbgate-production.up.railway.app/health` after a single 30-second wait.
+  - The remaining deploy failure was the health verifier receiving a transient `502` from `https://thumbgate.ai/health` after a single 30-second wait.
   - The production app still reported healthy via `/healthz` with durable feedback paths under `/data/feedback`.
 
 Requirements verified:
@@ -643,7 +643,7 @@ railway up -d -m "fix(billing): omit null stripe customer_email and default Rail
 python3 - <<'PY'
 import json, urllib.request
 req = urllib.request.Request(
-    'https://thumbgate-production.up.railway.app/checkout/pro',
+    'https://thumbgate.ai/checkout/pro',
     headers={'User-Agent': 'codex'},
     method='GET'
 )
@@ -659,7 +659,7 @@ PY
 railway run -- python3 - <<'PY'
 import json, os, urllib.request
 req = urllib.request.Request(
-    'https://thumbgate-production.up.railway.app/v1/billing/summary',
+    'https://thumbgate.ai/v1/billing/summary',
     headers={
         'Authorization': f"Bearer {os.environ['THUMBGATE_API_KEY']}",
         'User-Agent': 'codex'
@@ -751,7 +751,7 @@ railway up -d -m "revenue proof analytics + stripe checkout fallback"
 railway run node - <<'NODE'
 const https = require('https');
 const options = {
-  hostname: 'thumbgate-production.up.railway.app',
+  hostname: 'thumbgate.ai',
   path: '/v1/billing/summary',
   headers: {
     authorization: `Bearer ${process.env.THUMBGATE_API_KEY}`,
@@ -2124,10 +2124,10 @@ Problem verified before the fix:
 
 - The public Smithery page for `thumbgate-loop/thumbgate-v2` was live, but showed `No capabilities found` and `No deployments found`.
 - Production already exposed unauthenticated metadata endpoints:
-  - `GET https://thumbgate-production.up.railway.app/.well-known/mcp/server-card.json` -> `200`
-  - `GET https://thumbgate-production.up.railway.app/mcp` -> `200`
-  - `POST https://thumbgate-production.up.railway.app/mcp` with `initialize` -> `200`
-  - `POST https://thumbgate-production.up.railway.app/mcp` with `tools/list` -> `200`
+  - `GET https://thumbgate.ai/.well-known/mcp/server-card.json` -> `200`
+  - `GET https://thumbgate.ai/mcp` -> `200`
+  - `POST https://thumbgate.ai/mcp` with `initialize` -> `200`
+  - `POST https://thumbgate.ai/mcp` with `tools/list` -> `200`
 - The bug was that the live server-card route stripped `inputSchema`, which made the static server card materially weaker than `tools/list`.
 
 Commands run:

@@ -21,7 +21,7 @@ ThumbGate closes that gap with pre-action gates — checkpoints that intercept a
 
 No middleware rewrites. No prompt hacks. Gate at the action layer.
 
-https://thumbgate-production.up.railway.app
+https://thumbgate.ai
 
 `npx thumbgate init`
 
@@ -33,7 +33,7 @@ Your AI agent can install packages, run shell commands, overwrite files, and cal
 
 ThumbGate puts a pre-action gate in front of every tool call. It intercepts before execution. Feedback feeds a pipeline that generates enforcement rules. Open source.
 
-https://thumbgate-production.up.railway.app
+https://thumbgate.ai
 
 `npx thumbgate init`
 
