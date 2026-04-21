@@ -58,6 +58,13 @@ function getTodayAngle() {
 
 function generatePost(angle) {
   const { post, stats } = generateWeeklyStatsPost({ periodDays: 1 });
+  // Primary CTA routes through the production landing page so the funnel
+  // ledger (scripts/funnel/*) can attribute views → installs → paid. Links
+  // passed through `tagUrlsInText` auto-inject utm_source=zernio etc. because
+  // thumbgate-production.up.railway.app is in TRACKABLE_DOMAINS.
+  // Earlier versions pointed at GitHub, which is un-tracked by our funnel and
+  // invisible in revenue attribution — see 2026-04-21 distribution audit.
+  const LANDING = 'https://thumbgate-production.up.railway.app/numbers';
   const REPO = 'https://github.com/IgorGanapolsky/ThumbGate';
 
   switch (angle) {
@@ -70,7 +77,7 @@ function generatePost(angle) {
         '',
         `Pre-action gates > post-mortem reviews.`,
         '',
-        `ThumbGate is open source: ${REPO}`,
+        `See what ThumbGate has actually blocked this week: ${LANDING}`,
       ].join('\n');
     }
 
@@ -99,6 +106,7 @@ function generatePost(angle) {
         'Rules are generated from your thumbs-down feedback. The system learns from your corrections.',
         '',
         `Try it: npx thumbgate init`,
+        `See the numbers: ${LANDING}`,
       ].join('\n');
 
     case 'hot-take':
@@ -131,7 +139,8 @@ function generatePost(angle) {
         '',
         'One line of prevention saves hours of rollback.',
         '',
-        `ThumbGate automates this — generates hooks from your feedback: ${REPO}`,
+        `ThumbGate automates this — generates hooks from your feedback: ${LANDING}`,
+        `Source: ${REPO}`,
       ].join('\n');
 
     case 'stats':

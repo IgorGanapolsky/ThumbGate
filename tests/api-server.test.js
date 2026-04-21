@@ -755,6 +755,65 @@ test('root reuses journey cookies and records SEO landing telemetry from search 
   assert.equal(seoEvent.seoQuery, 'workflow hardening sprint');
 });
 
+// /numbers is the primary destination for Zernio social CTAs as of 2026-04-21.
+// These two tests guard the full attribution chain: request → telemetry-pings
+// (landing_page_view with pageType=numbers) → funnel-events.jsonl
+// (discovery/landing_view with UTM metadata). Regressing either breaks the
+// "did anyone click the social post?" question that the CEO asks daily.
+test('/numbers route records landing_page_view telemetry with pageType=numbers', async () => {
+  const cookieHeader = [
+    'thumbgate_visitor_id=visitor_numbers',
+    'thumbgate_session_id=session_numbers',
+    'thumbgate_acquisition_id=acq_numbers',
+  ].join('; ');
+  const res = await fetch(
+    apiUrl('/numbers?utm_source=zernio&utm_medium=social&utm_campaign=organic'),
+    { headers: { cookie: cookieHeader } }
+  );
+  assert.equal(res.status, 200);
+
+  const telemetryEvents = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
+  const landingEvent = telemetryEvents.find((entry) => (
+    entry.eventType === 'landing_page_view' &&
+    entry.visitorId === 'visitor_numbers' &&
+    entry.pageType === 'numbers'
+  ));
+  assert.ok(landingEvent, 'expected landing_page_view with pageType=numbers in telemetry-pings.jsonl');
+  assert.equal(landingEvent.utmSource, 'zernio');
+  assert.equal(landingEvent.utmMedium, 'social');
+  assert.equal(landingEvent.utmCampaign, 'organic');
+});
+
+test('/numbers route writes a discovery/landing_view entry to funnel-events.jsonl with UTM metadata', async () => {
+  const cookieHeader = [
+    'thumbgate_visitor_id=visitor_funnel',
+    'thumbgate_session_id=session_funnel',
+    'thumbgate_acquisition_id=acq_funnel',
+  ].join('; ');
+  const res = await fetch(
+    apiUrl('/numbers?utm_source=zernio&utm_medium=social&utm_campaign=organic&utm_content=linkedin_post'),
+    { headers: { cookie: cookieHeader } }
+  );
+  assert.equal(res.status, 200);
+
+  const funnelPath = path.join(tmpFeedbackDir, 'funnel-events.jsonl');
+  const funnelEvents = readJsonl(funnelPath);
+  const discoveryEvent = funnelEvents.find((entry) => (
+    entry.stage === 'discovery' &&
+    entry.event === 'landing_view' &&
+    entry.installId === 'visitor_funnel'
+  ));
+  assert.ok(
+    discoveryEvent,
+    `expected discovery/landing_view entry for /numbers with installId=visitor_funnel in ${funnelPath}`
+  );
+  assert.equal(discoveryEvent.metadata.page, 'numbers');
+  assert.equal(discoveryEvent.metadata.utmSource, 'zernio');
+  assert.equal(discoveryEvent.metadata.utmMedium, 'social');
+  assert.equal(discoveryEvent.metadata.utmCampaign, 'organic');
+  assert.equal(discoveryEvent.metadata.utmContent, 'linkedin_post');
+});
+
 test('tracked link router redirects allowlisted marketing slugs and records first-party click telemetry', async () => {
   const cookieHeader = [
     'thumbgate_visitor_id=visitor_go',
