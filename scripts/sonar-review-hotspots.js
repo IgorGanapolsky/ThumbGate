@@ -99,10 +99,35 @@ async function fetchSourceLine(componentKey, line, pullRequest) {
       pullRequest,
     });
     const src = (data.sources && data.sources[0] && data.sources[0].code) || '';
-    return src.replace(/<[^>]+>/g, '');
+    return stripHtmlTags(src);
   } catch {
     return '';
   }
+}
+
+// Strip HTML tags without a regex to avoid catastrophic backtracking on
+// pathological input (SonarCloud S5852). SonarCloud returns source lines
+// wrapped in <span class="..."> markers; we only need the plain text.
+// Linear-time state machine: either "inside a tag" or "outside". A '<'
+// while already inside stays inside (real HTML never does that, but the
+// loop must stay O(n) either way).
+function stripHtmlTags(input) {
+  if (!input) return '';
+  let out = '';
+  let inTag = false;
+  for (let i = 0; i < input.length; i += 1) {
+    const ch = input[i];
+    if (inTag) {
+      if (ch === '>') inTag = false;
+      continue;
+    }
+    if (ch === '<') {
+      inTag = true;
+      continue;
+    }
+    out += ch;
+  }
+  return out;
 }
 
 function matchesReview(hotspot, review, sourceText) {
@@ -166,7 +191,11 @@ async function main() {
   log(`done — matched=${marked} unmatched=${skipped}`);
 }
 
-if (require.main === module) {
+function isCliEntrypoint(entryModule = require.main) {
+  return Boolean(entryModule && entryModule.filename === __filename);
+}
+
+if (isCliEntrypoint()) {
   main().catch((err) => {
     warn(err.stack || err.message || String(err));
     process.exit(1);
@@ -174,6 +203,8 @@ if (require.main === module) {
 }
 
 module.exports = {
+  isCliEntrypoint,
   loadAllowlist,
   matchesReview,
+  stripHtmlTags,
 };

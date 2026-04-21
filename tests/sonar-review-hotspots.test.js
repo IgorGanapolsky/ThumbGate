@@ -3,7 +3,12 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { loadAllowlist, matchesReview } = require('../scripts/sonar-review-hotspots');
+const {
+  isCliEntrypoint,
+  loadAllowlist,
+  matchesReview,
+  stripHtmlTags,
+} = require('../scripts/sonar-review-hotspots');
 
 test('loadAllowlist reads the committed review policy file', () => {
   const allowlist = loadAllowlist();
@@ -42,6 +47,33 @@ test('matchesReview keys on file, rule, and optional line substring', () => {
     matchesReview(hotspot, { ...review, filePath: 'scripts/elsewhere.js' }, "spawnSync('git'"),
     false,
   );
+});
+
+test('stripHtmlTags removes tags without a regex (ReDoS-safe)', () => {
+  assert.equal(stripHtmlTags(''), '');
+  assert.equal(stripHtmlTags(null), '');
+  assert.equal(
+    stripHtmlTags('<span class="cd">const result = spawnSync(<span>git</span>)</span>'),
+    'const result = spawnSync(git)',
+  );
+  // Pathological nesting that would trip /<[^>]+>/g backtracking must still
+  // finish in bounded time. The state-machine implementation is O(n); we
+  // only assert it completes quickly and returns *something* without
+  // throwing. (Exact semantics on malformed HTML are intentionally not
+  // pinned because the input is malformed by definition.)
+  const pathological = '<'.repeat(10000) + 'ok' + '>'.repeat(10000);
+  const start = Date.now();
+  const result = stripHtmlTags(pathological);
+  const elapsedMs = Date.now() - start;
+  assert.equal(typeof result, 'string');
+  assert.ok(elapsedMs < 100, `stripHtmlTags took ${elapsedMs}ms on 20k-char input; expected <100ms (linear)`);
+});
+
+test('isCliEntrypoint identifies the script by filename only', () => {
+  const scriptPath = require('node:path').join(__dirname, '..', 'scripts', 'sonar-review-hotspots.js');
+  assert.equal(isCliEntrypoint({ filename: scriptPath }), true);
+  assert.equal(isCliEntrypoint({ filename: __filename }), false);
+  assert.equal(isCliEntrypoint(null), false);
 });
 
 test('matchesReview treats missing lineSubstring as a file+rule wildcard', () => {

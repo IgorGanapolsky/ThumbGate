@@ -18,4 +18,5 @@
       "rationale": "Installer MUST resolve git via the developer's own PATH. Git ships from many locations (brew, apt, scoop, Xcode, Git-for-Windows); pinning an absolute path would break every machine. The command literal ('git') is hard-coded, not user input, and args is always an array, so no shell interpolation is possible. Reviewed 2026-04-21."
     }
   ]
+
 }
