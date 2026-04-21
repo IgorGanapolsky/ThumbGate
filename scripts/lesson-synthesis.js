@@ -1,6 +1,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const { canonicalHash, findCanonicalDuplicate } = require('./lesson-canonical');
 
 const SIMILARITY_THRESHOLD = 0.6;
 const AUTO_PROMOTE_THRESHOLD = 3;
@@ -34,10 +35,29 @@ function appendJSONLLocal(filePath, record) {
 
 /**
  * Find a similar existing lesson by comparing titles and context.
- * Uses token overlap (Jaccard similarity) — fast, no embeddings needed.
+ *
+ * Two-layer dedup:
+ *   1. Canonical-hash match (cross-session). Punctuation/stop-word/wording
+ *      drift is normalized away, so "never force-push main" and "Don't
+ *      force push main." collapse to the same hash. When a hash matches,
+ *      similarity is reported as 1.0 and we skip the Jaccard pass.
+ *   2. Jaccard token overlap (legacy within-session path). Catches
+ *      rewordings that survive canonicalization (new keywords, different
+ *      root verb) above the 0.6 threshold.
+ *
+ * The canonical pass runs first because it's O(N) with constant work per
+ * entry and rejects trivial duplicates before we pay the Jaccard price.
  */
 function findSimilarLesson(memoryLogPath, newRecord) {
   const existing = readJSONLLocal(memoryLogPath, { maxLines: 200 });
+
+  // Layer 1: canonical-hash exact match (normalization-invariant).
+  const canonicalMatch = findCanonicalDuplicate(existing, newRecord);
+  if (canonicalMatch) {
+    return { match: canonicalMatch, similarity: 1, matchType: 'canonical' };
+  }
+
+  // Layer 2: Jaccard token overlap (original behavior).
   const newTokens = tokenize(newRecord.title + ' ' + (newRecord.content || ''));
 
   let bestMatch = null;
@@ -52,7 +72,7 @@ function findSimilarLesson(memoryLogPath, newRecord) {
     }
   }
 
-  return bestMatch ? { match: bestMatch, similarity: bestScore } : null;
+  return bestMatch ? { match: bestMatch, similarity: bestScore, matchType: 'jaccard' } : null;
 }
 
 /**
@@ -191,6 +211,7 @@ module.exports = {
   jaccardSimilarity,
   tokenize,
   inferScopeFromTags,
+  canonicalHash,
   SIMILARITY_THRESHOLD,
   AUTO_PROMOTE_THRESHOLD,
 };
