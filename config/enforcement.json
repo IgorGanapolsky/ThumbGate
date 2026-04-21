@@ -1,20 +1,72 @@
 {
   "$schema": "./enforcement.schema.json",
-  "description": "Loss matrix and enforcement knobs for the Bayes-optimal pre-tool-use gate. See scripts/bayes-optimal-gate.js for the decision math. Tags listed here mirror the canonical tags emitted by risk-scorer.buildPatternSummary. To disable tag-specific costs and fall back to a symmetric 1:1 decision, reduce any override to 1.0.",
+  "description": "Loss matrix and enforcement knobs for the Bayes-optimal pre-tool-use gate. See scripts/bayes-optimal-gate.js for the decision math. Tags listed here mirror the canonical tags emitted by risk-scorer.buildPatternSummary. Costs are relative: falseAllow[tag] is the regret of letting a harmful tool call through, falseBlock[tag] is the regret of blocking a safe one. resolveCost takes the max across matched tags, so a single high-cost tag dominates. To disable tag-specific costs and fall back to a symmetric 1:1 decision, reduce any override to 1.0.",
   "lossMatrix": {
     "falseAllow": {
       "default": 1.0,
-      "deploy-prod": 100.0,
-      "destructive": 50.0,
+
       "secrets": 1000.0,
-      "force-push-main": 200.0,
-      "data-loss": 500.0,
       "credentials": 800.0,
+      "env-file-edit": 700.0,
+      "env-override": 700.0,
+      "deploy-env-secret-exposure": 900.0,
+
+      "self-protect": 1500.0,
+      "kill-gate": 1500.0,
+      "hooks-disable": 1200.0,
+      "config-tamper": 1200.0,
+
+      "data-loss": 500.0,
+      "db-drop-production": 600.0,
+      "db-truncate-production": 600.0,
+      "db-delete-nowhere": 500.0,
+      "db-unmigrated-sql": 400.0,
+      "db-runtime-sqlite": 350.0,
+      "db-lancedb-wipe": 400.0,
+      "mcp-sql-delete": 400.0,
+      "mcp-sql-bulk-update": 250.0,
+
+      "destructive": 50.0,
       "rm-rf": 300.0,
-      "git-reset-hard": 100.0
+      "git-reset-hard": 100.0,
+      "force-push-main": 200.0,
+      "force-push": 150.0,
+      "protected-branch-push": 150.0,
+      "protected-file": 120.0,
+      "package-lock-reset": 75.0,
+
+      "deploy-prod": 100.0,
+      "deploy-unverified": 120.0,
+      "deploy-skip-ci": 150.0,
+      "deploy-publish-without-test": 180.0,
+      "deploy-version-drift": 90.0,
+      "production-change": 130.0,
+      "schema-migration": 150.0,
+      "permission-change": 140.0,
+
+      "supply-chain": 200.0,
+      "supply-chain-add": 200.0,
+      "unverified-skill": 160.0,
+      "blocked-npx": 180.0,
+      "network-egress": 250.0,
+      "unauthorized-egress": 250.0,
+
+      "pr-scope-violation": 80.0,
+      "admin-merge-bypass": 80.0,
+      "loop-abuse": 40.0,
+      "thread-unchecked-push": 40.0,
+      "generated-file-edit": 30.0,
+      "test-skip": 40.0,
+      "version-drift": 50.0,
+      "lockfile-manual": 60.0
     },
     "falseBlock": {
-      "default": 1.0
+      "default": 1.0,
+
+      "style-violation": 5.0,
+      "console-log-commit": 4.0,
+      "non-critical-warning": 5.0,
+      "large-file": 3.0
     }
   },
   "bayesOptimalEnabled": true,

@@ -382,3 +382,120 @@ test('end-to-end: a near-zero posterior with no cost override does not block', (
   const decision = bayes.bayesOptimalDecision(post, ['chatter']);
   assert.equal(decision.decision, 'allow');
 });
+
+/* ---------- loss matrix coverage expansion (2026-04-20) ----------
+ *
+ * These tests pin the expanded loss-matrix coverage added when
+ * config/enforcement.json grew from 9 to 49 falseAllow entries
+ * covering the DB-write, deploy, edit, MCP-SQL, self-protect,
+ * supply-chain, and network-egress gate families. The intent is:
+ *
+ *   1. Catastrophic classes (self-protect, secrets) dominate via resolveCost max.
+ *   2. Production-data classes (db-drop-*, db-truncate-*) sit above
+ *      destructive/rm-rf so a production DB tag outweighs a plain shell tag.
+ *   3. Noisy informational classes (style-violation) pay higher falseBlock
+ *      cost so the decision prefers allow when evidence is thin.
+ */
+
+test('loss matrix: self-protect dominates every other falseAllow override', () => {
+  const matrix = bayes.loadLossMatrix();
+  const selfProtect = bayes.resolveCost(matrix.falseAllow, ['self-protect']);
+  const entries = Object.entries(matrix.falseAllow)
+    .filter(([key]) => key !== 'default' && key !== 'self-protect');
+  for (const [, cost] of entries) {
+    assert.ok(
+      selfProtect >= cost,
+      `self-protect (${selfProtect}) should be >= every other falseAllow cost, violated by ${cost}`
+    );
+  }
+});
+
+test('loss matrix: db-drop-production outranks generic destructive and rm-rf', () => {
+  const matrix = bayes.loadLossMatrix();
+  assert.ok(
+    matrix.falseAllow['db-drop-production'] > matrix.falseAllow.destructive,
+    'db-drop-production must cost more than generic destructive'
+  );
+  assert.ok(
+    matrix.falseAllow['db-drop-production'] > matrix.falseAllow['rm-rf'],
+    'db-drop-production must cost more than rm-rf'
+  );
+});
+
+test('loss matrix: deploy-env-secret-exposure ranks in the secrets tier', () => {
+  const matrix = bayes.loadLossMatrix();
+  const exposure = matrix.falseAllow['deploy-env-secret-exposure'];
+  // Should be comparable to credentials (800) — within 25%.
+  assert.ok(exposure >= 600, `deploy-env-secret-exposure (${exposure}) should be >= 600`);
+  assert.ok(exposure <= matrix.falseAllow.secrets, 'should not exceed bare secrets cost');
+});
+
+test('loss matrix: every expanded-family tag returns a bounded finite cost', () => {
+  const matrix = bayes.loadLossMatrix();
+  const expandedFamilies = [
+    'self-protect', 'kill-gate', 'hooks-disable', 'config-tamper',
+    'db-drop-production', 'db-truncate-production', 'db-delete-nowhere',
+    'db-unmigrated-sql', 'db-runtime-sqlite', 'db-lancedb-wipe',
+    'mcp-sql-delete', 'mcp-sql-bulk-update',
+    'deploy-unverified', 'deploy-skip-ci', 'deploy-publish-without-test',
+    'deploy-version-drift', 'deploy-env-secret-exposure',
+    'production-change', 'schema-migration', 'permission-change',
+    'supply-chain', 'supply-chain-add', 'unverified-skill', 'blocked-npx',
+    'network-egress', 'unauthorized-egress',
+    'env-file-edit', 'env-override',
+    'pr-scope-violation', 'admin-merge-bypass', 'loop-abuse',
+    'thread-unchecked-push', 'generated-file-edit', 'test-skip',
+    'version-drift', 'lockfile-manual',
+    'force-push', 'protected-branch-push', 'protected-file',
+    'package-lock-reset',
+  ];
+  for (const tag of expandedFamilies) {
+    const cost = bayes.resolveCost(matrix.falseAllow, [tag]);
+    assert.ok(
+      Number.isFinite(cost) && cost > 1,
+      `expanded-family tag "${tag}" must have a finite override cost > 1, got ${cost}`
+    );
+  }
+});
+
+test('loss matrix: style-violation carries elevated falseBlock cost so thin evidence prefers allow', () => {
+  const matrix = bayes.loadLossMatrix();
+  const falseBlock = bayes.resolveCost(matrix.falseBlock, ['style-violation']);
+  const falseAllow = bayes.resolveCost(matrix.falseAllow, ['style-violation']);
+  assert.ok(
+    falseBlock > matrix.falseBlock.default,
+    'style-violation falseBlock should exceed the default'
+  );
+  // With no falseAllow override, allow cost equals default (1.0), so blocking
+  // style-violation requires pHarmful × 1 > pSafe × falseBlock, which is a
+  // conservative threshold — exactly the design intent.
+  assert.equal(falseAllow, matrix.falseAllow.default);
+});
+
+test('end-to-end: a self-protect tag with moderate posterior still blocks due to 1500x cost asymmetry', () => {
+  const matrix = bayes.loadLossMatrix();
+  const rateMap = new Map([['self-protect', 0.3]]);
+  const post = bayes.computeBayesPosterior({
+    tags: ['self-protect'],
+    riskByTag: rateMap,
+    baseRate: 0.1,
+  });
+  const decision = bayes.bayesOptimalDecision(post, ['self-protect'], matrix);
+  assert.equal(decision.decision, 'block');
+});
+
+test('end-to-end: a style-violation tag with high posterior still allows due to falseBlock penalty', () => {
+  const matrix = bayes.loadLossMatrix();
+  const rateMap = new Map([['style-violation', 0.55]]);
+  const post = bayes.computeBayesPosterior({
+    tags: ['style-violation'],
+    riskByTag: rateMap,
+    baseRate: 0.5,
+  });
+  const decision = bayes.bayesOptimalDecision(post, ['style-violation'], matrix);
+  // falseAllow[style-violation] = default = 1; falseBlock[style-violation] = 5.
+  // At pHarmful ~0.55: lossAllow = 0.55 * 1, lossBlock = 0.45 * 5 = 2.25.
+  // 0.55 < 2.25 → allow wins. The elevated falseBlock tax holds back
+  // cheap-to-fix stylistic blocks even when posterior is high.
+  assert.equal(decision.decision, 'allow');
+});
