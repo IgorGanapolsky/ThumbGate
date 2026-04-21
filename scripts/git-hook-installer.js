@@ -40,6 +40,13 @@ function supportsConfigBasedHooks(versionText) {
 }
 
 function runGit(args, cwd, { allowFailure = false } = {}) {
+  // NOSONAR javascript:S4036 — invoking `git` by name is intentional: this
+  // installer runs inside a developer's repo where git must come from the
+  // user's own PATH. Pinning an absolute path would break on every machine
+  // that installs git via brew/apt/scoop/Xcode/Git-for-Windows. The command
+  // name ('git') is a hard-coded literal, not user input, so shell-injection
+  // via args is not possible; args is always an array, so spawnSync does not
+  // go through a shell. Reviewed as safe.
   const result = spawnSync('git', args, {
     cwd,
     encoding: 'utf8',
@@ -106,7 +113,10 @@ function ensureHookExecutables(hooksDir) {
     if (!entry.isFile()) {
       continue;
     }
-    fs.chmodSync(path.join(hooksDir, entry.name), 0o755);
+    // 0o700 — rwx for the repo owner only. Git runs hooks as the same user
+    // that invoked the git command, so group/other execute bits serve no
+    // purpose here and would unnecessarily widen permissions.
+    fs.chmodSync(path.join(hooksDir, entry.name), 0o700);
   }
 }
 
@@ -260,7 +270,11 @@ module.exports = {
   supportsConfigBasedHooks,
 };
 
-if (require.main === module) {
+function isCliEntrypoint(entryModule = require.main) {
+  return Boolean(entryModule && entryModule.filename === __filename);
+}
+
+if (isCliEntrypoint()) {
   try {
     const result = installGitHooks();
     console.log(formatInstallSummary(result));
@@ -269,3 +283,5 @@ if (require.main === module) {
     process.exit(1);
   }
 }
+
+module.exports.isCliEntrypoint = isCliEntrypoint;

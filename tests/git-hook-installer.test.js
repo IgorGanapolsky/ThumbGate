@@ -9,6 +9,7 @@ const assert = require('node:assert/strict');
 const {
   formatInstallSummary,
   installGitHooks,
+  isCliEntrypoint,
   parseGitVersion,
   resolvesToRepoHooksDir,
   supportsConfigBasedHooks,
@@ -197,6 +198,42 @@ describe('git-hook-installer', () => {
     } finally {
       fs.rmSync(repoRoot, { recursive: true, force: true });
     }
+  });
+
+  test('installGitHooks applies owner-only (0o700) permissions to hook files', () => {
+    // Platform guard: Windows exposes a limited chmod surface, so only assert
+    // the Unix/macOS permission bits we care about.
+    if (process.platform === 'win32') {
+      return;
+    }
+    const repoRoot = makeTmpRepo();
+    const store = makeConfigStore();
+    try {
+      installGitHooks({
+        repoRoot,
+        gitVersion: 'git version 2.54.0',
+        readConfig: store.readConfig,
+        readConfigAll: store.readConfigAll,
+        setConfig: store.setConfig,
+        unsetConfig: store.unsetConfig,
+      });
+      const mode = fs.statSync(path.join(repoRoot, '.githooks', 'pre-commit')).mode & 0o777;
+      assert.equal(
+        mode,
+        0o700,
+        `expected hook files to be chmodded 0o700 (owner rwx only) for least-privilege; got 0o${mode.toString(8)}`
+      );
+    } finally {
+      fs.rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  test('isCliEntrypoint identifies the installer script by filename only', () => {
+    const installerPath = path.join(__dirname, '..', 'scripts', 'git-hook-installer.js');
+    assert.equal(isCliEntrypoint({ filename: installerPath }), true);
+    assert.equal(isCliEntrypoint({ filename: __filename }), false);
+    assert.equal(isCliEntrypoint(null), false);
+    assert.equal(isCliEntrypoint(undefined), false);
   });
 
   test('formatInstallSummary reports config-hook mode clearly', () => {
