@@ -12,32 +12,44 @@ const wp = require('../scripts/weekly-auto-post');
 test.after(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
 // === Generate Post File ===
-test('generateWeeklyPostFile creates markdown with frontmatter', () => {
+// With THUMBGATE_FEEDBACK_DIR pointed at a fresh tmp, there is no activity,
+// so the generator MUST suppress the post — no file written, no content to
+// publish. This is the 2026-04-21 Bluesky-disaster regression guard.
+test('generateWeeklyPostFile suppresses zero-activity windows (no file written)', () => {
   const r = wp.generateWeeklyPostFile({ periodDays: 7 });
-  assert.ok(r.filePath.endsWith('.md'));
-  assert.ok(fs.existsSync(r.filePath));
-  const content = fs.readFileSync(r.filePath, 'utf-8');
-  assert.ok(content.includes('---'));
-  assert.ok(content.includes('title:'));
-  assert.ok(content.includes('ThumbGate blocked'));
-  assert.ok(content.includes('#ThumbGate'));
+  assert.equal(r.suppressed, true);
+  assert.equal(r.filePath, null);
+  assert.equal(r.filename, null);
   assert.ok(r.date);
   assert.ok(r.stats);
+  assert.match(r.suppressedReason, /no activity/);
 });
 
-test('generateWeeklyPostFile includes stats data', () => {
+test('generateWeeklyPostFile returns numeric stats even when suppressed', () => {
   const r = wp.generateWeeklyPostFile({ periodDays: 1 });
-  assert.ok(typeof r.stats.blockedCount === 'number');
-  assert.ok(typeof r.stats.hoursSaved === 'number');
+  assert.equal(typeof r.stats.blockedCount, 'number');
+  assert.equal(typeof r.stats.hoursSaved, 'number');
 });
 
 // === Run Weekly Post (dry run) ===
-test('runWeeklyPost dry run generates but does not post', async () => {
+test('runWeeklyPost dry run on zero-activity window returns suppressed', async () => {
   const r = await wp.runWeeklyPost({ periodDays: 7, dryRun: true });
-  assert.equal(r.dryRun, true);
+  assert.equal(r.suppressed, true);
   assert.equal(r.posted, false);
   assert.equal(r.postResult, null);
-  assert.ok(r.generated.filePath);
+  assert.equal(r.zernioResult, null);
+  assert.equal(r.generated.filePath, null);
+});
+
+test('runWeeklyPost does NOT attempt to publish when suppressed', async () => {
+  // Even with dryRun:false, a suppressed generation must short-circuit BEFORE
+  // any publisher is imported/called. This is the critical guarantee that
+  // blocks a "blocked 0 mistakes" post from reaching Bluesky/X/LinkedIn.
+  const r = await wp.runWeeklyPost({ periodDays: 7, dryRun: false });
+  assert.equal(r.suppressed, true);
+  assert.equal(r.posted, false);
+  assert.equal(r.zernioResult, null);
+  assert.equal(r.postResult, null);
 });
 
 // === Schedule ===
@@ -51,11 +63,19 @@ test('createWeeklyPostSchedule creates monday 10am schedule', () => {
 
 // === List Posts ===
 test('listWeeklyPosts returns generated files', () => {
-  wp.generateWeeklyPostFile({ periodDays: 7 });
-  const posts = wp.listWeeklyPosts();
-  assert.ok(posts.length >= 1);
-  assert.ok(posts[0].filename.endsWith('.md'));
-  assert.ok(posts[0].date);
+  // Seed a fixture directly because the generator now refuses to write when
+  // there is no activity in the window (anti-zero-stats-post guard).
+  fs.mkdirSync(wp.POSTS_DIR, { recursive: true });
+  const fixturePath = path.join(wp.POSTS_DIR, 'weekly-stats-2099-01-01.md');
+  fs.writeFileSync(fixturePath, '---\ntitle: fixture\n---\n\nseed\n');
+  try {
+    const posts = wp.listWeeklyPosts();
+    assert.ok(posts.length >= 1);
+    assert.ok(posts[0].filename.endsWith('.md'));
+    assert.ok(posts[0].date);
+  } finally {
+    fs.unlinkSync(fixturePath);
+  }
 });
 
 // === POSTS_DIR ===

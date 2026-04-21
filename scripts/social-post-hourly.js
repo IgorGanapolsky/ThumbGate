@@ -56,8 +56,21 @@ function getTodayAngle() {
   return DAILY_ANGLES[idx];
 }
 
+// Angles to rotate through when the primary 'stats' angle is suppressed
+// because there's no activity to report. Ordered by deterministic safety:
+// each entry is a purely evergreen angle with NO dynamic values that can
+// be zero. See 2026-04-21 Bluesky incident where an unsuppressed stats
+// post shipped "blocked 0 mistakes, saving ~0 hours" to the public feed.
+const STATS_FALLBACK_CHAIN = ['educational', 'hot-take', 'tip'];
+
+function pickStatsFallbackAngle() {
+  // UTCDay-driven rotation so different weeks don't repeat the same fallback.
+  const idx = new Date().getUTCDay() % STATS_FALLBACK_CHAIN.length;
+  return STATS_FALLBACK_CHAIN[idx];
+}
+
 function generatePost(angle) {
-  const { post, stats } = generateWeeklyStatsPost({ periodDays: 1 });
+  const { post, stats, suppressed } = generateWeeklyStatsPost({ periodDays: 1 });
   // Primary CTA routes through the production landing page so the funnel
   // ledger (scripts/funnel/*) can attribute views → installs → paid. Links
   // passed through `tagUrlsInText` auto-inject utm_source=zernio etc. because
@@ -144,9 +157,21 @@ function generatePost(angle) {
       ].join('\n');
 
     case 'stats':
-      return post; // Use the generated weekly stats
+      // Refuse to emit a zero-stats post; fall back to an evergreen angle.
+      if (suppressed) {
+        const fallback = pickStatsFallbackAngle();
+        return generatePost(fallback);
+      }
+      return post;
 
     default:
+      // When the caller requested an unknown angle and stats are empty, do
+      // NOT silently hand back a zero-stats post. Route through the same
+      // fallback chain as the 'stats' angle.
+      if (suppressed) {
+        const fallback = pickStatsFallbackAngle();
+        return generatePost(fallback);
+      }
       return post;
   }
 }
@@ -226,6 +251,7 @@ if (isCliEntrypoint()) {
 
 module.exports = {
   DAILY_ANGLES,
+  STATS_FALLBACK_CHAIN,
   TEXT_PLATFORMS,
   generatePost,
   getTodayAngle,
@@ -233,5 +259,6 @@ module.exports = {
   isCliEntrypoint,
   isNonFatalPostFailure,
   main,
+  pickStatsFallbackAngle,
   runCli,
 };
