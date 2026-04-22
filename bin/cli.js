@@ -999,8 +999,8 @@ function pro() {
     console.log('  Launch dashboard: npx thumbgate pro');
     console.log('  Activate + run  : npx thumbgate pro --activate --key=YOUR_KEY');
     console.log('  Install configs : npx thumbgate pro --upgrade');
-    console.log('  Legacy launcher : npx thumbgate-pro (separate package)');
-    console.log('  Pro repo        : https://github.com/IgorGanapolsky/thumbgate-pro\n');
+    console.log('  Private core    : ThumbGate-Core (private repo)');
+    console.log('  Core repo       : https://github.com/IgorGanapolsky/ThumbGate-Core\n');
   }
 
   function launchDashboard(key, eventType) {
@@ -1596,7 +1596,14 @@ function hookAutoCapture() {
   const prompt = process.env.CLAUDE_USER_PROMPT || process.env.THUMBGATE_USER_PROMPT || readStdinText().trim();
   const { evaluatePromptGuard } = require(path.join(PKG_ROOT, 'scripts', 'prompt-guard'));
   const { processInlineFeedback, formatCliOutput } = require(path.join(PKG_ROOT, 'scripts', 'cli-feedback'));
-  const { recordConversationEntry, readRecentConversationWindow } = require(path.join(PKG_ROOT, 'scripts', 'feedback-history-distiller'));
+  const { loadOptionalModule } = require(path.join(PKG_ROOT, 'scripts', 'private-core-boundary'));
+  const { recordConversationEntry, readRecentConversationWindow } = loadOptionalModule(
+    path.join(PKG_ROOT, 'scripts', 'feedback-history-distiller'),
+    () => ({
+      recordConversationEntry: () => ({ recorded: false, reason: 'thumbgate_core_required' }),
+      readRecentConversationWindow: () => [],
+    })
+  );
 
   recordConversationEntry({
     author: 'user',

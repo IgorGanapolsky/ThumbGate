@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { execSync, execFileSync } = require('child_process');
+const { loadOptionalModule } = require('./private-core-boundary');
 
 const { isProTier, FREE_TIER_MAX_GATES } = require('./rate-limiter');
 const {
@@ -1976,12 +1977,9 @@ function buildRecentCorrectiveActionsContext(options = {}) {
 function buildRelevantLessonContext(toolName, toolInput) {
   if (!toolName) return null;
 
-  let retrieveRelevantLessons;
-  try {
-    ({ retrieveRelevantLessons } = require('./lesson-retrieval'));
-  } catch {
-    return null;
-  }
+  const { retrieveRelevantLessons } = loadOptionalModule('./lesson-retrieval', () => ({
+    retrieveRelevantLessons: () => [],
+  }));
 
   // Extract a searchable action context from the tool input
   const actionContext = extractActionContext(toolName, toolInput);

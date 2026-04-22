@@ -6,6 +6,10 @@ const path = require('path');
 const { aggregateFailureDiagnostics } = require('./failure-diagnostics');
 const { AUDIT_LOG_FILENAME } = require('./audit-trail');
 const { getBillingSummary, loadFunnelLedger, loadResolvedRevenueEvents } = require('./billing');
+const {
+  createUnavailableReport,
+  loadOptionalModule,
+} = require('./private-core-boundary');
 const { getTelemetryAnalytics, loadTelemetryEvents } = require('./telemetry-analytics');
 const { getAutoGatesPath } = require('./auto-promote-gates');
 const { summarizeDelegation } = require('./delegation-runtime');
@@ -14,8 +18,36 @@ const { filterEntriesForWindow, resolveAnalyticsWindow } = require('./analytics-
 const { resolveHostedBillingConfig } = require('./hosted-config');
 const { generateAgentReadinessReport } = require('./agent-readiness');
 const { summarizeGateTemplates } = require('./gate-templates');
-const { generateOrgDashboard } = require('./org-dashboard');
-const { buildPredictiveInsights } = require('./predictive-insights');
+const { generateOrgDashboard } = loadOptionalModule('./org-dashboard', () => ({
+  generateOrgDashboard: () => ({
+    activeAgents: 0,
+    totalAgents: 0,
+    orgAdherenceRate: 0,
+    topBlockedGates: [],
+    riskAgents: [],
+    upgradeMessage: 'Org dashboard requires ThumbGate-Core.',
+    ...createUnavailableReport('Org dashboard'),
+  }),
+}));
+const { buildPredictiveInsights } = loadOptionalModule('./predictive-insights', () => ({
+  buildPredictiveInsights: () => ({
+    upgradePropensity: {
+      pro: { band: 'unavailable', score: 0 },
+      team: { band: 'unavailable', score: 0 },
+    },
+    revenueForecast: {
+      predictedBookedRevenueCents: 0,
+      incrementalOpportunityCents: 0,
+    },
+    anomalySummary: {
+      count: 0,
+      severity: 'none',
+    },
+    topCreators: [],
+    topSources: [],
+    ...createUnavailableReport('Predictive insights'),
+  }),
+}));
 const { routeProfile } = require('./profile-router');
 const { getSettingsStatus } = require('./settings-hierarchy');
 const { summarizeWorkflowRuns } = require('./workflow-runs');
