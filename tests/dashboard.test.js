@@ -240,6 +240,32 @@ test('generateDashboard surfaces tracking readiness and instrumentation truth', 
   }
 });
 
+test('generateDashboard falls back cleanly when private dashboard modules are absent', () => {
+  const originalExistsSync = fs.existsSync;
+  fs.existsSync = (candidatePath) => {
+    if (typeof candidatePath === 'string' && (
+      candidatePath.endsWith('org-dashboard.js') ||
+      candidatePath.endsWith('delegation-runtime.js') ||
+      candidatePath.endsWith('workflow-sprint-intake.js')
+    )) {
+      return false;
+    }
+    return originalExistsSync(candidatePath);
+  };
+
+  try {
+    const data = generateDashboard(tmpDir);
+    assert.equal(data.delegation.totalHandoffs, 0);
+    assert.equal(data.delegation.availability, 'private_core');
+    assert.equal(data.team.proRequired, true);
+    assert.equal(data.team.availability, 'private_core');
+    assert.match(data.team.upgradeMessage, /private ThumbGate Core runtime/);
+    assert.equal(data.analytics.pipeline.workflowSprintLeads.total, 0);
+  } finally {
+    fs.existsSync = originalExistsSync;
+  }
+});
+
 // ---------------------------------------------------------------------------
 // Approval stats
 // ---------------------------------------------------------------------------
