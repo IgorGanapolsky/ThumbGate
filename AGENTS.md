@@ -97,6 +97,22 @@ On explicit user preference signals (`up/down`, `correct/wrong`, or subjective "
 - Maintain 100% reliability in the feedback-to-enforcement pipeline.
 - Archive or delete stale local-only branches after verifying whether they still carry unique commits.
 
+## Product Architecture Split
+
+ThumbGate is a two-repo product. The public shell stays thin; the private core holds the intelligence.
+
+- **Public shell** (`IgorGanapolsky/ThumbGate`, npm `thumbgate`): CLI, hook installer, adapter configs, local gate runner, public schemas, marketing. Seen by installers and competitors — keep it thin.
+- **Private core** (`IgorGanapolsky/ThumbGate-Core`): lesson ranking, policy synthesis, orchestration, billing intelligence, org visibility, licensed exports. Never published to npm, never required by public CI.
+
+Rules:
+1. Intelligence features go into Core. The public shell gets only thin client stubs.
+2. Public code talks to Core over HTTP / gRPC / licensed binary — never direct `require`.
+3. Public CI must pass with Core absent; integration suites are opt-in.
+4. Use `worktrees/public-*` and `worktrees/core-*` — never co-mingle in one branch.
+5. Never claim the split is "complete". Only report measurable deltas (files removed from public, boundary tests added, bundle size delta, empty Core import graph).
+
+Violations block merge. Pin fixes with regression tests in `tests/public-core-boundary.test.js`.
+
 ## Session Directive: PR Management & System Hygiene
 
 ### CTO Protocol
