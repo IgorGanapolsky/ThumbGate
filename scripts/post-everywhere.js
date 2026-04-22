@@ -51,6 +51,20 @@ function getPublisher(platform) {
   return loader();
 }
 
+// Zernio covers a subset of channels with a single OAuth bundle. When
+// ZERNIO_API_KEY is set we prefer it for those channels, collapsing per-platform
+// token rotations to one. Channels whose content shape Zernio can't match
+// (Reddit subreddit+title, Instagram media, YouTube video, Dev.to articles) stay
+// on direct-API dispatchers regardless. THUMBGATE_USE_DIRECT_PUBLISHERS=1 forces
+// the direct-API path even when the Zernio key is present (emergency fallback).
+const ZERNIO_ELIGIBLE_PLATFORMS = new Set(['linkedin', 'threads', 'bluesky']);
+
+function shouldUseZernio(platform) {
+  if (!process.env.ZERNIO_API_KEY) return false;
+  if (process.env.THUMBGATE_USE_DIRECT_PUBLISHERS === '1') return false;
+  return ZERNIO_ELIGIBLE_PLATFORMS.has(platform);
+}
+
 // ---------------------------------------------------------------------------
 // Markdown parser
 // ---------------------------------------------------------------------------
@@ -171,6 +185,10 @@ async function postToLinkedIn(parsed, dryRun) {
     return { dryRun: true };
   }
 
+  if (shouldUseZernio('linkedin')) {
+    const zernio = require('./social-analytics/publishers/zernio');
+    return zernio.publishPost({ text, platform: 'linkedin' });
+  }
   const linkedin = getPublisher('linkedin');
   return linkedin.publishPost({ text });
 }
@@ -259,6 +277,10 @@ async function postToThreads(parsed, dryRun) {
     return { dryRun: true };
   }
 
+  if (shouldUseZernio('threads')) {
+    const zernio = require('./social-analytics/publishers/zernio');
+    return zernio.publishPost({ text, platform: 'threads' });
+  }
   const threads = getPublisher('threads');
   return threads.publishPost({ text });
 }
@@ -363,7 +385,14 @@ const DEFAULT_PLATFORMS = Object.freeze([
   'youtube',
 ]);
 
-module.exports = { postEverywhere, parsePostFile, DEFAULT_PLATFORMS, DISPATCHERS };
+module.exports = {
+  postEverywhere,
+  parsePostFile,
+  DEFAULT_PLATFORMS,
+  DISPATCHERS,
+  shouldUseZernio,
+  ZERNIO_ELIGIBLE_PLATFORMS,
+};
 
 // ---------------------------------------------------------------------------
 // CLI
