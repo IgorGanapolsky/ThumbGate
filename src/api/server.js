@@ -1154,6 +1154,24 @@ function resolveBillingSummaryOptions(parsed) {
   });
 }
 
+function sendInvalidAnalyticsWindowProblem(res, title, err) {
+  sendProblem(res, {
+    type: PROBLEM_TYPES.INVALID_REQUEST,
+    title,
+    status: 400,
+    detail: err && err.message ? err.message : 'Invalid analytics window request.',
+  });
+}
+
+function resolveBillingSummaryOptionsOrRespondProblem(res, parsed, invalidTitle) {
+  try {
+    return resolveBillingSummaryOptions(parsed);
+  } catch (err) {
+    sendInvalidAnalyticsWindowProblem(res, invalidTitle, err);
+    return null;
+  }
+}
+
 async function buildLiveDashboardData(parsed, feedbackDir) {
   const summaryOptions = resolveBillingSummaryOptions(parsed);
   const billingSummary = await getBillingSummaryLive(summaryOptions);
@@ -1170,14 +1188,25 @@ async function loadLiveDashboardDataOrRespondProblem(res, parsed, feedbackDir, i
   try {
     return await buildLiveDashboardData(parsed, feedbackDir);
   } catch (err) {
-    sendProblem(res, {
-      type: PROBLEM_TYPES.INVALID_REQUEST,
-      title: invalidTitle,
-      status: 400,
-      detail: err && err.message ? err.message : 'Invalid analytics window request.',
-    });
+    sendInvalidAnalyticsWindowProblem(res, invalidTitle, err);
     return null;
   }
+}
+
+function buildLossAnalyticsResponse(data, summaryOptions) {
+  return {
+    window: data.analytics.window || summaryOptions,
+    lossAnalysis: data.analytics.lossAnalysis || null,
+    buyerLoss: data.analytics.buyerLoss || null,
+    funnel: data.analytics.funnel || null,
+    revenue: data.analytics.revenue || null,
+    telemetry: {
+      conversionFunnel: data.analytics.telemetry && data.analytics.telemetry.conversionFunnel,
+      behavior: data.analytics.telemetry && data.analytics.telemetry.behavior,
+      ctas: data.analytics.telemetry && data.analytics.telemetry.ctas,
+      visitors: data.analytics.telemetry && data.analytics.telemetry.visitors,
+    },
+  };
 }
 
 function createJourneyId(prefix) {
@@ -5856,16 +5885,12 @@ async function addContext(){
           return;
         }
 
-        let summaryOptions;
-        try {
-          summaryOptions = resolveBillingSummaryOptions(parsed);
-        } catch (err) {
-          sendProblem(res, {
-            type: PROBLEM_TYPES.INVALID_REQUEST,
-            title: 'Invalid billing summary query',
-            status: 400,
-            detail: err && err.message ? err.message : 'Invalid analytics window request.',
-          });
+        const summaryOptions = resolveBillingSummaryOptionsOrRespondProblem(
+          res,
+          parsed,
+          'Invalid billing summary query',
+        );
+        if (!summaryOptions) {
           return;
         }
 
@@ -6000,19 +6025,7 @@ async function addContext(){
         }
         const { summaryOptions, data } = dashboardResult;
 
-        sendJson(res, 200, {
-          window: data.analytics.window || summaryOptions,
-          lossAnalysis: data.analytics.lossAnalysis || null,
-          buyerLoss: data.analytics.buyerLoss || null,
-          funnel: data.analytics.funnel || null,
-          revenue: data.analytics.revenue || null,
-          telemetry: {
-            conversionFunnel: data.analytics.telemetry && data.analytics.telemetry.conversionFunnel,
-            behavior: data.analytics.telemetry && data.analytics.telemetry.behavior,
-            ctas: data.analytics.telemetry && data.analytics.telemetry.ctas,
-            visitors: data.analytics.telemetry && data.analytics.telemetry.visitors,
-          },
-        });
+        sendJson(res, 200, buildLossAnalyticsResponse(data, summaryOptions));
         return;
       }
 
@@ -6065,27 +6078,18 @@ async function addContext(){
 
       // GET /v1/dashboard/render-spec -- Constrained hosted dashboard JSON spec
       if (req.method === 'GET' && pathname === '/v1/dashboard/render-spec') {
-        let summaryOptions;
-        try {
-          summaryOptions = resolveBillingSummaryOptions(parsed);
-        } catch (err) {
-          sendProblem(res, {
-            type: PROBLEM_TYPES.INVALID_REQUEST,
-            title: 'Invalid render-spec query',
-            status: 400,
-            detail: err && err.message ? err.message : 'Invalid analytics window request.',
-          });
+        const dashboardResult = await loadLiveDashboardDataOrRespondProblem(
+          res,
+          parsed,
+          requestFeedbackDir,
+          'Invalid render-spec query',
+        );
+        if (!dashboardResult) {
           return;
         }
+        const { summaryOptions, data } = dashboardResult;
 
         try {
-          const billingSummary = await getBillingSummaryLive(summaryOptions);
-          const data = generateDashboard(requestFeedbackDir, {
-            analyticsWindow: summaryOptions,
-            billingSummary,
-            billingSource: 'live',
-            authContext: { tier: 'pro' },
-          });
           const renderSpec = buildDashboardRenderSpec(data, {
             view: parsed.searchParams.get('view') || undefined,
             now: summaryOptions.now,
