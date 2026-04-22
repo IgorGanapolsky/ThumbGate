@@ -1233,4 +1233,9 @@ module.exports = {
   acquireLock,
   toCaptureFeedbackTextResult,
   formatCorrectiveActionsReminder,
+  __test__: {
+    PRIVATE_MCP_MODULES,
+    loadPrivateMcpModule,
+    unavailablePrivateMcpFeature,
+  },
 };

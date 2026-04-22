@@ -6281,9 +6281,13 @@ module.exports = {
   startServer,
   __test__: {
     buildCheckoutFallbackUrl,
+    createPrivateCoreUnavailableError,
     buildPosthogProxyRequestOptions,
     getPosthogProxyPath,
     isAllowedPosthogProxyPath,
+    PRIVATE_API_MODULES,
+    loadPrivateApiModule,
+    requirePrivateApiModule,
     renderSitemapXml,
     renderPackagedDashboardHtml,
     renderPackagedLessonsHtml,
