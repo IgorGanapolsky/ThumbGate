@@ -398,6 +398,9 @@ test('Publish to NPM workflow uses the tested publish-decision guardrail', () =>
   assert.match(workflow, /steps\.plan\.outputs\.publish_npm == 'true'/);
   assert.match(workflow, /'package\.json'\s+'package-lock\.json'\s+'server\.json'/);
   assert.match(workflow, /'adapters\/\*\*'\s+'plugins\/\*\*'/);
+  assert.match(workflow, /PENDING_CHANGESETS=\$\(git diff --name-only "\$LAST_TAG"\.\.HEAD -- '\.changeset\/\*\.md'/);
+  assert.match(workflow, /grep -v '\^\.changeset\/README\.md\$'/);
+  assert.match(workflow, /Treating this no-op as release-audited until the next versioned publish lands\./);
   assert.match(workflow, /npm publish --tag "\$\{\{\s*steps\.plan\.outputs\.npm_tag \|\| 'latest'\s*\}\}" --provenance/);
   assert.match(workflow, /--install-attempts 12 --install-delay-ms 10000/);
 });
