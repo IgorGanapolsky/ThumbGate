@@ -129,6 +129,19 @@ jobs:
           args: >
             -Dsonar.projectVersion=${{ steps.package-version.outputs.version }}
 
+      - name: Auto-review pre-approved SonarCloud hotspots
+        if: steps.sonar-scope.outputs.scan == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]') && (github.event_name == 'pull_request' || github.event_name == 'merge_group')
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: IgorGanapolsky_ThumbGate
+          SONAR_PULL_REQUEST: ${{ github.event.pull_request.number }}
+        run: |
+          # Wait briefly for SonarCloud to finish background ingestion of the
+          # analysis report uploaded by the previous step; hotspots only appear
+          # in /api/hotspots/search once ingestion completes.
+          sleep 30
+          node scripts/sonar-review-hotspots.js
+
       - name: Check SonarCloud quality gate
         if: steps.sonar-scope.outputs.scan == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]') && (github.event_name == 'pull_request' || github.event_name == 'merge_group')
         uses: SonarSource/sonarqube-quality-gate-action@v1.2.0

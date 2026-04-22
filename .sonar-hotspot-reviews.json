@@ -1,0 +1,22 @@
+{
+  "$schema": "https://example.com/thumbgate-sonar-hotspot-allowlist.json",
+  "_comment": [
+    "Pre-approved SonarCloud hotspot allowlist for ThumbGate.",
+    "Each entry marks a specific (filePath, ruleKey, lineSubstring) triple as",
+    "REVIEWED / SAFE when SonarCloud detects it. The auto-reviewer script",
+    "(scripts/sonar-review-hotspots.js) runs in CI between the Sonar scan",
+    "and the Quality Gate check; the gate's new_security_hotspots_reviewed",
+    "metric passes once every hotspot is reviewed. Changes to this file",
+    "should be reviewed in PR like any other security policy change."
+  ],
+  "reviews": [
+    {
+      "filePath": "scripts/git-hook-installer.js",
+      "ruleKey": "javascript:S4036",
+      "lineSubstring": "spawnSync('git'",
+      "resolution": "SAFE",
+      "rationale": "Installer MUST resolve git via the developer's own PATH. Git ships from many locations (brew, apt, scoop, Xcode, Git-for-Windows); pinning an absolute path would break every machine. The command literal ('git') is hard-coded, not user input, and args is always an array, so no shell interpolation is possible. Reviewed 2026-04-21."
+    }
+  ]
+
+}

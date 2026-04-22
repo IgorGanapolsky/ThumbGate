@@ -38,7 +38,7 @@ function createTempGitRepo() {
   execFileSync('git', ['config', 'commit.gpgsign', 'false'], { cwd: repoDir, stdio: 'ignore' });
   fs.writeFileSync(path.join(repoDir, 'package.json'), JSON.stringify({ name: 'thumbgate-temp', version: '1.0.0' }, null, 2));
   execFileSync('git', ['add', 'package.json'], { cwd: repoDir, stdio: 'ignore' });
-  execFileSync('git', ['commit', '-m', 'init'], { cwd: repoDir, stdio: 'ignore' });
+  execFileSync('git', ['commit', '--no-verify', '-m', 'init'], { cwd: repoDir, stdio: 'ignore' });
   execFileSync('git', ['branch', 'feature/test'], { cwd: repoDir, stdio: 'ignore' });
   execFileSync('git', ['pack-refs', '--all', '--prune'], { cwd: repoDir, stdio: 'ignore' });
   return repoDir;
@@ -297,7 +297,7 @@ test('resolveBaseRef and changed-file helpers work on temporary repos', () => {
   fs.mkdirSync(path.join(repoDir, 'scripts'), { recursive: true });
   fs.writeFileSync(path.join(repoDir, 'scripts', 'publish-decision.js'), 'module.exports = {};\n');
   execFileSync('git', ['add', 'scripts/publish-decision.js'], { cwd: repoDir, stdio: 'ignore' });
-  execFileSync('git', ['commit', '-m', 'feature change'], { cwd: repoDir, stdio: 'ignore' });
+  execFileSync('git', ['commit', '--no-verify', '-m', 'feature change'], { cwd: repoDir, stdio: 'ignore' });
 
   assert.equal(resolveBaseRef(repoDir, 'main'), 'main');
   assert.deepEqual(listChangedFilesAgainstBase(repoDir, 'main'), ['scripts/publish-decision.js']);
