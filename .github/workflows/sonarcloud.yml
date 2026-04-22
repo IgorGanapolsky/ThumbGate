@@ -21,7 +21,10 @@ concurrency:
 
 jobs:
   sonar:
-    name: SonarCloud Code Analysis
+    # Keep the workflow job name distinct from SonarCloud's own decorated
+    # "SonarCloud Code Analysis" PR check. GitHub branch protection treats
+    # duplicate required check names ambiguously and can block merges.
+    name: SonarCloud Workflow
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

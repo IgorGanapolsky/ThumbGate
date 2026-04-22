@@ -199,9 +199,11 @@ test('CI workflow writes and uploads a prompt evaluation artifact', () => {
 
   assert.match(workflow, /name:\s*Write prompt evaluation report/);
   assert.match(workflow, /if:\s*always\(\)/);
-  assert.match(workflow, /node scripts\/prompt-eval\.js --min-score=0 --output proof\/prompt-eval-report\.json --json > \/dev\/null/);
+  assert.match(workflow, /node scripts\/prompt-eval\.js --min-score=0 --synthetic --synthetic-variants=1 --suite-output proof\/prompt-eval-suite\.generated\.json --output proof\/prompt-eval-report\.json --json > \/dev\/null/);
   assert.match(workflow, /GITHUB_STEP_SUMMARY/);
   assert.match(workflow, /proof\/prompt-eval-report\.json/);
+  assert.match(workflow, /proof\/prompt-eval-suite\.generated\.json/);
+  assert.match(workflow, /Synthetic cases: /);
 });
 
 test('runtime Docker image installs git for operational integrity checks', () => {
@@ -512,7 +514,7 @@ test('SonarCloud workflow refreshes main and stamps scans with the package versi
   assert.match(workflow, /types:\s*\[checks_requested\]/);
   assert.match(workflow, /group:\s*sonarcloud-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.ref\s*\}\}/);
   assert.match(workflow, /cancel-in-progress:\s*\$\{\{\s*github\.ref != 'refs\/heads\/main'\s*\}\}/);
-  assert.match(workflow, /name:\s*SonarCloud Code Analysis/);
+  assert.match(workflow, /name:\s*SonarCloud Workflow/);
   assert.match(workflow, /fetch-depth:\s*0/);
   assert.match(workflow, /name:\s*Skip SonarCloud scan for Dependabot PRs/);
   assert.match(workflow, /npm ci --onnxruntime-node-install-cuda=skip/);
@@ -522,6 +524,7 @@ test('SonarCloud workflow refreshes main and stamps scans with the package versi
   assert.match(workflow, /Build Sonar mainline analysis version[\s\S]*?sha\.\$SHORT_SHA/);
   assert.match(workflow, /Run SonarCloud scan \(default branch refresh\)[\s\S]*?github\.event_name == 'push' \|\| github\.event_name == 'workflow_dispatch'/);
   assert.match(workflow, /-Dsonar\.projectVersion=\$\{\{\s*steps\.sonar-mainline-version\.outputs\.value\s*\}\}/);
+  assert.doesNotMatch(workflow, /name:\s*SonarCloud Code Analysis\s*\n\s*runs-on:/);
 });
 
 test('SonarCloud workflow polls quality gates only for PR and merge-queue scans', () => {

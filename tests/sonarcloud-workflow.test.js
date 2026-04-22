@@ -7,6 +7,7 @@ const PROJECT_ROOT = path.resolve(__dirname, '..');
 const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'sonarcloud.yml'), 'utf8');
 
 test('SonarCloud workflow refreshes main and stamps scans with the package version', () => {
+  assert.match(workflow, /name:\s*SonarCloud Workflow/);
   assert.match(workflow, /push:\s*\n\s*branches:\s*\[main\]/);
   assert.match(workflow, /name: Read package version/);
   assert.match(workflow, /VERSION=\$\(node -p 'require\("\.\/package\.json"\)\.version'\)/);
@@ -14,6 +15,7 @@ test('SonarCloud workflow refreshes main and stamps scans with the package versi
   assert.match(workflow, /SHORT_SHA=\$\(printf '%s' "\$GITHUB_SHA" \| cut -c1-12\)/);
   assert.match(workflow, /echo "value=\$\{\{\s*steps\.package-version\.outputs\.version\s*\}\}\+sha\.\$SHORT_SHA" >> "\$GITHUB_OUTPUT"/);
   assert.match(workflow, /-Dsonar\.projectVersion=\$\{\{\s*steps\.package-version\.outputs\.version\s*\}\}/);
+  assert.doesNotMatch(workflow, /name:\s*SonarCloud Code Analysis\s*\n\s*runs-on:/);
 });
 
 test('SonarCloud workflow polls quality gates only for PR and merge-queue scans', () => {
