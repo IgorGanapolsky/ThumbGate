@@ -107,6 +107,15 @@ function loadProfilesLazy() {
   }
 }
 
+const PROFILE_RESTRICTIVENESS_ORDER = Object.freeze([
+  'locked',
+  'readonly',
+  'essential',
+  'commerce',
+  'dispatch',
+  'default',
+]);
+
 /**
  * Find the most restrictive (smallest) profile that includes the given tool.
  * Profile restrictiveness = fewer tools allowed = more restricted.
@@ -114,11 +123,17 @@ function loadProfilesLazy() {
 function findMostRestrictiveProfile(toolName) {
   const policy = loadProfilesLazy();
   if (!policy || !policy.profiles) return null;
+  const profileRank = new Map(PROFILE_RESTRICTIVENESS_ORDER.map((name, index) => [name, index]));
 
   // Sort profiles by number of tools (most restrictive first)
   const candidates = Object.entries(policy.profiles)
     .filter(([, tools]) => tools.includes(toolName))
-    .sort((a, b) => a[1].length - b[1].length);
+    .sort((a, b) => {
+      const sizeDelta = a[1].length - b[1].length;
+      if (sizeDelta !== 0) return sizeDelta;
+      return (profileRank.get(a[0]) ?? Number.MAX_SAFE_INTEGER)
+        - (profileRank.get(b[0]) ?? Number.MAX_SAFE_INTEGER);
+    });
 
   if (candidates.length === 0) return null;
   return candidates[0][0]; // most restrictive profile that has this tool

@@ -1501,6 +1501,26 @@ function harnessAudit() {
   console.log('');
 }
 
+function nativeMessagingAudit() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildNativeMessagingAudit,
+    formatNativeMessagingAudit,
+  } = require(path.join(PKG_ROOT, 'scripts', 'native-messaging-audit'));
+  const report = buildNativeMessagingAudit({
+    homeDir: args['home-dir'],
+    platform: args.platform,
+    aiOnly: args['ai-only'] === true,
+  });
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatNativeMessagingAudit(report));
+}
+
 function optimize() {
   const { optimize: doOptimize } = require(path.join(PKG_ROOT, 'scripts', 'optimize-context'));
   doOptimize();
@@ -1998,6 +2018,10 @@ switch (COMMAND) {
   case 'harness-audit':
   case 'harness':
     harnessAudit();
+    break;
+  case 'native-messaging-audit':
+  case 'bridge-audit':
+    nativeMessagingAudit();
     break;
   case 'optimize':
     optimize();

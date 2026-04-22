@@ -73,6 +73,8 @@ test('README exposes prompt-shaped buyer questions with tracked guide links', ()
   assert.match(readme, /Workflow Hardening Sprint/i);
   assert.match(readme, /Popular buyer questions/i);
   assert.match(readme, /guides\/stop-repeated-ai-agent-mistakes\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
+  assert.match(readme, /guides\/browser-automation-safety\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
+  assert.match(readme, /guides\/native-messaging-host-security\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/autoresearch-agent-safety\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/cursor-agent-guardrails\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/codex-cli-guardrails\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
@@ -108,6 +110,7 @@ test('LLM context keeps team pricing and CLI-first positioning aligned with comm
   assert.match(context, /Workflow Hardening Sprint/i);
   assert.match(context, /\$49\/seat\/mo/i);
   assert.match(context, /Autoresearch Safety Pack/i);
+  assert.match(context, /native-messaging-audit/i);
   assert.match(context, /reward-hacking failures/i);
   assert.match(context, /CLI-first/i);
   assert.match(context, /solo side lane/i);
@@ -138,6 +141,7 @@ test('LLM context positions ThumbGate as AI agent security infrastructure', () =
   assert.match(context, /SOC2/);
   assert.match(context, /append-only audit trail/i);
   assert.match(context, /prompt-injected/i);
+  assert.match(context, /native messaging host/i);
 });
 
 test('LLM context aligns ThumbGate with Google Cloud enterprise safety framework pattern', () => {
