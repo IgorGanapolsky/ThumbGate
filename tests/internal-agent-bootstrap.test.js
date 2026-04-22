@@ -149,3 +149,33 @@ test('bootstrapInternalAgent returns recall, sandbox, and reviewer-lane plan', (
     fs.rmSync(sandboxRoot, { recursive: true, force: true });
   }
 });
+
+test('bootstrapInternalAgent fails clearly when private intent router runtime is unavailable', () => {
+  const repoPath = initGitRepo();
+  const sandboxRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-bootstrap-missing-router-'));
+  const originalExistsSync = fs.existsSync;
+  fs.existsSync = (candidatePath) => {
+    if (typeof candidatePath === 'string' && candidatePath.endsWith('intent-router.js')) {
+      return false;
+    }
+    return originalExistsSync(candidatePath);
+  };
+
+  try {
+    assert.throws(
+      () => bootstrapInternalAgent({
+        source: 'github',
+        repoPath,
+        sandboxRoot,
+        context: 'Need a reviewer-ready response',
+        trigger: { type: 'pull_request_comment', id: '88', actor: 'octocat' },
+        task: { title: 'Harden MCP proof flow', body: 'Return a verified answer.' },
+      }),
+      /private intent router runtime/,
+    );
+  } finally {
+    fs.existsSync = originalExistsSync;
+    fs.rmSync(repoPath, { recursive: true, force: true });
+    fs.rmSync(sandboxRoot, { recursive: true, force: true });
+  }
+});
