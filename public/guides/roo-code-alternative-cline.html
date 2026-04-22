@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Roo Code Alternative: Migrating to Cline with Portable Lesson Memory</title>
+  <meta name="description" content="Roo Code sunsets May 15, 2026 and officially recommends Cline as the successor. Keep your agent's lesson memory portable with ThumbGate's local SQLite lesson DB." />
+  <meta property="og:title" content="Roo Code Alternative: Migrating to Cline with Portable Lesson Memory" />
+  <meta property="og:description" content="Roo Code sunsets May 15, 2026 and officially recommends Cline as the successor. Keep your agent's lesson memory portable with ThumbGate's local SQLite lesson DB." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/guides/roo-code-alternative-cline" />
+  <link rel="canonical" href="https://thumbgate.ai/guides/roo-code-alternative-cline" />
+  <link rel="llm-context" href="/public/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Roo Code Alternative: Migrating to Cline with Portable Lesson Memory",
+    "description": "Roo Code sunsets May 15, 2026 and officially recommends Cline as the successor. Keep your agent's lesson memory portable with ThumbGate's local SQLite lesson DB.",
+    "author": { "@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky" },
+    "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+    "datePublished": "2026-04-22",
+    "dateModified": "2026-04-22",
+    "mainEntityOfPage": "https://thumbgate.ai/guides/roo-code-alternative-cline"
+  }
+  </script>
+  <style>
+    :root { --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #161618; --line: #222225; --text: #e8e8ec; --muted: #8b8b96; --cyan: #22d3ee; --green: #4ade80; --red: #f87171; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+    a { color: var(--cyan); text-decoration: none; } a:hover { text-decoration: underline; }
+    .container { max-width: 820px; margin: 0 auto; padding: 0 24px; }
+    .topbar { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); background: rgba(10,10,11,0.88); border-bottom: 1px solid var(--line); }
+    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; }
+    .brand { font-weight: 700; color: var(--text); text-decoration: none; }
+    h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.15; margin: 40px 0 16px; }
+    h2 { font-size: 24px; margin: 36px 0 12px; color: var(--cyan); }
+    h3 { font-size: 18px; margin: 24px 0 8px; }
+    p, li { font-size: 17px; color: var(--text); }
+    .muted { color: var(--muted); }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; }
+    pre { background: var(--bg-card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow-x: auto; }
+    code.inline { background: var(--bg-card); padding: 2px 6px; border-radius: 4px; color: var(--cyan); }
+    .eyebrow { display: inline-block; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(34,211,238,0.22); background: rgba(34,211,238,0.1); color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 700; }
+    .cta { display: inline-block; background: var(--cyan); color: #000; padding: 14px 22px; border-radius: 10px; font-weight: 700; margin: 24px 0; }
+    article { padding: 24px 0 80px; }
+    footer { border-top: 1px solid var(--line); padding: 32px 0; color: var(--muted); font-size: 14px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <a class="brand" href="/">ThumbGate</a>
+      <nav><a href="/guides/">Guides</a> · <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a></nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <article>
+      <span class="eyebrow">Migration Guide</span>
+      <h1>Roo Code Alternative: Migrating to Cline with Portable Lesson Memory</h1>
+      <p class="muted">Roo Code announced its sunset on 2026-04-21. Final shutdown: 2026-05-15. The team officially recommended Cline as the model-agnostic open-source successor. Here is how to migrate without losing every lesson your agent learned inside Roo.</p>
+
+      <h2>The quiet cost of agent migrations</h2>
+      <p>Roo Code is a VS Code extension and its MCP wire format transfers to Cline directly. The visible part of the migration — swap the extension, keep the shortcuts — takes five minutes.</p>
+      <p>The hidden cost is memory. Every thumbs-down you gave Roo lived in Roo's context window and project memory: "don't <code class="inline">git push --force</code> to main," "this repo uses pnpm," "never auto-generate Prisma migrations on prod." When Roo goes dark on May 15, that institutional memory evaporates. You teach Cline the same mistakes from scratch.</p>
+      <p>Vendor-scoped lesson memory is a design mistake. In 2026 your agent's memory should outlive any single vendor.</p>
+
+      <h2>What ThumbGate adds to Cline</h2>
+      <p>ThumbGate stores lesson memory in a local SQLite file (<code class="inline">.thumbgate/memory.sqlite</code>) with FTS5 full-text search. Every thumbs-down becomes a row. When Cline proposes a tool call, ThumbGate's MCP server runs <code class="inline">gate_check</code> against the DB and blocks known-bad patterns before the call executes.</p>
+      <p>The DB lives in your project, not in Roo, not in Cline, not in our servers. When Cline eventually gets replaced in 2027, you copy one SQLite file and the memory moves with you.</p>
+
+      <h2>One-command migration</h2>
+      <pre><code>npx thumbgate init --agent cline</code></pre>
+      <p>The installer:</p>
+      <ul>
+        <li>Registers the ThumbGate MCP server in Cline's VS Code globalStorage settings (<code class="inline">cline_mcp_settings.json</code>)</li>
+        <li>Copies <code class="inline">.clinerules</code> into your project so Cline knows when to call <code class="inline">gate_check</code></li>
+        <li>Creates the local lesson DB at <code class="inline">.thumbgate/memory.sqlite</code></li>
+        <li>Prints every file it touched so you can roll back</li>
+      </ul>
+      <p>Any lessons you already captured under Roo live in <code class="inline">.thumbgate/memory.sqlite</code> and carry over unchanged.</p>
+
+      <h2>What gets gated</h2>
+      <p>The shipped <code class="inline">.clinerules</code> file tells Cline to call <code class="inline">gate_check</code> before:</p>
+      <ul>
+        <li><code class="inline">execute_command</code> that runs <code class="inline">git push</code>, <code class="inline">git reset --hard</code>, <code class="inline">rm -rf</code>, <code class="inline">sudo</code>, or <code class="inline">curl ... | sh</code></li>
+        <li>Cloud mutations — <code class="inline">aws</code>, <code class="inline">gcloud</code>, <code class="inline">az</code>, <code class="inline">railway</code>, <code class="inline">vercel deploy</code>, <code class="inline">gh release delete</code></li>
+        <li><code class="inline">write_to_file</code> or <code class="inline">replace_in_file</code> targeting <code class="inline">.env</code>, <code class="inline">*.pem</code>, <code class="inline">*.key</code>, or files under <code class="inline">.git/</code></li>
+        <li><code class="inline">browser_action</code> that submits a form or clicks on a production URL</li>
+      </ul>
+      <p>You can add or remove patterns by editing <code class="inline">.clinerules</code>.</p>
+
+      <h2>Verify it is working</h2>
+      <pre><code>npx thumbgate verify --agent cline</code></pre>
+      <p>Then inside Cline, ask it to run <code class="inline">git push --force</code> on a dummy branch. It should call <code class="inline">thumbgate.gate_check</code> first and refuse.</p>
+
+      <h2>Why portable memory matters</h2>
+      <p>Roo Code's sunset is a lesson about lock-in. Every time an agent vendor controls your lesson memory, a sunset announcement is also an announcement that your corrections evaporate. The only durable fix is to store lessons outside the agent — locally, in a format you own.</p>
+      <p>ThumbGate's lesson DB works with Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, and any MCP-compatible agent. One correction, every agent, every future agent.</p>
+
+      <a class="cta" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/cline/INSTALL.md">Read the full Cline setup doc →</a>
+
+      <h2>FAQ</h2>
+      <h3>When does Roo Code actually stop working?</h3>
+      <p>The team announced the sunset on 2026-04-21. Final shutdown is 2026-05-15.</p>
+
+      <h3>Does Cline use the same MCP format as Roo?</h3>
+      <p>Yes. Any MCP servers you ran under Roo Code transfer to Cline verbatim.</p>
+
+      <h3>Where does ThumbGate store my lessons?</h3>
+      <p>In a local SQLite file at <code class="inline">.thumbgate/memory.sqlite</code> inside your project. No cloud, no account, nothing to orphan if a vendor sunsets again.</p>
+
+      <h3>Does ThumbGate work if I go back to Claude Code or switch to Cursor?</h3>
+      <p>Yes. The lesson DB is agent-agnostic. Running <code class="inline">npx thumbgate init --agent &lt;name&gt;</code> wires any supported agent against the same DB.</p>
+    </article>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>ThumbGate — pre-action gates for AI coding agents. <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> · <a href="/">Home</a></p>
+    </div>
+  </footer>
+</body>
+</html>
