@@ -1,5 +1,11 @@
 # ThumbGate
 
+<p align="center">
+  <a href="https://thumbgate.ai">
+    <img src="public/assets/brand/thumbgate-icon-512.png" alt="ThumbGate" width="128" height="128" />
+  </a>
+</p>
+
 **Your AI coding bill has a leak.**
 
 **Stop paying $ for the same AI mistake.**
