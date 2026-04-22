@@ -1,6 +1,6 @@
 'use strict';
 
-const path = require('path');
+const path = require('node:path');
 
 function normalizeRequest(request) {
   return String(request || '').trim();
@@ -10,7 +10,7 @@ function isOptionalModuleMissing(error, request) {
   if (!error || error.code !== 'MODULE_NOT_FOUND') {
     return false;
   }
-  const message = String(error.message || '');
+  const message = String(error?.message || '');
   const normalizedRequest = normalizeRequest(request);
   const basename = path.basename(normalizedRequest);
   return [normalizedRequest, basename]
