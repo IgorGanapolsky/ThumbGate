@@ -2,8 +2,9 @@
 
 /**
  * social-reply-monitor.js
- * Monitors Reddit, X.com, and LinkedIn for replies to our posts,
- * then generates and posts contextual responses.
+ * Monitors Reddit and LinkedIn for replies to our posts, then generates and
+ * drafts contextual responses. X/Twitter monitoring was retired 2026-04-20;
+ * Bluesky replies are handled by scripts/social-reply-monitor-bluesky.js.
  *
  * Usage:
  *   node scripts/social-reply-monitor.js                    # Check all platforms
@@ -23,7 +24,6 @@ const { gateContextualReply, commentExplicitlyRequestsProduct } = require('./soc
 
 const STATE_FILE = path.resolve(__dirname, '..', '.thumbgate', 'reply-monitor-state.json');
 const REDDIT_API_BASE = 'https://oauth.reddit.com';
-const DEFAULT_X_HANDLE = 'IgorGanapolsky';
 
 loadLocalEnv();
 
@@ -60,85 +60,6 @@ function saveDraft(draft) {
   const dir = path.dirname(DRAFT_FILE);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.appendFileSync(DRAFT_FILE, JSON.stringify(draft) + '\n');
-}
-
-function normalizeArray(value) {
-  if (value && Array.isArray(value.data)) {
-    return value.data;
-  }
-  return Array.isArray(value) ? value : [];
-}
-
-function isRevenueRelevantXTweet(tweet = {}) {
-  const text = String(tweet.text || '').toLowerCase();
-  if (!text) return false;
-  return /thumbgate|thumbgate-production|checkout\/pro|workflow-sprint|pre-action gates|vibe coding/.test(text);
-}
-
-function buildOwnedConversationQuery(tweetId, username = DEFAULT_X_HANDLE) {
-  const normalizedId = String(tweetId || '').trim();
-  const normalizedUsername = String(username || DEFAULT_X_HANDLE).trim();
-  if (!normalizedId) {
-    return '';
-  }
-  return `conversation_id:${normalizedId} -from:${normalizedUsername}`;
-}
-
-async function collectXSearchCandidates(options = {}) {
-  const searchTweets = options.searchTweets;
-  if (typeof searchTweets !== 'function') {
-    return { tweets: [], searchMode: 'unavailable', queryLog: [] };
-  }
-
-  const username = options.username || process.env.X_USERNAME || DEFAULT_X_HANDLE;
-  const ownUserId = options.ownUserId || process.env.X_USER_ID || '1733256637199073280';
-  const queryLog = [];
-  const aggregate = [];
-  const seenTweetIds = new Set();
-  let ownedCandidates = [];
-
-  if (typeof options.fetchOwnedTweets === 'function') {
-    try {
-      const recentTweets = await options.fetchOwnedTweets();
-      ownedCandidates = normalizeArray(recentTweets)
-        .filter((tweet) => String(tweet.author_id || ownUserId) === ownUserId)
-        .filter(isRevenueRelevantXTweet)
-        .slice(0, 6);
-    } catch (err) {
-      console.warn(`[reply-monitor] Could not fetch own X tweets: ${err.message}`);
-    }
-  }
-
-  for (const tweet of ownedCandidates) {
-    const query = buildOwnedConversationQuery(tweet.id, username);
-    if (!query) continue;
-    queryLog.push(query);
-    const replies = normalizeArray(await searchTweets(query, { maxResults: 10 }));
-    for (const reply of replies) {
-      if (!reply || seenTweetIds.has(reply.id)) continue;
-      seenTweetIds.add(reply.id);
-      aggregate.push(reply);
-    }
-  }
-
-  if (aggregate.length > 0) {
-    return {
-      tweets: aggregate,
-      ownTweets: ownedCandidates.map((tweet) => ({ id: tweet.id, text: tweet.text || '' })),
-      queryLog,
-      searchMode: 'owned_conversations',
-    };
-  }
-
-  const fallbackQuery = 'thumbgate OR ThumbGate OR "pre-action gates"';
-  queryLog.push(fallbackQuery);
-  const fallbackTweets = normalizeArray(await searchTweets(fallbackQuery, { maxResults: 10 }));
-  return {
-    tweets: fallbackTweets,
-    ownTweets: ownedCandidates.map((tweet) => ({ id: tweet.id, text: tweet.text || '' })),
-    queryLog,
-    searchMode: 'keyword_fallback',
-  };
 }
 
 // ---------------------------------------------------------------------------
@@ -371,141 +292,6 @@ async function checkRedditReplies(state, dryRun) {
 }
 
 // ---------------------------------------------------------------------------
-// X/Twitter: fetch mentions and respond
-// ---------------------------------------------------------------------------
-
-async function checkXReplies(state, dryRun) {
-  console.log('[reply-monitor] Checking X/Twitter mentions...');
-
-  const { X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET } = process.env;
-  if (!X_API_KEY || !X_ACCESS_TOKEN) {
-    console.warn('[reply-monitor] X credentials not configured, skipping');
-    return [];
-  }
-
-  // Use the post-to-x module for OAuth signing
-  let xModule;
-  let xPoller;
-  try {
-    xModule = require('./post-to-x.js');
-    xPoller = require('./social-analytics/pollers/x.js');
-  } catch {
-    console.warn('[reply-monitor] Could not load X modules, skipping X');
-    return [];
-  }
-
-  let searchResult;
-  try {
-    searchResult = await collectXSearchCandidates({
-      searchTweets: xModule.searchTweets,
-      fetchOwnedTweets: process.env.X_BEARER_TOKEN && process.env.X_USER_ID
-        ? async () => {
-          const response = await xPoller.fetchUserTweets(process.env.X_BEARER_TOKEN, process.env.X_USER_ID);
-          return response && response.data;
-        }
-        : null,
-      ownUserId: process.env.X_USER_ID || '1733256637199073280',
-      username: process.env.X_USERNAME || DEFAULT_X_HANDLE,
-    });
-  } catch (err) {
-    console.warn(`[reply-monitor] X search failed: ${err.message}`);
-    return [];
-  }
-
-  const mentionsList = normalizeArray(searchResult && searchResult.tweets);
-  if (!mentionsList || mentionsList.length === 0) {
-    console.log('[reply-monitor] No X mentions found');
-    return [];
-  }
-
-  console.log(`[reply-monitor] X candidate search mode: ${searchResult.searchMode}`);
-
-  const results = [];
-  const repliesSentThisRun = new Set(); // Track reply text to prevent duplicates
-
-  // Our own user ID — skip our own tweets
-  const OWN_USER_ID = process.env.X_USER_ID || '1733256637199073280';
-
-  for (const tweet of mentionsList) {
-    const tweetId = tweet.id;
-    if (state.repliedTo[`x_${tweetId}`]) continue;
-
-    // Skip our own tweets
-    if (tweet.author_id === OWN_USER_ID) {
-      state.repliedTo[`x_${tweetId}`] = { at: new Date().toISOString(), platform: 'x', skipped: 'own_tweet' };
-      continue;
-    }
-
-    console.log(`[reply-monitor] New X mention: "${tweet.text.slice(0, 80)}..."`);
-
-    const isQuestion = /\?/.test(tweet.text);
-    const generatedReply = await generateReply(tweet.text, {
-      platform: 'x',
-      isQuestion,
-      author: tweet.author_id,
-    });
-
-    if (!generatedReply) {
-      // Mark as seen so we don't re-process, but don't reply
-      state.repliedTo[`x_${tweetId}`] = { at: new Date().toISOString(), platform: 'x', skipped: 'no_reply_generated' };
-      continue;
-    }
-
-    // Unmatched question — save a draft for human review rather than silently skipping
-    if (generatedReply === '__DRAFT__') {
-      const draft = {
-        platform: 'x',
-        tweetId,
-        author: tweet.author_id,
-        theirTweet: tweet.text.slice(0, 500),
-        suggestedReply: null,
-        draftedAt: new Date().toISOString(),
-        status: 'needs_human_reply',
-        reason: 'unmatched_question',
-      };
-      saveDraft(draft);
-      state.repliedTo[`x_${tweetId}`] = { at: new Date().toISOString(), platform: 'x', drafted: true, skipped: 'needs_human_reply' };
-      results.push({ tweetId, reply: null, posted: false, drafted: true });
-      console.log(`[reply-monitor] 📝 DRAFTED (needs human reply) for tweet ${tweetId} — saved to .thumbgate/reply-drafts.jsonl`);
-      continue;
-    }
-
-    // Truncate to 280 chars for Twitter
-    const truncated = generatedReply.slice(0, 275) + (generatedReply.length > 275 ? '...' : '');
-
-    // DUPLICATE CHECK: don't post the same text twice in one run
-    if (repliesSentThisRun.has(truncated)) {
-      console.log(`[reply-monitor] Skipping duplicate reply for tweet ${tweetId}`);
-      state.repliedTo[`x_${tweetId}`] = { at: new Date().toISOString(), platform: 'x', skipped: 'duplicate' };
-      continue;
-    }
-
-    console.log(`[reply-monitor] Generated X reply: "${truncated.slice(0, 100)}..."`);
-
-    if (dryRun) {
-      results.push({ tweetId, reply: truncated, posted: false });
-      repliesSentThisRun.add(truncated);
-      continue;
-    }
-
-    try {
-      await xModule.postTweet(truncated, tweetId);
-      state.repliedTo[`x_${tweetId}`] = { at: new Date().toISOString(), platform: 'x' };
-      results.push({ tweetId, reply: truncated, posted: true });
-      repliesSentThisRun.add(truncated);
-      console.log(`[reply-monitor] Replied to tweet ${tweetId}`);
-    } catch (err) {
-      console.warn(`[reply-monitor] Failed to reply to tweet ${tweetId}: ${err.message}`);
-      // Still mark as seen to avoid retry spam
-      state.repliedTo[`x_${tweetId}`] = { at: new Date().toISOString(), platform: 'x', skipped: 'post_failed' };
-    }
-  }
-
-  state.lastCheck.x = new Date().toISOString();
-  return results;
-}
-
-// ---------------------------------------------------------------------------
 // LinkedIn: check for comments on our posts
 // ---------------------------------------------------------------------------
 
@@ -532,13 +318,12 @@ async function checkLinkedInReplies(state, dryRun) {
 
 async function monitor({ platforms, dryRun } = {}) {
   const state = loadState();
-  const allPlatforms = platforms || ['reddit', 'x', 'linkedin'];
+  const allPlatforms = platforms || ['reddit', 'linkedin'];
   const allResults = {};
 
   for (const platform of allPlatforms) {
     try {
       if (platform === 'reddit') allResults.reddit = await checkRedditReplies(state, dryRun);
-      else if (platform === 'x') allResults.x = await checkXReplies(state, dryRun);
       else if (platform === 'linkedin') allResults.linkedin = await checkLinkedInReplies(state, dryRun);
     } catch (err) {
       console.error(`[reply-monitor] ${platform} error: ${err.message}`);
@@ -557,11 +342,7 @@ async function monitor({ platforms, dryRun } = {}) {
 }
 
 module.exports = {
-  buildOwnedConversationQuery,
-  checkXReplies,
-  collectXSearchCandidates,
   generateReply,
-  isRevenueRelevantXTweet,
   monitor,
 };
 
