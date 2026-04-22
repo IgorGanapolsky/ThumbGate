@@ -91,3 +91,44 @@ test('THUMBGATE_USE_DIRECT_PUBLISHERS with any value other than "1" does not tri
     assert.equal(shouldUseZernio('linkedin'), true);
   });
 });
+
+test('DISPATCHERS.linkedin and DISPATCHERS.threads route through Zernio publisher when ZERNIO_API_KEY is set', async () => {
+  const zernioPath = require.resolve('../scripts/social-analytics/publishers/zernio');
+  const peModulePath = require.resolve('../scripts/post-everywhere');
+  const calls = [];
+  const previousZernio = require.cache[zernioPath];
+  const prevKey = process.env.ZERNIO_API_KEY;
+  const prevEscape = process.env.THUMBGATE_USE_DIRECT_PUBLISHERS;
+  require.cache[zernioPath] = {
+    id: zernioPath,
+    filename: zernioPath,
+    loaded: true,
+    exports: {
+      publishPost: async (args) => {
+        calls.push(args);
+        return { via: 'zernio-stub', args };
+      },
+    },
+  };
+  delete require.cache[peModulePath];
+  process.env.ZERNIO_API_KEY = 'test-key';
+  delete process.env.THUMBGATE_USE_DIRECT_PUBLISHERS;
+  try {
+    const { DISPATCHERS } = require('../scripts/post-everywhere');
+    const linkedinResult = await DISPATCHERS.linkedin({ body: 'hello-linkedin' }, false);
+    const threadsResult = await DISPATCHERS.threads({ body: 'hello-threads' }, false);
+    assert.equal(linkedinResult.via, 'zernio-stub');
+    assert.equal(threadsResult.via, 'zernio-stub');
+    assert.equal(calls.length, 2);
+    assert.equal(calls[0].platform, 'linkedin');
+    assert.equal(calls[1].platform, 'threads');
+  } finally {
+    if (prevKey === undefined) delete process.env.ZERNIO_API_KEY;
+    else process.env.ZERNIO_API_KEY = prevKey;
+    if (prevEscape === undefined) delete process.env.THUMBGATE_USE_DIRECT_PUBLISHERS;
+    else process.env.THUMBGATE_USE_DIRECT_PUBLISHERS = prevEscape;
+    if (previousZernio) require.cache[zernioPath] = previousZernio;
+    else delete require.cache[zernioPath];
+    delete require.cache[peModulePath];
+  }
+});
