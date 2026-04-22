@@ -442,6 +442,8 @@ function getTelemetrySummary(feedbackDir, options = {}) {
   const pricingInterestByLevel = {};
   const seoLandingViewsBySurface = {};
   const seoLandingViewsByQuery = {};
+  const trackedLinkHitsBySlug = {};
+  const trackedLinkCheckoutStartsBySlug = {};
   const cliByPlatform = {};
   const cliByVersion = {};
   let pageViews = 0;
@@ -506,6 +508,9 @@ function getTelemetrySummary(feedbackDir, options = {}) {
         incrementCounter(ctaClicksByOfferCode, entry.offerCode);
         incrementCounter(ctaClicksByCampaignVariant, entry.campaignVariant);
         incrementCounter(byCtaId, entry.ctaId);
+        if (entry.linkSlug && (entry.eventType || entry.event) === 'cta_click') {
+          incrementCounter(trackedLinkHitsBySlug, entry.linkSlug);
+        }
       }
 
       if ((entry.eventType || entry.event) === 'checkout_start' || (entry.eventType || entry.event) === 'checkout_bootstrap') {
@@ -517,6 +522,7 @@ function getTelemetrySummary(feedbackDir, options = {}) {
         incrementCounter(checkoutStartsByCommunity, entry.community);
         incrementCounter(checkoutStartsByOfferCode, entry.offerCode);
         incrementCounter(checkoutStartsByCampaignVariant, entry.campaignVariant);
+        if (entry.linkSlug) incrementCounter(trackedLinkCheckoutStartsBySlug, entry.linkSlug);
         const starterKey = pickFirstText(
           entry.acquisitionId,
           entry.visitorId,
@@ -623,6 +629,17 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       pageViewsByTrafficChannel[channelKey] || 0
     );
   }
+
+  const trackedLinkConversionBySlug = {};
+  for (const slugKey of new Set([
+    ...Object.keys(trackedLinkHitsBySlug),
+    ...Object.keys(trackedLinkCheckoutStartsBySlug),
+  ])) {
+    trackedLinkConversionBySlug[slugKey] = safeRate(
+      trackedLinkCheckoutStartsBySlug[slugKey] || 0,
+      trackedLinkHitsBySlug[slugKey] || 0
+    );
+  }
   const installCopies = byEventType.install_copy || 0;
   const gptOpens = (byEventType.chatgpt_gpt_open || 0) + (byEventType.chatgpt_gpt_click || 0);
   const trialEmails = byEventType.trial_email_captured || 0;
@@ -719,6 +736,9 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       checkoutConversionBySource,
       checkoutConversionByCampaign,
       checkoutConversionByTrafficChannel,
+      trackedLinkHitsBySlug,
+      trackedLinkCheckoutStartsBySlug,
+      trackedLinkConversionBySlug,
     },
     recent: summarizeRecentEvents(events),
   };
@@ -842,6 +862,29 @@ function getTelemetryAnalytics(feedbackDir, options = {}) {
       topSurface: topSeoSurface ? { key: topSeoSurface[0], count: topSeoSurface[1] } : null,
       topQuery: topSeoQuery ? { key: topSeoQuery[0], count: topSeoQuery[1] } : null,
     },
+    trackedLinks: (() => {
+      const hits = summary.marketing.trackedLinkHitsBySlug || {};
+      const conversions = summary.marketing.trackedLinkCheckoutStartsBySlug || {};
+      const conversionRate = summary.marketing.trackedLinkConversionBySlug || {};
+      const totalHits = Object.values(hits).reduce((acc, n) => acc + n, 0);
+      const totalCheckoutStarts = Object.values(conversions).reduce((acc, n) => acc + n, 0);
+      const top = getTopCounterEntry(hits);
+      const bySlug = {};
+      for (const slug of new Set([...Object.keys(hits), ...Object.keys(conversions)])) {
+        bySlug[slug] = {
+          hits: hits[slug] || 0,
+          checkoutStarts: conversions[slug] || 0,
+          conversionRate: conversionRate[slug] || 0,
+        };
+      }
+      return {
+        totalHits,
+        totalCheckoutStarts,
+        overallConversionRate: safeRate(totalCheckoutStarts, totalHits),
+        bySlug,
+        topSlug: top ? { key: top[0], count: top[1] } : null,
+      };
+    })(),
     cli: summary.cli,
     recent: summary.recent,
   };
