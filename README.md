@@ -4,7 +4,7 @@
   </a>
 </p>
 
-<h1 align="center">ThumbGate</h1>
+# ThumbGate
 
 **Your AI coding bill has a leak.**
 
