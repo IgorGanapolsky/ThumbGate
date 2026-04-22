@@ -224,6 +224,12 @@ function sleep(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
+function canRequestTrunkQueue(pr) {
+  return String(pr.baseRefName || '').toLowerCase() === 'main'
+    && String(pr.mergeable || '').toUpperCase() === 'MERGEABLE'
+    && String(pr.mergeStateStatus || '').toUpperCase() === 'BLOCKED';
+}
+
 /**
  * Diagnose and resolve blockers autonomously
  */
@@ -290,6 +296,11 @@ async function resolveBlockers(pr, runner = runGh) {
   if (pr.reviewDecision === 'REVIEW_REQUIRED') {
     console.log('[PR Manager] BLOCKED: Required review is still outstanding.');
     return { status: 'blocked', reason: 'review_required' };
+  }
+
+  if (canRequestTrunkQueue(pr)) {
+    console.log('[PR Manager] READY: mainline PR is green and can be handed to Trunk despite GitHub BLOCKED state.');
+    return { status: 'ready' };
   }
 
   // 5. Ready to Merge
@@ -454,6 +465,7 @@ module.exports = {
   normalizePrNumber,
   resolveBlockers,
   resolveGhBinary,
+  canRequestTrunkQueue,
   waitForMergeCommit,
   performMerge,
   managePrs,
