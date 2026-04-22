@@ -4,6 +4,7 @@ const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
 const https = require('node:https');
+const Module = require('node:module');
 const { Readable } = require('node:stream');
 
 const GOVERNED_RELEASE_VERSION_MISMATCH = '9999.0.0';
@@ -118,6 +119,64 @@ test('PostHog proxy path allowlist blocks sibling-path SSRF attempts', () => {
   assert.equal(__test__.isAllowedPosthogProxyPath('/static/array.js'), true);
   assert.equal(__test__.isAllowedPosthogProxyPath('/captureevil'), false);
   assert.equal(__test__.isAllowedPosthogProxyPath('/http://evil.example/capture'), false);
+});
+
+async function withMissingPrivateApiModules(modulePaths, fn) {
+  const blocked = new Set(modulePaths);
+  const originalLoad = Module._load;
+  Module._load = function patchedModuleLoad(request, parent, isMain) {
+    if (blocked.has(request)) {
+      const error = new Error(`Cannot find module '${request}'`);
+      error.code = 'MODULE_NOT_FOUND';
+      throw error;
+    }
+    return originalLoad.call(this, request, parent, isMain);
+  };
+
+  try {
+    return await fn();
+  } finally {
+    Module._load = originalLoad;
+  }
+}
+
+test('private-core API module helpers report unknown and unavailable modules cleanly', async () => {
+  assert.throws(
+    () => __test__.loadPrivateApiModule('nope'),
+    /Unknown private API module: nope/,
+  );
+
+  await withMissingPrivateApiModules([
+    __test__.PRIVATE_API_MODULES.intentRouter,
+  ], async () => {
+    assert.equal(__test__.loadPrivateApiModule('intentRouter'), null);
+    let error;
+    try {
+      __test__.requirePrivateApiModule('intentRouter', 'Intent planning');
+    } catch (caught) {
+      error = caught;
+    }
+    assert.ok(error);
+    assert.equal(error.statusCode, 503);
+    assert.equal(error.code, 'PRIVATE_CORE_REQUIRED');
+    assert.match(error.message, /Intent planning is only available/);
+  });
+
+  const directError = __test__.createPrivateCoreUnavailableError('Hosted harness jobs');
+  assert.equal(directError.statusCode, 503);
+  assert.equal(directError.code, 'PRIVATE_CORE_REQUIRED');
+
+  await withMissingPrivateApiModules([
+    __test__.PRIVATE_API_MODULES.lessonSearch,
+    __test__.PRIVATE_API_MODULES.lessonSynthesis,
+    __test__.PRIVATE_API_MODULES.semanticLayer,
+    __test__.PRIVATE_API_MODULES.commercialOffer,
+  ], async () => {
+    assert.equal(__test__.loadPrivateApiModule('lessonSearch'), null);
+    assert.equal(__test__.loadPrivateApiModule('lessonSynthesis'), null);
+    assert.equal(__test__.loadPrivateApiModule('semanticLayer'), null);
+    assert.equal(__test__.loadPrivateApiModule('commercialOffer'), null);
+  });
 });
 
 test('PostHog ingest proxy forwards allowed analytics requests to PostHog', async () => {
@@ -2282,6 +2341,88 @@ test('workflow sprint advance endpoint appends pipeline snapshots and workflow r
     entry.eventType === 'workflow_sprint_lead_advanced' &&
     entry.pipelineStatus === 'proof_backed_run'
   )));
+});
+
+test('private-core API endpoints return 503 when hosted/private modules are absent', async () => {
+  const modulePaths = [
+    __test__.PRIVATE_API_MODULES.intentRouter,
+    __test__.PRIVATE_API_MODULES.delegationRuntime,
+    __test__.PRIVATE_API_MODULES.hostedJobLauncher,
+    __test__.PRIVATE_API_MODULES.workflowSprintIntake,
+    __test__.PRIVATE_API_MODULES.lessonSearch,
+    __test__.PRIVATE_API_MODULES.lessonSynthesis,
+    __test__.PRIVATE_API_MODULES.semanticLayer,
+    __test__.PRIVATE_API_MODULES.commercialOffer,
+  ];
+
+  await withMissingPrivateApiModules(modulePaths, async () => {
+    const catalogRes = await fetch(apiUrl('/v1/intents/catalog'), { headers: authHeader });
+    assert.equal(catalogRes.status, 503);
+    const catalogBody = await catalogRes.text();
+    assert.match(catalogBody, /private core|hosted runtime/i);
+
+    const planRes = await fetch(apiUrl('/v1/intents/plan'), {
+      method: 'POST',
+      headers: { ...authHeader, 'content-type': 'application/json' },
+      body: JSON.stringify({ intentId: 'improve_response_quality', context: 'Need a plan' }),
+    });
+    assert.equal(planRes.status, 503);
+
+    const startRes = await fetch(apiUrl('/v1/handoffs/start'), {
+      method: 'POST',
+      headers: { ...authHeader, 'content-type': 'application/json' },
+      body: JSON.stringify({ intentId: 'improve_response_quality', context: 'Delegate safely' }),
+    });
+    assert.equal(startRes.status, 503);
+
+    const completeRes = await fetch(apiUrl('/v1/handoffs/complete'), {
+      method: 'POST',
+      headers: { ...authHeader, 'content-type': 'application/json' },
+      body: JSON.stringify({ handoffId: 'handoff_123', outcome: 'success' }),
+    });
+    assert.equal(completeRes.status, 503);
+
+    const harnessRes = await fetch(apiUrl('/v1/jobs/harness'), {
+      method: 'POST',
+      headers: { ...authHeader, 'content-type': 'application/json' },
+      body: JSON.stringify({ harness: 'verification', inputs: { prompt: 'run' } }),
+    });
+    assert.equal(harnessRes.status, 503);
+
+    const advanceRes = await fetch(apiUrl('/v1/intake/workflow-sprint/advance'), {
+      method: 'POST',
+      headers: { ...authHeader, 'x-admin-key': 'thumbgate-admin-key', 'content-type': 'application/json' },
+      body: JSON.stringify({ leadId: 'lead_123', status: 'qualified' }),
+    });
+    assert.equal(advanceRes.status, 503);
+
+    const lessonsRes = await fetch(apiUrl('/v1/lessons/search?q=rollback&limit=5'), { headers: authHeader });
+    assert.equal(lessonsRes.status, 503);
+    assert.match(await lessonsRes.text(), /private core|hosted runtime/i);
+
+    const semanticRes = await fetch(apiUrl('/v1/semantic/describe?type=Customer'), { headers: authHeader });
+    assert.equal(semanticRes.status, 503);
+    assert.match(await semanticRes.text(), /private core|hosted runtime/i);
+
+    const exportRes = await fetch(apiUrl('/v1/lessons/export'), {
+      method: 'POST',
+      headers: { ...authHeader, 'content-type': 'application/json' },
+      body: JSON.stringify({ inline: false }),
+    });
+    assert.equal(exportRes.status, 503);
+    assert.match(await exportRes.text(), /private core|hosted runtime/i);
+
+    const checkoutRes = await fetch(apiUrl('/v1/billing/checkout'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        customerEmail: 'buyer@example.com',
+        installId: 'inst_private_offer_boundary',
+      }),
+    });
+    assert.equal(checkoutRes.status, 503);
+    assert.match(await checkoutRes.text(), /private core|hosted runtime/i);
+  });
 });
 
 test('billing session endpoint returns provisioned local checkout details', async () => {

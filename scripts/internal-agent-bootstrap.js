@@ -12,12 +12,17 @@ const {
   constructContextPack,
   recordProvenance,
 } = require('./contextfs');
-const { planIntent } = require('./intent-router');
 const { formatCodeGraphRecallSection } = require('./codegraph-context');
 
 const KNOWN_SOURCES = new Set(['github', 'slack', 'linear', 'api', 'cli']);
 const DEFAULT_SOURCE = 'api';
 const DEFAULT_SANDBOX_ROOT = path.join(os.tmpdir(), 'thumbgate-internal-agent-sandboxes');
+
+function loadIntentRouterModule() {
+  const modulePath = path.resolve(__dirname, 'intent-router.js');
+  if (!fs.existsSync(modulePath)) return null;
+  return require(modulePath);
+}
 
 function normalizeText(value) {
   if (value === undefined || value === null) return '';
@@ -422,7 +427,12 @@ function bootstrapInternalAgent(options = {}) {
       baseRef: null,
     };
 
-  const plan = planIntent({
+  const intentRouter = loadIntentRouterModule();
+  if (!intentRouter) {
+    throw new Error('Internal agent bootstrap requires the ThumbGate private intent router runtime.');
+  }
+
+  const plan = intentRouter.planIntent({
     intentId: invocation.intentId,
     context: startupContext.text,
     mcpProfile: invocation.mcpProfile,
