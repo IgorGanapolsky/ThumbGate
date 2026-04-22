@@ -8,13 +8,11 @@ const { AUDIT_LOG_FILENAME } = require('./audit-trail');
 const { getBillingSummary, loadFunnelLedger, loadResolvedRevenueEvents } = require('./billing');
 const { getTelemetryAnalytics, loadTelemetryEvents } = require('./telemetry-analytics');
 const { getAutoGatesPath } = require('./auto-promote-gates');
-const { summarizeDelegation } = require('./delegation-runtime');
 const { loadGatesConfig } = require('./gates-engine');
 const { filterEntriesForWindow, resolveAnalyticsWindow } = require('./analytics-window');
 const { resolveHostedBillingConfig } = require('./hosted-config');
 const { generateAgentReadinessReport } = require('./agent-readiness');
 const { summarizeGateTemplates } = require('./gate-templates');
-const { generateOrgDashboard } = require('./org-dashboard');
 const { buildPredictiveInsights } = require('./predictive-insights');
 const { routeProfile } = require('./profile-router');
 const { getSettingsStatus } = require('./settings-hierarchy');
@@ -27,6 +25,37 @@ const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'default.json');
 const LANDING_PAGE_PATH = path.join(PROJECT_ROOT, 'public', 'index.html');
 const DASHBOARD_REVIEW_STATE_FILE = 'dashboard-review-state.json';
+
+function loadOrgDashboardModule() {
+  const modulePath = path.resolve(__dirname, 'org-dashboard.js');
+  if (!fs.existsSync(modulePath)) return null;
+  return require(modulePath);
+}
+
+function loadDelegationRuntimeModule() {
+  const modulePath = path.resolve(__dirname, 'delegation-runtime.js');
+  if (!fs.existsSync(modulePath)) return null;
+  return require(modulePath);
+}
+
+function buildUnavailableOrgDashboard(windowHours) {
+  return {
+    windowHours,
+    totalAgents: 0,
+    activeAgents: 0,
+    totalToolCalls: 0,
+    totalBlocked: 0,
+    totalWarned: 0,
+    totalAllowed: 0,
+    orgAdherenceRate: 100,
+    topBlockedGates: [],
+    riskAgents: [],
+    agents: [],
+    proRequired: true,
+    upgradeMessage: 'Org dashboard is available only in the private ThumbGate Core runtime.',
+    availability: 'private_core',
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Data readers
@@ -1152,7 +1181,16 @@ function generateDashboard(feedbackDir, options = {}) {
   });
   const observability = computeObservabilityStats(diagnosticEntries, diagnostics, secretGuard, analytics.telemetry);
   const instrumentation = computeInstrumentationReadiness(analytics, billingSummary);
-  const delegation = summarizeDelegation(feedbackDir);
+  const delegationRuntime = loadDelegationRuntimeModule();
+  const delegation = delegationRuntime
+    ? delegationRuntime.summarizeDelegation(feedbackDir)
+    : {
+      totalHandoffs: 0,
+      successfulHandoffs: 0,
+      blockedHandoffs: 0,
+      activePlans: [],
+      availability: 'private_core',
+    };
   const readiness = generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
   const harness = computeHarnessOverview(feedbackDir, entries);
   const interventionPolicy = getInterventionPolicySummary(feedbackDir);
@@ -1219,11 +1257,15 @@ function generateDashboard(feedbackDir, options = {}) {
     day.lessons = lessonPipeline.lessonsByDay.get(day.dayKey) || 0;
   }
 
-  const team = generateOrgDashboard({
-    windowHours: resolveTeamWindowHours(analyticsWindow),
-    authContext: options.authContext,
-    proOverride: options.teamProOverride,
-  });
+  const teamWindowHours = resolveTeamWindowHours(analyticsWindow);
+  const orgDashboard = loadOrgDashboardModule();
+  const team = orgDashboard
+    ? orgDashboard.generateOrgDashboard({
+      windowHours: teamWindowHours,
+      authContext: options.authContext,
+      proOverride: options.teamProOverride,
+    })
+    : buildUnavailableOrgDashboard(teamWindowHours);
   const templateLibrary = summarizeGateTemplates();
   const predictive = buildPredictiveInsights({
     telemetryAnalytics: analytics.telemetry,
