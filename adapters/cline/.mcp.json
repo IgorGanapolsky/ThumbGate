@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "thumbgate": {
+      "command": "npx",
+      "args": ["--yes", "--package", "thumbgate@latest", "thumbgate", "serve"],
+      "autoApprove": ["recall", "retrieve_lessons", "gate_check", "capture_feedback"]
+    }
+  }
+}

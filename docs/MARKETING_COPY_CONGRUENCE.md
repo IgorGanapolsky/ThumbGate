@@ -10,7 +10,7 @@
 > Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.
 
 ### Public Landing Page (thumbgate-production.up.railway.app)
-> Stop paying for the same AI mistake twice. ThumbGate is the enforcement layer for AI agent orchestration: 👍 thumbs up and 👎 thumbs down become history-aware lessons, shared lessons and org visibility, plus Pre-Action Gates that block repeat mistakes before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode.
+> Stop paying for the same AI mistake twice. ThumbGate is the enforcement layer for AI agent orchestration: 👍 thumbs up and 👎 thumbs down become history-aware lessons, shared lessons and org visibility, plus Pre-Action Gates that block repeat mistakes before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode.
 
 ### NPM package.json
 > Pre-action gates that block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.
