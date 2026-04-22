@@ -5,7 +5,8 @@
  *
  * Pins the "Zernio for everything" contract:
  *   - The default POLLERS list contains only github + plausible + zernio
- *   - LEGACY_POLLERS holds the 7 retired direct-API pollers
+ *   - LEGACY_POLLERS holds the 6 retired direct-API pollers
+ *     (X/Twitter was retired from distribution 2026-04-20 and is not in the fallback either)
  *   - activePollers() returns the narrow list by default, and the union only
  *     when THUMBGATE_USE_DIRECT_POLLERS=1 explicitly opts in.
  *
@@ -23,7 +24,7 @@ test('POLLERS is the Zernio-canonical narrow list', () => {
   assert.deepEqual(names, ['github', 'plausible', 'zernio']);
 });
 
-test('LEGACY_POLLERS contains the retired direct-API pollers', () => {
+test('LEGACY_POLLERS contains the retired direct-API pollers (X excluded after 2026-04-20 retirement)', () => {
   const names = LEGACY_POLLERS.map((p) => p.name).sort();
   assert.deepEqual(names, [
     'instagram',
@@ -31,9 +32,9 @@ test('LEGACY_POLLERS contains the retired direct-API pollers', () => {
     'reddit',
     'threads',
     'tiktok',
-    'x',
     'youtube',
   ]);
+  assert.ok(!names.includes('x'), 'X must not appear in LEGACY_POLLERS — retired 2026-04-20');
 });
 
 test('every POLLERS entry declares required env keys', () => {
