@@ -1166,6 +1166,20 @@ async function buildLiveDashboardData(parsed, feedbackDir) {
   return { summaryOptions, data };
 }
 
+async function loadLiveDashboardDataOrRespondProblem(res, parsed, feedbackDir, invalidTitle) {
+  try {
+    return await buildLiveDashboardData(parsed, feedbackDir);
+  } catch (err) {
+    sendProblem(res, {
+      type: PROBLEM_TYPES.INVALID_REQUEST,
+      title: invalidTitle,
+      status: 400,
+      detail: err && err.message ? err.message : 'Invalid analytics window request.',
+    });
+    return null;
+  }
+}
+
 function createJourneyId(prefix) {
   return createTraceId(prefix).replace(/^trace_/, `${prefix}_`);
 }
@@ -5975,19 +5989,16 @@ async function addContext(){
 
       // GET /v1/analytics/losses -- explain where buyer dollars are falling out of the funnel
       if (req.method === 'GET' && pathname === '/v1/analytics/losses') {
-        let summaryOptions;
-        let data;
-        try {
-          ({ summaryOptions, data } = await buildLiveDashboardData(parsed, requestFeedbackDir));
-        } catch (err) {
-          sendProblem(res, {
-            type: PROBLEM_TYPES.INVALID_REQUEST,
-            title: 'Invalid loss analytics query',
-            status: 400,
-            detail: err && err.message ? err.message : 'Invalid analytics window request.',
-          });
+        const dashboardResult = await loadLiveDashboardDataOrRespondProblem(
+          res,
+          parsed,
+          requestFeedbackDir,
+          'Invalid loss analytics query',
+        );
+        if (!dashboardResult) {
           return;
         }
+        const { summaryOptions, data } = dashboardResult;
 
         sendJson(res, 200, {
           window: data.analytics.window || summaryOptions,
@@ -6007,18 +6018,16 @@ async function addContext(){
 
       // GET /v1/dashboard -- Full ThumbGate dashboard JSON
       if (req.method === 'GET' && pathname === '/v1/dashboard') {
-        let data;
-        try {
-          ({ data } = await buildLiveDashboardData(parsed, requestFeedbackDir));
-        } catch (err) {
-          sendProblem(res, {
-            type: PROBLEM_TYPES.INVALID_REQUEST,
-            title: 'Invalid dashboard query',
-            status: 400,
-            detail: err && err.message ? err.message : 'Invalid analytics window request.',
-          });
+        const dashboardResult = await loadLiveDashboardDataOrRespondProblem(
+          res,
+          parsed,
+          requestFeedbackDir,
+          'Invalid dashboard query',
+        );
+        if (!dashboardResult) {
           return;
         }
+        const { data } = dashboardResult;
 
         sendJson(res, 200, data);
         return;
