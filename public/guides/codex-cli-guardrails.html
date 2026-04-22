@@ -1,47 +1,231 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Codex CLI Guardrails | Prevent Repeated Mistakes with ThumbGate</title>
-<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
-<meta name="description" content="Codex CLI can move quickly through repo tasks, but buyers need more than good intentions. ThumbGate adds a reliability gateway with pre-action enforcement.">
-<meta name="keywords" content="Codex CLI guardrails, Codex CLI safety, prevent Codex mistakes, ThumbGate, pre-action gates, AI coding agent feedback">
-<meta property="og:title" content="Codex CLI Guardrails That Actually Enforce">
-<meta property="og:description" content="Codex CLI can move quickly through repo tasks, but buyers need more than good intentions. ThumbGate adds a reliability gateway with pre-action enforcement.">
-<meta property="og:type" content="article">
-<meta property="og:url" content="https://thumbgate-production.up.railway.app/guides/codex-cli-guardrails">
-<link rel="canonical" href="https://thumbgate-production.up.railway.app/guides/codex-cli-guardrails">
-<link rel="llm-context" href="/public/llm-context.md" type="text/markdown">
-
-<script type="application/ld+json">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Codex CLI Guardrails | Prevent Repeated Mistakes with ThumbGate</title>
+  <meta name="description" content="Codex CLI can move quickly through repo tasks, but buyers need more than good intentions. ThumbGate adds a reliability gateway so repeated mistakes become se..." />
+  <meta property="og:title" content="Codex CLI Guardrails | Prevent Repeated Mistakes with ThumbGate" />
+  <meta property="og:description" content="Codex CLI can move quickly through repo tasks, but buyers need more than good intentions. ThumbGate adds a reliability gateway so repeated mistakes become se..." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://usethumbgate.com/guides/codex-cli-guardrails" />
+  <link rel="canonical" href="https://usethumbgate.com/guides/codex-cli-guardrails" />
+  <link rel="llm-context" href="/public/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --bg-raised: #111113;
+      --bg-card: #161618;
+      --line: #222225;
+      --text: #e8e8ec;
+      --muted: #8b8b96;
+      --cyan: #22d3ee;
+      --green: #4ade80;
+      --red: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(12px);
+      background: rgba(10, 10, 11, 0.88);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 14px;
+      padding-bottom: 14px;
+    }
+    .brand {
+      font-weight: 700;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 211, 238, 0.22);
+      background: rgba(34, 211, 238, 0.1);
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1.06;
+      letter-spacing: -0.04em;
+      margin: 16px 0;
+      max-width: 760px;
+    }
+    .hero p {
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .signal-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 28px 0 0;
+    }
+    .signal-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .signal-pill.up {
+      border-color: rgba(74, 222, 128, 0.28);
+      color: #b8f7c8;
+      background: rgba(74, 222, 128, 0.1);
+    }
+    .signal-pill.down {
+      border-color: rgba(248, 113, 113, 0.28);
+      color: #ffc0c0;
+      background: rgba(248, 113, 113, 0.1);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+      gap: 24px;
+      padding-bottom: 72px;
+    }
+    .card, .detail-section, .sidebar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .card { padding: 24px; }
+    .detail-section { padding: 24px; margin-bottom: 18px; }
+    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+    .detail-section p { color: var(--muted); }
+    .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
+    .card h2 { margin-top: 0; }
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .sidebar-card {
+      padding: 20px;
+    }
+    /* Only the first sidebar card sticks. Stacking multiple stickies at the
+       same top offset makes them overlap each other on scroll. The related-
+       pages card flows normally below. */
+    .sidebar-card:first-child {
+      position: sticky;
+      top: 84px;
+      max-height: calc(100vh - 104px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .proof-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 18px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: var(--cyan);
+      color: #071116;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .faq-item {
+      border-top: 1px solid var(--line);
+      padding: 14px 0;
+    }
+    .faq-item summary {
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .faq-item p {
+      color: var(--muted);
+    }
+    .related-card {
+      display: block;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      margin-top: 12px;
+      color: var(--text);
+    }
+    .related-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    @media (max-width: 860px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .sidebar-card:first-child {
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
+    }
+  </style>
+  <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "Codex CLI Guardrails That Actually Enforce",
-  "description": "Codex CLI can move quickly through repo tasks, but buyers need more than good intentions. ThumbGate adds a reliability gateway with pre-action enforcement.",
-  "author": {
-    "@type": "Person",
-    "name": "Igor Ganapolsky",
-    "url": "https://github.com/IgorGanapolsky"
-  },
+  "description": "Codex CLI can move quickly through repo tasks, but buyers need more than good intentions. ThumbGate adds a reliability gateway so repeated mistakes become se...",
+  "about": [
+    "codex cli guardrails"
+  ],
+  "url": "https://usethumbgate.com/guides/codex-cli-guardrails",
   "publisher": {
     "@type": "Organization",
     "name": "ThumbGate",
-    "url": "https://thumbgate-production.up.railway.app"
+    "url": "https://usethumbgate.com"
   },
-  "datePublished": "2026-04-09",
-  "dateModified": "2026-04-09",
-  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/guides/codex-cli-guardrails",
-  "about": [
-    {"@type": "Thing", "name": "Codex CLI guardrails"},
-    {"@type": "Thing", "name": "AI coding agent safety"},
-    {"@type": "Thing", "name": "pre-action gates"}
-  ]
+  "mainEntityOfPage": "https://usethumbgate.com/guides/codex-cli-guardrails"
 }
-</script>
-
-<script type="application/ld+json">
+  </script>
+  <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -61,98 +245,91 @@
         "@type": "Answer",
         "text": "Prompt instructions are advisory. ThumbGate pre-action gates intercept the tool call itself and block the known-bad pattern before execution."
       }
-    },
-    {
-      "@type": "Question",
-      "name": "Can ThumbGate work with Codex CLI sandbox mode?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes. ThumbGate adds an additional layer of enforcement on top of any existing sandbox or permission model, so guardrails apply even when sandbox restrictions are relaxed."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "What happens when a gate blocks a Codex CLI command?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "The agent receives a rejection with the reason and the linked prevention rule, then adapts its approach. The blocked command never executes."
-      }
     }
   ]
 }
-</script>
-
-<link rel="stylesheet" href="/learn/learn.css">
+  </script>
 </head>
 <body>
-
-<nav>
-  <a href="/" class="brand">ThumbGate</a>
-  <a href="/guide">Setup Guide</a>
-  <a href="/learn">Learn</a>
-  <a href="/dashboard">Dashboard</a>
-  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
-</nav>
-
-<div class="container">
-  <div class="breadcrumb"><a href="/learn">Learn</a> / <a href="/guides/codex-cli-guardrails">Guides</a> / Codex CLI Guardrails</div>
-  <h1>Codex CLI Guardrails That Actually Enforce</h1>
-  <p style="color:var(--muted);">3 min read &middot; Designed for Codex CLI, works across all MCP agents</p>
-
-  <div class="tldr"><strong>TL;DR:</strong> Codex CLI can move quickly through repo tasks, but buyers need more than good intentions. ThumbGate adds a reliability gateway so repeated mistakes become searchable lessons, linked rules, and pre-action enforcement.</div>
-
-  <h2>What Codex CLI users usually need</h2>
-  <p>The problem is rarely a single bad command. It is the cost of the same failure pattern showing up across branches, sessions, or rushed workflows. Once that pattern is obvious, the buyer wants a durable control point.</p>
-
-  <h2>What ThumbGate adds</h2>
-  <ul>
-    <li>Feedback capture with explicit thumbs-up/down signals.</li>
-    <li>Searchable lessons and linked prevention rules.</li>
-    <li>Pre-action gates that block repeated bad commands before they run.</li>
-    <li>Verification evidence that gives teams something concrete to audit.</li>
-  </ul>
-
-  <div class="callout">
-    <strong>Why this matters:</strong> Guardrails are easier to buy when the outcome is obvious: less rework, fewer repeated failures, and a visible chain from operator feedback to enforced behavior.
+  <div class="topbar">
+    <div class="container">
+      <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+    </div>
   </div>
 
-  <h2>Install for Codex CLI</h2>
-  <pre><code>npx thumbgate init --agent codex</code></pre>
-  <p>Auto-detects Codex CLI and configures the PreToolUse hook. No build step, no cloud account.</p>
+  <main class="container">
+    <section class="hero">
+      <div class="eyebrow">integration | codex cli guardrails</div>
+      <h1>Codex CLI Guardrails That Actually Enforce</h1>
+      <p>Codex CLI can move quickly through repo tasks, but buyers need more than good intentions. ThumbGate adds a reliability gateway so repeated mistakes become searchable lessons, linked rules, and pre-action enforcement.</p>
+      <div class="signal-row">
+        <div class="signal-pill up">👍 Thumbs up reinforces good behavior</div>
+        <div class="signal-pill down">👎 Thumbs down blocks repeated mistakes</div>
+      </div>
+    </section>
 
-  <h2>Frequently Asked Questions</h2>
-  <h3>Is ThumbGate only for Codex CLI?</h3>
-  <p>No. Codex CLI is one supported workflow, but the same feedback and enforcement loop also works across Claude Code, Cursor, Gemini, Amp, and OpenCode.</p>
+    <section class="grid">
+      <div>
+        <div class="card">
+          <h2>Why this page exists</h2>
+          <ul><li>Codex CLI buyers are usually looking for safe autonomy, not just more prompts.</li><li>ThumbGate sits in the critical gap between feedback and execution.</li><li>This page should rank for people who want guardrails without giving up CLI speed.</li></ul>
+        </div>
+        
+      <section class="detail-section">
+        <h2>What Codex CLI users usually need</h2>
+        <p>The problem is rarely a single bad command. It is the cost of the same failure pattern showing up across branches, sessions, or rushed workflows. Once that pattern is obvious, the buyer wants a durable control point.</p>
+        
+      </section>
+      <section class="detail-section">
+        <h2>What ThumbGate adds</h2>
+        
+        <ul><li>Feedback capture with explicit thumbs-up/down signals.</li><li>Searchable lessons and linked prevention rules.</li><li>Pre-action gates that block repeated bad commands before they run.</li><li>Verification evidence that gives teams something concrete to audit.</li></ul>
+      </section>
+      <section class="detail-section">
+        <h2>Why this matters for revenue</h2>
+        <p>Guardrails are easier to buy when the outcome is obvious: less rework, fewer repeated failures, and a visible chain from operator feedback to enforced behavior.</p>
+        
+      </section>
+        <div class="detail-section">
+          <h2>FAQ</h2>
+          
+      <details class="faq-item">
+        <summary>Is ThumbGate only for Codex CLI?</summary>
+        <p>No. Codex CLI is one supported workflow, but the same feedback and enforcement loop also works across Claude Code, Cursor, Gemini, Amp, and OpenCode.</p>
+      </details>
+      <details class="faq-item">
+        <summary>How are Codex CLI guardrails different from prompt instructions?</summary>
+        <p>Prompt instructions are advisory. ThumbGate pre-action gates intercept the tool call itself and block the known-bad pattern before execution.</p>
+      </details>
+        </div>
+      </div>
 
-  <h3>How are Codex CLI guardrails different from prompt instructions?</h3>
-  <p>Prompt instructions are advisory. ThumbGate pre-action gates intercept the tool call itself and block the known-bad pattern before execution.</p>
-
-  <h3>Can ThumbGate work with Codex CLI sandbox mode?</h3>
-  <p>Yes. ThumbGate adds an additional layer of enforcement on top of any existing sandbox or permission model, so guardrails apply even when sandbox restrictions are relaxed.</p>
-
-  <h3>What happens when a gate blocks a Codex CLI command?</h3>
-  <p>The agent receives a rejection with the reason and the linked prevention rule, then adapts its approach. The blocked command never executes.</p>
-
-  <div class="cta-box">
-    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Pro for operators, Team for governance</h2>
-    <p>Start free with local gates. Pro is $19/mo or $149/yr for the personal dashboard and exports. Team rollout anchors at $49/seat/mo when shared lessons and org visibility matter.</p>
-    <div class="cta-install">$ npx thumbgate init --agent codex</div>
-    <p style="margin-top:8px;"><a href="/pro">See Pro and Team pricing &rarr;</a></p>
-  </div>
-
-  <div class="related">
-    <h3>Related</h3>
-    <a href="/guides/pre-action-gates">What Are Pre-Action Gates? &rarr;</a>
-    <a href="/compare/mem0">ThumbGate vs Mem0 &rarr;</a>
-    <a href="/guides/stop-repeated-ai-agent-mistakes">Stop Repeated AI Agent Mistakes &rarr;</a>
-    <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
-  </div>
-</div>
-
-<div class="sticky-cta">
-  <span style="color:var(--muted)">Try it now:</span>
-  <code>npx thumbgate init --agent codex</code>
-  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
-</div>
+      <aside class="sidebar">
+        <div class="sidebar-card">
+          <h2>GSD execution brief</h2>
+          <p>This page was prioritized because it captures high-intent demand around codex cli guardrails and feeds directly into ThumbGate's proof-led conversion path.</p>
+          <p><strong>Opportunity score:</strong> 89</p>
+          <p><strong>Primary persona:</strong> codex-builder</p>
+          <p><strong>Keyword cluster:</strong> codex cli guardrails</p>
+          <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
+          <div class="proof-links"><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json" target="_blank" rel="noopener">Automation proof</a><a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub repository</a></div>
+          <a class="cta-button" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_codex-cli-guardrails&amp;cta_placement=seo_brief&amp;plan_id=pro" target="_blank" rel="noopener">Go Pro — $19/mo</a>
+        </div>
+        <div class="sidebar-card">
+          <h2>Related pages</h2>
+          
+        <a class="related-card" href="/guides/pre-action-gates">
+          <span class="related-label">Related page</span>
+          <strong>What Are Pre-Action Gates?</strong>
+        </a>
+        <a class="related-card" href="/compare/mem0">
+          <span class="related-label">Related page</span>
+          <strong>ThumbGate vs Mem0</strong>
+        </a>
+        </div>
+      </aside>
+    </section>
+  </main>
 </body>
 </html>
