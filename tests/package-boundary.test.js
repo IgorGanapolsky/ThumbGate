@@ -206,9 +206,15 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // destructure + ~30-line try/catch inside servePublicMarketingPage + the
   // /numbers route swap to servePublicMarketingPage). Net ≈ 1.4 KB; 20 KB
   // ceiling bump preserves the usual rebase-flap headroom.
+  // Bumped 3.04 MB → 3.10 MB (2026-04-22) after merging main and extending
+  // scripts/feedback-loop.js with actionableRemediations (structured parallel
+  // to recommendations): skill-improve, pattern-reuse, diagnose-failure-
+  // category, and trend-declining push() branches. Net observed: unpackedSize
+  // crossed 3,041,534 bytes. 60 KB headroom covers the remediation block +
+  // rebase-flap on the next main merge.
   assert.ok(
-    manifest.unpackedSize <= 3_040_000,
-    `npm package should stay <= 3.04 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_100_000,
+    `npm package should stay <= 3.10 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
