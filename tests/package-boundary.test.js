@@ -145,6 +145,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   const forbiddenFiles = [
     'bin/memory.sh',
     'bin/obsidian-sync.sh',
+    'scripts/autonomous-workflow.js',
+    'scripts/decision-trace.js',
+    'scripts/sales-pipeline.js',
     'scripts/post-to-x.js',
     'scripts/post-to-x-retry.sh',
     'scripts/reddit-dm-outreach.js',
