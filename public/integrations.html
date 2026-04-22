@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThumbGate Integrations | Claude Code, Cursor, Codex, Gemini CLI, Amp</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Pick the ThumbGate integration that matches your AI coding stack. Setup guides and enforcement pages for Claude Code, Cursor, Codex CLI, Gemini CLI, Amp, and MCP-compatible agents.">
+<meta property="og:title" content="ThumbGate Integrations | Claude Code, Cursor, Codex, Gemini CLI, Amp">
+<meta property="og:description" content="Setup and enforcement entry points for every major AI coding agent ThumbGate supports.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://thumbgate-production.up.railway.app/integrations">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/integrations">
+<link rel="icon" type="image/png" href="/thumbgate-icon.png">
+<link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "ThumbGate Integrations",
+  "description": "Integration entry points for Claude Code, Cursor, Codex CLI, Gemini CLI, Amp, and MCP-compatible agents.",
+  "url": "https://thumbgate-production.up.railway.app/integrations",
+  "dateModified": "2026-04-22",
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate-production.up.railway.app"
+  },
+  "mainEntity": {
+    "@type": "ItemList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "url": "https://thumbgate-production.up.railway.app/guides/claude-code-feedback",
+        "name": "Claude Code feedback memory that enforces"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "url": "https://thumbgate-production.up.railway.app/guides/cursor-agent-guardrails",
+        "name": "Cursor guardrails that block repeated mistakes"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "url": "https://thumbgate-production.up.railway.app/guides/codex-cli-guardrails",
+        "name": "Codex CLI guardrails that actually enforce"
+      },
+      {
+        "@type": "ListItem",
+        "position": 4,
+        "url": "https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory",
+        "name": "Gemini CLI feedback memory that leads to enforcement"
+      },
+      {
+        "@type": "ListItem",
+        "position": 5,
+        "url": "https://thumbgate-production.up.railway.app/guide",
+        "name": "CLI setup guide"
+      }
+    ]
+  }
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Which AI coding agents does ThumbGate support?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ThumbGate supports Claude Code, Cursor, Codex CLI, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do integrations only add memory?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. ThumbGate integrations are designed around enforcement. They capture thumbs-up and thumbs-down feedback, promote repeated failures into prevention rules, and block repeated mistakes before the next tool call executes."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Where should a new buyer start?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Start with the guide that matches the agent you already use. If you are still evaluating the category, use the compare and use-case pages to understand when memory is enough and when you need enforcement."
+      }
+    }
+  ]
+}
+</script>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --bg: #0a0a0b;
+    --bg-card: #161618;
+    --border: #222225;
+    --text: #e8e8ec;
+    --muted: #8b8b94;
+    --cyan: #22d3ee;
+  }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+  nav { padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
+  nav a { color: var(--muted); text-decoration: none; font-size: 0.95rem; }
+  nav a:hover { color: var(--cyan); }
+  nav .brand { color: var(--text); font-weight: 700; }
+  .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .eyebrow { color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.75rem; font-weight: 700; }
+  h1 { font-size: clamp(2.2rem, 6vw, 4rem); line-height: 1.05; margin: 0.5rem 0 1rem; letter-spacing: -0.04em; }
+  h2 { font-size: 1.5rem; margin: 2.5rem 0 1rem; color: var(--cyan); }
+  p { margin: 0 0 1rem; color: var(--text); }
+  .lede { color: var(--muted); max-width: 760px; font-size: 1.05rem; }
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; margin-top: 2rem; }
+  .card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .card:hover { border-color: rgba(34, 211, 238, 0.4); transform: translateY(-2px); }
+  .card .kicker { font-size: 0.75rem; color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; margin-bottom: 10px; }
+  .card h3 { margin: 0 0 0.6rem; font-size: 1.15rem; }
+  .card p { margin: 0 0 0.85rem; color: var(--muted); font-size: 0.95rem; }
+  .card .arrow { color: var(--cyan); font-weight: 600; font-size: 0.9rem; }
+  .checklist { padding-left: 1.2rem; color: var(--muted); }
+  .checklist li { margin-bottom: 0.55rem; }
+  .cta-box {
+    margin-top: 2.5rem;
+    padding: 1.5rem;
+    border: 1px solid rgba(34, 211, 238, 0.22);
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(17,17,19,0.98) 0%, rgba(11,19,22,0.96) 100%);
+  }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 1rem; }
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.8rem 1rem;
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 700;
+  }
+  .cta.primary { background: var(--cyan); color: #041016; }
+  .cta.secondary { border: 1px solid var(--border); color: var(--text); }
+  @media (max-width: 700px) {
+    .container { padding: 1.5rem 1rem 3rem; }
+    nav { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="brand">ThumbGate</a>
+  <a href="/integrations">Integrations</a>
+  <a href="/use-cases">Use Cases</a>
+  <a href="/compare">Compare</a>
+  <a href="/learn">Learn</a>
+  <a href="/guide">Setup Guide</a>
+</nav>
+
+<div class="container">
+  <div class="eyebrow">Integration Hub</div>
+  <h1>Start with the agent you already use.</h1>
+  <p class="lede">These pages are built for commercial-intent queries, ad landing traffic, and AI answer retrieval. Each one explains the exact failure mode, how ThumbGate fits, and where to go next if you need proof instead of another memory layer.</p>
+
+  <div class="card-grid">
+    <a class="card" href="/guides/claude-code-feedback">
+      <div class="kicker">Claude Code</div>
+      <h3>Claude Code feedback memory that enforces</h3>
+      <p>Move from repeated corrections to prevention rules and pre-action gates that block the same mistake next session.</p>
+      <div class="arrow">Open Claude guide →</div>
+    </a>
+    <a class="card" href="/guides/cursor-agent-guardrails">
+      <div class="kicker">Cursor</div>
+      <h3>Cursor guardrails that block repeated mistakes</h3>
+      <p>For teams that already move fast in Cursor and now need a durable stop before the same risky action lands again.</p>
+      <div class="arrow">Open Cursor guide →</div>
+    </a>
+    <a class="card" href="/guides/codex-cli-guardrails">
+      <div class="kicker">Codex CLI</div>
+      <h3>Codex CLI guardrails that actually enforce</h3>
+      <p>Turn operator feedback into searchable lessons, linked rules, and runtime blocking instead of prompt-only instructions.</p>
+      <div class="arrow">Open Codex guide →</div>
+    </a>
+    <a class="card" href="/guides/gemini-cli-feedback-memory">
+      <div class="kicker">Gemini CLI</div>
+      <h3>Gemini CLI memory that leads to enforcement</h3>
+      <p>For buyers who start with memory and realize the real requirement is preventing the next repeated failure before execution.</p>
+      <div class="arrow">Open Gemini guide →</div>
+    </a>
+    <a class="card" href="/guide">
+      <div class="kicker">CLI Setup</div>
+      <h3>Get ThumbGate installed in the workflow</h3>
+      <p>Use the setup guide when you are past evaluation and want the shortest path from install to the first blocked repeat.</p>
+      <div class="arrow">Open setup guide →</div>
+    </a>
+    <a class="card" href="/compare">
+      <div class="kicker">Category</div>
+      <h3>Compare enforcement against memory-only tools</h3>
+      <p>Use the comparison pages when the buyer is deciding whether memory, specs, or runtime enforcement solves the actual pain.</p>
+      <div class="arrow">Open compare hub →</div>
+    </a>
+  </div>
+
+  <h2>What buyers usually need answered</h2>
+  <ul class="checklist">
+    <li>Does this work with the agent and editor stack I already use?</li>
+    <li>Will this stop repeated mistakes, or just help the model remember more context?</li>
+    <li>How quickly can I prove value before I ask a team to change its workflow?</li>
+  </ul>
+
+  <div class="cta-box">
+    <h2>Need the shortest path to value?</h2>
+    <p class="lede">Start with the guide for your current agent, then move to the use-case hub if you need a stronger “why now” page for outbound, paid traffic, or procurement review.</p>
+    <div class="cta-row">
+      <a class="cta primary" href="/use-cases">Browse use cases</a>
+      <a class="cta secondary" href="/go/install?utm_source=website&utm_medium=integrations_hub&utm_campaign=install_free&cta_id=integrations_install&cta_placement=integrations_hub">Install free CLI</a>
+    </div>
+  </div>
+</div>
+</body>
+</html>

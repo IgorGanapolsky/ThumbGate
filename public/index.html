@@ -50,6 +50,28 @@ __GA_BOOTSTRAP__
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "ThumbGate",
+  "url": "https://thumbgate-production.up.railway.app",
+  "logo": "https://thumbgate-production.up.railway.app/thumbgate-icon.png",
+  "sameAs": [
+    "https://github.com/IgorGanapolsky/ThumbGate",
+    "https://www.npmjs.com/package/thumbgate",
+    "https://smithery.ai/server/thumbgate"
+  ],
+  "knowsAbout": [
+    "AI coding agent guardrails",
+    "Pre-Action Gates",
+    "feedback-driven enforcement",
+    "agent harness optimization",
+    "autoresearch safety"
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "ThumbGate",
   "alternateName": "thumbgate",
@@ -383,6 +405,22 @@ __GA_BOOTSTRAP__
   }
   .seo-card .card-arrow { font-size: 13px; color: var(--cyan); margin-top: 12px; font-weight: 500; }
 
+  .hub-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .hub-card {
+    background: linear-gradient(180deg, rgba(17,17,19,0.98) 0%, rgba(22,22,24,0.96) 100%);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.2s, transform 0.15s;
+  }
+  .hub-card:hover { border-color: rgba(34,211,238,0.3); transform: translateY(-2px); }
+  .hub-card h3 { font-size: 20px; margin-bottom: 10px; letter-spacing: -0.02em; }
+  .hub-card p { font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 10px; }
+  .hub-list { padding-left: 18px; color: var(--text-muted); margin: 0; }
+  .hub-list li { margin-bottom: 6px; }
+
   /* AUTORESEARCH PACK */
   .autoresearch-pack { padding: 0 0 80px; }
   .autoresearch-panel { border: 1px solid rgba(34,211,238,0.28); border-radius: 8px; background: linear-gradient(180deg, rgba(17,17,19,0.98) 0%, rgba(10,18,20,0.98) 100%); padding: 28px; }
@@ -508,6 +546,7 @@ __GA_BOOTSTRAP__
     .first-gate-steps { grid-template-columns: 1fr; }
     .gpt-steps { grid-template-columns: 1fr; }
     .seo-grid { grid-template-columns: 1fr; }
+    .hub-grid { grid-template-columns: 1fr; }
     .autoresearch-grid { grid-template-columns: 1fr; }
     .pricing-grid { grid-template-columns: 1fr; }
     .team-form { grid-template-columns: 1fr; }
@@ -540,6 +579,8 @@ __GA_BOOTSTRAP__
     <div class="nav-links">
       <a href="#how-it-works">How It Works</a>
       <a href="#pricing">Pricing</a>
+      <a href="/integrations">Integrations</a>
+      <a href="/use-cases">Use Cases</a>
       <a href="/guides/autoresearch-agent-safety">Autoresearch</a>
       <a href="#faq">FAQ</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
@@ -882,6 +923,32 @@ __GA_BOOTSTRAP__
 
 <section class="seo-pages" id="compare-guides">
   <div class="container">
+    <div class="section-label">Browse by intent</div>
+    <h2 class="section-title">Start with the exact page your buyer query needs</h2>
+    <div class="hub-grid" style="margin-bottom:20px;">
+      <a class="hub-card" href="/integrations">
+        <div class="seo-kicker">Integration Hub</div>
+        <h3>Agent-specific landing pages</h3>
+        <p>Entry points for Claude Code, Cursor, Codex CLI, Gemini CLI, and the setup path. Better destinations for paid clicks and AI answer citations than a generic homepage.</p>
+        <ul class="hub-list">
+          <li>Claude Code feedback memory that enforces</li>
+          <li>Cursor guardrails for repeated mistakes</li>
+          <li>Codex CLI and Gemini CLI pages with clear conversion paths</li>
+        </ul>
+        <div class="card-arrow">Open integrations hub →</div>
+      </a>
+      <a class="hub-card" href="/use-cases">
+        <div class="seo-kicker">Use-Case Hub</div>
+        <h3>Problem-led pages for commercial intent</h3>
+        <p>Pages for repeated failures, pre-action gates, autoresearch safety, force-push prevention, and persistent memory that leads to enforcement.</p>
+        <ul class="hub-list">
+          <li>Stop repeated mistakes before the next tool call</li>
+          <li>Explain when memory is not enough</li>
+          <li>Pair outbound campaigns with stronger landing intent</li>
+        </ul>
+        <div class="card-arrow">Open use-case hub →</div>
+      </a>
+    </div>
     <div class="section-label">Popular Buyer Questions</div>
     <h2 class="section-title">How buyers discover ThumbGate in search and AI answers</h2>
     <div class="seo-grid">

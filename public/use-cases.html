@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThumbGate Use Cases | Stop Repeated AI Agent Mistakes</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Browse ThumbGate use cases for teams that need enforcement instead of more prompt rules: stopping repeated mistakes, pre-action gates, autoresearch safety, force-push prevention, and persistent memory that leads to action.">
+<meta property="og:title" content="ThumbGate Use Cases | Stop Repeated AI Agent Mistakes">
+<meta property="og:description" content="Use-case pages for engineering teams buying guardrails, proof, and pre-action enforcement for AI coding agents.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://thumbgate-production.up.railway.app/use-cases">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/use-cases">
+<link rel="icon" type="image/png" href="/thumbgate-icon.png">
+<link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "ThumbGate Use Cases",
+  "description": "Use-case pages for teams that need AI coding agent enforcement, proof, and pre-action gates.",
+  "url": "https://thumbgate-production.up.railway.app/use-cases",
+  "dateModified": "2026-04-22",
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate-production.up.railway.app"
+  },
+  "mainEntity": {
+    "@type": "ItemList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "url": "https://thumbgate-production.up.railway.app/guides/stop-repeated-ai-agent-mistakes",
+        "name": "How to stop AI coding agents from repeating mistakes"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "url": "https://thumbgate-production.up.railway.app/guides/pre-action-gates",
+        "name": "Pre-action gates for AI coding agents"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "url": "https://thumbgate-production.up.railway.app/guides/autoresearch-agent-safety",
+        "name": "Autoresearch agent safety"
+      },
+      {
+        "@type": "ListItem",
+        "position": 4,
+        "url": "https://thumbgate-production.up.railway.app/learn/stop-ai-agent-force-push",
+        "name": "How to stop AI agents from force-pushing to main"
+      },
+      {
+        "@type": "ListItem",
+        "position": 5,
+        "url": "https://thumbgate-production.up.railway.app/learn/ai-agent-persistent-memory",
+        "name": "Persistent memory across sessions"
+      }
+    ]
+  }
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "When is ThumbGate a better fit than memory alone?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ThumbGate is the better fit when retrieval alone is not enough and the workflow needs to stop the same risky action before execution. That includes repeated git mistakes, skipped verification, destructive scripts, and autoresearch loops that try to promote weak evidence."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What use cases convert best?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The strongest buying moments are repeated failures that already cost time or trust: the same refactor mistake, the same force-push, a bad migration pattern, or self-improving agent loops that need proof before they promote a win."
+      }
+    }
+  ]
+}
+</script>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --bg: #0a0a0b;
+    --bg-card: #161618;
+    --border: #222225;
+    --text: #e8e8ec;
+    --muted: #8b8b94;
+    --cyan: #22d3ee;
+  }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+  nav { padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
+  nav a { color: var(--muted); text-decoration: none; font-size: 0.95rem; }
+  nav a:hover { color: var(--cyan); }
+  nav .brand { color: var(--text); font-weight: 700; }
+  .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .eyebrow { color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.75rem; font-weight: 700; }
+  h1 { font-size: clamp(2.2rem, 6vw, 4rem); line-height: 1.05; margin: 0.5rem 0 1rem; letter-spacing: -0.04em; }
+  h2 { font-size: 1.5rem; margin: 2.5rem 0 1rem; color: var(--cyan); }
+  p { margin: 0 0 1rem; color: var(--text); }
+  .lede { color: var(--muted); max-width: 760px; font-size: 1.05rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; margin-top: 2rem; }
+  .card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .card:hover { border-color: rgba(34, 211, 238, 0.4); transform: translateY(-2px); }
+  .card .kicker { font-size: 0.75rem; color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; margin-bottom: 10px; }
+  .card h3 { margin: 0 0 0.6rem; font-size: 1.15rem; }
+  .card p { margin: 0 0 0.85rem; color: var(--muted); font-size: 0.95rem; }
+  .card .arrow { color: var(--cyan); font-weight: 600; font-size: 0.9rem; }
+  .reason-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 1.5rem; }
+  .reason {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .reason strong { display: block; margin-bottom: 0.4rem; }
+  .cta-box {
+    margin-top: 2.5rem;
+    padding: 1.5rem;
+    border: 1px solid rgba(34, 211, 238, 0.22);
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(17,17,19,0.98) 0%, rgba(11,19,22,0.96) 100%);
+  }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 1rem; }
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.8rem 1rem;
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 700;
+  }
+  .cta.primary { background: var(--cyan); color: #041016; }
+  .cta.secondary { border: 1px solid var(--border); color: var(--text); }
+  @media (max-width: 700px) {
+    .container { padding: 1.5rem 1rem 3rem; }
+    nav { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="brand">ThumbGate</a>
+  <a href="/integrations">Integrations</a>
+  <a href="/use-cases">Use Cases</a>
+  <a href="/compare">Compare</a>
+  <a href="/learn">Learn</a>
+  <a href="/guide">Setup Guide</a>
+</nav>
+
+<div class="container">
+  <div class="eyebrow">Use-Case Hub</div>
+  <h1>Map the pain to the page that closes it.</h1>
+  <p class="lede">This hub is for AI search, SEO, outbound links, and ad traffic that already knows the pain. The goal is simple: make it obvious whether the buyer needs memory, proof, pre-action gates, or a specific workflow page that shows enforcement in context.</p>
+
+  <div class="grid">
+    <a class="card" href="/guides/stop-repeated-ai-agent-mistakes">
+      <div class="kicker">Repeated failures</div>
+      <h3>How to stop AI coding agents from repeating mistakes</h3>
+      <p>The shortest path from “I already corrected this once” to a live gate that blocks the repeat before the next command runs.</p>
+      <div class="arrow">Open use case →</div>
+    </a>
+    <a class="card" href="/guides/pre-action-gates">
+      <div class="kicker">Category</div>
+      <h3>Pre-action gates for AI coding agents</h3>
+      <p>Explain the category clearly when the buyer is comparing prompt rules, memory systems, and real enforcement.</p>
+      <div class="arrow">Open category page →</div>
+    </a>
+    <a class="card" href="/guides/autoresearch-agent-safety">
+      <div class="kicker">Self-improving agents</div>
+      <h3>Autoresearch safety for self-improving coding loops</h3>
+      <p>Show why benchmark-search loops need holdout checks, proof trails, and gates before they promote weak wins.</p>
+      <div class="arrow">Open autoresearch page →</div>
+    </a>
+    <a class="card" href="/learn/stop-ai-agent-force-push">
+      <div class="kicker">Git safety</div>
+      <h3>Stop AI agents from force-pushing to main</h3>
+      <p>A concrete, painful workflow example that makes the pre-action gate story immediately real.</p>
+      <div class="arrow">Open force-push guide →</div>
+    </a>
+    <a class="card" href="/learn/ai-agent-persistent-memory">
+      <div class="kicker">Memory</div>
+      <h3>Persistent memory across sessions</h3>
+      <p>For searchers who start with memory, then need the bridge into rules, enforcement, and durable workflow proof.</p>
+      <div class="arrow">Open memory guide →</div>
+    </a>
+    <a class="card" href="/compare/mem0">
+      <div class="kicker">Comparison</div>
+      <h3>ThumbGate vs memory-only tooling</h3>
+      <p>Use this when a buyer asks whether a memory layer is enough or whether they actually need runtime blocking.</p>
+      <div class="arrow">Open comparison →</div>
+    </a>
+  </div>
+
+  <h2>When these pages matter most</h2>
+  <div class="reason-grid">
+    <div class="reason">
+      <strong>Buying review</strong>
+      <p class="lede">The team already feels the pain and needs proof that the next repeat can be blocked before deployment or merge damage lands.</p>
+    </div>
+    <div class="reason">
+      <strong>AI answer retrieval</strong>
+      <p class="lede">The query is specific enough that a focused page will rank or be cited better than a generic homepage.</p>
+    </div>
+    <div class="reason">
+      <strong>Paid traffic</strong>
+      <p class="lede">Ads and outbound campaigns convert better when the click lands on the exact workflow problem instead of a broad landing page.</p>
+    </div>
+  </div>
+
+  <div class="cta-box">
+    <h2>Need the integration-specific page too?</h2>
+    <p class="lede">Pair the use case with an agent-specific integration page when the buyer already knows their stack and wants the fastest route from evaluation to install.</p>
+    <div class="cta-row">
+      <a class="cta primary" href="/integrations">Browse integrations</a>
+      <a class="cta secondary" href="/go/pro?utm_source=website&utm_medium=use_cases_hub&utm_campaign=pro_upgrade&cta_id=use_cases_pro&cta_placement=use_cases_hub&plan_id=pro&landing_path=%2Fuse-cases">Start Pro trial</a>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -191,6 +191,8 @@ const GUIDE_PAGE_PATH = path.resolve(__dirname, '../../public/guide.html');
 const CODEX_PLUGIN_PAGE_PATH = path.resolve(__dirname, '../../public/codex-plugin.html');
 const COMPARE_PAGE_PATH = path.resolve(__dirname, '../../public/compare.html');
 const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
+const INTEGRATIONS_PAGE_PATH = path.resolve(__dirname, '../../public/integrations.html');
+const USE_CASES_PAGE_PATH = path.resolve(__dirname, '../../public/use-cases.html');
 const NUMBERS_PAGE_PATH = path.resolve(__dirname, '../../public/numbers.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
@@ -3850,6 +3852,40 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/integrations') {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(INTEGRATIONS_PAGE_PATH, 'utf-8'),
+          extraTelemetry: { pageType: 'integrations_hub' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Integrations page not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/use-cases') {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(USE_CASES_PAGE_PATH, 'utf-8'),
+          extraTelemetry: { pageType: 'use_cases_hub' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Use cases page not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && (pathname === '/numbers' || pathname === '/numbers.html')) {
       // Route through servePublicMarketingPage so landing_page_view telemetry
       // + funnel-events.jsonl `discovery/landing_view` get captured with UTM
@@ -3950,7 +3986,7 @@ async function addContext(){
           version: pkg.version,
           status: 'ok',
           docs: 'https://github.com/IgorGanapolsky/ThumbGate',
-          endpoints: ['/health', '/dashboard', '/guide', '/codex-plugin', '/compare', '/learn', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/documents', '/v1/documents/import', '/v1/documents/{documentId}', '/v1/dashboard', '/v1/dashboard/render-spec', '/v1/decisions/evaluate', '/v1/decisions/outcome', '/v1/decisions/metrics', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
+          endpoints: ['/health', '/dashboard', '/guide', '/codex-plugin', '/compare', '/learn', '/integrations', '/use-cases', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/documents', '/v1/documents/import', '/v1/documents/{documentId}', '/v1/dashboard', '/v1/dashboard/render-spec', '/v1/decisions/evaluate', '/v1/decisions/outcome', '/v1/decisions/metrics', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
         }, {}, {
           headOnly: isHeadRequest,
         });
