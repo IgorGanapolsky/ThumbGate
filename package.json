@@ -131,7 +131,6 @@
     "scripts/natural-language-harness.js",
     "scripts/obsidian-export.js",
     "scripts/operational-integrity.js",
-    "scripts/operator-artifacts.js",
     "scripts/perplexity-client.js",
     "scripts/pr-manager.js",
     "scripts/private-core-boundary.js",
