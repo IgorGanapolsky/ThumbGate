@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ThumbGate vs SpecLock | Thumbs Feedback vs Manual Specs</title>
-  <meta name="description" content="SpecLock starts from manually written constraints. ThumbGate starts from thumbs-up/down feedback and turns it into pre-action gates that block repeated mista..." />
-  <meta property="og:title" content="ThumbGate vs SpecLock | Thumbs Feedback vs Manual Specs" />
-  <meta property="og:description" content="SpecLock starts from manually written constraints. ThumbGate starts from thumbs-up/down feedback and turns it into pre-action gates that block repeated mista..." />
+  <title>ThumbGate for Claude Desktop | Install the Plugin in 60 Seconds</title>
+  <meta name="description" content="Install ThumbGate as a Claude Desktop plugin and get pre-action gates running in under a minute. No build step, no cloud account, no config files." />
+  <meta property="og:title" content="ThumbGate for Claude Desktop | Install the Plugin in 60 Seconds" />
+  <meta property="og:description" content="Install ThumbGate as a Claude Desktop plugin and get pre-action gates running in under a minute. No build step, no cloud account, no config files." />
   <meta property="og:type" content="article" />
-  <meta property="og:url" content="https://usethumbgate.com/compare/speclock" />
-  <link rel="canonical" href="https://usethumbgate.com/compare/speclock" />
+  <meta property="og:url" content="https://usethumbgate.com/guides/claude-desktop" />
+  <link rel="canonical" href="https://usethumbgate.com/guides/claude-desktop" />
   <link rel="llm-context" href="/public/llm-context.md" type="text/markdown" />
   <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
   <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
@@ -211,19 +211,18 @@
 {
   "@context": "https://schema.org",
   "@type": "TechArticle",
-  "headline": "ThumbGate vs SpecLock",
-  "description": "SpecLock starts from manually written constraints. ThumbGate starts from thumbs-up/down feedback and turns it into pre-action gates that block repeated mista...",
+  "headline": "ThumbGate for Claude Desktop",
+  "description": "Install ThumbGate as a Claude Desktop plugin and get pre-action gates running in under a minute. No build step, no cloud account, no config files.",
   "about": [
-    "thumbgate vs speclock",
-    "thumbgate vs mem0"
+    "claude desktop extension plugin thumbgate"
   ],
-  "url": "https://usethumbgate.com/compare/speclock",
+  "url": "https://usethumbgate.com/guides/claude-desktop",
   "publisher": {
     "@type": "Organization",
     "name": "ThumbGate",
     "url": "https://usethumbgate.com"
   },
-  "mainEntityOfPage": "https://usethumbgate.com/compare/speclock"
+  "mainEntityOfPage": "https://usethumbgate.com/guides/claude-desktop"
 }
   </script>
   <script type="application/ld+json">
@@ -233,18 +232,26 @@
   "mainEntity": [
     {
       "@type": "Question",
-      "name": "Is ThumbGate trying to replace specs?",
+      "name": "Do I need a cloud account?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "No. ThumbGate complements specs by capturing thumbs-up/down feedback from live agent behavior and enforcing the learned rules as pre-action gates."
+        "text": "No. ThumbGate runs entirely locally. Your feedback, rules, and gates never leave your machine."
       }
     },
     {
       "@type": "Question",
-      "name": "What does ThumbGate do that SpecLock does not?",
+      "name": "What is the .mcpb bundle?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "ThumbGate turns explicit feedback into searchable memory, auto-generated prevention rules, and runtime gates that block repeated mistakes before the next tool call executes."
+        "text": "It is a packaged Claude Desktop extension that includes the ThumbGate MCP server, tool definitions, and manifest — ready to install without building from source."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does this work with Claude Code too?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. The same npx thumbgate init command works for both Claude Desktop and Claude Code. Use --claude-desktop for the Desktop-specific setup."
       }
     }
   ]
@@ -261,9 +268,9 @@
 
   <main class="container">
     <section class="hero">
-      <div class="eyebrow">comparison | thumbgate vs speclock</div>
-      <h1>ThumbGate vs SpecLock</h1>
-      <p>SpecLock starts from manually written constraints. ThumbGate starts from thumbs-up/down feedback and turns it into pre-action gates that block repeated mistakes.</p>
+      <div class="eyebrow">integration | claude desktop extension plugin thumbgate</div>
+      <h1>ThumbGate for Claude Desktop</h1>
+      <p>Install ThumbGate as a Claude Desktop plugin and get pre-action gates running in under a minute. No build step, no cloud account, no config files.</p>
       <div class="signal-row">
         <div class="signal-pill up">👍 Thumbs up reinforces good behavior</div>
         <div class="signal-pill down">👎 Thumbs down blocks repeated mistakes</div>
@@ -274,34 +281,43 @@
       <div>
         <div class="card">
           <h2>Why this page exists</h2>
-          <ul><li>ThumbGate learns from thumbs-up and thumbs-down feedback without requiring a separate spec-writing workflow.</li><li>SpecLock is strongest when a team already has strong specifications and wants enforcement tied to those documents.</li><li>ThumbGate is strongest when the pain is repeated agent mistakes across Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode.</li></ul>
+          <ul><li>One command installs ThumbGate into Claude Desktop with zero config.</li><li>The packaged .mcpb bundle is available on GitHub Releases for drag-and-drop install.</li><li>All feedback, rules, and gates stay local on your machine.</li></ul>
         </div>
         
       <section class="detail-section">
-        <h2>The product difference in one sentence</h2>
-        <p>SpecLock helps a team codify rules before the work begins. ThumbGate helps a team convert real thumbs-up/down feedback into live pre-action gates after the work reveals what actually breaks.</p><p>That means ThumbGate is better for fast-moving agent workflows where the problem is not writing more specs, but preventing the same mistake from happening again tomorrow.</p>
+        <h2>Install with one command</h2>
+        <p>Run this in your terminal and Claude Desktop picks up ThumbGate automatically:</p><p>npx thumbgate init --claude-desktop</p><p>Or add the MCP server directly:</p><p>claude mcp add thumbgate -- npx -y thumbgate serve</p>
         
       </section>
       <section class="detail-section">
-        <h2>Choose ThumbGate when</h2>
-        
-        <ul><li>Your agent already repeats known mistakes and you need the block to happen before tool execution.</li><li>You want one feedback loop that supports both reinforcement from thumbs up and prevention from thumbs down.</li><li>You need proof assets, automation reports, and compatibility across multiple coding agents.</li></ul>
+        <h2>Or download the packaged bundle</h2>
+        <p>Grab the .mcpb bundle from GitHub Releases — no build step required. Drop it into Claude Desktop and you are running.</p>
+        <ul><li>Download from: github.com/IgorGanapolsky/ThumbGate/releases</li><li>Works with Claude Desktop on macOS, Windows, and Linux.</li><li>All data stays local. No cloud account needed.</li></ul>
       </section>
       <section class="detail-section">
-        <h2>Choose SpecLock when</h2>
+        <h2>What you get</h2>
         
-        <ul><li>Your team already maintains strong PRDs or system specs and wants the model constrained against those artifacts.</li><li>Your primary problem is uncontrolled file edits, not a missing feedback-to-enforcement loop.</li><li>You are willing to invest in manual constraint authoring as part of the workflow.</li></ul>
+        <ul><li>Thumbs-up/down feedback capture inside Claude Desktop.</li><li>Prevention rules auto-generated from repeated failures.</li><li>Pre-action gates that block known-bad patterns before execution.</li><li>Full-text search across your lesson history.</li><li>Health checks and system diagnostics.</li></ul>
+      </section>
+      <section class="detail-section">
+        <h2>Verify it works</h2>
+        <p>After install, run npx thumbgate doctor to confirm all subsystems are healthy. You should see 4/4 HEALTHY.</p>
+        
       </section>
         <div class="detail-section">
           <h2>FAQ</h2>
           
       <details class="faq-item">
-        <summary>Is ThumbGate trying to replace specs?</summary>
-        <p>No. ThumbGate complements specs by capturing thumbs-up/down feedback from live agent behavior and enforcing the learned rules as pre-action gates.</p>
+        <summary>Do I need a cloud account?</summary>
+        <p>No. ThumbGate runs entirely locally. Your feedback, rules, and gates never leave your machine.</p>
       </details>
       <details class="faq-item">
-        <summary>What does ThumbGate do that SpecLock does not?</summary>
-        <p>ThumbGate turns explicit feedback into searchable memory, auto-generated prevention rules, and runtime gates that block repeated mistakes before the next tool call executes.</p>
+        <summary>What is the .mcpb bundle?</summary>
+        <p>It is a packaged Claude Desktop extension that includes the ThumbGate MCP server, tool definitions, and manifest — ready to install without building from source.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Does this work with Claude Code too?</summary>
+        <p>Yes. The same npx thumbgate init command works for both Claude Desktop and Claude Code. Use --claude-desktop for the Desktop-specific setup.</p>
       </details>
         </div>
       </div>
@@ -309,20 +325,20 @@
       <aside class="sidebar">
         <div class="sidebar-card">
           <h2>GSD execution brief</h2>
-          <p>This page was prioritized because it captures high-intent demand around thumbgate vs speclock and feeds directly into ThumbGate's proof-led conversion path.</p>
-          <p><strong>Opportunity score:</strong> 100</p>
-          <p><strong>Primary persona:</strong> tool-evaluator</p>
-          <p><strong>Keyword cluster:</strong> thumbgate vs speclock, thumbgate vs mem0</p>
+          <p>This page was prioritized because it captures high-intent demand around claude desktop extension plugin thumbgate and feeds directly into ThumbGate's proof-led conversion path.</p>
+          <p><strong>Opportunity score:</strong> 88</p>
+          <p><strong>Primary persona:</strong> ai-engineer</p>
+          <p><strong>Keyword cluster:</strong> claude desktop extension plugin thumbgate</p>
           <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
           <div class="proof-links"><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json" target="_blank" rel="noopener">Automation proof</a><a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub repository</a></div>
-          <a class="cta-button" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=compare_speclock&amp;cta_placement=seo_brief&amp;plan_id=pro" target="_blank" rel="noopener">Go Pro — $19/mo</a>
+          <a class="cta-button" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_claude-desktop&amp;cta_placement=seo_brief&amp;plan_id=pro" target="_blank" rel="noopener">Go Pro — $19/mo</a>
         </div>
         <div class="sidebar-card">
           <h2>Related pages</h2>
           
-        <a class="related-card" href="/compare/mem0">
+        <a class="related-card" href="/guides/claude-code-feedback">
           <span class="related-label">Related page</span>
-          <strong>ThumbGate vs Mem0</strong>
+          <strong>Claude Code Feedback Memory That Actually Enforces</strong>
         </a>
         <a class="related-card" href="/guides/pre-action-gates">
           <span class="related-label">Related page</span>
