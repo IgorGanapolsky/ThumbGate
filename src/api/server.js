@@ -70,14 +70,6 @@ const {
   buildRubricEvaluation,
 } = require('../../scripts/rubric-engine');
 const {
-  listIntents,
-  planIntent,
-} = require('../../scripts/intent-router');
-const {
-  startHandoff,
-  completeHandoff,
-} = require('../../scripts/delegation-runtime');
-const {
   bootstrapInternalAgent,
 } = require('../../scripts/internal-agent-bootstrap');
 const {
@@ -188,17 +180,6 @@ const {
   resolveAnalyticsWindow,
 } = require('../../scripts/analytics-window');
 const {
-  launchDpoExportJob,
-  launchHarnessJob,
-  pauseQueuedJob,
-  cancelQueuedJob,
-  resumeHostedJob,
-} = require('../../scripts/hosted-job-launcher');
-const {
-  appendWorkflowSprintLead,
-  advanceWorkflowSprintLead,
-} = require('../../scripts/workflow-sprint-intake');
-const {
   importDocument,
   listImportedDocuments,
   readImportedDocument,
@@ -253,6 +234,44 @@ const STATIC_MIME_BY_EXT = Object.freeze({
   '.txt': 'text/plain; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
 });
+const PRIVATE_API_MODULES = Object.freeze({
+  intentRouter: path.resolve(__dirname, '../../scripts/intent-router.js'),
+  delegationRuntime: path.resolve(__dirname, '../../scripts/delegation-runtime.js'),
+  hostedJobLauncher: path.resolve(__dirname, '../../scripts/hosted-job-launcher.js'),
+  workflowSprintIntake: path.resolve(__dirname, '../../scripts/workflow-sprint-intake.js'),
+});
+
+function createPrivateCoreUnavailableError(feature) {
+  const error = new Error(`${feature} is only available in the ThumbGate private core or hosted runtime.`);
+  error.statusCode = 503;
+  error.code = 'PRIVATE_CORE_REQUIRED';
+  return error;
+}
+
+function loadPrivateApiModule(key) {
+  const modulePath = PRIVATE_API_MODULES[key];
+  if (!modulePath) {
+    throw new Error(`Unknown private API module: ${key}`);
+  }
+  try {
+    return require(modulePath);
+  } catch (error) {
+    const message = String(error && error.message || '');
+    if ((error && (error.code === 'MODULE_NOT_FOUND' || error.code === 'ERR_MODULE_NOT_FOUND'))
+      && (message.includes(modulePath) || message.includes(path.basename(modulePath)))) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+function requirePrivateApiModule(key, feature) {
+  const module = loadPrivateApiModule(key);
+  if (!module) {
+    throw createPrivateCoreUnavailableError(feature);
+  }
+  return module;
+}
 
 function serveStaticFile(res, filePath, { headOnly = false, cacheSeconds = 86400 } = {}) {
   const ext = path.extname(filePath).toLowerCase();
@@ -4426,7 +4445,8 @@ async function addContext(){
         const body = isFormSubmission
           ? await parseFormBody(req, 24 * 1024)
           : await parseJsonBody(req, 24 * 1024);
-        const lead = appendWorkflowSprintLead({
+        const workflowSprintIntake = requirePrivateApiModule('workflowSprintIntake', 'Workflow sprint intake');
+        const lead = workflowSprintIntake.appendWorkflowSprintLead({
           ...body,
           traceId: body.traceId || traceId,
           acquisitionId: body.acquisitionId || journeyState.acquisitionId,
@@ -4842,10 +4862,11 @@ async function addContext(){
         const bundleId = parsed.searchParams.get('bundleId') || undefined;
         const partnerProfile = parsed.searchParams.get('partnerProfile') || undefined;
         try {
-          const catalog = listIntents({ mcpProfile, bundleId, partnerProfile });
+          const intentRouter = requirePrivateApiModule('intentRouter', 'Intent catalog');
+          const catalog = intentRouter.listIntents({ mcpProfile, bundleId, partnerProfile });
           sendJson(res, 200, catalog);
         } catch (err) {
-          throw createHttpError(400, err.message || 'Invalid intent catalog request');
+          throw createHttpError(err.statusCode || 400, err.message || 'Invalid intent catalog request');
         }
         return;
       }
@@ -4853,7 +4874,8 @@ async function addContext(){
       if (req.method === 'POST' && pathname === '/v1/intents/plan') {
         const body = await parseJsonBody(req);
         try {
-          const plan = planIntent({
+          const intentRouter = requirePrivateApiModule('intentRouter', 'Intent planning');
+          const plan = intentRouter.planIntent({
             intentId: body.intentId,
             context: body.context || '',
             mcpProfile: body.mcpProfile,
@@ -4865,7 +4887,7 @@ async function addContext(){
           });
           sendJson(res, 200, plan);
         } catch (err) {
-          throw createHttpError(400, err.message || 'Invalid intent plan request');
+          throw createHttpError(err.statusCode || 400, err.message || 'Invalid intent plan request');
         }
         return;
       }
@@ -4873,7 +4895,9 @@ async function addContext(){
       if (req.method === 'POST' && pathname === '/v1/handoffs/start') {
         const body = await parseJsonBody(req);
         try {
-          const plan = planIntent({
+          const intentRouter = requirePrivateApiModule('intentRouter', 'Handoff planning');
+          const delegationRuntime = requirePrivateApiModule('delegationRuntime', 'Sequential handoffs');
+          const plan = intentRouter.planIntent({
             intentId: body.intentId,
             context: body.context || '',
             mcpProfile: body.mcpProfile,
@@ -4883,7 +4907,7 @@ async function addContext(){
             approved: body.approved === true,
             repoPath: body.repoPath,
           });
-          const result = startHandoff({
+          const result = delegationRuntime.startHandoff({
             plan,
             context: body.context || '',
             mcpProfile: body.mcpProfile || plan.mcpProfile,
@@ -4902,7 +4926,8 @@ async function addContext(){
       if (req.method === 'POST' && pathname === '/v1/handoffs/complete') {
         const body = await parseJsonBody(req);
         try {
-          const result = completeHandoff({
+          const delegationRuntime = requirePrivateApiModule('delegationRuntime', 'Sequential handoffs');
+          const result = delegationRuntime.completeHandoff({
             handoffId: body.handoffId,
             outcome: body.outcome,
             resultContext: body.resultContext || '',
@@ -4993,7 +5018,8 @@ async function addContext(){
         }
         const inputs = parseOptionalObject(body.inputs, 'inputs') || {};
         try {
-          const launched = launchHarnessJob(identifier, inputs, {
+          const hostedJobLauncher = requirePrivateApiModule('hostedJobLauncher', 'Hosted harness jobs');
+          const launched = hostedJobLauncher.launchHarnessJob(identifier, inputs, {
             jobId: normalizeNullableText(body.jobId) || undefined,
             skill: normalizeNullableText(body.skill) || undefined,
             partnerProfile: normalizeNullableText(body.partnerProfile) || undefined,
@@ -5052,8 +5078,9 @@ async function addContext(){
             throw createHttpError(409, `Job ${jobId} is already ${state.status}`);
           }
 
+          const hostedJobLauncher = requirePrivateApiModule('hostedJobLauncher', 'Hosted job control');
           if (action === 'resume') {
-            const launched = resumeHostedJob(jobId);
+            const launched = hostedJobLauncher.resumeHostedJob(jobId);
             sendJson(res, 202, {
               accepted: true,
               action,
@@ -5067,8 +5094,8 @@ async function addContext(){
 
           if (IDLE_JOB_STATUSES.has(state.status)) {
             const job = action === 'pause'
-              ? pauseQueuedJob(jobId, parseOptionalObject(body.metadata, 'metadata') || {})
-              : cancelQueuedJob(jobId, parseOptionalObject(body.metadata, 'metadata') || {});
+              ? hostedJobLauncher.pauseQueuedJob(jobId, parseOptionalObject(body.metadata, 'metadata') || {})
+              : hostedJobLauncher.cancelQueuedJob(jobId, parseOptionalObject(body.metadata, 'metadata') || {});
             sendJson(res, 202, {
               accepted: true,
               action,
@@ -5380,7 +5407,8 @@ async function addContext(){
 
         if (wantsAsync) {
           try {
-            const launched = launchDpoExportJob(paths, {
+            const hostedJobLauncher = requirePrivateApiModule('hostedJobLauncher', 'Hosted DPO export jobs');
+            const launched = hostedJobLauncher.launchDpoExportJob(paths, {
               jobId: normalizeNullableText(body.jobId) || undefined,
             });
             sendJson(res, 202, {
@@ -5813,7 +5841,8 @@ async function addContext(){
         const { FEEDBACK_DIR } = getFeedbackPaths();
         try {
           const body = await parseJsonBody(req, 24 * 1024);
-          const result = advanceWorkflowSprintLead(body, { feedbackDir: FEEDBACK_DIR });
+          const workflowSprintIntake = requirePrivateApiModule('workflowSprintIntake', 'Workflow sprint intake');
+          const result = workflowSprintIntake.advanceWorkflowSprintLead(body, { feedbackDir: FEEDBACK_DIR });
 
           appendBestEffortTelemetry(FEEDBACK_DIR, {
             eventType: 'workflow_sprint_lead_advanced',

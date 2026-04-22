@@ -95,11 +95,13 @@ test('npm package excludes generated runtime state from included directories', (
   }
 });
 
-test('npm package ships static dependencies needed for MCP server startup', () => {
+test('npm package ships static dependencies needed for packaged entrypoints', () => {
   const files = npmPackFiles();
-  const missing = collectStaticRuntimeDependencies('adapters/mcp/server-stdio.js', files);
+  const mcpMissing = collectStaticRuntimeDependencies('adapters/mcp/server-stdio.js', files);
+  const apiMissing = collectStaticRuntimeDependencies('src/api/server.js', files);
 
-  assert.deepEqual(missing, []);
+  assert.deepEqual(mcpMissing, []);
+  assert.deepEqual(apiMissing, []);
 });
 
 test('npm package ships a slim runtime boundary instead of repo/dev surfaces', () => {
@@ -175,6 +177,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'scripts/reflector-agent.js',
     'scripts/session-report.js',
     'scripts/swarm-coordinator.js',
+    'scripts/delegation-runtime.js',
+    'scripts/hosted-job-launcher.js',
+    'scripts/intent-router.js',
+    'scripts/workflow-sprint-intake.js',
   ];
 
   // File-count ceiling bumped 220 → 225 (2026-04-19) after main picked up

@@ -203,7 +203,9 @@ function getSelfAuditModule() {
 
 function getDelegationRuntimeModule() {
   try {
-    return require('./delegation-runtime');
+    const modulePath = path.resolve(__dirname, 'delegation-runtime.js');
+    if (!fs.existsSync(modulePath)) return null;
+    return require(modulePath);
   } catch {
     return null;
   }
