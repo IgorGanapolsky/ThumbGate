@@ -540,8 +540,10 @@ test('private-core MCP module helpers report unknown and unavailable modules cle
 
   await withMissingPrivateModules([
     __test__.PRIVATE_MCP_MODULES.intentRouter,
+    __test__.PRIVATE_MCP_MODULES.lessonSearch,
   ], async () => {
     assert.equal(__test__.loadPrivateMcpModule('intentRouter'), null);
+    assert.equal(__test__.loadPrivateMcpModule('lessonSearch'), null);
   });
 
   const unavailable = JSON.parse(__test__.unavailablePrivateMcpFeature('plan_intent').content[0].text);
@@ -851,8 +853,10 @@ test('private-core MCP tools return availability markers when private modules ar
     __test__.PRIVATE_MCP_MODULES.managedLessonAgent,
     __test__.PRIVATE_MCP_MODULES.semanticLayer,
     __test__.PRIVATE_MCP_MODULES.lessonInference,
+    __test__.PRIVATE_MCP_MODULES.lessonSearch,
   ];
   const toolCalls = [
+    { name: 'search_lessons', arguments: { query: 'release checklist', limit: 5 } },
     { name: 'reflect_on_feedback', arguments: { conversationWindow: [{ role: 'user', content: 'Add a rule.' }] } },
     { name: 'list_intents', arguments: {} },
     { name: 'plan_intent', arguments: { intentId: 'improve_response_quality', context: 'Need a plan' } },

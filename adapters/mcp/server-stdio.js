@@ -91,9 +91,6 @@ const {
   getReliability,
 } = require('../../scripts/thompson-sampling');
 const {
-  searchLessons,
-} = require('../../scripts/lesson-search');
-const {
   searchThumbgate,
 } = require('../../scripts/thumbgate-search');
 const {
@@ -131,6 +128,7 @@ const PRIVATE_MCP_MODULES = Object.freeze({
   managedLessonAgent: path.resolve(__dirname, '../../scripts/managed-lesson-agent.js'),
   semanticLayer: path.resolve(__dirname, '../../scripts/semantic-layer.js'),
   lessonInference: path.resolve(__dirname, '../../scripts/lesson-inference.js'),
+  lessonSearch: path.resolve(__dirname, '../../scripts/lesson-search.js'),
 });
 
 function loadPrivateMcpModule(key) {
@@ -531,12 +529,15 @@ async function callToolInner(name, args) {
       return toCaptureFeedbackTextResult(captureFeedback(args));
     case 'feedback_summary':
       return toTextResult(feedbackSummary(Number(args.recent || 20)));
-    case 'search_lessons':
-      return toTextResult(searchLessons(args.query || '', {
+    case 'search_lessons': {
+      const module = loadPrivateMcpModule('lessonSearch');
+      if (!module) return unavailablePrivateMcpFeature('search_lessons');
+      return toTextResult(module.searchLessons(args.query || '', {
         limit: Number(args.limit || 10),
         category: args.category,
         tags: Array.isArray(args.tags) ? args.tags : [],
       }));
+    }
     case 'retrieve_lessons': {
       // Cross-encoder reranking: retrieve more candidates, then rerank for precision
       const { retrieveWithRerankingSync } = require('../../scripts/cross-encoder-reranker');
