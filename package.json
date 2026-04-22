@@ -213,7 +213,6 @@
     "social:poll:instagram": "node scripts/social-analytics/pollers/instagram.js",
     "social:poll:tiktok": "node scripts/social-analytics/pollers/tiktok.js",
     "social:poll:linkedin": "node scripts/social-analytics/pollers/linkedin.js",
-    "social:poll:x": "node scripts/social-analytics/pollers/x.js",
     "social:poll:reddit": "node scripts/social-analytics/pollers/reddit.js",
     "social:poll:threads": "node scripts/social-analytics/pollers/threads.js",
     "social:poll:youtube": "node scripts/social-analytics/pollers/youtube.js",
