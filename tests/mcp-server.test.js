@@ -16,6 +16,8 @@ const RUNNER_PATH = require.resolve('../scripts/async-job-runner');
 const HARNESS_PATH = require.resolve('../scripts/natural-language-harness');
 const VERIFICATION_PATH = require.resolve('../scripts/verification-loop');
 const RERANKER_PATH = require.resolve('../scripts/cross-encoder-reranker');
+const SEMANTIC_LAYER_PATH = require.resolve('../scripts/semantic-layer');
+const LESSON_INFERENCE_PATH = require.resolve('../scripts/lesson-inference');
 
 const { handleRequest, TOOLS, SAFE_DATA_DIR, __test__ } = require('../adapters/mcp/server-stdio');
 
@@ -548,6 +550,84 @@ test('private-core MCP module helpers report unknown and unavailable modules cle
   assert.equal(unavailable.tool, 'plan_intent');
 });
 
+test('semantic and lesson-inference MCP tools route through private module loaders', async () => {
+  const previousSemanticLayer = require.cache[SEMANTIC_LAYER_PATH];
+  const previousLessonInference = require.cache[LESSON_INFERENCE_PATH];
+  stubModule(SEMANTIC_LAYER_PATH, {
+    async getBusinessMetrics(args) {
+      return {
+        ok: true,
+        filters: args,
+        bookedRevenue: 1200,
+      };
+    },
+    describeSemanticSchema() {
+      return {
+        entities: {
+          Customer: {
+            description: 'An individual or organization using the gateway.',
+          },
+        },
+        metrics: {},
+      };
+    },
+  });
+  stubModule(LESSON_INFERENCE_PATH, {
+    getAllLessonsForContext(args) {
+      return {
+        format: args.format || 'markdown',
+        lessons: ['Run verification before claiming completion.'],
+      };
+    },
+  });
+
+  try {
+    const metricsResult = await handleRequest({
+      jsonrpc: '2.0',
+      id: 545,
+      method: 'tools/call',
+      params: {
+        name: 'get_business_metrics',
+        arguments: {
+          window: '7d',
+        },
+      },
+    });
+    const metricsPayload = JSON.parse(metricsResult.content[0].text);
+    assert.equal(metricsPayload.ok, true);
+    assert.equal(metricsPayload.bookedRevenue, 1200);
+    assert.equal(metricsPayload.filters.window, '7d');
+
+    const schemaResult = await handleRequest({
+      jsonrpc: '2.0',
+      id: 546,
+      method: 'tools/call',
+      params: {
+        name: 'describe_semantic_entity',
+        arguments: {
+          type: 'Customer',
+        },
+      },
+    });
+    const schemaPayload = JSON.parse(schemaResult.content[0].text);
+    assert.match(schemaPayload.description, /organization using the gateway/i);
+
+    const lessonResult = await __test__.callToolInner('context_stuff_lessons', {
+      format: 'json',
+      signal: 'negative',
+    });
+    const lessonPayload = JSON.parse(lessonResult.content[0].text);
+    assert.equal(lessonPayload.format, 'json');
+    assert.deepEqual(lessonPayload.lessons, ['Run verification before claiming completion.']);
+  } finally {
+    if (previousSemanticLayer) require.cache[SEMANTIC_LAYER_PATH] = previousSemanticLayer;
+    else delete require.cache[SEMANTIC_LAYER_PATH];
+
+    if (previousLessonInference) require.cache[LESSON_INFERENCE_PATH] = previousLessonInference;
+    else delete require.cache[LESSON_INFERENCE_PATH];
+  }
+});
+
 test('report_product_issue logs local product feedback over MCP', async () => {
   const originalGithubToken = process.env.GITHUB_TOKEN;
   const originalGhToken = process.env.GH_TOKEN;
@@ -769,6 +849,8 @@ test('private-core MCP tools return availability markers when private modules ar
     __test__.PRIVATE_MCP_MODULES.operatorArtifacts,
     __test__.PRIVATE_MCP_MODULES.orgDashboard,
     __test__.PRIVATE_MCP_MODULES.managedLessonAgent,
+    __test__.PRIVATE_MCP_MODULES.semanticLayer,
+    __test__.PRIVATE_MCP_MODULES.lessonInference,
   ];
   const toolCalls = [
     { name: 'reflect_on_feedback', arguments: { conversationWindow: [{ role: 'user', content: 'Add a rule.' }] } },
@@ -779,6 +861,8 @@ test('private-core MCP tools return availability markers when private modules ar
     { name: 'distribute_context_to_agents', arguments: { prompt: 'distribute context', agents: ['reviewer'] } },
     { name: 'session_report', arguments: { windowHours: 24 } },
     { name: 'generate_operator_artifact', arguments: { artifactType: 'reliability_pulse' } },
+    { name: 'get_business_metrics', arguments: {} },
+    { name: 'describe_semantic_entity', arguments: { type: 'Customer' } },
   ];
 
   await withMissingPrivateModules(modulePaths, async () => {
@@ -794,6 +878,14 @@ test('private-core MCP tools return availability markers when private modules ar
       assert.equal(payload.availability, 'private_core', toolCall.name);
       assert.equal(payload.tool, toolCall.name, toolCall.name);
     }
+
+    const inferenceResult = await __test__.callToolInner('context_stuff_lessons', {
+      format: 'markdown',
+    });
+    const inferencePayload = JSON.parse(inferenceResult.content[0].text);
+    assert.equal(inferencePayload.ok, false);
+    assert.equal(inferencePayload.availability, 'private_core');
+    assert.equal(inferencePayload.tool, 'context_stuff_lessons');
   });
 });
 

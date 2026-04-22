@@ -94,9 +94,6 @@ const {
   searchLessons,
 } = require('../../scripts/lesson-search');
 const {
-  retrieveRelevantLessons,
-} = require('../../scripts/lesson-retrieval');
-const {
   searchThumbgate,
 } = require('../../scripts/thumbgate-search');
 const {
@@ -132,6 +129,8 @@ const PRIVATE_MCP_MODULES = Object.freeze({
   sessionReport: path.resolve(__dirname, '../../scripts/session-report.js'),
   operatorArtifacts: path.resolve(__dirname, '../../scripts/operator-artifacts.js'),
   managedLessonAgent: path.resolve(__dirname, '../../scripts/managed-lesson-agent.js'),
+  semanticLayer: path.resolve(__dirname, '../../scripts/semantic-layer.js'),
+  lessonInference: path.resolve(__dirname, '../../scripts/lesson-inference.js'),
 });
 
 function loadPrivateMcpModule(key) {
@@ -917,13 +916,15 @@ async function callToolInner(name, args) {
       enforceLimit('commerce_recall');
       return buildCommerceRecallResponse(args);
     case 'get_business_metrics': {
-      const { getBusinessMetrics } = require('../../scripts/semantic-layer');
-      const metrics = await getBusinessMetrics(args);
+      const module = loadPrivateMcpModule('semanticLayer');
+      if (!module) return unavailablePrivateMcpFeature('get_business_metrics');
+      const metrics = await module.getBusinessMetrics(args);
       return toTextResult(metrics);
     }
     case 'describe_semantic_entity': {
-      const { describeSemanticSchema } = require('../../scripts/semantic-layer');
-      const schema = describeSemanticSchema();
+      const module = loadPrivateMcpModule('semanticLayer');
+      if (!module) return unavailablePrivateMcpFeature('describe_semantic_entity');
+      const schema = module.describeSemanticSchema();
       const entity = schema.entities[args.type] || schema.metrics[args.type];
       if (!entity) {
         throw new Error(`Unknown semantic entity: ${args.type}`);
@@ -1011,8 +1012,13 @@ async function callToolInner(name, args) {
       return toTextResult(getSelfDistillStatus() || { message: 'No self-distill runs found.' });
     }
     case 'context_stuff_lessons': {
-      const { getAllLessonsForContext } = require('../../scripts/lesson-inference');
-      return toTextResult(getAllLessonsForContext({ maxTokenBudget: args.maxTokenBudget, signal: args.signal, format: args.format }));
+      const module = loadPrivateMcpModule('lessonInference');
+      if (!module) return unavailablePrivateMcpFeature('context_stuff_lessons');
+      return toTextResult(module.getAllLessonsForContext({
+        maxTokenBudget: args.maxTokenBudget,
+        signal: args.signal,
+        format: args.format,
+      }));
     }
     default:
       throw new Error(`Unsupported tool: ${name}`);
@@ -1237,5 +1243,6 @@ module.exports = {
     PRIVATE_MCP_MODULES,
     loadPrivateMcpModule,
     unavailablePrivateMcpFeature,
+    callToolInner,
   },
 };
