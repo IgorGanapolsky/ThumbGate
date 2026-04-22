@@ -26,7 +26,10 @@ const {
   readSessionHandoff,
   recordProvenance,
 } = require('./contextfs');
-const { retrieveRelevantLessons } = require('./lesson-retrieval');
+const { loadOptionalModule } = require('./private-core-boundary');
+const { retrieveRelevantLessons } = loadOptionalModule('./lesson-retrieval', () => ({
+  retrieveRelevantLessons: () => [],
+}));
 const { evaluatePretool } = require('./hybrid-feedback-context');
 const { loadProfile } = require('./user-profile');
 const {
