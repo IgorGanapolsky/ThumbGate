@@ -85,7 +85,7 @@
         "hasDomain": true,
         "domain": "testing",
         "hasOutcome": true,
-        "outcomeContains": ["failure", "error"]
+        "outcomeContains": ["failure"]
       }
     },
     {

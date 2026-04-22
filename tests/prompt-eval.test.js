@@ -13,6 +13,7 @@ const {
   compareReports,
   writeReport,
   loadReport,
+  expandWithSyntheticEvaluations,
 } = require('../scripts/prompt-eval');
 
 const SUITE_PATH = path.join(__dirname, '..', 'bench', 'prompt-eval-suite.json');
@@ -43,6 +44,39 @@ test('gradeOutput: passing case with all checks met', () => {
   const checks = gradeOutput(output, expected);
   const allPass = checks.every((c) => c.pass);
   assert.ok(allPass, 'all checks should pass: ' + checks.filter((c) => !c.pass).map((c) => c.criterion).join(', '));
+});
+
+test('gradeOutput: prevention rule checks validate rule text, action, and confidence', () => {
+  const output = {
+    rule: 'NEVER leave the worktree before switching branches.',
+    actionType: 'block',
+    confidence: 0.85,
+    generated: true,
+  };
+  const expected = {
+    hasRule: true,
+    ruleContains: ['NEVER', 'worktree'],
+    actionType: 'block',
+    confidence: { min: 0.7 },
+  };
+  const checks = gradeOutput(output, expected);
+  assert.ok(checks.every((check) => check.pass), 'all rule checks should pass');
+});
+
+test('gradeOutput: self-distillation checks validate pattern and improvement guidance', () => {
+  const output = {
+    summary: 'Exited worktree; Did not use ThumbGate; Pattern: repeated workflow mistakes; Improvement: keep using ThumbGate at session start.',
+    pattern: 'Pattern: repeated workflow mistakes.',
+    improvement: 'Improvement: keep using ThumbGate at session start.',
+  };
+  const expected = {
+    hasSummary: true,
+    summaryContains: ['worktree', 'ThumbGate'],
+    identifiesPattern: true,
+    suggestsImprovement: true,
+  };
+  const checks = gradeOutput(output, expected);
+  assert.ok(checks.every((check) => check.pass), 'summary pattern checks should pass');
 });
 
 test('gradeOutput: failing case with missing content', () => {
@@ -123,6 +157,28 @@ test('runSuite: runs full suite and returns aggregate report', () => {
   assert.equal(report.total, report.passed + report.failed + report.errors + report.skipped, 'counts should add up');
 });
 
+test('expandWithSyntheticEvaluations clones seed evaluations into synthetic variants', () => {
+  const suite = loadSuite(SUITE_PATH);
+  const expanded = expandWithSyntheticEvaluations(suite, { syntheticVariants: 2 });
+
+  assert.equal(expanded.totalSeedEvaluations, suite.evaluations.length);
+  assert.equal(expanded.syntheticCount, suite.evaluations.length * 2);
+  assert.equal(expanded.evaluations.length, suite.evaluations.length * 3);
+  assert.equal(expanded.evaluations.some((entry) => entry.synthetic === true), true);
+  assert.equal(expanded.evaluations.some((entry) => /__synthetic_1$/.test(entry.id)), true);
+});
+
+test('runSuite can execute against an expanded synthetic suite', () => {
+  const report = runSuite(SUITE_PATH, {
+    minScore: 0,
+    expandSynthetic: true,
+    syntheticVariants: 1,
+  });
+
+  assert.ok(report.total > loadSuite(SUITE_PATH).evaluations.length);
+  assert.equal(report.syntheticCount, loadSuite(SUITE_PATH).evaluations.length);
+});
+
 test('compareReports: flags score regressions by eval id', () => {
   const baseline = {
     suite: 'baseline',
@@ -148,6 +204,12 @@ test('compareReports: flags score regressions by eval id', () => {
 });
 
 test('runSuite: require-no-regressions fails a regressed report even above min score', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-prompt-eval-regression-'));
+  const suitePath = path.join(tmpDir, 'suite.json');
+  const suite = loadSuite(SUITE_PATH);
+  suite.evaluations[0].expectedOutput.titleContains = ['definitely-missing'];
+  fs.writeFileSync(suitePath, JSON.stringify(suite, null, 2));
+
   const baselineReport = {
     suite: 'baseline',
     score: 100,
@@ -161,14 +223,18 @@ test('runSuite: require-no-regressions fails a regressed report even above min s
     ],
   };
 
-  const report = runSuite(SUITE_PATH, {
-    minScore: 0,
-    requireNoRegressions: true,
-    baselineReport,
-  });
+  try {
+    const report = runSuite(suitePath, {
+      minScore: 0,
+      requireNoRegressions: true,
+      baselineReport,
+    });
 
-  assert.equal(report.pass, false);
-  assert.ok(report.comparison.regressions.length >= 1);
+    assert.equal(report.pass, false);
+    assert.ok(report.comparison.regressions.length >= 1);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
 });
 
 test('writeReport/loadReport round-trip eval artifacts', () => {
@@ -204,6 +270,39 @@ test('CLI accepts split --output and --min-score arguments', () => {
   assert.equal(fs.existsSync(outPath), true);
   const report = JSON.parse(fs.readFileSync(outPath, 'utf8'));
   assert.equal(typeof report.score, 'number');
+
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+test('CLI can write a synthetic expanded suite artifact', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-prompt-eval-suite-'));
+  const suiteOutPath = path.join(tmpDir, 'suite.json');
+  const reportOutPath = path.join(tmpDir, 'report.json');
+  const result = spawnSync(process.execPath, [
+    path.join(__dirname, '..', 'scripts', 'prompt-eval.js'),
+    '--min-score',
+    '0',
+    '--synthetic',
+    '--synthetic-variants',
+    '1',
+    '--suite-output',
+    suiteOutPath,
+    '--output',
+    reportOutPath,
+    '--json',
+  ], {
+    encoding: 'utf8',
+  });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.equal(fs.existsSync(suiteOutPath), true);
+  assert.equal(fs.existsSync(reportOutPath), true);
+
+  const suite = JSON.parse(fs.readFileSync(suiteOutPath, 'utf8'));
+  const report = JSON.parse(fs.readFileSync(reportOutPath, 'utf8'));
+  assert.ok(Array.isArray(suite.evaluations));
+  assert.equal(typeof report.syntheticCount, 'number');
+  assert.ok(report.syntheticCount > 0);
 
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
