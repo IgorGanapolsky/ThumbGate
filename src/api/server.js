@@ -4890,30 +4890,30 @@ async function addContext(){
       return;
     }
 
-    // Operator key is allowed to bypass the general admin gate for its dedicated endpoint
-    const _reqToken = extractApiKey(req);
-    const isOperatorBillingRequest = Boolean(expectedOperatorKey)
-      && _reqToken === expectedOperatorKey
-      && req.method === 'GET'
-      && pathname === '/v1/billing/summary';
-
-    if (!isOperatorBillingRequest && !isAuthorized(req, expectedApiKey)) {
-      sendProblem(res, {
-        type: PROBLEM_TYPES.UNAUTHORIZED,
-        title: 'Unauthorized',
-        status: 401,
-        detail: 'A valid API key is required to access this endpoint.',
-      });
-      return;
-    }
-
-    // Usage metering — record request for billing keys (not static THUMBGATE_API_KEY)
-    const _token = extractBearerToken(req);
-    if (_token && _token !== expectedApiKey) {
-      recordBillingUsage(_token);
-    }
-
     try {
+      // Operator key is allowed to bypass the general admin gate for its dedicated endpoint
+      const _reqToken = extractApiKey(req);
+      const isOperatorBillingRequest = Boolean(expectedOperatorKey)
+        && _reqToken === expectedOperatorKey
+        && req.method === 'GET'
+        && pathname === '/v1/billing/summary';
+
+      if (!isOperatorBillingRequest && !isAuthorized(req, expectedApiKey)) {
+        sendProblem(res, {
+          type: PROBLEM_TYPES.UNAUTHORIZED,
+          title: 'Unauthorized',
+          status: 401,
+          detail: 'A valid API key is required to access this endpoint.',
+        });
+        return;
+      }
+
+      // Usage metering — record request for billing keys (not static THUMBGATE_API_KEY)
+      const _token = extractBearerToken(req);
+      if (_token && _token !== expectedApiKey) {
+        recordBillingUsage(_token);
+      }
+
       if (req.method === 'GET' && pathname === '/v1/feedback/stats') {
         sendJson(res, 200, analyzeFeedback(requestFeedbackPaths.FEEDBACK_LOG_PATH));
         return;
@@ -5884,8 +5884,18 @@ async function addContext(){
           return;
         }
 
-        const summary = await getLiveBillingSummary(summaryOptions);
-        sendJson(res, 200, summary);
+        try {
+          const summary = await getLiveBillingSummary(summaryOptions);
+          sendJson(res, 200, summary);
+        } catch (err) {
+          const isPrivateCoreError = err && err.statusCode === 503;
+          sendProblem(res, {
+            type: isPrivateCoreError ? PROBLEM_TYPES.SERVICE_UNAVAILABLE : PROBLEM_TYPES.INTERNAL,
+            title: isPrivateCoreError ? 'Private core required' : 'Internal Server Error',
+            status: isPrivateCoreError ? 503 : 500,
+            detail: err && err.message ? err.message : 'Unable to compute billing summary.',
+          });
+        }
         return;
       }
 
@@ -6017,14 +6027,24 @@ async function addContext(){
           return;
         }
 
-        const billingSummary = await getLiveBillingSummary(summaryOptions);
-        const data = generateDashboard(requestFeedbackDir, {
-          analyticsWindow: summaryOptions,
-          billingSummary,
-          billingSource: 'live',
-          authContext: { tier: 'pro' },
-        });
-        sendJson(res, 200, data);
+        try {
+          const billingSummary = await getLiveBillingSummary(summaryOptions);
+          const data = generateDashboard(requestFeedbackDir, {
+            analyticsWindow: summaryOptions,
+            billingSummary,
+            billingSource: 'live',
+            authContext: { tier: 'pro' },
+          });
+          sendJson(res, 200, data);
+        } catch (err) {
+          const isPrivateCoreError = err && err.statusCode === 503;
+          sendProblem(res, {
+            type: isPrivateCoreError ? PROBLEM_TYPES.SERVICE_UNAVAILABLE : PROBLEM_TYPES.INTERNAL,
+            title: isPrivateCoreError ? 'Private core required' : 'Internal Server Error',
+            status: isPrivateCoreError ? 503 : 500,
+            detail: err && err.message ? err.message : 'Unable to compute dashboard.',
+          });
+        }
         return;
       }
 
