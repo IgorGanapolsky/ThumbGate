@@ -992,6 +992,37 @@ describe('bin/cli.js', () => {
     fs.rmSync(doctorDir, { recursive: true, force: true });
   });
 
+  test('native-messaging-audit --json reports dormant AI browser bridges', () => {
+    const homeDir = makeTmpDir();
+    const manifestDir = path.join(homeDir, 'Library', 'Application Support', 'Google', 'Chrome', 'NativeMessagingHosts');
+    const hostDir = path.join(homeDir, 'Library', 'Application Support', 'Claude');
+    fs.mkdirSync(manifestDir, { recursive: true });
+    fs.mkdirSync(hostDir, { recursive: true });
+    const hostPath = path.join(hostDir, 'claude-native-host');
+    fs.writeFileSync(hostPath, '#!/bin/sh\nexit 0\n');
+    fs.writeFileSync(path.join(manifestDir, 'com.anthropic.claude_browser_extension.json'), JSON.stringify({
+      name: 'com.anthropic.claude_browser_extension',
+      path: hostPath,
+      type: 'stdio',
+      allowed_origins: ['chrome-extension://abcdefghijklmnopabcdefghijklmnop/'],
+    }, null, 2));
+
+    const result = runCliSync(['native-messaging-audit', '--json', '--platform=darwin', `--home-dir=${homeDir}`], {
+      env: {
+        ...process.env,
+        THUMBGATE_NO_NUDGE: '1',
+      },
+    });
+
+    assert.strictEqual(result.status, 0, `native-messaging-audit failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.name, 'thumbgate-native-messaging-audit');
+    assert.equal(payload.summary.manifestCount, 1);
+    assert.ok(payload.findings.some((finding) => finding.code === 'dormant_ai_browser_bridge'));
+
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  });
+
   test('dispatch --json emits a phone-safe remote ops brief', () => {
     const isolatedDir = makeTmpDir();
     const feedbackDir = path.join(isolatedDir, 'feedback');

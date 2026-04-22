@@ -2,12 +2,21 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 
+const os = require('node:os');
+const fs = require('node:fs');
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sph-'));
+// Force zero-activity stats so the suppression path is exercised.
+process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+test.after(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
 const {
   DAILY_ANGLES,
+  STATS_FALLBACK_CHAIN,
   generatePost,
   handlePostFailure,
   isCliEntrypoint,
   isNonFatalPostFailure,
+  pickStatsFallbackAngle,
   runCli,
 } = require('../scripts/social-post-hourly');
 const { ZernioQuotaError } = require('../scripts/social-analytics/publishers/zernio');
@@ -93,6 +102,41 @@ test('daily social poster detects its CLI entrypoint by filename', () => {
   assert.equal(isCliEntrypoint({ filename: scriptPath }), true);
   assert.equal(isCliEntrypoint({ filename: __filename }), false);
   assert.equal(isCliEntrypoint(null), false);
+});
+
+// Zero-stats Bluesky-disaster regression guard (2026-04-21): the CEO flagged
+// a public Bluesky post reading "This week ThumbGate blocked 0 mistakes,
+// saving ~0 hours. Pre-action gates > post-mortem fixes." — the worst
+// possible advertisement for a "pre-action gate" product. Under zero-
+// activity stats, the 'stats' and default branches MUST pick an evergreen
+// fallback angle, NOT emit the raw post text.
+test('stats angle falls back to an evergreen angle when there is no activity', () => {
+  const content = generatePost('stats');
+  assert.ok(
+    !/blocked 0 mistakes/i.test(content),
+    `stats angle must not publish "blocked 0 mistakes" in a zero-activity window; got:\n${content}`,
+  );
+  assert.ok(
+    !/saving ~0 hours/i.test(content),
+    `stats angle must not publish "saving ~0 hours" in a zero-activity window; got:\n${content}`,
+  );
+});
+
+test('unknown angles also fall back to evergreen angle on zero activity', () => {
+  const content = generatePost('this-angle-does-not-exist');
+  assert.ok(!/blocked 0 mistakes/i.test(content));
+  assert.ok(!/saving ~0 hours/i.test(content));
+});
+
+test('pickStatsFallbackAngle returns only evergreen angles with no dynamic zeros', () => {
+  for (const angle of STATS_FALLBACK_CHAIN) {
+    assert.ok(DAILY_ANGLES.includes(angle), `${angle} must be a real angle`);
+    const content = generatePost(angle);
+    assert.ok(!/\b0 mistakes\b/i.test(content));
+    assert.ok(!/saving ~0 hours/i.test(content));
+  }
+  const picked = pickStatsFallbackAngle();
+  assert.ok(STATS_FALLBACK_CHAIN.includes(picked));
 });
 
 // Funnel-attribution regression guard (2026-04-21): every daily post that

@@ -224,6 +224,46 @@ test('settings_status tool returns resolved settings with origin metadata', asyn
   assert.ok(payload.origins.some((entry) => entry.path === 'mcp.defaultProfile'));
 });
 
+test('native_messaging_audit tool returns local browser bridge findings over MCP', async () => {
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-mcp-native-messaging-'));
+  try {
+    const manifestDir = path.join(homeDir, 'Library', 'Application Support', 'Google', 'Chrome', 'NativeMessagingHosts');
+    const hostDir = path.join(homeDir, 'Library', 'Application Support', 'Claude');
+    fs.mkdirSync(manifestDir, { recursive: true });
+    fs.mkdirSync(hostDir, { recursive: true });
+    const hostPath = path.join(hostDir, 'claude-native-host');
+    fs.writeFileSync(hostPath, '#!/bin/sh\nexit 0\n');
+    fs.writeFileSync(path.join(manifestDir, 'com.anthropic.claude_browser_extension.json'), JSON.stringify({
+      name: 'com.anthropic.claude_browser_extension',
+      path: hostPath,
+      type: 'stdio',
+      allowed_origins: ['chrome-extension://abcdefghijklmnopabcdefghijklmnop/'],
+    }, null, 2));
+
+    const result = await handleRequest({
+      jsonrpc: '2.0',
+      id: 35,
+      method: 'tools/call',
+      params: {
+        name: 'native_messaging_audit',
+        arguments: {
+          platform: 'darwin',
+          homeDir,
+          aiOnly: true,
+        },
+      },
+    });
+
+    const payload = JSON.parse(result.content[0].text);
+    assert.equal(payload.name, 'thumbgate-native-messaging-audit');
+    assert.equal(payload.summary.manifestCount, 1);
+    assert.equal(payload.summary.aiBridgeCount, 1);
+    assert.ok(payload.findings.some((finding) => finding.code === 'dormant_ai_browser_bridge'));
+  } finally {
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  }
+});
+
 test('generate_operator_artifact returns a decision-ready reliability pulse over MCP', async () => {
   const result = await handleRequest({
     jsonrpc: '2.0',

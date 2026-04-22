@@ -92,6 +92,16 @@ test('settings_status tool exists as a read-only visibility surface', () => {
   assert.match(settingsTool.description, /per-field origin metadata/i);
 });
 
+test('native_messaging_audit tool exists as a read-only browser bridge audit surface', () => {
+  const auditTool = TOOLS.find((tool) => tool.name === 'native_messaging_audit');
+  assert.ok(auditTool, 'native_messaging_audit tool must exist');
+  assert.equal(auditTool.annotations.readOnlyHint, true);
+  assert.ok(auditTool.inputSchema.properties.platform);
+  assert.ok(auditTool.inputSchema.properties.homeDir);
+  assert.ok(auditTool.inputSchema.properties.aiOnly);
+  assert.match(auditTool.description, /native messaging hosts/i);
+});
+
 test('generate_operator_artifact exposes read-only decision pulses', () => {
   const artifactTool = TOOLS.find((tool) => tool.name === 'generate_operator_artifact');
   assert.ok(artifactTool, 'generate_operator_artifact tool must exist');

@@ -53,9 +53,40 @@ test('formatDailyDigest produces title and message', () => {
 test('formatDailyDigest empty dashboard', () => {
   assert.ok(!digest.formatDailyDigest({ activeAgents: 0, totalAgents: 0, totalToolCalls: 0, totalBlocked: 0, totalWarned: 0, totalAllowed: 0, orgAdherenceRate: 100, topBlockedGates: [], riskAgents: [] }).message.includes('Hours saved'));
 });
-test('generateWeeklyStatsPost returns post', () => {
-  const { post } = digest.generateWeeklyStatsPost({ periodDays: 1 });
-  assert.ok(post.includes('ThumbGate blocked')); assert.ok(post.includes('Pre-action gates'));
+test('generateWeeklyStatsPost returns post text and a suppression flag', () => {
+  const r = digest.generateWeeklyStatsPost({ periodDays: 1 });
+  assert.ok(r.post.includes('ThumbGate blocked'));
+  assert.ok(r.post.includes('Pre-action gates'));
+  // Contract: the return shape must always expose `suppressed` so callers
+  // can refuse to publish zero-stats posts (see 2026-04-21 Bluesky incident).
+  assert.equal(typeof r.suppressed, 'boolean');
+});
+test('generateWeeklyStatsPost suppresses zero-activity window', () => {
+  // Earlier `recordMeteredUsage` tests in this file intentionally seed the
+  // shared ledger (it lives under THUMBGATE_FEEDBACK_DIR). For this zero-
+  // stats suppression test we need a truly empty ledger, so re-point the
+  // env dir for the duration of this test, clear the cache, and restore.
+  const prev = process.env.THUMBGATE_FEEDBACK_DIR;
+  const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-empty-'));
+  process.env.THUMBGATE_FEEDBACK_DIR = empty;
+  try {
+    // digest + org-dashboard + metered-billing cache module state; reload
+    // them against the empty dir so the summary is genuinely zero.
+    delete require.cache[require.resolve('../scripts/daily-digest')];
+    delete require.cache[require.resolve('../scripts/org-dashboard')];
+    delete require.cache[require.resolve('../scripts/metered-billing')];
+    const freshDigest = require('../scripts/daily-digest');
+    const r = freshDigest.generateWeeklyStatsPost({ periodDays: 1 });
+    assert.equal(r.suppressed, true);
+    assert.match(r.suppressedReason, /no activity/);
+  } finally {
+    process.env.THUMBGATE_FEEDBACK_DIR = prev;
+    fs.rmSync(empty, { recursive: true, force: true });
+    // Restore caches so subsequent tests see the shared tmpDir again.
+    delete require.cache[require.resolve('../scripts/daily-digest')];
+    delete require.cache[require.resolve('../scripts/org-dashboard')];
+    delete require.cache[require.resolve('../scripts/metered-billing')];
+  }
 });
 test('createDailyDigestSchedule works', () => {
   const r = digest.createDailyDigestSchedule({ platform: 'slack', webhookUrl: 'https://hooks.slack.com/test' });

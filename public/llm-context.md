@@ -17,6 +17,7 @@ The buyer outcome is simple: prevent expensive AI mistakes, make AI stop repeati
 - An agent modifies secrets or PII-bearing files because no approval policy was in place
 - A team cannot audit which agent actions were blocked, approved, or overridden, making compliance reporting impossible
 - A self-improving Autoresearch-style loop promotes a benchmark win after skipping holdout tests, hiding failed runs, or editing the metric instead of improving the product
+- A desktop or browser agent silently adds a native messaging host, extension bridge, or persistent browser permission that widens local access without explicit approval
 
 ## How ThumbGate Works Technically
 
@@ -37,6 +38,8 @@ ThumbGate is built on Node.js >=18.18.0 and runs locally on each developer's mac
 **Autoresearch Safety Pack**: ThumbGate gates self-improving coding loops before they promote a claimed improvement. The `autoresearch-brief` ContextFS template retrieves research history, learned rules, holdout expectations, proof requirements, and reward-hacking failures so the agent can search for better code without grading itself on missing evidence.
 
 **Audit Trail**: Every gate decision (blocked, approved, overridden) is logged with a timestamp, the triggering tool call, the matching lesson ID, and the identity of any human who approved an exception. This log is queryable and exportable for compliance reporting.
+
+**Browser Bridge Audit**: `npx thumbgate native-messaging-audit` inspects local browser native messaging manifests, allowed extension origins, missing host binaries, and dormant AI browser bridges so teams can review connector scope before an agent turns a one-off install into a durable local integration.
 
 **Three-Tier Approval Routing (OVIS-inspired)**: ThumbGate gates operate on three distinct tiers, inspired by the OVIS decision framework (Owner, Veto, Influence). Each gate carries an `action` field that determines the routing outcome:
 
@@ -144,6 +147,8 @@ npx thumbgate dashboard
 - Context footprint report: https://thumbgate-production.up.railway.app/.well-known/mcp/footprint.json
 - ThumbGate skill manifests: https://thumbgate-production.up.railway.app/.well-known/mcp/skills.json
 - ThumbGate MCP applications: https://thumbgate-production.up.railway.app/.well-known/mcp/applications.json
+- Browser automation safety guide: https://thumbgate-production.up.railway.app/guides/browser-automation-safety
+- Native messaging host security guide: https://thumbgate-production.up.railway.app/guides/native-messaging-host-security
 - GitHub: https://github.com/IgorGanapolsky/ThumbGate
 - npm: https://www.npmjs.com/package/thumbgate
 - Documentation: https://thumbgate-production.up.railway.app/guide
