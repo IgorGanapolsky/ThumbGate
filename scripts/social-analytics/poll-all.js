@@ -37,12 +37,14 @@ const POLLERS = [
 /**
  * Legacy direct-API pollers. Off by default. Activated only when
  * THUMBGATE_USE_DIRECT_POLLERS=1 — treat as emergency fallback, not steady state.
+ *
+ * X/Twitter was retired from distribution 2026-04-20 (see CLAUDE.md § Distribution
+ * Channel Focus) and is no longer included in the legacy fallback either.
  */
 const LEGACY_POLLERS = [
   { name: 'instagram', module: './pollers/instagram', envRequired: ['INSTAGRAM_ACCESS_TOKEN', 'INSTAGRAM_USER_ID'] },
   { name: 'tiktok', module: './pollers/tiktok', envRequired: ['TIKTOK_ACCESS_TOKEN'] },
   { name: 'linkedin', module: './pollers/linkedin', envRequired: ['LINKEDIN_ACCESS_TOKEN', 'LINKEDIN_PERSON_URN'] },
-  { name: 'x', module: './pollers/x', envRequired: ['X_BEARER_TOKEN', 'X_USER_ID'] },
   { name: 'reddit', module: './pollers/reddit', envRequired: ['REDDIT_CLIENT_ID', 'REDDIT_CLIENT_SECRET', 'REDDIT_USERNAME', 'REDDIT_PASSWORD'] },
   { name: 'threads', module: './pollers/threads', envRequired: ['THREADS_ACCESS_TOKEN', 'THREADS_USER_ID'] },
   { name: 'youtube', module: './pollers/youtube', envRequired: ['YOUTUBE_API_KEY', 'YOUTUBE_CHANNEL_ID'] },
