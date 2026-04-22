@@ -21,6 +21,21 @@ function withTempDir(fn) {
   }
 }
 
+function withPatchedModule(modulePath, patch, fn) {
+  const resolved = require.resolve(modulePath);
+  const original = require(resolved);
+  const previousExports = { ...original };
+  Object.assign(original, patch);
+  try {
+    return fn();
+  } finally {
+    for (const key of Object.keys(original)) {
+      if (!(key in previousExports)) delete original[key];
+    }
+    Object.assign(original, previousExports);
+  }
+}
+
 test('analyzeFeedback returns actionableRemediations array (always present)', () => {
   withTempDir(() => {
     const analysis = analyzeFeedback();
@@ -123,6 +138,47 @@ test('actionableRemediations emits trend-declining entry when recent approval di
       assert.ok(typeof trendDeclining.evidence.sampleSize === 'number');
       assert.ok(typeof trendDeclining.rationale === 'string');
     }
+  });
+});
+
+test('actionableRemediations emits high-risk domain/tag entries from the risk summary', () => {
+  withTempDir(() => {
+    withPatchedModule('../scripts/risk-scorer', {
+      getRiskSummary: () => ({
+        highRiskDomains: [{ key: 'git-workflow', highRisk: 3, total: 4, riskRate: 0.75 }],
+        highRiskTags: [{ key: 'force-push', highRisk: 2, total: 3, riskRate: 0.667 }],
+      }),
+    }, () => {
+      const analysis = analyzeFeedback();
+      const domain = analysis.actionableRemediations.find((r) => r.type === 'high-risk-domain');
+      const tag = analysis.actionableRemediations.find((r) => r.type === 'high-risk-tag');
+      assert.ok(domain, 'expected high-risk-domain remediation');
+      assert.equal(domain.action, 'audit-domain-failures');
+      assert.equal(domain.target, 'git-workflow');
+      assert.ok(tag, 'expected high-risk-tag remediation');
+      assert.equal(tag.action, 'audit-tag-failures');
+      assert.equal(tag.target, 'force-push');
+    });
+  });
+});
+
+test('actionableRemediations emits delegation entries when delegation summary crosses thresholds', () => {
+  withTempDir(() => {
+    withPatchedModule('../scripts/delegation-runtime', {
+      summarizeDelegation: () => ({
+        attemptCount: 4,
+        verificationFailureRate: 0.75,
+        avoidedDelegationCount: 3,
+      }),
+    }, () => {
+      const analysis = analyzeFeedback();
+      const reduce = analysis.actionableRemediations.find((r) => r.type === 'delegation-reduce');
+      const policy = analysis.actionableRemediations.find((r) => r.type === 'delegation-policy-review');
+      assert.ok(reduce, 'expected delegation-reduce remediation');
+      assert.equal(reduce.action, 'reduce-delegation-use');
+      assert.ok(policy, 'expected delegation-policy-review remediation');
+      assert.equal(policy.action, 'review-delegation-policy');
+    });
   });
 });
 
