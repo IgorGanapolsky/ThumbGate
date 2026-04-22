@@ -206,6 +206,14 @@ __GA_BOOTSTRAP__
     },
     {
       "@type": "Question",
+      "name": "Why does the ChatGPT ads rollout matter to ThumbGate?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "OpenAI began testing ads in ChatGPT in the US on February 9, 2026, and Digiday reported CPC bidding on April 21, 2026. As conversational AI becomes a monetized discovery surface, teams need a cleaner boundary between AI advice and risky execution. ThumbGate is that pre-action gate layer."
+      }
+    },
+    {
+      "@type": "Question",
       "name": "How does ThumbGate reduce host blast radius for high-risk local runs?",
       "acceptedAnswer": {
         "@type": "Answer",
@@ -773,7 +781,7 @@ __GA_BOOTSTRAP__
     <div class="gpt-panel">
       <div class="section-label" style="text-align:left;">ChatGPT Entry Point · Live ThumbGate GPT for ChatGPT</div>
       <h2>Open the GPT. Give typed thumbs feedback. Turn the lesson into a gate.</h2>
-      <p>ThumbGate should meet users where they already ask AI for help. The live GPT is the lowest-friction way to capture a useful thumbs-up/down lesson, check a risky action, and prove the enforcement loop before installing anything.</p>
+      <p>ThumbGate should meet users where they already ask AI for help. The live GPT is the lowest-friction way to capture a useful thumbs-up/down lesson, check a risky action, and prove the enforcement loop before installing anything. As ChatGPT ads roll out, this matters more: ChatGPT can stay the discovery and checkpointing layer, while ThumbGate remains the hard execution boundary after <code>npx thumbgate init</code>.</p>
       <div class="gpt-steps">
         <div class="gpt-step">
           <strong>1. Try the live GPT</strong>
@@ -791,6 +799,7 @@ __GA_BOOTSTRAP__
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
         <a href="/go/gpt?utm_source=website&utm_medium=gpt_section&utm_campaign=chatgpt_gpt&cta_id=gpt_path_open_gpt&cta_placement=gpt_section" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('gpt_path_cta_click',{cta:'open_gpt'})">Open ThumbGate GPT</a>
         <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/chatgpt/INSTALL.md" class="btn-free" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">ChatGPT Actions setup</a>
+        <a href="/guides/chatgpt-ads-trust" class="btn-free" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">Why ChatGPT ads need gates</a>
       </div>
       <p class="gpt-note"><strong>Plain English rule:</strong> ChatGPT is the discovery and memory surface for advice, checkpointing, and typed feedback capture. One typed signal becomes one remembered rule. The hard Reliability Gateway still runs in the local agent or CI lane.</p>
     </div>
@@ -959,6 +968,12 @@ __GA_BOOTSTRAP__
         <h3>AI Search Topical Presence</h3>
         <p>Why AI tools recommend the brands they repeatedly see tied to a buyer problem, and how ThumbGate builds that association with proof-backed pages.</p>
         <div class="card-arrow">Strengthen the association →</div>
+      </a>
+      <a class="seo-card" href="/guides/chatgpt-ads-trust">
+        <div class="seo-kicker">ChatGPT Ads</div>
+        <h3>ChatGPT Ads Need Pre-Action Gates</h3>
+        <p>As conversational AI becomes an ad surface, trust, measurement, and execution boundaries matter more. This page ties that shift directly to ThumbGate.</p>
+        <div class="card-arrow">Own the trust angle →</div>
       </a>
       <a class="seo-card" href="/guides/relational-knowledge-ai-recommendations">
         <div class="seo-kicker">Recommendation</div>
@@ -1330,6 +1345,10 @@ __GA_BOOTSTRAP__
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Do I have to chat inside the ThumbGate GPT for enforcement?</div>
         <div class="faq-a">No. The ThumbGate GPT is the ChatGPT entrypoint for checking proposed actions, capturing thumbs-up/down lessons, and getting setup help. Use it for advice and checkpointing; hard enforcement still runs locally where the agent executes after <code>npx thumbgate init</code>.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Why does the ChatGPT ads rollout matter to ThumbGate?</div>
+        <div class="faq-a">OpenAI began testing ads in ChatGPT in the US on February 9, 2026, and Digiday reported CPC bidding on April 21, 2026. That makes trust and measurement more important around AI-assisted decisions. ThumbGate gives teams a hard boundary between conversational discovery and risky local execution, so a suggested action still has to pass a real gate before it runs. <a href="/guides/chatgpt-ads-trust" style="color:var(--cyan);text-decoration:underline;">Read the full positioning guide</a>.</div>
       </div>
       <div class="faq-item">
         <button class="faq-q" type="button" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How do we keep high-risk autonomous runs off the host?</button>
