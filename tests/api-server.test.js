@@ -3158,6 +3158,39 @@ test('buildCanonicalMarketingRedirect preserves path and query on alias host red
   );
 });
 
+test('normalizePublicHostHeader returns empty string for missing, blank, or unparseable host values', () => {
+  const { normalizePublicHostHeader } = __test__;
+  assert.equal(normalizePublicHostHeader(undefined), '');
+  assert.equal(normalizePublicHostHeader(''), '');
+  assert.equal(normalizePublicHostHeader('   '), '');
+  assert.equal(normalizePublicHostHeader(':8080'), '');
+  assert.equal(normalizePublicHostHeader('example.com'), 'example.com');
+});
+
+test('alias host request returns 308 redirect to canonical thumbgate.ai host', async () => {
+  const http = require('node:http');
+  const port = handle.port;
+  const response = await new Promise((resolve, reject) => {
+    const req = http.request(
+      {
+        hostname: '127.0.0.1',
+        port,
+        method: 'GET',
+        path: '/pro?utm_source=smoke',
+        headers: { host: 'usethumbgate.com', 'x-forwarded-proto': 'https', ...authHeader },
+      },
+      (res) => {
+        res.resume();
+        resolve({ statusCode: res.statusCode, location: res.headers.location });
+      }
+    );
+    req.on('error', reject);
+    req.end();
+  });
+  assert.equal(response.statusCode, 308);
+  assert.equal(response.location, 'https://thumbgate.ai/pro?utm_source=smoke');
+});
+
 test('rejects external output path by default', async () => {
   const externalPath = '/tmp/should-not-write-outside-safe-root.jsonl';
   const res = await fetch(apiUrl('/v1/dpo/export'), {
