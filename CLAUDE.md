@@ -102,6 +102,28 @@ curl -s https://thumbgate-production.up.railway.app/dashboard | grep 'ThumbGate 
 
 **NEVER say "done" or "pushed" without showing `gh pr view` output first.**
 
+## Hard-Won Lessons (pattern-harvest from agent-architect-kit)
+
+These patterns were adopted 2026-04-21 from @ultrathink-art's agent-architect-kit CLAUDE.md. Each rule has a concrete `# WHY` — delete a rule only if you can prove its incident class is extinct.
+
+- **Fix-on-fix commits = systemic failure signal.** If a bug takes 3+ commit attempts to land, stop pushing. Read the platform docs, understand the behavior, push ONE correct fix.
+  # WHY: Repeated guesses burn CI minutes, destabilize main, and train the lesson DB on noise. A 5-commit CSS chase in Feb 2026 turned out to be one line (`scroll-snap-type: none` on mobile).
+
+- **No rapid-fire pushes to main.** Each push to `feat/**` or `main` triggers a full Railway rebuild (2-5 min) + full CI matrix. Batch related edits into one commit. Never push two fix commits within 10 minutes for the same bug.
+  # WHY: Overlapping deploys briefly run two containers against the same SQLite file; rapid pushes also obscure which change actually fixed the issue.
+
+- **Behavioral rules: only ZERO/ALWAYS thresholds are enforceable.** An LLM cannot count across independent sessions, so ratio rules ("1 in 5 posts should mention ThumbGate") silently degrade to "every post mentions ThumbGate." Write absolutes: "NEVER auto-post replies", "ALWAYS show `gh pr view` before claiming done."
+  # WHY: Mar 2026 — a "1-in-5" social mention rule in architect-kit's playbook produced 100% promotional reply output because agents can't maintain a running tally across sessions.
+
+- **Memory and instructions must be updated together.** When you change a CLAUDE.md rule, also update any lesson DB entry or `prevention-rules.md` line that contradicts it. Otherwise the agent follows stale memory over the new instruction.
+  # WHY: Mar 2026 — a rule change in architect-kit's instructions was ignored because the role memory file still preached the old rule; the memory won.
+
+- **Post-deploy checks are POST-deploy, not a gate.** The Railway `/health` and `/dashboard` curls in the Deployment Verification Gate run AFTER the merge. Never gate the merge itself on a production-URL check — the merge hasn't shipped yet.
+  # WHY: A health-check-as-prereq pattern would block every PR on an infra blip. Our gate correctly runs the curls post-merge, waits for the rebuild, and blocks the "deployed" claim, not the merge.
+
+- **`require.main === module` is a lie in CommonJS.** Use a path-based check: `path.resolve(process.argv[1]) === path.resolve(__filename)`. SonarCloud rule S3403 flags the `require.main` form as an always-false equality under strict type inference.
+  # WHY: 2026-04-21 — SonarCloud blocked PR #1115 on four scripts using `require.main === module`. Path-resolve form is the portable fix.
+
 ## Verification Commands (Standard Set)
 
 Run ALL of these before claiming any task complete:

@@ -1,5 +1,170 @@
 # Changelog
 
+## 1.15.0
+
+### Minor Changes
+
+- [#1121](https://github.com/IgorGanapolsky/ThumbGate/pull/1121) [`bc32329`](https://github.com/IgorGanapolsky/ThumbGate/commit/bc32329f91efbeda0ea34ca5949ec918959489cf) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add one-shot integration bridge for [agent-architect-kit](https://github.com/ultrathink-art/agent-architect-kit) per-role memory directories.
+
+  `scripts/integrations/architect-kit-memory-bridge.js` parses `agents/state/memory/<role>.md` files (Mistakes / Learnings / Stakeholder Feedback / Session Log sections) and emits ThumbGate feedback entries: Mistakes → thumbs-down with `whatWentWrong`, Learnings → thumbs-up with `whatWorked`, Stakeholder Feedback polarity-flipped on negative keywords, Session Log skipped. Every entry tagged `architect-kit` + `role:<name>` + source section for auditable rollback. Ingested entries flow through the standard lesson-DB / Thompson Sampling / prevention-rule pipeline, so architect-kit users can promote their markdown memory into PreToolUse-enforced hooks.
+
+  CLI: `npm run integrations:architect-kit:import -- --dir=<path> [--role=<name>] [--dry-run] [--json]`.
+
+  Also harvests six high-ROI patterns from architect-kit's annotated CLAUDE.md into a new _Hard-Won Lessons_ section (fix-on-fix signal, rapid-push batching, ZERO/ALWAYS behavioral thresholds, memory-instructions coupling, post-deploy-gate nuance, `require.main === module` path-resolve fix) each with an explicit `# WHY` tying to a specific incident class.
+
+  Test coverage: 16 dependency-injected unit tests pinned into `npm test` via the test-suite parity guard.
+
+- [#1100](https://github.com/IgorGanapolsky/ThumbGate/pull/1100) [`f3e40ca`](https://github.com/IgorGanapolsky/ThumbGate/commit/f3e40ca41ae8d28a2e3ead987826fb39657d889e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Expand the Bayes-optimal gate's loss matrix to 49 falseAllow tiers (self-protect, kill-gate, hooks-disable, db-drop-production, deploy-env-secret-exposure, mcp-sql-delete, supply-chain, network-egress, …) and 5 falseBlock tiers, so cost-weighted decisions cover the full blast-radius spectrum instead of bucketing everything under `default`.
+
+  Add cross-session canonical-hash lesson dedup. `scripts/lesson-canonical.js` normalizes lessons via lowercase → punctuation strip → stop-word drop → trailing-s stem → sort → SHA-256, so two lessons that differ only in phrasing collapse to the same 16-hex hash. Wired into `captureFeedback` (stamps `canonicalHash` on each memory record), `findSimilarLesson` (canonical match short-circuits Jaccard with `matchType: 'canonical'`), and `lesson-db.findDuplicate` (canonical fallback when exact-text miss).
+
+  Add a summarize-then-expand pack assembly strategy to ContextFS. Opt in via `summarizeThenExpand: true` / `strategy: 'summarize-then-expand'` on `constructContextPack`. Pass 1 reserves ~35% of `maxChars` for a wide roster of `title + one-line hint` summaries; pass 2 walks top-down upgrading to full `structuredContext` while the remaining budget can absorb the delta. Under tight budgets the pack surfaces more of the corpus (broad recall) while still spending depth on the top-ranked hits.
+
+- [#1092](https://github.com/IgorGanapolsky/ThumbGate/pull/1092) [`a137117`](https://github.com/IgorGanapolsky/ThumbGate/commit/a1371178b285f0c9c2ea2a36a9054094e821c275) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat(public): first-party numbers page + freshness markers for SEO 2026 trust signals
+
+  Ships `/numbers` — a live first-party-data page rendered from the same local
+  scripts that power the CLI (`scripts/gate-stats.js`, `scripts/token-savings.js`,
+  `scripts/bayes-optimal-gate.js`). Every number links back to its source script
+  so AI retrievers can cite with provenance.
+
+  The page surfaces:
+
+  - Active gates (manual + auto-promoted)
+  - Actions blocked / warned
+  - Top blocked gate + last promotion
+  - Estimated hours saved, LLM dollars saved, tokens not spent
+  - Bayes error rate of the intervention scorer
+
+  JSON-LD includes `SoftwareApplication`, `Dataset` with `variableMeasured`
+  PropertyValue entries, and stable `Person` authorship with `sameAs` links
+  (GitHub, LinkedIn). Regenerate via `npm run numbers:generate`.
+
+  Also stamps consistent authorship + visible `Updated:` markers +
+  `dateModified` JSON-LD on five public pages that previously lacked them:
+  `learn.html`, `lessons.html`, `codex-plugin.html`, `pro.html`,
+  `dashboard.html`.
+
+  Rationale: the 2026-04 SEJ "What Search Engines Trust Now" analysis ranks
+  first-party data, freshness, and extractability as the signals most durable
+  against AI-synthesis ambiguity. ThumbGate's operational metrics are unique —
+  nobody else can fake "180 blocks last month" because they don't run the
+  gates. Publishing them as schema-marked-up Dataset + SoftwareApplication on a
+  page dated the same day it's regenerated hits all three signals at once.
+
+  Regression guards: `tests/numbers-page.test.js` pins JSON-LD contract,
+  authorship, source-link provenance, and freshness markers on all five pages.
+
+- [#1103](https://github.com/IgorGanapolsky/ThumbGate/pull/1103) [`d7101d4`](https://github.com/IgorGanapolsky/ThumbGate/commit/d7101d4f709f7ac7cd6259ebb41537ec054c622c) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a pre-promotion rule validator (scripts/rule-validator.js) that gates
+  every auto-promoted prevention rule before it lands in
+  synthesized-rules.jsonl. Inspired by the Autogenesis self-evolving agent
+  protocol (arxiv 2604.15034): we already had capability-gap identification,
+  candidate generation, and integration — this plugs the missing "validate
+  before integrate" phase.
+
+  A proposed rule is now promotable iff it fires on the seed lesson that
+  triggered promotion AND its precision on recent overlapping-tag events
+  clears a floor (default 0.8). Rules that fail either invariant are parked
+  in a new rejected-rules.jsonl side log with a machine-readable reason
+  (rule_does_not_match_seed_lesson, precision_below_floor,
+  insufficient_sample, no_firings_in_sample, invalid_rule_shape) so
+  operators can audit silent rejections. Thresholds are overridable; the
+  validator is a pure function (no IO) and covered by 15 new tests.
+
+### Patch Changes
+
+- [#1118](https://github.com/IgorGanapolsky/ThumbGate/pull/1118) [`70adc79`](https://github.com/IgorGanapolsky/ThumbGate/commit/70adc79557c6ea68848edd8844f8c5443597c9a9) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Route every outbound checkout link through the existing `/go/pro` tracked-link redirector and lock its behavior with tests.
+
+  The `/go/:slug` redirector in `src/api/server.js` (`serveTrackedLinkRedirect`, line ~1305) already handled attribution — forwarding `utm_source`/`utm_medium`/`utm_campaign`/`utm_content` to `/checkout/:plan` and writing first-party telemetry via `buildTrackedLinkAttribution`. The problem was that README, SKILL docs, dashboard CTAs, postinstall banner, Reddit/dev.to autopilot posts, and `scripts/commercial-offer.js` all linked _directly_ at `https://buy.stripe.com/7sY...`, bypassing the redirector. Result: Plausible saw referrer but not campaign; Stripe saw conversions but not source; attribution was structurally impossible.
+
+  Replaces the raw `buy.stripe.com` CTA across 10 surfaces with `https://thumbgate-production.up.railway.app/go/pro?utm_source=<channel>` (and `&utm_campaign=autopilot` on scheduled posts): three SKILL.md copies (`.agents/`, `.claude/`, `skills/`), `public/dashboard.html` (demo + live CTAs), `public/lessons.html`, `.github/workflows/marketing-autopilot.yml` (Reddit + dev.to posts), `scripts/ralph-mode-ci.js`, and `scripts/commercial-offer.js` (`PRO_MONTHLY_PAYMENT_LINK`).
+
+  Adds three `tests/api-server.test.js` cases that pin the redirector's public contract: param-preserving 302 for `/go/pro?utm_source=…`, default attribution for bare `/go/pro`, and 404 JSON for unregistered slugs. Updates `tests/cli.test.js`, `tests/postinstall.test.js`, and `tests/thumbgate-skill.test.js` to match the new canonical URL surface.
+
+- [#1126](https://github.com/IgorGanapolsky/ThumbGate/pull/1126) [`a75511c`](https://github.com/IgorGanapolsky/ThumbGate/commit/a75511c4fbaf91e42a09362d0cdcde067d7c9faa) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - fix(social): never publish "blocked 0 mistakes, saving ~0 hours" stats posts
+
+  When `getMeteredUsageSummary` returns zero blocks AND zero warnings AND zero active agents for the period, `generateWeeklyStatsPost` now sets `suppressed: true` with a human-readable `suppressedReason`. `scripts/weekly-auto-post.js` refuses to write the markdown file or call any publisher when suppressed. `scripts/social-post-hourly.js` routes the `stats` angle (and the default branch) through an evergreen fallback chain (`educational` / `hot-take` / `tip`) so the daily post cron never ships raw zero-stats text.
+
+  Triggered by a 2026-04-21 CEO thumbs-down on a Bluesky post reading "This week ThumbGate blocked 0 mistakes, saving ~0 hours. Pre-action gates > post-mortem fixes." The two existing offending posts were deleted live via `com.atproto.repo.deleteRecord`; this patch prevents the pattern from ever publishing again and adds regression tests in `tests/metaclaw-features.test.js`, `tests/weekly-auto-post.test.js`, and `tests/social-post-hourly.test.js`.
+
+- [#1115](https://github.com/IgorGanapolsky/ThumbGate/pull/1115) [`ddcbffd`](https://github.com/IgorGanapolsky/ThumbGate/commit/ddcbffdcc7254a00056c9fe4d27a0540ebdfa38c) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Wire Bluesky reply monitoring into Ralph Loop (hourly CI) as a draft-only step.
+
+  Zernio exposes no inbound/comments API as of 2026-04-21 (probed — `/inbox`, `/comments`, `/conversations`, `/messages`, `/dms`, `/threads`, `/engagements`, `/replies` all return 404 with HTML shell while `/accounts` returns 200 JSON). The Zernio Inbox add-on visible on the billing dashboard is a human-only surface. Reply monitoring for Bluesky therefore uses direct AT Protocol: `scripts/social-reply-monitor-bluesky.js` polls `app.bsky.notification.listNotifications` on the user's PDS and queues drafts to `.thumbgate/reply-drafts.jsonl`. The monitor never auto-posts — a draft-only posture was made mandatory after a CEO thumbs-down on AI-pitch reply voice.
+
+  New `reply-monitor-bluesky` step in `scripts/ralph-loop.js` gated on `requiredEnvAll: ['BLUESKY_HANDLE','BLUESKY_APP_PASSWORD']`. Workflow env block in `.github/workflows/ralph-loop.yml` passes the new repo secrets. Tests in `tests/ralph-loop.test.js` pin the step list and skip-reason contract.
+
+  Also ships two one-shot operator tools: `scripts/bluesky-list-actionable.js` dumps un-replied notifications for human triage, `scripts/bluesky-delete-replies.js` rolls back via `com.atproto.repo.deleteRecord`. The `skills/bluesky-engagement/SKILL.md` is the authoritative reference for credential rotation and the voice guardrail lesson.
+
+- [#1123](https://github.com/IgorGanapolsky/ThumbGate/pull/1123) [`2c17f45`](https://github.com/IgorGanapolsky/ThumbGate/commit/2c17f45c76075d54ed09fca0198c8c2f27be73af) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add the ThumbGate native messaging audit CLI and browser bridge safety guides for browser automation safety and native messaging host security.
+
+- [#1119](https://github.com/IgorGanapolsky/ThumbGate/pull/1119) [`6e28801`](https://github.com/IgorGanapolsky/ThumbGate/commit/6e2880115ec815c374f3b86a314e22bb0dd44a4e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Adopt Git 2.54 local config hooks for ThumbGate installs, keep older Git clients on `core.hooksPath`, and harden proof/test temp repos against ambient operator hooks.
+
+- [#1119](https://github.com/IgorGanapolsky/ThumbGate/pull/1119) [`6e28801`](https://github.com/IgorGanapolsky/ThumbGate/commit/6e2880115ec815c374f3b86a314e22bb0dd44a4e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - fix(installer): harden git-hook-installer.js against SonarCloud quality-gate findings
+
+  - Tighten hook file permissions from `0o755` to `0o700`. Git runs hooks as the
+    same user that invoked the git command, so group/other execute bits served
+    no purpose and only widened the attack surface (SonarCloud S2612).
+  - Replace `require.main === module` with an explicit `isCliEntrypoint()` helper
+    comparing `require.main.filename` against `__filename`. The strict-equality
+    idiom tripped SonarCloud S3403 ("this check will always be false") under its
+    TypeScript flow analyzer; the filename-based check has no such ambiguity and
+    also makes the CLI-detection path unit-testable.
+  - Document why `spawnSync('git', …)` is safe with a NOSONAR annotation
+    (S4036 hotspot review). The installer must honor the developer's PATH
+    because git ships from a dozen different locations (brew, apt, scoop,
+    Xcode, Git-for-Windows); args is always an array, so no shell interpolation
+    risk; and the command literal is hard-coded, not user-supplied.
+
+  Adds regression tests covering the new owner-only permission bits and the
+  new `isCliEntrypoint` helper.
+
+- [#1105](https://github.com/IgorGanapolsky/ThumbGate/pull/1105) [`56370d5`](https://github.com/IgorGanapolsky/ThumbGate/commit/56370d53731e1890cff5a1b4ff54ad9bd4e6bc09) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Hard-block destructive local shell actions in default gates and render CLI thumbs-down feedback with the correct label.
+
+- [#1106](https://github.com/IgorGanapolsky/ThumbGate/pull/1106) [`9843fdc`](https://github.com/IgorGanapolsky/ThumbGate/commit/9843fdc4fe13927a1d9dd2ef4654fc558f32bde1) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add the ThumbGate harness optimization audit CLI and a proof-linked SEO guide for AI agent harness optimization.
+
+- [#1004](https://github.com/IgorGanapolsky/ThumbGate/pull/1004) [`e7dc1c6`](https://github.com/IgorGanapolsky/ThumbGate/commit/e7dc1c626e63fe64c636e0b2426a86ade18fabc1) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Route `main`-targeting PR manager merges through `/trunk merge` comments so autonomous merge requests work under Enterprise Managed User accounts without falling back to blocked GraphQL merge mutations.
+
+- [#1095](https://github.com/IgorGanapolsky/ThumbGate/pull/1095) [`78b45f5`](https://github.com/IgorGanapolsky/ThumbGate/commit/78b45f511005a764ce164c8fb81d1095786ffc6a) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Pin the runtime protobuf dependency to a patched release so clean ThumbGate installs avoid the protobufjs critical advisory.
+
+- [#1111](https://github.com/IgorGanapolsky/ThumbGate/pull/1111) [`fa777d1`](https://github.com/IgorGanapolsky/ThumbGate/commit/fa777d1a84ae769fb4610c1f4034d3a5f88d492f) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - fix(social): route social CTAs through tracked landing page
+
+  404 posts published via Zernio over the last 30 days produced 0 rows in
+  `.claude/memory/feedback/funnel-events.jsonl` because every post CTA
+  linked to `github.com/IgorGanapolsky/ThumbGate`, which never touches the
+  funnel tracker. Attribution blindness: 4 lifetime installs across 404
+  posts was the result.
+
+  Primary CTA in every Zernio-published angle/caption now routes through
+  `https://thumbgate-production.up.railway.app/numbers`. `tagUrlsInText`
+  auto-injects `utm_source=zernio&utm_medium=social&utm_campaign=organic`
+  because the landing domain is already in `TRACKABLE_DOMAINS`. GitHub is
+  retained as a secondary "Source (MIT)" reference for credibility.
+
+  Covers:
+
+  - `scripts/social-post-hourly.js` — daily LinkedIn/X poster, 7 content
+    angles. `horror-story`, `tip`, `product-demo` now lead with the
+    tracked landing URL.
+  - `scripts/social-analytics/post-video.js` — TikTok/YouTube/Instagram
+    captions. TikTok and YouTube now lead with the tracked landing URL;
+    Instagram unchanged (uses "link in bio" — no inline URLs).
+
+  Regression guards in `tests/social-post-hourly.test.js` and
+  `tests/post-video.test.js` fail if any angle/caption regresses to a
+  github-only CTA.
+
+  Also wires the `/numbers` handler in `src/api/server.js` through
+  `servePublicMarketingPage` so the `landing_page_view` telemetry and a
+  `discovery/landing_view` entry in `funnel-events.jsonl` are both
+  captured with the UTM metadata attached to the inbound request. Before
+  this wire, `/numbers` views wrote only to `telemetry-pings.jsonl`
+  (invisible to `npm run feedback:summary` and `bin/cli.js cfo --today`),
+  leaving the funnel ledger empty despite 404 published Zernio posts.
+  Other marketing pages (`/`, `/dashboard`) already routed through
+  `servePublicMarketingPage` and now automatically inherit the
+  funnel-ledger write as well.
+
+- [#1102](https://github.com/IgorGanapolsky/ThumbGate/pull/1102) [`186caf5`](https://github.com/IgorGanapolsky/ThumbGate/commit/186caf5caf845ab94c068d70f2032ba08707f1fa) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Accept the Socket Security Pull Request Alerts context in branch-protection congruence checks.
+
 ## 1.14.0
 
 ### Minor Changes

@@ -93,6 +93,7 @@ const { exportDatabricksBundle } = require('../../scripts/export-databricks-bund
 const { generateDashboard } = require('../../scripts/dashboard');
 const { getSettingsStatus } = require('../../scripts/settings-hierarchy');
 const { generateSkills } = require('../../scripts/skill-generator');
+const { buildNativeMessagingAudit } = require('../../scripts/native-messaging-audit');
 const {
   loadModel,
   getReliability,
@@ -157,7 +158,7 @@ const {
   finalizeSession: finalizeFeedbackSession,
 } = require('../../scripts/feedback-session');
 
-const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.14.1' };
+const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.15.0' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
@@ -850,6 +851,12 @@ async function callToolInner(name, args) {
       return toTextResult(generateOrgDashboard({ windowHours: Number(args.windowHours || 24) }));
     case 'settings_status':
       return toTextResult(getSettingsStatus());
+    case 'native_messaging_audit':
+      return toTextResult(buildNativeMessagingAudit({
+        platform: args.platform,
+        homeDir: args.homeDir,
+        aiOnly: args.aiOnly === true,
+      }));
     case 'commerce_recall':
       enforceLimit('commerce_recall');
       return buildCommerceRecallResponse(args);

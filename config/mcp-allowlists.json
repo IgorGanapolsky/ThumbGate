@@ -45,6 +45,7 @@
       "gate_stats",
       "dashboard",
       "settings_status",
+      "native_messaging_audit",
       "list_harnesses",
       "run_harness",
       "run_autoresearch",
@@ -139,6 +140,7 @@
       "gate_stats",
       "dashboard",
       "settings_status",
+      "native_messaging_audit",
       "get_business_metrics",
       "describe_semantic_entity",
       "get_reliability_rules",
@@ -173,6 +175,7 @@
       "gate_stats",
       "dashboard",
       "settings_status",
+      "native_messaging_audit",
       "get_business_metrics",
       "describe_semantic_entity",
       "get_reliability_rules",
@@ -199,6 +202,7 @@
       "check_operational_integrity",
       "workflow_sentinel",
       "settings_status",
+      "native_messaging_audit",
       "generate_operator_artifact"
     ]
   }

@@ -40,7 +40,7 @@ function initGitRepo() {
   execFileSync('git', ['config', 'commit.gpgsign', 'false'], { cwd: repoPath, stdio: 'ignore' });
   fs.writeFileSync(path.join(repoPath, 'README.md'), '# proof repo\n');
   execFileSync('git', ['add', 'README.md'], { cwd: repoPath, stdio: 'ignore' });
-  execFileSync('git', ['commit', '-m', 'init'], { cwd: repoPath, stdio: 'ignore' });
+  execFileSync('git', ['commit', '--no-verify', '-m', 'init'], { cwd: repoPath, stdio: 'ignore' });
   return repoPath;
 }
 

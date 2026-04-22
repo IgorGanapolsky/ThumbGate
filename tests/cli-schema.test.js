@@ -75,7 +75,7 @@ test('findCommand returns undefined for unknown name', () => {
 
 test('core commands are all registered in schema', () => {
   const required = ['capture', 'lessons', 'stats', 'gate-stats', 'explore',
-    'artifacts', 'rules', 'doctor', 'harness-audit', 'export-dpo', 'init', 'serve', 'dashboard'];
+    'artifacts', 'rules', 'doctor', 'harness-audit', 'native-messaging-audit', 'export-dpo', 'init', 'serve', 'dashboard'];
   for (const name of required) {
     assert.ok(findCommand(name), `${name} must be in CLI_COMMANDS`);
   }
@@ -87,6 +87,17 @@ test('harness-audit command exposes JSON and token budget flags', () => {
   assert.equal(cmd.name, 'harness-audit');
   assert.ok(flagNames.includes('json'), 'harness-audit must have --json flag');
   assert.ok(flagNames.includes('doc-token-budget'), 'harness-audit must expose doc budget control');
+});
+
+test('native-messaging-audit exposes JSON, platform, home-dir, and ai-only flags', () => {
+  const cmd = findCommand('bridge-audit');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'native-messaging-audit');
+  assert.equal(cmd.mcpTool, 'native_messaging_audit');
+  assert.ok(flagNames.includes('json'));
+  assert.ok(flagNames.includes('platform'));
+  assert.ok(flagNames.includes('home-dir'));
+  assert.ok(flagNames.includes('ai-only'));
 });
 
 test('lessons command has --json, --local, --remote flags', () => {

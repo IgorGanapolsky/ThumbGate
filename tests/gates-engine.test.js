@@ -107,7 +107,7 @@ function createPushTestRepo(changedFile = 'src/app.js') {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, 'module.exports = 1;\n');
   execFileSync('git', ['add', '.'], { cwd: repoDir, stdio: ['ignore', 'pipe', 'pipe'] });
-  execFileSync('git', ['commit', '-m', 'initial'], { cwd: repoDir, stdio: ['ignore', 'pipe', 'pipe'] });
+  execFileSync('git', ['commit', '--no-verify', '-m', 'initial'], { cwd: repoDir, stdio: ['ignore', 'pipe', 'pipe'] });
   fs.writeFileSync(filePath, 'module.exports = 2;\n');
   return repoDir;
 }

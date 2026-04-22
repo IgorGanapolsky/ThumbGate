@@ -21,12 +21,28 @@ const POSTS_DIR = path.join(os.homedir(), '.thumbgate', 'weekly-posts');
 
 /**
  * Generate a weekly stats post file in post-everywhere format.
- * Returns the file path.
+ * Returns the file path — OR a suppression marker with `filePath: null`
+ * when there is no activity to report. The file is NOT written when
+ * suppressed, because "This week ThumbGate blocked 0 mistakes, saving ~0
+ * hours" is actively harmful to ship publicly (see the 2026-04-21 Bluesky
+ * disaster flagged by the CEO).
  */
 function generateWeeklyPostFile({ periodDays = 7 } = {}) {
-  const { post, stats } = generateWeeklyStatsPost({ periodDays });
-
+  const { post, stats, suppressed, suppressedReason } = generateWeeklyStatsPost({ periodDays });
   const date = new Date().toISOString().slice(0, 10);
+
+  if (suppressed) {
+    return {
+      filePath: null,
+      filename: null,
+      post,
+      stats,
+      date,
+      suppressed: true,
+      suppressedReason,
+    };
+  }
+
   const filename = `weekly-stats-${date}.md`;
 
   // Build post-everywhere compatible frontmatter
@@ -46,15 +62,29 @@ function generateWeeklyPostFile({ periodDays = 7 } = {}) {
   const filePath = path.join(POSTS_DIR, filename);
   fs.writeFileSync(filePath, content);
 
-  return { filePath, filename, post, stats, date };
+  return { filePath, filename, post, stats, date, suppressed: false };
 }
 
 /**
  * Generate and post weekly stats. Full pipeline.
  * If dryRun is true, generates the file but doesn't post.
+ * If generation is suppressed (no activity), no file is written and no
+ * publish is attempted. The suppression reason is surfaced in the result.
  */
 async function runWeeklyPost({ periodDays = 7, platforms, dryRun = false } = {}) {
   const generated = generateWeeklyPostFile({ periodDays });
+
+  if (generated.suppressed) {
+    return {
+      generated,
+      posted: false,
+      suppressed: true,
+      suppressedReason: generated.suppressedReason,
+      zernioResult: null,
+      postResult: null,
+      dryRun,
+    };
+  }
 
   let postResult = null;
   let zernioResult = null;
@@ -82,6 +112,7 @@ async function runWeeklyPost({ periodDays = 7, platforms, dryRun = false } = {})
   return {
     generated,
     posted: !dryRun,
+    suppressed: false,
     zernioResult,
     postResult,
     dryRun,
