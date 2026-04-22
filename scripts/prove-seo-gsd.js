@@ -128,6 +128,8 @@ async function run() {
           '/guides/agent-harness-optimization',
           '/guides/browser-automation-safety',
           '/guides/native-messaging-host-security',
+          '/guides/ai-search-topical-presence',
+          '/guides/relational-knowledge-ai-recommendations',
           '/guides/claude-code-feedback',
           '/guides/autoresearch-agent-safety',
         ]) {
@@ -156,6 +158,8 @@ async function run() {
           '/guides/agent-harness-optimization',
           '/guides/browser-automation-safety',
           '/guides/native-messaging-host-security',
+          '/guides/ai-search-topical-presence',
+          '/guides/relational-knowledge-ai-recommendations',
           '/guides/claude-code-feedback',
           '/guides/autoresearch-agent-safety',
         ]) {
