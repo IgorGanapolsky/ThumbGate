@@ -156,6 +156,21 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'scripts/perplexity-marketing.js',
     'scripts/build-claude-mcpb.js',
     'scripts/build-codex-plugin.js',
+    'scripts/analytics-report.js',
+    'scripts/billing-setup.js',
+    'scripts/creator-campaigns.js',
+    'scripts/daemon-manager.js',
+    'scripts/dispatch-brief.js',
+    'scripts/distribution-surfaces.js',
+    'scripts/funnel-analytics.js',
+    'scripts/operational-dashboard.js',
+    'scripts/operational-summary.js',
+    'scripts/optimize-context.js',
+    'scripts/pulse.js',
+    'scripts/session-episode-store.js',
+    'scripts/session-health-sensor.js',
+    'scripts/tool-kpi-tracker.js',
+    'scripts/webhook-delivery.js',
   ];
 
   // File-count ceiling bumped 220 → 225 (2026-04-19) after main picked up
