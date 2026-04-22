@@ -111,14 +111,6 @@ const {
   buildHostedCancelUrl,
 } = require('../../scripts/hosted-config');
 const {
-  PRO_MONTHLY_PRICE_DOLLARS,
-  PRO_ANNUAL_PRICE_DOLLARS,
-  TEAM_MONTHLY_PRICE_DOLLARS,
-  normalizePlanId,
-  normalizeBillingCycle,
-  normalizeSeatCount,
-} = require('../../scripts/commercial-offer');
-const {
   generateSkills,
 } = require('../../scripts/skill-generator');
 const {
@@ -238,6 +230,7 @@ const PRIVATE_API_MODULES = Object.freeze({
   workflowSprintIntake: path.resolve(__dirname, '../../scripts/workflow-sprint-intake.js'),
   lessonSearch: path.resolve(__dirname, '../../scripts/lesson-search.js'),
   semanticLayer: path.resolve(__dirname, '../../scripts/semantic-layer.js'),
+  commercialOffer: path.resolve(__dirname, '../../scripts/commercial-offer.js'),
 });
 
 function createPrivateCoreUnavailableError(feature) {
@@ -270,6 +263,22 @@ function requirePrivateApiModule(key, feature) {
     throw createPrivateCoreUnavailableError(feature);
   }
   return module;
+}
+
+function getCommercialOfferModule() {
+  return requirePrivateApiModule('commercialOffer', 'Commercial offer planning');
+}
+
+function normalizePlanId(value) {
+  return getCommercialOfferModule().normalizePlanId(value);
+}
+
+function normalizeBillingCycle(value) {
+  return getCommercialOfferModule().normalizeBillingCycle(value);
+}
+
+function normalizeSeatCount(value, fallback) {
+  return getCommercialOfferModule().normalizeSeatCount(value, fallback);
 }
 
 function serveStaticFile(res, filePath, { headOnly = false, cacheSeconds = 86400 } = {}) {
@@ -1356,6 +1365,7 @@ function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadReques
 }
 
 function resolveCheckoutOfferSummary(metadata = {}) {
+  const commercialOffer = getCommercialOfferModule();
   const planId = normalizePlanId(metadata.planId);
   const billingCycle = normalizeBillingCycle(metadata.billingCycle);
 
@@ -1366,8 +1376,8 @@ function resolveCheckoutOfferSummary(metadata = {}) {
       billingCycle: 'monthly',
       seatCount,
       type: 'subscription',
-      price: TEAM_MONTHLY_PRICE_DOLLARS * seatCount,
-      priceLabel: `$${TEAM_MONTHLY_PRICE_DOLLARS}/seat/mo`,
+      price: commercialOffer.TEAM_MONTHLY_PRICE_DOLLARS * seatCount,
+      priceLabel: `$${commercialOffer.TEAM_MONTHLY_PRICE_DOLLARS}/seat/mo`,
     };
   }
 
@@ -1377,7 +1387,7 @@ function resolveCheckoutOfferSummary(metadata = {}) {
       billingCycle: 'annual',
       seatCount: 1,
       type: 'subscription',
-      price: PRO_ANNUAL_PRICE_DOLLARS,
+      price: commercialOffer.PRO_ANNUAL_PRICE_DOLLARS,
       priceLabel: '$149/yr',
     };
   }
@@ -1387,7 +1397,7 @@ function resolveCheckoutOfferSummary(metadata = {}) {
     billingCycle: 'monthly',
     seatCount: 1,
     type: 'subscription',
-    price: PRO_MONTHLY_PRICE_DOLLARS,
+    price: commercialOffer.PRO_MONTHLY_PRICE_DOLLARS,
     priceLabel: '$19/mo',
   };
 }

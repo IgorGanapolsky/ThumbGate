@@ -169,9 +169,11 @@ test('private-core API module helpers report unknown and unavailable modules cle
   await withMissingPrivateApiModules([
     __test__.PRIVATE_API_MODULES.lessonSearch,
     __test__.PRIVATE_API_MODULES.semanticLayer,
+    __test__.PRIVATE_API_MODULES.commercialOffer,
   ], async () => {
     assert.equal(__test__.loadPrivateApiModule('lessonSearch'), null);
     assert.equal(__test__.loadPrivateApiModule('semanticLayer'), null);
+    assert.equal(__test__.loadPrivateApiModule('commercialOffer'), null);
   });
 });
 
@@ -2347,6 +2349,7 @@ test('private-core API endpoints return 503 when hosted/private modules are abse
     __test__.PRIVATE_API_MODULES.workflowSprintIntake,
     __test__.PRIVATE_API_MODULES.lessonSearch,
     __test__.PRIVATE_API_MODULES.semanticLayer,
+    __test__.PRIVATE_API_MODULES.commercialOffer,
   ];
 
   await withMissingPrivateApiModules(modulePaths, async () => {
@@ -2397,6 +2400,17 @@ test('private-core API endpoints return 503 when hosted/private modules are abse
     const semanticRes = await fetch(apiUrl('/v1/semantic/describe?type=Customer'), { headers: authHeader });
     assert.equal(semanticRes.status, 503);
     assert.match(await semanticRes.text(), /private core|hosted runtime/i);
+
+    const checkoutRes = await fetch(apiUrl('/v1/billing/checkout'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        customerEmail: 'buyer@example.com',
+        installId: 'inst_private_offer_boundary',
+      }),
+    });
+    assert.equal(checkoutRes.status, 503);
+    assert.match(await checkoutRes.text(), /private core|hosted runtime/i);
   });
 });
 
