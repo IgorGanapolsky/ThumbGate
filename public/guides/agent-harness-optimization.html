@@ -1,30 +1,231 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Agent Harness Optimization | ThumbGate</title>
-  <meta name="description" content="Optimize AI agent harnesses with progressive disclosure, MCP tool indexes, specialized gate harnesses, and ThumbGate Pre-Action Gates.">
-  <meta property="og:title" content="AI Agent Harness Optimization | ThumbGate">
-  <meta property="og:description" content="Keep global prompts lean, load MCP schemas on demand, and turn harness lessons into Pre-Action Gates.">
-  <meta property="og:type" content="article">
-  <meta property="og:url" content="https://thumbgate-production.up.railway.app/guides/agent-harness-optimization">
-  <link rel="canonical" href="https://thumbgate-production.up.railway.app/guides/agent-harness-optimization">
-  <link rel="llm-context" href="/public/llm-context.md" type="text/markdown">
-  <link rel="icon" type="image/png" href="/thumbgate-icon.png">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Agent Harness Optimization | Progressive Disclosure + Pre-Action Gates</title>
+  <meta name="description" content="A better harness keeps global instructions lean, loads MCP schemas only when needed, and turns feedback into pre-action gates. ThumbGate makes that workflow..." />
+  <meta property="og:title" content="AI Agent Harness Optimization | Progressive Disclosure + Pre-Action Gates" />
+  <meta property="og:description" content="A better harness keeps global instructions lean, loads MCP schemas only when needed, and turns feedback into pre-action gates. ThumbGate makes that workflow..." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://usethumbgate.com/guides/agent-harness-optimization" />
+  <link rel="canonical" href="https://usethumbgate.com/guides/agent-harness-optimization" />
+  <link rel="llm-context" href="/public/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --bg-raised: #111113;
+      --bg-card: #161618;
+      --line: #222225;
+      --text: #e8e8ec;
+      --muted: #8b8b96;
+      --cyan: #22d3ee;
+      --green: #4ade80;
+      --red: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(12px);
+      background: rgba(10, 10, 11, 0.88);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 14px;
+      padding-bottom: 14px;
+    }
+    .brand {
+      font-weight: 700;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 211, 238, 0.22);
+      background: rgba(34, 211, 238, 0.1);
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1.06;
+      letter-spacing: -0.04em;
+      margin: 16px 0;
+      max-width: 760px;
+    }
+    .hero p {
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .signal-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 28px 0 0;
+    }
+    .signal-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .signal-pill.up {
+      border-color: rgba(74, 222, 128, 0.28);
+      color: #b8f7c8;
+      background: rgba(74, 222, 128, 0.1);
+    }
+    .signal-pill.down {
+      border-color: rgba(248, 113, 113, 0.28);
+      color: #ffc0c0;
+      background: rgba(248, 113, 113, 0.1);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+      gap: 24px;
+      padding-bottom: 72px;
+    }
+    .card, .detail-section, .sidebar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .card { padding: 24px; }
+    .detail-section { padding: 24px; margin-bottom: 18px; }
+    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+    .detail-section p { color: var(--muted); }
+    .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
+    .card h2 { margin-top: 0; }
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .sidebar-card {
+      padding: 20px;
+    }
+    /* Only the first sidebar card sticks. Stacking multiple stickies at the
+       same top offset makes them overlap each other on scroll. The related-
+       pages card flows normally below. */
+    .sidebar-card:first-child {
+      position: sticky;
+      top: 84px;
+      max-height: calc(100vh - 104px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .proof-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 18px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: var(--cyan);
+      color: #071116;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .faq-item {
+      border-top: 1px solid var(--line);
+      padding: 14px 0;
+    }
+    .faq-item summary {
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .faq-item p {
+      color: var(--muted);
+    }
+    .related-card {
+      display: block;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      margin-top: 12px;
+      color: var(--text);
+    }
+    .related-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    @media (max-width: 860px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .sidebar-card:first-child {
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
+    }
+  </style>
   <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "AI Agent Harness Optimization That Blocks Repeat Failures",
-  "description": "How ThumbGate optimizes AI agent harnesses with progressive disclosure, MCP discovery, specialized gate harnesses, and Pre-Action Gates.",
-  "about": ["AI agent harness optimization", "progressive disclosure", "Pre-Action Gates", "MCP tools", "ThumbGate"],
-  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/guides/agent-harness-optimization",
+  "description": "A better harness keeps global instructions lean, loads MCP schemas only when needed, and turns feedback into pre-action gates. ThumbGate makes that workflow...",
+  "about": [
+    "cursor prevent repeated mistakes",
+    "claude code prevent repeated mistakes",
+    "codex cli guardrails",
+    "pre-action gates for ai coding agents"
+  ],
+  "url": "https://usethumbgate.com/guides/agent-harness-optimization",
   "publisher": {
     "@type": "Organization",
     "name": "ThumbGate",
-    "url": "https://thumbgate-production.up.railway.app"
-  }
+    "url": "https://usethumbgate.com"
+  },
+  "mainEntityOfPage": "https://usethumbgate.com/guides/agent-harness-optimization"
 }
   </script>
   <script type="application/ld+json">
@@ -37,7 +238,7 @@
       "name": "What is an AI agent harness?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "An AI agent harness is the runtime layer around the model: context loading, tool calls, guardrails, approval boundaries, memory, and verification."
+        "text": "An AI agent harness is the runtime layer around the model: context loading, tool calls, guardrails, approval boundaries, memory, and verification. ThumbGate focuses on the enforcement part of that harness."
       }
     },
     {
@@ -45,94 +246,91 @@
       "name": "How does ThumbGate optimize a harness?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "ThumbGate keeps global instructions lean, supports progressive MCP discovery, selects workflow-specific gate harnesses, and converts feedback into Pre-Action Gates."
+        "text": "ThumbGate keeps global instructions lean, supports progressive MCP discovery, selects workflow-specific gate harnesses, and converts feedback into Pre-Action Gates that block known-bad actions before execution."
       }
     }
   ]
 }
   </script>
-  <style>
-    :root { --bg:#0a0a0b; --panel:#161618; --line:#222225; --text:#e8e8ec; --muted:#a1a1aa; --cyan:#22d3ee; --green:#4ade80; }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
-    a { color: var(--cyan); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
-    .topbar { border-bottom: 1px solid var(--line); background: rgba(10,10,11,.9); }
-    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; padding-bottom: 14px; }
-    .brand { color: var(--text); font-weight: 800; }
-    .hero { padding: 72px 0 28px; }
-    .eyebrow { color: var(--cyan); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-    h1 { max-width: 760px; margin: 12px 0 16px; font-size: clamp(34px, 5vw, 56px); line-height: 1.06; }
-    .hero p { max-width: 760px; color: var(--muted); font-size: 18px; }
-    .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 24px; padding-bottom: 72px; }
-    .card { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 24px; margin-bottom: 18px; }
-    .card h2 { margin-top: 0; }
-    .card p, .card li { color: var(--muted); }
-    .price { color: var(--green); font-weight: 800; }
-    .cta { display: inline-flex; margin-top: 14px; padding: 12px 16px; border-radius: 8px; background: var(--cyan); color: #061014; font-weight: 800; }
-    @media (max-width: 840px) { .grid { grid-template-columns: 1fr; } }
-  </style>
 </head>
 <body>
-  <header class="topbar">
+  <div class="topbar">
     <div class="container">
-      <a class="brand" href="/">ThumbGate</a>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md">Verification evidence</a>
+      <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
     </div>
-  </header>
+  </div>
+
   <main class="container">
     <section class="hero">
-      <div class="eyebrow">Harness optimization</div>
-      <h1>AI agent harness optimization that blocks repeat failures</h1>
-      <p>A better harness keeps global instructions lean, loads MCP schemas only when needed, and turns feedback into Pre-Action Gates. ThumbGate makes that workflow measurable and enforceable.</p>
+      <div class="eyebrow">guide | ai agent harness optimization</div>
+      <h1>AI Agent Harness Optimization That Blocks Repeat Failures</h1>
+      <p>A better harness keeps global instructions lean, loads MCP schemas only when needed, and turns feedback into pre-action gates. ThumbGate makes that workflow measurable and enforceable.</p>
+      <div class="signal-row">
+        <div class="signal-pill up">👍 Thumbs up reinforces good behavior</div>
+        <div class="signal-pill down">👎 Thumbs down blocks repeated mistakes</div>
+      </div>
     </section>
+
     <section class="grid">
       <div>
-        <section class="card">
-          <h2>Why harnesses matter</h2>
-          <p>The model is not the whole system. The harness decides which instructions, tools, context packs, approval rules, and verification gates the agent sees before it acts. When every rule lives in one global prompt, the agent burns attention on context it does not need.</p>
-          <p>ThumbGate keeps the harness in the useful zone: short discovery docs, progressive MCP tool loading, workflow-specific gate harnesses, and hard enforcement when a known-bad action tries to repeat.</p>
-        </section>
-        <section class="card">
-          <h2>What ThumbGate audits</h2>
-          <ul>
-            <li>Global AGENTS.md, CLAUDE.md, and GEMINI.md token pressure.</li>
-            <li>Progressive MCP discovery through lightweight tool indexes and schema URLs.</li>
-            <li>Specialized deploy, code-edit, and database-write gate harnesses.</li>
-            <li>Feedback-to-enforcement coverage through thumbs-down prevention rules and Pre-Action Gates.</li>
-          </ul>
-        </section>
-        <section class="card">
-          <h2>Run the audit</h2>
-          <p><code>npx thumbgate harness-audit</code></p>
-          <p>The audit gives teams a first concrete action before they buy: see whether the current agent setup is compounding useful context or compounding instruction bloat.</p>
-        </section>
-        <section class="card">
+        <div class="card">
+          <h2>Why this page exists</h2>
+          <ul><li>Harness optimization is the control layer around the model: context, tools, guardrails, and feedback.</li><li>Progressive disclosure keeps agents out of prompt bloat while preserving proof and tool access.</li><li>ThumbGate adds a concrete audit path and Pre-Action Gates so harness lessons become runtime enforcement.</li></ul>
+        </div>
+        
+      <section class="detail-section">
+        <h2>What changed</h2>
+        <p>The model is no longer the whole system. The harness decides which instructions, tools, context packs, and approval rules the model sees before it acts.</p><p>When a team stuffs every rule into a global prompt, the agent loses reasoning room. When it routes work through lean discovery surfaces, the agent can fetch the exact tool schema, lesson, or harness only when the task requires it.</p>
+        
+      </section>
+      <section class="detail-section">
+        <h2>How ThumbGate improves the harness</h2>
+        
+        <ul><li>Scores global agent docs so AGENTS.md, CLAUDE.md, and GEMINI.md stay lean instead of becoming unreviewable prompt bundles.</li><li>Publishes progressive MCP discovery through lightweight indexes and per-tool schema URLs.</li><li>Selects specialized gate harnesses for deploy, code-edit, and database-write actions instead of loading every gate for every workflow.</li><li>Turns thumbs-down feedback into prevention rules, then into hard Pre-Action Gates that block repeated mistakes.</li></ul>
+      </section>
+      <section class="detail-section">
+        <h2>Where this creates ROI</h2>
+        <p>For acquisition, this page names the buyer category: AI agent harness optimization. For conversion, the CLI audit gives a concrete first action. For retention, the same audit keeps local instructions and MCP surfaces from drifting back into bloat.</p>
+        
+      </section>
+        <div class="detail-section">
           <h2>FAQ</h2>
-          <details open>
-            <summary>What is an AI agent harness?</summary>
-            <p>The runtime layer around the model: context loading, tool calls, guardrails, approval boundaries, memory, and verification.</p>
-          </details>
-          <details>
-            <summary>How does ThumbGate optimize a harness?</summary>
-            <p>ThumbGate keeps global instructions lean, supports progressive MCP discovery, selects workflow-specific gate harnesses, and converts feedback into Pre-Action Gates.</p>
-          </details>
-        </section>
+          
+      <details class="faq-item">
+        <summary>What is an AI agent harness?</summary>
+        <p>An AI agent harness is the runtime layer around the model: context loading, tool calls, guardrails, approval boundaries, memory, and verification. ThumbGate focuses on the enforcement part of that harness.</p>
+      </details>
+      <details class="faq-item">
+        <summary>How does ThumbGate optimize a harness?</summary>
+        <p>ThumbGate keeps global instructions lean, supports progressive MCP discovery, selects workflow-specific gate harnesses, and converts feedback into Pre-Action Gates that block known-bad actions before execution.</p>
+      </details>
+        </div>
       </div>
-      <aside>
-        <section class="card">
-          <h2>Start with proof</h2>
-          <p>Free local CLI installs the enforcement loop. Pro is <span class="price">$19/mo</span> or <span class="price">$149/yr</span>. Team starts at <span class="price">$49/seat/mo</span> after intake.</p>
-          <p><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/harnesses-report.json">Machine-readable harness proof</a></p>
-          <a class="cta" href="/go/install?utm_source=guide&utm_medium=harness_optimization&utm_campaign=agent_harness_optimization">Install Free CLI</a>
-        </section>
-        <section class="card">
-          <h2>Related</h2>
-          <p><a href="/guides/pre-action-gates">What are Pre-Action Gates?</a></p>
-          <p><a href="/guides/codex-cli-guardrails">Codex CLI guardrails</a></p>
-          <p><a href="/compare/mem0">ThumbGate vs Mem0</a></p>
-        </section>
+
+      <aside class="sidebar">
+        <div class="sidebar-card">
+          <h2>GSD execution brief</h2>
+          <p>This page was prioritized because it captures high-intent demand around ai agent harness optimization and feeds directly into ThumbGate's proof-led conversion path.</p>
+          <p><strong>Opportunity score:</strong> 83</p>
+          <p><strong>Primary persona:</strong> ai-engineer</p>
+          <p><strong>Keyword cluster:</strong> cursor prevent repeated mistakes, claude code prevent repeated mistakes, codex cli guardrails, pre-action gates for ai coding agents</p>
+          <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
+          <div class="proof-links"><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json" target="_blank" rel="noopener">Automation proof</a><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/harnesses-report.json" target="_blank" rel="noopener">Harness proof</a><a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub repository</a></div>
+          <a class="cta-button" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_agent-harness-optimization&amp;cta_placement=seo_brief&amp;plan_id=pro" target="_blank" rel="noopener">Go Pro — $19/mo</a>
+        </div>
+        <div class="sidebar-card">
+          <h2>Related pages</h2>
+          
+        <a class="related-card" href="/guides/pre-action-gates">
+          <span class="related-label">Related page</span>
+          <strong>What Are Pre-Action Gates?</strong>
+        </a>
+        <a class="related-card" href="/guides/codex-cli-guardrails">
+          <span class="related-label">Related page</span>
+          <strong>Codex CLI Guardrails That Actually Enforce</strong>
+        </a>
+        </div>
       </aside>
     </section>
   </main>

@@ -12,6 +12,9 @@ const GUIDE_FILES = [
   'guides/agent-harness-optimization.html',
   'guides/browser-automation-safety.html',
   'guides/native-messaging-host-security.html',
+  'guides/ai-search-topical-presence.html',
+  'guides/relational-knowledge-ai-recommendations.html',
+  'guides/claude-code-feedback.html',
   'guides/stop-repeated-ai-agent-mistakes.html',
   'guides/claude-code-prevent-repeated-mistakes.html',
   'guides/cursor-prevent-repeated-mistakes.html',
@@ -27,12 +30,12 @@ const COMPARE_FILES = [
 const ALL_FILES = [...GUIDE_FILES, ...COMPARE_FILES];
 
 describe('SEO guide and comparison pages', () => {
-  it('all 11 HTML files exist', () => {
+  it('all 14 HTML files exist', () => {
     for (const file of ALL_FILES) {
       const fullPath = path.join(PUBLIC_DIR, file);
       assert.ok(fs.existsSync(fullPath), `Missing file: ${file}`);
     }
-    assert.equal(ALL_FILES.length, 11);
+    assert.equal(ALL_FILES.length, 14);
   });
 
   for (const file of ALL_FILES) {
@@ -101,5 +104,21 @@ describe('SEO guide and comparison pages', () => {
       html.includes('npx thumbgate native-messaging-audit'),
       'browser automation safety guide should include the native messaging audit command'
     );
+  });
+
+  it('AI search visibility guides reinforce the recommendation-discovery story', () => {
+    const topicalPresence = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/ai-search-topical-presence.html'),
+      'utf-8'
+    );
+    const relationalKnowledge = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/relational-knowledge-ai-recommendations.html'),
+      'utf-8'
+    );
+
+    assert.ok(topicalPresence.includes('Topical presence'), 'topical presence guide should mention topical presence');
+    assert.ok(topicalPresence.includes('Verification evidence'), 'topical presence guide should link proof assets');
+    assert.ok(relationalKnowledge.includes('Relational knowledge'), 'relational knowledge guide should mention relational knowledge');
+    assert.ok(relationalKnowledge.includes('pre-action gates'), 'relational knowledge guide should tie the topic back to ThumbGate');
   });
 });
