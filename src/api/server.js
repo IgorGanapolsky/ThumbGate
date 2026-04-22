@@ -1154,6 +1154,18 @@ function resolveBillingSummaryOptions(parsed) {
   });
 }
 
+async function buildLiveDashboardData(parsed, feedbackDir) {
+  const summaryOptions = resolveBillingSummaryOptions(parsed);
+  const billingSummary = await getBillingSummaryLive(summaryOptions);
+  const data = generateDashboard(feedbackDir, {
+    analyticsWindow: summaryOptions,
+    billingSummary,
+    billingSource: 'live',
+    authContext: { tier: 'pro' },
+  });
+  return { summaryOptions, data };
+}
+
 function createJourneyId(prefix) {
   return createTraceId(prefix).replace(/^trace_/, `${prefix}_`);
 }
@@ -5964,8 +5976,9 @@ async function addContext(){
       // GET /v1/analytics/losses -- explain where buyer dollars are falling out of the funnel
       if (req.method === 'GET' && pathname === '/v1/analytics/losses') {
         let summaryOptions;
+        let data;
         try {
-          summaryOptions = resolveBillingSummaryOptions(parsed);
+          ({ summaryOptions, data } = await buildLiveDashboardData(parsed, requestFeedbackDir));
         } catch (err) {
           sendProblem(res, {
             type: PROBLEM_TYPES.INVALID_REQUEST,
@@ -5976,13 +5989,6 @@ async function addContext(){
           return;
         }
 
-        const billingSummary = await getBillingSummaryLive(summaryOptions);
-        const data = generateDashboard(requestFeedbackDir, {
-          analyticsWindow: summaryOptions,
-          billingSummary,
-          billingSource: 'live',
-          authContext: { tier: 'pro' },
-        });
         sendJson(res, 200, {
           window: data.analytics.window || summaryOptions,
           lossAnalysis: data.analytics.lossAnalysis || null,
@@ -6001,9 +6007,9 @@ async function addContext(){
 
       // GET /v1/dashboard -- Full ThumbGate dashboard JSON
       if (req.method === 'GET' && pathname === '/v1/dashboard') {
-        let summaryOptions;
+        let data;
         try {
-          summaryOptions = resolveBillingSummaryOptions(parsed);
+          ({ data } = await buildLiveDashboardData(parsed, requestFeedbackDir));
         } catch (err) {
           sendProblem(res, {
             type: PROBLEM_TYPES.INVALID_REQUEST,
@@ -6014,13 +6020,6 @@ async function addContext(){
           return;
         }
 
-        const billingSummary = await getBillingSummaryLive(summaryOptions);
-        const data = generateDashboard(requestFeedbackDir, {
-          analyticsWindow: summaryOptions,
-          billingSummary,
-          billingSource: 'live',
-          authContext: { tier: 'pro' },
-        });
         sendJson(res, 200, data);
         return;
       }
