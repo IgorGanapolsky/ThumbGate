@@ -4,6 +4,10 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const pkg = require('../../package.json');
+const {
+  createUnavailableAsyncOperation,
+  loadOptionalModule,
+} = require('../../scripts/private-core-boundary');
 
 const POSTHOG_API_PATHS = new Set(['/capture', '/batch', '/decide', '/e', '/engage']);
 const POSTHOG_INGEST_HOST = 'us.i.posthog.com';
@@ -50,7 +54,9 @@ const {
 } = require('../../scripts/feedback-paths');
 const {
   readRecentConversationWindow,
-} = require('../../scripts/feedback-history-distiller');
+} = loadOptionalModule(path.join(__dirname, '../../scripts/feedback-history-distiller'), () => ({
+  readRecentConversationWindow: () => [],
+}));
 const {
   readJSONL,
   exportDpoFromMemories,
@@ -193,7 +199,13 @@ const {
   pauseQueuedJob,
   cancelQueuedJob,
   resumeHostedJob,
-} = require('../../scripts/hosted-job-launcher');
+} = loadOptionalModule(path.join(__dirname, '../../scripts/hosted-job-launcher'), () => ({
+  launchDpoExportJob: createUnavailableAsyncOperation('Hosted DPO export'),
+  launchHarnessJob: createUnavailableAsyncOperation('Hosted harness jobs'),
+  pauseQueuedJob: createUnavailableAsyncOperation('Hosted job controls'),
+  cancelQueuedJob: createUnavailableAsyncOperation('Hosted job controls'),
+  resumeHostedJob: createUnavailableAsyncOperation('Hosted job controls'),
+}));
 const {
   appendWorkflowSprintLead,
   advanceWorkflowSprintLead,

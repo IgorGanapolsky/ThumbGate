@@ -9,6 +9,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { loadOptionalModule } = require('./private-core-boundary');
 const {
   resolveFeedbackAction,
   prepareForStorage,
@@ -25,7 +26,13 @@ const {
 const { recordAction, attributeFeedback } = require('./feedback-attribution');
 const {
   distillFeedbackHistory,
-} = require('./feedback-history-distiller');
+} = loadOptionalModule('./feedback-history-distiller', () => ({
+  distillFeedbackHistory: () => ({
+    inferredFields: {},
+    conversationWindow: [],
+    source: 'public-shell-fallback',
+  }),
+}));
 const {
   extractFilePaths: extractConversationPaths,
   extractErrors: extractConversationErrors,
@@ -41,6 +48,11 @@ const {
   buildFeedbackPathsFromDir,
   getFeedbackPaths: resolveFeedbackPaths,
 } = require('./feedback-paths');
+const {
+  reflect,
+} = loadOptionalModule('./reflector-agent', () => ({
+  reflect: () => null,
+}));
 
 const AUDIT_TRAIL_TAG = 'audit-trail';
 
@@ -944,7 +956,6 @@ function captureFeedback(params) {
   let reflection = null;
   if (signal === 'negative' && Array.isArray(params.conversationWindow) && params.conversationWindow.length >= 2) {
     try {
-      const { reflect } = require('./reflector-agent');
       reflection = reflect({
         conversationWindow: params.conversationWindow,
         context: inferredContext,
