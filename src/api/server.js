@@ -54,7 +54,7 @@ const {
 } = require('../../scripts/feedback-paths');
 const {
   readRecentConversationWindow,
-} = loadOptionalModule('../../scripts/feedback-history-distiller', () => ({
+} = loadOptionalModule(path.join(__dirname, '../../scripts/feedback-history-distiller'), () => ({
   readRecentConversationWindow: () => [],
 }));
 const {
