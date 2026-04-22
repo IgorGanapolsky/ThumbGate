@@ -165,6 +165,14 @@ test('private-core API module helpers report unknown and unavailable modules cle
   const directError = __test__.createPrivateCoreUnavailableError('Hosted harness jobs');
   assert.equal(directError.statusCode, 503);
   assert.equal(directError.code, 'PRIVATE_CORE_REQUIRED');
+
+  await withMissingPrivateApiModules([
+    __test__.PRIVATE_API_MODULES.lessonSearch,
+    __test__.PRIVATE_API_MODULES.semanticLayer,
+  ], async () => {
+    assert.equal(__test__.loadPrivateApiModule('lessonSearch'), null);
+    assert.equal(__test__.loadPrivateApiModule('semanticLayer'), null);
+  });
 });
 
 test('PostHog ingest proxy forwards allowed analytics requests to PostHog', async () => {
@@ -2337,6 +2345,8 @@ test('private-core API endpoints return 503 when hosted/private modules are abse
     __test__.PRIVATE_API_MODULES.delegationRuntime,
     __test__.PRIVATE_API_MODULES.hostedJobLauncher,
     __test__.PRIVATE_API_MODULES.workflowSprintIntake,
+    __test__.PRIVATE_API_MODULES.lessonSearch,
+    __test__.PRIVATE_API_MODULES.semanticLayer,
   ];
 
   await withMissingPrivateApiModules(modulePaths, async () => {
@@ -2379,6 +2389,14 @@ test('private-core API endpoints return 503 when hosted/private modules are abse
       body: JSON.stringify({ leadId: 'lead_123', status: 'qualified' }),
     });
     assert.equal(advanceRes.status, 503);
+
+    const lessonsRes = await fetch(apiUrl('/v1/lessons/search?q=rollback&limit=5'), { headers: authHeader });
+    assert.equal(lessonsRes.status, 503);
+    assert.match(await lessonsRes.text(), /private core|hosted runtime/i);
+
+    const semanticRes = await fetch(apiUrl('/v1/semantic/describe?type=Customer'), { headers: authHeader });
+    assert.equal(semanticRes.status, 503);
+    assert.match(await semanticRes.text(), /private core|hosted runtime/i);
   });
 });
 
