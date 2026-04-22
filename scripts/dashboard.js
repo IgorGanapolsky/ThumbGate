@@ -778,6 +778,13 @@ function computeAnalyticsSummary(feedbackDir, options = {}) {
       topSurface: null,
       topQuery: null,
     },
+    trackedLinks: telemetry.trackedLinks || {
+      totalHits: 0,
+      totalCheckoutStarts: 0,
+      overallConversionRate: 0,
+      bySlug: {},
+      topSlug: null,
+    },
     efficiency,
     revenue: billing.revenue || {
       paidProviderEvents: 0,
