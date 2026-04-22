@@ -10,6 +10,8 @@ const PUBLIC_DIR = path.resolve(__dirname, '..', 'public');
 const GUIDE_FILES = [
   'guides/pre-action-gates.html',
   'guides/agent-harness-optimization.html',
+  'guides/browser-automation-safety.html',
+  'guides/native-messaging-host-security.html',
   'guides/stop-repeated-ai-agent-mistakes.html',
   'guides/claude-code-prevent-repeated-mistakes.html',
   'guides/cursor-prevent-repeated-mistakes.html',
@@ -25,12 +27,12 @@ const COMPARE_FILES = [
 const ALL_FILES = [...GUIDE_FILES, ...COMPARE_FILES];
 
 describe('SEO guide and comparison pages', () => {
-  it('all 9 HTML files exist', () => {
+  it('all 11 HTML files exist', () => {
     for (const file of ALL_FILES) {
       const fullPath = path.join(PUBLIC_DIR, file);
       assert.ok(fs.existsSync(fullPath), `Missing file: ${file}`);
     }
-    assert.equal(ALL_FILES.length, 9);
+    assert.equal(ALL_FILES.length, 11);
   });
 
   for (const file of ALL_FILES) {
@@ -86,6 +88,18 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(
       html.includes('proof/harnesses-report.json'),
       'agent harness guide should link machine-readable harness proof'
+    );
+  });
+
+  it('browser safety guide routes readers into the native messaging audit', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/browser-automation-safety.html'),
+      'utf-8'
+    );
+
+    assert.ok(
+      html.includes('npx thumbgate native-messaging-audit'),
+      'browser automation safety guide should include the native messaging audit command'
     );
   });
 });

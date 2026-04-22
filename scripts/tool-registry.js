@@ -842,6 +842,18 @@ const TOOLS = [
     },
   }),
   readOnlyTool({
+    name: 'native_messaging_audit',
+    description: 'Audit local browser native messaging hosts and AI browser bridges. Flags missing host binaries, pre-authorized extension bridges, and manifests for browsers not detected locally.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        platform: { type: 'string', enum: ['darwin', 'linux', 'win32'], description: 'Optional platform override for manifest discovery.' },
+        homeDir: { type: 'string', description: 'Optional home-directory override for manifest discovery.' },
+        aiOnly: { type: 'boolean', description: 'When true, only AI/browser bridge manifests are returned.' },
+      },
+    },
+  }),
+  readOnlyTool({
     name: 'commerce_recall',
     description: 'Recall past feedback filtered by commerce categories (product_recommendation, brand_compliance, sizing, pricing, regulatory). Returns quality scores alongside memories for agentic commerce agents.',
     inputSchema: {

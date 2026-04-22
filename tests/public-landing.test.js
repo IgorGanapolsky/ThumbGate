@@ -150,6 +150,17 @@ test('public landing page positions ThumbGate as agent governance for AI coding 
   assert.doesNotMatch(landingPage, /official Anthropic partner/i);
 });
 
+test('public landing page exposes browser-bridge safety buyer guides', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /\/guides\/browser-automation-safety/);
+  assert.match(landingPage, /Browser Automation Safety for AI Agents/);
+  assert.match(landingPage, /\/guides\/native-messaging-host-security/);
+  assert.match(landingPage, /Native Messaging Host Security/);
+  assert.match(landingPage, /cross-app bridges/i);
+  assert.match(landingPage, /pre-authorized extension paths/i);
+});
+
 test('public landing page hero features both thumbs up AND thumbs down prominently', () => {
   const landingPage = readLandingPage();
 
