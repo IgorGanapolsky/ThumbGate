@@ -30,7 +30,6 @@ const {
   resolveFallbackArtifactPath,
 } = require('./feedback-paths');
 const { getTelemetryAnalytics, getTelemetrySourceDiagnostics } = require('./telemetry-analytics');
-const { loadWorkflowSprintLeads } = require('./workflow-sprint-intake');
 const {
   PRO_MONTHLY_PRICE_ID,
   PRO_ANNUAL_PRICE_ID,
@@ -51,6 +50,12 @@ const {
 } = require('./analytics-window');
 const { ensureParentDir } = require('./fs-utils');
 const mailer = require('./mailer');
+
+function loadWorkflowSprintIntakeModule() {
+  const modulePath = path.resolve(__dirname, 'workflow-sprint-intake.js');
+  if (!fs.existsSync(modulePath)) return null;
+  return require(modulePath);
+}
 
 // ---------------------------------------------------------------------------
 // Config
@@ -1759,8 +1764,9 @@ function getBusinessAnalytics(options = {}) {
     (entry) => entry && entry.timestamp
   );
   const revenueEvents = loadResolvedRevenueEvents({ ...analyticsWindow, extraRevenueEvents });
+  const workflowSprintIntake = loadWorkflowSprintIntakeModule();
   const workflowSprintLeads = filterEntriesForWindow(
-    loadWorkflowSprintLeads(),
+    workflowSprintIntake ? workflowSprintIntake.loadWorkflowSprintLeads() : [],
     analyticsWindow,
     (entry) => entry && entry.submittedAt
   );

@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
+const Module = require('node:module');
 const { execFileSync } = require('node:child_process');
 
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-mcp-test-'));
@@ -16,7 +17,7 @@ const HARNESS_PATH = require.resolve('../scripts/natural-language-harness');
 const VERIFICATION_PATH = require.resolve('../scripts/verification-loop');
 const RERANKER_PATH = require.resolve('../scripts/cross-encoder-reranker');
 
-const { handleRequest, TOOLS, SAFE_DATA_DIR } = require('../adapters/mcp/server-stdio');
+const { handleRequest, TOOLS, SAFE_DATA_DIR, __test__ } = require('../adapters/mcp/server-stdio');
 
 function initGitRepo() {
   const repoPath = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-mcp-repo-'));
@@ -44,6 +45,25 @@ function stubModule(modulePath, exports) {
     loaded: true,
     exports,
   };
+}
+
+async function withMissingPrivateModules(modulePaths, fn) {
+  const blocked = new Set(modulePaths);
+  const originalLoad = Module._load;
+  Module._load = function patchedModuleLoad(request, parent, isMain) {
+    if (blocked.has(request)) {
+      const error = new Error(`Cannot find module '${request}'`);
+      error.code = 'MODULE_NOT_FOUND';
+      throw error;
+    }
+    return originalLoad.call(this, request, parent, isMain);
+  };
+
+  try {
+    return await fn();
+  } finally {
+    Module._load = originalLoad;
+  }
 }
 
 function makeAcceptedVerification() {
@@ -510,6 +530,24 @@ test('reflect_on_feedback returns a proposed rule from the conversation window',
   assert.match(payload.message, /Correct\?/);
 });
 
+test('private-core MCP module helpers report unknown and unavailable modules cleanly', async () => {
+  assert.throws(
+    () => __test__.loadPrivateMcpModule('nope'),
+    /Unknown private MCP module: nope/,
+  );
+
+  await withMissingPrivateModules([
+    __test__.PRIVATE_MCP_MODULES.intentRouter,
+  ], async () => {
+    assert.equal(__test__.loadPrivateMcpModule('intentRouter'), null);
+  });
+
+  const unavailable = JSON.parse(__test__.unavailablePrivateMcpFeature('plan_intent').content[0].text);
+  assert.equal(unavailable.ok, false);
+  assert.equal(unavailable.availability, 'private_core');
+  assert.equal(unavailable.tool, 'plan_intent');
+});
+
 test('report_product_issue logs local product feedback over MCP', async () => {
   const originalGithubToken = process.env.GITHUB_TOKEN;
   const originalGhToken = process.env.GH_TOKEN;
@@ -719,6 +757,44 @@ test('start_handoff and complete_handoff expose sequential delegation over MCP',
   assert.equal(completed.status, 'completed');
   assert.equal(completed.outcome, 'accepted');
   assert.equal(completed.verificationAccepted, true);
+});
+
+test('private-core MCP tools return availability markers when private modules are absent', async () => {
+  const modulePaths = [
+    __test__.PRIVATE_MCP_MODULES.intentRouter,
+    __test__.PRIVATE_MCP_MODULES.delegationRuntime,
+    __test__.PRIVATE_MCP_MODULES.reflectorAgent,
+    __test__.PRIVATE_MCP_MODULES.swarmCoordinator,
+    __test__.PRIVATE_MCP_MODULES.sessionReport,
+    __test__.PRIVATE_MCP_MODULES.operatorArtifacts,
+    __test__.PRIVATE_MCP_MODULES.orgDashboard,
+    __test__.PRIVATE_MCP_MODULES.managedLessonAgent,
+  ];
+  const toolCalls = [
+    { name: 'reflect_on_feedback', arguments: { conversationWindow: [{ role: 'user', content: 'Add a rule.' }] } },
+    { name: 'list_intents', arguments: {} },
+    { name: 'plan_intent', arguments: { intentId: 'improve_response_quality', context: 'Need a plan' } },
+    { name: 'start_handoff', arguments: { intentId: 'improve_response_quality', context: 'Delegate safely' } },
+    { name: 'complete_handoff', arguments: { handoffId: 'handoff_123', outcome: 'success' } },
+    { name: 'distribute_context_to_agents', arguments: { prompt: 'distribute context', agents: ['reviewer'] } },
+    { name: 'session_report', arguments: { windowHours: 24 } },
+    { name: 'generate_operator_artifact', arguments: { artifactType: 'reliability_pulse' } },
+  ];
+
+  await withMissingPrivateModules(modulePaths, async () => {
+    for (const toolCall of toolCalls) {
+      const result = await handleRequest({
+        jsonrpc: '2.0',
+        id: `missing-${toolCall.name}`,
+        method: 'tools/call',
+        params: toolCall,
+      });
+      const payload = JSON.parse(result.content[0].text);
+      assert.equal(payload.ok, false, toolCall.name);
+      assert.equal(payload.availability, 'private_core', toolCall.name);
+      assert.equal(payload.tool, toolCall.name, toolCall.name);
+    }
+  });
 });
 
 test('bootstrap_internal_agent creates a sandbox and reviewer plan over MCP', async () => {
