@@ -54,7 +54,7 @@ const {
 } = require('../../scripts/feedback-paths');
 const {
   readRecentConversationWindow,
-} = loadOptionalModule('../../scripts/feedback-history-distiller', () => ({
+} = loadOptionalModule(path.join(__dirname, '../../scripts/feedback-history-distiller'), () => ({
   readRecentConversationWindow: () => [],
 }));
 const {
@@ -199,7 +199,7 @@ const {
   pauseQueuedJob,
   cancelQueuedJob,
   resumeHostedJob,
-} = loadOptionalModule('../../scripts/hosted-job-launcher', () => ({
+} = loadOptionalModule(path.join(__dirname, '../../scripts/hosted-job-launcher'), () => ({
   launchDpoExportJob: createUnavailableAsyncOperation('Hosted DPO export'),
   launchHarnessJob: createUnavailableAsyncOperation('Hosted harness jobs'),
   pauseQueuedJob: createUnavailableAsyncOperation('Hosted job controls'),

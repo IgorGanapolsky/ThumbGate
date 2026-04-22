@@ -107,7 +107,7 @@ const {
 } = require('../../scripts/lesson-search');
 const {
   retrieveRelevantLessons,
-} = loadOptionalModule('../../scripts/lesson-retrieval', () => ({
+} = loadOptionalModule(path.join(__dirname, '../../scripts/lesson-retrieval'), () => ({
   retrieveRelevantLessons: () => [],
 }));
 const {
@@ -122,7 +122,7 @@ const {
   readImportedDocument,
 } = require('../../scripts/document-intake');
 const { checkLimit, UPGRADE_MESSAGE } = require('../../scripts/rate-limiter');
-const { generateOrgDashboard } = loadOptionalModule('../../scripts/org-dashboard', () => ({
+const { generateOrgDashboard } = loadOptionalModule(path.join(__dirname, '../../scripts/org-dashboard'), () => ({
   generateOrgDashboard: () => ({
     activeAgents: 0,
     totalAgents: 0,
@@ -140,7 +140,7 @@ const {
 const { runLoop: runAutoresearchLoop } = require('../../scripts/autoresearch-runner');
 const { TOOLS } = require('../../scripts/tool-registry');
 const { buildContextFootprintReport } = require('../../scripts/context-footprint');
-const { reflect: reflectOnFeedback } = loadOptionalModule('../../scripts/reflector-agent', () => ({
+const { reflect: reflectOnFeedback } = loadOptionalModule(path.join(__dirname, '../../scripts/reflector-agent'), () => ({
   reflect: () => createUnavailableReport('Feedback reflection'),
 }));
 const { submitProductIssue } = require('../../scripts/product-feedback');
@@ -537,7 +537,7 @@ async function callToolInner(name, args) {
       }));
     case 'retrieve_lessons': {
       // Cross-encoder reranking: retrieve more candidates, then rerank for precision
-      const { retrieveWithRerankingSync } = loadOptionalModule('../../scripts/cross-encoder-reranker', () => ({
+      const { retrieveWithRerankingSync } = loadOptionalModule(path.join(__dirname, '../../scripts/cross-encoder-reranker'), () => ({
         retrieveWithRerankingSync: (toolName, actionContext, options = {}) => retrieveRelevantLessons(
           toolName,
           actionContext,
@@ -961,13 +961,13 @@ async function callToolInner(name, args) {
     case 'finalize_feedback_session':
       return toTextResult(finalizeFeedbackSession(args.sessionId));
     case 'run_managed_lesson_agent': {
-      const { runManagedAgent } = loadOptionalModule('../../scripts/managed-lesson-agent', () => ({
+      const { runManagedAgent } = loadOptionalModule(path.join(__dirname, '../../scripts/managed-lesson-agent'), () => ({
         runManagedAgent: async () => createUnavailableReport('Managed lesson agent'),
       }));
       return toTextResult(await runManagedAgent({ dryRun: args.dryRun, limit: args.limit, model: args.model }));
     }
     case 'managed_agent_status': {
-      const { getManagedAgentStatus } = loadOptionalModule('../../scripts/managed-lesson-agent', () => ({
+      const { getManagedAgentStatus } = loadOptionalModule(path.join(__dirname, '../../scripts/managed-lesson-agent'), () => ({
         getManagedAgentStatus: () => createUnavailableReport('Managed lesson agent'),
       }));
       return toTextResult(getManagedAgentStatus() || { message: 'No managed agent runs recorded yet.' });
