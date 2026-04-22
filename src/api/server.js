@@ -156,9 +156,6 @@ const {
   getSettingsStatus,
 } = require('../../scripts/settings-hierarchy');
 const {
-  searchLessons,
-} = require('../../scripts/lesson-search');
-const {
   updateRecordInJsonl,
   deleteRecordFromJsonl,
   readJSONLLocal,
@@ -239,6 +236,8 @@ const PRIVATE_API_MODULES = Object.freeze({
   delegationRuntime: path.resolve(__dirname, '../../scripts/delegation-runtime.js'),
   hostedJobLauncher: path.resolve(__dirname, '../../scripts/hosted-job-launcher.js'),
   workflowSprintIntake: path.resolve(__dirname, '../../scripts/workflow-sprint-intake.js'),
+  lessonSearch: path.resolve(__dirname, '../../scripts/lesson-search.js'),
+  semanticLayer: path.resolve(__dirname, '../../scripts/semantic-layer.js'),
 });
 
 function createPrivateCoreUnavailableError(feature) {
@@ -5224,7 +5223,8 @@ async function addContext(){
           .split(',')
           .map((tag) => tag.trim())
           .filter(Boolean);
-        const results = searchLessons(query, {
+        const lessonSearch = requirePrivateApiModule('lessonSearch', 'Lesson search');
+        const results = lessonSearch.searchLessons(query, {
           limit: Number.isFinite(limit) ? limit : 10,
           category,
           tags,
@@ -5727,12 +5727,12 @@ async function addContext(){
 
       // GET /v1/semantic/describe — get canonical definition of a business entity
       if (req.method === 'GET' && pathname === '/v1/semantic/describe') {
-        const { describeSemanticSchema } = require('../../scripts/semantic-layer');
+        const semanticLayer = requirePrivateApiModule('semanticLayer', 'Semantic schema');
         const type = parsed.query.type;
         if (!type) {
           throw createHttpError(400, 'type query parameter is required');
         }
-        const schema = describeSemanticSchema();
+        const schema = semanticLayer.describeSemanticSchema();
         const entity = schema.entities[type] || schema.metrics[type];
         if (!entity) {
           sendProblem(res, {
