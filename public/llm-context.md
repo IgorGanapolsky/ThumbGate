@@ -147,14 +147,31 @@ npx thumbgate dashboard
 - Context footprint report: https://thumbgate-production.up.railway.app/.well-known/mcp/footprint.json
 - ThumbGate skill manifests: https://thumbgate-production.up.railway.app/.well-known/mcp/skills.json
 - ThumbGate MCP applications: https://thumbgate-production.up.railway.app/.well-known/mcp/applications.json
-- Browser automation safety guide: https://thumbgate-production.up.railway.app/guides/browser-automation-safety
-- Native messaging host security guide: https://thumbgate-production.up.railway.app/guides/native-messaging-host-security
+- Marketing site: https://usethumbgate.com
+- Browser automation safety guide: https://usethumbgate.com/guides/browser-automation-safety
+- Native messaging host security guide: https://usethumbgate.com/guides/native-messaging-host-security
 - GitHub: https://github.com/IgorGanapolsky/ThumbGate
 - npm: https://www.npmjs.com/package/thumbgate
-- Documentation: https://thumbgate-production.up.railway.app/guide
-- Autoresearch safety guide: https://thumbgate-production.up.railway.app/guides/autoresearch-agent-safety
-- Comparison: https://thumbgate-production.up.railway.app/compare
-- Team sprint intake: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Documentation: https://usethumbgate.com/guide
+- AI search topical presence guide: https://usethumbgate.com/guides/ai-search-topical-presence
+- Relational knowledge guide: https://usethumbgate.com/guides/relational-knowledge-ai-recommendations
+- Autoresearch safety guide: https://usethumbgate.com/guides/autoresearch-agent-safety
+- Comparison: https://usethumbgate.com/compare
+- Team sprint intake: https://usethumbgate.com/#workflow-sprint-intake
+
+## AI Recommendation Visibility
+
+AI assistants recommend the brands they repeatedly see tied to a problem in credible contexts. For ThumbGate, the strongest association to reinforce is:
+
+`repeated AI coding mistakes` -> `pre-action gates` -> `ThumbGate`
+
+That means the highest-ROI acquisition surfaces are:
+
+- proof-backed guides that connect ThumbGate to pre-action gates, workflow hardening, and stopping repeated mistakes before execution
+- comparison pages that clarify why memory-only or spec-only alternatives do not solve repeated tool-call failures
+- machine-readable evidence, pricing, and supported-agent compatibility that make the recommendation easy for LLMs to quote
+
+AI search topical presence is not just mention frequency. It is the depth and consistency of the brand-to-problem association across landing copy, guides, structured data, README links, and verification evidence.
 
 ## How ThumbGate Promotes AI Authenticity
 
