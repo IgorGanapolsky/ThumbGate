@@ -168,10 +168,12 @@ test('private-core API module helpers report unknown and unavailable modules cle
 
   await withMissingPrivateApiModules([
     __test__.PRIVATE_API_MODULES.lessonSearch,
+    __test__.PRIVATE_API_MODULES.lessonSynthesis,
     __test__.PRIVATE_API_MODULES.semanticLayer,
     __test__.PRIVATE_API_MODULES.commercialOffer,
   ], async () => {
     assert.equal(__test__.loadPrivateApiModule('lessonSearch'), null);
+    assert.equal(__test__.loadPrivateApiModule('lessonSynthesis'), null);
     assert.equal(__test__.loadPrivateApiModule('semanticLayer'), null);
     assert.equal(__test__.loadPrivateApiModule('commercialOffer'), null);
   });
@@ -2348,6 +2350,7 @@ test('private-core API endpoints return 503 when hosted/private modules are abse
     __test__.PRIVATE_API_MODULES.hostedJobLauncher,
     __test__.PRIVATE_API_MODULES.workflowSprintIntake,
     __test__.PRIVATE_API_MODULES.lessonSearch,
+    __test__.PRIVATE_API_MODULES.lessonSynthesis,
     __test__.PRIVATE_API_MODULES.semanticLayer,
     __test__.PRIVATE_API_MODULES.commercialOffer,
   ];
@@ -2400,6 +2403,14 @@ test('private-core API endpoints return 503 when hosted/private modules are abse
     const semanticRes = await fetch(apiUrl('/v1/semantic/describe?type=Customer'), { headers: authHeader });
     assert.equal(semanticRes.status, 503);
     assert.match(await semanticRes.text(), /private core|hosted runtime/i);
+
+    const exportRes = await fetch(apiUrl('/v1/lessons/export'), {
+      method: 'POST',
+      headers: { ...authHeader, 'content-type': 'application/json' },
+      body: JSON.stringify({ inline: false }),
+    });
+    assert.equal(exportRes.status, 503);
+    assert.match(await exportRes.text(), /private core|hosted runtime/i);
 
     const checkoutRes = await fetch(apiUrl('/v1/billing/checkout'), {
       method: 'POST',

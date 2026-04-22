@@ -148,11 +148,6 @@ const {
   getSettingsStatus,
 } = require('../../scripts/settings-hierarchy');
 const {
-  updateRecordInJsonl,
-  deleteRecordFromJsonl,
-  readJSONLLocal,
-} = require('../../scripts/lesson-synthesis');
-const {
   searchThumbgate,
 } = require('../../scripts/thumbgate-search');
 const {
@@ -229,6 +224,7 @@ const PRIVATE_API_MODULES = Object.freeze({
   hostedJobLauncher: path.resolve(__dirname, '../../scripts/hosted-job-launcher.js'),
   workflowSprintIntake: path.resolve(__dirname, '../../scripts/workflow-sprint-intake.js'),
   lessonSearch: path.resolve(__dirname, '../../scripts/lesson-search.js'),
+  lessonSynthesis: path.resolve(__dirname, '../../scripts/lesson-synthesis.js'),
   semanticLayer: path.resolve(__dirname, '../../scripts/semantic-layer.js'),
   commercialOffer: path.resolve(__dirname, '../../scripts/commercial-offer.js'),
 });
@@ -279,6 +275,22 @@ function normalizeBillingCycle(value) {
 
 function normalizeSeatCount(value, fallback) {
   return getCommercialOfferModule().normalizeSeatCount(value, fallback);
+}
+
+function getLessonSynthesisModule() {
+  return requirePrivateApiModule('lessonSynthesis', 'Lesson synthesis');
+}
+
+function readLessonJsonl(filePath, options) {
+  return getLessonSynthesisModule().readJSONLLocal(filePath, options);
+}
+
+function updateLessonJsonlRecord(filePath, recordId, record) {
+  return getLessonSynthesisModule().updateRecordInJsonl(filePath, recordId, record);
+}
+
+function deleteLessonJsonlRecord(filePath, recordId) {
+  return getLessonSynthesisModule().deleteRecordFromJsonl(filePath, recordId);
 }
 
 function serveStaticFile(res, filePath, { headOnly = false, cacheSeconds = 86400 } = {}) {
@@ -533,11 +545,11 @@ function findRecordById(id, feedbackDir) {
   const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
   let memoryRecord = null;
   let feedbackEvent = null;
-  const memoryRecords = readJSONLLocal(memoryLogPath, { maxLines: 0 });
+  const memoryRecords = readLessonJsonl(memoryLogPath, { maxLines: 0 });
   for (const rec of memoryRecords) {
     if (rec.id === id) { memoryRecord = rec; break; }
   }
-  const feedbackRecords = readJSONLLocal(feedbackLogPath, { maxLines: 0 });
+  const feedbackRecords = readLessonJsonl(feedbackLogPath, { maxLines: 0 });
   for (const rec of feedbackRecords) {
     if (rec.id === id) { feedbackEvent = rec; break; }
   }
@@ -562,8 +574,8 @@ function updateLessonRecord(feedbackDir, lessonId, updater) {
   if (!updated) return null;
   const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
   const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
-  const updatedMemory = updateRecordInJsonl(memoryLogPath, lessonId, updated);
-  const updatedFeedback = updateRecordInJsonl(feedbackLogPath, lessonId, updated);
+  const updatedMemory = updateLessonJsonlRecord(memoryLogPath, lessonId, updated);
+  const updatedFeedback = updateLessonJsonlRecord(feedbackLogPath, lessonId, updated);
   if (!updatedMemory && !updatedFeedback) return null;
   return updated;
 }
@@ -3716,8 +3728,8 @@ async function addContext(){
       const feedbackDir = requestSafeDataDir;
       const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
       const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
-      const deletedMemory = deleteRecordFromJsonl(memoryLogPath, lessonId);
-      const deletedFeedback = deleteRecordFromJsonl(feedbackLogPath, lessonId);
+      const deletedMemory = deleteLessonJsonlRecord(memoryLogPath, lessonId);
+      const deletedFeedback = deleteLessonJsonlRecord(feedbackLogPath, lessonId);
       if (!deletedMemory && !deletedFeedback) {
         sendJson(res, 404, { error: 'Record not found' });
         return;
@@ -5461,8 +5473,8 @@ async function addContext(){
         const feedbackDir = requestSafeDataDir;
         const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
         const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
-        const memories = readJSONLLocal(memoryLogPath, { maxLines: 0 });
-        const feedbacks = readJSONLLocal(feedbackLogPath, { maxLines: 0 });
+        const memories = readLessonJsonl(memoryLogPath, { maxLines: 0 });
+        const feedbacks = readLessonJsonl(feedbackLogPath, { maxLines: 0 });
 
         // Merge into unified lesson records
         const lessonMap = new Map();
@@ -5552,7 +5564,7 @@ async function addContext(){
         const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
 
         // Load existing IDs for dedup
-        const existing = readJSONLLocal(feedbackLogPath, { maxLines: 0 });
+        const existing = readLessonJsonl(feedbackLogPath, { maxLines: 0 });
         const existingIds = new Set(existing.map((r) => r.id).filter(Boolean));
         // Also dedup by title+signal content hash
         const existingHashes = new Set(existing.map((r) => {
