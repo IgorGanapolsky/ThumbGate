@@ -591,7 +591,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",
-    "@google/genai": "1.49.0",
+    "@google/genai": "1.50.1",
     "@huggingface/transformers": "^4.1.0",
     "@lancedb/lancedb": "^0.27.2",
     "apache-arrow": "^18.1.0",
