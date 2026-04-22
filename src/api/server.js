@@ -89,22 +89,6 @@ const {
   samplePosteriors,
 } = require('../../scripts/thompson-sampling');
 const {
-  appendFunnelEvent,
-  createCheckoutSession,
-  getCheckoutSessionStatus,
-  provisionApiKey,
-  validateApiKey,
-  recordUsage,
-  rotateApiKey,
-  handleWebhook,
-  verifyWebhookSignature,
-  verifyGithubWebhookSignature,
-  handleGithubWebhook,
-  getFunnelAnalytics,
-  getBillingSummary,
-  getBillingSummaryLive,
-} = require('../../scripts/billing');
-const {
   resolveHostedBillingConfig,
   createTraceId,
   buildHostedSuccessUrl,
@@ -225,6 +209,7 @@ const PRIVATE_API_MODULES = Object.freeze({
   workflowSprintIntake: path.resolve(__dirname, '../../scripts/workflow-sprint-intake.js'),
   lessonSearch: path.resolve(__dirname, '../../scripts/lesson-search.js'),
   lessonSynthesis: path.resolve(__dirname, '../../scripts/lesson-synthesis.js'),
+  billing: path.resolve(__dirname, '../../scripts/billing.js'),
   semanticLayer: path.resolve(__dirname, '../../scripts/semantic-layer.js'),
   commercialOffer: path.resolve(__dirname, '../../scripts/commercial-offer.js'),
 });
@@ -291,6 +276,62 @@ function updateLessonJsonlRecord(filePath, recordId, record) {
 
 function deleteLessonJsonlRecord(filePath, recordId) {
   return getLessonSynthesisModule().deleteRecordFromJsonl(filePath, recordId);
+}
+
+function getBillingModule() {
+  return requirePrivateApiModule('billing', 'Billing operations');
+}
+
+function appendBillingFunnelEvent(event) {
+  return getBillingModule().appendFunnelEvent(event);
+}
+
+function createBillingCheckoutSession(payload) {
+  return getBillingModule().createCheckoutSession(payload);
+}
+
+function getBillingCheckoutSessionStatus(sessionId) {
+  return getBillingModule().getCheckoutSessionStatus(sessionId);
+}
+
+function provisionBillingApiKey(customerId, options) {
+  return getBillingModule().provisionApiKey(customerId, options);
+}
+
+function validateBillingApiKey(token) {
+  return getBillingModule().validateApiKey(token);
+}
+
+function recordBillingUsage(token) {
+  return getBillingModule().recordUsage(token);
+}
+
+function rotateBillingApiKey(currentKey) {
+  return getBillingModule().rotateApiKey(currentKey);
+}
+
+function handleBillingWebhookBody(rawBody, signature) {
+  return getBillingModule().handleWebhook(rawBody, signature);
+}
+
+function verifyBillingWebhook(rawBody, signature) {
+  return getBillingModule().verifyWebhookSignature(rawBody, signature);
+}
+
+function verifyBillingGithubWebhook(rawBody, signature) {
+  return getBillingModule().verifyGithubWebhookSignature(rawBody, signature);
+}
+
+function handleBillingGithubWebhookEvent(event) {
+  return getBillingModule().handleGithubWebhook(event);
+}
+
+function getBillingFunnelSummary() {
+  return getBillingModule().getFunnelAnalytics();
+}
+
+function getLiveBillingSummary(summaryOptions) {
+  return getBillingModule().getBillingSummaryLive(summaryOptions);
 }
 
 function serveStaticFile(res, filePath, { headOnly = false, cacheSeconds = 86400 } = {}) {
@@ -2212,7 +2253,7 @@ function servePublicMarketingPage({
   // Best-effort: wrapped in try/catch so a billing-ledger hiccup never
   // breaks a page render.
   try {
-    appendFunnelEvent({
+    appendBillingFunnelEvent({
       stage: 'discovery',
       event: 'landing_view',
       installId: journeyState.visitorId || null,
@@ -3002,7 +3043,7 @@ function isAuthorized(req, expected) {
 
   // Also accept any valid provisioned billing key
   if (token) {
-    const result = validateApiKey(token);
+    const result = validateBillingApiKey(token);
     return result.valid === true;
   }
 
@@ -4054,7 +4095,7 @@ async function addContext(){
       }, req.headers, 'checkout_bootstrap');
 
       try {
-        const result = await createCheckoutSession({
+        const result = await createBillingCheckoutSession({
           successUrl: buildCheckoutFallbackUrl(
             buildHostedSuccessUrl(hostedConfig.appOrigin, traceId),
             analyticsMetadata,
@@ -4681,7 +4722,7 @@ async function addContext(){
         });
 
         const sig = req.headers['stripe-signature'] || '';
-        if (!verifyWebhookSignature(rawBody, sig)) {
+        if (!verifyBillingWebhook(rawBody, sig)) {
           sendProblem(res, {
             type: PROBLEM_TYPES.WEBHOOK_INVALID,
             title: 'Invalid webhook signature',
@@ -4691,7 +4732,7 @@ async function addContext(){
           return;
         }
 
-        const result = await handleWebhook(rawBody, sig);
+        const result = await handleBillingWebhookBody(rawBody, sig);
         if (result && result.reason === 'invalid_signature') {
           sendProblem(res, {
             type: PROBLEM_TYPES.WEBHOOK_INVALID,
@@ -4725,7 +4766,7 @@ async function addContext(){
         });
 
         const sig = req.headers['x-hub-signature-256'] || '';
-        if (!verifyGithubWebhookSignature(rawBody, sig)) {
+        if (!verifyBillingGithubWebhook(rawBody, sig)) {
           sendProblem(res, {
             type: PROBLEM_TYPES.WEBHOOK_INVALID,
             title: 'Invalid webhook signature',
@@ -4748,7 +4789,7 @@ async function addContext(){
           return;
         }
 
-        const result = handleGithubWebhook(event);
+        const result = handleBillingGithubWebhookEvent(event);
         sendJson(res, 200, result);
       } catch (err) {
         sendProblem(res, {
@@ -4775,7 +4816,7 @@ async function addContext(){
         const analyticsMetadata = buildCheckoutAttributionMetadata(body, req, traceId);
         const offerSummary = resolveCheckoutOfferSummary(analyticsMetadata);
         
-        const result = await createCheckoutSession({
+        const result = await createBillingCheckoutSession({
           successUrl: body.successUrl || buildCheckoutFallbackUrl(
             buildHostedSuccessUrl(hostedConfig.appOrigin, traceId),
             analyticsMetadata,
@@ -4820,7 +4861,7 @@ async function addContext(){
           throw createHttpError(400, 'sessionId is required');
         }
 
-        const result = await getCheckoutSessionStatus(sessionId);
+        const result = await getBillingCheckoutSessionStatus(sessionId);
         if (!result.found) {
           throw createHttpError(404, 'Checkout session not found');
         }
@@ -4869,7 +4910,7 @@ async function addContext(){
     // Usage metering — record request for billing keys (not static THUMBGATE_API_KEY)
     const _token = extractBearerToken(req);
     if (_token && _token !== expectedApiKey) {
-      recordUsage(_token);
+      recordBillingUsage(_token);
     }
 
     try {
@@ -5776,7 +5817,7 @@ async function addContext(){
       // GET /v1/billing/usage — usage for the authenticated key
       if (req.method === 'GET' && pathname === '/v1/billing/usage') {
         const token = extractBearerToken(req);
-        const validation = validateApiKey(token);
+        const validation = validateBillingApiKey(token);
         if (!validation.valid) {
           sendProblem(res, {
             type: PROBLEM_TYPES.UNAUTHORIZED,
@@ -5810,7 +5851,7 @@ async function addContext(){
         if (!body.customerId) {
           throw createHttpError(400, 'customerId is required');
         }
-        const result = provisionApiKey(body.customerId, {
+        const result = provisionBillingApiKey(body.customerId, {
           installId: body.installId,
           source: 'admin_provision',
         });
@@ -5843,7 +5884,7 @@ async function addContext(){
           return;
         }
 
-        const summary = await getBillingSummaryLive(summaryOptions);
+        const summary = await getLiveBillingSummary(summaryOptions);
         sendJson(res, 200, summary);
         return;
       }
@@ -5918,7 +5959,7 @@ async function addContext(){
           });
           return;
         }
-        const validation = validateApiKey(currentKey);
+        const validation = validateBillingApiKey(currentKey);
         if (!validation.valid) {
           sendProblem(res, {
             type: PROBLEM_TYPES.BAD_REQUEST,
@@ -5929,7 +5970,7 @@ async function addContext(){
           return;
         }
         try {
-          const result = rotateApiKey(currentKey);
+          const result = rotateBillingApiKey(currentKey);
           if (!result.rotated) {
             sendProblem(res, {
               type: PROBLEM_TYPES.BAD_REQUEST,
@@ -5956,7 +5997,7 @@ async function addContext(){
 
       // GET /v1/analytics/funnel — aggregate acquisition/activation/paid funnel metrics
       if (req.method === 'GET' && pathname === '/v1/analytics/funnel') {
-        const summary = getFunnelAnalytics();
+        const summary = getBillingFunnelSummary();
         sendJson(res, 200, summary);
         return;
       }
@@ -5976,7 +6017,7 @@ async function addContext(){
           return;
         }
 
-        const billingSummary = await getBillingSummaryLive(summaryOptions);
+        const billingSummary = await getLiveBillingSummary(summaryOptions);
         const data = generateDashboard(requestFeedbackDir, {
           analyticsWindow: summaryOptions,
           billingSummary,
@@ -6033,7 +6074,7 @@ async function addContext(){
         }
 
         try {
-          const billingSummary = await getBillingSummaryLive(summaryOptions);
+          const billingSummary = await getLiveBillingSummary(summaryOptions);
           const data = generateDashboard(requestFeedbackDir, {
             analyticsWindow: summaryOptions,
             billingSummary,
@@ -6178,7 +6219,7 @@ async function addContext(){
           });
 
           const sig = req.headers['stripe-signature'] || '';
-          if (!verifyWebhookSignature(rawBody, sig)) {
+          if (!verifyBillingWebhook(rawBody, sig)) {
             sendProblem(res, {
               type: PROBLEM_TYPES.WEBHOOK_INVALID,
               title: 'Invalid webhook signature',

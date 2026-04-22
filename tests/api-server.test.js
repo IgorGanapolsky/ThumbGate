@@ -167,11 +167,13 @@ test('private-core API module helpers report unknown and unavailable modules cle
   assert.equal(directError.code, 'PRIVATE_CORE_REQUIRED');
 
   await withMissingPrivateApiModules([
+    __test__.PRIVATE_API_MODULES.billing,
     __test__.PRIVATE_API_MODULES.lessonSearch,
     __test__.PRIVATE_API_MODULES.lessonSynthesis,
     __test__.PRIVATE_API_MODULES.semanticLayer,
     __test__.PRIVATE_API_MODULES.commercialOffer,
   ], async () => {
+    assert.equal(__test__.loadPrivateApiModule('billing'), null);
     assert.equal(__test__.loadPrivateApiModule('lessonSearch'), null);
     assert.equal(__test__.loadPrivateApiModule('lessonSynthesis'), null);
     assert.equal(__test__.loadPrivateApiModule('semanticLayer'), null);
@@ -2349,6 +2351,7 @@ test('private-core API endpoints return 503 when hosted/private modules are abse
     __test__.PRIVATE_API_MODULES.delegationRuntime,
     __test__.PRIVATE_API_MODULES.hostedJobLauncher,
     __test__.PRIVATE_API_MODULES.workflowSprintIntake,
+    __test__.PRIVATE_API_MODULES.billing,
     __test__.PRIVATE_API_MODULES.lessonSearch,
     __test__.PRIVATE_API_MODULES.lessonSynthesis,
     __test__.PRIVATE_API_MODULES.semanticLayer,
@@ -2411,6 +2414,12 @@ test('private-core API endpoints return 503 when hosted/private modules are abse
     });
     assert.equal(exportRes.status, 503);
     assert.match(await exportRes.text(), /private core|hosted runtime/i);
+
+    const billingSummaryRes = await fetch(apiUrl('/v1/billing/summary'), {
+      headers: { 'x-api-key': 'thumbgate-admin-key' },
+    });
+    assert.equal(billingSummaryRes.status, 503);
+    assert.match(await billingSummaryRes.text(), /private core|hosted runtime/i);
 
     const checkoutRes = await fetch(apiUrl('/v1/billing/checkout'), {
       method: 'POST',
