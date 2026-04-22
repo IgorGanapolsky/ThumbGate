@@ -89,7 +89,8 @@ jobs:
       - name: Guard against silent no-op when main has content changes since last publish
         # Prevents the "1.5.2 already on npm, content changes don't ship" failure mode.
         # If the published version already exists but main has meaningful source changes
-        # (README, HTML, scripts) since that tag, we should have bumped the version.
+        # (README, HTML, scripts) since that tag, we should have bumped the version
+        # unless pending valid changesets already describe the next release.
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.npm.outputs.published == 'true' && steps.plan.outputs.skip_publish == 'true'
         env:
           VERSION: ${{ steps.package.outputs.version }}
@@ -109,6 +110,28 @@ jobs:
             'package.json' 'package-lock.json' 'server.json' \
             'adapters/**' 'plugins/**' 'public/*.html' 'scripts/*.js' \
             'src/**' 'bin/**' 'README.md' 'CHANGELOG.md' 2>/dev/null | wc -l | tr -d ' ')
+          VALID_PENDING_CHANGESETS=$(LAST_TAG="$LAST_TAG" node <<'NODE'
+          const { execFileSync } = require('node:child_process');
+          const { collectChangesets } = require('./scripts/changeset-check');
+
+          const diffOutput = execFileSync('git', [
+            'diff',
+            '--name-only',
+            `${process.env.LAST_TAG}..HEAD`,
+            '--',
+            '.changeset/*.md',
+            ':!.changeset/README.md',
+          ], { encoding: 'utf8' });
+
+          const files = diffOutput.split(/\r?\n/).filter(Boolean);
+          const count = collectChangesets({ files }).filter((entry) => entry.validForPackage).length;
+          process.stdout.write(String(count));
+          NODE
+          )
+          if [ "$SHIPPED_CHANGES" -gt 0 ] && [ "$VALID_PENDING_CHANGESETS" -gt 0 ]; then
+            echo "::notice::Pending valid .changeset entries cover ${SHIPPED_CHANGES} shipped file changes since ${LAST_TAG}; no-op publish is expected until the release version is consumed."
+            exit 0
+          fi
           if [ "$SHIPPED_CHANGES" -gt 0 ]; then
             echo "::error::Silent no-op detected: ${SHIPPED_CHANGES} shipped files changed since ${LAST_TAG} but package.json still says ${VERSION} (already on npm). Bump the version or tests won't verify the content ships."
             git diff --name-only "$LAST_TAG"..HEAD -- \
