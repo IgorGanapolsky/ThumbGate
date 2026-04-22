@@ -72,7 +72,6 @@
     "scripts/context-engine.js",
     "scripts/contextfs.js",
     "scripts/conversation-context.js",
-    "scripts/creator-campaigns.js",
     "scripts/context-footprint.js",
     "scripts/codex-self-heal.js",
     "scripts/dashboard-render-spec.js",
