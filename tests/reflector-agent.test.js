@@ -1,8 +1,21 @@
 #!/usr/bin/env node
 'use strict';
 
-const { describe, it, beforeEach } = require('node:test');
+const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+
+// Isolate these unit tests from the developer's real feedback DB.
+// `checkRecurrence` → `retrieveWithRerankingSync` → `retrieveRelevantLessons`
+// reads `memory-log.jsonl` under the resolved feedback dir. When the dev
+// machine has real lessons, assertions that expect zero matches flip. Pin
+// THUMBGATE_FEEDBACK_DIR to a fresh empty tmpdir for the lifetime of this
+// file so the tests exercise the pure logic under a deterministic DB state.
+const TMP_FEEDBACK_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-reflector-'));
+const PRIOR_FEEDBACK_DIR = process.env.THUMBGATE_FEEDBACK_DIR;
+process.env.THUMBGATE_FEEDBACK_DIR = TMP_FEEDBACK_DIR;
 
 // We test the pure functions directly — they don't call lesson-retrieval internally
 // except checkRecurrence, which we test with its try/catch fallback behavior
@@ -39,6 +52,15 @@ const emptyConversation = [];
 // --- Tests ---
 
 describe('reflector-agent', () => {
+
+  after(() => {
+    if (PRIOR_FEEDBACK_DIR === undefined) {
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
+    } else {
+      process.env.THUMBGATE_FEEDBACK_DIR = PRIOR_FEEDBACK_DIR;
+    }
+    try { fs.rmSync(TMP_FEEDBACK_DIR, { recursive: true, force: true }); } catch { /* best-effort */ }
+  });
 
   describe('reflect()', () => {
     it('returns reflection_complete with conversation window + negative signal', () => {
