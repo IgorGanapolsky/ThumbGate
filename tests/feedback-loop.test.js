@@ -308,6 +308,35 @@ test('captureFeedback: can distill a statusline follow-up from local conversatio
   assert.equal(result.feedbackEvent.distillation.source, 'local_conversation_window');
 });
 
+test('captureFeedback: skips reflection when reflector-agent private module is unavailable', (t) => {
+  const tmpDir = makeTmpDir();
+  const originalExistsSync = fs.existsSync;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  t.after(() => {
+    fs.existsSync = originalExistsSync;
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
+  });
+
+  fs.existsSync = (candidatePath) => {
+    if (typeof candidatePath === 'string' && candidatePath.endsWith('reflector-agent.js')) {
+      return false;
+    }
+    return originalExistsSync(candidatePath);
+  };
+
+  const result = captureFeedback({
+    signal: 'down',
+    context: 'The agent skipped tests before claiming done',
+    whatWentWrong: 'No tests were run before the claim',
+    whatToChange: 'Always run the verification command first',
+    tags: ['verification'],
+  });
+
+  assert.equal(result.accepted, true);
+  assert.equal(result.feedbackEvent.reflection == null, true);
+});
+
 // -- analyzeFeedback --
 
 test('analyzeFeedback: returns correct counts on populated log', (t) => {

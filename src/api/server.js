@@ -70,14 +70,6 @@ const {
   buildRubricEvaluation,
 } = require('../../scripts/rubric-engine');
 const {
-  listIntents,
-  planIntent,
-} = require('../../scripts/intent-router');
-const {
-  startHandoff,
-  completeHandoff,
-} = require('../../scripts/delegation-runtime');
-const {
   bootstrapInternalAgent,
 } = require('../../scripts/internal-agent-bootstrap');
 const {
@@ -119,14 +111,6 @@ const {
   buildHostedCancelUrl,
 } = require('../../scripts/hosted-config');
 const {
-  PRO_MONTHLY_PRICE_DOLLARS,
-  PRO_ANNUAL_PRICE_DOLLARS,
-  TEAM_MONTHLY_PRICE_DOLLARS,
-  normalizePlanId,
-  normalizeBillingCycle,
-  normalizeSeatCount,
-} = require('../../scripts/commercial-offer');
-const {
   generateSkills,
 } = require('../../scripts/skill-generator');
 const {
@@ -164,14 +148,6 @@ const {
   getSettingsStatus,
 } = require('../../scripts/settings-hierarchy');
 const {
-  searchLessons,
-} = require('../../scripts/lesson-search');
-const {
-  updateRecordInJsonl,
-  deleteRecordFromJsonl,
-  readJSONLLocal,
-} = require('../../scripts/lesson-synthesis');
-const {
   searchThumbgate,
 } = require('../../scripts/thumbgate-search');
 const {
@@ -187,17 +163,6 @@ const {
 const {
   resolveAnalyticsWindow,
 } = require('../../scripts/analytics-window');
-const {
-  launchDpoExportJob,
-  launchHarnessJob,
-  pauseQueuedJob,
-  cancelQueuedJob,
-  resumeHostedJob,
-} = require('../../scripts/hosted-job-launcher');
-const {
-  appendWorkflowSprintLead,
-  advanceWorkflowSprintLead,
-} = require('../../scripts/workflow-sprint-intake');
 const {
   importDocument,
   listImportedDocuments,
@@ -253,6 +218,80 @@ const STATIC_MIME_BY_EXT = Object.freeze({
   '.txt': 'text/plain; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
 });
+const PRIVATE_API_MODULES = Object.freeze({
+  intentRouter: path.resolve(__dirname, '../../scripts/intent-router.js'),
+  delegationRuntime: path.resolve(__dirname, '../../scripts/delegation-runtime.js'),
+  hostedJobLauncher: path.resolve(__dirname, '../../scripts/hosted-job-launcher.js'),
+  workflowSprintIntake: path.resolve(__dirname, '../../scripts/workflow-sprint-intake.js'),
+  lessonSearch: path.resolve(__dirname, '../../scripts/lesson-search.js'),
+  lessonSynthesis: path.resolve(__dirname, '../../scripts/lesson-synthesis.js'),
+  semanticLayer: path.resolve(__dirname, '../../scripts/semantic-layer.js'),
+  commercialOffer: path.resolve(__dirname, '../../scripts/commercial-offer.js'),
+});
+
+function createPrivateCoreUnavailableError(feature) {
+  const error = new Error(`${feature} is only available in the ThumbGate private core or hosted runtime.`);
+  error.statusCode = 503;
+  error.code = 'PRIVATE_CORE_REQUIRED';
+  return error;
+}
+
+function loadPrivateApiModule(key) {
+  const modulePath = PRIVATE_API_MODULES[key];
+  if (!modulePath) {
+    throw new Error(`Unknown private API module: ${key}`);
+  }
+  try {
+    return require(modulePath);
+  } catch (error) {
+    const message = String(error && error.message || '');
+    if ((error && (error.code === 'MODULE_NOT_FOUND' || error.code === 'ERR_MODULE_NOT_FOUND'))
+      && (message.includes(modulePath) || message.includes(path.basename(modulePath)))) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+function requirePrivateApiModule(key, feature) {
+  const module = loadPrivateApiModule(key);
+  if (!module) {
+    throw createPrivateCoreUnavailableError(feature);
+  }
+  return module;
+}
+
+function getCommercialOfferModule() {
+  return requirePrivateApiModule('commercialOffer', 'Commercial offer planning');
+}
+
+function normalizePlanId(value) {
+  return getCommercialOfferModule().normalizePlanId(value);
+}
+
+function normalizeBillingCycle(value) {
+  return getCommercialOfferModule().normalizeBillingCycle(value);
+}
+
+function normalizeSeatCount(value, fallback) {
+  return getCommercialOfferModule().normalizeSeatCount(value, fallback);
+}
+
+function getLessonSynthesisModule() {
+  return requirePrivateApiModule('lessonSynthesis', 'Lesson synthesis');
+}
+
+function readLessonJsonl(filePath, options) {
+  return getLessonSynthesisModule().readJSONLLocal(filePath, options);
+}
+
+function updateLessonJsonlRecord(filePath, recordId, record) {
+  return getLessonSynthesisModule().updateRecordInJsonl(filePath, recordId, record);
+}
+
+function deleteLessonJsonlRecord(filePath, recordId) {
+  return getLessonSynthesisModule().deleteRecordFromJsonl(filePath, recordId);
+}
 
 function serveStaticFile(res, filePath, { headOnly = false, cacheSeconds = 86400 } = {}) {
   const ext = path.extname(filePath).toLowerCase();
@@ -506,11 +545,11 @@ function findRecordById(id, feedbackDir) {
   const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
   let memoryRecord = null;
   let feedbackEvent = null;
-  const memoryRecords = readJSONLLocal(memoryLogPath, { maxLines: 0 });
+  const memoryRecords = readLessonJsonl(memoryLogPath, { maxLines: 0 });
   for (const rec of memoryRecords) {
     if (rec.id === id) { memoryRecord = rec; break; }
   }
-  const feedbackRecords = readJSONLLocal(feedbackLogPath, { maxLines: 0 });
+  const feedbackRecords = readLessonJsonl(feedbackLogPath, { maxLines: 0 });
   for (const rec of feedbackRecords) {
     if (rec.id === id) { feedbackEvent = rec; break; }
   }
@@ -535,8 +574,8 @@ function updateLessonRecord(feedbackDir, lessonId, updater) {
   if (!updated) return null;
   const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
   const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
-  const updatedMemory = updateRecordInJsonl(memoryLogPath, lessonId, updated);
-  const updatedFeedback = updateRecordInJsonl(feedbackLogPath, lessonId, updated);
+  const updatedMemory = updateLessonJsonlRecord(memoryLogPath, lessonId, updated);
+  const updatedFeedback = updateLessonJsonlRecord(feedbackLogPath, lessonId, updated);
   if (!updatedMemory && !updatedFeedback) return null;
   return updated;
 }
@@ -1338,6 +1377,7 @@ function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadReques
 }
 
 function resolveCheckoutOfferSummary(metadata = {}) {
+  const commercialOffer = getCommercialOfferModule();
   const planId = normalizePlanId(metadata.planId);
   const billingCycle = normalizeBillingCycle(metadata.billingCycle);
 
@@ -1348,8 +1388,8 @@ function resolveCheckoutOfferSummary(metadata = {}) {
       billingCycle: 'monthly',
       seatCount,
       type: 'subscription',
-      price: TEAM_MONTHLY_PRICE_DOLLARS * seatCount,
-      priceLabel: `$${TEAM_MONTHLY_PRICE_DOLLARS}/seat/mo`,
+      price: commercialOffer.TEAM_MONTHLY_PRICE_DOLLARS * seatCount,
+      priceLabel: `$${commercialOffer.TEAM_MONTHLY_PRICE_DOLLARS}/seat/mo`,
     };
   }
 
@@ -1359,7 +1399,7 @@ function resolveCheckoutOfferSummary(metadata = {}) {
       billingCycle: 'annual',
       seatCount: 1,
       type: 'subscription',
-      price: PRO_ANNUAL_PRICE_DOLLARS,
+      price: commercialOffer.PRO_ANNUAL_PRICE_DOLLARS,
       priceLabel: '$149/yr',
     };
   }
@@ -1369,7 +1409,7 @@ function resolveCheckoutOfferSummary(metadata = {}) {
     billingCycle: 'monthly',
     seatCount: 1,
     type: 'subscription',
-    price: PRO_MONTHLY_PRICE_DOLLARS,
+    price: commercialOffer.PRO_MONTHLY_PRICE_DOLLARS,
     priceLabel: '$19/mo',
   };
 }
@@ -3688,8 +3728,8 @@ async function addContext(){
       const feedbackDir = requestSafeDataDir;
       const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
       const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
-      const deletedMemory = deleteRecordFromJsonl(memoryLogPath, lessonId);
-      const deletedFeedback = deleteRecordFromJsonl(feedbackLogPath, lessonId);
+      const deletedMemory = deleteLessonJsonlRecord(memoryLogPath, lessonId);
+      const deletedFeedback = deleteLessonJsonlRecord(feedbackLogPath, lessonId);
       if (!deletedMemory && !deletedFeedback) {
         sendJson(res, 404, { error: 'Record not found' });
         return;
@@ -4426,7 +4466,8 @@ async function addContext(){
         const body = isFormSubmission
           ? await parseFormBody(req, 24 * 1024)
           : await parseJsonBody(req, 24 * 1024);
-        const lead = appendWorkflowSprintLead({
+        const workflowSprintIntake = requirePrivateApiModule('workflowSprintIntake', 'Workflow sprint intake');
+        const lead = workflowSprintIntake.appendWorkflowSprintLead({
           ...body,
           traceId: body.traceId || traceId,
           acquisitionId: body.acquisitionId || journeyState.acquisitionId,
@@ -4842,10 +4883,11 @@ async function addContext(){
         const bundleId = parsed.searchParams.get('bundleId') || undefined;
         const partnerProfile = parsed.searchParams.get('partnerProfile') || undefined;
         try {
-          const catalog = listIntents({ mcpProfile, bundleId, partnerProfile });
+          const intentRouter = requirePrivateApiModule('intentRouter', 'Intent catalog');
+          const catalog = intentRouter.listIntents({ mcpProfile, bundleId, partnerProfile });
           sendJson(res, 200, catalog);
         } catch (err) {
-          throw createHttpError(400, err.message || 'Invalid intent catalog request');
+          throw createHttpError(err.statusCode || 400, err.message || 'Invalid intent catalog request');
         }
         return;
       }
@@ -4853,7 +4895,8 @@ async function addContext(){
       if (req.method === 'POST' && pathname === '/v1/intents/plan') {
         const body = await parseJsonBody(req);
         try {
-          const plan = planIntent({
+          const intentRouter = requirePrivateApiModule('intentRouter', 'Intent planning');
+          const plan = intentRouter.planIntent({
             intentId: body.intentId,
             context: body.context || '',
             mcpProfile: body.mcpProfile,
@@ -4865,7 +4908,7 @@ async function addContext(){
           });
           sendJson(res, 200, plan);
         } catch (err) {
-          throw createHttpError(400, err.message || 'Invalid intent plan request');
+          throw createHttpError(err.statusCode || 400, err.message || 'Invalid intent plan request');
         }
         return;
       }
@@ -4873,7 +4916,9 @@ async function addContext(){
       if (req.method === 'POST' && pathname === '/v1/handoffs/start') {
         const body = await parseJsonBody(req);
         try {
-          const plan = planIntent({
+          const intentRouter = requirePrivateApiModule('intentRouter', 'Handoff planning');
+          const delegationRuntime = requirePrivateApiModule('delegationRuntime', 'Sequential handoffs');
+          const plan = intentRouter.planIntent({
             intentId: body.intentId,
             context: body.context || '',
             mcpProfile: body.mcpProfile,
@@ -4883,7 +4928,7 @@ async function addContext(){
             approved: body.approved === true,
             repoPath: body.repoPath,
           });
-          const result = startHandoff({
+          const result = delegationRuntime.startHandoff({
             plan,
             context: body.context || '',
             mcpProfile: body.mcpProfile || plan.mcpProfile,
@@ -4902,7 +4947,8 @@ async function addContext(){
       if (req.method === 'POST' && pathname === '/v1/handoffs/complete') {
         const body = await parseJsonBody(req);
         try {
-          const result = completeHandoff({
+          const delegationRuntime = requirePrivateApiModule('delegationRuntime', 'Sequential handoffs');
+          const result = delegationRuntime.completeHandoff({
             handoffId: body.handoffId,
             outcome: body.outcome,
             resultContext: body.resultContext || '',
@@ -4993,7 +5039,8 @@ async function addContext(){
         }
         const inputs = parseOptionalObject(body.inputs, 'inputs') || {};
         try {
-          const launched = launchHarnessJob(identifier, inputs, {
+          const hostedJobLauncher = requirePrivateApiModule('hostedJobLauncher', 'Hosted harness jobs');
+          const launched = hostedJobLauncher.launchHarnessJob(identifier, inputs, {
             jobId: normalizeNullableText(body.jobId) || undefined,
             skill: normalizeNullableText(body.skill) || undefined,
             partnerProfile: normalizeNullableText(body.partnerProfile) || undefined,
@@ -5052,8 +5099,9 @@ async function addContext(){
             throw createHttpError(409, `Job ${jobId} is already ${state.status}`);
           }
 
+          const hostedJobLauncher = requirePrivateApiModule('hostedJobLauncher', 'Hosted job control');
           if (action === 'resume') {
-            const launched = resumeHostedJob(jobId);
+            const launched = hostedJobLauncher.resumeHostedJob(jobId);
             sendJson(res, 202, {
               accepted: true,
               action,
@@ -5067,8 +5115,8 @@ async function addContext(){
 
           if (IDLE_JOB_STATUSES.has(state.status)) {
             const job = action === 'pause'
-              ? pauseQueuedJob(jobId, parseOptionalObject(body.metadata, 'metadata') || {})
-              : cancelQueuedJob(jobId, parseOptionalObject(body.metadata, 'metadata') || {});
+              ? hostedJobLauncher.pauseQueuedJob(jobId, parseOptionalObject(body.metadata, 'metadata') || {})
+              : hostedJobLauncher.cancelQueuedJob(jobId, parseOptionalObject(body.metadata, 'metadata') || {});
             sendJson(res, 202, {
               accepted: true,
               action,
@@ -5197,7 +5245,8 @@ async function addContext(){
           .split(',')
           .map((tag) => tag.trim())
           .filter(Boolean);
-        const results = searchLessons(query, {
+        const lessonSearch = requirePrivateApiModule('lessonSearch', 'Lesson search');
+        const results = lessonSearch.searchLessons(query, {
           limit: Number.isFinite(limit) ? limit : 10,
           category,
           tags,
@@ -5380,7 +5429,8 @@ async function addContext(){
 
         if (wantsAsync) {
           try {
-            const launched = launchDpoExportJob(paths, {
+            const hostedJobLauncher = requirePrivateApiModule('hostedJobLauncher', 'Hosted DPO export jobs');
+            const launched = hostedJobLauncher.launchDpoExportJob(paths, {
               jobId: normalizeNullableText(body.jobId) || undefined,
             });
             sendJson(res, 202, {
@@ -5423,8 +5473,8 @@ async function addContext(){
         const feedbackDir = requestSafeDataDir;
         const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
         const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
-        const memories = readJSONLLocal(memoryLogPath, { maxLines: 0 });
-        const feedbacks = readJSONLLocal(feedbackLogPath, { maxLines: 0 });
+        const memories = readLessonJsonl(memoryLogPath, { maxLines: 0 });
+        const feedbacks = readLessonJsonl(feedbackLogPath, { maxLines: 0 });
 
         // Merge into unified lesson records
         const lessonMap = new Map();
@@ -5514,7 +5564,7 @@ async function addContext(){
         const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
 
         // Load existing IDs for dedup
-        const existing = readJSONLLocal(feedbackLogPath, { maxLines: 0 });
+        const existing = readLessonJsonl(feedbackLogPath, { maxLines: 0 });
         const existingIds = new Set(existing.map((r) => r.id).filter(Boolean));
         // Also dedup by title+signal content hash
         const existingHashes = new Set(existing.map((r) => {
@@ -5699,12 +5749,12 @@ async function addContext(){
 
       // GET /v1/semantic/describe — get canonical definition of a business entity
       if (req.method === 'GET' && pathname === '/v1/semantic/describe') {
-        const { describeSemanticSchema } = require('../../scripts/semantic-layer');
+        const semanticLayer = requirePrivateApiModule('semanticLayer', 'Semantic schema');
         const type = parsed.query.type;
         if (!type) {
           throw createHttpError(400, 'type query parameter is required');
         }
-        const schema = describeSemanticSchema();
+        const schema = semanticLayer.describeSemanticSchema();
         const entity = schema.entities[type] || schema.metrics[type];
         if (!entity) {
           sendProblem(res, {
@@ -5813,7 +5863,8 @@ async function addContext(){
         const { FEEDBACK_DIR } = getFeedbackPaths();
         try {
           const body = await parseJsonBody(req, 24 * 1024);
-          const result = advanceWorkflowSprintLead(body, { feedbackDir: FEEDBACK_DIR });
+          const workflowSprintIntake = requirePrivateApiModule('workflowSprintIntake', 'Workflow sprint intake');
+          const result = workflowSprintIntake.advanceWorkflowSprintLead(body, { feedbackDir: FEEDBACK_DIR });
 
           appendBestEffortTelemetry(FEEDBACK_DIR, {
             eventType: 'workflow_sprint_lead_advanced',
@@ -6252,9 +6303,13 @@ module.exports = {
   startServer,
   __test__: {
     buildCheckoutFallbackUrl,
+    createPrivateCoreUnavailableError,
     buildPosthogProxyRequestOptions,
     getPosthogProxyPath,
     isAllowedPosthogProxyPath,
+    PRIVATE_API_MODULES,
+    loadPrivateApiModule,
+    requirePrivateApiModule,
     renderSitemapXml,
     renderPackagedDashboardHtml,
     renderPackagedLessonsHtml,

@@ -47,14 +47,6 @@ const {
 } = require('../../scripts/contextfs');
 const { buildRubricEvaluation } = require('../../scripts/rubric-engine');
 const {
-  listIntents,
-  planIntent,
-} = require('../../scripts/intent-router');
-const {
-  startHandoff,
-  completeHandoff,
-} = require('../../scripts/delegation-runtime');
-const {
   getActiveMcpProfile,
   getAllowedTools,
   assertToolAllowed,
@@ -99,12 +91,6 @@ const {
   getReliability,
 } = require('../../scripts/thompson-sampling');
 const {
-  searchLessons,
-} = require('../../scripts/lesson-search');
-const {
-  retrieveRelevantLessons,
-} = require('../../scripts/lesson-retrieval');
-const {
   searchThumbgate,
 } = require('../../scripts/thumbgate-search');
 const {
@@ -116,7 +102,6 @@ const {
   readImportedDocument,
 } = require('../../scripts/document-intake');
 const { checkLimit, UPGRADE_MESSAGE } = require('../../scripts/rate-limiter');
-const { generateOrgDashboard } = require('../../scripts/org-dashboard');
 const {
   listHarnesses,
   runHarness,
@@ -124,21 +109,53 @@ const {
 const { runLoop: runAutoresearchLoop } = require('../../scripts/autoresearch-runner');
 const { TOOLS } = require('../../scripts/tool-registry');
 const { buildContextFootprintReport } = require('../../scripts/context-footprint');
-const { reflect: reflectOnFeedback } = require('../../scripts/reflector-agent');
 const { submitProductIssue } = require('../../scripts/product-feedback');
 const {
   assembleUnifiedContext,
   formatUnifiedContext,
 } = require('../../scripts/context-manager');
 const { exportHfDataset } = require('../../scripts/export-hf-dataset');
-const { distributeContextToAgents } = require('../../scripts/swarm-coordinator');
-const { buildSessionReport } = require('../../scripts/session-report');
-const {
-  generateOperatorArtifact,
-  formatArtifactMarkdown,
-} = require('../../scripts/operator-artifacts');
 
 const PRO_CHECKOUT_URL = 'https://thumbgate-production.up.railway.app/checkout/pro';
+const PRIVATE_MCP_MODULES = Object.freeze({
+  intentRouter: path.resolve(__dirname, '../../scripts/intent-router.js'),
+  delegationRuntime: path.resolve(__dirname, '../../scripts/delegation-runtime.js'),
+  orgDashboard: path.resolve(__dirname, '../../scripts/org-dashboard.js'),
+  reflectorAgent: path.resolve(__dirname, '../../scripts/reflector-agent.js'),
+  swarmCoordinator: path.resolve(__dirname, '../../scripts/swarm-coordinator.js'),
+  sessionReport: path.resolve(__dirname, '../../scripts/session-report.js'),
+  operatorArtifacts: path.resolve(__dirname, '../../scripts/operator-artifacts.js'),
+  managedLessonAgent: path.resolve(__dirname, '../../scripts/managed-lesson-agent.js'),
+  semanticLayer: path.resolve(__dirname, '../../scripts/semantic-layer.js'),
+  lessonInference: path.resolve(__dirname, '../../scripts/lesson-inference.js'),
+  lessonSearch: path.resolve(__dirname, '../../scripts/lesson-search.js'),
+});
+
+function loadPrivateMcpModule(key) {
+  const modulePath = PRIVATE_MCP_MODULES[key];
+  if (!modulePath) {
+    throw new Error(`Unknown private MCP module: ${key}`);
+  }
+  try {
+    return require(modulePath);
+  } catch (error) {
+    const message = String(error && error.message || '');
+    if ((error && (error.code === 'MODULE_NOT_FOUND' || error.code === 'ERR_MODULE_NOT_FOUND'))
+      && (message.includes(modulePath) || message.includes(path.basename(modulePath)))) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+function unavailablePrivateMcpFeature(toolName) {
+  return toTextResult({
+    ok: false,
+    availability: 'private_core',
+    tool: toolName,
+    message: `${toolName} is only available in the ThumbGate private core or hosted runtime.`,
+  });
+}
 
 function enforceLimit(action) {
   const limit = checkLimit(action);
@@ -316,13 +333,14 @@ function buildDiagnoseFailureResponse(args = {}) {
 
   if (args.intentId) {
     try {
-      intentPlan = planIntent({
+      const module = loadPrivateMcpModule('intentRouter');
+      intentPlan = module ? module.planIntent({
         intentId: args.intentId,
         context: args.context || '',
         mcpProfile: requestedProfile,
         approved: args.approved === true,
         repoPath: args.repoPath,
-      });
+      }) : null;
     } catch (_) {
       intentPlan = null;
     }
@@ -511,12 +529,15 @@ async function callToolInner(name, args) {
       return toCaptureFeedbackTextResult(captureFeedback(args));
     case 'feedback_summary':
       return toTextResult(feedbackSummary(Number(args.recent || 20)));
-    case 'search_lessons':
-      return toTextResult(searchLessons(args.query || '', {
+    case 'search_lessons': {
+      const module = loadPrivateMcpModule('lessonSearch');
+      if (!module) return unavailablePrivateMcpFeature('search_lessons');
+      return toTextResult(module.searchLessons(args.query || '', {
         limit: Number(args.limit || 10),
         category: args.category,
         tags: Array.isArray(args.tags) ? args.tags : [],
       }));
+    }
     case 'retrieve_lessons': {
       // Cross-encoder reranking: retrieve more candidates, then rerank for precision
       const { retrieveWithRerankingSync } = require('../../scripts/cross-encoder-reranker');
@@ -565,13 +586,17 @@ async function callToolInner(name, args) {
     case 'diagnose_failure':
       return buildDiagnoseFailureResponse(args);
     case 'reflect_on_feedback':
-      return toTextResult(reflectOnFeedback({
+      {
+        const module = loadPrivateMcpModule('reflectorAgent');
+        if (!module) return unavailablePrivateMcpFeature('reflect_on_feedback');
+        return toTextResult(module.reflect({
         conversationWindow: args.conversationWindow || [],
         context: args.context || '',
         whatWentWrong: args.whatWentWrong || '',
         structuredRule: null,
         feedbackEvent: args.feedbackEventId ? { id: args.feedbackEventId } : null,
-      }));
+        }));
+      }
     case 'report_product_issue':
       return toTextResult(await submitProductIssue({
         title: args.title,
@@ -580,52 +605,69 @@ async function callToolInner(name, args) {
         source: 'mcp tool',
       }));
     case 'list_intents':
-      return toTextResult(listIntents({
-        mcpProfile: args.mcpProfile,
-        bundleId: args.bundleId,
-        partnerProfile: args.partnerProfile,
-      }));
+      {
+        const module = loadPrivateMcpModule('intentRouter');
+        if (!module) return unavailablePrivateMcpFeature('list_intents');
+        return toTextResult(module.listIntents({
+          mcpProfile: args.mcpProfile,
+          bundleId: args.bundleId,
+          partnerProfile: args.partnerProfile,
+        }));
+      }
     case 'plan_intent':
-      return toTextResult(planIntent({
-        intentId: args.intentId,
-        context: args.context || '',
-        mcpProfile: args.mcpProfile,
-        bundleId: args.bundleId,
-        partnerProfile: args.partnerProfile,
-        delegationMode: args.delegationMode,
-        approved: args.approved === true,
-        repoPath: args.repoPath,
-      }));
-    case 'start_handoff':
-      return toTextResult(startHandoff({
-        plan: planIntent({
+      {
+        const module = loadPrivateMcpModule('intentRouter');
+        if (!module) return unavailablePrivateMcpFeature('plan_intent');
+        return toTextResult(module.planIntent({
           intentId: args.intentId,
           context: args.context || '',
           mcpProfile: args.mcpProfile,
           bundleId: args.bundleId,
           partnerProfile: args.partnerProfile,
-          delegationMode: 'sequential',
+          delegationMode: args.delegationMode,
           approved: args.approved === true,
           repoPath: args.repoPath,
-        }),
-        context: args.context || '',
-        mcpProfile: args.mcpProfile || getActiveMcpProfile(),
-        partnerProfile: args.partnerProfile || null,
-        repoPath: args.repoPath,
-        delegateProfile: args.delegateProfile || null,
-        plannedChecks: Array.isArray(args.plannedChecks) ? args.plannedChecks : [],
-      }));
+        }));
+      }
+    case 'start_handoff':
+      {
+        const intentRouter = loadPrivateMcpModule('intentRouter');
+        const delegationRuntime = loadPrivateMcpModule('delegationRuntime');
+        if (!intentRouter || !delegationRuntime) return unavailablePrivateMcpFeature('start_handoff');
+        return toTextResult(delegationRuntime.startHandoff({
+          plan: intentRouter.planIntent({
+            intentId: args.intentId,
+            context: args.context || '',
+            mcpProfile: args.mcpProfile,
+            bundleId: args.bundleId,
+            partnerProfile: args.partnerProfile,
+            delegationMode: 'sequential',
+            approved: args.approved === true,
+            repoPath: args.repoPath,
+          }),
+          context: args.context || '',
+          mcpProfile: args.mcpProfile || getActiveMcpProfile(),
+          partnerProfile: args.partnerProfile || null,
+          repoPath: args.repoPath,
+          delegateProfile: args.delegateProfile || null,
+          plannedChecks: Array.isArray(args.plannedChecks) ? args.plannedChecks : [],
+        }));
+      }
     case 'complete_handoff':
-      return toTextResult(completeHandoff({
-        handoffId: args.handoffId,
-        outcome: args.outcome,
-        resultContext: args.resultContext || '',
-        attempts: args.attempts,
-        violationCount: args.violationCount,
-        tokenEstimate: args.tokenEstimate,
-        latencyMs: args.latencyMs,
-        summary: args.summary || '',
-      }));
+      {
+        const module = loadPrivateMcpModule('delegationRuntime');
+        if (!module) return unavailablePrivateMcpFeature('complete_handoff');
+        return toTextResult(module.completeHandoff({
+          handoffId: args.handoffId,
+          outcome: args.outcome,
+          resultContext: args.resultContext || '',
+          attempts: args.attempts,
+          violationCount: args.violationCount,
+          tokenEstimate: args.tokenEstimate,
+          latencyMs: args.latencyMs,
+          summary: args.summary || '',
+        }));
+      }
     case 'enforcement_matrix':
       return toTextResult(listEnforcementMatrix());
     case 'security_scan': {
@@ -797,23 +839,33 @@ async function callToolInner(name, args) {
       });
     }
     case 'distribute_context_to_agents':
-      return toTextResult(distributeContextToAgents({
+      {
+        const module = loadPrivateMcpModule('swarmCoordinator');
+        if (!module) return unavailablePrivateMcpFeature('distribute_context_to_agents');
+        return toTextResult(module.distributeContextToAgents({
         query: args.query || '',
         agents: args.agents,
         maxItems: args.maxItems,
         maxChars: args.maxChars,
         namespaces: Array.isArray(args.namespaces) ? args.namespaces : [],
         ttlMs: args.ttlMs,
-      }));
+        }));
+      }
     case 'session_report':
-      return toTextResult(buildSessionReport({ windowHours: args.windowHours }));
+      {
+        const module = loadPrivateMcpModule('sessionReport');
+        if (!module) return unavailablePrivateMcpFeature('session_report');
+        return toTextResult(module.buildSessionReport({ windowHours: args.windowHours }));
+      }
     case 'generate_operator_artifact': {
-      const artifact = await generateOperatorArtifact({
+      const module = loadPrivateMcpModule('operatorArtifacts');
+      if (!module) return unavailablePrivateMcpFeature('generate_operator_artifact');
+      const artifact = await module.generateOperatorArtifact({
         type: args.type,
         windowHours: args.windowHours,
       });
       if (args.format === 'markdown') {
-        return toTextResult(formatArtifactMarkdown(artifact));
+        return toTextResult(module.formatArtifactMarkdown(artifact));
       }
       return toTextResult(artifact);
     }
@@ -848,7 +900,11 @@ async function callToolInner(name, args) {
     case 'dashboard':
       return toTextResult(generateDashboard(getFeedbackPaths().FEEDBACK_DIR));
     case 'org_dashboard':
-      return toTextResult(generateOrgDashboard({ windowHours: Number(args.windowHours || 24) }));
+      {
+        const module = loadPrivateMcpModule('orgDashboard');
+        if (!module) return unavailablePrivateMcpFeature('org_dashboard');
+        return toTextResult(module.generateOrgDashboard({ windowHours: Number(args.windowHours || 24) }));
+      }
     case 'settings_status':
       return toTextResult(getSettingsStatus());
     case 'native_messaging_audit':
@@ -861,13 +917,15 @@ async function callToolInner(name, args) {
       enforceLimit('commerce_recall');
       return buildCommerceRecallResponse(args);
     case 'get_business_metrics': {
-      const { getBusinessMetrics } = require('../../scripts/semantic-layer');
-      const metrics = await getBusinessMetrics(args);
+      const module = loadPrivateMcpModule('semanticLayer');
+      if (!module) return unavailablePrivateMcpFeature('get_business_metrics');
+      const metrics = await module.getBusinessMetrics(args);
       return toTextResult(metrics);
     }
     case 'describe_semantic_entity': {
-      const { describeSemanticSchema } = require('../../scripts/semantic-layer');
-      const schema = describeSemanticSchema();
+      const module = loadPrivateMcpModule('semanticLayer');
+      if (!module) return unavailablePrivateMcpFeature('describe_semantic_entity');
+      const schema = module.describeSemanticSchema();
       const entity = schema.entities[args.type] || schema.metrics[args.type];
       if (!entity) {
         throw new Error(`Unknown semantic entity: ${args.type}`);
@@ -937,12 +995,14 @@ async function callToolInner(name, args) {
     case 'finalize_feedback_session':
       return toTextResult(finalizeFeedbackSession(args.sessionId));
     case 'run_managed_lesson_agent': {
-      const { runManagedAgent } = require('../../scripts/managed-lesson-agent');
-      return toTextResult(await runManagedAgent({ dryRun: args.dryRun, limit: args.limit, model: args.model }));
+      const module = loadPrivateMcpModule('managedLessonAgent');
+      if (!module) return unavailablePrivateMcpFeature('run_managed_lesson_agent');
+      return toTextResult(await module.runManagedAgent({ dryRun: args.dryRun, limit: args.limit, model: args.model }));
     }
     case 'managed_agent_status': {
-      const { getManagedAgentStatus } = require('../../scripts/managed-lesson-agent');
-      return toTextResult(getManagedAgentStatus() || { message: 'No managed agent runs recorded yet.' });
+      const module = loadPrivateMcpModule('managedLessonAgent');
+      if (!module) return unavailablePrivateMcpFeature('managed_agent_status');
+      return toTextResult(module.getManagedAgentStatus() || { message: 'No managed agent runs recorded yet.' });
     }
     case 'run_self_distill': {
       const { runSelfDistill } = require('../../scripts/self-distill-agent');
@@ -953,8 +1013,13 @@ async function callToolInner(name, args) {
       return toTextResult(getSelfDistillStatus() || { message: 'No self-distill runs found.' });
     }
     case 'context_stuff_lessons': {
-      const { getAllLessonsForContext } = require('../../scripts/lesson-inference');
-      return toTextResult(getAllLessonsForContext({ maxTokenBudget: args.maxTokenBudget, signal: args.signal, format: args.format }));
+      const module = loadPrivateMcpModule('lessonInference');
+      if (!module) return unavailablePrivateMcpFeature('context_stuff_lessons');
+      return toTextResult(module.getAllLessonsForContext({
+        maxTokenBudget: args.maxTokenBudget,
+        signal: args.signal,
+        format: args.format,
+      }));
     }
     default:
       throw new Error(`Unsupported tool: ${name}`);
@@ -1175,4 +1240,10 @@ module.exports = {
   acquireLock,
   toCaptureFeedbackTextResult,
   formatCorrectiveActionsReminder,
+  __test__: {
+    PRIVATE_MCP_MODULES,
+    loadPrivateMcpModule,
+    unavailablePrivateMcpFeature,
+    callToolInner,
+  },
 };
