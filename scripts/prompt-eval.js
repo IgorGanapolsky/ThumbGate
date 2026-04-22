@@ -235,6 +235,10 @@ function loadSuite(suitePath) {
   return raw;
 }
 
+function loadReport(reportPath) {
+  return JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+}
+
 function runEvaluation(evalCase) {
   const simulator = PROMPT_SIMULATORS[evalCase.prompt];
   if (!simulator) {
@@ -295,7 +299,11 @@ function runSuite(suitePath = DEFAULT_SUITE, options = {}) {
     ? Math.round(results.reduce((s, r) => s + r.score, 0) / results.length)
     : 0;
 
-  return {
+  const minScore = Number.isFinite(Number(options.minScore))
+    ? Number(options.minScore)
+    : Number(suite.successCriteria?.minAggregateScore || 80);
+
+  const report = {
     suite: suite.name,
     total: results.length,
     passed,
@@ -303,10 +311,72 @@ function runSuite(suitePath = DEFAULT_SUITE, options = {}) {
     errors,
     skipped,
     score: totalScore,
-    minScore: options.minScore || 80,
-    pass: totalScore >= (options.minScore || 80),
+    minScore,
+    pass: totalScore >= minScore,
+    successCriteria: suite.successCriteria || null,
     results,
   };
+
+  const baselineReport = options.baselineReport
+    || (options.baselinePath ? loadReport(options.baselinePath) : null);
+  if (baselineReport) {
+    report.comparison = compareReports(report, baselineReport);
+    const requireNoRegressions = options.requireNoRegressions === true
+      || suite.successCriteria?.requireNoRegressions === true;
+    if (requireNoRegressions && report.comparison.regressions.length > 0) {
+      report.pass = false;
+    }
+  }
+
+  return report;
+}
+
+function compareReports(currentReport, baselineReport) {
+  const baselineById = new Map((baselineReport?.results || []).map((result) => [result.id, result]));
+  const regressions = [];
+  const improvements = [];
+
+  for (const result of currentReport.results || []) {
+    const baseline = baselineById.get(result.id);
+    if (!baseline) continue;
+
+    const scoreDelta = result.score - baseline.score;
+    if (scoreDelta < 0 || (baseline.status === 'pass' && result.status !== 'pass')) {
+      regressions.push({
+        id: result.id,
+        baselineScore: baseline.score,
+        currentScore: result.score,
+        delta: scoreDelta,
+        baselineStatus: baseline.status,
+        currentStatus: result.status,
+      });
+      continue;
+    }
+
+    if (scoreDelta > 0 || (baseline.status !== 'pass' && result.status === 'pass')) {
+      improvements.push({
+        id: result.id,
+        baselineScore: baseline.score,
+        currentScore: result.score,
+        delta: scoreDelta,
+        baselineStatus: baseline.status,
+        currentStatus: result.status,
+      });
+    }
+  }
+
+  return {
+    baselineSuite: baselineReport?.suite || null,
+    baselineScore: Number.isFinite(Number(baselineReport?.score)) ? Number(baselineReport.score) : null,
+    scoreDelta: Number.isFinite(Number(baselineReport?.score)) ? currentReport.score - Number(baselineReport.score) : null,
+    regressions,
+    improvements,
+  };
+}
+
+function writeReport(report, outputPath) {
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, JSON.stringify(report, null, 2) + '\n');
 }
 
 // ---------------------------------------------------------------------------
@@ -328,14 +398,43 @@ if (isCliInvocation()) {
   let suitePath = DEFAULT_SUITE;
   let json = false;
   let minScore = 80;
+  let baselinePath = null;
+  let outputPath = null;
+  let requireNoRegressions = false;
 
-  for (const arg of args) {
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    const nextArg = args[index + 1];
     if (arg.startsWith('--suite=')) suitePath = path.resolve(arg.slice(8));
+    if (arg === '--suite' && nextArg) {
+      suitePath = path.resolve(nextArg);
+      index += 1;
+      continue;
+    }
     if (arg === '--json') json = true;
     if (arg.startsWith('--min-score=')) minScore = Number(arg.slice(12));
+    if (arg === '--min-score' && nextArg) {
+      minScore = Number(nextArg);
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith('--baseline=')) baselinePath = path.resolve(arg.slice(11));
+    if (arg === '--baseline' && nextArg) {
+      baselinePath = path.resolve(nextArg);
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith('--output=')) outputPath = path.resolve(arg.slice(9));
+    if (arg === '--output' && nextArg) {
+      outputPath = path.resolve(nextArg);
+      index += 1;
+      continue;
+    }
+    if (arg === '--require-no-regressions') requireNoRegressions = true;
   }
 
-  const report = runSuite(suitePath, { minScore });
+  const report = runSuite(suitePath, { minScore, baselinePath, requireNoRegressions });
+  if (outputPath) writeReport(report, outputPath);
 
   if (json) {
     console.log(JSON.stringify(report, null, 2));
@@ -354,10 +453,22 @@ if (isCliInvocation()) {
     }
     console.log('='.repeat(50));
     console.log(`Score: ${report.score}% | Pass: ${report.passed} | Fail: ${report.failed} | Error: ${report.errors} | Skip: ${report.skipped}`);
+    if (report.comparison) {
+      console.log(`Baseline delta: ${report.comparison.scoreDelta >= 0 ? '+' : ''}${report.comparison.scoreDelta}%`);
+      console.log(`Regressions: ${report.comparison.regressions.length} | Improvements: ${report.comparison.improvements.length}`);
+    }
     console.log(report.pass ? '\u2705 PASS' : `\u274C FAIL (min: ${minScore}%)`);
   }
 
   process.exit(report.pass ? 0 : 1);
 }
 
-module.exports = { runSuite, runEvaluation, gradeOutput, loadSuite };
+module.exports = {
+  runSuite,
+  runEvaluation,
+  gradeOutput,
+  loadSuite,
+  loadReport,
+  compareReports,
+  writeReport,
+};

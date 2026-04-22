@@ -96,6 +96,13 @@ jobs:
       - name: Run Tessl distribution proof
         run: npm run prove:tessl
 
+      - name: Write prompt evaluation report
+        if: always()
+        run: |
+          mkdir -p proof
+          node scripts/prompt-eval.js --min-score=0 --output proof/prompt-eval-report.json --json > /dev/null
+          node -e "const fs=require('node:fs'); const report=JSON.parse(fs.readFileSync('proof/prompt-eval-report.json','utf8')); const lines=['## Prompt Evaluation', '- Score: ' + report.score + '%', '- Passed: ' + report.passed + '/' + report.total, '- Failed: ' + report.failed, '- Errors: ' + report.errors, '- Skipped: ' + report.skipped]; if (report.comparison) lines.push('- Regressions: ' + report.comparison.regressions.length); fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');"
+
       - name: Sync GitHub About metadata on main
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         continue-on-error: true
@@ -133,3 +140,4 @@ jobs:
             proof/autoresearch-report.md
             proof/tessl-report.json
             proof/tessl-report.md
+            proof/prompt-eval-report.json

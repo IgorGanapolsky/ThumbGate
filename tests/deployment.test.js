@@ -194,6 +194,16 @@ test('CI workflow stays test-only and leaves Railway deploys to the dedicated wo
   assert.doesNotMatch(workflow, /https:\/\/thumbgate-710216278770\.us-central1\.run\.app\/health/);
 });
 
+test('CI workflow writes and uploads a prompt evaluation artifact', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
+
+  assert.match(workflow, /name:\s*Write prompt evaluation report/);
+  assert.match(workflow, /if:\s*always\(\)/);
+  assert.match(workflow, /node scripts\/prompt-eval\.js --min-score=0 --output proof\/prompt-eval-report\.json --json > \/dev\/null/);
+  assert.match(workflow, /GITHUB_STEP_SUMMARY/);
+  assert.match(workflow, /proof\/prompt-eval-report\.json/);
+});
+
 test('runtime Docker image installs git for operational integrity checks', () => {
   const dockerfile = fs.readFileSync(path.join(PROJECT_ROOT, 'Dockerfile'), 'utf8');
 

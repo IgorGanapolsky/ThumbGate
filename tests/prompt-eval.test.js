@@ -1,8 +1,19 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { spawnSync } = require('node:child_process');
+const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 
-const { runSuite, runEvaluation, gradeOutput, loadSuite } = require('../scripts/prompt-eval');
+const {
+  runSuite,
+  runEvaluation,
+  gradeOutput,
+  loadSuite,
+  compareReports,
+  writeReport,
+  loadReport,
+} = require('../scripts/prompt-eval');
 
 const SUITE_PATH = path.join(__dirname, '..', 'bench', 'prompt-eval-suite.json');
 
@@ -110,4 +121,89 @@ test('runSuite: runs full suite and returns aggregate report', () => {
   assert.ok(typeof report.score === 'number', 'should compute aggregate score');
   assert.ok(typeof report.pass === 'boolean', 'should have pass/fail boolean');
   assert.equal(report.total, report.passed + report.failed + report.errors + report.skipped, 'counts should add up');
+});
+
+test('compareReports: flags score regressions by eval id', () => {
+  const baseline = {
+    suite: 'baseline',
+    score: 100,
+    results: [
+      { id: 'a', score: 100, status: 'pass' },
+      { id: 'b', score: 100, status: 'pass' },
+    ],
+  };
+  const current = {
+    suite: 'current',
+    score: 80,
+    results: [
+      { id: 'a', score: 100, status: 'pass' },
+      { id: 'b', score: 60, status: 'fail' },
+    ],
+  };
+
+  const comparison = compareReports(current, baseline);
+  assert.equal(comparison.scoreDelta, -20);
+  assert.equal(comparison.regressions.length, 1);
+  assert.equal(comparison.regressions[0].id, 'b');
+});
+
+test('runSuite: require-no-regressions fails a regressed report even above min score', () => {
+  const baselineReport = {
+    suite: 'baseline',
+    score: 100,
+    results: [
+      { id: 'lesson-distill-negative-clear', score: 100, status: 'pass' },
+      { id: 'lesson-distill-negative-vague', score: 100, status: 'pass' },
+      { id: 'lesson-distill-positive', score: 100, status: 'pass' },
+      { id: 'prevention-rule-repeated-mistake', score: 100, status: 'pass' },
+      { id: 'feedback-capture-enrichment', score: 100, status: 'pass' },
+      { id: 'self-distill-session-summary', score: 100, status: 'pass' },
+    ],
+  };
+
+  const report = runSuite(SUITE_PATH, {
+    minScore: 0,
+    requireNoRegressions: true,
+    baselineReport,
+  });
+
+  assert.equal(report.pass, false);
+  assert.ok(report.comparison.regressions.length >= 1);
+});
+
+test('writeReport/loadReport round-trip eval artifacts', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-prompt-eval-'));
+  const outPath = path.join(tmpDir, 'report.json');
+  const report = runSuite(SUITE_PATH, { minScore: 0 });
+
+  writeReport(report, outPath);
+  const loaded = loadReport(outPath);
+
+  assert.equal(loaded.suite, report.suite);
+  assert.equal(loaded.score, report.score);
+  assert.equal(Array.isArray(loaded.results), true);
+
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+test('CLI accepts split --output and --min-score arguments', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-prompt-eval-cli-'));
+  const outPath = path.join(tmpDir, 'report.json');
+  const result = spawnSync(process.execPath, [
+    path.join(__dirname, '..', 'scripts', 'prompt-eval.js'),
+    '--min-score',
+    '0',
+    '--output',
+    outPath,
+    '--json',
+  ], {
+    encoding: 'utf8',
+  });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.equal(fs.existsSync(outPath), true);
+  const report = JSON.parse(fs.readFileSync(outPath, 'utf8'));
+  assert.equal(typeof report.score, 'number');
+
+  fs.rmSync(tmpDir, { recursive: true, force: true });
 });
