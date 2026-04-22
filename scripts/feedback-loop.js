@@ -261,6 +261,7 @@ function normalizeAnalysisShape(analysis = {}) {
     delegation: analysis.delegation || null,
     boostedRisk: analysis.boostedRisk || null,
     recommendations: Array.isArray(analysis.recommendations) ? analysis.recommendations : [],
+    actionableRemediations: Array.isArray(analysis.actionableRemediations) ? analysis.actionableRemediations : [],
     source: analysis.source,
     byDomain: Array.isArray(analysis.byDomain) ? analysis.byDomain : [],
     byImportance: Array.isArray(analysis.byImportance) ? analysis.byImportance : [],
@@ -1513,11 +1514,22 @@ function analyzeFeedback(logPath) {
   };
 
   const recommendations = [];
+  // Structured counterpart to `recommendations` — machine-actionable shape so
+  // hooks/agents can act on each item without regex-parsing prose strings.
+  // Each entry: { type, target, evidence, action, rationale }.
+  const actionableRemediations = [];
 
   for (const [skill, stat] of Object.entries(skills)) {
     const negRate = stat.total > 0 ? stat.negative / stat.total : 0;
     if (stat.total >= 3 && negRate >= 0.5) {
       recommendations.push(`IMPROVE skill '${skill}' (${stat.negative}/${stat.total} negative)`);
+      actionableRemediations.push({
+        type: 'skill-improve',
+        target: skill,
+        evidence: { positive: stat.positive, negative: stat.negative, total: stat.total, negativeRate: Math.round(negRate * 1000) / 1000 },
+        action: 'review-and-update-skill',
+        rationale: `Skill '${skill}' has ${stat.negative}/${stat.total} negative feedback events (${Math.round(negRate * 100)}% negative rate).`,
+      });
     }
   }
 
@@ -1525,14 +1537,35 @@ function analyzeFeedback(logPath) {
     const posRate = stat.total > 0 ? stat.positive / stat.total : 0;
     if (stat.total >= 3 && posRate >= 0.8) {
       recommendations.push(`REUSE pattern '${tag}' (${stat.positive}/${stat.total} positive)`);
+      actionableRemediations.push({
+        type: 'pattern-reuse',
+        target: tag,
+        evidence: { positive: stat.positive, negative: stat.negative, total: stat.total, positiveRate: Math.round(posRate * 1000) / 1000 },
+        action: 'replicate-pattern',
+        rationale: `Pattern '${tag}' has ${stat.positive}/${stat.total} positive feedback events (${Math.round(posRate * 100)}% positive rate).`,
+      });
     }
   }
 
   if (recent.length >= 10 && recentRate < approvalRate - 0.1) {
     recommendations.push('DECLINING trend in last 20 signals; tighten verification before response.');
+    actionableRemediations.push({
+      type: 'trend-declining',
+      target: 'recent-signals',
+      evidence: { recentRate, approvalRate, sampleSize: recent.length },
+      action: 'tighten-verification-before-response',
+      rationale: `Recent approval rate (${Math.round(recentRate * 100)}%) has dropped ≥10pp below lifetime (${Math.round(approvalRate * 100)}%).`,
+    });
   }
   if (trend === 'degrading') {
     recommendations.push(`DEGRADING 7d trend (${rate7d}) vs 30d (${rate30d}); increase prevention rule injection.`);
+    actionableRemediations.push({
+      type: 'trend-degrading',
+      target: '7d-window',
+      evidence: { rate7d, rate30d, delta: Math.round((rate7d - rate30d) * 1000) / 1000 },
+      action: 'increase-prevention-rule-injection',
+      rationale: `7d rate (${rate7d}) is below 30d rate (${rate30d}) by more than threshold.`,
+    });
   }
 
   let boostedRisk = null;
@@ -1543,9 +1576,23 @@ function analyzeFeedback(logPath) {
       if (boostedRisk) {
         boostedRisk.highRiskDomains.slice(0, 2).forEach((bucket) => {
           recommendations.push(`CHECK high-risk domain '${bucket.key}' (${bucket.highRisk}/${bucket.total} high-risk)`);
+          actionableRemediations.push({
+            type: 'high-risk-domain',
+            target: bucket.key,
+            evidence: { highRisk: bucket.highRisk, total: bucket.total, riskRate: bucket.riskRate },
+            action: 'audit-domain-failures',
+            rationale: `Domain '${bucket.key}' has ${bucket.highRisk}/${bucket.total} high-risk events (${Math.round((bucket.riskRate || 0) * 100)}% risk rate).`,
+          });
         });
         boostedRisk.highRiskTags.slice(0, 2).forEach((bucket) => {
           recommendations.push(`CHECK high-risk tag '${bucket.key}' (${bucket.highRisk}/${bucket.total} high-risk)`);
+          actionableRemediations.push({
+            type: 'high-risk-tag',
+            target: bucket.key,
+            evidence: { highRisk: bucket.highRisk, total: bucket.total, riskRate: bucket.riskRate },
+            action: 'audit-tag-failures',
+            rationale: `Tag '${bucket.key}' has ${bucket.highRisk}/${bucket.total} high-risk events (${Math.round((bucket.riskRate || 0) * 100)}% risk rate).`,
+          });
         });
       }
     }
@@ -1560,9 +1607,23 @@ function analyzeFeedback(logPath) {
       delegation = delegationRuntime.summarizeDelegation(paths.FEEDBACK_DIR);
       if (delegation.attemptCount >= 3 && delegation.verificationFailureRate >= 0.5) {
         recommendations.push(`REDUCE delegation: verification failure rate is ${Math.round(delegation.verificationFailureRate * 100)}%`);
+        actionableRemediations.push({
+          type: 'delegation-reduce',
+          target: 'verification-failure-rate',
+          evidence: { verificationFailureRate: delegation.verificationFailureRate, attemptCount: delegation.attemptCount },
+          action: 'reduce-delegation-use',
+          rationale: `Delegation verification failure rate is ${Math.round(delegation.verificationFailureRate * 100)}% across ${delegation.attemptCount} attempts.`,
+        });
       }
       if (delegation.avoidedDelegationCount >= 3) {
         recommendations.push(`REVIEW delegation policy: ${delegation.avoidedDelegationCount} handoff starts were blocked before execution`);
+        actionableRemediations.push({
+          type: 'delegation-policy-review',
+          target: 'handoff-blocks',
+          evidence: { avoidedDelegationCount: delegation.avoidedDelegationCount },
+          action: 'review-delegation-policy',
+          rationale: `${delegation.avoidedDelegationCount} handoff starts were blocked before execution.`,
+        });
       }
     }
   } catch {
@@ -1570,6 +1631,13 @@ function analyzeFeedback(logPath) {
   }
   diagnostics.categories.slice(0, 2).forEach((bucket) => {
     recommendations.push(`DIAGNOSE '${bucket.key}' failures (${bucket.count})`);
+    actionableRemediations.push({
+      type: 'diagnose-failure-category',
+      target: bucket.key,
+      evidence: { count: bucket.count },
+      action: 'investigate-failure-category',
+      rationale: `Failure category '${bucket.key}' has ${bucket.count} diagnosed events.`,
+    });
   });
 
   return normalizeAnalysisShape({
@@ -1591,6 +1659,7 @@ function analyzeFeedback(logPath) {
     delegation,
     boostedRisk,
     recommendations,
+    actionableRemediations,
   });
 }
 
