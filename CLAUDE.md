@@ -212,6 +212,35 @@ CI runs `--check` on every push. If it fails, files are out of sync.
 
 Policy file: `config/mcp-allowlists.json`
 
+## Product Architecture Split
+
+ThumbGate ships as a two-repo product with an enforced boundary. Do not re-collapse the boundary.
+
+- **Public shell** — `IgorGanapolsky/ThumbGate` (this repo, npm package `thumbgate`, landing page `thumbgate.ai`, Railway production).
+  Surface: CLI, hook installer, adapter configs, basic local gate runner, public JSON schemas, marketing/docs.
+  Visible to installers, recruiters, competitors — keep it thin.
+
+- **Private core** — `IgorGanapolsky/ThumbGate-Core` (private; not published to npm).
+  Surface: lesson ranking, policy synthesis, multi-agent orchestration, billing intelligence, org visibility, licensed exports.
+  Production-only. Never mirrored into the public repo, never imported into the npm bundle, never required by public CI.
+
+### Boundary Rules
+
+1. **No re-expansion.** Any new feature that is "intelligence" (ranking, synthesis, adaptive gates, org analytics, pricing logic) lands in ThumbGate-Core. The public shell gets a thin client stub only.
+2. **Wire protocol, not direct require.** Public code talks to Core over a stable wire (HTTP / gRPC / licensed binary). Never `require('../ThumbGate-Core/...')`.
+3. **Independent CI.** Public repo's default CI matrix must pass with Core absent — no API keys, no network calls to Core. Integration suites that touch Core live in a separate opt-in workflow.
+4. **Dedicated worktrees.** Use `worktrees/public-*` for public-shell work and `worktrees/core-*` for Core work. Never co-mingle changes in one branch.
+5. **Never claim "split complete".** Report measurable deltas only: files removed from public, boundary tests added, public bundle size delta, Core import graph verified empty. "Done" on this workstream requires all four evidence lines.
+
+### Split Violation Triggers (block merge)
+
+- A public npm-published script imports Core internals directly.
+- Public README or landing page describes a feature that only exists in Core.
+- Public CI requires a Core API key to pass a non-integration suite.
+- `package.json` in the public repo lists Core as a runtime dependency.
+
+When you fix a violation, pin the fix with a regression test in `tests/public-core-boundary.test.js`.
+
 ## Session Handoff
 
 Before ending any session:
