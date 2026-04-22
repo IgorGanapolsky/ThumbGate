@@ -99,6 +99,7 @@ const {
 } = loadOptionalModule(path.join(__dirname, '../../scripts/lesson-retrieval'), () => ({
   retrieveRelevantLessons: () => [],
 }));
+const {
   searchThumbgate,
 } = require('../../scripts/thumbgate-search');
 const {
