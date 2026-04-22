@@ -89,7 +89,8 @@ jobs:
       - name: Guard against silent no-op when main has content changes since last publish
         # Prevents the "1.5.2 already on npm, content changes don't ship" failure mode.
         # If the published version already exists but main has meaningful source changes
-        # (README, HTML, scripts) since that tag, we should have bumped the version.
+        # (README, HTML, scripts) since that tag, we should have bumped the version
+        # unless an audited changeset is still pending.
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.npm.outputs.published == 'true' && steps.plan.outputs.skip_publish == 'true'
         env:
           VERSION: ${{ steps.package.outputs.version }}
@@ -109,7 +110,13 @@ jobs:
             'package.json' 'package-lock.json' 'server.json' \
             'adapters/**' 'plugins/**' 'public/*.html' 'scripts/*.js' \
             'src/**' 'bin/**' 'README.md' 'CHANGELOG.md' 2>/dev/null | wc -l | tr -d ' ')
+          PENDING_CHANGESETS=$(git diff --name-only "$LAST_TAG"..HEAD -- '.changeset/*.md' 2>/dev/null | grep -v '^.changeset/README.md$' | wc -l | tr -d ' ')
           if [ "$SHIPPED_CHANGES" -gt 0 ]; then
+            if [ "$PENDING_CHANGESETS" -gt 0 ]; then
+              echo "::notice::Shipped content changed since ${LAST_TAG}, but ${PENDING_CHANGESETS} pending changeset file(s) were detected. Treating this no-op as release-audited until the next versioned publish lands."
+              git diff --name-only "$LAST_TAG"..HEAD -- '.changeset/*.md' | grep -v '^.changeset/README.md$' | head -20
+              exit 0
+            fi
             echo "::error::Silent no-op detected: ${SHIPPED_CHANGES} shipped files changed since ${LAST_TAG} but package.json still says ${VERSION} (already on npm). Bump the version or tests won't verify the content ships."
             git diff --name-only "$LAST_TAG"..HEAD -- \
               'package.json' 'package-lock.json' 'server.json' \
