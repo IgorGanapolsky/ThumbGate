@@ -1001,6 +1001,101 @@ test('generateDashboard surfaces telemetry ingest errors and checkout failure co
   assert.equal(data.observability.checkoutApiFailuresByCode.checkout_request_failed, 1);
 });
 
+test('generateDashboard ranks lost-revenue causes from behavior, objections, and checkout drop-off', () => {
+  writeTelemetryLog([
+    {
+      receivedAt: new Date().toISOString(),
+      eventType: 'landing_page_view',
+      clientType: 'web',
+      acquisitionId: 'acq_loss_dashboard_1',
+      visitorId: 'visitor_loss_dashboard_1',
+      sessionId: 'session_loss_dashboard_1',
+      source: 'website',
+      page: '/',
+    },
+    {
+      receivedAt: new Date().toISOString(),
+      eventType: 'cta_impression',
+      clientType: 'web',
+      acquisitionId: 'acq_loss_dashboard_1',
+      visitorId: 'visitor_loss_dashboard_1',
+      sessionId: 'session_loss_dashboard_1',
+      ctaId: 'pricing_pro_trial',
+      ctaPlacement: 'pricing',
+      planId: 'pro',
+      page: '/',
+    },
+    {
+      receivedAt: new Date().toISOString(),
+      eventType: 'checkout_bootstrap',
+      clientType: 'web',
+      acquisitionId: 'acq_loss_dashboard_1',
+      visitorId: 'visitor_loss_dashboard_1',
+      sessionId: 'session_loss_dashboard_1',
+      ctaId: 'pricing_pro_trial',
+      page: '/checkout/pro',
+    },
+    {
+      receivedAt: new Date().toISOString(),
+      eventType: 'checkout_cancelled',
+      clientType: 'web',
+      acquisitionId: 'acq_loss_dashboard_1',
+      visitorId: 'visitor_loss_dashboard_1',
+      sessionId: 'session_loss_dashboard_1',
+      reasonCode: 'too_expensive',
+    },
+    {
+      receivedAt: new Date().toISOString(),
+      eventType: 'reason_not_buying',
+      clientType: 'web',
+      acquisitionId: 'acq_loss_dashboard_1',
+      visitorId: 'visitor_loss_dashboard_1',
+      sessionId: 'session_loss_dashboard_1',
+      reasonCode: 'too_expensive',
+    },
+    {
+      receivedAt: new Date().toISOString(),
+      eventType: 'buyer_email_focus',
+      clientType: 'web',
+      acquisitionId: 'acq_loss_dashboard_1',
+      visitorId: 'visitor_loss_dashboard_1',
+      sessionId: 'session_loss_dashboard_1',
+    },
+    {
+      receivedAt: new Date().toISOString(),
+      eventType: 'buyer_email_abandon',
+      clientType: 'web',
+      acquisitionId: 'acq_loss_dashboard_1',
+      visitorId: 'visitor_loss_dashboard_1',
+      sessionId: 'session_loss_dashboard_1',
+    },
+    {
+      receivedAt: new Date().toISOString(),
+      eventType: 'page_exit',
+      clientType: 'web',
+      acquisitionId: 'acq_loss_dashboard_1',
+      visitorId: 'visitor_loss_dashboard_1',
+      sessionId: 'session_loss_dashboard_1',
+      lastVisibleSection: 'hero',
+      dwellBucket: 'under_10s',
+      scrollBucket: 'under_25',
+      engagementMs: 5000,
+      maxScrollPercent: 20,
+    },
+  ]);
+
+  const data = generateDashboard(tmpDir);
+  assert.ok(data.analytics.lossAnalysis);
+  assert.equal(data.analytics.lossAnalysis.primaryIssue.key, 'explicit_pricing');
+  assert.equal(data.analytics.lossAnalysis.explicitThemes[0].key, 'pricing');
+  assert.equal(data.analytics.lossAnalysis.revenueOpportunity.currentMonthlyPriceCents, 1900);
+  assert.equal(data.analytics.lossAnalysis.revenueOpportunity.checkoutLossCount, 1);
+  assert.equal(data.analytics.lossAnalysis.behaviorSignals.emailAbandonEvents, 1);
+  assert.equal(data.analytics.lossAnalysis.behaviorSignals.topExitSection.key, 'hero');
+  assert.ok(data.analytics.lossAnalysis.inferredCauses.some((cause) => cause.key === 'checkout_friction'));
+  assert.ok(data.analytics.lossAnalysis.stageDropoff.some((entry) => entry.key === 'checkout_to_paid'));
+});
+
 // ---------------------------------------------------------------------------
 // readJSONL / readJsonFile helpers
 // ---------------------------------------------------------------------------

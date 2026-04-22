@@ -5961,6 +5961,44 @@ async function addContext(){
         return;
       }
 
+      // GET /v1/analytics/losses -- explain where buyer dollars are falling out of the funnel
+      if (req.method === 'GET' && pathname === '/v1/analytics/losses') {
+        let summaryOptions;
+        try {
+          summaryOptions = resolveBillingSummaryOptions(parsed);
+        } catch (err) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.INVALID_REQUEST,
+            title: 'Invalid loss analytics query',
+            status: 400,
+            detail: err && err.message ? err.message : 'Invalid analytics window request.',
+          });
+          return;
+        }
+
+        const billingSummary = await getBillingSummaryLive(summaryOptions);
+        const data = generateDashboard(requestFeedbackDir, {
+          analyticsWindow: summaryOptions,
+          billingSummary,
+          billingSource: 'live',
+          authContext: { tier: 'pro' },
+        });
+        sendJson(res, 200, {
+          window: data.analytics.window || summaryOptions,
+          lossAnalysis: data.analytics.lossAnalysis || null,
+          buyerLoss: data.analytics.buyerLoss || null,
+          funnel: data.analytics.funnel || null,
+          revenue: data.analytics.revenue || null,
+          telemetry: {
+            conversionFunnel: data.analytics.telemetry && data.analytics.telemetry.conversionFunnel,
+            behavior: data.analytics.telemetry && data.analytics.telemetry.behavior,
+            ctas: data.analytics.telemetry && data.analytics.telemetry.ctas,
+            visitors: data.analytics.telemetry && data.analytics.telemetry.visitors,
+          },
+        });
+        return;
+      }
+
       // GET /v1/dashboard -- Full ThumbGate dashboard JSON
       if (req.method === 'GET' && pathname === '/v1/dashboard') {
         let summaryOptions;
