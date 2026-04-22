@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThumbGate for Platform Teams</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="How platform teams use ThumbGate to standardize AI agent behavior across Claude Code, Codex, Cursor, Gemini, and CI without turning rollout into a services project.">
+<meta property="og:title" content="ThumbGate for Platform Teams">
+<meta property="og:description" content="Standardize AI agent behavior across repos and workflows with Pre-Action Gates, shared lessons, and proof-backed rollout patterns.">
+<meta property="og:type" content="article">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/use-cases/platform-teams">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "ThumbGate for Platform Teams",
+  "description": "How platform teams standardize AI agent behavior across repos and workflows with Pre-Action Gates, shared lessons, and proof-backed rollout patterns.",
+  "datePublished": "2026-04-22",
+  "dateModified": "2026-04-22",
+  "author": { "@type": "Person", "name": "Igor Ganapolsky" },
+  "publisher": { "@type": "Organization", "name": "ThumbGate" }
+}
+</script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root { --bg:#0a0a0b; --card:#161618; --border:#222225; --text:#e8e8ec; --muted:#8b8b94; --cyan:#22d3ee; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+  .container { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  nav { padding: 1rem 2rem; border-bottom: 1px solid var(--border); display:flex; gap:1.5rem; flex-wrap:wrap; }
+  nav a { color: var(--muted); text-decoration:none; font-size:0.9rem; }
+  nav .brand { color: var(--text); font-weight:700; }
+  h1 { font-size:2.2rem; line-height:1.15; margin:2rem 0 1rem; }
+  h2 { font-size:1.45rem; margin:2.2rem 0 1rem; color:var(--cyan); }
+  p, li { margin-bottom:0.75rem; }
+  ul { padding-left:1.25rem; }
+  .card { background: var(--card); border:1px solid var(--border); border-radius:12px; padding:1.25rem; margin:1rem 0; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; margin:1rem 0; }
+  .cta { display:inline-block; background:var(--cyan); color:#000; padding:0.8rem 1.2rem; border-radius:8px; text-decoration:none; font-weight:700; }
+  .secondary { color:var(--cyan); text-decoration:underline; margin-left:1rem; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="brand">ThumbGate</a>
+  <a href="/guide">Guide</a>
+  <a href="/compare">Compare</a>
+  <a href="/dashboard">Dashboard</a>
+</nav>
+<div class="container">
+  <h1>ThumbGate for platform teams</h1>
+  <p>Platform teams are the first internal buyer when AI coding agents move from experimentation to shared use. The problem is not model quality in the abstract. The problem is rollout control: different repos, different agents, different operators, and the same mistakes showing up across all of them.</p>
+
+  <h2>What the platform team actually needs</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>One control point</h3>
+      <p>Claude Code, Codex, Cursor, Gemini CLI, Amp, and CI all need the same enforcement story, not six separate governance projects.</p>
+    </div>
+    <div class="card">
+      <h3>Shared lessons</h3>
+      <p>When one repo learns not to force-push, skip tests, or run a risky migration, that lesson should become reusable policy.</p>
+    </div>
+    <div class="card">
+      <h3>Proof before scale</h3>
+      <p>Platform teams need evidence: which gate fired, what it blocked, and where review churn is actually dropping.</p>
+    </div>
+  </div>
+
+  <h2>ThumbGate rollout pattern</h2>
+  <ol style="padding-left:1.25rem;">
+    <li>Start with one repo, one owner, and one repeated AI failure.</li>
+    <li>Install the free CLI wedge and capture real thumbs-up/down feedback.</li>
+    <li>Promote the repeated failure into a Pre-Action Gate.</li>
+    <li>Use the team rollout path when shared lessons, dashboard visibility, and approval boundaries become the blocker.</li>
+  </ol>
+
+  <h2>Why platform teams buy</h2>
+  <ul>
+    <li>Lower review churn across agent-written changes</li>
+    <li>Shared enforcement memory instead of tribal knowledge</li>
+    <li>A path from local proof to managed rollout</li>
+    <li>One governance story across multiple agent runtimes</li>
+  </ul>
+
+  <div class="card">
+    <p><strong>ThumbGate is not another platform-team committee project.</strong> It starts as a local CLI wedge, proves value on one live failure mode, and only then expands into a broader rollout.</p>
+    <p><a href="/#workflow-sprint-intake" class="cta">Start the workflow hardening sprint</a><a href="/compare/ai-experience-orchestration" class="secondary">Compare against orchestration suites</a></p>
+  </div>
+</div>
+</body>
+</html>
