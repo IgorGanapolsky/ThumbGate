@@ -115,10 +115,8 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'scripts/feedback-loop.js',
     'scripts/gates-engine.js',
     'scripts/hf-papers.js',
-    'scripts/session-report.js',
     'scripts/statusline.sh',
     'scripts/statusline-meta.js',
-    'scripts/swarm-coordinator.js',
     'scripts/tool-registry.js',
     'skills/thumbgate/SKILL.md',
     '.claude-plugin/plugin.json',
@@ -171,6 +169,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'scripts/session-health-sensor.js',
     'scripts/tool-kpi-tracker.js',
     'scripts/webhook-delivery.js',
+    'scripts/managed-lesson-agent.js',
+    'scripts/operator-artifacts.js',
+    'scripts/org-dashboard.js',
+    'scripts/reflector-agent.js',
+    'scripts/session-report.js',
+    'scripts/swarm-coordinator.js',
   ];
 
   // File-count ceiling bumped 220 → 225 (2026-04-19) after main picked up

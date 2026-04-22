@@ -116,7 +116,6 @@ const {
   readImportedDocument,
 } = require('../../scripts/document-intake');
 const { checkLimit, UPGRADE_MESSAGE } = require('../../scripts/rate-limiter');
-const { generateOrgDashboard } = require('../../scripts/org-dashboard');
 const {
   listHarnesses,
   runHarness,
@@ -124,21 +123,48 @@ const {
 const { runLoop: runAutoresearchLoop } = require('../../scripts/autoresearch-runner');
 const { TOOLS } = require('../../scripts/tool-registry');
 const { buildContextFootprintReport } = require('../../scripts/context-footprint');
-const { reflect: reflectOnFeedback } = require('../../scripts/reflector-agent');
 const { submitProductIssue } = require('../../scripts/product-feedback');
 const {
   assembleUnifiedContext,
   formatUnifiedContext,
 } = require('../../scripts/context-manager');
 const { exportHfDataset } = require('../../scripts/export-hf-dataset');
-const { distributeContextToAgents } = require('../../scripts/swarm-coordinator');
-const { buildSessionReport } = require('../../scripts/session-report');
-const {
-  generateOperatorArtifact,
-  formatArtifactMarkdown,
-} = require('../../scripts/operator-artifacts');
 
 const PRO_CHECKOUT_URL = 'https://thumbgate-production.up.railway.app/checkout/pro';
+const PRIVATE_MCP_MODULES = Object.freeze({
+  orgDashboard: path.resolve(__dirname, '../../scripts/org-dashboard.js'),
+  reflectorAgent: path.resolve(__dirname, '../../scripts/reflector-agent.js'),
+  swarmCoordinator: path.resolve(__dirname, '../../scripts/swarm-coordinator.js'),
+  sessionReport: path.resolve(__dirname, '../../scripts/session-report.js'),
+  operatorArtifacts: path.resolve(__dirname, '../../scripts/operator-artifacts.js'),
+  managedLessonAgent: path.resolve(__dirname, '../../scripts/managed-lesson-agent.js'),
+});
+
+function loadPrivateMcpModule(key) {
+  const modulePath = PRIVATE_MCP_MODULES[key];
+  if (!modulePath) {
+    throw new Error(`Unknown private MCP module: ${key}`);
+  }
+  try {
+    return require(modulePath);
+  } catch (error) {
+    const message = String(error && error.message || '');
+    if ((error && (error.code === 'MODULE_NOT_FOUND' || error.code === 'ERR_MODULE_NOT_FOUND'))
+      && (message.includes(modulePath) || message.includes(path.basename(modulePath)))) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+function unavailablePrivateMcpFeature(toolName) {
+  return toTextResult({
+    ok: false,
+    availability: 'private_core',
+    tool: toolName,
+    message: `${toolName} is only available in the ThumbGate private core or hosted runtime.`,
+  });
+}
 
 function enforceLimit(action) {
   const limit = checkLimit(action);
@@ -565,13 +591,17 @@ async function callToolInner(name, args) {
     case 'diagnose_failure':
       return buildDiagnoseFailureResponse(args);
     case 'reflect_on_feedback':
-      return toTextResult(reflectOnFeedback({
+      {
+        const module = loadPrivateMcpModule('reflectorAgent');
+        if (!module) return unavailablePrivateMcpFeature('reflect_on_feedback');
+        return toTextResult(module.reflect({
         conversationWindow: args.conversationWindow || [],
         context: args.context || '',
         whatWentWrong: args.whatWentWrong || '',
         structuredRule: null,
         feedbackEvent: args.feedbackEventId ? { id: args.feedbackEventId } : null,
-      }));
+        }));
+      }
     case 'report_product_issue':
       return toTextResult(await submitProductIssue({
         title: args.title,
@@ -797,23 +827,33 @@ async function callToolInner(name, args) {
       });
     }
     case 'distribute_context_to_agents':
-      return toTextResult(distributeContextToAgents({
+      {
+        const module = loadPrivateMcpModule('swarmCoordinator');
+        if (!module) return unavailablePrivateMcpFeature('distribute_context_to_agents');
+        return toTextResult(module.distributeContextToAgents({
         query: args.query || '',
         agents: args.agents,
         maxItems: args.maxItems,
         maxChars: args.maxChars,
         namespaces: Array.isArray(args.namespaces) ? args.namespaces : [],
         ttlMs: args.ttlMs,
-      }));
+        }));
+      }
     case 'session_report':
-      return toTextResult(buildSessionReport({ windowHours: args.windowHours }));
+      {
+        const module = loadPrivateMcpModule('sessionReport');
+        if (!module) return unavailablePrivateMcpFeature('session_report');
+        return toTextResult(module.buildSessionReport({ windowHours: args.windowHours }));
+      }
     case 'generate_operator_artifact': {
-      const artifact = await generateOperatorArtifact({
+      const module = loadPrivateMcpModule('operatorArtifacts');
+      if (!module) return unavailablePrivateMcpFeature('generate_operator_artifact');
+      const artifact = await module.generateOperatorArtifact({
         type: args.type,
         windowHours: args.windowHours,
       });
       if (args.format === 'markdown') {
-        return toTextResult(formatArtifactMarkdown(artifact));
+        return toTextResult(module.formatArtifactMarkdown(artifact));
       }
       return toTextResult(artifact);
     }
@@ -848,7 +888,11 @@ async function callToolInner(name, args) {
     case 'dashboard':
       return toTextResult(generateDashboard(getFeedbackPaths().FEEDBACK_DIR));
     case 'org_dashboard':
-      return toTextResult(generateOrgDashboard({ windowHours: Number(args.windowHours || 24) }));
+      {
+        const module = loadPrivateMcpModule('orgDashboard');
+        if (!module) return unavailablePrivateMcpFeature('org_dashboard');
+        return toTextResult(module.generateOrgDashboard({ windowHours: Number(args.windowHours || 24) }));
+      }
     case 'settings_status':
       return toTextResult(getSettingsStatus());
     case 'native_messaging_audit':
@@ -937,12 +981,14 @@ async function callToolInner(name, args) {
     case 'finalize_feedback_session':
       return toTextResult(finalizeFeedbackSession(args.sessionId));
     case 'run_managed_lesson_agent': {
-      const { runManagedAgent } = require('../../scripts/managed-lesson-agent');
-      return toTextResult(await runManagedAgent({ dryRun: args.dryRun, limit: args.limit, model: args.model }));
+      const module = loadPrivateMcpModule('managedLessonAgent');
+      if (!module) return unavailablePrivateMcpFeature('run_managed_lesson_agent');
+      return toTextResult(await module.runManagedAgent({ dryRun: args.dryRun, limit: args.limit, model: args.model }));
     }
     case 'managed_agent_status': {
-      const { getManagedAgentStatus } = require('../../scripts/managed-lesson-agent');
-      return toTextResult(getManagedAgentStatus() || { message: 'No managed agent runs recorded yet.' });
+      const module = loadPrivateMcpModule('managedLessonAgent');
+      if (!module) return unavailablePrivateMcpFeature('managed_agent_status');
+      return toTextResult(module.getManagedAgentStatus() || { message: 'No managed agent runs recorded yet.' });
     }
     case 'run_self_distill': {
       const { runSelfDistill } = require('../../scripts/self-distill-agent');

@@ -106,6 +106,12 @@ const DOMAIN_CATEGORIES = [
 const HOME = process.env.HOME || process.env.USERPROFILE || '';
 const pendingBackgroundSideEffects = new Set();
 
+function loadReflectorAgentModule() {
+  const modulePath = path.resolve(__dirname, 'reflector-agent.js');
+  if (!fs.existsSync(modulePath)) return null;
+  return require(modulePath);
+}
+
 /**
  * Update the statusline cache with latest lesson info after feedback capture.
  * The statusline.sh script reads this cache to display lesson context in Claude Code's status bar.
@@ -944,14 +950,14 @@ function captureFeedback(params) {
   let reflection = null;
   if (signal === 'negative' && Array.isArray(params.conversationWindow) && params.conversationWindow.length >= 2) {
     try {
-      const { reflect } = require('./reflector-agent');
-      reflection = reflect({
+      const reflectorAgent = loadReflectorAgentModule();
+      reflection = reflectorAgent ? reflectorAgent.reflect({
         conversationWindow: params.conversationWindow,
         context: inferredContext,
         whatWentWrong: params.whatWentWrong,
         structuredRule,
         feedbackEvent: null, // not yet constructed
-      });
+      }) : null;
     } catch (_err) { /* non-critical */ }
   }
 
