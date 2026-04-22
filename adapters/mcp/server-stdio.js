@@ -4,6 +4,10 @@
 const fs = require('fs');
 const path = require('path');
 const promptCache = new Map();
+const {
+  createUnavailableReport,
+  loadOptionalModule,
+} = require('../../scripts/private-core-boundary');
 
 function getCachedPrompt(key) {
   return promptCache.get(key);
@@ -91,6 +95,10 @@ const {
   getReliability,
 } = require('../../scripts/thompson-sampling');
 const {
+  retrieveRelevantLessons,
+} = loadOptionalModule('../../scripts/lesson-retrieval', () => ({
+  retrieveRelevantLessons: () => [],
+}));
   searchThumbgate,
 } = require('../../scripts/thumbgate-search');
 const {
@@ -102,6 +110,17 @@ const {
   readImportedDocument,
 } = require('../../scripts/document-intake');
 const { checkLimit, UPGRADE_MESSAGE } = require('../../scripts/rate-limiter');
+const { generateOrgDashboard } = loadOptionalModule('../../scripts/org-dashboard', () => ({
+  generateOrgDashboard: () => ({
+    activeAgents: 0,
+    totalAgents: 0,
+    orgAdherenceRate: 0,
+    topBlockedGates: [],
+    riskAgents: [],
+    upgradeMessage: 'Org dashboard requires ThumbGate-Core.',
+    ...createUnavailableReport('Org dashboard'),
+  }),
+}));
 const {
   listHarnesses,
   runHarness,
@@ -109,6 +128,9 @@ const {
 const { runLoop: runAutoresearchLoop } = require('../../scripts/autoresearch-runner');
 const { TOOLS } = require('../../scripts/tool-registry');
 const { buildContextFootprintReport } = require('../../scripts/context-footprint');
+const { reflect: reflectOnFeedback } = loadOptionalModule('../../scripts/reflector-agent', () => ({
+  reflect: () => createUnavailableReport('Feedback reflection'),
+}));
 const { submitProductIssue } = require('../../scripts/product-feedback');
 const {
   assembleUnifiedContext,
@@ -540,7 +562,13 @@ async function callToolInner(name, args) {
     }
     case 'retrieve_lessons': {
       // Cross-encoder reranking: retrieve more candidates, then rerank for precision
-      const { retrieveWithRerankingSync } = require('../../scripts/cross-encoder-reranker');
+      const { retrieveWithRerankingSync } = loadOptionalModule('../../scripts/cross-encoder-reranker', () => ({
+        retrieveWithRerankingSync: (toolName, actionContext, options = {}) => retrieveRelevantLessons(
+          toolName,
+          actionContext,
+          { maxResults: options.maxResults || 5 },
+        ),
+      }));
       return toTextResult(retrieveWithRerankingSync(
         args.toolName,
         args.actionContext || '',
