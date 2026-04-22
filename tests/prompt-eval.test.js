@@ -1,5 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -181,6 +182,28 @@ test('writeReport/loadReport round-trip eval artifacts', () => {
   assert.equal(loaded.suite, report.suite);
   assert.equal(loaded.score, report.score);
   assert.equal(Array.isArray(loaded.results), true);
+
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+test('CLI accepts split --output and --min-score arguments', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-prompt-eval-cli-'));
+  const outPath = path.join(tmpDir, 'report.json');
+  const result = spawnSync(process.execPath, [
+    path.join(__dirname, '..', 'scripts', 'prompt-eval.js'),
+    '--min-score',
+    '0',
+    '--output',
+    outPath,
+    '--json',
+  ], {
+    encoding: 'utf8',
+  });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.equal(fs.existsSync(outPath), true);
+  const report = JSON.parse(fs.readFileSync(outPath, 'utf8'));
+  assert.equal(typeof report.score, 'number');
 
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });

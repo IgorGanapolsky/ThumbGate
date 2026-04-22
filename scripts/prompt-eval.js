@@ -402,12 +402,34 @@ if (isCliInvocation()) {
   let outputPath = null;
   let requireNoRegressions = false;
 
-  for (const arg of args) {
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    const nextArg = args[index + 1];
     if (arg.startsWith('--suite=')) suitePath = path.resolve(arg.slice(8));
+    if (arg === '--suite' && nextArg) {
+      suitePath = path.resolve(nextArg);
+      index += 1;
+      continue;
+    }
     if (arg === '--json') json = true;
     if (arg.startsWith('--min-score=')) minScore = Number(arg.slice(12));
+    if (arg === '--min-score' && nextArg) {
+      minScore = Number(nextArg);
+      index += 1;
+      continue;
+    }
     if (arg.startsWith('--baseline=')) baselinePath = path.resolve(arg.slice(11));
+    if (arg === '--baseline' && nextArg) {
+      baselinePath = path.resolve(nextArg);
+      index += 1;
+      continue;
+    }
     if (arg.startsWith('--output=')) outputPath = path.resolve(arg.slice(9));
+    if (arg === '--output' && nextArg) {
+      outputPath = path.resolve(nextArg);
+      index += 1;
+      continue;
+    }
     if (arg === '--require-no-regressions') requireNoRegressions = true;
   }
 
