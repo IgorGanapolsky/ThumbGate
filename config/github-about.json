@@ -3,7 +3,7 @@
   "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
   "homepageUrl": "https://thumbgate-production.up.railway.app",
   "githubDescription": "Self-improving agent governance: 👍/👎 → Pre-Action Gates that block repeat AI mistakes. Stop paying for the same mistake twice.",
-  "metaDescription": "Stop paying for the same AI mistake twice. ThumbGate turns 👍 thumbs up and 👎 thumbs down feedback into history-aware lessons and Pre-Action Gates that block repeat AI agent mistakes before they reach the model — self-improving agent governance with shared lessons and org visibility for Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode.",
+  "metaDescription": "Stop paying for the same AI mistake twice. ThumbGate is the enforcement layer for AI agent orchestration: 👍 thumbs up and 👎 thumbs down become history-aware lessons, shared lessons and org visibility, plus Pre-Action Gates that block repeat mistakes before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode.",
   "topics": [
     "thumbgate",
     "pre-action-gates",
