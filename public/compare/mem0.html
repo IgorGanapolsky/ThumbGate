@@ -1,47 +1,232 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ThumbGate vs Mem0 | Enforcement vs Memory for AI Agents</title>
-<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
-<meta name="description" content="Mem0 is memory. ThumbGate is memory plus enforcement. It captures thumbs-up/down feedback, promotes the signal into rules, and blocks repeat failures with pre-action gates.">
-<meta name="keywords" content="ThumbGate vs Mem0, Mem0 alternative, AI agent memory enforcement, pre-action gates, feedback loop, AI coding agent guardrails">
-<meta property="og:title" content="ThumbGate vs Mem0">
-<meta property="og:description" content="Mem0 is memory. ThumbGate is memory plus enforcement. It captures thumbs-up/down feedback, promotes the signal into rules, and blocks repeat failures with pre-action gates.">
-<meta property="og:type" content="article">
-<meta property="og:url" content="https://thumbgate-production.up.railway.app/compare/mem0">
-<link rel="canonical" href="https://thumbgate-production.up.railway.app/compare/mem0">
-<link rel="llm-context" href="/public/llm-context.md" type="text/markdown">
-
-<script type="application/ld+json">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ThumbGate vs Mem0 | Enforcement vs Memory for AI Agents</title>
+  <meta name="description" content="Mem0 is memory. ThumbGate is memory plus enforcement. It captures thumbs-up/down feedback, promotes the signal into rules, and blocks repeat failures with pr..." />
+  <meta property="og:title" content="ThumbGate vs Mem0 | Enforcement vs Memory for AI Agents" />
+  <meta property="og:description" content="Mem0 is memory. ThumbGate is memory plus enforcement. It captures thumbs-up/down feedback, promotes the signal into rules, and blocks repeat failures with pr..." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://usethumbgate.com/compare/mem0" />
+  <link rel="canonical" href="https://usethumbgate.com/compare/mem0" />
+  <link rel="llm-context" href="/public/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --bg-raised: #111113;
+      --bg-card: #161618;
+      --line: #222225;
+      --text: #e8e8ec;
+      --muted: #8b8b96;
+      --cyan: #22d3ee;
+      --green: #4ade80;
+      --red: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(12px);
+      background: rgba(10, 10, 11, 0.88);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 14px;
+      padding-bottom: 14px;
+    }
+    .brand {
+      font-weight: 700;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 211, 238, 0.22);
+      background: rgba(34, 211, 238, 0.1);
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1.06;
+      letter-spacing: -0.04em;
+      margin: 16px 0;
+      max-width: 760px;
+    }
+    .hero p {
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .signal-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 28px 0 0;
+    }
+    .signal-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .signal-pill.up {
+      border-color: rgba(74, 222, 128, 0.28);
+      color: #b8f7c8;
+      background: rgba(74, 222, 128, 0.1);
+    }
+    .signal-pill.down {
+      border-color: rgba(248, 113, 113, 0.28);
+      color: #ffc0c0;
+      background: rgba(248, 113, 113, 0.1);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+      gap: 24px;
+      padding-bottom: 72px;
+    }
+    .card, .detail-section, .sidebar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .card { padding: 24px; }
+    .detail-section { padding: 24px; margin-bottom: 18px; }
+    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+    .detail-section p { color: var(--muted); }
+    .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
+    .card h2 { margin-top: 0; }
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .sidebar-card {
+      padding: 20px;
+    }
+    /* Only the first sidebar card sticks. Stacking multiple stickies at the
+       same top offset makes them overlap each other on scroll. The related-
+       pages card flows normally below. */
+    .sidebar-card:first-child {
+      position: sticky;
+      top: 84px;
+      max-height: calc(100vh - 104px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .proof-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 18px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: var(--cyan);
+      color: #071116;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .faq-item {
+      border-top: 1px solid var(--line);
+      padding: 14px 0;
+    }
+    .faq-item summary {
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .faq-item p {
+      color: var(--muted);
+    }
+    .related-card {
+      display: block;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      margin-top: 12px;
+      color: var(--text);
+    }
+    .related-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    @media (max-width: 860px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .sidebar-card:first-child {
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
+    }
+  </style>
+  <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "TechArticle",
-  "headline": "ThumbGate vs Mem0 — Enforcement vs Memory for AI Agents",
-  "description": "Mem0 is memory. ThumbGate is memory plus enforcement. It captures thumbs-up/down feedback, promotes the signal into rules, and blocks repeat failures with pre-action gates.",
-  "author": {
-    "@type": "Person",
-    "name": "Igor Ganapolsky",
-    "url": "https://github.com/IgorGanapolsky"
-  },
+  "headline": "ThumbGate vs Mem0",
+  "description": "Mem0 is memory. ThumbGate is memory plus enforcement. It captures thumbs-up/down feedback, promotes the signal into rules, and blocks repeat failures with pr...",
+  "about": [
+    "thumbgate vs speclock",
+    "thumbgate vs mem0"
+  ],
+  "url": "https://usethumbgate.com/compare/mem0",
   "publisher": {
     "@type": "Organization",
     "name": "ThumbGate",
-    "url": "https://thumbgate-production.up.railway.app"
+    "url": "https://usethumbgate.com"
   },
-  "datePublished": "2026-04-09",
-  "dateModified": "2026-04-09",
-  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/compare/mem0",
-  "about": [
-    {"@type": "Thing", "name": "ThumbGate vs Mem0"},
-    {"@type": "Thing", "name": "AI agent memory enforcement"},
-    {"@type": "Thing", "name": "pre-action gates"}
-  ]
+  "mainEntityOfPage": "https://usethumbgate.com/compare/mem0"
 }
-</script>
-
-<script type="application/ld+json">
+  </script>
+  <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -61,129 +246,91 @@
         "@type": "Answer",
         "text": "Because buyers often start with memory tooling and only later realize they also need enforcement. This page makes that upgrade path explicit."
       }
-    },
-    {
-      "@type": "Question",
-      "name": "Is Mem0 bad?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "No. Mem0 is useful when you mainly need retrieval and cross-session context. ThumbGate is useful when retrieval alone is not enough and the system has to stop the same mistake before execution."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Can I migrate from Mem0 to ThumbGate?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "ThumbGate does not require migrating away from Mem0. You can add ThumbGate as the enforcement layer while keeping any existing memory system for retrieval."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Does ThumbGate require a cloud account?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "No. ThumbGate is local-first with SQLite+FTS5 storage. No cloud account, no API keys needed to capture feedback and enforce pre-action gates."
-      }
     }
   ]
 }
-</script>
-
-<link rel="stylesheet" href="/learn/learn.css">
+  </script>
 </head>
 <body>
-
-<nav>
-  <a href="/" class="brand">ThumbGate</a>
-  <a href="/guide">Setup Guide</a>
-  <a href="/learn">Learn</a>
-  <a href="/dashboard">Dashboard</a>
-  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
-</nav>
-
-<div class="container">
-  <div class="breadcrumb"><a href="/learn">Learn</a> / <a href="/compare/mem0">Compare</a> / ThumbGate vs Mem0</div>
-  <h1>ThumbGate vs Mem0</h1>
-  <p style="color:var(--muted);">3 min read &middot; Bottom-of-funnel comparison for buyers choosing between memory and enforcement</p>
-
-  <div class="tldr"><strong>TL;DR:</strong> Mem0 is memory. ThumbGate is memory plus enforcement. It captures thumbs-up/down feedback, promotes the signal into rules, and blocks repeat failures with pre-action gates.</div>
-
-  <h2>Where Mem0 fits</h2>
-  <p>Mem0 is designed as a cloud memory layer. It helps the model remember context and past interactions, but memory alone does not guarantee that the next action is safe.</p>
-
-  <h2>Where ThumbGate fits</h2>
-  <p>ThumbGate begins with the same need to remember, but it goes further. A thumbs down can become a prevention rule, and that rule can become a pre-action gate that blocks a repeated tool call.</p>
-  <ul>
-    <li>Thumbs up reinforces good behavior.</li>
-    <li>Thumbs down blocks repeated mistakes.</li>
-    <li>Verification evidence and automation reports back up the reliability claim.</li>
-  </ul>
-
-  <table style="width:100%;border-collapse:collapse;margin:1.5rem 0;">
-    <thead>
-      <tr style="border-bottom:2px solid var(--border, #333);">
-        <th style="text-align:left;padding:8px;">Capability</th>
-        <th style="text-align:center;padding:8px;">ThumbGate</th>
-        <th style="text-align:center;padding:8px;">Mem0</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr><td style="padding:8px;">Cross-session memory</td><td style="text-align:center;">Yes (local-first)</td><td style="text-align:center;">Yes (cloud)</td></tr>
-      <tr><td style="padding:8px;">Pre-action gate enforcement</td><td style="text-align:center;">Yes</td><td style="text-align:center;">No</td></tr>
-      <tr><td style="padding:8px;">Thumbs-up/down feedback</td><td style="text-align:center;">Yes</td><td style="text-align:center;">No</td></tr>
-      <tr><td style="padding:8px;">Prevention rule generation</td><td style="text-align:center;">Automatic</td><td style="text-align:center;">No</td></tr>
-      <tr><td style="padding:8px;">Multi-agent support</td><td style="text-align:center;">6 agents</td><td style="text-align:center;">API-based</td></tr>
-      <tr><td style="padding:8px;">Local-first / no cloud required</td><td style="text-align:center;">Yes</td><td style="text-align:center;">No</td></tr>
-      <tr><td style="padding:8px;">Thompson Sampling scoring</td><td style="text-align:center;">Yes</td><td style="text-align:center;">No</td></tr>
-      <tr><td style="padding:8px;">Verification evidence</td><td style="text-align:center;">Yes</td><td style="text-align:center;">No</td></tr>
-    </tbody>
-  </table>
-
-  <div class="callout">
-    <strong>The upgrade path:</strong> Buyers often start with memory tooling and only later realize they also need enforcement. ThumbGate makes that upgrade path explicit: keep memory, add gates.
+  <div class="topbar">
+    <div class="container">
+      <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+    </div>
   </div>
 
-  <h2>Install ThumbGate</h2>
-  <pre><code>npx thumbgate init --agent claude-code</code></pre>
-  <p>Works with Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode.</p>
+  <main class="container">
+    <section class="hero">
+      <div class="eyebrow">comparison | thumbgate vs mem0</div>
+      <h1>ThumbGate vs Mem0</h1>
+      <p>Mem0 is memory. ThumbGate is memory plus enforcement. It captures thumbs-up/down feedback, promotes the signal into rules, and blocks repeat failures with pre-action gates.</p>
+      <div class="signal-row">
+        <div class="signal-pill up">👍 Thumbs up reinforces good behavior</div>
+        <div class="signal-pill down">👎 Thumbs down blocks repeated mistakes</div>
+      </div>
+    </section>
 
-  <h2>Frequently Asked Questions</h2>
-  <h3>Does ThumbGate still include memory?</h3>
-  <p>Yes. ThumbGate keeps local-first memory, ContextFS packs, lesson search, and recall, but adds pre-action enforcement when memory alone is insufficient.</p>
+    <section class="grid">
+      <div>
+        <div class="card">
+          <h2>Why this page exists</h2>
+          <ul><li>Mem0 is useful when you mainly need retrieval and cross-session context.</li><li>ThumbGate is useful when retrieval alone is not enough and the system has to stop the same mistake before execution.</li><li>ThumbGate adds proof assets and automation reports so the buying story is stronger for engineering teams.</li></ul>
+        </div>
+        
+      <section class="detail-section">
+        <h2>Where Mem0 fits</h2>
+        <p>Mem0 is designed as a cloud memory layer. It helps the model remember context and past interactions, but memory alone does not guarantee that the next action is safe.</p>
+        
+      </section>
+      <section class="detail-section">
+        <h2>Where ThumbGate fits</h2>
+        <p>ThumbGate begins with the same need to remember, but it goes further. A thumbs down can become a prevention rule, and that rule can become a pre-action gate that blocks a repeated tool call.</p>
+        <ul><li>Thumbs up reinforces good behavior.</li><li>Thumbs down blocks repeated mistakes.</li><li>Verification evidence and automation reports back up the reliability claim.</li></ul>
+      </section>
+      <section class="detail-section">
+        <h2>Which page should rank</h2>
+        <p>This comparison page should win when the searcher is already deciding between a memory system and an enforcement system. The goal is to make the distinction obvious in under 30 seconds.</p>
+        
+      </section>
+        <div class="detail-section">
+          <h2>FAQ</h2>
+          
+      <details class="faq-item">
+        <summary>Does ThumbGate still include memory?</summary>
+        <p>Yes. ThumbGate keeps local-first memory, ContextFS packs, lesson search, and recall, but adds pre-action enforcement when memory alone is insufficient.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Why compare Mem0 at all?</summary>
+        <p>Because buyers often start with memory tooling and only later realize they also need enforcement. This page makes that upgrade path explicit.</p>
+      </details>
+        </div>
+      </div>
 
-  <h3>Why compare Mem0 at all?</h3>
-  <p>Because buyers often start with memory tooling and only later realize they also need enforcement. This page makes that upgrade path explicit.</p>
-
-  <h3>Is Mem0 bad?</h3>
-  <p>No. Mem0 is useful when you mainly need retrieval and cross-session context. ThumbGate is useful when retrieval alone is not enough and the system has to stop the same mistake before execution.</p>
-
-  <h3>Can I migrate from Mem0 to ThumbGate?</h3>
-  <p>ThumbGate does not require migrating away from Mem0. You can add ThumbGate as the enforcement layer while keeping any existing memory system for retrieval.</p>
-
-  <h3>Does ThumbGate require a cloud account?</h3>
-  <p>No. ThumbGate is local-first with SQLite+FTS5 storage. No cloud account, no API keys needed to capture feedback and enforce pre-action gates.</p>
-
-  <div class="cta-box">
-    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Pro for operators, Team for governance</h2>
-    <p>Start free with local gates. Pro is $19/mo or $149/yr for the personal dashboard and exports. Team rollout anchors at $49/seat/mo when shared lessons and org visibility matter.</p>
-    <div class="cta-install">$ npx thumbgate init</div>
-    <p style="margin-top:8px;"><a href="/pro">See Pro and Team pricing &rarr;</a></p>
-  </div>
-
-  <div class="related">
-    <h3>Related</h3>
-    <a href="/compare/speclock">ThumbGate vs SpecLock &rarr;</a>
-    <a href="/guides/claude-code-prevent-repeated-mistakes">Claude Code Feedback Memory &rarr;</a>
-    <a href="/guides/pre-action-gates">What Are Pre-Action Gates? &rarr;</a>
-    <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
-  </div>
-</div>
-
-<div class="sticky-cta">
-  <span style="color:var(--muted)">Try it now:</span>
-  <code>npx thumbgate init</code>
-  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
-</div>
+      <aside class="sidebar">
+        <div class="sidebar-card">
+          <h2>GSD execution brief</h2>
+          <p>This page was prioritized because it captures high-intent demand around thumbgate vs mem0 and feeds directly into ThumbGate's proof-led conversion path.</p>
+          <p><strong>Opportunity score:</strong> 100</p>
+          <p><strong>Primary persona:</strong> tool-evaluator</p>
+          <p><strong>Keyword cluster:</strong> thumbgate vs speclock, thumbgate vs mem0</p>
+          <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
+          <div class="proof-links"><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json" target="_blank" rel="noopener">Automation proof</a><a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub repository</a></div>
+          <a class="cta-button" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=compare_mem0&amp;cta_placement=seo_brief&amp;plan_id=pro" target="_blank" rel="noopener">Go Pro — $19/mo</a>
+        </div>
+        <div class="sidebar-card">
+          <h2>Related pages</h2>
+          
+        <a class="related-card" href="/compare/speclock">
+          <span class="related-label">Related page</span>
+          <strong>ThumbGate vs SpecLock</strong>
+        </a>
+        <a class="related-card" href="/guides/claude-code-feedback">
+          <span class="related-label">Related page</span>
+          <strong>Claude Code Feedback Memory That Actually Enforces</strong>
+        </a>
+        </div>
+      </aside>
+    </section>
+  </main>
 </body>
 </html>
