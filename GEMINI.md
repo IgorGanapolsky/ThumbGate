@@ -100,6 +100,22 @@ When external Gemini/LLM calls are routed through a gateway, keep this loop as t
 
 Use feedback-derived prevention rules as constraints to reduce repeated failures across sessions.
 
+## Product Architecture Split
+
+ThumbGate ships as two repositories with an enforced boundary:
+
+- **Public shell** (`IgorGanapolsky/ThumbGate`, npm `thumbgate`, `thumbgate.ai`): CLI, hook installer, adapter configs, local gate runner, public schemas, marketing. Keep it thin.
+- **Private core** (`IgorGanapolsky/ThumbGate-Core`): lesson ranking, policy synthesis, orchestration, billing intelligence, org visibility, licensed exports. Not on npm.
+
+Rules:
+1. Intelligence features go into Core; the public shell gets only thin client stubs.
+2. Public code talks to Core over HTTP / gRPC / licensed binary — never a direct `require`.
+3. Public CI must pass with Core absent; integration suites are opt-in.
+4. Use `worktrees/public-*` and `worktrees/core-*` — never co-mingle in one branch.
+5. Never claim the split is "complete". Report measurable deltas only (files removed from public, boundary tests added, bundle delta, empty Core import graph).
+
+Violations block merge. Pin fixes with regression tests in `tests/public-core-boundary.test.js`.
+
 ## Session Directive: PR Management & System Hygiene
 
 ### CTO Protocol
