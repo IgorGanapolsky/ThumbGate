@@ -3,6 +3,11 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const {
+  FIXTURE_TOKENS,
+  buildAwsAccessKeyId,
+  buildGitHubPat,
+} = require('../scripts/secret-fixture-tokens');
 
 const {
   compareSpecVersions,
@@ -45,7 +50,7 @@ const TEST_SUITE = {
   cases: [
     { id: 'block-force-push', input: { command: 'git push --force origin main' }, expect: 'block', constraintId: 'no-force-push' },
     { id: 'pass-safe-push', input: { command: 'git push origin main' }, expect: 'pass' },
-    { id: 'block-secrets', input: { content: 'key = "AKIAIOSFODNN7EXAMPLE"' }, expect: 'block', constraintId: 'no-secrets' },
+    { id: 'block-secrets', input: { content: `key = "${buildAwsAccessKeyId()}"` }, expect: 'block', constraintId: 'no-secrets' },
     { id: 'pass-safe-code', input: { content: 'const x = 1;' }, expect: 'pass' },
   ],
 };
@@ -90,6 +95,27 @@ test('loadEvalSuite reads and validates from file', () => {
   const suite = loadEvalSuite(path.join(tempDir, 'test.json'));
   assert.equal(suite.name, 'test-eval');
   assert.equal(suite.cases.length, 4);
+});
+
+test('loadEvalSuite expands scanner-safe fixture placeholders', () => {
+  const tempDir = makeTempDir();
+  writeJson(tempDir, 'fixture.json', {
+    name: 'fixture-eval',
+    cases: [
+      {
+        id: 'block-gh-pat',
+        input: { content: `token = "${FIXTURE_TOKENS.githubPat}"` },
+        expect: 'block',
+        constraintId: 'no-secrets',
+      },
+    ],
+  });
+
+  const suite = loadEvalSuite(path.join(tempDir, 'fixture.json'));
+  assert.equal(
+    suite.cases[0].input.content,
+    `token = "${buildGitHubPat()}"`,
+  );
 });
 
 test('loadEvalDir loads all JSON eval suites from a directory', () => {
