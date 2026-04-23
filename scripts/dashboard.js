@@ -719,6 +719,197 @@ function countCoverage(entries, resolver) {
   return safeRate(matched, entries.length);
 }
 
+function sumCounterValues(counter = {}) {
+  return Object.values(counter).reduce((sum, value) => sum + (Number(value) || 0), 0);
+}
+
+function sumKeysMatching(counter = {}, matcher) {
+  return Object.entries(counter).reduce((sum, entry) => {
+    const [key, value] = entry;
+    return matcher(key) ? sum + (Number(value) || 0) : sum;
+  }, 0);
+}
+
+function rankCounter(counter = {}, limit = 5) {
+  return Object.entries(counter)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([key, count]) => ({ key, count }));
+}
+
+function mapBuyerLossTheme(reasonCode) {
+  const normalized = String(reasonCode || 'unknown').toLowerCase();
+  if (['too_expensive', 'price_shock', 'budget', 'need_budget_approval'].includes(normalized)) {
+    return 'pricing';
+  }
+  if (['need_more_proof', 'trust_gap', 'security_unclear'].includes(normalized)) {
+    return 'trust';
+  }
+  if (['not_ready', 'later', 'just_researching'].includes(normalized)) {
+    return 'timing';
+  }
+  if (['need_team_features', 'need_team_approval'].includes(normalized)) {
+    return 'team';
+  }
+  if (['integration_unclear', 'setup_confusing'].includes(normalized)) {
+    return 'integration';
+  }
+  if (['prefer_oss'].includes(normalized)) {
+    return 'open_source';
+  }
+  return 'unknown';
+}
+
+function buildLossAnalysis(analytics) {
+  const telemetry = analytics.telemetry || {};
+  const visitors = telemetry.visitors || {};
+  const ctas = telemetry.ctas || {};
+  const behavior = telemetry.behavior || {};
+  const buyerLoss = analytics.buyerLoss || {};
+  const conversionFunnel = telemetry.conversionFunnel || {};
+  const runtimeConfig = resolveHostedBillingConfig();
+  const monthlyPriceCents = Math.round((Number(runtimeConfig.proPriceDollars) || 19) * 100);
+  const pageViews = visitors.pageViews || 0;
+  const checkoutStarts = ctas.checkoutStarts || 0;
+  const paidOrders = analytics.funnel ? analytics.funnel.paidOrders || 0 : 0;
+  const trialEmails = conversionFunnel.trialEmails || 0;
+  const explicitReasons = buyerLoss.reasonsByCode || {};
+  const reasonThemes = {};
+  Object.entries(explicitReasons).forEach(([reasonCode, count]) => {
+    const theme = mapBuyerLossTheme(reasonCode);
+    reasonThemes[theme] = (reasonThemes[theme] || 0) + count;
+  });
+
+  const proImpressions = sumKeysMatching(behavior.ctaImpressionsById || {}, (key) => /pro|pricing/i.test(key));
+  const proClicks = sumKeysMatching(ctas.byId || {}, (key) => /pro|pricing/i.test(key));
+  const pricingViews = sumKeysMatching(behavior.sectionViewsById || {}, (key) => /pricing/i.test(key));
+  const proofViews = sumKeysMatching(behavior.sectionViewsById || {}, (key) => /proof/i.test(key));
+  const exitsBeforePricing = sumKeysMatching(behavior.exitsByLastVisibleSection || {}, (key) => !/pricing|faq/i.test(key));
+  const checkoutLossCount = Math.max(0, checkoutStarts - paidOrders);
+
+  const stageDropoff = [
+    {
+      key: 'landing_to_checkout',
+      stage: 'landing',
+      lostCount: Math.max(0, pageViews - checkoutStarts),
+      rate: safeRate(Math.max(0, pageViews - checkoutStarts), pageViews),
+    },
+    {
+      key: 'cta_impression_to_click',
+      stage: 'message',
+      lostCount: Math.max(0, proImpressions - proClicks),
+      rate: safeRate(Math.max(0, proImpressions - proClicks), proImpressions),
+    },
+    {
+      key: 'email_focus_to_capture',
+      stage: 'lead_capture',
+      lostCount: Math.max(0, (behavior.emailFocusEvents || 0) - trialEmails),
+      rate: safeRate(Math.max(0, (behavior.emailFocusEvents || 0) - trialEmails), behavior.emailFocusEvents || 0),
+    },
+    {
+      key: 'checkout_to_paid',
+      stage: 'checkout',
+      lostCount: checkoutLossCount,
+      rate: safeRate(checkoutLossCount, checkoutStarts),
+    },
+  ].sort((a, b) => b.lostCount - a.lostCount);
+
+  const inferredCauses = [];
+  if (exitsBeforePricing > 0) {
+    inferredCauses.push({
+      key: 'message_drop_before_pricing',
+      stage: 'landing',
+      count: exitsBeforePricing,
+      evidence: {
+        topExitSection: behavior.topExitSection,
+        pricingViews,
+        pageExits: behavior.pageExits || 0,
+      },
+    });
+  }
+  if (proImpressions > 0 && proClicks < proImpressions) {
+    inferredCauses.push({
+      key: 'weak_pricing_cta_response',
+      stage: 'message',
+      count: Math.max(0, proImpressions - proClicks),
+      evidence: {
+        proImpressions,
+        proClicks,
+        impressionToClickRate: safeRate(proClicks, proImpressions),
+      },
+    });
+  }
+  if ((behavior.emailAbandonEvents || 0) > 0) {
+    inferredCauses.push({
+      key: 'email_capture_friction',
+      stage: 'lead_capture',
+      count: behavior.emailAbandonEvents || 0,
+      evidence: {
+        emailFocusEvents: behavior.emailFocusEvents || 0,
+        emailAbandonEvents: behavior.emailAbandonEvents || 0,
+        emailAbandonRate: behavior.emailAbandonRate || 0,
+      },
+    });
+  }
+  if (checkoutLossCount > 0 || ctas.checkoutFailures || ctas.lookupFailures || ctas.checkoutCancelled || ctas.checkoutAbandoned) {
+    inferredCauses.push({
+      key: 'checkout_friction',
+      stage: 'checkout',
+      count: checkoutLossCount,
+      evidence: {
+        checkoutStarts,
+        paidOrders,
+        checkoutCancelled: ctas.checkoutCancelled || 0,
+        checkoutAbandoned: ctas.checkoutAbandoned || 0,
+        checkoutFailures: ctas.checkoutFailures || 0,
+        lookupFailures: ctas.lookupFailures || 0,
+      },
+    });
+  }
+  const topTheme = rankCounter(reasonThemes, 1)[0] || null;
+  if (topTheme) {
+    inferredCauses.push({
+      key: `explicit_${topTheme.key}`,
+      stage: topTheme.key === 'pricing' ? 'pricing' : 'objection',
+      count: topTheme.count,
+      evidence: {
+        theme: topTheme.key,
+        topReasons: rankCounter(explicitReasons, 3),
+      },
+    });
+  }
+
+  inferredCauses.sort((a, b) => b.count - a.count);
+
+  return {
+    primaryIssue: inferredCauses[0] || null,
+    stageDropoff,
+    inferredCauses,
+    explicitThemes: rankCounter(reasonThemes, 6),
+    explicitReasons: rankCounter(explicitReasons, 6),
+    behaviorSignals: {
+      topViewedSection: behavior.topViewedSection || null,
+      topExitSection: behavior.topExitSection || null,
+      topExitDwellBucket: behavior.topExitDwellBucket || null,
+      topImpressionCta: behavior.topImpressionCta || null,
+      pricingViews,
+      proofViews,
+      pageExits: behavior.pageExits || 0,
+      exitsBeforePricing,
+      averageExitEngagementMs: behavior.averageExitEngagementMs || 0,
+      averageExitScrollPercent: behavior.averageExitScrollPercent || 0,
+      emailFocusEvents: behavior.emailFocusEvents || 0,
+      emailAbandonEvents: behavior.emailAbandonEvents || 0,
+    },
+    revenueOpportunity: {
+      currentMonthlyPriceCents: monthlyPriceCents,
+      checkoutLossCount,
+      explicitBuyerLossCount: buyerLoss.totalSignals || 0,
+      opportunityAtCurrentMonthlyPriceCents: checkoutLossCount * monthlyPriceCents,
+    },
+  };
+}
+
 function computeAnalyticsSummary(feedbackDir, options = {}) {
   const analyticsWindow = resolveAnalyticsWindow(options.analyticsWindow || options);
   const telemetryEntries = filterEntriesForWindow(
@@ -1211,6 +1402,7 @@ function generateDashboard(feedbackDir, options = {}) {
     analyticsWindow,
     billingSummary,
   });
+  analytics.lossAnalysis = buildLossAnalysis(analytics);
   const observability = computeObservabilityStats(diagnosticEntries, diagnostics, secretGuard, analytics.telemetry);
   const instrumentation = computeInstrumentationReadiness(analytics, billingSummary);
   const delegationRuntime = loadDelegationRuntimeModule();

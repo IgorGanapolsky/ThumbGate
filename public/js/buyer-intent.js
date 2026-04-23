@@ -143,6 +143,183 @@
     }
   }
 
+  function normalizeInteger(value) {
+    var parsed = Number(value);
+    return Number.isFinite(parsed) ? Math.round(parsed) : null;
+  }
+
+  function bucketDwellMs(value) {
+    var ms = normalizeInteger(value) || 0;
+    if (ms < 10000) return 'under_10s';
+    if (ms < 30000) return '10s_to_30s';
+    if (ms < 60000) return '30s_to_60s';
+    if (ms < 180000) return '1m_to_3m';
+    return 'over_3m';
+  }
+
+  function bucketScrollPercent(value) {
+    var pct = normalizeInteger(value);
+    if (pct === null) return 'unknown';
+    if (pct < 25) return 'under_25';
+    if (pct < 50) return '25_to_49';
+    if (pct < 75) return '50_to_74';
+    if (pct < 100) return '75_to_99';
+    return '100';
+  }
+
+  function initializeBehaviorAnalytics(options) {
+    var settings = options || {};
+    var sendTelemetry = typeof settings.sendTelemetry === 'function'
+      ? settings.sendTelemetry
+      : function() {};
+    var state = {
+      startedAt: Date.now(),
+      maxScrollPercent: 0,
+      lastVisibleSection: settings.initialSectionId || null,
+      emailFocused: false,
+      emailCaptured: false,
+      sectionSeen: Object.create(null),
+      ctaSeen: Object.create(null),
+      exitSent: false,
+    };
+
+    function emit(eventType, extra) {
+      sendTelemetry(eventType, Object.assign({
+        pageType: settings.pageType || 'marketing',
+        page: settings.pagePath || (global.location ? global.location.pathname : null),
+        landingPath: settings.landingPath || (global.location ? global.location.pathname : null),
+      }, extra || {}));
+    }
+
+    function observeTargets(targets, callback, threshold) {
+      if (!global.IntersectionObserver || !Array.isArray(targets) || !targets.length || !global.document) {
+        return null;
+      }
+      var observer = new global.IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (!entry.isIntersecting) return;
+          callback(entry.target);
+        });
+      }, { threshold: threshold || 0.45 });
+
+      targets.forEach(function(target) {
+        if (target && target.element) {
+          observer.observe(target.element);
+        }
+      });
+      return observer;
+    }
+
+    function resolveTargets(items) {
+      if (!global.document || typeof global.document.querySelector !== 'function') {
+        return [];
+      }
+      return (items || []).map(function(item) {
+        var element = global.document.querySelector(item.selector);
+        if (!element) return null;
+        return Object.assign({ element: element }, item);
+      }).filter(Boolean);
+    }
+
+    function markEmailCaptured() {
+      state.emailCaptured = true;
+    }
+
+    var sectionTargets = resolveTargets(settings.sections);
+    observeTargets(sectionTargets, function(target) {
+      var sectionId = target.sectionId || target.id || target.selector || 'unknown';
+      state.lastVisibleSection = sectionId;
+      if (state.sectionSeen[sectionId]) return;
+      state.sectionSeen[sectionId] = true;
+      emit('section_view', {
+        sectionId: sectionId,
+        sectionLabel: target.sectionLabel || sectionId,
+      });
+    }, 0.35);
+
+    var ctaTargets = resolveTargets(settings.ctaImpressions);
+    observeTargets(ctaTargets, function(target) {
+      var ctaId = target.ctaId || target.selector || 'unknown_cta';
+      if (state.ctaSeen[ctaId]) return;
+      state.ctaSeen[ctaId] = true;
+      emit('cta_impression', {
+        ctaId: ctaId,
+        ctaPlacement: target.ctaPlacement || null,
+        planId: target.planId || null,
+      });
+    }, 0.6);
+
+    if (global.addEventListener) {
+      global.addEventListener('scroll', function() {
+        if (!global.document || !global.document.documentElement) return;
+        var docHeight = global.document.documentElement.scrollHeight - (global.innerHeight || 0);
+        if (docHeight <= 0) {
+          state.maxScrollPercent = 100;
+          return;
+        }
+        var nextPercent = Math.max(0, Math.min(100, Math.round(((global.scrollY || 0) / docHeight) * 100)));
+        if (nextPercent > state.maxScrollPercent) {
+          state.maxScrollPercent = nextPercent;
+        }
+      }, { passive: true });
+    }
+
+    if (global.document && typeof global.document.querySelectorAll === 'function') {
+      var emailSelector = settings.emailSelector || '[data-buyer-email]';
+      Array.from(global.document.querySelectorAll(emailSelector)).forEach(function(input) {
+        input.addEventListener('focus', function() {
+          if (state.emailFocused) return;
+          state.emailFocused = true;
+          emit('buyer_email_focus', {
+            ctaId: settings.emailCtaId || 'buyer_email',
+            ctaPlacement: settings.emailCtaPlacement || null,
+          });
+        });
+      });
+
+      Array.from(global.document.querySelectorAll(settings.newsletterFormSelector || '[data-newsletter-form]')).forEach(function(form) {
+        form.addEventListener('submit', function() {
+          var input = form.querySelector(settings.formEmailSelector || 'input[name="email"]');
+          if (isValidBuyerEmail(getEmailFromInput(input))) {
+            markEmailCaptured();
+          }
+        });
+      });
+    }
+
+    function sendExitSignals() {
+      if (state.exitSent) return;
+      state.exitSent = true;
+      var engagementMs = Math.max(0, Date.now() - state.startedAt);
+      emit('page_exit', {
+        lastVisibleSection: state.lastVisibleSection || 'unknown',
+        engagementMs: engagementMs,
+        dwellBucket: bucketDwellMs(engagementMs),
+        maxScrollPercent: state.maxScrollPercent,
+        scrollBucket: bucketScrollPercent(state.maxScrollPercent),
+        buyerEmailFocused: state.emailFocused,
+        buyerEmailCaptured: state.emailCaptured,
+      });
+      if (state.emailFocused && !state.emailCaptured) {
+        emit('buyer_email_abandon', {
+          lastVisibleSection: state.lastVisibleSection || 'unknown',
+          engagementMs: engagementMs,
+          dwellBucket: bucketDwellMs(engagementMs),
+        });
+      }
+    }
+
+    if (global.addEventListener) {
+      global.addEventListener('pagehide', sendExitSignals);
+      global.addEventListener('beforeunload', sendExitSignals);
+    }
+
+    return {
+      markEmailCaptured: markEmailCaptured,
+      sendExitSignals: sendExitSignals,
+    };
+  }
+
   function getEmailFromInput(input) {
     return normalizeBuyerEmail(input && input.value);
   }
@@ -248,5 +425,8 @@
     initializeBuyerIntent: initializeBuyerIntent,
     initializeEmailCheckoutButtons: initializeEmailCheckoutButtons,
     trackEvent: trackEvent,
+    initializeBehaviorAnalytics: initializeBehaviorAnalytics,
+    bucketDwellMs: bucketDwellMs,
+    bucketScrollPercent: bucketScrollPercent,
   };
 })(globalThis);
