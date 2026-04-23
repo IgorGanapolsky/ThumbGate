@@ -597,7 +597,7 @@ function buildLessonUserPrompt({ signal, context, windowText }) {
 }
 
 async function inferStructuredLessonLLM(conversationWindow, signal, context) {
-  const { isAvailable, callClaude, MODELS } = require('./llm-client');
+  const { isAvailable, callClaudeJson, MODELS } = require('./llm-client');
   if (!isAvailable()) return null;
 
   const normalizedWindow = Array.isArray(conversationWindow) ? conversationWindow : [];
@@ -611,41 +611,35 @@ async function inferStructuredLessonLLM(conversationWindow, signal, context) {
 
   const userPrompt = buildLessonUserPrompt({ signal, context, windowText });
 
-  const raw = await callClaude({
+  const parsed = await callClaudeJson({
     systemPrompt: LLM_LESSON_SYSTEM_PROMPT,
     userPrompt,
     model: MODELS.FAST,
     maxTokens: 512,
+    cache: true,
   });
 
-  if (!raw) return null;
+  if (!parsed || !parsed.trigger || !parsed.action) return null;
 
-  try {
-    const parsed = JSON.parse(raw);
-    if (!parsed.trigger || !parsed.action) return null;
+  const filePaths = extractFilePaths(normalizedWindow);
+  const toolCalls = extractToolCalls(normalizedWindow);
+  const errorPatterns = extractErrors(normalizedWindow);
+  const userMessages = normalizedWindow.filter((m) => m.role === 'user');
+  const assistantMessages = normalizedWindow.filter((m) => m.role === 'assistant');
+  const lastUser = userMessages[userMessages.length - 1]?.content || '';
+  const lastAssistant = assistantMessages[assistantMessages.length - 1]?.content || '';
 
-    const filePaths = extractFilePaths(normalizedWindow);
-    const toolCalls = extractToolCalls(normalizedWindow);
-    const errorPatterns = extractErrors(normalizedWindow);
-    const userMessages = normalizedWindow.filter((m) => m.role === 'user');
-    const assistantMessages = normalizedWindow.filter((m) => m.role === 'assistant');
-    const lastUser = userMessages[userMessages.length - 1]?.content || '';
-    const lastAssistant = assistantMessages[assistantMessages.length - 1]?.content || '';
-
-    return {
-      format: 'if-then-v1-llm',
-      trigger: parsed.trigger,
-      action: parsed.action,
-      signal: signal === 'positive' || signal === 'up' ? 'positive' : 'negative',
-      confidence: Math.max(0, Math.min(1, Number(parsed.confidence) || 0.5)),
-      scope: parsed.scope || inferScope(filePaths, toolCalls),
-      examples: [{ userIntent: lastUser.slice(0, 300), assistantAction: lastAssistant.slice(0, 300), outcome: signal === 'positive' || signal === 'up' ? 'approved' : 'rejected' }],
-      metadata: { toolsUsed: toolCalls, filesInvolved: filePaths.slice(0, 10), errorPatterns: errorPatterns.slice(0, 5), conversationLength: normalizedWindow.length, inferredAt: new Date().toISOString(), llmModel: MODELS.FAST },
-      tags: Array.isArray(parsed.tags) ? parsed.tags : [],
-    };
-  } catch {
-    return null;
-  }
+  return {
+    format: 'if-then-v1-llm',
+    trigger: parsed.trigger,
+    action: parsed.action,
+    signal: signal === 'positive' || signal === 'up' ? 'positive' : 'negative',
+    confidence: Math.max(0, Math.min(1, Number(parsed.confidence) || 0.5)),
+    scope: parsed.scope || inferScope(filePaths, toolCalls),
+    examples: [{ userIntent: lastUser.slice(0, 300), assistantAction: lastAssistant.slice(0, 300), outcome: signal === 'positive' || signal === 'up' ? 'approved' : 'rejected' }],
+    metadata: { toolsUsed: toolCalls, filesInvolved: filePaths.slice(0, 10), errorPatterns: errorPatterns.slice(0, 5), conversationLength: normalizedWindow.length, inferredAt: new Date().toISOString(), llmModel: MODELS.FAST },
+    tags: Array.isArray(parsed.tags) ? parsed.tags : [],
+  };
 }
 
 module.exports = {

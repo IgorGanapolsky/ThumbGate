@@ -2,6 +2,7 @@
 
 const path = require('node:path');
 const { readJSONL, getFeedbackPaths } = require('./feedback-loop');
+const { loadOptionalModule } = require('./private-core-boundary');
 
 const HIGH_RISK_TAGS = new Set([
   'billing',
@@ -514,7 +515,9 @@ function searchLessons(query = '', options = {}) {
   // Cross-encoder reranking: when a query is present, rerank the top-50 bi-encoder
   // candidates using field-weighted BM25 so the most relevant lessons surface first.
   if (query && results.length > 1) {
-    const { rerankLessons } = require('./lesson-reranker');
+    const { rerankLessons } = loadOptionalModule('./lesson-reranker', () => ({
+      rerankLessons: (_query, pool) => pool,
+    }));
     const pool = results.slice(0, 50);
     const tail  = results.slice(50);
     const reranked = rerankLessons(query, pool, { topK: pool.length });

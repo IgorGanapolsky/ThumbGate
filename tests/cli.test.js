@@ -919,7 +919,8 @@ describe('bin/cli.js', () => {
     });
     assert.equal(checkoutUrl, PRO_MONTHLY_PAYMENT_LINK, 'Pro command should include the attributed Pro checkout URL');
     assert.ok(result.stdout.includes('$19/mo or $149/yr'), 'Pro command should include current pricing');
-    assert.ok(result.stdout.includes('Legacy launcher'), 'Pro command should still mention legacy launcher path');
+    assert.ok(result.stdout.includes('Launch dashboard: npx thumbgate pro'), 'Pro command should include the local dashboard launcher');
+    assert.ok(result.stdout.includes('Private core    : ThumbGate-Core (private repo)'), 'Pro command should describe the current private-core split');
   });
 
   test('THUMBGATE_NO_TELEMETRY=1 prevents telemetry ping on init', () => {

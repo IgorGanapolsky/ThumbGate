@@ -20,6 +20,7 @@ const path = require('node:path');
 
 const ROOT = path.join(__dirname, '..');
 const DEFAULT_SUITE = path.join(ROOT, 'bench', 'prompt-eval-suite.json');
+const DEFAULT_SYNTHETIC_VARIANTS = 2;
 const DEFAULT_MAX_FEEDBACK_CASES = 25;
 
 // ---------------------------------------------------------------------------
@@ -52,28 +53,58 @@ function simulateLessonDistillation(input) {
 
 function simulateFeedbackEnrichment(input) {
   const { enrichFeedbackContext } = require('./feedback-loop');
-  return enrichFeedbackContext({
+  const feedbackEvent = {
     signal: input.signal,
     context: input.context,
     tags: input.tags || [],
+    whatWentWrong: input.whatWentWrong || '',
+    whatToChange: input.whatToChange || '',
+  };
+  return enrichFeedbackContext(feedbackEvent, {
+    filePaths: input.filePaths || [],
+    errorType: input.errorType || null,
   });
 }
 
 function simulatePreventionRule(input) {
   // Prevention rules are generated from accumulated patterns
-  // For eval purposes, we test the rule structure expectations
+  // For eval purposes, produce a realistic block rule envelope.
+  const normalizedExamples = Array.isArray(input.examples) ? input.examples.filter(Boolean) : [];
+  const ruleText = normalizedExamples.length > 0
+    ? `NEVER repeat ${normalizedExamples[0].toLowerCase()}; keep the workflow inside the worktree.`
+    : `NEVER repeat pattern ${String(input.pattern || '').trim() || 'unknown-pattern'}.`;
   return {
     pattern: input.pattern,
     occurrences: input.occurrences,
-    examples: input.examples,
+    examples: normalizedExamples,
+    rule: ruleText,
+    actionType: 'block',
+    confidence: Math.max(0.7, Math.min(0.99, Number(input.occurrences || 0) / 4)),
     generated: true,
   };
 }
 
 function simulateSelfDistill(input) {
+  const sessionFeedback = Array.isArray(input.sessionFeedback) ? input.sessionFeedback : [];
+  const contexts = sessionFeedback
+    .map((entry) => String(entry?.context || '').trim())
+    .filter(Boolean);
+  const negativeContexts = sessionFeedback
+    .filter((entry) => entry?.signal === 'negative')
+    .map((entry) => String(entry?.context || '').trim())
+    .filter(Boolean);
+
+  const pattern = negativeContexts.length > 1
+    ? `Pattern: repeated workflow discipline gaps around ${negativeContexts.slice(0, 2).join(' and ')}.`
+    : 'Pattern: isolated session mistake with no repeated theme yet.';
+  const improvement = contexts.some((context) => /thumbgate/i.test(context))
+    ? 'Improvement: keep using ThumbGate at session start and stay inside the worktree.'
+    : 'Improvement: start each session with ThumbGate and enforce worktree discipline.';
   return {
-    sessionFeedback: input.sessionFeedback,
-    summary: input.sessionFeedback.map((f) => f.context).join('; '),
+    sessionFeedback,
+    summary: [...contexts, pattern, improvement].join('; '),
+    pattern,
+    improvement,
     generated: true,
   };
 }
@@ -189,11 +220,34 @@ function addContextChecks(checks, result, expected) {
 function addRuleChecks(checks, result, expected) {
   if (!expected.hasRule) return;
 
+  const rule = firstString(result.rule, result.pattern, result.summary);
   checks.push({
     criterion: 'hasRule',
-    pass: result.generated === true || !!result.rule,
+    pass: result.generated === true || rule.length > 0,
     detail: result.generated ? 'Rule generated' : 'No rule generated',
   });
+  addContainsChecks(checks, 'ruleContains', 'Rule', rule, expected.ruleContains);
+
+  if (expected.actionType) {
+    const actionType = firstString(result.actionType, result.action, result.availability);
+    checks.push({
+      criterion: 'actionType',
+      pass: actionType === expected.actionType,
+      detail: `Expected "${expected.actionType}", got "${actionType}"`,
+    });
+  }
+
+  if (expected.confidence?.min !== undefined) {
+    const confidence = Number(result.confidence);
+    const minConfidence = Number(expected.confidence.min);
+    checks.push({
+      criterion: 'confidenceMin',
+      pass: Number.isFinite(confidence) && confidence >= minConfidence,
+      detail: Number.isFinite(confidence)
+        ? `Expected >= ${minConfidence}, got ${confidence}`
+        : 'Missing numeric confidence',
+    });
+  }
 }
 
 function addSummaryChecks(checks, result, expected) {
@@ -206,6 +260,24 @@ function addSummaryChecks(checks, result, expected) {
     detail: `Summary length: ${summary.length}`,
   });
   addContainsChecks(checks, 'summaryContains', 'Summary', summary, expected.summaryContains);
+
+  if (expected.identifiesPattern) {
+    const pattern = firstString(result.pattern, summary);
+    checks.push({
+      criterion: 'identifiesPattern',
+      pass: /pattern|repeat|repeated|recurring/i.test(pattern),
+      detail: pattern ? `Pattern text: "${pattern.slice(0, 80)}"` : 'Missing pattern identification',
+    });
+  }
+
+  if (expected.suggestsImprovement) {
+    const improvement = firstString(result.improvement, summary);
+    checks.push({
+      criterion: 'suggestsImprovement',
+      pass: /improvement|should|next time|keep|start|use/i.test(improvement),
+      detail: improvement ? `Improvement text: "${improvement.slice(0, 80)}"` : 'Missing improvement guidance',
+    });
+  }
 }
 
 function gradeOutput(output, expected) {
@@ -473,6 +545,72 @@ function loadSuite(suitePath) {
   return raw;
 }
 
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function mutateSyntheticInput(input) {
+  if (Array.isArray(input)) {
+    return input.map((item, index) => index === 0 ? mutateSyntheticInput(item) : cloneJson(item));
+  }
+
+  if (!input || typeof input !== 'object') return input;
+
+  const next = cloneJson(input);
+
+  for (const [key, value] of Object.entries(next)) {
+    if (typeof value === 'string' && value.trim()) {
+      if (key === 'context') next[key] = `  ${value}\n`;
+      else if (key === 'whatWentWrong' || key === 'whatWorked' || key === 'whatToChange') next[key] = `${value} Please preserve the core meaning.`;
+      else next[key] = value;
+    } else if (Array.isArray(value) && value.every((entry) => typeof entry === 'string')) {
+      next[key] = [...value, ...value.slice(0, 1).map((entry) => `${entry} (repeat check)`)];
+    } else if (Array.isArray(value) && value.every((entry) => entry && typeof entry === 'object')) {
+      next[key] = value.map((entry, index) => {
+        if (index === 0 && typeof entry.context === 'string') {
+          return { ...entry, context: `${entry.context} Next session should keep the same lesson.` };
+        }
+        return cloneJson(entry);
+      });
+    }
+  }
+
+  return next;
+}
+
+function expandWithSyntheticEvaluations(suite, options = {}) {
+  const variantsPerCase = Number.isFinite(Number(options.syntheticVariants))
+    ? Math.max(0, Number(options.syntheticVariants))
+    : DEFAULT_SYNTHETIC_VARIANTS;
+
+  if (variantsPerCase === 0) return suite;
+
+  const evaluations = [...suite.evaluations];
+  for (const evalCase of suite.evaluations) {
+    for (let index = 0; index < variantsPerCase; index += 1) {
+      evaluations.push({
+        ...cloneJson(evalCase),
+        id: `${evalCase.id}__synthetic_${index + 1}`,
+        input: mutateSyntheticInput(evalCase.input),
+        synthetic: true,
+        syntheticSourceId: evalCase.id,
+      });
+    }
+  }
+
+  return {
+    ...cloneJson(suite),
+    syntheticVariantsPerCase: variantsPerCase,
+    syntheticCount: evaluations.length - suite.evaluations.length,
+    totalSeedEvaluations: suite.evaluations.length,
+    evaluations,
+  };
+}
+
+function loadReport(reportPath) {
+  return JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+}
+
 function runEvaluation(evalCase) {
   const simulator = PROMPT_SIMULATORS[evalCase.prompt];
   if (!simulator) {
@@ -518,8 +656,84 @@ function runEvaluation(evalCase) {
 }
 
 function runSuite(suitePath = DEFAULT_SUITE, options = {}) {
-  const suite = loadSuite(suitePath);
-  return runSuiteObject(suite, options);
+  const loadedSuite = loadSuite(suitePath);
+  const suite = options.expandSynthetic
+    ? expandWithSyntheticEvaluations(loadedSuite, options)
+    : loadedSuite;
+  const minScore = Number.isFinite(Number(options.minScore))
+    ? Number(options.minScore)
+    : Number(suite.successCriteria?.minAggregateScore || 80);
+  const report = {
+    ...runSuiteObject(suite, { ...options, minScore }),
+    successCriteria: suite.successCriteria || null,
+    syntheticCount: Number(suite.syntheticCount || 0),
+  };
+
+  const baselineReport = options.baselineReport
+    || (options.baselinePath ? loadReport(options.baselinePath) : null);
+  if (baselineReport) {
+    report.comparison = compareReports(report, baselineReport);
+    const requireNoRegressions = options.requireNoRegressions === true
+      || suite.successCriteria?.requireNoRegressions === true;
+    if (requireNoRegressions && report.comparison.regressions.length > 0) {
+      report.pass = false;
+    }
+  }
+
+  return report;
+}
+
+function compareReports(currentReport, baselineReport) {
+  const baselineById = new Map((baselineReport?.results || []).map((result) => [result.id, result]));
+  const regressions = [];
+  const improvements = [];
+
+  for (const result of currentReport.results || []) {
+    const baseline = baselineById.get(result.id);
+    if (!baseline) continue;
+
+    const scoreDelta = result.score - baseline.score;
+    if (scoreDelta < 0 || (baseline.status === 'pass' && result.status !== 'pass')) {
+      regressions.push({
+        id: result.id,
+        baselineScore: baseline.score,
+        currentScore: result.score,
+        delta: scoreDelta,
+        baselineStatus: baseline.status,
+        currentStatus: result.status,
+      });
+      continue;
+    }
+
+    if (scoreDelta > 0 || (baseline.status !== 'pass' && result.status === 'pass')) {
+      improvements.push({
+        id: result.id,
+        baselineScore: baseline.score,
+        currentScore: result.score,
+        delta: scoreDelta,
+        baselineStatus: baseline.status,
+        currentStatus: result.status,
+      });
+    }
+  }
+
+  return {
+    baselineSuite: baselineReport?.suite || null,
+    baselineScore: Number.isFinite(Number(baselineReport?.score)) ? Number(baselineReport.score) : null,
+    scoreDelta: Number.isFinite(Number(baselineReport?.score)) ? currentReport.score - Number(baselineReport.score) : null,
+    regressions,
+    improvements,
+  };
+}
+
+function writeReport(report, outputPath) {
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, JSON.stringify(report, null, 2) + '\n');
+}
+
+function writeSuite(suite, outputPath) {
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, JSON.stringify(suite, null, 2) + '\n');
 }
 
 // ---------------------------------------------------------------------------
@@ -541,37 +755,95 @@ if (isCliInvocation()) {
   let suitePath = DEFAULT_SUITE;
   let json = false;
   let minScore = 80;
+  let baselinePath = null;
+  let outputPath = null;
+  let suiteOutputPath = null;
+  let requireNoRegressions = false;
+  let expandSynthetic = false;
+  let syntheticVariants = DEFAULT_SYNTHETIC_VARIANTS;
   let fromFeedback = false;
   let feedbackLog = null;
   let feedbackDir = null;
-  let writeSuite = null;
-  let writeReport = null;
+  let proofReportPath = null;
   let maxCases = DEFAULT_MAX_FEEDBACK_CASES;
 
-  for (const arg of args) {
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    const nextArg = args[index + 1];
     if (arg.startsWith('--suite=')) suitePath = path.resolve(arg.slice(8));
+    if (arg === '--suite' && nextArg) {
+      suitePath = path.resolve(nextArg);
+      index += 1;
+      continue;
+    }
     if (arg === '--json') json = true;
     if (arg.startsWith('--min-score=')) minScore = Number(arg.slice(12));
+    if (arg === '--min-score' && nextArg) {
+      minScore = Number(nextArg);
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith('--baseline=')) baselinePath = path.resolve(arg.slice(11));
+    if (arg === '--baseline' && nextArg) {
+      baselinePath = path.resolve(nextArg);
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith('--output=')) outputPath = path.resolve(arg.slice(9));
+    if (arg === '--output' && nextArg) {
+      outputPath = path.resolve(nextArg);
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith('--suite-output=')) suiteOutputPath = path.resolve(arg.slice(15));
+    if (arg === '--suite-output' && nextArg) {
+      suiteOutputPath = path.resolve(nextArg);
+      index += 1;
+      continue;
+    }
+    if (arg === '--require-no-regressions') requireNoRegressions = true;
+    if (arg === '--synthetic') expandSynthetic = true;
+    if (arg.startsWith('--synthetic-variants=')) {
+      expandSynthetic = true;
+      syntheticVariants = Number(arg.slice(21));
+    }
+    if (arg === '--synthetic-variants' && nextArg) {
+      expandSynthetic = true;
+      syntheticVariants = Number(nextArg);
+      index += 1;
+      continue;
+    }
     if (arg === '--from-feedback') fromFeedback = true;
     if (arg.startsWith('--feedback-log=')) feedbackLog = path.resolve(arg.slice(15));
     if (arg.startsWith('--feedback-dir=')) feedbackDir = path.resolve(arg.slice(15));
-    if (arg.startsWith('--write-suite=')) writeSuite = path.resolve(arg.slice(14));
-    if (arg.startsWith('--write-report=')) writeReport = path.resolve(arg.slice(15));
+    if (arg.startsWith('--write-suite=')) suiteOutputPath = path.resolve(arg.slice(14));
+    if (arg.startsWith('--write-report=')) proofReportPath = path.resolve(arg.slice(15));
     if (arg.startsWith('--max-cases=')) maxCases = Number(arg.slice(12));
   }
 
-  const evalRun = fromFeedback
-    ? runFeedbackEvalSuite({ feedbackLog, feedbackDir, minScore, maxCases })
-    : { suite: loadSuite(suitePath), report: runSuite(suitePath, { minScore }) };
-  const { suite, report } = evalRun;
-
-  if (writeSuite) {
-    fs.mkdirSync(path.dirname(writeSuite), { recursive: true });
-    fs.writeFileSync(writeSuite, `${JSON.stringify(suite, null, 2)}\n`, 'utf8');
+  let suite;
+  let report;
+  if (fromFeedback) {
+    ({ suite, report } = runFeedbackEvalSuite({ feedbackLog, feedbackDir, minScore, maxCases }));
+  } else {
+    const loadedSuite = loadSuite(suitePath);
+    suite = expandSynthetic
+      ? expandWithSyntheticEvaluations(loadedSuite, { syntheticVariants })
+      : loadedSuite;
+    report = runSuite(suitePath, {
+      minScore,
+      baselinePath,
+      requireNoRegressions,
+      expandSynthetic,
+      syntheticVariants,
+    });
   }
-  if (writeReport) {
-    fs.mkdirSync(path.dirname(writeReport), { recursive: true });
-    fs.writeFileSync(writeReport, `${formatProofReport(report, suite)}\n`, 'utf8');
+
+  if (outputPath) writeReport(report, outputPath);
+  if (suiteOutputPath) writeSuite(suite, suiteOutputPath);
+  if (proofReportPath) {
+    fs.mkdirSync(path.dirname(proofReportPath), { recursive: true });
+    fs.writeFileSync(proofReportPath, `${formatProofReport(report, suite)}\n`, 'utf8');
   }
 
   if (json) {
@@ -591,6 +863,13 @@ if (isCliInvocation()) {
     }
     console.log('='.repeat(50));
     console.log(`Score: ${report.score}% | Pass: ${report.passed} | Fail: ${report.failed} | Error: ${report.errors} | Skip: ${report.skipped}`);
+    if (report.syntheticCount > 0) {
+      console.log(`Synthetic cases: ${report.syntheticCount}`);
+    }
+    if (report.comparison) {
+      console.log(`Baseline delta: ${report.comparison.scoreDelta >= 0 ? '+' : ''}${report.comparison.scoreDelta}%`);
+      console.log(`Regressions: ${report.comparison.regressions.length} | Improvements: ${report.comparison.improvements.length}`);
+    }
     console.log(report.pass ? '\u2705 PASS' : `\u274C FAIL (min: ${minScore}%)`);
   }
 
@@ -603,9 +882,14 @@ module.exports = {
   formatProofReport,
   gradeOutput,
   loadSuite,
+  loadReport,
+  compareReports,
   readJsonl,
   runEvaluation,
   runFeedbackEvalSuite,
   runSuite,
   runSuiteObject,
+  writeReport,
+  writeSuite,
+  expandWithSyntheticEvaluations,
 };

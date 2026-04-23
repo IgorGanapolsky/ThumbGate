@@ -349,39 +349,14 @@ Return JSON only, no markdown fences:
 Focus on actionable, specific lessons. Ignore trivial interactions.`;
 
 async function callAnthropicApi(conversationText, model) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return null;
-
-  const body = JSON.stringify({
-    model: model || 'claude-sonnet-4-20250514',
-    max_tokens: 2048,
-    system: LLM_SYSTEM_PROMPT,
-    messages: [
-      { role: 'user', content: `Analyze this conversation window and extract lessons:\n\n${conversationText}` },
-    ],
+  const { callClaudeJson, MODELS } = require('./llm-client');
+  return callClaudeJson({
+    model: model || MODELS.SMART,
+    maxTokens: 2048,
+    systemPrompt: LLM_SYSTEM_PROMPT,
+    userPrompt: `Analyze this conversation window and extract lessons:\n\n${conversationText}`,
+    cache: true,
   });
-
-  try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body,
-    });
-
-    if (!resp.ok) return null;
-
-    const data = await resp.json();
-    const text = (data.content && data.content[0] && data.content[0].text) || '';
-    // Strip markdown fences if present
-    const cleaned = text.replace(/^```(?:json)?\s*/m, '').replace(/```\s*$/m, '').trim();
-    return JSON.parse(cleaned);
-  } catch {
-    return null;
-  }
 }
 
 async function generateLlmLessons(conversationWindow, model) {

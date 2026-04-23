@@ -23,7 +23,7 @@ const {
 const PROJECT_ROOT = path.join(__dirname, '..');
 const CANONICAL_APP_ORIGIN = 'https://thumbgate-production.up.railway.app';
 const CURRENT_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/ThumbGate';
-const PRO_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/thumbgate-pro';
+const PRIVATE_CORE_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/ThumbGate-Core';
 
 function readJson(relativePath) {
   return JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, relativePath), 'utf8'));
@@ -423,10 +423,10 @@ test('commercial truth sources stay aligned across public and historical docs', 
   assert.doesNotMatch(directoryGuide, /30k\+ stars|18k\+ servers listed/i);
 });
 
-test('public repo documents the separate Pro overlay repository', () => {
+test('public repo documents the ThumbGate-Core private boundary', () => {
   const readme = readText('README.md');
   const distributionDoc = readText('docs/PLUGIN_DISTRIBUTION.md');
-  assert.match(readme, new RegExp(PRO_REPOSITORY_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-  assert.match(distributionDoc, /public repo owns shared runtime/i);
-  assert.match(distributionDoc, /paid overlay code in the separate `thumbgate-pro` repo\/package/i);
+  assert.match(readme, new RegExp(PRIVATE_CORE_REPOSITORY_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(distributionDoc, /public repo owns the CLI shell/i);
+  assert.match(distributionDoc, /`ThumbGate-Core` owns hosted\/private overlays/i);
 });
