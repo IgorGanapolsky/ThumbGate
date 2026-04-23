@@ -384,7 +384,7 @@ async function main() {
     'config/github-about.json githubDescription must mention agent governance'
   );
   check(
-    /pre-action gates|shared lessons|team safeguards/i.test(githubAbout.githubDescription),
+    /pre-action checks|shared lessons|team safeguards/i.test(githubAbout.githubDescription),
     'config/github-about.json githubDescription must preserve the GitHub repo positioning'
   );
   check(

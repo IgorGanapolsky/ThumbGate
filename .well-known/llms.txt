@@ -6,7 +6,7 @@
 > ThumbGate prevents expensive AI mistakes before they happen. It checks
 > risky commands, file edits, deploys, payments, API calls, and other agent
 > actions before execution. 👎 Thumbs down becomes a history-aware lesson and
-> a Pre-Action Gate; 👍 thumbs up reinforces safe patterns.
+> a Pre-Action Check; 👍 thumbs up reinforces safe patterns.
 
 ## What ThumbGate solves
 
@@ -20,7 +20,7 @@
 
 1. Agent makes a mistake → developer gives thumbs-down
 2. ThumbGate captures context and infers a structured lesson
-3. Recurring failures get promoted to enforcement gates
+3. Recurring failures get promoted to prevention rules
 4. PreToolUse hooks block the pattern before it executes again
 5. Thompson Sampling adapts gate confidence over time
 
@@ -40,8 +40,8 @@ npx thumbgate init --agent claude-code
 ## Pricing
 
 - Free GPT: advice, checkpointing, and setup help in ChatGPT
-- Free local CLI: 3 feedback captures/day, 5 lesson searches/day, recall, and local Pre-Action Gates after install
-- Pro: $19/mo or $149/yr — personal enforcement proof, local dashboard, gate debugger, DPO export, and review-ready exports
+- Free local CLI: 3 feedback captures/day, 5 lesson searches/day, recall, and local Pre-Action Checks after install
+- Pro: $19/mo or $149/yr — personal enforcement proof, local dashboard, check debugger, DPO export, and review-ready exports
 - Team: $99/seat/mo, 3-seat minimum after intake — shared lessons, org visibility, approval boundaries, and rollout proof
 
 ## Links

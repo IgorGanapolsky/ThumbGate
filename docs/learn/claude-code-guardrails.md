@@ -1,6 +1,6 @@
 ---
 title: "How to Add Guardrails to Claude Code: Stop Repeated Mistakes"
-description: "Learn how to use MCP and Pre-Action Gates to physically block Claude Code from repeating the same expensive mistakes."
+description: "Learn how to use MCP and Pre-Action Checks to physically block Claude Code from repeating the same expensive mistakes."
 author: "Igor Ganapolsky"
 date: "2026-04-14"
 ---
@@ -21,7 +21,7 @@ Most developers try to solve agent amnesia by stuffing rules into a `.clauderc` 
 2. **Lack of Enforcement:** A prompt is a suggestion, not a physical barrier. If the LLM decides to ignore the rule, the tool call (like `execute_command` or `edit_file`) still runs.
 3. **Maintenance Nightmare:** Your system prompt quickly becomes a 500-line document of edge cases that no human can read or maintain.
 
-## The Solution: Pre-Action Gates via MCP
+## The Solution: Pre-Action Checks via MCP
 
 Instead of relying on the LLM to remember rules, we can intercept the tool call *before* it executes. 
 
@@ -58,12 +58,12 @@ thumbs down: Never run DROP TABLE on production databases. Always use safe migra
 
 ## Step 3: The Gate Auto-Generates
 
-ThumbGate intercepts your feedback, analyzes the context of the failed tool call, and distills it into a permanent **Pre-Action Gate**. 
+ThumbGate intercepts your feedback, analyzes the context of the failed tool call, and distills it into a permanent **Pre-Action Check**.
 
 You will see a confirmation in your terminal:
 
 ```bash
-✅ Lesson distilled. Pre-Action Gate created: Block DROP TABLE commands.
+✅ Lesson distilled. Pre-Action Check created: Block DROP TABLE commands.
 ```
 
 This rule is now stored locally and applies to all future Claude Code sessions in this repository.

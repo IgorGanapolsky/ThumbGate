@@ -79,10 +79,10 @@
     <div class="good">
       <h4>With ThumbGate</h4>
       <ul>
-        <li>Gate blocks file writes outside scope</li>
-        <li>Gate blocks destructive SQL before execution</li>
-        <li>Gate blocks force-push to protected branches</li>
-        <li>Gate remembers your rejection across sessions</li>
+        <li>Check blocks file writes outside scope</li>
+        <li>Check blocks destructive SQL before execution</li>
+        <li>Check blocks force-push to protected branches</li>
+        <li>Check remembers your rejection across sessions</li>
         <li>Mistakes are blocked permanently after feedback</li>
       </ul>
     </div>
@@ -90,10 +90,10 @@
 
   <h2>Why CLAUDE.md and .cursorrules are not enough</h2>
   <p>Prompt rules live inside the agent's context. They compete with your conversation, the codebase, and the agent's own reasoning. When the context window fills up, prompt rules are the first thing to get compressed or ignored.</p>
-  <p>Pre-action gates live <em>outside</em> the agent. They intercept tool calls at the hook layer (PreToolUse in MCP) before execution. The agent cannot override them because the gate runs in a separate process.</p>
+  <p>Pre-action checks live <em>outside</em> the agent. They intercept tool calls at the hook layer (PreToolUse in MCP) before execution. The agent cannot override them because the check runs in a separate process.</p>
 
   <div class="callout callout-green">
-    <strong>Mental model:</strong> Prompt rules are speed limit signs. Pre-action gates are physical barriers. Signs can be ignored. Barriers cannot.
+    <strong>Mental model:</strong> Prompt rules are speed limit signs. Pre-action checks are physical barriers. Signs can be ignored. Barriers cannot.
   </div>
 
   <h2>How to add guardrails in two minutes</h2>
@@ -101,14 +101,14 @@
     <li><strong>Install:</strong> <code>npx thumbgate init</code> — auto-detects your agent and configures hooks</li>
     <li><strong>Code normally:</strong> vibe-code as you always do, no workflow changes</li>
     <li><strong>Correct when needed:</strong> when the agent does something wrong, give it a thumbs-down with context</li>
-    <li><strong>Gates build themselves:</strong> repeated failures auto-promote into prevention rules that block the action next time</li>
+    <li><strong>Checks build themselves:</strong> repeated failures auto-promote into prevention rules that block the action next time</li>
   </ol>
 
   <h2>It gets smarter over time</h2>
-  <p>ThumbGate uses Thompson Sampling to adapt enforcement. Patterns that cause real damage get strict gates. Low-risk patterns stay relaxed. The system tunes itself based on your feedback — no manual rule-writing required.</p>
+  <p>ThumbGate uses Thompson Sampling to adapt enforcement. Patterns that cause real damage get strict checks. Low-risk patterns stay relaxed. The system tunes itself based on your feedback — no manual rule-writing required.</p>
   <p>Every correction you make improves the model. Every thumbs-up reinforces good behavior. Over weeks, your agent develops an immune system tailored to your codebase and workflow.</p>
 
-  <h2>What vibe-coders actually gate</h2>
+  <h2>What vibe-coders actually check</h2>
   <p>Based on real usage patterns from ThumbGate users:</p>
   <ul>
     <li><strong>Git operations:</strong> force-push, branch deletion, rebase on shared branches</li>
@@ -119,7 +119,7 @@
   </ul>
 
   <div class="cta-box">
-    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Start with one gate</h2>
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Start with one check</h2>
     <p>Install, vibe-code, and give your first thumbs-down. The safety net builds itself.</p>
     <div class="cta-install">$ npx thumbgate init</div>
   </div>
@@ -127,7 +127,7 @@
   <div class="related">
     <h3>Related guides</h3>
     <a href="/learn/stop-ai-agent-force-push">How to Stop AI Agents From Force-Pushing to Main &rarr;</a>
-    <a href="/learn/mcp-pre-action-gates-explained">MCP Pre-Action Gates Explained &rarr;</a>
+    <a href="/learn/mcp-pre-action-checks-explained">MCP Pre-Action Checks Explained &rarr;</a>
     <a href="/guide">Full Setup Guide &rarr;</a>
   </div>
 </div>

@@ -381,11 +381,11 @@ test('claude plugin metadata stays aligned with the released package and install
   assert.equal(marketplace.version, packageVersion);
   assert.equal(marketplaceEntry.name, pluginManifest.name);
   assert.equal(pluginManifest.skills, './skills/');
-  assert.match(pluginManifest.description, /Pre-Action Gates|pre-action gates|prevention rules/i);
-  assert.match(marketplaceEntry.description, /Pre-Action Gates|pre-action gates|prevention rules/i);
-  assert.ok(pluginManifest.keywords.includes('pre-action-gates'));
+  assert.match(pluginManifest.description, /Pre-Action Checks|pre-action checks|prevention rules/i);
+  assert.match(marketplaceEntry.description, /Pre-Action Checks|pre-action checks|prevention rules/i);
+  assert.ok(pluginManifest.keywords.includes('pre-action-checks'));
   assert.ok(pluginManifest.keywords.includes('ai-agent-safety'));
-  assert.ok(marketplaceEntry.metadata.keywords.includes('pre-action-gates'));
+  assert.ok(marketplaceEntry.metadata.keywords.includes('pre-action-checks'));
   assert.equal(pluginManifest.homepage, 'https://thumbgate-production.up.railway.app');
   assert.equal(pluginManifest.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
   assert.equal(marketplaceEntry.metadata.homepage, 'https://thumbgate-production.up.railway.app');

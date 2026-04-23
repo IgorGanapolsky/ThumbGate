@@ -13,7 +13,7 @@ ThumbGate now ships a standalone Codex plugin bundle in GitHub Releases, alongsi
 
 ## What it does
 
-- adds ThumbGate's Pre-Action Gates to Codex workflows
+- adds ThumbGate's Pre-Action Checks to Codex workflows
 - captures thumbs-up/down feedback that survives session boundaries
 - auto-refreshes the Codex MCP/hook runtime from the latest npm release on startup
 - writes the ThumbGate status line target alongside the Codex hook bundle

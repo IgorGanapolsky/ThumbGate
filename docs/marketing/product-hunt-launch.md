@@ -9,7 +9,7 @@ ThumbGate (thumbgate)
 👍 reinforce wins. 👎 block repeated mistakes.
 
 ## Description (260 chars max)
-ThumbGate turns thumbs-up/down feedback into enforcement for AI coding agents. 👍 reinforces what worked. 👎 auto-promotes failures into prevention rules and pre-action gates that block repeat mistakes across Claude, Cursor, Codex, Gemini, Amp, and MCP agents.
+ThumbGate turns thumbs-up/down feedback into enforcement for AI coding agents. 👍 reinforces what worked. 👎 auto-promotes failures into prevention rules and pre-action checks that block repeat mistakes across Claude, Cursor, Codex, Gemini, Amp, and MCP agents.
 
 ## Topics
 Developer Tools, Artificial Intelligence, Open Source
@@ -35,7 +35,7 @@ Every AI coding agent has the same problem: **you correct a mistake, and next se
 **How it works in 10 seconds:**
 1️⃣ Agent force-pushes to main. You give it a 👎.
 2️⃣ ThumbGate auto-generates a prevention rule from your feedback.
-3️⃣ A PreToolUse gate physically blocks `git push --force` before it executes. Forever.
+3️⃣ A PreToolUse check physically blocks `git push --force` before it executes. Forever.
 
 **The other half matters too:** 👍 feedback reinforces what worked, so your safe patterns, approved flows, and useful commands become easier to repeat.
 
@@ -43,10 +43,10 @@ Every AI coding agent has the same problem: **you correct a mistake, and next se
 
 **What's under the hood (core MCP toolset):**
 - `recall` — injects relevant past failures at session start
-- `search_lessons` — shows corrective actions, lifecycle state, linked rules & gates
-- Pre-action gates — physically block tool calls matching failure patterns
+- `search_lessons` — shows corrective actions, lifecycle state, linked rules & checks
+- Pre-action checks — physically block tool calls matching failure patterns
 - Session handoff — seamless continuity across sessions
-- Thompson Sampling — Bayesian adaptive gate sensitivity per failure domain
+- Thompson Sampling — Bayesian adaptive check sensitivity per failure domain
 - SQLite + FTS5 — sub-millisecond lesson search (no more 300s JSONL scans)
 
 **Zero config install:**
@@ -60,34 +60,34 @@ Auto-detects your agent (Claude Code, Cursor, Codex, Gemini, Amp, OpenCode) and 
 - Guide: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/CLAUDE_DESKTOP_EXTENSION.md
 
 **What makes ThumbGate different from memory tools like Mem0 or .cursorrules:**
-Most memory tools help agents *remember*. ThumbGate also *enforces*. A gate doesn't ask the agent to cooperate — it blocks the action before execution.
+Most memory tools help agents *remember*. ThumbGate also *enforces*. A check doesn't ask the agent to cooperate — it blocks the action before execution.
 
-**Honest disclaimer:** This is not model-training feedback optimization. It's context engineering + enforcement. Feedback → searchable memory → prevention rules → gates that block known-bad actions.
+**Honest disclaimer:** This is not model-training feedback optimization. It's context engineering + enforcement. Feedback → searchable memory → prevention rules → checks that block known-bad actions.
 
 Free and open source. Pro adds a personal local dashboard and exports for individual operators. Team rollout stays intake-first for shared lessons and org visibility.
 
-I'll be here all day — ask me anything about pre-action gates, the MCP protocol, or why "prevention > cure" for AI agents. 🚀
+I'll be here all day — ask me anything about pre-action checks, the MCP protocol, or why "prevention > cure" for AI agents. 🚀
 
 ## Gallery Image Descriptions (for screenshots/assets to upload)
 
 ### Image 1: Hero — The Problem/Solution
-**Concept:** Split screen. Left side shows terminal with agent force-pushing to main (red ✗). Right side shows ThumbGate gate blocking it (green shield + "⛔ BLOCKED"). Tagline overlay: "Thumbs down a mistake. It never happens again."
+**Concept:** Split screen. Left side shows terminal with agent force-pushing to main (red ✗). Right side shows ThumbGate check blocking it (green shield + "⛔ BLOCKED"). Tagline overlay: "Thumbs down a mistake. It never happens again."
 
 ### Image 2: How It Works Flow
 **Concept:** 5-step horizontal flow diagram:
-`👎 Feedback → Validate → Remember → Prevention Rule → ⛔ Gate Blocks`
+`👎 Feedback → Validate → Remember → Prevention Rule → ⛔ Check Blocks`
 Clean, dark background with green/amber/red color coding.
 
 ### Image 3: Terminal Demo
 **Concept:** Real terminal screenshot showing:
 ```
 $ npx thumbgate serve
-[gate] ⛔ Blocked: git push --force (rule: no-force-push, confidence: 0.94)
-[gate] ✅ Passed: git push origin feature-branch
+[check] ⛔ Blocked: git push --force (rule: no-force-push, confidence: 0.94)
+[check] ✅ Passed: git push origin feature-branch
 ```
 
 ### Image 4: Dashboard
-**Concept:** Screenshot of live dashboard at https://thumbgate-production.up.railway.app/dashboard showing enforcement matrix, gate stats, and feedback summary.
+**Concept:** Screenshot of live dashboard at https://thumbgate-production.up.railway.app/dashboard showing enforcement matrix, check stats, and feedback summary.
 
 ### Image 5: Agent Compatibility
 **Concept:** Logo grid showing supported agents: Claude Code, Cursor, Codex, Gemini, Amp, OpenCode. Center text: "One install. Every agent." with `npx thumbgate init` command.
@@ -101,7 +101,7 @@ $ npx thumbgate serve
 ```
 Thumbs down a mistake. Your AI agent never repeats it. 👎→⛔
 
-ThumbGate — pre-action gates that physically block AI coding agents from repeating known failures.
+ThumbGate — pre-action checks that physically block AI coding agents from repeating known failures.
 
 Works with Claude Code, Cursor, Codex, Gemini, Amp.
 
@@ -116,7 +116,7 @@ Most AI agent memory tools help agents remember.
 
 ThumbGate also enforces.
 
-Give your AI coding agent a thumbs-down → it auto-generates a prevention rule → a PreToolUse gate physically blocks the agent from repeating that mistake. Not a suggestion. A constraint.
+Give your AI coding agent a thumbs-down → it auto-generates a prevention rule → a PreToolUse check physically blocks the agent from repeating that mistake. Not a suggestion. A constraint.
 
 Core MCP toolset. Zero config. Works with Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode.
 
@@ -129,11 +129,11 @@ We just updated our Product Hunt listing → https://www.producthunt.com/product
 ```
 Title: I built ThumbGate — thumbs down a mistake and your AI agent can never repeat it
 
-I got tired of correcting the same mistakes across sessions. Prompts are suggestions. So I built pre-action gates.
+I got tired of correcting the same mistakes across sessions. Prompts are suggestions. So I built pre-action checks.
 
-How it works: 👎 → prevention rule → gate blocks the action before execution.
+How it works: 👎 → prevention rule → check blocks the action before execution.
 
-Core MCP toolset, SQLite+FTS5 for sub-ms search, Thompson Sampling for adaptive gate sensitivity.
+Core MCP toolset, SQLite+FTS5 for sub-ms search, Thompson Sampling for adaptive check sensitivity.
 
 npx thumbgate init — auto-detects your agent.
 

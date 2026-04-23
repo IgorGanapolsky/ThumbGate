@@ -362,7 +362,7 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(delivered.length, 1);
     assert.equal(delivered[0].subject, 'Your 7-day ThumbGate Pro trial is live');
     assert.match(delivered[0].text, /npx thumbgate pro --activate --key=tg_test_activation_key/);
-    assert.match(delivered[0].text, /Pre-Action Gates/);
+    assert.match(delivered[0].text, /Pre-Action Checks/);
     assert.match(delivered[0].text, /Give one concrete thumbs up or thumbs down/);
     assert.match(delivered[0].html, /Reliability Gateway blocks/);
     assert.match(delivered[0].html, /verification evidence/);
@@ -505,7 +505,7 @@ describe('billing.js — funnel ledger', () => {
       assert.deepEqual(acceptedBodies[0].to, ['buyer@example.com']);
       assert.equal(acceptedBodies[0].subject, 'Your 7-day ThumbGate Pro trial is live');
       assert.match(acceptedBodies[0].text, /npx thumbgate pro --activate --key=tg_resend_success/);
-      assert.match(acceptedBodies[0].html, /Pre-Action Gates/);
+      assert.match(acceptedBodies[0].html, /Pre-Action Checks/);
     } finally {
       restoreHttps();
     }

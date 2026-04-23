@@ -460,8 +460,8 @@ function buildSubscriptionPriceData(checkoutSelection, appOrigin) {
     product_data: buildCheckoutProductData({
       name: isTeam ? 'ThumbGate Team' : 'ThumbGate Pro',
       description: isTeam
-        ? 'Shared Pre-Action Gates, team governance, and workflow hardening for AI coding agents.'
-        : 'Local dashboard, DPO export, and Pre-Action Gates for AI coding agents.',
+        ? 'Shared Pre-Action Checks, team governance, and workflow hardening for AI coding agents.'
+        : 'Local dashboard, DPO export, and Pre-Action Checks for AI coding agents.',
       appOrigin,
       planId: isTeam ? 'team' : 'pro',
     }),
@@ -534,7 +534,7 @@ function buildTrialActivationEmail({ customerEmail, apiKey, sessionId, planId, a
   const subject = 'Your 7-day ThumbGate Pro trial is live';
   const preheader = 'Activate Pro in one command, open the dashboard, and start blocking repeated AI coding mistakes.';
   const headline = 'Your 7-day ThumbGate Pro trial is live.';
-  const intro = 'ThumbGate turns thumbs up/down feedback into Pre-Action Gates that stop repeated AI coding mistakes before the next tool call. It keeps lessons local and turns repeated mistakes into Reliability Gateway blocks.';
+  const intro = 'ThumbGate turns thumbs up/down feedback into Pre-Action Checks that stop repeated AI coding mistakes before the next tool call. It keeps lessons local and turns repeated mistakes into Reliability Gateway blocks.';
   const exampleFeedback = 'thumbs down: the answer skipped exact files and tests; next time include paths, commands, and verification evidence.';
   const safeDashboardUrl = escapeHtml(dashboardUrl);
   const safeDocsUrl = escapeHtml(docsUrl);

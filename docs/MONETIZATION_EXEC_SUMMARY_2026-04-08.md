@@ -103,7 +103,7 @@ Highest-ROI channels for ThumbGate right now:
 
 ThumbGate has a differentiated wedge:
 
-- pre-action gates instead of memory-only recall
+- pre-action checks instead of memory-only recall
 - multi-agent/editor support across Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode
 - DPO and export surfaces that connect reliability work to model hardening
 - local-first positioning that fits privacy-sensitive developer workflows

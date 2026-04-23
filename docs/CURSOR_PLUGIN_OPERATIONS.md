@@ -31,7 +31,7 @@
 ## Positioning rules
 
 - Lead with the user problem: known mistakes repeating in agent workflows.
-- Lead with outcome before architecture: Pre-Action Gates, prevention rules, proof.
+- Lead with outcome before architecture: Pre-Action Checks, prevention rules, proof.
 - Mention history-aware lesson distillation when the surface allows a vague thumbs signal to become a concrete lesson.
 - Keep `DPO` and `Thompson Sampling` in the body or tags, not the first sentence.
 - Keep proof near the pitch by linking [VERIFICATION_EVIDENCE.md](./VERIFICATION_EVIDENCE.md).

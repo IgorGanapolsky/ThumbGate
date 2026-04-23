@@ -1,4 +1,4 @@
-# I built pre-action gates that physically block Claude Code from repeating mistakes
+# I built pre-action checks that physically block Claude Code from repeating mistakes
 
 *Target: Dev.to / Hashnode / Medium*
 
@@ -13,10 +13,10 @@ And it stops... for that session. But the next day, or the next week, or when a 
 
 Prompts are subjective. They are suggestions, not constraints. 
 
-## Enter Pre-Action Gates
-To move from "cool demos" to "merging 1,000+ PRs per week," you need infrastructure. Specifically, you need **Pre-Action Gates**.
+## Enter Pre-Action Checks
+To move from "cool demos" to "merging 1,000+ PRs per week," you need infrastructure. Specifically, you need **Pre-Action Checks**.
 
-Pre-Action Gates sit between the LLM and your codebase. They enforce hard boundaries that the agent cannot cross, regardless of the prompt.
+Pre-Action Checks sit between the LLM and your codebase. They enforce hard boundaries that the agent cannot cross, regardless of the prompt.
 
 I built **ThumbGate** to capture human feedback, auto-promote recurring failures into prevention rules, and enforce those rules before risky tool calls execute.
 

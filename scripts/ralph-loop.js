@@ -297,7 +297,7 @@ function renderMarkdownReport(report) {
     `Mode: ${report.mode}`,
     `Dry run: ${report.dryRun ? 'yes' : 'no'}`,
     '',
-    'Ralph Mode keeps the Reliability Gateway pointed at acquisition: sense audience signals, engage safely, and preserve proof for Pre-Action Gates, DPO, and Thompson Sampling review.',
+    'Ralph Mode keeps the Reliability Gateway pointed at acquisition: sense audience signals, engage safely, and preserve proof for Pre-Action Checks, DPO, and Thompson Sampling review.',
     '',
     '## Steps',
     '',
