@@ -82,7 +82,7 @@ test('prepareBundle writes bundle manifest, captions, and deterministic asset pa
     sourceHtmlPath: DEFAULT_ASSET_HTML,
     captionPath: DEFAULT_CAPTION_PATH,
     outputDir: tempDir,
-    slug: 'pre-action-gates',
+    slug: 'pre-action-checks',
     chromeBin: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
     ffmpegBin: '/opt/homebrew/bin/ffmpeg',
     renderSlidesFn: ({ slideDocuments, outputDir }) => {
@@ -108,7 +108,7 @@ test('prepareBundle writes bundle manifest, captions, and deterministic asset pa
   assert.match(result.manifest.hashes.tiktokVideoSha256, /^[a-f0-9]{64}$/);
   assert.match(
     fs.readFileSync(result.manifest.tiktokCaptionPath, 'utf8'),
-    /Pre-Action Gates don't ask - they enforce\./
+    /Pre-Action Checks don't ask - they enforce\./
   );
 });
 
@@ -176,13 +176,13 @@ test('Chrome AppleScript only focuses a window/tab when it is not already frontm
 test('normalizeTikTokCaption collapses multiline IG captions to one line', () => {
   const input = [
     'Every AI memory tool asks the agent to cooperate.',
-    'Pre-Action Gates do not ask — they enforce.',
+    'Pre-Action Checks do not ask — they enforce.',
     '#OpenSource',
   ].join('\n');
 
   assert.equal(
     normalizeTikTokCaption(input),
-    'Every AI memory tool asks the agent to cooperate. Pre-Action Gates do not ask - they enforce. #OpenSource'
+    'Every AI memory tool asks the agent to cooperate. Pre-Action Checks do not ask - they enforce. #OpenSource'
   );
 });
 
@@ -400,8 +400,8 @@ test('stopChromeProcess terminates a spawned child before temp-profile cleanup',
 });
 
 test('contenteditable caption script embeds the caption without requiring System Events', () => {
-  const script = buildContentEditableCaptionScript('Pre-Action Gates');
-  assert.match(script, /Pre-Action Gates/);
+  const script = buildContentEditableCaptionScript('Pre-Action Checks');
+  assert.match(script, /Pre-Action Checks/);
   assert.doesNotMatch(script, /System Events/);
 });
 

@@ -14,9 +14,9 @@ The ones that fund that line item:
 
 None of these are exotic. They are the ordinary cost of an agent without persistent correction. The fix is not a longer system prompt. System prompts are suggestions. Agents ignore suggestions under complex reasoning chains.
 
-The fix is enforcement at the tool-call boundary. Pre-action gates fire before the agent executes a tool, check whether the pattern has been flagged as bad, and block it before the API round-trip happens. Fix it once, your bill stops seeing it.
+The fix is enforcement at the tool-call boundary. Pre-action checks fire before the agent executes a tool, check whether the pattern has been flagged as bad, and block it before the API round-trip happens. Fix it once, your bill stops seeing it.
 
-ThumbGate does this for Claude Code, Cursor, and Codex. Local-first lesson DB, PreToolUse hooks, Thompson Sampling on which gates are worth keeping. Open source.
+ThumbGate does this for Claude Code, Cursor, and Codex. Local-first lesson DB, PreToolUse hooks, Thompson Sampling on which checks are worth keeping. Open source.
 
 OpenAI priced attention at $3–$5 a click. Price your agent's repeat mistakes before someone else does.
 

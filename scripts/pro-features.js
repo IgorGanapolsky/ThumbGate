@@ -23,7 +23,7 @@ function requirePro(
     'databricks-export': 'Export to Databricks ML pipeline format',
     'dashboard-search': 'Search, filter, and edit lessons across all repos',
     'multi-repo-sync': 'Sync prevention rules across multiple repositories',
-    'custom-gates': 'Create custom pre-action gates beyond the defaults',
+    'custom-gates': 'Create custom pre-action checks beyond the defaults',
     'advanced-thompson': 'Advanced Thompson Sampling with custom priors and decay',
     'rule-analytics': 'Analytics on which rules fire most and their block rates',
     'team-sharing': 'Share lesson databases across team members',

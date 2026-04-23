@@ -2,7 +2,7 @@
 'use strict';
 
 /**
- * Security Scanner — OWASP-aware static analysis for PreToolUse gates.
+ * Security Scanner — OWASP-aware static analysis for PreToolUse checks.
  *
  * Scans code being written/edited by AI agents for common vulnerability
  * patterns (injection, XSS, path traversal, etc.) and suspicious dependency

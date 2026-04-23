@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "thumbgate",
-      "description": "Type 👍 or 👎 on any agent action. ThumbGate captures it, distills a lesson, and blocks the pattern from repeating. One thumbs-down = the agent physically cannot make that mistake again. 33 pre-action gates, budget enforcement, self-protection, and NIST/SOC2 compliance tags.",
+      "description": "Type 👍 or 👎 on any agent action. ThumbGate captures it, distills a lesson, and blocks the pattern from repeating. One thumbs-down = the agent physically cannot make that mistake again. 33 pre-action checks, budget enforcement, self-protection, and NIST/SOC2 compliance tags.",
       "source": {
         "source": "npm",
         "package": "thumbgate"
@@ -22,7 +22,7 @@
       "license": "MIT",
       "category": "developer-tools",
       "tags": [
-        "pre-action-gates",
+        "pre-action-checks",
         "ai-agent-safety",
         "mcp",
         "memory",
@@ -31,7 +31,7 @@
       "keywords": [
         "claude-desktop",
         "desktop-extension",
-        "pre-action-gates",
+        "pre-action-checks",
         "ai-agent-safety",
         "mcp",
         "memory",
@@ -44,7 +44,7 @@
         "keywords": [
           "claude-desktop",
           "desktop-extension",
-          "pre-action-gates",
+          "pre-action-checks",
           "ai-agent-safety",
           "mcp",
           "memory",

@@ -277,7 +277,7 @@ function generateComparisonData() {
       silentDeletion: false,
       searchMethod: 'FTS5 + LanceDB vectors + Thompson Sampling + multi-hop retrieval',
       lessons: lessonCount,
-      features: ['prevention rules', 'pre-action gates', 'org dashboard', 'DPO export', 'skill packs', 'hallucination detection', 'PII scanning'],
+      features: ['prevention rules', 'pre-action checks', 'org dashboard', 'DPO export', 'skill packs', 'hallucination detection', 'PII scanning'],
     },
     recommendation: health.criticalCount > 0
       ? 'URGENT: memories are being silently deleted. Migrate now with: npx thumbgate migrate'

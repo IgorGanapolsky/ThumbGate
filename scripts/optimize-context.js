@@ -11,7 +11,7 @@ function optimize() {
   if (!fs.existsSync(THUMBGATE_DIR)) fs.mkdirSync(THUMBGATE_DIR, { recursive: true });
   const migrationHeader = '\n### [MIGRATED] Rules from CLAUDE.md\n';
   fs.appendFileSync(RULES_PATH, migrationHeader + content.slice(0, 500) + '\n');
-  console.log('✅ Migrated rules to the Pre-Action Gates.');
+  console.log('✅ Migrated rules to the Pre-Action Checks.');
 }
 if (require.main === module) optimize();
 module.exports = { optimize };

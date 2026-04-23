@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Multica + ThumbGate: Pre-Action Gates for Self-Hosted Agent Autopilot</title>
-  <meta name="description" content="Multica runs Claude Code / OpenCode / Code CLI as scheduled jobs on a self-hosted VPS. Autopilot magnifies tool-call mistakes. ThumbGate adds pre-action gates at the tool-call boundary with a local SQLite lesson DB on the same VPS." />
-  <meta property="og:title" content="Multica + ThumbGate: Pre-Action Gates for Self-Hosted Agent Autopilot" />
-  <meta property="og:description" content="Multica runs Claude Code / OpenCode / Code CLI as scheduled jobs on a self-hosted VPS. Autopilot magnifies tool-call mistakes. ThumbGate adds pre-action gates at the tool-call boundary with a local SQLite lesson DB on the same VPS." />
+  <title>Multica + ThumbGate: Pre-Action Checks for Self-Hosted Agent Autopilot</title>
+  <meta name="description" content="Multica runs Claude Code / OpenCode / Code CLI as scheduled jobs on a self-hosted VPS. Autopilot magnifies tool-call mistakes. ThumbGate adds pre-action checks at the tool-call boundary with a local SQLite lesson DB on the same VPS." />
+  <meta property="og:title" content="Multica + ThumbGate: Pre-Action Checks for Self-Hosted Agent Autopilot" />
+  <meta property="og:description" content="Multica runs Claude Code / OpenCode / Code CLI as scheduled jobs on a self-hosted VPS. Autopilot magnifies tool-call mistakes. ThumbGate adds pre-action checks at the tool-call boundary with a local SQLite lesson DB on the same VPS." />
   <meta property="og:type" content="article" />
   <meta property="og:url" content="https://thumbgate.ai/guides/multica-thumbgate-setup" />
   <link rel="canonical" href="https://thumbgate.ai/guides/multica-thumbgate-setup" />
@@ -18,8 +18,8 @@
   {
     "@context": "https://schema.org",
     "@type": "TechArticle",
-    "headline": "Multica + ThumbGate: Pre-Action Gates for Self-Hosted Agent Autopilot",
-    "description": "Multica runs Claude Code / OpenCode / Code CLI as scheduled jobs on a self-hosted VPS. Autopilot magnifies tool-call mistakes. ThumbGate adds pre-action gates at the tool-call boundary with a local SQLite lesson DB on the same VPS.",
+    "headline": "Multica + ThumbGate: Pre-Action Checks for Self-Hosted Agent Autopilot",
+    "description": "Multica runs Claude Code / OpenCode / Code CLI as scheduled jobs on a self-hosted VPS. Autopilot magnifies tool-call mistakes. ThumbGate adds pre-action checks at the tool-call boundary with a local SQLite lesson DB on the same VPS.",
     "author": { "@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky" },
     "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
     "datePublished": "2026-04-22",
@@ -61,7 +61,7 @@
   <main class="container">
     <article>
       <span class="eyebrow">Setup Guide</span>
-      <h1>Multica + ThumbGate: Pre-Action Gates for Self-Hosted Agent Autopilot</h1>
+      <h1>Multica + ThumbGate: Pre-Action Checks for Self-Hosted Agent Autopilot</h1>
       <p class="muted">Multica gives your AI agent a VPS, root shell, and a scheduled cron. The quiet risk: autopilot magnifies tool-call mistakes. This guide shows how to drop ThumbGate in front of your Multica-hosted agent so the wrong pattern never runs twice — much less every morning at 9am.</p>
 
       <h2>Why Multica needs a guard layer</h2>
@@ -127,7 +127,7 @@ npx thumbgate init --agent opencode</code></pre>
 
   <footer>
     <div class="container">
-      <p>ThumbGate — pre-action gates for AI coding agents. <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> · <a href="/">Home</a></p>
+      <p>ThumbGate — pre-action checks for AI coding agents. <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> · <a href="/">Home</a></p>
     </div>
   </footer>
 </body>

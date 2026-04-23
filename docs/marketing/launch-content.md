@@ -42,7 +42,7 @@ MIT licensed. Pro is $19/mo or $149/yr for individual operators, while Team roll
 Landing: https://thumbgate-production.up.railway.app/?utm_source=hackernews&utm_medium=community_post&utm_campaign=first_customer_push&utm_content=show_hn&community=ShowHN&campaign_variant=technical_launch
 GitHub: https://github.com/IgorGanapolsky/ThumbGate
 
-Happy to answer questions about the gate engine or how prevention rules are generated.
+Happy to answer questions about the check engine or how prevention rules are generated.
 
 ---
 
@@ -99,7 +99,7 @@ Not a mental note. Not a prompt update. An actual 👎 that captures what went w
 
 👍 works the other way — reinforces the behavior you like. Over time, your 👍/👎 signals build an immune system. Good patterns strengthen. Bad patterns are blocked.
 
-After setting up gates on my top 10 failure patterns, those specific mistakes dropped to near-zero. The agent still finds new ways to mess up (it's creative like that), but it can't repeat the known ones.
+After setting up Pre-Action Checks on my top 10 failure patterns, those specific mistakes dropped to near-zero. The agent still finds new ways to mess up (it's creative like that), but it can't repeat the known ones.
 
 It works with any MCP-compatible agent. One command to set up:
 
@@ -163,7 +163,7 @@ Local-first free path. MIT licensed.
 **Tweet 6:**
 Pro ($19/mo or $149/yr) adds a searchable personal local dashboard to query and export your 👍/👎 entries.
 
-But captures, recalls, gates, and blocking all work on the free local path. No cloud account required.
+But captures, recalls, Pre-Action Checks, and blocking all work on the free local path. No cloud account required.
 
 Landing: https://thumbgate-production.up.railway.app/?utm_source=x&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=launch_thread_cta&creator=IgorGanapolsky&campaign_variant=founder_story
 GitHub: github.com/IgorGanapolsky/ThumbGate
@@ -182,10 +182,10 @@ GitHub: github.com/IgorGanapolsky/ThumbGate
 
 ## 6. mcp.so Submission
 
-ThumbGate is a pre-action gate engine for AI coding agents. Unlike memory servers that store and retrieve context (Mem0, Zep), this server enforces behavior change: repeated failures are auto-promoted into prevention rules, and PreToolUse hooks physically block tool calls that match known failure patterns before they execute. Capture structured up/down feedback, validate it against a rubric engine (vague signals are rejected), promote to searchable JSONL + LanceDB vector memory, and recall relevant context at session start. The gate engine is the differentiator — agents don't just remember past mistakes, they are blocked from repeating them. Works with Claude Code, Codex, Gemini, Amp, Cursor, and any MCP-compatible agent. Install with `npx thumbgate init`. MIT licensed.
+ThumbGate is a pre-action check engine for AI coding agents. Unlike memory servers that store and retrieve context (Mem0, Zep), this server enforces behavior change: repeated failures are auto-promoted into prevention rules, and PreToolUse hooks physically block tool calls that match known failure patterns before they execute. Capture structured up/down feedback, validate it against a rubric engine (vague signals are rejected), promote to searchable JSONL + LanceDB vector memory, and recall relevant context at session start. The check engine is the differentiator — agents don't just remember past mistakes, they are blocked from repeating them. Works with Claude Code, Codex, Gemini, Amp, Cursor, and any MCP-compatible agent. Install with `npx thumbgate init`. MIT licensed.
 
 ---
 
 ## 7. smithery.ai Submission
 
-ThumbGate captures explicit structured feedback from AI coding agents, validates it against a rubric engine, and auto-promotes repeated failures into prevention rules enforced via PreToolUse hooks. Pre-action gates physically block tool calls matching known failure patterns before execution — turning past mistakes into hard constraints rather than suggestions. Supports semantic recall via LanceDB vectors, DPO/KTO export for downstream fine-tuning, and a file watcher bridge for external signal ingestion. Compatible with Claude Code, Codex, Gemini, Amp, Cursor, and OpenCode. Install with `npx thumbgate init` or `claude mcp add thumbgate -- npx -y thumbgate serve`. MIT licensed, open source.
+ThumbGate captures explicit structured feedback from AI coding agents, validates it against a rubric engine, and auto-promotes repeated failures into prevention rules enforced via PreToolUse hooks. Pre-action checks physically block tool calls matching known failure patterns before execution — turning past mistakes into hard constraints rather than suggestions. Supports semantic recall via LanceDB vectors, DPO/KTO export for downstream fine-tuning, and a file watcher bridge for external signal ingestion. Compatible with Claude Code, Codex, Gemini, Amp, Cursor, and OpenCode. Install with `npx thumbgate init` or `claude mcp add thumbgate -- npx -y thumbgate serve`. MIT licensed, open source.

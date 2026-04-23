@@ -71,7 +71,7 @@ test('loadLessons parses JSONL correctly', () => {
   fs.rmSync(dir, { recursive: true });
 });
 
-test('loadGates reads configured and custom gates once', () => {
+test('loadGates reads configured and custom checks once', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-gates-'));
   const gatesDir = path.join(root, 'config', 'gates');
   fs.mkdirSync(gatesDir, { recursive: true });

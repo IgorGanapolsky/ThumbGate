@@ -38,7 +38,7 @@ const PRODUCT = {
   sponsor: 'https://github.com/sponsors/IgorGanapolsky',
   coffee: 'https://buymeacoffee.com/igorganapolsky',
   tagline: 'Local-first memory and feedback pipeline for AI agents. Captures thumbs-up/down signals, promotes reusable memories, generates prevention rules from repeated failures, and exports KTO/DPO pairs for fine-tuning.',
-  keywords: ['MCP', 'ThumbGate', 'DPO', 'KTO', 'Thompson Sampling', 'AI agent memory', 'Claude Code', 'Amp', 'Gemini CLI', 'context engineering', 'prevention rules', 'Pre-Action Gates'],
+  keywords: ['MCP', 'ThumbGate', 'DPO', 'KTO', 'Thompson Sampling', 'AI agent memory', 'Claude Code', 'Amp', 'Gemini CLI', 'context engineering', 'prevention rules', 'Pre-Action Checks'],
   proPrice: '$19/mo or $149/yr',
 };
 

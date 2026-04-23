@@ -72,7 +72,7 @@ Use:
 - Claude Desktop extension
 - Claude workflow hardening
 - history-aware lesson distillation
-- Pre-Action Gates
+- Pre-Action Checks
 - Reliability Gateway
 - proof-backed reliability
 
@@ -195,7 +195,7 @@ Keep `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` aligned 
 
 - package version
 - current product description
-- keywords for `claude-desktop`, `workflow-hardening`, and `pre-action-gates`
+- keywords for `claude-desktop`, `workflow-hardening`, and `pre-action-checks`
 
 Keep the generated MCPB manifest aligned with:
 

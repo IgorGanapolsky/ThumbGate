@@ -16,12 +16,12 @@ That's it. One thumbs-down, never again.
 
 - **👎 Thumbs down** → captures the mistake → distills a lesson → auto-promotes to a prevention rule → PreToolUse hook blocks the pattern before execution
 - **👍 Thumbs up** → reinforces good patterns → agent starts preferring your approved flows without re-explaining them each session
-- **33 pre-action gates** → block destructive actions (force-push, mass delete, destructive SQL) before they execute
+- **33 pre-action checks** → block destructive actions (force-push, mass delete, destructive SQL) before they execute
 - **Budget enforcement** → action count + time limits prevent runaway sessions
 - **Self-protection** → agent cannot disable its own governance
-- **Compliance tags** → NIST, SOC2, OWASP, CWE on gate rules for enterprise teams
+- **Compliance tags** → NIST, SOC2, OWASP, CWE on prevention rules for enterprise teams
 - **Shared team enforcement** → one engineer's thumbs-down protects the whole team
-- **60-second follow-up** → feedback can link to a prior mistake with `relatedFeedbackId` so delayed corrections still become useful gates
+- **60-second follow-up** → feedback can link to a prior mistake with `relatedFeedbackId` so delayed corrections still become useful prevention rules
 
 ## Installation
 

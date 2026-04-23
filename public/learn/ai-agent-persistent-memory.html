@@ -115,13 +115,13 @@
       </tr>
       <tr class="memory-row">
         <td>Procedural</td>
-        <td>Encoded behaviours — gates that fire before actions without requiring the agent to reason about them</td>
+        <td>Encoded behaviours — checks that fire before actions without requiring the agent to reason about them</td>
         <td>A PreToolUse hook that checks every <code>git push</code> command against the prevention rule and blocks the dangerous pattern automatically.</td>
       </tr>
     </tbody>
   </table>
 
-  <p>Most "persistent memory" proposals for AI agents stop at episodic: they store a log of past conversations. That is useful, but insufficient. The signal gets diluted in a sea of raw events. What agents need is the full pipeline: episodes promote to semantic rules, semantic rules compile into procedural gates.</p>
+  <p>Most "persistent memory" proposals for AI agents stop at episodic: they store a log of past conversations. That is useful, but insufficient. The signal gets diluted in a sea of raw events. What agents need is the full pipeline: episodes promote to semantic rules, semantic rules compile into procedural checks.</p>
 
   <h2>How ThumbGate implements persistent memory</h2>
   <p>ThumbGate is built around this three-tier memory architecture. Here is each layer in concrete terms.</p>
@@ -144,17 +144,17 @@ node .claude/scripts/feedback/capture-feedback.js \
   <p>Raw feedback events are processed into a SQLite database with full-text search (FTS5). This is not a flat file — it is a queryable knowledge store. When a new session starts, the system retrieves lessons relevant to the current task by similarity, not by recency.</p>
   <p>The FTS5 index means retrieval is fast even as the database grows. You are not loading the entire history into context. You are loading the lessons most likely to matter right now. That is the difference between a knowledge base and a memory dump.</p>
 
-  <h3>Procedural layer: prevention rules and gates</h3>
-  <p>Promoted lessons generate prevention rules in <code>prevention-rules.md</code>. Rules are not prompt instructions — they are checked by a PreToolUse hook that fires before every tool call. The agent cannot reason around a gate. The gate runs outside the agent's context.</p>
+  <h3>Procedural layer: prevention rules and checks</h3>
+  <p>Promoted lessons generate prevention rules in <code>prevention-rules.md</code>. Rules are not prompt instructions — they are checked by a PreToolUse hook that fires before every tool call. The agent cannot reason around a check. The check runs outside the agent's context.</p>
 
   <div class="callout callout-green">
-    <strong>The promotion pipeline:</strong> Thumbs-down event &rarr; feedback log entry &rarr; lesson promoted to SQLite &rarr; prevention rule generated &rarr; PreToolUse gate active for every future session, with no additional setup.
+    <strong>The promotion pipeline:</strong> Thumbs-down event &rarr; feedback log entry &rarr; lesson promoted to SQLite &rarr; prevention rule generated &rarr; PreToolUse check active for every future session, with no additional setup.
   </div>
 
   <h2>Thompson Sampling for memory-informed decisions</h2>
   <p>Not every prevention rule has the same confidence level. A rule derived from one thumbs-down event is weaker than a rule reinforced by a dozen. ThumbGate uses Thompson Sampling — a multi-armed bandit algorithm — to handle this uncertainty.</p>
-  <p>For each gate, the system maintains a Beta distribution over outcomes. As thumbs-up and thumbs-down feedback accumulates, the distribution tightens. A gate with high confidence becomes a hard block. A gate still gathering signal issues a warning and lets the agent reconsider.</p>
-  <p>This matters for memory because it means the system learns your preferences rather than requiring you to manually tune thresholds. You give feedback. The gate calibrates. The agent adapts.</p>
+  <p>For each check, the system maintains a Beta distribution over outcomes. As thumbs-up and thumbs-down feedback accumulates, the distribution tightens. A check with high confidence becomes a hard block. A check still gathering signal issues a warning and lets the agent reconsider.</p>
+  <p>This matters for memory because it means the system learns your preferences rather than requiring you to manually tune thresholds. You give feedback. The check calibrates. The agent adapts.</p>
   <p>Thompson Sampling also prevents over-blocking. If a pattern that was once dangerous stops being a problem — because the codebase changed, or you updated your workflow — thumbs-up feedback on future calls will widen the distribution back toward allowing. Memory is not one-way.</p>
 
   <h2>Setup: persistent memory in two minutes</h2>
@@ -167,7 +167,7 @@ node .claude/scripts/feedback/capture-feedback.js \
     <li>The SQLite+FTS5 lesson database in <code>.claude/memory/</code></li>
     <li>The feedback log at <code>.claude/memory/feedback/feedback-log.jsonl</code></li>
     <li>Prevention rules at <code>.claude/memory/feedback/prevention-rules.md</code></li>
-    <li>A PreToolUse hook that reads gates on every tool call</li>
+    <li>A PreToolUse hook that reads checks on every tool call</li>
     <li>The MCP server adapter for your agent runtime</li>
   </ul>
 
@@ -175,7 +175,7 @@ node .claude/scripts/feedback/capture-feedback.js \
 
   <h3>What memory looks like on day one vs. day thirty</h3>
   <p>On day one, the database is empty. The agent behaves the same as it always has. You give feedback on its actions.</p>
-  <p>By day thirty, the database has accumulated dozens of lessons. The agent's context at session start includes the most relevant ones. Prevention rules have tightened around patterns that caused problems. Patterns that worked have been reinforced. The agent makes fewer mistakes — not because it was retrained, but because the gates learned from your feedback.</p>
+  <p>By day thirty, the database has accumulated dozens of lessons. The agent's context at session start includes the most relevant ones. Prevention rules have tightened around patterns that caused problems. Patterns that worked have been reinforced. The agent makes fewer mistakes — not because it was retrained, but because the checks learned from your feedback.</p>
   <p>That is persistent memory in practice: not a bigger context window, not a longer system prompt, but a feedback loop that accumulates signal and converts it into durable enforcement.</p>
 
   <div class="cta-box">
@@ -187,7 +187,7 @@ node .claude/scripts/feedback/capture-feedback.js \
   <div class="related">
     <h3>Related articles</h3>
     <a href="/learn/agent-harness-pattern">The Agent Harness Pattern: Why Your AI Needs a Seatbelt &rarr;</a>
-    <a href="/learn/mcp-pre-action-gates-explained">MCP Pre-Action Gates Explained &rarr;</a>
+    <a href="/learn/mcp-pre-action-checks-explained">MCP Pre-Action Checks Explained &rarr;</a>
     <a href="/learn/stop-ai-agent-force-push">How to Stop AI Agents From Force-Pushing to Main &rarr;</a>
     <a href="/learn/vibe-coding-safety-net">The Vibe Coding Safety Net You Are Missing &rarr;</a>
   </div>

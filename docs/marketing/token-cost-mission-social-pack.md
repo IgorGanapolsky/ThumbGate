@@ -19,7 +19,7 @@ Sonnet costs $3/$15 per 1M tokens. Every retry, every hallucination, every repea
 ### B — meter hook (244 chars)
 
 ```text
-Your AI agent forgets between sessions. Same hallucination, same retry loop, same wasted tokens — every Monday. ThumbGate's pre-action gates intercept the call before it hits the model. Tokens spent on the repeat: 0. Mission: don't pay for the same mistake twice.
+Your AI agent forgets between sessions. Same hallucination, same retry loop, same wasted tokens — every Monday. ThumbGate's pre-action checks intercept the call before it hits the model. Tokens spent on the repeat: 0. Mission: don't pay for the same mistake twice.
 ```
 
 ### C — receipt hook (227 chars)
@@ -43,7 +43,7 @@ Every hallucination → retry. Every "no, try again" → the meter runs. Your ag
 
 ThumbGate's mission: stop paying for the same AI mistake twice.
 
-One 👎 → permanent gate → 0 tokens on the repeat. Forever.
+One 👎 → permanent check → 0 tokens on the repeat. Forever.
 
 → thumbgate-production.up.railway.app
 ```
@@ -53,7 +53,7 @@ One 👎 → permanent gate → 0 tokens on the repeat. Forever.
 ```text
 Sat down to look at my Anthropic bill. ~40% of the spend was Claude Code retrying things I'd already corrected. Same wrong import, same wrong file path, same wrong test name. Different week. Same tokens. Same dollars.
 
-So I built ThumbGate. One thumbs-down on the wrong tool call → a Pre-Action Gate intercepts every future occurrence before it hits the model. 0 input tokens. 0 output tokens. 0 retry loop.
+So I built ThumbGate. One thumbs-down on the wrong tool call → a Pre-Action Check intercepts every future occurrence before it hits the model. 0 input tokens. 0 output tokens. 0 retry loop.
 
 Mission: stop paying for the same AI mistake twice.
 
@@ -73,7 +73,7 @@ Frontier models are not cheap. Sonnet 4.5 is $3 per million input tokens and $15
 
 Most "AI agent reliability" tools approach this as a quality problem. We approached it as a billing problem.
 
-ThumbGate is a local-first enforcement layer that turns one thumbs-down into a Pre-Action Gate — a hook that physically intercepts the offending tool call before it reaches the model. Zero input tokens. Zero output tokens. Zero retry loop. The savings show up on the dashboard as a live "tokens saved this week" counter so your engineering manager can put a real dollar number on the gate's value.
+ThumbGate is a local-first enforcement layer that turns one thumbs-down into a Pre-Action Check — a hook that physically intercepts the offending tool call before it reaches the model. Zero input tokens. Zero output tokens. Zero retry loop. The savings show up on the dashboard as a live "tokens saved this week" counter so your engineering manager can put a real dollar number on the check's value.
 
 Mission: stop paying for the same AI mistake twice.
 
@@ -104,7 +104,7 @@ Show HN: ThumbGate – live "tokens saved" counter for AI agents
 ### C (67 chars)
 
 ```text
-ThumbGate: pre-action gates that cut your Anthropic bill on retry loops
+ThumbGate: pre-action checks that cut your Anthropic bill on retry loops
 ```
 
 ---
@@ -114,7 +114,7 @@ ThumbGate: pre-action gates that cut your Anthropic bill on retry loops
 ### Title (≤ 300 chars)
 
 ```text
-[Tool] ThumbGate – an open-source pre-action gate that stops your AI agent from burning tokens on the same hallucination twice
+[Tool] ThumbGate – an open-source pre-action check that stops your AI agent from burning tokens on the same hallucination twice
 ```
 
 ### Body (no enforced limit — keep tight)
@@ -122,9 +122,9 @@ ThumbGate: pre-action gates that cut your Anthropic bill on retry loops
 ```text
 Why I built this: I was looking at my Anthropic bill and noticed that ~40% of the spend was Claude Code retrying tool calls I'd already corrected once. Same wrong file path. Same wrong test name. Same wrong import. Different week. Same dollars.
 
-ThumbGate is a local-first enforcement layer. You give a tool call a thumbs-down, ThumbGate distills it into a Pre-Action Gate — a PreToolUse hook that physically intercepts the same call before it reaches the model. Zero input tokens. Zero output tokens. Zero retry loop.
+ThumbGate is a local-first enforcement layer. You give a tool call a thumbs-down, ThumbGate distills it into a Pre-Action Check — a PreToolUse hook that physically intercepts the same call before it reaches the model. Zero input tokens. Zero output tokens. Zero retry loop.
 
-The dashboard has a live "tokens saved this week" counter so you can see the actual dollar impact of your gates. Defaults to a Sonnet-blended estimate (you can swap models if you're on Opus or GPT).
+The dashboard has a live "tokens saved this week" counter so you can see the actual dollar impact of your checks. Defaults to a Sonnet-blended estimate (you can swap models if you're on Opus or GPT).
 
 MIT licensed. Works with Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent.
 
@@ -145,7 +145,7 @@ VO: "$400 a month on Claude. Forty percent of that — paying for the same mista
 
 [0:05–0:15] Cut to terminal. Agent makes a wrong git push command. User types `thumbs down: never run --force on main`. ThumbGate captures the lesson.
 
-VO: "One thumbs-down. ThumbGate turns it into a permanent gate."
+VO: "One thumbs-down. ThumbGate turns it into a permanent check."
 
 [0:15–0:30] New session. Same agent, same wrong command. Hook fires. ⛔ BLOCKED. Token counter on screen reads 0.
 
@@ -153,7 +153,7 @@ VO: "Next time the agent tries it — zero tokens. Zero retry. Zero round-trip. 
 
 [0:30–0:45] Dashboard screen. Live "Tokens Saved This Week" counter ticks up. Big green number.
 
-VO: "Live counter on the dashboard. Real dollar savings. Every gate, every block, every week."
+VO: "Live counter on the dashboard. Real dollar savings. Every check, every block, every week."
 
 [0:45–0:55] Cut to logo. Tagline on screen: "Stop paying for the same AI mistake twice."
 

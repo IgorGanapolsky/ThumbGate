@@ -28,7 +28,7 @@ describe('thumbgate-skill', () => {
     const content = fs.readFileSync(SKILL_MD, 'utf-8');
 
     // These trigger words help Claude auto-invoke the skill
-    assert.ok(content.toLowerCase().includes('pre-action gates'), 'mentions pre-action gates');
+    assert.ok(content.toLowerCase().includes('pre-action checks'), 'mentions pre-action checks');
     assert.ok(content.includes('thumbs-up/down'), 'mentions thumbs-up/down');
     assert.ok(content.includes('prevention rules'), 'mentions prevention rules');
     assert.ok(content.includes('block known-bad patterns'), 'mentions blocking');
@@ -86,12 +86,12 @@ describe('thumbgate-skill', () => {
     assert.ok(guides.includes('thumbgate'), 'references npm package');
   });
 
-  test('gate-config reference documents Thompson Sampling and custom gates', () => {
+  test('gate-config reference documents Thompson Sampling and custom checks', () => {
     const config = fs.readFileSync(path.join(SKILL_DIR, 'references', 'gate-config.md'), 'utf-8');
 
     assert.ok(config.includes('Thompson Sampling'), 'documents Thompson Sampling');
-    assert.ok(config.includes('Auto-Promoted Gates'), 'documents auto-promotion');
-    assert.ok(config.includes('Custom Gates'), 'documents custom gates');
+    assert.ok(config.includes('Auto-Promoted Checks'), 'documents auto-promotion');
+    assert.ok(config.includes('Custom Checks'), 'documents custom checks');
     assert.ok(config.includes('no-force-push'), 'lists default gate');
     assert.ok(config.includes('no-drop-table'), 'lists critical gate');
     assert.ok(config.includes('7-day half-life'), 'documents decay');
