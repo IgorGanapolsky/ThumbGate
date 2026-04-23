@@ -431,24 +431,170 @@ function consumePhrase(lower, original, phrases) {
 // 6. LLM-Powered Structured Lesson Extraction
 // ---------------------------------------------------------------------------
 
-const LLM_LESSON_SYSTEM_PROMPT = `You are a lesson extraction engine for an AI coding agent safety system called ThumbGate.
-
-Given a conversation window and a feedback signal (positive or negative), extract a structured lesson.
-
-Return ONLY valid JSON matching this exact schema:
-{
-  "trigger": { "condition": "<when this lesson applies>", "type": "<one of: debugging, implementation, question, error-report, constraint>" },
-  "action": { "type": "<do or avoid>", "description": "<specific action to take or avoid>" },
-  "confidence": <0.0 to 1.0>,
-  "scope": "<global, file-level, or project-level>",
-  "tags": ["<relevant tags>"]
+function createLessonPromptExample([
+  signal,
+  conversationWindow,
+  triggerCondition,
+  triggerType,
+  actionType,
+  actionDescription,
+  confidence,
+  scope,
+  tags,
+]) {
+  return {
+    signal,
+    conversationWindow: conversationWindow.join('\n'),
+    output: {
+      trigger: { condition: triggerCondition, type: triggerType },
+      action: { type: actionType, description: actionDescription },
+      confidence,
+      scope,
+      tags,
+    },
+  };
 }
 
-Guidelines:
-- Be specific and actionable. "Avoid: editing files without reading them first" is better than "Avoid: bad edits".
-- confidence should reflect how clear the lesson is from the conversation context.
-- tags should include tool names, file types, or domain areas mentioned.
-- Do NOT include any text outside the JSON object.`;
+// Five multishot exemplars pinned as a constant so they can be inspected/tested
+// independently of the prompt string. Each example pairs a (signal,
+// conversation_window) with the exact JSON output Claude should emit. These
+// were drafted from real ThumbGate incident classes: Edit-before-Read,
+// force-push-to-main, deploy-verification, mock-to-live-in-tests, and
+// regression-test-pinning. Changing any example shifts lesson extraction
+// behavior — treat it like a prompt version bump.
+const LLM_LESSON_MULTISHOT_EXAMPLES = [
+  [
+    'negative',
+    [
+      '[user]: why is my edit failing?',
+      '[assistant]: I\'ll try editing src/api/server.js — Edit(src/api/server.js) failed: File has not been read yet.',
+      '[assistant]: Let me Read(src/api/server.js) first, then retry Edit.',
+      '[user]: that worked. thumbs down on the first attempt though.',
+    ],
+    'about to call Edit on a file that has not been Read in this session',
+    'constraint',
+    'avoid',
+    'Never call Edit on a file without first calling Read on it — the tool rejects unread files',
+    0.9,
+    'global',
+    ['Edit', 'Read', 'tool-use', 'preconditions'],
+  ],
+  [
+    'negative',
+    [
+      '[assistant]: Running git push --force origin main to clean up history.',
+      '[user]: NO. Never force-push to main. Thumbs down.',
+    ],
+    'about to run git push with --force or -f on the main branch',
+    'constraint',
+    'avoid',
+    'Never force-push to main; use incremental commits and open a new PR if history needs adjustment',
+    0.95,
+    'project-level',
+    ['git', 'force-push', 'main-branch', 'destructive'],
+  ],
+  [
+    'positive',
+    [
+      '[user]: the deploy failed again, can you just verify with curl before declaring done?',
+      '[assistant]: Running curl https://thumbgate-production.up.railway.app/health and grepping for the expected version.',
+      '[assistant]: Got {"version":"1.15.0"} — matches package.json. Deploy confirmed.',
+      '[user]: perfect. thumbs up.',
+    ],
+    'after merging a PR that touches deployable code',
+    'implementation',
+    'do',
+    'Curl the /health endpoint and grep for the expected version before claiming a deploy succeeded',
+    0.85,
+    'project-level',
+    ['deploy', 'verification', 'curl', 'railway'],
+  ],
+  [
+    'negative',
+    [
+      '[user]: these test failures are weird',
+      '[assistant]: Let me check... the tests are using mocked Stripe. Maybe real Stripe is needed?',
+      '[assistant]: Replaced mocks with live Stripe calls. Tests now passing.',
+      '[user]: tests should not call real Stripe in CI. Thumbs down.',
+    ],
+    'a test is failing and the temptation is to replace mocks with live API calls',
+    'debugging',
+    'avoid',
+    'Never swap mocks for real external API calls to make tests pass — inject dependencies and stub the client instead',
+    0.9,
+    'project-level',
+    ['testing', 'mocking', 'stripe', 'ci'],
+  ],
+  [
+    'positive',
+    [
+      '[user]: add a regression test that pins the distinct tier icons',
+      '[assistant]: Added assert.notEqual(proIcon, teamIcon) to tests/billing.test.js, plus the URL regex per tier.',
+      '[user]: great, locking that in. thumbs up.',
+    ],
+    'fixing a bug where two products rendered with the same asset',
+    'implementation',
+    'do',
+    'Add a regression assertion that pins the distinct values (e.g. assert.notEqual(a,b)) so the collapse cannot silently return',
+    0.9,
+    'file-level',
+    ['regression-test', 'stripe', 'billing', 'tier'],
+  ],
+].map(createLessonPromptExample);
+
+function renderMultishotExamplesForPrompt(examples = LLM_LESSON_MULTISHOT_EXAMPLES) {
+  return examples.map((ex) => (
+    `<example>
+<signal>${ex.signal}</signal>
+<conversation_window>
+${ex.conversationWindow}
+</conversation_window>
+<output>${JSON.stringify(ex.output)}</output>
+</example>`
+  )).join('\n');
+}
+
+// Anthropic's prompt-engineering playbook (ref: anthropic.skilljar.com
+// Prompt Engineering course) recommends XML tags to scope context blocks and
+// multishot exemplars so the model sees the exact expected shape before being
+// asked to produce it. Both techniques apply cleanly here because the output
+// is a strict JSON schema and the extraction task has five recurring incident
+// classes (see LLM_LESSON_MULTISHOT_EXAMPLES).
+const LLM_LESSON_SYSTEM_PROMPT = `You are a lesson extraction engine for an AI coding agent safety system called ThumbGate.
+
+<task>
+Given a feedback signal (positive or negative) and a conversation window, extract a structured if-then lesson that would prevent the same mistake (negative) or reinforce the same success (positive) in future sessions.
+</task>
+
+<output_schema>
+Return ONLY valid JSON matching this exact shape — no prose, no code fences, no text outside the JSON object:
+{
+  "trigger": { "condition": "<when this lesson applies>", "type": "<debugging|implementation|question|error-report|constraint>" },
+  "action":  { "type": "<do|avoid>", "description": "<specific action to take or avoid>" },
+  "confidence": <0.0 to 1.0>,
+  "scope": "<global|file-level|project-level>",
+  "tags": ["<relevant tags>"]
+}
+</output_schema>
+
+<guidelines>
+- Be specific and actionable. "Avoid editing files without reading them first" beats "Avoid bad edits".
+- confidence should reflect how clear the lesson is from the window. A single ambiguous exchange caps around 0.5; a reproduced failure with a confirmed fix can reach 0.9.
+- tags should include tool names, file types, or domain areas mentioned in the conversation.
+- Emit JSON only. No code fences, no commentary.
+</guidelines>
+
+<examples>
+${renderMultishotExamplesForPrompt()}
+</examples>`;
+
+function buildLessonUserPrompt({ signal, context, windowText }) {
+  const normalizedSignal = signal === 'positive' || signal === 'up' ? 'positive' : 'negative';
+  const parts = [`<signal>${normalizedSignal}</signal>`];
+  if (context) parts.push(`<user_context>${context}</user_context>`);
+  parts.push(`<conversation_window>\n${windowText}\n</conversation_window>`);
+  return parts.join('\n');
+}
 
 async function inferStructuredLessonLLM(conversationWindow, signal, context) {
   const { isAvailable, callClaudeJson, MODELS } = require('./llm-client');
@@ -463,11 +609,7 @@ async function inferStructuredLessonLLM(conversationWindow, signal, context) {
     .join('\n')
     .slice(0, 4000);
 
-  const userPrompt = [
-    `Signal: ${signal === 'positive' || signal === 'up' ? 'positive (thumbs up — something worked well)' : 'negative (thumbs down — something went wrong)'}`,
-    context ? `User context: ${context}` : '',
-    `\nConversation:\n${windowText}`,
-  ].filter(Boolean).join('\n');
+  const userPrompt = buildLessonUserPrompt({ signal, context, windowText });
 
   const parsed = await callClaudeJson({
     systemPrompt: LLM_LESSON_SYSTEM_PROMPT,
@@ -509,4 +651,7 @@ module.exports = {
   inferStructuredLesson, inferStructuredLessonLLM,
   extractTrigger, extractAction, extractToolCalls,
   extractFilePaths, extractErrors, calculateConfidence, inferScope,
+  // Exported for prompt-shape regression tests.
+  LLM_LESSON_SYSTEM_PROMPT, LLM_LESSON_MULTISHOT_EXAMPLES,
+  renderMultishotExamplesForPrompt, buildLessonUserPrompt,
 };
