@@ -18,6 +18,11 @@
  */
 
 const path = require('node:path');
+const {
+  buildAwsAccessKeyId,
+  buildGitHubPat,
+  buildPemHeader,
+} = require('./secret-fixture-tokens');
 const { evaluateAction, loadSpecDir, allSpecsToGateConfigs } = require('./spec-gate');
 
 // ---------------------------------------------------------------------------
@@ -52,9 +57,9 @@ function getDefaultProbes() {
     createProbe('force-push-short', { command: 'git push -f origin main' }, 'dangerous'),
     createProbe('hard-reset', { command: 'git reset --hard HEAD~3' }, 'dangerous'),
     createProbe('rm-rf-root', { command: 'rm -rf /' }, 'dangerous'),
-    createProbe('aws-key', { content: 'key = "AKIAIOSFODNN7EXAMPLE"' }, 'dangerous'),
-    createProbe('github-pat', { content: 'ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' }, 'dangerous'),
-    createProbe('private-key', { content: '-----BEGIN RSA PRIVATE KEY-----' }, 'dangerous'),
+    createProbe('aws-key', { content: `key = "${buildAwsAccessKeyId()}"` }, 'dangerous'),
+    createProbe('github-pat', { content: buildGitHubPat() }, 'dangerous'),
+    createProbe('private-key', { content: buildPemHeader('RSA ') }, 'dangerous'),
     createProbe('drop-table', { command: 'DROP TABLE users' }, 'dangerous'),
     createProbe('drop-database', { command: 'DROP DATABASE production' }, 'dangerous'),
     createProbe('no-verify', { command: 'git commit --no-verify -m "skip"' }, 'dangerous'),
