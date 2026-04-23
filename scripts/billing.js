@@ -405,8 +405,21 @@ function resolveCheckoutBrandUrls(appOrigin) {
   const origin = resolvePublicAppOrigin(appOrigin);
   return {
     icon: joinPublicUrl(origin, '/assets/brand/thumbgate-icon-512.png'),
+    iconPro: joinPublicUrl(origin, '/assets/brand/thumbgate-icon-pro-512.png'),
+    iconTeam: joinPublicUrl(origin, '/assets/brand/thumbgate-icon-team-512.png'),
     logo: joinPublicUrl(origin, '/assets/brand/thumbgate-logo-1200x360.png'),
   };
+}
+
+// Resolve the per-tier product image that ships to Stripe `product_data.images`.
+// Keeping three distinct URLs means the Stripe dashboard and checkout surface
+// never show twins for Free/Pro/Team; see tests/billing-tier-icons.test.js.
+function resolveTierIconUrl(planId, appOrigin) {
+  const brandUrls = resolveCheckoutBrandUrls(appOrigin);
+  const normalized = typeof planId === 'string' ? planId.toLowerCase() : '';
+  if (normalized === 'team') return brandUrls.iconTeam;
+  if (normalized === 'pro') return brandUrls.iconPro;
+  return brandUrls.icon;
 }
 
 function buildCheckoutBrandingSettings(appOrigin) {
@@ -424,12 +437,11 @@ function buildCheckoutBrandingSettings(appOrigin) {
   };
 }
 
-function buildCheckoutProductData({ name, description, appOrigin }) {
-  const brandUrls = resolveCheckoutBrandUrls(appOrigin);
+function buildCheckoutProductData({ name, description, appOrigin, planId }) {
   return {
     name,
     description,
-    images: [brandUrls.icon],
+    images: [resolveTierIconUrl(planId, appOrigin)],
   };
 }
 
@@ -451,6 +463,7 @@ function buildSubscriptionPriceData(checkoutSelection, appOrigin) {
         ? 'Shared Pre-Action Gates, team governance, and workflow hardening for AI coding agents.'
         : 'Local dashboard, DPO export, and Pre-Action Gates for AI coding agents.',
       appOrigin,
+      planId: isTeam ? 'team' : 'pro',
     }),
   };
 }

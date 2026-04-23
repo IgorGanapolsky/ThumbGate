@@ -273,7 +273,7 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(withoutEmail.metadata.priceId, billing.CONFIG.STRIPE_PRICE_ID_PRO_MONTHLY);
     assert.equal(withoutEmail.line_items[0].price_data.unit_amount, 1900);
     assert.equal(withoutEmail.line_items[0].price_data.recurring.interval, 'month');
-    assert.match(withoutEmail.line_items[0].price_data.product_data.images[0], /\/assets\/brand\/thumbgate-icon-512\.png$/);
+    assert.match(withoutEmail.line_items[0].price_data.product_data.images[0], /\/assets\/brand\/thumbgate-icon-pro-512\.png$/);
     assert.match(withoutEmail.branding_settings.logo.url, /\/assets\/brand\/thumbgate-logo-1200x360\.png$/);
     assert.equal(Object.prototype.hasOwnProperty.call(withoutEmail.branding_settings, 'icon'), false);
     assert.equal(withoutEmail.line_items[0].quantity, 1);
@@ -315,6 +315,14 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(team.payment_method_collection, 'if_required');
     assert.equal(team.metadata.planId, 'team');
     assert.equal(team.metadata.seatCount, '3');
+
+    // Regression guard: each tier must ship its own product image so the
+    // Stripe product catalog, checkout, and dashboard never render twins.
+    const proIcon = annual.line_items[0].price_data.product_data.images[0];
+    const teamIcon = team.line_items[0].price_data.product_data.images[0];
+    assert.match(proIcon, /\/assets\/brand\/thumbgate-icon-pro-512\.png$/);
+    assert.match(teamIcon, /\/assets\/brand\/thumbgate-icon-team-512\.png$/);
+    assert.notEqual(proIcon, teamIcon);
   });
 
   test('checkout session status preserves trace id for cross-service lookup', async () => {
@@ -591,7 +599,7 @@ describe('billing.js — funnel ledger', () => {
       assert.equal(attempts.length, 2);
       assert.ok(attempts[0].branding_settings);
       assert.equal(Object.prototype.hasOwnProperty.call(attempts[1], 'branding_settings'), false);
-      assert.match(attempts[1].line_items[0].price_data.product_data.images[0], /thumbgate-icon-512\.png$/);
+      assert.match(attempts[1].line_items[0].price_data.product_data.images[0], /thumbgate-icon-pro-512\.png$/);
     } finally {
       restoreStripe();
     }

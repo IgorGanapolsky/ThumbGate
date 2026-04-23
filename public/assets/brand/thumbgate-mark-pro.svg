@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">ThumbGate Pro mark</title>
+  <desc id="desc">ThumbGate TG gate monogram with a gold Pro ribbon badge.</desc>
+  <defs>
+    <linearGradient id="tg-frame-pro" x1="96" y1="96" x2="416" y2="416" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8cf5d1"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+    <linearGradient id="pro-ribbon" x1="312" y1="48" x2="472" y2="144" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fbbf24"/>
+      <stop offset="1" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#061015"/>
+  <rect x="78" y="78" width="356" height="356" rx="84" fill="#0b1820" stroke="url(#tg-frame-pro)" stroke-width="18"/>
+  <path d="M146 354V192c0-36 29-65 65-65h90c36 0 65 29 65 65v162" fill="none" stroke="#8cf5d1" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="256" y="310" text-anchor="middle" fill="#e7fbff" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Arial, sans-serif" font-size="132" font-weight="900" letter-spacing="-8">TG</text>
+  <rect x="140" y="344" width="232" height="28" rx="14" fill="#22d3ee"/>
+  <g transform="translate(296 40)">
+    <path d="M0 0 H176 V84 L156 66 L136 84 L116 66 L96 84 L76 66 L56 84 L36 66 L16 84 L0 66 Z" fill="url(#pro-ribbon)"/>
+    <text x="88" y="54" text-anchor="middle" fill="#1a1305" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Arial, sans-serif" font-size="44" font-weight="900" letter-spacing="4">PRO</text>
+  </g>
+</svg>

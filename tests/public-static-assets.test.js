@@ -42,13 +42,15 @@ test('GET /thumbgate-logo.png serves the checkout-ready brand logo without an AP
 });
 
 test('GET /thumbgate-icon.png and brand assets serve public Stripe images', async () => {
-  const [iconRes, checkoutIconRes, checkoutLogoRes] = await Promise.all([
+  const [iconRes, checkoutIconRes, proIconRes, teamIconRes, checkoutLogoRes] = await Promise.all([
     fetch(`${origin}/thumbgate-icon.png`),
     fetch(`${origin}/assets/brand/thumbgate-icon-512.png`),
+    fetch(`${origin}/assets/brand/thumbgate-icon-pro-512.png`),
+    fetch(`${origin}/assets/brand/thumbgate-icon-team-512.png`),
     fetch(`${origin}/assets/brand/thumbgate-logo-1200x360.png`),
   ]);
 
-  for (const res of [iconRes, checkoutIconRes, checkoutLogoRes]) {
+  for (const res of [iconRes, checkoutIconRes, proIconRes, teamIconRes, checkoutLogoRes]) {
     assert.equal(res.status, 200);
     assert.equal(res.headers.get('content-type'), 'image/png');
     assert.ok(Number(res.headers.get('content-length')) > 0);
