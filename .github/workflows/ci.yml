@@ -69,6 +69,13 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Run gate-eval regression suite
+        # Exits non-zero if any case in config/evals/*.json fails against
+        # config/specs/*.json. Any constraint regex change that flips a
+        # previously-blocking case to pass (or vice versa) blocks merge
+        # until the eval case is consciously updated in the same PR.
+        run: npm run gate-eval:ci
+
       - name: Run coverage
         run: npm run test:coverage
 
