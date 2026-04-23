@@ -54,11 +54,11 @@ test('buildDependabotChangeset creates a valid thumbgate patch changeset', () =>
 
 test('buildDependabotChangeset accepts explicit package and release options', () => {
   const changeset = buildDependabotChangeset('docs: refresh onboarding text', {
-    packageName: 'thumbgate-pro',
+    packageName: 'thumbgate-core',
     releaseType: 'minor',
   });
 
-  assert.match(changeset, /^---\n'thumbgate-pro': minor\n---/);
+  assert.match(changeset, /^---\n'thumbgate-core': minor\n---/);
   assert.match(changeset, /Keep ThumbGate release automation current/i);
 });
 
@@ -114,7 +114,7 @@ test('runCli derives the default output path and validates missing title input',
       '--title',
       'chore(deps-dev): bump @changesets/cli from 2.30.0 to 2.31.0',
       '--package-name',
-      'thumbgate-pro',
+      'thumbgate-core',
       '--release-type',
       'minor',
     ]);
@@ -125,7 +125,7 @@ test('runCli derives the default output path and validates missing title input',
   const expectedPath = path.join('.changeset', 'dependabot-changesets-cli.md');
   assert.equal(writtenPath, expectedPath);
   const content = fs.readFileSync(path.join(tempDir, expectedPath), 'utf8');
-  assert.match(content, /^---\n'thumbgate-pro': minor\n---/);
+  assert.match(content, /^---\n'thumbgate-core': minor\n---/);
   assert.throws(() => runCli([]), /--title is required/);
 });
 

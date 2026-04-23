@@ -194,6 +194,18 @@ test('CI workflow stays test-only and leaves Railway deploys to the dedicated wo
   assert.doesNotMatch(workflow, /https:\/\/thumbgate-710216278770\.us-central1\.run\.app\/health/);
 });
 
+test('CI workflow writes and uploads a prompt evaluation artifact', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
+
+  assert.match(workflow, /name:\s*Write prompt evaluation report/);
+  assert.match(workflow, /if:\s*always\(\)/);
+  assert.match(workflow, /node scripts\/prompt-eval\.js --min-score=0 --synthetic --synthetic-variants=1 --suite-output proof\/prompt-eval-suite\.generated\.json --output proof\/prompt-eval-report\.json --json > \/dev\/null/);
+  assert.match(workflow, /GITHUB_STEP_SUMMARY/);
+  assert.match(workflow, /proof\/prompt-eval-report\.json/);
+  assert.match(workflow, /proof\/prompt-eval-suite\.generated\.json/);
+  assert.match(workflow, /Synthetic cases: /);
+});
+
 test('runtime Docker image installs git for operational integrity checks', () => {
   const dockerfile = fs.readFileSync(path.join(PROJECT_ROOT, 'Dockerfile'), 'utf8');
 
@@ -502,7 +514,7 @@ test('SonarCloud workflow refreshes main and stamps scans with the package versi
   assert.match(workflow, /types:\s*\[checks_requested\]/);
   assert.match(workflow, /group:\s*sonarcloud-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.ref\s*\}\}/);
   assert.match(workflow, /cancel-in-progress:\s*\$\{\{\s*github\.ref != 'refs\/heads\/main'\s*\}\}/);
-  assert.match(workflow, /name:\s*SonarCloud Code Analysis/);
+  assert.match(workflow, /name:\s*SonarCloud Code Analysis\s*\n\s*runs-on:/);
   assert.match(workflow, /fetch-depth:\s*0/);
   assert.match(workflow, /name:\s*Skip SonarCloud scan for Dependabot PRs/);
   assert.match(workflow, /npm ci --onnxruntime-node-install-cuda=skip/);

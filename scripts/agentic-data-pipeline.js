@@ -17,7 +17,27 @@ const {
   serializeAnalyticsWindow,
 } = require('./analytics-window');
 const { appendWorkflowRun } = require('./workflow-runs');
-const { buildPredictiveInsights } = require('./predictive-insights');
+const {
+  createUnavailableReport,
+  loadOptionalModule,
+} = require('./private-core-boundary');
+const { buildPredictiveInsights } = loadOptionalModule('./predictive-insights', () => ({
+  buildPredictiveInsights: () => ({
+    opportunitySummary: [],
+    anomalySummary: { count: 0, severity: 'none' },
+    topCreators: [],
+    topSources: [],
+    upgradePropensity: {
+      pro: { band: 'unavailable', score: 0 },
+      team: { band: 'unavailable', score: 0 },
+    },
+    revenueForecast: {
+      predictedBookedRevenueCents: 0,
+      incrementalOpportunityCents: 0,
+    },
+    ...createUnavailableReport('Predictive insights'),
+  }),
+}));
 const { ensureDir } = require('./fs-utils');
 
 const PIPELINE_DIRNAME = 'agentic-data-pipeline';
