@@ -92,7 +92,10 @@ test('THUMBGATE_USE_DIRECT_PUBLISHERS with any value other than "1" does not tri
   });
 });
 
-test('DISPATCHERS.linkedin and DISPATCHERS.threads route through Zernio publisher when ZERNIO_API_KEY is set', async () => {
+test('DISPATCHERS.linkedin and DISPATCHERS.threads route through zernio.publishToAllPlatforms', async () => {
+  // Dispatchers now unconditionally route through publishToAllPlatforms (single
+  // code path, account discovery handled by Zernio). The prior stub targeted a
+  // broken publishPost({text, platform}) contract that never existed.
   const zernioPath = require.resolve('../scripts/social-analytics/publishers/zernio');
   const peModulePath = require.resolve('../scripts/post-everywhere');
   const calls = [];
@@ -104,10 +107,12 @@ test('DISPATCHERS.linkedin and DISPATCHERS.threads route through Zernio publishe
     filename: zernioPath,
     loaded: true,
     exports: {
-      publishPost: async (args) => {
-        calls.push(args);
-        return { via: 'zernio-stub', args };
+      publishToAllPlatforms: async (content, options) => {
+        calls.push({ content, options });
+        return { via: 'zernio-stub', content, options };
       },
+      isDuplicate: () => false,
+      recordPost: () => {},
     },
   };
   delete require.cache[peModulePath];
@@ -120,8 +125,10 @@ test('DISPATCHERS.linkedin and DISPATCHERS.threads route through Zernio publishe
     assert.equal(linkedinResult.via, 'zernio-stub');
     assert.equal(threadsResult.via, 'zernio-stub');
     assert.equal(calls.length, 2);
-    assert.equal(calls[0].platform, 'linkedin');
-    assert.equal(calls[1].platform, 'threads');
+    assert.deepEqual(calls[0].options, { platforms: ['linkedin'] });
+    assert.deepEqual(calls[1].options, { platforms: ['threads'] });
+    assert.equal(calls[0].content, 'hello-linkedin');
+    assert.ok(calls[1].content.includes('hello-threads'));
   } finally {
     if (prevKey === undefined) delete process.env.ZERNIO_API_KEY;
     else process.env.ZERNIO_API_KEY = prevKey;
