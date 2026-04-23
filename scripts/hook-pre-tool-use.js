@@ -295,8 +295,87 @@ function formatLessonsAsReminder(lessons, extras) {
       'You MUST satisfy this gate (show gh pr view output with 0 unresolved threads) before merging.'
     );
   }
+  const riskContext = summarizeActionRiskContext(extras?.toolName, extras?.toolInput, lessons);
+  if (riskContext.surfaceSignals.length > 0) {
+    lines.push('', `ACTION PROFILE: ${riskContext.surfaceSignals.join(' · ')}`);
+  }
+  if (riskContext.hotSignals.length > 0) {
+    lines.push(`HOT RISK SIGNALS: ${riskContext.hotSignals.join(' · ')}`);
+  }
+  const saferMove = buildSaferNextMove(lessons);
+  if (saferMove) {
+    lines.push(`SAFER NEXT MOVE: ${saferMove}`);
+  }
   lines.push('</system-reminder>');
   return lines.join('\n');
+}
+
+function summarizeActionRiskContext(toolName, toolInput, lessons) {
+  const actionContext = extractActionContext(toolName, toolInput).toLowerCase();
+  const surfaceSignals = [];
+  if (toolName === 'Bash') {
+    if (/\bgit\s+push\b/.test(actionContext)) surfaceSignals.push('remote git write');
+    if (/\bgh\s+pr\s+(?:create|merge|close|edit|ready)\b/.test(actionContext)) surfaceSignals.push('pull-request mutation');
+    if (/\b(?:npm|pnpm|yarn)\s+publish\b/.test(actionContext)) surfaceSignals.push('package publish');
+    if (/\brm\s+-rf\b/.test(actionContext)) surfaceSignals.push('destructive shell');
+  }
+  if ((toolName === 'Edit' || toolName === 'Write') && /(^|\/)(agents\.md|claude(\.local)?\.md|gemini\.md|readme\.md|skill\.md)$|^config\/gates\//i.test(String(toolInput && toolInput.file_path || ''))) {
+    surfaceSignals.push('protected policy file');
+  }
+
+  let summary = null;
+  try {
+    const pkgRoot = path.resolve(__dirname, '..');
+    const { getRiskSummary } = require(path.join(pkgRoot, 'scripts', 'risk-scorer'));
+    summary = getRiskSummary();
+  } catch (err) {
+    failOpen(err);
+  }
+
+  const lessonTags = new Set();
+  for (const lesson of lessons || []) {
+    for (const tag of tagsForLesson(lesson)) lessonTags.add(String(tag).toLowerCase());
+  }
+
+  const hotSignals = [];
+  if (summary) {
+    const highRiskTags = Array.isArray(summary.highRiskTags) ? summary.highRiskTags : [];
+    for (const bucket of highRiskTags) {
+      const key = String(bucket && bucket.key || '').toLowerCase();
+      if (!key) continue;
+      if (actionContext.includes(key) || lessonTags.has(key)) {
+        hotSignals.push(`${key} (${Math.round(Number(bucket.riskRate || 0) * 100)}% risk)`);
+      }
+      if (hotSignals.length >= 2) break;
+    }
+    const highRiskDomains = Array.isArray(summary.highRiskDomains) ? summary.highRiskDomains : [];
+    for (const bucket of highRiskDomains) {
+      const key = String(bucket && bucket.key || '').toLowerCase();
+      if (!key) continue;
+      if ((key === 'git-workflow' && /\bgit\b|\bgh\s+pr\b/.test(actionContext))
+        || (key === 'security' && /\bsecret|token|credential|key\b/.test(actionContext))
+        || (key === 'testing' && /\btest|coverage|verify\b/.test(actionContext))) {
+        hotSignals.push(`${key} domain (${Math.round(Number(bucket.riskRate || 0) * 100)}% risk)`);
+      }
+      if (hotSignals.length >= 3) break;
+    }
+  }
+
+  return {
+    surfaceSignals: [...new Set(surfaceSignals)].slice(0, 3),
+    hotSignals: [...new Set(hotSignals)].slice(0, 3),
+  };
+}
+
+function buildSaferNextMove(lessons) {
+  for (const lesson of lessons || []) {
+    const text = lesson && (lesson.whatToChange || lesson.howToAvoid || lesson.content || lesson.title);
+    if (!text) continue;
+    const safeText = String(text).trim().replace(/\s+/g, ' ');
+    if (!safeText) continue;
+    return safeText.slice(0, MAX_LESSON_TEXT_LEN);
+  }
+  return null;
 }
 
 function resolveEffectiveInput(rawToolInput) {
@@ -439,7 +518,11 @@ function main() {
   const autogate = maybeRegisterPrCommitGate(toolName, effectiveInput);
 
   if (lessons.length > 0 || autogate) {
-    return allowWithContext(formatLessonsAsReminder(lessons, { autogate }));
+    return allowWithContext(formatLessonsAsReminder(lessons, {
+      autogate,
+      toolName,
+      toolInput: effectiveInput,
+    }));
   }
 
   return allow();
@@ -486,6 +569,8 @@ module.exports = {
   currentGitBranch,
   maybeRegisterPrCommitGate,
   formatLessonsAsReminder,
+  summarizeActionRiskContext,
+  buildSaferNextMove,
   resolveEffectiveInput,
   maybeBlockOnRisk,
   maybeBlockViaBayesOptimal,

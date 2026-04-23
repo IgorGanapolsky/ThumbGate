@@ -895,6 +895,79 @@ test('generateDashboard computes a harness score and top next fix recommendation
   assert.ok(data.harness.topRecommendations.some((recommendation) => recommendation.type === 'prevention_rule'));
 });
 
+test('generateDashboard surfaces actionable remediations and agent surface inventory', () => {
+  writeFeedbackLog([
+    {
+      id: 'fb_inv_1',
+      signal: 'negative',
+      skill: 'github',
+      context: 'Skipped verification before merge',
+      tags: ['git-workflow', 'verification'],
+      timestamp: new Date().toISOString(),
+    },
+    {
+      id: 'fb_inv_2',
+      signal: 'negative',
+      skill: 'github',
+      context: 'Skipped verification before merge again',
+      tags: ['git-workflow', 'verification'],
+      timestamp: new Date().toISOString(),
+    },
+    {
+      id: 'fb_inv_3',
+      signal: 'negative',
+      skill: 'github',
+      context: 'Skipped verification before merge a third time',
+      tags: ['git-workflow', 'verification'],
+      timestamp: new Date().toISOString(),
+    },
+  ]);
+  writeAuditLog([
+    {
+      id: 'audit_inv_1',
+      timestamp: new Date().toISOString(),
+      toolName: 'Bash',
+      decision: 'deny',
+      gateId: 'evidence-before-done',
+      source: 'gates-engine',
+    },
+    {
+      id: 'audit_inv_2',
+      timestamp: new Date().toISOString(),
+      toolName: 'Edit',
+      decision: 'warn',
+      gateId: 'protected-policy-file',
+      source: 'secret-guard',
+    },
+  ]);
+  writeDecisionLog([
+    {
+      recordType: 'evaluation',
+      actionId: 'decision_inv_1',
+      timestamp: new Date().toISOString(),
+      toolName: 'Bash',
+      recommendation: { executionMode: 'checkpoint_required' },
+    },
+    {
+      recordType: 'evaluation',
+      actionId: 'decision_inv_2',
+      timestamp: new Date().toISOString(),
+      toolName: 'Edit',
+      recommendation: { executionMode: 'auto_execute' },
+    },
+  ]);
+
+  const data = generateDashboard(tmpDir);
+
+  assert.ok(Array.isArray(data.actionableRemediations));
+  assert.ok(data.actionableRemediations.some((item) => item.type === 'skill-improve'));
+  assert.equal(data.agentSurfaceInventory.profile, data.readiness.permissions.profile);
+  assert.ok(Array.isArray(data.agentSurfaceInventory.observedTools));
+  assert.ok(data.agentSurfaceInventory.observedTools.some((tool) => tool.toolName === 'Bash'));
+  assert.ok(Array.isArray(data.agentSurfaceInventory.policySources));
+  assert.ok(data.agentSurfaceInventory.policySources.some((source) => source.source === 'gates-engine'));
+});
+
 test('generateDashboard separates repeated CTA clicks from unique checkout starters and flags orphan revenue', () => {
   writeTelemetryLog([
     {

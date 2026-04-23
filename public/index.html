@@ -24,7 +24,7 @@ __GOOGLE_SITE_VERIFICATION_META__
 <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
 <meta property="og:image" content="/og.png">
 <title>ThumbGate — Stop paying for the same AI mistake twice</title>
-<meta name="description" content="Stop paying for the same AI mistake twice. ThumbGate is the enforcement layer for AI agent orchestration: 👍 thumbs up and 👎 thumbs down become history-aware lessons, shared lessons and org visibility, plus Pre-Action Checks that block repeat mistakes before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode.">
+<meta name="description" content="Stop paying for the same AI mistake twice. ThumbGate is machine-speed pre-action defense for AI coding agents: 👍 thumbs up and 👎 thumbs down become history-aware lessons, shared lessons and org visibility, actionable remediations, agent surface inventory, and Pre-Action Checks that block repeat mistakes before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode.">
 <meta property="og:title" content="ThumbGate — Stop paying for the same AI mistake twice">
 <meta property="og:description" content="Frontier LLMs are expensive, opaque, and unreliable in production. ThumbGate gates risky agent actions before they run: workflow shape, inspection evidence, token budget, and repeated-failure memory in one pre-action check.">
 <meta property="og:type" content="website">
@@ -53,7 +53,7 @@ __GA_BOOTSTRAP__
   "@type": "SoftwareApplication",
   "name": "ThumbGate",
   "alternateName": "thumbgate",
-  "description": "ThumbGate stops you from paying for the same AI mistake twice. Frontier LLMs are expensive, opaque, and unreliable in production — every repeated hallucination, retry loop, or known-bad tool call burns more tokens. ThumbGate's Pre-Action Checks inspect workflow shape, environment evidence, budget, and repeated-failure memory before the action runs. Works with Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and any MCP-compatible agent.",
+  "description": "ThumbGate stops you from paying for the same AI mistake twice. It is machine-speed pre-action defense for coding agents: thumbs-up/down feedback becomes history-aware lessons, shared lessons and org visibility, actionable remediations, agent surface inventory, and Pre-Action Checks that inspect workflow shape, environment evidence, budget, and repeated-failure memory before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and any MCP-compatible agent.",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Cross-platform, Node.js >=18.18.0",
   "license": "https://opensource.org/licenses/MIT",
@@ -70,6 +70,8 @@ __GA_BOOTSTRAP__
     "Prevent expensive AI mistakes — catch bad commands, destructive database actions, unsafe publishes, and risky API calls before execution",
     "Make AI stop repeating mistakes — thumbs-down feedback becomes history-aware lessons and Pre-Action Checks",
     "Turn AI into a reliable operator — checkpoint risky actions, enforce safe patterns, and keep proof of what changed",
+    "Agent surface inventory — see which tools, MCP surfaces, and policy sources are actually active before rollout",
+    "Actionable remediations — rank the next highest-ROI fixes from real feedback and risk pressure",
     "ThumbGate GPT for ChatGPT — check proposed agent actions, capture thumbs-up/down lessons, and route users into local enforcement",
     "Workflow Sentinel — score blast radius before PR, merge, release, and publish actions fire",
     "Workflow architecture checks — distinguish predefined workflows, parallel fan-out, and open-ended agents before execution",
@@ -572,9 +574,9 @@ __GA_BOOTSTRAP__
 <section class="hero">
   <div class="container">
     <div class="hero-thumbs">👍👎</div>
-    <div class="hero-badge">● Your AI coding bill has a leak</div>
+    <div class="hero-badge">● Machine-speed pre-action defense for coding agents</div>
     <h1>Stop paying $ for the same AI mistake.</h1>
-    <p style="font-size:18px;color:var(--text-muted);max-width:720px;margin:0 auto 20px;line-height:1.6;">Every retry loop, every hallucinated import, every "let me try a different approach" — those are billable tokens on every LLM vendor's bill. Thumbs-down once; ThumbGate blocks that exact mistake on every future call. Across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — any MCP-compatible agent, forever, including fast-moving vibe coding workflows.</p>
+    <p style="font-size:18px;color:var(--text-muted);max-width:720px;margin:0 auto 20px;line-height:1.6;">Every retry loop, every hallucinated import, every "let me try a different approach" — those are billable tokens on every LLM vendor's bill. ThumbGate is machine-speed pre-action defense: thumbs-down once, block that exact mistake on every future call, surface the next highest-ROI remediation, and show which agent surfaces are actually active before rollout. Across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — any MCP-compatible agent, forever, including fast-moving vibe coding workflows.</p>
     <p style="font-size:15px;color:var(--text-dim);max-width:760px;margin:0 auto 24px;line-height:1.6;">As desktop agents move into parallel sessions, terminals, and production workflows, ThumbGate checks the thing benchmarks miss: is this next action a known workflow, an open-ended agent, a costly fan-out, or a blind tool call with no way to verify it worked?</p>
 
     <!-- HERO PRICING CARD — visible in first viewport so $19/mo and $149/yr never get buried -->
@@ -611,12 +613,12 @@ __GA_BOOTSTRAP__
         <span style="display:inline-flex;align-items:center;gap:6px;color:#4ade80;"><span style="width:6px;height:6px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px #4ade80;animation:pulse 1.6s ease-in-out infinite;"></span>enforcing</span>
       </div>
       <div style="font-size:13px;color:var(--text-muted);margin-bottom:4px;">💸 Tokens saved — since install (Sonnet-blended, conservative)</div>
-      <div id="hero-savings-counter" data-target="1247.82" style="font-size:44px;font-weight:700;color:#4ade80;letter-spacing:-0.02em;line-height:1;margin-bottom:18px;">$0.00</div>
+      <div id="hero-savings-counter" data-target="0" style="font-size:44px;font-weight:700;color:#4ade80;letter-spacing:-0.02em;line-height:1;margin-bottom:18px;">$0.00</div>
       <div style="font-size:12px;line-height:1.8;border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;">
         <div style="color:#4ade80;">✅ check:no-force-push — blocked 12×</div>
         <div style="color:#4ade80;">✅ check:no-hallucinated-import — blocked 8×</div>
         <div style="color:#f87171;">❌ check:no-drop-prod — FIRED · saved ~$3.40</div>
-        <div style="color:var(--text-muted);font-size:11px;margin-top:8px;">Sample shown. Your own dashboard tracks live feedback log + blocked calls from day one. <span style="color:var(--cyan);">Open dashboard →</span></div>
+        <div style="color:var(--text-muted);font-size:11px;margin-top:8px;">Sample shown. Your own dashboard tracks live feedback log, actionable remediations, and agent surface inventory from day one. <span style="color:var(--cyan);">Open dashboard →</span></div>
       </div>
     </a>
     <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}</style>
@@ -632,7 +634,8 @@ __GA_BOOTSTRAP__
     </script>
     <div class="hero-signals">
       <a class="signal-pill signal-down" href="#how-it-works" title="See how check interception works">Block repeat hallucinations before the model sees them</a>
-      <a class="signal-pill signal-up" href="#how-it-works" title="See the one-thumbs-down enforcement loop">Thumbs-down once, blocked forever, across every agent</a>
+      <a class="signal-pill signal-up" href="/dashboard" title="See the remediation and inventory dashboard">Thumbs-down once, blocked forever</a>
+      <a class="signal-pill" href="/dashboard" title="See the remediation and inventory dashboard">Actionable remediations + agent surface inventory</a>
       <a class="signal-pill" href="#install" title="Install the CLI">CLI-first workflow governance with a live tokens-saved counter</a>
     </div>
     <p class="hero-persona" style="display:none">For consultancies, platform teams, and AI product teams with one workflow owner, one repeated failure, and one buyer who needs proof before a wider rollout.</p>
