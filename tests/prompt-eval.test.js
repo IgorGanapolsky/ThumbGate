@@ -147,6 +147,15 @@ test('feedbackEntryToEvalCase turns vague thumbs-down into a rejection eval', ()
   });
 });
 
+test('feedbackEntryToEvalCase builds regex-free stable ids from noisy context', () => {
+  const evalCase = feedbackEntryToEvalCase({
+    signal: 'down',
+    context: '--- Ship!!! broken $$$ checkout /// path ??? ',
+  }, 2);
+
+  assert.equal(evalCase.id, 'feedback-negative-negative-ship-broken-checkout-path-3');
+});
+
 test('buildEvalSuiteFromFeedback creates bounded reusable eval suites', () => {
   const suite = buildEvalSuiteFromFeedback([
     { id: 'fb_1', signal: 'down', context: 'Skipped tests before merge', whatToChange: 'Run tests first' },

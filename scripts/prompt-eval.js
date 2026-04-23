@@ -247,10 +247,24 @@ function readJsonl(filePath) {
 }
 
 function stableCaseId(value, index = 0) {
-  const slug = String(value || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .slice(0, 64);
+  const source = String(value || '').toLowerCase();
+  let slug = '';
+  let previousWasDash = false;
+  for (const ch of source) {
+    const isDigit = ch >= '0' && ch <= '9';
+    const isLower = ch >= 'a' && ch <= 'z';
+    if (isDigit || isLower) {
+      slug += ch;
+      previousWasDash = false;
+      if (slug.length >= 64) break;
+      continue;
+    }
+    if (!previousWasDash && slug.length > 0) {
+      slug += '-';
+      previousWasDash = true;
+      if (slug.length >= 64) break;
+    }
+  }
   let start = 0;
   let end = slug.length;
   while (start < end && slug[start] === '-') start += 1;
