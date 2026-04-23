@@ -57,7 +57,7 @@ export async function handleCheckout(
     success_url: `${origin}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/billing/cancel`,
     metadata: {
-      product: 'thumbgate-pro',
+      product: 'thumbgate',
     },
   });
 

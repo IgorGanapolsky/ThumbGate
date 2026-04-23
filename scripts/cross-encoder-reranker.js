@@ -82,7 +82,7 @@ function heuristicCrossEncode(query, document) {
  * More accurate but requires API key and costs tokens.
  */
 async function llmCrossEncode(query, documents) {
-  const { isAvailable, callClaude, MODELS } = require('./llm-client');
+  const { isAvailable, callClaudeJson, MODELS } = require('./llm-client');
   if (!isAvailable()) return null;
 
   const docList = documents
@@ -100,13 +100,13 @@ Return ONLY a JSON array of scores, one per document. Example: [0.9, 0.2, 0.7, 0
 No other text.`;
 
   try {
-    const raw = await callClaude({
+    const scores = await callClaudeJson({
       systemPrompt: 'You are a relevance scoring engine. Return only JSON arrays of numbers.',
       userPrompt: prompt,
       model: MODELS.FAST,
       maxTokens: 256,
+      cache: true,
     });
-    const scores = JSON.parse(raw);
     if (Array.isArray(scores) && scores.length === documents.length) {
       return scores.map((s) => Math.max(0, Math.min(1, Number(s) || 0)));
     }
