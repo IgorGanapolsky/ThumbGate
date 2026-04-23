@@ -5,6 +5,10 @@ const fs = require('fs');
 const path = require('path');
 const { EventEmitter } = require('node:events');
 const pkg = require('../../package.json');
+const {
+  createUnavailableAsyncOperation,
+  loadOptionalModule,
+} = require('../../scripts/private-core-boundary');
 
 const POSTHOG_API_PATHS = new Set(['/capture', '/batch', '/decide', '/e', '/engage']);
 const POSTHOG_INGEST_HOST = 'us.i.posthog.com';
@@ -51,7 +55,9 @@ const {
 } = require('../../scripts/feedback-paths');
 const {
   readRecentConversationWindow,
-} = require('../../scripts/feedback-history-distiller');
+} = loadOptionalModule(path.join(__dirname, '../../scripts/feedback-history-distiller'), () => ({
+  readRecentConversationWindow: () => [],
+}));
 const {
   readJSONL,
   exportDpoFromMemories,

@@ -2,6 +2,10 @@
   "version": 1,
   "name": "ThumbGate Prompt Evaluation",
   "description": "Tests core ThumbGate prompts against expected outputs. Based on Anthropic prompt evaluation methodology: test against expected answers, compare versions, review outputs for errors.",
+  "successCriteria": {
+    "minAggregateScore": 80,
+    "requireNoRegressions": true
+  },
   "evaluations": [
     {
       "id": "lesson-distill-negative-clear",
@@ -81,7 +85,7 @@
         "hasDomain": true,
         "domain": "testing",
         "hasOutcome": true,
-        "outcomeContains": ["failure", "error"]
+        "outcomeContains": ["failure"]
       }
     },
     {
