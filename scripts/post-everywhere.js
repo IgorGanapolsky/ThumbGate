@@ -51,12 +51,13 @@ function getPublisher(platform) {
   return loader();
 }
 
-// Zernio covers a subset of channels with a single OAuth bundle. When
-// ZERNIO_API_KEY is set we prefer it for those channels, collapsing per-platform
-// token rotations to one. Channels whose content shape Zernio can't match
-// (Reddit subreddit+title, Instagram media, YouTube video, Dev.to articles) stay
-// on direct-API dispatchers regardless. THUMBGATE_USE_DIRECT_PUBLISHERS=1 forces
-// the direct-API path even when the Zernio key is present (emergency fallback).
+// Zernio covers linkedin/threads/bluesky with a single OAuth bundle. These three
+// dispatchers route unconditionally through publishToAllPlatforms — direct-API
+// paths were removed 2026-04-22 after they were discovered to be calling
+// non-existent / mismatched signatures (linkedin.publishPost, threads.publishPost,
+// zernio.publishPost({text, platform})) during the ChatGPT CPC ads campaign.
+// Channels whose content shape Zernio can't match (Reddit subreddit+title,
+// Instagram media, YouTube video, Dev.to articles) stay on direct-API dispatchers.
 const ZERNIO_ELIGIBLE_PLATFORMS = new Set(['linkedin', 'threads', 'bluesky']);
 
 function shouldUseZernio(platform) {
@@ -185,12 +186,8 @@ async function postToLinkedIn(parsed, dryRun) {
     return { dryRun: true };
   }
 
-  if (shouldUseZernio('linkedin')) {
-    const zernio = require('./social-analytics/publishers/zernio');
-    return zernio.publishPost({ text, platform: 'linkedin' });
-  }
-  const linkedin = getPublisher('linkedin');
-  return linkedin.publishPost({ text });
+  const zernio = require('./social-analytics/publishers/zernio');
+  return zernio.publishToAllPlatforms(text, { platforms: ['linkedin'] });
 }
 
 async function postToDevTo(parsed, dryRun) {
@@ -277,12 +274,8 @@ async function postToThreads(parsed, dryRun) {
     return { dryRun: true };
   }
 
-  if (shouldUseZernio('threads')) {
-    const zernio = require('./social-analytics/publishers/zernio');
-    return zernio.publishPost({ text, platform: 'threads' });
-  }
-  const threads = getPublisher('threads');
-  return threads.publishPost({ text });
+  const zernio = require('./social-analytics/publishers/zernio');
+  return zernio.publishToAllPlatforms(text, { platforms: ['threads'] });
 }
 
 async function postToBluesky(parsed, dryRun) {
@@ -294,9 +287,8 @@ async function postToBluesky(parsed, dryRun) {
     return { dryRun: true };
   }
 
-  // Bluesky posts route through Zernio's aggregator.
   const zernio = getPublisher('bluesky');
-  return zernio.publishPost({ text, platform: 'bluesky' });
+  return zernio.publishToAllPlatforms(text, { platforms: ['bluesky'] });
 }
 
 // ---------------------------------------------------------------------------
