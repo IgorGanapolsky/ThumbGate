@@ -18,7 +18,7 @@ sequenceDiagram
     FB->>FB: Validate schema, score quality
     FB->>FB: Store in JSONL + ContextFS
     FB->>Promo: Analyze for promotion
-    Promo->>Config: Auto-promote to gate rule
+    Promo->>Config: Auto-promote to prevention rule
 
     Note over Dev,Config: Session 2 — Gate blocks the repeat
     Dev->>Agent: "Refactor the auth module"

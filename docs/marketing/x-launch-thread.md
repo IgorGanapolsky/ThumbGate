@@ -13,7 +13,7 @@ We built thumbgate as Claude workflow hardening:
 
 - recall
 - prevention rules
-- Pre-Action Gates
+- Pre-Action Checks
 - verification evidence
 
 The front-line offer is a Workflow Hardening Sprint.
@@ -86,7 +86,7 @@ It needs:
 - recall
 - guardrails
 - proof
-- Pre-Action Gates
+- Pre-Action Checks
 
 That is what makes a workflow deployable team-wide.
 ```
@@ -100,7 +100,7 @@ The expensive failures are repeated unsafe actions.
 
 Use the Gateway to:
 - persist operational lessons
-- add pre-action gates
+- add pre-action checks
 - reduce avoidable incidents across long agent sessions
 ```
 

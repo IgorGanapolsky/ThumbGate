@@ -4,7 +4,7 @@ If you are running Multica (or any self-hosted agent orchestrator — OpenDevin,
 
 Prompt rules don't fix this. The agent reads CLAUDE.md, then the context window rolls, then the autopilot fires the next job with fresh context, then the bad pattern runs again.
 
-ThumbGate is the tool-call-boundary enforcement layer these setups are missing. Local SQLite lesson DB on the same VPS as your agent. Pre-action gates block known-bad patterns — git push --force, rm -rf, curl | sh, cloud mutations — before the command executes.
+ThumbGate is the tool-call-boundary enforcement layer these setups are missing. Local SQLite lesson DB on the same VPS as your agent. Pre-action checks block known-bad patterns — git push --force, rm -rf, curl | sh, cloud mutations — before the command executes.
 
 Setup inside Multica is the same one-liner as anywhere else:
 

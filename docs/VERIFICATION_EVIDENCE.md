@@ -6,7 +6,7 @@
 
 | Category | Evidence |
 |----------|---------|
-| **Pre-action gates** | Block known mistakes before tool use — tested with real feedback patterns |
+| **Pre-action checks** | Block known mistakes before tool use — tested with real feedback patterns |
 | **Feedback capture** | Up/down signals with context, tags, rubric scores — schema-validated |
 | **Prevention rules** | Auto-promoted from repeated failures — regression-tested |
 | **Filesystem search** | ContextFS files searchable without embeddings — regression-tested |
@@ -298,7 +298,7 @@ Observed result:
   - deletes `scripts/behavioral-extraction.js`
   - adds scratch-only `scripts/gsd-final-verification.js`
   - changes `bin/memory.sh`, `bin/obsidian-sync.sh`, `primer.md`, and adds `docs/OPERATIONAL_LOOPS.md` without a coherent verification lane
-- A stronger live browser proof was attempted with `npm run social:publish -- --bundle .artifacts/social/pre-action-gates-proof/bundle.json --platforms instagram --no-share --cleanup-drafts`. The repo-side tab-focus bug was fixed first, but the live attempt still failed outside repo control because Google Chrome returned: `Executing JavaScript through AppleScript is turned off. To turn it on, from the menu bar, go to View > Developer > Allow JavaScript from Apple Events.`
+- A stronger live browser proof was attempted with `npm run social:publish -- --bundle .artifacts/social/pre-action-checks-proof/bundle.json --platforms instagram --no-share --cleanup-drafts`. The repo-side tab-focus bug was fixed first, but the live attempt still failed outside repo control because Google Chrome returned: `Executing JavaScript through AppleScript is turned off. To turn it on, from the menu bar, go to View > Developer > Allow JavaScript from Apple Events.`
 - `npm audit --json` exited `0` with `0` vulnerabilities.
 - `git diff --check` exited `0`.
 
@@ -315,7 +315,7 @@ Requirements verified:
 
 Scope:
 
-- Repositioned the public landing page away from generic "memory server" framing and toward "AI workflow control plane" language, while preserving the existing Pre-Action Gates product contract.
+- Repositioned the public landing page away from generic "memory server" framing and toward "AI workflow control plane" language, while preserving the existing Pre-Action Checks product contract.
 - Added a comparison section that clarifies the difference between memory servers, agentic RAG, and the workflow control layer this product actually sells.
 - Surfaced semantic cache efficiency metrics in the dashboard/API by reusing existing ContextFS provenance (`contextfs/provenance/packs.jsonl`) rather than introducing a new ledger or duplicate write path.
 - Updated the commercial truth copy so the Pro package promises concrete efficiency metrics: semantic cache hit rate and reused context tokens.
@@ -1884,7 +1884,7 @@ Artifacts updated:
 Scope:
 
 - Harness Score added to the dashboard so operators can see correction coverage, enforcement coverage, diagnostic coverage, repeat-failure pressure, and top next harness fixes in one place.
-- `search_lessons` upgraded to expose lifecycle state, linked corrective actions, linked prevention rules, linked auto-gates, and next harness recommendations for each lesson.
+- `search_lessons` upgraded to expose lifecycle state, linked corrective actions, linked prevention rules, linked auto-promoted checks, and next harness recommendations for each lesson.
 - MCP/CLI/tool metadata updated so the new harness-improvement surface is discoverable to agents.
 
 Commands run:
@@ -2008,7 +2008,7 @@ Scope:
 
 - Added a first-class lesson search surface so any MCP-compatible free or self-hosted agent can search promoted lessons and inspect the corrective action linked to each result.
 - Exposed the feature through MCP (`search_lessons`), HTTP (`GET /v1/lessons/search`), and CLI (`npx thumbgate lessons` / `search-lessons`).
-- Linked each lesson result to its source feedback, matching prevention rules, and matching auto-promoted gates.
+- Linked each lesson result to its source feedback, matching prevention rules, and matching auto-promoted checks.
 - Updated public docs so the essential profile now advertises lesson search as a free/self-hosted MCP surface.
 
 Commands run:
@@ -2043,7 +2043,7 @@ Behavioral proof points:
 
 - `search_lessons` is available in the `default`, `essential`, `readonly`, `dispatch`, and `locked` MCP profiles.
 - Empty queries list recent lessons; text queries rank lessons by query overlap plus recency.
-- Search responses expose `correctiveActions` derived from lesson content plus linked prevention rules and auto-gates.
+- Search responses expose `correctiveActions` derived from lesson content plus linked prevention rules and auto-promoted checks.
 - `GET /v1/lessons/search` and the ChatGPT adapter OpenAPI both include the new search route.
 - The CLI `lessons` command prints lesson summaries together with linked corrective actions.
 

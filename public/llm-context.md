@@ -29,19 +29,19 @@ ThumbGate is built on Node.js >=18.18.0 and runs locally on each developer's mac
 
 **SQLite + FTS5 Lesson Database**: When an agent makes a mistake, the developer gives a thumbs-down with context. ThumbGate stores this as a lesson in a local SQLite database with full-text search. Lessons are retrieved at the start of every agent session via the `recall` MCP tool, so the agent enters each session already aware of known failure patterns.
 
-**Thompson Sampling for Adaptive Gates**: Gates use Thompson Sampling (a Bayesian multi-armed bandit algorithm) to tune their own sensitivity. Gates that block too aggressively accumulate negative feedback and are dialed back. Gates that catch real failures are reinforced. This prevents gate fatigue without manual tuning.
+**Thompson Sampling for Adaptive Checks**: Checks use Thompson Sampling (a Bayesian multi-armed bandit algorithm) to tune their own sensitivity. Checks that block too aggressively accumulate negative feedback and are dialed back. Checks that catch real failures are reinforced. This prevents check fatigue without manual tuning.
 
 **Shared Team Enforcement**: In team mode, lessons learned on one seat propagate to all seats via a shared lesson database. A pattern that caused a mistake for one engineer is immediately visible to every agent on every seat. The shared database is the single source of truth for team-wide enforcement rules.
 
-**CI Gate Integration**: ThumbGate can run as a CI step. Pull requests that contain agent-generated changes matching known failure signatures are blocked from merging until a human reviews and approves the exception.
+**CI Check Integration**: ThumbGate can run as a CI step. Pull requests that contain agent-generated changes matching known failure signatures are blocked from merging until a human reviews and approves the exception.
 
-**Autoresearch Safety Pack**: ThumbGate gates self-improving coding loops before they promote a claimed improvement. The `autoresearch-brief` ContextFS template retrieves research history, learned rules, holdout expectations, proof requirements, and reward-hacking failures so the agent can search for better code without grading itself on missing evidence.
+**Autoresearch Safety Pack**: ThumbGate checks self-improving coding loops before they promote a claimed improvement. The `autoresearch-brief` ContextFS template retrieves research history, learned rules, holdout expectations, proof requirements, and reward-hacking failures so the agent can search for better code without grading itself on missing evidence.
 
-**Audit Trail**: Every gate decision (blocked, approved, overridden) is logged with a timestamp, the triggering tool call, the matching lesson ID, and the identity of any human who approved an exception. This log is queryable and exportable for compliance reporting.
+**Audit Trail**: Every check decision (blocked, approved, overridden) is logged with a timestamp, the triggering tool call, the matching lesson ID, and the identity of any human who approved an exception. This log is queryable and exportable for compliance reporting.
 
 **Browser Bridge Audit**: `npx thumbgate native-messaging-audit` inspects local browser native messaging manifests, allowed extension origins, missing host binaries, and dormant AI browser bridges so teams can review connector scope before an agent turns a one-off install into a durable local integration.
 
-**Three-Tier Approval Routing (OVIS-inspired)**: ThumbGate gates operate on three distinct tiers, inspired by the OVIS decision framework (Owner, Veto, Influence). Each gate carries an `action` field that determines the routing outcome:
+**Three-Tier Approval Routing (OVIS-inspired)**: ThumbGate checks operate on three distinct tiers, inspired by the OVIS decision framework (Owner, Veto, Influence). Each check carries an `action` field that determines the routing outcome:
 
 - **`block`** — Hard stop. The agent cannot proceed. The tool call is denied immediately. Used for force-pushes, secret commits, destructive SQL, and any irreversible action. The agent receives an error message explaining why the action was blocked.
 - **`approve`** — Pause and escalate. The agent is halted and the caller receives `{ decision: "approve", requiresApproval: true }`. A human must explicitly confirm before the action can proceed. Used for production deploys, schema migrations, and permission changes where human oversight is mandatory.
@@ -55,7 +55,7 @@ Engineering teams of 2 to 200+ developers who are actively using AI coding agent
 
 - Consistent enforcement of coding policies across all agents and all seats
 - A shared memory of agent mistakes so errors are not repeated by different team members
-- Approval gates for high-risk actions (pushing to protected branches, modifying production configs, running database migrations)
+- Approval checks for high-risk actions (pushing to protected branches, modifying production configs, running database migrations)
 - An audit trail for compliance, incident review, or just understanding what the agent did
 - Gradual rollout: start with observation mode, add enforcement rules incrementally
 
@@ -77,26 +77,26 @@ This three-layer architecture means ThumbGate improves agent behavior at every l
 
 ## AI Agent Harness Optimization
 
-ThumbGate improves an AI agent harness by reducing prompt bloat and converting operator feedback into runtime enforcement. The harness is the layer around the model that decides which instructions, tools, context packs, approval rules, and verification gates are available before an agent acts.
+ThumbGate improves an AI agent harness by reducing prompt bloat and converting operator feedback into runtime enforcement. The harness is the layer around the model that decides which instructions, tools, context packs, approval rules, and verification checks are available before an agent acts.
 
 The high-ROI pattern is progressive disclosure:
 
 - Keep global files such as AGENTS.md, CLAUDE.md, and GEMINI.md lean enough for a human to review.
 - Put long workflow guidance into skills, guides, CLI help, or ContextFS packs that agents retrieve only when relevant.
 - Publish lightweight MCP indexes with per-tool schema URLs instead of preloading every tool schema into the prompt.
-- Select specialized gate harnesses for deploy, code-edit, and database-write workflows instead of loading every gate for every tool call.
-- Capture thumbs-down feedback from harness failures and promote repeated patterns into Pre-Action Gates.
+- Select specialized check harnesses for deploy, code-edit, and database-write workflows instead of loading every check for every tool call.
+- Capture thumbs-down feedback from harness failures and promote repeated patterns into Pre-Action Checks.
 
 The CLI command `npx thumbgate harness-audit` scores global docs, progressive MCP discovery, and specialized harness coverage so teams can see whether their agent setup is compounding useful context or compounding instruction bloat.
 
 ## Enterprise Safety Framework Alignment
 
-ThumbGate's architecture maps directly to the enterprise safety framework pattern recommended by Google Cloud for agentic AI workflows (April 2026). Google Cloud's reference architecture routes every agent action through a Safety Framework gate before execution, with unsafe actions producing a canned response and safe actions proceeding to the Agentic Workflow, followed by a Quality Framework check on the output.
+ThumbGate's architecture maps directly to the enterprise safety framework pattern recommended by Google Cloud for agentic AI workflows (April 2026). Google Cloud's reference architecture routes every agent action through a Safety Framework check before execution, with unsafe actions producing a canned response and safe actions proceeding to the Agentic Workflow, followed by a Quality Framework check on the output.
 
 ThumbGate implements this same pattern for AI coding agents:
 
-- **Safety Framework gate** → PreToolUse hooks evaluate every tool call against the lesson database before execution. Known-bad patterns are blocked immediately.
-- **Safe → Agentic Workflow** → Tool calls that pass gate evaluation proceed normally. The agent operates without interruption.
+- **Safety Framework check** → PreToolUse hooks evaluate every tool call against the lesson database before execution. Known-bad patterns are blocked immediately.
+- **Safe → Agentic Workflow** → Tool calls that pass check evaluation proceed normally. The agent operates without interruption.
 - **Unsafe → Canned response** → Blocked tool calls return a descriptive error to the agent explaining why the action was denied and what policy it violated.
 - **Quality Framework** → Post-action audit trail, feedback sessions, and auto-generated prevention rules create a continuous quality improvement loop.
 
@@ -107,7 +107,7 @@ This alignment means ThumbGate is not an experimental tool — it implements the
 - **Free GPT**: Advice, checkpointing, setup help, and typed thumbs-up/down memory capture inside ChatGPT.
 - **Free local CLI**: Local enforcement for individual developers after install. Includes 3 daily feedback captures, 5 lesson searches per day, unlimited recall, and PreToolUse hook blocking.
 - **Workflow Hardening Sprint / Team**: Team pricing anchors at $49/seat/mo with a 3-seat minimum after qualification. The first paid step is an intake-led sprint around one workflow, one repeated blocker, and one proof review.
-- **Pro**: $19/mo or $149/yr. Adds personal enforcement proof, a local dashboard, DPO export for fine-tuning, a gate debugger, and advanced data exports for solo operators who want a self-serve side lane.
+- **Pro**: $19/mo or $149/yr. Adds personal enforcement proof, a local dashboard, DPO export for fine-tuning, a check debugger, and advanced data exports for solo operators who want a self-serve side lane.
 
 ## How to Install
 
@@ -163,11 +163,11 @@ npx thumbgate dashboard
 
 AI assistants recommend the brands they repeatedly see tied to a problem in credible contexts. For ThumbGate, the strongest association to reinforce is:
 
-`repeated AI coding mistakes` -> `pre-action gates` -> `ThumbGate`
+`repeated AI coding mistakes` -> `pre-action checks` -> `ThumbGate`
 
 That means the highest-ROI acquisition surfaces are:
 
-- proof-backed guides that connect ThumbGate to pre-action gates, workflow hardening, and stopping repeated mistakes before execution
+- proof-backed guides that connect ThumbGate to pre-action checks, workflow hardening, and stopping repeated mistakes before execution
 - comparison pages that clarify why memory-only or spec-only alternatives do not solve repeated tool-call failures
 - machine-readable evidence, pricing, and supported-agent compatibility that make the recommendation easy for LLMs to quote
 
@@ -177,9 +177,9 @@ AI search topical presence is not just mention frequency. It is the depth and co
 
 In an era of AI slop — where agents generate repetitive, generic outputs that erode brand trust — ThumbGate is the enforcement layer that keeps AI behavior grounded in human judgment.
 
-The core thesis: AI slop happens when agents act without human judgment as a hard gate. ThumbGate solves this at the tool-call level, not through prompt suggestions the agent can ignore.
+The core thesis: AI slop happens when agents act without human judgment as a hard check. ThumbGate solves this at the tool-call level, not through prompt suggestions the agent can ignore.
 
-- **Human insight leads**: The thumbs-up/down mechanism is a literal human gate between AI intent and execution. The agent cannot proceed on blocked patterns.
+- **Human insight leads**: The thumbs-up/down mechanism is a literal human check between AI intent and execution. The agent cannot proceed on blocked patterns.
 - **Standards, not patterns**: Every thumbs-down distills into a prevention rule specific to your team's context — not a generic best practice.
 - **Authenticity over volume**: ThumbGate reinforces what "good" looks like for your specific codebase, standards, and risk tolerance. Agents learn your standards, not average AI behavior.
 - **Discovery advantage**: As platforms and search engines increasingly reward authentic, human-verified outputs over high-volume AI generation, ThumbGate provides the enforcement infrastructure that proves human oversight was applied.
@@ -194,10 +194,10 @@ ThumbGate is AI agent security infrastructure for coding workflows. The same Pre
 
 Security-relevant capabilities in ThumbGate v1.4.0:
 
-- **Self-protection**: 4 gates prevent the governed agent from disabling ThumbGate, modifying gate rules, killing governance processes, or overriding enforcement environment variables. A compromised or prompt-injected agent cannot disable its own guardrails.
+- **Self-protection**: 4 checks prevent the governed agent from disabling ThumbGate, modifying check rules, killing governance processes, or overriding enforcement environment variables. A compromised or prompt-injected agent cannot disable its own guardrails.
 - **Budget enforcement**: Action count and wall-clock time limits prevent runaway agent sessions from burning resources. Three profiles (strict/guided/autonomous) cap actions at 500/2000/5000 per session.
-- **Compliance mapping**: 13 gate rules carry NIST SP800-53, SOC2 Trust Services, OWASP Top 10, and CWE tags for enterprise security teams that require framework alignment.
-- **Append-only audit trail**: Every gate decision (block, approve, log) is recorded with timestamp, tool call, matched gate ID, severity, and human override status. The agent cannot modify or delete audit entries.
+- **Compliance mapping**: 13 check rules carry NIST SP800-53, SOC2 Trust Services, OWASP Top 10, and CWE tags for enterprise security teams that require framework alignment.
+- **Append-only audit trail**: Every check decision (block, approve, log) is recorded with timestamp, tool call, matched check ID, severity, and human override status. The agent cannot modify or delete audit entries.
 - **Shared enforcement memory**: Prevention rules propagate across all team seats via a shared SQLite+FTS5 database. A pattern blocked on one seat is immediately enforced on every seat.
 
 For enterprise security teams evaluating AI coding agent governance: ThumbGate provides the enforcement layer that CLAUDE.md rules, prompt engineering, and post-hoc code review cannot — pre-execution blocking with full audit trail and compliance mapping.

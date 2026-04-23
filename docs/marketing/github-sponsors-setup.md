@@ -95,7 +95,7 @@ Suggested description:
 ```markdown
 ## Support ThumbGate
 
-**ThumbGate** is an open-source pre-action gate system for AI coding agents.
+**ThumbGate** is an open-source pre-action check system for AI coding agents.
 It captures thumbs-up/down feedback, promotes it to persistent memory, generates
 prevention rules, and blocks known-bad tool calls via PreToolUse hooks.
 

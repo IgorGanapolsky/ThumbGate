@@ -7,26 +7,26 @@
 ## Surface Descriptions
 
 ### Cursor Directory (cursor.directory/thumbgate)
-> Pre-action gates that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.
+> Pre-action checks that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.
 
 ### Public Landing Page (thumbgate-production.up.railway.app)
-> Stop paying for the same AI mistake twice. ThumbGate is the enforcement layer for AI agent orchestration: 👍 thumbs up and 👎 thumbs down become history-aware lessons, shared lessons and org visibility, plus Pre-Action Gates that block repeat mistakes before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode.
+> Stop paying for the same AI mistake twice. ThumbGate is the enforcement layer for AI agent orchestration: 👍 thumbs up and 👎 thumbs down become history-aware lessons, shared lessons and org visibility, plus Pre-Action Checks that block repeat mistakes before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode.
 
 ### NPM package.json
-> Pre-action gates that block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.
+> Pre-action checks that block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.
 
 ### GitHub Repo About
 **Canonical source:** `config/github-about.json`
-> Self-improving agent governance: 👍/👎 → Pre-Action Gates that block repeat AI mistakes. Stop paying for the same mistake twice.
+> Self-improving agent governance: 👍/👎 → Pre-Action Checks that block repeat AI mistakes. Stop paying for the same mistake twice.
 
-**Canonical topics:** `thumbgate`, `pre-action-gates`, `mcp`, `mcp-server`, `ai-agents`, `agent-reliability`, `guardrails`, `ai-safety`, `developer-tools`, `feedback-loop`, `claude-code`, `cursor`, `codex`, `gemini`, `amp`, `opencode`, `thompson-sampling`
+**Canonical topics:** `thumbgate`, `pre-action-checks`, `mcp`, `mcp-server`, `ai-agents`, `agent-reliability`, `guardrails`, `ai-safety`, `developer-tools`, `feedback-loop`, `claude-code`, `cursor`, `codex`, `gemini`, `amp`, `opencode`, `thompson-sampling`
 
 ### Stripe Pro Offer
 **Title:** ThumbGate Pro — Personal Local Dashboard + DPO Export
 **Description:** ThumbGate Pro gives individual operators a personal local dashboard, DPO export, advanced data exports, and review-ready workflow support. Team rollout remains intake-first for shared hosted lessons, approval boundaries, and org visibility.
 
 ### DEV.TO Blog Post
-**Title:** I built pre-action gates that physically block Claude Code from repeating mistakes
+**Title:** I built pre-action checks that physically block Claude Code from repeating mistakes
 
 ## Terminology Enforcement (Kill List)
 
@@ -34,9 +34,9 @@
 |---|---|
 | AI reliability layer | stop costly AI agent mistakes |
 | Global enforcement | enforcement for actions routed through ThumbGate |
-| Behavior control system | Pre-Action Gates that block risky actions before execution |
+| Behavior control system | Pre-Action Checks that block risky actions before execution |
 | ThumbGate feedback loop | feedback-to-enforcement pipeline |
-| Veto Layer | Pre-Action Gates |
+| Veto Layer | Pre-Action Checks |
 | Agentic Feedback Studio | [DROP] |
 | ShieldCortex | [DROP] |
 | Vibe-to-Verification | [DROP] |
@@ -48,7 +48,7 @@
 
 **Context**: In the age of AI slop — oversaturation with generic, low-quality AI-generated outputs — brands and engineering teams are actively seeking ways to ensure AI acts with human-backed standards. Merriam-Webster named "slop" its 2025 Word of the Year. The antidote the market wants: "human insight leads, AI supports."
 
-**ThumbGate's answer**: ThumbGate is the authenticity enforcement layer for AI agents. The thumbs-up/down mechanism is a hard gate between AI intent and execution — not a soft suggestion. Every thumbs-down becomes a prevention rule specific to your team's actual standards.
+**ThumbGate's answer**: ThumbGate is the authenticity enforcement layer for AI agents. The thumbs-up/down mechanism is a hard check between AI intent and execution — not a soft suggestion. Every thumbs-down becomes a prevention rule specific to your team's actual standards.
 
 **Key messages to use on this angle:**
 - "Stop AI agents before they make costly mistakes."
@@ -64,7 +64,7 @@
 
 **Terminology rules for this angle:**
 - Say: "AI authenticity enforcement" (not "AI content quality")
-- Say: "human judgment as a hard gate" (not "human oversight")
+- Say: "human judgment as a hard check" (not "human oversight")
 - Say: "your team's actual standards" (not "best practices")
 - Avoid claiming ThumbGate prevents "bad content" — it prevents bad *agent actions*
 

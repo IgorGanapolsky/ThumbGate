@@ -105,7 +105,7 @@ test('dashboard, lessons, pro, and learn pages use the inline mark in their head
     'public/pro.html',
     'public/learn.html',
     'public/learn/agent-harness-pattern.html',
-    'public/learn/mcp-pre-action-gates-explained.html',
+    'public/learn/mcp-pre-action-checks-explained.html',
     'public/learn/ai-agent-persistent-memory.html',
     'public/learn/vibe-coding-safety-net.html',
     'public/learn/stop-ai-agent-force-push.html',

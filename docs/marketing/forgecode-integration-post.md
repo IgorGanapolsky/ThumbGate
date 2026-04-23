@@ -10,7 +10,7 @@
 
 Hey Forge team and community,
 
-I built [ThumbGate](https://github.com/IgorGanapolsky/ThumbGate) — pre-action gates for AI coding agents. It captures thumbs-down feedback and turns it into prevention rules that physically block agents from repeating mistakes.
+I built [ThumbGate](https://github.com/IgorGanapolsky/ThumbGate) — pre-action checks for AI coding agents. It captures thumbs-down feedback and turns it into prevention rules that physically block agents from repeating mistakes.
 
 **The problem ThumbGate solves for Forge users:**
 

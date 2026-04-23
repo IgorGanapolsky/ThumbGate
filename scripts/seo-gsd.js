@@ -16,7 +16,7 @@ const PRODUCT = {
   compatibility: ['Claude Code', 'Cursor', 'Codex', 'Gemini', 'Amp', 'OpenCode'],
   proofPoints: [
     'thumbs-up/down feedback loop',
-    'pre-action gates',
+    'pre-action checks',
     'verification evidence',
     'automation proof',
     'SQLite+FTS5 lesson DB',
@@ -38,7 +38,7 @@ const HIGH_ROI_QUERY_SEEDS = [
     notes: 'Bottom-of-funnel comparison against memory-only tooling.',
   },
   {
-    query: 'pre-action gates for ai coding agents',
+    query: 'pre-action checks for ai coding agents',
     businessValue: 96,
     source: 'seed',
     notes: 'Category-defining query that explains the core wedge.',
@@ -46,7 +46,7 @@ const HIGH_ROI_QUERY_SEEDS = [
   querySeed(
     'ai agent harness optimization',
     94,
-    'Fresh harness-engineering demand that maps directly to ThumbGate progressive disclosure, pre-action gates, and workflow audits.',
+    'Fresh harness-engineering demand that maps directly to ThumbGate progressive disclosure, pre-action checks, and workflow audits.',
   ),
   querySeed(
     'browser automation safety',
@@ -171,7 +171,7 @@ function preActionGuide(slug, content) {
   return guideBlueprint({
     ...content,
     path: `/guides/${slug}`,
-    pillar: 'pre-action-gates',
+    pillar: 'pre-action-checks',
   });
 }
 
@@ -180,14 +180,14 @@ const HARNESS_OPTIMIZATION_GUIDE_SPEC = Object.freeze({
   slug: 'agent-harness-optimization',
   meta: {
     query: HARNESS_OPTIMIZATION_QUERY,
-    title: 'AI Agent Harness Optimization | Progressive Disclosure + Pre-Action Gates',
+    title: 'AI Agent Harness Optimization | Progressive Disclosure + Pre-Action Checks',
     heroTitle: 'AI Agent Harness Optimization That Blocks Repeat Failures',
-    heroSummary: 'A better harness keeps global instructions lean, loads MCP schemas only when needed, and turns feedback into pre-action gates. ThumbGate makes that workflow measurable and enforceable.',
+    heroSummary: 'A better harness keeps global instructions lean, loads MCP schemas only when needed, and turns feedback into pre-action checks. ThumbGate makes that workflow measurable and enforceable.',
   },
   takeaways: [
     'Harness optimization is the control layer around the model: context, tools, guardrails, and feedback.',
     'Progressive disclosure keeps agents out of prompt bloat while preserving proof and tool access.',
-    'ThumbGate adds a concrete audit path and Pre-Action Gates so harness lessons become runtime enforcement.',
+    'ThumbGate adds a concrete audit path and Pre-Action Checks so harness lessons become runtime enforcement.',
   ],
   sections: [
     ['paragraphs', 'What changed', [
@@ -198,7 +198,7 @@ const HARNESS_OPTIMIZATION_GUIDE_SPEC = Object.freeze({
       'Scores global agent docs so AGENTS.md, CLAUDE.md, and GEMINI.md stay lean instead of becoming unreviewable prompt bundles.',
       'Publishes progressive MCP discovery through lightweight indexes and per-tool schema URLs.',
       'Selects specialized gate harnesses for deploy, code-edit, and database-write actions instead of loading every gate for every workflow.',
-      'Turns thumbs-down feedback into prevention rules, then into hard Pre-Action Gates that block repeated mistakes.',
+      'Turns thumbs-down feedback into prevention rules, then into hard Pre-Action Checks that block repeated mistakes.',
     ]],
     ['paragraphs', 'Where this creates ROI', [
       'For acquisition, this page names the buyer category: AI agent harness optimization. For conversion, the CLI audit gives a concrete first action. For retention, the same audit keeps local instructions and MCP surfaces from drifting back into bloat.',
@@ -211,10 +211,10 @@ const HARNESS_OPTIMIZATION_GUIDE_SPEC = Object.freeze({
     ],
     [
       'How does ThumbGate optimize a harness?',
-      'ThumbGate keeps global instructions lean, supports progressive MCP discovery, selects workflow-specific gate harnesses, and converts feedback into Pre-Action Gates that block known-bad actions before execution.',
+      'ThumbGate keeps global instructions lean, supports progressive MCP discovery, selects workflow-specific gate harnesses, and converts feedback into Pre-Action Checks that block known-bad actions before execution.',
     ],
   ],
-  relatedPaths: ['/guides/pre-action-gates', '/guides/codex-cli-guardrails'],
+  relatedPaths: ['/guides/pre-action-checks', '/guides/codex-cli-guardrails'],
 });
 
 function buildSectionFromSpec(kind, heading, entries) {
@@ -236,7 +236,7 @@ const BROWSER_BRIDGE_GUIDE_SPECS = Object.freeze([
     slug: 'browser-automation-safety',
     meta: {
       query: 'browser automation safety',
-      title: 'Browser Automation Safety | Prompt Injection, Permissions, and Pre-Action Gates',
+      title: 'Browser Automation Safety | Prompt Injection, Permissions, and Pre-Action Checks',
       heroTitle: 'Browser automation safety needs explicit approval boundaries',
       heroSummary: 'Browser agents can click, type, and navigate for you, but they also widen prompt-injection and cross-app integration risk. ThumbGate adds approval boundaries, auditability, and a native messaging audit before those bridges turn into silent blast-radius expansion.',
     },
@@ -257,7 +257,7 @@ const BROWSER_BRIDGE_GUIDE_SPECS = Object.freeze([
         'Whether browser-use runs default to ask-before-acting or silently expand capability before a human approves them.',
       ]],
       ['paragraphs', 'How ThumbGate fits', [
-        'ThumbGate is the approval and enforcement layer around browser-use. Start by running npx thumbgate native-messaging-audit. Then gate future connector installs, record who approved them, and turn browser-bridge mistakes into Pre-Action Gates before the same pattern repeats.',
+        'ThumbGate is the approval and enforcement layer around browser-use. Start by running npx thumbgate native-messaging-audit. Then gate future connector installs, record who approved them, and turn browser-bridge mistakes into Pre-Action Checks before the same pattern repeats.',
       ]],
     ],
     faq: [
@@ -270,7 +270,7 @@ const BROWSER_BRIDGE_GUIDE_SPECS = Object.freeze([
         'Audit native messaging hosts, review extension permissions, keep ask-before-acting enabled by default, and require explicit approval for any cross-app connector that expands the agent runtime beyond the browser sandbox.',
       ],
     ],
-    relatedPaths: ['/guides/native-messaging-host-security', '/guides/pre-action-gates'],
+    relatedPaths: ['/guides/native-messaging-host-security', '/guides/pre-action-checks'],
   },
   {
     slug: 'native-messaging-host-security',
@@ -310,7 +310,7 @@ const BROWSER_BRIDGE_GUIDE_SPECS = Object.freeze([
         'ThumbGate audits known host locations, highlights AI/browser bridges, flags stale or missing host binaries, and gives teams an enforcement layer so future connector expansion requires explicit approval.',
       ],
     ],
-    relatedPaths: ['/guides/browser-automation-safety', '/guides/pre-action-gates'],
+    relatedPaths: ['/guides/browser-automation-safety', '/guides/pre-action-checks'],
   },
 ]);
 
@@ -331,20 +331,20 @@ const AI_RECOMMENDATION_VISIBILITY_GUIDE_SPECS = Object.freeze([
       query: 'ai search topical presence',
       title: 'AI Search Topical Presence | Become the Obvious Recommendation',
       heroTitle: 'AI search topical presence decides who gets recommended',
-      heroSummary: 'AI assistants recommend the tools they repeatedly see tied to a problem in credible contexts. ThumbGate wins when the web consistently connects it to pre-action gates, AI coding agent safety, and stopping repeated mistakes before execution.',
+      heroSummary: 'AI assistants recommend the tools they repeatedly see tied to a problem in credible contexts. ThumbGate wins when the web consistently connects it to pre-action checks, AI coding agent safety, and stopping repeated mistakes before execution.',
     },
     takeaways: [
       'Topical presence is about repeated, credible association with the problems buyers actually ask AI systems to solve.',
-      'ThumbGate should own a narrow association first: pre-action gates for AI coding agents.',
+      'ThumbGate should own a narrow association first: pre-action checks for AI coding agents.',
       'Proof assets, comparisons, integration pages, and category guides build the depth and breadth that make recommendations stick.',
     ],
     sections: [
       ['paragraphs', 'What topical presence really measures', [
         'AI search visibility is not just page count or classic keyword volume. It is the strength of the association between your brand, the buyer problem, and the category language the model has already absorbed.',
-        'For ThumbGate, that means showing up around pre-action gates, stopping repeated AI agent mistakes, AI coding agent guardrails, workflow hardening, and runtime enforcement. When those associations repeat across guides, product copy, proof artifacts, and third-party mentions, the model gains confidence retrieving ThumbGate for the right prompt.',
+        'For ThumbGate, that means showing up around pre-action checks, stopping repeated AI agent mistakes, AI coding agent guardrails, workflow hardening, and runtime enforcement. When those associations repeat across guides, product copy, proof artifacts, and third-party mentions, the model gains confidence retrieving ThumbGate for the right prompt.',
       ]],
       ['bullets', 'How ThumbGate improves topical presence', [
-        'Lead with one crisp category association: ThumbGate is the pre-action gates layer for AI coding agents.',
+        'Lead with one crisp category association: ThumbGate is the pre-action checks layer for AI coding agents.',
         'Publish proof-backed pages that connect the product to repeated-mistake blocking, workflow hardening, and team enforcement.',
         'Cover adjacent commercial prompts such as Codex guardrails, Cursor repeat-failure prevention, browser automation safety, and Autoresearch safety.',
         'Keep pricing, verification evidence, and supported-agent compatibility easy for humans and LLMs to quote.',
@@ -360,10 +360,10 @@ const AI_RECOMMENDATION_VISIBILITY_GUIDE_SPECS = Object.freeze([
       ],
       [
         'What should a developer tool do first to improve topical presence?',
-        'Pick one narrow, commercially relevant association and reinforce it everywhere. For ThumbGate, that association is pre-action gates for AI coding agents backed by verification evidence and workflow hardening outcomes.',
+        'Pick one narrow, commercially relevant association and reinforce it everywhere. For ThumbGate, that association is pre-action checks for AI coding agents backed by verification evidence and workflow hardening outcomes.',
       ],
     ],
-    relatedPaths: ['/guides/relational-knowledge-ai-recommendations', '/guides/pre-action-gates'],
+    relatedPaths: ['/guides/relational-knowledge-ai-recommendations', '/guides/pre-action-checks'],
   },
   {
     slug: 'relational-knowledge-ai-recommendations',
@@ -376,12 +376,12 @@ const AI_RECOMMENDATION_VISIBILITY_GUIDE_SPECS = Object.freeze([
     takeaways: [
       'AI recommendations come from learned associations, not from whichever brand publishes the most pages.',
       'Crowded many-to-many categories make generic positioning disappear into the noise.',
-      'ThumbGate should reinforce a tight relationship: repeated AI coding mistakes -> pre-action gates -> ThumbGate.',
+      'ThumbGate should reinforce a tight relationship: repeated AI coding mistakes -> pre-action checks -> ThumbGate.',
     ],
     sections: [
       ['paragraphs', 'Relational knowledge in plain English', [
         'A language model stores facts and associations about the world. When a buyer asks for a recommendation, the model tries to retrieve the brand most strongly associated with that problem and category. If the associations are weak or generic, the model falls back to louder or simpler competitors.',
-        'That is why vague positioning like "AI memory for agents" is a weaker long-term recommendation strategy for ThumbGate than a sharper relationship such as "pre-action gates that stop repeated AI coding mistakes before execution."',
+        'That is why vague positioning like "AI memory for agents" is a weaker long-term recommendation strategy for ThumbGate than a sharper relationship such as "pre-action checks that stop repeated AI coding mistakes before execution."',
       ]],
       ['bullets', 'How ThumbGate becomes the obvious recommendation', [
         'Repeat the same category language across landing copy, guides, README links, and structured data.',
@@ -390,7 +390,7 @@ const AI_RECOMMENDATION_VISIBILITY_GUIDE_SPECS = Object.freeze([
         'Expand outward from the core association into adjacent prompts only after the primary link is strong.',
       ]],
       ['paragraphs', 'Where teams usually get lost', [
-        'Brands become invisible when they try to cover too many adjacent categories without owning one association deeply. ThumbGate should keep using specific buyer-language such as workflow hardening, pre-action gates, repeat-failure blocking, browser bridge safety, and AI coding agent guardrails so the recommendation path stays crisp.',
+        'Brands become invisible when they try to cover too many adjacent categories without owning one association deeply. ThumbGate should keep using specific buyer-language such as workflow hardening, pre-action checks, repeat-failure blocking, browser bridge safety, and AI coding agent guardrails so the recommendation path stays crisp.',
       ]],
     ],
     faq: [
@@ -400,7 +400,7 @@ const AI_RECOMMENDATION_VISIBILITY_GUIDE_SPECS = Object.freeze([
       ],
       [
         'What signals help ThumbGate most?',
-        'Pages that tie ThumbGate to pre-action gates, AI coding agent safety, stopping repeated mistakes, supported-agent compatibility, and proof-backed outcomes help the model retrieve it with more confidence.',
+        'Pages that tie ThumbGate to pre-action checks, AI coding agent safety, stopping repeated mistakes, supported-agent compatibility, and proof-backed outcomes help the model retrieve it with more confidence.',
       ],
     ],
     relatedPaths: ['/guides/ai-search-topical-presence', '/compare/mem0'],
@@ -425,7 +425,7 @@ const PAGE_BLUEPRINTS = [
     pillar: 'comparison',
     title: 'ThumbGate vs SpecLock | Thumbs Feedback vs Manual Specs',
     heroTitle: 'ThumbGate vs SpecLock',
-    heroSummary: 'SpecLock starts from manually written constraints. ThumbGate starts from thumbs-up/down feedback and turns it into pre-action gates that block repeated mistakes.',
+    heroSummary: 'SpecLock starts from manually written constraints. ThumbGate starts from thumbs-up/down feedback and turns it into pre-action checks that block repeated mistakes.',
     takeaways: [
       'ThumbGate learns from thumbs-up and thumbs-down feedback without requiring a separate spec-writing workflow.',
       'SpecLock is strongest when a team already has strong specifications and wants enforcement tied to those documents.',
@@ -435,7 +435,7 @@ const PAGE_BLUEPRINTS = [
       {
         heading: 'The product difference in one sentence',
         paragraphs: [
-          'SpecLock helps a team codify rules before the work begins. ThumbGate helps a team convert real thumbs-up/down feedback into live pre-action gates after the work reveals what actually breaks.',
+          'SpecLock helps a team codify rules before the work begins. ThumbGate helps a team convert real thumbs-up/down feedback into live pre-action checks after the work reveals what actually breaks.',
           'That means ThumbGate is better for fast-moving agent workflows where the problem is not writing more specs, but preventing the same mistake from happening again tomorrow.',
         ],
       },
@@ -459,14 +459,14 @@ const PAGE_BLUEPRINTS = [
     faq: [
       {
         question: 'Is ThumbGate trying to replace specs?',
-        answer: 'No. ThumbGate complements specs by capturing thumbs-up/down feedback from live agent behavior and enforcing the learned rules as pre-action gates.',
+        answer: 'No. ThumbGate complements specs by capturing thumbs-up/down feedback from live agent behavior and enforcing the learned rules as pre-action checks.',
       },
       {
         question: 'What does ThumbGate do that SpecLock does not?',
-        answer: 'ThumbGate turns explicit feedback into searchable memory, auto-generated prevention rules, and runtime gates that block repeated mistakes before the next tool call executes.',
+        answer: 'ThumbGate turns explicit feedback into searchable memory, auto-generated prevention rules, and runtime checks that block repeated mistakes before the next tool call executes.',
       },
     ],
-    relatedPaths: ['/compare/mem0', '/guides/pre-action-gates'],
+    relatedPaths: ['/compare/mem0', '/guides/pre-action-checks'],
   },
   {
     query: 'thumbgate vs mem0',
@@ -475,7 +475,7 @@ const PAGE_BLUEPRINTS = [
     pillar: 'comparison',
     title: 'ThumbGate vs Mem0 | Enforcement vs Memory for AI Agents',
     heroTitle: 'ThumbGate vs Mem0',
-    heroSummary: 'Mem0 is memory. ThumbGate is memory plus enforcement. It captures thumbs-up/down feedback, promotes the signal into rules, and blocks repeat failures with pre-action gates.',
+    heroSummary: 'Mem0 is memory. ThumbGate is memory plus enforcement. It captures thumbs-up/down feedback, promotes the signal into rules, and blocks repeat failures with pre-action checks.',
     takeaways: [
       'Mem0 is useful when you mainly need retrieval and cross-session context.',
       'ThumbGate is useful when retrieval alone is not enough and the system has to stop the same mistake before execution.',
@@ -491,7 +491,7 @@ const PAGE_BLUEPRINTS = [
       {
         heading: 'Where ThumbGate fits',
         paragraphs: [
-          'ThumbGate begins with the same need to remember, but it goes further. A thumbs down can become a prevention rule, and that rule can become a pre-action gate that blocks a repeated tool call.',
+          'ThumbGate begins with the same need to remember, but it goes further. A thumbs down can become a prevention rule, and that rule can become a pre-action check that blocks a repeated tool call.',
         ],
         bullets: [
           'Thumbs up reinforces good behavior.',
@@ -519,12 +519,12 @@ const PAGE_BLUEPRINTS = [
     relatedPaths: ['/compare/speclock', '/guides/claude-code-feedback'],
   },
   {
-    query: 'pre-action gates for ai coding agents',
-    path: '/guides/pre-action-gates',
+    query: 'pre-action checks for ai coding agents',
+    path: '/guides/pre-action-checks',
     pageType: 'guide',
-    pillar: 'pre-action-gates',
-    title: 'Pre-Action Gates for AI Coding Agents | ThumbGate Guide',
-    heroTitle: 'What Are Pre-Action Gates?',
+    pillar: 'pre-action-checks',
+    title: 'Pre-Action Checks for AI Coding Agents | ThumbGate Guide',
+    heroTitle: 'What Are Pre-Action Checks?',
     heroSummary: 'Pre-action gates stop the risky move before the agent executes it. ThumbGate uses thumbs-up/down feedback to decide what should be reinforced, warned, or blocked.',
     takeaways: [
       'Prompt rules are advisory. Pre-action gates are enforcement.',
@@ -536,7 +536,7 @@ const PAGE_BLUEPRINTS = [
         heading: 'Why this matters',
         paragraphs: [
           'Most AI coding failures are not mysterious. They are repeated mistakes: force-pushes, destructive scripts, missed verification steps, or breaking architectural constraints.',
-          'A pre-action gate turns that failure pattern into a runtime checkpoint. The agent sees the stop before the bad action lands.',
+          'A pre-action check turns that failure pattern into a runtime checkpoint. The agent sees the stop before the bad action lands.',
         ],
       },
       {
@@ -557,7 +557,7 @@ const PAGE_BLUEPRINTS = [
     ],
     faq: [
       {
-        question: 'How are pre-action gates different from prompt rules?',
+        question: 'How are pre-action checks different from prompt rules?',
         answer: 'Prompt rules ask the model nicely. Pre-action gates intercept the tool call and block it before execution when the known-bad pattern matches.',
       },
       {
@@ -572,10 +572,10 @@ const PAGE_BLUEPRINTS = [
     query: 'stop ai coding agents from repeating mistakes',
     path: '/guides/stop-repeated-ai-agent-mistakes',
     pageType: 'guide',
-    pillar: 'pre-action-gates',
+    pillar: 'pre-action-checks',
     title: 'How to Stop AI Coding Agents From Repeating Mistakes | ThumbGate',
     heroTitle: 'How to Stop AI Coding Agents From Repeating Mistakes',
-    heroSummary: 'If your agent keeps repeating the same bad move, the fix is not more memory alone. The fix is a feedback loop that turns repeated failures into pre-action gates before the next tool call executes.',
+    heroSummary: 'If your agent keeps repeating the same bad move, the fix is not more memory alone. The fix is a feedback loop that turns repeated failures into pre-action checks before the next tool call executes.',
     takeaways: [
       'Repeated mistakes are a workflow problem, not just a context-window problem.',
       'ThumbGate turns thumbs-down feedback into prevention rules and runtime gates.',
@@ -608,14 +608,14 @@ const PAGE_BLUEPRINTS = [
     faq: [
       {
         question: 'Is memory alone enough to stop repeated mistakes?',
-        answer: 'Usually no. Memory helps retrieval, but ThumbGate adds pre-action gates so the same risky move can be blocked before the next command executes.',
+        answer: 'Usually no. Memory helps retrieval, but ThumbGate adds pre-action checks so the same risky move can be blocked before the next command executes.',
       },
       {
         question: 'Does ThumbGate only punish bad behavior?',
         answer: 'No. Thumbs up reinforces good behavior, so the loop captures safe patterns as well as failures.',
       },
     ],
-    relatedPaths: ['/guides/pre-action-gates', '/guides/claude-code-feedback'],
+    relatedPaths: ['/guides/pre-action-checks', '/guides/claude-code-feedback'],
   },
   {
     query: 'claude code feedback memory',
@@ -656,14 +656,14 @@ const PAGE_BLUEPRINTS = [
     faq: [
       {
         question: 'Does this only work with Claude Code?',
-        answer: 'No. Claude Code is a strong entry point, but the same thumbs-up/down feedback loop and pre-action gates work across other MCP-compatible coding agents too.',
+        answer: 'No. Claude Code is a strong entry point, but the same thumbs-up/down feedback loop and pre-action checks work across other MCP-compatible coding agents too.',
       },
       {
         question: 'Why mention thumbs up as well as thumbs down?',
         answer: 'Because reinforcement matters. Good behavior should become easier to repeat, not only bad behavior harder to repeat.',
       },
     ],
-    relatedPaths: ['/guides/pre-action-gates', '/compare/mem0'],
+    relatedPaths: ['/guides/pre-action-checks', '/compare/mem0'],
   },
   {
     query: 'cursor prevent repeated mistakes',
@@ -672,7 +672,7 @@ const PAGE_BLUEPRINTS = [
     pillar: 'agent-workflows',
     title: 'Cursor Agent Guardrails | Stop Repeated Mistakes with ThumbGate',
     heroTitle: 'Cursor Guardrails That Block Repeated Mistakes',
-    heroSummary: 'Cursor moves fast, which makes repeated mistakes expensive. ThumbGate gives Cursor users a feedback loop that turns thumbs-down corrections into pre-action gates before the next risky step fires.',
+    heroSummary: 'Cursor moves fast, which makes repeated mistakes expensive. ThumbGate gives Cursor users a feedback loop that turns thumbs-down corrections into pre-action checks before the next risky step fires.',
     takeaways: [
       'Cursor users want speed without trusting the agent blindly.',
       'ThumbGate adds enforcement without forcing a platform switch.',
@@ -690,7 +690,7 @@ const PAGE_BLUEPRINTS = [
         bullets: [
           'Capture thumbs-up/down feedback on agent behavior.',
           'Promote repeated failures into prevention rules.',
-          'Block known-bad commands with pre-action gates before execution.',
+          'Block known-bad commands with pre-action checks before execution.',
           'Keep the memory and gates local-first so the operator retains control.',
         ],
       },
@@ -711,7 +711,7 @@ const PAGE_BLUEPRINTS = [
         answer: 'Repeated failures like risky git actions, destructive scripts, skipped verification, or any other known-bad pattern you have already corrected once.',
       },
     ],
-    relatedPaths: ['/guides/stop-repeated-ai-agent-mistakes', '/guides/pre-action-gates'],
+    relatedPaths: ['/guides/stop-repeated-ai-agent-mistakes', '/guides/pre-action-checks'],
   },
   {
     query: 'codex cli guardrails',
@@ -738,7 +738,7 @@ const PAGE_BLUEPRINTS = [
         bullets: [
           'Feedback capture with explicit thumbs-up/down signals.',
           'Searchable lessons and linked prevention rules.',
-          'Pre-action gates that block repeated bad commands before they run.',
+          'Pre-action checks that block repeated bad commands before they run.',
           'Verification evidence that gives teams something concrete to audit.',
         ],
       },
@@ -756,10 +756,10 @@ const PAGE_BLUEPRINTS = [
       },
       {
         question: 'How are Codex CLI guardrails different from prompt instructions?',
-        answer: 'Prompt instructions are advisory. ThumbGate pre-action gates intercept the tool call itself and block the known-bad pattern before execution.',
+        answer: 'Prompt instructions are advisory. ThumbGate pre-action checks intercept the tool call itself and block the known-bad pattern before execution.',
       },
     ],
-    relatedPaths: ['/guides/pre-action-gates', '/compare/mem0'],
+    relatedPaths: ['/guides/pre-action-checks', '/compare/mem0'],
   },
   {
     query: 'gemini cli feedback memory',
@@ -768,7 +768,7 @@ const PAGE_BLUEPRINTS = [
     pillar: 'agent-workflows',
     title: 'Gemini CLI Feedback Memory | Memory Plus Enforcement with ThumbGate',
     heroTitle: 'Gemini CLI Feedback Memory That Leads to Enforcement',
-    heroSummary: 'Gemini CLI users often start by asking for better memory. ThumbGate answers the bigger need: memory that can become prevention rules and pre-action gates when the same mistake shows up twice.',
+    heroSummary: 'Gemini CLI users often start by asking for better memory. ThumbGate answers the bigger need: memory that can become prevention rules and pre-action checks when the same mistake shows up twice.',
     takeaways: [
       'Gemini CLI searchers often begin with memory but buy because of enforcement.',
       'ThumbGate keeps the local-first memory story while adding runtime blocking.',
@@ -814,13 +814,13 @@ const PAGE_BLUEPRINTS = [
   guideBlueprint({
     query: 'autoresearch agent safety',
     path: '/guides/autoresearch-agent-safety',
-    pillar: 'pre-action-gates',
+    pillar: 'pre-action-checks',
     title: 'Autoresearch Agent Safety | Gates for Self-Improving Coding Agents',
     heroTitle: 'Autoresearch Agent Safety for Self-Improving Coding Agents',
     heroSummary: 'Autoresearch-style loops can search for better code, but they need gates for holdout tests, proof trails, reward hacking, and unsafe self-improvement.',
     takeaways: [
       'Self-improving coding loops need a control plane before they promote their own wins.',
-      'ThumbGate turns failed experiment reviews into prevention rules and pre-action gates.',
+      'ThumbGate turns failed experiment reviews into prevention rules and pre-action checks.',
       'The sales wedge is concrete: let the agent search, but gate the evidence before it accepts a variant.',
     ],
     sections: [
@@ -854,10 +854,10 @@ const PAGE_BLUEPRINTS = [
       ),
       answer(
         'What does ThumbGate add to an Autoresearch loop?',
-        'ThumbGate adds structured thumbs-up/down feedback, prevention rules, Thompson Sampling, ContextFS proof packs, and pre-action gates for risky experiment and promotion steps.',
+        'ThumbGate adds structured thumbs-up/down feedback, prevention rules, Thompson Sampling, ContextFS proof packs, and pre-action checks for risky experiment and promotion steps.',
       ),
     ],
-    relatedPaths: ['/guides/pre-action-gates', '/guides/codex-cli-guardrails'],
+    relatedPaths: ['/guides/pre-action-checks', '/guides/codex-cli-guardrails'],
   }),
   {
     query: 'claude desktop extension plugin thumbgate',
@@ -866,7 +866,7 @@ const PAGE_BLUEPRINTS = [
     pillar: 'agent-workflows',
     title: 'ThumbGate for Claude Desktop | Install the Plugin in 60 Seconds',
     heroTitle: 'ThumbGate for Claude Desktop',
-    heroSummary: 'Install ThumbGate as a Claude Desktop plugin and get pre-action gates running in under a minute. No build step, no cloud account, no config files.',
+    heroSummary: 'Install ThumbGate as a Claude Desktop plugin and get pre-action checks running in under a minute. No build step, no cloud account, no config files.',
     takeaways: [
       'One command installs ThumbGate into Claude Desktop with zero config.',
       'The packaged .mcpb bundle is available on GitHub Releases for drag-and-drop install.',
@@ -898,7 +898,7 @@ const PAGE_BLUEPRINTS = [
         bullets: [
           'Thumbs-up/down feedback capture inside Claude Desktop.',
           'Prevention rules auto-generated from repeated failures.',
-          'Pre-action gates that block known-bad patterns before execution.',
+          'Pre-action checks that block known-bad patterns before execution.',
           'Full-text search across your lesson history.',
           'Health checks and system diagnostics.',
         ],
@@ -924,7 +924,7 @@ const PAGE_BLUEPRINTS = [
         answer: 'Yes. The same npx thumbgate init command works for both Claude Desktop and Claude Code. Use --claude-desktop for the Desktop-specific setup.',
       },
     ],
-    relatedPaths: ['/guides/claude-code-feedback', '/guides/pre-action-gates'],
+    relatedPaths: ['/guides/claude-code-feedback', '/guides/pre-action-checks'],
   },
 ];
 
@@ -1031,7 +1031,7 @@ function classifyIntent(query) {
     return 'commercial';
   }
   if (/\b(what is|how to|guide|best practices|why)\b/.test(normalized)) return 'informational';
-  if (/\b(guardrails|pre-action gates|feedback|prevent repeated mistakes|repeating mistakes|memory|harness optimization)\b/.test(normalized)) {
+  if (/\b(guardrails|pre-action checks|feedback|prevent repeated mistakes|repeating mistakes|memory|harness optimization)\b/.test(normalized)) {
     return 'commercial';
   }
   return 'informational';
@@ -1042,9 +1042,9 @@ function inferPillar(query) {
   if (/\b(speclock|mem0|alternative|vs|compare|comparison)\b/.test(normalized)) return 'comparison';
   if (/\b(thumbs up|thumbs down|feedback|reinforce|mistake)\b/.test(normalized)) return 'feedback-loop';
   if (/\b(topical presence|relational knowledge|recommend(?:ation|ed)? brands?|ai search visibility)\b/.test(normalized)) return 'ai-agent-reliability';
-  if (/\b(browser automation|native messaging|browser bridge|prompt injection)\b/.test(normalized)) return 'pre-action-gates';
-  if (/\b(autoresearch|self-improving|benchmark|reward hacking|harness optimization)\b/.test(normalized)) return 'pre-action-gates';
-  if (/\b(pre-action gates|guardrails|block|prevent repeated mistakes|repeating mistakes)\b/.test(normalized)) return 'pre-action-gates';
+  if (/\b(browser automation|native messaging|browser bridge|prompt injection)\b/.test(normalized)) return 'pre-action-checks';
+  if (/\b(autoresearch|self-improving|benchmark|reward hacking|harness optimization)\b/.test(normalized)) return 'pre-action-checks';
+  if (/\b(pre-action checks|guardrails|block|prevent repeated mistakes|repeating mistakes)\b/.test(normalized)) return 'pre-action-checks';
   if (/\b(claude code|cursor|codex|gemini|amp|opencode|integration|plugin)\b/.test(normalized)) return 'agent-workflows';
   return 'ai-agent-reliability';
 }
@@ -1057,7 +1057,7 @@ function inferPersona(query) {
   if (normalized.includes('gemini')) return 'gemini-builder';
   if (normalized.includes('autoresearch') || normalized.includes('self-improving')) return 'ai-research-engineer';
   if (/\b(vs|alternative|compare)\b/.test(normalized)) return 'tool-evaluator';
-  if (/\b(guardrails|pre-action gates)\b/.test(normalized)) return 'engineering-lead';
+  if (/\b(guardrails|pre-action checks)\b/.test(normalized)) return 'engineering-lead';
   return 'ai-engineer';
 }
 
@@ -1090,7 +1090,7 @@ function scoreOpportunity(row) {
   };
   const pillarWeight = {
     comparison: 14,
-    'pre-action-gates': 12,
+    'pre-action-checks': 12,
     'feedback-loop': 12,
     'agent-workflows': 11,
     'ai-agent-reliability': 9,

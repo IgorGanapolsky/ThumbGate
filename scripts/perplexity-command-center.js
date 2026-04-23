@@ -21,7 +21,7 @@ const PRODUCT = {
   repo: 'https://github.com/IgorGanapolsky/ThumbGate',
   site: 'https://thumbgate-production.up.railway.app',
   checkout: 'https://thumbgate-production.up.railway.app/checkout/pro',
-  promise: 'turn thumbs-up/down feedback into pre-action gates that stop AI agents from repeating mistakes',
+  promise: 'turn thumbs-up/down feedback into pre-action checks that stop AI agents from repeating mistakes',
 };
 
 const LEAD_SEARCH_QUERIES = [
@@ -30,7 +30,7 @@ const LEAD_SEARCH_QUERIES = [
     query: 'AI coding agent repeats mistakes Claude Code Cursor Codex MCP guardrails',
   },
   {
-    label: 'pre-action gate demand',
+    label: 'pre-action check demand',
     query: 'pre tool use hook block bad tool calls AI agent safety developer workflow',
   },
   {

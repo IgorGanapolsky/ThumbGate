@@ -44,8 +44,8 @@ Manual CI modes are `all`, `engage`, `poll`, `audit`, and `post`. The scheduled 
 
 ## Canonical Source
 
-- Carousel HTML: [assets/pre-action-gates-instagram-carousel.html](./assets/pre-action-gates-instagram-carousel.html)
-- Caption: [assets/pre-action-gates-caption.txt](./assets/pre-action-gates-caption.txt)
+- Carousel HTML: [assets/pre-action-checks-instagram-carousel.html](./assets/pre-action-checks-instagram-carousel.html)
+- Caption: [assets/pre-action-checks-caption.txt](./assets/pre-action-checks-caption.txt)
 
 ## Prerequisites
 
@@ -59,7 +59,7 @@ Manual CI modes are `all`, `engage`, `poll`, `audit`, and `post`. The scheduled 
 Prepare a bundle:
 
 ```bash
-npm run social:prepare -- --slug pre-action-gates
+npm run social:prepare -- --slug pre-action-checks
 ```
 
 One-command prepare + publish with the default dual-platform lane:
@@ -67,7 +67,7 @@ One-command prepare + publish with the default dual-platform lane:
 ```bash
 npm run social:post -- \
   --source /Users/ganapolsky_i/Downloads/instagram-carousel-slides.html \
-  --caption-text "Every AI memory tool asks the agent to cooperate. Pre-Action Gates don't ask - they enforce." \
+  --caption-text "Every AI memory tool asks the agent to cooperate. Pre-Action Checks don't ask - they enforce." \
   --backend playwright \
   --profile-dir Default \
   --slug first-live-social-post
@@ -78,15 +78,15 @@ Prepare from a custom HTML file and inline caption:
 ```bash
 npm run social:prepare -- \
   --source /Users/ganapolsky_i/Downloads/instagram-carousel-slides.html \
-  --caption-text "Every AI memory tool asks the agent to cooperate. Pre-Action Gates don't ask - they enforce." \
-  --slug pre-action-gates-session
+  --caption-text "Every AI memory tool asks the agent to cooperate. Pre-Action Checks don't ask - they enforce." \
+  --slug pre-action-checks-session
 ```
 
 Queue the prepared bundle:
 
 ```bash
 npm run social:queue -- \
-  --bundle .artifacts/social/pre-action-gates/bundle.json \
+  --bundle .artifacts/social/pre-action-checks/bundle.json \
   --when 2026-03-23T09:00:00-04:00 \
   --platforms instagram,tiktok
 ```
@@ -103,7 +103,7 @@ Prepare browser drafts without publishing:
 
 ```bash
 npm run social:publish -- \
-  --bundle .artifacts/social/pre-action-gates/bundle.json \
+  --bundle .artifacts/social/pre-action-checks/bundle.json \
   --platforms instagram,tiktok \
   --no-share \
   --cleanup-drafts
@@ -113,7 +113,7 @@ Publish immediately:
 
 ```bash
 npm run social:publish -- \
-  --bundle .artifacts/social/pre-action-gates/bundle.json \
+  --bundle .artifacts/social/pre-action-checks/bundle.json \
   --platforms instagram,tiktok
 ```
 
@@ -121,7 +121,7 @@ If the same platform/caption/slide-hash combination was already published, the c
 
 ```bash
 npm run social:publish -- \
-  --bundle .artifacts/social/pre-action-gates/bundle.json \
+  --bundle .artifacts/social/pre-action-checks/bundle.json \
   --platforms instagram,tiktok \
   --force
 ```

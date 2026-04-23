@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Agent Harness Pattern: Why Your AI Needs a Seatbelt — ThumbGate</title>
 <script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
-<meta name="description" content="Tsinghua researchers formalized agent harnesses as first-class objects with contracts, verification gates, and durable state. ThumbGate implements this pattern today.">
-<meta name="keywords" content="agent harness pattern, natural language agent harness, NLAH, AI agent safety, pre-action gates, verification gates, agent contracts, ThumbGate, MCP hooks">
+<meta name="description" content="Tsinghua researchers formalized agent harnesses as first-class objects with contracts, verification checks, and durable state. ThumbGate implements this pattern today.">
+<meta name="keywords" content="agent harness pattern, natural language agent harness, NLAH, AI agent safety, pre-action checks, verification checks, agent contracts, ThumbGate, MCP hooks">
 <meta property="og:title" content="The Agent Harness Pattern: Why Your AI Needs a Seatbelt">
-<meta property="og:description" content="Academic research meets production code. How the natural-language agent harness pattern maps to real pre-action gates.">
+<meta property="og:description" content="Academic research meets production code. How the natural-language agent harness pattern maps to real pre-action checks.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://thumbgate-production.up.railway.app/learn/agent-harness-pattern">
 <link rel="canonical" href="https://thumbgate-production.up.railway.app/learn/agent-harness-pattern">
@@ -18,7 +18,7 @@
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "The Agent Harness Pattern: Why Your AI Needs a Seatbelt",
-  "description": "How the natural-language agent harness pattern from academic research maps to real pre-action gates you can ship today.",
+  "description": "How the natural-language agent harness pattern from academic research maps to real pre-action checks you can ship today.",
   "author": {
     "@type": "Person",
     "name": "Igor Ganapolsky",
@@ -63,7 +63,7 @@
   <h1>The Agent Harness Pattern: Why Your AI Needs a Seatbelt</h1>
   <p style="color:var(--muted);">5 min read &middot; Research deep-dive for developers shipping AI agents in production</p>
 
-  <div class="tldr"><strong>TL;DR:</strong> Tsinghua researchers proved that AI agents need harnesses — contracts, verification gates, and durable state. ThumbGate is a production implementation you can ship today.</div>
+  <div class="tldr"><strong>TL;DR:</strong> Tsinghua researchers proved that AI agents need harnesses — contracts, verification checks, and durable state. ThumbGate is a production implementation you can ship today.</div>
 
   <h2>The problem: agents act faster than you can review</h2>
   <p>AI coding agents can write, commit, and deploy code in seconds. The gap between "agent decides to act" and "irreversible damage" is measured in milliseconds. Prompt instructions alone cannot close that gap because they live inside the same context the agent can override.</p>
@@ -91,9 +91,9 @@
         <td>Prevention rules in <code>prevention-rules.md</code> — auto-generated from thumbs-down feedback</td>
       </tr>
       <tr class="mapping-row">
-        <td>Verification Gates</td>
+        <td>Verification Checks</td>
         <td>Checkpoints that intercept actions before execution</td>
-        <td>PreToolUse hooks — intercept every tool call, match against gates, block or allow</td>
+        <td>PreToolUse hooks — intercept every tool call, match against checks, block or allow</td>
       </tr>
       <tr class="mapping-row">
         <td>Durable State</td>
@@ -113,32 +113,32 @@
   <p>A contract says: if the tool call is <code>Bash</code> and the command matches <code>git push.*--force</code> targeting <code>main</code>, return <code>{"decision": "block"}</code>. The agent never executes the command. There is nothing to reason around.</p>
 
   <div class="callout callout-red">
-    <strong>Prompt rules fail silently.</strong> When a prompt rule is violated, you only find out after the damage is done. A verification gate fails loudly — the agent receives a block response and must adapt.
+    <strong>Prompt rules fail silently.</strong> When a prompt rule is violated, you only find out after the damage is done. A verification check fails loudly — the agent receives a block response and must adapt.
   </div>
 
-  <h2>Verification gates in practice</h2>
-  <p>Every time your AI agent calls a tool — running a shell command, writing a file, making an API call — a PreToolUse hook fires. ThumbGate checks the call against your gates:</p>
+  <h2>Verification checks in practice</h2>
+  <p>Every time your AI agent calls a tool — running a shell command, writing a file, making an API call — a PreToolUse hook fires. ThumbGate checks the call against your checks:</p>
 
   <ol>
     <li><strong>Pattern match:</strong> Does the tool name and arguments match any prevention rule?</li>
     <li><strong>Thompson Sampling:</strong> For rules with uncertain severity, use multi-armed bandit sampling to decide block vs. warn</li>
     <li><strong>Decision:</strong> Block (hard stop), warn (let agent reconsider), or allow (no match)</li>
-    <li><strong>Feedback loop:</strong> The decision is logged. Thumbs-up/down on outcomes refines future gates.</li>
+    <li><strong>Feedback loop:</strong> The decision is logged. Thumbs-up/down on outcomes refines future checks.</li>
   </ol>
 
-  <p>This is the verification gate pattern from the NLAH framework, running in production today.</p>
+  <p>This is the verification check pattern from the NLAH framework, running in production today.</p>
 
   <h2>Durable state: memory that survives sessions</h2>
   <p>One of the NLAH paper's strongest arguments is that agent harnesses need persistent state. An agent that forgets its mistakes between sessions will repeat them.</p>
   <p>ThumbGate stores every feedback event in a SQLite database with full-text search (FTS5). When a new session starts, the agent's context is assembled from relevant past lessons — not the entire history, but the lessons most similar to the current task.</p>
 
   <div class="callout callout-green">
-    <strong>The feedback loop closes itself:</strong> You thumbs-down a mistake → a prevention rule is generated → the gate blocks the mistake next time → the agent adapts → you thumbs-up the adaptation → the rule is reinforced.
+    <strong>The feedback loop closes itself:</strong> You thumbs-down a mistake → a prevention rule is generated → the check blocks the mistake next time → the agent adapts → you thumbs-up the adaptation → the rule is reinforced.
   </div>
 
   <h2>Adapters: one harness, many agents</h2>
   <p>The NLAH framework emphasizes platform independence. A harness should work across different agent runtimes without rewriting the safety logic.</p>
-  <p>ThumbGate achieves this through the Model Context Protocol (MCP). Any agent that speaks MCP — Claude Code, Cursor, Codex, Gemini, Amp, OpenCode — connects to the same ThumbGate server and gets the same gates. Write your rules once, enforce everywhere.</p>
+  <p>ThumbGate achieves this through the Model Context Protocol (MCP). Any agent that speaks MCP — Claude Code, Cursor, Codex, Gemini, Amp, OpenCode — connects to the same ThumbGate server and gets the same checks. Write your rules once, enforce everywhere.</p>
 
   <h2>From research to production in two minutes</h2>
   <p>The NLAH framework describes what an agent harness <em>should</em> be. ThumbGate is what it looks like when you ship one:</p>
@@ -150,7 +150,7 @@
     <li>A PreToolUse hook that intercepts every tool call</li>
     <li>A SQLite+FTS5 lesson database for durable state</li>
     <li>Prevention rules generated from your feedback</li>
-    <li>Thompson Sampling for probabilistic gate decisions</li>
+    <li>Thompson Sampling for probabilistic check decisions</li>
     <li>MCP server adapters for your agent runtime</li>
   </ul>
 
@@ -164,7 +164,7 @@
 
   <div class="related">
     <h3>Related articles</h3>
-    <a href="/learn/mcp-pre-action-gates-explained">MCP Pre-Action Gates Explained →</a>
+    <a href="/learn/mcp-pre-action-checks-explained">MCP Pre-Action Checks Explained →</a>
     <a href="/learn/stop-ai-agent-force-push">How to Stop AI Agents From Force-Pushing to Main →</a>
     <a href="/learn/vibe-coding-safety-net">The Vibe Coding Safety Net You Are Missing →</a>
   </div>

@@ -4,11 +4,11 @@ Open the published ThumbGate GPT directly:
 
 https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate
 
-Use the GPT as the public front door: paste a risky AI action to check, prevent an expensive mistake before it runs, save a thumbs-up/down lesson, write a Pre-Action Gate, install ThumbGate for an agent, or export proof.
+Use the GPT as the public front door: paste a risky AI action to check, prevent an expensive mistake before it runs, save a thumbs-up/down lesson, write a Pre-Action Check, install ThumbGate for an agent, or export proof.
 
 Users do **not** have to keep chatting inside the ThumbGate GPT for enforcement. The GPT is advice, checkpointing, guided setup, and ChatGPT memory capture. Real enforcement for coding agents still runs locally through ThumbGate hooks after `npx thumbgate init`.
 
-Use the term **Reliability Gateway** only after the user understands the outcome: ThumbGate is the gate between AI intent and costly execution.
+Use the term **Reliability Gateway** only after the user understands the outcome: ThumbGate is the approval layer between AI intent and costly execution.
 
 Marketing rule: every landing page, README, social post, and plugin listing should point to the live GPT before asking a cold user to read OpenAPI docs.
 
@@ -53,7 +53,7 @@ Stop costly AI mistakes before they run
 Full description:
 
 ```text
-Paste a risky AI action before it runs. ThumbGate tells you whether to allow, block, or checkpoint it, then turns thumbs-up/down feedback into Pre-Action Gates so repeated mistakes stop coming back.
+Paste a risky AI action before it runs. ThumbGate tells you whether to allow, block, or checkpoint it, then turns thumbs-up/down feedback into Pre-Action Checks so repeated mistakes stop coming back.
 ```
 
 Conversation starters:
@@ -65,7 +65,7 @@ Conversation starters:
 
 Use typed chat replies. ChatGPT's native feedback buttons may send feedback to OpenAI, but they should not be described as the ThumbGate capture path unless OpenAI exposes them to GPT Actions.
 
-## Pre-action gate flow
+## Pre-action check flow
 
 Use this when the user asks whether an AI agent should run a proposed action, command, file edit, deployment, merge, or publish step:
 
@@ -74,14 +74,14 @@ Use this when the user asks whether an AI agent should run a proposed action, co
 3. If the response has `decisionControl.executionMode: "checkpoint_required"`, the GPT asks for explicit confirmation before proceeding.
 4. If the response has `decisionControl.executionMode: "auto_execute"`, the GPT can say the action is allowed and summarize why.
 
-Plain thumbs-up/down feedback is the memory loop. The decision endpoint is the gate loop. Do not claim hard blocking unless the decision endpoint, a saved lesson, or a prevention rule was actually applied.
+Plain thumbs-up/down feedback is the memory loop. The decision endpoint is the check loop. Do not claim hard blocking unless the decision endpoint, a saved lesson, or a prevention rule was actually applied.
 
 ## Best first GPT message
 
 Use this as the first response:
 
 ```text
-Paste the risky AI action before it runs, or tell me what went right/wrong. I can prevent costly mistakes, save the lesson, write a prevention gate, or show what ThumbGate already remembers.
+Paste the risky AI action before it runs, or tell me what went right/wrong. I can prevent costly mistakes, save the lesson, write a prevention rule, or show what ThumbGate already remembers.
 ```
 
 ## Prerequisites

@@ -13,7 +13,7 @@ Use this kit instead of older memory-first launch copy when posting about the pr
 
 ## Canonical Message
 
-> The sellable unit is not a generic AI employee. It is one workflow with memory, gates, and proof.
+> The sellable unit is not a generic AI employee. It is one workflow with memory, checks, and proof.
 
 ## Channel Packages
 
@@ -34,8 +34,8 @@ Local, private-first export-ready assets live under [assets](./assets/README.md)
 - [LinkedIn slide 5](./assets/ai-reliability-system-linkedin-slide-05.svg)
 - [LinkedIn slide 6](./assets/ai-reliability-system-linkedin-slide-06.svg)
 - [X summary card](./assets/ai-reliability-system-x-card.svg)
-- [IG/TikTok carousel HTML](./assets/pre-action-gates-instagram-carousel.html)
-- [IG/TikTok caption](./assets/pre-action-gates-caption.txt)
+- [IG/TikTok carousel HTML](./assets/pre-action-checks-instagram-carousel.html)
+- [IG/TikTok caption](./assets/pre-action-checks-caption.txt)
 
 ## Publishing Order
 

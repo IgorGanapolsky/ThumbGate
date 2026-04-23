@@ -70,7 +70,7 @@ Source (MIT): https://github.com/IgorGanapolsky/ThumbGate
 
 Your agent force-pushed to main. Deleted prod config. Ran the wrong migration. You told it not to. Next session — same mistake.
 
-ThumbGate solves this with pre-action gates: every 👎 becomes a lesson, every lesson becomes a gate, every gate is enforced via PreToolUse hooks.
+ThumbGate solves this with pre-action checks: every 👎 becomes a lesson, every lesson becomes a gate, every gate is enforced via PreToolUse hooks.
 
 v1.4.1: Thompson Sampling · LanceDB vector search · SQLite+FTS5 lesson DB
 
