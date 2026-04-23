@@ -11,6 +11,7 @@
  *   npx thumbgate import-doc    # import a local policy/runbook document and propose gates
  *   npx thumbgate export-dpo    # export DPO training pairs
  *   npx thumbgate export-databricks   # export Databricks-ready analytics bundle
+ *   npx thumbgate eval --from-feedback # turn feedback into reusable prompt evals
  *   npx thumbgate stats         # feedback analytics + Revenue-at-Risk
  *   npx thumbgate cfo           # local operational billing summary
  *   npx thumbgate pro           # solo dashboard + exports side lane
@@ -1809,6 +1810,60 @@ function gateStats() {
   console.log('\n' + formatStats(stats) + '\n');
 }
 
+function evalCmd() {
+  syncActiveProjectContext();
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    formatProofReport,
+    runFeedbackEvalSuite,
+    runSuite,
+    loadSuite,
+  } = require(path.join(PKG_ROOT, 'scripts', 'prompt-eval'));
+  const minScore = args['min-score'] === undefined ? 80 : Number(args['min-score']);
+  const maxCases = args['max-cases'] === undefined ? 25 : Number(args['max-cases']);
+  const suitePath = args.suite ? path.resolve(CWD, args.suite) : null;
+  const fromFeedback = Boolean(args['from-feedback'] || !suitePath);
+  const evalRun = fromFeedback
+    ? runFeedbackEvalSuite({
+        feedbackDir: args['feedback-dir'] ? path.resolve(CWD, args['feedback-dir']) : undefined,
+        feedbackLog: args['feedback-log'] ? path.resolve(CWD, args['feedback-log']) : undefined,
+        maxCases,
+        minScore,
+      })
+    : {
+        suite: loadSuite(suitePath),
+        report: runSuite(suitePath, { minScore }),
+      };
+  const { suite, report } = evalRun;
+
+  if (args['write-suite']) {
+    const outputPath = path.resolve(CWD, args['write-suite']);
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    fs.writeFileSync(outputPath, `${JSON.stringify(suite, null, 2)}\n`, 'utf8');
+  }
+
+  if (args['write-report']) {
+    const outputPath = path.resolve(CWD, args['write-report']);
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    fs.writeFileSync(outputPath, `${formatProofReport(report, suite)}\n`, 'utf8');
+  }
+
+  if (args.json) {
+    console.log(JSON.stringify({ ...report, suiteDefinition: fromFeedback ? suite : undefined }, null, 2));
+    process.exit(report.pass ? 0 : 1);
+  }
+
+  console.log(`\nPrompt Evaluation: ${report.suite}`);
+  console.log('─'.repeat(50));
+  console.log(`  Score      : ${report.score}% (min ${report.minScore}%)`);
+  console.log(`  Cases      : ${report.passed}/${report.total} passing`);
+  console.log(`  Failures   : ${report.failed}`);
+  console.log(`  Errors     : ${report.errors}`);
+  console.log(`  Source     : ${fromFeedback ? 'feedback-derived' : suitePath}`);
+  console.log(report.pass ? '\n✅ PASS\n' : '\n❌ FAIL\n');
+  process.exit(report.pass ? 0 : 1);
+}
+
 function startApi() {
   const serverPath = path.join(PKG_ROOT, 'src', 'api', 'server.js');
   try {
@@ -1825,13 +1880,13 @@ function help() {
   const GROUP_LABELS = {
     capture:   'Feedback capture',
     discovery: 'Discovery & inspection',
-    gates:     'Gates & rules',
+    gates:     'Checks & rules',
     export:    'Export',
     ops:       'Operations',
     advanced:  'Advanced',
   };
 
-  console.log(`thumbgate v${v}  — pre-action gates for AI coding agents`);
+  console.log(`thumbgate v${v}  — pre-action checks for AI coding agents`);
   console.log('');
 
   for (const [groupKey, label] of Object.entries(GROUP_LABELS)) {
@@ -1862,7 +1917,8 @@ function help() {
   console.log('  north-star            Show proof-backed workflow-run progress toward the North Star');
   console.log('  model-fit             Detect local embedding profile and write evidence report');
   console.log('  risk                  Train or query the boosted local risk scorer');
-  console.log('  optimize              [PRO] Prune CLAUDE.md and migrate rules to Pre-Action Gates');
+  console.log('  eval                  Turn feedback into reusable prompt/workflow eval proof');
+  console.log('  optimize              [PRO] Prune CLAUDE.md and migrate rules to Pre-Action Checks');
   console.log('  prove [--target=X]    Run proof harness (adapters|automation|...)');
   console.log('  watch                 Watch .thumbgate/ for external signals');
   console.log('  status                Approval trend + failure domain dashboard');
@@ -1893,6 +1949,7 @@ function help() {
   console.log('  npx thumbgate explore gates --json');
   console.log('  npx thumbgate demo');
   console.log('  npx thumbgate stats --json');
+  console.log('  npx thumbgate eval --from-feedback --json');
   console.log('  npx thumbgate lessons "force push" --json');
   console.log('  npx thumbgate lessons --query="deploy" --remote');
   console.log('  npx thumbgate gate-stats --json');
@@ -2172,6 +2229,10 @@ switch (COMMAND) {
   }
   case 'gate-stats':
     gateStats();
+    break;
+  case 'eval':
+  case 'prompt-eval':
+    evalCmd();
     break;
   case 'explore': {
     const subCmd = process.argv[3];
