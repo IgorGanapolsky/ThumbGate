@@ -30,7 +30,27 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Fetch base branch for changeset diff
-        run: git fetch --no-tags --prune origin '+refs/heads/main:refs/remotes/origin/main'
+        # Retry the fetch to ride through transient GitHub infra 500s.
+        # Without retry, a single HTTP 500 on `git fetch` (e.g. during a
+        # GitHub Actions incident) fails the required status check and
+        # blocks the Trunk merge queue. Five attempts with exponential
+        # backoff (1s, 2s, 4s, 8s) cap at ~15s of wait time.
+        run: |
+          set -euo pipefail
+          delay=1
+          for attempt in 1 2 3 4 5; do
+            if git fetch --no-tags --prune origin '+refs/heads/main:refs/remotes/origin/main'; then
+              echo "Fetched origin/main on attempt ${attempt}"
+              exit 0
+            fi
+            if [ "${attempt}" -eq 5 ]; then
+              echo "git fetch origin main failed after 5 attempts" >&2
+              exit 1
+            fi
+            echo "git fetch attempt ${attempt} failed; retrying in ${delay}s" >&2
+            sleep "${delay}"
+            delay=$(( delay * 2 ))
+          done
 
       - name: Install release-check dependencies
         run: npm ci --ignore-scripts --onnxruntime-node-install-cuda=skip
