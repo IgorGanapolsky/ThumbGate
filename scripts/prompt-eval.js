@@ -250,9 +250,14 @@ function stableCaseId(value, index = 0) {
   const slug = String(value || '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 48);
-  return `${slug || 'entry'}-${index + 1}`;
+    .slice(0, 64);
+  let start = 0;
+  let end = slug.length;
+  while (start < end && slug[start] === '-') start += 1;
+  while (end > start && slug[end - 1] === '-') end -= 1;
+  const trimmed = slug.slice(start, end);
+  const normalized = trimmed.slice(0, 48);
+  return `${normalized || 'entry'}-${index + 1}`;
 }
 
 function normalizeSignal(entry = {}) {
