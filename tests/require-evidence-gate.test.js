@@ -58,12 +58,40 @@ test('require_evidence_for_claim blocks completion claim when evidence missing',
   assert.ok(response.missingActions.includes('tests_passed'));
 });
 
+test('require_evidence_for_claim blocks build-link claims when workflow evidence is missing', async () => {
+  clearSessionActions();
+  const response = await callTool('require_evidence_for_claim', {
+    claim: 'Here is the Android Firebase build link for your branch',
+  });
+  assert.equal(response.mode, 'blocking');
+  assert.equal(response.verified, false);
+  assert.equal(response.matchedChecks, true);
+  assert.equal(response.blocking, true);
+  assert.deepEqual(response.missingActions, ['workflow_verified', 'job_verified', 'branch_verified', 'sha_verified']);
+});
+
 test('require_evidence_for_claim unblocks once tracked evidence exists', async () => {
   clearSessionActions();
   trackAction('tests_passed', { source: 'npm test' });
 
   const response = await callTool('require_evidence_for_claim', {
     claim: 'all tests pass',
+  });
+  assert.equal(response.verified, true);
+  assert.equal(response.blocking, false);
+  assert.deepEqual(response.missingActions, []);
+  clearSessionActions();
+});
+
+test('require_evidence_for_claim unblocks build-link claims once workflow evidence exists', async () => {
+  clearSessionActions();
+  trackAction('workflow_verified', { workflowName: 'Release Pipeline' });
+  trackAction('job_verified', { jobName: 'Deploy Mobile Build to Distribution' });
+  trackAction('branch_verified', { branch: 'release/mobile-push-fix' });
+  trackAction('sha_verified', { sha: '0123456789abcdef0123456789abcdef01234567' });
+
+  const response = await callTool('require_evidence_for_claim', {
+    claim: 'Here is the Android Firebase build link for your branch',
   });
   assert.equal(response.verified, true);
   assert.equal(response.blocking, false);

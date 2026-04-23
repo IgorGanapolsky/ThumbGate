@@ -161,4 +161,17 @@ test('default claim verification config ships expected gates', () => {
   assert.ok(patterns.some((pattern) => pattern.includes('tests? pass')));
   assert.ok(patterns.some((pattern) => pattern.includes('ready to merge')));
   assert.ok(patterns.some((pattern) => pattern.includes('verified on device')));
+  assert.ok(patterns.some((pattern) => pattern.includes('firebase.*build')));
+});
+
+test('verifyClaimEvidence requires workflow evidence for build-link claims', () => {
+  const backups = backupRuntimeState();
+  try {
+    resetRuntimeState();
+    const result = verifyClaimEvidence('Android Firebase build link for this PR');
+    assert.equal(result.verified, false);
+    assert.deepStrictEqual(result.checks[0].missing, ['workflow_verified', 'job_verified', 'branch_verified', 'sha_verified']);
+  } finally {
+    restoreRuntimeState(backups);
+  }
 });

@@ -24,6 +24,12 @@
       "requiredActions": ["on_device_verified"],
       "message": "You claimed on-device verification without evidence. Capture the proof first, then call track_action('on_device_verified').",
       "createdAt": 1774972800000
+    },
+    {
+      "pattern": "firebase.*build|build.*firebase|build link|workflow run|job url|android.*build|ios.*build",
+      "requiredActions": ["workflow_verified", "job_verified", "branch_verified", "sha_verified"],
+      "message": "You claimed or provided a build/workflow link without verifying the exact workflow, job, branch, and head SHA first. Verify each item, then track workflow_verified, job_verified, branch_verified, and sha_verified before responding.",
+      "createdAt": 1775972800000
     }
   ]
 }
