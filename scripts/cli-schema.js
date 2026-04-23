@@ -92,7 +92,7 @@ const CLI_COMMANDS = [
   },
   {
     name: 'gate-stats',
-    description: 'Gate engine statistics — active checks, blocks, warns, time saved',
+    description: 'Check engine statistics — active checks, blocks, warns, time saved',
     group: 'discovery',
     flags: [
       { name: 'json', type: 'boolean', description: 'Output as JSON' },
@@ -128,10 +128,26 @@ const CLI_COMMANDS = [
   discoveryCommand({
     name: 'harness-audit',
     aliases: ['harness'],
-    description: 'Score global docs, MCP discovery, and specialized gate harnesses',
+    description: 'Score global docs, MCP discovery, and specialized check harnesses',
     flags: [
       jsonFlag(),
       { name: 'doc-token-budget', type: 'number', description: 'Global docs budget (default 9000)' },
+    ],
+  }),
+  discoveryCommand({
+    name: 'eval',
+    aliases: ['prompt-eval'],
+    description: 'Turn feedback into reusable prompt/workflow eval proof',
+    flags: [
+      jsonFlag(),
+      { name: 'from-feedback', type: 'boolean', description: 'Generate eval cases from feedback-log.jsonl' },
+      { name: 'feedback-log', type: 'string', description: 'Explicit feedback-log.jsonl path' },
+      { name: 'feedback-dir', type: 'string', description: 'Explicit ThumbGate feedback directory' },
+      { name: 'suite', type: 'string', description: 'Run an existing prompt eval suite' },
+      { name: 'write-suite', type: 'string', description: 'Write generated suite JSON' },
+      { name: 'write-report', type: 'string', description: 'Write Markdown proof report' },
+      { name: 'min-score', type: 'number', description: 'Minimum passing score (default 80)' },
+      { name: 'max-cases', type: 'number', description: 'Maximum feedback-derived cases (default 25)' },
     ],
   }),
   discoveryCommand({

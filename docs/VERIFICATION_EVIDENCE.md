@@ -9,6 +9,7 @@
 | **Pre-action checks** | Block known mistakes before tool use — tested with real feedback patterns |
 | **Feedback capture** | Up/down signals with context, tags, rubric scores — schema-validated |
 | **Prevention rules** | Auto-promoted from repeated failures — regression-tested |
+| **Prompt/workflow evals** | Feedback-derived eval suites prove whether prompt and workflow behavior improved |
 | **Filesystem search** | ContextFS files searchable without embeddings — regression-tested |
 | **Social analytics** | Multi-platform polling pipeline — regression-tested |
 | **ThumbGate search** | Two-tier search (MCP tool + REST API) — regression-tested |
@@ -24,6 +25,7 @@ cd thumbgate && npm ci
 npm test                    # full repository suite
 npm run prove:adapters      # Adapter compatibility proof
 npm run prove:automation    # Automation proof harness
+npm run eval:feedback       # Feedback-derived prompt/workflow eval proof
 npm run test:coverage       # Coverage report
 ```
 

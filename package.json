@@ -250,6 +250,7 @@
     "test:dashboard-insights": "node --test tests/dashboard-insights.test.js",
     "test:telemetry-tracked-link-slug": "node --test tests/telemetry-tracked-link-slug.test.js",
     "test:prompt-eval": "node --test tests/prompt-eval.test.js",
+    "eval:feedback": "node scripts/prompt-eval.js --from-feedback",
     "test:decision-trace": "node --test tests/decision-trace.test.js",
     "test:feedback-fallback": "node --test tests/feedback-fallback.test.js",
     "test:metaclaw": "node --test tests/metaclaw-features.test.js",
