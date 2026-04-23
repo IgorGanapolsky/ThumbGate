@@ -192,8 +192,18 @@ function collapseDecisionTimeline(records) {
   });
 }
 
-function initializeDaySeries(dayCount) {
-  const today = new Date();
+function resolveNow(now) {
+  if (now instanceof Date) return new Date(now.getTime());
+  if (typeof now === 'number' && Number.isFinite(now)) return new Date(now);
+  if (typeof now === 'string' && now) {
+    const parsed = new Date(now);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  return new Date();
+}
+
+function initializeDaySeries(dayCount, now) {
+  const today = resolveNow(now);
   today.setHours(0, 0, 0, 0);
   const days = [];
   for (let offset = dayCount - 1; offset >= 0; offset -= 1) {
@@ -224,7 +234,7 @@ function computeDecisionMetrics(feedbackDir, options = {}) {
   const dayCount = Number.isInteger(options.dayCount) ? options.dayCount : DEFAULT_DAY_COUNT;
   const records = readDecisionLog(getDecisionLogPath(feedbackDir));
   const actions = collapseDecisionTimeline(records).filter((entry) => entry.evaluation);
-  const series = initializeDaySeries(dayCount);
+  const series = initializeDaySeries(dayCount, options.now);
   const dayMap = new Map(series.map((day) => [day.dayKey, day]));
   const outcomeCounts = {
     accepted: 0,
