@@ -406,7 +406,7 @@ Pro ($19/mo or $149/yr) lifts those caps and adds history-aware lesson recall, l
 - [Agent Workflow Contract](WORKFLOW.md) — the agent-run contract for all ThumbGate operations
 - [Ready for Agent Intake](https://github.com/IgorGanapolsky/ThumbGate/issues/new?template=ready-for-agent.yml) — ready-for-agent intake template
 - [SEO Guide: Claude Code Guardrails](docs/learn/claude-code-guardrails.md)
-- [Pro Overlay Repository](https://github.com/IgorGanapolsky/thumbgate-pro) — paid overlay code in the separate `thumbgate-pro` repo/package
+- [ThumbGate-Core](https://github.com/IgorGanapolsky/ThumbGate-Core) — private core for hosted overlays, ranking, policy synthesis, billing intelligence, and org/team workflows
 
 ---
 

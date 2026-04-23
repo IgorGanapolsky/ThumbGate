@@ -15,19 +15,19 @@ Rubric scoring and anti-hacking guardrails are shared via `config/rubrics/defaul
 
 ## Commercial packaging model
 
-1. Ship OSS core first in this repo (`thumbgate`).
-2. Keep paid overlay code in the separate `thumbgate-pro` repo/package.
-3. Offer managed hosted API + analytics as paid SaaS.
+1. Ship the thin public ThumbGate shell in this repo/package (`thumbgate`).
+2. Keep moat logic in the private `ThumbGate-Core` repo.
+3. Offer managed hosted API + analytics as paid SaaS backed by ThumbGate-Core.
 4. Sell enterprise controls (SSO, audit, retention policies, support SLA).
 
 This avoids platform-specific rewrite cost and keeps the product under a small bootstrap budget until paid demand exists.
 
-## Public vs Pro repo boundary
+## Public vs private-core boundary
 
-1. Public repo owns shared runtime, adapters, schemas, docs, and free/local behavior.
-2. Pro repo inherits from the published `thumbgate` package and adds paid-only overlays.
-3. Do not ship `pro/` package code or Pro publish workflows from this public repo.
-4. Public docs may link to the Pro offer and repo, but protected implementation stays out of this tree.
+1. Public repo owns the CLI shell, hook bootstrap, adapter manifests, public schemas, docs, and safe local-first behavior.
+2. `ThumbGate-Core` owns hosted/private overlays, lesson distillation, ranking/reranking, policy synthesis, orchestration logic, billing intelligence, and org/team visibility layers.
+3. Do not ship private-core modules in the public npm tarball when the public shell can degrade safely without them.
+4. Public docs may link to the Pro offer and ThumbGate-Core truth, but protected implementation stays out of this tree.
 
 ## ChatGPT (GPT Actions)
 

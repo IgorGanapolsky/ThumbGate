@@ -253,7 +253,7 @@ Constraints:
 - Return ONLY the JSON array — no markdown, no explanation outside the array.`;
 
 async function analyzeWithLLM(entries) {
-  const { isAvailable, callClaude, MODELS } = require('./llm-client');
+  const { isAvailable, callClaudeJson, MODELS } = require('./llm-client');
   if (!isAvailable()) return null;
 
   const negativeEntries = entries
@@ -276,34 +276,28 @@ async function analyzeWithLLM(entries) {
     return entry;
   }).join('\n\n');
 
-  const raw = await callClaude({
+  const parsed = await callClaudeJson({
     systemPrompt: LLM_RULES_SYSTEM_PROMPT,
     userPrompt: `Analyze these ${negativeEntries.length} negative feedback entries and generate prevention rules:\n\n${batch}`,
     model: MODELS.SMART,
     maxTokens: 2048,
+    cache: true,
   });
 
-  if (!raw) return null;
+  if (!Array.isArray(parsed)) return null;
 
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return null;
-
-    return parsed
-      .filter((r) => r.pattern && r.action && r.message && r.severity)
-      .slice(0, 10)
-      .map((r) => ({
-        pattern: r.pattern,
-        count: negativeEntries.length,
-        severity: ['critical', 'high', 'medium'].includes(r.severity) ? r.severity : 'medium',
-        hasHighRisk: r.severity === 'critical',
-        suggestedRule: r.message,
-        reasoning: r.reasoning || '',
-        source: 'llm-analysis',
-      }));
-  } catch {
-    return null;
-  }
+  return parsed
+    .filter((r) => r.pattern && r.action && r.message && r.severity)
+    .slice(0, 10)
+    .map((r) => ({
+      pattern: r.pattern,
+      count: negativeEntries.length,
+      severity: ['critical', 'high', 'medium'].includes(r.severity) ? r.severity : 'medium',
+      hasHighRisk: r.severity === 'critical',
+      suggestedRule: r.message,
+      reasoning: r.reasoning || '',
+      source: 'llm-analysis',
+    }));
 }
 
 if (require.main === module) {

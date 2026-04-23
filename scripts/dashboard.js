@@ -6,6 +6,10 @@ const path = require('path');
 const { aggregateFailureDiagnostics } = require('./failure-diagnostics');
 const { AUDIT_LOG_FILENAME } = require('./audit-trail');
 const { getBillingSummary, loadFunnelLedger, loadResolvedRevenueEvents } = require('./billing');
+const {
+  createUnavailableReport,
+  loadOptionalModule,
+} = require('./private-core-boundary');
 const { getTelemetryAnalytics, loadTelemetryEvents } = require('./telemetry-analytics');
 const { getAutoGatesPath } = require('./auto-promote-gates');
 const { loadGatesConfig } = require('./gates-engine');
@@ -13,7 +17,25 @@ const { filterEntriesForWindow, resolveAnalyticsWindow } = require('./analytics-
 const { resolveHostedBillingConfig } = require('./hosted-config');
 const { generateAgentReadinessReport } = require('./agent-readiness');
 const { summarizeGateTemplates } = require('./gate-templates');
-const { buildPredictiveInsights } = require('./predictive-insights');
+const { buildPredictiveInsights } = loadOptionalModule('./predictive-insights', () => ({
+  buildPredictiveInsights: () => ({
+    upgradePropensity: {
+      pro: { band: 'unavailable', score: 0 },
+      team: { band: 'unavailable', score: 0 },
+    },
+    revenueForecast: {
+      predictedBookedRevenueCents: 0,
+      incrementalOpportunityCents: 0,
+    },
+    anomalySummary: {
+      count: 0,
+      severity: 'none',
+    },
+    topCreators: [],
+    topSources: [],
+    ...createUnavailableReport('Predictive insights'),
+  }),
+}));
 const { routeProfile } = require('./profile-router');
 const { getSettingsStatus } = require('./settings-hierarchy');
 const { summarizeWorkflowRuns } = require('./workflow-runs');
@@ -29,7 +51,9 @@ const DASHBOARD_REVIEW_STATE_FILE = 'dashboard-review-state.json';
 function loadOrgDashboardModule() {
   const modulePath = path.resolve(__dirname, 'org-dashboard.js');
   if (!fs.existsSync(modulePath)) return null;
-  return require(modulePath);
+  return loadOptionalModule('./org-dashboard', () => ({
+    generateOrgDashboard: ({ windowHours } = {}) => buildUnavailableOrgDashboard(windowHours || 24),
+  }));
 }
 
 function loadDelegationRuntimeModule() {
@@ -40,6 +64,7 @@ function loadDelegationRuntimeModule() {
 
 function buildUnavailableOrgDashboard(windowHours) {
   return {
+    available: false,
     windowHours,
     totalAgents: 0,
     activeAgents: 0,
@@ -52,7 +77,7 @@ function buildUnavailableOrgDashboard(windowHours) {
     riskAgents: [],
     agents: [],
     proRequired: true,
-    upgradeMessage: 'Org dashboard is available only in the private ThumbGate Core runtime.',
+    upgradeMessage: 'Org dashboard is available only in the private ThumbGate Core runtime (ThumbGate-Core).',
     availability: 'private_core',
   };
 }

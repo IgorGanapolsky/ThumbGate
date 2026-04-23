@@ -36,7 +36,7 @@ const { resolveFeedbackDir } = require('./feedback-paths');
 const { parseFeedbackFile, classifySignal, promoteToGates } = require('./feedback-to-rules');
 const { loadAutoGates, saveAutoGates, getAutoGatesPath, patternToGateId } = require('./auto-promote-gates');
 const { readEvolutionState, writeEvolutionState, captureEvolutionSnapshot, applyAcceptedMutation } = require('./evolution-state');
-const { isAvailable, callClaude, MODELS } = require('./llm-client');
+const { isAvailable, callClaudeJson, MODELS } = require('./llm-client');
 const { ensureParentDir } = require('./fs-utils');
 
 // ---------------------------------------------------------------------------
@@ -165,24 +165,18 @@ async function generateCandidatesViaLLM(failures, successDef, blockPatterns) {
     `Generate ${CANDIDATES_PER_RUN} candidate prevention rules that would catch these failures.`,
   ].join('\n\n');
 
-  const raw = await callClaude({
+  const parsed = await callClaudeJson({
     systemPrompt: CANDIDATE_SYSTEM_PROMPT,
     userPrompt,
     model: MODELS.FAST,
     maxTokens: 1200,
+    cache: true,
   });
 
-  if (!raw) return null;
-
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return null;
-    return parsed
-      .filter((r) => r.pattern && r.action && r.message && r.severity)
-      .slice(0, CANDIDATES_PER_RUN);
-  } catch {
-    return null;
-  }
+  if (!Array.isArray(parsed)) return null;
+  return parsed
+    .filter((r) => r.pattern && r.action && r.message && r.severity)
+    .slice(0, CANDIDATES_PER_RUN);
 }
 
 function generateCandidatesHeuristic(failures, blockPatterns) {

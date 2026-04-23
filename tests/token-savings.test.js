@@ -105,9 +105,9 @@ describe('token-savings', () => {
 
     it('renormalizes when weights do not sum to 1', () => {
       const r = blendedPricePer1M({ 'claude-sonnet-4-5': 2, 'claude-opus-4-6': 2 }, DEFAULT_MODEL_PRICES);
-      // 50/50 of $3+$15 → $9 input
-      assert.equal(r.input, 9.0);
-      assert.equal(r.output, 45.0);
+      // 50/50 of Sonnet ($3/$15) and Opus ($5/$25)
+      assert.equal(r.input, 4.0);
+      assert.equal(r.output, 20.0);
     });
 
     it('returns zero when weights sum to zero', () => {

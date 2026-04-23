@@ -22,10 +22,11 @@
  * Defaults are intentionally conservative — the goal is "you almost
  * certainly saved at least this much," not "let's flatter ourselves."
  *
- * Pricing snapshot (USD per 1M tokens, retrieved 2026-04-15):
+ * Pricing snapshot (USD per 1M tokens, retrieved 2026-04-22 from Anthropic's
+ * official prompt-caching pricing table):
  *   Sonnet 4.5: $3 input, $15 output
- *   Opus 4.6:   $15 input, $75 output
- *   Haiku 4.5:  $0.80 input, $4 output
+ *   Opus 4.6:   $5 input, $25 output
+ *   Haiku 4.5:  $1 input, $5 output
  *   GPT-4o:     $2.50 input, $10 output
  *
  * If the caller doesn't pass a modelMix, we assume a Sonnet-heavy
@@ -36,8 +37,8 @@
 const DEFAULT_MODEL_PRICES = Object.freeze({
   // USD per 1M tokens
   'claude-sonnet-4-5': { input: 3.0, output: 15.0 },
-  'claude-opus-4-6': { input: 15.0, output: 75.0 },
-  'claude-haiku-4-5': { input: 0.80, output: 4.0 },
+  'claude-opus-4-6': { input: 5.0, output: 25.0 },
+  'claude-haiku-4-5': { input: 1.0, output: 5.0 },
   'gpt-4o': { input: 2.50, output: 10.0 },
 });
 
