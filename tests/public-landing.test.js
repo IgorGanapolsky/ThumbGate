@@ -537,6 +537,10 @@ test('public landing page includes 7-day free trial and email capture gate', () 
   assert.match(landingPage, /\/js\/buyer-intent\.js/);
   assert.match(buyerIntentScript, /customer_email/);
   assert.match(buyerIntentScript, /submitNewsletterSignup/);
+  assert.match(buyerIntentScript, /initializeBehaviorAnalytics/);
+  assert.match(buyerIntentScript, /buyer_email_abandon/);
+  assert.match(landingPage, /initializeBehaviorAnalytics/);
+  assert.match(landingPage, /pricing_pro_trial/);
   assert.match(buyerIntentScript, /dataset\.baseHref/);
   assert.doesNotMatch(buyerIntentScript, /setAttribute\('href'/);
   assert.doesNotMatch(landingPage, /props:\s*\{\s*email:/);

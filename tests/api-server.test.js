@@ -3333,3 +3333,66 @@ test('funnel analytics returns counts and conversion rates', async () => {
   assert.ok(summary.attribution.acquisitionByCampaignVariant.comment_problem_solution >= 1);
   assert.ok(summary.attribution.acquisitionByOfferCode['REDDIT-EARLY'] >= 1);
 });
+
+test('loss analytics endpoint returns ranked causes and behavioral signals', async () => {
+  fs.appendFileSync(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'), [
+    JSON.stringify({
+      receivedAt: new Date().toISOString(),
+      eventType: 'landing_page_view',
+      clientType: 'web',
+      acquisitionId: 'acq_loss_api_1',
+      visitorId: 'visitor_loss_api_1',
+      sessionId: 'session_loss_api_1',
+      page: '/',
+      source: 'website',
+    }),
+    JSON.stringify({
+      receivedAt: new Date().toISOString(),
+      eventType: 'checkout_bootstrap',
+      clientType: 'web',
+      acquisitionId: 'acq_loss_api_1',
+      visitorId: 'visitor_loss_api_1',
+      sessionId: 'session_loss_api_1',
+      ctaId: 'pricing_pro_trial',
+      page: '/checkout/pro',
+      source: 'website',
+    }),
+    JSON.stringify({
+      receivedAt: new Date().toISOString(),
+      eventType: 'reason_not_buying',
+      clientType: 'web',
+      acquisitionId: 'acq_loss_api_1',
+      visitorId: 'visitor_loss_api_1',
+      sessionId: 'session_loss_api_1',
+      reasonCode: 'need_more_proof',
+      page: '/cancel',
+      source: 'website',
+    }),
+    JSON.stringify({
+      receivedAt: new Date().toISOString(),
+      eventType: 'page_exit',
+      clientType: 'web',
+      acquisitionId: 'acq_loss_api_1',
+      visitorId: 'visitor_loss_api_1',
+      sessionId: 'session_loss_api_1',
+      lastVisibleSection: 'hero',
+      dwellBucket: 'under_10s',
+      scrollBucket: 'under_25',
+      engagementMs: 6300,
+      maxScrollPercent: 18,
+      page: '/',
+      source: 'website',
+    }),
+  ].join('\n') + '\n');
+
+  const analyticsRes = await fetch(apiUrl('/v1/analytics/losses'), {
+    headers: authHeader,
+  });
+  assert.equal(analyticsRes.status, 200);
+  const body = await analyticsRes.json();
+  assert.ok(body.lossAnalysis);
+  assert.ok(Array.isArray(body.lossAnalysis.inferredCauses));
+  assert.ok(Array.isArray(body.lossAnalysis.explicitReasons));
+  assert.equal(body.lossAnalysis.explicitThemes[0].key, 'trust');
+  assert.equal(body.telemetry.behavior.topExitSection.key, 'hero');
+});

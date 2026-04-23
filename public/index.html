@@ -1544,6 +1544,7 @@ function copyInstall(el) {
 
 /* ── Plausible custom event tracking ── */
 (function() {
+
   function trackClick(selector, eventName, props) {
     document.querySelectorAll(selector).forEach(function(el) {
       el.addEventListener('click', function() {
@@ -1627,6 +1628,29 @@ function copyInstall(el) {
 
   /* SEO/comparison page clicks */
   trackClick('.seo-card', 'seo_page_click');
+
+  globalThis.buyerJourney = globalThis.ThumbGateBuyerIntent.initializeBehaviorAnalytics({
+    pageType: 'marketing',
+    pagePath: '/',
+    landingPath: '/',
+    sendTelemetry: sendFirstPartyTelemetry,
+    emailSelector: '#pro-email',
+    sections: [
+      { selector: '.hero', sectionId: 'hero', sectionLabel: 'Hero' },
+      { selector: '.proof-bar', sectionId: 'proof_bar', sectionLabel: 'Proof Bar' },
+      { selector: '#how-it-works', sectionId: 'how_it_works', sectionLabel: 'How It Works' },
+      { selector: '#pricing', sectionId: 'pricing', sectionLabel: 'Pricing' },
+      { selector: '#workflow-sprint-intake', sectionId: 'workflow_sprint_intake', sectionLabel: 'Workflow Sprint Intake' },
+      { selector: '#faq', sectionId: 'faq', sectionLabel: 'FAQ' }
+    ],
+    ctaImpressions: [
+      { selector: '#pro-checkout-link', ctaId: 'pricing_pro_trial', ctaPlacement: 'pricing', planId: 'pro' },
+      { selector: '.price-card.pro .btn-pro', ctaId: 'pricing_pro_monthly', ctaPlacement: 'pricing', planId: 'pro' },
+      { selector: '.hero-actions .btn-pro-page', ctaId: 'hero_go_pro', ctaPlacement: 'hero', planId: 'pro' },
+      { selector: '.sticky-cta .btn-pro', ctaId: 'sticky_go_pro', ctaPlacement: 'sticky_cta', planId: 'pro' },
+      { selector: '.price-card.team .btn-team', ctaId: 'team_workflow_sprint', ctaPlacement: 'pricing', planId: 'team' }
+    ]
+  });
 })();
 </script>
 <script>
@@ -1646,6 +1670,9 @@ async function handleProTrial() {
   buyerIntent.storeBuyerEmail(normalizedEmail);
   buyerIntent.hydrateBuyerEmailInputs(normalizedEmail);
   buyerIntent.applyBuyerEmailToCheckoutLinks(normalizedEmail);
+  if (globalThis.buyerJourney && typeof globalThis.buyerJourney.markEmailCaptured === 'function') {
+    globalThis.buyerJourney.markEmailCaptured();
+  }
   var checkoutLink = document.getElementById('pro-checkout-link');
   var checkoutUrl = checkoutLink ? checkoutLink.href : '/checkout/pro';
   if (typeof plausible === 'function') {
