@@ -28,6 +28,13 @@ function withTempDir(fn) {
   }
 }
 
+function isoDaysAgo(dayOffset, hour, minute) {
+  const timestamp = new Date();
+  timestamp.setHours(hour, minute, 0, 0);
+  timestamp.setDate(timestamp.getDate() - dayOffset);
+  return timestamp.toISOString();
+}
+
 test('decision journal records evaluations and outcomes with computed latency', () => {
   withTempDir((tmpDir) => {
     const evaluation = recordDecisionEvaluation({
@@ -53,7 +60,7 @@ test('decision journal records evaluations and outcomes with computed latency', 
       toolName: 'Bash',
       toolInput: { command: 'npm publish', changedFiles: ['package.json'] },
       changedFiles: ['package.json'],
-      timestamp: '2026-04-09T12:00:00.000Z',
+      timestamp: isoDaysAgo(3, 12, 0),
     });
 
     const outcome = recordDecisionOutcome({
@@ -62,7 +69,7 @@ test('decision journal records evaluations and outcomes with computed latency', 
       actualDecision: 'warn',
       actor: 'human',
       notes: 'Needed a manual checkpoint before release.',
-      timestamp: '2026-04-09T12:05:00.000Z',
+      timestamp: isoDaysAgo(3, 12, 5),
     });
 
     assert.equal(outcome.latencyMs, 5 * 60 * 1000);
@@ -99,14 +106,14 @@ test('collapseDecisionTimeline groups records by actionId', () => {
       toolName: 'Edit',
       toolInput: { filePath: 'README.md' },
       changedFiles: ['README.md'],
-      timestamp: '2026-04-09T08:00:00.000Z',
+      timestamp: isoDaysAgo(2, 8, 0),
     });
 
     recordDecisionOutcome({
       actionId: evaluation.actionId,
       outcome: 'completed',
       actor: 'agent',
-      timestamp: '2026-04-09T08:01:30.000Z',
+      timestamp: isoDaysAgo(2, 8, 1),
     });
 
     const timeline = collapseDecisionTimeline(readDecisionLog());
@@ -142,13 +149,13 @@ test('computeDecisionMetrics summarizes fast-path, overrides, rollbacks, and lat
       toolName: 'Edit',
       toolInput: { filePath: 'README.md' },
       changedFiles: ['README.md'],
-      timestamp: '2026-04-09T09:00:00.000Z',
+      timestamp: isoDaysAgo(3, 9, 0),
     });
     recordDecisionOutcome({
       actionId: fastPath.actionId,
       outcome: 'completed',
       actor: 'agent',
-      timestamp: '2026-04-09T09:01:00.000Z',
+      timestamp: isoDaysAgo(3, 9, 1),
     });
 
     const warned = recordDecisionEvaluation({
@@ -174,14 +181,14 @@ test('computeDecisionMetrics summarizes fast-path, overrides, rollbacks, and lat
       toolName: 'Bash',
       toolInput: { command: 'npm publish' },
       changedFiles: ['package.json', 'server.json'],
-      timestamp: '2026-04-09T10:00:00.000Z',
+      timestamp: isoDaysAgo(2, 10, 0),
     });
     recordDecisionOutcome({
       actionId: warned.actionId,
       outcome: 'overridden',
       actualDecision: 'warn',
       actor: 'human',
-      timestamp: '2026-04-09T10:06:00.000Z',
+      timestamp: isoDaysAgo(2, 10, 6),
     });
 
     const blocked = recordDecisionEvaluation({
@@ -207,14 +214,14 @@ test('computeDecisionMetrics summarizes fast-path, overrides, rollbacks, and lat
       toolName: 'Bash',
       toolInput: { command: 'gh pr merge --admin' },
       changedFiles: ['package.json', '.github/workflows/release.yml'],
-      timestamp: '2026-04-09T11:00:00.000Z',
+      timestamp: isoDaysAgo(1, 11, 0),
     });
     recordDecisionOutcome({
       actionId: blocked.actionId,
       outcome: 'rolled_back',
       actualDecision: 'deny',
       actor: 'system',
-      timestamp: '2026-04-09T11:03:00.000Z',
+      timestamp: isoDaysAgo(1, 11, 3),
     });
 
     const metrics = computeDecisionMetrics();
