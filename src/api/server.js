@@ -3,6 +3,7 @@ const http = require('http');
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const { EventEmitter } = require('events');
 const pkg = require('../../package.json');
 
 const POSTHOG_API_PATHS = new Set(['/capture', '/batch', '/decide', '/e', '/engage']);
@@ -3228,6 +3229,18 @@ function createApiServer() {
   const expectedApiKey = getExpectedApiKey();
   const expectedOperatorKey = getExpectedOperatorKey();
 
+  // Live-event bus. Feedback captures, prevention-rule regenerations, and
+  // gate decisions push to this emitter; the /v1/events SSE endpoint streams
+  // those events to connected dashboard clients so they render in real time
+  // instead of waiting for the next manual refresh.
+  //
+  // See .changeset/dashboard-sse-live.md for the ROI rationale — this is a
+  // direct application of the "persistent channel beats per-turn HTTP" pattern
+  // to ThumbGate's dashboard surface (the primary UI for watching team
+  // feedback flow).
+  const eventBus = new EventEmitter();
+  eventBus.setMaxListeners(200);
+
   return http.createServer(async (req, res) => {
     const parsed = new URL(req.url, 'http://localhost');
     const pathname = parsed.pathname;
@@ -4933,6 +4946,46 @@ async function addContext(){
         return;
       }
 
+      // Server-Sent Events stream of live feedback / rule-regen / gate events.
+      // Dashboard clients subscribe once (with the same Bearer auth already
+      // required for /v1/feedback/stats) and receive pushed events as they
+      // happen — no polling, no per-event HTTP round trip. Replaces the
+      // implicit "refresh the page" loop that used to be the only way to see
+      // new feedback land.
+      if (req.method === 'GET' && pathname === '/v1/events') {
+        res.writeHead(200, {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache, no-transform',
+          'Connection': 'keep-alive',
+          'X-Accel-Buffering': 'no', // disable nginx buffering if any proxy is in front
+        });
+        // Initial handshake so the client knows the stream is live. Carries
+        // the server version so clients can detect mid-session upgrades.
+        res.write(`event: connected\ndata: ${JSON.stringify({ version: pkg.version, ts: Date.now() })}\n\n`);
+
+        const onEvent = (payload) => {
+          try {
+            res.write(`event: ${payload.type}\ndata: ${JSON.stringify(payload)}\n\n`);
+          } catch (_) { /* connection already closed */ }
+        };
+        eventBus.on('broadcast', onEvent);
+
+        // Heartbeat every 25s keeps proxies (Railway, CDNs) from idle-closing
+        // the connection. Clients ignore comment frames per the SSE spec.
+        const heartbeat = setInterval(() => {
+          try { res.write(':ping\n\n'); } catch (_) { /* closed */ }
+        }, 25_000);
+
+        const cleanup = () => {
+          clearInterval(heartbeat);
+          eventBus.removeListener('broadcast', onEvent);
+        };
+        req.on('close', cleanup);
+        req.on('aborted', cleanup);
+        res.on('close', cleanup);
+        return;
+      }
+
       if (req.method === 'GET' && pathname === '/v1/intents/catalog') {
         const mcpProfile = parsed.searchParams.get('mcpProfile') || undefined;
         const bundleId = parsed.searchParams.get('bundleId') || undefined;
@@ -5415,6 +5468,19 @@ async function addContext(){
           tags: extractTags(body.tags),
           skill: body.skill,
         });
+        if (result && result.accepted) {
+          // Fan out to any connected dashboard clients so they re-render
+          // without polling. Non-sensitive summary only (no chat history,
+          // no evidence blobs).
+          eventBus.emit('broadcast', {
+            type: 'feedback',
+            signal: body.signal,
+            tags: Array.isArray(body.tags) ? body.tags.slice(0, 8) : [],
+            feedbackId: result.feedbackId,
+            promoted: Boolean(result.promoted),
+            ts: Date.now(),
+          });
+        }
         const code = result.accepted ? 200 : 422;
         sendJson(res, code, result);
         return;
@@ -5427,6 +5493,13 @@ async function addContext(){
           ? resolveSafePath(body.outputPath, { safeDataDir: requestSafeDataDir })
           : undefined;
         const result = writePreventionRules(outputPath, Number.isFinite(minOccurrences) ? minOccurrences : 2);
+        // Tell live dashboard clients the rules file just changed so they can
+        // re-fetch the summary without waiting on a poll tick.
+        eventBus.emit('broadcast', {
+          type: 'rules-updated',
+          path: result.path,
+          ts: Date.now(),
+        });
         sendJson(res, 200, {
           path: result.path,
           markdown: result.markdown,
