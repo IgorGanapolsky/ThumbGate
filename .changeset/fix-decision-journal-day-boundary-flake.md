@@ -2,6 +2,6 @@
 "thumbgate": patch
 ---
 
-fix(tests): anchor decision-journal metric test timestamps to now-3d
+fix(decision-journal): pin clock in metrics test to remove day-boundary flake
 
-The `computeDecisionMetrics` test used hard-coded `2026-04-09T...` timestamps while the metric aggregates over a rolling 14-day window anchored at wall-clock time. Two weeks later the fixed timestamps fell off the window and the `metrics.days.some((day) => day.evaluations > 0)` assertion failed, blocking every open PR. Switched to a `now - 3 days` base with preserved hour-offset latencies so the test is date-agnostic.
+`computeDecisionMetrics` now accepts an optional `options.now` and threads it into `initializeDaySeries`, so the rolling 14-day window is driven by an injectable clock rather than a fresh `new Date()` at aggregation time. The metrics test pins both the synthetic event base and the aggregator clock to the same reference timestamp, removing the race where CI crossing UTC midnight between event inserts and aggregation dropped events out of the window and failed `metrics.days.some((day) => day.evaluations > 0)`.

@@ -119,10 +119,12 @@ test('collapseDecisionTimeline groups records by actionId', () => {
 
 test('computeDecisionMetrics summarizes fast-path, overrides, rollbacks, and latency', () => {
   withTempDir(() => {
-    // Anchor timestamps 3 days ago so events land inside the rolling 14-day
-    // window regardless of when CI runs. Hour offsets preserve the exact
-    // latency deltas the assertions below depend on.
-    const baseDate = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    // Pin a synthetic "now" and anchor events three days earlier so both the
+    // day-series window and the event timestamps share a single clock. This
+    // removes the day-boundary flake where CI crossing UTC midnight between
+    // event inserts and metrics aggregation dropped events out of the window.
+    const pinnedNow = new Date('2026-06-15T12:00:00.000Z');
+    const baseDate = new Date(pinnedNow.getTime() - 3 * 24 * 60 * 60 * 1000);
     baseDate.setUTCHours(0, 0, 0, 0);
     const baseMs = baseDate.getTime();
     const iso = (hours, minutes = 0, seconds = 0) =>
@@ -226,7 +228,7 @@ test('computeDecisionMetrics summarizes fast-path, overrides, rollbacks, and lat
       timestamp: iso(11, 3),
     });
 
-    const metrics = computeDecisionMetrics();
+    const metrics = computeDecisionMetrics(undefined, { now: pinnedNow });
     assert.equal(metrics.evaluationCount, 3);
     assert.equal(metrics.fastPathCount, 1);
     assert.equal(metrics.overrideCount, 1);
