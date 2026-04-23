@@ -26,8 +26,8 @@ This document is the source of truth for product, pricing, traction, and proof c
 - 3 daily feedback captures
 - 5 daily lesson searches
 - Unlimited recall on the local runtime
-- 10 auto-promoted gates plus the core safety policy
-- 5 built-in gates
+- 10 auto-promoted checks plus the core safety policy
+- 5 built-in checks
 - Single user, single machine
 - DPO/KTO export for fine-tuning
 - CLI dashboard
@@ -38,7 +38,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 - Personal local dashboard
 - DPO export and advanced data exports
 - Review-ready workflow support for the first risky flow
-- Unlimited custom gates with auto-gate promotion
+- Unlimited custom checks with auto-promotion into prevention rules
 - Secondary self-serve lane for solo operators, not the default enterprise pitch
 
 ### Team ($49/seat/mo, min 3, hosted rollout intake-first)
@@ -46,8 +46,8 @@ This document is the source of truth for product, pricing, traction, and proof c
 - Workflow hardening sprint as the first paid step
 - Shared hosted lesson database
 - Generated hosted review views for team, incident, and rollout operations
-- Org dashboard with active agents, gate hit rates, and risk agents
-- Curated gate template library
+- Org dashboard with active agents, check hit rates, and risk agents
+- Curated check template library
 - Isolated execution guidance for risky local autonomy and signed hosted sandbox dispatch for team workflows
 - Workflow hardening sprint intake and rollout support
 - Team-wide sharing of prevention rules and proof artifacts

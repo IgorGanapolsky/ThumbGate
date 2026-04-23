@@ -8,7 +8,7 @@ const path = require('path');
 const PUBLIC_DIR = path.resolve(__dirname, '..', 'public');
 
 const GUIDE_FILES = [
-  'guides/pre-action-gates.html',
+  'guides/pre-action-checks.html',
   'guides/agent-harness-optimization.html',
   'guides/browser-automation-safety.html',
   'guides/native-messaging-host-security.html',
@@ -119,6 +119,6 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(topicalPresence.includes('Topical presence'), 'topical presence guide should mention topical presence');
     assert.ok(topicalPresence.includes('Verification evidence'), 'topical presence guide should link proof assets');
     assert.ok(relationalKnowledge.includes('Relational knowledge'), 'relational knowledge guide should mention relational knowledge');
-    assert.ok(relationalKnowledge.includes('pre-action gates'), 'relational knowledge guide should tie the topic back to ThumbGate');
+    assert.ok(relationalKnowledge.includes('pre-action checks'), 'relational knowledge guide should tie the topic back to ThumbGate');
   });
 });

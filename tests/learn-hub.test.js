@@ -51,7 +51,7 @@ test('learn hub links to core articles and high-intent buyer guides', () => {
   const html = readFile(learnHubPath);
   assert.match(html, /\/learn\/stop-ai-agent-force-push/);
   assert.match(html, /\/learn\/vibe-coding-safety-net/);
-  assert.match(html, /\/learn\/mcp-pre-action-gates-explained/);
+  assert.match(html, /\/learn\/mcp-pre-action-checks-explained/);
   assert.match(html, /\/learn\/agent-harness-pattern/);
   assert.match(html, /\/learn\/ai-agent-persistent-memory/);
   assert.match(html, /\/guides\/stop-repeated-ai-agent-mistakes/);
@@ -71,7 +71,7 @@ test('learn hub has article cards with titles, descriptions, tags, and a buyer-q
   assert.match(html, /class="article-tag"/);
   assert.match(html, /How to Stop AI Agents From Force-Pushing/);
   assert.match(html, /Vibe Coding Safety Net/);
-  assert.match(html, /MCP Pre-Action Gates Explained/);
+  assert.match(html, /MCP Pre-Action Checks Explained/);
   assert.match(html, /Agent Harness Pattern/);
   assert.match(html, /Persistent Memory Across Sessions/);
   assert.match(html, /Popular buyer questions/);
@@ -134,7 +134,7 @@ test('force-push article has breadcrumb back to learn hub', () => {
 test('force-push article has related links to other articles', () => {
   const html = readFile(path.join(learnDir, 'stop-ai-agent-force-push.html'));
   assert.match(html, /\/learn\/vibe-coding-safety-net/);
-  assert.match(html, /\/learn\/mcp-pre-action-gates-explained/);
+  assert.match(html, /\/learn\/mcp-pre-action-checks-explained/);
 });
 
 // ============================================================
@@ -174,56 +174,56 @@ test('vibe-coding article has install CTA', () => {
 test('vibe-coding article has related links', () => {
   const html = readFile(path.join(learnDir, 'vibe-coding-safety-net.html'));
   assert.match(html, /\/learn\/stop-ai-agent-force-push/);
-  assert.match(html, /\/learn\/mcp-pre-action-gates-explained/);
+  assert.match(html, /\/learn\/mcp-pre-action-checks-explained/);
 });
 
 // ============================================================
-// Article 3: MCP Pre-Action Gates Explained
+// Article 3: MCP Pre-Action Checks Explained
 // ============================================================
 
 test('mcp-gates article exists with correct structure', () => {
-  const html = readFile(path.join(learnDir, 'mcp-pre-action-gates-explained.html'));
+  const html = readFile(path.join(learnDir, 'mcp-pre-action-checks-explained.html'));
   assert.match(html, /<!DOCTYPE html>/i);
-  assert.match(html, /<title>MCP Pre-Action Gates Explained/);
+  assert.match(html, /<title>MCP Pre-Action Checks Explained/);
 });
 
 test('mcp-gates article has TechArticle JSON-LD', () => {
-  const html = readFile(path.join(learnDir, 'mcp-pre-action-gates-explained.html'));
+  const html = readFile(path.join(learnDir, 'mcp-pre-action-checks-explained.html'));
   assert.match(html, /"@type":\s*"TechArticle"/);
 });
 
 test('mcp-gates article has comparison table (prompt rules vs gates)', () => {
-  const html = readFile(path.join(learnDir, 'mcp-pre-action-gates-explained.html'));
+  const html = readFile(path.join(learnDir, 'mcp-pre-action-checks-explained.html'));
   assert.match(html, /<table>/);
   assert.match(html, /Prompt Rules/);
-  assert.match(html, /Pre-Action Gates/);
+  assert.match(html, /Pre-Action Checks/);
 });
 
 test('mcp-gates article has flow diagram', () => {
-  const html = readFile(path.join(learnDir, 'mcp-pre-action-gates-explained.html'));
+  const html = readFile(path.join(learnDir, 'mcp-pre-action-checks-explained.html'));
   assert.match(html, /class="flow-diagram"/);
   assert.match(html, /PreToolUse hook fires/);
 });
 
 test('mcp-gates article covers Thompson Sampling', () => {
-  const html = readFile(path.join(learnDir, 'mcp-pre-action-gates-explained.html'));
+  const html = readFile(path.join(learnDir, 'mcp-pre-action-checks-explained.html'));
   assert.match(html, /Thompson Sampling/);
 });
 
 test('mcp-gates article has canonical and OG tags', () => {
-  const html = readFile(path.join(learnDir, 'mcp-pre-action-gates-explained.html'));
+  const html = readFile(path.join(learnDir, 'mcp-pre-action-checks-explained.html'));
   assert.match(html, /rel="canonical"/);
-  assert.match(html, /\/learn\/mcp-pre-action-gates-explained/);
+  assert.match(html, /\/learn\/mcp-pre-action-checks-explained/);
   assert.match(html, /og:title/);
 });
 
 test('mcp-gates article has install CTA', () => {
-  const html = readFile(path.join(learnDir, 'mcp-pre-action-gates-explained.html'));
+  const html = readFile(path.join(learnDir, 'mcp-pre-action-checks-explained.html'));
   assert.match(html, /npx thumbgate init/);
 });
 
 test('mcp-gates article lists supported agents', () => {
-  const html = readFile(path.join(learnDir, 'mcp-pre-action-gates-explained.html'));
+  const html = readFile(path.join(learnDir, 'mcp-pre-action-checks-explained.html'));
   assert.match(html, /Claude Code/);
   assert.match(html, /Cursor/);
   assert.match(html, /Codex/);
@@ -251,7 +251,7 @@ test('agent-harness article has NLAH-to-ThumbGate mapping table', () => {
   assert.match(html, /<table>/);
   assert.match(html, /NLAH Component/);
   assert.match(html, /Contracts/);
-  assert.match(html, /Verification Gates/);
+  assert.match(html, /Verification Checks/);
   assert.match(html, /Durable State/);
   assert.match(html, /Adapters/);
 });
@@ -276,7 +276,7 @@ test('agent-harness article has breadcrumb back to learn hub', () => {
 
 test('agent-harness article has related links to other articles', () => {
   const html = readFile(path.join(learnDir, 'agent-harness-pattern.html'));
-  assert.match(html, /\/learn\/mcp-pre-action-gates-explained/);
+  assert.match(html, /\/learn\/mcp-pre-action-checks-explained/);
   assert.match(html, /\/learn\/stop-ai-agent-force-push/);
   assert.match(html, /\/learn\/vibe-coding-safety-net/);
 });
@@ -348,7 +348,7 @@ test('persistent-memory article has breadcrumb back to learn hub', () => {
 test('persistent-memory article has related links to other articles', () => {
   const html = readFile(path.join(learnDir, 'ai-agent-persistent-memory.html'));
   assert.match(html, /\/learn\/agent-harness-pattern/);
-  assert.match(html, /\/learn\/mcp-pre-action-gates-explained/);
+  assert.match(html, /\/learn\/mcp-pre-action-checks-explained/);
   assert.match(html, /\/learn\/stop-ai-agent-force-push/);
   assert.match(html, /\/learn\/vibe-coding-safety-net/);
 });
@@ -431,7 +431,7 @@ test('key learn articles include TL;DR and sticky CTA markup', () => {
   const files = [
     'stop-ai-agent-force-push.html',
     'vibe-coding-safety-net.html',
-    'mcp-pre-action-gates-explained.html',
+    'mcp-pre-action-checks-explained.html',
     'agent-harness-pattern.html',
     'ai-agent-persistent-memory.html'
   ];
@@ -476,7 +476,7 @@ test('no learn page references version numbers (evergreen content)', () => {
 
 test('no learn page has broken internal links', () => {
   const allFiles = [learnHubPath, ...fs.readdirSync(learnDir).filter(f => f.endsWith('.html')).map(f => path.join(learnDir, f))];
-  const validPaths = ['/learn', '/guide', '/dashboard', '/', '/learn/stop-ai-agent-force-push', '/learn/vibe-coding-safety-net', '/learn/mcp-pre-action-gates-explained', '/learn/agent-harness-pattern', '/learn/ai-agent-persistent-memory', '/learn/learn.css', '/favicon.svg', '/thumbgate-icon.png', '/og.png', '/assets/brand/thumbgate-mark.svg', '/assets/brand/thumbgate-mark-inline.svg', '/guides/stop-repeated-ai-agent-mistakes', '/guides/browser-automation-safety', '/guides/native-messaging-host-security', '/guides/ai-search-topical-presence', '/guides/relational-knowledge-ai-recommendations', '/guides/cursor-agent-guardrails', '/guides/codex-cli-guardrails', '/guides/gemini-cli-feedback-memory', '/guides/autoresearch-agent-safety'];
+  const validPaths = ['/learn', '/guide', '/dashboard', '/', '/learn/stop-ai-agent-force-push', '/learn/vibe-coding-safety-net', '/learn/mcp-pre-action-checks-explained', '/learn/agent-harness-pattern', '/learn/ai-agent-persistent-memory', '/learn/learn.css', '/favicon.svg', '/thumbgate-icon.png', '/og.png', '/assets/brand/thumbgate-mark.svg', '/assets/brand/thumbgate-mark-inline.svg', '/guides/stop-repeated-ai-agent-mistakes', '/guides/browser-automation-safety', '/guides/native-messaging-host-security', '/guides/ai-search-topical-presence', '/guides/relational-knowledge-ai-recommendations', '/guides/cursor-agent-guardrails', '/guides/codex-cli-guardrails', '/guides/gemini-cli-feedback-memory', '/guides/autoresearch-agent-safety'];
   for (const file of allFiles) {
     const html = readFile(file);
     const links = html.match(/href="(\/[^"#]*?)"/g) || [];

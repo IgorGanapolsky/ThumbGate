@@ -341,7 +341,7 @@ if (isCliInvocation()) {
     const entries = loadSpecAudit();
     console.log(JSON.stringify(summarizeSpecAudit(entries), null, 2));
   } else {
-    console.error(`Unknown command: ${command}. Use: check, gates, audit`);
+    console.error(`Unknown command: ${command}. Use: check, checks, audit`);
     process.exit(1);
   }
 }

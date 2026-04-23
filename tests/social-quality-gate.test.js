@@ -16,7 +16,7 @@ test('blocks AI phrasing', () => { assert.equal(scanForSlop("In today's rapidly 
 test('blocks fake urgency', () => { assert.equal(scanForSlop("Don't miss out on our latest release — limited time!").allowed, false); });
 test('blocks hype', () => { assert.equal(scanForSlop('Our revolutionary game-changer disrupts the space.').allowed, false); });
 test('blocks too short', () => { assert.equal(scanForSlop('Check this!').allowed, false); });
-test('allows few hashtags', () => { assert.equal(scanForSlop('Built a pre-action gate system for AI agents. Thompson Sampling adapts which rules fire.\n#ThumbGate #AIAgents #MCP').allowed, true); });
+test('allows few hashtags', () => { assert.equal(scanForSlop('Built a pre-action check system for AI agents. Thompson Sampling adapts which rules fire.\n#ThumbGate #AIAgents #MCP').allowed, true); });
 test('our tweet passes', () => { assert.equal(scanForSlop('I built an open-source MCP server that stops AI coding agents from repeating mistakes.\n\nEvery 👎 → prevention rule → gate → blocked.\n\nMore errors = stronger gates.\n\nnpx thumbgate init\nhttps://github.com/IgorGanapolsky/ThumbGate\n\n#ThumbGate #ClaudeCode #AIAgents').allowed, true); });
 test('gatePost works same as scanForSlop', () => { assert.equal(gatePost('Good genuine post about work.').allowed, scanForSlop('Good genuine post about work.').allowed); });
 test('blocks unsolicited reddit CTA replies', () => {

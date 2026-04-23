@@ -16,14 +16,14 @@ const DEFAULT_ASSET_HTML = path.join(
   'docs',
   'marketing',
   'assets',
-  'pre-action-gates-instagram-carousel.html'
+  'pre-action-checks-instagram-carousel.html'
 );
 const DEFAULT_CAPTION_PATH = path.join(
   REPO_ROOT,
   'docs',
   'marketing',
   'assets',
-  'pre-action-gates-caption.txt'
+  'pre-action-checks-caption.txt'
 );
 const DEFAULT_OUTPUT_ROOT = path.join(REPO_ROOT, '.artifacts', 'social');
 const DEFAULT_QUEUE_PATH = path.join(REPO_ROOT, '.thumbgate', 'social-post-queue.json');
@@ -2460,13 +2460,13 @@ async function main(argv = process.argv.slice(2)) {
 
   if (command === 'prepare') {
     const sourceHtmlPath = resolvePath(args.source, DEFAULT_ASSET_HTML);
-    const outputDir = resolvePath(args.output, path.join(DEFAULT_OUTPUT_ROOT, slugify(args.slug || 'pre-action-gates')));
+    const outputDir = resolvePath(args.output, path.join(DEFAULT_OUTPUT_ROOT, slugify(args.slug || 'pre-action-checks')));
     const { manifestPath, manifest } = prepareBundle({
       sourceHtmlPath,
       captionPath: resolvePath(args.caption, DEFAULT_CAPTION_PATH),
       captionText: args['caption-text'],
       outputDir,
-      slug: args.slug || 'pre-action-gates',
+      slug: args.slug || 'pre-action-checks',
       slideDurationSeconds: Number(args['slide-seconds'] || 2.4),
       dryRun: Boolean(args['dry-run']),
     });

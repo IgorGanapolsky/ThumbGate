@@ -84,7 +84,7 @@ function scoreThread(thread) {
 function generateReply(thread) {
   const context = thread.selftext.substring(0, 200);
   return `
-**ThumbGate can help prevent this.** Our pre-action gates catch agent mistakes before they happen:
+**ThumbGate can help prevent this.** Our pre-action checks catch agent mistakes before they happen:
 - Stop force pushes on protected branches
 - Prevent deletions of critical files
 - Verify AI actions before execution

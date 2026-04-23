@@ -1,4 +1,4 @@
-# If you're running Claude Code against Google's new Agentic Data Cloud, add pre-action gates before autopilot fires.
+# If you're running Claude Code against Google's new Agentic Data Cloud, add pre-action checks before autopilot fires.
 
 Google announced the Agentic Data Cloud at Cloud Next on April 22. BigQuery, Spanner, AlloyDB, Cloud SQL, and Looker now speak MCP directly. The Data Agent Kit drops those tools into Claude Code, Codex, Gemini CLI, and VS Code on day one.
 

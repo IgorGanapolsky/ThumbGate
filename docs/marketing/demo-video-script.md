@@ -36,11 +36,11 @@ Output appears:
 ```
 Feedback captured. Distilling lesson...
 Rule generated: BLOCK tool=Write when pattern=overwrite+no-existence-check
-Gate active. This pattern will be blocked in future sessions.
+Check active. This pattern will be blocked in future sessions.
 ```
 
 **Voiceover:**
-"One thumbs-down. ThumbGate captures the failure, distills it into a prevention rule, and installs a gate. The mistake is now permanently blocked."
+"One thumbs-down. ThumbGate captures the failure, distills it into a prevention rule, and installs a check. The mistake is now permanently blocked."
 
 ---
 
@@ -58,13 +58,13 @@ Output:
 ThumbGate initialized.
 SQLite lesson DB: .thumbgate/lessons.db
 PreToolUse hook: .claude/settings.json updated
-Gates active: 0
+Checks active: 0
 ```
 
 **Step 2 — Next agent session attempts the same bad Write call:**
 ```
 [PreToolUse] Evaluating: Write { path: "config.json", mode: "overwrite" }
-Gate matched: destructive-write-no-existence-check (confidence: 0.91)
+Check matched: destructive-write-no-existence-check (confidence: 0.91)
 BLOCKED. Reason: "always check file existence before writing"
 ```
 Red "BLOCKED" text pulses briefly.
@@ -75,14 +75,14 @@ npx thumbgate dashboard
 ```
 Simple table appears:
 ```
-Gates active:     3
+Checks active:     3
 Blocks today:     1
 Lessons learned:  7
 Last block:       2 minutes ago — destructive-write-no-existence-check
 ```
 
 **Voiceover:**
-"Install in one command. The PreToolUse hook intercepts every agent action before it executes. When a gate matches, the call is blocked — with the exact reason, sourced from your own feedback."
+"Install in one command. The PreToolUse hook intercepts every agent action before it executes. When a check matches, the call is blocked — with the exact reason, sourced from your own feedback."
 
 ---
 
@@ -91,7 +91,7 @@ Last block:       2 minutes ago — destructive-write-no-existence-check
 **On screen:**
 Dashboard view. Three stat cards animate in:
 - "7 lessons learned"
-- "3 gates active"
+- "3 checks active"
 - "1 mistake blocked today"
 
 Below: a short lessons table with two rows visible:

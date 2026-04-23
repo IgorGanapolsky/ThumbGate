@@ -6,7 +6,7 @@ I wanted to share some implementation details from a project I have been buildin
 
 AI coding agents (Claude Code, Cursor, Codex) work by executing tool calls -- Bash commands, file writes, git operations. ThumbGate installs PreToolUse hooks that fire before each tool call. Each hook receives the proposed action and can allow, block, or modify it.
 
-The hooks are wired at init time (`npx thumbgate init` detects the agent and writes the appropriate config). At runtime, the flow is: agent proposes tool call -> hook engine loads active gates -> each gate checks the action -> if any gate rejects, the action is blocked and the agent receives a rejection message with the reason and a suggested alternative.
+The hooks are wired at init time (`npx thumbgate init` detects the agent and writes the appropriate config). At runtime, the flow is: agent proposes tool call -> hook engine loads active checks -> each check checks the action -> if any check rejects, the action is blocked and the agent receives a rejection message with the reason and a suggested alternative.
 
 **SQLite + FTS5 for lesson search:**
 
@@ -14,9 +14,9 @@ Every piece of feedback (thumbs-up or thumbs-down) gets distilled into a "lesson
 
 When a hook fires, it queries the lesson DB to check if the proposed action matches any known-bad patterns. FTS5 handles the keyword matching. For semantic matching (catching paraphrased versions of the same mistake), there is a LanceDB vector index. The dual-recall approach (FTS5 keyword + LanceDB vector) catches both exact and fuzzy matches.
 
-**Thompson Sampling for gate activation:**
+**Thompson Sampling for check activation:**
 
-Not every gate is equally useful, and activating too many gates creates false positives. ThumbGate uses Thompson Sampling -- a multi-armed bandit algorithm -- to decide gate activation weights. Each gate has a beta distribution parameterized by its success (true blocks) and failure (false positive) counts. At decision time, we sample from each distribution and activate gates above a threshold. This means the system self-tunes: useful gates get stronger, noisy gates fade out.
+Not every check is equally useful, and activating too many checks creates false positives. ThumbGate uses Thompson Sampling -- a multi-armed bandit algorithm -- to decide check activation weights. Each check has a beta distribution parameterized by its success (true blocks) and failure (false positive) counts. At decision time, we sample from each distribution and activate checks above a threshold. This means the system self-tunes: useful checks get stronger, noisy checks fade out.
 
 **Content-hash deduplication:**
 

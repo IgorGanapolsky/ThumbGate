@@ -1,14 +1,14 @@
 ---
 name: thumbgate
-description: "Pre-action gates for AI agents - capture feedback, generate prevention rules, block known-bad patterns. Use for setup, feedback capture, gate debugging, or DPO training data export."
+description: "Pre-action checks for AI agents - capture thumbs-up/down feedback, generate prevention rules, block known-bad patterns. Use for setup, feedback capture, check debugging, or DPO training data export."
 allowed-tools:
   - Bash
   - Read
 ---
 
-# ThumbGate — Pre-Action Gates for AI Agents
+# ThumbGate — Pre-Action Checks for AI Agents
 
-ThumbGate turns thumbs-up/down feedback into hard enforcement gates that block
+ThumbGate turns thumbs-up/down feedback into hard enforcement checks that block
 known-bad agent actions before they execute. Think of it as an immune system
 for your AI agent.
 

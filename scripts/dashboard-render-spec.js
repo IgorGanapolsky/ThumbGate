@@ -243,7 +243,7 @@ function buildIncidentReviewSpec(data) {
         badge: String(gate.action || 'block').toUpperCase(),
         tone: gate.action === 'warn' ? 'info' : 'warning',
       })),
-      'No active gates configured.'
+      'No active checks configured.'
     ),
     buildList(
       'Root cause clusters',

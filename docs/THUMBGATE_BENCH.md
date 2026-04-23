@@ -2,7 +2,7 @@
 
 ThumbGate Bench is a deterministic proof harness for the Reliability Gateway. It measures whether ThumbGate can preserve useful agent capability while stopping unsafe actions before execution.
 
-The goal is not to copy an external benchmark. The goal is to make ThumbGate's own buyer promise measurable: thumbs-down patterns become Pre-Action Gates, thumbs-up patterns keep flowing, and replayed scenarios stay stable.
+The goal is not to copy an external benchmark. The goal is to make ThumbGate's own buyer promise measurable: thumbs-down patterns become Pre-Action Checks, thumbs-up patterns keep flowing, and replayed scenarios stay stable.
 
 ## What It Measures
 

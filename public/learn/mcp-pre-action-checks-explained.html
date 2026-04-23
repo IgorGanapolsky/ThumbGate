@@ -3,22 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MCP Pre-Action Gates Explained — ThumbGate</title>
+<title>MCP Pre-Action Checks Explained — ThumbGate</title>
 <script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
-<meta name="description" content="What pre-action gates are, how they work in the Model Context Protocol, and why enforcement beats prompt rules for AI coding agent safety.">
-<meta name="keywords" content="MCP pre-action gates, PreToolUse hooks, Model Context Protocol, AI agent enforcement, Claude Code hooks, MCP server guardrails, tool call interception, ThumbGate">
-<meta property="og:title" content="MCP Pre-Action Gates Explained">
-<meta property="og:description" content="Technical deep-dive: how pre-action gates intercept tool calls and enforce safety rules for AI coding agents.">
+<meta name="description" content="What pre-action checks are, how they work in the Model Context Protocol, and why enforcement beats prompt rules for AI coding agent safety.">
+<meta name="keywords" content="MCP pre-action checks, PreToolUse hooks, Model Context Protocol, AI agent enforcement, Claude Code hooks, MCP server guardrails, tool call interception, ThumbGate">
+<meta property="og:title" content="MCP Pre-Action Checks Explained">
+<meta property="og:description" content="Technical deep-dive: how pre-action checks intercept tool calls and enforce safety rules for AI coding agents.">
 <meta property="og:type" content="article">
-<meta property="og:url" content="https://thumbgate-production.up.railway.app/learn/mcp-pre-action-gates-explained">
-<link rel="canonical" href="https://thumbgate-production.up.railway.app/learn/mcp-pre-action-gates-explained">
+<meta property="og:url" content="https://thumbgate-production.up.railway.app/learn/mcp-pre-action-checks-explained">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/learn/mcp-pre-action-checks-explained">
 
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "TechArticle",
-  "headline": "MCP Pre-Action Gates Explained",
-  "description": "Technical deep-dive into pre-action gates: how they intercept tool calls and enforce safety rules at the MCP hook layer.",
+  "headline": "MCP Pre-Action Checks Explained",
+  "description": "Technical deep-dive into pre-action checks: how they intercept tool calls and enforce safety rules at the MCP hook layer.",
   "author": {
     "@type": "Person",
     "name": "Igor Ganapolsky",
@@ -31,7 +31,7 @@
   },
   "datePublished": "2026-04-01",
   "dateModified": "2026-04-01",
-  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/learn/mcp-pre-action-gates-explained",
+  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/learn/mcp-pre-action-checks-explained",
   "about": [
     {"@type": "Thing", "name": "Model Context Protocol"},
     {"@type": "Thing", "name": "PreToolUse hooks"},
@@ -62,15 +62,15 @@
 </nav>
 
 <div class="container">
-  <div class="breadcrumb"><a href="/learn">Learn</a> / MCP Pre-Action Gates</div>
-  <h1>MCP Pre-Action Gates Explained</h1>
+  <div class="breadcrumb"><a href="/learn">Learn</a> / MCP Pre-Action Checks</div>
+  <h1>MCP Pre-Action Checks Explained</h1>
   <p style="color:var(--muted);">4 min read &middot; Technical deep-dive for developers building on MCP</p>
 
-  <div class="tldr"><strong>TL;DR:</strong> Pre-action gates intercept tool calls before they execute. Unlike prompt rules, they cannot be ignored. This is how enforcement actually works in MCP.</div>
+  <div class="tldr"><strong>TL;DR:</strong> Pre-action checks intercept tool calls before they execute. Unlike prompt rules, they cannot be ignored. This is how enforcement actually works in MCP.</div>
 
-  <h2>What is a pre-action gate?</h2>
-  <p>A pre-action gate is an enforcement rule that intercepts an AI agent's tool call <em>before</em> it executes. If the tool call matches a known-bad pattern, the gate blocks it and returns a rejection to the agent. The agent then adapts its approach without ever having run the dangerous action.</p>
-  <p>Gates run at the hook layer of the Model Context Protocol (MCP). They are external to the agent's reasoning chain, which means they cannot be overridden by prompt injection, context overflow, or chain-of-thought reasoning.</p>
+  <h2>What is a pre-action check?</h2>
+  <p>A pre-action check is an enforcement rule that intercepts an AI agent's tool call <em>before</em> it executes. If the tool call matches a known-bad pattern, the check blocks it and returns a rejection to the agent. The agent then adapts its approach without ever having run the dangerous action.</p>
+  <p>Checks run at the hook layer of the Model Context Protocol (MCP). They are external to the agent's reasoning chain, which means they cannot be overridden by prompt injection, context overflow, or chain-of-thought reasoning.</p>
 
   <h2>How it works: the tool call lifecycle</h2>
   <div class="flow-diagram">
@@ -78,17 +78,17 @@
     <span class="arrow">&darr;</span><br>
     <span class="block">PreToolUse hook fires</span><br>
     <span class="arrow">&darr;</span><br>
-    <span class="block">ThumbGate checks tool call against gates</span><br>
+    <span class="block">ThumbGate checks tool call against checks</span><br>
     <span class="arrow">&darr;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&darr;</span><br>
     <span class="block">No match &rarr; ALLOW</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="deny">Match &rarr; BLOCK + reason</span><br>
     <span class="arrow">&darr;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&darr;</span><br>
     <span class="block">Tool executes</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="deny">Agent receives rejection</span>
   </div>
 
-  <h2>Prompt rules vs. pre-action gates</h2>
+  <h2>Prompt rules vs. pre-action checks</h2>
   <table>
     <thead>
-      <tr><th>Property</th><th>Prompt Rules</th><th>Pre-Action Gates</th></tr>
+      <tr><th>Property</th><th>Prompt Rules</th><th>Pre-Action Checks</th></tr>
     </thead>
     <tbody>
       <tr><td>Where they live</td><td>Inside agent context</td><td>External hook layer</td></tr>
@@ -100,10 +100,10 @@
     </tbody>
   </table>
 
-  <h2>The three layers of a gate</h2>
+  <h2>The three layers of a check</h2>
 
   <h3>1. Pattern matcher</h3>
-  <p>Gates match against the tool name and its arguments. For a <code>Bash</code> tool call, the pattern might match <code>git push --force</code> targeting <code>main</code>. For a <code>Write</code> tool call, it might match writes to <code>.env</code> or <code>production.config</code>.</p>
+  <p>Checks match against the tool name and its arguments. For a <code>Bash</code> tool call, the pattern might match <code>git push --force</code> targeting <code>main</code>. For a <code>Write</code> tool call, it might match writes to <code>.env</code> or <code>production.config</code>.</p>
   <pre><code>{
   "tool": "Bash",
   "pattern": "git push.*(--force|-f).*main",
@@ -111,9 +111,9 @@
 }</code></pre>
 
   <h3>2. Evidence and reasoning</h3>
-  <p>Every gate decision includes a reasoning chain: why this pattern exists, how many times it has fired, what the original failure was. This transparency lets you audit the system and tune it.</p>
+  <p>Every check decision includes a reasoning chain: why this pattern exists, how many times it has fired, what the original failure was. This transparency lets you audit the system and tune it.</p>
   <pre><code>{
-  "gate": "no-force-push-main",
+  "check": "no-force-push-main",
   "decision": "BLOCK",
   "reason": "Force-push to main blocked",
   "evidence": "User reported loss of 14 commits (2026-03-15)",
@@ -122,23 +122,23 @@
 }</code></pre>
 
   <h3>3. Thompson Sampling adaptation</h3>
-  <p>Not all patterns deserve the same enforcement level. Thompson Sampling uses a beta distribution to model each gate's risk profile. High-risk patterns (many failures, few successes) get strict enforcement. Low-risk patterns (rarely triggered, occasionally overridden) stay relaxed.</p>
+  <p>Not all patterns deserve the same enforcement level. Thompson Sampling uses a beta distribution to model each check's risk profile. High-risk patterns (many failures, few successes) get strict enforcement. Low-risk patterns (rarely triggered, occasionally overridden) stay relaxed.</p>
 
   <div class="callout">
-    <strong>Why Thompson Sampling?</strong> It balances exploration vs. exploitation. New gates start with wide confidence intervals and tighten as evidence accumulates. This prevents over-blocking on sparse data while ensuring genuinely dangerous patterns get strict enforcement fast.
+    <strong>Why Thompson Sampling?</strong> It balances exploration vs. exploitation. New checks start with wide confidence intervals and tighten as evidence accumulates. This prevents over-blocking on sparse data while ensuring genuinely dangerous patterns get strict enforcement fast.
   </div>
 
-  <h2>How gates are created</h2>
+  <h2>How checks are created</h2>
   <ol>
     <li><strong>Feedback capture:</strong> Developer gives thumbs-down with context about what went wrong</li>
     <li><strong>Lesson storage:</strong> Feedback is stored in SQLite with FTS5 indexing for fast retrieval</li>
     <li><strong>Corrective inference:</strong> ThumbGate matches the failure against similar past failures and infers what should be prevented</li>
     <li><strong>Rule promotion:</strong> After configurable repeated failures, the lesson promotes to a prevention rule</li>
-    <li><strong>Gate activation:</strong> The prevention rule becomes an active gate in the PreToolUse hook</li>
+    <li><strong>Check activation:</strong> The prevention rule becomes an active check in the PreToolUse hook</li>
   </ol>
 
   <h2>Supported agents</h2>
-  <p>Pre-action gates work with any agent that supports MCP hooks:</p>
+  <p>Pre-action checks work with any agent that supports MCP hooks:</p>
   <ul>
     <li><strong>Claude Code</strong> &mdash; PreToolUse hooks in <code>.claude/settings.json</code></li>
     <li><strong>Cursor</strong> &mdash; MCP server configuration in <code>.cursor/mcp.json</code></li>
@@ -149,8 +149,8 @@
   <p>Run <code>npx thumbgate init</code> to auto-detect your agent and configure the correct hook format.</p>
 
   <div class="cta-box">
-    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Build your first gate</h2>
-    <p>Install, give your first thumbs-down, and watch the gate auto-generate.</p>
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Build your first check</h2>
+    <p>Install, give your first thumbs-down, and watch the check auto-generate.</p>
     <div class="cta-install">$ npx thumbgate init</div>
   </div>
 

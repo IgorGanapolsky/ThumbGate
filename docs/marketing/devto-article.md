@@ -26,7 +26,7 @@ When I started, I assumed the fix was simple: write feedback to a file, load it 
 
 None of these worked reliably. The missing piece was not retrieval — it was **behavior steering**.
 
-## What Actually Worked: Prevention Gates
+## What Actually Worked: Prevention Checks
 
 The breakthrough came when I stopped treating feedback as passive context and started treating it as active control flow.
 
@@ -34,8 +34,8 @@ The breakthrough came when I stopped treating feedback as passive context and st
 
 1. You rate agent actions (thumbs up or down) with a brief note
 2. Feedback gets stored in JSONL and indexed in LanceDB
-3. When the same failure pattern appears 3+ times, the system auto-generates a **prevention gate** — a structured rule that the agent must check before acting
-4. Gates get enforced pre-action, not post-hoc
+3. When the same failure pattern appears 3+ times, the system auto-generates a **prevention check** — a structured rule that the agent must check before acting
+4. Checks get enforced pre-action, not post-hoc
 
 The install is one line:
 
@@ -56,19 +56,19 @@ Then add it to your MCP config (Claude Code example):
 }
 ```
 
-The agent now has access to tools like `capture_feedback`, `query_memory`, and `check_gates`. When it starts a task, it queries relevant gates first. If a gate fires, the agent gets a structured warning with the historical context of why that approach failed before.
+The agent now has access to tools like `capture_feedback`, `query_memory`, and `check_gates`. When it starts a task, it queries relevant checks first. If a check fires, the agent gets a structured warning with the historical context of why that approach failed before.
 
 ## The Interesting Part: Thompson Sampling
 
-Static rules decay in usefulness. A gate that was critical last month might be irrelevant after a refactor. Hard-coding enforcement creates the same problem as the 200-line CLAUDE.md — the agent drowns in stale constraints.
+Static rules decay in usefulness. A check that was critical last month might be irrelevant after a refactor. Hard-coding enforcement creates the same problem as the 200-line CLAUDE.md — the agent drowns in stale constraints.
 
-So I added Thompson Sampling (Beta-Bernoulli model) to decide which gates to enforce. Each gate tracks its own alpha/beta parameters based on outcomes:
+So I added Thompson Sampling (Beta-Bernoulli model) to decide which checks to enforce. Each check tracks its own alpha/beta parameters based on outcomes:
 
-- Gate fires and prevents a real failure -> reward (alpha increments)
-- Gate fires but the action would have been fine -> penalty (beta increments)
-- Gate with low engagement over time -> natural decay toward prior
+- Check fires and prevents a real failure -> reward (alpha increments)
+- Check fires but the action would have been fine -> penalty (beta increments)
+- Check with low engagement over time -> natural decay toward prior
 
-The agent samples from each gate's Beta distribution to decide enforcement probability. High-value gates get enforced consistently. Stale or noisy gates fade out on their own. No manual curation needed.
+The agent samples from each check's Beta distribution to decide enforcement probability. High-value checks get enforced consistently. Stale or noisy checks fade out on their own. No manual curation needed.
 
 This turned out to be the single most impactful design decision in the project. The system self-corrects without human maintenance.
 
@@ -80,13 +80,13 @@ I have not fine-tuned a model with this data yet, but the export pipeline is tes
 
 ## What I Learned
 
-**Memory without enforcement is just a suggestion.** Agents ignore passive context under pressure. Gates that block action are 10x more effective than memories that inform context.
+**Memory without enforcement is just a suggestion.** Agents ignore passive context under pressure. Checks that block action are 10x more effective than memories that inform context.
 
 **Behavior steering needs exploration/exploitation.** Static rules accumulate cruft. Thompson Sampling keeps the system adaptive without manual pruning.
 
 **MCP is the right abstraction layer.** Building this as an MCP server means it works with any MCP-compatible agent — Claude Code, Codex CLI, Gemini CLI, Amp — without agent-specific integration code. One server, multiple agents.
 
-**Testing feedback systems is hard.** You cannot unit test "does the agent learn" in the traditional sense. I ended up with a large regression suite and proof-backed verification reports that cover the pipeline mechanics (capture, storage, retrieval, gate generation, DPO export) without pretending to test emergent behavior directly.
+**Testing feedback systems is hard.** You cannot unit test "does the agent learn" in the traditional sense. I ended up with a large regression suite and proof-backed verification reports that cover the pipeline mechanics (capture, storage, retrieval, check generation, DPO export) without pretending to test emergent behavior directly.
 
 ## Try It
 
@@ -101,6 +101,6 @@ npm: [thumbgate](https://www.npmjs.com/package/thumbgate)
 
 If you want a personal local dashboard and DPO export, there is a [Pro tier at $19/mo or $149/yr](https://thumbgate-production.up.railway.app/checkout/pro). Team workflows start with the Workflow Hardening Sprint when shared lessons, org visibility, and hosted rollout proof matter. The core local feedback loop still works on its own.
 
-I have been running this on my own projects for months. The difference between session 1 and session 50 is noticeable — the agent stops making the same classes of mistakes. Not because it got smarter, but because the gates will not let it repeat what already failed.
+I have been running this on my own projects for months. The difference between session 1 and session 50 is noticeable — the agent stops making the same classes of mistakes. Not because it got smarter, but because the checks will not let it repeat what already failed.
 
 Happy to answer questions or take feedback (pun intended).

@@ -205,8 +205,8 @@ function collectLocalGitHubAboutErrors(root = ROOT) {
     `.github/github-app-manifest.json url must match ${about.homepageUrl}`
   );
   check(
-    /pre-action gates/i.test(appManifest.description),
-    '.github/github-app-manifest.json description must mention pre-action gates'
+    /pre-action checks/i.test(appManifest.description),
+    '.github/github-app-manifest.json description must mention pre-action checks'
   );
   check(
     !/persistent memory/i.test(appManifest.description),

@@ -7,7 +7,7 @@ Use the Gateway as the reliability layer for:
 
 - recall before work starts
 - prevention rules after repeated failures
-- pre-action gates before risky tool calls
+- pre-action checks before risky tool calls
 - verification evidence after the run
 
 ## Integration pattern

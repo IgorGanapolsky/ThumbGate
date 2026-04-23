@@ -21,12 +21,12 @@ We make one workflow measurable enough to justify and safe enough to roll out.
 
 - **Buyer:** consultancy owner, platform lead, head of ops, or AI product lead.
 - **User:** the operator running the workflow day to day.
-- **Champion:** the engineer or platform owner wiring ThumbGate, the Reliability Gateway, and Pre-Action Gates into the workflow.
+- **Champion:** the engineer or platform owner wiring ThumbGate, the Reliability Gateway, and Pre-Action Checks into the workflow.
 
 # High-Signal Features
 
 - **Context Packs:** Dynamic semantic assembly of project knowledge for agent boot-up and bounded retrieval.
-- **Pre-Action Gates:** Repeated failures trigger non-bypassable `CLAUDE.md` / `AGENTS.md` rules and shared prevention policies.
+- **Pre-Action Checks:** Repeated failures trigger non-bypassable `CLAUDE.md` / `AGENTS.md` rules and shared prevention policies.
 - **Proof-Ready Runs:** Machine-readable evidence, audit trails, and hosted workflow artifacts for rollout decisions.
 - **Release Confidence:** Changesets, SemVer, version sync, and exact-merge verification keep package publishes legible to enterprise buyers.
 

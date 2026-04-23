@@ -64,7 +64,7 @@ npx thumbgate init --agent claude-code
 
 Each gate has a confidence score modeled as a Beta distribution. When it correctly blocks a mistake, confidence goes up. When it fires on a false positive, confidence goes down.
 
-Over time, good gates get stricter. Bad gates relax. Self-correcting. No manual tuning."
+Over time, good checks get stricter. Bad gates relax. Self-correcting. No manual tuning."
 
 ## SELF-DISTILLATION (360-420 seconds)
 

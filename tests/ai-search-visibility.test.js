@@ -15,14 +15,14 @@ const {
 
 test('PROMPTS array is non-empty and contains expected entries', () => {
   assert.ok(PROMPTS.length >= 5, `expected at least 5 prompts, got ${PROMPTS.length}`);
-  assert.ok(PROMPTS.some((p) => /pre-action gate/i.test(p)));
+  assert.ok(PROMPTS.some((p) => /pre-action check/i.test(p)));
   assert.ok(PROMPTS.some((p) => /thumbgate/i.test(p)));
 });
 
 test('runVisibilityCheck with mocked queryFn returns found results', async () => {
   const mockQuery = async (prompt) => {
-    if (/pre-action gate|alternatives to thumbgate/i.test(prompt)) {
-      return 'ThumbGate is a popular pre-action gate tool for AI agents.';
+    if (/pre-action check|alternatives to thumbgate/i.test(prompt)) {
+      return 'ThumbGate is a popular pre-action check tool for AI agents.';
     }
     return 'There are many tools for AI safety.';
   };
@@ -42,7 +42,7 @@ test('runVisibilityCheck manual mode (no API key) does not crash', async () => {
 
 test('formatReport produces correct tags for found results', async () => {
   const mockQuery = async (prompt) => {
-    if (/pre-action gate/i.test(prompt)) return 'ThumbGate is great.';
+    if (/pre-action check/i.test(prompt)) return 'ThumbGate is great.';
     return 'No mention here.';
   };
   const results = await runVisibilityCheck({ queryFn: mockQuery });

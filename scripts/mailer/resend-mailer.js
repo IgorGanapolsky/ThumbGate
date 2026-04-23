@@ -339,7 +339,7 @@ function renderTrialWelcomeBodies({ licenseKey, customerId, customerName, trialE
   const headline = 'Your ThumbGate Pro trial is live.';
   const subhead = `You have 7 days of Pro access. Trial ends ${trialEndLabel}.`;
   const description =
-    'ThumbGate turns thumbs up/down feedback into Pre-Action Gates that stop repeated AI coding mistakes ' +
+    'ThumbGate turns thumbs up/down feedback into Pre-Action Checks that stop repeated AI coding mistakes ' +
     'before the next tool call. Lessons stay on your machine. Repeated failures become Reliability Gateway blocks.';
   const exampleFeedback =
     'thumbs down: the answer skipped exact files and tests; next time include paths, commands, and verification evidence.';

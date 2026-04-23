@@ -18,7 +18,7 @@ The ones that eat my bill:
 
 At the team level these are not small.
 
-The approach that actually moved the number for me was pre-action gates. PreToolUse hooks that fire before the agent executes a tool call, check whether this exact pattern was previously flagged as bad, and block it before the API round-trip happens. Not a warning in the system prompt. A block.
+The approach that actually moved the number for me was pre-action checks. PreToolUse hooks that fire before the agent executes a tool call, check whether this exact pattern was previously flagged as bad, and block it before the API round-trip happens. Not a warning in the system prompt. A block.
 
 I have been building this into a local tool called ThumbGate. Thumbs-down captures the context, the tool call, the conversation state. That distills into a lesson in a local SQLite + FTS5 lesson DB. The next time an agent tries the same tool call pattern, the hook blocks it. Works with Claude Code, Cursor, Codex, any MCP-compatible agent. Local-first, MIT licensed.
 

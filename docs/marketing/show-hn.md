@@ -13,7 +13,7 @@ Show HN: ThumbGate – stop paying tokens for the same AI coding mistake twice
 Length: 75 chars. Fits. If moderators rename, fallbacks:
 
 1. `Show HN: ThumbGate – block repeat AI agent mistakes before the next tool call`
-2. `Show HN: Pre-action gates for Claude Code, Cursor, Codex, and other MCP agents`
+2. `Show HN: Pre-action checks for Claude Code, Cursor, Codex, and other MCP agents`
 
 ## URL field
 
@@ -32,7 +32,7 @@ Every retry is a billable token. Across one week, across every developer
 on a team, the math gets ugly — the same lesson, paid for over and over.
 
 ThumbGate is a local MCP server that turns one thumbs-down into a
-Pre-Action Gate. The next time any MCP-compatible agent tries that same
+Pre-Action Check. The next time any MCP-compatible agent tries that same
 tool call, a PreToolUse hook intercepts it BEFORE the round-trip to the
 model. Zero input tokens, zero output tokens, zero retry loop.
 
@@ -46,7 +46,7 @@ How it works under the hood:
   - SQLite + FTS5 lesson DB for text recall
   - LanceDB vectors for semantic recall (MemAlign dual recall)
   - Thompson Sampling promotes high-confidence gates, retires quiet ones
-  - PreToolUse hook evaluates every tool call against active gates
+  - PreToolUse hook evaluates every tool call against active checks
   - All data stays on disk — no cloud, no telemetry, no "send prompts to
     our server" pattern
 
@@ -72,7 +72,7 @@ Honest limitations:
   - Demo video on the landing page is deliberately short — recording a
     longer walkthrough this week.
 
-Would genuinely love feedback on the Pre-Action Gate model vs.
+Would genuinely love feedback on the Pre-Action Check model vs.
 alternatives (CLAUDE.md, .cursorrules, prompt-level constraints). The
 core argument is that suggestions the agent can ignore aren't the
 same thing as a hook that physically intercepts the call.
@@ -103,7 +103,7 @@ Word count: ~370. Well under HN's soft 2000-char comfort zone, long enough to ac
 ## Day-of ops
 
 1. Submit → immediately copy the post URL.
-2. First comment from you within 2 minutes: a short meta note like *"Happy to dig into the Pre-Action Gate architecture, the DPO export format, or the tradeoffs vs. agent-side memory. AMA."* This anchors the top comment to you, not to a drive-by criticism.
+2. First comment from you within 2 minutes: a short meta note like *"Happy to dig into the Pre-Action Check architecture, the DPO export format, or the tradeoffs vs. agent-side memory. AMA."* This anchors the top comment to you, not to a drive-by criticism.
 3. Reply to every substantive comment within 15 minutes for the first 90 minutes. HN front-page placement is a function of *engagement velocity*, not just upvotes.
 4. **Do not** ask for upvotes anywhere. Do not post the link in Slack asking people to vote. HN catches vote rings and penalizes.
 5. If the post dies on /new (no votes in 30 min), don't panic — it usually takes 2–4 organic upvotes to leave /new.

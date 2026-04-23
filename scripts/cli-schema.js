@@ -92,7 +92,7 @@ const CLI_COMMANDS = [
   },
   {
     name: 'gate-stats',
-    description: 'Gate engine statistics — active gates, blocks, warns, time saved',
+    description: 'Gate engine statistics — active checks, blocks, warns, time saved',
     group: 'discovery',
     flags: [
       { name: 'json', type: 'boolean', description: 'Output as JSON' },
