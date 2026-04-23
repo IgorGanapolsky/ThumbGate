@@ -490,6 +490,7 @@
     "test:demo-voiceover": "node --test tests/demo-voiceover.test.js",
     "test:gate-coherence": "node --test tests/gate-coherence.test.js",
     "test:gate-eval": "node --test tests/gate-eval.test.js",
+    "gate-eval:ci": "node scripts/gate-eval.js run",
     "test:high-roi": "node --test tests/high-roi.test.js tests/autonomous-workflow.test.js",
     "test:public-static-assets": "node --test tests/public-static-assets.test.js",
     "test:token-savings": "node --test tests/token-savings.test.js",
