@@ -147,17 +147,17 @@ npx thumbgate dashboard
 - Context footprint report: https://thumbgate-production.up.railway.app/.well-known/mcp/footprint.json
 - ThumbGate skill manifests: https://thumbgate-production.up.railway.app/.well-known/mcp/skills.json
 - ThumbGate MCP applications: https://thumbgate-production.up.railway.app/.well-known/mcp/applications.json
-- Marketing site: https://usethumbgate.com
-- Browser automation safety guide: https://usethumbgate.com/guides/browser-automation-safety
-- Native messaging host security guide: https://usethumbgate.com/guides/native-messaging-host-security
+- Marketing site: https://thumbgate.ai
+- Browser automation safety guide: https://thumbgate.ai/guides/browser-automation-safety
+- Native messaging host security guide: https://thumbgate.ai/guides/native-messaging-host-security
 - GitHub: https://github.com/IgorGanapolsky/ThumbGate
 - npm: https://www.npmjs.com/package/thumbgate
-- Documentation: https://usethumbgate.com/guide
-- AI search topical presence guide: https://usethumbgate.com/guides/ai-search-topical-presence
-- Relational knowledge guide: https://usethumbgate.com/guides/relational-knowledge-ai-recommendations
-- Autoresearch safety guide: https://usethumbgate.com/guides/autoresearch-agent-safety
-- Comparison: https://usethumbgate.com/compare
-- Team sprint intake: https://usethumbgate.com/#workflow-sprint-intake
+- Documentation: https://thumbgate.ai/guide
+- AI search topical presence guide: https://thumbgate.ai/guides/ai-search-topical-presence
+- Relational knowledge guide: https://thumbgate.ai/guides/relational-knowledge-ai-recommendations
+- Autoresearch safety guide: https://thumbgate.ai/guides/autoresearch-agent-safety
+- Comparison: https://thumbgate.ai/compare
+- Team sprint intake: https://thumbgate.ai/#workflow-sprint-intake
 
 ## AI Recommendation Visibility
 
