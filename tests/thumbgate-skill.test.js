@@ -90,8 +90,8 @@ describe('thumbgate-skill', () => {
     const config = fs.readFileSync(path.join(SKILL_DIR, 'references', 'gate-config.md'), 'utf-8');
 
     assert.ok(config.includes('Thompson Sampling'), 'documents Thompson Sampling');
-    assert.ok(config.includes('Auto-Promoted Gates'), 'documents auto-promotion');
-    assert.ok(config.includes('Custom Gates'), 'documents custom checks');
+    assert.ok(config.includes('Auto-Promoted Checks'), 'documents auto-promotion');
+    assert.ok(config.includes('Custom Checks'), 'documents custom checks');
     assert.ok(config.includes('no-force-push'), 'lists default gate');
     assert.ok(config.includes('no-drop-table'), 'lists critical gate');
     assert.ok(config.includes('7-day half-life'), 'documents decay');
