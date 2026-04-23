@@ -551,6 +551,7 @@ describe('bin/cli.js', () => {
     assert.ok(result.stdout.includes('lessons'), 'Help should mention lessons');
     assert.ok(result.stdout.includes('stats'), 'Help should mention stats');
     assert.ok(result.stdout.includes('north-star'), 'Help should mention north-star');
+    assert.ok(result.stdout.includes('eval'), 'Help should mention eval');
     assert.ok(result.stdout.includes('rules'), 'Help should mention rules');
     assert.ok(result.stdout.includes('self-heal'), 'Help should mention self-heal');
     assert.ok(result.stdout.includes('prove'), 'Help should mention prove');
@@ -559,6 +560,33 @@ describe('bin/cli.js', () => {
     assert.ok(result.stdout.includes('analytics'), 'Help should mention analytics');
     assert.ok(result.stdout.includes('gate-check'), 'Help should mention gate-check');
     assert.ok(result.stdout.includes('statusline-render'), 'Help should mention statusline-render');
+  });
+
+  test('eval command turns local feedback into reusable proof JSON', () => {
+    const feedbackDir = makeTmpDir();
+    fs.writeFileSync(path.join(feedbackDir, 'feedback-log.jsonl'), `${JSON.stringify({
+      id: 'fb_cli_eval_1',
+      signal: 'down',
+      context: 'Skipped checkout verification and claimed the fix was live',
+      whatWentWrong: 'Reported completion before running focused tests',
+      whatToChange: 'Run focused verification before claiming completion',
+      tags: ['verification'],
+    })}\n`);
+
+    const result = runCliSync(['eval', '--from-feedback', '--json', '--min-score=0'], {
+      env: {
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_NO_NUDGE: '1',
+      },
+    });
+
+    assert.strictEqual(result.status, 0, `Expected exit 0, got ${result.status}\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.feedbackDerived, true);
+    assert.equal(payload.suiteDefinition.source.selectedCases, 1);
+    assert.equal(payload.total, 1);
+
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
 
   test('gate-check allows ordinary edits when no task scope is declared', () => {
