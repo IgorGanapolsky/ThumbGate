@@ -1,0 +1,12 @@
+# ThumbGate enforcement rules for Cline
+
+Before executing any of the following tool calls, call `thumbgate.gate_check` via the ThumbGate MCP server and honor its verdict. If `gate_check` returns `block`, abort the action and surface the reason to the user.
+
+Gated tool calls:
+- Any `execute_command` that runs `git push`, `git reset --hard`, `git clean`, `rm`, `rm -rf`, `sudo`, `curl ... | sh`, `wget ... | sh`, or any command that mutates cloud resources (`aws`, `gcloud`, `az`, `railway`, `vercel deploy`, `gh release delete`).
+- Any `write_to_file` or `replace_in_file` targeting `.env`, `*.pem`, `*.key`, or files under `.git/`.
+- Any `browser_action` that submits a form or clicks a button on a production URL.
+
+After each blocked or allowed action, capture the outcome with `thumbgate.capture_feedback` so the lesson DB improves over time.
+
+Lessons retrieved via `thumbgate.recall` at session start take precedence over default behavior whenever they conflict.

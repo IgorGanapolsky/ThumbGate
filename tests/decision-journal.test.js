@@ -119,6 +119,15 @@ test('collapseDecisionTimeline groups records by actionId', () => {
 
 test('computeDecisionMetrics summarizes fast-path, overrides, rollbacks, and latency', () => {
   withTempDir(() => {
+    // Anchor timestamps 3 days ago so events land inside the rolling 14-day
+    // window regardless of when CI runs. Hour offsets preserve the exact
+    // latency deltas the assertions below depend on.
+    const baseDate = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    baseDate.setUTCHours(0, 0, 0, 0);
+    const baseMs = baseDate.getTime();
+    const iso = (hours, minutes = 0, seconds = 0) =>
+      new Date(baseMs + ((hours * 60 + minutes) * 60 + seconds) * 1000).toISOString();
+
     const fastPath = recordDecisionEvaluation({
       toolName: 'Edit',
       decision: 'allow',
@@ -142,13 +151,13 @@ test('computeDecisionMetrics summarizes fast-path, overrides, rollbacks, and lat
       toolName: 'Edit',
       toolInput: { filePath: 'README.md' },
       changedFiles: ['README.md'],
-      timestamp: '2026-04-09T09:00:00.000Z',
+      timestamp: iso(9),
     });
     recordDecisionOutcome({
       actionId: fastPath.actionId,
       outcome: 'completed',
       actor: 'agent',
-      timestamp: '2026-04-09T09:01:00.000Z',
+      timestamp: iso(9, 1),
     });
 
     const warned = recordDecisionEvaluation({
@@ -174,14 +183,14 @@ test('computeDecisionMetrics summarizes fast-path, overrides, rollbacks, and lat
       toolName: 'Bash',
       toolInput: { command: 'npm publish' },
       changedFiles: ['package.json', 'server.json'],
-      timestamp: '2026-04-09T10:00:00.000Z',
+      timestamp: iso(10),
     });
     recordDecisionOutcome({
       actionId: warned.actionId,
       outcome: 'overridden',
       actualDecision: 'warn',
       actor: 'human',
-      timestamp: '2026-04-09T10:06:00.000Z',
+      timestamp: iso(10, 6),
     });
 
     const blocked = recordDecisionEvaluation({
@@ -207,14 +216,14 @@ test('computeDecisionMetrics summarizes fast-path, overrides, rollbacks, and lat
       toolName: 'Bash',
       toolInput: { command: 'gh pr merge --admin' },
       changedFiles: ['package.json', '.github/workflows/release.yml'],
-      timestamp: '2026-04-09T11:00:00.000Z',
+      timestamp: iso(11),
     });
     recordDecisionOutcome({
       actionId: blocked.actionId,
       outcome: 'rolled_back',
       actualDecision: 'deny',
       actor: 'system',
-      timestamp: '2026-04-09T11:03:00.000Z',
+      timestamp: iso(11, 3),
     });
 
     const metrics = computeDecisionMetrics();

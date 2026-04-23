@@ -100,7 +100,7 @@ test('public landing page includes Plausible analytics and search engine proof b
   assert.match(landingPage, /ThumbGate Bench/i);
   assert.match(landingPage, /Proof-backed CI/i);
   assert.match(landingPage, /CI and proof lanes/i);
-  assert.match(landingPage, /Claude Code · Cursor · Codex · Gemini · Amp · OpenCode/i);
+  assert.match(landingPage, /Claude Code · Cursor · Codex · Gemini · Amp · Cline · OpenCode/i);
 });
 
 test('public landing page routes PostHog through same-origin ingest proxy and captures pageviews', () => {

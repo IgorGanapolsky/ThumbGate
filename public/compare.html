@@ -54,7 +54,7 @@
       "name": "Does ThumbGate work with Claude Code?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. ThumbGate works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent. Run npx thumbgate init --agent claude-code to auto-configure PreToolUse hooks in your .claude/settings.json."
+        "text": "Yes. ThumbGate works with Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and any MCP-compatible agent. Run npx thumbgate init --agent claude-code to auto-configure PreToolUse hooks in your .claude/settings.json."
       }
     },
     {
@@ -239,7 +239,7 @@
 <ul>
   <li><strong>Enforcement, not suggestions.</strong> Prompt rules in CLAUDE.md or .cursorrules are instructions the agent can ignore. ThumbGate intercepts tool calls at the PreToolUse hook level and physically blocks dangerous actions before they execute.</li>
   <li><strong>Learns and adapts automatically.</strong> Every thumbs-down becomes a data point. After repeated failures with the same pattern, ThumbGate auto-generates a prevention rule. Gates adapt their sensitivity over time using Thompson Sampling -- aggressive gates that over-block get tuned down, effective gates get reinforced.</li>
-  <li><strong>Works across all major AI coding agents.</strong> One install command covers Claude Code, Cursor, Codex, Gemini CLI, Amp, and OpenCode. No per-agent configuration needed.</li>
+  <li><strong>Works across all major AI coding agents.</strong> One install command covers Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, and OpenCode. No per-agent configuration needed.</li>
   <li><strong>Prevention is cheaper than recovery.</strong> Manual code review catches mistakes after the PR. Git revert catches them after the push. ThumbGate catches them before the tool call executes -- saving the time, context switches, and cleanup cost of undoing damage.</li>
 </ul>
 
@@ -288,7 +288,7 @@
 
 <div class="card">
   <h3>Does ThumbGate work with Claude Code?</h3>
-  <p>Yes. ThumbGate works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent. Run <code>npx thumbgate init --agent claude-code</code> to auto-configure PreToolUse hooks.</p>
+  <p>Yes. ThumbGate works with Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and any MCP-compatible agent. Run <code>npx thumbgate init --agent claude-code</code> to auto-configure PreToolUse hooks.</p>
 </div>
 
 <div class="card">
