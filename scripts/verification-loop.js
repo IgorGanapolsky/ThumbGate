@@ -6,11 +6,20 @@ const {
   getFeedbackPaths,
   appendDiagnosticRecord,
 } = require('./feedback-loop');
+const { loadOptionalModule } = require('./private-core-boundary');
 const {
   buildPartnerStrategy,
   computePartnerReward,
   resolveVerificationRetries,
-} = require('./partner-orchestration');
+} = loadOptionalModule('./partner-orchestration', () => ({
+  buildPartnerStrategy: ({ partnerProfile } = {}) => ({
+    profile: partnerProfile || 'public-shell',
+    verificationMode: 'local-only',
+    recommendedChecks: [],
+  }),
+  computePartnerReward: () => 0,
+  resolveVerificationRetries: (requestedMaxRetries) => requestedMaxRetries,
+}));
 const {
   diagnoseFailure,
 } = require('./failure-diagnostics');

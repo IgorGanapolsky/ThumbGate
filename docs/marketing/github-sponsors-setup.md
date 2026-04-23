@@ -67,7 +67,7 @@ The listing already exists. The only remaining step is adding tiers.
    - **Name** (Supporter, Pro Sponsor)
    - **Description** (copy from the perks above)
    - **Is one-time?** — leave unchecked (recurring monthly)
-4. For the $19 tier, enable **"Welcome message"** with instructions on how to access the `thumbgate-pro` package (npm token or GitHub Packages invite).
+4. For the $19 tier, enable **"Welcome message"** with instructions on how to access the hosted/private `ThumbGate-Core` entitlement or managed Pro onboarding path.
 5. Link Team buyers to the Workflow Hardening Sprint intake instead of adding a fixed Team Sponsor tier.
 6. Click **"Publish"** on each tier.
 
@@ -101,11 +101,11 @@ prevention rules, and blocks known-bad tool calls via PreToolUse hooks.
 
 Sponsoring funds:
 - Continued development of the free `thumbgate` npm package
-- LanceDB vector similarity and Thompson Sampling in `thumbgate-pro`
+- Private-core intelligence in `ThumbGate-Core`
 - ContextFS context assembly and DPO export for fine-tuning pipelines
 - Documentation, examples, and community support
 
-Pro sponsors receive a `thumbgate-pro` license as part of their tier. Team buyers should use the Workflow Hardening Sprint intake so shared rollout scope is qualified before seats are sold.
+Pro sponsors receive the commercial Pro entitlement backed by `ThumbGate-Core`. Team buyers should use the Workflow Hardening Sprint intake so shared rollout scope is qualified before seats are sold.
 ```
 
 ---
@@ -115,7 +115,7 @@ Pro sponsors receive a `thumbgate-pro` license as part of their tier. Team buyer
 | Perk | ThumbGate Feature | Available At |
 |------|-------------------|--------------|
 | npm package access | `thumbgate` (free) | All tiers |
-| Pro npm package | `thumbgate-pro` | $19+/mo |
+| Private core entitlement | `ThumbGate-Core` | $19+/mo |
 | LanceDB vector similarity search | `npm run feedback:summary` with vector index | $19+/mo |
 | Thompson Sampling bandit | Adaptive lesson retrieval | $19+/mo |
 | ContextFS context packs | `npm run feedback:rules` context assembly | $19+/mo |

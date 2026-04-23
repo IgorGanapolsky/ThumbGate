@@ -254,7 +254,7 @@ describe('llmCrossEncode', () => {
   it('returns null when the LLM client is unavailable', async () => {
     const result = await withMockedLlmClient({
       isAvailable: () => false,
-      callClaude: async () => { throw new Error('should not call unavailable llm'); },
+      callClaudeJson: async () => { throw new Error('should not call unavailable llm'); },
       MODELS: { FAST: 'mock-fast' },
     }, () => llmCrossEncode('git push', [{ title: 'A', content: 'B' }]));
 
@@ -264,12 +264,13 @@ describe('llmCrossEncode', () => {
   it('parses and clamps LLM scores for the document list', async () => {
     const scores = await withMockedLlmClient({
       isAvailable: () => true,
-      callClaude: async ({ systemPrompt, userPrompt, model, maxTokens }) => {
+      callClaudeJson: async ({ systemPrompt, userPrompt, model, maxTokens, cache }) => {
         assert.match(systemPrompt, /relevance scoring engine/);
         assert.match(userPrompt, /Query: "git push"/);
         assert.equal(model, 'mock-fast');
         assert.equal(maxTokens, 256);
-        return '[1.2, -0.2, "not numeric"]';
+        assert.equal(cache, true);
+        return [1.2, -0.2, 'not numeric'];
       },
       MODELS: { FAST: 'mock-fast' },
     }, () => llmCrossEncode('git push', [
@@ -284,14 +285,14 @@ describe('llmCrossEncode', () => {
   it('falls back when the LLM response is not a matching JSON score array', async () => {
     const wrongLength = await withMockedLlmClient({
       isAvailable: () => true,
-      callClaude: async () => '[0.9]',
+      callClaudeJson: async () => [0.9],
       MODELS: { FAST: 'mock-fast' },
     }, () => llmCrossEncode('git push', [{ title: 'A' }, { title: 'B' }]));
     assert.equal(wrongLength, null);
 
     const invalidJson = await withMockedLlmClient({
       isAvailable: () => true,
-      callClaude: async () => 'not json',
+      callClaudeJson: async () => 'not json',
       MODELS: { FAST: 'mock-fast' },
     }, () => llmCrossEncode('git push', [{ title: 'A' }]));
     assert.equal(invalidJson, null);
