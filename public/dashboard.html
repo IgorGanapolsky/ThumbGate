@@ -523,6 +523,10 @@ async function connect(options) {
     renderStats(data);
     setSelectedCard('all');
     await loadDashboardData();
+    // Open a live-events stream so feedback/rule-regen events surface
+    // without a manual refresh. Non-fatal: if the browser doesn't support
+    // ReadableStream over fetch (very old), we simply stay on the polled path.
+    subscribeToLiveEvents();
   } catch (e) {
     status.className = 'auth-status err';
     status.textContent = '✗ ' + e.message;
@@ -754,6 +758,74 @@ async function loadDashboardData() {
       renderDashboardData(data);
     }
   } catch (e) { /* insights degrade gracefully */ }
+}
+
+// Live-events SSE subscription. We use fetch() + ReadableStream instead of
+// the native EventSource because EventSource can't attach our Bearer auth
+// header. On any event we re-fetch the stats/dashboard summary — cheap, and
+// avoids having to duplicate rendering logic per event type.
+var __liveEventsController = null;
+async function subscribeToLiveEvents() {
+  if (__liveEventsController) {
+    try { __liveEventsController.abort(); } catch (_) { /* already aborted */ }
+  }
+  if (typeof AbortController === 'undefined' || !window.fetch) return;
+  var controller = new AbortController();
+  __liveEventsController = controller;
+  try {
+    var res = await fetch('/v1/events', {
+      headers: { 'Authorization': 'Bearer ' + API_KEY },
+      signal: controller.signal,
+    });
+    if (!res.ok || !res.body || !res.body.getReader) return;
+    var reader = res.body.getReader();
+    var decoder = new TextDecoder('utf-8');
+    var buffer = '';
+    while (true) {
+      var chunk = await reader.read();
+      if (chunk.done) break;
+      buffer += decoder.decode(chunk.value, { stream: true });
+      var frames = buffer.split('\n\n');
+      buffer = frames.pop() || '';
+      for (var i = 0; i < frames.length; i++) {
+        handleLiveEventFrame(frames[i]);
+      }
+    }
+  } catch (e) {
+    // AbortError fires on logout/reconnect — not worth surfacing to the user.
+  }
+}
+
+function handleLiveEventFrame(frame) {
+  if (!frame || frame.charAt(0) === ':') return; // heartbeat comment
+  var eventName = 'message';
+  var dataLines = [];
+  var lines = frame.split('\n');
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    if (line.indexOf('event:') === 0) eventName = line.slice(6).trim();
+    else if (line.indexOf('data:') === 0) dataLines.push(line.slice(5).trim());
+  }
+  if (!dataLines.length) return;
+  var payload;
+  try { payload = JSON.parse(dataLines.join('\n')); } catch (_) { return; }
+  onLiveEvent(eventName, payload);
+}
+
+function onLiveEvent(eventName, payload) {
+  // All events currently boil down to "something changed, re-pull summary".
+  // When we add richer partial updates we can branch on eventName here.
+  if (eventName === 'connected') return;
+  refreshStatsOnly();
+}
+
+async function refreshStatsOnly() {
+  try {
+    var res = await fetch('/v1/feedback/stats', { headers: getHeaders() });
+    if (!res.ok) return;
+    var data = await res.json();
+    renderStats(data);
+  } catch (_) { /* ignore transient errors */ }
 }
 
 function formatReviewTimestamp(value) {
