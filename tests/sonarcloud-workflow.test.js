@@ -7,6 +7,7 @@ const PROJECT_ROOT = path.resolve(__dirname, '..');
 const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'sonarcloud.yml'), 'utf8');
 
 test('SonarCloud workflow refreshes main and stamps scans with the package version', () => {
+  assert.match(workflow, /name:\s*SonarCloud Code Analysis\s*\n\s*runs-on:/);
   assert.match(workflow, /push:\s*\n\s*branches:\s*\[main\]/);
   assert.match(workflow, /name: Read package version/);
   assert.match(workflow, /VERSION=\$\(node -p 'require\("\.\/package\.json"\)\.version'\)/);

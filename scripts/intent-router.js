@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
+const { loadOptionalModule } = require('./private-core-boundary');
 const { getActiveMcpProfile, getAllowedTools } = require('./mcp-policy');
 const { loadGatesConfig } = require('./gates-engine');
 const { loadModel, samplePosteriors } = require('./thompson-sampling');
@@ -8,7 +9,14 @@ const { analyzeCodeGraphImpact } = require('./codegraph-context');
 const {
   buildPartnerStrategy,
   getPartnerActionBias,
-} = require('./partner-orchestration');
+} = loadOptionalModule('./partner-orchestration', () => ({
+  buildPartnerStrategy: ({ partnerProfile } = {}) => ({
+    profile: partnerProfile || 'public-shell',
+    verificationMode: 'local-only',
+    recommendedChecks: [],
+  }),
+  getPartnerActionBias: () => 0,
+}));
 const {
   evaluateDelegation,
   normalizeDelegationMode,
