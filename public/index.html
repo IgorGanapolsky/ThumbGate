@@ -826,6 +826,11 @@ __GA_BOOTSTRAP__
         <p>Claude Code, Codex, Gemini CLI, Amp, and OpenCode all use the same gateway and memory model. Any MCP-compatible agent gets pre-action gates, feedback memory, and enforcement out of the box.</p>
         <div class="card-arrow">Open the setup guide →</div>
       </a>
+      <a class="compat-card seo-card" href="/guides/gcp-mcp-guardrails" rel="noopener">
+        <h3>☁️ Google Data Agent Kit</h3>
+        <p>Cloud Next 2026 shipped BigQuery, Spanner, AlloyDB, and Cloud SQL as MCP tool calls into Claude Code, Codex, and Gemini CLI. ThumbGate gates the destructive ones — DROP on prod datasets, unscoped DELETEs, IAM escalation — before they fire.</p>
+        <div class="card-arrow">Read the GCP guardrails guide →</div>
+      </a>
       <a class="compat-card" href="/codex-plugin?utm_source=website&utm_medium=compatibility&utm_campaign=codex_plugin&cta_id=compat_codex_plugin&cta_placement=compatibility" rel="noopener" onclick="if(typeof posthog!=='undefined')posthog.capture('compat_codex_plugin_click',{cta:'open_codex_plugin_page'})">
         <h3>🧩 Codex plugin</h3>
         <p>Codex gets a standalone ThumbGate plugin bundle, a repo-local plugin profile, and the same auto-updating MCP launcher. The runtime resolves <code>thumbgate@latest</code> when Codex starts, so npm fixes reach active installs. The install page includes the zip, MCP config, and verification path in one place.</p>
