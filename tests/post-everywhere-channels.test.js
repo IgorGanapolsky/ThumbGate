@@ -166,6 +166,103 @@ test('Bluesky dispatcher truncates to 300 chars', async () => {
   assert.deepEqual(result, { dryRun: true });
 });
 
+// ---------------------------------------------------------------------------
+// Dispatcher contract assertions
+//
+// On 2026-04-22 the ChatGPT CPC ads campaign hit three dead dispatchers:
+//   - postToLinkedIn → linkedin.publishPost({text})  (module exports publishTextPost(token, urn, text))
+//   - postToThreads  → threads.publishPost({text})   (no such export)
+//   - postToBluesky  → zernio.publishPost({text, platform})  (publishPost takes (content, platforms[], options))
+// All three are now routed through zernio.publishToAllPlatforms(content, {platforms:[<name>]}).
+// These tests spy on publishToAllPlatforms to pin the wire contract — any future
+// refactor that re-introduces a mismatched call will fail here before shipping.
+// ---------------------------------------------------------------------------
+
+function withZernioSpy(fn) {
+  const zernio = require('../scripts/social-analytics/publishers/zernio');
+  const original = zernio.publishToAllPlatforms;
+  const calls = [];
+  zernio.publishToAllPlatforms = async (content, options) => {
+    calls.push({ content, options });
+    return { published: [{ platform: options?.platforms?.[0], result: { id: 'spy' } }], errors: [] };
+  };
+  return Promise.resolve(fn(calls)).finally(() => {
+    zernio.publishToAllPlatforms = original;
+  });
+}
+
+test('postToLinkedIn routes through zernio.publishToAllPlatforms with {platforms:["linkedin"]}', async () => {
+  await withZernioSpy(async (calls) => {
+    await DISPATCHERS.linkedin({ body: 'Hello from LinkedIn.' }, false);
+    assert.equal(calls.length, 1, 'publishToAllPlatforms must be called exactly once');
+    assert.equal(calls[0].content, 'Hello from LinkedIn.');
+    assert.deepEqual(calls[0].options, { platforms: ['linkedin'] });
+  });
+});
+
+test('postToThreads routes through zernio.publishToAllPlatforms with {platforms:["threads"]}', async () => {
+  await withZernioSpy(async (calls) => {
+    await DISPATCHERS.threads({ title: 'T', body: 'Short threads body.' }, false);
+    assert.equal(calls.length, 1);
+    assert.ok(calls[0].content.includes('Short threads body.'));
+    assert.deepEqual(calls[0].options, { platforms: ['threads'] });
+  });
+});
+
+test('postToBluesky routes through zernio.publishToAllPlatforms with {platforms:["bluesky"]}', async () => {
+  await withZernioSpy(async (calls) => {
+    await DISPATCHERS.bluesky({ title: 'B', body: 'Short bluesky body.' }, false);
+    assert.equal(calls.length, 1);
+    assert.ok(calls[0].content.includes('Short bluesky body.'));
+    assert.deepEqual(calls[0].options, { platforms: ['bluesky'] });
+  });
+});
+
+test('postToThreads truncates content to 500 chars before handing to Zernio', async () => {
+  await withZernioSpy(async (calls) => {
+    const long = 'x'.repeat(1000);
+    await DISPATCHERS.threads({ title: 'T', body: long }, false);
+    assert.equal(calls.length, 1);
+    assert.ok(calls[0].content.length <= 500, `content length ${calls[0].content.length} must be ≤ 500`);
+  });
+});
+
+test('postToBluesky truncates content to 300 chars before handing to Zernio', async () => {
+  await withZernioSpy(async (calls) => {
+    const long = 'x'.repeat(1000);
+    await DISPATCHERS.bluesky({ title: 'B', body: long }, false);
+    assert.equal(calls.length, 1);
+    assert.ok(calls[0].content.length <= 300, `content length ${calls[0].content.length} must be ≤ 300`);
+  });
+});
+
+test('zernio module exports publishToAllPlatforms (the single-call contract)', () => {
+  const zernio = require('../scripts/social-analytics/publishers/zernio');
+  assert.equal(typeof zernio.publishToAllPlatforms, 'function',
+    'publishToAllPlatforms must stay exported — three dispatchers depend on it');
+});
+
+test('linkedin publisher module does not export a {text}-options-bag publishPost', () => {
+  // Regression guard for the 2026-04-22 discovery: the direct-API call
+  // linkedin.publishPost({text}) was shipped but the module actually exports
+  // publishTextPost(token, personUrn, text). If a future refactor re-adds
+  // a publishPost({text}) export, that's fine — but the dispatcher must not
+  // rely on it without also fixing the signature.
+  const linkedin = require('../scripts/social-analytics/publishers/linkedin');
+  assert.equal(typeof linkedin.publishTextPost, 'function',
+    'publishTextPost(token, personUrn, text) is the canonical direct-API entry');
+});
+
+test('threads publisher module exposes postTextThread, not publishPost', () => {
+  // Regression guard for the 2026-04-22 discovery: threads.publishPost({text})
+  // was called but does not exist. The real entry is postTextThread({text, token, userId}).
+  const threads = require('../scripts/social-analytics/publishers/threads');
+  assert.equal(typeof threads.postTextThread, 'function',
+    'postTextThread is the canonical threads direct-API entry');
+  assert.equal(typeof threads.publishPost, 'undefined',
+    'threads.publishPost must not exist — it was an invented name that broke silently');
+});
+
 test('marketing-autopilot workflow default platforms match focus channels', () => {
   const workflow = fs.readFileSync(
     path.join(__dirname, '..', '.github', 'workflows', 'marketing-autopilot.yml'),
