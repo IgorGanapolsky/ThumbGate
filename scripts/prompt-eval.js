@@ -17,7 +17,6 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const crypto = require('node:crypto');
 
 const ROOT = path.join(__dirname, '..');
 const DEFAULT_SUITE = path.join(ROOT, 'bench', 'prompt-eval-suite.json');
@@ -247,8 +246,13 @@ function readJsonl(filePath) {
   }
 }
 
-function hashId(value) {
-  return crypto.createHash('sha1').update(String(value)).digest('hex').slice(0, 10);
+function stableCaseId(value, index = 0) {
+  const slug = String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48);
+  return `${slug || 'entry'}-${index + 1}`;
 }
 
 function normalizeSignal(entry = {}) {
@@ -294,8 +298,8 @@ function feedbackEntryToEvalCase(entry = {}, index = 0) {
   const tags = Array.isArray(entry.tags)
     ? entry.tags.map(String).filter(Boolean)
     : String(entry.tags || '').split(',').map((tag) => tag.trim()).filter(Boolean);
-  const rawId = entry.id || entry.feedbackId || `${signal}:${context}:${whatWentWrong}:${whatToChange}:${whatWorked}:${index}`;
-  const id = `feedback-${signal}-${hashId(rawId)}`;
+  const rawId = entry.id || entry.feedbackId || `${signal}:${context}:${whatWentWrong}:${whatToChange}:${whatWorked}`;
+  const id = `feedback-${signal}-${stableCaseId(rawId, index)}`;
   const actionableText = signal === 'negative'
     ? compactText(whatToChange, whatWentWrong, context)
     : compactText(context, whatWorked);
