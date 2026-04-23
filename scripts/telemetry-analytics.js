@@ -315,6 +315,15 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     pricingInterest: pickFirstText(raw.pricingInterest, raw.interestLevel),
     seoQuery: pickFirstText(raw.seoQuery, raw.query),
     seoSurface: pickFirstText(raw.seoSurface, raw.searchSurface, raw.surface),
+    sectionId: pickFirstText(raw.sectionId, raw.section),
+    sectionLabel: pickFirstText(raw.sectionLabel),
+    lastVisibleSection: pickFirstText(raw.lastVisibleSection, raw.visibleSection),
+    dwellBucket: pickFirstText(raw.dwellBucket, raw.engagementBucket),
+    scrollBucket: pickFirstText(raw.scrollBucket),
+    engagementMs: normalizeInteger(raw.engagementMs),
+    maxScrollPercent: normalizeInteger(raw.maxScrollPercent ?? raw.scrollPercent),
+    buyerEmailFocused: Boolean(raw.buyerEmailFocused),
+    buyerEmailCaptured: Boolean(raw.buyerEmailCaptured),
     trafficChannel: inferTrafficChannel(raw, referrerHost),
     failureCode: pickFirstText(raw.failureCode),
     httpStatus: normalizeInteger(raw.httpStatus),
@@ -444,10 +453,17 @@ function getTelemetrySummary(feedbackDir, options = {}) {
   const seoLandingViewsByQuery = {};
   const trackedLinkHitsBySlug = {};
   const trackedLinkCheckoutStartsBySlug = {};
+  const sectionViewsById = {};
+  const pageExitsByLastVisibleSection = {};
+  const pageExitsByDwellBucket = {};
+  const pageExitsByScrollBucket = {};
+  const ctaImpressionsById = {};
+  const ctaImpressionsByPlacement = {};
   const cliByPlatform = {};
   const cliByVersion = {};
   let pageViews = 0;
   let ctaClicks = 0;
+  let ctaImpressions = 0;
   let checkoutStarts = 0;
   let checkoutFailures = 0;
   let checkoutCancelled = 0;
@@ -460,6 +476,9 @@ function getTelemetrySummary(feedbackDir, options = {}) {
   let buyerLossSignals = 0;
   let pricingInterestEvents = 0;
   let seoLandingViews = 0;
+  let pageExitEvents = 0;
+  let emailFocusEvents = 0;
+  let emailAbandonEvents = 0;
   let webEvents = 0;
   let webEventsWithVisitorId = 0;
   let webEventsWithSessionId = 0;
@@ -467,6 +486,10 @@ function getTelemetrySummary(feedbackDir, options = {}) {
   let attributedPageViews = 0;
   let attributedCheckoutStarts = 0;
   let latestSeenAt = null;
+  let exitEngagementMsTotal = 0;
+  let exitEngagementMsCount = 0;
+  let exitScrollPercentTotal = 0;
+  let exitScrollPercentCount = 0;
 
   for (const entry of events) {
     incrementCounter(byClientType, entry.clientType || entry.client || 'unknown');
@@ -587,6 +610,39 @@ function getTelemetrySummary(feedbackDir, options = {}) {
         buyerLossSignals += 1;
       }
 
+      if ((entry.eventType || entry.event) === 'section_view') {
+        incrementCounter(sectionViewsById, entry.sectionId);
+      }
+
+      if ((entry.eventType || entry.event) === 'cta_impression') {
+        ctaImpressions += 1;
+        incrementCounter(ctaImpressionsById, entry.ctaId);
+        incrementCounter(ctaImpressionsByPlacement, entry.ctaPlacement);
+      }
+
+      if ((entry.eventType || entry.event) === 'page_exit') {
+        pageExitEvents += 1;
+        incrementCounter(pageExitsByLastVisibleSection, entry.lastVisibleSection);
+        incrementCounter(pageExitsByDwellBucket, entry.dwellBucket);
+        incrementCounter(pageExitsByScrollBucket, entry.scrollBucket);
+        if (entry.engagementMs !== null) {
+          exitEngagementMsTotal += entry.engagementMs;
+          exitEngagementMsCount += 1;
+        }
+        if (entry.maxScrollPercent !== null) {
+          exitScrollPercentTotal += entry.maxScrollPercent;
+          exitScrollPercentCount += 1;
+        }
+      }
+
+      if ((entry.eventType || entry.event) === 'buyer_email_focus') {
+        emailFocusEvents += 1;
+      }
+
+      if ((entry.eventType || entry.event) === 'buyer_email_abandon') {
+        emailAbandonEvents += 1;
+      }
+
       if ((entry.eventType || entry.event) === 'pricing_interest') {
         pricingInterestEvents += 1;
         incrementCounter(pricingInterestByLevel, entry.pricingInterest);
@@ -683,6 +739,10 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       buyerLossSignals,
       pricingInterestEvents,
       seoLandingViews,
+      ctaImpressions,
+      pageExitEvents,
+      emailFocusEvents,
+      emailAbandonEvents,
       pageViewToCheckoutRate: safeRate(checkoutStarts, pageViews),
       visitorToCheckoutRate: safeRate(checkoutStarts, webVisitors.size),
       visitorIdCoverageRate: safeRate(webEventsWithVisitorId, webEvents),
@@ -691,6 +751,12 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       attributedPageViews,
       attributedCheckoutStarts,
       attributionCoverageRate: safeRate(attributedPageViews, pageViews),
+      averageExitEngagementMs: exitEngagementMsCount > 0
+        ? Math.round(exitEngagementMsTotal / exitEngagementMsCount)
+        : 0,
+      averageExitScrollPercent: exitScrollPercentCount > 0
+        ? Math.round(exitScrollPercentTotal / exitScrollPercentCount)
+        : 0,
     },
     cli: {
       uniqueInstalls: cliInstalls.size,
@@ -733,6 +799,12 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       pricingInterestByLevel,
       seoLandingViewsBySurface,
       seoLandingViewsByQuery,
+      sectionViewsById,
+      pageExitsByLastVisibleSection,
+      pageExitsByDwellBucket,
+      pageExitsByScrollBucket,
+      ctaImpressionsById,
+      ctaImpressionsByPlacement,
       checkoutConversionBySource,
       checkoutConversionByCampaign,
       checkoutConversionByTrafficChannel,
@@ -764,6 +836,20 @@ function getTelemetryAnalytics(feedbackDir, options = {}) {
   const topBuyerLossReason = getTopCounterEntry(summary.marketing.buyerLossReasons);
   const topSeoSurface = getTopCounterEntry(summary.marketing.seoLandingViewsBySurface);
   const topSeoQuery = getTopCounterEntry(summary.marketing.seoLandingViewsByQuery);
+  const topViewedSection = getTopCounterEntry(summary.marketing.sectionViewsById);
+  const topExitSection = getTopCounterEntry(summary.marketing.pageExitsByLastVisibleSection);
+  const topExitDwellBucket = getTopCounterEntry(summary.marketing.pageExitsByDwellBucket);
+  const topImpressionCta = getTopCounterEntry(summary.marketing.ctaImpressionsById);
+  const impressionToClickRateById = {};
+  for (const ctaId of new Set([
+    ...Object.keys(summary.marketing.ctaImpressionsById || {}),
+    ...Object.keys(summary.marketing.byCtaId || {}),
+  ])) {
+    impressionToClickRateById[ctaId] = safeRate(
+      (summary.marketing.byCtaId || {})[ctaId] || 0,
+      (summary.marketing.ctaImpressionsById || {})[ctaId] || 0
+    );
+  }
 
   return {
     window: summary.window,
@@ -808,6 +894,7 @@ function getTelemetryAnalytics(feedbackDir, options = {}) {
       checkoutFailures: summary.web.checkoutFailures,
       checkoutCancelled: summary.web.checkoutCancelled,
       checkoutAbandoned: summary.web.checkoutAbandoned,
+      ctaImpressions: summary.web.ctaImpressions,
       successPageViews: summary.web.checkoutSuccessPageViews,
       cancelPageViews: summary.web.checkoutCancelPageViews,
       paidConfirmations: summary.web.checkoutPaidConfirmations,
@@ -843,6 +930,25 @@ function getTelemetryAnalytics(feedbackDir, options = {}) {
       paidConfirmationRate: safeRate(summary.web.checkoutPaidConfirmations, summary.web.checkoutStarts),
       successPageViewRate: safeRate(summary.web.checkoutSuccessPageViews, summary.web.checkoutStarts),
       conversionByTrafficChannel: summary.marketing.checkoutConversionByTrafficChannel,
+    },
+    behavior: {
+      sectionViewsById: summary.marketing.sectionViewsById,
+      ctaImpressionsById: summary.marketing.ctaImpressionsById,
+      ctaImpressionsByPlacement: summary.marketing.ctaImpressionsByPlacement,
+      pageExits: summary.web.pageExitEvents,
+      exitsByLastVisibleSection: summary.marketing.pageExitsByLastVisibleSection,
+      exitsByDwellBucket: summary.marketing.pageExitsByDwellBucket,
+      exitsByScrollBucket: summary.marketing.pageExitsByScrollBucket,
+      emailFocusEvents: summary.web.emailFocusEvents,
+      emailAbandonEvents: summary.web.emailAbandonEvents,
+      emailAbandonRate: safeRate(summary.web.emailAbandonEvents, summary.web.emailFocusEvents),
+      averageExitEngagementMs: summary.web.averageExitEngagementMs,
+      averageExitScrollPercent: summary.web.averageExitScrollPercent,
+      impressionToClickRateById,
+      topViewedSection: topViewedSection ? { key: topViewedSection[0], count: topViewedSection[1] } : null,
+      topExitSection: topExitSection ? { key: topExitSection[0], count: topExitSection[1] } : null,
+      topExitDwellBucket: topExitDwellBucket ? { key: topExitDwellBucket[0], count: topExitDwellBucket[1] } : null,
+      topImpressionCta: topImpressionCta ? { key: topImpressionCta[0], count: topImpressionCta[1] } : null,
     },
     buyerLoss: {
       totalSignals: summary.web.buyerLossSignals,

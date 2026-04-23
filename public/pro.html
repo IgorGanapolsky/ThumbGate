@@ -1050,6 +1050,46 @@ __GA_BOOTSTRAP__
 
 <script src="/js/buyer-intent.js"></script>
 <script>
+function readMarketingParam(name) {
+  var params = new URLSearchParams(window.location.search);
+  return params.get(name);
+}
+
+function sendFirstPartyTelemetry(eventType, props) {
+  var payload = Object.assign({
+    eventType: eventType,
+    clientType: 'web',
+    acquisitionId: serverAcquisitionId,
+    visitorId: serverVisitorId,
+    sessionId: serverSessionId,
+    source: readMarketingParam('utm_source') || readMarketingParam('source') || 'website',
+    utmSource: readMarketingParam('utm_source') || 'website',
+    utmMedium: readMarketingParam('utm_medium') || 'pro_page',
+    utmCampaign: readMarketingParam('utm_campaign') || 'pro_pack',
+    utmContent: readMarketingParam('utm_content'),
+    utmTerm: readMarketingParam('utm_term'),
+    creator: readMarketingParam('creator') || readMarketingParam('creator_handle'),
+    community: readMarketingParam('community') || readMarketingParam('subreddit'),
+    postId: readMarketingParam('post_id'),
+    commentId: readMarketingParam('comment_id'),
+    campaignVariant: readMarketingParam('campaign_variant'),
+    offerCode: readMarketingParam('offer_code'),
+    page: '/pro',
+    landingPath: '/pro'
+  }, props || {});
+  var body = JSON.stringify(payload);
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon('/v1/telemetry/ping', new Blob([body], { type: 'application/json' }));
+    return;
+  }
+  fetch('/v1/telemetry/ping', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: body,
+    keepalive: true,
+  }).catch(function() {});
+}
+
 function initializeBuyerIntent() {
   globalThis.ThumbGateBuyerIntent.initializeBuyerIntent({
     page: 'pro',
@@ -1066,6 +1106,11 @@ function trackClick(selector, eventName, props) {
   document.querySelectorAll(selector).forEach(function(el) {
     el.addEventListener('click', function() {
       if (typeof plausible === 'function') plausible(eventName, { props: props || {} });
+      sendFirstPartyTelemetry(eventName, Object.assign({}, props || {}, {
+        ctaId: (props && props.ctaId) || eventName,
+        ctaPlacement: (props && props.ctaPlacement) || 'pro_page',
+        planId: (props && props.planId) || null,
+      }));
     });
   });
 }
@@ -1087,6 +1132,25 @@ trackClick('.btn-demo', 'pro_demo_click', { page: 'pro' });
 trackClick('.btn-free-path', 'pro_free_path_click', { page: 'pro' });
 trackClick('.proof-links a', 'pro_proof_click', { page: 'pro' });
 initializeBuyerIntent();
+globalThis.buyerJourney = globalThis.ThumbGateBuyerIntent.initializeBehaviorAnalytics({
+  pageType: 'marketing',
+  pagePath: '/pro',
+  landingPath: '/pro',
+  sendTelemetry: sendFirstPartyTelemetry,
+  emailSelector: '[data-buyer-email]',
+  sections: [
+    { selector: '.hero', sectionId: 'hero', sectionLabel: 'Hero' },
+    { selector: '#proof', sectionId: 'proof', sectionLabel: 'Proof' },
+    { selector: '#why-pay', sectionId: 'why_pay', sectionLabel: 'Why Pay' },
+    { selector: '#pricing', sectionId: 'pricing', sectionLabel: 'Pricing' },
+    { selector: '#faq', sectionId: 'faq', sectionLabel: 'FAQ' }
+  ],
+  ctaImpressions: [
+    { selector: '.btn-pro-checkout', ctaId: 'pro_checkout', ctaPlacement: 'pro_page', planId: 'pro' },
+    { selector: '.btn-demo', ctaId: 'pro_demo', ctaPlacement: 'pro_page', planId: 'proof' },
+    { selector: '.btn-free-path', ctaId: 'pro_free_path', ctaPlacement: 'pro_page', planId: 'free' }
+  ]
+});
 
 document.querySelectorAll('.faq-q').forEach(function(el) {
   el.addEventListener('click', function() {

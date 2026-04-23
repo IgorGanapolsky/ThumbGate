@@ -410,6 +410,85 @@ test('getTelemetryAnalytics summarizes buyer-loss, abandonment, and SEO telemetr
   assert.equal(analytics.seo.topQuery.key, 'ai agent guardrails');
 });
 
+test('getTelemetryAnalytics summarizes behavioral loss signals from landing pages', () => {
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'section_view',
+    clientType: 'web',
+    acquisitionId: 'acq_behavior_1',
+    visitorId: 'visitor_behavior_1',
+    sessionId: 'session_behavior_1',
+    sectionId: 'pricing',
+    sectionLabel: 'Pricing',
+    page: '/',
+  });
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'cta_impression',
+    clientType: 'web',
+    acquisitionId: 'acq_behavior_1',
+    visitorId: 'visitor_behavior_1',
+    sessionId: 'session_behavior_1',
+    ctaId: 'pricing_pro_trial',
+    ctaPlacement: 'pricing',
+    planId: 'pro',
+    page: '/',
+  });
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'cta_click',
+    clientType: 'web',
+    acquisitionId: 'acq_behavior_1',
+    visitorId: 'visitor_behavior_1',
+    sessionId: 'session_behavior_1',
+    ctaId: 'pricing_pro_trial',
+    ctaPlacement: 'pricing',
+    planId: 'pro',
+    page: '/',
+  });
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'buyer_email_focus',
+    clientType: 'web',
+    acquisitionId: 'acq_behavior_1',
+    visitorId: 'visitor_behavior_1',
+    sessionId: 'session_behavior_1',
+    page: '/',
+  });
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'buyer_email_abandon',
+    clientType: 'web',
+    acquisitionId: 'acq_behavior_1',
+    visitorId: 'visitor_behavior_1',
+    sessionId: 'session_behavior_1',
+    page: '/',
+  });
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'page_exit',
+    clientType: 'web',
+    acquisitionId: 'acq_behavior_1',
+    visitorId: 'visitor_behavior_1',
+    sessionId: 'session_behavior_1',
+    lastVisibleSection: 'hero',
+    dwellBucket: 'under_10s',
+    scrollBucket: 'under_25',
+    engagementMs: 8400,
+    maxScrollPercent: 22,
+    page: '/',
+  });
+
+  const analytics = getTelemetryAnalytics(tmpDir);
+  assert.equal(analytics.behavior.sectionViewsById.pricing, 1);
+  assert.equal(analytics.behavior.ctaImpressionsById.pricing_pro_trial, 1);
+  assert.equal(analytics.behavior.pageExits, 1);
+  assert.equal(analytics.behavior.exitsByLastVisibleSection.hero, 1);
+  assert.equal(analytics.behavior.exitsByDwellBucket.under_10s, 1);
+  assert.equal(analytics.behavior.emailFocusEvents, 1);
+  assert.equal(analytics.behavior.emailAbandonEvents, 1);
+  assert.equal(analytics.behavior.emailAbandonRate, 1);
+  assert.equal(analytics.behavior.averageExitEngagementMs, 8400);
+  assert.equal(analytics.behavior.averageExitScrollPercent, 22);
+  assert.equal(analytics.behavior.impressionToClickRateById.pricing_pro_trial, 1);
+  assert.equal(analytics.behavior.topViewedSection.key, 'pricing');
+  assert.equal(analytics.behavior.topExitSection.key, 'hero');
+});
+
 test('getTelemetryAnalytics keeps generic CTA clicks separate from checkout starts and counts checkout bootstrap', () => {
   appendTelemetryEvent(tmpDir, {
     eventType: 'landing_page_view',
