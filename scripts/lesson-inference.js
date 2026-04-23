@@ -431,6 +431,30 @@ function consumePhrase(lower, original, phrases) {
 // 6. LLM-Powered Structured Lesson Extraction
 // ---------------------------------------------------------------------------
 
+function createLessonPromptExample({
+  signal,
+  conversationWindow,
+  triggerCondition,
+  triggerType,
+  actionType,
+  actionDescription,
+  confidence,
+  scope,
+  tags,
+}) {
+  return {
+    signal,
+    conversationWindow: conversationWindow.join('\n'),
+    output: {
+      trigger: { condition: triggerCondition, type: triggerType },
+      action: { type: actionType, description: actionDescription },
+      confidence,
+      scope,
+      tags,
+    },
+  };
+}
+
 // Five multishot exemplars pinned as a constant so they can be inspected/tested
 // independently of the prompt string. Each example pairs a (signal,
 // conversation_window) with the exact JSON output Claude should emit. These
@@ -439,83 +463,83 @@ function consumePhrase(lower, original, phrases) {
 // regression-test-pinning. Changing any example shifts lesson extraction
 // behavior — treat it like a prompt version bump.
 const LLM_LESSON_MULTISHOT_EXAMPLES = [
-  {
+  createLessonPromptExample({
     signal: 'negative',
     conversationWindow: [
       '[user]: why is my edit failing?',
       '[assistant]: I\'ll try editing src/api/server.js — Edit(src/api/server.js) failed: File has not been read yet.',
       '[assistant]: Let me Read(src/api/server.js) first, then retry Edit.',
       '[user]: that worked. thumbs down on the first attempt though.',
-    ].join('\n'),
-    output: {
-      trigger: { condition: 'about to call Edit on a file that has not been Read in this session', type: 'constraint' },
-      action: { type: 'avoid', description: 'Never call Edit on a file without first calling Read on it — the tool rejects unread files' },
-      confidence: 0.9,
-      scope: 'global',
-      tags: ['Edit', 'Read', 'tool-use', 'preconditions'],
-    },
-  },
-  {
+    ],
+    triggerCondition: 'about to call Edit on a file that has not been Read in this session',
+    triggerType: 'constraint',
+    actionType: 'avoid',
+    actionDescription: 'Never call Edit on a file without first calling Read on it — the tool rejects unread files',
+    confidence: 0.9,
+    scope: 'global',
+    tags: ['Edit', 'Read', 'tool-use', 'preconditions'],
+  }),
+  createLessonPromptExample({
     signal: 'negative',
     conversationWindow: [
       '[assistant]: Running git push --force origin main to clean up history.',
       '[user]: NO. Never force-push to main. Thumbs down.',
-    ].join('\n'),
-    output: {
-      trigger: { condition: 'about to run git push with --force or -f on the main branch', type: 'constraint' },
-      action: { type: 'avoid', description: 'Never force-push to main; use incremental commits and open a new PR if history needs adjustment' },
-      confidence: 0.95,
-      scope: 'project-level',
-      tags: ['git', 'force-push', 'main-branch', 'destructive'],
-    },
-  },
-  {
+    ],
+    triggerCondition: 'about to run git push with --force or -f on the main branch',
+    triggerType: 'constraint',
+    actionType: 'avoid',
+    actionDescription: 'Never force-push to main; use incremental commits and open a new PR if history needs adjustment',
+    confidence: 0.95,
+    scope: 'project-level',
+    tags: ['git', 'force-push', 'main-branch', 'destructive'],
+  }),
+  createLessonPromptExample({
     signal: 'positive',
     conversationWindow: [
       '[user]: the deploy failed again, can you just verify with curl before declaring done?',
       '[assistant]: Running curl https://thumbgate-production.up.railway.app/health and grepping for the expected version.',
       '[assistant]: Got {"version":"1.15.0"} — matches package.json. Deploy confirmed.',
       '[user]: perfect. thumbs up.',
-    ].join('\n'),
-    output: {
-      trigger: { condition: 'after merging a PR that touches deployable code', type: 'implementation' },
-      action: { type: 'do', description: 'Curl the /health endpoint and grep for the expected version before claiming a deploy succeeded' },
-      confidence: 0.85,
-      scope: 'project-level',
-      tags: ['deploy', 'verification', 'curl', 'railway'],
-    },
-  },
-  {
+    ],
+    triggerCondition: 'after merging a PR that touches deployable code',
+    triggerType: 'implementation',
+    actionType: 'do',
+    actionDescription: 'Curl the /health endpoint and grep for the expected version before claiming a deploy succeeded',
+    confidence: 0.85,
+    scope: 'project-level',
+    tags: ['deploy', 'verification', 'curl', 'railway'],
+  }),
+  createLessonPromptExample({
     signal: 'negative',
     conversationWindow: [
       '[user]: these test failures are weird',
       '[assistant]: Let me check... the tests are using mocked Stripe. Maybe real Stripe is needed?',
       '[assistant]: Replaced mocks with live Stripe calls. Tests now passing.',
       '[user]: tests should not call real Stripe in CI. Thumbs down.',
-    ].join('\n'),
-    output: {
-      trigger: { condition: 'a test is failing and the temptation is to replace mocks with live API calls', type: 'debugging' },
-      action: { type: 'avoid', description: 'Never swap mocks for real external API calls to make tests pass — inject dependencies and stub the client instead' },
-      confidence: 0.9,
-      scope: 'project-level',
-      tags: ['testing', 'mocking', 'stripe', 'ci'],
-    },
-  },
-  {
+    ],
+    triggerCondition: 'a test is failing and the temptation is to replace mocks with live API calls',
+    triggerType: 'debugging',
+    actionType: 'avoid',
+    actionDescription: 'Never swap mocks for real external API calls to make tests pass — inject dependencies and stub the client instead',
+    confidence: 0.9,
+    scope: 'project-level',
+    tags: ['testing', 'mocking', 'stripe', 'ci'],
+  }),
+  createLessonPromptExample({
     signal: 'positive',
     conversationWindow: [
       '[user]: add a regression test that pins the distinct tier icons',
       '[assistant]: Added assert.notEqual(proIcon, teamIcon) to tests/billing.test.js, plus the URL regex per tier.',
       '[user]: great, locking that in. thumbs up.',
-    ].join('\n'),
-    output: {
-      trigger: { condition: 'fixing a bug where two products rendered with the same asset', type: 'implementation' },
-      action: { type: 'do', description: 'Add a regression assertion that pins the distinct values (e.g. assert.notEqual(a,b)) so the collapse cannot silently return' },
-      confidence: 0.9,
-      scope: 'file-level',
-      tags: ['regression-test', 'stripe', 'billing', 'tier'],
-    },
-  },
+    ],
+    triggerCondition: 'fixing a bug where two products rendered with the same asset',
+    triggerType: 'implementation',
+    actionType: 'do',
+    actionDescription: 'Add a regression assertion that pins the distinct values (e.g. assert.notEqual(a,b)) so the collapse cannot silently return',
+    confidence: 0.9,
+    scope: 'file-level',
+    tags: ['regression-test', 'stripe', 'billing', 'tier'],
+  }),
 ];
 
 function renderMultishotExamplesForPrompt(examples = LLM_LESSON_MULTISHOT_EXAMPLES) {
