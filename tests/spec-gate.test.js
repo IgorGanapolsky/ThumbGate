@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { buildAwsAccessKeyId } = require('../scripts/secret-fixture-tokens');
 
 const {
   evaluateAction,
@@ -109,7 +110,7 @@ test('evaluateConstraints allows safe commands', () => {
 
 test('evaluateConstraints blocks secrets in content scope', () => {
   const spec = validateSpec(FULL_SPEC);
-  const results = evaluateConstraints(spec, { content: 'const key = "AKIAIOSFODNN7EXAMPLE"' });
+  const results = evaluateConstraints(spec, { content: `const key = "${buildAwsAccessKeyId()}"` });
 
   const secrets = results.find((r) => r.constraintId === 'no-secrets');
   assert.equal(secrets.passed, false);
