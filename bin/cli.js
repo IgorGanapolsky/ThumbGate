@@ -528,8 +528,54 @@ function setupForge() {
   return true;
 }
 
+function setupCline() {
+  let changed = false;
+
+  // 1. Copy .clinerules into project root (Cline auto-loads this at session start).
+  const rulesDest = path.join(CWD, '.clinerules');
+  const rulesSrc = path.join(PKG_ROOT, 'adapters', 'cline', '.clinerules');
+  if (!fs.existsSync(rulesDest) && fs.existsSync(rulesSrc)) {
+    fs.copyFileSync(rulesSrc, rulesDest);
+    console.log('  Cline: installed .clinerules with ThumbGate gating rules');
+    changed = true;
+  }
+
+  // 2. Merge MCP server block into Cline's VS Code globalStorage settings.
+  // Extension id: saoudrizwan.claude-dev
+  const platform = process.platform;
+  let clineSettingsPath = null;
+  if (platform === 'darwin') {
+    clineSettingsPath = path.join(HOME, 'Library', 'Application Support', 'Code', 'User', 'globalStorage', 'saoudrizwan.claude-dev', 'settings', 'cline_mcp_settings.json');
+  } else if (platform === 'linux') {
+    clineSettingsPath = path.join(HOME, '.config', 'Code', 'User', 'globalStorage', 'saoudrizwan.claude-dev', 'settings', 'cline_mcp_settings.json');
+  } else if (platform === 'win32' && process.env.APPDATA) {
+    clineSettingsPath = path.join(process.env.APPDATA, 'Code', 'User', 'globalStorage', 'saoudrizwan.claude-dev', 'settings', 'cline_mcp_settings.json');
+  }
+
+  if (clineSettingsPath) {
+    let settings = { mcpServers: {} };
+    if (fs.existsSync(clineSettingsPath)) {
+      try { settings = JSON.parse(fs.readFileSync(clineSettingsPath, 'utf8')); } catch (_) { settings = { mcpServers: {} }; }
+    }
+    settings.mcpServers = settings.mcpServers || {};
+    const canonicalEntry = canonicalMcpEntry('home');
+    if (!mcpEntriesMatch(settings.mcpServers[MCP_SERVER_NAME], canonicalEntry)) {
+      settings.mcpServers[MCP_SERVER_NAME] = canonicalEntry;
+      fs.mkdirSync(path.dirname(clineSettingsPath), { recursive: true });
+      fs.writeFileSync(clineSettingsPath, JSON.stringify(settings, null, 2) + '\n');
+      console.log(`  Cline: registered thumbgate MCP server in ${clineSettingsPath}`);
+      changed = true;
+    }
+  } else {
+    console.log('  Cline: unsupported platform for auto-wiring MCP settings; see adapters/cline/INSTALL.md');
+  }
+
+  return changed;
+}
+
 function detectAgent(projectDir) {
   if (fs.existsSync(path.join(projectDir, '.claude'))) return 'claude-code';
+  if (fs.existsSync(path.join(projectDir, '.clinerules'))) return 'cline';
   if (fs.existsSync(path.join(projectDir, '.cursorrules'))) return 'cursor';
   if (fs.existsSync(path.join(projectDir, '.cursor'))) return 'cursor';
   if (fs.existsSync(path.join(projectDir, '.codex'))) return 'codex';
@@ -670,6 +716,12 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
     { name: 'Amp', detect: [() => whichExists('amp'), () => fs.existsSync(path.join(HOME, '.amp'))], setup: setupAmp },
     { name: 'Cursor', detect: [() => fs.existsSync(path.join(HOME, '.cursor', 'mcp.json')), () => fs.existsSync(path.join(CWD, '.cursor'))], setup: setupCursor },
     { name: 'ForgeCode', detect: [() => whichExists('forge'), () => fs.existsSync(path.join(CWD, 'forge.yaml'))], setup: setupForge },
+    { name: 'Cline', detect: [
+      () => fs.existsSync(path.join(CWD, '.clinerules')),
+      () => process.platform === 'darwin' && fs.existsSync(path.join(HOME, 'Library', 'Application Support', 'Code', 'User', 'globalStorage', 'saoudrizwan.claude-dev')),
+      () => process.platform === 'linux' && fs.existsSync(path.join(HOME, '.config', 'Code', 'User', 'globalStorage', 'saoudrizwan.claude-dev')),
+      () => process.platform === 'win32' && process.env.APPDATA && fs.existsSync(path.join(process.env.APPDATA, 'Code', 'User', 'globalStorage', 'saoudrizwan.claude-dev')),
+    ], setup: setupCline },
   ];
 
   for (const p of platforms) {
@@ -690,8 +742,11 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
 
   if (configured === 0) console.log('  All detected platforms already configured.');
 
-  // Auto-wire hooks if --agent flag is provided (or auto-detect)
-  if (args.agent || args['wire-hooks']) {
+  // Cline uses .clinerules (no native hook surface). Run setupCline directly
+  // and skip wireHooks, which does not support cline.
+  if (args.agent === 'cline') {
+    setupCline();
+  } else if (args.agent || args['wire-hooks']) {
     const { wireHooks } = require(path.join(PKG_ROOT, 'scripts', 'auto-wire-hooks'));
     const hookResult = wireHooks({ agent: args.agent, dryRun: args['dry-run'] });
     if (hookResult.error) {

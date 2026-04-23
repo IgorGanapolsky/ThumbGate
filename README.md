@@ -10,9 +10,9 @@
 
 **Stop paying $ for the same AI mistake.**
 
-Every retry loop, every hallucinated import, every *"let me try a different approach"* — those are billable tokens on every LLM vendor's bill. Thumbs-down once; ThumbGate blocks that exact mistake on every future call. Across Claude Code, Cursor, Codex, Gemini, Amp, OpenCode — any MCP-compatible agent, forever.
+Every retry loop, every hallucinated import, every *"let me try a different approach"* — those are billable tokens on every LLM vendor's bill. Thumbs-down once; ThumbGate blocks that exact mistake on every future call. Across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — any MCP-compatible agent, forever.
 
-Under the hood: your thumbs-down becomes a **Pre-Action Gate** that physically blocks the pattern **permanently** on every future call — across every session, every model, every agent. It is **self-improving agent governance**: every correction promotes a fresh prevention rule, and your library of Pre-Action Gates grows stronger with every lesson. Works with Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent. The monthly Anthropic / OpenAI bill stops paying for the same lesson over and over — local-first enforcement, zero tokens spent on repeats.
+Under the hood: your thumbs-down becomes a **Pre-Action Gate** that physically blocks the pattern **permanently** on every future call — across every session, every model, every agent. It is **self-improving agent governance**: every correction promotes a fresh prevention rule, and your library of Pre-Action Gates grows stronger with every lesson. Works with Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and any MCP-compatible agent. The monthly Anthropic / OpenAI bill stops paying for the same lesson over and over — local-first enforcement, zero tokens spent on repeats.
 
 > **Prevent expensive AI mistakes. Make AI stop repeating mistakes. Turn a smart assistant into a reliable operator.**
 
@@ -113,7 +113,7 @@ The gate engine converts lessons into enforceable rules using pattern matching, 
 Before any agent action executes, ThumbGate's `PreToolUse` hook intercepts the command and evaluates it against all active gates. This happens at the MCP protocol level — the agent physically cannot bypass it.
 
 ### Layer 4: Multi-Agent Distribution
-Gates are distributed across all connected agents via MCP stdio protocol. One correction in Claude Code protects Cursor, Codex, Gemini CLI, and any MCP-compatible agent.
+Gates are distributed across all connected agents via MCP stdio protocol. One correction in Claude Code protects Cursor, Codex, Gemini CLI, Cline, and any MCP-compatible agent.
 
 Prompt engineering still matters, but it is only the starting point. ThumbGate adds prompt evaluation on top: proof lanes, benchmarks, and self-heal checks tell you whether your prompt and workflow actually held up under execution instead of leaving you to guess from vibes.
 
@@ -132,10 +132,11 @@ Prompt engineering still matters, but it is only the starting point. ThumbGate a
 | **Codex** | `npx thumbgate init --agent codex` |
 | **Gemini CLI** | `npx thumbgate init --agent gemini` |
 | **Amp** | `npx thumbgate init --agent amp` |
+| **Cline** (Roo Code successor) | `npx thumbgate init --agent cline` |
 | **Claude Desktop** | [Download extension bundle](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb) |
 | **Any MCP agent** | `npx thumbgate serve` |
 
-Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode**, and any MCP-compatible agent.
+Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode**, and any MCP-compatible agent. Migrating from Roo Code (sunsetting 2026-05-15)? See [`adapters/cline/INSTALL.md`](./adapters/cline/INSTALL.md).
 
 ### Status bar proof
 
@@ -239,7 +240,7 @@ npx thumbgate bench      # run reliability benchmark
 | Org-wide dashboard | — | — | ✅ |
 | Approval + audit proof | — | — | ✅ |
 
-The free tier gives you 3 lifetime feedback captures and 1 auto-promoted prevention rule — enough to prove the enforcement loop works. MCP integrations for all agents (Claude Code, Cursor, Codex, Gemini, Amp, OpenCode) ship free.
+The free tier gives you 3 lifetime feedback captures and 1 auto-promoted prevention rule — enough to prove the enforcement loop works. MCP integrations for all agents (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode) ship free.
 
 Pro ($19/mo or $149/yr) lifts those caps and adds history-aware lesson recall, lesson search, DPO export, and a personal dashboard. Team ($49/seat/mo) adds a shared hosted lesson DB, org dashboard, and shared enforcement across the org. Pro and Team include `open_feedback_session`, `append_feedback_context`, and `finalize_feedback_session` for structured multi-turn feedback capture.
 
@@ -385,7 +386,7 @@ No. ThumbGate does not update model weights. It captures feedback, stores lesson
 Those are suggestions the agent can ignore. ThumbGate gates are enforced — they physically block the action before it runs. They also auto-generate from feedback instead of requiring manual writing.
 
 **Does it work with my agent?**
-If it supports MCP or pre-action hooks, yes. Claude Code, Claude Desktop, Cursor, Codex, Gemini CLI, Amp, OpenCode all work out of the box.
+If it supports MCP or pre-action hooks, yes. Claude Code, Claude Desktop, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode all work out of the box.
 
 **Is it free?**
 The free tier gives you 3 lifetime feedback captures and 1 auto-promoted prevention rule — enough to prove the enforcement loop works. MCP integrations ship free for every agent.
