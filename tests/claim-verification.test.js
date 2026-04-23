@@ -80,7 +80,7 @@ test('loadSessionActions prunes expired actions from runtime state', () => {
   }
 });
 
-test('registerClaimGate writes custom gates to runtime state instead of tracked config', () => {
+test('registerClaimGate writes custom checks to runtime state instead of tracked config', () => {
   const backups = backupRuntimeState();
   try {
     resetRuntimeState();

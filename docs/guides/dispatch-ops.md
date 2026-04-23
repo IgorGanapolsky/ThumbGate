@@ -59,4 +59,4 @@ When a task needs edits, open a dedicated worktree and switch back to `THUMBGATE
 4. Open a dedicated worktree.
 5. Switch to the default profile for implementation and verification.
 
-This keeps remote review fast while preserving the same Pre-Action Gates, worktree discipline, and evidence-first delivery model used everywhere else in the repo.
+This keeps remote review fast while preserving the same Pre-Action Checks, worktree discipline, and evidence-first delivery model used everywhere else in the repo.

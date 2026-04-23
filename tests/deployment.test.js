@@ -485,7 +485,7 @@ test('CI workflow gives the full suite enough runtime budget', () => {
   assert.ok(Number(timeoutMatch[1]) >= 45, 'CI timeout must leave enough room for the full suite');
 });
 
-test('CI workflow runs budget status and coverage gates before proof lanes', () => {
+test('CI workflow runs budget status and coverage checks before proof lanes', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
 
   assert.match(workflow, /Run budget status gate/);

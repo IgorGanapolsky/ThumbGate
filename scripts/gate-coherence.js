@@ -80,7 +80,7 @@ function getDefaultProbes() {
 // ---------------------------------------------------------------------------
 
 /**
- * Evaluate a probe against the spec-gate layer.
+ * Evaluate a probe against the spec-approval layer.
  */
 function evaluateSpecLayer(specs, probe) {
   const result = evaluateAction(specs, probe.input);

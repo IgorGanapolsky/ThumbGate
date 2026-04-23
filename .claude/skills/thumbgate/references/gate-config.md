@@ -1,28 +1,28 @@
-# Gate Configuration
+# Check Configuration
 
-## Default Gates
+## Default Checks
 
 ThumbGate ships with sensible defaults that block common dangerous patterns:
 
-| Gate | Blocks | Severity |
+| Check | Blocks | Severity |
 |------|--------|----------|
 | `no-force-push` | `git push --force` to protected branches | critical |
 | `no-drop-table` | `DROP TABLE` in production contexts | critical |
 | `no-skip-tests` | Claiming "done" without test evidence | high |
 | `no-delete-main` | Deleting main/master branch | critical |
 
-## Auto-Promoted Gates
+## Auto-Promoted Checks
 
 When you give repeated thumbs-down on similar failures, ThumbGate auto-promotes
-them into prevention gates via Thompson Sampling:
+them into prevention checks via Thompson Sampling:
 
 1. First thumbs-down: stored as a lesson
 2. 2+ similar failures: pattern detected, rule generated
-3. 3+ similar failures: rule promoted to hard gate (PreToolUse block)
+3. 3+ similar failures: rule promoted to hard check (PreToolUse block)
 
 ## Thompson Sampling Calibration
 
-Each gate category has a reliability score from Beta(alpha, beta):
+Each check category has a reliability score from Beta(alpha, beta):
 
 | Calibration | Samples | Meaning |
 |-------------|---------|---------|
@@ -33,9 +33,9 @@ Each gate category has a reliability score from Beta(alpha, beta):
 
 Decay: 7-day half-life with exponential weighting. Recent feedback matters more.
 
-## Custom Gates (Pro)
+## Custom Checks (Pro)
 
-Pro users can create custom gates beyond the defaults:
+Pro users can create custom checks beyond the defaults:
 
 ```bash
 # Example: block any npm publish without version bump

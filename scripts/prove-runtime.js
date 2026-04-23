@@ -278,7 +278,7 @@ async function run() {
     },
     {
       id: 'RUNTIME-07',
-      desc: 'packaged thumbgate runtime boots local API and serves dashboard affordances',
+      desc: 'packaged thumbcheck runtime boots local API and serves dashboard affordances',
       fn: async () => {
         const result = await runPackagedRuntimeSmoke({
           expectedVersion: require(path.join(ROOT, 'package.json')).version,

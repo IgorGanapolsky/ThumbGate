@@ -69,7 +69,7 @@ test('full command uses mocked Perplexity APIs for visibility, leads, and agent 
       const prompt = messages[0].content;
       const content = /alternatives to thumbgate/i.test(prompt)
         ? 'LangSmith and custom scripts are common options.'
-        : 'ThumbGate is a pre-action gate for AI coding agent reliability.';
+        : 'ThumbGate is a pre-action check for AI coding agent reliability.';
       return { choices: [{ message: { content } }], citations: ['https://example.com/thumbgate'] };
     },
     search: async () => {

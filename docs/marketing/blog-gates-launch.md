@@ -30,17 +30,17 @@ The problem wasn't the bot. The bot was doing its job. The problem was me -- or 
 
 These aren't novel mistakes. I'd made each of them before. The agent had been told not to. The instructions were in the system prompt. But system prompts degrade -- the agent's attention drifts over long sessions, and the instruction that said "check PR threads before pushing" gets buried under 50K tokens of other context.
 
-## The fix: pre-action gates
+## The fix: pre-action checks
 
 I needed something that couldn't be ignored. Not a suggestion in a system prompt. A physical block.
 
 Claude Code has a hook system called `PreToolUse` -- it runs a script before every tool invocation (Bash command, file edit, etc.) and the script can return `deny` to block the action entirely. This is the enforcement point.
 
-I built a gates engine. It's a JSON config file that defines patterns to match against tool invocations, and actions to take when they match:
+I built a checks engine. It's a JSON config file that defines patterns to match against tool invocations, and actions to take when they match:
 
 ```json
 {
-  "gates": [
+  "checks": [
     {
       "id": "push-without-thread-check",
       "trigger": "Bash:git_push",
@@ -60,7 +60,7 @@ I built a gates engine. It's a JSON config file that defines patterns to match a
 }
 ```
 
-When the agent tries to run `git push`, the gates engine intercepts it. If the `pr_threads_checked` condition hasn't been satisfied in the last 5 minutes, the push is denied. The agent is forced to check review threads first, address any unresolved comments, and only then push.
+When the agent tries to run `git push`, the checks engine intercepts it. If the `pr_threads_checked` condition hasn't been satisfied in the last 5 minutes, the push is denied. The agent is forced to check review threads first, address any unresolved comments, and only then push.
 
 The `unless` mechanism is key. It's not a permanent block -- it's a prerequisite. You can satisfy the condition by actually doing the work:
 
@@ -74,13 +74,13 @@ function isConditionSatisfied(conditionId) {
 }
 ```
 
-After the agent queries PR threads (and records that it did), the push gate opens for 5 minutes. This enforces the workflow without permanently blocking anything.
+After the agent queries PR threads (and records that it did), the push check opens for 5 minutes. This enforces the workflow without permanently blocking anything.
 
-## Auto-promotion: mistakes become gates automatically
+## Auto-promotion: mistakes become checks automatically
 
-The manual gates handle known failure patterns. But what about new ones?
+The manual checks handle known failure patterns. But what about new ones?
 
-The auto-promotion engine scans the feedback log -- every thumbs-down from the developer gets recorded with context about what went wrong. The first confirmed failure becomes a warning gate, and repeated failures escalate into a hard block:
+The auto-promotion engine scans the feedback log -- every thumbs-down from the developer gets recorded with context about what went wrong. The first confirmed failure becomes a warning check, and repeated failures escalate into a hard block:
 
 - **1 occurrence** = `warn` (agent sees a warning but can proceed)
 - **3 occurrences** = `block` (agent is physically stopped)
@@ -101,15 +101,15 @@ function buildGateRule(group) {
 }
 ```
 
-The system maintains a maximum of 10 auto-promoted gates, rotating out the oldest when new ones are added. This prevents unbounded growth while keeping the most relevant failure patterns active.
+The system maintains a maximum of 10 auto-promoted checks, rotating out the oldest when new ones are added. This prevents unbounded growth while keeping the most relevant failure patterns active.
 
 In my case, the "execution-gap" pattern -- announcing completion without actually pushing -- hit 3 occurrences and auto-upgraded from `warn` to `block`. Now the agent literally cannot claim it's done without the push having happened.
 
 ## The result
 
-Before gates: I'd lose 30-120 minutes per PR to avoidable loops. The agent would make the same category of mistake it made last week, last month, three months ago.
+Before checks: I'd lose 30-120 minutes per PR to avoidable loops. The agent would make the same category of mistake it made last week, last month, three months ago.
 
-After gates: those specific failure modes are impossible. Not unlikely. Not "the agent will try harder." Impossible. The `PreToolUse` hook runs before every tool call, every time, regardless of how degraded the context window is.
+After checks: those specific failure modes are impossible. Not unlikely. Not "the agent will try harder." Impossible. The `PreToolUse` hook runs before every tool call, every time, regardless of how degraded the context window is.
 
 The architecture is simple:
 
@@ -123,7 +123,7 @@ Developer feedback (thumbs down)
   Auto-promote scan (3+ = warn, 5+ = block)
        |
        v
-  gates config (JSON)
+  checks config (JSON)
        |
        v
   PreToolUse hook (runs before every tool call)
@@ -136,19 +136,19 @@ No ML. No fine-tuning. No prompt engineering. Just a regex matcher that runs bef
 
 ## Try it
 
-thumbgate v0.7.0 ships the gates engine, the auto-promotion pipeline, and the PreToolUse hook integration for Claude Code.
+thumbgate v0.7.0 ships the checks engine, the auto-promotion pipeline, and the PreToolUse hook integration for Claude Code.
 
 ```bash
 npx thumbgate init --agent claude-code
 ```
 
 This sets up:
-- `config/gates/default.json` -- starter gates for common failure patterns
-- `scripts/gates-engine.js` -- the PreToolUse hook
-- `scripts/auto-promote-gates.js` -- the feedback-to-gates pipeline
+- shipped default rules -- starter checks for common failure patterns
+- `scripts/checks-engine.js` -- the PreToolUse hook
+- `scripts/auto-promote-checks.js` -- the feedback-to-checks pipeline
 - Feedback capture via MCP tools
 
-The gates config is just JSON. Add your own patterns, set your own thresholds, define your own `unless` conditions. The engine doesn't care what agent framework you're using -- it just needs a PreToolUse hook that reads stdin and writes stdout.
+The checks config is just JSON. Add your own patterns, set your own thresholds, define your own `unless` conditions. The engine doesn't care what agent framework you're using -- it just needs a PreToolUse hook that reads stdin and writes stdout.
 
 MIT licensed. Early-stage project.
 

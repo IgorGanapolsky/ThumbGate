@@ -20,7 +20,7 @@ The enforcement part is what makes it different from just writing notes. ThumbGa
 
 The feedback loop looks like this: capture (thumbs up/down) -> distill (history-aware, reuses up to 8 prior recorded entries for vague thumbs-downs and links a 60-second follow-up thread) -> store (SQLite + FTS5) -> generate rules -> enforce via PreToolUse hooks. Every session your agent gets a little smarter.
 
-It ships with built-in gates for the most common footguns: force-push, direct push to main, pushing with unresolved review threads, destructive package-lock edits, and .env file exposure. You can add custom gates too.
+It ships with built-in checks for the most common footguns: force-push, direct push to main, pushing with unresolved review threads, destructive package-lock edits, and .env file exposure. You can add custom checks too.
 
 Setup is one command:
 
@@ -38,7 +38,7 @@ Curious if others have run into the same "agent amnesia" problem and how you are
 
 ## 2. r/LocalLLaMA -- Posted: [ ]
 
-**Title:** Pre-action gates for AI coding agents -- blocking bad tool calls before they execute
+**Title:** Pre-action checks for AI coding agents -- blocking bad tool calls before they execute
 
 **Body:**
 
@@ -52,7 +52,7 @@ The system uses PreToolUse hooks that fire before every tool call. Each hook che
 
 **Storage layer:** SQLite with FTS5 for full-text lesson search. Each lesson stores the original tool call, the conversation context, the failure description, and the generated prevention rule. FTS5 lets you do fast prefix and phrase queries against the lesson corpus. For semantic matching (catching variations of the same mistake), there is a LanceDB vector index that embeds lessons and does nearest-neighbor lookup.
 
-**Gate selection:** Not all gates are equally useful. ThumbGate uses Thompson Sampling (a multi-armed bandit algorithm) to decide which gates to activate. Gates that successfully block real mistakes get reinforced; gates that only produce false positives get downweighted. This means the system self-tunes over time without manual configuration.
+**Check selection:** Not all checks are equally useful. ThumbGate uses Thompson Sampling (a multi-armed bandit algorithm) to decide which checks to activate. Checks that successfully block real mistakes get reinforced; checks that only produce false positives get downweighted. This means the system self-tunes over time without manual configuration.
 
 **Content-hash dedup:** Every feedback entry is content-hashed before storage. If you thumbs-down the same mistake twice, it deduplicates rather than creating redundant lessons. This keeps the lesson DB clean without manual curation.
 
@@ -66,7 +66,7 @@ npx thumbgate init
 
 Source and docs: https://github.com/IgorGanapolsky/ThumbGate
 
-Would love to hear thoughts on the Thompson Sampling approach for gate selection -- has anyone used bandits for similar runtime policy decisions?
+Would love to hear thoughts on the Thompson Sampling approach for check selection -- has anyone used bandits for similar runtime policy decisions?
 
 ---
 
@@ -88,9 +88,9 @@ That is what ThumbGate does. When something goes wrong, you give a thumbs-down. 
 
 The enforcement part is the key differentiator. ThumbGate generates PreToolUse hooks that intercept tool calls before they execute. If your agent tries to run a command that matches a known-bad pattern, it gets blocked. Not warned -- blocked. The agent has to find a different approach.
 
-It also works in the positive direction. Thumbs-up feedback reinforces good patterns. Over time, the system learns which gates are most useful and adjusts (it uses a Thompson Sampling algorithm under the hood for this).
+It also works in the positive direction. Thumbs-up feedback reinforces good patterns. Over time, the system learns which checks are most useful and adjusts (it uses a Thompson Sampling algorithm under the hood for this).
 
-Built-in gates cover the common footguns: force-push, direct push to protected branches, unresolved review threads, destructive lock file edits, and .env exposure. You can define custom gates for your project-specific patterns.
+Built-in checks cover the common footguns: force-push, direct push to protected branches, unresolved review threads, destructive lock file edits, and .env exposure. You can define custom checks for your project-specific patterns.
 
 One command to set up:
 
@@ -100,7 +100,7 @@ npx thumbgate init
 
 Works with ChatGPT/Codex, Claude Code, Cursor, Gemini CLI, and any MCP-compatible agent. MIT licensed, fully open source: https://github.com/IgorGanapolsky/ThumbGate
 
-What are the recurring agent mistakes that drive you the most crazy? Curious what gates other people would want.
+What are the recurring agent mistakes that drive you the most crazy? Curious what checks other people would want.
 
 ---
 
@@ -121,7 +121,7 @@ I have been working on an open source tool called ThumbGate and I would really a
 3. Next time the agent tries `git push --force`, a PreToolUse hook fires and blocks it.
 4. The agent gets a message explaining why and is forced to use the safe alternative.
 
-It ships with built-in gates for common issues (force-push, .env edits, pushing with unresolved reviews, destructive lock file changes) and you can add custom gates in a JSON config.
+It ships with built-in checks for common issues (force-push, .env edits, pushing with unresolved reviews, destructive lock file changes) and you can add custom checks in a JSON config.
 
 **Tech stack:** Node.js (>=18.18.0), SQLite with FTS5 for lesson search, LanceDB for vector/semantic matching, JSONL for logs. No external API calls for the enforcement path -- everything runs locally.
 
@@ -131,17 +131,17 @@ It ships with built-in gates for common issues (force-push, .env edits, pushing 
 npx thumbgate init
 ```
 
-That auto-detects your agent, creates the config, and wires the hooks. There is also `npx thumbgate doctor` for health checks and `npx thumbgate dashboard` for a local web UI showing your lessons and gate activity.
+That auto-detects your agent, creates the config, and wires the hooks. There is also `npx thumbgate doctor` for health checks and `npx thumbgate dashboard` for a local web UI showing your lessons and check activity.
 
 MIT licensed. The repo is here: https://github.com/IgorGanapolsky/ThumbGate
 
 Things I would especially love feedback on:
 
 - Is the `npx thumbgate init` onboarding flow clear enough?
-- Are there gates you would want out of the box that are not included?
+- Are there checks you would want out of the box that are not included?
 - Any thoughts on the local-first approach vs. a hosted service?
 
-The project also has Pro for individual dashboard/export workflows and Team for shared lesson databases, org dashboards, and rollout proof, but the core local gate loop is usable without a paid account.
+The project also has Pro for individual dashboard/export workflows and Team for shared lesson databases, org dashboards, and rollout proof, but the core local check loop is usable without a paid account.
 
 Thanks in advance for any feedback.
 
@@ -159,7 +159,7 @@ I wanted to share some implementation details from a project I have been buildin
 
 AI coding agents (Claude Code, Cursor, Codex) work by executing tool calls -- Bash commands, file writes, git operations. ThumbGate installs PreToolUse hooks that fire before each tool call. Each hook receives the proposed action and can allow, block, or modify it.
 
-The hooks are wired at init time (`npx thumbgate init` detects the agent and writes the appropriate config). At runtime, the flow is: agent proposes tool call -> hook engine loads active gates -> each gate checks the action -> if any gate rejects, the action is blocked and the agent receives a rejection message with the reason and a suggested alternative.
+The hooks are wired at init time (`npx thumbgate init` detects the agent and writes the appropriate config). At runtime, the flow is: agent proposes tool call -> hook engine loads active checks -> each check checks the action -> if any check rejects, the action is blocked and the agent receives a rejection message with the reason and a suggested alternative.
 
 **SQLite + FTS5 for lesson search:**
 
@@ -167,9 +167,9 @@ Every piece of feedback (thumbs-up or thumbs-down) gets distilled into a "lesson
 
 When a hook fires, it queries the lesson DB to check if the proposed action matches any known-bad patterns. FTS5 handles the keyword matching. For semantic matching (catching paraphrased versions of the same mistake), there is a LanceDB vector index. The dual-recall approach (FTS5 keyword + LanceDB vector) catches both exact and fuzzy matches.
 
-**Thompson Sampling for gate activation:**
+**Thompson Sampling for check activation:**
 
-Not every gate is equally useful, and activating too many gates creates false positives. ThumbGate uses Thompson Sampling -- a multi-armed bandit algorithm -- to decide gate activation weights. Each gate has a beta distribution parameterized by its success (true blocks) and failure (false positive) counts. At decision time, we sample from each distribution and activate gates above a threshold. This means the system self-tunes: useful gates get stronger, noisy gates fade out.
+Not every check is equally useful, and activating too many checks creates false positives. ThumbGate uses Thompson Sampling -- a multi-armed bandit algorithm -- to decide check activation weights. Each check has a beta distribution parameterized by its success (true blocks) and failure (false positive) counts. At decision time, we sample from each distribution and activate checks above a threshold. This means the system self-tunes: useful checks get stronger, noisy checks fade out.
 
 **Content-hash deduplication:**
 

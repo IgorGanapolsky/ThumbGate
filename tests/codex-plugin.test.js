@@ -63,7 +63,7 @@ test('codex plugin manifest uses ThumbGate branding and local MCP config', () =>
   assert.match(readme, /auto-refreshes the Codex MCP\/hook runtime/i);
   assert.match(readme, new RegExp(getCodexPluginLatestDownloadUrl(root).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(readme, /build:codex-plugin/i);
-  assert.match(readme, /Pre-Action Gates/i);
+  assert.match(readme, /Pre-Action Checks/i);
   assert.match(install, /thumbgate-codex-plugin\.zip/i);
   assert.match(install, /build:codex-plugin/i);
   assert.match(install, /thumbgate@latest/i);

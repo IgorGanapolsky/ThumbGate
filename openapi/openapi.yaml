@@ -1149,7 +1149,7 @@ paths:
           description: Comma-separated tags that must all be present on a lesson.
       responses:
         '200':
-          description: Searchable promoted lessons with linked corrective actions, prevention rules, and auto-gates
+          description: Searchable promoted lessons with linked corrective actions, prevention rules, and auto-promoted checks
         '401':
           description: Unauthorized
   /v1/search:

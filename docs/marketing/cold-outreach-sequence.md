@@ -29,7 +29,7 @@ Following up with the two assets behind the offer:
 - Proof pack: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 - Sprint intake: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 
-The point is not generic AI governance. The point is to make one workflow safer to ship with recall, prevention rules, pre-action gates, and machine-readable evidence.
+The point is not generic AI governance. The point is to make one workflow safer to ship with recall, prevention rules, pre-action checks, and machine-readable evidence.
 
 If {{Company}} has one workflow owner and one repeated rollout blocker, I can tell you quickly whether it qualifies for the sprint.
 

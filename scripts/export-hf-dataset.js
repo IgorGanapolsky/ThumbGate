@@ -123,7 +123,7 @@ function buildPreferenceRow(pair, index) {
 function buildDatasetInfo({ traceCount, preferenceCount, exportedAt }) {
   return {
     dataset_info: {
-      description: 'Agent traces and DPO preference pairs from ThumbGate — pre-action gates for AI coding agents. Contains real-world tool call feedback, failure patterns, and learned corrections.',
+      description: 'Agent traces and DPO preference pairs from ThumbGate — pre-action checks for AI coding agents. Contains real-world tool call feedback, failure patterns, and learned corrections.',
       citation: '',
       homepage: 'https://github.com/IgorGanapolsky/ThumbGate',
       license: 'MIT',

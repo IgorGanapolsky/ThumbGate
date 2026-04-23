@@ -111,7 +111,7 @@ function renderNumbersPage(input) {
     '@type': 'Dataset',
     name: 'ThumbGate Live Operational Metrics',
     description:
-      'First-party operational metrics from the ThumbGate pre-action gate runtime: active gates, blocked AI agent actions, estimated token savings, and Bayes error rate of the intervention scorer.',
+      'First-party operational metrics from the ThumbGate pre-action check runtime: active checks, blocked AI agent actions, estimated token savings, and Bayes error rate of the intervention scorer.',
     url: 'https://thumbgate-production.up.railway.app/numbers',
     license: 'https://opensource.org/licenses/MIT',
     creator: softwareLd.creator,
@@ -177,7 +177,7 @@ function renderNumbersPage(input) {
 <meta name="generator" content="ThumbGate">
 <meta name="author" content="Igor Ganapolsky">
 <title>ThumbGate — The Numbers | Live First-Party Data</title>
-<meta name="description" content="ThumbGate's live operational numbers: active pre-action gates, AI agent actions blocked, estimated LLM tokens and dollars saved, and the Bayes error rate of our intervention scorer. First-party data, regenerated on every release.">
+<meta name="description" content="ThumbGate's live operational numbers: active pre-action checks, AI agent actions blocked, estimated LLM tokens and dollars saved, and the Bayes error rate of our intervention scorer. First-party data, regenerated on every release.">
 <meta property="og:title" content="ThumbGate — The Numbers">
 <meta property="og:description" content="Live first-party operational metrics: gates, blocks, token savings, and scorer calibration. Regenerated on every release.">
 <meta property="og:type" content="website">
@@ -341,7 +341,7 @@ ${JSON.stringify(datasetLd, null, 2)}
   <div class="method">
     <p><strong>Where the numbers come from.</strong> This page is regenerated from local scripts — no survey data, no hand-edited figures, no third-party attribution. Every number on this page is produced by code in the public <a href="https://github.com/IgorGanapolsky/ThumbGate">ThumbGate repo</a>.</p>
     <ul>
-      <li><strong>Active gates</strong> — union of <code>config/gates/default.json</code> (manual) and the auto-promotion ledger (auto).</li>
+      <li><strong>Active checks</strong> — union of shipped default rules and the auto-promotion ledger (auto).</li>
       <li><strong>Actions blocked/warned</strong> — sum of <code>occurrences</code> across gates with the corresponding action.</li>
       <li><strong>Hours saved</strong> — conservative 15-minute/incident estimate for debugging a repeated AI mistake × (blocks + warns).</li>
       <li><strong>Dollars saved</strong> — blended per-call token estimate (2k input + 600 output) × blocks × 2026-04-15 Anthropic + OpenAI list prices. See <code>scripts/token-savings.js</code> for the full price snapshot.</li>

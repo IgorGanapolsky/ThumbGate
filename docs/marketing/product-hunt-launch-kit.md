@@ -15,7 +15,7 @@ Thumbs down a mistake. Your AI agent never repeats it.
 54 characters. Problem-first, outcome-clear, memorable.
 
 **Alternates (if primary is taken):**
-- `Pre-action gates that stop AI agents from repeating mistakes` (61 chars — trim to fit)
+- `Pre-action checks that stop AI agents from repeating mistakes` (62 chars — trim to fit)
 - `Your AI agent's immune system. One thumbs down at a time.` (57 chars)
 
 ---
@@ -23,7 +23,7 @@ Thumbs down a mistake. Your AI agent never repeats it.
 ## 2. Description (260 chars max)
 
 ```
-ThumbGate turns thumbs-up/down feedback into enforcement for AI coding agents. 👎 auto-generates prevention rules and pre-action gates that physically block repeat mistakes. 👍 reinforces wins. Works with Claude Code, Cursor, Codex, Gemini, Amp, and any MCP agent.
+ThumbGate turns thumbs-up/down feedback into enforcement for AI coding agents. 👎 auto-generates prevention rules and pre-action checks that physically block repeat mistakes. 👍 reinforces wins. Works with Claude Code, Cursor, Codex, Gemini, Amp, and any MCP agent.
 ```
 
 265 characters — trim one phrase to stay under 260:
@@ -62,7 +62,7 @@ Happy launch day! A few things to know before you try it:
 
 The free tier gives you the local loop: 3 daily feedback captures, 5 daily lesson searches, auto-generated prevention rules, and local enforcement via PreToolUse hooks. No cloud account, no credit card.
 
-Pro ($19/mo) adds the personal local dashboard, DPO export pairs for downstream fine-tuning, and a gate debugger to trace exactly why a rule fired.
+Pro ($19/mo) adds the personal local dashboard, DPO export pairs for downstream fine-tuning, and a check debugger to trace exactly why a rule fired.
 
 Team anchors at $49/seat/mo if you want shared lesson libraries, org visibility, and approval boundaries across an engineering team.
 
@@ -198,7 +198,7 @@ Product Hunt resets at **12:01 AM PST**. For maximum ranking, submit just after 
 **How:** Personal DM on Twitter/X or LinkedIn. One message per person. Include a genuine note about why you think they'd find it useful.
 
 **Template:**
-> "Hey [name] — I'm launching ThumbGate on Product Hunt today. It's the tool that stops AI coding agents from repeating the same mistakes via pre-action gates. Given that you work with [Claude Code / Cursor / AI agents], I think you'd genuinely find it useful. Would mean a lot if you checked it out: [PH link]"
+> "Hey [name] — I'm launching ThumbGate on Product Hunt today. It's the tool that stops AI coding agents from repeating the same mistakes via pre-action checks. Given that you work with [Claude Code / Cursor / AI agents], I think you'd genuinely find it useful. Would mean a lot if you checked it out: [PH link]"
 
 **Do not:** Send mass blasts, copy-paste identical messages, or ask people who have never used an AI coding agent.
 
@@ -279,7 +279,7 @@ Yes — if your agent supports the MCP protocol, ThumbGate works with it. Confir
 
 For any MCP-compatible agent not listed above: `npx thumbgate init` auto-detects your setup.
 
-If you're running an agent that doesn't support MCP yet, the gate engine still works locally — you just trigger feedback capture manually via the CLI instead of from within the agent UI.
+If you're running an agent that doesn't support MCP yet, the check engine still works locally — you just trigger feedback capture manually via the CLI instead of from within the agent UI.
 
 ---
 
@@ -290,7 +290,7 @@ The free tier includes everything that makes the core product work:
 
 - Unlimited feedback capture (thumbs up and thumbs down)
 - Auto-generated prevention rules from your feedback
-- Pre-action gates that block matching tool calls via PreToolUse hooks
+- Pre-action checks that block matching tool calls via PreToolUse hooks
 - Local SQLite + FTS5 lesson storage (sub-millisecond search)
 - Session recall — relevant past failures injected at session start
 - No cloud account required — all state lives in `.thumbgate/` in your repo

@@ -132,7 +132,7 @@ function buildReliabilityPulseArtifact(options = {}) {
   if (negativeAdded > 0 || staleLessons > 0 || blocked > 0) {
     artifact.status = 'actionable';
     artifact.decision.label = 'Regenerate and inspect gates';
-    artifact.decision.rationale = 'Recent negative signal or gate activity means the prevention layer has learnable work to absorb.';
+    artifact.decision.rationale = 'Recent negative signal or check activity means the prevention layer has learnable work to absorb.';
     artifact.decision.nextActions = compactList([
       negativeAdded > 0 ? `Promote ${negativeAdded} new negative signal(s) into prevention rules.` : null,
       staleLessons > 0 ? `Review ${staleLessons} stale lesson(s) before they age out of useful recall.` : null,
@@ -228,7 +228,7 @@ function buildRevenuePulseArtifact(options = {}) {
     artifact.decision.label = 'Create more acquisition surface';
     artifact.decision.rationale = 'No paid orders or checkout intent are visible, so traffic and discovery injection beat infrastructure work.';
     artifact.decision.nextActions = compactList([
-      'Publish one high-intent ThumbGate proof chunk with DPO, Pre-Action Gates, and Reliability Gateway terms.',
+      'Publish one high-intent ThumbGate proof chunk with DPO, Pre-Action Checks, and Reliability Gateway terms.',
       'Add one outreach or community distribution action tied to the latest verification evidence.',
       topTrafficChannel ? `Reuse current top channel: ${topTrafficChannel}.` : 'Seed a first measurable traffic channel.',
     ], 3);

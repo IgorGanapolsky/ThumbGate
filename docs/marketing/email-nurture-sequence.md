@@ -6,9 +6,9 @@
 
 ---
 
-## Email 1 — Day 0: Welcome + First Gate in 2 Minutes
+## Email 1 — Day 0: Welcome + First Check in 2 Minutes
 
-**Subject:** Your first gate takes 2 minutes
+**Subject:** Your first check takes 2 minutes
 
 **Preview text:** Here's the one command you need right now.
 
@@ -24,7 +24,7 @@ Run this in your project:
 npx thumbgate init
 ```
 
-That installs the PreToolUse hook into your Claude Code settings. From this point, any feedback you capture gets turned into a gate that blocks the same mistake in every future session.
+That installs the PreToolUse hook into your Claude Code settings. From this point, any feedback you capture gets turned into a check that blocks the same mistake in every future session.
 
 Your first thumbs-down:
 
@@ -33,7 +33,7 @@ npx thumbgate feedback --down \
   "agent overwrote my .env without checking it existed"
 ```
 
-That's it. Gate is live. The mistake won't happen again.
+That's it. Check is live. The mistake won't happen again.
 
 When you're ready to see what's been blocked:
 
@@ -86,7 +86,7 @@ If you haven't captured your first piece of feedback yet, now's the time. Think 
 
 **Subject:** Three ThumbGate features most developers miss
 
-**Preview text:** Feedback sessions, custom gates, and MCP integration.
+**Preview text:** Feedback sessions, custom checks, and MCP integration.
 
 **Body:**
 
@@ -103,18 +103,18 @@ npx thumbgate session end
 
 Sessions let ThumbGate see patterns across a sequence of actions, not just individual mistakes.
 
-**2. Custom gates**
-You can write gates directly without going through feedback capture:
+**2. Custom checks**
+You can write checks directly without going through feedback capture:
 
 ```
-npx thumbgate gate add \
+npx thumbgate check add \
   --pattern "Write+path:*.env" \
   --action block \
   --reason "never overwrite env files"
 ```
 
 **3. MCP integration**
-If you use MCP-compatible tools (Claude Code, Cursor with MCP, Amp), ThumbGate exposes a full MCP server. Add it to your profile and the gate engine runs natively inside your IDE toolchain.
+If you use MCP-compatible tools (Claude Code, Cursor with MCP, Amp), ThumbGate exposes a full MCP server. Add it to your profile and the check engine runs natively inside your IDE toolchain.
 
 Config: `config/mcp-allowlists.json`
 
@@ -137,11 +137,11 @@ Some numbers from this week:
 
 - 724 npm installs
 - 200+ GitHub stars
-- 1,800+ gates triggered across the community
+- 1,800+ checks triggered across the community
 
 What developers are saying:
 
-> "First tool that actually made my Claude Code sessions feel consistent across days. The gate that stops it from touching my migration files alone was worth the install."
+> "First tool that actually made my Claude Code sessions feel consistent across days. The check that stops it from touching my migration files alone was worth the install."
 
 > "Took 3 minutes to set up. Blocked the same React pattern error I'd fixed twice already. Done."
 
@@ -166,7 +166,7 @@ If ThumbGate has saved you from a repeated mistake, we'd genuinely love to hear 
 
 You've been using ThumbGate for two weeks. By now you likely have lessons accumulating in your local DB.
 
-Free tier gives you 5 lesson searches per day. If you're hitting that limit, it means the system is working — your agents are learning, your gates are active, and you're catching real mistakes.
+Free tier gives you 5 lesson searches per day. If you're hitting that limit, it means the system is working — your agents are learning, your checks are active, and you're catching real mistakes.
 
 ThumbGate Pro removes the limit and adds:
 
@@ -174,7 +174,7 @@ ThumbGate Pro removes the limit and adds:
 - Export DPO training pairs for fine-tuning your own models
 - Advanced dashboard with confidence trend graphs
 - Priority support (direct reply to the core team)
-- Early access to new gate adapters
+- Early access to new check adapters
 
 Current price: $9/month. No seat limits on a single machine.
 
@@ -191,7 +191,7 @@ Upgrade takes 60 seconds.
 
 | # | Day | Subject | Goal |
 |---|-----|---------|------|
-| 1 | 0 | Your first gate takes 2 minutes | Activation — get the hook installed |
+| 1 | 0 | Your first check takes 2 minutes | Activation — get the hook installed |
 | 2 | 2 | Your agent doesn't remember. ThumbGate fixes that. | Pain-point resonance + first feedback |
 | 3 | 5 | Three features most developers miss | Depth + engagement with power features |
 | 4 | 10 | 724 developers blocked 1,800+ mistakes this week | Social proof + community belonging |

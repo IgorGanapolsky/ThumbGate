@@ -12,7 +12,7 @@
 
 Every retry loop, every hallucinated import, every *"let me try a different approach"* — those are billable tokens on every LLM vendor's bill. Thumbs-down once; ThumbGate blocks that exact mistake on every future call. Across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — any MCP-compatible agent, forever.
 
-Under the hood: your thumbs-down becomes a **Pre-Action Gate** that physically blocks the pattern **permanently** on every future call — across every session, every model, every agent. It is **self-improving agent governance**: every correction promotes a fresh prevention rule, and your library of Pre-Action Gates grows stronger with every lesson. Works with Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and any MCP-compatible agent. The monthly Anthropic / OpenAI bill stops paying for the same lesson over and over — local-first enforcement, zero tokens spent on repeats.
+Under the hood: your thumbs-down becomes one of your **Pre-Action Checks** that physically blocks the pattern **permanently** on every future call — across every session, every model, every agent. It is **self-improving agent governance**: every correction promotes a fresh prevention rule, and your library of prevention rules grows stronger with every lesson. Works with Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and any MCP-compatible agent. The monthly Anthropic / OpenAI bill stops paying for the same lesson over and over — local-first enforcement, zero tokens spent on repeats.
 
 > **Prevent expensive AI mistakes. Make AI stop repeating mistakes. Turn a smart assistant into a reliable operator.**
 
@@ -40,7 +40,7 @@ If someone is not already bought into ThumbGate, do not lead with architecture. 
 
 1. **Show the pain:** open the **[ThumbGate GPT](https://thumbgate-production.up.railway.app/go/gpt?utm_source=github&utm_medium=readme&utm_campaign=first_dollar_activation&cta_id=readme_first_dollar_open_gpt&cta_placement=readme_first_dollar)** and paste the bad answer, risky command, deploy, PR action, or agent plan before it runs again.
 2. **Capture the lesson:** type `thumbs down:` or `thumbs up:` with one concrete sentence. Native ChatGPT rating buttons are not the ThumbGate capture path; typed feedback is.
-3. **Enforce the repeat:** run `npx thumbgate init` where the agent executes so the lesson can become a Pre-Action Gate instead of another reminder.
+3. **Enforce the repeat:** run `npx thumbgate init` where the agent executes so the lesson can become a Pre-Action Check instead of another reminder.
 4. **Upgrade only after proof:** Solo Pro is for the dashboard, DPO export, proof-ready evidence, and higher capture limits after one real blocked repeat. Team starts with the Workflow Hardening Sprint around one repeated failure, one owner, and one proof review.
 
 The buying question is simple: **what repeated AI mistake would be worth blocking before the next tool call?**
@@ -70,11 +70,11 @@ That's ~$0.21 in tokens just to fix the same mistake three times — multiplied 
 
 ```
 Session 1:  Agent force-pushes to main.     You 👎 it.       +4,200 tokens
-Session 2:  ⛔ Gate blocks the force-push.  Zero round-trip. +0 tokens
+Session 2:  ⛔ Check blocks the force-push.  Zero round-trip. +0 tokens
 Session 3+: Never happens again.                              +0 tokens
 ```
 
-One thumbs-down. The PreToolUse hook intercepts the call **before** it reaches the model — no input tokens, no output tokens, no retry loop. The dashboard tracks **tokens saved this week** as a live counter so you can see exactly what your prevention rules are worth. Mark a review checkpoint once, and the dashboard narrows the next pass to only the feedback, lessons, and gate blocks that landed since your last review.
+One thumbs-down. The PreToolUse hook intercepts the call **before** it reaches the model — no input tokens, no output tokens, no retry loop. The dashboard tracks **tokens saved this week** as a live counter so you can see exactly what your prevention rules are worth. Mark a review checkpoint once, and the dashboard narrows the next pass to only the feedback, lessons, and check blocks that landed since your last review.
 
 ThumbGate doesn't make your agent smarter. It makes your agent *cheaper to be wrong with.*
 
@@ -87,10 +87,10 @@ npx thumbgate init       # auto-detects your agent, wires everything
 npx thumbgate capture "Never run DROP on production tables"
 ```
 
-That single command creates a gate rule. Next time any AI agent tries to run `DROP` on production:
+That single command creates a prevention rule. Next time any AI agent tries to run `DROP` on production:
 
 ```
-⛔ Gate blocked: "Never run DROP on production tables"
+⛔ Check blocked: "Never run DROP on production tables"
    Pattern: DROP.*production
    Verdict: BLOCK
 ```
@@ -106,14 +106,14 @@ ThumbGate operates as a 4-layer enforcement stack between your AI agent and your
 ### Layer 1: Feedback Capture
 Your thumbs-up/down reactions are captured via MCP protocol, CLI, or the ChatGPT GPT surface. Each reaction is stored as a structured lesson with context, timestamp, and severity.
 
-### Layer 2: Gate Engine
-The gate engine converts lessons into enforceable rules using pattern matching, semantic similarity (via LanceDB vectors), and Thompson Sampling for adaptive rule selection. Rules are stored locally in `.thumbgate/gates/`.
+### Layer 2: Check Engine
+The check engine converts lessons into enforceable rules using pattern matching, semantic similarity (via LanceDB vectors), and Thompson Sampling for adaptive rule selection. Rules stay in local ThumbGate runtime state.
 
 ### Layer 3: Pre-Action Interception
-Before any agent action executes, ThumbGate's `PreToolUse` hook intercepts the command and evaluates it against all active gates. This happens at the MCP protocol level — the agent physically cannot bypass it.
+Before any agent action executes, ThumbGate's `PreToolUse` hook intercepts the command and evaluates it against all active checks. This happens at the MCP protocol level — the agent physically cannot bypass it.
 
 ### Layer 4: Multi-Agent Distribution
-Gates are distributed across all connected agents via MCP stdio protocol. One correction in Claude Code protects Cursor, Codex, Gemini CLI, Cline, and any MCP-compatible agent.
+Checks are distributed across all connected agents via MCP stdio protocol. One correction in Claude Code protects Cursor, Codex, Gemini CLI, Cline, and any MCP-compatible agent.
 
 Prompt engineering still matters, but it is only the starting point. ThumbGate adds prompt evaluation on top: proof lanes, benchmarks, and self-heal checks tell you whether your prompt and workflow actually held up under execution instead of leaving you to guess from vibes.
 
@@ -162,7 +162,7 @@ Open the Codex plugin install page or download the standalone bundle from GitHub
   STEP 1              STEP 2                 STEP 3
   ────────            ────────               ────────
 
-  You react           ThumbGate learns       The gate holds
+  You react           ThumbGate learns       The check holds
 
   👎 on a bad    ──►  Feedback becomes  ──►  Next time the
   agent action        a saved lesson         agent tries the
@@ -186,7 +186,7 @@ ThumbGate sells three concrete outcomes:
 
 ## Use Cases
 
-- **Stop force-push to main** — Gate blocks `git push --force` on protected branches before it runs
+- **Stop force-push to main** — Check blocks `git push --force` on protected branches before it runs
 - **Prevent repeated migration failures** — Each mistake becomes a searchable lesson that fires before the next attempt
 - **Block unauthorized file edits** — Control which files agents can touch with path-based rules
 - **Memory across sessions** — The agent remembers your feedback from yesterday
@@ -195,7 +195,7 @@ ThumbGate sells three concrete outcomes:
 
 ---
 
-## Built-in Gates
+## Built-in Checks
 
 ```
 ⛔ force-push          → blocks git push --force
@@ -204,7 +204,7 @@ ThumbGate sells three concrete outcomes:
 ⛔ package-lock-reset  → blocks destructive lock edits
 ⛔ env-file-edit       → blocks .env secret exposure
 
-+ custom gates in config/gates/custom.json
++ custom prevention rules for project-specific failures
 ```
 
 ---
@@ -214,9 +214,9 @@ ThumbGate sells three concrete outcomes:
 ```bash
 npx thumbgate init       # detect agent, wire hooks
 npx thumbgate doctor     # health check
-npx thumbgate capture    # create a gate from text
+npx thumbgate capture    # create a check from text
 npx thumbgate lessons    # see what's been learned
-npx thumbgate explore    # terminal explorer for lessons, gates, stats
+npx thumbgate explore    # terminal explorer for lessons, checks, stats
 npx thumbgate native-messaging-audit  # inspect local browser bridges and extension hosts
 npx thumbgate dashboard  # open local dashboard
 npx thumbgate serve      # start MCP server on stdio
@@ -229,7 +229,7 @@ npx thumbgate bench      # run reliability benchmark
 
 | | Free | Pro ($19/mo) | Team ($49/seat/mo) |
 |---|---|---|---|
-| Local CLI + enforced gates | ✅ | ✅ | ✅ |
+| Local CLI + enforced checks | ✅ | ✅ | ✅ |
 | Feedback captures (lifetime) | 3 | Unlimited | Unlimited |
 | Auto-promoted prevention rules | 1 | Unlimited | Unlimited |
 | MCP agent integrations | All | All | All |
@@ -302,7 +302,7 @@ The export bundle includes full lesson metadata: signal, title, context, tags, f
 
 ## DPO Export for Fine-Tuning (Pro + Team)
 
-Every thumbs-up and thumbs-down becomes a training signal. ThumbGate Pro exports your captured feedback as DPO (Direct Preference Optimization) pairs — ready to feed into a LoRA fine-tune so your model stops repeating known mistakes at the weight level, not just the gate level.
+Every thumbs-up and thumbs-down becomes a training signal. ThumbGate Pro exports your captured feedback as DPO (Direct Preference Optimization) pairs — ready to feed into a LoRA fine-tune so your model stops repeating known mistakes at the weight level, not just the check level.
 
 **Export DPO pairs:**
 
@@ -320,9 +320,9 @@ curl -X POST http://localhost:3456/v1/dpo/export \
 **Use cases:**
 - Fine-tune Llama 3 / Mistral / local models with a LoRA adapter trained on your real mistakes
 - Feed into RLAIF or KTO pipelines (KTO export also available via `/v1/kto/export`)
-- Build a model that natively avoids your team's known failure patterns — no gate at inference time needed
+- Build a model that natively avoids your team's known failure patterns — no check at inference time needed
 
-**Why this matters:** Gates block mistakes. Fine-tuning prevents them from being attempted. Combine both for belt-and-suspenders governance.
+**Why this matters:** Checks block mistakes. Fine-tuning prevents them from being attempted. Combine both for belt-and-suspenders governance.
 
 ---
 
@@ -333,7 +333,7 @@ curl -X POST http://localhost:3456/v1/dpo/export \
 | **Storage** | SQLite + FTS5, LanceDB vectors, JSONL logs |
 | **Capture** | 3 feedback captures lifetime (free), unlimited (Pro) |
 | **Intelligence** | MemAlign dual recall, Thompson Sampling |
-| **Enforcement** | PreToolUse hook engine, Gates config |
+| **Enforcement** | PreToolUse hook engine, Checks config |
 | **Interfaces** | MCP stdio, HTTP API, CLI (Node.js >=18) |
 | **Billing** | Stripe |
 | **Execution** | Railway, Cloudflare Workers, Docker Sandboxes |
@@ -355,7 +355,7 @@ Every Changeset is tied to the exact `main` merge commit and generates Verificat
 - **[Claude Desktop Extension](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb)** — One-click install for Claude Desktop
 - **[Codex Plugin](https://thumbgate-production.up.railway.app/codex-plugin)** — Auto-updating standalone bundle and install page for Codex CLI
 - **[Perplexity Command Center](docs/PERPLEXITY_MAX_COMMAND_CENTER.md)** — AI-search visibility + lead discovery
-- **[ThumbGate Bench](docs/THUMBGATE_BENCH.md)** — Reliability benchmark for gate evaluation
+- **[ThumbGate Bench](docs/THUMBGATE_BENCH.md)** — Reliability benchmark for check evaluation
 - **[Manus AI Skill](skills/thumbgate/SKILL.md)** — ThumbGate integration for Manus AI agents
 
 ---
@@ -383,7 +383,7 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 No. ThumbGate does not update model weights. It captures feedback, stores lessons, injects context at runtime, and blocks bad actions before they execute.
 
 **How is this different from CLAUDE.md or .cursorrules?**
-Those are suggestions the agent can ignore. ThumbGate gates are enforced — they physically block the action before it runs. They also auto-generate from feedback instead of requiring manual writing.
+Those are suggestions the agent can ignore. ThumbGate checks are enforced — they physically block the action before it runs. They also auto-generate from feedback instead of requiring manual writing.
 
 **Does it work with my agent?**
 If it supports MCP or pre-action hooks, yes. Claude Code, Claude Desktop, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode all work out of the box.

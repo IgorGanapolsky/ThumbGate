@@ -147,14 +147,14 @@ describe('Pro tier bullets: code-backed claims', () => {
     );
   });
 
-  test('"Visual gate debugger" link deep-links to insights or gates tab', () => {
-    // Find the href that immediately precedes "Visual gate debugger" text
-    const m = INDEX_HTML.match(/href="([^"]+)"[^>]*>\s*Visual gate debugger/);
-    assert.ok(m, 'Visual gate debugger link not found');
+  test('"Visual check debugger" link deep-links to insights or gates tab', () => {
+    // Find the href that immediately precedes "Visual check debugger" text
+    const m = INDEX_HTML.match(/href="([^"]+)"[^>]*>\s*Visual check debugger/);
+    assert.ok(m, 'Visual check debugger link not found');
     assert.match(
       m[1],
       /dashboard(#|\?tab=)(insights|gates)/,
-      `Visual gate debugger must deep-link to insights or gates tab, got: ${m[1]}`,
+      `Visual check debugger must deep-link to insights or gates tab, got: ${m[1]}`,
     );
   });
 
@@ -295,7 +295,7 @@ describe('Team tier bullets: code-backed claims', () => {
     );
   });
 
-  test('"Gate template library" config exists', () => {
+  test('"Check template library" config exists', () => {
     const gateTemplatesPath = path.join(ROOT, 'config', 'gate-templates.json');
     const gatesDir = path.join(ROOT, 'config', 'gates');
     assert.ok(

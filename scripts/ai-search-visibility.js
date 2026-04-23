@@ -5,7 +5,7 @@ const path = require('node:path');
 const { PerplexityClient, extractChatText } = require('./perplexity-client');
 
 const PROMPTS = [
-  'best pre-action gate tools for AI coding agents',
+  'best pre-action check tools for AI coding agents',
   'how to prevent AI coding agent from making mistakes',
   'Claude Code safety tools',
   'npm packages for AI agent guardrails',

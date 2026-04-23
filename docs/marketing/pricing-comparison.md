@@ -4,11 +4,11 @@
 |---------|------|--------------|
 | Feedback capture + recall | Yes | Yes |
 | Prevention rules | Yes | Yes |
-| 5 built-in gates | Yes | Yes |
+| 5 built-in checks | Yes | Yes |
 | Dashboard CLI | Yes | Yes |
 | DPO/KTO export | Yes | Yes |
 | Auto-gate promotion | No | Yes |
-| Unlimited custom gates | No | Yes |
+| Unlimited custom checks | No | Yes |
 | Multi-repo sync | No | Yes |
 | CI webhook auto-ingest | No | Yes |
 | Priority support | No | Yes |

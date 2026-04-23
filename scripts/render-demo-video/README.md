@@ -21,7 +21,7 @@ Scene boundaries (must match `index.html` + `generate-narration.js`):
 | Scene | Starts | Ends | Narrative job |
 |-------|--------|------|---------------|
 | 1 — The problem            | 0 s  | 15 s | Same failure, different session, paid tokens both times |
-| 2 — The idea               | 15 s | 30 s | A 👎 becomes a Pre-Action Gate |
+| 2 — The idea               | 15 s | 30 s | A 👎 becomes a Pre-Action Check |
 | 3 — The gate fires         | 30 s | 55 s | Gate intercepts bad call before the model round-trip |
 | 4 — Why it compounds       | 55 s | 75 s | Dashboard, token savings, quiet-gate retirement |
 | 5 — Install                | 75 s | 90 s | `npx thumbgate init` CTA |

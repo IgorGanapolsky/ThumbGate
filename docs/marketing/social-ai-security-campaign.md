@@ -1,13 +1,13 @@
 # ThumbGate — AI Security Campaign: Social Posts
 
 Campaign positioning: ThumbGate as the security answer for AI coding agents.
-Core concept: Pre-Action Gates intercept every tool call before execution.
+Core concept: Pre-Action Checks intercept every tool call before execution.
 
 ---
 
 ## Twitter/X Post (under 280 chars)
 
-AI coding agents are a supply chain attack surface. Every tool call — file write, shell exec, package install — runs unaudited. ThumbGate puts a pre-action gate in front of each one. Feedback becomes enforcement.
+AI coding agents are a supply chain attack surface. Every tool call — file write, shell exec, package install — runs unaudited. ThumbGate puts a pre-action check in front of each one. Feedback becomes enforcement.
 
 `npx thumbgate init`
 
@@ -17,7 +17,7 @@ AI coding agents are a supply chain attack surface. Every tool call — file wri
 
 Teams deploying AI coding agents have a governance gap: every tool call executes without audit, approval, or memory of past failures.
 
-ThumbGate closes that gap with pre-action gates — checkpoints that intercept agent actions before they run. When something goes wrong, the feedback-to-enforcement pipeline converts that signal into a prevention rule. The next agent hitting the same pattern gets blocked before it causes damage.
+ThumbGate closes that gap with pre-action checks — checkpoints that intercept agent actions before they run. When something goes wrong, the feedback-to-enforcement pipeline converts that signal into a prevention rule. The next agent hitting the same pattern gets blocked before it causes damage.
 
 No middleware rewrites. No prompt hacks. Gate at the action layer.
 
@@ -31,7 +31,7 @@ https://thumbgate-production.up.railway.app
 
 Your AI agent can install packages, run shell commands, overwrite files, and call external APIs — all without guardrails, all without memory of what broke last time.
 
-ThumbGate puts a pre-action gate in front of every tool call. It intercepts before execution. Feedback feeds a pipeline that generates enforcement rules. Open source.
+ThumbGate puts a pre-action check in front of every tool call. It intercepts before execution. Feedback feeds a pipeline that generates enforcement rules. Open source.
 
 https://thumbgate-production.up.railway.app
 
@@ -41,7 +41,7 @@ https://thumbgate-production.up.railway.app
 
 ## Reddit Post — r/ClaudeAI or r/LocalLLaMA
 
-**Title:** I built pre-action gates for AI agents after watching Claude delete prod config
+**Title:** I built pre-action checks for AI agents after watching Claude delete prod config
 
 **Body:**
 

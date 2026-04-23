@@ -38,13 +38,13 @@
             "@type": "BlogPosting",
             "headline": "Your AI agent is a supply chain attack surface. Here's how to gate it.",
             "datePublished": "2026-04-10",
-            "keywords": "AI agent security, supply chain attack, pre-action gates, agent governance, ThumbGate"
+            "keywords": "AI agent security, supply chain attack, pre-action checks, agent governance, ThumbGate"
           },
           {
             "@type": "BlogPosting",
-            "headline": "The Claude Code Leak Proves Why Pre-Action Gates Matter",
+            "headline": "The Claude Code Leak Proves Why Pre-Action Checks Matter",
             "datePublished": "2026-04-01",
-            "keywords": "Claude Code security, Claude Code guardrails, AI agent safety, pre-action gates"
+            "keywords": "Claude Code security, Claude Code guardrails, AI agent safety, pre-action checks"
           },
           {
             "@type": "BlogPosting",
@@ -195,9 +195,9 @@
           something that operates on the <em>input</em> &mdash; before execution.
         </p>
 
-        <h3>Pre-Action Gates via PreToolUse hooks</h3>
+        <h3>Pre-Action Checks via PreToolUse hooks</h3>
         <p>
-          ThumbGate implements pre-action gates via <code>PreToolUse</code> hooks
+          ThumbGate implements pre-action checks via <code>PreToolUse</code> hooks
           &mdash; interception points that run before every tool invocation. No
           action reaches execution without passing through the gate. Not Bash
           commands, not file edits, not web fetches.
@@ -290,7 +290,7 @@
 
       <article class="post">
         <div class="post-date">April 1, 2026</div>
-        <h2>The Claude Code Leak Proves Why Pre-Action Gates Matter</h2>
+        <h2>The Claude Code Leak Proves Why Pre-Action Checks Matter</h2>
 
         <p>
           Anthropic accidentally shipped 512,000 lines of Claude Code source
@@ -314,7 +314,7 @@
 
         <p>
           That's exactly what ThumbGate does. Every Claude Code user — and every
-          Claw-code user — can add pre-action gates today:
+          Claw-code user — can add pre-action checks today:
         </p>
 
         <ul>
