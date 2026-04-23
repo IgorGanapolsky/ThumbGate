@@ -6,6 +6,10 @@ const os = require('node:os');
 const path = require('node:path');
 
 const {
+  buildEvalSuiteFromFeedback,
+  feedbackEntryToEvalCase,
+  formatProofReport,
+  runFeedbackEvalSuite,
   runSuite,
   runEvaluation,
   gradeOutput,
@@ -248,6 +252,82 @@ test('writeReport/loadReport round-trip eval artifacts', () => {
   assert.equal(loaded.suite, report.suite);
   assert.equal(loaded.score, report.score);
   assert.equal(Array.isArray(loaded.results), true);
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+test('feedbackEntryToEvalCase converts negative feedback into a lesson eval', () => {
+  const evalCase = feedbackEntryToEvalCase({
+    id: 'fb_1',
+    signal: 'down',
+    context: 'Skipped verification and shipped a broken checkout flow',
+    whatWentWrong: 'Claimed the flow worked before running tests',
+    whatToChange: 'Always run focused checkout tests before claiming success',
+    tags: ['verification'],
+  });
+
+  assert.equal(evalCase.prompt, 'lesson-distillation');
+  assert.equal(evalCase.input.signal, 'negative');
+  assert.equal(evalCase.expectedOutput.category, 'error');
+  assert.equal(evalCase.expectedOutput.hasContent, true);
+});
+
+test('feedbackEntryToEvalCase turns vague thumbs-down into a rejection eval', () => {
+  const evalCase = feedbackEntryToEvalCase({ signal: 'down', context: 'thumbs down' });
+  assert.deepEqual(evalCase.expectedOutput, {
+    shouldReject: true,
+    rejectReason: 'vague-feedback',
+  });
+});
+
+test('feedbackEntryToEvalCase builds regex-free stable ids from noisy context', () => {
+  const evalCase = feedbackEntryToEvalCase({
+    signal: 'down',
+    context: '--- Ship!!! broken $$$ checkout /// path ??? ',
+  }, 2);
+
+  assert.equal(evalCase.id, 'feedback-negative-negative-ship-broken-checkout-path-3');
+});
+
+test('buildEvalSuiteFromFeedback creates bounded reusable eval suites', () => {
+  const suite = buildEvalSuiteFromFeedback([
+    { id: 'fb_1', signal: 'down', context: 'Skipped tests before merge', whatToChange: 'Run tests first' },
+    { id: 'fb_2', signal: 'up', context: 'Verified the adapter parity before pushing', whatWorked: 'Ran parity tests' },
+  ], { maxCases: 1, sourcePath: '/tmp/feedback-log.jsonl' });
+
+  assert.equal(suite.source.totalEntries, 2);
+  assert.equal(suite.source.selectedCases, 1);
+  assert.equal(suite.evaluations.length, 1);
+  assert.equal(suite.source.type, 'feedback-log');
+});
+
+test('runFeedbackEvalSuite reads feedback-log.jsonl and returns proof report data', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-prompt-eval-'));
+  const feedbackLog = path.join(tmpDir, 'feedback-log.jsonl');
+  fs.writeFileSync(feedbackLog, [
+    JSON.stringify({
+      id: 'fb_eval_1',
+      signal: 'down',
+      context: 'Exited the worktree and modified the main checkout',
+      whatWentWrong: 'Touched the wrong branch after creating a worktree',
+      whatToChange: 'Stay inside the assigned worktree until the PR is opened',
+      tags: ['git'],
+    }),
+    JSON.stringify({
+      id: 'fb_eval_2',
+      signal: 'up',
+      context: 'Ran the focused tests before reporting completion',
+      whatWorked: 'Verification was evidence-backed',
+      tags: ['testing'],
+    }),
+  ].join('\n') + '\n');
+
+  const { suite, report } = runFeedbackEvalSuite({ feedbackLog, minScore: 0 });
+  const proof = formatProofReport(report, suite);
+
+  assert.equal(suite.evaluations.length, 2);
+  assert.equal(report.feedbackDerived, true);
+  assert.match(proof, /Feedback-Derived Coverage/);
+  assert.match(proof, /Buyer Proof/);
 
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
@@ -303,6 +383,19 @@ test('CLI can write a synthetic expanded suite artifact', () => {
   assert.ok(Array.isArray(suite.evaluations));
   assert.equal(typeof report.syntheticCount, 'number');
   assert.ok(report.syntheticCount > 0);
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+test('runFeedbackEvalSuite handles empty feedback logs as bootstrapping proof', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-empty-prompt-eval-'));
+  const feedbackLog = path.join(tmpDir, 'feedback-log.jsonl');
+  fs.writeFileSync(feedbackLog, '', 'utf8');
+
+  const { suite, report } = runFeedbackEvalSuite({ feedbackLog, minScore: 0 });
+
+  assert.equal(suite.evaluations.length, 0);
+  assert.equal(report.noCases, true);
+  assert.equal(report.pass, true);
 
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
