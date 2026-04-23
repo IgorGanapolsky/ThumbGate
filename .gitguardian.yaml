@@ -1,0 +1,23 @@
+# GitGuardian configuration — https://docs.gitguardian.com/ggshield-docs/reference/config
+#
+# Purpose: ThumbGate's gate-evaluation fixtures under config/evals/ are a library
+# of deliberately secret-shaped test strings used to prove our secret-detection
+# constraint (`no-env-in-code`) blocks what it claims to block. By definition the
+# file contains patterns that match GitHub-PAT, OpenAI-key, AWS-key regexes —
+# that's the point. Allowlisting the directory prevents GitGuardian from filing
+# false-positive incidents every time we expand the eval suite.
+#
+# History: 2026-04-23 — incident #31377605 fired on feature-branch commit
+# 9049a2a of PR #1238 because a fake PAT test fixture `ghp_1234567890abc...`
+# matched GitHub's PAT regex. Token was never a real credential (validity check
+# returned Invalid), the commit never reached main (squash-merge dropped it),
+# but the false positive consumed audit cycles. This allowlist is the permanent
+# fix.
+
+version: 2
+
+secret:
+  ignored-paths:
+    - "config/evals/**"
+    - "tests/**/fixtures/**"
+    - "tests/**/*.fixture.*"
