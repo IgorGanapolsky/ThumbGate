@@ -7,6 +7,8 @@ const {
   classifyProduct,
   TIER_IMAGE_MAP,
   buildUpdatePlan,
+  loadStripeModule,
+  main,
   run,
 } = require('../scripts/stripe-sync-product-images');
 
@@ -110,6 +112,21 @@ test('run aborts with exit code 2 when stripe factory cannot be loaded', async (
   }
 });
 
+test('loadStripeModule returns null only for a missing stripe package', () => {
+  const missing = new Error('Cannot find module stripe');
+  missing.code = 'MODULE_NOT_FOUND';
+  assert.equal(loadStripeModule(() => {
+    throw missing;
+  }), null);
+
+  const stripeFactory = () => {};
+  assert.equal(loadStripeModule(() => stripeFactory), stripeFactory);
+
+  assert.throws(() => loadStripeModule(() => {
+    throw new TypeError('broken loader');
+  }), /broken loader/);
+});
+
 test('buildUpdatePlan marks Team/Pro as needing update and skips already-correct entries', async () => {
   const products = [
     { id: 'prod_team_1', name: 'ThumbGate Team — Org-wide AI agent immunity', images: [] },
@@ -182,5 +199,35 @@ test('run in dry-run mode builds the plan but issues zero Stripe writes', async 
   } finally {
     if (originalKey === undefined) delete process.env.STRIPE_SECRET_KEY;
     else process.env.STRIPE_SECRET_KEY = originalKey;
+  }
+});
+
+test('main forwards dry-run argv to the runner and records runner failures', async () => {
+  const originalExitCode = process.exitCode;
+  const logger = silentLogger();
+  const calls = [];
+  try {
+    await main({
+      argv: ['node', 'scripts/stripe-sync-product-images.js', '--dry-run'],
+      logger,
+      runner: async (options) => {
+        calls.push(options);
+      },
+    });
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].dryRun, true);
+    assert.equal(calls[0].logger, logger);
+
+    await main({
+      argv: ['node', 'scripts/stripe-sync-product-images.js'],
+      logger,
+      runner: async () => {
+        throw new Error('mock stripe failure');
+      },
+    });
+    assert.equal(process.exitCode, 1);
+    assert.ok(logger.entries.some((entry) => entry.message.includes('mock stripe failure')));
+  } finally {
+    process.exitCode = originalExitCode;
   }
 });

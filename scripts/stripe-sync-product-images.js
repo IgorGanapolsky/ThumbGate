@@ -68,12 +68,13 @@ async function buildUpdatePlan(productsIterator) {
   return plan;
 }
 
-function loadStripeModule() {
+function loadStripeModule(loader = require) {
   try {
     // eslint-disable-next-line global-require
-    return require('stripe');
+    return loader('stripe');
   } catch (err) {
-    return null;
+    if (err && err.code === 'MODULE_NOT_FOUND') return null;
+    throw err;
   }
 }
 
@@ -123,12 +124,16 @@ async function run({ dryRun, stripeFactory, logger = console } = {}) {
   return { plan, updatedIds };
 }
 
-if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
-  const dryRun = process.argv.includes('--dry-run');
-  run({ dryRun }).catch((err) => {
-    console.error('Failed:', err.message || err);
+function main({ argv = process.argv, logger = console, runner = run } = {}) {
+  const dryRun = argv.includes('--dry-run');
+  return runner({ dryRun, logger }).catch((err) => {
+    logger.error('Failed:', err.message || err);
     process.exitCode = 1;
   });
 }
 
-module.exports = { run, classifyProduct, TIER_IMAGE_MAP, buildUpdatePlan };
+if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
+  main();
+}
+
+module.exports = { run, classifyProduct, TIER_IMAGE_MAP, buildUpdatePlan, loadStripeModule, main };
