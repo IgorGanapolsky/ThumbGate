@@ -3,7 +3,7 @@ const http = require('http');
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
-const { EventEmitter } = require('events');
+const { EventEmitter } = require('node:events');
 const pkg = require('../../package.json');
 
 const POSTHOG_API_PATHS = new Set(['/capture', '/batch', '/decide', '/e', '/engage']);
@@ -4963,17 +4963,32 @@ async function addContext(){
         // the server version so clients can detect mid-session upgrades.
         res.write(`event: connected\ndata: ${JSON.stringify({ version: pkg.version, ts: Date.now() })}\n\n`);
 
-        const onEvent = (payload) => {
+        // Both writes below can fail once the client has disconnected (the
+        // socket is destroyed but our subscriber hasn't been removed yet).
+        // We intentionally swallow the error and rely on the 'close'/'aborted'
+        // handlers below to unsubscribe and clear the heartbeat — there is no
+        // useful recovery action to take inline for a closed stream.
+        const safeWrite = (chunk) => {
           try {
-            res.write(`event: ${payload.type}\ndata: ${JSON.stringify(payload)}\n\n`);
-          } catch (_) { /* connection already closed */ }
+            res.write(chunk);
+          } catch (writeErr) {
+            // Connection closed between the emit and the flush; cleanup runs
+            // via the 'close' listener so we don't need to act here. Keep the
+            // exception binding so Sonar's "handle or don't catch" rule is
+            // satisfied without adding log noise on every disconnect.
+            void writeErr;
+          }
+        };
+
+        const onEvent = (payload) => {
+          safeWrite(`event: ${payload.type}\ndata: ${JSON.stringify(payload)}\n\n`);
         };
         eventBus.on('broadcast', onEvent);
 
         // Heartbeat every 25s keeps proxies (Railway, CDNs) from idle-closing
         // the connection. Clients ignore comment frames per the SSE spec.
         const heartbeat = setInterval(() => {
-          try { res.write(':ping\n\n'); } catch (_) { /* closed */ }
+          safeWrite(':ping\n\n');
         }, 25_000);
 
         const cleanup = () => {
@@ -5468,7 +5483,7 @@ async function addContext(){
           tags: extractTags(body.tags),
           skill: body.skill,
         });
-        if (result && result.accepted) {
+        if (result?.accepted) {
           // Fan out to any connected dashboard clients so they re-render
           // without polling. Non-sensitive summary only (no chat history,
           // no evidence blobs).
