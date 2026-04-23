@@ -52,30 +52,12 @@ function classifyProduct(product) {
   return null;
 }
 
-async function run({ dryRun }) {
-  const secret = process.env.STRIPE_SECRET_KEY;
-  if (!secret) {
-    console.error('STRIPE_SECRET_KEY is not set. Aborting.');
-    process.exitCode = 2;
-    return;
-  }
-
-  // Lazy-load so `node --check` and linters don't require stripe to be installed
-  // just to parse this file.
-  let StripeCtor;
-  try {
-    // eslint-disable-next-line global-require
-    StripeCtor = require('stripe');
-  } catch (err) {
-    console.error('stripe package not installed. Run `npm install stripe` first.');
-    process.exitCode = 2;
-    return;
-  }
-
-  const stripe = StripeCtor(secret, { apiVersion: '2024-06-20' });
-
+// Build the update plan from a `products.list` async iterator. Pure async
+// function so tests can inject a fake iterator without mocking the full
+// Stripe SDK.
+async function buildUpdatePlan(productsIterator) {
   const plan = [];
-  for await (const product of stripe.products.list({ active: true, limit: 100 })) {
+  for await (const product of productsIterator) {
     const match = classifyProduct(product);
     if (!match) continue;
     const current = Array.isArray(product.images) ? product.images : [];
@@ -83,27 +65,62 @@ async function run({ dryRun }) {
     const needsUpdate = current.length !== 1 || current[0] !== match.imageUrl;
     plan.push({ productId: product.id, name: product.name, tier: match.tier, current, target, needsUpdate });
   }
+  return plan;
+}
 
-  const updates = plan.filter((entry) => entry.needsUpdate);
-  const skipped = plan.filter((entry) => !entry.needsUpdate);
-
-  console.log(`Found ${plan.length} matching products (${updates.length} need update, ${skipped.length} already correct).`);
-  for (const entry of plan) {
-    const verb = entry.needsUpdate ? 'UPDATE' : 'SKIP  ';
-    console.log(`  ${verb} ${entry.productId}  ${entry.name}  →  ${entry.tier}`);
+function loadStripeModule() {
+  try {
+    // eslint-disable-next-line global-require
+    return require('stripe');
+  } catch (err) {
+    return null;
   }
+}
 
-  if (dryRun) {
-    console.log('\nDry run — no Stripe writes issued.');
+async function run({ dryRun, stripeFactory, logger = console } = {}) {
+  const secret = process.env.STRIPE_SECRET_KEY;
+  if (!secret) {
+    logger.error('STRIPE_SECRET_KEY is not set. Aborting.');
+    process.exitCode = 2;
     return;
   }
 
-  for (const entry of updates) {
-    await stripe.products.update(entry.productId, { images: entry.target });
-    console.log(`  ✓ patched ${entry.productId}`);
+  // Lazy-load so `node --check` and linters don't require stripe to be installed
+  // just to parse this file. Tests can inject `stripeFactory` to mock it;
+  // passing `null` explicitly disables the loader to exercise the missing-SDK branch.
+  const factory = stripeFactory !== undefined ? stripeFactory : loadStripeModule();
+  if (!factory) {
+    logger.error('stripe package not installed. Run `npm install stripe` first.');
+    process.exitCode = 2;
+    return;
   }
 
-  console.log(`\nDone. ${updates.length} product(s) updated.`);
+  const stripe = factory(secret, { apiVersion: '2024-06-20' });
+
+  const plan = await buildUpdatePlan(stripe.products.list({ active: true, limit: 100 }));
+  const updates = plan.filter((entry) => entry.needsUpdate);
+  const skipped = plan.filter((entry) => !entry.needsUpdate);
+
+  logger.log(`Found ${plan.length} matching products (${updates.length} need update, ${skipped.length} already correct).`);
+  for (const entry of plan) {
+    const verb = entry.needsUpdate ? 'UPDATE' : 'SKIP  ';
+    logger.log(`  ${verb} ${entry.productId}  ${entry.name}  →  ${entry.tier}`);
+  }
+
+  if (dryRun) {
+    logger.log('\nDry run — no Stripe writes issued.');
+    return { plan, updatedIds: [] };
+  }
+
+  const updatedIds = [];
+  for (const entry of updates) {
+    await stripe.products.update(entry.productId, { images: entry.target });
+    logger.log(`  ✓ patched ${entry.productId}`);
+    updatedIds.push(entry.productId);
+  }
+
+  logger.log(`\nDone. ${updates.length} product(s) updated.`);
+  return { plan, updatedIds };
 }
 
 if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
@@ -114,4 +131,4 @@ if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
   });
 }
 
-module.exports = { run, classifyProduct, TIER_IMAGE_MAP };
+module.exports = { run, classifyProduct, TIER_IMAGE_MAP, buildUpdatePlan };
