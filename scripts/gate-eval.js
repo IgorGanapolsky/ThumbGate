@@ -29,6 +29,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { readJsonl, appendJsonl } = require('./fs-utils');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const { expandFixturePlaceholders } = require('./secret-fixture-tokens');
 const { evaluateAction, loadSpecDir, validateSpec } = require('./spec-gate');
 
 const EVAL_DIR = path.join(__dirname, '..', 'config', 'evals');
@@ -95,7 +96,7 @@ function validateEvalCase(raw) {
     input: {
       tool: normalizeText(input.tool, 80) || null,
       command: normalizeText(input.command, 2000) || null,
-      content: normalizeText(input.content, 5000) || null,
+      content: expandFixtureText(input.content, 5000),
       action: normalizeText(input.action, 200) || null,
       sandbox: normalizeText(input.sandbox, 2000) || null,
       sessionActions: Array.isArray(input.sessionActions) ? input.sessionActions : [],
@@ -375,6 +376,11 @@ function normalizeText(value, maxLength = 500) {
   if (value === undefined || value === null) return null;
   const text = String(value).trim();
   return text ? text.slice(0, maxLength) : null;
+}
+
+function expandFixtureText(value, maxLength = 5000) {
+  const text = normalizeText(value, maxLength);
+  return text ? expandFixturePlaceholders(text) : null;
 }
 
 function average(arr) {

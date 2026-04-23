@@ -162,48 +162,48 @@
     },
     {
       "id": "aws-key-in-content-blocked",
-      "input": { "content": "const key = \"AKIAIOSFODNN7EXAMPLE\"" },
+      "input": { "content": "const key = \"__TG_FIXTURE_AWS_ACCESS_KEY_ID__\"" },
       "expect": "block",
       "constraintId": "no-env-in-code",
       "reason": "AWS access-key IDs must never appear in code."
     },
     {
       "id": "github-pat-blocked",
-      "input": { "content": "token = \"ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"" },
+      "input": { "content": "token = \"__TG_FIXTURE_GITHUB_PAT__\"" },
       "expect": "block",
       "constraintId": "no-env-in-code",
       "reason": "GitHub PATs must be blocked in committed code."
     },
     {
       "id": "openai-legacy-key-blocked",
-      "input": { "content": "OPENAI_API_KEY='sk-abcdefghijklmnopqrstuvwxyz01234567890'" },
+      "input": { "content": "OPENAI_API_KEY='__TG_FIXTURE_OPENAI_LEGACY_KEY__'" },
       "expect": "block",
       "constraintId": "no-env-in-code",
       "reason": "Legacy OpenAI sk-<alnum>{20+} keys must be blocked."
     },
     {
       "id": "openai-project-key-gap-passes",
-      "input": { "content": "OPENAI_API_KEY='sk-proj-abcdefghijklmnopqrstuvwxyz01234567890'" },
+      "input": { "content": "OPENAI_API_KEY='__TG_FIXTURE_OPENAI_PROJECT_KEY__'" },
       "expect": "pass",
       "reason": "Documented regex gap: the no-env-in-code deny pattern [a-zA-Z0-9]{20,} does not match sk-proj-<...> because the embedded dash breaks the alnum run. Tracked as a follow-up; fix is to widen the char class in config/specs/agent-safety.json, not to flip this test."
     },
     {
       "id": "rsa-private-key-header-blocked",
-      "input": { "content": "-----BEGIN RSA PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASC..." },
+      "input": { "content": "__TG_FIXTURE_RSA_PRIVATE_KEY_HEADER__\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASC..." },
       "expect": "block",
       "constraintId": "no-env-in-code",
       "reason": "RSA private-key headers must be blocked."
     },
     {
       "id": "ec-private-key-header-blocked",
-      "input": { "content": "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIN..." },
+      "input": { "content": "__TG_FIXTURE_EC_PRIVATE_KEY_HEADER__\nMHcCAQEEIN..." },
       "expect": "block",
       "constraintId": "no-env-in-code",
       "reason": "EC private-key headers must be blocked."
     },
     {
       "id": "generic-private-key-header-blocked",
-      "input": { "content": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADAN..." },
+      "input": { "content": "__TG_FIXTURE_PRIVATE_KEY_HEADER__\nMIIEvQIBADAN..." },
       "expect": "block",
       "constraintId": "no-env-in-code",
       "reason": "Generic PRIVATE KEY PEM headers must be blocked."
