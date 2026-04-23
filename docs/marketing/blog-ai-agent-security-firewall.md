@@ -26,7 +26,7 @@ The gap is pre-action enforcement.
 
 ## What ThumbGate does
 
-ThumbGate implements pre-action gates via `PreToolUse` hooks -- Claude Code's built-in interception point that runs before every tool invocation.
+ThumbGate implements pre-action checks via `PreToolUse` hooks -- Claude Code's built-in interception point that runs before every tool invocation.
 
 The flow:
 
@@ -144,7 +144,7 @@ The problem is that those mitigations live in system prompts, which degrade. The
 
 ThumbGate closes that loop. Every confirmed failure becomes a prevention rule. Rules are enforced at the PreToolUse layer, which doesn't degrade -- it runs before every action, every time, regardless of context window state.
 
-Teams that share a ThumbGate config share enforcement memory. A mistake one engineer's agent makes can generate a gate that protects every agent on the team. The gates get more precise as the failure log grows. The system learns from operational reality, not from idealized policy documents.
+Teams that share a ThumbGate config share enforcement memory. A mistake one engineer's agent makes can generate a gate that protects every agent on the team. The checks get more precise as the failure log grows. The system learns from operational reality, not from idealized policy documents.
 
 **Human judgment leads. AI supports. ThumbGate enforces it.**
 

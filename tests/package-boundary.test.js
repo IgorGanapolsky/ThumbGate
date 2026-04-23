@@ -214,7 +214,7 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 2.85 MB → 2.90 MB (2026-04-18) to accommodate
   // buildRecentCorrectiveActionsContext in gates-engine.js + its tests.
   // Bumped 2.90 MB → 2.95 MB (2026-04-19) to accommodate the Bayes-optimal
-  // gate runtime (scripts/bayes-optimal-gate.js, ~8 KB) which gate-stats.js
+  // check runtime (scripts/bayes-optimal-gate.js, ~8 KB) which gate-stats.js
   // requires at runtime, plus the config/enforcement.json loss-matrix shipped
   // alongside it. Still well below the ~3 MB drift threshold where we'd need
   // to actively trim assets.

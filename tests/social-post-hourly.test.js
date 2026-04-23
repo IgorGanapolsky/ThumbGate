@@ -107,7 +107,7 @@ test('daily social poster detects its CLI entrypoint by filename', () => {
 // Zero-stats Bluesky-disaster regression guard (2026-04-21): the CEO flagged
 // a public Bluesky post reading "This week ThumbGate blocked 0 mistakes,
 // saving ~0 hours. Pre-action gates > post-mortem fixes." — the worst
-// possible advertisement for a "pre-action gate" product. Under zero-
+// possible advertisement for a "pre-action check" product. Under zero-
 // activity stats, the 'stats' and default branches MUST pick an evergreen
 // fallback angle, NOT emit the raw post text.
 test('stats angle falls back to an evergreen angle when there is no activity', () => {

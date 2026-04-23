@@ -103,7 +103,7 @@ function buildPlatformPost(platform) {
       'AI coding agents do not reliably learn from your repo-level pain.',
       'That is the problem I kept hitting with Claude Code and Cursor: the same broken config, import, or workflow mistake would come back in the next session.',
       'ThumbGate turns thumbs-down feedback into a prevention rule and blocks the same pattern before the next tool call lands.',
-      'Local-first. Free path. Pro adds the personal dashboard, DPO export, and a gate debugger.',
+      'Local-first. Free path. Pro adds the personal dashboard, DPO export, and a check debugger.',
       buildLandingUrl('linkedin', 'launch_post_linkedin'),
     ].join(' ');
   }
@@ -183,7 +183,7 @@ function buildCampaignEntries() {
         ].join(' '),
         linkedin: [
           'Repeated agent mistakes are a systems problem, not a prompt-writing problem.',
-          'ThumbGate turns explicit feedback into prevention rules and gives individual operators a paid path when they want the dashboard, exports, and gate debugger.',
+          'ThumbGate turns explicit feedback into prevention rules and gives individual operators a paid path when they want the dashboard, exports, and check debugger.',
           buildLandingUrl('linkedin', 'campaign_checkout_path'),
         ].join(' '),
         instagram: [

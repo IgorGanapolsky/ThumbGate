@@ -10,7 +10,7 @@ The enforcement part is what makes it different from just writing notes. ThumbGa
 
 The feedback loop looks like this: capture (thumbs up/down) -> distill (history-aware, reuses up to 8 prior recorded entries for vague thumbs-downs and links a 60-second follow-up thread) -> store (SQLite + FTS5) -> generate rules -> enforce via PreToolUse hooks. Every session your agent gets a little smarter.
 
-It ships with built-in gates for the most common footguns: force-push, direct push to main, pushing with unresolved review threads, destructive package-lock edits, and .env file exposure. You can add custom gates too.
+It ships with built-in checks for the most common footguns: force-push, direct push to main, pushing with unresolved review threads, destructive package-lock edits, and .env file exposure. You can add custom checks too.
 
 Setup is one command:
 

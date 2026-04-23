@@ -135,7 +135,7 @@ Current canonical assets:
 ## Outreach Operating Rules
 
 - Pitch inclusion on fan-out pages that already rank for `best`, `top`, `alternatives`, `review`, and `vs`.
-- Offer a concrete angle: workflow hardening, pre-action gates, proof pack, and the fit checker.
+- Offer a concrete angle: workflow hardening, pre-action checks, proof pack, and the fit checker.
 - Lead with a specific workflow outcome, not with generic “AI employee” or “memory layer” language.
 - Re-check the same pages monthly and update mention status.
 

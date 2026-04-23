@@ -6,7 +6,7 @@
  *
  * Why this exists:
  *   The mission of ThumbGate is "stop paying for the same AI mistake
- *   twice." Every time a Pre-Action Gate blocks a known-bad tool call,
+ *   twice." Every time a Pre-Action Check blocks a known-bad tool call,
  *   the agent does NOT make a round-trip to the model. That's:
  *
  *     - input tokens you didn't spend (system prompt + tool defs +

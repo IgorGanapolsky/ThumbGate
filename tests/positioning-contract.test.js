@@ -40,7 +40,7 @@ test('public surfaces lead with outcomes instead of infrastructure abstractions'
   for (const surface of [readme, landingPage, llms, gptInstructions]) {
     assert.match(surface, /costly|expensive/i);
     assert.match(surface, /before (?:they|it) (?:make|run|happen)|before execution/i);
-    assert.match(surface, /Pre-Action Gates/i);
+    assert.match(surface, /Pre-Action Checks/i);
   }
 
   assert.match(readme, /Prevent expensive AI mistakes/i);
@@ -119,7 +119,7 @@ test('LLM context keeps team pricing and CLI-first positioning aligned with comm
   assert.match(context, /solo side lane/i);
   assert.match(context, /AI Recommendation Visibility/);
   assert.match(context, /repeated AI coding mistakes/);
-  assert.match(context, /pre-action gates/);
+  assert.match(context, /pre-action checks/);
   assert.doesNotMatch(context, /\$12\/seat\/mo/i);
 });
 
@@ -155,7 +155,7 @@ test('LLM context aligns ThumbGate with Google Cloud enterprise safety framework
 
   assert.match(context, /Enterprise Safety Framework Alignment/);
   assert.match(context, /Google Cloud/);
-  assert.match(context, /Safety Framework gate/);
+  assert.match(context, /Safety Framework check/);
   assert.match(context, /PreToolUse hooks/);
   assert.match(context, /Canned response/i);
   assert.match(context, /Quality Framework/);
@@ -176,7 +176,7 @@ test('launch-content variants align with reliability-over-orchestration position
   const launchContent = readText(path.join('docs', 'marketing', 'launch-content.md'));
 
   assert.match(launchContent, /ThumbGate/i);
-  assert.match(launchContent, /Pre-Action Gates/i);
+  assert.match(launchContent, /Pre-Action Checks/i);
   assert.match(launchContent, /repeating known mistakes|block tool calls/i);
   assert.doesNotMatch(launchContent, /Agentic Feedback Studio/i);
   assert.doesNotMatch(launchContent, /persistent memory layer that fixes this/i);

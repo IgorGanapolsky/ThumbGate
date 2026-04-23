@@ -18,19 +18,19 @@ You correct the agent in a session — "don't force-push to main" — and it adj
 
 **The idea: thumbs-down = enforcement, not just feedback.**
 
-When something goes wrong, you give a 👎. Not just a signal — a structured capture: what happened, what went wrong, what should change. That thumbs-down gets validated, deduplicated, and promoted into a prevention rule. The rule becomes a gate that fires *before* the agent's tool call executes. The agent physically cannot repeat the mistake.
+When something goes wrong, you give a 👎. Not just a signal — a structured capture: what happened, what went wrong, what should change. That thumbs-down gets validated, deduplicated, and promoted into a prevention rule. The rule becomes a check that fires *before* the agent's tool call executes. The agent physically cannot repeat the mistake.
 
 👍 reinforces good behavior. Over time, the 👍/👎 signals build an accumulating immune system — patterns the agent should follow get stronger, patterns it should avoid are blocked at execution.
 
 **Why enforcement beats memory:**
 
-A system prompt says "please don't force-push." A gate says "you cannot force-push — this tool call is blocked." The difference matters. Memory is advisory. Enforcement is physical.
+A system prompt says "please don't force-push." A check says "you cannot force-push — this tool call is blocked." The difference matters. Memory is advisory. Enforcement is physical.
 
 **The tricky parts:**
 
-1. **False positives.** Gates that block legitimate actions erode trust. If users start ignoring gates, the system is useless. You need rules to lose confidence when they fire incorrectly — adaptive weighting (Thompson Sampling / multi-armed bandit) works here.
+1. **False positives.** Checks that block legitimate actions erode trust. If users start ignoring checks, the system is useless. You need rules to lose confidence when they fire incorrectly — adaptive weighting (Thompson Sampling / multi-armed bandit) works here.
 
-2. **Feedback quality.** Just "thumbs down" without context produces vague rules. Requiring "what went wrong" + "what to change" fields dramatically reduces garbage entering the gate engine.
+2. **Feedback quality.** Just "thumbs down" without context produces vague rules. Requiring "what went wrong" + "what to change" fields dramatically reduces garbage entering the check engine.
 
 3. **Cold start.** New rules have no data. Enforce aggressively (risk false positives) or leniently (risk letting the failure through)?
 

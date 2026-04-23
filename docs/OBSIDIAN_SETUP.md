@@ -162,7 +162,7 @@ npm run self-heal:check
 - **Prevention rules as browsable notes** — searchable, linkable, editable in Obsidian
 - **Feedback stats at a glance** — paste `npm run feedback:stats` output into a vault note
 - **Session context in primer.md** — always know the last completed task and next step
-- **Pre-action gates** — Claude Code checks prevention rules before executing any tool call
+- **Pre-action checks** — Claude Code checks prevention rules before executing any tool call
 
 ---
 

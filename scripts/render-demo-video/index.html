@@ -245,7 +245,7 @@
 <!-- Scene 2: The Idea (15-30s) -->
 <section class="scene" id="s2">
   <div class="brand">THUMBGATE</div>
-  <div class="scene-title">One thumbs-down → a Pre-Action Gate.</div>
+  <div class="scene-title">One thumbs-down → a Pre-Action Check.</div>
   <div class="scene-subtitle">ThumbGate extracts the <em>pattern</em> behind your correction and installs a small rule that fires before the next call leaves your machine.</div>
   <div class="term">
     <div class="term-chrome"><span class="r"></span><span class="y"></span><span class="g"></span></div>
@@ -264,7 +264,7 @@
     <div class="term-label">claude-code · session #47</div>
     <pre id="s3-body"></pre>
     <div class="gate-banner" id="s3-gate">
-      <div class="title">⛔ Pre-Action Gate matched</div>
+      <div class="title">⛔ Pre-Action Check matched</div>
       <div class="row"><span class="k">tool</span>Write</div>
       <div class="row"><span class="k">pattern</span>overwrite + no-existence-check</div>
       <div class="row"><span class="k">confidence</span>0.91</div>
@@ -366,7 +366,7 @@ const s2Script = [
   { delay: 1800, text: '👎 Feedback captured.\n',                                    cls: 'warn' },
   { delay: 2600, text: '  ├─ Parsing context …\n',                                   cls: 'muted' },
   { delay: 3400, text: '  ├─ Pattern identified: destructive Write, no existence check.\n', cls: 'hi' },
-  { delay: 4600, text: '  └─ Installing Pre-Action Gate …\n',                        cls: 'muted' },
+  { delay: 4600, text: '  └─ Installing Pre-Action Check …\n',                        cls: 'muted' },
   { delay: 6000, text: '\n',                                                         cls: 'muted' },
   { delay: 6000, text: '✅ Gate active: destructive-write-no-existence-check\n',     cls: 'ok' },
   { delay: 7000, text: '   fires on: any agent attempting a Write in this shape.\n', cls: 'muted' },

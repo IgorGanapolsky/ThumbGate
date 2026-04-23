@@ -6,9 +6,9 @@
 <meta name="generator" content="ThumbGate">
 <meta name="author" content="Igor Ganapolsky">
 <title>ThumbGate — The Numbers | Live First-Party Data</title>
-<meta name="description" content="ThumbGate's live operational numbers: active pre-action gates, AI agent actions blocked, estimated LLM tokens and dollars saved, and the Bayes error rate of our intervention scorer. First-party data, regenerated on every release.">
+<meta name="description" content="ThumbGate's live operational numbers: active pre-action checks, AI agent actions blocked, estimated LLM tokens and dollars saved, and the Bayes error rate of our intervention scorer. First-party data, regenerated on every release.">
 <meta property="og:title" content="ThumbGate — The Numbers">
-<meta property="og:description" content="Live first-party operational metrics: gates, blocks, token savings, and scorer calibration. Regenerated on every release.">
+<meta property="og:description" content="Live first-party operational metrics: checks, blocks, token savings, and scorer calibration. Regenerated on every release.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://thumbgate-production.up.railway.app/numbers">
 <meta name="twitter:card" content="summary_large_image">
@@ -45,7 +45,7 @@
   "@context": "https://schema.org",
   "@type": "Dataset",
   "name": "ThumbGate Live Operational Metrics",
-  "description": "First-party operational metrics from the ThumbGate pre-action gate runtime: active gates, blocked AI agent actions, estimated token savings, and Bayes error rate of the intervention scorer.",
+  "description": "First-party operational metrics from the ThumbGate pre-action check runtime: active checks, blocked AI agent actions, estimated token savings, and Bayes error rate of the intervention scorer.",
   "url": "https://thumbgate-production.up.railway.app/numbers",
   "license": "https://opensource.org/licenses/MIT",
   "creator": {
@@ -60,7 +60,7 @@
   "dateModified": "2026-04-20",
   "datePublished": "2026-04-20",
   "keywords": [
-    "AI agent gates",
+    "AI agent checks",
     "LLM token savings",
     "prevention rules",
     "Bayes error rate",
@@ -192,31 +192,31 @@
   <p class="subtitle">Live first-party operational data from the ThumbGate runtime. No surveys, no projections — counts pulled from the same local scripts that power the CLI and dashboard.</p>
   <div class="freshness">Updated: 2026-04-20 · Version 1.12.2</div>
 
-  <h2>Gate enforcement</h2>
+  <h2>Check enforcement</h2>
   <div class="stats-grid">
     <div class="stat-card">
-      <div class="stat-label">Active gates</div>
+      <div class="stat-label">Active checks</div>
       <div class="stat-value">52</div>
       <div class="stat-sub">33 manual · 19 auto-promoted</div>
-      <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/gate-stats.js">source: gate-stats.js</a>
+      <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/check-stats.js">source: check-stats.js</a>
     </div>
     <div class="stat-card">
       <div class="stat-label">Actions blocked</div>
       <div class="stat-value">0</div>
-      <div class="stat-sub">repeat AI mistakes prevented at the gate</div>
-      <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/gate-stats.js">source: gate-stats.js</a>
+      <div class="stat-sub">repeat AI mistakes prevented at the check</div>
+      <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/check-stats.js">source: check-stats.js</a>
     </div>
     <div class="stat-card">
       <div class="stat-label">Actions warned</div>
       <div class="stat-value">455</div>
       <div class="stat-sub">soft interventions; not blocks</div>
-      <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/gate-stats.js">source: gate-stats.js</a>
+      <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/check-stats.js">source: check-stats.js</a>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Top blocked gate</div>
+      <div class="stat-label">Top blocked check</div>
       <div class="stat-value" style="font-size:1.1rem;">local-only-git-writes (0 blocks)</div>
       <div class="stat-sub">highest-occurrence prevention rule</div>
-      <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/gate-stats.js">source: gate-stats.js</a>
+      <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/check-stats.js">source: check-stats.js</a>
     </div>
   </div>
 
@@ -226,7 +226,7 @@
       <div class="stat-label">Estimated hours saved</div>
       <div class="stat-value">113.8</div>
       <div class="stat-sub">~15 min per blocked mistake × blocks+warns</div>
-      <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/gate-stats.js">source: gate-stats.js</a>
+      <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/check-stats.js">source: check-stats.js</a>
     </div>
     <div class="stat-card">
       <div class="stat-label">Estimated LLM dollars saved</div>
@@ -244,7 +244,7 @@
       <div class="stat-label">Scorer Bayes error</div>
       <div class="stat-value">1.5%</div>
       <div class="stat-sub">irreducible error given current feature set</div>
-      <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/bayes-optimal-gate.js">source: bayes-optimal-gate.js</a>
+      <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/bayes-optimal-check.js">source: bayes-optimal-check.js</a>
     </div>
   </div>
 
@@ -252,8 +252,8 @@
   <div class="method">
     <p><strong>Where the numbers come from.</strong> This page is regenerated from local scripts — no survey data, no hand-edited figures, no third-party attribution. Every number on this page is produced by code in the public <a href="https://github.com/IgorGanapolsky/ThumbGate">ThumbGate repo</a>.</p>
     <ul>
-      <li><strong>Active gates</strong> — union of <code>config/gates/default.json</code> (manual) and the auto-promotion ledger (auto).</li>
-      <li><strong>Actions blocked/warned</strong> — sum of <code>occurrences</code> across gates with the corresponding action.</li>
+      <li><strong>Active checks</strong> — union of shipped default rules and the auto-promotion ledger (auto).</li>
+      <li><strong>Actions blocked/warned</strong> — sum of <code>occurrences</code> across checks with the corresponding action.</li>
       <li><strong>Hours saved</strong> — conservative 15-minute/incident estimate for debugging a repeated AI mistake × (blocks + warns).</li>
       <li><strong>Dollars saved</strong> — blended per-call token estimate (2k input + 600 output) × blocks × 2026-04-15 Anthropic + OpenAI list prices. See <code>scripts/token-savings.js</code> for the full price snapshot.</li>
       <li><strong>Bayes error rate</strong> — irreducible classifier error of the current risk scorer given its feature set. High values mean "add features, don't tune thresholds."</li>
@@ -263,7 +263,7 @@
 
   <div class="cta">
     <a href="https://www.npmjs.com/package/thumbgate">Install ThumbGate — npx thumbgate init</a>
-    <div class="footer-note">Prefer the raw feed? See <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> or run <code>npm run gate:stats</code> locally.</div>
+    <div class="footer-note">Prefer the raw feed? See <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> or run <code>npm run check:stats</code> locally.</div>
     <div class="footer-note">Generated at 2026-04-20T21:45:34.500Z UTC.</div>
   </div>
 </main>

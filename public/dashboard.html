@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ThumbGate Dashboard — Gate Stats, Approval Rate, Prevention Impact</title>
-<meta name="description" content="Live dashboard showing gate enforcement stats, approval rate trends, prevention impact, and system health for ThumbGate pre-action gates.">
+<meta name="description" content="Live dashboard showing gate enforcement stats, approval rate trends, prevention impact, and system health for ThumbGate pre-action checks.">
 <link rel="canonical" href="https://thumbgate-production.up.railway.app/dashboard">
 <link rel="icon" type="image/png" href="/thumbgate-icon.png">
 <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
@@ -221,7 +221,7 @@
   <div style="margin:0 0 24px;padding:24px;background:linear-gradient(135deg,rgba(34,211,238,0.08),rgba(74,222,128,0.05));border:1px solid rgba(34,211,238,0.2);border-radius:12px;">
     <h1 style="font-size:22px;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em;">🔍 Operations Dashboard</h1>
     <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Updated: <time datetime="2026-04-20">2026-04-20</time> · by <a href="https://github.com/IgorGanapolsky" style="color:inherit;">Igor Ganapolsky</a></p>
-    <p style="font-size:14px;color:var(--text-muted);line-height:1.6;max-width:700px;">What's happening right now? Search memories, inspect active gates, manage your team, and export training data. <span style="color:var(--cyan);font-weight:600;">This is your control plane for AI agent behavior.</span></p>
+    <p style="font-size:14px;color:var(--text-muted);line-height:1.6;max-width:700px;">What's happening right now? Search memories, inspect active checks, manage your team, and export training data. <span style="color:var(--cyan);font-weight:600;">This is your control plane for AI agent behavior.</span></p>
     <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text-muted);">
       <span>🔍 <strong style="color:var(--text);">Search</strong> — find any memory</span>
       <span>🛡️ <strong style="color:var(--text);">Gates</strong> — what's blocking</span>
@@ -240,7 +240,7 @@
     <a class="stat-card" data-card-action="all" onclick="selectCard(this,'all')" href="/lessons" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view all feedback → Lessons page"><div class="stat-label">Total Feedback</div><div class="stat-value cyan" id="statTotal">—</div></a>
     <a class="stat-card" data-card-action="up" onclick="selectCard(this,'up')" href="/lessons?signal=positive" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view positive feedback → Lessons page"><div class="stat-label">👍 Positive</div><div class="stat-value green" id="statPositive">—</div></a>
     <a class="stat-card" data-card-action="down" onclick="selectCard(this,'down')" href="/lessons?signal=negative" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view negative feedback → Lessons page"><div class="stat-label">👎 Negative</div><div class="stat-value red" id="statNegative">—</div></a>
-    <a class="stat-card" data-card-action="gates" onclick="selectCard(this,'gates');return false;" href="#" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view active gates"><div class="stat-label">Active Gates</div><div class="stat-value cyan" id="statGates">—</div></a>
+    <a class="stat-card" data-card-action="gates" onclick="selectCard(this,'gates');return false;" href="#" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view active checks"><div class="stat-label">Active Gates</div><div class="stat-value cyan" id="statGates">—</div></a>
   </div>
 
   <div class="panel" id="reviewDeltaPanel" style="margin-bottom:20px;">
@@ -303,7 +303,7 @@
   <!-- GATES TAB -->
   <div class="tab-content" id="tab-gates">
     <div class="gates-section">
-      <h2>Active Pre-Action Gates</h2>
+      <h2>Active Pre-Action Checks</h2>
       <div id="gatesList"><div class="loading">Loading gates...</div></div>
     </div>
   </div>
@@ -445,7 +445,7 @@
           <div>
             <div style="font-size:32px;margin-bottom:8px;">🛡️</div>
             <div style="font-size:13px;font-weight:600;margin-bottom:4px;">3. Gate Promoted</div>
-            <div style="font-size:12px;color:var(--text-muted);">Repeated lessons auto-promote into pre-action gates</div>
+            <div style="font-size:12px;color:var(--text-muted);">Repeated lessons auto-promote into pre-action checks</div>
           </div>
           <div>
             <div style="font-size:32px;margin-bottom:8px;">🚫</div>
@@ -824,7 +824,7 @@ function renderDashboardData(data) {
   const gateStats = data.gateStats || {};
   document.getElementById('statGates').textContent = gates.length || gateStats.totalGates || 0;
   if (!gates.length) {
-    document.getElementById('gatesList').innerHTML = '<div class="empty">No active gates</div>';
+    document.getElementById('gatesList').innerHTML = '<div class="empty">No active checks</div>';
   } else {
     document.getElementById('gatesList').innerHTML = gates.map(function(g) {
       const action = g.action || 'block';
@@ -1147,7 +1147,7 @@ function renderTemplates(templateLibrary) {
         '<div class="template-pattern">' + escHtml(template.pattern || '') + '</div>' +
       '</div>';
     }).join('')
-    : '<div class="empty">No gate templates available</div>';
+    : '<div class="empty">No check templates available</div>';
 }
 
 document.addEventListener('click', function(event) {
@@ -1211,9 +1211,9 @@ function loadDemo() {
   document.getElementById('reviewCheckpointBtn').textContent = 'Connect to save your own review checkpoint';
   // Sample memories — realistic scenarios from real agent-driven development
   var demoResults = [
-    { signal: 'down', title: 'Claimed fix worked without running tests', context: 'Agent announced "fixed and pushed" but never ran the test suite. CI failed on 3 tests. Gate now requires test evidence before any completion claim.', tags: ['anti-lying', 'verification-gap', 'ci', 'trust-breach'], timestamp: '2025-06-22T10:20:00Z' },
-    { signal: 'down', title: 'Force-pushed to main and lost teammate commits', context: 'Used git push --force on main to fix a rebase. Overwrote 3 commits from another team member. Had to recover from reflog. Gate now blocks all --force pushes to protected branches.', tags: ['git', 'destructive', 'auto-blocked'], timestamp: '2025-06-20T09:15:00Z' },
-    { signal: 'up', title: 'Pre-action gate caught .env commit', context: 'Gate blocked a git add that included .env with production API keys. Saved from leaking secrets to a public repo.', tags: ['security', 'prevention', 'secrets'], timestamp: '2025-06-19T11:30:00Z' },
+    { signal: 'down', title: 'Claimed fix worked without running tests', context: 'Agent announced "fixed and pushed" but never ran the test suite. CI failed on 3 tests. Check now requires test evidence before any completion claim.', tags: ['anti-lying', 'verification-gap', 'ci', 'trust-breach'], timestamp: '2025-06-22T10:20:00Z' },
+    { signal: 'down', title: 'Force-pushed to main and lost teammate commits', context: 'Used git push --force on main to fix a rebase. Overwrote 3 commits from another team member. Had to recover from reflog. Check now blocks all --force pushes to protected branches.', tags: ['git', 'destructive', 'auto-blocked'], timestamp: '2025-06-20T09:15:00Z' },
+    { signal: 'up', title: 'Pre-action check caught .env commit', context: 'Check blocked a git add that included .env with production API keys. Saved from leaking secrets to a public repo.', tags: ['security', 'prevention', 'secrets'], timestamp: '2025-06-19T11:30:00Z' },
     { signal: 'down', title: 'PR scope creep — 72 changed files for a 2-file fix', context: 'Agent included unrelated formatting changes, config files, and lock file updates in a PR that should have touched 2 files. User had to manually separate the changes.', tags: ['pr-scope', 'scope-creep', 'user-frustration', 'git-workflow'], timestamp: '2025-06-18T14:30:00Z' },
     { signal: 'up', title: 'Full PR review cycle with on-device verification', context: 'Fixed 3 review findings, verified on physical Android device with fresh debug build, confirmed Delete Account flow end-to-end before marking PR ready.', tags: ['pr-review', 'on-device-verification', 'evidence-based', 'metric:ROI'], timestamp: '2025-06-17T16:45:00Z' },
     { signal: 'down', title: 'Claimed Figma compliance without visual verification', context: 'Said UI matched Figma designs without actually checking. User pointed out wrong colors, missing spacing, and incorrect font weights. Should have used screenshot comparison.', tags: ['anti-lying', 'figma', 'visual-verification', 'trust-breach'], timestamp: '2025-06-16T08:05:00Z' },

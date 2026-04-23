@@ -11,7 +11,7 @@ This document maps the node-based visual workflow (like Freepik Spaces) to our h
 | **Text Assistant** | `scripts/code-reasoning.js` (Prompt expansion and constraint checking) |
 | **Image Generator** | *External API / CLI* (Triggered via `run_shell_command`) |
 | **Upscaler/Collage** | `scripts/a2ui-engine.js` (Agent-to-UI rendering and layout) |
-| **Human Monitoring** | **Pre-Action Gates + Thompson Sampling** (Automated QA layer) |
+| **Human Monitoring** | **Pre-Action Checks + Thompson Sampling** (Automated QA layer) |
 
 ## 2. The "Experience Pack" Format
 

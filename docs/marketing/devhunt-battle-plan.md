@@ -17,7 +17,7 @@
 > One thumbs-down permanently blocks that AI mistake
 
 **Description:**
-> ThumbGate puts a gate before every AI agent action. One thumbs-down captures the mistake, generates a prevention rule, and permanently blocks that pattern from recurring — across Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode. Free to start; Pro at $19/mo adds the personal dashboard and DPO export. Team at $49/seat/mo adds shared governance for engineering teams.
+> ThumbGate puts a check before every AI agent action. One thumbs-down captures the mistake, generates a prevention rule, and permanently blocks that pattern from recurring — across Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode. Free to start; Pro at $19/mo adds the personal dashboard and DPO export. Team at $49/seat/mo adds shared governance for engineering teams.
 
 **Pricing:** Freemium (Free + Pro $19/mo + Team $49/seat/mo)
 
@@ -28,9 +28,9 @@
 
 ## Visual Assets Needed
 
-1. **Square logo** (256x256 PNG) — ThumbGate logo with gate icon
+1. **Square logo** (256x256 PNG) — ThumbGate logo with check icon
 2. **Hero banner** (1200x630) — "One thumbs-down. Permanently blocked." with before/after
-3. **Screenshot 1:** Terminal showing `npx thumbgate init` + gate blocking output
+3. **Screenshot 1:** Terminal showing `npx thumbgate init` + check blocking output
 4. **Screenshot 2:** Dashboard at /dashboard showing blocked mistakes
 5. **Screenshot 3:** Before/after diagram (from README)
 6. **Screenshot 4:** Pricing page at /#pricing
@@ -42,7 +42,7 @@
 
 **Morning (8-9am ET):**
 - Submit listing on DevHunt
-- Tweet: "ThumbGate is live on @devhunt_ this week. Pre-action gates for Claude Code, Cursor & Codex. One 👎 = permanent block. Vote → [link] #claudecode #cursor #aicoding"
+- Tweet: "ThumbGate is live on @devhunt_ this week. Pre-action checks for Claude Code, Cursor & Codex. One 👎 = permanent block. Vote → [link] #claudecode #cursor #aicoding"
 - Post on LinkedIn with same angle
 
 **Midday:**
@@ -55,9 +55,9 @@
 ### Day 1-2 (Tue-Wed — Community Push)
 
 **Reddit posts (value-first, not salesy):**
-- r/ClaudeCode: "I built gates that permanently block Claude Code from repeating your mistakes. Just launched on DevHunt."
-- r/cursor: "If your Cursor agent keeps force-pushing to main, ThumbGate gates prevent that permanently."
-- r/LocalLLaMA: "Pre-action gates for any MCP-compatible AI agent. Open source, local-first."
+- r/ClaudeCode: "I built checks that permanently block Claude Code from repeating your mistakes. Just launched on DevHunt."
+- r/cursor: "If your Cursor agent keeps force-pushing to main, ThumbGate checks prevent that permanently."
+- r/LocalLLaMA: "Pre-action checks for any MCP-compatible AI agent. Open source, local-first."
 
 **Dev.to article:**
 - Quick post: "How I Got My AI Agent to Stop Repeating the Same Mistake (and launched on DevHunt)"
@@ -89,7 +89,7 @@
 ## Why We Win
 
 1. **724 weekly npm installs** — real users to mobilize (3-4% conversion = 22-29 votes)
-2. **Unique mechanism** — no one else has PreToolUse gates + Thompson Sampling
+2. **Unique mechanism** — no one else has PreToolUse checks + Thompson Sampling
 3. **6 agent platforms** — broadest compatibility (Claude Code, Cursor, Codex, Gemini, Amp, OpenCode)
 4. **Visual before/after** — the README diagram is immediately understandable
 5. **Claudify's audience** — Claude Code users who voted for Claudify 2 weeks ago are our ideal voters

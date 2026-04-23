@@ -28,7 +28,7 @@ test('public landing page keeps FAQPage JSON-LD parity for SEO and GEO', () => {
   assert.match(landingPage, /What is the ThumbGate tech stack\?/);
   assert.match(landingPage, /What AI agents does ThumbGate work with\?/);
   assert.match(landingPage, /Do I have to chat inside the ThumbGate GPT for enforcement\?/);
-  assert.match(landingPage, /How are pre-action gates different from prompt rules\?/);
+  assert.match(landingPage, /How are pre-action checks different from prompt rules\?/);
   assert.match(landingPage, /behavioral immune system/i);
   assert.match(landingPage, /PreToolUse hook enforcement/i);
   assert.match(landingPage, /Thompson Sampling/i);
@@ -118,8 +118,8 @@ test('public landing page includes the three-step how-it-works section', () => {
   assert.match(landingPage, /id="how-it-works"/);
   assert.match(landingPage, /Feedback/);
   assert.match(landingPage, /Rules/);
-  assert.match(landingPage, /Gates/);
-  assert.match(landingPage, /Pre-Action Gates/i);
+  assert.match(landingPage, /Checks/);
+  assert.match(landingPage, /Pre-Action Checks/i);
   assert.match(landingPage, /prevention rules/i);
   assert.match(landingPage, /Thompson Sampling/);
 });
@@ -215,8 +215,8 @@ test('public landing page Pro tier uses outcome-framed bullets that justify upgr
   const landingPage = readLandingPage();
 
   // Pro bullets frame outcomes, not features
-  assert.match(landingPage, /Visual gate debugger/i);
-  assert.match(landingPage, /every blocked action and the gate that fired/i);
+  assert.match(landingPage, /Visual check debugger/i);
+  assert.match(landingPage, /every blocked action and the check that fired/i);
   assert.match(landingPage, /Auto-connect/i);
   assert.match(landingPage, /agents appear automatically/i);
   assert.match(landingPage, /DPO training data export/i);
@@ -237,7 +237,7 @@ test('public landing page includes an explicit Team rollout lane with shared wor
   assert.match(landingPage, /Shared enforcement memory/i);
   assert.match(landingPage, /Hosted review views/i);
   assert.match(landingPage, /Org dashboard/i);
-  assert.match(landingPage, /Gate template library/i);
+  assert.match(landingPage, /Check template library/i);
   assert.match(landingPage, /workflow-sprint-intake/);
   assert.match(landingPage, /Start Team Pilot Intake/i);
   assert.match(landingPage, /name="planId" value="team"/);
@@ -253,7 +253,7 @@ test('public landing page includes FAQ section with accordion interaction', () =
   assert.match(landingPage, /What's the tech stack\?/);
   assert.match(landingPage, /What AI agents and editors does this work with\?/);
   assert.match(landingPage, /Do I need a cloud account\?/);
-  assert.match(landingPage, /How are (?:pre-action )?gates different from prompt rules\?/);
+  assert.match(landingPage, /How are (?:pre-action )?checks different from prompt rules\?/);
   assert.match(landingPage, /What does Pro cost\?/);
   assert.match(landingPage, /role="button"/);
   assert.match(landingPage, /tabindex="0"/);
@@ -275,7 +275,7 @@ test('public landing page includes compatibility section for AI agent surfaces',
   assert.match(landingPage, /id="compatibility"/);
   assert.match(landingPage, /AI CLIs/i);
   assert.match(landingPage, /MCP-compatible agent/i);
-  assert.match(landingPage, /pre-action gates/i);
+  assert.match(landingPage, /pre-action checks/i);
   assert.match(landingPage, /enforcement out of the box/i);
   assert.match(landingPage, /Claude Desktop plugin/i);
   assert.match(landingPage, /Editor workflows/i);
@@ -294,7 +294,7 @@ test('public landing page includes compatibility section for AI agent surfaces',
   assert.match(landingPage, /Open ThumbGate GPT/);
   assert.match(landingPage, /Live ThumbGate GPT for ChatGPT/);
   assert.match(landingPage, /ChatGPT Entry Point/);
-  assert.match(landingPage, /Open the GPT\. Give typed thumbs feedback\. Turn the lesson into a gate\./);
+  assert.match(landingPage, /Open the GPT\. Give typed thumbs feedback\. Turn the lesson into a check\./);
   assert.match(landingPage, /No, you do not have to chat inside the GPT forever/);
   assert.match(landingPage, /ChatGPT is the discovery and memory surface/);
   assert.match(landingPage, /Do not rely on ChatGPT's native rating buttons for ThumbGate memory/);
@@ -352,7 +352,7 @@ test('public landing page internally links to comparison and guide pages without
   assert.match(landingPage, /How buyers discover ThumbGate/i);
   assert.match(landingPage, /href="\/compare\/speclock"/);
   assert.match(landingPage, /href="\/compare\/mem0"/);
-  assert.match(landingPage, /href="\/guides\/pre-action-gates"/);
+  assert.match(landingPage, /href="\/guides\/pre-action-checks"/);
   assert.match(landingPage, /href="\/guides\/agent-harness-optimization"/);
   assert.match(landingPage, /href="\/guides\/ai-search-topical-presence"/);
   assert.match(landingPage, /href="\/guides\/relational-knowledge-ai-recommendations"/);
@@ -404,7 +404,7 @@ test('public Codex plugin page explains install, direct download, and latest run
   assert.match(codexPage, /npx thumbgate init --agent codex/);
   assert.match(codexPage, /thumbgate-codex-plugin\.zip/);
   assert.match(codexPage, /plugins\/codex-profile\/INSTALL\.md/);
-  assert.match(codexPage, /Pre-Action Gates/);
+  assert.match(codexPage, /Pre-Action Checks/);
   assert.match(codexPage, /Codex settings/);
   assert.match(codexPage, /Bare "thumbs down" is intentionally too vague/);
 });
@@ -550,5 +550,5 @@ test('public landing page includes dashboard preview in Pro card', () => {
   const landingPage = readLandingPage();
   assert.match(landingPage, /dashboard-preview/);
   assert.match(landingPage, /What your Pro dashboard looks like/);
-  assert.match(landingPage, /gate:no-force-push/);
+  assert.match(landingPage, /check:no-force-push/);
 });

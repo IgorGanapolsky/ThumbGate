@@ -1,17 +1,17 @@
 ---
 name: thumbgate
 description: >-
-  Pre-action gates for AI coding agents — capture thumbs-up/down feedback,
+  Pre-action checks for AI coding agents — capture thumbs-up/down feedback,
   generate prevention rules, and block known-bad patterns before they execute.
   Use when setting up ThumbGate, capturing feedback on agent actions, checking
-  active prevention gates, debugging blocked actions, or exporting DPO training
-  data. Triggers on: "thumbgate", "gate", "block mistake", "prevention rule",
+  active prevention rules, debugging blocked actions, or exporting DPO training
+  data. Triggers on: "thumbgate", "check", "block mistake", "prevention rule",
   "feedback", "thumbs up", "thumbs down", "capture feedback", "what went wrong".
 ---
 
-# ThumbGate — Pre-Action Gates for AI Agents
+# ThumbGate — Pre-Action Checks for AI Agents
 
-ThumbGate turns thumbs-up/down feedback into hard enforcement gates that block
+ThumbGate turns thumbs-up/down feedback into hard enforcement checks that block
 known-bad agent actions before they execute. Think of it as an immune system
 for your AI agent.
 

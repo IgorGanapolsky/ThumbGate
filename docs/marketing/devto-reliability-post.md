@@ -60,7 +60,7 @@ Bounded retrieval of relevant history for the current task. Instead of dumping e
 
 Each piece of feedback gets a reliability score via [Thompson Sampling](https://en.wikipedia.org/wiki/Thompson_sampling) (beta-binomial posterior). Noisy or one-off signals don't immediately become rules. Only patterns that recur above a confidence threshold get promoted to prevention rules.
 
-The gate engine uses a default-deny model for high-risk actions. The agent must pass through checkpoint validation before executing anything flagged by prior failures.
+The check engine uses a default-deny model for high-risk actions. The agent must pass through checkpoint validation before executing anything flagged by prior failures.
 
 ## Install
 

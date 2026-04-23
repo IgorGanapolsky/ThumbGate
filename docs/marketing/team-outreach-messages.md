@@ -20,7 +20,7 @@ Use [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) only after the buyer
 
 > Your question about rollback rates when context changes is exactly the right one.
 
-> I am looking for one AI-agent workflow to harden end-to-end this week: repeated failure, prevention gate, and proof run. If you have one workflow where context drift or rollback risk keeps showing up, I can harden that workflow for you. Worth a 15-minute diagnostic?
+> I am looking for one AI-agent workflow to harden end-to-end this week: repeated failure, prevention rule, and proof run. If you have one workflow where context drift or rollback risk keeps showing up, I can harden that workflow for you. Worth a 15-minute diagnostic?
 
 ---
 
@@ -28,7 +28,7 @@ Use [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) only after the buyer
 
 > Your ACT-R engram work is fascinating — especially the conflict resolution for opposing facts and the decay model.
 
-> I am looking for one serious AI-agent workflow to harden end-to-end this week. If your memory system has one recurring failure mode — stale context, opposing facts, bad handoffs, or unsafe tool calls — I can turn that into a prevention gate and proof run. Open to a 15-minute diagnostic?
+> I am looking for one serious AI-agent workflow to harden end-to-end this week. If your memory system has one recurring failure mode — stale context, opposing facts, bad handoffs, or unsafe tool calls — I can turn that into a prevention rule and proof run. Open to a 15-minute diagnostic?
 
 ---
 
@@ -36,7 +36,7 @@ Use [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) only after the buyer
 
 > Your arch-create → review → sprint → implement → review workflow is one of the most mature agent processes I've seen anyone describe.
 
-> I am looking for one AI-agent workflow to harden end-to-end this week. Your workflow already has phases, review boundaries, and context risk, so it is a strong fit: pick one repeating failure and I will help turn it into an enforceable gate plus proof run. Worth 15 minutes?
+> I am looking for one AI-agent workflow to harden end-to-end this week. Your workflow already has phases, review boundaries, and context risk, so it is a strong fit: pick one repeating failure and I will help turn it into an enforceable Pre-Action Check plus proof run. Worth 15 minutes?
 
 ---
 
@@ -44,4 +44,4 @@ Use [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) only after the buyer
 
 > Appreciate the kind words on the Thompson Sampling approach. You nailed the core insight — most guardrails are brittle prompt hacks that break when context shifts.
 
-> I am looking for one AI-agent workflow to harden end-to-end this week: repeated failure, prevention gate, and proof run. If you have a workflow where brittle guardrails keep failing, I can harden that workflow with you. Open to a 15-minute diagnostic?
+> I am looking for one AI-agent workflow to harden end-to-end this week: repeated failure, prevention rule, and proof run. If you have a workflow where brittle guardrails keep failing, I can harden that workflow with you. Open to a 15-minute diagnostic?

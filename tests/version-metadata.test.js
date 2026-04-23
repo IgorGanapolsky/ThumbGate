@@ -109,12 +109,12 @@ test('public docs render the current package version', () => {
   assert.match(chatgptInstall, /Search for `ThumbGate`/);
   assert.match(chatgptInstall, /30-second user flow/);
   assert.match(chatgptInstall, /GPT profile card/);
-  assert.match(chatgptInstall, /Pre-action gate flow/);
+  assert.match(chatgptInstall, /Pre-action check flow/);
   assert.match(chatgptInstall, /Reliability Gateway/i);
   assert.match(chatgptInstall, /Stop costly AI mistakes before they run/);
   assert.match(chatgptInstall, /evaluateDecision/);
   assert.match(chatgptInstall, /decisionControl\.executionMode: "blocked"/);
-  assert.match(chatgptInstall, /Plain thumbs-up\/down feedback is the memory loop\. The decision endpoint is the gate loop\./);
+  assert.match(chatgptInstall, /Plain thumbs-up\/down feedback is the memory loop\. The decision endpoint is the check loop\./);
   assert.match(chatgptInstall, /Check this agent action before it runs: git push --force --tags/i);
   assert.match(chatgptInstall, /The GPT should feel like a feedback button that remembers/i);
   assert.match(chatgptInstall, /Thumbs down: that answer ignored my request for exact commands/i);
@@ -152,7 +152,7 @@ test('public docs render the current package version', () => {
   assert.match(gptStoreSubmission, /Reliability Gateway/i);
   assert.match(gptStoreSubmission, /one signal becomes one remembered rule/i);
   assert.match(gptStoreSubmission, /prevent expensive AI mistakes/i);
-  assert.match(gptStoreSubmission, /Pre-Action Gates/);
+  assert.match(gptStoreSubmission, /Pre-Action Checks/);
   assert.match(gptStoreSubmission, /POST \/v1\/decisions\/evaluate/);
   assert.match(gptStoreSubmission, /Action check mode/);
   assert.match(gptStoreSubmission, /Feedback capture mode/);
@@ -396,7 +396,7 @@ test('commercial truth sources stay aligned across public and historical docs', 
 
   assert.match(commercialTruth, /Pro at \$19\/mo or \$149\/yr/);
   assert.match(commercialTruth, /Team pricing anchor is \*\*\$49\/seat\/mo/i);
-  assert.match(commercialTruth, /auto-gate promotion/);
+  assert.match(commercialTruth, /auto-promotion into prevention rules/);
   assert.match(commercialTruth, /Do not treat GitHub stars, watchers, dependents, or npm download counts as customer or revenue proof/);
 
   assert.match(readme, /Commercial Truth/);

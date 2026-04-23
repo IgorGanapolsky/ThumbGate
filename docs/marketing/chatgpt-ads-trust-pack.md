@@ -1,10 +1,10 @@
 # ChatGPT Ads Trust Pack
 
-Use this pack when the conversation is about ChatGPT ads, AI trust, or measurement. The thesis is not "ThumbGate is an ad product." The thesis is "as AI assistants become monetized decision surfaces, teams need pre-action gates before AI suggestions turn into risky actions."
+Use this pack when the conversation is about ChatGPT ads, AI trust, or measurement. The thesis is not "ThumbGate is an ad product." The thesis is "as AI assistants become monetized decision surfaces, teams need pre-action checks before AI suggestions turn into risky actions."
 
 ## Core thesis
 
-As AI assistants become ad platforms, teams need pre-action gates, audit trails, and proof-ready runs before a monetized workflow touches users.
+As AI assistants become ad platforms, teams need pre-action checks, audit trails, and proof-ready runs before a monetized workflow touches users.
 
 ## LinkedIn post
 
@@ -30,9 +30,9 @@ If a suggested command, deployment, approval, or workflow step is one message aw
 That is the ThumbGate pitch:
 - ChatGPT can be the discovery and checkpointing layer
 - typed thumbs up/down can capture feedback
-- ThumbGate becomes the pre-action gate layer that decides allow, block, or checkpoint before the risky step runs
+- ThumbGate becomes the pre-action check layer that decides allow, block, or checkpoint before the risky step runs
 
-As AI assistants become ad platforms, teams need pre-action gates, audit trails, and proof-ready runs before a monetized workflow touches users.
+As AI assistants become ad platforms, teams need pre-action checks, audit trails, and proof-ready runs before a monetized workflow touches users.
 
 Proof:
 https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
@@ -62,7 +62,7 @@ then teams need a hard boundary between AI advice and risky execution.
 
 That is what I am building with ThumbGate:
 - capture thumbs up/down on agent behavior
-- turn repeated failures into Pre-Action Gates
+- turn repeated failures into Pre-Action Checks
 - block the known-bad action before it runs
 - keep verification evidence close to the workflow
 
@@ -85,7 +85,7 @@ Once AI assistants become monetized discovery surfaces, teams need a hard bounda
 
 That is the ThumbGate angle:
 ChatGPT for discovery and typed feedback.
-ThumbGate for Pre-Action Gates before the action runs.
+ThumbGate for Pre-Action Checks before the action runs.
 
 Guide:
 https://thumbgate-production.up.railway.app/guides/chatgpt-ads-trust
@@ -98,7 +98,7 @@ My read: ChatGPT ads make trust and execution boundaries more important, not les
 
 If AI is now part search surface, part recommendation engine, and part action planner, the next layer has to be enforcement.
 
-That is where ThumbGate fits: Pre-Action Gates between AI advice and the risky command.
+That is where ThumbGate fits: Pre-Action Checks between AI advice and the risky command.
 ```
 
 ## Proof links

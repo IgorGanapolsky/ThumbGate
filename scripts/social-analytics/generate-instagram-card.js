@@ -27,7 +27,7 @@ const CARD_VARIANTS = [
   { headline: ['AI agent broke', 'production?'], sub: ['That exact pattern', 'is now blocked forever.'] },
   { headline: ['Fight AI', 'with AI.'], sub: ['Self-tuning gates.', 'Thompson Sampling.'] },
   { headline: ['Your agent can\'t', 'disable this.'], sub: ['Self-protection gates.', '4 layers deep.'] },
-  { headline: ['NIST. SOC2.', 'OWASP. CWE.'], sub: ['Compliance tags on', 'every gate rule.'] },
+  { headline: ['NIST. SOC2.', 'OWASP. CWE.'], sub: ['Compliance tags on', 'every rule.'] },
   { headline: ['500 actions.', '2.5 hours.'], sub: ['Budget enforcement.', 'No runaway agents.'] },
   { headline: ['First AI-agent', 'cyberattack confirmed.'], sub: ['PreToolUse hooks', 'block before execution.'] },
 ];

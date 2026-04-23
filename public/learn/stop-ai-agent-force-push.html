@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>How to Stop AI Agents From Force-Pushing to Main — ThumbGate</title>
 <script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
-<meta name="description" content="Your AI coding agent just force-pushed to main. Again. Here is how to make that physically impossible with a pre-action gate in two minutes.">
-<meta name="keywords" content="AI agent force push, Claude Code force push prevention, git push force main, AI coding agent git safety, pre-action gates, ThumbGate">
+<meta name="description" content="Your AI coding agent just force-pushed to main. Again. Here is how to make that physically impossible with a pre-action check in two minutes.">
+<meta name="keywords" content="AI agent force push, Claude Code force push prevention, git push force main, AI coding agent git safety, pre-action checks, ThumbGate">
 <meta property="og:title" content="How to Stop AI Agents From Force-Pushing to Main">
-<meta property="og:description" content="Make force-push to main physically impossible for your AI coding agent with a pre-action gate.">
+<meta property="og:description" content="Make force-push to main physically impossible for your AI coding agent with a pre-action check.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://thumbgate-production.up.railway.app/learn/stop-ai-agent-force-push">
 <link rel="canonical" href="https://thumbgate-production.up.railway.app/learn/stop-ai-agent-force-push">
@@ -18,7 +18,7 @@
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "How to Stop AI Agents From Force-Pushing to Main",
-  "description": "Make force-push to main physically impossible for your AI coding agent with a pre-action gate.",
+  "description": "Make force-push to main physically impossible for your AI coding agent with a pre-action check.",
   "author": {
     "@type": "Person",
     "name": "Igor Ganapolsky",
@@ -35,7 +35,7 @@
   "about": [
     {"@type": "Thing", "name": "git force push prevention"},
     {"@type": "Thing", "name": "AI coding agent safety"},
-    {"@type": "Thing", "name": "pre-action gates"}
+    {"@type": "Thing", "name": "pre-action checks"}
   ]
 }
 </script>
@@ -73,8 +73,8 @@
     <li><strong>No enforcement layer</strong> &mdash; nothing physically stops the tool call from executing</li>
   </ul>
 
-  <h2>The fix: a pre-action gate</h2>
-  <p>A pre-action gate intercepts the tool call <em>before</em> it executes. It pattern-matches the command against known-bad actions and blocks them. The agent cannot bypass it because the gate runs outside the agent's control, at the MCP hook layer.</p>
+  <h2>The fix: a pre-action check</h2>
+  <p>A pre-action check intercepts the tool call <em>before</em> it executes. It pattern-matches the command against known-bad actions and blocks them. The agent cannot bypass it because the check runs outside the agent's control, at the MCP hook layer.</p>
 
   <h3>Step 1: Install ThumbGate</h3>
   <pre><code>npx thumbgate init</code></pre>
@@ -84,19 +84,19 @@
   <p>The next time your agent tries a force-push (or anything dangerous), give it a thumbs-down with context:</p>
   <pre><code>👎 "Never force-push to main. This destroyed 14 commits last time."</code></pre>
 
-  <h3>Step 3: Gate auto-generates</h3>
-  <p>ThumbGate captures the feedback, matches it against the tool call pattern, and auto-generates a prevention rule. After repeated failures (configurable), it promotes to a hard gate:</p>
+  <h3>Step 3: Check auto-generates</h3>
+  <p>ThumbGate captures the feedback, matches it against the tool call pattern, and auto-generates a prevention rule. After repeated failures (configurable), it promotes to a hard check:</p>
   <pre><code># Auto-generated prevention rule
 pattern: "git push --force"
 target_branch: "main"
 action: BLOCK
 reason: "Force-push to main blocked — destroyed 14 commits (2026-03-15)"</code></pre>
 
-  <h3>Step 4: Gate fires on every future attempt</h3>
+  <h3>Step 4: Check fires on every future attempt</h3>
   <p>The PreToolUse hook checks every <code>Bash</code> tool call. If it matches <code>git push --force</code> targeting <code>main</code>, the action is blocked before execution. The agent receives a rejection with the reason and adapts.</p>
 
   <div class="callout">
-    <strong>Key difference:</strong> Prompt rules ask nicely. Pre-action gates physically block. The gate runs at the hook layer, outside the agent's reasoning chain, so it cannot be overridden by context or chain-of-thought.
+    <strong>Key difference:</strong> Prompt rules ask nicely. Pre-action checks physically block. The check runs at the hook layer, outside the agent's reasoning chain, so it cannot be overridden by context or chain-of-thought.
   </div>
 
   <h2>What about other dangerous actions?</h2>
@@ -108,7 +108,7 @@ reason: "Force-push to main blocked — destroyed 14 commits (2026-03-15)"</code
     <li>Running untested migrations on prod</li>
     <li>Skipping test suites before deploy</li>
   </ul>
-  <p>Every thumbs-down teaches the system. Thompson Sampling adapts gate sensitivity: high-risk patterns get strict enforcement, low-risk ones stay relaxed.</p>
+  <p>Every thumbs-down teaches the system. Thompson Sampling adapts check sensitivity: high-risk patterns get strict enforcement, low-risk ones stay relaxed.</p>
 
   <div class="cta-box">
     <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Try it now</h2>
@@ -119,7 +119,7 @@ reason: "Force-push to main blocked — destroyed 14 commits (2026-03-15)"</code
   <div class="related">
     <h3>Related guides</h3>
     <a href="/learn/vibe-coding-safety-net">The Vibe Coding Safety Net You Are Missing &rarr;</a>
-    <a href="/learn/mcp-pre-action-gates-explained">MCP Pre-Action Gates Explained &rarr;</a>
+    <a href="/learn/mcp-pre-action-checks-explained">MCP Pre-Action Checks Explained &rarr;</a>
     <a href="/guide">Full Setup Guide &rarr;</a>
   </div>
 </div>

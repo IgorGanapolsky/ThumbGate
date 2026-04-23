@@ -1,4 +1,4 @@
-# Beyond Prompt Rules: How Pre-Action Gates Stop AI Coding Agents From Repeating Mistakes
+# Beyond Prompt Rules: How Pre-Action Checks Stop AI Coding Agents From Repeating Mistakes
 
 *A practical guide to human-in-the-loop enforcement for vibe coding*
 
@@ -21,9 +21,9 @@ The problem is structural:
 3. **No feedback loop.** There's no mechanism to turn a mistake into a rule automatically.
 4. **No enforcement.** Even if the rule exists, nothing physically stops the agent from violating it.
 
-## Pre-Action Gates: Enforcement, Not Suggestions
+## Pre-Action Checks: Enforcement, Not Suggestions
 
-Pre-Action Gates are a different approach. Instead of hoping the agent cooperates, gates intercept tool calls *before execution* and block ones that match known failure patterns.
+Pre-Action Checks are a different approach. Instead of hoping the agent cooperates, gates intercept tool calls *before execution* and block ones that match known failure patterns.
 
 ```
 Agent tries: git push --force
@@ -55,7 +55,7 @@ When the same mistake pattern appears 3+ times, it's automatically promoted from
 
 ### 3. Enforce via PreToolUse hooks
 
-Prevention rules become gates that run on every tool call. The gate engine checks the proposed action against all active rules and blocks matches before execution. No cooperation from the agent required.
+Prevention rules become gates that run on every tool call. The check engine checks the proposed action against all active rules and blocks matches before execution. No cooperation from the agent required.
 
 ## The Tech Stack
 
@@ -74,7 +74,7 @@ Everything runs locally. No cloud account required. No model weights are modifie
 | Actually works | Does not work |
 |---|---|
 | `recall` injects past context into the next session | Thumbs up/down changing model weights |
-| Pre-action gates block known-bad tool calls before execution | Agents self-correcting without gates |
+| Pre-action checks block known-bad tool calls before execution | Agents self-correcting without checks |
 | Auto-promotion turns repeated failures into warn/block rules | Vague feedback silently helping the system |
 | Corrective actions surface remediation steps from similar past failures | Calling this model training in the strict sense |
 
@@ -94,7 +94,7 @@ This scaffolds the `.thumbgate/` directory, wires PreToolUse hooks for your agen
 
 As vibe coding becomes the default way developers interact with AI agents, the need for human-in-the-loop enforcement grows. You cannot prompt-engineer your way out of an agent that doesn't remember its mistakes. You need a system that captures, remembers, distills, and enforces.
 
-Pre-action gates are that system. They don't replace your agent — they make it reliable.
+Pre-action checks are that system. They don't replace your agent — they make it reliable.
 
 ---
 

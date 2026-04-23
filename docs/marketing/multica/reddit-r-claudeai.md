@@ -1,4 +1,4 @@
-# If you're running Claude Code inside Multica (or any self-hosted agent orchestrator), install pre-action gates before autopilot fires.
+# If you're running Claude Code inside Multica (or any self-hosted agent orchestrator), install pre-action checks before autopilot fires.
 
 Multica's pitch is real: VPS + Docker + Postgres + UI, and your Claude Code / OpenCode / Code CLI agents run as jobs on a kanban board. Autopilot schedules recurring work — "every day at 9am, fetch these RSS feeds, do X."
 
@@ -6,7 +6,7 @@ The risk nobody discusses: autopilot magnifies tool-call mistakes. An agent that
 
 Prompt rules (CLAUDE.md, .cursorrules) don't survive this. Context window rolls, autopilot fires fresh context, pattern repeats.
 
-ThumbGate fixes it at the tool-call boundary. SQLite lesson DB on the same VPS as your agent (`.thumbgate/memory.sqlite`). Pre-action gates block known-bad patterns — `git push --force`, `rm -rf`, `curl | sh`, cloud mutations — before execution.
+ThumbGate fixes it at the tool-call boundary. SQLite lesson DB on the same VPS as your agent (`.thumbgate/memory.sqlite`). Pre-action checks block known-bad patterns — `git push --force`, `rm -rf`, `curl | sh`, cloud mutations — before execution.
 
 Install is the same one-liner Multica viewers run for any terminal agent:
 

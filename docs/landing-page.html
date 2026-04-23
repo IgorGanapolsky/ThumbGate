@@ -16,8 +16,8 @@
     "url": "__APP_ORIGIN__",
     "operatingSystem": "Node.js, Cross-platform",
     "applicationCategory": "DeveloperApplication",
-    "description": "CLI-first agent governance for coding teams. ThumbGate turns repeated failures into shared enforcement, blocks dangerous tool calls with Pre-Action Gates, and adds approval boundaries, workflow governance, and isolated execution guidance for risky autonomy.",
-    "keywords": "ThumbGate, AI reliability system, DPO, KTO, AI agent reliability, context engineering, prevention rules, Pre-Action Gates",
+    "description": "CLI-first agent governance for coding teams. ThumbGate turns repeated failures into shared enforcement, blocks dangerous tool calls with Pre-Action Checks, and adds approval boundaries, workflow governance, and isolated execution guidance for risky autonomy.",
+    "keywords": "ThumbGate, AI reliability system, DPO, KTO, AI agent reliability, context engineering, prevention rules, Pre-Action Checks",
     "offers": {
       "@type": "Offer",
       "price": "19",
@@ -29,7 +29,7 @@
       "https://www.npmjs.com/package/thumbgate"
     ],
     "featureList": [
-      "Pre-Action Gates",
+      "Pre-Action Checks",
       "Workflow Sentinel blast-radius scoring",
       "Docker Sandboxes routing guidance for high-risk local runs",
       "Signed hosted sandbox dispatch",
@@ -75,7 +75,7 @@
         "name": "How does ThumbGate reduce host blast radius for high-risk runs?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "ThumbGate combines pre-action gates with execution guidance. Workflow Sentinel predicts risky local actions before they execute, and those runs can be routed into Docker Sandboxes instead of running directly on the host. Team workflows also have a signed hosted sandbox lane for isolated automation dispatch."
+          "text": "ThumbGate combines pre-action checks with execution guidance. Workflow Sentinel predicts risky local actions before they execute, and those runs can be routed into Docker Sandboxes instead of running directly on the host. Team workflows also have a signed hosted sandbox lane for isolated automation dispatch."
         }
       },
       {
@@ -630,7 +630,7 @@
         <div class='panel hero-copy'>
           <span class='eyebrow'>Workflow Hardening Sprint for engineering teams</span>
           <h1>Make one AI coding workflow safe enough to ship team-wide.</h1>
-          <p>ThumbGate is a CLI-first control plane for AI coding workflows. It captures thumbs-up/down signals from every run, converts repeated failures into prevention rules, and gates dangerous actions before they cause damage.</p>
+          <p>ThumbGate is a CLI-first control plane for AI coding workflows. It captures thumbs-up/down signals from every run, converts repeated failures into prevention rules, and checks dangerous actions before they cause damage.</p>
           <p>The business story is enterprise-first: use the Workflow Hardening Sprint to prove one blocker, one owner, and one proof review before a wider rollout. The local CLI stays free as the adoption wedge, while Pro remains the solo side lane.</p>
           <div class='hero-proof'>
             <span class='proof-pill'>North Star: one workflow live and auditable</span>
@@ -673,25 +673,25 @@
             </div>
             <div class='mini'>
               <strong>What is public today</strong>
-              OSS remains free with 5 built-in gates. Team starts intake-first via the Workflow Hardening Sprint. Pro is the solo side lane for a personal local dashboard and exports.
+              OSS remains free with 5 built-in checks. Team starts intake-first via the Workflow Hardening Sprint. Pro is the solo side lane for a personal local dashboard and exports.
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <section id='gate-demo'>
+    <section id='check-demo'>
       <div class='section-inner'>
         <div class='section-head'>
-          <span class='eyebrow'>Gate in action</span>
+          <span class='eyebrow'>Check in action</span>
           <h2>See what gets blocked. See what gets through.</h2>
           <p>ThumbGate intercepts agent tool calls before execution. Blocked operations never run. Passing operations leave an auditable trace.</p>
         </div>
         <div class='steps'>
           <h3>Terminal</h3>
-          <pre style='margin:0;font-family:"SFMono-Regular",Consolas,monospace;font-size:15px;line-height:1.7;color:#d8cec1;'><span style='color:#e06c75;'>[gate] &#x26D4; Blocked: git push --force main</span>
+          <pre style='margin:0;font-family:"SFMono-Regular",Consolas,monospace;font-size:15px;line-height:1.7;color:#d8cec1;'><span style='color:#e06c75;'>[check] &#x26D4; Blocked: git push --force main</span>
           <span style='color:#abb2bf;'>         rule: no-force-push &bull; severity: critical &bull; action: abort</span>
-<span style='color:#98c379;'>[gate] &#x2705; Passed:  npm test &amp;&amp; git push origin feature-branch</span>
+<span style='color:#98c379;'>[check] &#x2705; Passed:  npm test &amp;&amp; git push origin feature-branch</span>
           <span style='color:#abb2bf;'>         rule: test-before-push &bull; evidence: logged</span></pre>
         </div>
       </div>
@@ -778,7 +778,7 @@
           </div>
           <div class='card'>
             <h3>Build, then pitch honestly</h3>
-            <p>Use <code>npm run build:claude-mcpb</code> plus the review-ready source zip to package the real bundle, then market Claude workflow hardening, Pre-Action Gates, and proof-backed reliability without claiming approval before it exists.</p>
+            <p>Use <code>npm run build:claude-mcpb</code> plus the review-ready source zip to package the real bundle, then market Claude workflow hardening, Pre-Action Checks, and proof-backed reliability without claiming approval before it exists.</p>
           </div>
         </div>
         <p class='note'>Official directory review is separate. Claude Code users can install now with <code>/plugin marketplace add IgorGanapolsky/ThumbGate</code> and <code>/plugin install thumbgate@thumbgate-marketplace</code>.</p>
@@ -848,7 +848,7 @@
         <div class='grid-3'>
           <div class='card'>
             <h3>Import</h3>
-            <p>Use the workflow artifacts you already have: PR review threads, CI logs, runbooks, JSONL, and CSV. These become candidate memories, gates, and approval boundaries.</p>
+            <p>Use the workflow artifacts you already have: PR review threads, CI logs, runbooks, JSONL, and CSV. These become candidate memories, checks, and approval boundaries.</p>
           </div>
           <div class='card'>
             <h3>Compare</h3>
@@ -959,7 +959,7 @@
           </div>
           <div class='card'>
             <h3>Automation proof JSON</h3>
-            <p>Machine-readable automation evidence for rubric gates, prevention rules, and workflow checks.</p>
+            <p>Machine-readable automation evidence for rubric checks, prevention rules, and workflow checks.</p>
             <p><a href='__AUTOMATION_REPORT_URL__'>Open <code>proof/automation/report.json</code></a></p>
           </div>
           <div class='card'>
@@ -1013,7 +1013,7 @@
             <ul>
               <li>Feedback capture and recall</li>
               <li>Prevention rules</li>
-              <li>5 built-in gates</li>
+              <li>5 built-in checks</li>
               <li>Dashboard CLI</li>
               <li>DPO/KTO export</li>
             </ul>
@@ -1027,7 +1027,7 @@
             <ul>
               <li>Workflow Hardening Sprint intake</li>
               <li>Shared enforcement memory</li>
-              <li>Team lesson export/import — one team's lessons become every team's gates</li>
+              <li>Team lesson export/import — one team's lessons become every team's checks</li>
               <li>Approval boundaries and audit trail</li>
               <li>Org dashboard and proof-ready exports</li>
               <li>Isolated execution guidance for risky autonomy</li>
@@ -1051,7 +1051,7 @@
               <li>Personal local dashboard on localhost</li>
               <li>DPO export and proof-ready data</li>
               <li>Lesson export/import for cross-project sharing</li>
-              <li>Unlimited custom gates</li>
+              <li>Unlimited custom checks</li>
               <li>Priority support</li>
             </ul>
             <a class='button secondary' href='https://thumbgate-production.up.railway.app/checkout/pro?utm_source=landing_page&utm_medium=cta_button&utm_campaign=pro_pack' target='_blank' rel='noreferrer'>See Solo Pro</a>

@@ -4,7 +4,7 @@ Academic research just proved what we've been running in production for 18 month
 
 The Memento-Skills paper (arXiv 2603.18743) demonstrates that external skill memory systems — ones that rewrite themselves from failure feedback — achieve 26-116% accuracy improvements without touching the model. No retraining. No fine-tuning. Just structured context engineering.
 
-That's exactly what ThumbGate does. We capture agent failures, infer prevention rules, and inject them as PreToolUse gates. The paper's Read → Execute → Reflect → Write loop maps directly to our capture → infer → enforce → block cycle. The academic validation confirms what we've observed: you don't need to retrain your model to make it safer and more reliable. You need better context.
+That's exactly what ThumbGate does. We capture agent failures, infer prevention rules, and inject them as PreToolUse checks. The paper's Read → Execute → Reflect → Write loop maps directly to our capture → infer → enforce → block cycle. The academic validation confirms what we've observed: you don't need to retrain your model to make it safer and more reliable. You need better context.
 
 ThumbGate processes real-world AI agent failures — git operations, code edits, file writes, API calls — and learns from them. Every "thumbs down" on a failed action becomes a lesson. Every lesson becomes a rule. Every rule becomes a gate that stops the same mistake from happening again. The feedback loop is tight. The enforcement is immediate.
 

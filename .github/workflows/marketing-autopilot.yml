@@ -156,13 +156,13 @@ jobs:
               {
                 subreddit: 'ClaudeAI',
                 kind: 'link',
-                title: 'ThumbGate v1.4.1: Pre-action safety gates that block Claude Code from repeating mistakes',
+                title: 'ThumbGate v1.4.1: Pre-action safety checks that block Claude Code from repeating mistakes',
                 url: 'https://thumbgate-production.up.railway.app/pro?utm_source=reddit&utm_medium=social&utm_campaign=autopilot&utm_content=claudeai',
               },
               {
                 subreddit: 'SideProject',
                 kind: 'self',
-                title: 'I built pre-action gates that physically block Claude Code from repeating mistakes — now with a Pro tier',
+                title: 'I built pre-action checks that physically block Claude Code from repeating mistakes — now with a Pro tier',
                 text: [
                   'After my AI agent force-pushed to main and wiped 3 PRs, I built ThumbGate.',
                   '',
@@ -182,7 +182,7 @@ jobs:
               {
                 subreddit: 'LocalLLaMA',
                 kind: 'self',
-                title: 'ThumbGate: pre-action gates that stop AI agents from repeating the same mistakes',
+                title: 'ThumbGate: pre-action checks that stop AI agents from repeating the same mistakes',
                 text: [
                   'Built a tool that intercepts every tool call before it executes and checks it against a lesson DB built from past failures.',
                   '',

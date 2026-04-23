@@ -4,7 +4,7 @@
 /**
  * Gate Eval — systematic evaluation of gate effectiveness.
  *
- * Applies Anthropic's prompt-evaluation framework to ThumbGate's gate layer:
+ * Applies Anthropic's prompt-evaluation framework to ThumbGate's approval layer:
  *
  *   1. Test cases: define expected outcomes (SHOULD block / SHOULD pass),
  *      run them against current specs, report mismatches.

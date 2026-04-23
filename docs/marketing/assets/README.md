@@ -18,12 +18,12 @@ These assets are the local source of truth for the March 2026 AI reliability sys
 - `ai-reliability-system-linkedin-slide-05.svg`
 - `ai-reliability-system-linkedin-slide-06.svg`
 - `ai-reliability-system-x-card.svg`
-- `pre-action-gates-instagram-carousel.html`
-- `pre-action-gates-caption.txt`
+- `pre-action-checks-instagram-carousel.html`
+- `pre-action-checks-caption.txt`
 
 ## Notes
 
 - Keep these assets local/private.
 - Use Figma only as an optional drafting surface, not as the canonical source.
 - Export PNGs from these SVGs when posting to social platforms.
-- The zero-filming pipeline renders the IG/TikTok bundle from `pre-action-gates-instagram-carousel.html` plus `pre-action-gates-caption.txt`.
+- The zero-filming pipeline renders the IG/TikTok bundle from `pre-action-checks-instagram-carousel.html` plus `pre-action-checks-caption.txt`.

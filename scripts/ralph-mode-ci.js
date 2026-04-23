@@ -247,7 +247,7 @@ async function main() {
       const hoursSince = (Date.now() - new Date(lastLinkedin).getTime()) / 3600000;
       if (hoursSince >= 4) {
         const angles = [
-          'ThumbGate: pre-action gates for AI coding agents. 68 tools on Smithery. Works with Claude Code, Cursor, Codex, Gemini, Amp.\n\nnpx thumbgate quick-start\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
+          'ThumbGate: pre-action checks for AI coding agents. 68 tools on Smithery. Works with Claude Code, Cursor, Codex, Gemini, Amp.\n\nnpx thumbgate quick-start\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
           'Every AI agent framework ships memory. None ship enforcement.\n\nThumbGate adds PreToolUse hooks that block bad actions before execution. Thompson Sampling adapts. Self-distillation auto-learns.\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
         ];
         const r = await postLinkedIn(angles[Math.floor(Date.now() / 14400000) % angles.length]);
@@ -281,7 +281,7 @@ async function main() {
           const comments = await ghApi('/repos/' + repo + '/issues/' + num + '/comments?per_page=1&page=' + issue.comments);
           const latest = comments[0];
           if (latest && latest.user.login !== 'IgorGanapolsky') {
-            const reply = 'Thanks for the response! ThumbGate adds PreToolUse enforcement — gates that block known-bad actions before execution. Thompson Sampling adapts confidence. Self-distillation auto-generates rules from outcomes.\n\nInstall with `npx thumbgate init`. Would love to explore integration.\n\nhttps://github.com/IgorGanapolsky/ThumbGate';
+            const reply = 'Thanks for the response! ThumbGate adds PreToolUse enforcement — checks that block known-bad actions before execution. Thompson Sampling adapts confidence. Self-distillation auto-generates rules from outcomes.\n\nInstall with `npx thumbgate init`. Would love to explore integration.\n\nhttps://github.com/IgorGanapolsky/ThumbGate';
             await ghPostComment(repo, num, reply);
             console.log('  Replied to @' + latest.user.login);
             report.ghIssues++;
@@ -393,7 +393,7 @@ async function checkPerplexityVisibility() {
   if (!PPLX_KEY) { console.log('Perplexity: skipped (no key)'); return; }
 
   const prompts = [
-    'best pre-action gate tools for AI coding agents',
+    'best pre-action check tools for AI coding agents',
     'how to prevent AI coding agent from making mistakes',
     'Claude Code safety tools',
     'alternatives to thumbgate',

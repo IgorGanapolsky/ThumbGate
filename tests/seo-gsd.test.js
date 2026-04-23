@@ -53,7 +53,7 @@ test('renderPlanMarkdown names all five GSD stages and page briefs', () => {
   assert.match(markdown, /## Review/);
   assert.match(markdown, /ThumbGate vs SpecLock/);
   assert.match(markdown, /ThumbGate vs Mem0/);
-  assert.match(markdown, /AI Agent Harness Optimization \| Progressive Disclosure \+ Pre-Action Gates/);
+  assert.match(markdown, /AI Agent Harness Optimization \| Progressive Disclosure \+ Pre-Action Checks/);
   assert.match(markdown, /AI Search Topical Presence \| Become the Obvious Recommendation/);
   assert.match(markdown, /Relational Knowledge in AI Recommendations \| Why Brands Get Picked/);
   assert.match(markdown, /How to Stop AI Coding Agents From Repeating Mistakes \| ThumbGate/);
@@ -98,7 +98,7 @@ test('Autoresearch safety page is discoverable and commercially classified', () 
   assert.ok(page);
   assert.equal(page.query, 'autoresearch agent safety');
   assert.equal(page.pageType, 'guide');
-  assert.equal(page.pillar, 'pre-action-gates');
+  assert.equal(page.pillar, 'pre-action-checks');
   assert.deepEqual(sitemapEntry, {
     path: '/guides/autoresearch-agent-safety',
     changefreq: 'monthly',
@@ -113,7 +113,7 @@ test('agent harness optimization page is discoverable and commercially classifie
   assert.ok(page);
   assert.equal(page.query, 'ai agent harness optimization');
   assert.equal(page.pageType, 'guide');
-  assert.equal(page.pillar, 'pre-action-gates');
+  assert.equal(page.pillar, 'pre-action-checks');
   assert.deepEqual(sitemapEntry, {
     path: '/guides/agent-harness-optimization',
     changefreq: 'monthly',
@@ -128,7 +128,7 @@ test('browser automation safety page is discoverable and commercially classified
   assert.ok(page);
   assert.equal(page.query, 'browser automation safety');
   assert.equal(page.pageType, 'guide');
-  assert.equal(page.pillar, 'pre-action-gates');
+  assert.equal(page.pillar, 'pre-action-checks');
   assert.deepEqual(sitemapEntry, {
     path: '/guides/browser-automation-safety',
     changefreq: 'monthly',
@@ -143,7 +143,7 @@ test('AI search topical presence page is discoverable and commercially classifie
   assert.ok(page);
   assert.equal(page.query, 'ai search topical presence');
   assert.equal(page.pageType, 'guide');
-  assert.equal(page.pillar, 'pre-action-gates');
+  assert.equal(page.pillar, 'pre-action-checks');
   assert.deepEqual(sitemapEntry, {
     path: '/guides/ai-search-topical-presence',
     changefreq: 'monthly',
@@ -158,7 +158,7 @@ test('native messaging host security page is discoverable and commercially class
   assert.ok(page);
   assert.equal(page.query, 'native messaging host security');
   assert.equal(page.pageType, 'guide');
-  assert.equal(page.pillar, 'pre-action-gates');
+  assert.equal(page.pillar, 'pre-action-checks');
   assert.deepEqual(sitemapEntry, {
     path: '/guides/native-messaging-host-security',
     changefreq: 'monthly',
@@ -173,7 +173,7 @@ test('relational knowledge page is discoverable and commercially classified', ()
   assert.ok(page);
   assert.equal(page.query, 'relational knowledge ai recommendations');
   assert.equal(page.pageType, 'guide');
-  assert.equal(page.pillar, 'pre-action-gates');
+  assert.equal(page.pillar, 'pre-action-checks');
   assert.deepEqual(sitemapEntry, {
     path: '/guides/relational-knowledge-ai-recommendations',
     changefreq: 'monthly',

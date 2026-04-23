@@ -41,7 +41,7 @@ Cursor is fast until it repeats the same repo mistake for the third time.
 
 We shipped ThumbGate to give Cursor agents:
 - local memory for repo lessons
-- pre-action gates before tool use
+- pre-action checks before tool use
 - proof-backed feedback
 
 The point is not more orchestration.
@@ -60,7 +60,7 @@ An agent gets corrected, the session ends, and the same repo mistake comes back 
 ThumbGate is our fix for that:
 - capture feedback with evidence
 - recall the right lesson in the next task
-- block known-bad actions with pre-action gates
+- block known-bad actions with pre-action checks
 - keep verification evidence close to the workflow
 
 The positioning is simple: stop repeated mistakes before they become team-wide habits.

@@ -124,7 +124,7 @@ async function run() {
           '/',
           '/compare/speclock',
           '/compare/mem0',
-          '/guides/pre-action-gates',
+          '/guides/pre-action-checks',
           '/guides/agent-harness-optimization',
           '/guides/browser-automation-safety',
           '/guides/native-messaging-host-security',
@@ -154,7 +154,7 @@ async function run() {
         for (const pathname of [
           '/compare/speclock',
           '/compare/mem0',
-          '/guides/pre-action-gates',
+          '/guides/pre-action-checks',
           '/guides/agent-harness-optimization',
           '/guides/browser-automation-safety',
           '/guides/native-messaging-host-security',

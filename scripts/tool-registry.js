@@ -387,7 +387,7 @@ const TOOLS = [
   }),
   readOnlyTool({
     name: 'enforcement_matrix',
-    description: 'Show the full Enforcement Matrix: feedback pipeline stats, active pre-action gates, and rejection ledger with revival conditions.',
+    description: 'Show the full Enforcement Matrix: feedback pipeline stats, active pre-action checks, and rejection ledger with revival conditions.',
     inputSchema: {
       type: 'object',
       properties: {},
