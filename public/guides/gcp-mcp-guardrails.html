@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BigQuery, Spanner, AlloyDB Agent Guardrails: Gating Google's Agentic Data Cloud MCP Calls</title>
+  <meta name="description" content="Google's Agentic Data Cloud exposes BigQuery, Spanner, AlloyDB, and Cloud SQL as MCP tool calls that any agent can trigger. IAM does not know what you thumbs-down'd last week. ThumbGate's local lesson DB does." />
+  <meta property="og:title" content="BigQuery, Spanner, AlloyDB Agent Guardrails: Gating Google's Agentic Data Cloud MCP Calls" />
+  <meta property="og:description" content="Google's Agentic Data Cloud exposes BigQuery, Spanner, AlloyDB, and Cloud SQL as MCP tool calls that any agent can trigger. IAM does not know what you thumbs-down'd last week. ThumbGate's local lesson DB does." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/guides/gcp-mcp-guardrails" />
+  <link rel="canonical" href="https://thumbgate.ai/guides/gcp-mcp-guardrails" />
+  <link rel="llm-context" href="/public/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "BigQuery, Spanner, AlloyDB Agent Guardrails: Gating Google's Agentic Data Cloud MCP Calls",
+    "description": "Google's Agentic Data Cloud exposes BigQuery, Spanner, AlloyDB, and Cloud SQL as MCP tool calls that any agent can trigger. IAM does not know what you thumbs-down'd last week. ThumbGate's local lesson DB does.",
+    "author": { "@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky" },
+    "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+    "datePublished": "2026-04-22",
+    "dateModified": "2026-04-22",
+    "mainEntityOfPage": "https://thumbgate.ai/guides/gcp-mcp-guardrails"
+  }
+  </script>
+  <style>
+    :root { --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #161618; --line: #222225; --text: #e8e8ec; --muted: #8b8b96; --cyan: #22d3ee; --green: #4ade80; --red: #f87171; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+    a { color: var(--cyan); text-decoration: none; } a:hover { text-decoration: underline; }
+    .container { max-width: 820px; margin: 0 auto; padding: 0 24px; }
+    .topbar { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); background: rgba(10,10,11,0.88); border-bottom: 1px solid var(--line); }
+    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; }
+    .brand { font-weight: 700; color: var(--text); text-decoration: none; }
+    h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.15; margin: 40px 0 16px; }
+    h2 { font-size: 24px; margin: 36px 0 12px; color: var(--cyan); }
+    h3 { font-size: 18px; margin: 24px 0 8px; }
+    p, li { font-size: 17px; color: var(--text); }
+    .muted { color: var(--muted); }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; }
+    pre { background: var(--bg-card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow-x: auto; }
+    code.inline { background: var(--bg-card); padding: 2px 6px; border-radius: 4px; color: var(--cyan); }
+    .eyebrow { display: inline-block; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(34,211,238,0.22); background: rgba(34,211,238,0.1); color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 700; }
+    .cta { display: inline-block; background: var(--cyan); color: #000; padding: 14px 22px; border-radius: 10px; font-weight: 700; margin: 24px 0; }
+    article { padding: 24px 0 80px; }
+    footer { border-top: 1px solid var(--line); padding: 32px 0; color: var(--muted); font-size: 14px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <a class="brand" href="/">ThumbGate</a>
+      <nav><a href="/guides/">Guides</a> · <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a></nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <article>
+      <span class="eyebrow">Cloud Next 2026</span>
+      <h1>BigQuery, Spanner, AlloyDB Agent Guardrails: Gating Google's Agentic Data Cloud MCP Calls</h1>
+      <p class="muted">Google Cloud Next 2026 shipped the Agentic Data Cloud: BigQuery, Spanner, AlloyDB, Cloud SQL, and Looker are all exposed as MCP tool calls, and the Data Agent Kit drops those tools into Claude Code, Codex, Gemini CLI, and VS Code on day one. Existing IAM policies gate who can call what. They do not gate what your agent already learned not to do.</p>
+
+      <h2>What changed on April 22, 2026</h2>
+      <p>Google announced the Agentic Data Cloud at Cloud Next. Three pieces matter for anyone running an AI coding agent:</p>
+      <ul>
+        <li><strong>Knowledge Catalog remote MCP</strong> — semantic metadata for every table, column, and warehouse surface, exposed through an MCP server.</li>
+        <li><strong>Core-engine MCP</strong> — BigQuery, Spanner, AlloyDB, and Cloud SQL each speak MCP directly. Your agent can query, mutate, and describe tables through a standard tool-call wire.</li>
+        <li><strong>Data Agent Kit</strong> — a portable set of MCP tools and IDE extensions that drop into VS Code, Claude Code, Gemini CLI, and Codex.</li>
+      </ul>
+      <p>Net effect: every schema is now a surface your agent can call. The blast radius of a single bad tool call just grew by the width of your cloud warehouse.</p>
+
+      <h2>Why IAM is not the answer</h2>
+      <p>IAM and VPC Service Controls gate <em>who</em> can call an operation. They do not gate <em>what you already taught your agent not to do.</em> An agent running under a service account with <code class="inline">bigquery.tables.delete</code> has permission to drop the table. IAM will not stop it. Your "don't drop prod tables" thumbs-down from last Tuesday lives in a lesson, not a role.</p>
+      <p>The role-based layer and the feedback-based layer are orthogonal. IAM protects the tenant. ThumbGate protects the session.</p>
+
+      <h2>What ThumbGate gates at the MCP boundary</h2>
+      <p>ThumbGate runs as an MCP server next to your agent and maintains a local SQLite lesson database at <code class="inline">.thumbgate/memory.sqlite</code>. Every thumbs-down becomes a row. On every subsequent tool call, ThumbGate's <code class="inline">gate_check</code> intercepts the proposed call and blocks known-bad patterns before execution. For Google's Agentic Data Cloud surfaces, the high-value patterns are:</p>
+      <ul>
+        <li><strong>BigQuery destructive DDL</strong> — <code class="inline">DROP TABLE</code>, <code class="inline">DROP DATASET</code>, <code class="inline">TRUNCATE TABLE</code>, <code class="inline">ALTER TABLE ... DROP COLUMN</code> on any dataset matching <code class="inline">prod_*</code>.</li>
+        <li><strong>BigQuery unscoped DML</strong> — <code class="inline">DELETE FROM &lt;table&gt; WHERE 1=1</code>, <code class="inline">UPDATE</code> without a <code class="inline">WHERE</code>, any mutation whose predicate did not match the previous <code class="inline">SELECT COUNT(*)</code>.</li>
+        <li><strong>Spanner schema mutations</strong> — <code class="inline">DROP TABLE</code>, <code class="inline">DROP INDEX</code>, schema change DDL on labeled-prod instances.</li>
+        <li><strong>AlloyDB / Cloud SQL</strong> — <code class="inline">TRUNCATE</code>, unscoped <code class="inline">DELETE</code>, extension drops, <code class="inline">gcloud sql instances delete</code>, <code class="inline">gcloud sql instances patch ... --no-backup</code>.</li>
+        <li><strong>IAM escalation</strong> — <code class="inline">gcloud projects add-iam-policy-binding</code> granting <code class="inline">roles/owner</code> or <code class="inline">roles/iam.serviceAccountTokenCreator</code> from an agent session.</li>
+      </ul>
+
+      <h2>Install alongside your Google Cloud agent</h2>
+      <p>The Data Agent Kit ships into Claude Code, Codex, Gemini CLI, and VS Code — every one of those is a first-class ThumbGate-supported agent. One install per agent:</p>
+      <pre><code># Claude Code (most common path for BigQuery work)
+npx thumbgate init --agent claude-code
+
+# Codex
+npx thumbgate init --agent codex
+
+# Gemini CLI
+npx thumbgate init --agent gemini-cli</code></pre>
+      <p>The installer writes the MCP server config, wires the PreToolUse hook, creates <code class="inline">.thumbgate/memory.sqlite</code>, and prints every file it touched so you can roll back.</p>
+
+      <h2>Teach it a BigQuery lesson</h2>
+      <p>The first time your agent proposes <code class="inline">DROP TABLE prod_events</code>, capture the thumbs-down:</p>
+      <pre><code>npx thumbgate capture \
+  --feedback=down \
+  --context="agent proposed DROP TABLE prod_events during migration rewrite" \
+  --what-went-wrong="destructive DDL on a prod BigQuery table" \
+  --what-to-change="require explicit confirmation before any DROP on prod_* datasets" \
+  --tags="bigquery,ddl,prod"</code></pre>
+      <p>Every future agent session — Claude Code, Codex, Gemini CLI, tomorrow morning's autopilot run — now checks this lesson against proposed tool calls before firing them.</p>
+
+      <h2>Knowledge Catalog vs. ThumbGate memory</h2>
+      <p>Google's Knowledge Catalog and the Agent Platform Memory Bank are different memory classes from ThumbGate's lesson DB:</p>
+      <ul>
+        <li><strong>Knowledge Catalog</strong> — semantic metadata about your data. "This column is PII, this table holds transactions."</li>
+        <li><strong>Memory Bank</strong> — conversational recall for the agent. "The user prefers Python over SQL."</li>
+        <li><strong>ThumbGate lesson DB</strong> — tool-call behavior memory. "Never <code class="inline">DROP TABLE</code> on prod after last Tuesday's thumbs-down."</li>
+      </ul>
+      <p>All three coexist. None replaces the others.</p>
+
+      <a class="cta" href="https://github.com/IgorGanapolsky/ThumbGate">Install ThumbGate →</a>
+
+      <h2>FAQ</h2>
+      <h3>Does ThumbGate need a separate "Google" adapter?</h3>
+      <p>No. The Data Agent Kit drops into Claude Code, Codex, Gemini CLI, and VS Code, all of which are first-class ThumbGate-supported agents. Install ThumbGate against your CLI of choice and the gate runs against every MCP call — including the ones Google just added.</p>
+
+      <h3>Does the gate add latency on BigQuery queries?</h3>
+      <p>The gate reads a local SQLite row and runs a pattern match. Typical overhead is under 5 ms per proposed tool call, measured against an empty warm cache. Your BigQuery query itself is still bounded by Google's SLA, not ours.</p>
+
+      <h3>What happens on an autopilot / scheduled run?</h3>
+      <p>The gate runs on every tool call regardless of origin. Whether Claude Code fired it from your terminal, an autopilot job triggered it at 9am, or Gemini CLI ran it from a CI hook — the PreToolUse hook still checks the lesson DB first.</p>
+
+      <h3>Does ThumbGate send my query text to any external service?</h3>
+      <p>No. The lesson DB is local SQLite. The gate check is local. No outbound network call is required for enforcement.</p>
+
+      <h3>Can I use ThumbGate with Google's Agent Platform (managed agents)?</h3>
+      <p>ThumbGate gates tool calls at the agent process that speaks MCP. For managed Agent Platform agents that run inside Google, the equivalent enforcement lives in IAM and VPC Service Controls. ThumbGate is the local-development and self-hosted companion — run it wherever your agent's process is under your control.</p>
+    </article>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>ThumbGate — pre-action gates for AI coding agents. <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> · <a href="/">Home</a></p>
+    </div>
+  </footer>
+</body>
+</html>
