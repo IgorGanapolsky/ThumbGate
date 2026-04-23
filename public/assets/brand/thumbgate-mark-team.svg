@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">ThumbGate Team mark</title>
+  <desc id="desc">ThumbGate TG gate monogram with a violet Team badge and three stacked member glyphs.</desc>
+  <defs>
+    <linearGradient id="tg-frame-team" x1="96" y1="96" x2="416" y2="416" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8cf5d1"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+    <linearGradient id="team-badge" x1="296" y1="40" x2="472" y2="136" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#a78bfa"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#061015"/>
+  <rect x="78" y="78" width="356" height="356" rx="84" fill="#0b1820" stroke="url(#tg-frame-team)" stroke-width="18"/>
+  <path d="M146 354V192c0-36 29-65 65-65h90c36 0 65 29 65 65v162" fill="none" stroke="#8cf5d1" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="256" y="310" text-anchor="middle" fill="#e7fbff" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Arial, sans-serif" font-size="132" font-weight="900" letter-spacing="-8">TG</text>
+  <rect x="140" y="344" width="232" height="28" rx="14" fill="#22d3ee"/>
+  <g transform="translate(296 40)">
+    <rect x="0" y="0" width="176" height="84" rx="42" fill="url(#team-badge)"/>
+    <circle cx="34" cy="42" r="12" fill="#ede9fe"/>
+    <circle cx="58" cy="42" r="12" fill="#ede9fe"/>
+    <circle cx="82" cy="42" r="12" fill="#ede9fe"/>
+    <text x="130" y="54" text-anchor="middle" fill="#1e1033" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Arial, sans-serif" font-size="28" font-weight="900" letter-spacing="2">TEAM</text>
+  </g>
+</svg>
