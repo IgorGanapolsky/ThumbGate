@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
+const { buildAwsAccessKeyId } = require('../scripts/secret-fixture-tokens');
 
 const {
   analyzeCoverage,
@@ -167,7 +168,7 @@ test('analyzeCoverage reports exercised and uncovered constraints', () => {
   const specs = [validateSpec(TEST_SPEC)];
   const probes = [
     createProbe('fp', { command: 'git push --force origin main' }, 'dangerous'),
-    createProbe('key', { content: 'AKIAIOSFODNN7EXAMPLE' }, 'dangerous'),
+    createProbe('key', { content: buildAwsAccessKeyId() }, 'dangerous'),
   ];
 
   const coverage = analyzeCoverage(specs, probes);
@@ -181,7 +182,7 @@ test('analyzeCoverage returns 100% when all constraints exercised', () => {
   const specs = [validateSpec(TEST_SPEC)];
   const probes = [
     createProbe('fp', { command: 'git push --force origin main' }, 'dangerous'),
-    createProbe('key', { content: 'AKIAIOSFODNN7EXAMPLE' }, 'dangerous'),
+    createProbe('key', { content: buildAwsAccessKeyId() }, 'dangerous'),
     createProbe('drop', { command: 'DROP TABLE users' }, 'dangerous'),
   ];
 
