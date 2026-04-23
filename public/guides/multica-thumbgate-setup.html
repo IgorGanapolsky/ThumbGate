@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multica + ThumbGate: Pre-Action Gates for Self-Hosted Agent Autopilot</title>
+  <meta name="description" content="Multica runs Claude Code / OpenCode / Code CLI as scheduled jobs on a self-hosted VPS. Autopilot magnifies tool-call mistakes. ThumbGate adds pre-action gates at the tool-call boundary with a local SQLite lesson DB on the same VPS." />
+  <meta property="og:title" content="Multica + ThumbGate: Pre-Action Gates for Self-Hosted Agent Autopilot" />
+  <meta property="og:description" content="Multica runs Claude Code / OpenCode / Code CLI as scheduled jobs on a self-hosted VPS. Autopilot magnifies tool-call mistakes. ThumbGate adds pre-action gates at the tool-call boundary with a local SQLite lesson DB on the same VPS." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/guides/multica-thumbgate-setup" />
+  <link rel="canonical" href="https://thumbgate.ai/guides/multica-thumbgate-setup" />
+  <link rel="llm-context" href="/public/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Multica + ThumbGate: Pre-Action Gates for Self-Hosted Agent Autopilot",
+    "description": "Multica runs Claude Code / OpenCode / Code CLI as scheduled jobs on a self-hosted VPS. Autopilot magnifies tool-call mistakes. ThumbGate adds pre-action gates at the tool-call boundary with a local SQLite lesson DB on the same VPS.",
+    "author": { "@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky" },
+    "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+    "datePublished": "2026-04-22",
+    "dateModified": "2026-04-22",
+    "mainEntityOfPage": "https://thumbgate.ai/guides/multica-thumbgate-setup"
+  }
+  </script>
+  <style>
+    :root { --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #161618; --line: #222225; --text: #e8e8ec; --muted: #8b8b96; --cyan: #22d3ee; --green: #4ade80; --red: #f87171; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+    a { color: var(--cyan); text-decoration: none; } a:hover { text-decoration: underline; }
+    .container { max-width: 820px; margin: 0 auto; padding: 0 24px; }
+    .topbar { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); background: rgba(10,10,11,0.88); border-bottom: 1px solid var(--line); }
+    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; }
+    .brand { font-weight: 700; color: var(--text); text-decoration: none; }
+    h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.15; margin: 40px 0 16px; }
+    h2 { font-size: 24px; margin: 36px 0 12px; color: var(--cyan); }
+    h3 { font-size: 18px; margin: 24px 0 8px; }
+    p, li { font-size: 17px; color: var(--text); }
+    .muted { color: var(--muted); }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; }
+    pre { background: var(--bg-card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow-x: auto; }
+    code.inline { background: var(--bg-card); padding: 2px 6px; border-radius: 4px; color: var(--cyan); }
+    .eyebrow { display: inline-block; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(34,211,238,0.22); background: rgba(34,211,238,0.1); color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 700; }
+    .cta { display: inline-block; background: var(--cyan); color: #000; padding: 14px 22px; border-radius: 10px; font-weight: 700; margin: 24px 0; }
+    article { padding: 24px 0 80px; }
+    footer { border-top: 1px solid var(--line); padding: 32px 0; color: var(--muted); font-size: 14px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <a class="brand" href="/">ThumbGate</a>
+      <nav><a href="/guides/">Guides</a> · <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a></nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <article>
+      <span class="eyebrow">Setup Guide</span>
+      <h1>Multica + ThumbGate: Pre-Action Gates for Self-Hosted Agent Autopilot</h1>
+      <p class="muted">Multica gives your AI agent a VPS, root shell, and a scheduled cron. The quiet risk: autopilot magnifies tool-call mistakes. This guide shows how to drop ThumbGate in front of your Multica-hosted agent so the wrong pattern never runs twice — much less every morning at 9am.</p>
+
+      <h2>Why Multica needs a guard layer</h2>
+      <p>Multica is self-hosted agent orchestration: Docker, Postgres, a kanban UI, and CLI agents (Claude Code, OpenCode, Code CLI) running as jobs on your VPS. Autopilot schedules recurring work — "every day at 9am, fetch these RSS feeds, pick the 10 best articles, draft a YouTube video."</p>
+      <p>That is powerful, and it is exactly where tool-call mistakes get expensive:</p>
+      <ul>
+        <li>An agent that force-pushes once is a cleanup.</li>
+        <li>An agent that force-pushes every morning because a scheduled job hits the same pattern is a production incident on a cron.</li>
+        <li>Prompt rules (<code class="inline">CLAUDE.md</code>, <code class="inline">.cursorrules</code>) don't survive this. The context window rolls, autopilot fires fresh context, the bad pattern repeats.</li>
+      </ul>
+
+      <h2>What ThumbGate adds</h2>
+      <p>ThumbGate is the tool-call-boundary enforcement layer. It runs as an MCP server on the same VPS as your Multica-hosted agent and maintains a local SQLite lesson database at <code class="inline">.thumbgate/memory.sqlite</code>. Every thumbs-down becomes a row. On every subsequent tool call, ThumbGate checks the proposed call against the DB and blocks known-bad patterns — <code class="inline">git push --force</code>, <code class="inline">rm -rf</code>, <code class="inline">curl ... | sh</code>, cloud mutations, writes to <code class="inline">.env</code> and <code class="inline">.git/</code> — before the command executes.</p>
+      <p>No cloud service, no account, no vendor lock-in. The lesson DB lives next to the agent on your VPS.</p>
+
+      <h2>Install inside Multica</h2>
+      <p>There is no <code class="inline">--agent multica</code> flag because Multica is a runtime, not an agent. Multica invokes Claude Code or OpenCode as the actual terminal agent. ThumbGate wraps the underlying CLI with the install commands you already know:</p>
+      <pre><code># On the VPS where Multica runs
+cd /path/to/project
+
+# For Claude Code (most common)
+npx thumbgate init --agent claude-code
+
+# Or OpenCode
+npx thumbgate init --agent opencode</code></pre>
+      <p>The installer writes the MCP server config, wires the PreToolUse hook, creates <code class="inline">.thumbgate/memory.sqlite</code>, and prints every file it touched so you can roll back.</p>
+
+      <h2>Verify it is working</h2>
+      <pre><code>npx thumbgate verify --agent claude-code</code></pre>
+      <p>Then in the Multica UI, create a test issue that asks the agent to run <code class="inline">git push --force</code> on a dummy branch. Inspect the execution history — the agent should hit the PreToolUse hook first and refuse. Capture the refusal with a thumbs-up; that teaches ThumbGate your enforcement preference persists.</p>
+
+      <h2>Autopilot + ThumbGate: the right mental model</h2>
+      <p>Multica's autopilot creates an Issue on each scheduled run, which the assigned agent picks up. The agent runs in a fresh session every time, which is precisely why prompt-level rules decay. ThumbGate's lesson DB is the piece of memory that survives the session reset:</p>
+      <ul>
+        <li>Session 1: autopilot fires, agent proposes bad pattern, you thumbs-down.</li>
+        <li>Session 2 (tomorrow 9am): autopilot fires, agent proposes the same pattern, PreToolUse hook reads the DB, blocks the call, agent tries a different approach — zero token spend on the repeat.</li>
+      </ul>
+
+      <h2>Local-only vs VPS tradeoffs</h2>
+      <p>Multica can run local-only or on a Tailscale-protected VPS. ThumbGate works identically in both:</p>
+      <ul>
+        <li><strong>Local-only Multica:</strong> <code class="inline">.thumbgate/memory.sqlite</code> lives on your dev machine. Best for sensitive repos.</li>
+        <li><strong>VPS Multica:</strong> the SQLite file lives on the same VPS as the agent. Backs up as part of your regular VPS snapshots. Survives Multica upgrades, OS rebuilds, even a Multica sunset.</li>
+      </ul>
+      <p>The lesson DB is portable by design. If Multica ever gets replaced by the next orchestrator, you copy one file and the institutional memory moves with you.</p>
+
+      <a class="cta" href="https://github.com/IgorGanapolsky/ThumbGate">Install ThumbGate →</a>
+
+      <h2>FAQ</h2>
+      <h3>Do I need a separate Multica adapter?</h3>
+      <p>No. Multica invokes Claude Code or OpenCode as subprocesses. Both are first-class ThumbGate-supported agents.</p>
+
+      <h3>Does ThumbGate work with Multica's "Talk directly to agent" mode?</h3>
+      <p>Yes. The PreToolUse hook runs on every tool call, regardless of whether the call originated from an issue, an autopilot run, or direct chat.</p>
+
+      <h3>What happens if the ThumbGate MCP server is down?</h3>
+      <p>The PreToolUse hook fails closed by default — tool calls that can't reach the gate are blocked. You can relax to fail-open via <code class="inline">.thumbgate/config.json</code> if your workflow prefers availability over strictness.</p>
+
+      <h3>Does thumbsing down in Multica's UI talk to ThumbGate?</h3>
+      <p>Not directly. Multica's issue statuses ("In review") are workflow signals, not tool-call feedback. Capture ThumbGate feedback via <code class="inline">npx thumbgate capture --feedback=down --context "..."</code> in the agent's shell. Future work: a Multica webhook that forwards issue-close reasons as ThumbGate feedback.</p>
+    </article>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>ThumbGate — pre-action gates for AI coding agents. <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> · <a href="/">Home</a></p>
+    </div>
+  </footer>
+</body>
+</html>
