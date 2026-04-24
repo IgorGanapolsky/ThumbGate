@@ -13,6 +13,8 @@ This page remains the canonical copy-paste submission packet for updating the GP
 
 > **ACTION REQUIRED (operator):** the live GPT listing currently shows earlier copy. Sync by opening https://chat.openai.com/gpts/editor → ThumbGate → Configure, and pasting the sections below into Name, Description, Instructions, and Conversation Starters. A publish bump is required for the updated copy to show in Explore GPTs.
 
+Live repair audit: `docs/chatgpt-live-audit-2026-04-24.md` records the current published GPT drift: empty profile image metadata, built-in `ember` emoji/theme state, stale Action instructions, and feedback capture behavior consistent with a missing or stale GPT Builder Bearer secret.
+
 ---
 
 ## GPT Name
@@ -70,6 +72,9 @@ User experience rules:
 - Sell outcomes before infrastructure: prevent expensive AI mistakes, make AI stop repeating mistakes, and turn a smart assistant into a reliable operator.
 - Be precise about scope: this GPT provides advice, checkpointing, and memory capture; hard blocking applies to actions routed through ThumbGate locally, in CI, or through the decision endpoint.
 - Confirm every saved lesson with the exact future behavior it changes.
+- Never say "I saved this", "I'll remember this", "I'll keep doing this", or "I can still apply it going forward" unless the `captureFeedback` action returned a successful promoted/accepted result.
+- If `captureFeedback` fails with `401`, `403`, `5xx`, timeout, missing action, or any setup/auth error, say exactly: "Not saved in ThumbGate yet." Then state the setup failure in one sentence and give the owner fix: update the GPT Builder Action authentication to API Key -> Bearer with the raw `THUMBGATE_API_KEY`, re-import `https://thumbgate-production.up.railway.app/openapi.yaml`, and retest `captureFeedback`.
+- Do not ask the user whether to turn failed feedback into a hard rule after a save failure. The only next step is repair the Action setup or retry capture after the Action is healthy.
 - Only show feedback IDs when the user asks for technical details or is configuring developer Actions.
 - Keep confirmations short. The product feeling is: one signal becomes one remembered rule.
 
@@ -231,7 +236,19 @@ components:
 
 ## Profile Image Suggestion
 
-A simple icon: blue feedback loop arrow (circular) with a thumbs-up/thumbs-down overlay. Or use the GitHub social preview image from the repo.
+Use the canonical ThumbGate GPT avatar:
+
+```
+public/assets/brand/thumbgate-icon-512.png
+```
+
+Expected SHA-256:
+
+```
+6f0290f7fe50de9a82c18be2299deafba4c686df46b3b5309e363a7d589d89dc
+```
+
+This is the dark rounded-square TG gate monogram. Do not use `docs/logo-400x400.png`, `.claude-plugin/bundle/icon.png`, a generic cube, emoji thumbs, or a generated image.
 
 ---
 
@@ -251,8 +268,9 @@ https://thumbgate-production.up.railway.app/privacy
 - [ ] Conversation starters added
 - [ ] OpenAPI schema imported (Actions tab)
 - [ ] API key authentication configured
+- [ ] `captureFeedback` tested after publish settings change; it returns `200 OK` with `accepted: true`
 - [ ] Category set to Programming / Productivity
-- [ ] Profile image uploaded
+- [ ] Profile image uploaded from `public/assets/brand/thumbgate-icon-512.png` and visually checked in ChatGPT mobile/desktop
 - [ ] Privacy policy URL added
 - [ ] Test: send a capture feedback message and verify API call succeeds
 - [ ] Submit for review

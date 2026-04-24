@@ -9,7 +9,9 @@ const markPath = path.join(repoRoot, 'public', 'assets', 'brand', 'thumbgate-mar
 // Transparent full-bleed mark — correct for site-header inline use next to the wordmark
 const inlineMarkPath = path.join(repoRoot, 'public', 'assets', 'brand', 'thumbgate-mark-inline.svg');
 const faviconPngPath = path.join(repoRoot, 'public', 'thumbgate-icon.png');
+const canonicalGptIconPath = path.join(repoRoot, 'public', 'assets', 'brand', 'thumbgate-icon-512.png');
 const ogPngPath = path.join(repoRoot, 'public', 'og.png');
+const CANONICAL_GPT_ICON_SHA256 = '6f0290f7fe50de9a82c18be2299deafba4c686df46b3b5309e363a7d589d89dc';
 
 test('ThumbGate app-icon mark SVG exists at /assets/brand (for apple-touch-icon / PWA)', () => {
   assert.equal(fs.existsSync(markPath), true, 'public/assets/brand/thumbgate-mark.svg must exist');
@@ -60,6 +62,38 @@ test('ThumbGate favicon PNG exists for crisp tab and bookmark rendering', () => 
   assert.equal(buf[1], 0x50);
   assert.equal(buf[2], 0x4e);
   assert.equal(buf[3], 0x47);
+});
+
+test('ChatGPT GPT submission uses the canonical TG gate monogram avatar', () => {
+  assert.equal(
+    fs.existsSync(canonicalGptIconPath),
+    true,
+    'public/assets/brand/thumbgate-icon-512.png must exist for the GPT avatar',
+  );
+
+  const crypto = require('node:crypto');
+  const canonicalIcon = fs.readFileSync(canonicalGptIconPath);
+  assert.equal(crypto.createHash('sha256').update(canonicalIcon).digest('hex'), CANONICAL_GPT_ICON_SHA256);
+
+  const publicIcon = fs.readFileSync(faviconPngPath);
+  assert.equal(
+    crypto.createHash('sha256').update(publicIcon).digest('hex'),
+    CANONICAL_GPT_ICON_SHA256,
+    'public/thumbgate-icon.png must stay byte-identical to the canonical GPT avatar',
+  );
+
+  const chatgptInstructions = fs.readFileSync(path.join(repoRoot, 'docs', 'chatgpt-gpt-instructions.md'), 'utf8');
+  const gptStoreSubmission = fs.readFileSync(path.join(repoRoot, 'docs', 'gpt-store-submission.md'), 'utf8');
+  const chatgptInstall = fs.readFileSync(path.join(repoRoot, 'adapters', 'chatgpt', 'INSTALL.md'), 'utf8');
+
+  for (const content of [chatgptInstructions, gptStoreSubmission, chatgptInstall]) {
+    assert.match(content, /public\/assets\/brand\/thumbgate-icon-512\.png/);
+    assert.match(content, new RegExp(CANONICAL_GPT_ICON_SHA256));
+    assert.match(content, /generic cube|emoji thumbs|generated image|auto-generated ChatGPT image/i);
+  }
+
+  assert.doesNotMatch(gptStoreSubmission, /blue feedback loop arrow \(circular\)/i);
+  assert.doesNotMatch(gptStoreSubmission, /GitHub social preview image/i);
 });
 
 test('ThumbGate og-image PNG exists for link previews', () => {
