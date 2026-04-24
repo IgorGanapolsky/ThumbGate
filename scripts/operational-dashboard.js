@@ -135,10 +135,12 @@ async function getOperationalDashboard(options = {}) {
     // Non-auth failure — local fallback is still useful for dev workflows,
     // but tag the source so downstream renderers do not mistake it for
     // verified hosted truth.
+    //
+    // Log only the status code (trusted) — the full reason contains upstream
+    // response text and is only returned structurally via fallbackReason.
     console.warn(
       `[operational-dashboard] Hosted dashboard unreachable (status=${status ?? 'network'}); ` +
-      `falling back to LOCAL-UNVERIFIED state. Numbers below may not reflect ` +
-      `actual Stripe revenue. Reason: ${reason}`
+      `falling back to LOCAL-UNVERIFIED state. Numbers below may not reflect actual Stripe revenue.`
     );
     return {
       source: 'local-unverified',
