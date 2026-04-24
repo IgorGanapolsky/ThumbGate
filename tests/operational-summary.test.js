@@ -10,6 +10,7 @@ const {
   resolveHostedSummaryConfig,
   shouldPreferHostedSummary,
   fetchHostedBillingSummary,
+  getOperationalBillingSummary,
 } = require('../scripts/operational-summary');
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -175,6 +176,97 @@ describe('operational-summary', () => {
           () => fetchHostedBillingSummary({}, { apiBaseUrl: null, apiKey: 'tg_op_k' }),
           (err) => err.code === 'hosted_summary_unconfigured'
         );
+      });
+    });
+  });
+
+  // ── getOperationalBillingSummary auth-failure contract ──────────────────────
+  //
+  // Regression test for the silent-lie bug: prior to 2026-04-24, a 401 from
+  // the hosted summary endpoint was swallowed into a `source: 'local'` empty
+  // summary, which reports $0.00 even when Stripe has real paid revenue.
+  // The contract is now: 401/403 must throw loudly; other failures fall back
+  // to local but tag `source: 'local-unverified'` so downstream surfaces can
+  // distinguish verified hosted data from unverified fallback.
+
+  describe('getOperationalBillingSummary', () => {
+    const ORIGINAL_FETCH = global.fetch;
+
+    after(() => {
+      global.fetch = ORIGINAL_FETCH;
+    });
+
+    it('throws hosted_summary_unauthorized on 401 instead of silently returning $0', async () => {
+      global.fetch = async () => ({
+        ok: false,
+        status: 401,
+        text: async () => '{"detail":"A valid API key is required to access this endpoint."}',
+      });
+      await withEnv({
+        THUMBGATE_METRICS_SOURCE: undefined,
+        THUMBGATE_OPERATOR_KEY: 'tg_op_stale',
+        THUMBGATE_BILLING_API_BASE_URL: 'https://fake.example.com',
+      }, async () => {
+        await assert.rejects(
+          () => getOperationalBillingSummary({ window: 'lifetime' }),
+          (err) => {
+            assert.strictEqual(err.code, 'hosted_summary_unauthorized');
+            assert.strictEqual(err.status, 401);
+            assert.match(err.message, /THUMBGATE_OPERATOR_KEY/);
+            assert.match(err.message, /operator\.json/);
+            return true;
+          }
+        );
+      });
+    });
+
+    it('also throws on 403', async () => {
+      global.fetch = async () => ({
+        ok: false,
+        status: 403,
+        text: async () => '',
+      });
+      await withEnv({
+        THUMBGATE_METRICS_SOURCE: undefined,
+        THUMBGATE_OPERATOR_KEY: 'tg_op_forbidden',
+        THUMBGATE_BILLING_API_BASE_URL: 'https://fake.example.com',
+      }, async () => {
+        await assert.rejects(
+          () => getOperationalBillingSummary({ window: 'lifetime' }),
+          (err) => err.code === 'hosted_summary_unauthorized' && err.status === 403
+        );
+      });
+    });
+
+    it('falls back to local-unverified on 503 (non-auth failure)', async () => {
+      global.fetch = async () => ({
+        ok: false,
+        status: 503,
+        text: async () => 'Service Unavailable',
+      });
+      await withEnv({
+        THUMBGATE_METRICS_SOURCE: undefined,
+        THUMBGATE_OPERATOR_KEY: 'tg_op_ok',
+        THUMBGATE_BILLING_API_BASE_URL: 'https://fake.example.com',
+      }, async () => {
+        const result = await getOperationalBillingSummary({ window: 'lifetime' });
+        assert.strictEqual(result.source, 'local-unverified');
+        assert.strictEqual(result.hostedStatus, 503);
+        assert.ok(result.fallbackReason);
+        assert.ok(result.summary, 'summary object should still be returned from local fallback');
+      });
+    });
+
+    it('falls back to local-unverified on network error (no status)', async () => {
+      global.fetch = async () => { throw new Error('ECONNREFUSED'); };
+      await withEnv({
+        THUMBGATE_METRICS_SOURCE: undefined,
+        THUMBGATE_OPERATOR_KEY: 'tg_op_ok',
+        THUMBGATE_BILLING_API_BASE_URL: 'https://fake.example.com',
+      }, async () => {
+        const result = await getOperationalBillingSummary({ window: 'lifetime' });
+        assert.strictEqual(result.source, 'local-unverified');
+        assert.strictEqual(result.hostedStatus, null);
       });
     });
   });
