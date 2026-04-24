@@ -2998,6 +2998,41 @@ test('decision endpoints persist evaluations, outcomes, and live metrics', async
   assert.ok(evaluation.decisionControl);
   assert.ok(['auto_execute', 'checkpoint_required', 'blocked'].includes(evaluation.decisionControl.executionMode));
 
+  const providerEvaluateRes = await fetch(apiUrl('/v1/decisions/evaluate'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...authHeader },
+    body: JSON.stringify({
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-5',
+      content: [{
+        type: 'tool_use',
+        id: 'toolu_api_budget',
+        name: 'Bash',
+        input: {
+          command: 'npm test',
+          changedFiles: ['tests/api-server.test.js'],
+        },
+      }],
+      usage: {
+        input_tokens: 9000,
+        output_tokens: 100,
+      },
+      budget: {
+        maxTokensPerAction: 4000,
+      },
+      repoPath: process.cwd(),
+    }),
+  });
+
+  assert.equal(providerEvaluateRes.status, 200);
+  const providerEvaluation = await providerEvaluateRes.json();
+  assert.equal(providerEvaluation.toolName, 'Bash');
+  assert.equal(providerEvaluation.normalizedAction.provider, 'anthropic');
+  assert.equal(providerEvaluation.normalizedAction.model, 'claude-sonnet-4-5');
+  assert.equal(providerEvaluation.costControl.mode, 'block');
+  assert.equal(providerEvaluation.decision, 'deny');
+  assert.equal(providerEvaluation.decisionControl.executionMode, 'blocked');
+
   const outcomeRes = await fetch(apiUrl('/v1/decisions/outcome'), {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...authHeader },

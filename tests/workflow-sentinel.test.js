@@ -19,6 +19,10 @@ const {
 const {
   callTool,
 } = require('../adapters/mcp/server-stdio');
+const {
+  buildCostControl,
+  normalizeProviderAction,
+} = require('../scripts/provider-action-normalizer');
 
 function writeJson(filePath, value) {
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2) + '\n');
@@ -155,6 +159,165 @@ test('workflow sentinel treats explicit changed files as authoritative for PR ha
   assert.deepEqual(report.blastRadius.affectedFiles, ['README.md']);
   assert.equal(report.decisionControl.executionMode, 'auto_execute');
   assert.equal(report.decisionControl.decisionOwner, 'agent');
+});
+
+test('provider action normalizer maps Anthropic tool_use blocks into sentinel actions', () => {
+  const normalized = normalizeProviderAction({
+    provider: 'anthropic',
+    model: 'claude-sonnet-4-5',
+    content: [{
+      type: 'tool_use',
+      id: 'toolu_01',
+      name: 'Bash',
+      input: {
+        command: 'npm test',
+        changedFiles: ['tests/workflow-sentinel.test.js'],
+      },
+    }],
+    usage: {
+      input_tokens: 1000,
+      output_tokens: 250,
+    },
+  });
+
+  assert.equal(normalized.provider, 'anthropic');
+  assert.equal(normalized.model, 'claude-sonnet-4-5');
+  assert.equal(normalized.toolName, 'Bash');
+  assert.equal(normalized.command, 'npm test');
+  assert.equal(normalized.intent, 'verify');
+  assert.deepEqual(normalized.affectedFiles, ['tests/workflow-sentinel.test.js']);
+  assert.equal(normalized.usage.totalTokens, 1250);
+  assert.equal(normalized.rawShape.hasAnthropicToolUse, true);
+});
+
+test('provider action normalizer maps MCP tools/call into sentinel actions', () => {
+  const normalized = normalizeProviderAction({
+    method: 'tools/call',
+    params: {
+      server: 'filesystem',
+      name: 'run_command',
+      arguments: {
+        command: 'git push origin codex/mcp-control-plane',
+        changed_files: ['scripts/provider-action-normalizer.js'],
+      },
+    },
+  });
+
+  assert.equal(normalized.provider, 'mcp');
+  assert.equal(normalized.mcpServer, 'filesystem');
+  assert.equal(normalized.toolName, 'run_command');
+  assert.equal(normalized.actionType, 'shell.exec');
+  assert.equal(normalized.intent, 'release-workflow');
+  assert.deepEqual(normalized.affectedFiles, ['scripts/provider-action-normalizer.js']);
+  assert.equal(normalized.rawShape.hasMcpToolCall, true);
+});
+
+test('provider action normalizer parses OpenAI function tool calls', () => {
+  const normalized = normalizeProviderAction({
+    provider: 'openai',
+    toolCall: {
+      id: 'call_123',
+      function: {
+        name: 'Bash',
+        arguments: JSON.stringify({
+          command: 'npm test',
+          changedFiles: ['tests/workflow-sentinel.test.js'],
+        }),
+      },
+    },
+    usage: {
+      prompt_tokens: 1200,
+      completion_tokens: 200,
+    },
+  });
+
+  assert.equal(normalized.provider, 'openai');
+  assert.equal(normalized.providerCallId, 'call_123');
+  assert.equal(normalized.toolName, 'Bash');
+  assert.equal(normalized.command, 'npm test');
+  assert.deepEqual(normalized.affectedFiles, ['tests/workflow-sentinel.test.js']);
+  assert.equal(normalized.usage.totalTokens, 1400);
+  assert.equal(normalized.rawShape.hasOpenAiToolCall, true);
+});
+
+test('provider action normalizer preserves MCP resource and prompt primitives', () => {
+  const resource = normalizeProviderAction({
+    method: 'resources/read',
+    params: {
+      server: 'docs',
+      uri: 'file:///workspace/README.md',
+    },
+  });
+  const prompt = normalizeProviderAction({
+    method: 'prompts/get',
+    params: {
+      server: 'playbooks',
+      name: 'format_document',
+      arguments: {
+        style: 'concise',
+      },
+    },
+  });
+
+  assert.equal(resource.provider, 'mcp');
+  assert.equal(resource.mcpPrimitive, 'resource');
+  assert.equal(resource.actionType, 'context.read');
+  assert.equal(resource.intent, 'read-context');
+  assert.deepEqual(resource.toolInput, { uri: 'file:///workspace/README.md' });
+  assert.equal(prompt.provider, 'mcp');
+  assert.equal(prompt.mcpPrimitive, 'prompt');
+  assert.equal(prompt.actionType, 'prompt.get');
+  assert.equal(prompt.intent, 'load-prompt-template');
+  assert.deepEqual(prompt.toolInput, { style: 'concise' });
+});
+
+test('workflow sentinel denies provider actions that exceed explicit model budget', () => {
+  const normalized = normalizeProviderAction({
+    provider: 'anthropic',
+    content: [{
+      type: 'tool_use',
+      id: 'toolu_budget',
+      name: 'Bash',
+      input: {
+        command: 'npm test',
+        changedFiles: ['tests/workflow-sentinel.test.js'],
+      },
+    }],
+    usage: {
+      input_tokens: 9000,
+      output_tokens: 500,
+    },
+  });
+  const costControl = buildCostControl(normalized, { maxTokensPerAction: 5000 });
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-provider-budget-'));
+  const report = evaluateWorkflowSentinel(normalized.toolName, {
+    repoPath: process.cwd(),
+  }, {
+    normalizedAction: normalized,
+    budget: { maxTokensPerAction: 5000 },
+    feedbackDir,
+    feedbackOptions: { feedbackDir },
+    governanceState: {
+      taskScope: {
+        summary: 'provider action budget test',
+        allowedPaths: ['tests/**'],
+        protectedPaths: [],
+      },
+      protectedApprovals: [],
+      branchGovernance: {
+        baseBranch: 'main',
+        prRequired: true,
+      },
+    },
+  });
+
+  assert.equal(costControl.mode, 'block');
+  assert.equal(report.normalizedAction.provider, 'anthropic');
+  assert.equal(report.costControl.mode, 'block');
+  assert.equal(report.decision, 'deny');
+  assert.equal(report.decisionControl.executionMode, 'blocked');
+  assert.ok(report.remediations.some((entry) => entry.id === 'reduce_model_budget'));
+  assert.match(report.evidence.join('\n'), /Cost control block/);
 });
 
 test('evaluateGatesAsync returns workflow sentinel warning when no static gate matches', async () => {

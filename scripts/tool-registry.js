@@ -773,9 +773,38 @@ const TOOLS = [
     description: 'Predict pre-action workflow risk, blast radius, and remediations before a tool call executes.',
     inputSchema: {
       type: 'object',
-      required: ['toolName'],
       properties: {
-        toolName: { type: 'string', description: 'Tool being assessed, such as Bash, Edit, or Write' },
+        toolName: { type: 'string', description: 'Tool being assessed, such as Bash, Edit, or Write. Optional when provider-native tool call payload is supplied.' },
+        provider: { type: 'string', description: 'Optional provider name, such as anthropic, openai, codex, cursor, gemini, or mcp' },
+        model: { type: 'string', description: 'Optional model name used for audit evidence and budget review' },
+        providerToolCall: {
+          type: 'object',
+          additionalProperties: true,
+          description: 'Provider-native tool call object, including Anthropic tool_use or OpenAI function/tool call shapes',
+        },
+        content: {
+          type: 'array',
+          items: { type: 'object', additionalProperties: true },
+          description: 'Provider-native message content blocks; Anthropic tool_use blocks are normalized automatically',
+        },
+        method: { type: 'string', description: 'Optional JSON-RPC/MCP method, such as tools/call' },
+        params: {
+          type: 'object',
+          additionalProperties: true,
+          description: 'Optional JSON-RPC/MCP params, including tools/call name and arguments, resources/read URI, or prompts/get template arguments',
+        },
+        usage: {
+          type: 'object',
+          additionalProperties: true,
+          description: 'Provider token/cost usage, such as input_tokens, output_tokens, or total_tokens',
+        },
+        tokenEstimate: { type: 'number', description: 'Estimated total tokens for this action when provider usage is unavailable' },
+        costUsd: { type: 'number', description: 'Estimated USD cost for this action when provider usage is unavailable' },
+        budget: {
+          type: 'object',
+          additionalProperties: true,
+          description: 'Optional per-action budget controls: maxTokensPerAction, remainingTokens, maxCostUsdPerAction, remainingCostUsd',
+        },
         command: { type: 'string', description: 'Optional shell command when toolName is Bash' },
         filePath: { type: 'string', description: 'Optional primary file path for edit-like tools' },
         changedFiles: {

@@ -144,7 +144,8 @@ test('scope control tools expose the task-scope and protected-approval workflow'
   assert.ok(setBranchTool.inputSchema.properties.releaseVersion, 'set_branch_governance should expose releaseVersion');
   assert.ok(approveTool.inputSchema.required.includes('pathGlobs'), 'approve_protected_action should require pathGlobs');
   assert.ok(integrityTool.inputSchema.properties.requirePrForReleaseSensitive, 'check_operational_integrity should expose release-sensitive enforcement');
-  assert.ok(sentinelTool.inputSchema.required.includes('toolName'), 'workflow_sentinel should require toolName');
+  assert.equal(sentinelTool.inputSchema.required, undefined, 'workflow_sentinel should allow provider-native tool calls without toolName');
+  assert.ok(sentinelTool.inputSchema.properties.providerToolCall, 'workflow_sentinel should expose provider-native tool calls');
   assert.ok(sentinelTool.inputSchema.properties.changedFiles, 'workflow_sentinel should expose changedFiles');
 });
 

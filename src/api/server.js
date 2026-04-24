@@ -138,6 +138,9 @@ const {
   evaluateWorkflowSentinel,
 } = require('../../scripts/workflow-sentinel');
 const {
+  normalizeProviderAction,
+} = require('../../scripts/provider-action-normalizer');
+const {
   recordDecisionEvaluation,
   recordDecisionOutcome,
   computeDecisionMetrics,
@@ -6216,26 +6219,60 @@ async function addContext(){
 
       if (req.method === 'POST' && pathname === '/v1/decisions/evaluate') {
         const body = await parseJsonBody(req);
-        if (!body.toolName) {
+        const normalizedRequestAction = normalizeProviderAction(body);
+        const hasProviderNativeAction = Boolean(
+          body.providerToolCall
+            || body.toolCall
+            || body.toolUse
+            || body.content
+            || body.mcp
+            || body.mcpToolCall
+            || body.method === 'tools/call'
+        );
+        if (!body.toolName && !hasProviderNativeAction) {
           sendProblem(res, {
             type: PROBLEM_TYPES.BAD_REQUEST,
             title: 'Bad Request',
             status: 400,
-            detail: 'toolName is required.',
+            detail: 'toolName or provider tool call is required.',
           });
           return;
         }
 
-        const report = evaluateWorkflowSentinel(body.toolName, {
+        const changedFiles = Array.isArray(body.changedFiles)
+          ? body.changedFiles
+          : normalizedRequestAction.affectedFiles;
+        const toolInput = {
           command: body.command,
           path: body.filePath,
-          changed_files: Array.isArray(body.changedFiles) ? body.changedFiles : [],
+          changed_files: changedFiles,
           repoPath: body.repoPath,
           baseBranch: body.baseBranch,
-        }, {
+          providerToolCall: body.providerToolCall,
+          toolCall: body.toolCall,
+          toolUse: body.toolUse,
+          content: body.content,
+          input: body.input,
+          arguments: body.arguments,
+          method: body.method,
+          params: body.params,
+          mcp: body.mcp,
+          mcpToolCall: body.mcpToolCall,
+          budget: body.budget,
+          usage: body.usage,
+        };
+
+        const report = evaluateWorkflowSentinel(normalizedRequestAction.toolName || body.toolName, toolInput, {
+          provider: body.provider,
+          model: body.model,
+          normalizedAction: normalizedRequestAction,
+          usage: body.usage,
+          tokenEstimate: body.tokenEstimate,
+          costUsd: body.costUsd,
+          budget: body.budget,
           repoPath: body.repoPath,
           baseBranch: body.baseBranch,
-          affectedFiles: Array.isArray(body.changedFiles) ? body.changedFiles : undefined,
+          affectedFiles: changedFiles.length > 0 ? changedFiles : undefined,
           requirePrForReleaseSensitive: body.requirePrForReleaseSensitive === true,
           requireVersionNotBehindBase: body.requireVersionNotBehindBase === true,
           governanceState: getScopeState(),
@@ -6243,15 +6280,17 @@ async function addContext(){
         });
         const evaluation = recordDecisionEvaluation(report, {
           source: 'api',
-          toolName: body.toolName,
+          toolName: report.toolName,
           toolInput: {
             command: body.command,
             filePath: body.filePath,
-            changedFiles: Array.isArray(body.changedFiles) ? body.changedFiles : [],
+            changedFiles,
             repoPath: body.repoPath,
             baseBranch: body.baseBranch,
+            normalizedAction: report.normalizedAction,
+            costControl: report.costControl,
           },
-          changedFiles: Array.isArray(body.changedFiles) ? body.changedFiles : [],
+          changedFiles,
         }, {
           feedbackDir: requestFeedbackDir,
         });

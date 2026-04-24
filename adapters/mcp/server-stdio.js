@@ -76,6 +76,9 @@ const {
 const {
   evaluateWorkflowSentinel,
 } = require('../../scripts/workflow-sentinel');
+const {
+  normalizeProviderAction,
+} = require('../../scripts/provider-action-normalizer');
 const { diagnoseFailure } = require('../../scripts/failure-diagnostics');
 const {
   analyzeCodeGraphImpact,
@@ -908,20 +911,43 @@ async function callToolInner(name, args) {
         branchGovernance: getBranchGovernanceState(),
       }));
     case 'workflow_sentinel':
-      return toTextResult(evaluateWorkflowSentinel(args.toolName, {
+      {
+        const normalizedAction = normalizeProviderAction(args);
+        const changedFiles = Array.isArray(args.changedFiles) ? args.changedFiles : normalizedAction.affectedFiles;
+        return toTextResult(evaluateWorkflowSentinel(normalizedAction.toolName || args.toolName, {
         command: args.command,
         path: args.filePath,
-        changedFiles: Array.isArray(args.changedFiles) ? args.changedFiles : [],
+        changedFiles,
         repoPath: args.repoPath,
         baseBranch: args.baseBranch,
+        providerToolCall: args.providerToolCall,
+        toolCall: args.toolCall,
+        toolUse: args.toolUse,
+        content: args.content,
+        input: args.input,
+        arguments: args.arguments,
+        method: args.method,
+        params: args.params,
+        mcp: args.mcp,
+        mcpToolCall: args.mcpToolCall,
+        budget: args.budget,
+        usage: args.usage,
       }, {
+        provider: args.provider,
+        model: args.model,
+        normalizedAction,
+        usage: args.usage,
+        tokenEstimate: args.tokenEstimate,
+        costUsd: args.costUsd,
+        budget: args.budget,
         repoPath: args.repoPath,
         baseBranch: args.baseBranch,
-        affectedFiles: Array.isArray(args.changedFiles) ? args.changedFiles : undefined,
+        affectedFiles: changedFiles.length > 0 ? changedFiles : undefined,
         requirePrForReleaseSensitive: args.requirePrForReleaseSensitive === true,
         requireVersionNotBehindBase: args.requireVersionNotBehindBase === true,
         governanceState: getScopeState(),
       }));
+      }
     case 'register_claim_gate':
       return toTextResult(registerClaimGate(args.claimPattern, args.requiredActions, args.message));
     case 'gate_stats':
