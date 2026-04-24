@@ -17,12 +17,26 @@ const COST_CLASS_SCORES = Object.freeze({
 
 function normalizeSlug(value, fallback = '') {
   if (value === undefined || value === null || value === '') return fallback;
-  const normalized = String(value)
-    .trim()
-    .toLowerCase()
-    .replaceAll(/[^a-z0-9]+/g, '-')
-    .replaceAll(/^-+/g, '')
-    .replaceAll(/-+$/g, '');
+  const source = String(value).trim().toLowerCase();
+  let normalized = '';
+  let previousWasDash = false;
+
+  for (const char of source) {
+    const isAlphaNumeric = (char >= 'a' && char <= 'z') || (char >= '0' && char <= '9');
+    if (isAlphaNumeric) {
+      normalized += char;
+      previousWasDash = false;
+      continue;
+    }
+    if (!previousWasDash && normalized) {
+      normalized += '-';
+      previousWasDash = true;
+    }
+  }
+
+  if (normalized.endsWith('-')) {
+    normalized = normalized.slice(0, -1);
+  }
   return normalized || fallback;
 }
 
@@ -188,15 +202,14 @@ function writeModelCandidatesReport(feedbackDir, options = {}) {
 }
 
 function renderModelCandidatesReport(report) {
-  const lines = [];
-  lines.push(
-    `# Managed Model Candidates — ${report.workload.label}`,
+  const lines = [
+    `# Managed Model Candidates - ${report.workload.label}`,
     '',
     report.workload.summary,
     '',
     `Catalog version: ${report.catalogVersion}`,
     `Candidates considered: ${report.considered}`,
-  );
+  ];
   if (report.filters.provider) lines.push(`Provider filter: ${report.filters.provider}`);
   if (report.filters.family) lines.push(`Family filter: ${report.filters.family}`);
   lines.push('');
@@ -206,24 +219,19 @@ function renderModelCandidatesReport(report) {
     return `${lines.join('\n')}\n`;
   }
 
-  report.recommended.forEach((candidate, index) => {
-    lines.push(
-      `${index + 1}. ${candidate.id}`,
-      `   Score: ${candidate.score}`,
-      `   Context window: ${candidate.contextWindow}`,
-      `   Cost class: ${candidate.costClass}`,
-      `   Matched strengths: ${candidate.matchedStrengths.join(', ') || 'none'}`,
-      `   Notes: ${candidate.notes}`,
-      '   Benchmark commands:',
-    );
-    candidate.benchmarkPlan.commands.forEach((entry) => {
-      lines.push(`   - ${entry.command}`);
-    });
-    lines.push(
-      `   Benchmark metrics: ${candidate.benchmarkPlan.metrics.join(', ')}`,
-      '',
-    );
-  });
+  const recommendationLines = report.recommended.flatMap((candidate, index) => [
+    `${index + 1}. ${candidate.id}`,
+    `   Score: ${candidate.score}`,
+    `   Context window: ${candidate.contextWindow}`,
+    `   Cost class: ${candidate.costClass}`,
+    `   Matched strengths: ${candidate.matchedStrengths.join(', ') || 'none'}`,
+    `   Notes: ${candidate.notes}`,
+    '   Benchmark commands:',
+    ...candidate.benchmarkPlan.commands.map((entry) => `   - ${entry.command}`),
+    `   Benchmark metrics: ${candidate.benchmarkPlan.metrics.join(', ')}`,
+    '',
+  ]);
+  lines.push(...recommendationLines);
 
   return `${lines.join('\n').trimEnd()}\n`;
 }
@@ -243,7 +251,7 @@ module.exports = {
   writeModelCandidatesReport,
 };
 
-if (require.main?.filename === __filename) {
+if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
   const report = buildModelCandidatesReport();
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
 }
