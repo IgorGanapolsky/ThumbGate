@@ -6,7 +6,7 @@
  * After a sequence of tool calls and feedback captures, produces a per-skill
  * quality score derived from timestamp-proximity correlation.
  *
- * Ported from Subway_RN_Demo/.claude/scripts/feedback/skill-quality-tracker.js
+ * Tracks per-skill quality from local feedback events.
  * PATH: PROJECT_ROOT = path.join(__dirname, '..') — 1 level up from scripts/
  */
 
@@ -59,7 +59,7 @@ async function loadFeedback(filePath) {
   for await (const line of rl) {
     const obj = parseLine(line);
     if (obj && obj.timestamp) {
-      // Support both 'feedback' (Subway) and 'signal' (ThumbGate) field names
+      // Support both legacy 'feedback' and current 'signal' field names.
       const feedbackVal = obj.feedback || obj.signal;
       if (feedbackVal) {
         // Normalize to 'positive'/'negative' regardless of source schema

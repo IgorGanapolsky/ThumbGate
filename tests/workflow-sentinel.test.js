@@ -72,9 +72,15 @@ test('workflow sentinel warns on multi-surface release-sensitive blast radius', 
   assert.equal(report.decisionControl.executionMode, 'checkpoint_required');
   assert.equal(report.decisionControl.decisionOwner, 'human');
   assert.equal(report.decisionControl.reversibility, 'one_way_door');
+  assert.equal(report.decisionControl.deliberation.required, true);
+  assert.equal(report.decisionControl.deliberation.mode, 'reason_then_consistency_check');
+  assert.equal(report.decisionControl.deliberation.consistencyCheck.required, true);
+  assert.equal(report.decisionControl.deliberation.consistencyCheck.variants.length, 3);
+  assert.equal(report.decisionControl.deliberation.consistencyCheck.onDisagreement, 'checkpoint_required');
   assert.ok(report.remediations.some((entry) => entry.id === 'split_blast_radius'));
   assert.match(report.reasoning.join('\n'), /Blast radius:/);
   assert.match(report.reasoning.join('\n'), /Decision control:/);
+  assert.match(report.reasoning.join('\n'), /Deliberation policy:/);
 });
 
 test('workflow sentinel denies recurring destructive pattern with high blast radius', () => {
@@ -159,6 +165,53 @@ test('workflow sentinel treats explicit changed files as authoritative for PR ha
   assert.deepEqual(report.blastRadius.affectedFiles, ['README.md']);
   assert.equal(report.decisionControl.executionMode, 'auto_execute');
   assert.equal(report.decisionControl.decisionOwner, 'agent');
+  assert.equal(report.decisionControl.deliberation.required, true);
+  assert.equal(report.decisionControl.deliberation.mode, 'reason_then_decide');
+  assert.equal(report.decisionControl.deliberation.consistencyCheck.required, false);
+});
+
+test('workflow sentinel blocks mismatched GitHub Actions release dispatch', () => {
+  const isolatedFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sentinel-fb-'));
+  const report = evaluateWorkflowSentinel('Bash', {
+    command: 'gh workflow run deploy-dev.yml --ref develop',
+    changed_files: ['mobile/app/build.gradle'],
+  }, {
+    repoPath: process.cwd(),
+    headSha: '1111111111111111111111111111111111111111',
+    feedbackDir: isolatedFeedbackDir,
+    feedbackOptions: { feedbackDir: isolatedFeedbackDir },
+    governanceState: {
+      taskScope: {
+        summary: 'Release mobile build.',
+        allowedPaths: ['mobile/**'],
+        protectedPaths: [],
+      },
+      protectedApprovals: [],
+      branchGovernance: {
+        branchName: 'release/mobile-2026-04-24',
+        baseBranch: 'main',
+        prRequired: true,
+        workflowDispatch: {
+          environment: 'release',
+          workflow: 'deploy-release.yml',
+          ref: 'main',
+          sha: '0000000000000000000000000000000000000000',
+          job: 'mobile-release',
+        },
+      },
+    },
+  });
+
+  assert.equal(report.decision, 'deny');
+  assert.equal(report.decisionControl.executionMode, 'blocked');
+  assert.equal(report.decisionControl.deliberation.mode, 'reason_then_consistency_check');
+  assert.equal(report.operationalIntegrity.commandInfo.isWorkflowRun, true);
+  assert.equal(report.operationalIntegrity.commandInfo.workflowName, 'deploy-dev.yml');
+  assert.ok(report.operationalIntegrity.blockers.some((entry) => entry.code === 'workflow_name_mismatch'));
+  assert.ok(report.operationalIntegrity.blockers.some((entry) => entry.code === 'workflow_ref_mismatch'));
+  assert.ok(report.operationalIntegrity.blockers.some((entry) => entry.code === 'workflow_sha_mismatch'));
+  assert.ok(report.remediations.some((entry) => entry.id === 'verify_workflow_dispatch'));
+  assert.match(report.evidence.join('\n'), /workflow_name_mismatch/);
 });
 
 test('provider action normalizer maps Anthropic tool_use blocks into sentinel actions', () => {

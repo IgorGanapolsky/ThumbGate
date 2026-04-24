@@ -6242,6 +6242,7 @@ async function addContext(){
         const changedFiles = Array.isArray(body.changedFiles)
           ? body.changedFiles
           : normalizedRequestAction.affectedFiles;
+        const scopeState = getScopeState();
         const toolInput = {
           command: body.command,
           path: body.filePath,
@@ -6275,7 +6276,15 @@ async function addContext(){
           affectedFiles: changedFiles.length > 0 ? changedFiles : undefined,
           requirePrForReleaseSensitive: body.requirePrForReleaseSensitive === true,
           requireVersionNotBehindBase: body.requireVersionNotBehindBase === true,
-          governanceState: getScopeState(),
+          governanceState: {
+            ...scopeState,
+            branchGovernance: body.workflowDispatch && typeof body.workflowDispatch === 'object'
+              ? {
+                ...(scopeState.branchGovernance || {}),
+                workflowDispatch: body.workflowDispatch,
+              }
+              : scopeState.branchGovernance,
+          },
           feedbackDir: requestFeedbackDir,
         });
         const evaluation = recordDecisionEvaluation(report, {

@@ -876,10 +876,55 @@ paths:
           application/json:
             schema:
               type: object
-              required: [toolName]
               properties:
                 toolName:
                   type: string
+                  description: Tool name is optional when provider-native tool call payload is supplied.
+                provider:
+                  type: string
+                model:
+                  type: string
+                providerToolCall:
+                  type: object
+                  additionalProperties: true
+                toolCall:
+                  type: object
+                  additionalProperties: true
+                toolUse:
+                  type: object
+                  additionalProperties: true
+                content:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: true
+                input:
+                  type: object
+                  additionalProperties: true
+                arguments:
+                  type: object
+                  additionalProperties: true
+                method:
+                  type: string
+                params:
+                  type: object
+                  additionalProperties: true
+                mcp:
+                  type: object
+                  additionalProperties: true
+                mcpToolCall:
+                  type: object
+                  additionalProperties: true
+                usage:
+                  type: object
+                  additionalProperties: true
+                tokenEstimate:
+                  type: number
+                costUsd:
+                  type: number
+                budget:
+                  type: object
+                  additionalProperties: true
                 command:
                   type: string
                 filePath:
@@ -896,6 +941,25 @@ paths:
                   type: boolean
                 requireVersionNotBehindBase:
                   type: boolean
+                workflowDispatch:
+                  type: object
+                  description: Evidence required before running `gh workflow run` or another environment-specific workflow dispatch.
+                  properties:
+                    environment:
+                      type: string
+                      description: Requested environment such as dev, staging, beta, or release.
+                    workflow:
+                      type: string
+                      description: Expected workflow file or workflow name.
+                    ref:
+                      type: string
+                      description: Expected branch or ref passed to the workflow dispatch command.
+                    sha:
+                      type: string
+                      description: Expected HEAD SHA to verify before and after dispatch.
+                    job:
+                      type: string
+                      description: Expected job name to verify before reporting the workflow URL.
       responses:
         '200':
           description: Persisted workflow-sentinel recommendation with decision-control metadata and actionId

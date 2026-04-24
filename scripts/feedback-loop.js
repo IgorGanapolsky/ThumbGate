@@ -585,7 +585,7 @@ function saveSummary(summary) {
 
 // ============================================================
 // ML Side-Effect Helpers — Sequence Tracking (ML-03) and
-// Diversity Tracking (ML-04). Inline per Subway architecture.
+// Diversity Tracking (ML-04). Inline feedback-loop implementation.
 // ============================================================
 
 function inferDomain(tags, context) {

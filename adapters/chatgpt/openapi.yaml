@@ -941,6 +941,25 @@ paths:
                   type: boolean
                 requireVersionNotBehindBase:
                   type: boolean
+                workflowDispatch:
+                  type: object
+                  description: Evidence required before running `gh workflow run` or another environment-specific workflow dispatch.
+                  properties:
+                    environment:
+                      type: string
+                      description: Requested environment such as dev, staging, beta, or release.
+                    workflow:
+                      type: string
+                      description: Expected workflow file or workflow name.
+                    ref:
+                      type: string
+                      description: Expected branch or ref passed to the workflow dispatch command.
+                    sha:
+                      type: string
+                      description: Expected HEAD SHA to verify before and after dispatch.
+                    job:
+                      type: string
+                      description: Expected job name to verify before reporting the workflow URL.
       responses:
         '200':
           description: Persisted workflow-sentinel recommendation with decision-control metadata and actionId
