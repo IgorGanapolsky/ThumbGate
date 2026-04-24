@@ -8,7 +8,7 @@
  * - Action analysis report (XPRT-03): tool call patterns, success rates, top failures
  * - DPO validation gate (XPRT-04): validateMemoryStructure() prevents bad training pairs
  *
- * Ported and adapted from Subway_RN_Demo exportTrainingData() patterns.
+ * Adapted from earlier local feedback export patterns.
  * PATH: PROJECT_ROOT = path.join(__dirname, '..') — 1 level from scripts/
  */
 

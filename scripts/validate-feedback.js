@@ -8,7 +8,7 @@
  * 3. Anomaly detection (suspicious patterns, sensitive data)
  * 4. Self-correction (auto-correct fixable errors)
  *
- * Ported from Subway_RN_Demo with ThumbGate schema adaptations:
+ * Adapted for ThumbGate schema validation:
  * - Uses 'signal' (not 'feedback') with values 'positive'/'negative'
  * - Uses 'id' as required field (not 'source')
  * - THUMBGATE_FEEDBACK_DIR env var for path resolution

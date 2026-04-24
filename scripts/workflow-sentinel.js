@@ -33,7 +33,7 @@ const DEFAULT_PROTECTED_FILE_GLOBS = [
   'config/gates/**',
 ];
 const EDIT_LIKE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
-const HIGH_RISK_BASH_PATTERN = /\b(?:git\s+(?:add|commit|push)|gh\s+pr\s+(?:create|merge)|gh\s+release\s+create|npm\s+publish|yarn\s+publish|pnpm\s+publish|rm\s+-rf)\b/i;
+const HIGH_RISK_BASH_PATTERN = /\b(?:git\s+(?:add|commit|push)|gh\s+(?:pr\s+(?:create|merge)|workflow\s+run|release\s+create)|npm\s+publish|yarn\s+publish|pnpm\s+publish|rm\s+-rf)\b/i;
 
 const SURFACE_RULES = [
   { key: 'policy', pattern: /^(?:AGENTS\.md|CLAUDE(?:\.local)?\.md|GEMINI\.md|config\/gates\/|config\/mcp-allowlists\.json|scripts\/tool-registry\.js)/ },
@@ -399,8 +399,25 @@ function scoreRisk({
   if (isHighRiskAction(toolName, toolInput, affectedFiles)) {
     addDriver(drivers, 'high_risk_action', 0.18, 'Command or edit pattern is classified as high risk.');
   }
-  if (commandInfo.isPrCreate || commandInfo.isPrMerge || commandInfo.isPublish || commandInfo.isReleaseCreate || commandInfo.isTagCreate) {
-    addDriver(drivers, 'governed_command', 0.16, 'Action touches PR, release, or publish workflow state.');
+  if (commandInfo.isPrCreate
+    || commandInfo.isPrMerge
+    || commandInfo.isWorkflowRun
+    || commandInfo.isPublish
+    || commandInfo.isReleaseCreate
+    || commandInfo.isTagCreate) {
+    addDriver(drivers, 'governed_command', 0.16, 'Action touches PR, workflow dispatch, release, or publish workflow state.');
+  }
+  if (commandInfo.isWorkflowRun) {
+    addDriver(
+      drivers,
+      'workflow_dispatch',
+      0.2,
+      'GitHub Actions workflow dispatch can trigger environment-specific builds or releases.',
+      {
+        workflowName: commandInfo.workflowName,
+        workflowRef: commandInfo.workflowRef,
+      }
+    );
   }
   if (/\bgit\s+push\b.*(?:--force|-f)\b/i.test(commandInfo.text)) {
     addDriver(drivers, 'force_push', 0.5, 'Force push predicts destructive branch history rewrite.');
@@ -596,6 +613,23 @@ function addIntegrityRemediations(push, integrity) {
       why: 'Merge actions should be tied to one explicit review surface.',
     },
     {
+      codes: [
+        'missing_workflow_dispatch_evidence',
+        'missing_workflow_environment',
+        'missing_workflow_name',
+        'workflow_name_mismatch',
+        'missing_workflow_ref',
+        'workflow_ref_mismatch',
+        'missing_workflow_sha',
+        'workflow_sha_mismatch',
+        'missing_workflow_job',
+      ],
+      id: 'verify_workflow_dispatch',
+      title: 'Verify workflow dispatch target',
+      action: 'Set branch governance workflowDispatch with environment, workflow, ref, sha, and expected job before running gh workflow run.',
+      why: 'Environment-specific build dispatches must prove the workflow file, branch/ref, HEAD SHA, and job name before execution.',
+    },
+    {
       codes: ['missing_release_version', 'release_version_mismatch'],
       id: 'align_release_version',
       title: 'Align release version',
@@ -709,6 +743,9 @@ function buildReasoning(report) {
     lines.push(
       `Decision control: ${report.decisionControl.decisionOwner} owns a ${report.decisionControl.reversibility} action via ${report.decisionControl.executionMode}.`
     );
+    if (report.decisionControl.deliberation?.required) {
+      lines.push(`Deliberation policy: ${report.decisionControl.deliberation.mode} before final approval.`);
+    }
   }
   if (report.learnedPolicy && report.learnedPolicy.enabled && report.learnedPolicy.prediction) {
     lines.push(
@@ -763,6 +800,52 @@ function classifyReversibility({ command, blastRadius, integrity, protectedSurfa
   return 'two_way_door';
 }
 
+function buildDeliberationPolicy({
+  executionMode,
+  reversibility,
+  risk,
+  hasOperationalBlockers,
+}) {
+  const riskBand = risk && risk.band ? risk.band : 'very_low';
+  const riskScore = risk && typeof risk.score === 'number' ? risk.score : 0;
+  const needsConsistencyCheck = executionMode === 'blocked'
+    || reversibility === 'one_way_door'
+    || riskBand === 'very_high'
+    || riskScore >= 0.72
+    || hasOperationalBlockers;
+  const required = executionMode !== 'auto_execute' || riskScore >= 0.45 || hasOperationalBlockers;
+  const mode = needsConsistencyCheck
+    ? 'reason_then_consistency_check'
+    : required
+      ? 'reason_then_decide'
+      : 'brief_rationale';
+
+  return {
+    required,
+    mode,
+    minSentences: needsConsistencyCheck ? 4 : required ? 2 : 1,
+    summarizeOnly: true,
+    instruction: required
+      ? 'Pause before answering, compare safety, reversibility, prior-failure, and evidence signals, then summarize only the decision evidence.'
+      : 'Give a brief evidence summary before approving fast-path execution.',
+    consistencyCheck: {
+      required: needsConsistencyCheck,
+      variants: needsConsistencyCheck
+        ? [
+          'Re-evaluate the same action from the failure-prevention perspective.',
+          'Re-evaluate the same action from the reversibility and rollback perspective.',
+          'Re-evaluate the same action from the user-intent and evidence perspective.',
+        ]
+        : [],
+      requiredAgreement: needsConsistencyCheck ? 'all_variants_same_execution_mode' : 'not_required',
+      onDisagreement: 'checkpoint_required',
+      rationale: needsConsistencyCheck
+        ? 'High-risk and one-way-door actions should be stable under paraphrased evaluation before an agent proceeds.'
+        : 'Low-risk fast-path actions do not require paraphrase stability checks.',
+    },
+  };
+}
+
 function buildDecisionControl({
   decision,
   risk,
@@ -792,11 +875,18 @@ function buildDecisionControl({
         ? 'shared'
         : 'human'
       : 'agent';
+  const deliberation = buildDeliberationPolicy({
+    executionMode,
+    reversibility,
+    risk,
+    hasOperationalBlockers,
+  });
 
   return {
     executionMode,
     decisionOwner,
     reversibility,
+    deliberation,
     requiresHumanApproval: executionMode === 'checkpoint_required' && decisionOwner !== 'agent',
     recommendedAction: executionMode === 'blocked'
       ? 'halt'
@@ -882,6 +972,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     baseBranch,
     command: toolInput.command,
     changedFiles: affectedFiles,
+    headSha: options.headSha || toolInput.headSha,
     requirePrForReleaseSensitive: options.requirePrForReleaseSensitive === true,
     requireVersionNotBehindBase: options.requireVersionNotBehindBase === true,
     branchGovernance: governanceState.branchGovernance,
@@ -1019,6 +1110,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
 
 module.exports = {
   buildDecisionControl,
+  buildDeliberationPolicy,
   DEFAULT_PROTECTED_FILE_GLOBS,
   buildBlastRadius,
   buildEvidence,

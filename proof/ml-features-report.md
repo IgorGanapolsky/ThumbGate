@@ -164,8 +164,8 @@ New test files:
 
 ## Anti-Pattern Compliance
 
-- ThumbGate signal field: `f.signal === 'positive'` (NOT `f.reward`) — Subway schema differs
-- Python PROJECT_ROOT: `Path(__file__).parent.parent` (2 levels, not Subway's 4)
+- ThumbGate signal field: `f.signal === 'positive'` (NOT `f.reward`) — legacy feedback schemas differ
+- Python PROJECT_ROOT: `Path(__file__).parent.parent` (2 levels, not legacy external repo depth)
 - Thompson update: always uses `timeDecayWeight(timestamp)`, never raw weight=1.0
 - Side-effects: wrapped in try/catch — captureFeedback() never blocks on ML failures
 - Diversity denominator: `Math.max(domainCount, 1)` — no div-by-zero on first entry
