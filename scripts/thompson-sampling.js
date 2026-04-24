@@ -5,7 +5,7 @@
  * Implements per-category reliability estimates (ML-01) and exponential
  * time-decay weighting with half-life of 7 days (ML-02).
  *
- * Source: Direct port of train_from_feedback.py (Subway_RN_Demo) lines 218-293.
+ * Source: Adapted from earlier local feedback-modeling experiments.
  * Algorithm: Beta-Bernoulli update with Marsaglia-Tsang gamma sampling for
  *            posterior draws. Zero external npm dependencies.
  *
@@ -45,7 +45,7 @@ const DECAY_FLOOR = 0.01;
 const MIN_SAMPLES_THRESHOLD = 5;
 
 /**
- * Default category taxonomy — mirrors Subway's 8-keyword categories plus
+ * Default category taxonomy — mirrors the legacy 8-keyword categories plus
  * 'uncategorized' as the catch-all. Used when initializing a new model.
  */
 const DEFAULT_CATEGORIES = [

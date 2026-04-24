@@ -6226,6 +6226,7 @@ async function addContext(){
           return;
         }
 
+        const scopeState = getScopeState();
         const report = evaluateWorkflowSentinel(body.toolName, {
           command: body.command,
           path: body.filePath,
@@ -6238,7 +6239,15 @@ async function addContext(){
           affectedFiles: Array.isArray(body.changedFiles) ? body.changedFiles : undefined,
           requirePrForReleaseSensitive: body.requirePrForReleaseSensitive === true,
           requireVersionNotBehindBase: body.requireVersionNotBehindBase === true,
-          governanceState: getScopeState(),
+          governanceState: {
+            ...scopeState,
+            branchGovernance: body.workflowDispatch && typeof body.workflowDispatch === 'object'
+              ? {
+                ...(scopeState.branchGovernance || {}),
+                workflowDispatch: body.workflowDispatch,
+              }
+              : scopeState.branchGovernance,
+          },
           feedbackDir: requestFeedbackDir,
         });
         const evaluation = recordDecisionEvaluation(report, {
