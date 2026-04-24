@@ -5,6 +5,7 @@ const { getBillingSummaryLive } = require('./billing');
 const { generateDashboard } = require('./dashboard');
 const { getFeedbackPaths } = require('./feedback-loop');
 const { resolveHostedBillingConfig } = require('./hosted-config');
+const { loadOperatorConfig } = require('./operational-summary');
 
 function normalizeText(value) {
   if (value === undefined || value === null) return null;
@@ -18,8 +19,17 @@ function shouldPreferHostedDashboard() {
 
 function resolveHostedDashboardConfig() {
   const runtimeConfig = resolveHostedBillingConfig();
-  const apiBaseUrl = normalizeText(process.env.THUMBGATE_BILLING_API_BASE_URL) || runtimeConfig.billingApiBaseUrl;
-  const apiKey = normalizeText(process.env.THUMBGATE_API_KEY);
+  const operatorConfig = loadOperatorConfig();
+  // Match operational-summary's key priority chain so north-star and cfo
+  // authenticate against the same hosted deployment consistently. Prior to
+  // this change, north-star only read THUMBGATE_API_KEY, silently 401'ing
+  // on machines configured via operator.json or THUMBGATE_OPERATOR_KEY.
+  const apiKey = normalizeText(process.env.THUMBGATE_OPERATOR_KEY)
+    || operatorConfig.operatorKey
+    || normalizeText(process.env.THUMBGATE_API_KEY);
+  const apiBaseUrl = normalizeText(process.env.THUMBGATE_BILLING_API_BASE_URL)
+    || operatorConfig.baseUrl
+    || runtimeConfig.billingApiBaseUrl;
   return {
     apiBaseUrl,
     apiKey,
@@ -84,12 +94,45 @@ async function getOperationalDashboard(options = {}) {
       source: 'hosted',
       data,
       fallbackReason: null,
+      hostedStatus: 200,
     };
   } catch (err) {
+    const reason = err && err.message ? err.message : 'hosted_dashboard_unavailable';
+    const status = err && typeof err.status === 'number' ? err.status : null;
+
+    // Mirror operational-summary: auth failure is the dangerous case. A
+    // dashboard that silently shows $0 revenue (from the local ledger) when
+    // Stripe actually has paid customers is a lie the operator acts on.
+    // Refuse to guess — surface an actionable error.
+    if (status === 401 || status === 403) {
+      const authErr = new Error(
+        `Hosted operational dashboard rejected credentials (HTTP ${status}). ` +
+        `The operator key on this machine does not match the one on the ` +
+        `hosted deployment. Fix: set THUMBGATE_OPERATOR_KEY in this shell, ` +
+        `or update the operatorKey field in ~/.config/thumbgate/operator.json, ` +
+        `to match Railway's THUMBGATE_OPERATOR_KEY. ` +
+        `Running north-star without hosted auth would report local-only ` +
+        `data as ground truth, which may not reflect actual Stripe revenue. ` +
+        `Original response: ${reason}`
+      );
+      authErr.code = 'hosted_dashboard_unauthorized';
+      authErr.status = status;
+      throw authErr;
+    }
+
+    // Non-auth failure — local fallback is still useful for dev workflows,
+    // but tag the source so downstream renderers do not mistake it for
+    // verified hosted truth.
+    console.warn(
+      `[operational-dashboard] Hosted dashboard unreachable (status=${status ?? 'network'}); ` +
+      `falling back to LOCAL-UNVERIFIED state. Numbers below may not reflect ` +
+      `actual Stripe revenue. Reason: ${reason}`
+    );
     return {
-      source: 'local',
+      source: 'local-unverified',
       data: await buildOperationalDashboard(analyticsWindow),
-      fallbackReason: err && err.message ? err.message : 'hosted_dashboard_unavailable',
+      fallbackReason: reason,
+      hostedStatus: status,
     };
   }
 }
