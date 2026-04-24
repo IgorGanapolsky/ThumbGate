@@ -121,6 +121,12 @@ test('public docs render the current package version', () => {
   assert.match(chatgptInstall, /Thumbs up: this answer gave file paths, commands, and tests/i);
   assert.match(chatgptInstall, /Paste the risky AI action before it runs, or tell me what went right\/wrong/i);
   assert.match(chatgptInstall, /native feedback buttons may send feedback to OpenAI/i);
+  assert.match(chatgptInstall, /Not saved in ThumbGate yet/i);
+  assert.match(chatgptInstall, /must not say it saved the lesson/i);
+  assert.match(chatgptInstall, /API Key -> Bearer with the raw THUMBGATE_API_KEY/i);
+  assert.match(chatgptInstall, /public\/assets\/brand\/thumbgate-icon-512\.png/);
+  assert.match(chatgptInstall, /6f0290f7fe50de9a82c18be2299deafba4c686df46b3b5309e363a7d589d89dc/);
+  assert.doesNotMatch(chatgptInstall, /blue feedback loop arrow \(circular\)/i);
   assert.match(chatgptInstall, /Regular GPT users should not need an API key, JSON payload, OpenAPI knowledge, or developer setup/i);
   assert.match(chatgptInstall, /Users do \*\*not\*\* have to keep chatting inside the ThumbGate GPT for enforcement/i);
   assert.match(chatgptInstall, /every landing page, README, social post, and plugin listing should point to the live GPT/i);
@@ -142,6 +148,11 @@ test('public docs render the current package version', () => {
   assert.match(chatgptInstructions, /public front door for ThumbGate/i);
   assert.match(chatgptInstructions, /Hard enforcement runs locally after `npx thumbgate init` where your agent actually executes/i);
   assert.match(chatgptInstructions, /Regular users should never need an API key, JSON payload, OpenAPI knowledge, or developer setup/i);
+  assert.match(chatgptInstructions, /Never say "I saved this", "I'll remember this", "I'll keep doing this", or "I can still apply it going forward"/);
+  assert.match(chatgptInstructions, /Not saved in ThumbGate yet/i);
+  assert.match(chatgptInstructions, /API Key -> Bearer with the raw `THUMBGATE_API_KEY`/);
+  assert.match(chatgptInstructions, /public\/assets\/brand\/thumbgate-icon-512\.png/);
+  assert.match(chatgptInstructions, /Do not use `docs\/logo-400x400\.png`, the Claude plugin icon, a generic cube, emoji thumbs, or an auto-generated ChatGPT image/);
   assert.doesNotMatch(chatgptInstructions, /Setup Concierge/i);
   assert.doesNotMatch(chatgptInstructions, /AI safety gate/i);
   assert.match(gptStoreSubmission, /published-user-confirmed/);
@@ -162,6 +173,13 @@ test('public docs render the current package version', () => {
   assert.match(gptStoreSubmission, /Never make regular users write JSON/);
   assert.match(gptStoreSubmission, /Regular users should never be asked for API keys/);
   assert.match(gptStoreSubmission, /Only show feedback IDs when the user asks for technical details/i);
+  assert.match(gptStoreSubmission, /Never say "I saved this", "I'll remember this", "I'll keep doing this", or "I can still apply it going forward"/);
+  assert.match(gptStoreSubmission, /Not saved in ThumbGate yet/i);
+  assert.match(gptStoreSubmission, /API Key -> Bearer with the raw `THUMBGATE_API_KEY`/);
+  assert.match(gptStoreSubmission, /public\/assets\/brand\/thumbgate-icon-512\.png/);
+  assert.match(gptStoreSubmission, /6f0290f7fe50de9a82c18be2299deafba4c686df46b3b5309e363a7d589d89dc/);
+  assert.match(gptStoreSubmission, /Do not use `docs\/logo-400x400\.png`, `.claude-plugin\/bundle\/icon\.png`, a generic cube, emoji thumbs, or a generated image/);
+  assert.doesNotMatch(gptStoreSubmission, /blue feedback loop arrow \(circular\)/i);
   assert.match(gptStoreSubmission, /https:\/\/thumbgate-production\.up\.railway\.app\/privacy/);
   assert.match(gptStoreSubmission, /Category set to Programming \/ Productivity/);
   assert.match(gptStoreSubmission, /Stop my agent from editing generated files/i);

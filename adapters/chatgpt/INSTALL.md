@@ -23,6 +23,8 @@ The GPT should feel like a feedback button that remembers.
 
 Do not imply ChatGPT's built-in thumbs buttons save ThumbGate lessons. The reliable public capture path is a typed message inside the GPT.
 
+Critical failure rule: if the `captureFeedback` Action fails with `401`, `403`, `5xx`, timeout, missing action, or any setup/auth error, the GPT must not say it saved the lesson, will remember the lesson, or can still apply it going forward. It must say: "Not saved in ThumbGate yet." Then it should state the setup failure and point the GPT owner to the Action auth repair steps below. Do not ask the user whether to turn failed feedback into a hard rule.
+
 ## GPT Store path
 
 1. Open the direct GPT URL: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate
@@ -64,6 +66,14 @@ Conversation starters:
 4. `Turn this mistake into a ThumbGate rule: the agent edited generated files again.`
 
 Use typed chat replies. ChatGPT's native feedback buttons may send feedback to OpenAI, but they should not be described as the ThumbGate capture path unless OpenAI exposes them to GPT Actions.
+
+GPT avatar:
+
+```text
+public/assets/brand/thumbgate-icon-512.png
+```
+
+Upload the canonical dark rounded-square TG gate monogram above. Do not use `docs/logo-400x400.png`, `.claude-plugin/bundle/icon.png`, a generic cube, emoji thumbs, or a generated image. Expected SHA-256: `6f0290f7fe50de9a82c18be2299deafba4c686df46b3b5309e363a7d589d89dc`.
 
 ## Pre-action check flow
 
@@ -162,6 +172,12 @@ Before publishing or re-publishing the GPT, keep it private and verify these thr
 3. `Check this: git push --force`
 
 All three should call the action layer without a `401 Unauthorized` response. If any action test returns `401`, the GPT Builder secret is missing, stale, pasted with an extra `Bearer ` prefix, or pointed at a different backend key than Railway's `THUMBGATE_API_KEY`.
+
+Expected user-facing failure copy when an Action is unhealthy:
+
+```text
+Not saved in ThumbGate yet. The GPT Action is not authenticated, so I cannot persist this lesson. The GPT owner needs to update Actions auth to API Key -> Bearer with the raw THUMBGATE_API_KEY, re-import https://thumbgate-production.up.railway.app/openapi.yaml, and retest captureFeedback.
+```
 
 ## Available Actions
 
