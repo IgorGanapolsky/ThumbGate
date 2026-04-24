@@ -1220,6 +1220,27 @@ function modelFit() {
   console.log(JSON.stringify({ reportPath, report }, null, 2));
 }
 
+function modelCandidatesCmd() {
+  const args = parseArgs(process.argv.slice(3));
+  const { writeModelCandidatesReport, renderModelCandidatesReport } = require(path.join(PKG_ROOT, 'scripts', 'model-candidates'));
+  const maxCandidates = args.max ? Number(args.max) : undefined;
+  const { reportPath, report } = writeModelCandidatesReport(undefined, {
+    workload: args.workload,
+    provider: args.provider,
+    family: args.family,
+    gateway: args.gateway,
+    maxCandidates: Number.isFinite(maxCandidates) ? maxCandidates : undefined,
+  });
+
+  if (args.json) {
+    console.log(JSON.stringify({ reportPath, report }, null, 2));
+    return;
+  }
+
+  process.stdout.write(renderModelCandidatesReport(report));
+  process.stdout.write(`\nReport path: ${reportPath}\n`);
+}
+
 function risk() {
   const args = parseArgs(process.argv.slice(3));
   const riskScorer = require(path.join(PKG_ROOT, 'scripts', 'risk-scorer'));
@@ -1923,6 +1944,7 @@ function help() {
   console.log('  repair-github-marketplace  Repair legacy GitHub Marketplace amount mappings');
   console.log('  north-star            Show proof-backed workflow-run progress toward the North Star');
   console.log('  model-fit             Detect local embedding profile and write evidence report');
+  console.log('  model-candidates      Rank managed model candidates and emit a benchmark plan');
   console.log('  risk                  Train or query the boosted local risk scorer');
   console.log('  eval                  Turn feedback into reusable prompt/workflow eval proof');
   console.log('  optimize              [PRO] Prune CLAUDE.md and migrate rules to Pre-Action Checks');
@@ -2097,6 +2119,10 @@ switch (COMMAND) {
   }
   case 'model-fit':
     modelFit();
+    break;
+  case 'model-candidates':
+  case 'managed-models':
+    modelCandidatesCmd();
     break;
   case 'risk':
     risk();

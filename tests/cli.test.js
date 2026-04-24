@@ -545,6 +545,7 @@ describe('bin/cli.js', () => {
     assert.ok(result.stdout.includes('cfo'), 'Help should mention cfo');
     assert.ok(result.stdout.includes('repair-github-marketplace'), 'Help should mention repair-github-marketplace');
     assert.ok(result.stdout.includes('model-fit'), 'Help should mention model-fit');
+    assert.ok(result.stdout.includes('model-candidates'), 'Help should mention model-candidates');
     assert.ok(result.stdout.includes('risk'), 'Help should mention risk');
     assert.ok(result.stdout.includes('export-dpo'), 'Help should mention export-dpo');
     assert.ok(result.stdout.includes('export-databricks'), 'Help should mention export-databricks');
@@ -1571,6 +1572,25 @@ describe('bin/cli.js', () => {
     const payload = JSON.parse(result.stdout);
     assert.equal(payload.report.selectedProfile.id, 'compact');
     assert.ok(fs.existsSync(payload.reportPath), 'model-fit should write the report file');
+
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+  });
+
+  test('model-candidates ranks managed candidates and writes a report', () => {
+    const isolatedDir = makeTmpDir();
+    const feedbackDir = path.join(isolatedDir, 'feedback');
+    const result = runCliSync(['model-candidates', '--workload=pretool-gating', '--provider=openai-compatible', '--gateway=tinker', '--json'], {
+      cwd: isolatedDir,
+      env: {
+        ...process.env,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_NO_NUDGE: '1',
+      },
+    });
+    assert.equal(result.status, 0, `model-candidates failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.report.recommended[0].id, 'tinker/qwen3.6-35b-a3b');
+    assert.ok(fs.existsSync(payload.reportPath), 'model-candidates should write the report file');
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   });
