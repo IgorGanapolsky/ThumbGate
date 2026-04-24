@@ -148,7 +148,7 @@ test('public docs render the current package version', () => {
   assert.match(gptStoreSubmission, /https:\/\/chatgpt\.com\/g\/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate/);
   assert.doesNotMatch(gptStoreSubmission, /URL has not been captured/i);
   assert.match(gptStoreSubmission, /Explore GPTs -> search ThumbGate/i);
-  assert.match(gptStoreSubmission, /Stop costly AI mistakes before they run/);
+  assert.match(gptStoreSubmission, /Stop your AI agent from repeating mistakes/);
   assert.match(gptStoreSubmission, /Reliability Gateway/i);
   assert.match(gptStoreSubmission, /one signal becomes one remembered rule/i);
   assert.match(gptStoreSubmission, /prevent expensive AI mistakes/i);
@@ -164,7 +164,7 @@ test('public docs render the current package version', () => {
   assert.match(gptStoreSubmission, /Only show feedback IDs when the user asks for technical details/i);
   assert.match(gptStoreSubmission, /https:\/\/thumbgate-production\.up\.railway\.app\/privacy/);
   assert.match(gptStoreSubmission, /Category set to Programming \/ Productivity/);
-  assert.match(gptStoreSubmission, /Turn this mistake into a ThumbGate rule/i);
+  assert.match(gptStoreSubmission, /Stop my agent from editing generated files/i);
   assert.match(claudePluginReadme, new RegExp(getClaudePluginLatestDownloadUrl(PROJECT_ROOT).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(claudePluginReadme, new RegExp(getClaudePluginReviewLatestDownloadUrl(PROJECT_ROOT).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(claudeCodexBridgeReadme, /claude --plugin-dir/i);
