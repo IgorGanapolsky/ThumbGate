@@ -1813,7 +1813,7 @@ Scope:
 - Added MCP stdio transport compatibility for both `Content-Length` framed JSON-RPC and newline-delimited JSON requests.
 - Fixed CLI `serve` bootstrap to explicitly start the stdio listener when loaded via `require()`.
 - Removed duplicate/dead `serve` switch branch collision with `start-api`.
-- Hardened proof/test reliability for external Subway repo discovery and proof test determinism.
+- Hardened proof/test reliability for external repo discovery and proof test determinism.
 
 Commands run:
 

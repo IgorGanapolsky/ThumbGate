@@ -203,7 +203,7 @@ describe('buildPreferencePairs', () => {
     assert.ok(pairs.every((p) => p.metadata.tagOverlap >= 1));
   });
 
-  it('handles entries using feedback field (Subway schema)', () => {
+  it('handles entries using legacy feedback field schema', () => {
     const entries = [
       { ...makeEntry(), signal: undefined, feedback: 'up', reward: 1 },
       { ...makeEntry(), signal: undefined, feedback: 'down', reward: -1, context: 'Failed' },
