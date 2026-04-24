@@ -10,3 +10,4 @@
 - `perplexity/.mcp.json`: Claude Code config with ThumbGate + Perplexity MCP servers side-by-side.
 - `perplexity/config.toml`: Codex config with ThumbGate + Perplexity MCP servers.
 - `perplexity/opencode.json`: OpenCode config with ThumbGate + Perplexity MCP servers.
+- `config/model-candidates.json` + `scripts/model-candidates.js`: managed-model catalog and benchmark planner for evaluating candidates like Tinker Kimi/Qwen against ThumbGate workloads before routing production traffic.

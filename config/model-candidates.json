@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "description": "Managed model candidates for ThumbGate workload benchmarking. Catalog only: no provider-specific runtime dependency is assumed here.",
+  "workloads": {
+    "pretool-gating": {
+      "label": "PreTool gating",
+      "summary": "Fast, reliable gate judgments for tool-use and agentic coding decisions before commands run.",
+      "desiredStrengths": ["agentic-coding", "tool-use", "reliability"],
+      "targetContextWindow": 64000,
+      "benchmarkCommands": [
+        "npx thumbgate eval --from-feedback --json --min-score=0",
+        "node scripts/gate-eval.js run",
+        "npx thumbgate bench --json --min-score=90"
+      ],
+      "metrics": [
+        "passRate",
+        "falsePositiveRate",
+        "falseNegativeRate",
+        "medianLatencyMs",
+        "costPer1kActionsUsd"
+      ]
+    },
+    "long-trace-review": {
+      "label": "Long trace review",
+      "summary": "Review long agent traces, multi-step failures, and large-context coding sessions without dropping important detail.",
+      "desiredStrengths": ["long-horizon-coding", "multi-agent", "reliability"],
+      "targetContextWindow": 128000,
+      "benchmarkCommands": [
+        "npx thumbgate eval --from-feedback --json --min-score=0",
+        "node scripts/gate-eval.js run",
+        "npx thumbgate bench --json --min-score=90"
+      ],
+      "metrics": [
+        "passRate",
+        "longContextReliability",
+        "traceCompressionLoss",
+        "medianLatencyMs",
+        "costPerTraceUsd"
+      ]
+    },
+    "cheap-fast-path": {
+      "label": "Cheap fast path",
+      "summary": "Low-cost first-pass model for cheap approval triage before escalating ambiguous work.",
+      "desiredStrengths": ["agentic-coding", "tool-use"],
+      "targetContextWindow": 32000,
+      "benchmarkCommands": [
+        "npx thumbgate eval --from-feedback --json --min-score=0",
+        "node scripts/gate-eval.js run",
+        "npx thumbgate bench --json --min-score=90"
+      ],
+      "metrics": [
+        "passRate",
+        "medianLatencyMs",
+        "costPer1kActionsUsd",
+        "escalationRate"
+      ]
+    }
+  },
+  "candidates": [
+    {
+      "id": "anthropic/claude-haiku-4-5",
+      "vendor": "Anthropic",
+      "family": "claude",
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5-20251001",
+      "contextWindow": 200000,
+      "costClass": "low",
+      "strengths": ["tool-use", "reliability", "fast-inference"],
+      "notes": "Fast control candidate for cheap approval triage."
+    },
+    {
+      "id": "anthropic/claude-sonnet-4-6",
+      "vendor": "Anthropic",
+      "family": "claude",
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-6",
+      "contextWindow": 200000,
+      "costClass": "medium",
+      "strengths": ["agentic-coding", "tool-use", "reliability", "long-horizon-coding"],
+      "notes": "Current stronger managed control candidate."
+    },
+    {
+      "id": "tinker/kimi-k2.6-32k",
+      "vendor": "Thinking Machines",
+      "family": "kimi",
+      "provider": "openai-compatible",
+      "gateway": "tinker",
+      "model": "kimi-k2.6-32k",
+      "contextWindow": 32000,
+      "costClass": "medium",
+      "strengths": ["long-horizon-coding", "multi-agent", "reliability"],
+      "notes": "Tinker April 23, 2026 release. Good candidate when long-horizon coding matters more than ultra-low latency."
+    },
+    {
+      "id": "tinker/kimi-k2.6-128k",
+      "vendor": "Thinking Machines",
+      "family": "kimi",
+      "provider": "openai-compatible",
+      "gateway": "tinker",
+      "model": "kimi-k2.6-128k",
+      "contextWindow": 128000,
+      "costClass": "medium",
+      "strengths": ["long-horizon-coding", "multi-agent", "reliability", "long-context"],
+      "notes": "Highest-ROI Kimi candidate for long traces and multi-step review."
+    },
+    {
+      "id": "tinker/qwen3.6-35b-a3b",
+      "vendor": "Thinking Machines",
+      "family": "qwen",
+      "provider": "openai-compatible",
+      "gateway": "tinker",
+      "model": "qwen3.6-35b-a3b",
+      "contextWindow": 64000,
+      "costClass": "low",
+      "strengths": ["agentic-coding", "tool-use", "reliability", "fast-inference"],
+      "notes": "Best first Tinker candidate for ThumbGate pre-action gating and tool-risk classification."
+    },
+    {
+      "id": "tinker/qwen3.6-27b",
+      "vendor": "Thinking Machines",
+      "family": "qwen",
+      "provider": "openai-compatible",
+      "gateway": "tinker",
+      "model": "qwen3.6-27b",
+      "contextWindow": 64000,
+      "costClass": "low",
+      "strengths": ["agentic-coding", "tool-use", "fast-inference"],
+      "notes": "Cheapest Tinker candidate for the fast gate path; use when latency/cost matter most."
+    }
+  ]
+}

@@ -117,6 +117,23 @@ Checks are distributed across all connected agents via MCP stdio protocol. One c
 
 Prompt engineering still matters, but it is only the starting point. ThumbGate adds prompt evaluation on top: proof lanes, benchmarks, and self-heal checks tell you whether your prompt and workflow actually held up under execution instead of leaving you to guess from vibes. Run `npx thumbgate eval --from-feedback --write-report=.thumbgate/prompt-eval-proof.md` to turn real thumbs-up/down feedback into reusable eval cases and a buyer-ready proof report.
 
+### Managed model benchmark lane
+
+When a new managed model drops, do not swap ThumbGate over on vendor claims alone. Rank it against the actual ThumbGate workload first:
+
+```bash
+npx thumbgate model-candidates --workload=pretool-gating --json
+npx thumbgate model-candidates --workload=long-trace-review --provider=openai-compatible --gateway=tinker --json
+```
+
+The catalog currently includes the April 23, 2026 Tinker additions:
+
+- `tinker/qwen3.6-35b-a3b` for pre-action gating, agentic coding, and tool-use
+- `tinker/qwen3.6-27b` for the cheap fast-path
+- `tinker/kimi-k2.6-128k` for long-trace review and multi-agent sessions
+
+Each recommendation ships with the benchmark commands to run next: feedback-derived prompt eval, `gate-eval`, and `thumbgate bench`. That keeps model selection evidence-backed instead of hype-driven.
+
 ![Feedback Pipeline](docs/diagrams/feedback_pipeline.png)
 
 ![Agent Integration](docs/diagrams/agent_integration.png)

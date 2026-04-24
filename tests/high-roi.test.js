@@ -36,6 +36,14 @@ test('workflow-gate-checkpoint module exports expected API', () => {
   assert.equal(typeof wgc.shouldHaltWorkflow, 'function');
 });
 
+test('model-candidates module exports expected API', () => {
+  const modelCandidates = require('../scripts/model-candidates');
+  assert.equal(typeof modelCandidates.loadCatalog, 'function');
+  assert.equal(typeof modelCandidates.recommendCandidates, 'function');
+  assert.equal(typeof modelCandidates.buildModelCandidatesReport, 'function');
+  assert.equal(typeof modelCandidates.writeModelCandidatesReport, 'function');
+});
+
 test('autonomous-workflow module exports expected API', () => {
   const workflow = require('../scripts/autonomous-workflow');
   assert.equal(typeof workflow.runAutonomousWorkflow, 'function');
