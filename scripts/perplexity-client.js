@@ -110,7 +110,7 @@ function extractCitations(response) {
 
 class PerplexityClient {
   constructor(options = {}) {
-    this.apiKey = options.apiKey || process.env.PERPLEXITY_API_KEY || '';
+    this.apiKey = options.apiKey ?? process.env.PERPLEXITY_API_KEY ?? '';
     this.baseUrl = options.baseUrl || process.env.PERPLEXITY_BASE_URL || DEFAULT_BASE_URL;
     this.fetchFn = options.fetchFn || globalThis.fetch;
     this.timeoutMs = Number(options.timeoutMs || process.env.PERPLEXITY_TIMEOUT_MS || DEFAULT_TIMEOUT_MS);
