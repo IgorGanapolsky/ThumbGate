@@ -803,7 +803,38 @@ const TOOLS = [
         budget: {
           type: 'object',
           additionalProperties: true,
-          description: 'Optional per-action budget controls: maxTokensPerAction, remainingTokens, maxCostUsdPerAction, remainingCostUsd',
+          description: 'Optional per-action budget controls: maxTokensPerAction, remainingTokens, maxCostUsdPerAction, remainingCostUsd, maxParallelBranches',
+        },
+        workflowPattern: {
+          type: 'string',
+          enum: ['single_action', 'chaining', 'routing', 'parallelization', 'evaluator-optimizer', 'agent'],
+          description: 'Optional workflow architecture hint. Agents require inspection evidence; predefined workflows are easier to evaluate.',
+        },
+        workflow: {
+          type: 'object',
+          additionalProperties: true,
+          description: 'Optional workflow metadata: pattern, steps, routes, branches, tools, inspection, and verification evidence.',
+        },
+        goal: { type: 'string', description: 'Optional agent goal for open-ended tool planning.' },
+        tools: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Optional abstract/combinable tool names available to an open-ended agent.',
+        },
+        branches: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Optional parallel workflow branches for fan-out budget and review checks.',
+        },
+        steps: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Optional predefined workflow steps for chaining/evaluator workflow audit evidence.',
+        },
+        routes: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Optional routing workflow destinations or classes.',
         },
         command: { type: 'string', description: 'Optional shell command when toolName is Bash' },
         filePath: { type: 'string', description: 'Optional primary file path for edit-like tools' },

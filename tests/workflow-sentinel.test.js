@@ -21,6 +21,7 @@ const {
 } = require('../adapters/mcp/server-stdio');
 const {
   buildCostControl,
+  buildWorkflowControl,
   normalizeProviderAction,
 } = require('../scripts/provider-action-normalizer');
 
@@ -371,6 +372,189 @@ test('workflow sentinel denies provider actions that exceed explicit model budge
   assert.equal(report.decisionControl.executionMode, 'blocked');
   assert.ok(report.remediations.some((entry) => entry.id === 'reduce_model_budget'));
   assert.match(report.evidence.join('\n'), /Cost control block/);
+});
+
+test('provider action normalizer detects open-ended agent workflows and inspection evidence', () => {
+  const missingInspection = normalizeProviderAction({
+    provider: 'anthropic',
+    workflowPattern: 'agent',
+    goal: 'Create and publish a product video.',
+    tools: ['bash', 'generate_image', 'text_to_speech', 'post_media'],
+    content: [{
+      type: 'tool_use',
+      id: 'toolu_agent',
+      name: 'post_media',
+      input: {
+        platform: 'threads',
+      },
+    }],
+  });
+  const withInspection = normalizeProviderAction({
+    provider: 'anthropic',
+    workflowPattern: 'agent',
+    goal: 'Create and publish a product video.',
+    tools: ['bash', 'generate_image', 'text_to_speech', 'post_media'],
+    workflow: {
+      inspection: {
+        required: true,
+        expectedObservation: 'Screenshot preview and upload API response confirm the media matches requirements.',
+      },
+    },
+    content: [{
+      type: 'tool_use',
+      id: 'toolu_agent_verified',
+      name: 'post_media',
+      input: {
+        platform: 'threads',
+      },
+    }],
+  });
+
+  assert.equal(missingInspection.workflow.pattern, 'agent');
+  assert.equal(missingInspection.workflow.toolCount, 4);
+  assert.equal(missingInspection.workflow.hasInspectionEvidence, false);
+  assert.equal(buildWorkflowControl(missingInspection).mode, 'block');
+  assert.equal(withInspection.workflow.hasInspectionEvidence, true);
+  assert.equal(buildWorkflowControl(withInspection).mode, 'allow');
+});
+
+test('workflow sentinel blocks open-ended agents without environment inspection', () => {
+  const normalized = normalizeProviderAction({
+    provider: 'anthropic',
+    workflowPattern: 'agent',
+    goal: 'Investigate and fix an unknown production issue.',
+    tools: ['read', 'grep', 'bash', 'edit'],
+    content: [{
+      type: 'tool_use',
+      id: 'toolu_agent_no_inspection',
+      name: 'Bash',
+      input: {
+        command: 'node scripts/deploy-policy.js --dry-run',
+        changedFiles: ['src/api/server.js'],
+      },
+    }],
+  });
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-agent-workflow-'));
+  const report = evaluateWorkflowSentinel(normalized.toolName, {}, {
+    normalizedAction: normalized,
+    feedbackDir,
+    feedbackOptions: { feedbackDir },
+    governanceState: {
+      taskScope: {
+        summary: 'agent workflow inspection test',
+        allowedPaths: ['src/**'],
+        protectedPaths: [],
+      },
+      protectedApprovals: [],
+      branchGovernance: {
+        baseBranch: 'main',
+        prRequired: true,
+      },
+    },
+  });
+
+  assert.equal(report.workflowControl.mode, 'block');
+  assert.equal(report.decision, 'deny');
+  assert.equal(report.decisionControl.executionMode, 'blocked');
+  assert.ok(report.drivers.some((entry) => entry.key === 'missing_environment_inspection'));
+  assert.ok(report.remediations.some((entry) => entry.id === 'add_environment_inspection'));
+  assert.ok(report.remediations.some((entry) => entry.id === 'prefer_workflow_when_possible'));
+  assert.match(report.evidence.join('\n'), /Workflow pattern agent/);
+});
+
+test('workflow sentinel allows inspected predefined workflows but records fan-out risk', () => {
+  const normalized = normalizeProviderAction({
+    provider: 'anthropic',
+    workflowPattern: 'parallelization',
+    branches: ['security', 'product', 'copy'],
+    workflow: {
+      inspection: {
+        required: true,
+        expectedObservation: 'Aggregator compares branch findings and emits acceptance criteria.',
+      },
+    },
+    content: [{
+      type: 'tool_use',
+      id: 'toolu_parallel',
+      name: 'Bash',
+      input: {
+        command: 'npm test',
+        changedFiles: ['tests/workflow-sentinel.test.js'],
+      },
+    }],
+  });
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-parallel-workflow-'));
+  const report = evaluateWorkflowSentinel(normalized.toolName, {}, {
+    normalizedAction: normalized,
+    budget: { maxParallelBranches: 4 },
+    feedbackDir,
+    feedbackOptions: { feedbackDir },
+    governanceState: {
+      taskScope: {
+        summary: 'parallel workflow inspection test',
+        allowedPaths: ['tests/**'],
+        protectedPaths: [],
+      },
+      protectedApprovals: [],
+      branchGovernance: {
+        baseBranch: 'main',
+        prRequired: true,
+      },
+    },
+  });
+
+  assert.equal(report.workflowControl.mode, 'allow');
+  assert.equal(report.normalizedAction.workflow.pattern, 'parallelization');
+  assert.equal(report.normalizedAction.workflow.branchCount, 3);
+  assert.ok(report.drivers.some((entry) => entry.key === 'parallel_workflow'));
+  assert.match(report.reasoning.join('\n'), /Workflow control: allow for parallelization/);
+});
+
+test('workflow sentinel blocks parallel fan-out beyond branch budget', () => {
+  const normalized = normalizeProviderAction({
+    provider: 'anthropic',
+    workflowPattern: 'parallelization',
+    branches: ['a', 'b', 'c', 'd', 'e'],
+    workflow: {
+      inspection: {
+        required: true,
+        expectedObservation: 'Aggregator validates each branch.',
+      },
+    },
+    content: [{
+      type: 'tool_use',
+      id: 'toolu_parallel_budget',
+      name: 'Bash',
+      input: {
+        command: 'npm test',
+        changedFiles: ['tests/workflow-sentinel.test.js'],
+      },
+    }],
+  });
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-parallel-budget-'));
+  const report = evaluateWorkflowSentinel(normalized.toolName, {}, {
+    normalizedAction: normalized,
+    budget: { maxParallelBranches: 3 },
+    feedbackDir,
+    feedbackOptions: { feedbackDir },
+    governanceState: {
+      taskScope: {
+        summary: 'parallel budget test',
+        allowedPaths: ['tests/**'],
+        protectedPaths: [],
+      },
+      protectedApprovals: [],
+      branchGovernance: {
+        baseBranch: 'main',
+        prRequired: true,
+      },
+    },
+  });
+
+  assert.equal(report.costControl.mode, 'block');
+  assert.equal(report.workflowControl.mode, 'block');
+  assert.equal(report.decision, 'deny');
+  assert.match(report.evidence.join('\n'), /Parallel workflow branch count 5 exceeds/);
 });
 
 test('evaluateGatesAsync returns workflow sentinel warning when no static gate matches', async () => {

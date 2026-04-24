@@ -925,6 +925,30 @@ paths:
                 budget:
                   type: object
                   additionalProperties: true
+                workflowPattern:
+                  type: string
+                  enum: [single_action, chaining, routing, parallelization, evaluator-optimizer, agent]
+                workflow:
+                  type: object
+                  additionalProperties: true
+                goal:
+                  type: string
+                tools:
+                  type: array
+                  items:
+                    type: string
+                branches:
+                  type: array
+                  items:
+                    type: string
+                steps:
+                  type: array
+                  items:
+                    type: string
+                routes:
+                  type: array
+                  items:
+                    type: string
                 command:
                   type: string
                 filePath:

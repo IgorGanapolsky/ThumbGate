@@ -19,6 +19,7 @@ const { evaluatePretool } = require('./hybrid-feedback-context');
 const { getInterventionRecommendation } = require('./intervention-policy');
 const {
   buildCostControl,
+  buildWorkflowControl,
   normalizeProviderAction,
 } = require('./provider-action-normalizer');
 
@@ -397,6 +398,7 @@ function scoreRisk({
   taskScopeViolation,
   protectedSurface,
   costControl,
+  workflowControl,
 }) {
   const drivers = [];
   const commandInfo = classifyCommand(toolInput.command || '');
@@ -498,6 +500,45 @@ function scoreRisk({
       { mode: costControl.mode, reasons: costControl.reasons }
     );
   }
+  if (workflowControl && workflowControl.workflow && workflowControl.workflow.pattern !== 'single_action') {
+    const workflow = workflowControl.workflow;
+    if (workflow.pattern === 'agent') {
+      addDriver(
+        drivers,
+        'open_ended_agent',
+        workflow.hasInspectionEvidence ? 0.14 : 0.28,
+        workflow.hasInspectionEvidence
+          ? 'Open-ended agent action declares inspection evidence.'
+          : 'Open-ended agent action lacks explicit environment-inspection evidence.',
+        { pattern: workflow.pattern, toolCount: workflow.toolCount }
+      );
+    } else if (workflow.pattern === 'parallelization') {
+      addDriver(
+        drivers,
+        'parallel_workflow',
+        workflow.branchCount > 1 ? 0.12 : 0.06,
+        'Parallel workflow fan-out increases aggregate cost and review surface.',
+        { branchCount: workflow.branchCount }
+      );
+    } else {
+      addDriver(
+        drivers,
+        'workflow_pattern',
+        0.06,
+        `Provider action declared ${workflow.pattern} workflow pattern.`,
+        { pattern: workflow.pattern, stepCount: workflow.stepCount, routeCount: workflow.routeCount }
+      );
+    }
+    if (workflow.requiresInspection && !workflow.hasInspectionEvidence) {
+      addDriver(
+        drivers,
+        'missing_environment_inspection',
+        workflow.pattern === 'agent' ? 0.22 : 0.14,
+        'Action has no declared way to observe whether the tool/workflow result succeeded.',
+        { pattern: workflow.pattern }
+      );
+    }
+  }
   if (memoryGuard && memoryGuard.mode && memoryGuard.mode !== 'allow') {
     addDriver(
       drivers,
@@ -570,6 +611,7 @@ function buildEvidence({
   protectedSurface,
   normalizedAction,
   costControl,
+  workflowControl,
 }) {
   const evidence = [];
   if (normalizedAction && normalizedAction.provider !== 'unknown') {
@@ -579,6 +621,15 @@ function buildEvidence({
   }
   if (costControl && costControl.mode && costControl.mode !== 'allow') {
     evidence.push(`Cost control ${costControl.mode}: ${costControl.reasons.join(' ')}`);
+  }
+  if (workflowControl && workflowControl.workflow && workflowControl.workflow.pattern !== 'single_action') {
+    const workflow = workflowControl.workflow;
+    evidence.push(
+      `Workflow pattern ${workflow.pattern}: ${workflow.branchCount} branch(es), ${workflow.stepCount} step(s), ${workflow.toolCount} tool(s), inspection evidence ${workflow.hasInspectionEvidence ? 'present' : 'missing'}.`
+    );
+    if (workflowControl.mode !== 'allow') {
+      evidence.push(`Workflow control ${workflowControl.mode}: ${workflowControl.reasons.join(' ')}`);
+    }
   }
   if (memoryGuard && memoryGuard.mode && memoryGuard.mode !== 'allow') {
     evidence.push(`Memory guard predicted ${memoryGuard.mode}: ${memoryGuard.reason}`);
@@ -688,6 +739,7 @@ function buildRemediations({
   learnedPolicy,
   executionSurface,
   costControl,
+  workflowControl,
 }) {
   const remediations = [];
   const seen = new Set();
@@ -765,6 +817,22 @@ function buildRemediations({
       'High token or cost estimates should be reviewed before the model/tool loop continues.'
     );
   }
+  if (workflowControl && workflowControl.mode && workflowControl.mode !== 'allow') {
+    push(
+      'add_environment_inspection',
+      'Add environment inspection evidence',
+      'Declare how the agent will observe results after action: read-before-write, screenshots, API response checks, test commands, or generated-output validation.',
+      'Open-ended agents and inspection-sensitive workflows need a concrete feedback signal before they can be trusted in production.'
+    );
+  }
+  if (workflowControl?.workflow?.pattern === 'agent') {
+    push(
+      'prefer_workflow_when_possible',
+      'Prefer a predefined workflow when possible',
+      'If the task shape is known, split it into explicit workflow steps instead of letting an open-ended agent improvise.',
+      'Predefined workflows are easier to test, evaluate, budget, and audit than open-ended agents.'
+    );
+  }
 
   return remediations;
 }
@@ -792,6 +860,11 @@ function buildReasoning(report) {
   }
   if (report.costControl && report.costControl.mode !== 'allow') {
     lines.push(`Cost control: ${report.costControl.mode} — ${report.costControl.reasons.join(' ')}`);
+  }
+  if (report.workflowControl && report.workflowControl.workflow.pattern !== 'single_action') {
+    lines.push(
+      `Workflow control: ${report.workflowControl.mode} for ${report.workflowControl.workflow.pattern} with inspection ${report.workflowControl.workflow.hasInspectionEvidence ? 'present' : 'missing'}.`
+    );
   }
   for (const driver of report.drivers.slice(0, 4)) {
     lines.push(`Driver ${driver.key} (+${driver.weight}): ${driver.reason}`);
@@ -892,6 +965,7 @@ function buildDecisionControl({
   integrity,
   protectedSurface,
   costControl,
+  workflowControl,
 }) {
   const reversibility = classifyReversibility({
     command,
@@ -902,10 +976,13 @@ function buildDecisionControl({
   const hasOperationalBlockers = Boolean(integrity && Array.isArray(integrity.blockers) && integrity.blockers.length > 0);
   const hasCostWarning = Boolean(costControl && costControl.mode === 'warn');
   const hasCostBlock = Boolean(costControl && costControl.mode === 'block');
+  const hasWorkflowWarning = Boolean(workflowControl && workflowControl.mode === 'warn');
+  const hasWorkflowBlock = Boolean(workflowControl && workflowControl.mode === 'block');
   const requiresCheckpoint = decision === 'warn'
-    || (decision === 'allow' && (reversibility !== 'two_way_door' || hasOperationalBlockers || hasCostWarning));
+    || (decision === 'allow' && (reversibility !== 'two_way_door' || hasOperationalBlockers || hasCostWarning || hasWorkflowWarning));
   const executionMode = decision === 'deny'
     || hasCostBlock
+    || hasWorkflowBlock
     ? 'blocked'
     : requiresCheckpoint
       ? 'checkpoint_required'
@@ -929,7 +1006,7 @@ function buildDecisionControl({
     decisionOwner,
     reversibility,
     deliberation,
-    requiresHumanApproval: (executionMode === 'checkpoint_required' && decisionOwner !== 'agent') || hasCostBlock,
+    requiresHumanApproval: (executionMode === 'checkpoint_required' && decisionOwner !== 'agent') || hasCostBlock || hasWorkflowBlock,
     recommendedAction: executionMode === 'blocked'
       ? 'halt'
       : executionMode === 'checkpoint_required'
@@ -943,9 +1020,12 @@ function buildDecisionControl({
   };
 }
 
-function chooseDecision({ riskScore, integrity, memoryGuard, learnedPolicy, blastRadius, command, costControl }) {
+function chooseDecision({ riskScore, integrity, memoryGuard, learnedPolicy, blastRadius, command, costControl, workflowControl }) {
   const hasOperationalBlockers = Boolean(integrity && Array.isArray(integrity.blockers) && integrity.blockers.length > 0);
   if (costControl && costControl.mode === 'block') {
+    return 'deny';
+  }
+  if (workflowControl && workflowControl.mode === 'block') {
     return 'deny';
   }
   const destructiveBypass = /\bgit\s+push\b.*(?:--force|-f)\b/i.test(command) || /\bgh\s+pr\s+merge\b.*--admin\b/i.test(command);
@@ -994,7 +1074,7 @@ function chooseDecision({ riskScore, integrity, memoryGuard, learnedPolicy, blas
   if (destructiveBypass || learnedHardStop || repeatedHighBlast || (hasOperationalBlockers && riskScore >= 0.72) || riskScore >= 0.86) {
     return 'deny';
   }
-  if ((costControl && costControl.mode === 'warn') || riskScore >= 0.45 || (learnedWarning && riskScore >= 0.3) || (learnedRecall && riskScore >= 0.34)) {
+  if ((workflowControl && workflowControl.mode === 'warn') || (costControl && costControl.mode === 'warn') || riskScore >= 0.45 || (learnedWarning && riskScore >= 0.3) || (learnedRecall && riskScore >= 0.34)) {
     return 'warn';
   }
   return 'allow';
@@ -1025,6 +1105,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     normalizedToolInput.changed_files = normalizedAction.affectedFiles;
   }
   const costControl = buildCostControl(normalizedAction, options.budget || toolInput.budget || {});
+  const workflowControl = buildWorkflowControl(normalizedAction, options.workflowPolicy || toolInput.workflowPolicy || options.budget || toolInput.budget || {});
   const governanceState = options.governanceState || loadGovernanceState();
   const repoPath = options.repoPath || normalizedToolInput.repoPath || normalizedToolInput.cwd || process.cwd();
   const repoRoot = resolveRepoRoot(repoPath) || null;
@@ -1092,6 +1173,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     taskScopeViolation,
     protectedSurface: protectedSurfaceForRisk,
     costControl,
+    workflowControl,
   });
   const executionSurface = buildDockerSandboxPlan({
     toolName: normalizedToolName,
@@ -1116,6 +1198,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     },
     command: normalizedToolInput.command || '',
     costControl,
+    workflowControl,
   });
   const evidence = buildEvidence({
     integrity,
@@ -1126,6 +1209,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     protectedSurface: protectedSurfaceForRisk,
     normalizedAction,
     costControl,
+    workflowControl,
   });
   const remediations = buildRemediations({
     integrity,
@@ -1136,6 +1220,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     learnedPolicy,
     executionSurface,
     costControl,
+    workflowControl,
   });
   const summary = decision === 'allow'
     ? 'No predictive workflow blockers detected.'
@@ -1147,6 +1232,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     toolName: normalizedToolName,
     normalizedAction,
     costControl,
+    workflowControl,
     decision,
     riskScore: risk.score,
     band: risk.band,
@@ -1180,6 +1266,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     integrity,
     protectedSurface: protectedSurfaceForRisk,
     costControl,
+    workflowControl,
   });
   report.reasoning = buildReasoning(report);
   return report;

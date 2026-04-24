@@ -2,6 +2,7 @@
 'use strict';
 
 const DEFAULT_SOFT_TOKEN_LIMIT = 8000;
+const DEFAULT_MAX_PARALLEL_BRANCHES = 4;
 
 const EDIT_TOOL_NAMES = new Set(['Edit', 'Write', 'MultiEdit', 'file.write']);
 const MCP_PRIMITIVE_BY_METHOD = {
@@ -18,6 +19,59 @@ function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
+function appendDashOnce(output) {
+  if (output.endsWith('-')) return output;
+  return `${output}-`;
+}
+
+function isAsciiAlphanumeric(ch) {
+  const code = ch.charCodeAt(0);
+  return (code >= 48 && code <= 57) || (code >= 97 && code <= 122);
+}
+
+function isWhitespace(ch) {
+  const code = ch.charCodeAt(0);
+  return code === 9 || code === 10 || code === 11 || code === 12 || code === 13 || code === 32;
+}
+
+function trimDashes(value) {
+  let start = 0;
+  let end = value.length;
+  while (start < end && value[start] === '-') start += 1;
+  while (end > start && value[end - 1] === '-') end -= 1;
+  return value.slice(start, end);
+}
+
+function normalizeToken(value, allowedPunctuation = '._-') {
+  const text = String(value || '').trim().toLowerCase();
+  let output = '';
+  for (const ch of text) {
+    if (isAsciiAlphanumeric(ch) || allowedPunctuation.includes(ch)) {
+      output += ch;
+      continue;
+    }
+    output = appendDashOnce(output);
+  }
+  return trimDashes(output);
+}
+
+function normalizeCommandText(value) {
+  const text = String(value || '').trim().toLowerCase();
+  let output = '';
+  for (const ch of text) {
+    if (isWhitespace(ch)) {
+      output = output.endsWith(' ') ? output : `${output} `;
+      continue;
+    }
+    output += ch;
+  }
+  return output.trim();
+}
+
+function containsAny(value, needles) {
+  return needles.some((needle) => value.includes(needle));
+}
+
 function normalizeProvider(provider) {
   const value = String(provider || '').trim().toLowerCase();
   if (!value) return 'unknown';
@@ -26,7 +80,7 @@ function normalizeProvider(provider) {
   if (value.includes('codex')) return 'codex';
   if (value.includes('gemini')) return 'gemini';
   if (value.includes('cursor')) return 'cursor';
-  return value.replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'unknown';
+  return normalizeToken(value) || 'unknown';
 }
 
 function firstObject(...values) {
@@ -177,29 +231,30 @@ function inferActionType(toolName, toolInput = {}, fallback = {}) {
   if (fallback.method === 'resources/read') return 'context.read';
   if (fallback.method === 'prompts/get') return 'prompt.get';
   const normalizedTool = String(toolName || '').trim();
-  if (normalizedTool === 'Bash' || /bash|shell|terminal|exec|run_command/i.test(normalizedTool)) {
+  const lowerTool = normalizedTool.toLowerCase();
+  if (normalizedTool === 'Bash' || containsAny(lowerTool, ['bash', 'shell', 'terminal', 'exec', 'run_command'])) {
     return 'shell.exec';
   }
-  if (EDIT_TOOL_NAMES.has(normalizedTool) || /edit|write|patch|file/i.test(normalizedTool)) {
+  if (EDIT_TOOL_NAMES.has(normalizedTool) || containsAny(lowerTool, ['edit', 'write', 'patch', 'file'])) {
     return 'file.write';
   }
-  if (/fetch|request|http|browser/i.test(normalizedTool)) {
+  if (containsAny(lowerTool, ['fetch', 'request', 'http', 'browser'])) {
     return 'network.request';
   }
   return 'tool.call';
 }
 
 function inferIntent({ actionType, command, affectedFiles }) {
-  const text = String(command || '').toLowerCase();
+  const text = normalizeCommandText(command);
   if (actionType === 'context.read') return 'read-context';
   if (actionType === 'prompt.get') return 'load-prompt-template';
-  if (/\b(?:npm|yarn|pnpm)\s+publish\b/.test(text) || /\bgh\s+release\s+create\b/.test(text)) {
+  if (containsAny(text, ['npm publish', 'yarn publish', 'pnpm publish', 'gh release create'])) {
     return 'publish';
   }
-  if (/\bgh\s+pr\s+merge\b/.test(text) || /\bgit\s+push\b/.test(text)) {
+  if (containsAny(text, ['gh pr merge', 'git push'])) {
     return 'release-workflow';
   }
-  if (/\b(?:npm|node|yarn|pnpm)\s+(?:test|run test)|\bpytest\b|\bgo test\b/.test(text)) {
+  if (containsAny(text, ['npm test', 'npm run test', 'node test', 'node run test', 'yarn test', 'yarn run test', 'pnpm test', 'pnpm run test', 'pytest', 'go test'])) {
     return 'verify';
   }
   if (actionType === 'file.write' && affectedFiles.length > 0) {
@@ -239,6 +294,166 @@ function normalizeUsage(input = {}, toolInput = {}) {
   };
 }
 
+function normalizeStringArray(value) {
+  if (Array.isArray(value)) return uniqueStrings(value);
+  if (typeof value === 'string' && value.trim()) return [value.trim()];
+  return [];
+}
+
+function firstArray(...values) {
+  for (const value of values) {
+    if (Array.isArray(value)) return value;
+  }
+  return [];
+}
+
+function normalizeWorkflowPattern(value) {
+  const text = normalizeToken(value, '.-');
+  if (!text) return '';
+  if (['parallel', 'parallelization', 'fanout', 'fan-out'].includes(text)) return 'parallelization';
+  if (['chain', 'chaining', 'sequential'].includes(text)) return 'chaining';
+  if (['route', 'routing', 'classifier'].includes(text)) return 'routing';
+  if (['evaluator', 'optimizer', 'evaluator-optimizer', 'grader'].includes(text)) return 'evaluator-optimizer';
+  if (['agent', 'agentic', 'autonomous-agent'].includes(text)) return 'agent';
+  if (['workflow', 'single', 'single-action'].includes(text)) return 'single_action';
+  return text || '';
+}
+
+function inferWorkflowPattern(source = {}, toolInput = {}) {
+  const explicit = normalizeWorkflowPattern(firstString(
+    source.workflowPattern,
+    source.workflow_pattern,
+    source.workflow && source.workflow.pattern,
+    toolInput.workflowPattern,
+    toolInput.workflow_pattern,
+    toolInput.workflow && toolInput.workflow.pattern,
+    source.pattern,
+    toolInput.pattern
+  ));
+  if (explicit) return explicit;
+
+  const routes = firstArray(source.routes, toolInput.routes, source.workflow && source.workflow.routes, toolInput.workflow && toolInput.workflow.routes);
+  const branches = firstArray(
+    source.branches,
+    source.subTasks,
+    source.subtasks,
+    source.parallelBranches,
+    toolInput.branches,
+    toolInput.subTasks,
+    toolInput.subtasks,
+    toolInput.parallelBranches,
+    source.workflow && source.workflow.branches,
+    toolInput.workflow && toolInput.workflow.branches
+  );
+  const steps = firstArray(source.steps, toolInput.steps, source.workflow && source.workflow.steps, toolInput.workflow && toolInput.workflow.steps);
+
+  if (source.agent === true || source.isAgent === true || toolInput.agent === true || toolInput.isAgent === true) return 'agent';
+  if (routes.length > 0) return 'routing';
+  if (branches.length > 1 || source.parallel === true || toolInput.parallel === true) return 'parallelization';
+  if (steps.length > 1) return 'chaining';
+  if (source.evaluator || source.grader || source.optimizer || toolInput.evaluator || toolInput.grader || toolInput.optimizer) return 'evaluator-optimizer';
+  if ((source.goal || toolInput.goal) && firstArray(source.tools, toolInput.tools).length > 0) return 'agent';
+  return 'single_action';
+}
+
+function hasInspectionEvidence(source = {}, toolInput = {}) {
+  const workflow = firstObject(source.workflow, toolInput.workflow);
+  const verification = firstObject(source.verification, toolInput.verification, workflow.verification);
+  const inspection = firstObject(source.inspection, toolInput.inspection, workflow.inspection);
+  const checks = [
+    source.observesAfterAction,
+    source.observeAfterAction,
+    source.readBeforeWrite,
+    source.postActionObservation,
+    toolInput.observesAfterAction,
+    toolInput.observeAfterAction,
+    toolInput.readBeforeWrite,
+    toolInput.postActionObservation,
+    workflow.observesAfterAction,
+    workflow.readBeforeWrite,
+    verification.required,
+    verification.expectedResult,
+    verification.command,
+    verification.apiResponse,
+    verification.screenshot,
+    inspection.required,
+    inspection.expectedObservation,
+    inspection.screenshot,
+    inspection.apiResponse,
+  ];
+  if (checks.some(Boolean)) return true;
+  return normalizeStringArray(source.evidence).length > 0
+    || normalizeStringArray(toolInput.evidence).length > 0
+    || normalizeStringArray(source.checks).length > 0
+    || normalizeStringArray(toolInput.checks).length > 0
+    || normalizeStringArray(workflow.checks).length > 0;
+}
+
+function normalizeWorkflow(source = {}, toolInput = {}) {
+  const workflow = firstObject(source.workflow, toolInput.workflow);
+  const branches = firstArray(
+    source.branches,
+    source.subTasks,
+    source.subtasks,
+    source.parallelBranches,
+    toolInput.branches,
+    toolInput.subTasks,
+    toolInput.subtasks,
+    toolInput.parallelBranches,
+    workflow.branches,
+    workflow.subTasks,
+    workflow.subtasks
+  );
+  const steps = firstArray(source.steps, toolInput.steps, workflow.steps);
+  const routes = firstArray(source.routes, toolInput.routes, workflow.routes);
+  const tools = firstArray(source.tools, toolInput.tools, workflow.tools);
+  const pattern = inferWorkflowPattern(source, toolInput);
+  const branchCount = firstNumber(
+    source.branchCount,
+    toolInput.branchCount,
+    workflow.branchCount,
+    branches.length
+  );
+  const stepCount = firstNumber(
+    source.stepCount,
+    toolInput.stepCount,
+    workflow.stepCount,
+    steps.length
+  );
+  const toolCount = firstNumber(
+    source.toolCount,
+    toolInput.toolCount,
+    workflow.toolCount,
+    tools.length
+  );
+  const routeCount = firstNumber(
+    source.routeCount,
+    toolInput.routeCount,
+    workflow.routeCount,
+    routes.length
+  );
+  const inspectionEvidence = hasInspectionEvidence(source, toolInput);
+  const requiresInspection = Boolean(
+    pattern === 'agent'
+      || pattern === 'parallelization'
+      || source.requiresInspection
+      || toolInput.requiresInspection
+      || workflow.requiresInspection
+  );
+
+  return {
+    pattern,
+    branchCount,
+    stepCount,
+    toolCount,
+    routeCount,
+    hasInspectionEvidence: inspectionEvidence,
+    requiresInspection,
+    isOpenEndedAgent: pattern === 'agent',
+    isPredefinedWorkflow: ['single_action', 'chaining', 'routing', 'parallelization', 'evaluator-optimizer'].includes(pattern),
+  };
+}
+
 function normalizeProviderAction(input = {}) {
   const source = asObject(input);
   const toolInput = extractToolInput(source);
@@ -264,6 +479,7 @@ function normalizeProviderAction(input = {}) {
     intent: inferIntent({ actionType, command, affectedFiles }),
     affectedFiles,
     usage,
+    workflow: normalizeWorkflow(source, toolInput),
     rawShape: {
       hasProviderToolCall: Boolean(source.providerToolCall || source.toolCall || source.toolUse),
       hasOpenAiToolCall: Boolean(extractOpenAiToolCall(source).name),
@@ -280,6 +496,40 @@ function normalizeBudget(input = {}) {
     remainingTokens: firstNumber(budget.remainingTokens, budget.tokensRemaining),
     maxCostUsdPerAction: firstNumber(budget.maxCostUsdPerAction, budget.perActionCostUsd, budget.costLimitUsd),
     remainingCostUsd: firstNumber(budget.remainingCostUsd, budget.costUsdRemaining),
+    maxParallelBranches: firstNumber(budget.maxParallelBranches, budget.parallelBranchLimit, DEFAULT_MAX_PARALLEL_BRANCHES),
+  };
+}
+
+function buildWorkflowControl(normalizedAction = {}, policyInput = {}) {
+  const workflow = asObject(normalizedAction.workflow);
+  const policy = asObject(policyInput);
+  const reasons = [];
+  const warnings = [];
+  const maxParallelBranches = firstNumber(
+    policy.maxParallelBranches,
+    policy.parallelBranchLimit,
+    DEFAULT_MAX_PARALLEL_BRANCHES
+  );
+  const requireInspectionForAgents = policy.requireInspectionForAgents !== false;
+
+  if (workflow.pattern === 'agent' && requireInspectionForAgents && !workflow.hasInspectionEvidence) {
+    reasons.push('Open-ended agent actions must declare environment-inspection or verification evidence before execution.');
+  }
+  if (workflow.requiresInspection && !workflow.hasInspectionEvidence && workflow.pattern !== 'agent') {
+    warnings.push('Workflow declares inspection-sensitive behavior but does not include explicit post-action verification evidence.');
+  }
+  if (maxParallelBranches > 0 && workflow.branchCount > maxParallelBranches) {
+    reasons.push(`Parallel workflow branch count ${workflow.branchCount} exceeds limit ${maxParallelBranches}.`);
+  }
+
+  return {
+    mode: reasons.length > 0 ? 'block' : warnings.length > 0 ? 'warn' : 'allow',
+    workflow,
+    reasons: reasons.concat(warnings),
+    policy: {
+      maxParallelBranches,
+      requireInspectionForAgents,
+    },
   };
 }
 
@@ -301,6 +551,9 @@ function buildCostControl(normalizedAction = {}, budgetInput = {}) {
   }
   if (budget.remainingCostUsd > 0 && estimatedCostUsd > budget.remainingCostUsd) {
     reasons.push(`Estimated cost $${estimatedCostUsd.toFixed(4)} exceeds remaining budget $${budget.remainingCostUsd.toFixed(4)}.`);
+  }
+  if (budget.maxParallelBranches > 0 && normalizedAction.workflow?.branchCount > budget.maxParallelBranches) {
+    reasons.push(`Parallel workflow branch count ${normalizedAction.workflow.branchCount} exceeds budget limit ${budget.maxParallelBranches}.`);
   }
 
   const softWarning = reasons.length === 0 && totalTokens >= DEFAULT_SOFT_TOKEN_LIMIT
@@ -324,7 +577,9 @@ function buildCostControl(normalizedAction = {}, budgetInput = {}) {
 module.exports = {
   DEFAULT_SOFT_TOKEN_LIMIT,
   buildCostControl,
+  buildWorkflowControl,
   normalizeBudget,
   normalizeProvider,
   normalizeProviderAction,
+  normalizeWorkflow,
 };

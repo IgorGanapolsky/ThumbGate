@@ -55,6 +55,7 @@ test('renderPlanMarkdown names all five GSD stages and page briefs', () => {
   assert.match(markdown, /ThumbGate vs Mem0/);
   assert.match(markdown, /AI Agent Harness Optimization \| Progressive Disclosure \+ Pre-Action Checks/);
   assert.match(markdown, /AI Search Topical Presence \| Become the Obvious Recommendation/);
+  assert.match(markdown, /Best Tools to Stop AI Agents From Breaking Production \| ThumbGate Listicle/);
   assert.match(markdown, /Relational Knowledge in AI Recommendations \| Why Brands Get Picked/);
   assert.match(markdown, /How to Stop AI Coding Agents From Repeating Mistakes \| ThumbGate/);
   assert.match(markdown, /Cursor Agent Guardrails \| Stop Repeated Mistakes with ThumbGate/);
@@ -151,6 +152,26 @@ test('AI search topical presence page is discoverable and commercially classifie
   });
 });
 
+test('AI agent production listicle is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/best-tools-stop-ai-agents-breaking-production');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/best-tools-stop-ai-agents-breaking-production');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'best tools to stop ai agents from breaking production');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-checks');
+  assert.match(html, /Claude Code, Cursor, Codex, Gemini/);
+  assert.match(html, /Environment inspection requirements/);
+  assert.match(html, /Parallel branch budgets/);
+  assert.match(html, /AEO fuel/);
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/best-tools-stop-ai-agents-breaking-production',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
 test('native messaging host security page is discoverable and commercially classified', () => {
   const page = findSeoPageByPath('/guides/native-messaging-host-security');
   const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/native-messaging-host-security');
@@ -200,6 +221,7 @@ test('writePlanOutputs persists machine-readable GSD artifacts', () => {
     assert.equal(pages.length, PAGE_BLUEPRINTS.length);
     assert.ok(pages.some((page) => page.path === '/guides/agent-harness-optimization'));
     assert.ok(pages.some((page) => page.path === '/guides/ai-search-topical-presence'));
+    assert.ok(pages.some((page) => page.path === '/guides/best-tools-stop-ai-agents-breaking-production'));
     assert.ok(pages.some((page) => page.path === '/guides/relational-knowledge-ai-recommendations'));
     assert.ok(pages.some((page) => page.path === '/guides/codex-cli-guardrails'));
     assert.ok(pages.some((page) => page.path === '/guides/gemini-cli-feedback-memory'));
