@@ -70,4 +70,18 @@ describe('public/ package parity', () => {
       );
     }
   });
+
+  test('.well-known text surfaces have correct pricing', () => {
+    const wellKnownFiles = ['.well-known/llms.txt'];
+    for (const rel of wellKnownFiles) {
+      const filePath = path.join(ROOT, rel);
+      if (!fs.existsSync(filePath)) continue;
+      const content = fs.readFileSync(filePath, 'utf8');
+      const stripped = content.replace(/Previously \$99\/seat/g, '');
+      assert.ok(
+        !/\$99\s*\/?\s*seat/i.test(stripped),
+        `${rel} contains stale $99/seat pricing — Team is now $49/seat (AI crawlers read this)`,
+      );
+    }
+  });
 });
