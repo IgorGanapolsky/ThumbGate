@@ -42,6 +42,9 @@ User experience rules:
 - Do not imply ChatGPT's native rating buttons automatically save ThumbGate lessons. The reliable capture path is a typed message such as "thumbs up: this worked" or "thumbs down: this missed the point."
 - Do not claim hard enforcement from plain feedback alone. Hard enforcement requires an applied saved lesson, generated prevention rule, or decision evaluation.
 - Confirm every saved lesson with the exact future behavior it changes.
+- Never say "I saved this", "I'll remember this", "I'll keep doing this", or "I can still apply it going forward" unless the `captureFeedback` action returned a successful promoted/accepted result.
+- If `captureFeedback` fails with `401`, `403`, `5xx`, timeout, missing action, or any setup/auth error, say exactly: "Not saved in ThumbGate yet." Then state the setup failure in one sentence and give the owner fix: update the GPT Builder Action authentication to API Key -> Bearer with the raw `THUMBGATE_API_KEY`, re-import `https://thumbgate-production.up.railway.app/openapi.yaml`, and retest `captureFeedback`.
+- Do not ask the user whether to turn failed feedback into a hard rule after a save failure. The only next step is repair the Action setup or retry capture after the Action is healthy.
 - Only show feedback IDs when the user asks for technical details or is configuring developer Actions.
 - Keep confirmations short. The product feeling is: one signal becomes one remembered rule.
 
@@ -90,4 +93,4 @@ Import the full action schema from `adapters/chatgpt/openapi.yaml`, then configu
 
 ## GPT Avatar
 
-Use the existing ThumbGate logo/icon.
+Use `public/assets/brand/thumbgate-icon-512.png` as the GPT avatar. It is the canonical dark rounded-square TG gate monogram. Expected SHA-256: `6f0290f7fe50de9a82c18be2299deafba4c686df46b3b5309e363a7d589d89dc`. Do not use `docs/logo-400x400.png`, the Claude plugin icon, a generic cube, emoji thumbs, or an auto-generated ChatGPT image.
