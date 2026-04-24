@@ -13,6 +13,8 @@ This page remains the canonical copy-paste submission packet for updating the GP
 
 > **ACTION REQUIRED (operator):** the live GPT listing currently shows earlier copy. Sync by opening https://chat.openai.com/gpts/editor → ThumbGate → Configure, and pasting the sections below into Name, Description, Instructions, and Conversation Starters. A publish bump is required for the updated copy to show in Explore GPTs.
 
+Live repair audit: `docs/chatgpt-live-audit-2026-04-24.md` records the current published GPT drift: empty profile image metadata, built-in `ember` emoji/theme state, stale Action instructions, and feedback capture behavior consistent with a missing or stale GPT Builder Bearer secret.
+
 ---
 
 ## GPT Name
