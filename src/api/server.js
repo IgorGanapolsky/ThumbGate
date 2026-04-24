@@ -181,6 +181,7 @@ const {
 } = require('../../scripts/rate-limiter');
 const { sendProblem, PROBLEM_TYPES } = require('../../scripts/problem-detail');
 const { TOOLS: MCP_TOOLS } = require('../../scripts/tool-registry');
+const resendMailer = require('../../scripts/mailer/resend-mailer');
 const {
   buildContextFootprintReport,
 } = require('../../scripts/context-footprint');
@@ -3480,6 +3481,19 @@ function createApiServer() {
               landingPath,
               attribution,
             }) + '\n');
+            // Fire-and-forget welcome email. Never blocks the 200 response, never
+            // throws — the mailer returns a structured result even on failure, so
+            // the signup still succeeds if Resend is down or RESEND_API_KEY is unset.
+            Promise.resolve()
+              .then(() => resendMailer.sendNewsletterWelcomeEmail({ to: email }))
+              .then((result) => {
+                if (!result || result.sent !== true) {
+                  console.warn('[newsletter] welcome email not sent:', email, result && result.reason);
+                }
+              })
+              .catch((err) => {
+                console.warn('[newsletter] welcome email threw:', email, err && err.message);
+              });
           }
           const journeyState = resolveJourneyState(req, parsed);
           appendBestEffortTelemetry(getFeedbackPaths().FEEDBACK_DIR, {

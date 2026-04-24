@@ -108,14 +108,60 @@ async function getOperationalBillingSummary(options = {}) {
       source: 'hosted',
       summary,
       fallbackReason: null,
+      hostedStatus: 200,
     };
   } catch (err) {
     const reason = err && err.message ? err.message : 'hosted_summary_unavailable';
-    console.warn(`[operational-summary] Hosted billing unavailable — falling back to local state. Reason: ${reason}`);
+    const status = err && typeof err.status === 'number' ? err.status : null;
+    const code = err && err.code ? err.code : null;
+
+    // Hosted deliberately disabled or never configured — local fallback is
+    // intentional, not a degraded state. Tag as plain 'local'.
+    if (code === 'hosted_summary_disabled' || code === 'hosted_summary_unconfigured') {
+      return {
+        source: 'local',
+        summary: await getBillingSummaryLive(analyticsWindow),
+        fallbackReason: reason,
+        hostedStatus: null,
+      };
+    }
+
+    // Auth failure is the most dangerous case: if hosted Stripe data says
+    // we have paid customers and local ledgers are empty, silently returning
+    // "$0.00" is a lie that hides actual revenue. Refuse to guess — surface
+    // an actionable error so the operator fixes the key before any
+    // downstream report renders wrong numbers.
+    if (status === 401 || status === 403) {
+      const authErr = new Error(
+        `Hosted billing summary rejected credentials (HTTP ${status}). ` +
+        `The operator key on this machine does not match the one on the ` +
+        `hosted deployment. Fix: set THUMBGATE_OPERATOR_KEY in this shell, ` +
+        `or update the operatorKey field in ~/.config/thumbgate/operator.json, ` +
+        `to match Railway's THUMBGATE_OPERATOR_KEY. ` +
+        `Running this command without hosted auth would report local-only ` +
+        `data as ground truth, which may not reflect actual Stripe revenue. ` +
+        `Original response: ${reason}`
+      );
+      authErr.code = 'hosted_summary_unauthorized';
+      authErr.status = status;
+      throw authErr;
+    }
+
+    // Non-auth failure (network, 5xx, config) — local fallback is still
+    // useful for dev workflows, but tag the source so downstream renderers
+    // and agents do not mistake it for verified hosted truth.
+    //
+    // Log only the status code (trusted) — the full reason contains upstream
+    // response text and is only returned structurally via fallbackReason.
+    console.warn(
+      `[operational-summary] Hosted billing unreachable (status=${status ?? 'network'}); ` +
+      `falling back to LOCAL-UNVERIFIED state. Numbers below may not reflect actual Stripe revenue.`
+    );
     return {
-      source: 'local',
+      source: 'local-unverified',
       summary: await getBillingSummaryLive(analyticsWindow),
       fallbackReason: reason,
+      hostedStatus: status,
     };
   }
 }
