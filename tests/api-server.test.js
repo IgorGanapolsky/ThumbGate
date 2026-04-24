@@ -2997,6 +2997,30 @@ test('decision endpoints persist evaluations, outcomes, and live metrics', async
   assert.ok(typeof evaluation.actionId === 'string');
   assert.ok(evaluation.decisionControl);
   assert.ok(['auto_execute', 'checkpoint_required', 'blocked'].includes(evaluation.decisionControl.executionMode));
+  assert.ok(evaluation.decisionControl.deliberation);
+
+  const workflowEvaluateRes = await fetch(apiUrl('/v1/decisions/evaluate'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...authHeader },
+    body: JSON.stringify({
+      toolName: 'Bash',
+      command: 'gh workflow run deploy-dev.yml --ref develop',
+      changedFiles: ['mobile/app/build.gradle'],
+      repoPath: process.cwd(),
+      workflowDispatch: {
+        environment: 'release',
+        workflow: 'deploy-release.yml',
+        ref: 'main',
+        sha: '0000000000000000000000000000000000000000',
+        job: 'mobile-release',
+      },
+    }),
+  });
+  assert.equal(workflowEvaluateRes.status, 200);
+  const workflowEvaluation = await workflowEvaluateRes.json();
+  assert.equal(workflowEvaluation.decisionControl.executionMode, 'blocked');
+  assert.equal(workflowEvaluation.decisionControl.deliberation.consistencyCheck.required, true);
+  assert.ok(workflowEvaluation.operationalIntegrity.blockers.some((entry) => entry.code === 'workflow_name_mismatch'));
 
   const outcomeRes = await fetch(apiUrl('/v1/decisions/outcome'), {
     method: 'POST',

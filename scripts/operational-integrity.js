@@ -603,10 +603,18 @@ function findOpenPrForBranch({ branchName, runner = runGh, env = process.env } =
 
 function classifyCommand(command) {
   const text = String(command || '').trim();
+  const workflowRunMatch = text.match(/\bgh\s+workflow\s+run\s+([^\s]+)/i);
+  const refMatch = text.match(/(?:--ref|-r)\s+([^\s]+)/i);
+  const fieldArgs = [...text.matchAll(/(?:--field|-f)\s+([A-Za-z0-9_.-]+)=([^\s]+)/gi)]
+    .map((match) => ({ name: match[1], value: match[2] }));
   return {
     text,
     isPrCreate: /\bgh\s+pr\s+create\b/i.test(text),
     isPrMerge: /\bgh\s+pr\s+merge\b/i.test(text),
+    isWorkflowRun: /\bgh\s+workflow\s+run\b/i.test(text),
+    workflowName: workflowRunMatch ? workflowRunMatch[1] : null,
+    workflowRef: refMatch ? refMatch[1] : null,
+    workflowFields: fieldArgs,
     isPublish: /\b(?:npm|yarn|pnpm)\s+publish\b/i.test(text),
     isReleaseCreate: /\bgh\s+release\s+create\b/i.test(text),
     isTagCreate: /\bgit\s+tag\b/i.test(text),
@@ -648,21 +656,106 @@ function evaluateOperationalIntegrity(options = {}) {
   const commandInfo = classifyCommand(options.command || '');
   const blockers = [];
 
-  const requiresGovernance = commandInfo.isPrCreate || commandInfo.isPrMerge || commandInfo.isPublish || commandInfo.isReleaseCreate || commandInfo.isTagCreate;
+  const requiresGovernance = commandInfo.isPrCreate
+    || commandInfo.isPrMerge
+    || commandInfo.isWorkflowRun
+    || commandInfo.isPublish
+    || commandInfo.isReleaseCreate
+    || commandInfo.isTagCreate;
   const isPublishLike = commandInfo.isPublish || commandInfo.isReleaseCreate || commandInfo.isTagCreate;
 
   if (requiresGovernance && !branchGovernance) {
     blockers.push(buildBlocker(
       'missing_branch_governance',
-      'PR, merge, release, and publish actions require explicit branch governance.'
+      'PR, workflow dispatch, merge, release, and publish actions require explicit branch governance.'
     ));
   }
 
   if (branchGovernance && branchGovernance.localOnly === true && requiresGovernance) {
     blockers.push(buildBlocker(
       'local_only_branch',
-      'This task is marked local-only. PR, merge, release, and publish actions are blocked.'
+      'This task is marked local-only. PR, workflow dispatch, merge, release, and publish actions are blocked.'
     ));
+  }
+
+  if (commandInfo.isWorkflowRun) {
+    const workflowEvidence = branchGovernance && branchGovernance.workflowDispatch
+      && typeof branchGovernance.workflowDispatch === 'object'
+      ? branchGovernance.workflowDispatch
+      : null;
+    const requestedEnvironment = workflowEvidence && workflowEvidence.environment
+      ? String(workflowEvidence.environment).trim()
+      : '';
+    const expectedWorkflow = workflowEvidence && workflowEvidence.workflow
+      ? String(workflowEvidence.workflow).trim()
+      : '';
+    const expectedRef = workflowEvidence && workflowEvidence.ref
+      ? String(workflowEvidence.ref).trim()
+      : '';
+    const expectedSha = workflowEvidence && workflowEvidence.sha
+      ? String(workflowEvidence.sha).trim()
+      : '';
+    const expectedJob = workflowEvidence && workflowEvidence.job
+      ? String(workflowEvidence.job).trim()
+      : '';
+
+    if (!workflowEvidence) {
+      blockers.push(buildBlocker(
+        'missing_workflow_dispatch_evidence',
+        'GitHub Actions workflow dispatch requires explicit workflowDispatch evidence: environment, workflow, ref, sha, and job.'
+      ));
+    }
+    if (workflowEvidence && !requestedEnvironment) {
+      blockers.push(buildBlocker(
+        'missing_workflow_environment',
+        'Workflow dispatch requires the requested environment, such as dev, staging, beta, or release.'
+      ));
+    }
+    if (workflowEvidence && !expectedWorkflow) {
+      blockers.push(buildBlocker(
+        'missing_workflow_name',
+        'Workflow dispatch requires the expected workflow file name before execution.'
+      ));
+    }
+    if (workflowEvidence && expectedWorkflow && commandInfo.workflowName !== expectedWorkflow) {
+      blockers.push(buildBlocker(
+        'workflow_name_mismatch',
+        `Requested ${requestedEnvironment || 'workflow'} dispatch expects ${expectedWorkflow}, but command runs ${commandInfo.workflowName || 'unknown workflow'}.`,
+        { expectedWorkflow, actualWorkflow: commandInfo.workflowName }
+      ));
+    }
+    if (workflowEvidence && !expectedRef) {
+      blockers.push(buildBlocker(
+        'missing_workflow_ref',
+        'Workflow dispatch requires an explicit branch/ref before execution.'
+      ));
+    }
+    if (workflowEvidence && expectedRef && commandInfo.workflowRef !== expectedRef) {
+      blockers.push(buildBlocker(
+        'workflow_ref_mismatch',
+        `Workflow dispatch expects ref ${expectedRef}, but command uses ${commandInfo.workflowRef || 'no --ref value'}.`,
+        { expectedRef, actualRef: commandInfo.workflowRef }
+      ));
+    }
+    if (workflowEvidence && !expectedSha) {
+      blockers.push(buildBlocker(
+        'missing_workflow_sha',
+        'Workflow dispatch requires the HEAD SHA that will be verified after dispatch.'
+      ));
+    }
+    if (workflowEvidence && expectedSha && headSha && expectedSha !== headSha) {
+      blockers.push(buildBlocker(
+        'workflow_sha_mismatch',
+        `Workflow dispatch expects SHA ${expectedSha}, but repository HEAD is ${headSha}.`,
+        { expectedSha, headSha }
+      ));
+    }
+    if (workflowEvidence && !expectedJob) {
+      blockers.push(buildBlocker(
+        'missing_workflow_job',
+        'Workflow dispatch requires the expected job name to verify before reporting the run URL.'
+      ));
+    }
   }
 
   if (commandInfo.isPrMerge && /--admin\b/i.test(commandInfo.text)) {

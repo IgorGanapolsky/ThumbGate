@@ -216,12 +216,68 @@ test('evaluateOperationalIntegrity blocks governance-marked local-only release a
   assert.ok(result.blockers.some((blocker) => blocker.code === 'local_only_branch'));
 });
 
-test('classifyCommand recognizes PR and publish commands', () => {
+test('evaluateOperationalIntegrity blocks unverified workflow dispatches', () => {
+  const result = evaluateOperationalIntegrity({
+    currentBranch: 'release/mobile-2026-04-24',
+    baseBranch: 'main',
+    command: 'gh workflow run deploy-dev.yml --ref develop',
+    headSha: '1111111111111111111111111111111111111111',
+    branchGovernance: {
+      branchName: 'release/mobile-2026-04-24',
+      baseBranch: 'main',
+      workflowDispatch: {
+        environment: 'release',
+        workflow: 'deploy-release.yml',
+        ref: 'main',
+        sha: '0000000000000000000000000000000000000000',
+        job: 'mobile-release',
+      },
+    },
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.commandInfo.isWorkflowRun, true);
+  assert.equal(result.commandInfo.workflowName, 'deploy-dev.yml');
+  assert.equal(result.commandInfo.workflowRef, 'develop');
+  assert.ok(result.blockers.some((blocker) => blocker.code === 'workflow_name_mismatch'));
+  assert.ok(result.blockers.some((blocker) => blocker.code === 'workflow_ref_mismatch'));
+  assert.ok(result.blockers.some((blocker) => blocker.code === 'workflow_sha_mismatch'));
+});
+
+test('evaluateOperationalIntegrity allows verified workflow dispatches', () => {
+  const result = evaluateOperationalIntegrity({
+    currentBranch: 'main',
+    baseBranch: 'main',
+    command: 'gh workflow run deploy-release.yml --ref main',
+    headSha: '1111111111111111111111111111111111111111',
+    branchGovernance: {
+      branchName: 'main',
+      baseBranch: 'main',
+      workflowDispatch: {
+        environment: 'release',
+        workflow: 'deploy-release.yml',
+        ref: 'main',
+        sha: '1111111111111111111111111111111111111111',
+        job: 'mobile-release',
+      },
+    },
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.blockers, []);
+});
+
+test('classifyCommand recognizes PR, workflow, and publish commands', () => {
   const prCreate = classifyCommand('gh pr create --title "thumbgate"');
+  const workflowRun = classifyCommand('gh workflow run deploy-release.yml --ref main -f platform=mobile');
   const publish = classifyCommand('npm publish');
 
   assert.equal(prCreate.isPrCreate, true);
   assert.equal(prCreate.isPublish, false);
+  assert.equal(workflowRun.isWorkflowRun, true);
+  assert.equal(workflowRun.workflowName, 'deploy-release.yml');
+  assert.equal(workflowRun.workflowRef, 'main');
+  assert.deepEqual(workflowRun.workflowFields, [{ name: 'platform', value: 'mobile' }]);
   assert.equal(publish.isPublish, true);
   assert.equal(publish.isReleaseCreate, false);
 });
