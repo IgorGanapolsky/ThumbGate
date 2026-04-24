@@ -20,8 +20,8 @@ const { ensureParentDir, readJsonl } = require('./fs-utils');
 
 const RUNS_FILE = 'agent-runs.jsonl';
 
-function getFeedbackDir() { return resolveFeedbackDir(); }
-function getRunsPath() { return path.join(getFeedbackDir(), RUNS_FILE); }
+function getFeedbackDir(feedbackDir) { return resolveFeedbackDir({ feedbackDir }); }
+function getRunsPath(feedbackDir) { return path.join(getFeedbackDir(feedbackDir), RUNS_FILE); }
 
 // ---------------------------------------------------------------------------
 // 1. Run Tracking
@@ -31,8 +31,8 @@ function getRunsPath() { return path.join(getFeedbackDir(), RUNS_FILE); }
  * Record a background agent run.
  * Called when a background agent starts or completes a task.
  */
-function recordAgentRun({ agentId, runType, source, branch, prNumber, status, gatesChecked, gatesBlocked, filesChanged, ciPassed, duration, metadata } = {}) {
-  const runsPath = getRunsPath();
+function recordAgentRun({ agentId, runType, source, branch, prNumber, status, gatesChecked, gatesBlocked, filesChanged, ciPassed, duration, metadata } = {}, feedbackDir) {
+  const runsPath = getRunsPath(feedbackDir);
   ensureParentDir(runsPath);
   const run = {
     id: `run_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -62,8 +62,8 @@ function recordAgentRun({ agentId, runType, source, branch, prNumber, status, ga
  * Check if a background agent run should proceed based on governance rules.
  * Returns { allowed, blockers, warnings, governanceScore }.
  */
-function checkRunGovernance({ agentId, runType, branch, filesChanged } = {}) {
-  const runs = readJsonl(getRunsPath());
+function checkRunGovernance({ agentId, runType, branch, filesChanged } = {}, feedbackDir) {
+  const runs = readJsonl(getRunsPath(feedbackDir));
   const blockers = [];
   const warnings = [];
 
@@ -109,7 +109,7 @@ function checkRunGovernance({ agentId, runType, branch, filesChanged } = {}) {
  * Auto-capture feedback from a completed background agent run.
  * Converts CI pass/fail into structured feedback for the learning loop.
  */
-function auditCompletedRun({ runId, agentId, ciPassed, ciOutput, prNumber, branch, filesChanged } = {}) {
+function auditCompletedRun({ runId, agentId, ciPassed, ciOutput, prNumber, branch, filesChanged } = {}, feedbackDir) {
   const signal = ciPassed ? 'positive' : 'negative';
   const context = ciPassed
     ? `Background agent run ${runId || 'unknown'} completed successfully. PR #${prNumber || '?'} on ${branch || '?'}. ${filesChanged || 0} files changed. CI passed.`
@@ -127,7 +127,7 @@ function auditCompletedRun({ runId, agentId, ciPassed, ciOutput, prNumber, branc
     status: ciPassed ? 'completed' : 'failed',
     filesChanged,
     ciPassed,
-  });
+  }, feedbackDir);
 
   // Auto-capture feedback
   let feedbackResult = null;
@@ -153,8 +153,8 @@ function auditCompletedRun({ runId, agentId, ciPassed, ciOutput, prNumber, branc
  * Generate a governance report for background agent runs.
  * Shows: total runs, blocked, pass rate, top failing agents, lessons learned.
  */
-function generateGovernanceReport({ periodHours = 24 } = {}) {
-  const runs = readJsonl(getRunsPath());
+function generateGovernanceReport({ periodHours = 24, feedbackDir } = {}) {
+  const runs = readJsonl(getRunsPath(feedbackDir));
   const cutoff = Date.now() - periodHours * 60 * 60 * 1000;
   const recent = runs.filter((r) => new Date(r.timestamp).getTime() > cutoff);
 

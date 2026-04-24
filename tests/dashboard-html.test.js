@@ -62,10 +62,18 @@ test('dashboard includes team metrics and gate-template tabs powered by dashboar
   assert.match(dashboard, /id="inventorySummaryCards"/);
   assert.match(dashboard, /id="inventoryObservedTools"/);
   assert.match(dashboard, /id="inventoryPolicySources"/);
+  assert.match(dashboard, /id="backgroundAgentSummaryCards"/);
+  assert.match(dashboard, /id="backgroundAgentHighlights"/);
+  assert.match(dashboard, /id="backgroundAgentRunTypes"/);
+  assert.match(dashboard, /id="regulatedProofSummaryCards"/);
+  assert.match(dashboard, /id="regulatedProofDetails"/);
+  assert.match(dashboard, /id="regulatedProofArtifacts"/);
   assert.match(dashboard, /id="actionableRemediations"/);
   assert.match(dashboard, /function renderTeam\(team, analytics\)/);
   assert.match(dashboard, /function renderPredictive\(predictive\)/);
   assert.match(dashboard, /function renderAgentInventory\(inventory\)/);
+  assert.match(dashboard, /function renderBackgroundAgents\(backgroundAgents\)/);
+  assert.match(dashboard, /function renderRegulatedProof\(regulatedProof\)/);
   assert.match(dashboard, /function renderGeneratedView\(spec\)/);
   assert.match(dashboard, /function loadGeneratedView\(viewName\)/);
   assert.match(dashboard, /function renderSettingsStatus\(settingsStatus\)/);
@@ -76,6 +84,8 @@ test('dashboard includes team metrics and gate-template tabs powered by dashboar
   assert.match(dashboard, /Forecast revenue/);
   assert.match(dashboard, /highest-ROI guardrails/i);
   assert.match(dashboard, /Agent Surface Inventory/);
+  assert.match(dashboard, /Background Agent Mode/);
+  assert.match(dashboard, /Regulated Buyer Proof/);
   assert.match(dashboard, /Highest-ROI Next Actions/);
 });
 

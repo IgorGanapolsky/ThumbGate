@@ -39,6 +39,7 @@ const { buildPredictiveInsights } = loadOptionalModule('./predictive-insights', 
 const { routeProfile } = require('./profile-router');
 const { getSettingsStatus } = require('./settings-hierarchy');
 const { summarizeWorkflowRuns } = require('./workflow-runs');
+const { generateGovernanceReport } = require('./background-agent-governance');
 const { searchLessons } = require('./lesson-search');
 const { getInterventionPolicySummary } = require('./intervention-policy');
 const {
@@ -1438,6 +1439,58 @@ function computeAgentSurfaceInventory(feedbackDir, options = {}) {
   };
 }
 
+function computeBackgroundAgentMode(feedbackDir, options = {}) {
+  const governance = generateGovernanceReport({
+    periodHours: options.periodHours || 24,
+    feedbackDir,
+  });
+  const workflowSummary = options.workflowSummary || summarizeWorkflowRuns(feedbackDir);
+  const topRunType = Object.entries(governance.byType || {})
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))[0] || null;
+  const latestRun = workflowSummary.latestRun || null;
+  const checkpointCoverage = safeRate(workflowSummary.reviewedRuns || 0, workflowSummary.proofBackedRuns || 0);
+
+  return {
+    ...governance,
+    checkpointCoverage,
+    reviewedRuns: workflowSummary.reviewedRuns || 0,
+    proofBackedRuns: workflowSummary.proofBackedRuns || 0,
+    latestRun,
+    topRunType: topRunType ? { runType: topRunType[0], count: topRunType[1] } : null,
+    recommendedMode: governance.blocked > 0 || governance.failed > 0
+      ? 'checkpoint-heavy'
+      : governance.total > 0
+        ? 'operator-light'
+        : 'bootstrapping',
+  };
+}
+
+function computeRegulatedBuyerProof(settingsStatus, workflowSummary, decisions, readiness) {
+  const origins = Array.isArray(settingsStatus && settingsStatus.origins) ? settingsStatus.origins : [];
+  const activeLayers = Array.isArray(settingsStatus && settingsStatus.activeLayers)
+    ? settingsStatus.activeLayers.filter((layer) => layer && layer.exists)
+    : [];
+  const latestRun = workflowSummary && workflowSummary.latestRun ? workflowSummary.latestRun : null;
+  const proofArtifacts = latestRun && Array.isArray(latestRun.proofArtifacts) ? latestRun.proofArtifacts : [];
+
+  return {
+    policyOriginCount: origins.length,
+    activeLayerCount: activeLayers.length,
+    reviewedRuns: workflowSummary && workflowSummary.reviewedRuns || 0,
+    proofBackedRuns: workflowSummary && workflowSummary.proofBackedRuns || 0,
+    checkpointCoverage: safeRate(
+      workflowSummary && workflowSummary.reviewedRuns || 0,
+      workflowSummary && workflowSummary.proofBackedRuns || 0
+    ),
+    decisionEvaluations: decisions && decisions.evaluationCount || 0,
+    appendOnlyAuditReady: Boolean(decisions && decisions.evaluationCount > 0),
+    runtimeIsolation: Boolean(readiness && readiness.articleAlignment && readiness.articleAlignment.runtimeIsolation),
+    latestWorkflowName: latestRun ? (latestRun.workflowName || latestRun.workflowId) : null,
+    latestProofArtifacts: proofArtifacts.slice(0, 3),
+    latestPolicyOrigin: origins[0] || null,
+  };
+}
+
 function resolveTeamWindowHours(analyticsWindow) {
   const window = analyticsWindow && analyticsWindow.window;
   if (window === 'today') return 24;
@@ -1573,6 +1626,16 @@ function generateDashboard(feedbackDir, options = {}) {
       settingsOptions: { projectRoot: PROJECT_ROOT },
     }),
   };
+  const workflowSummary = summarizeWorkflowRuns(feedbackDir);
+  const backgroundAgents = computeBackgroundAgentMode(feedbackDir, {
+    workflowSummary,
+  });
+  const regulatedProof = computeRegulatedBuyerProof(
+    settingsStatus,
+    workflowSummary,
+    decisions,
+    readiness,
+  );
 
   // Live metrics — gate hit rate, lesson effectiveness, error trend
   const now = Date.now();
@@ -1663,6 +1726,8 @@ function generateDashboard(feedbackDir, options = {}) {
     feedbackAnalysis,
     actionableRemediations,
     agentSurfaceInventory,
+    backgroundAgents,
+    regulatedProof,
     interventionPolicy,
     decisions,
     settingsStatus,

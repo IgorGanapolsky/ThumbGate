@@ -354,6 +354,36 @@
           </div>
         </div>
       </div>
+      <div class="panel" style="margin-top:16px;">
+        <h3>Background Agent Mode</h3>
+        <p class="template-summary">Queued and scheduled agents need explicit checkpoints before they touch code, money, or customer systems.</p>
+        <div class="inventory-grid" id="backgroundAgentSummaryCards"><div class="loading">Loading background-agent mode...</div></div>
+        <div class="team-columns" style="margin-top:16px;">
+          <div class="panel">
+            <h3>Governance Pressure</h3>
+            <div class="inventory-tools" id="backgroundAgentHighlights"><div class="loading">Loading background-agent governance...</div></div>
+          </div>
+          <div class="panel">
+            <h3>Run Types</h3>
+            <div class="inventory-sources" id="backgroundAgentRunTypes"><div class="loading">Loading background-agent run types...</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:16px;">
+        <h3>Regulated Buyer Proof</h3>
+        <p class="template-summary">Show where policy came from, how many runs were reviewed, and which proof artifacts are ready when buyers ask for auditability.</p>
+        <div class="inventory-grid" id="regulatedProofSummaryCards"><div class="loading">Loading proof posture...</div></div>
+        <div class="team-columns" style="margin-top:16px;">
+          <div class="panel">
+            <h3>Policy Origin Proof</h3>
+            <div class="inventory-tools" id="regulatedProofDetails"><div class="loading">Loading policy origin proof...</div></div>
+          </div>
+          <div class="panel">
+            <h3>Latest Replay Artifacts</h3>
+            <div class="inventory-sources" id="regulatedProofArtifacts"><div class="loading">Loading replay artifacts...</div></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -939,9 +969,11 @@ function renderDashboardData(data) {
 
   renderTeam(data.team || {}, data.analytics || {});
   renderAgentInventory(data.agentSurfaceInventory || {});
+  renderBackgroundAgents(data.backgroundAgents || {});
   renderReviewDelta(data.reviewDelta || {});
   renderPredictive(data.predictive || {});
   renderSettingsStatus(data.settingsStatus || {});
+  renderRegulatedProof(data.regulatedProof || {});
   renderTemplates(data.templateLibrary || {});
   renderInsights(data);
 }
@@ -1275,6 +1307,92 @@ function renderAgentInventory(inventory) {
       return '<div class="inventory-row"><div><div class="inventory-name">' + escHtml(source.source || 'unknown') + '</div><div class="inventory-subtitle">Runtime policy source</div></div><span class="generated-badge">' + escHtml(String(source.count || 0) + ' events') + '</span></div>';
     }).join('')
     : '<div class="empty" style="padding:20px 0;">No policy sources recorded yet.</div>';
+}
+
+function renderBackgroundAgents(backgroundAgents) {
+  var cards = [
+    {
+      label: 'Background runs',
+      value: String(backgroundAgents.total || 0),
+      note: 'last ' + String(backgroundAgents.periodHours || 24) + ' hours',
+    },
+    {
+      label: 'Pass rate',
+      value: String(backgroundAgents.passRate || 0) + '%',
+      note: String(backgroundAgents.completed || 0) + ' completed / ' + String(backgroundAgents.failed || 0) + ' failed',
+    },
+    {
+      label: 'Gate pressure',
+      value: String(backgroundAgents.gatesBlocked || 0),
+      note: String(backgroundAgents.gatesChecked || 0) + ' checkpoints evaluated',
+    },
+    {
+      label: 'Checkpoint coverage',
+      value: String(Math.round((backgroundAgents.checkpointCoverage || 0) * 100)) + '%',
+      note: String(backgroundAgents.reviewedRuns || 0) + ' reviewed proof-backed runs',
+    }
+  ];
+
+  document.getElementById('backgroundAgentSummaryCards').innerHTML = cards.map(function(card) {
+    return '<div class="inventory-card"><div class="team-kicker">' + escHtml(card.label) + '</div><div class="inventory-value">' + escHtml(card.value) + '</div><div class="inventory-note">' + escHtml(card.note) + '</div></div>';
+  }).join('');
+
+  var highlights = [];
+  if (backgroundAgents.topFailingAgent) {
+    highlights.push('<div class="inventory-row"><div><div class="inventory-name">Top failing agent</div><div class="inventory-subtitle">' + escHtml(backgroundAgents.topFailingAgent.agentId || 'unknown') + '</div></div><span class="generated-badge">' + escHtml(String(backgroundAgents.topFailingAgent.passRate || 0) + '% pass') + '</span></div>');
+  }
+  highlights.push('<div class="inventory-row"><div><div class="inventory-name">Recommended operating mode</div><div class="inventory-subtitle">Use ' + escHtml(backgroundAgents.recommendedMode || 'bootstrapping') + ' when background agents queue code, money, or customer actions.</div></div><span class="generated-badge">' + escHtml(String(backgroundAgents.blocked || 0) + ' blocked') + '</span></div>');
+  document.getElementById('backgroundAgentHighlights').innerHTML = highlights.join('');
+
+  var runTypes = Object.keys(backgroundAgents.byType || {});
+  document.getElementById('backgroundAgentRunTypes').innerHTML = runTypes.length
+    ? runTypes.map(function(runType) {
+      return '<div class="inventory-row"><div><div class="inventory-name">' + escHtml(runType) + '</div><div class="inventory-subtitle">Observed background workflow type</div></div><span class="generated-badge">' + escHtml(String(backgroundAgents.byType[runType] || 0) + ' runs') + '</span></div>';
+    }).join('')
+    : '<div class="empty" style="padding:20px 0;">No background-agent runs recorded yet.</div>';
+}
+
+function renderRegulatedProof(regulatedProof) {
+  var cards = [
+    {
+      label: 'Policy origins',
+      value: String(regulatedProof.policyOriginCount || 0),
+      note: String(regulatedProof.activeLayerCount || 0) + ' active settings layers',
+    },
+    {
+      label: 'Reviewed runs',
+      value: String(regulatedProof.reviewedRuns || 0),
+      note: String(regulatedProof.proofBackedRuns || 0) + ' proof-backed runs tracked',
+    },
+    {
+      label: 'Decision records',
+      value: String(regulatedProof.decisionEvaluations || 0),
+      note: regulatedProof.appendOnlyAuditReady ? 'append-only audit trail live' : 'no decision audit yet',
+    },
+    {
+      label: 'Runtime isolation',
+      value: regulatedProof.runtimeIsolation ? 'on' : 'off',
+      note: 'containerized execution posture',
+    }
+  ];
+
+  document.getElementById('regulatedProofSummaryCards').innerHTML = cards.map(function(card) {
+    return '<div class="inventory-card"><div class="team-kicker">' + escHtml(card.label) + '</div><div class="inventory-value">' + escHtml(card.value) + '</div><div class="inventory-note">' + escHtml(card.note) + '</div></div>';
+  }).join('');
+
+  var details = [];
+  if (regulatedProof.latestPolicyOrigin) {
+    details.push('<div class="inventory-row"><div><div class="inventory-name">' + escHtml(regulatedProof.latestPolicyOrigin.path || 'latest setting') + '</div><div class="inventory-subtitle">' + escHtml(regulatedProof.latestPolicyOrigin.sourcePath || 'built-in defaults') + '</div></div><span class="generated-badge">' + escHtml(String(regulatedProof.latestPolicyOrigin.scope || 'default')) + '</span></div>');
+  }
+  details.push('<div class="inventory-row"><div><div class="inventory-name">Checkpoint coverage</div><div class="inventory-subtitle">Reviewed proof-backed runs divided by total proof-backed workflow runs.</div></div><span class="generated-badge">' + escHtml(String(Math.round((regulatedProof.checkpointCoverage || 0) * 100)) + '%') + '</span></div>');
+  document.getElementById('regulatedProofDetails').innerHTML = details.join('');
+
+  var artifacts = Array.isArray(regulatedProof.latestProofArtifacts) ? regulatedProof.latestProofArtifacts : [];
+  document.getElementById('regulatedProofArtifacts').innerHTML = artifacts.length
+    ? artifacts.map(function(artifact) {
+      return '<div class="inventory-row"><div><div class="inventory-name">' + escHtml(artifact) + '</div><div class="inventory-subtitle">Proof artifact from ' + escHtml(regulatedProof.latestWorkflowName || 'latest workflow run') + '</div></div><span class="generated-badge">replay-ready</span></div>';
+    }).join('')
+    : '<div class="empty" style="padding:20px 0;">No workflow replay artifacts recorded yet.</div>';
 }
 
 function renderTemplates(templateLibrary) {
