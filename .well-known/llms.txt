@@ -42,7 +42,7 @@ npx thumbgate init --agent claude-code
 - Free GPT: advice, checkpointing, and setup help in ChatGPT
 - Free local CLI: 3 feedback captures/day, 5 lesson searches/day, recall, and local Pre-Action Checks after install
 - Pro: $19/mo or $149/yr — personal enforcement proof, local dashboard, check debugger, DPO export, and review-ready exports
-- Team: $99/seat/mo, 3-seat minimum after intake — shared lessons, org visibility, approval boundaries, and rollout proof
+- Team: $49/seat/mo, 3-seat minimum after intake — shared lessons, org visibility, approval boundaries, and rollout proof
 
 ## Links
 
