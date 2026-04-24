@@ -503,10 +503,121 @@ async function sendTrialWelcomeEmail({ to, licenseKey, customerId, customerName,
   return sendEmail({ to, subject, html, text, replyTo: getReplyTo(), fetchImpl, dnsResolver });
 }
 
+function renderNewsletterWelcomeBodies() {
+  const supportEmail = getSupportEmail();
+  const unsubscribeEmail = getUnsubscribeEmail();
+  const businessName = getBusinessName();
+  const businessAddress = getBusinessAddress();
+  const unsubscribeMailto = `mailto:${unsubscribeEmail}?subject=unsubscribe&body=Please%20remove%20me%20from%20ThumbGate%20emails.`;
+  const headline = 'Welcome to ThumbGate.';
+  const subhead =
+    'One concrete AI coding failure prevented per email. No theory, no fluff.';
+  const firstLesson =
+    'First lesson: the most expensive AI mistake is the one it repeats. ' +
+    'ThumbGate turns thumbs up/down signals into Pre-Action Checks that stop ' +
+    'the next recurrence before the tool call runs.';
+  const ctaLink = 'https://thumbgate.ai/pro';
+
+  const text = [
+    'Welcome to ThumbGate.',
+    '',
+    subhead,
+    '',
+    firstLesson,
+    '',
+    `Want the full stop-repeating-mistakes loop locally? ${ctaLink}`,
+    '',
+    `Questions? Reply to this email or write ${supportEmail}.`,
+    '',
+    '— Igor, founder of ThumbGate',
+    '',
+    '---',
+    `You're getting this because you signed up on thumbgate.ai. Unsubscribe: ${unsubscribeEmail}`,
+    `${businessName} · ${businessAddress}`,
+  ].join('\n');
+
+  const safeHeadline = escapeHtml(headline);
+  const safeSubhead = escapeHtml(subhead);
+  const safeFirstLesson = escapeHtml(firstLesson);
+  const safeSupportEmail = escapeHtml(supportEmail);
+  const safeBusinessName = escapeHtml(businessName);
+  const safeBusinessAddress = escapeHtml(businessAddress);
+  const safeUnsubscribeEmail = escapeHtml(unsubscribeEmail);
+  const safeUnsubscribeMailto = escapeHtml(unsubscribeMailto);
+
+  const html = `<!doctype html>
+<html>
+  <body style="margin:0;background:#f5f7fb;padding:28px 12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#17212b;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;max-width:640px;background:#ffffff;border:1px solid #d8e2ea;border-radius:10px;overflow:hidden;">
+            <tr>
+              <td style="background:#071115;padding:24px 28px;color:#e7fbff;">
+                <div style="font-size:13px;font-weight:700;letter-spacing:0.02em;text-transform:uppercase;color:#73d4e9;">ThumbGate</div>
+                <h1 style="margin:10px 0 6px;font-size:24px;line-height:1.25;color:#ffffff;">${safeHeadline}</h1>
+                <p style="margin:0;font-size:14px;line-height:1.5;color:#9cbac4;">${safeSubhead}</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:24px 28px 10px;">
+                <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#344451;">${safeFirstLesson}</p>
+                <p style="margin:0 0 22px;">
+                  <a href="${ctaLink}" style="display:inline-block;background:#45bfd8;color:#061015;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:6px;font-size:15px;">See the full Pro loop</a>
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 28px 22px;">
+                <p style="margin:0 0 4px;font-size:14px;line-height:1.6;color:#17212b;">— Igor, founder of ThumbGate</p>
+                <p style="margin:0;font-size:13px;line-height:1.55;color:#526273;">
+                  Questions? Reply or write
+                  <a href="mailto:${safeSupportEmail}" style="color:#087a91;">${safeSupportEmail}</a>.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:16px 28px 22px;border-top:1px solid #e2e8ec;background:#fafbfc;">
+                <p style="margin:0 0 6px;font-size:12px;line-height:1.5;color:#7a8790;">
+                  You signed up on thumbgate.ai.
+                  <a href="${safeUnsubscribeMailto}" style="color:#7a8790;text-decoration:underline;">Unsubscribe</a>
+                  (${safeUnsubscribeEmail}).
+                </p>
+                <p style="margin:0;font-size:12px;line-height:1.5;color:#7a8790;">
+                  ${safeBusinessName} &middot; ${safeBusinessAddress}
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+
+  return { html, text };
+}
+
+async function sendNewsletterWelcomeEmail({ to, fetchImpl, dnsResolver } = {}) {
+  if (!isNonEmptyString(to)) throw new Error('sendNewsletterWelcomeEmail: `to` is required');
+  const { html, text } = renderNewsletterWelcomeBodies();
+  return sendEmail({
+    to,
+    subject: 'Welcome to ThumbGate — one AI mistake prevented per email',
+    html,
+    text,
+    replyTo: getReplyTo(),
+    fetchImpl,
+    dnsResolver,
+  });
+}
+
 module.exports = {
   sendEmail,
   sendTrialWelcomeEmail,
+  sendNewsletterWelcomeEmail,
   renderTrialWelcomeBodies,
+  renderNewsletterWelcomeBodies,
   _resolveSenderAddress: resolveSenderAddress,
   _hasResendSenderDns: hasResendSenderDns,
   _recordsHaveResendDns: recordsHaveResendDns,
