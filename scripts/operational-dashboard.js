@@ -99,6 +99,18 @@ async function getOperationalDashboard(options = {}) {
   } catch (err) {
     const reason = err && err.message ? err.message : 'hosted_dashboard_unavailable';
     const status = err && typeof err.status === 'number' ? err.status : null;
+    const code = err && err.code ? err.code : null;
+
+    // Hosted deliberately disabled or never configured — local fallback is
+    // intentional, not a degraded state. Tag as plain 'local'.
+    if (code === 'hosted_dashboard_disabled' || code === 'hosted_dashboard_unconfigured') {
+      return {
+        source: 'local',
+        data: await buildOperationalDashboard(analyticsWindow),
+        fallbackReason: reason,
+        hostedStatus: null,
+      };
+    }
 
     // Mirror operational-summary: auth failure is the dangerous case. A
     // dashboard that silently shows $0 revenue (from the local ledger) when
