@@ -1,5 +1,438 @@
 # Changelog
 
+## 1.16.0
+
+### Minor Changes
+
+- [#1122](https://github.com/IgorGanapolsky/ThumbGate/pull/1122) [`de61abe`](https://github.com/IgorGanapolsky/ThumbGate/commit/de61abe37bb58d217aad7299f3b5cb8e411d1a09) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat(feedback-stats): emit structured `actionableRemediations` alongside prose `recommendations`
+
+  `analyzeFeedback()` / `feedback_stats` now returns a machine-actionable `actionableRemediations` array parallel to the existing prose `recommendations` list. Each entry has:
+
+  ```ts
+  {
+    type: 'skill-improve' | 'pattern-reuse' | 'trend-declining' | 'trend-degrading' | 'high-risk-domain' | 'high-risk-tag' | 'delegation-reduce' | 'delegation-policy-review' | 'diagnose-failure-category',
+    target: string,         // skill name, tag, domain, or failure category
+    evidence: { ... },      // numeric signal (counts, rates) that triggered the rule
+    action: string,         // canonical action verb consumers can switch on
+    rationale: string,      // human-readable explanation of why this fired
+  }
+  ```
+
+  This lets hooks and agents act on recommendations programmatically without regex-parsing prose strings. Prose output is unchanged and fully backwards-compatible; the new field is always present (empty array when no recommendations fire).
+
+- [#1198](https://github.com/IgorGanapolsky/ThumbGate/pull/1198) [`17ec44b`](https://github.com/IgorGanapolsky/ThumbGate/commit/17ec44bbbce24b18c371c9a1789eabf283e51677) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat(adapters): Cline adapter for Roo Code sunset capture
+
+  Adds a first-class Cline adapter (`adapters/cline/.mcp.json`, `.clinerules`, `INSTALL.md`) and wires `npx thumbgate init --agent cline` to auto-register the ThumbGate MCP server in Cline's VS Code globalStorage settings and drop `.clinerules` into the project root. Updates README, landing page, and compare page to list Cline alongside Claude Code, Cursor, Codex, Gemini CLI, Amp, and OpenCode. Captures migration audience from Roo Code's announced 2026-05-15 shutdown.
+
+- [#1161](https://github.com/IgorGanapolsky/ThumbGate/pull/1161) [`a46785c`](https://github.com/IgorGanapolsky/ThumbGate/commit/a46785cac7343210348c46b021f2457c148a2bdc) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Surface per-slug `/go/:slug` hits, checkout starts, and conversion rate on the
+  dashboard telemetry feed. `getTelemetryAnalytics` now exposes a `trackedLinks`
+  panel (`totalHits`, `totalCheckoutStarts`, `overallConversionRate`,
+  `bySlug.<slug>.{hits,checkoutStarts,conversionRate}`, `topSlug`) so the
+  `/v1/dashboard` API and `/dashboard` UI can show which tracked links actually
+  drive checkouts. CLI telemetry is excluded from the rollup (web-only).
+
+- [#1264](https://github.com/IgorGanapolsky/ThumbGate/pull/1264) [`d631ddd`](https://github.com/IgorGanapolsky/ThumbGate/commit/d631ddde9b93490a2c25164b56f1ca51731514b4) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat(api): push dashboard updates over Server-Sent Events on `/v1/events`
+
+  Applies the "persistent channel beats per-turn HTTP round trip" pattern (the thesis of OpenAI's 2026-04 Responses-API WebSocket post) to the ThumbGate dashboard. Instead of re-fetching `/v1/feedback/stats` on a manual refresh, clients now subscribe once to `/v1/events` and receive pushed frames as feedback/rule-regen events happen.
+
+  Surface:
+
+  - **`GET /v1/events`** — Bearer-authed SSE stream. On connect the server emits an `event: connected` frame with the current server version; thereafter every `POST /v1/feedback/capture` emits an `event: feedback` frame (signal + tags + feedbackId + promoted) and every `POST /v1/feedback/rules` emits an `event: rules-updated` frame (path). Heartbeat comment frames every 25s keep Railway / proxy idle timers from closing the connection.
+  - **Dashboard client** (`public/dashboard.html`) — subscribes immediately after `connect()` using `fetch()` + `ReadableStream` (needed instead of native `EventSource` so we can send `Authorization: Bearer …`). On any event the client re-pulls `/v1/feedback/stats` and re-renders the summary cards.
+
+  Non-breaking: existing polled `/v1/feedback/stats`, `/v1/dashboard`, and `/v1/feedback/rules` endpoints are unchanged. Clients that don't open `/v1/events` behave exactly as before.
+
+  Why: manual refresh was the only way to see new feedback land in the dashboard, which made live demo sessions awkward and hid the real-time nature of the feedback loop. SSE is the right tool for server→client pushes here — no WebSocket upgrade dance, no extra deps, survives Railway's proxy with `X-Accel-Buffering: no`.
+
+### Patch Changes
+
+- [#1140](https://github.com/IgorGanapolsky/ThumbGate/pull/1140) [`d675466`](https://github.com/IgorGanapolsky/ThumbGate/commit/d675466984975297f4ba8000289b3e2e961537e6) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add Anthropic-aligned prompt caching and JSON response handling to the
+  public ThumbGate shell, and persist prompt evaluation evidence in CI so
+  regressions are easier to catch before release.
+
+- [#1153](https://github.com/IgorGanapolsky/ThumbGate/pull/1153) [`b9d7f2c`](https://github.com/IgorGanapolsky/ThumbGate/commit/b9d7f2c5d39493f550b8a9926fd52d41d5038cd6) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - fix(api): lazy-load commercial offer private boundary
+
+  Move the commercial-offer helpers used by the hosted billing checkout
+  path behind the private API module loader. The hosted runtime keeps the
+  same behavior when the module exists, while partially extracted or
+  public-shell deployments now fail with the standard
+  `PRIVATE_CORE_REQUIRED` contract instead of assuming commercial offer
+  logic is always bundled.
+
+  This pins the current split at the checkout boundary:
+
+  1. checkout attribution parsing now resolves plan/cycle/seat helpers
+     through the private API module loader.
+  2. checkout offer summaries now resolve pricing constants through the
+     private API module loader.
+  3. API regression coverage asserts that `/v1/billing/checkout` returns
+     503 when the commercial-offer module is absent.
+
+- [#1153](https://github.com/IgorGanapolsky/ThumbGate/pull/1153) [`b9d7f2c`](https://github.com/IgorGanapolsky/ThumbGate/commit/b9d7f2c5d39493f550b8a9926fd52d41d5038cd6) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - fix(api): lazy-load lesson search and semantic private boundaries
+
+  Move the remaining lesson-search and semantic-schema routes in the HTTP
+  API server behind the private API module loader. The hosted runtime keeps
+  the current behavior when those modules are present, while public-shell
+  or partially extracted runtimes now fail with the standard
+  `PRIVATE_CORE_REQUIRED` 503 instead of assuming the modules are always
+  bundled.
+
+  This pins two more hosted-only edges:
+
+  1. `/v1/lessons/search` now resolves through the lesson-search private
+     boundary.
+  2. `/v1/semantic/describe` now resolves through the semantic-layer
+     private boundary.
+  3. API regression tests cover both the normal route behavior and the
+     unavailable-module fallback contract.
+
+- [#1153](https://github.com/IgorGanapolsky/ThumbGate/pull/1153) [`b9d7f2c`](https://github.com/IgorGanapolsky/ThumbGate/commit/b9d7f2c5d39493f550b8a9926fd52d41d5038cd6) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - fix(api): lazy-load lesson synthesis private boundary
+
+  Move lesson record read/write flows behind the private API loader so export, import, and lesson detail mutations fail with the standard private-core contract when the hosted lesson synthesis module is unavailable.
+
+- [#1130](https://github.com/IgorGanapolsky/ThumbGate/pull/1130) [`5dcc446`](https://github.com/IgorGanapolsky/ThumbGate/commit/5dcc44656169dafef40538502103415adb00ca3c) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - chore(brand): canonical TG monogram on README + Stripe coherence
+
+  The canonical ThumbGate mark (TG gate monogram, dark rounded square with
+  teal-to-cyan gradient frame) now renders consistently across the three
+  public brand surfaces. Before this change each surface had drifted to
+  its own raster:
+
+  - Landing page (thumbgate.ai): already canonical (header + favicon + og.png)
+  - Stripe product catalog: ThumbGate Pro and ThumbGate Team each had a
+    different one-off upload (teal shield / dark gate-with-lightning).
+    Re-pointed at `https://thumbgate.ai/assets/brand/thumbgate-icon-512.png`
+    via the Stripe API so the checkout surface matches the landing page
+    and the npm package page.
+  - GitHub repo / npmjs.com: README had no brand image. Now renders the
+    same canonical 128x128 PNG at the top so github.com visitors and npm
+    installers see the same mark that renders on the landing page.
+
+  `public/og.png` (already present, already canonical) still needs to be
+  uploaded to GitHub's Settings -> Social preview separately — GitHub does
+  not expose that surface via REST or GraphQL, so it can only be uploaded
+  via the web UI.
+
+- [#1196](https://github.com/IgorGanapolsky/ThumbGate/pull/1196) [`1ea88ec`](https://github.com/IgorGanapolsky/ThumbGate/commit/1ea88ec22d9a7904519a03063e5df54154ef6960) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat(analytics): deepen buyer loss telemetry and expose loss-analysis reporting
+
+  Capture first-party buyer behavior on the public landing pages so
+  ThumbGate can explain lost dollars with evidence instead of anecdotes.
+
+  - track section views, CTA impressions, page exits, and buyer email
+    focus/abandon behavior on the homepage and Pro page
+  - aggregate behavioral telemetry into funnel dropoff, inferred causes,
+    explicit objections, and revenue-opportunity reporting
+  - expose the synthesized loss-analysis view through
+    `/v1/analytics/losses` and keep the OpenAPI surfaces aligned
+
+  This release does not claim more revenue by itself. It makes the live
+  buyer funnel diagnosable once deployed, which closes a major blind spot
+  in why ThumbGate is not yet converting consistently.
+
+- [#1226](https://github.com/IgorGanapolsky/ThumbGate/pull/1226) [`947f12b`](https://github.com/IgorGanapolsky/ThumbGate/commit/947f12b6d55339d768127d814eded7dacca4a230) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - chore(canonical): thumbgate.ai across public pages and seo-gsd
+
+  Replaced stale `usethumbgate.com` references with the canonical `thumbgate.ai` domain in `public/learn.html`, `public/compare/mem0.html`, `public/compare/speclock.html`, `public/llm-context.md`, and `scripts/seo-gsd.js`. PR [#1202](https://github.com/IgorGanapolsky/ThumbGate/issues/1202) attempted this fix and was closed as duplicate of [#1201](https://github.com/IgorGanapolsky/ThumbGate/issues/1201), but [#1201](https://github.com/IgorGanapolsky/ThumbGate/issues/1201) only shipped Multica guide content — the URL replacements never landed. Every canonical link, `og:url`, schema.org `url`, and llm-context reference on these pages now points at the active domain.
+
+- [#1188](https://github.com/IgorGanapolsky/ThumbGate/pull/1188) [`6a8b0fb`](https://github.com/IgorGanapolsky/ThumbGate/commit/6a8b0fba6cde3b4b2b6bc7273bc3b5c1a3cb7e43) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat(seo): add /guides/chatgpt-ads-trust page and ChatGPT-ads FAQ
+
+  New SEO/GEO guide page threading the "pre-action gates" thesis
+  against the ChatGPT ads rollout (CPC bidding went live 2026-04-21
+  per Digiday; ads test started 2026-02-09 per TechCrunch).
+
+  Adds a JSON-LD `FAQPage` entry on the homepage answering _why does
+  the ChatGPT ads rollout matter to ThumbGate?_, and links the new
+  guide from the ChatGPT GPT section with a "Why ChatGPT ads need
+  gates" CTA.
+
+  Canonical URL pinned to `https://thumbgate.ai/guides/chatgpt-ads-trust`.
+  Pre-existing guide files still use the legacy `usethumbgate.com`
+  domain that 301-redirects to apex but drops the path — a separate
+  PR sweeps those.
+
+- Block unverified build and workflow link claims unless workflow, job, branch, and head SHA evidence have all been recorded first.
+
+- [#1237](https://github.com/IgorGanapolsky/ThumbGate/pull/1237) [`4a549e6`](https://github.com/IgorGanapolsky/ThumbGate/commit/4a549e6e965c487f5ecd74a5af7afaeb6465b40a) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add feedback-derived prompt/workflow evaluation so real thumbs-up/down signals can become reusable eval suites, CLI proof reports, and buyer-ready evidence artifacts.
+
+- [#1207](https://github.com/IgorGanapolsky/ThumbGate/pull/1207) [`a0517d1`](https://github.com/IgorGanapolsky/ThumbGate/commit/a0517d1774333f482a639874b4a6881a2824c45a) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - fix(decision-journal): pin clock in metrics test to remove day-boundary flake
+
+  `computeDecisionMetrics` now accepts an optional `options.now` and threads it into `initializeDaySeries`, so the rolling 14-day window is driven by an injectable clock rather than a fresh `new Date()` at aggregation time. The metrics test pins both the synthetic event base and the aggregator clock to the same reference timestamp, removing the race where CI crossing UTC midnight between event inserts and aggregation dropped events out of the window and failed `metrics.days.some((day) => day.evaluations > 0)`.
+
+- [#1144](https://github.com/IgorGanapolsky/ThumbGate/pull/1144) [`61c65bf`](https://github.com/IgorGanapolsky/ThumbGate/commit/61c65bf3538608c4d484fc26f1cd60f0cfa541bf) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Trim additional internal analytics, orchestration, and operational scripts out of the public ThumbGate npm package so the shipped surface stays closer to a thin client.
+
+- [#1238](https://github.com/IgorGanapolsky/ThumbGate/pull/1238) [`6e98379`](https://github.com/IgorGanapolsky/ThumbGate/commit/6e9837986963d3033f76724b47953d5af0b85a22) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat(eval): expand gate-eval seed set 19→67 cases + wire into CI as regression gate
+
+  Applying Anthropic's measure-first prompt-eval methodology to ThumbGate's gate layer. The existing `config/evals/agent-safety-eval.json` only had 19 cases — enough to prove the harness worked, not enough to catch regex drift. This PR widens coverage and turns the eval into a merge-blocker so any constraint change that breaks a case gets caught before ship.
+
+  **Seed expansion (19 → 67 cases):**
+
+  - `no-force-push` — 9 cases (long/short flag, --force-with-lease, flag-after-branch, extra whitespace, uppercase + 3 negative near-misses for normal push/tags/upstream).
+  - `no-reset-hard` — 7 cases (HEAD~N, origin/main, @{u}, extra whitespace + soft/mixed/plain resets pass).
+  - `no-rm-rf-root` — 8 cases (/, ../, ~, . + node_modules, dist, .cache, single file pass).
+  - `no-env-in-code` — 10 cases (AWS/GitHub/OpenAI/RSA/EC/generic PEM + normal code, short AKIA prefix, doc prose, public key pass).
+  - `no-skip-hooks` — 6 cases (--no-verify on commit/amend/push, --no-gpg-sign + normal commit/rebase pass).
+  - `no-drop-table` — 8 cases (TABLE/DATABASE/SCHEMA, lowercase + SELECT/CREATE/TRUNCATE/DROP COLUMN pass).
+  - `no-sandbox-network` — 9 cases (curl/wget/fetch/net.connect/http + safe log/math pass + 1 documented regex gap).
+  - `no-sandbox-fs-escape` — 8 cases (/etc, /var, /usr, /home, ../, process.env + safe in-memory/local-require pass).
+  - Generic npm-lint pass case (multi-input tool+content).
+
+  **2 real regex gaps surfaced by the expanded coverage (tracked as follow-ups, not fixed here — scope discipline):**
+
+  1. `no-env-in-code` does not catch OpenAI's `sk-proj-<alnum>{20+}` format because the embedded dash breaks the `[a-zA-Z0-9]{20,}` run. Pinned as `openai-project-key-gap-passes` so future tightening flips the expectation visibly.
+  2. `no-sandbox-network` requires whitespace after `http`/`fetch`, so packed calls like `http.request(opts)` and `fetch('...')` slip through. Pinned as `sandbox-http-dot-request-gap-passes` and `sandbox-fetch-no-space-gap-passes`.
+
+  **CI regression gate:**
+
+  - New npm script `gate-eval:ci` runs `scripts/gate-eval.js run` which exits non-zero on any case failure.
+  - Added step in `.github/workflows/ci.yml` immediately after `npm test` — any constraint change in `config/specs/*.json` that flips a previously-passing case (e.g. widens a deny regex and starts catching a "safe" case) will block merge until the eval JSON is consciously updated in the same PR.
+
+  Net effect: every PR now has to take explicit responsibility for changes to gate behavior. No more silent regex drift.
+
+- [#1206](https://github.com/IgorGanapolsky/ThumbGate/pull/1206) [`02fc119`](https://github.com/IgorGanapolsky/ThumbGate/commit/02fc119df9ef7411709e2ef3432b783a5eee7a09) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - marketing(gcp-mcp): Google Cloud Next 2026 piggyback — Agentic Data Cloud guardrails
+
+  Adds `/guides/gcp-mcp-guardrails` SEO landing, four platform posts (LinkedIn, Reddit r/ClaudeAI, Bluesky, Threads) under `docs/marketing/gcp-mcp/`, and a Google Data Agent Kit compatibility card on the landing page. Captures the 24-hour news-window audience from Google's April 22 Agentic Data Cloud announcement by positioning ThumbGate as the feedback-driven enforcement layer that IAM and VPC Service Controls cannot represent. No new adapter — the Data Agent Kit drops into Claude Code, Codex, Gemini CLI, and VS Code, all first-class-supported by ThumbGate.
+
+- [#1190](https://github.com/IgorGanapolsky/ThumbGate/pull/1190) [`ce688de`](https://github.com/IgorGanapolsky/ThumbGate/commit/ce688de68da4c42108a1fa5682679e914863a7c0) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - chore(brand): add 1280x640 GitHub social preview asset
+
+  Add `public/assets/brand/github-social-preview.png` at GitHub's
+  1280x640 spec, rendered from the same `thumbgate-icon-512.png`
+  that Stripe product thumbnails and the homepage og.png reference.
+  One canonical visual identity across marketing, checkout, and the
+  repo social preview.
+
+  Upload is a manual follow-up: Settings → General → Social preview.
+  GitHub's REST and GraphQL APIs do not expose an upload endpoint
+  for this field.
+
+- [#1191](https://github.com/IgorGanapolsky/ThumbGate/pull/1191) [`9bda185`](https://github.com/IgorGanapolsky/ThumbGate/commit/9bda1853211b86b2066075ba96d98009ab1d2640) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - fix(guides): canonicalize guide pages to thumbgate.ai
+
+  Rewrite `og:url`, `<link rel="canonical">`, and JSON-LD
+  `url` / `mainEntityOfPage` / `publisher.url` on the remaining 11 guide
+  pages from `https://usethumbgate.com` to `https://thumbgate.ai`.
+
+  The legacy `usethumbgate.com` host 301-redirects to `thumbgate.ai` but
+  drops the path, so Google saw every `/guides/<slug>` canonicalize to
+  the bare apex and collapsed the topical signal across all guides into
+  a single URL. Matches the chatgpt-ads-trust.html fix shipped in [#1188](https://github.com/IgorGanapolsky/ThumbGate/issues/1188).
+
+- [#1239](https://github.com/IgorGanapolsky/ThumbGate/pull/1239) [`1a24251`](https://github.com/IgorGanapolsky/ThumbGate/commit/1a242519a4fbe90e4241e2fe782b4c51414964a7) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat(lesson-inference): XML-tagged Claude prompt + 5 multishot exemplars
+
+  Applies Anthropic's prompt-engineering playbook (ref: [Prompt Engineering course](https://anthropic.skilljar.com/claude-with-the-anthropic-api/287745)) to the LLM lesson-extraction prompt in `scripts/lesson-inference.js`. This is PR 2 of the high-ROI eval sequence (PR 1 was gate-eval seed expansion).
+
+  **Why this prompt specifically:**
+
+  `inferStructuredLessonLLM` calls Claude with a strict-JSON output contract. It hits exactly the three failure modes that XML tags + multishot exemplars are designed to fix:
+
+  1. Model occasionally wraps JSON in code fences despite instructions → tightened with explicit `<guidelines>` clause + `no code fences` prohibition.
+  2. Plain-text `Signal: positive` / `Conversation:` headers compete with the conversation content itself for the model's attention → replaced with scoped `<signal>`, `<user_context>`, `<conversation_window>` tags.
+  3. Schema description without exemplars means the model has to synthesize shape from an abstract spec → replaced with 5 concrete `<example>` blocks drawn from real ThumbGate incident classes.
+
+  **What changed:**
+
+  - `LLM_LESSON_SYSTEM_PROMPT` rebuilt with `<task>`, `<output_schema>`, `<guidelines>`, `<examples>` section tags. Schema enum values moved to explicit pipe-delimited unions (`<debugging|implementation|question|error-report|constraint>`).
+  - New `LLM_LESSON_MULTISHOT_EXAMPLES` constant — 5 exemplars covering: Edit-before-Read, force-push-to-main, deploy-verification, mock-to-live-in-tests, regression-test-pinning. Each exemplar is a `{signal, conversationWindow, output}` triple; `output` is the exact JSON the model should emit.
+  - New `renderMultishotExamplesForPrompt()` renders the exemplar set as `<example><signal>…</signal><conversation_window>…</conversation_window><output>{…}</output></example>` blocks, then inlines them into the system prompt.
+  - New `buildLessonUserPrompt({signal, context, windowText})` wraps the user-side content in `<signal>`, `<user_context>` (optional), `<conversation_window>` tags. `inferStructuredLessonLLM` now calls this helper, so the caller's `windowText` never competes with header text for attention.
+  - Signal normalization preserved: `positive`/`up` → `positive`; `negative`/`down` → `negative`.
+
+  **New regression tests (`tests/lesson-prompt-shape.test.js`, 9 cases):**
+
+  - Every XML section tag (`<task>`, `<output_schema>`, `<guidelines>`, `<examples>`) is balanced and correctly ordered.
+  - Every schema enum value (`ALLOWED_TRIGGER_TYPES`, `ALLOWED_ACTION_TYPES`, `ALLOWED_SCOPES`) appears in the prompt — accidental removal surfaces instantly.
+  - Multishot exemplar count pinned at 5; must cover both `positive` and `negative` signals.
+  - Every exemplar `output` is schema-valid JSON (trigger.type, action.type, scope enum checks; confidence in [0,1]; non-empty string tags).
+  - Rendered `<example>` block extracts cleanly via a naive regex parser and round-trips through JSON.parse back to the source exemplar object.
+  - `buildLessonUserPrompt` emits expected XML structure, normalizes signals, omits `<user_context>` when not provided.
+  - System prompt contains explicit "no code fences / no prose" prohibitions.
+
+  **What this does NOT change:**
+
+  - No behavior change in `createLesson`, `extractTrigger`, `extractAction`, `extractToolCalls`, or any of the deterministic lesson-building pipeline. Those stay regex-driven and tested by the existing 30-case `tests/lesson-inference.test.js` suite (still green).
+  - No measurement of the actual Claude-response quality improvement. That requires a lesson-eval suite analogous to `config/evals/agent-safety-eval.json` plus live API calls — queued as follow-up (`feat/lesson-eval-suite`). Today's PR ships the prompt upgrade and the shape-regression guard; quality measurement is the next loop.
+
+  **Follow-up (not in this PR):**
+
+  - `feat/lesson-eval-suite` — curate 30+ (signal, conversation_window, expected_lesson) tuples from `.claude/memory/feedback/lessons-index.jsonl` and wire into `scripts/gate-eval.js` as a live A/B suite that compares the old prompt vs the new prompt on the same conversation windows.
+
+- [#1185](https://github.com/IgorGanapolsky/ThumbGate/pull/1185) [`a3952e2`](https://github.com/IgorGanapolsky/ThumbGate/commit/a3952e21e020a1c54bbe70f38cfff5a203e97082) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Refresh the public marketing surface with orchestration-vs-enforcement positioning, plus new buyer workflow pages for platform teams and regulated workflows.
+
+- [#1153](https://github.com/IgorGanapolsky/ThumbGate/pull/1153) [`b9d7f2c`](https://github.com/IgorGanapolsky/ThumbGate/commit/b9d7f2c5d39493f550b8a9926fd52d41d5038cd6) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - fix(mcp): lazy-load lesson search private boundary
+
+  Move the remaining direct lesson-search import in the MCP stdio adapter
+  behind the private module loader. This keeps the hosted/private runtime
+  behavior unchanged while letting the public shell return the standard
+  `private_core` availability payload if lesson search is extracted out of
+  the public package.
+
+  This pins the boundary in two ways:
+
+  1. `search_lessons` now resolves through the MCP private-module loader.
+  2. MCP tests cover the unavailable-module path for lesson search along
+     with the existing private-core tool matrix.
+
+- [#1153](https://github.com/IgorGanapolsky/ThumbGate/pull/1153) [`b9d7f2c`](https://github.com/IgorGanapolsky/ThumbGate/commit/b9d7f2c5d39493f550b8a9926fd52d41d5038cd6) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - fix(mcp): lazy-load semantic and lesson-inference private boundaries
+
+  Move the remaining direct semantic-layer and lesson-inference imports in
+  the MCP stdio adapter behind the existing private-module loader. The
+  public adapter now returns the standard `private_core` availability
+  payload when those modules are absent instead of hard-requiring them at
+  module load time.
+
+  This keeps the public shell compatible with the current runtime while
+  making the next extraction cut safer:
+
+  1. `get_business_metrics` and `describe_semantic_entity` now route
+     through the semantic-layer private boundary.
+  2. `context_stuff_lessons` now routes through the lesson-inference
+     private boundary.
+  3. MCP tests pin both the loaded and unavailable paths so the public
+     shell can shed these modules without breaking the adapter contract.
+
+- [#1201](https://github.com/IgorGanapolsky/ThumbGate/pull/1201) [`e04c2b5`](https://github.com/IgorGanapolsky/ThumbGate/commit/e04c2b5f61bbc5d33625fe38990f89b904324329) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - marketing(multica): positioning play for self-hosted agent orchestration
+
+  Adds `/guides/multica-thumbgate-setup` SEO landing page and four platform posts (LinkedIn, Reddit r/ClaudeAI, Bluesky, Threads) under `docs/marketing/multica/`. Captures the self-hosted-agent-orchestration audience (Multica + Claude Code + autopilot users) by positioning ThumbGate as the enforcement layer their autopilot setup is missing. No new adapter — Multica runs first-class-supported terminal agents (Claude Code, OpenCode) that ThumbGate already integrates with.
+
+- [#1162](https://github.com/IgorGanapolsky/ThumbGate/pull/1162) [`252b648`](https://github.com/IgorGanapolsky/ThumbGate/commit/252b64800c4fada60e1d99c6b3a151e9b790dade) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - fix(brand): regenerate public/og.png to match Stripe product icon
+
+  Social card previews (LinkedIn, Twitter, iMessage) were serving the
+  old legacy og.png while Stripe product pages used the canonical
+  `thumbgate-icon-512.png`. CEO flagged the mismatch after a LinkedIn
+  link preview showed the old wordmark banner instead of the current
+  brand mark.
+
+  Regenerate `public/og.png` at the standard 1200×630 social-card
+  aspect, centered on the brand dark `srgb(6,16,21)` background, using
+  the exact same `thumbgate-icon-512.png` that Stripe product images
+  point at. One canonical visual identity across the marketing surface
+  and the checkout surface.
+
+  No HTML changes — every page that referenced `/og.png` inherits the
+  new card automatically as social-platform caches refresh.
+
+- [#1189](https://github.com/IgorGanapolsky/ThumbGate/pull/1189) [`3b2f8ba`](https://github.com/IgorGanapolsky/ThumbGate/commit/3b2f8ba0f2fb5fc1d4440095557ecd6b537210c9) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix three post-everywhere dispatcher contract mismatches discovered live
+  2026-04-22 during the ChatGPT CPC ads campaign:
+
+  - `postToLinkedIn` called `linkedin.publishPost({text})`; the module exports
+    `publishTextPost(token, personUrn, text)`.
+  - `postToThreads` called `threads.publishPost({text})`; no such export (real
+    entry is `postTextThread({text, token, userId})`).
+  - `postToBluesky` called `zernio.publishPost({text, platform})`; the real
+    signature is `publishPost(content, platforms[], options)` with `accountId`
+    required on each platform entry.
+
+  All three now route through `zernio.publishToAllPlatforms(content,
+{platforms:[<name>]})` — single code path, account discovery handled by
+  Zernio. Contract tests in `tests/post-everywhere-channels.test.js` spy on
+  `publishToAllPlatforms` and pin the call shape so this bug class cannot land
+  again.
+
+- [#1153](https://github.com/IgorGanapolsky/ThumbGate/pull/1153) [`b9d7f2c`](https://github.com/IgorGanapolsky/ThumbGate/commit/b9d7f2c5d39493f550b8a9926fd52d41d5038cd6) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Keep the public ThumbGate server package resilient when private orchestration modules are absent by lazy-loading intent routing, handoff, hosted-job, and workflow-sprint surfaces instead of shipping them in the npm tarball.
+
+- [#1153](https://github.com/IgorGanapolsky/ThumbGate/pull/1153) [`b9d7f2c`](https://github.com/IgorGanapolsky/ThumbGate/commit/b9d7f2c5d39493f550b8a9926fd52d41d5038cd6) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Keep the public ThumbGate package resilient when private MCP intelligence modules are absent by lazy-loading org dashboard and reflector surfaces instead of shipping them in the npm tarball.
+
+- [#1132](https://github.com/IgorGanapolsky/ThumbGate/pull/1132) [`0b97f19`](https://github.com/IgorGanapolsky/ThumbGate/commit/0b97f195b5c1dc179de9766bdfe41c413366f990) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - docs(directives): persist Product Architecture Split to CLAUDE.md / AGENTS.md / GEMINI.md
+
+  Codify the two-repo product boundary on the three canonical directive
+  files so future sessions — across Claude, Codex, and Gemini — don't
+  drift the public shell back toward proprietary intelligence surfaces.
+
+  - **Public shell** (`IgorGanapolsky/ThumbGate`, npm `thumbgate`): CLI,
+    hook installer, adapter configs, local gate runner, public schemas,
+    marketing. Thin by design.
+  - **Private core** (`IgorGanapolsky/ThumbGate-Core`): ranking, policy
+    synthesis, orchestration, billing intelligence, org visibility,
+    licensed exports. Not published to npm, not required by public CI.
+
+  Boundary rules: no re-expansion, wire protocol only, independent CI,
+  dedicated worktrees, and no "split complete" claim without measurable
+  deltas. Violation triggers (direct Core imports, public README
+  describing Core-only features, Core API keys in public CI, Core as
+  public runtime dependency) block merge.
+
+  No runtime change — docs only.
+
+- [#1157](https://github.com/IgorGanapolsky/ThumbGate/pull/1157) [`29c51b9`](https://github.com/IgorGanapolsky/ThumbGate/commit/29c51b9e3b7027de00d54827404b900d8a0c3c02) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - test(boundary): add public-core-boundary regression test
+
+  CLAUDE.md / AGENTS.md / GEMINI.md mandate a regression test at
+  `tests/public-core-boundary.test.js` to pin fixes that preserve the
+  Product Architecture Split. Until now this file did not exist on main,
+  so each "split complete" claim was unverifiable.
+
+  The test asserts three directive-codified violation triggers:
+
+  1. No packaged JS/TS file imports `thumbgate-core`, `@thumbgate/core`,
+     or `../ThumbGate-Core`. Public code must talk to Core over a wire
+     protocol, never direct `require`.
+  2. `package.json` does not list Core in `dependencies`,
+     `peerDependencies`, or `optionalDependencies`.
+  3. The npm bundle file count stays below a ceiling (260 currently, with
+     ~50-file headroom over today's 212) to catch silent re-expansion.
+
+  All three pass against the current public shell. This test is the
+  canonical home for future boundary fixes.
+
+- [#1133](https://github.com/IgorGanapolsky/ThumbGate/pull/1133) [`a419771`](https://github.com/IgorGanapolsky/ThumbGate/commit/a419771fb62822cb5d108b5e3b22daa8c45ce409) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Keep the public ThumbGate package boundary thin by removing non-runtime workflow, tracing, and sales pipeline scripts from the published tarball.
+
+- [#1140](https://github.com/IgorGanapolsky/ThumbGate/pull/1140) [`d675466`](https://github.com/IgorGanapolsky/ThumbGate/commit/d675466984975297f4ba8000289b3e2e961537e6) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Keep the public ThumbGate package boundary aligned with ThumbGate-Core by
+  loading private-core modules optionally in the public shell, and update
+  the Pro CLI verification to reflect the current private-core split.
+
+- [#1138](https://github.com/IgorGanapolsky/ThumbGate/pull/1138) [`cbf8c25`](https://github.com/IgorGanapolsky/ThumbGate/commit/cbf8c25df449cf346e323f2ceb186c4b4ae556b1) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Treat pending changesets as an audited no-op path in the npm publish guard so main no longer fails when release-relevant content lands ahead of the next versioned publish.
+
+- [#1155](https://github.com/IgorGanapolsky/ThumbGate/pull/1155) [`06a8e25`](https://github.com/IgorGanapolsky/ThumbGate/commit/06a8e2548ac9151dcdc685545de590946f877df4) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - test(reflector-agent): isolate from developer feedback DB
+
+  The `reflector-agent.test.js` unit tests call `checkRecurrence`, which
+  transitively reads `memory-log.jsonl` under the resolved feedback dir.
+  On developer machines with a populated lesson DB, assertions that
+  expect zero matches (`severity: 'info'`, `recurrence.count: 0`) flip
+  to `'warning'` / `1` because real recurring-mistake memories leak in.
+
+  Pin `THUMBGATE_FEEDBACK_DIR` to a fresh empty `mkdtempSync` dir for the
+  lifetime of the file, and restore the prior value in an `after` hook.
+  This lets the full verification chain run head-to-tail without one
+  stray test stopping the `&&` chain.
+
+  No runtime change. Tests only.
+
+- [#1233](https://github.com/IgorGanapolsky/ThumbGate/pull/1233) [`fd01a68`](https://github.com/IgorGanapolsky/ThumbGate/commit/fd01a6807a369061d98b4d22099cc4bf34c6721d) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Replace customer-facing Pre-Action Gates language with Pre-Action Checks across public docs, package metadata, plugin manifests, and marketing surfaces.
+
+- [#1173](https://github.com/IgorGanapolsky/ThumbGate/pull/1173) [`019e3a3`](https://github.com/IgorGanapolsky/ThumbGate/commit/019e3a384c5ff31a2a1630645dd1818946935fb1) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Align `scripts/social-reply-monitor.js` and `scripts/social-analytics/poll-all.js`
+  with the CLAUDE.md X/Twitter retirement (2026-04-20). The reply monitor's
+  `checkXReplies` branch (plus its `collectXSearchCandidates`,
+  `isRevenueRelevantXTweet`, `buildOwnedConversationQuery`, and `DEFAULT_X_HANDLE`
+  helpers) has been removed — the default platform list is now `['reddit', 'linkedin']`.
+  `LEGACY_POLLERS` no longer contains the `x` entry, and `scripts/social-analytics/pollers/x.js`
+  and `scripts/social-analytics/publishers/x.js` have been deleted. The
+  `social:poll:x` npm script has been removed. Tests in
+  `tests/social-reply-monitor.test.js`, `tests/zernio-canonical-pollers.test.js`,
+  and `tests/social-analytics.test.js` are pinned to the new surface.
+
+- [#1199](https://github.com/IgorGanapolsky/ThumbGate/pull/1199) [`84d5d56`](https://github.com/IgorGanapolsky/ThumbGate/commit/84d5d5666a6e3b6ebfa9d140c2ce8d8fd1163cf1) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - marketing(roo-sunset): Cline-migration campaign + SEO guide
+
+  Adds `docs/marketing/roo-sunset/` copy for LinkedIn / Reddit r/ClaudeAI / Bluesky / Threads (all four live via Zernio 2026-04-22) and `public/guides/roo-code-alternative-cline.html` as the SEO landing for the Roo sunset narrative. Pairs with the new Cline adapter to convert Roo's 2026-05-15 shutdown into ThumbGate installs.
+
+- [#1259](https://github.com/IgorGanapolsky/ThumbGate/pull/1259) [`ad62ce7`](https://github.com/IgorGanapolsky/ThumbGate/commit/ad62ce786a95b674a665ca44e00b380a4cea7be8) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Make eval fixtures scanner-safe by replacing secret-shaped committed test data with runtime-expanded placeholders, and add regression coverage to prevent future GitGuardian-style false positives.
+
+- [#1231](https://github.com/IgorGanapolsky/ThumbGate/pull/1231) [`256450a`](https://github.com/IgorGanapolsky/ThumbGate/commit/256450a0ea899a84598b2529a843ab34fd08b799) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat(billing): differentiate ThumbGate Free/Pro/Team with tier-specific product icons
+
+  CEO flagged that the Stripe product catalog renders "ThumbGate Team" and "ThumbGate Pro" with the same icon. Root cause: `scripts/billing.js` always shipped `thumbgate-icon-512.png` in `product_data.images` regardless of plan, so Stripe had no way to draw them differently.
+
+  - Added `public/assets/brand/thumbgate-mark-{pro,team}.svg` and rendered 512×512 PNGs. Pro adds a gold PRO ribbon to the upper-right; Team adds a violet pill with three stacked member dots. The core TG gate glyph is unchanged so cross-surface brand continuity holds.
+  - Introduced `resolveTierIconUrl(planId, appOrigin)` in `scripts/billing.js`; `buildCheckoutProductData` now accepts `planId` and picks the right icon per plan.
+  - Added `scripts/stripe-sync-product-images.js` (idempotent) to patch the `images` field on existing dashboard Products so already-created Team/Pro rows stop rendering as twins. Must run post-deploy once the PNGs are live on the public shell.
+  - Regression test in `tests/billing.test.js` pins three distinct URLs for free/pro/team checkout payloads; `tests/public-static-assets.test.js` confirms the public shell serves the two new PNGs.
+
+  Follow-up (not in this PR): the core TG monogram still has no thumb silhouette despite the product name. Separate design session to consider integrating the thumb gesture into the primary mark.
+
+- [#1125](https://github.com/IgorGanapolsky/ThumbGate/pull/1125) [`856b818`](https://github.com/IgorGanapolsky/ThumbGate/commit/856b81855de840b764226f0e5666bbc0114031b4) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add AI recommendation visibility guides for topical presence and relational knowledge, and update touched marketing links to use the landing site at usethumbgate.com.
+
+- [#1159](https://github.com/IgorGanapolsky/ThumbGate/pull/1159) [`6fd61b6`](https://github.com/IgorGanapolsky/ThumbGate/commit/6fd61b6633678dff2e00f8ee85a1c3afee3e0f97) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Route LinkedIn and Threads publishing through Zernio when `ZERNIO_API_KEY` is
+  set, collapsing three token rotations (LinkedIn, Threads, Bluesky) to a single
+  Zernio OAuth bundle. Direct-API publishers remain the fallback when the key is
+  absent and can be forced back on with `THUMBGATE_USE_DIRECT_PUBLISHERS=1`
+  (emergency escape parallel to `THUMBGATE_USE_DIRECT_POLLERS=1` for analytics).
+  Reddit, Instagram, YouTube, Dev.to, and TikTok stay on direct-API because
+  Zernio cannot match their content shapes (subreddit+title, media, video,
+  articles).
+
 ## 1.15.0
 
 ### Minor Changes
