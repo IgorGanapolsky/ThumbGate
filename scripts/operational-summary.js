@@ -113,6 +113,18 @@ async function getOperationalBillingSummary(options = {}) {
   } catch (err) {
     const reason = err && err.message ? err.message : 'hosted_summary_unavailable';
     const status = err && typeof err.status === 'number' ? err.status : null;
+    const code = err && err.code ? err.code : null;
+
+    // Hosted deliberately disabled or never configured — local fallback is
+    // intentional, not a degraded state. Tag as plain 'local'.
+    if (code === 'hosted_summary_disabled' || code === 'hosted_summary_unconfigured') {
+      return {
+        source: 'local',
+        summary: await getBillingSummaryLive(analyticsWindow),
+        fallbackReason: reason,
+        hostedStatus: null,
+      };
+    }
 
     // Auth failure is the most dangerous case: if hosted Stripe data says
     // we have paid customers and local ledgers are empty, silently returning
