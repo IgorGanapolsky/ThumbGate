@@ -20,8 +20,9 @@ function normalizeSlug(value, fallback = '') {
   const normalized = String(value)
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replaceAll(/[^a-z0-9]+/g, '-')
+    .replaceAll(/^-+/g, '')
+    .replaceAll(/-+$/g, '');
   return normalized || fallback;
 }
 
@@ -188,12 +189,14 @@ function writeModelCandidatesReport(feedbackDir, options = {}) {
 
 function renderModelCandidatesReport(report) {
   const lines = [];
-  lines.push(`# Managed Model Candidates — ${report.workload.label}`);
-  lines.push('');
-  lines.push(report.workload.summary);
-  lines.push('');
-  lines.push(`Catalog version: ${report.catalogVersion}`);
-  lines.push(`Candidates considered: ${report.considered}`);
+  lines.push(
+    `# Managed Model Candidates — ${report.workload.label}`,
+    '',
+    report.workload.summary,
+    '',
+    `Catalog version: ${report.catalogVersion}`,
+    `Candidates considered: ${report.considered}`,
+  );
   if (report.filters.provider) lines.push(`Provider filter: ${report.filters.provider}`);
   if (report.filters.family) lines.push(`Family filter: ${report.filters.family}`);
   lines.push('');
@@ -204,18 +207,22 @@ function renderModelCandidatesReport(report) {
   }
 
   report.recommended.forEach((candidate, index) => {
-    lines.push(`${index + 1}. ${candidate.id}`);
-    lines.push(`   Score: ${candidate.score}`);
-    lines.push(`   Context window: ${candidate.contextWindow}`);
-    lines.push(`   Cost class: ${candidate.costClass}`);
-    lines.push(`   Matched strengths: ${candidate.matchedStrengths.join(', ') || 'none'}`);
-    lines.push(`   Notes: ${candidate.notes}`);
-    lines.push('   Benchmark commands:');
+    lines.push(
+      `${index + 1}. ${candidate.id}`,
+      `   Score: ${candidate.score}`,
+      `   Context window: ${candidate.contextWindow}`,
+      `   Cost class: ${candidate.costClass}`,
+      `   Matched strengths: ${candidate.matchedStrengths.join(', ') || 'none'}`,
+      `   Notes: ${candidate.notes}`,
+      '   Benchmark commands:',
+    );
     candidate.benchmarkPlan.commands.forEach((entry) => {
       lines.push(`   - ${entry.command}`);
     });
-    lines.push(`   Benchmark metrics: ${candidate.benchmarkPlan.metrics.join(', ')}`);
-    lines.push('');
+    lines.push(
+      `   Benchmark metrics: ${candidate.benchmarkPlan.metrics.join(', ')}`,
+      '',
+    );
   });
 
   return `${lines.join('\n').trimEnd()}\n`;
@@ -236,7 +243,7 @@ module.exports = {
   writeModelCandidatesReport,
 };
 
-if (require.main === module) {
+if (require.main?.filename === __filename) {
   const report = buildModelCandidatesReport();
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
 }
