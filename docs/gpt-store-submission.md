@@ -1,7 +1,7 @@
 ---
 title: GPT Store Submission — ThumbGate
 created: 2026-03-04T00:00:00Z
-updated: 2026-04-14T00:00:00Z
+updated: 2026-04-24T00:00:00Z
 status: published-user-confirmed
 ---
 
@@ -10,6 +10,8 @@ status: published-user-confirmed
 ThumbGate was user-confirmed as published to GPT Store in the Programming category on April 13, 2026. Direct URL: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate. If that URL is unavailable for a user's account, point them to **Explore GPTs -> search ThumbGate -> choose the GPT by Igor Ganapolsky**.
 
 This page remains the canonical copy-paste submission packet for updating the GPT in ChatGPT GPT Builder (https://chat.openai.com/gpts/editor).
+
+> **ACTION REQUIRED (operator):** the live GPT listing currently shows earlier copy. Sync by opening https://chat.openai.com/gpts/editor → ThumbGate → Configure, and pasting the sections below into Name, Description, Instructions, and Conversation Starters. A publish bump is required for the updated copy to show in Explore GPTs.
 
 ---
 
@@ -24,7 +26,7 @@ ThumbGate
 ## Short Description (max 50 characters)
 
 ```
-Stop costly AI mistakes before they run
+Stop your AI agent from repeating mistakes
 ```
 
 ---
@@ -32,7 +34,7 @@ Stop costly AI mistakes before they run
 ## Full Description (max 300 characters)
 
 ```
-Paste a risky AI action before it runs. ThumbGate tells you whether to allow, block, or checkpoint it, then turns thumbs-up/down feedback into Pre-Action Checks so repeated mistakes stop coming back.
+Paste any AI action before it runs: commands, edits, merges, deploys. ThumbGate tells you whether to allow, block, or checkpoint — and remembers every thumbs-down so your agent stops repeating the same mistakes. No more "why did it do that again?"
 ```
 
 ---
@@ -89,12 +91,16 @@ Authentication: Bearer token configured once by the GPT owner in GPT Builder. Re
 
 ## Conversation Starters
 
+Outcome-led, named-pain starters that match what developers actually type into search:
+
 ```
-1. "Check this agent action before it runs: git push --force --tags"
-2. "Turn this mistake into a ThumbGate rule: the agent edited generated files again."
-3. "Install ThumbGate for Claude Code or Codex in this repo."
-4. "Search my saved lessons before you answer."
+1. "Check: git push --force --tags"
+2. "Stop my agent from editing generated files"
+3. "This answer was wrong — save the lesson"
+4. "What mistakes has my agent repeated this week?"
 ```
+
+> **Why these four:** each one opens with a verb a developer would type mid-frustration, and each maps 1:1 to an API action (evaluateDecision, generatePreventionRules, captureFeedback, getFeedbackSummary). Avoid proprietary terms ("Pre-Action Checks", "Reliability Gateway") in the starters — those belong in the instructions for the model, not the discovery surface.
 
 ---
 
