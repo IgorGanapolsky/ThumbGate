@@ -2,12 +2,14 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
+  analyzeTargetEvidence,
   buildFallbackMessage,
   buildMotionCatalog,
   buildRevenueLinks,
   clampTargetCount,
   deriveRevenueDirective,
   fetchGitHubJson,
+  hasCredibleRepoIdentity,
   parseArgs,
   prospectTargets,
   renderRevenueLoopMarkdown,
@@ -116,6 +118,10 @@ test('target classification leads with sprint unless target is clearly self-serv
   const sprintTarget = selectOutreachMotion({
     repoName: 'deployment-governance-agent',
     description: 'Production workflow governance and compliance gates for platform teams.',
+    evidence: {
+      score: 10,
+      outreachAngle: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
+    },
   }, catalog);
   const proTarget = selectOutreachMotion({
     repoName: 'mcp-demo-template',
@@ -126,7 +132,31 @@ test('target classification leads with sprint unless target is clearly self-serv
   assert.equal(proTarget.key, 'pro');
 });
 
-test('prospects GitHub targets via REST search and dedupes repeated repos', async () => {
+test('target evidence favors production workflows over generic fresh repos', () => {
+  const strong = analyzeTargetEvidence({
+    repoName: 'jira-workflow-guardian',
+    description: 'Production Jira workflow governance with approval gates and audit proof for platform teams.',
+    stars: 84,
+    updatedAt: new Date().toISOString(),
+  });
+  const weak = analyzeTargetEvidence({
+    repoName: 'mcp-playground-demo',
+    description: 'Template demo for trying MCP quickly.',
+    stars: 0,
+    updatedAt: new Date().toISOString(),
+  });
+
+  assert.ok(strong.score > weak.score);
+  assert.ok(strong.evidence.some((entry) => /workflow control surface/i.test(entry)));
+  assert.match(strong.outreachAngle, /rollout proof|approval boundaries/i);
+});
+
+test('repo identity filter drops obviously weak identifiers', () => {
+  assert.equal(hasCredibleRepoIdentity({ repoName: '-L-' }), false);
+  assert.equal(hasCredibleRepoIdentity({ repoName: 'mcp-jira-stdio' }), true);
+});
+
+test('prospects GitHub targets via REST search, filters low-signal repos, and dedupes repeated repos', async () => {
   const requestedUrls = [];
   const fetchImpl = async (url, options) => {
     requestedUrls.push(String(url));
@@ -140,9 +170,9 @@ test('prospects GitHub targets via REST search and dedupes repeated repos', asyn
               owner: { login: 'builder' },
               name: 'production-mcp-server',
               html_url: 'https://github.com/builder/production-mcp-server',
-              description: 'Production MCP server',
+              description: 'Production MCP server for deployment workflow approvals and audit proof.',
               stargazers_count: 42,
-              updated_at: '2026-04-14T00:00:00Z',
+              updated_at: new Date().toISOString(),
             },
             {
               owner: { login: 'builder' },
@@ -150,7 +180,15 @@ test('prospects GitHub targets via REST search and dedupes repeated repos', asyn
               html_url: 'https://github.com/builder/production-mcp-server',
               description: 'Duplicate target',
               stargazers_count: 42,
-              updated_at: '2026-04-14T00:00:00Z',
+              updated_at: new Date().toISOString(),
+            },
+            {
+              owner: { login: 'builder' },
+              name: 'mcp-demo-template',
+              html_url: 'https://github.com/builder/mcp-demo-template',
+              description: 'Template demo for Claude Code builders.',
+              stargazers_count: 0,
+              updated_at: new Date().toISOString(),
             },
           ],
         });
@@ -163,7 +201,8 @@ test('prospects GitHub targets via REST search and dedupes repeated repos', asyn
   assert.equal(result.errors.length, 0);
   assert.equal(result.targets.length, 1);
   assert.equal(result.targets[0].username, 'builder');
-  assert.equal(requestedUrls.length, 2);
+  assert.ok(result.targets[0].evidence.score >= 5);
+  assert.equal(requestedUrls.length, 3);
   assert.ok(requestedUrls.every((url) => url.startsWith('https://api.github.com/search/repositories')));
 });
 
@@ -201,7 +240,7 @@ test('GitHub discovery reports API and parser failures as non-fatal warnings', a
   assert.equal(invalid.ok, false);
   assert.equal(unavailable.ok, false);
   assert.equal(prospects.targets.length, 0);
-  assert.equal(prospects.errors.length, 2);
+  assert.equal(prospects.errors.length, 3);
 });
 
 test('rendered revenue loop markdown anchors every target to truth and proof', () => {
@@ -247,6 +286,9 @@ test('rendered revenue loop markdown anchors every target to truth and proof', (
       username: 'builder',
       repoName: 'mcp-solo-helper',
       repoUrl: 'https://github.com/example/mcp-solo-helper',
+      evidenceScore: 8,
+      evidence: ['agent infrastructure', 'updated in the last 7 days'],
+      outreachAngle: 'Lead with context-drift hardening for one workflow before proposing any broader agent platform story.',
       motion: selectedMotion.key,
       motionLabel: selectedMotion.label,
       motionReason: selectedMotion.reason,
@@ -261,6 +303,8 @@ test('rendered revenue loop markdown anchors every target to truth and proof', (
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
   assert.match(markdown, /Workflow Hardening Sprint/);
   assert.match(markdown, /Pipeline stage: targeted/);
+  assert.match(markdown, /Evidence score: 8/);
+  assert.match(markdown, /Outreach angle:/);
   assert.doesNotMatch(markdown, /founding users today/i);
 });
 

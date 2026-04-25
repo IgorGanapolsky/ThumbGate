@@ -10,6 +10,34 @@ const { ensureDir } = require('./fs-utils');
 const GITHUB_API_BASE_URL = 'https://api.github.com/';
 const COMMERCIAL_TRUTH_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md';
 const VERIFICATION_EVIDENCE_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
+const TARGET_SEARCH_QUERIES = [
+  'search/repositories?q=Model+Context+Protocol+workflow+automation+sort:updated',
+  'search/repositories?q=Model+Context+Protocol+production+security+sort:stars',
+  'search/repositories?q=Claude+Code+review+automation+sort:updated',
+];
+const SELF_SERVE_ONLY_SIGNALS = /\b(awesome|list|example|template|demo|tutorial|course|personal|dotfiles|toy|boilerplate)\b/;
+const TARGET_SIGNAL_RULES = [
+  {
+    label: 'workflow control surface',
+    pattern: /\b(workflow|approval|review|handoff|governance|gate|guardrail|policy|audit|proof)\b/,
+    weight: 4,
+  },
+  {
+    label: 'production or platform workflow',
+    pattern: /\b(production|platform|deploy|deployment|incident|sre|ci|cd|release|security|compliance)\b/,
+    weight: 4,
+  },
+  {
+    label: 'business-system integration',
+    pattern: /\b(jira|github|gitlab|microsoft ?365|office|google drive|calendar|slack|salesforce|crm|analytics)\b/,
+    weight: 3,
+  },
+  {
+    label: 'agent infrastructure',
+    pattern: /\b(mcp|model context protocol|agent|automation|memory|context|tool use|orchestrator)\b/,
+    weight: 2,
+  },
+];
 
 function getGoogleGenAI() {
   try {
@@ -101,6 +129,20 @@ function clampTargetCount(value) {
 function normalizeText(value) {
   if (value === undefined || value === null) return '';
   return String(value).trim();
+}
+
+function dedupeList(values = []) {
+  const seen = new Set();
+  const deduped = [];
+  for (const value of values) {
+    const normalized = normalizeText(value);
+    if (!normalized) continue;
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(normalized);
+  }
+  return deduped;
 }
 
 function buildRevenueLinks(config = resolveHostedBillingConfig({
@@ -268,15 +310,69 @@ function dedupeTargets(targets) {
   return unique;
 }
 
-async function prospectTargets(maxTargets = 6, { fetchImpl = globalThis.fetch } = {}) {
-  const queries = [
-    'search/repositories?q=MCP+Model+Context+Protocol+sort:updated',
-    'search/repositories?q=Claude+Code+MCP+sort:updated',
-  ];
+function hasCredibleRepoIdentity(target) {
+  const repoName = normalizeText(target.repoName);
+  const normalized = repoName.replace(/[^a-z0-9]/gi, '');
+  return normalized.length >= 4;
+}
 
+function analyzeTargetEvidence(target) {
+  const haystack = `${normalizeText(target.repoName)} ${normalizeText(target.description)}`.toLowerCase();
+  const evidence = [];
+  let score = 0;
+
+  for (const rule of TARGET_SIGNAL_RULES) {
+    if (!rule.pattern.test(haystack)) continue;
+    score += rule.weight;
+    evidence.push(rule.label);
+  }
+
+  if (target.stars >= 100) {
+    score += 4;
+    evidence.push(`${target.stars} GitHub stars`);
+  } else if (target.stars >= 25) {
+    score += 3;
+    evidence.push(`${target.stars} GitHub stars`);
+  } else if (target.stars >= 5) {
+    score += 2;
+    evidence.push(`${target.stars} GitHub stars`);
+  }
+
+  const updatedAt = normalizeText(target.updatedAt);
+  if (updatedAt) {
+    const ageMs = Date.now() - Date.parse(updatedAt);
+    if (Number.isFinite(ageMs) && ageMs >= 0) {
+      const ageDays = ageMs / (24 * 60 * 60 * 1000);
+      if (ageDays <= 7) {
+        score += 2;
+        evidence.push('updated in the last 7 days');
+      } else if (ageDays <= 30) {
+        score += 1;
+        evidence.push('updated in the last 30 days');
+      }
+    }
+  }
+
+  let outreachAngle = 'Pitch one repeated workflow failure, then offer proof-backed hardening instead of a generic tool trial.';
+  if (/\b(jira|github|gitlab|microsoft ?365|office|google drive|calendar|slack|salesforce|crm|analytics)\b/.test(haystack)) {
+    outreachAngle = 'Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.';
+  } else if (/\b(production|platform|deploy|deployment|incident|sre|ci|cd|release|security|compliance)\b/.test(haystack)) {
+    outreachAngle = 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.';
+  } else if (/\b(memory|context|agent|orchestrator|tool use)\b/.test(haystack)) {
+    outreachAngle = 'Lead with context-drift hardening for one workflow before proposing any broader agent platform story.';
+  }
+
+  return {
+    score,
+    evidence: dedupeList(evidence),
+    outreachAngle,
+  };
+}
+
+async function prospectTargets(maxTargets = 6, { fetchImpl = globalThis.fetch } = {}) {
   const combined = [];
   const errors = [];
-  for (const endpoint of queries) {
+  for (const endpoint of TARGET_SEARCH_QUERIES) {
     const response = await fetchGitHubJson(endpoint, { fetchImpl });
     if (!response.ok) {
       errors.push(response.error);
@@ -296,36 +392,71 @@ async function prospectTargets(maxTargets = 6, { fetchImpl = globalThis.fetch } 
     }
   }
 
+  const ranked = dedupeTargets(combined)
+    .filter(hasCredibleRepoIdentity)
+    .map((target) => {
+      const evidence = analyzeTargetEvidence(target);
+      return {
+        ...target,
+        evidence,
+      };
+    })
+    .filter((target) => {
+      if (SELF_SERVE_ONLY_SIGNALS.test(`${target.repoName} ${target.description}`.toLowerCase())) {
+        return target.evidence.score >= 6;
+      }
+      return target.evidence.score >= 5;
+    })
+    .sort((left, right) => {
+      if (right.evidence.score !== left.evidence.score) {
+        return right.evidence.score - left.evidence.score;
+      }
+      if (right.stars !== left.stars) {
+        return right.stars - left.stars;
+      }
+      return String(right.updatedAt || '').localeCompare(String(left.updatedAt || ''));
+    });
+
   return {
-    targets: dedupeTargets(combined).slice(0, maxTargets),
+    targets: ranked.slice(0, maxTargets),
     errors,
   };
 }
 
 function selectOutreachMotion(target, motionCatalog = buildMotionCatalog()) {
   const haystack = `${normalizeText(target.repoName)} ${normalizeText(target.description)}`.toLowerCase();
-  const proOnlySignals = /(awesome|list|example|template|demo|tutorial|course|personal|dotfiles|toy)/;
-  if (proOnlySignals.test(haystack)) {
+  if (SELF_SERVE_ONLY_SIGNALS.test(haystack)) {
     return {
       key: motionCatalog.pro.key,
       label: motionCatalog.pro.label,
-      reason: 'Target looks like a low-urgency self-serve/tooling fit, so Pro is the fallback CTA.',
+      reason: 'Target looks like a self-serve tooling surface, so Pro is the cleaner CTA unless a concrete workflow pain is confirmed.',
+    };
+  }
+
+  if ((target.evidence?.score || 0) >= 8) {
+    return {
+      key: motionCatalog.sprint.key,
+      label: motionCatalog.sprint.label,
+      reason: target.evidence.outreachAngle,
     };
   }
 
   return {
     key: motionCatalog.sprint.key,
     label: motionCatalog.sprint.label,
-    reason: 'Target can be approached with one concrete workflow-hardening offer before any generic Pro pitch.',
+    reason: target.evidence?.outreachAngle
+      || 'Target can be approached with one concrete workflow-hardening offer before any generic Pro pitch.',
   };
 }
 
 function buildFallbackMessage(target, selectedMotion, motionCatalog = buildMotionCatalog()) {
   const motion = motionCatalog[selectedMotion.key];
   const repoRef = `\`${target.repoName}\``;
+  const angle = normalizeText(target.evidence?.outreachAngle);
   if (selectedMotion.key === motionCatalog.sprint.key) {
     return [
       `Hey @${target.username}, saw you're shipping ${repoRef}. I am looking for one AI-agent workflow to harden end-to-end this week: repeated failure, prevention gate, and a proof run.`,
+      angle ? `${angle}` : '',
       `If ${repoRef} has one workflow that keeps breaking or losing context, I can harden that workflow for you: ${motion.cta}`
     ].join(' ');
   }
@@ -441,6 +572,9 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
       description: target.description,
       stars: target.stars,
       updatedAt: target.updatedAt,
+      evidenceScore: target.evidence?.score || 0,
+      evidence: target.evidence?.evidence || [],
+      outreachAngle: target.evidence?.outreachAngle || '',
       motion: target.selectedMotion.key,
       motionLabel: target.selectedMotion.label,
       motionReason: target.selectedMotion.reason,
@@ -458,6 +592,9 @@ function renderRevenueTargetMarkdown(target) {
     `- Pipeline stage: ${target.pipelineStage}`,
     `- Offer: ${target.offer}`,
     `- Repo: ${target.repoUrl || 'n/a'}`,
+    `- Evidence score: ${target.evidenceScore}`,
+    `- Evidence: ${target.evidence.length ? target.evidence.join(', ') : 'n/a'}`,
+    `- Outreach angle: ${target.outreachAngle || 'n/a'}`,
     `- Motion: ${target.motionLabel}`,
     `- Why: ${target.motionReason}`,
     `- CTA: ${target.cta}`,
@@ -511,10 +648,51 @@ function renderRevenueLoopMarkdown(report) {
   return `${lines.join('\n').trim()}\n`;
 }
 
+function escapeCsvValue(value) {
+  const text = normalizeText(value);
+  if (!text) return '';
+  const escaped = text.replace(/"/g, '""');
+  return /[",\n]/.test(escaped) ? `"${escaped}"` : escaped;
+}
+
+function renderRevenueLoopCsv(report) {
+  const rows = [
+    [
+      'username',
+      'repoName',
+      'repoUrl',
+      'offer',
+      'pipelineStage',
+      'evidenceScore',
+      'evidence',
+      'outreachAngle',
+      'motionLabel',
+      'cta',
+      'message',
+    ],
+    ...report.targets.map((target) => ([
+      target.username,
+      target.repoName,
+      target.repoUrl,
+      target.offer,
+      target.pipelineStage,
+      String(target.evidenceScore),
+      target.evidence.join('; '),
+      target.outreachAngle,
+      target.motionLabel,
+      target.cta,
+      target.message,
+    ])),
+  ];
+
+  return `${rows.map((row) => row.map(escapeCsvValue).join(',')).join('\n')}\n`;
+}
+
 function writeRevenueLoopOutputs(report, options = {}) {
   const repoRoot = path.resolve(__dirname, '..');
   const defaultDocsPath = path.join(repoRoot, 'docs', 'AUTONOMOUS_GITOPS.md');
   const markdown = renderRevenueLoopMarkdown(report);
+  const csv = renderRevenueLoopCsv(report);
   const reportDir = normalizeText(options.reportDir)
     ? path.resolve(repoRoot, options.reportDir)
     : '';
@@ -524,6 +702,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     ensureDir(reportDir);
     fs.writeFileSync(path.join(reportDir, 'gtm-revenue-loop.md'), markdown, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'gtm-revenue-loop.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(path.join(reportDir, 'gtm-target-queue.csv'), csv, 'utf8');
   }
 
   if (shouldWriteDocs) {
@@ -600,12 +779,14 @@ module.exports = {
   COMMERCIAL_TRUTH_LINK,
   VERIFICATION_EVIDENCE_LINK,
   buildFallbackMessage,
+  analyzeTargetEvidence,
   buildMotionCatalog,
   buildRevenueLinks,
   buildRevenueLoopReport,
   clampTargetCount,
   deriveRevenueDirective,
   fetchGitHubJson,
+  hasCredibleRepoIdentity,
   isCliInvocation,
   parseArgs,
   prospectTargets,
