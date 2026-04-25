@@ -39,9 +39,15 @@ const { buildPredictiveInsights } = loadOptionalModule('./predictive-insights', 
 const { routeProfile } = require('./profile-router');
 const { getSettingsStatus } = require('./settings-hierarchy');
 const { summarizeWorkflowRuns } = require('./workflow-runs');
+const { generateGovernanceReport } = require('./background-agent-governance');
 const { searchLessons } = require('./lesson-search');
 const { getInterventionPolicySummary } = require('./intervention-policy');
-const { computeDecisionMetrics } = require('./decision-journal');
+const {
+  DECISION_LOG_FILENAME,
+  computeDecisionMetrics,
+  readDecisionLog,
+} = require('./decision-journal');
+const { analyzeFeedback } = require('./feedback-loop');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'default.json');
@@ -1308,6 +1314,183 @@ function computeHarnessOverview(feedbackDir, entries) {
   };
 }
 
+function remediationPriority(type) {
+  const priorities = {
+    'trend-declining': 90,
+    'trend-degrading': 85,
+    'high-risk-domain': 80,
+    'high-risk-tag': 78,
+    'skill-improve': 72,
+    'delegation-reduce': 68,
+    'delegation-policy-review': 66,
+    'diagnose-failure-category': 62,
+    'pattern-reuse': 58,
+  };
+  return priorities[type] || 40;
+}
+
+function summarizeActionableRemediations(items, limit = 6) {
+  if (!Array.isArray(items)) return [];
+  return items
+    .slice()
+    .sort((left, right) => {
+      const delta = remediationPriority(right && right.type) - remediationPriority(left && left.type);
+      if (delta !== 0) return delta;
+      const rightCount = Number(right && right.evidence && (right.evidence.count || right.evidence.total || right.evidence.highRisk || 0));
+      const leftCount = Number(left && left.evidence && (left.evidence.count || left.evidence.total || left.evidence.highRisk || 0));
+      if (rightCount !== leftCount) return rightCount - leftCount;
+      return String((left && left.target) || '').localeCompare(String((right && right.target) || ''));
+    })
+    .slice(0, limit)
+    .map((item) => ({
+      ...item,
+      priority: remediationPriority(item.type),
+      title: `${String(item.action || 'review').replace(/-/g, ' ')} · ${item.target || 'system'}`,
+      badge: String(item.type || 'remediation').replace(/-/g, ' '),
+    }));
+}
+
+function summarizeMcpServerInventory(projectRoot = PROJECT_ROOT) {
+  const configPath = path.join(projectRoot, '.mcp.json');
+  const parsed = readJsonFile(configPath);
+  const mcpServers = parsed && parsed.mcpServers && typeof parsed.mcpServers === 'object'
+    ? Object.keys(parsed.mcpServers).sort((left, right) => left.localeCompare(right))
+    : [];
+  return {
+    configPath: fs.existsSync(configPath) ? configPath : null,
+    configuredServers: mcpServers,
+    configuredServerCount: mcpServers.length,
+  };
+}
+
+function computeAgentSurfaceInventory(feedbackDir, options = {}) {
+  const readiness = options.readiness || generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
+  const auditEntries = Array.isArray(options.auditEntries)
+    ? options.auditEntries
+    : readJSONL(path.join(feedbackDir, AUDIT_LOG_FILENAME));
+  const decisionRecords = Array.isArray(options.decisionRecords)
+    ? options.decisionRecords
+    : readDecisionLog(path.join(feedbackDir, DECISION_LOG_FILENAME));
+  const toolBuckets = new Map();
+  const sourceBuckets = new Map();
+  const toolNames = new Set();
+
+  function getToolBucket(toolName) {
+    const key = normalizeText(toolName) || 'unknown';
+    toolNames.add(key);
+    if (!toolBuckets.has(key)) {
+      toolBuckets.set(key, {
+        toolName: key,
+        evaluations: 0,
+        allow: 0,
+        warn: 0,
+        deny: 0,
+        intercepted: 0,
+      });
+    }
+    return toolBuckets.get(key);
+  }
+
+  for (const record of decisionRecords) {
+    if (!record || record.recordType !== 'evaluation') continue;
+    getToolBucket(record.toolName).evaluations += 1;
+  }
+
+  for (const entry of auditEntries) {
+    if (!entry) continue;
+    const bucket = getToolBucket(entry.toolName);
+    if (entry.decision === 'allow') bucket.allow += 1;
+    if (entry.decision === 'warn') {
+      bucket.warn += 1;
+      bucket.intercepted += 1;
+    }
+    if (entry.decision === 'deny') {
+      bucket.deny += 1;
+      bucket.intercepted += 1;
+    }
+    const sourceKey = normalizeText(entry.source) || 'unknown';
+    sourceBuckets.set(sourceKey, (sourceBuckets.get(sourceKey) || 0) + 1);
+  }
+
+  const observedTools = [...toolBuckets.values()]
+    .sort((left, right) => {
+      if (right.intercepted !== left.intercepted) return right.intercepted - left.intercepted;
+      if (right.evaluations !== left.evaluations) return right.evaluations - left.evaluations;
+      return left.toolName.localeCompare(right.toolName);
+    })
+    .slice(0, 8);
+  const policySources = [...sourceBuckets.entries()]
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+    .map(([source, count]) => ({ source, count }))
+    .slice(0, 6);
+  const mcpInventory = summarizeMcpServerInventory(PROJECT_ROOT);
+
+  return {
+    profile: readiness.permissions.profile,
+    tier: readiness.permissions.tier,
+    configuredServerCount: mcpInventory.configuredServerCount,
+    configuredServers: mcpInventory.configuredServers,
+    observedToolCount: toolNames.size,
+    observedTools,
+    policySources,
+    writeCapableTools: readiness.permissions.writeCapableTools.slice(0, 8),
+    activeBootstrapFiles: readiness.bootstrap.requiredPresent,
+    requiredBootstrapFiles: readiness.bootstrap.requiredCount,
+  };
+}
+
+function computeBackgroundAgentMode(feedbackDir, options = {}) {
+  const governance = generateGovernanceReport({
+    periodHours: options.periodHours || 24,
+    feedbackDir,
+  });
+  const workflowSummary = options.workflowSummary || summarizeWorkflowRuns(feedbackDir);
+  const topRunType = Object.entries(governance.byType || {})
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))[0] || null;
+  const latestRun = workflowSummary.latestRun || null;
+  const checkpointCoverage = safeRate(workflowSummary.reviewedRuns || 0, workflowSummary.proofBackedRuns || 0);
+
+  return {
+    ...governance,
+    checkpointCoverage,
+    reviewedRuns: workflowSummary.reviewedRuns || 0,
+    proofBackedRuns: workflowSummary.proofBackedRuns || 0,
+    latestRun,
+    topRunType: topRunType ? { runType: topRunType[0], count: topRunType[1] } : null,
+    recommendedMode: governance.blocked > 0 || governance.failed > 0
+      ? 'checkpoint-heavy'
+      : governance.total > 0
+        ? 'operator-light'
+        : 'bootstrapping',
+  };
+}
+
+function computeRegulatedBuyerProof(settingsStatus, workflowSummary, decisions, readiness) {
+  const origins = Array.isArray(settingsStatus && settingsStatus.origins) ? settingsStatus.origins : [];
+  const activeLayers = Array.isArray(settingsStatus && settingsStatus.activeLayers)
+    ? settingsStatus.activeLayers.filter((layer) => layer && layer.exists)
+    : [];
+  const latestRun = workflowSummary && workflowSummary.latestRun ? workflowSummary.latestRun : null;
+  const proofArtifacts = latestRun && Array.isArray(latestRun.proofArtifacts) ? latestRun.proofArtifacts : [];
+
+  return {
+    policyOriginCount: origins.length,
+    activeLayerCount: activeLayers.length,
+    reviewedRuns: workflowSummary && workflowSummary.reviewedRuns || 0,
+    proofBackedRuns: workflowSummary && workflowSummary.proofBackedRuns || 0,
+    checkpointCoverage: safeRate(
+      workflowSummary && workflowSummary.reviewedRuns || 0,
+      workflowSummary && workflowSummary.proofBackedRuns || 0
+    ),
+    decisionEvaluations: decisions && decisions.evaluationCount || 0,
+    appendOnlyAuditReady: Boolean(decisions && decisions.evaluationCount > 0),
+    runtimeIsolation: Boolean(readiness && readiness.articleAlignment && readiness.articleAlignment.runtimeIsolation),
+    latestWorkflowName: latestRun ? (latestRun.workflowName || latestRun.workflowId) : null,
+    latestProofArtifacts: proofArtifacts.slice(0, 3),
+    latestPolicyOrigin: origins[0] || null,
+  };
+}
+
 function resolveTeamWindowHours(analyticsWindow) {
   const window = analyticsWindow && analyticsWindow.window;
   if (window === 'today') return 24;
@@ -1416,9 +1599,19 @@ function generateDashboard(feedbackDir, options = {}) {
       availability: 'private_core',
     };
   const readiness = generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
+  const feedbackAnalysis = analyzeFeedback(path.join(feedbackDir, 'feedback-log.jsonl'));
   const harness = computeHarnessOverview(feedbackDir, entries);
   const interventionPolicy = getInterventionPolicySummary(feedbackDir);
+  const decisionRecords = readDecisionLog(path.join(feedbackDir, DECISION_LOG_FILENAME));
   const decisions = computeDecisionMetrics(feedbackDir);
+  const actionableRemediations = summarizeActionableRemediations(
+    feedbackAnalysis && feedbackAnalysis.actionableRemediations
+  );
+  const agentSurfaceInventory = computeAgentSurfaceInventory(feedbackDir, {
+    readiness,
+    auditEntries,
+    decisionRecords,
+  });
   const settingsStatus = getSettingsStatus({ projectRoot: PROJECT_ROOT });
   settingsStatus.routingPreview = {
     dashboardTool: routeProfile({
@@ -1433,6 +1626,16 @@ function generateDashboard(feedbackDir, options = {}) {
       settingsOptions: { projectRoot: PROJECT_ROOT },
     }),
   };
+  const workflowSummary = summarizeWorkflowRuns(feedbackDir);
+  const backgroundAgents = computeBackgroundAgentMode(feedbackDir, {
+    workflowSummary,
+  });
+  const regulatedProof = computeRegulatedBuyerProof(
+    settingsStatus,
+    workflowSummary,
+    decisions,
+    readiness,
+  );
 
   // Live metrics — gate hit rate, lesson effectiveness, error trend
   const now = Date.now();
@@ -1520,6 +1723,11 @@ function generateDashboard(feedbackDir, options = {}) {
     observability,
     instrumentation,
     readiness,
+    feedbackAnalysis,
+    actionableRemediations,
+    agentSurfaceInventory,
+    backgroundAgents,
+    regulatedProof,
     interventionPolicy,
     decisions,
     settingsStatus,

@@ -133,6 +133,68 @@ test('workflow sentinel denies recurring destructive pattern with high blast rad
   assert.match(report.evidence.join('\n'), /Memory guard predicted block/);
 });
 
+test('workflow sentinel checkpoints economic actions even before code changes land', () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sentinel-economic-'));
+  const report = evaluateWorkflowSentinel('Bash', {
+    command: 'stripe refunds create re_123 --reason requested_by_customer',
+  }, {
+    feedbackDir,
+    repoPath: process.cwd(),
+    governanceState: {
+      taskScope: {
+        summary: 'finance ops',
+        allowedPaths: ['scripts/**'],
+        protectedPaths: [],
+      },
+      protectedApprovals: [],
+      branchGovernance: {
+        baseBranch: 'main',
+        prRequired: true,
+      },
+    },
+  });
+
+  assert.equal(report.decision, 'warn');
+  assert.equal(report.actionProfile.economicAction, true);
+  assert.equal(report.decisionControl.executionMode, 'checkpoint_required');
+  assert.equal(report.decisionControl.reversibility, 'one_way_door');
+  assert.ok(report.remediations.some((entry) => entry.id === 'economic_action_approval'));
+  assert.match(report.reasoning.join('\n'), /economic action/i);
+});
+
+test('workflow sentinel checkpoints background customer-system actions', () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sentinel-background-'));
+  const report = evaluateWorkflowSentinel('Bash', {
+    command: 'node scripts/async-job-runner.js --task "resend customer invoice email"',
+    metadata: {
+      source: 'scheduled',
+      runType: 'invoice-send',
+    },
+  }, {
+    feedbackDir,
+    repoPath: process.cwd(),
+    governanceState: {
+      taskScope: {
+        summary: 'background invoicing',
+        allowedPaths: ['scripts/**'],
+        protectedPaths: [],
+      },
+      protectedApprovals: [],
+      branchGovernance: {
+        baseBranch: 'main',
+        prRequired: true,
+      },
+    },
+  });
+
+  assert.equal(report.decision, 'warn');
+  assert.equal(report.actionProfile.backgroundAgent, true);
+  assert.equal(report.actionProfile.customerSystemAction, true);
+  assert.equal(report.decisionControl.executionMode, 'checkpoint_required');
+  assert.ok(report.remediations.some((entry) => entry.id === 'background_agent_checkpoint'));
+  assert.ok(report.remediations.some((entry) => entry.id === 'customer_system_guardrail'));
+});
+
 test('workflow sentinel treats explicit changed files as authoritative for PR handoff', () => {
   const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sentinel-empty-'));
   const report = evaluateWorkflowSentinel('Bash', {
