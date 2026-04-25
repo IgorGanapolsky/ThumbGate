@@ -1,6 +1,6 @@
 {
   "phase": "12-interruptible-runtime",
-  "generatedAt": "2026-04-14T22:17:16.659Z",
+  "generatedAt": "2026-04-24T23:54:31.400Z",
   "passed": 7,
   "failed": 0,
   "total": 7,
@@ -31,7 +31,7 @@
     },
     "RUNTIME-07": {
       "status": "pass",
-      "desc": "packaged thumbgate runtime boots local API and serves dashboard affordances"
+      "desc": "packaged thumbcheck runtime boots local API and serves dashboard affordances"
     }
   }
 }

@@ -9,7 +9,7 @@
  * Detection priority (first match wins):
  *   1. THUMBGATE_HARNESS env var — explicit override
  *   2. Tool-name heuristic (Edit/Write/MultiEdit → code-edit)
- *   3. Command-text heuristic (deploy keywords → deploy, SQL keywords → db-write)
+ *   3. Command-text heuristic (deploy keywords → deploy, SQL keywords → db-write, routines → routine)
  *   4. null → load only default.json + auto-promoted gates
  *
  * Each harness is ADDITIVE — default.json gates always load first.
@@ -25,6 +25,7 @@ const HARNESSES = Object.freeze({
   deploy: path.join(HARNESS_DIR, 'deploy.json'),
   'code-edit': path.join(HARNESS_DIR, 'code-edit.json'),
   'db-write': path.join(HARNESS_DIR, 'db-write.json'),
+  routine: path.join(HARNESS_DIR, 'routine.json'),
 });
 
 // ---------------------------------------------------------------------------
@@ -48,6 +49,14 @@ const DB_WRITE_PATTERNS = [
   /\brm\s+.*\.sqlite\b/i,
   /\blancedb\b.*(?:create|delete|drop|truncate)/i,
   /\.db\.exec\(|\.db\.prepare\(/i,
+];
+
+const ROUTINE_PATTERNS = [
+  /\b(routine|scheduled agent|workspace agent|webhook trigger|post[-\s]?merge|nightly|daily audit)\b/i,
+  /\b(reasoning_effort|system prompt|developer message|verbosity|length limits)\b/i,
+  /\b(gpt-5\.5|gpt-5\.5-pro|xhigh|ultrathink)\b/i,
+  /\b(slack|salesforce|gmail|google drive|notion|jira|linear|atlassian)\b.*\b(send|post|write|update|delete|create)\b/i,
+  /\b(context|role|expectations|few[-\s]?shot|zero[-\s]?shot|prompt template|prompt library)\b/i,
 ];
 
 const CODE_EDIT_TOOL_NAMES = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
@@ -83,6 +92,9 @@ function selectHarness(toolName, toolInput) {
   if (commandText) {
     if (DB_WRITE_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES['db-write'];
+    }
+    if (ROUTINE_PATTERNS.some((p) => p.test(commandText))) {
+      return HARNESSES.routine;
     }
     if (DEPLOY_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES['deploy'];
@@ -168,7 +180,7 @@ function scoreHarnessAudit(inputs = {}, options = {}) {
   const mcpToolCount = Number(inputs.mcpToolCount || 0);
   const progressiveToolIndexPresent = Boolean(inputs.progressiveToolIndexPresent);
   const specializedHarnesses = Array.isArray(inputs.specializedHarnesses) ? inputs.specializedHarnesses : [];
-  const hasSpecializedHarnesses = specializedHarnesses.length >= 3;
+  const hasSpecializedHarnesses = specializedHarnesses.length >= 4;
   const missingDocs = globalDocs.filter((doc) => doc.exists === false).map((doc) => doc.name);
   const observations = [];
   const recommendations = [];
@@ -193,8 +205,8 @@ function scoreHarnessAudit(inputs = {}, options = {}) {
 
   if (!hasSpecializedHarnesses) {
     score -= 18;
-    observations.push('Fewer than three specialized gate harnesses are available for risky workflows.');
-    recommendations.push('Add workflow-specific harnesses for deploy, code-edit, and database-write actions so default gates stay lean.');
+    observations.push('Fewer than four specialized gate harnesses are available for risky workflows.');
+    recommendations.push('Add workflow-specific harnesses for deploy, code-edit, database-write, and unattended routine actions so default gates stay lean.');
   } else {
     observations.push(`Specialized harnesses are available: ${specializedHarnesses.join(', ')}.`);
   }

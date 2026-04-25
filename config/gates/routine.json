@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "harness": "routine",
+  "description": "Specialized gates for unattended scheduled or webhook-triggered agent routines.",
+  "gates": [
+    {
+      "id": "routine-no-direct-main-write",
+      "layer": "Execution",
+      "pattern": "git\\s+(commit|push)\\b.*\\b(main|master)\\b|git\\s+checkout\\s+(main|master)\\s*&&",
+      "toolNames": ["Bash"],
+      "action": "block",
+      "severity": "critical",
+      "message": "Unattended routines must create feature branches and PRs. Direct writes to protected branches are blocked."
+    },
+    {
+      "id": "routine-merge-without-checks",
+      "layer": "Verification",
+      "pattern": "gh\\s+pr\\s+merge|/trunk\\s+merge",
+      "toolNames": ["Bash"],
+      "action": "warn",
+      "severity": "critical",
+      "message": "Routine merge requested. Confirm test output, review state, branch SHA, and decision-journal evidence first."
+    },
+    {
+      "id": "routine-system-prompt-change-without-evals",
+      "layer": "Quality",
+      "pattern": "(system\\s*prompt|developer\\s*message|reasoning\\s*effort|verbosity|length\\s*limits)",
+      "toolNames": ["Bash", "Edit", "Write", "MultiEdit"],
+      "action": "warn",
+      "severity": "high",
+      "message": "Harness or prompt behavior change detected. Require per-model evals, ablation notes, and soak/rollout evidence."
+    },
+    {
+      "id": "routine-connector-write-without-approval",
+      "layer": "Permissions",
+      "pattern": "(slack|salesforce|gmail|google\\s*drive|notion|jira|linear|atlassian).*(send|post|write|update|delete|create)",
+      "toolNames": ["Bash", "Edit", "Write"],
+      "action": "warn",
+      "severity": "high",
+      "message": "Connector write detected. Workspace routines must ask before cross-app writes unless an explicit approval policy allows it."
+    }
+  ]
+}

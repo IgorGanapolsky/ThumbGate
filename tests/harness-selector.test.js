@@ -233,6 +233,7 @@ describe('listHarnesses and getHarnessPath', () => {
     assert.ok(names.includes('deploy'), 'should include deploy');
     assert.ok(names.includes('code-edit'), 'should include code-edit');
     assert.ok(names.includes('db-write'), 'should include db-write');
+    assert.ok(names.includes('routine'), 'should include routine');
   });
 
   it('getHarnessPath returns a string for known names', () => {
@@ -244,6 +245,26 @@ describe('listHarnesses and getHarnessPath', () => {
 
   it('getHarnessPath returns null for unknown names', () => {
     assert.strictEqual(getHarnessPath('nonexistent'), null);
+  });
+});
+
+describe('selectHarnessName — routine harness', () => {
+  it('detects scheduled workspace agents', () => {
+    assert.strictEqual(
+      selectHarnessName('Bash', { command: 'run daily workspace agent routine after PR merge' }),
+      'routine'
+    );
+  });
+
+  it('detects prompt and reasoning policy changes', () => {
+    assert.strictEqual(
+      selectHarnessName('Edit', { file_path: 'CLAUDE.md', content: 'reasoning_effort xhigh for all tasks' }),
+      'code-edit'
+    );
+    assert.strictEqual(
+      selectHarnessName('Bash', { command: 'update system prompt length limits and GPT-5.5 xhigh policy' }),
+      'routine'
+    );
   });
 });
 
@@ -293,7 +314,7 @@ describe('harness optimization audit', () => {
       ],
       mcpToolCount: 40,
       progressiveToolIndexPresent: true,
-      specializedHarnesses: ['deploy', 'code-edit', 'db-write'],
+      specializedHarnesses: ['deploy', 'code-edit', 'db-write', 'routine'],
     });
 
     assert.equal(audit.status, 'compounding');
@@ -306,7 +327,7 @@ describe('harness optimization audit', () => {
 
     assert.equal(audit.name, 'thumbgate-harness-optimization-audit');
     assert.ok(Number.isInteger(audit.score));
-    assert.ok(audit.totals.specializedHarnessCount >= 3);
+    assert.ok(audit.totals.specializedHarnessCount >= 4);
     assert.ok(audit.recommendations.length >= 1);
   });
 });
