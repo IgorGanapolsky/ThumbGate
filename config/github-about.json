@@ -2,8 +2,8 @@
   "repo": "IgorGanapolsky/ThumbGate",
   "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
   "homepageUrl": "https://thumbgate-production.up.railway.app",
-  "githubDescription": "Machine-speed pre-action defense for AI agents: 👍/👎 become checks that block repeat mistakes before code, money, or customer systems change.",
-  "metaDescription": "Stop paying for the same AI mistake twice. ThumbGate is machine-speed pre-action defense for AI agents: 👍 thumbs up and 👎 thumbs down become history-aware lessons, background-agent checkpoints, economic action gates, policy-origin proof, and Pre-Action Checks that block repeat mistakes before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode.",
+  "githubDescription": "Agent governance for ThumbGate: 👍/👎 become Pre-Action Checks that block repeat mistakes before code, money, or customer systems change.",
+  "metaDescription": "Stop paying for the same AI mistake twice. ThumbGate is machine-speed pre-action defense for AI coding agents: 👍 thumbs up and 👎 thumbs down become history-aware lessons, shared lessons and org visibility, actionable remediations, agent surface inventory, and Pre-Action Checks that block repeat mistakes before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode.",
   "topics": [
     "thumbgate",
     "pre-action-checks",

@@ -17,7 +17,7 @@
 
 ### GitHub Repo About
 **Canonical source:** `config/github-about.json`
-> Self-improving agent governance: 👍/👎 → Pre-Action Checks that block repeat AI mistakes. Stop paying for the same mistake twice.
+> Agent governance for ThumbGate: 👍/👎 become Pre-Action Checks that block repeat mistakes before code, money, or customer systems change.
 
 **Canonical topics:** `thumbgate`, `pre-action-checks`, `mcp`, `mcp-server`, `ai-agents`, `agent-reliability`, `guardrails`, `ai-safety`, `developer-tools`, `feedback-loop`, `claude-code`, `cursor`, `codex`, `gemini`, `amp`, `opencode`, `thompson-sampling`
 

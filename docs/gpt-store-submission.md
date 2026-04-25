@@ -28,7 +28,7 @@ ThumbGate
 ## Short Description (max 50 characters)
 
 ```
-Preflight risky AI actions before they run
+Stop your AI agent from repeating mistakes
 ```
 
 ---
