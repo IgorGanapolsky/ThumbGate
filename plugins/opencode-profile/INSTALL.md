@@ -25,7 +25,7 @@ The portable profile adds this MCP server entry:
   "mcp": {
     "thumbgate": {
       "type": "local",
-      "command": ["npx", "--yes", "--package", "thumbgate@1.16.0", "thumbgate", "serve"],
+      "command": ["npx", "--yes", "--package", "thumbgate@1.16.1", "thumbgate", "serve"],
       "enabled": true
     }
   }
