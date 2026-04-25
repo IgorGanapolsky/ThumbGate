@@ -1,3 +1,6 @@
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
@@ -5,6 +8,7 @@ const {
   analyzeTargetEvidence,
   buildFallbackMessage,
   buildMotionCatalog,
+  buildRevenueLoopReport,
   buildRevenueLinks,
   clampTargetCount,
   deriveRevenueDirective,
@@ -13,8 +17,10 @@ const {
   parseArgs,
   prospectTargets,
   renderRevenueLoopMarkdown,
+  runRevenueLoop,
   selectOutreachMotion,
   summarizeCommercialSnapshot,
+  writeRevenueLoopOutputs,
 } = require('../scripts/gtm-revenue-loop');
 
 test('motion catalog stays aligned with current commercial truth and proof links', () => {
@@ -324,4 +330,169 @@ test('first-touch outreach does not push proof before pain is confirmed', () => 
   assert.match(message, /harden/);
   assert.doesNotMatch(message, /VERIFICATION_EVIDENCE/);
   assert.doesNotMatch(message, /COMMERCIAL_TRUTH/);
+});
+
+test('revenue loop report keeps evidence metadata on each target', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const report = buildRevenueLoopReport({
+    source: 'local',
+    fallbackReason: '',
+    summary: {
+      revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    },
+    motionCatalog: catalog,
+    directive: {
+      state: 'cold-start',
+      objective: 'First 10 paying customers',
+      headline: 'No verified revenue and no active pipeline.',
+      primaryMotion: 'sprint',
+      secondaryMotion: 'pro',
+      actions: ['Lead with one workflow.'],
+    },
+    targets: [{
+      username: 'builder',
+      repoName: 'production-mcp-server',
+      repoUrl: 'https://github.com/example/production-mcp-server',
+      description: 'Production workflow automation with GitHub integrations.',
+      stars: 42,
+      updatedAt: '2026-04-20T00:00:00.000Z',
+      evidence: {
+        score: 9,
+        evidence: ['workflow control surface', '42 GitHub stars'],
+        outreachAngle: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
+      },
+      selectedMotion: {
+        key: 'sprint',
+        label: catalog.sprint.label,
+        reason: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
+      },
+      message: 'I can harden one production workflow for you this week.',
+    }],
+  });
+
+  assert.equal(report.targets[0].evidenceScore, 9);
+  assert.deepEqual(report.targets[0].evidence, ['workflow control surface', '42 GitHub stars']);
+  assert.match(report.targets[0].outreachAngle, /rollout proof/);
+  assert.equal(report.targets[0].offer, 'workflow_hardening_sprint');
+});
+
+test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for operator import', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const report = {
+    generatedAt: '2026-04-25T00:00:00.000Z',
+    source: 'local',
+    fallbackReason: 'Hosted operational summary is not configured.',
+    currentTruth: {
+      publicSelfServeOffer: catalog.pro.label,
+      teamPilotOffer: catalog.sprint.label,
+      commercialTruthLink: catalog.pro.truth,
+      verificationEvidenceLink: catalog.pro.proof,
+    },
+    directive: {
+      state: 'cold-start',
+      objective: 'First 10 paying customers',
+      headline: 'No verified revenue and no active pipeline.',
+      primaryMotion: 'sprint',
+      secondaryMotion: 'pro',
+      actions: ['Lead with one workflow.'],
+    },
+    snapshot: {
+      paidOrders: 0,
+      bookedRevenueCents: 0,
+      checkoutStarts: 0,
+      uniqueLeads: 0,
+      sprintLeads: 0,
+      qualifiedSprintLeads: 0,
+    },
+    targets: [{
+      username: 'builder',
+      repoName: 'production-mcp-server',
+      repoUrl: 'https://github.com/example/production-mcp-server',
+      offer: 'workflow_hardening_sprint',
+      pipelineStage: 'targeted',
+      evidenceScore: 9,
+      evidence: ['workflow control surface', '42 GitHub stars'],
+      outreachAngle: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
+      motionLabel: catalog.sprint.label,
+      motionReason: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
+      cta: catalog.sprint.cta,
+      message: 'I can harden one workflow, then prove it.',
+    }],
+  };
+  const reportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-gtm-'));
+
+  try {
+    const written = writeRevenueLoopOutputs(report, { reportDir });
+    const csvPath = path.join(reportDir, 'gtm-target-queue.csv');
+    const csv = fs.readFileSync(csvPath, 'utf8');
+
+    assert.equal(written.reportDir, reportDir);
+    assert.equal(written.docsPath, null);
+    assert.ok(fs.existsSync(path.join(reportDir, 'gtm-revenue-loop.md')));
+    assert.ok(fs.existsSync(path.join(reportDir, 'gtm-revenue-loop.json')));
+    assert.ok(fs.existsSync(csvPath));
+    assert.match(csv, /^username,repoName,repoUrl,offer,pipelineStage,evidenceScore,evidence,outreachAngle,motionLabel,cta,message/m);
+    assert.match(csv, /"I can harden one workflow, then prove it\."/);
+  } finally {
+    fs.rmSync(reportDir, { recursive: true, force: true });
+  }
+});
+
+test('runRevenueLoop writes an evidence-backed target queue with discovery warnings when GitHub search fails', async () => {
+  const reportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-revenue-loop-'));
+  const originalGeminiKey = process.env.GEMINI_API_KEY;
+  delete process.env.GEMINI_API_KEY;
+
+  try {
+    const { report, written } = await runRevenueLoop({
+      maxTargets: 2,
+      reportDir,
+      fetchImpl: async (url) => {
+        if (String(url).includes('Claude+Code+review+automation')) {
+          return {
+            ok: false,
+            status: 503,
+            async text() {
+              return 'search temporarily unavailable';
+            },
+          };
+        }
+
+        return {
+          ok: true,
+          async text() {
+            return JSON.stringify({
+              items: [{
+                owner: { login: 'builder' },
+                name: 'production-mcp-server',
+                html_url: 'https://github.com/example/production-mcp-server',
+                description: 'Production workflow automation with GitHub integrations.',
+                stargazers_count: 42,
+                updated_at: '2026-04-20T00:00:00.000Z',
+              }],
+            });
+          },
+        };
+      },
+    });
+
+    assert.equal(report.targets.length, 1);
+    assert.ok(Array.isArray(report.discoveryWarnings));
+    assert.equal(report.discoveryWarnings.length, 1);
+    assert.match(report.discoveryWarnings[0], /temporarily unavailable/);
+    assert.equal(written.reportDir, reportDir);
+    assert.ok(fs.existsSync(path.join(reportDir, 'gtm-target-queue.csv')));
+  } finally {
+    if (originalGeminiKey === undefined) {
+      delete process.env.GEMINI_API_KEY;
+    } else {
+      process.env.GEMINI_API_KEY = originalGeminiKey;
+    }
+    fs.rmSync(reportDir, { recursive: true, force: true });
+  }
 });
