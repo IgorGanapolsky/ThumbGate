@@ -182,6 +182,18 @@ test('launch-content variants align with reliability-over-orchestration position
   assert.doesNotMatch(launchContent, /persistent memory layer that fixes this/i);
 });
 
+test('launch-now playbook stays discovery-first and avoids retired broadcast channels', () => {
+  const launchNow = readText('LAUNCH_NOW.md');
+
+  assert.match(launchNow, /npm run gtm:revenue-loop/i);
+  assert.match(launchNow, /sales:pipeline -- import/i);
+  assert.match(launchNow, /Workflow Hardening Sprint/i);
+  assert.match(launchNow, /X\/Twitter is retired/i);
+  assert.match(launchNow, /Do not lead with Pro/i);
+  assert.doesNotMatch(launchNow, /Show HN/i);
+  assert.doesNotMatch(launchNow, /X\/Twitter thread/i);
+});
+
 test('public landing copy stays vendor-neutral and honest about editor support', () => {
   const congruence = readText(path.join('docs', 'MARKETING_COPY_CONGRUENCE.md'));
   const landingPage = readText(path.join('public', 'index.html'));
