@@ -7,6 +7,7 @@ const assert = require('node:assert/strict');
 const {
   analyzeTargetEvidence,
   buildFallbackMessage,
+  buildMarketplaceCopy,
   buildMotionCatalog,
   buildPainConfirmedFollowUp,
   buildRevenueLoopReport,
@@ -18,6 +19,7 @@ const {
   hasCredibleRepoIdentity,
   parseArgs,
   prospectTargets,
+  renderMarketplaceCopyMarkdown,
   renderRevenueLoopMarkdown,
   runRevenueLoop,
   selectOutreachMotion,
@@ -503,6 +505,125 @@ test('revenue loop report keeps evidence metadata on each target', () => {
   assert.match(report.targets[0].painConfirmedFollowUpDraft, /proof pack/);
 });
 
+test('marketplace copy pack stays tied to current revenue-loop evidence', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const report = buildRevenueLoopReport({
+    source: 'local',
+    fallbackReason: 'Hosted operational summary is not configured.',
+    summary: {
+      revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    },
+    motionCatalog: catalog,
+    directive: {
+      state: 'cold-start',
+      objective: 'First 10 paying customers',
+      headline: 'No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.',
+      primaryMotion: 'sprint',
+      secondaryMotion: 'pro',
+      actions: ['Lead with one workflow.'],
+    },
+    targets: [
+      {
+        temperature: 'warm',
+        source: 'reddit',
+        channel: 'reddit_dm',
+        username: 'builder',
+        accountName: 'r/ClaudeCode',
+        contactUrl: 'https://www.reddit.com/user/builder/',
+        repoName: '',
+        repoUrl: '',
+        evidence: {
+          score: 8,
+          evidence: ['warm inbound engagement'],
+          outreachAngle: 'Lead with one repeated workflow failure.',
+        },
+        outreachAngle: 'Lead with one repeated workflow failure.',
+        motion: 'sprint',
+        motionLabel: catalog.sprint.label,
+        motionReason: 'Warm workflow pain already exists.',
+        selectedMotion: {
+          key: 'sprint',
+          label: catalog.sprint.label,
+          reason: 'Warm workflow pain already exists.',
+        },
+        pipelineStage: 'targeted',
+        offer: 'workflow_hardening_sprint',
+        cta: catalog.sprint.cta,
+      },
+      {
+        temperature: 'cold',
+        source: 'github',
+        channel: 'github',
+        username: 'freema',
+        accountName: 'freema',
+        contactUrl: '',
+        repoName: 'mcp-jira-stdio',
+        repoUrl: 'https://github.com/freema/mcp-jira-stdio',
+        evidence: {
+          score: 10,
+          evidence: ['workflow control surface', 'business-system integration'],
+          outreachAngle: 'Lead with approval boundaries, rollback safety, and proof.',
+        },
+        outreachAngle: 'Lead with approval boundaries, rollback safety, and proof.',
+        motion: 'sprint',
+        motionLabel: catalog.sprint.label,
+        motionReason: 'Jira workflows need approval boundaries.',
+        selectedMotion: {
+          key: 'sprint',
+          label: catalog.sprint.label,
+          reason: 'Jira workflows need approval boundaries.',
+        },
+        pipelineStage: 'targeted',
+        offer: 'workflow_hardening_sprint',
+        cta: catalog.sprint.cta,
+      },
+      {
+        temperature: 'cold',
+        source: 'github',
+        channel: 'github',
+        username: 'platform',
+        accountName: 'platform',
+        contactUrl: '',
+        repoName: 'release-governor',
+        repoUrl: 'https://github.com/example/release-governor',
+        evidence: {
+          score: 9,
+          evidence: ['production or platform workflow'],
+          outreachAngle: 'Lead with rollout proof for one production workflow.',
+        },
+        outreachAngle: 'Lead with rollout proof for one production workflow.',
+        motion: 'pro',
+        motionLabel: catalog.pro.label,
+        motionReason: 'Self-serve path is secondary.',
+        selectedMotion: {
+          key: 'pro',
+          label: catalog.pro.label,
+          reason: 'Self-serve path is secondary.',
+        },
+        pipelineStage: 'targeted',
+        offer: 'pro_self_serve',
+        cta: catalog.pro.cta,
+      },
+    ],
+  });
+  const pack = buildMarketplaceCopy(report);
+  const markdown = renderMarketplaceCopyMarkdown(pack);
+
+  assert.match(pack.headline, /Harden one AI-agent workflow/i);
+  assert.equal(pack.recommendedCtas[0].label, catalog.sprint.label);
+  assert.equal(pack.recommendedCtas[1].label, catalog.pro.label);
+  assert.ok(pack.topSignals.some((signal) => /Warm discovery workflows/.test(signal.label)));
+  assert.ok(pack.topSignals.some((signal) => /Business-system workflow approvals/.test(signal.label)));
+  assert.match(markdown, /Proof Policy/);
+  assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
+  assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
+  assert.doesNotMatch(markdown, /paid customers already exist/i);
+});
+
 test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for operator import', () => {
   const links = buildRevenueLinks();
   const catalog = buildMotionCatalog(links);
@@ -562,17 +683,22 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     const written = writeRevenueLoopOutputs(report, { reportDir });
     const csvPath = path.join(reportDir, 'gtm-target-queue.csv');
     const csv = fs.readFileSync(csvPath, 'utf8');
+    const marketplaceCopy = JSON.parse(fs.readFileSync(path.join(reportDir, 'gtm-marketplace-copy.json'), 'utf8'));
     const jsonl = fs.readFileSync(path.join(reportDir, 'gtm-target-queue.jsonl'), 'utf8');
 
     assert.equal(written.reportDir, reportDir);
     assert.equal(written.docsPath, null);
     assert.ok(fs.existsSync(path.join(reportDir, 'gtm-revenue-loop.md')));
     assert.ok(fs.existsSync(path.join(reportDir, 'gtm-revenue-loop.json')));
+    assert.ok(fs.existsSync(path.join(reportDir, 'gtm-marketplace-copy.md')));
+    assert.ok(fs.existsSync(path.join(reportDir, 'gtm-marketplace-copy.json')));
     assert.ok(fs.existsSync(csvPath));
     assert.ok(fs.existsSync(path.join(reportDir, 'gtm-target-queue.jsonl')));
     assert.match(csv, /^temperature,source,channel,username,accountName,contactUrl,repoName,repoUrl,updatedAt,offer,pipelineStage,evidenceScore,evidence,evidenceSource,outreachAngle,motionLabel,motionReason,proofPackTrigger,cta,firstTouchDraft,painConfirmedFollowUpDraft/m);
     assert.match(csv, /"I can harden one workflow, then prove it\."/);
     assert.match(csv, /"If the workflow pain is real, I can send the proof pack\."/);
+    assert.match(marketplaceCopy.headline, /workflow/i);
+    assert.ok(Array.isArray(marketplaceCopy.topSignals));
     assert.equal(JSON.parse(jsonl.trim()).repoName, 'production-mcp-server');
   } finally {
     fs.rmSync(reportDir, { recursive: true, force: true });
@@ -675,9 +801,13 @@ test('runRevenueLoop writes an evidence-backed target queue with discovery warni
     assert.ok(Array.isArray(report.discoveryWarnings));
     assert.equal(report.discoveryWarnings.length, 1);
     assert.match(report.discoveryWarnings[0], /temporarily unavailable/);
+    assert.ok(report.marketplaceCopy);
+    assert.ok(Array.isArray(report.marketplaceCopy.topSignals));
     assert.match(report.targets[0].proofPackTrigger, /buyer confirms pain/);
     assert.match(report.targets[0].painConfirmedFollowUpDraft, /VERIFICATION_EVIDENCE/);
     assert.equal(written.reportDir, reportDir);
+    assert.ok(fs.existsSync(path.join(reportDir, 'gtm-marketplace-copy.md')));
+    assert.ok(fs.existsSync(path.join(reportDir, 'gtm-marketplace-copy.json')));
     assert.ok(fs.existsSync(path.join(reportDir, 'gtm-target-queue.csv')));
     assert.ok(fs.existsSync(path.join(reportDir, 'gtm-target-queue.jsonl')));
   } finally {

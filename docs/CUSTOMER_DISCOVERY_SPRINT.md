@@ -46,10 +46,12 @@ Generate a target queue:
 npm run gtm:revenue-loop -- --report-dir reports/gtm/$(date +%F)-selling-now --max-targets=12
 ```
 
-The revenue loop now emits four operator artifacts in that folder:
+The revenue loop now emits six operator artifacts in that folder:
 
 - `gtm-revenue-loop.md` for the human summary
 - `gtm-revenue-loop.json` for machine-readable truth
+- `gtm-marketplace-copy.md` for listing-ready copy based on the same target evidence
+- `gtm-marketplace-copy.json` for machine-readable listing copy and target themes
 - `gtm-target-queue.csv` for spreadsheet sorting
 - `gtm-target-queue.jsonl` for line-by-line operator handoff with first-touch and pain-confirmed follow-up drafts
 

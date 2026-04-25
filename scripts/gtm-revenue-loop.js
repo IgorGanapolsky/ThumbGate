@@ -48,6 +48,36 @@ const TARGET_SIGNAL_RULES = [
     weight: 2,
   },
 ];
+const MARKETPLACE_SIGNAL_THEMES = [
+  {
+    key: 'warm_discovery',
+    label: 'Warm discovery workflows',
+    summary: 'Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain.',
+    listingAngle: 'Lead with one repeated workflow failure and a founder-led diagnostic before any generic tool pitch.',
+    match: (target) => normalizeText(target.temperature).toLowerCase() === 'warm',
+  },
+  {
+    key: 'business_system_workflows',
+    label: 'Business-system workflow approvals',
+    summary: 'Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof.',
+    listingAngle: 'Lead with approval boundaries, rollback safety, and proof for one workflow.',
+    match: (target) => hasEvidenceLabel(target, 'business-system integration'),
+  },
+  {
+    key: 'production_rollout',
+    label: 'Production rollout proof',
+    summary: 'Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems.',
+    listingAngle: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
+    match: (target) => hasEvidenceLabel(target, 'production or platform workflow'),
+  },
+  {
+    key: 'workflow_control',
+    label: 'Workflow control surfaces',
+    summary: 'The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive.',
+    listingAngle: 'Lead with one repeated workflow failure, then show how ThumbGate turns it into an enforceable pre-action gate.',
+    match: (target) => hasEvidenceLabel(target, 'workflow control surface'),
+  },
+];
 
 function getGoogleGenAI() {
   try {
@@ -139,6 +169,12 @@ function clampTargetCount(value) {
 function normalizeText(value) {
   if (value === undefined || value === null) return '';
   return String(value).trim();
+}
+
+function hasEvidenceLabel(target, label) {
+  const targetLabels = Array.isArray(target?.evidence) ? target.evidence : [];
+  const needle = normalizeText(label).toLowerCase();
+  return targetLabels.some((entry) => normalizeText(entry).toLowerCase() === needle);
 }
 
 function dedupeList(values = []) {
@@ -642,6 +678,106 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
   };
 }
 
+function resolveMotionLabel(report, motionKey) {
+  return motionKey === 'pro'
+    ? report.currentTruth.publicSelfServeOffer
+    : report.currentTruth.teamPilotOffer;
+}
+
+function resolveMotionCta(report, motionKey) {
+  const matchingTarget = Array.isArray(report.targets)
+    ? report.targets.find((target) => normalizeText(target.motion) === normalizeText(motionKey) && normalizeText(target.cta))
+    : null;
+  return matchingTarget ? matchingTarget.cta : '';
+}
+
+function buildMarketplaceCopy(report) {
+  const targets = Array.isArray(report?.targets) ? report.targets : [];
+  const signalThemes = MARKETPLACE_SIGNAL_THEMES
+    .map((theme) => {
+      const matches = targets.filter((target) => theme.match(target));
+      return {
+        key: theme.key,
+        label: theme.label,
+        summary: theme.summary,
+        listingAngle: theme.listingAngle,
+        count: matches.length,
+        examples: matches.slice(0, 3).map((target) => (
+          normalizeText(target.repoName)
+            ? `${target.username}/${target.repoName}`
+            : `@${target.username}`
+        )),
+      };
+    })
+    .filter((theme) => theme.count > 0)
+    .sort((left, right) => right.count - left.count)
+    .slice(0, 3);
+  const topTheme = signalThemes[0];
+  const primaryMotion = normalizeText(report.directive?.primaryMotion) || 'sprint';
+  const secondaryMotion = normalizeText(report.directive?.secondaryMotion) || 'pro';
+  const headline = primaryMotion === 'sprint'
+    ? 'Harden one AI-agent workflow before you roll it out.'
+    : 'Turn repeated AI-agent mistakes into pre-action checks before the next tool call.';
+  const signalSentence = signalThemes.length
+    ? signalThemes.map((theme) => theme.summary).join(' ')
+    : 'Current target evidence still points to workflow hardening and proof-first positioning.';
+  const shortDescription = [
+    report.directive?.headline || headline,
+    signalSentence,
+  ].join(' ');
+  const longDescription = [
+    'ThumbGate is a reliability gateway for AI coding workflows.',
+    'It captures repeated failures, regenerates pre-action gates, and keeps approval boundaries, rollback safety, and proof attached to the workflow before the next risky tool call.',
+    signalSentence,
+    `Primary motion: ${resolveMotionLabel(report, primaryMotion)}.`,
+    `Secondary motion: ${resolveMotionLabel(report, secondaryMotion)} after the buyer asks for the self-serve path.`,
+  ].join(' ');
+  const sampleTargets = targets
+    .slice(0, 5)
+    .map((target) => ({
+      account: normalizeText(target.repoName)
+        ? `${target.username}/${target.repoName}`
+        : `@${target.username}`,
+      temperature: target.temperature || 'cold',
+      motion: target.motionLabel || resolveMotionLabel(report, target.motion),
+      why: target.motionReason || target.outreachAngle || '',
+    }));
+
+  return {
+    generatedAt: report.generatedAt,
+    state: report.directive?.state || 'cold-start',
+    headline,
+    shortDescription,
+    longDescription,
+    proofPolicy: 'Do not lead with proof links. Use Commercial Truth and Verification Evidence only after the buyer confirms pain.',
+    recommendedCtas: [
+      {
+        motion: primaryMotion,
+        label: resolveMotionLabel(report, primaryMotion),
+        cta: resolveMotionCta(report, primaryMotion),
+      },
+      {
+        motion: secondaryMotion,
+        label: resolveMotionLabel(report, secondaryMotion),
+        cta: resolveMotionCta(report, secondaryMotion),
+      },
+    ],
+    listingBullets: dedupeList([
+      'Turn repeated AI-agent mistakes into enforceable pre-action gates.',
+      topTheme ? topTheme.listingAngle : '',
+      `Primary offer: ${resolveMotionLabel(report, primaryMotion)}.`,
+      `Secondary offer: ${resolveMotionLabel(report, secondaryMotion)} after the buyer asks for the tool path.`,
+      'Keep approval boundaries, rollback safety, and proof attached to the workflow before rollout.',
+    ]),
+    topSignals: signalThemes,
+    sampleTargets,
+    proofLinks: [
+      report.currentTruth?.commercialTruthLink || '',
+      report.currentTruth?.verificationEvidenceLink || '',
+    ].filter(Boolean),
+  };
+}
+
 function renderRevenueTargetMarkdown(target) {
   return [
     `### @${target.username} — ${target.repoName || target.accountName || 'warm discovery lead'}`,
@@ -718,6 +854,55 @@ function renderRevenueLoopMarkdown(report) {
   return `${lines.join('\n').trim()}\n`;
 }
 
+function renderMarketplaceCopyMarkdown(pack) {
+  const signalLines = pack.topSignals.length
+    ? pack.topSignals.map((signal) => `- ${signal.label} (${signal.count}): ${signal.summary}${signal.examples.length ? ` Examples: ${signal.examples.join(', ')}` : ''}`)
+    : ['- No target evidence was available for this run.'];
+  const ctaLines = pack.recommendedCtas
+    .filter((entry) => entry.label || entry.cta)
+    .map((entry) => `- ${entry.label}: ${entry.cta || 'cta unavailable in this run'}`);
+  const sampleTargetLines = pack.sampleTargets.length
+    ? pack.sampleTargets.map((target) => `- ${target.account} (${target.temperature}): ${target.why}`)
+    : ['- No sample targets available in this run.'];
+  const proofLines = pack.proofLinks.length
+    ? pack.proofLinks.map((link) => `- ${link}`)
+    : ['- No proof links available in this run.'];
+
+  return [
+    '# Marketplace Copy Pack',
+    '',
+    'This pack is operator-ready listing copy derived from the current GTM revenue loop. It is not proof of sent outreach, installs, or revenue by itself.',
+    '',
+    '## Listing Headline',
+    pack.headline,
+    '',
+    '## Short Description',
+    pack.shortDescription,
+    '',
+    '## Long Description',
+    pack.longDescription,
+    '',
+    '## Listing Bullets',
+    ...pack.listingBullets.map((bullet) => `- ${bullet}`),
+    '',
+    '## Recommended CTAs',
+    ...ctaLines,
+    '',
+    '## Evidence-Backed Buyer Signals',
+    ...signalLines,
+    '',
+    '## Proof Policy',
+    `- ${pack.proofPolicy}`,
+    '',
+    '## Sample Targets Behind This Copy',
+    ...sampleTargetLines,
+    '',
+    '## Proof Links',
+    ...proofLines,
+    '',
+  ].join('\n');
+}
+
 function escapeCsvValue(value) {
   const text = normalizeText(value);
   if (!text) return '';
@@ -786,6 +971,8 @@ function writeRevenueLoopOutputs(report, options = {}) {
   const repoRoot = path.resolve(__dirname, '..');
   const defaultDocsPath = path.join(repoRoot, 'docs', 'AUTONOMOUS_GITOPS.md');
   const markdown = renderRevenueLoopMarkdown(report);
+  const marketplaceCopy = report.marketplaceCopy || buildMarketplaceCopy(report);
+  const marketplaceMarkdown = renderMarketplaceCopyMarkdown(marketplaceCopy);
   const csv = renderRevenueLoopCsv(report);
   const jsonl = renderRevenueLoopJsonl(report);
   const reportDir = normalizeText(options.reportDir)
@@ -797,6 +984,8 @@ function writeRevenueLoopOutputs(report, options = {}) {
     ensureDir(reportDir);
     fs.writeFileSync(path.join(reportDir, 'gtm-revenue-loop.md'), markdown, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'gtm-revenue-loop.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(path.join(reportDir, 'gtm-marketplace-copy.md'), marketplaceMarkdown, 'utf8');
+    fs.writeFileSync(path.join(reportDir, 'gtm-marketplace-copy.json'), `${JSON.stringify(marketplaceCopy, null, 2)}\n`, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'gtm-target-queue.csv'), csv, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'gtm-target-queue.jsonl'), jsonl, 'utf8');
   }
@@ -807,6 +996,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
 
   return {
     markdown,
+    marketplaceMarkdown,
     reportDir: reportDir || null,
     docsPath: shouldWriteDocs ? defaultDocsPath : null,
   };
@@ -830,6 +1020,7 @@ async function runRevenueLoop(options = {}) {
     directive,
     targets: warmTargets.concat(enrichedTargets),
   });
+  report.marketplaceCopy = buildMarketplaceCopy(report);
 
   if (errors.length) {
     report.discoveryWarnings = errors;
@@ -890,8 +1081,10 @@ module.exports = {
   parseArgs,
   prospectTargets,
   renderRevenueLoopMarkdown,
+  renderMarketplaceCopyMarkdown,
   runRevenueLoop,
   selectOutreachMotion,
   summarizeCommercialSnapshot,
   writeRevenueLoopOutputs,
+  buildMarketplaceCopy,
 };
