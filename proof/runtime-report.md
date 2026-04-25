@@ -1,6 +1,6 @@
 # Interruptible Runtime Proof Report
 
-Generated: 2026-04-14T22:17:16.659Z
+Generated: 2026-04-24T23:54:31.400Z
 Result: 7/7 passed
 
 ## Requirements
@@ -11,7 +11,7 @@ Result: 7/7 passed
 - [x] **RUNTIME-04**: failed verification queues an auto-improvement experiment
 - [x] **RUNTIME-05**: schedule manager builds a managed async-job-runner command for job files
 - [x] **RUNTIME-06**: verify-run full includes the runtime proof lane and artifact
-- [x] **RUNTIME-07**: packaged thumbgate runtime boots local API and serves dashboard affordances
+- [x] **RUNTIME-07**: packaged thumbcheck runtime boots local API and serves dashboard affordances
 
 7 passed, 0 failed
 
