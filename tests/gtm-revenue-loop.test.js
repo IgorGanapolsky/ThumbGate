@@ -14,6 +14,7 @@ const {
   clampTargetCount,
   deriveRevenueDirective,
   fetchGitHubJson,
+  hasCredibleRepoDescription,
   hasCredibleRepoIdentity,
   parseArgs,
   prospectTargets,
@@ -163,6 +164,18 @@ test('repo identity filter drops obviously weak identifiers', () => {
   assert.equal(hasCredibleRepoIdentity({ repoName: 'mcp-jira-stdio' }), true);
 });
 
+test('repo description sanity gate rejects corrupted GitHub metadata', () => {
+  assert.equal(hasCredibleRepoDescription({
+    description: 'Production workflow approvals and audit proof for MCP teams.',
+  }), true);
+  assert.equal(hasCredibleRepoDescription({
+    description: "Skip to content github / docs @@ -10,23 +10,8 @@ .github/workflows/repo-sync.yml Showing 501 changed files",
+  }), false);
+  assert.equal(hasCredibleRepoDescription({
+    description: 'x'.repeat(501),
+  }), false);
+});
+
 test('prospects GitHub targets via REST search, filters low-signal repos, and dedupes repeated repos', async () => {
   const requestedUrls = [];
   const fetchImpl = async (url, options) => {
@@ -211,6 +224,40 @@ test('prospects GitHub targets via REST search, filters low-signal repos, and de
   assert.ok(result.targets[0].evidence.score >= 5);
   assert.equal(requestedUrls.length, 3);
   assert.ok(requestedUrls.every((url) => url.startsWith('https://api.github.com/search/repositories')));
+});
+
+test('prospecting drops repositories with corrupted descriptions even when scores look high', async () => {
+  const result = await prospectTargets(5, {
+    fetchImpl: async () => ({
+      ok: true,
+      async text() {
+        return JSON.stringify({
+          items: [
+            {
+              owner: { login: 'Sfedfcv' },
+              name: 'redesigned-pancake',
+              html_url: 'https://github.com/Sfedfcv/redesigned-pancake',
+              description: "Skip to content github / docs @@ -10,23 +10,8 @@ .github/workflows/repo-sync.yml Showing 501 changed files with 5,397 additions and 1,362 deletions.",
+              stargazers_count: 224,
+              updated_at: new Date().toISOString(),
+            },
+            {
+              owner: { login: 'freema' },
+              name: 'mcp-jira-stdio',
+              html_url: 'https://github.com/freema/mcp-jira-stdio',
+              description: 'MCP server for Jira integration with stdio transport. Issue management, project tracking, and workflow automation via Model Context Protocol.',
+              stargazers_count: 11,
+              updated_at: new Date().toISOString(),
+            },
+          ],
+        });
+      },
+    }),
+  });
+
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.targets.length, 1);
+  assert.equal(result.targets[0].repoName, 'mcp-jira-stdio');
 });
 
 test('GitHub discovery reports API and parser failures as non-fatal warnings', async () => {

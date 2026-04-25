@@ -16,6 +16,15 @@ const TARGET_SEARCH_QUERIES = [
   'search/repositories?q=Claude+Code+review+automation+sort:updated',
 ];
 const SELF_SERVE_ONLY_SIGNALS = /\b(awesome|list|example|template|demo|tutorial|course|personal|dotfiles|toy|boilerplate)\b/;
+const MAX_CREDIBLE_DESCRIPTION_LENGTH = 500;
+const SUSPICIOUS_REPO_DESCRIPTION_PATTERNS = [
+  /^\s*skip to content\b/i,
+  /\bshowing \d+ changed files\b/i,
+  /\bbinary file not shown\b/i,
+  /\bdiff not rendered\b/i,
+  /\b\.github\/workflows\//i,
+  /@@ -\d+,\d+ \+\d+,\d+ @@/,
+];
 const TARGET_SIGNAL_RULES = [
   {
     label: 'workflow control surface',
@@ -316,6 +325,13 @@ function hasCredibleRepoIdentity(target) {
   return normalized.length >= 4;
 }
 
+function hasCredibleRepoDescription(target) {
+  const description = normalizeText(target.description);
+  if (!description) return false;
+  if (description.length > MAX_CREDIBLE_DESCRIPTION_LENGTH) return false;
+  return !SUSPICIOUS_REPO_DESCRIPTION_PATTERNS.some((pattern) => pattern.test(description));
+}
+
 function analyzeTargetEvidence(target) {
   const haystack = `${normalizeText(target.repoName)} ${normalizeText(target.description)}`.toLowerCase();
   const evidence = [];
@@ -394,6 +410,7 @@ async function prospectTargets(maxTargets = 6, { fetchImpl = globalThis.fetch } 
 
   const ranked = dedupeTargets(combined)
     .filter(hasCredibleRepoIdentity)
+    .filter(hasCredibleRepoDescription)
     .map((target) => {
       const evidence = analyzeTargetEvidence(target);
       return {
@@ -832,6 +849,7 @@ module.exports = {
   clampTargetCount,
   deriveRevenueDirective,
   fetchGitHubJson,
+  hasCredibleRepoDescription,
   hasCredibleRepoIdentity,
   isCliInvocation,
   parseArgs,
