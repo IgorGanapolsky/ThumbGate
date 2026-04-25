@@ -30,11 +30,12 @@ REPORT_DIR="reports/gtm/$(date +%F)-selling-now"
 npm run gtm:revenue-loop -- --report-dir "$REPORT_DIR" --max-targets=12
 ```
 
-Review three files before sending anything:
+Review four files before sending anything:
 
 - `gtm-revenue-loop.md` for the current commercial truth and directive
 - `gtm-revenue-loop.json` for the machine-readable queue
 - `gtm-target-queue.csv` for operator copy/paste into a tracker or CRM
+- `gtm-marketplace-copy.md` for listing-ready copy derived from the same target evidence
 
 The generated queue now includes two lanes in one artifact:
 
@@ -106,6 +107,7 @@ Do not treat generic posting as sales progress.
 
 Before refreshing listing copy or directory submissions, make sure these remain aligned:
 
+- the current `gtm-marketplace-copy.md` artifact from the revenue loop
 - [docs/COMMERCIAL_TRUTH.md](docs/COMMERCIAL_TRUTH.md)
 - [docs/VERIFICATION_EVIDENCE.md](docs/VERIFICATION_EVIDENCE.md)
 - [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json)
