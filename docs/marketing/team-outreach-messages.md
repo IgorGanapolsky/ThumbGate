@@ -6,6 +6,8 @@ These are the 4 highest-value leads from comment engagement. Track each one in t
 npm run sales:pipeline -- add --source reddit --channel reddit_dm --username <name> --pain "<specific pain hypothesis>"
 ```
 
+These same warm targets are exported into the GTM revenue-loop artifact and used by `scripts/reddit-dm-outreach.js`, so keep this copy aligned with the discovery-first offer.
+
 Use them as part of the one-week discovery loop in [CUSTOMER_DISCOVERY_SPRINT.md](../CUSTOMER_DISCOVERY_SPRINT.md). The goal is not to sell on first touch. The goal is to learn whether the real buyer problem is team agent governance, approval boundaries, and rollout proof.
 
 First-touch rule: lead with one concrete offer, not generic Pro and not the proof pack.

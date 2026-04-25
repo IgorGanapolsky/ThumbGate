@@ -23,6 +23,7 @@ const {
   summarizeCommercialSnapshot,
   writeRevenueLoopOutputs,
 } = require('../scripts/gtm-revenue-loop');
+const { getWarmOutboundTargets } = require('../scripts/warm-outreach-targets');
 
 test('motion catalog stays aligned with current commercial truth and proof links', () => {
   const links = buildRevenueLinks();
@@ -290,7 +291,12 @@ test('rendered revenue loop markdown anchors every target to truth and proof', (
       qualifiedSprintLeads: 0,
     },
     targets: [{
+      temperature: 'warm',
+      source: 'reddit',
+      channel: 'reddit_dm',
       username: 'builder',
+      accountName: 'r/ClaudeCode',
+      contactUrl: 'https://www.reddit.com/user/builder/',
       repoName: 'mcp-solo-helper',
       repoUrl: 'https://github.com/example/mcp-solo-helper',
       evidenceScore: 8,
@@ -308,6 +314,8 @@ test('rendered revenue loop markdown anchors every target to truth and proof', (
 
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
+  assert.match(markdown, /Warm Discovery Queue/);
+  assert.match(markdown, /Source: reddit \/ reddit_dm/);
   assert.match(markdown, /Workflow Hardening Sprint/);
   assert.match(markdown, /Pipeline stage: targeted/);
   assert.match(markdown, /Evidence score: 8/);
@@ -392,7 +400,12 @@ test('revenue loop report keeps evidence metadata on each target', () => {
       actions: ['Lead with one workflow.'],
     },
     targets: [{
+      temperature: 'warm',
+      source: 'reddit',
+      channel: 'reddit_dm',
       username: 'builder',
+      accountName: 'r/ClaudeCode',
+      contactUrl: 'https://www.reddit.com/user/builder/',
       repoName: 'production-mcp-server',
       repoUrl: 'https://github.com/example/production-mcp-server',
       description: 'Production workflow automation with GitHub integrations.',
@@ -415,6 +428,8 @@ test('revenue loop report keeps evidence metadata on each target', () => {
   });
 
   assert.equal(report.targets[0].evidenceScore, 9);
+  assert.equal(report.targets[0].temperature, 'warm');
+  assert.equal(report.targets[0].source, 'reddit');
   assert.deepEqual(report.targets[0].evidence, ['workflow control surface', '42 GitHub stars']);
   assert.match(report.targets[0].outreachAngle, /rollout proof/);
   assert.equal(report.targets[0].evidenceSource, 'https://github.com/example/production-mcp-server');
@@ -454,7 +469,12 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
       qualifiedSprintLeads: 0,
     },
     targets: [{
+      temperature: 'warm',
+      source: 'reddit',
+      channel: 'reddit_dm',
       username: 'builder',
+      accountName: 'r/ClaudeCode',
+      contactUrl: 'https://www.reddit.com/user/builder/',
       repoName: 'production-mcp-server',
       repoUrl: 'https://github.com/example/production-mcp-server',
       updatedAt: '2026-04-20T00:00:00.000Z',
@@ -486,7 +506,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.ok(fs.existsSync(path.join(reportDir, 'gtm-revenue-loop.json')));
     assert.ok(fs.existsSync(csvPath));
     assert.ok(fs.existsSync(path.join(reportDir, 'gtm-target-queue.jsonl')));
-    assert.match(csv, /^username,repoName,repoUrl,updatedAt,offer,pipelineStage,evidenceScore,evidence,evidenceSource,outreachAngle,motionLabel,motionReason,proofPackTrigger,cta,firstTouchDraft,painConfirmedFollowUpDraft/m);
+    assert.match(csv, /^temperature,source,channel,username,accountName,contactUrl,repoName,repoUrl,updatedAt,offer,pipelineStage,evidenceScore,evidence,evidenceSource,outreachAngle,motionLabel,motionReason,proofPackTrigger,cta,firstTouchDraft,painConfirmedFollowUpDraft/m);
     assert.match(csv, /"I can harden one workflow, then prove it\."/);
     assert.match(csv, /"If the workflow pain is real, I can send the proof pack\."/);
     assert.equal(JSON.parse(jsonl.trim()).repoName, 'production-mcp-server');
@@ -533,7 +553,9 @@ test('runRevenueLoop writes an evidence-backed target queue with discovery warni
       },
     });
 
-    assert.equal(report.targets.length, 1);
+    assert.equal(report.targets.length, 5);
+    assert.equal(report.targets.filter((target) => target.temperature === 'warm').length, 4);
+    assert.equal(report.targets.filter((target) => target.temperature !== 'warm').length, 1);
     assert.ok(Array.isArray(report.discoveryWarnings));
     assert.equal(report.discoveryWarnings.length, 1);
     assert.match(report.discoveryWarnings[0], /temporarily unavailable/);
@@ -550,4 +572,14 @@ test('runRevenueLoop writes an evidence-backed target queue with discovery warni
     }
     fs.rmSync(reportDir, { recursive: true, force: true });
   }
+});
+
+test('warm discovery targets stay sprint-first and evidence-backed', () => {
+  const warmTargets = getWarmOutboundTargets('https://thumbgate-production.up.railway.app/#workflow-sprint-intake');
+
+  assert.equal(warmTargets.length, 4);
+  assert.ok(warmTargets.every((target) => target.temperature === 'warm'));
+  assert.ok(warmTargets.every((target) => target.selectedMotion.key === 'sprint'));
+  assert.ok(warmTargets.every((target) => /harden end-to-end this week|harden that workflow/.test(target.message)));
+  assert.ok(warmTargets.every((target) => !/lifetime pro|no strings attached/i.test(target.message)));
 });
