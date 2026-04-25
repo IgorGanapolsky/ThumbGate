@@ -18,10 +18,21 @@ function normalizeText(value) {
 }
 
 function normalizeIdentifier(value, fallback = 'field') {
-  const normalized = normalizeText(value)
-    .toLowerCase()
-    .replaceAll(/[^a-z0-9]+/g, '_')
-    .replaceAll(/^_+|_+$/g, '');
+  let normalized = '';
+  let previousWasSeparator = false;
+  for (const char of normalizeText(value).toLowerCase()) {
+    const isAllowed = (char >= 'a' && char <= 'z') || (char >= '0' && char <= '9');
+    if (isAllowed) {
+      normalized += char;
+      previousWasSeparator = false;
+    } else if (!previousWasSeparator && normalized) {
+      normalized += '_';
+      previousWasSeparator = true;
+    }
+  }
+  if (normalized.endsWith('_')) {
+    normalized = normalized.slice(0, -1);
+  }
   return normalized || fallback;
 }
 
@@ -49,7 +60,7 @@ function inferColumnType(values) {
 }
 
 function summarizeColumn(name, rows) {
-  const values = rows.map((row) => row && row[name]);
+  const values = rows.map((row) => row?.[name]);
   return {
     name,
     type: inferColumnType(values),
