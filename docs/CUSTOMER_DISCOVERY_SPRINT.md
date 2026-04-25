@@ -53,6 +53,7 @@ The revenue loop now emits four operator artifacts in that folder:
 - `gtm-target-queue.csv` for spreadsheet sorting
 - `gtm-target-queue.jsonl` for line-by-line operator handoff with first-touch and pain-confirmed follow-up drafts
 
+That report now carries both warm discovery leads and cold GitHub prospects in one machine-readable queue so the operator can import a single artifact and still contact the warm engagers first.
 Import the queue into the local sales ledger:
 
 ```bash

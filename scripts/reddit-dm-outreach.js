@@ -18,6 +18,8 @@
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const { resolveHostedBillingConfig } = require('./hosted-config');
+const { buildWarmRedditMessages } = require('./warm-outreach-targets');
 
 // Parse .env credentials line-by-line
 function parseEnv(filePath) {
@@ -40,24 +42,30 @@ function parseEnv(filePath) {
   return result;
 }
 
-const envPath = path.join(__dirname, '..', '.env');
-const env = parseEnv(envPath);
-
-const REDDIT_CLIENT_ID = env.REDDIT_CLIENT_ID;
-const REDDIT_CLIENT_SECRET = env.REDDIT_CLIENT_SECRET;
-const REDDIT_USERNAME = env.REDDIT_USERNAME;
-const REDDIT_PASSWORD = env.REDDIT_PASSWORD;
-
-if (!REDDIT_CLIENT_ID || !REDDIT_CLIENT_SECRET || !REDDIT_USERNAME || !REDDIT_PASSWORD) {
-  console.error('❌ Missing Reddit credentials in .env');
-  process.exit(1);
+function getRedditCredentials() {
+  const envPath = path.join(__dirname, '..', '.env');
+  const fileEnv = fs.existsSync(envPath) ? parseEnv(envPath) : {};
+  return {
+    REDDIT_CLIENT_ID: process.env.REDDIT_CLIENT_ID || fileEnv.REDDIT_CLIENT_ID,
+    REDDIT_CLIENT_SECRET: process.env.REDDIT_CLIENT_SECRET || fileEnv.REDDIT_CLIENT_SECRET,
+    REDDIT_USERNAME: process.env.REDDIT_USERNAME || fileEnv.REDDIT_USERNAME,
+    REDDIT_PASSWORD: process.env.REDDIT_PASSWORD || fileEnv.REDDIT_PASSWORD,
+  };
 }
-
-console.log('📧 Reddit DM Outreach');
-console.log('---');
 
 // OAuth2 password grant flow
 function authenticate() {
+  const {
+    REDDIT_CLIENT_ID,
+    REDDIT_CLIENT_SECRET,
+    REDDIT_USERNAME,
+    REDDIT_PASSWORD,
+  } = getRedditCredentials();
+
+  if (!REDDIT_CLIENT_ID || !REDDIT_CLIENT_SECRET || !REDDIT_USERNAME || !REDDIT_PASSWORD) {
+    throw new Error('Missing Reddit credentials in environment or .env');
+  }
+
   return new Promise((resolve, reject) => {
     const authHeader = 'Basic ' + Buffer.from(
       REDDIT_CLIENT_ID + ':' + REDDIT_CLIENT_SECRET
@@ -146,30 +154,13 @@ function sendDM(accessToken, to, subject, text) {
 // Main
 async function main() {
   try {
+    console.log('📧 Reddit DM Outreach');
+    console.log('---');
     const accessToken = await authenticate();
-
-    const messages = [
-      {
-        to: 'game-of-kton',
-        subject: 'Quick question about your agent workflow',
-        text: 'Hey — you left some really thoughtful comments on the AI coding agent thread. I\'m building ThumbGate (agent mistake prevention via PreToolUse hooks) and your feedback was the most useful I got.\n\nI\'m trying to figure out if this is worth building further. Would you be open to a quick 15-min call this week? Just want to understand how you handle agent mistakes in your workflow.\n\nI\'ll give you lifetime Pro access regardless — no strings attached.\n\nHere\'s the repo if you want to look first: https://github.com/IgorGanapolsky/ThumbGate'
-      },
-      {
-        to: 'Deep_Ad1959',
-        subject: 'Your context-dependent blocking idea',
-        text: 'Hey — your point about context-dependent blocking was really insightful. That\'s exactly the problem I\'m trying to solve with ThumbGate (using Thompson Sampling for adaptive gates instead of hard binary blocks).\n\nWould you be open to a quick 15-min call this week? I\'m trying to figure out what developers would actually pay for in this space. Your perspective would be genuinely valuable.\n\nLifetime Pro access is yours either way. Repo: https://github.com/IgorGanapolsky/ThumbGate'
-      },
-      {
-        to: 'leogodin217',
-        subject: 'Quick question about AI agent safety in your workflow',
-        text: 'Hey — you engaged with one of my posts about AI coding agent tooling and your take stood out. I\'m building ThumbGate (prevents AI agents from repeating mistakes via automated prevention rules).\n\nI\'m at the stage where I need honest feedback from people who actually use agents daily. Would you do a quick 15-min call this week? Just want to understand your pain points.\n\nLifetime Pro access is yours regardless. Repo: https://github.com/IgorGanapolsky/ThumbGate'
-      },
-      {
-        to: 'Enthu-Cutlet-1337',
-        subject: 'Quick question about your AI coding agent setup',
-        text: 'Hey — you commented on one of my posts about agent memory/safety tooling and your feedback was one of the few that was genuinely useful.\n\nI\'m building ThumbGate (automated mistake prevention for AI coding agents) and I\'m trying to figure out if this solves a real problem or if everyone just uses CLAUDE.md files. Would you be open to a quick 15-min call this week?\n\nLifetime Pro access is yours either way — no pitch, just questions. Repo: https://github.com/IgorGanapolsky/ThumbGate'
-      }
-    ];
+    const billingConfig = resolveHostedBillingConfig({
+      requestOrigin: 'https://thumbgate-production.up.railway.app',
+    });
+    const messages = buildWarmRedditMessages(`${billingConfig.appOrigin}/#workflow-sprint-intake`);
 
     console.log(`\n📨 Sending ${messages.length} direct messages...\n`);
 
@@ -189,4 +180,22 @@ async function main() {
   }
 }
 
-main();
+function isCliInvocation(argv = process.argv) {
+  const invokedPath = argv[1];
+  return invokedPath ? path.resolve(invokedPath) === __filename : false;
+}
+
+if (isCliInvocation()) {
+  main().catch((err) => {
+    console.error('❌ Error:', err?.message || err);
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  buildWarmRedditMessages,
+  getRedditCredentials,
+  isCliInvocation,
+  main,
+  parseEnv,
+};
