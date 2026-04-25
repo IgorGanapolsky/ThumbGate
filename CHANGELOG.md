@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.16.2
+
+### Patch Changes
+
+- [#1288](https://github.com/IgorGanapolsky/ThumbGate/pull/1288) [`7fb0caf`](https://github.com/IgorGanapolsky/ThumbGate/commit/7fb0caf4e362de6b44aa0bb0056e0a29dd79f4b8) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add tracked Aiventyx marketplace CTAs and operator-ready listing export assets.
+
+- [#1284](https://github.com/IgorGanapolsky/ThumbGate/pull/1284) [`fdf1933`](https://github.com/IgorGanapolsky/ThumbGate/commit/fdf19337238408f99e01d10081cb9e0e60c1bd83) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Harden the GTM revenue loop with evidence-based target scoring, operator-ready CSV prospect queues, and a discovery-first launch checklist that prioritizes validated outreach over stale broadcast playbooks.
+
 ## 1.16.1
 
 ### Patch Changes
