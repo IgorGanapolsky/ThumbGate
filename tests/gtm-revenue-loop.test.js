@@ -351,6 +351,25 @@ test('pain-confirmed follow-up adds proof links only after the buyer confirms pa
   assert.match(message, /Workflow Hardening Sprint/i);
 });
 
+test('pain-confirmed follow-up supports self-serve Pro targets', () => {
+  const catalog = buildMotionCatalog(buildRevenueLinks());
+  const selectedMotion = selectOutreachMotion({
+    username: 'builder',
+    repoName: 'mcp-demo-template',
+    description: 'Tutorial and demo template for Claude Code builders.',
+  }, catalog);
+  const message = buildPainConfirmedFollowUp({
+    username: 'builder',
+    repoName: 'mcp-demo-template',
+  }, selectedMotion, catalog);
+
+  assert.equal(selectedMotion.key, 'pro');
+  assert.match(message, /checkout\/pro/);
+  assert.match(message, /self-serve path/);
+  assert.match(message, /VERIFICATION_EVIDENCE/);
+  assert.match(message, /COMMERCIAL_TRUTH/);
+});
+
 test('revenue loop report keeps evidence metadata on each target', () => {
   const links = buildRevenueLinks();
   const catalog = buildMotionCatalog(links);
@@ -459,6 +478,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     const written = writeRevenueLoopOutputs(report, { reportDir });
     const csvPath = path.join(reportDir, 'gtm-target-queue.csv');
     const csv = fs.readFileSync(csvPath, 'utf8');
+    const jsonl = fs.readFileSync(path.join(reportDir, 'gtm-target-queue.jsonl'), 'utf8');
 
     assert.equal(written.reportDir, reportDir);
     assert.equal(written.docsPath, null);
@@ -469,6 +489,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.match(csv, /^username,repoName,repoUrl,updatedAt,offer,pipelineStage,evidenceScore,evidence,evidenceSource,outreachAngle,motionLabel,motionReason,proofPackTrigger,cta,firstTouchDraft,painConfirmedFollowUpDraft/m);
     assert.match(csv, /"I can harden one workflow, then prove it\."/);
     assert.match(csv, /"If the workflow pain is real, I can send the proof pack\."/);
+    assert.equal(JSON.parse(jsonl.trim()).repoName, 'production-mcp-server');
   } finally {
     fs.rmSync(reportDir, { recursive: true, force: true });
   }
