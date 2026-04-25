@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.16.4
+
+### Patch Changes
+
+- [#1300](https://github.com/IgorGanapolsky/ThumbGate/pull/1300) [`f98e175`](https://github.com/IgorGanapolsky/ThumbGate/commit/f98e175fe0fdad2f4178bba0eda596b44e0f3a01) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix warm revenue-loop follow-up drafts so operator outreach falls back to workflow language when a qualified target has no repository name.
+
+- [#1266](https://github.com/IgorGanapolsky/ThumbGate/pull/1266) [`2291476`](https://github.com/IgorGanapolsky/ThumbGate/commit/22914765bc5ed5531b1d0dd2efc304c54ccf4b48) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add machine-speed ROI surfaces to ThumbGate's public shell. The dashboard now exposes actionable remediations and agent surface inventory, the PreToolUse reminder adds action-profile and safer-next-move context, and the landing/meta copy is aligned to position ThumbGate as pre-action defense for AI coding agents without hardcoded token-savings claims.
+
+- [#1302](https://github.com/IgorGanapolsky/ThumbGate/pull/1302) [`18c22cd`](https://github.com/IgorGanapolsky/ThumbGate/commit/18c22cd7a7947553fffbc537c297fc02a1ed1819) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Emit marketplace copy pack markdown and JSON from the GTM revenue loop so launch surfaces stay aligned with current buyer signals.
+
+- [#1298](https://github.com/IgorGanapolsky/ThumbGate/pull/1298) [`46636b0`](https://github.com/IgorGanapolsky/ThumbGate/commit/46636b01217ffacac70f9466672455b4b04835ef) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Filter corrupted GitHub repository descriptions out of the GTM revenue prospect queue so outreach drafts stay evidence-backed.
+
+- [#1293](https://github.com/IgorGanapolsky/ThumbGate/pull/1293) [`325f274`](https://github.com/IgorGanapolsky/ThumbGate/commit/325f274de9625894e2be49939d76f00e2f7c72f6) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a warm discovery revenue queue, preserve lead source metadata through sales imports, and align Reddit outreach copy with the workflow hardening sprint offer.
+
 ## 1.16.3
 
 ### Patch Changes
