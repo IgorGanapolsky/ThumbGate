@@ -161,6 +161,15 @@ test('public landing page exposes browser-bridge safety buyer guides', () => {
   assert.match(landingPage, /pre-authorized extension paths/i);
 });
 
+test('public landing page exposes AEO listicle for production AI agent safety', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /\/guides\/best-tools-stop-ai-agents-breaking-production/);
+  assert.match(landingPage, /Best Tools to Stop AI Agents From Breaking Production/);
+  assert.match(landingPage, /long-tail answer-engine page/i);
+  assert.match(landingPage, /parallel coding agents/i);
+});
+
 test('public landing page hero features both thumbs up AND thumbs down prominently', () => {
   const landingPage = readLandingPage();
 

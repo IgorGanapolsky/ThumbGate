@@ -16,6 +16,9 @@ const {
 test('PROMPTS array is non-empty and contains expected entries', () => {
   assert.ok(PROMPTS.length >= 5, `expected at least 5 prompts, got ${PROMPTS.length}`);
   assert.ok(PROMPTS.some((p) => /pre-action check/i.test(p)));
+  assert.ok(PROMPTS.some((p) => /breaking production/i.test(p)));
+  assert.ok(PROMPTS.some((p) => /parallel AI coding agent safety/i.test(p)));
+  assert.ok(PROMPTS.some((p) => /environment inspection/i.test(p)));
   assert.ok(PROMPTS.some((p) => /thumbgate/i.test(p)));
 });
 

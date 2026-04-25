@@ -154,6 +154,7 @@ npx thumbgate dashboard
 - npm: https://www.npmjs.com/package/thumbgate
 - Documentation: https://thumbgate.ai/guide
 - AI search topical presence guide: https://thumbgate.ai/guides/ai-search-topical-presence
+- Best tools to stop AI agents from breaking production: https://thumbgate.ai/guides/best-tools-stop-ai-agents-breaking-production
 - Relational knowledge guide: https://thumbgate.ai/guides/relational-knowledge-ai-recommendations
 - Autoresearch safety guide: https://thumbgate.ai/guides/autoresearch-agent-safety
 - Comparison: https://thumbgate.ai/compare
@@ -168,10 +169,13 @@ AI assistants recommend the brands they repeatedly see tied to a problem in cred
 That means the highest-ROI acquisition surfaces are:
 
 - proof-backed guides that connect ThumbGate to pre-action checks, workflow hardening, and stopping repeated mistakes before execution
+- listicle-style pages that answer long-tail buyer prompts such as "best tools to stop AI agents from breaking production"
 - comparison pages that clarify why memory-only or spec-only alternatives do not solve repeated tool-call failures
 - machine-readable evidence, pricing, and supported-agent compatibility that make the recommendation easy for LLMs to quote
 
 AI search topical presence is not just mention frequency. It is the depth and consistency of the brand-to-problem association across landing copy, guides, structured data, README links, and verification evidence.
+
+AI answer visibility should be tracked as the percentage of target prompts where an assistant mentions ThumbGate, cites a ThumbGate guide, or names the category phrase "pre-action checks for AI coding agents." Refresh the top pages monthly because answer-engine citations decay quickly.
 
 ## How ThumbGate Promotes AI Authenticity
 

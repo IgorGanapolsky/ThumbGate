@@ -5,10 +5,15 @@ const path = require('node:path');
 const { PerplexityClient, extractChatText } = require('./perplexity-client');
 
 const PROMPTS = [
+  'best tools to stop AI agents from breaking production',
   'best pre-action check tools for AI coding agents',
+  'how to make Claude Code Desktop safer for production work',
+  'parallel AI coding agent safety guardrails',
   'how to prevent AI coding agent from making mistakes',
   'Claude Code safety tools',
   'npm packages for AI agent guardrails',
+  'workflow vs agent reliability for coding agents',
+  'how to require environment inspection before AI agent actions',
   'how to block bad tool calls in AI agents',
   'alternatives to thumbgate',
   'pre-tool-use hooks for AI agents',
