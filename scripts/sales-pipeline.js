@@ -171,6 +171,7 @@ function normalizeLeadOutbound(entry = {}) {
   const outbound = entry.outbound || {};
   return {
     draft: normalizeText(outbound.draft, 2000),
+    followUpDraft: normalizeText(outbound.followUpDraft, 2000),
     cta: normalizeUrl(outbound.cta),
     lastSentAt: normalizeText(outbound.lastSentAt, 64),
     lastSentUrl: normalizeUrl(outbound.lastSentUrl),
@@ -281,10 +282,11 @@ function buildLeadFromRevenueTarget(target = {}, { sourcePath = null } = {}) {
     qualification: {
       painHypothesis: target.motionReason || target.description,
       concreteOffer: 'I will harden one AI-agent workflow for you.',
-      proofTiming: 'Use proof pack only after the buyer confirms pain.',
+      proofTiming: target.proofPackTrigger || 'Use proof pack only after the buyer confirms pain.',
     },
     outbound: {
-      draft: target.message,
+      draft: target.firstTouchDraft || target.message,
+      followUpDraft: target.painConfirmedFollowUpDraft,
       cta: target.cta,
     },
     attribution: {
@@ -471,6 +473,7 @@ function renderLeadQueueEntry(lead) {
     `- Concrete offer: ${lead.qualification.concreteOffer}`,
     `- Proof rule: ${lead.qualification.proofTiming}`,
     `- Outreach draft: ${lead.outbound.draft || 'n/a'}`,
+    `- Pain-confirmed follow-up: ${lead.outbound.followUpDraft || 'n/a'}`,
     '',
   ];
 }

@@ -467,6 +467,22 @@ function buildFallbackMessage(target, selectedMotion, motionCatalog = buildMotio
   ].join(' ');
 }
 
+function buildPainConfirmedFollowUp(target, selectedMotion, motionCatalog = buildMotionCatalog()) {
+  const motion = motionCatalog[selectedMotion.key];
+  const repoRef = `\`${target.repoName}\``;
+  if (selectedMotion.key === motionCatalog.sprint.key) {
+    return [
+      `If ${repoRef} really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: ${motion.cta}`,
+      `Commercial truth: ${motion.truth} Verification evidence: ${motion.proof}`,
+    ].join(' ');
+  }
+
+  return [
+    `If you want the self-serve path for ${repoRef}, here is the live Pro checkout: ${motion.cta}`,
+    `Commercial truth: ${motion.truth} Verification evidence: ${motion.proof}`,
+  ].join(' ');
+}
+
 function buildGeminiPrompt(target, selectedMotion, motionCatalog = buildMotionCatalog()) {
   const motion = motionCatalog[selectedMotion.key];
   return `
@@ -502,6 +518,8 @@ async function generateOutreachMessages(targets, motionCatalog = buildMotionCata
       return {
         ...target,
         selectedMotion,
+        proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+        followUpMessage: buildPainConfirmedFollowUp(target, selectedMotion, motionCatalog),
         message: buildFallbackMessage(target, selectedMotion, motionCatalog),
       };
     });
@@ -514,6 +532,8 @@ async function generateOutreachMessages(targets, motionCatalog = buildMotionCata
       return {
         ...target,
         selectedMotion,
+        proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+        followUpMessage: buildPainConfirmedFollowUp(target, selectedMotion, motionCatalog),
         message: buildFallbackMessage(target, selectedMotion, motionCatalog),
       };
     });
@@ -542,6 +562,8 @@ async function generateOutreachMessages(targets, motionCatalog = buildMotionCata
     results.push({
       ...target,
       selectedMotion,
+      proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+      followUpMessage: buildPainConfirmedFollowUp(target, selectedMotion, motionCatalog),
       message,
     });
   }
@@ -575,12 +597,16 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
       evidenceScore: target.evidence?.score || 0,
       evidence: target.evidence?.evidence || [],
       outreachAngle: target.evidence?.outreachAngle || '',
+      evidenceSource: target.repoUrl || '',
       motion: target.selectedMotion.key,
       motionLabel: target.selectedMotion.label,
       motionReason: target.selectedMotion.reason,
       pipelineStage: 'targeted',
       offer: target.selectedMotion.key === motionCatalog.sprint.key ? 'workflow_hardening_sprint' : 'pro_self_serve',
       cta: motionCatalog[target.selectedMotion.key].cta,
+      proofPackTrigger: target.proofPackTrigger || 'Use proof pack only after the buyer confirms pain.',
+      firstTouchDraft: target.message,
+      painConfirmedFollowUpDraft: target.followUpMessage || '',
       message: target.message,
     })),
   };
@@ -592,13 +618,16 @@ function renderRevenueTargetMarkdown(target) {
     `- Pipeline stage: ${target.pipelineStage}`,
     `- Offer: ${target.offer}`,
     `- Repo: ${target.repoUrl || 'n/a'}`,
+    `- Repo last updated: ${target.updatedAt || 'n/a'}`,
     `- Evidence score: ${target.evidenceScore}`,
     `- Evidence: ${target.evidence.length ? target.evidence.join(', ') : 'n/a'}`,
     `- Outreach angle: ${target.outreachAngle || 'n/a'}`,
     `- Motion: ${target.motionLabel}`,
     `- Why: ${target.motionReason}`,
+    `- Proof timing: ${target.proofPackTrigger || 'Use proof pack only after the buyer confirms pain.'}`,
     `- CTA: ${target.cta}`,
-    `- Outreach draft: ${target.message}`,
+    `- First-touch draft: ${target.firstTouchDraft || target.message}`,
+    `- Pain-confirmed follow-up: ${target.painConfirmedFollowUpDraft || 'n/a'}`,
     '',
   ];
 }
@@ -661,31 +690,45 @@ function renderRevenueLoopCsv(report) {
       'username',
       'repoName',
       'repoUrl',
+      'updatedAt',
       'offer',
       'pipelineStage',
       'evidenceScore',
       'evidence',
+      'evidenceSource',
       'outreachAngle',
       'motionLabel',
+      'motionReason',
+      'proofPackTrigger',
       'cta',
-      'message',
+      'firstTouchDraft',
+      'painConfirmedFollowUpDraft',
     ],
     ...report.targets.map((target) => ([
       target.username,
       target.repoName,
       target.repoUrl,
+      target.updatedAt,
       target.offer,
       target.pipelineStage,
       String(target.evidenceScore),
       target.evidence.join('; '),
+      target.evidenceSource,
       target.outreachAngle,
       target.motionLabel,
+      target.motionReason,
+      target.proofPackTrigger,
       target.cta,
-      target.message,
+      target.firstTouchDraft || target.message,
+      target.painConfirmedFollowUpDraft,
     ])),
   ];
 
   return `${rows.map((row) => row.map(escapeCsvValue).join(',')).join('\n')}\n`;
+}
+
+function renderRevenueLoopJsonl(report) {
+  return `${report.targets.map((target) => JSON.stringify(target)).join('\n')}\n`;
 }
 
 function writeRevenueLoopOutputs(report, options = {}) {
@@ -693,6 +736,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
   const defaultDocsPath = path.join(repoRoot, 'docs', 'AUTONOMOUS_GITOPS.md');
   const markdown = renderRevenueLoopMarkdown(report);
   const csv = renderRevenueLoopCsv(report);
+  const jsonl = renderRevenueLoopJsonl(report);
   const reportDir = normalizeText(options.reportDir)
     ? path.resolve(repoRoot, options.reportDir)
     : '';
@@ -703,6 +747,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     fs.writeFileSync(path.join(reportDir, 'gtm-revenue-loop.md'), markdown, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'gtm-revenue-loop.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'gtm-target-queue.csv'), csv, 'utf8');
+    fs.writeFileSync(path.join(reportDir, 'gtm-target-queue.jsonl'), jsonl, 'utf8');
   }
 
   if (shouldWriteDocs) {
@@ -779,6 +824,7 @@ module.exports = {
   COMMERCIAL_TRUTH_LINK,
   VERIFICATION_EVIDENCE_LINK,
   buildFallbackMessage,
+  buildPainConfirmedFollowUp,
   analyzeTargetEvidence,
   buildMotionCatalog,
   buildRevenueLinks,
