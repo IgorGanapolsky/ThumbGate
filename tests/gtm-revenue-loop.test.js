@@ -425,6 +425,23 @@ test('pain-confirmed follow-up supports self-serve Pro targets', () => {
   assert.match(message, /COMMERCIAL_TRUTH/);
 });
 
+test('pain-confirmed follow-up falls back to workflow language for warm targets without a repo', () => {
+  const catalog = buildMotionCatalog(buildRevenueLinks());
+  const message = buildPainConfirmedFollowUp({
+    username: 'builder',
+    repoName: '',
+  }, {
+    key: 'sprint',
+    label: catalog.sprint.label,
+    reason: 'Warm target already named a repeated workflow failure.',
+  }, catalog);
+
+  assert.match(message, /If your workflow really has one repeated workflow failure blocking rollout/);
+  assert.doesNotMatch(message, /``/);
+  assert.match(message, /VERIFICATION_EVIDENCE/);
+  assert.match(message, /COMMERCIAL_TRUTH/);
+});
+
 test('revenue loop report keeps evidence metadata on each target', () => {
   const links = buildRevenueLinks();
   const catalog = buildMotionCatalog(links);
@@ -560,6 +577,58 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
   } finally {
     fs.rmSync(reportDir, { recursive: true, force: true });
   }
+});
+
+test('warm-target report output does not emit blank repo placeholders in follow-up drafts', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const report = buildRevenueLoopReport({
+    source: 'local',
+    fallbackReason: '',
+    summary: {
+      revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    },
+    motionCatalog: catalog,
+    directive: {
+      state: 'cold-start',
+      objective: 'First 10 paying customers',
+      headline: 'No verified revenue and no active pipeline.',
+      primaryMotion: 'sprint',
+      secondaryMotion: 'pro',
+      actions: ['Lead with one workflow.'],
+    },
+    targets: [{
+      temperature: 'warm',
+      source: 'reddit',
+      channel: 'reddit_dm',
+      username: 'builder',
+      accountName: 'r/ClaudeCode',
+      contactUrl: 'https://www.reddit.com/user/builder/',
+      repoName: '',
+      repoUrl: '',
+      description: 'Builder already named a repeated workflow blocker.',
+      stars: 0,
+      updatedAt: null,
+      evidence: {
+        score: 8,
+        evidence: ['warm inbound engagement'],
+        outreachAngle: 'Lead with one repeated workflow blocker.',
+      },
+      proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+      selectedMotion: {
+        key: 'sprint',
+        label: catalog.sprint.label,
+        reason: 'Warm target already named a repeated workflow blocker.',
+      },
+      message: 'I can harden one AI-agent workflow for you this week.',
+    }],
+  });
+
+  assert.match(report.targets[0].painConfirmedFollowUpDraft, /If your workflow really has one repeated workflow failure blocking rollout/);
+  assert.doesNotMatch(report.targets[0].painConfirmedFollowUpDraft, /``/);
 });
 
 test('runRevenueLoop writes an evidence-backed target queue with discovery warnings when GitHub search fails', async () => {
