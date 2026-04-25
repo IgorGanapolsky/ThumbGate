@@ -6,14 +6,18 @@ const path = require('node:path');
 
 const {
   AI_CODING_CATEGORY,
+  AIVENTYX_CONTENT,
   DASHBOARD_URL,
   STANDARD_MARKETPLACE_FEE,
   buildAiventyxFollowUp,
   buildAiventyxListings,
   buildAiventyxMarketplacePlan,
   buildAiventyxNinetyDayPlan,
+  buildAiventyxTrackingMetadata,
+  buildTrackedMarketplaceLink,
   isCliInvocation,
   parseArgs,
+  renderAiventyxMarketplaceCsv,
   renderAiventyxMarketplaceMarkdown,
   writeAiventyxMarketplaceOutputs,
 } = require('../scripts/aiventyx-marketplace-plan');
@@ -32,10 +36,32 @@ test('Aiventyx listings cover free, Pro, and Teams without inventing traction', 
   assert.deepEqual(listings.map((listing) => listing.key), ['free', 'pro', 'teams']);
   assert.ok(listings.every((listing) => listing.category === AI_CODING_CATEGORY));
   assert.equal(listings.find((listing) => listing.key === 'pro').pricingModel, '$19/mo or $149/yr');
-  assert.match(listings.find((listing) => listing.key === 'pro').primaryCTA, /\/checkout\/pro$/);
-  assert.match(listings.find((listing) => listing.key === 'teams').primaryCTA, /#workflow-sprint-intake$/);
+  assert.match(listings.find((listing) => listing.key === 'free').primaryCTA, /\/go\/install\?/);
+  assert.match(listings.find((listing) => listing.key === 'pro').primaryCTA, /\/go\/pro\?/);
+  assert.match(listings.find((listing) => listing.key === 'teams').primaryCTA, /#workflow-sprint-intake/);
+  assert.ok(listings.every((listing) => /utm_source=aiventyx/.test(listing.primaryCTA)));
+  assert.ok(listings.every((listing) => /utm_medium=marketplace/.test(listing.primaryCTA)));
+  assert.ok(listings.every((listing) => listing.attribution.utmContent === AIVENTYX_CONTENT));
   assert.ok(listings.every((listing) => listing.proofLinks.some((link) => /COMMERCIAL_TRUTH\.md/.test(link))));
   assert.ok(listings.every((listing) => !/guaranteed|partnered with|approved by/i.test(listing.description)));
+});
+
+test('tracked marketplace links and metadata stay machine-readable for attribution', () => {
+  const tracking = buildAiventyxTrackingMetadata('pro');
+  const tracked = new URL(buildTrackedMarketplaceLink('https://thumbgate-production.up.railway.app/go/pro', {
+    ...tracking,
+    planId: 'pro',
+  }));
+
+  assert.equal(tracking.utmSource, 'aiventyx');
+  assert.equal(tracking.utmMedium, 'marketplace');
+  assert.equal(tracking.utmCampaign, 'aiventyx_pro_listing');
+  assert.equal(tracking.offerCode, 'AIVENTYX-PRO');
+  assert.equal(tracked.searchParams.get('utm_source'), 'aiventyx');
+  assert.equal(tracked.searchParams.get('utm_medium'), 'marketplace');
+  assert.equal(tracked.searchParams.get('utm_campaign'), 'aiventyx_pro_listing');
+  assert.equal(tracked.searchParams.get('offer_code'), 'AIVENTYX-PRO');
+  assert.equal(tracked.searchParams.get('plan_id'), 'pro');
 });
 
 test('90-day plan keeps paid conversion as the north star and defers deeper integration', () => {
@@ -75,7 +101,22 @@ test('rendered pack is dashboard-ready and anchored to proof links', () => {
   assert.match(rendered, /ThumbGate Teams/);
   assert.match(rendered, /paid_conversion/);
   assert.match(rendered, /VERIFICATION_EVIDENCE\.md/);
+  assert.match(rendered, /Attribution contract/);
+  assert.match(rendered, /utm_source=aiventyx, utm_medium=marketplace/);
   assert.doesNotMatch(rendered, /guaranteed revenue|approved partner/i);
+});
+
+test('CSV export keeps listing submission fields and attribution in one operator file', () => {
+  const csv = renderAiventyxMarketplaceCsv(buildAiventyxMarketplacePlan({
+    appOrigin: 'https://thumbgate-production.up.railway.app',
+    proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
+    sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+  }));
+
+  assert.match(csv, /^key,name,dashboardStatus,category,pricingModel,primaryCTA,/);
+  assert.match(csv, /ThumbGate Pro/);
+  assert.match(csv, /aiventyx_pro_listing/);
+  assert.match(csv, /AIVENTYX-TEAMS/);
 });
 
 test('CLI options and report writing produce markdown and JSON artifacts', () => {
@@ -96,10 +137,12 @@ test('CLI options and report writing produce markdown and JSON artifacts', () =>
   assert.equal(written.docsPath, null);
   assert.equal(fs.existsSync(path.join(tempDir, 'aiventyx-marketplace-plan.md')), true);
   assert.equal(fs.existsSync(path.join(tempDir, 'aiventyx-marketplace-plan.json')), true);
+  assert.equal(fs.existsSync(path.join(tempDir, 'aiventyx-marketplace-listings.csv')), true);
 
   const json = JSON.parse(fs.readFileSync(path.join(tempDir, 'aiventyx-marketplace-plan.json'), 'utf8'));
   assert.equal(json.listings.length, 3);
   assert.equal(json.ninetyDayPlan.northStar, 'paid_conversion');
+  assert.match(fs.readFileSync(path.join(tempDir, 'aiventyx-marketplace-listings.csv'), 'utf8'), /utm_source/);
 });
 
 test('CLI entrypoint detection is path based for importer safety', () => {
