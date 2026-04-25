@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.16.3
+
+### Patch Changes
+
+- [#1290](https://github.com/IgorGanapolsky/ThumbGate/pull/1290) [`f54046a`](https://github.com/IgorGanapolsky/ThumbGate/commit/f54046a236d03b60839d01b0147b9bd5e497baca) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add evidence-backed GTM handoff outputs so the revenue loop emits first-touch drafts, pain-confirmed follow-ups, proof-timing guidance, and JSONL prospect queues for operator outreach.
+
 ## 1.16.2
 
 ### Patch Changes
