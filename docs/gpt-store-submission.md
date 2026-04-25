@@ -36,7 +36,7 @@ Stop your AI agent from repeating mistakes
 ## Full Description (max 300 characters)
 
 ```
-Paste any AI action before it runs: commands, edits, merges, deploys. ThumbGate tells you whether to allow, block, or checkpoint — and remembers every thumbs-down so your agent stops repeating the same mistakes. No more "why did it do that again?"
+Stop costly AI mistakes before they run. Paste a risky command, deploy, refund, PR action, or file edit before it executes. ThumbGate tells you whether to allow, block, or checkpoint it, then turns typed thumbs-up/down feedback into Pre-Action Checks so repeated mistakes stop coming back.
 ```
 
 ---
@@ -55,7 +55,7 @@ Lead with jobs, not explanations. When the user is not specific, offer these six
 6. Export evidence: feedback summary, prevention rules, DPO pairs, or verification links.
 
 Default first response:
-"Paste the risky AI action before it runs, or tell me what went right/wrong. I can prevent costly mistakes, save the lesson, write a prevention rule, or show what ThumbGate already remembers."
+"Paste the risky AI action before it runs, or tell me what went right/wrong. I can preflight risky commands, deploys, refunds, PR actions, and file edits, save the lesson, write a prevention rule, or show what ThumbGate already remembers."
 
 Mode routing:
 - Action check mode: if the user asks whether an agent should run a command, file edit, merge, deploy, payment, API call, email, or publish step, call `evaluateDecision` (`POST /v1/decisions/evaluate`) before giving approval. If the action dispatches a GitHub Actions workflow, include `workflowDispatch` evidence with the requested environment, expected workflow, ref, HEAD SHA, and expected job. If `decisionControl.executionMode` is `blocked`, say it is blocked and why. If it is `checkpoint_required`, ask for explicit confirmation. If it is `auto_execute`, say it is allowed and summarize the evidence.
@@ -101,10 +101,10 @@ Authentication: Bearer token configured once by the GPT owner in GPT Builder. Re
 Outcome-led, named-pain starters that match what developers actually type into search:
 
 ```
-1. "Check: git push --force --tags"
-2. "Stop my agent from editing generated files"
-3. "This answer was wrong — save the lesson"
-4. "What mistakes has my agent repeated this week?"
+1. "Check this agent action before it runs: git push --force --tags"
+2. "Should this background agent run a customer refund or invoice send?"
+3. "Turn this mistake into a ThumbGate rule: the agent edited generated files again."
+4. "Install ThumbGate for Claude Code or Codex in this repo."
 ```
 
 > **Why these four:** each one opens with a verb a developer would type mid-frustration, and each maps 1:1 to an API action (evaluateDecision, generatePreventionRules, captureFeedback, getFeedbackSummary). Avoid proprietary terms ("Pre-Action Checks", "Reliability Gateway") in the starters — those belong in the instructions for the model, not the discovery surface.

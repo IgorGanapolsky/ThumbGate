@@ -91,6 +91,12 @@ function writeWorkflowRuns(entries) {
   fs.writeFileSync(runsPath, lines + '\n');
 }
 
+function writeAgentRuns(entries) {
+  const runsPath = path.join(tmpDir, 'agent-runs.jsonl');
+  const lines = entries.map((e) => JSON.stringify(e)).join('\n');
+  fs.writeFileSync(runsPath, lines + '\n');
+}
+
 function writeContextPacks(entries) {
   const packsPath = path.join(tmpDir, 'contextfs', 'provenance', 'packs.jsonl');
   fs.mkdirSync(path.dirname(packsPath), { recursive: true });
@@ -148,12 +154,45 @@ test('generateDashboard handles empty state (no files)', () => {
   assert.equal(data.analytics.northStar.weeklyActiveProofBackedWorkflowRuns, 0);
   assert.equal(data.observability.diagnosticEvents, 0);
   assert.equal(typeof data.team.activeAgents, 'number');
+  assert.equal(typeof data.backgroundAgents.total, 'number');
+  assert.equal(typeof data.regulatedProof.policyOriginCount, 'number');
   assert.equal(data.predictive.anomalySummary.count, 0);
   assert.equal(data.predictive.upgradePropensity.pro.band, 'very_low');
   assert.equal(data.templateLibrary.total, 6);
   assert.equal(data.templateLibrary.categories['Git Safety'], 1);
   assert.equal(typeof data.settingsStatus.resolvedSettings.mcp.defaultProfile, 'string');
   assert.ok(Array.isArray(data.settingsStatus.origins));
+});
+
+test('generateDashboard summarizes background-agent mode and regulated proof posture', () => {
+  const now = new Date().toISOString();
+  writeAgentRuns([
+    { id: 'run_a', timestamp: now, agentId: 'bg-agent-1', runType: 'refund-review', status: 'completed', gatesChecked: 4, gatesBlocked: 1 },
+    { id: 'run_b', timestamp: now, agentId: 'bg-agent-2', runType: 'invoice-send', status: 'failed', gatesChecked: 2, gatesBlocked: 1 },
+  ]);
+  writeWorkflowRuns([
+    {
+      timestamp: now,
+      workflowId: 'wf_background',
+      workflowName: 'Background refund lane',
+      owner: 'ops',
+      runtime: 'codex',
+      status: 'passed',
+      customerType: 'paid_team',
+      reviewed: true,
+      proofBacked: true,
+      proofArtifacts: ['proof/refund-review.txt'],
+    },
+  ]);
+
+  const data = generateDashboard(tmpDir);
+
+  assert.equal(data.backgroundAgents.total, 2);
+  assert.equal(data.backgroundAgents.gatesBlocked, 2);
+  assert.equal(data.backgroundAgents.topRunType.runType, 'invoice-send');
+  assert.equal(data.regulatedProof.reviewedRuns, 1);
+  assert.equal(data.regulatedProof.proofBackedRuns, 1);
+  assert.equal(data.regulatedProof.latestProofArtifacts[0], 'proof/refund-review.txt');
 });
 
 test('generateDashboard surfaces tracking readiness and instrumentation truth', () => {
@@ -893,6 +932,79 @@ test('generateDashboard computes a harness score and top next fix recommendation
   assert.equal(data.harness.status, 'weak');
   assert.ok(data.harness.topRecommendations.some((recommendation) => recommendation.type === 'pre_action_gate'));
   assert.ok(data.harness.topRecommendations.some((recommendation) => recommendation.type === 'prevention_rule'));
+});
+
+test('generateDashboard surfaces actionable remediations and agent surface inventory', () => {
+  writeFeedbackLog([
+    {
+      id: 'fb_inv_1',
+      signal: 'negative',
+      skill: 'github',
+      context: 'Skipped verification before merge',
+      tags: ['git-workflow', 'verification'],
+      timestamp: new Date().toISOString(),
+    },
+    {
+      id: 'fb_inv_2',
+      signal: 'negative',
+      skill: 'github',
+      context: 'Skipped verification before merge again',
+      tags: ['git-workflow', 'verification'],
+      timestamp: new Date().toISOString(),
+    },
+    {
+      id: 'fb_inv_3',
+      signal: 'negative',
+      skill: 'github',
+      context: 'Skipped verification before merge a third time',
+      tags: ['git-workflow', 'verification'],
+      timestamp: new Date().toISOString(),
+    },
+  ]);
+  writeAuditLog([
+    {
+      id: 'audit_inv_1',
+      timestamp: new Date().toISOString(),
+      toolName: 'Bash',
+      decision: 'deny',
+      gateId: 'evidence-before-done',
+      source: 'gates-engine',
+    },
+    {
+      id: 'audit_inv_2',
+      timestamp: new Date().toISOString(),
+      toolName: 'Edit',
+      decision: 'warn',
+      gateId: 'protected-policy-file',
+      source: 'secret-guard',
+    },
+  ]);
+  writeDecisionLog([
+    {
+      recordType: 'evaluation',
+      actionId: 'decision_inv_1',
+      timestamp: new Date().toISOString(),
+      toolName: 'Bash',
+      recommendation: { executionMode: 'checkpoint_required' },
+    },
+    {
+      recordType: 'evaluation',
+      actionId: 'decision_inv_2',
+      timestamp: new Date().toISOString(),
+      toolName: 'Edit',
+      recommendation: { executionMode: 'auto_execute' },
+    },
+  ]);
+
+  const data = generateDashboard(tmpDir);
+
+  assert.ok(Array.isArray(data.actionableRemediations));
+  assert.ok(data.actionableRemediations.some((item) => item.type === 'skill-improve'));
+  assert.equal(data.agentSurfaceInventory.profile, data.readiness.permissions.profile);
+  assert.ok(Array.isArray(data.agentSurfaceInventory.observedTools));
+  assert.ok(data.agentSurfaceInventory.observedTools.some((tool) => tool.toolName === 'Bash'));
+  assert.ok(Array.isArray(data.agentSurfaceInventory.policySources));
+  assert.ok(data.agentSurfaceInventory.policySources.some((source) => source.source === 'gates-engine'));
 });
 
 test('generateDashboard separates repeated CTA clicks from unique checkout starters and flags orphan revenue', () => {

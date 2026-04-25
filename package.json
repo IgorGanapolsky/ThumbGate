@@ -59,6 +59,7 @@
     "scripts/audit-trail.js",
     "scripts/auto-promote-gates.js",
     "scripts/auto-wire-hooks.js",
+    "scripts/background-agent-governance.js",
     "scripts/bayes-optimal-gate.js",
     "scripts/belief-update.js",
     "scripts/billing.js",

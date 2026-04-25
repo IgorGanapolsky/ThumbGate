@@ -353,6 +353,44 @@ test('formatLessonsAsReminder appends auto-gate notice when extras.autogate is p
   assert.match(out, /0 unresolved threads/);
 });
 
+test('formatLessonsAsReminder adds action profile, hot risk signals, and safer next move context', () => {
+  const hook = require(HOOK_PATH);
+  const riskScorerPath = path.join(REPO_ROOT, 'scripts', 'risk-scorer.js');
+  const realMod = require.cache[riskScorerPath];
+  require.cache[riskScorerPath] = {
+    id: riskScorerPath,
+    filename: riskScorerPath,
+    loaded: true,
+    exports: {
+      getRiskSummary: () => ({
+        highRiskTags: [{ key: 'force-push', risk: 8, riskRate: 0.8 }],
+        highRiskDomains: [{ key: 'git-workflow', highRisk: 3, total: 4, riskRate: 0.75 }],
+      }),
+    },
+  };
+  try {
+    const out = hook.formatLessonsAsReminder(
+      [
+        { whatToChange: 'create a branch PR instead of force-pushing', tags: ['force-push', 'git-workflow'] },
+      ],
+      {
+        toolName: 'Bash',
+        toolInput: { command: 'git push --force origin main' },
+      }
+    );
+    assert.match(out, /ACTION PROFILE:/);
+    assert.match(out, /remote git write/);
+    assert.match(out, /HOT RISK SIGNALS:/);
+    assert.match(out, /force-push/);
+    assert.match(out, /git-workflow domain/);
+    assert.match(out, /SAFER NEXT MOVE:/);
+    assert.match(out, /branch PR instead of force-pushing/);
+  } finally {
+    if (realMod) require.cache[riskScorerPath] = realMod;
+    else delete require.cache[riskScorerPath];
+  }
+});
+
 test('resolveEffectiveInput falls back to legacy CLAUDE_TOOL_INPUT env string', () => {
   const { resolveEffectiveInput } = require(HOOK_PATH);
   assert.deepEqual(resolveEffectiveInput({ command: 'ls' }), { command: 'ls' });

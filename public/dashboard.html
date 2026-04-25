@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ThumbGate Dashboard — Gate Stats, Approval Rate, Prevention Impact</title>
-<meta name="description" content="Live dashboard showing gate enforcement stats, approval rate trends, prevention impact, and system health for ThumbGate pre-action checks.">
+<title>ThumbGate Dashboard — Gate Stats, Agent Inventory, Remediations</title>
+<meta name="description" content="Live ThumbGate dashboard showing gate enforcement stats, agent surface inventory, actionable remediations, prevention impact, and system health for pre-action checks.">
 <link rel="canonical" href="https://thumbgate-production.up.railway.app/dashboard">
 <link rel="icon" type="image/png" href="/thumbgate-icon.png">
 <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
@@ -123,6 +123,16 @@
   .team-note { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
   .team-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
   .risk-row, .blocked-row, .template-meta { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+  .inventory-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+  .inventory-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .inventory-value { font-size: 22px; font-weight: 700; color: var(--cyan); letter-spacing: -0.03em; }
+  .inventory-note { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.5; }
+  .inventory-tools, .inventory-sources, .remediation-list { display: flex; flex-direction: column; gap: 10px; }
+  .inventory-row, .remediation-row { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .inventory-row:last-child, .remediation-row:last-child { border-bottom: none; }
+  .inventory-name, .remediation-name { font-size: 14px; font-weight: 600; }
+  .inventory-subtitle, .remediation-subtitle { font-size: 12px; color: var(--text-muted); line-height: 1.55; margin-top: 4px; }
+  .remediation-action { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; border-radius: 999px; padding: 4px 10px; background: var(--bg-raised); color: var(--text-muted); border: 1px solid var(--border); white-space: nowrap; }
   .risk-row, .blocked-row { padding: 10px 0; border-bottom: 1px solid var(--border); }
   .risk-row:last-child, .blocked-row:last-child { border-bottom: none; }
   .risk-name, .blocked-name { font-size: 14px; font-weight: 600; }
@@ -183,7 +193,7 @@
   @media (max-width: 700px) {
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
     .search-filters { flex-wrap: wrap; }
-    .team-grid, .template-grid, .team-columns, .settings-grid, .generated-grid { grid-template-columns: 1fr; }
+    .team-grid, .template-grid, .team-columns, .settings-grid, .generated-grid, .inventory-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -329,6 +339,51 @@
         <h3>Predictive Watchlist</h3>
         <div id="predictiveAnomalies"><div class="loading">Loading predictive watchlist...</div></div>
       </div>
+      <div class="panel" style="margin-top:16px;">
+        <h3>Agent Surface Inventory</h3>
+        <p class="template-summary">See which tools, policy sources, and MCP surfaces are actually active before you widen rollout.</p>
+        <div class="inventory-grid" id="inventorySummaryCards"><div class="loading">Loading inventory...</div></div>
+        <div class="team-columns" style="margin-top:16px;">
+          <div class="panel">
+            <h3>Observed Tools</h3>
+            <div class="inventory-tools" id="inventoryObservedTools"><div class="loading">Loading observed tools...</div></div>
+          </div>
+          <div class="panel">
+            <h3>Policy Sources</h3>
+            <div class="inventory-sources" id="inventoryPolicySources"><div class="loading">Loading policy sources...</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:16px;">
+        <h3>Background Agent Mode</h3>
+        <p class="template-summary">Queued and scheduled agents need explicit checkpoints before they touch code, money, or customer systems.</p>
+        <div class="inventory-grid" id="backgroundAgentSummaryCards"><div class="loading">Loading background-agent mode...</div></div>
+        <div class="team-columns" style="margin-top:16px;">
+          <div class="panel">
+            <h3>Governance Pressure</h3>
+            <div class="inventory-tools" id="backgroundAgentHighlights"><div class="loading">Loading background-agent governance...</div></div>
+          </div>
+          <div class="panel">
+            <h3>Run Types</h3>
+            <div class="inventory-sources" id="backgroundAgentRunTypes"><div class="loading">Loading background-agent run types...</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:16px;">
+        <h3>Regulated Buyer Proof</h3>
+        <p class="template-summary">Show where policy came from, how many runs were reviewed, and which proof artifacts are ready when buyers ask for auditability.</p>
+        <div class="inventory-grid" id="regulatedProofSummaryCards"><div class="loading">Loading proof posture...</div></div>
+        <div class="team-columns" style="margin-top:16px;">
+          <div class="panel">
+            <h3>Policy Origin Proof</h3>
+            <div class="inventory-tools" id="regulatedProofDetails"><div class="loading">Loading policy origin proof...</div></div>
+          </div>
+          <div class="panel">
+            <h3>Latest Replay Artifacts</h3>
+            <div class="inventory-sources" id="regulatedProofArtifacts"><div class="loading">Loading replay artifacts...</div></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -426,6 +481,12 @@
         <div style="position:relative;height:280px;margin-top:12px;">
           <canvas id="gateAuditChart"></canvas>
         </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:24px;">
+        <h3>Highest-ROI Next Actions</h3>
+        <p class="template-summary">These recommendations come from real feedback, risk patterns, and delegation pressure in your current runtime.</p>
+        <div class="remediation-list" id="actionableRemediations"><div class="loading">Loading next actions...</div></div>
       </div>
 
       <!-- How It Works -->
@@ -907,9 +968,12 @@ function renderDashboardData(data) {
   }
 
   renderTeam(data.team || {}, data.analytics || {});
+  renderAgentInventory(data.agentSurfaceInventory || {});
+  renderBackgroundAgents(data.backgroundAgents || {});
   renderReviewDelta(data.reviewDelta || {});
   renderPredictive(data.predictive || {});
   renderSettingsStatus(data.settingsStatus || {});
+  renderRegulatedProof(data.regulatedProof || {});
   renderTemplates(data.templateLibrary || {});
   renderInsights(data);
 }
@@ -1202,6 +1266,135 @@ function renderPredictive(predictive) {
     : '<div class="empty" style="padding:20px 0;">No predictive anomalies right now.</div>';
 }
 
+function renderAgentInventory(inventory) {
+  var cards = [
+    {
+      label: 'MCP profile',
+      value: inventory.profile || 'unknown',
+      note: (inventory.tier || 'custom') + ' tier',
+    },
+    {
+      label: 'Observed tools',
+      value: String(inventory.observedToolCount || 0),
+      note: 'from decision + audit logs',
+    },
+    {
+      label: 'Policy sources',
+      value: String((inventory.policySources || []).length),
+      note: 'gates, scanners, or routers firing now',
+    },
+    {
+      label: 'Configured MCP servers',
+      value: String(inventory.configuredServerCount || 0),
+      note: 'from local .mcp.json',
+    }
+  ];
+
+  document.getElementById('inventorySummaryCards').innerHTML = cards.map(function(card) {
+    return '<div class="inventory-card"><div class="team-kicker">' + escHtml(card.label) + '</div><div class="inventory-value">' + escHtml(card.value) + '</div><div class="inventory-note">' + escHtml(card.note) + '</div></div>';
+  }).join('');
+
+  var tools = Array.isArray(inventory.observedTools) ? inventory.observedTools : [];
+  document.getElementById('inventoryObservedTools').innerHTML = tools.length
+    ? tools.map(function(tool) {
+      return '<div class="inventory-row"><div><div class="inventory-name">' + escHtml(tool.toolName || 'unknown') + '</div><div class="inventory-subtitle">' + escHtml((tool.evaluations || 0) + ' evals · ' + (tool.intercepted || 0) + ' intercepted · ' + (tool.allow || 0) + ' allowed') + '</div></div><span class="generated-badge">' + escHtml(String((tool.deny || 0) + ' deny / ' + (tool.warn || 0) + ' warn')) + '</span></div>';
+    }).join('')
+    : '<div class="empty" style="padding:20px 0;">No observed tools yet.</div>';
+
+  var sources = Array.isArray(inventory.policySources) ? inventory.policySources : [];
+  document.getElementById('inventoryPolicySources').innerHTML = sources.length
+    ? sources.map(function(source) {
+      return '<div class="inventory-row"><div><div class="inventory-name">' + escHtml(source.source || 'unknown') + '</div><div class="inventory-subtitle">Runtime policy source</div></div><span class="generated-badge">' + escHtml(String(source.count || 0) + ' events') + '</span></div>';
+    }).join('')
+    : '<div class="empty" style="padding:20px 0;">No policy sources recorded yet.</div>';
+}
+
+function renderBackgroundAgents(backgroundAgents) {
+  var cards = [
+    {
+      label: 'Background runs',
+      value: String(backgroundAgents.total || 0),
+      note: 'last ' + String(backgroundAgents.periodHours || 24) + ' hours',
+    },
+    {
+      label: 'Pass rate',
+      value: String(backgroundAgents.passRate || 0) + '%',
+      note: String(backgroundAgents.completed || 0) + ' completed / ' + String(backgroundAgents.failed || 0) + ' failed',
+    },
+    {
+      label: 'Gate pressure',
+      value: String(backgroundAgents.gatesBlocked || 0),
+      note: String(backgroundAgents.gatesChecked || 0) + ' checkpoints evaluated',
+    },
+    {
+      label: 'Checkpoint coverage',
+      value: String(Math.round((backgroundAgents.checkpointCoverage || 0) * 100)) + '%',
+      note: String(backgroundAgents.reviewedRuns || 0) + ' reviewed proof-backed runs',
+    }
+  ];
+
+  document.getElementById('backgroundAgentSummaryCards').innerHTML = cards.map(function(card) {
+    return '<div class="inventory-card"><div class="team-kicker">' + escHtml(card.label) + '</div><div class="inventory-value">' + escHtml(card.value) + '</div><div class="inventory-note">' + escHtml(card.note) + '</div></div>';
+  }).join('');
+
+  var highlights = [];
+  if (backgroundAgents.topFailingAgent) {
+    highlights.push('<div class="inventory-row"><div><div class="inventory-name">Top failing agent</div><div class="inventory-subtitle">' + escHtml(backgroundAgents.topFailingAgent.agentId || 'unknown') + '</div></div><span class="generated-badge">' + escHtml(String(backgroundAgents.topFailingAgent.passRate || 0) + '% pass') + '</span></div>');
+  }
+  highlights.push('<div class="inventory-row"><div><div class="inventory-name">Recommended operating mode</div><div class="inventory-subtitle">Use ' + escHtml(backgroundAgents.recommendedMode || 'bootstrapping') + ' when background agents queue code, money, or customer actions.</div></div><span class="generated-badge">' + escHtml(String(backgroundAgents.blocked || 0) + ' blocked') + '</span></div>');
+  document.getElementById('backgroundAgentHighlights').innerHTML = highlights.join('');
+
+  var runTypes = Object.keys(backgroundAgents.byType || {});
+  document.getElementById('backgroundAgentRunTypes').innerHTML = runTypes.length
+    ? runTypes.map(function(runType) {
+      return '<div class="inventory-row"><div><div class="inventory-name">' + escHtml(runType) + '</div><div class="inventory-subtitle">Observed background workflow type</div></div><span class="generated-badge">' + escHtml(String(backgroundAgents.byType[runType] || 0) + ' runs') + '</span></div>';
+    }).join('')
+    : '<div class="empty" style="padding:20px 0;">No background-agent runs recorded yet.</div>';
+}
+
+function renderRegulatedProof(regulatedProof) {
+  var cards = [
+    {
+      label: 'Policy origins',
+      value: String(regulatedProof.policyOriginCount || 0),
+      note: String(regulatedProof.activeLayerCount || 0) + ' active settings layers',
+    },
+    {
+      label: 'Reviewed runs',
+      value: String(regulatedProof.reviewedRuns || 0),
+      note: String(regulatedProof.proofBackedRuns || 0) + ' proof-backed runs tracked',
+    },
+    {
+      label: 'Decision records',
+      value: String(regulatedProof.decisionEvaluations || 0),
+      note: regulatedProof.appendOnlyAuditReady ? 'append-only audit trail live' : 'no decision audit yet',
+    },
+    {
+      label: 'Runtime isolation',
+      value: regulatedProof.runtimeIsolation ? 'on' : 'off',
+      note: 'containerized execution posture',
+    }
+  ];
+
+  document.getElementById('regulatedProofSummaryCards').innerHTML = cards.map(function(card) {
+    return '<div class="inventory-card"><div class="team-kicker">' + escHtml(card.label) + '</div><div class="inventory-value">' + escHtml(card.value) + '</div><div class="inventory-note">' + escHtml(card.note) + '</div></div>';
+  }).join('');
+
+  var details = [];
+  if (regulatedProof.latestPolicyOrigin) {
+    details.push('<div class="inventory-row"><div><div class="inventory-name">' + escHtml(regulatedProof.latestPolicyOrigin.path || 'latest setting') + '</div><div class="inventory-subtitle">' + escHtml(regulatedProof.latestPolicyOrigin.sourcePath || 'built-in defaults') + '</div></div><span class="generated-badge">' + escHtml(String(regulatedProof.latestPolicyOrigin.scope || 'default')) + '</span></div>');
+  }
+  details.push('<div class="inventory-row"><div><div class="inventory-name">Checkpoint coverage</div><div class="inventory-subtitle">Reviewed proof-backed runs divided by total proof-backed workflow runs.</div></div><span class="generated-badge">' + escHtml(String(Math.round((regulatedProof.checkpointCoverage || 0) * 100)) + '%') + '</span></div>');
+  document.getElementById('regulatedProofDetails').innerHTML = details.join('');
+
+  var artifacts = Array.isArray(regulatedProof.latestProofArtifacts) ? regulatedProof.latestProofArtifacts : [];
+  document.getElementById('regulatedProofArtifacts').innerHTML = artifacts.length
+    ? artifacts.map(function(artifact) {
+      return '<div class="inventory-row"><div><div class="inventory-name">' + escHtml(artifact) + '</div><div class="inventory-subtitle">Proof artifact from ' + escHtml(regulatedProof.latestWorkflowName || 'latest workflow run') + '</div></div><span class="generated-badge">replay-ready</span></div>';
+    }).join('')
+    : '<div class="empty" style="padding:20px 0;">No workflow replay artifacts recorded yet.</div>';
+}
+
 function renderTemplates(templateLibrary) {
   const templates = Array.isArray(templateLibrary.templates) ? templateLibrary.templates : [];
   const categories = templateLibrary.categories || {};
@@ -1370,6 +1563,39 @@ function loadDemo() {
       { type: 'creator_underperformance', message: 'Creator reach_vb is generating intent without revenue conversion.', severity: 'warning' }
     ]
   });
+  renderAgentInventory({
+    profile: 'default',
+    tier: 'builder',
+    configuredServerCount: 3,
+    observedToolCount: 4,
+    observedTools: [
+      { toolName: 'Bash', evaluations: 120, intercepted: 19, allow: 101, deny: 12, warn: 7 },
+      { toolName: 'Edit', evaluations: 64, intercepted: 6, allow: 58, deny: 2, warn: 4 },
+      { toolName: 'Read', evaluations: 42, intercepted: 0, allow: 42, deny: 0, warn: 0 }
+    ],
+    policySources: [
+      { source: 'gates-engine', count: 23 },
+      { source: 'secret-guard', count: 6 },
+      { source: 'workflow-sentinel', count: 4 }
+    ]
+  });
+  renderActionableRemediations([
+    {
+      title: 'tighten verification before response · recent-signals',
+      rationale: 'Recent approval rate has dropped below the lifetime baseline, so fast completion claims need tighter proof.',
+      action: 'tighten-verification-before-response',
+    },
+    {
+      title: 'audit domain failures · git-workflow',
+      rationale: 'Git workflow events are overrepresented in high-risk outcomes and deserve a stronger pre-action gate.',
+      action: 'audit-domain-failures',
+    },
+    {
+      title: 'review and update skill · github',
+      rationale: 'GitHub-related failures have crossed the negative-rate threshold, so the skill needs a correction pass.',
+      action: 'review-and-update-skill',
+    }
+  ]);
   renderSettingsStatus({
     activeLayers: [
       { scope: 'defaults', exists: true, leafCount: 7, sourcePath: null },
@@ -1412,6 +1638,58 @@ function loadDemo() {
     ]
   });
   renderGeneratedView(buildDemoGeneratedViewSpec(currentGeneratedView));
+  renderInsights({
+    gateStats: { blocked: 180 },
+    tokenSavings: {
+      dollarsSaved: 0,
+      dollarsSavedDisplay: '$0.00',
+      tokensSavedDisplay: '0',
+      blockedCalls: 0,
+      modelMix: { 'sonnet-4.5': 0.8, 'opus-4.6': 0.15, 'haiku-4.5': 0.05 },
+      blendedPricePer1M: { input: 6.2, output: 24.1 }
+    },
+    lessonPipeline: {
+      stages: [
+        { id: 'feedback', label: 'Feedback Signals', count: 297, detail: '37 up / 260 down' },
+        { id: 'lessons', label: 'Lessons Distilled', count: 94, detail: '72 mistakes / 22 good patterns' },
+        { id: 'gates', label: 'Gates Promoted', count: 21, detail: '22% of lessons become gates' },
+        { id: 'blocked', label: 'Actions Blocked', count: 180, detail: 'Repeat mistakes prevented' }
+      ],
+      rates: { feedbackToLesson: 32, lessonToGate: 22 }
+    },
+    feedbackTimeSeries: {
+      days: Array.from({ length: 30 }, function(_, index) {
+        return {
+          dayKey: '2026-04-' + String(index + 1).padStart(2, '0'),
+          up: index % 6 === 0 ? 2 : (index % 4 === 0 ? 1 : 0),
+          down: 3 + (index % 5),
+          lessons: index % 3 === 0 ? 2 : 1
+        };
+      })
+    },
+    gateAudit: {
+      days: Array.from({ length: 14 }, function(_, index) {
+        return {
+          dayKey: '2026-04-' + String(index + 10).padStart(2, '0'),
+          allow: 8 + (index % 3),
+          deny: 2 + (index % 2),
+          warn: index % 3
+        };
+      })
+    },
+    actionableRemediations: [
+      {
+        title: 'tighten verification before response · recent-signals',
+        rationale: 'Recent approval rate has dropped below the lifetime baseline, so fast completion claims need tighter proof.',
+        action: 'tighten-verification-before-response'
+      },
+      {
+        title: 'audit domain failures · git-workflow',
+        rationale: 'Git workflow events are overrepresented in high-risk outcomes and deserve a stronger pre-action gate.',
+        action: 'audit-domain-failures'
+      }
+    ]
+  });
 }
 
 // Auto-load demo on first visit so visitors see the product immediately
@@ -1461,6 +1739,23 @@ function renderInsights(data) {
   renderFeedbackTrendChart(data.feedbackTimeSeries || {});
   renderLessonTrendChart(data.feedbackTimeSeries || {});
   renderGateAuditChartFromData(data.gateAudit || {});
+  renderActionableRemediations(data.actionableRemediations || []);
+}
+
+function renderActionableRemediations(remediations) {
+  var list = document.getElementById('actionableRemediations');
+  if (!list) return;
+  if (!Array.isArray(remediations) || !remediations.length) {
+    list.innerHTML = '<div class="empty" style="padding:20px 0;">No remediation pressure yet. As feedback accumulates, ThumbGate will rank the next highest-ROI fixes here.</div>';
+    return;
+  }
+
+  list.innerHTML = remediations.map(function(item) {
+    var title = item.title || ((item.action || 'review') + ' · ' + (item.target || 'system'));
+    var subtitle = item.rationale || '';
+    var action = item.action || 'review';
+    return '<div class="remediation-row"><div><div class="remediation-name">' + escHtml(title) + '</div><div class="remediation-subtitle">' + escHtml(subtitle) + '</div></div><span class="remediation-action">' + escHtml(String(action).replace(/-/g, ' ')) + '</span></div>';
+  }).join('');
 }
 
 /**

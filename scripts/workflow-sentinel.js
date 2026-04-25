@@ -39,6 +39,9 @@ const DEFAULT_PROTECTED_FILE_GLOBS = [
 ];
 const EDIT_LIKE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
 const HIGH_RISK_BASH_PATTERN = /\b(?:git\s+(?:add|commit|push)|gh\s+(?:pr\s+(?:create|merge)|workflow\s+run|release\s+create)|npm\s+publish|yarn\s+publish|pnpm\s+publish|rm\s+-rf)\b/i;
+const BACKGROUND_AGENT_PATTERN = /\b(?:async(?:-job|-task)?|autonomous|background|cron|dispatch|heartbeat|job runner|job-runner|queue|queued|schedule|scheduled|worker|workflow run)\b/i;
+const ECONOMIC_ACTION_PATTERN = /\b(?:billing|charge|credit memo|invoice|payment(?: link|s)?|payout|refund|stripe|subscription(?:s| creation| update| cancel| delete)?|top-?up)\b/i;
+const CUSTOMER_SYSTEM_PATTERN = /\b(?:crm|customer|email|hubspot|intercom|mailgun|resend|salesforce|support|zendesk)\b/i;
 
 const SURFACE_RULES = [
   { key: 'policy', pattern: /^(?:AGENTS\.md|CLAUDE(?:\.local)?\.md|GEMINI\.md|config\/gates\/|config\/mcp-allowlists\.json|scripts\/tool-registry\.js)/ },
@@ -234,6 +237,38 @@ function isHighRiskAction(toolName, toolInput = {}, affectedFiles = []) {
   return HIGH_RISK_BASH_PATTERN.test(String(toolInput.command || ''));
 }
 
+function classifyActionProfile(toolInput = {}) {
+  const command = String(toolInput.command || '');
+  const metadata = toolInput && typeof toolInput.metadata === 'object' ? toolInput.metadata : {};
+  const source = String(toolInput.source || metadata.source || '');
+  const runType = String(toolInput.runType || metadata.runType || '');
+  const combined = [command, source, runType, metadata.context || ''].filter(Boolean).join(' ');
+
+  const backgroundAgent = Boolean(
+    toolInput.backgroundAgent === true
+      || toolInput.scheduled === true
+      || metadata.backgroundAgent === true
+      || metadata.scheduled === true
+      || BACKGROUND_AGENT_PATTERN.test(combined)
+  );
+  const economicAction = Boolean(
+    toolInput.economicAction === true
+      || metadata.economicAction === true
+      || ECONOMIC_ACTION_PATTERN.test(combined)
+  );
+  const customerSystemAction = Boolean(
+    toolInput.customerSystemAction === true
+      || metadata.customerSystemAction === true
+      || CUSTOMER_SYSTEM_PATTERN.test(combined)
+  );
+
+  return {
+    backgroundAgent,
+    economicAction,
+    customerSystemAction,
+  };
+}
+
 function isProtectedApprovalRelevant(toolName, toolInput = {}) {
   if (EDIT_LIKE_TOOLS.has(toolName)) return true;
   if (toolName !== 'Bash') return false;
@@ -399,12 +434,28 @@ function scoreRisk({
   protectedSurface,
   costControl,
   workflowControl,
+  actionProfile,
 }) {
   const drivers = [];
   const commandInfo = classifyCommand(toolInput.command || '');
 
   if (isHighRiskAction(toolName, toolInput, affectedFiles)) {
     addDriver(drivers, 'high_risk_action', 0.18, 'Command or edit pattern is classified as high risk.');
+  }
+  if (actionProfile && actionProfile.backgroundAgent) {
+    addDriver(drivers, 'background_agent', 0.18, 'Background or scheduled agent context reduces real-time human supervision.');
+  }
+  if (actionProfile && actionProfile.economicAction) {
+    addDriver(drivers, 'economic_action', 0.24, 'Action appears to touch billing, refunds, invoices, payouts, or subscriptions.');
+  }
+  if (actionProfile && actionProfile.customerSystemAction) {
+    addDriver(drivers, 'customer_system_action', 0.14, 'Action appears to touch customer-facing systems or communications.');
+  }
+  if (actionProfile && actionProfile.backgroundAgent && actionProfile.economicAction) {
+    addDriver(drivers, 'background_economic_combo', 0.08, 'Background autonomy plus money movement needs a tighter checkpoint.');
+  }
+  if (actionProfile && actionProfile.backgroundAgent && actionProfile.customerSystemAction) {
+    addDriver(drivers, 'background_customer_combo', 0.06, 'Background autonomy plus customer systems raises downstream trust risk.');
   }
   if (commandInfo.isPrCreate
     || commandInfo.isPrMerge
@@ -612,6 +663,7 @@ function buildEvidence({
   normalizedAction,
   costControl,
   workflowControl,
+  actionProfile,
 }) {
   const evidence = [];
   if (normalizedAction && normalizedAction.provider !== 'unknown') {
@@ -630,6 +682,15 @@ function buildEvidence({
     if (workflowControl.mode !== 'allow') {
       evidence.push(`Workflow control ${workflowControl.mode}: ${workflowControl.reasons.join(' ')}`);
     }
+  }
+  if (actionProfile && actionProfile.backgroundAgent) {
+    evidence.push('Background or scheduled agent context detected for this action.');
+  }
+  if (actionProfile && actionProfile.economicAction) {
+    evidence.push('Economic action keywords detected (billing, refunds, payouts, invoices, or subscriptions).');
+  }
+  if (actionProfile && actionProfile.customerSystemAction) {
+    evidence.push('Customer-system keywords detected (email, CRM, or support surface).');
   }
   if (memoryGuard && memoryGuard.mode && memoryGuard.mode !== 'allow') {
     evidence.push(`Memory guard predicted ${memoryGuard.mode}: ${memoryGuard.reason}`);
@@ -740,6 +801,7 @@ function buildRemediations({
   executionSurface,
   costControl,
   workflowControl,
+  actionProfile,
 }) {
   const remediations = [];
   const seen = new Set();
@@ -767,6 +829,30 @@ function buildRemediations({
     );
   }
   addIntegrityRemediations(push, integrity);
+  if (actionProfile && actionProfile.backgroundAgent) {
+    push(
+      'background_agent_checkpoint',
+      'Add an operator checkpoint',
+      'Pause the background run at a review step before it continues into code, deploy, money, or customer actions.',
+      'Queued autonomy needs an explicit approval boundary before irreversible work proceeds.'
+    );
+  }
+  if (actionProfile && actionProfile.economicAction) {
+    push(
+      'economic_action_approval',
+      'Require operator approval for money movement',
+      'Require an explicit operator checkpoint before refunds, payouts, invoice sends, or subscription changes execute.',
+      'Money-touching actions are costly to reverse and need a clear human owner.'
+    );
+  }
+  if (actionProfile && actionProfile.customerSystemAction) {
+    push(
+      'customer_system_guardrail',
+      'Add a customer-system hold point',
+      'Review customer-facing email, CRM, or support actions before sending or mutating external state.',
+      'Customer-facing actions can create trust damage even when the underlying code path is correct.'
+    );
+  }
   if (memoryGuard && memoryGuard.mode && memoryGuard.mode !== 'allow') {
     push(
       'retrieve_lessons',
@@ -850,6 +936,16 @@ function buildReasoning(report) {
       lines.push(`Deliberation policy: ${report.decisionControl.deliberation.mode} before final approval.`);
     }
   }
+  if (report.actionProfile) {
+    const activeFlags = [
+      report.actionProfile.backgroundAgent ? 'background agent' : null,
+      report.actionProfile.economicAction ? 'economic action' : null,
+      report.actionProfile.customerSystemAction ? 'customer system' : null,
+    ].filter(Boolean);
+    if (activeFlags.length) {
+      lines.push(`Action profile: ${activeFlags.join(', ')}.`);
+    }
+  }
   if (report.learnedPolicy && report.learnedPolicy.enabled && report.learnedPolicy.prediction) {
     lines.push(
       `Learned policy predicted ${report.learnedPolicy.prediction.label} (${report.learnedPolicy.prediction.confidence}).`
@@ -885,7 +981,7 @@ function getSentinelActionType(toolName) {
   return '';
 }
 
-function classifyReversibility({ command, blastRadius, integrity, protectedSurface }) {
+function classifyReversibility({ command, blastRadius, integrity, protectedSurface, actionProfile }) {
   const text = String(command || '');
   const blockers = integrity && Array.isArray(integrity.blockers) ? integrity.blockers : [];
   const destructiveCommand = /\bgit\s+push\b.*(?:--force|-f)\b/i.test(text)
@@ -901,9 +997,15 @@ function classifyReversibility({ command, blastRadius, integrity, protectedSurfa
     ? protectedSurface.unapprovedProtectedFiles.length > 0
     : false;
   const hardBlockers = blockers.some((blocker) => /publish|merge|release|protected/i.test(String(blocker.code || '')));
+  const economicAction = Boolean(actionProfile && actionProfile.economicAction);
+  const customerSystemAction = Boolean(actionProfile && actionProfile.customerSystemAction);
+  const backgroundAgent = Boolean(actionProfile && actionProfile.backgroundAgent);
 
-  if (destructiveCommand || releaseSensitive || unapprovedProtected || hardBlockers) {
+  if (destructiveCommand || releaseSensitive || unapprovedProtected || hardBlockers || economicAction) {
     return 'one_way_door';
+  }
+  if ((backgroundAgent && customerSystemAction) || customerSystemAction) {
+    return 'reviewable';
   }
   if ((blastRadius && blastRadius.fileCount >= 4) || (blastRadius && blastRadius.surfaceCount >= 2)) {
     return 'reviewable';
@@ -966,12 +1068,14 @@ function buildDecisionControl({
   protectedSurface,
   costControl,
   workflowControl,
+  actionProfile,
 }) {
   const reversibility = classifyReversibility({
     command,
     blastRadius,
     integrity,
     protectedSurface,
+    actionProfile,
   });
   const hasOperationalBlockers = Boolean(integrity && Array.isArray(integrity.blockers) && integrity.blockers.length > 0);
   const hasCostWarning = Boolean(costControl && costControl.mode === 'warn');
@@ -1020,7 +1124,7 @@ function buildDecisionControl({
   };
 }
 
-function chooseDecision({ riskScore, integrity, memoryGuard, learnedPolicy, blastRadius, command, costControl, workflowControl }) {
+function chooseDecision({ riskScore, integrity, memoryGuard, learnedPolicy, blastRadius, command, costControl, workflowControl, actionProfile }) {
   const hasOperationalBlockers = Boolean(integrity && Array.isArray(integrity.blockers) && integrity.blockers.length > 0);
   if (costControl && costControl.mode === 'block') {
     return 'deny';
@@ -1067,12 +1171,18 @@ function chooseDecision({ riskScore, integrity, memoryGuard, learnedPolicy, blas
         || blastRadius.unapprovedProtectedFiles > 0
       )
   );
+  const economicAction = Boolean(actionProfile && actionProfile.economicAction);
+  const backgroundAgent = Boolean(actionProfile && actionProfile.backgroundAgent);
+  const customerSystemAction = Boolean(actionProfile && actionProfile.customerSystemAction);
 
   if (lowRiskHandoff) {
     return 'allow';
   }
   if (destructiveBypass || learnedHardStop || repeatedHighBlast || (hasOperationalBlockers && riskScore >= 0.72) || riskScore >= 0.86) {
     return 'deny';
+  }
+  if (economicAction || (backgroundAgent && customerSystemAction) || (backgroundAgent && riskScore >= 0.3)) {
+    return 'warn';
   }
   if ((workflowControl && workflowControl.mode === 'warn') || (costControl && costControl.mode === 'warn') || riskScore >= 0.45 || (learnedWarning && riskScore >= 0.3) || (learnedRecall && riskScore >= 0.34)) {
     return 'warn';
@@ -1112,6 +1222,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
   const affectedFiles = Array.isArray(options.affectedFiles)
     ? options.affectedFiles.map((filePath) => normalizePosix(filePath)).filter(Boolean)
     : collectAffectedFiles(normalizedToolName, normalizedToolInput, repoRoot);
+  const actionProfile = classifyActionProfile(normalizedToolInput);
   const highRiskAction = isHighRiskAction(normalizedToolName, normalizedToolInput, affectedFiles);
   const baseBranch = options.baseBranch
     || (governanceState.branchGovernance && governanceState.branchGovernance.baseBranch)
@@ -1174,6 +1285,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     protectedSurface: protectedSurfaceForRisk,
     costControl,
     workflowControl,
+    actionProfile,
   });
   const executionSurface = buildDockerSandboxPlan({
     toolName: normalizedToolName,
@@ -1199,6 +1311,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     command: normalizedToolInput.command || '',
     costControl,
     workflowControl,
+    actionProfile,
   });
   const evidence = buildEvidence({
     integrity,
@@ -1210,6 +1323,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     normalizedAction,
     costControl,
     workflowControl,
+    actionProfile,
   });
   const remediations = buildRemediations({
     integrity,
@@ -1221,6 +1335,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     executionSurface,
     costControl,
     workflowControl,
+    actionProfile,
   });
   const summary = decision === 'allow'
     ? 'No predictive workflow blockers detected.'
@@ -1242,6 +1357,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     evidence,
     remediations,
     executionSurface,
+    actionProfile,
     memoryGuard,
     learnedPolicy,
     taskScopeViolation,
@@ -1267,6 +1383,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     protectedSurface: protectedSurfaceForRisk,
     costControl,
     workflowControl,
+    actionProfile,
   });
   report.reasoning = buildReasoning(report);
   return report;
@@ -1282,6 +1399,7 @@ module.exports = {
   buildReasoning,
   buildRemediations,
   buildTaskScopeViolation,
+  classifyActionProfile,
   classifySurface,
   collectAffectedFiles,
   evaluateWorkflowSentinel,

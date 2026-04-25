@@ -10,14 +10,14 @@
 > Pre-action checks that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.
 
 ### Public Landing Page (thumbgate-production.up.railway.app)
-> Stop paying for the same AI mistake twice. ThumbGate is the enforcement layer for AI agent orchestration: 👍 thumbs up and 👎 thumbs down become history-aware lessons, shared lessons and org visibility, plus Pre-Action Checks that block repeat mistakes before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode.
+> Stop paying for the same AI mistake twice. ThumbGate is machine-speed pre-action defense for AI coding agents: 👍 thumbs up and 👎 thumbs down become history-aware lessons, shared lessons and org visibility, actionable remediations, agent surface inventory, and Pre-Action Checks that block repeat mistakes before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode.
 
 ### NPM package.json
 > Pre-action checks that block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.
 
 ### GitHub Repo About
 **Canonical source:** `config/github-about.json`
-> Self-improving agent governance: 👍/👎 → Pre-Action Checks that block repeat AI mistakes. Stop paying for the same mistake twice.
+> Agent governance for ThumbGate: 👍/👎 become Pre-Action Checks that block repeat mistakes before code, money, or customer systems change.
 
 **Canonical topics:** `thumbgate`, `pre-action-checks`, `mcp`, `mcp-server`, `ai-agents`, `agent-reliability`, `guardrails`, `ai-safety`, `developer-tools`, `feedback-loop`, `claude-code`, `cursor`, `codex`, `gemini`, `amp`, `opencode`, `thompson-sampling`
 
