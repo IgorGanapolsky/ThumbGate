@@ -13,6 +13,7 @@ const GUIDE_FILES = [
   'guides/browser-automation-safety.html',
   'guides/native-messaging-host-security.html',
   'guides/ai-search-topical-presence.html',
+  'guides/best-tools-stop-ai-agents-breaking-production.html',
   'guides/relational-knowledge-ai-recommendations.html',
   'guides/claude-code-feedback.html',
   'guides/stop-repeated-ai-agent-mistakes.html',
@@ -30,12 +31,12 @@ const COMPARE_FILES = [
 const ALL_FILES = [...GUIDE_FILES, ...COMPARE_FILES];
 
 describe('SEO guide and comparison pages', () => {
-  it('all 14 HTML files exist', () => {
+  it('all 15 HTML files exist', () => {
     for (const file of ALL_FILES) {
       const fullPath = path.join(PUBLIC_DIR, file);
       assert.ok(fs.existsSync(fullPath), `Missing file: ${file}`);
     }
-    assert.equal(ALL_FILES.length, 14);
+    assert.equal(ALL_FILES.length, 15);
   });
 
   for (const file of ALL_FILES) {
@@ -111,6 +112,10 @@ describe('SEO guide and comparison pages', () => {
       path.join(PUBLIC_DIR, 'guides/ai-search-topical-presence.html'),
       'utf-8'
     );
+    const productionListicle = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/best-tools-stop-ai-agents-breaking-production.html'),
+      'utf-8'
+    );
     const relationalKnowledge = fs.readFileSync(
       path.join(PUBLIC_DIR, 'guides/relational-knowledge-ai-recommendations.html'),
       'utf-8'
@@ -118,6 +123,9 @@ describe('SEO guide and comparison pages', () => {
 
     assert.ok(topicalPresence.includes('Topical presence'), 'topical presence guide should mention topical presence');
     assert.ok(topicalPresence.includes('Verification evidence'), 'topical presence guide should link proof assets');
+    assert.ok(productionListicle.includes('AEO fuel'), 'production listicle should explain the answer-engine citation angle');
+    assert.ok(productionListicle.includes('Parallel branch budgets'), 'production listicle should mention parallel branch budgets');
+    assert.ok(productionListicle.includes('Environment inspection requirements'), 'production listicle should mention environment inspection');
     assert.ok(relationalKnowledge.includes('Relational knowledge'), 'relational knowledge guide should mention relational knowledge');
     assert.ok(relationalKnowledge.includes('pre-action checks'), 'relational knowledge guide should tie the topic back to ThumbGate');
   });

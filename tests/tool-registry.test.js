@@ -144,8 +144,17 @@ test('scope control tools expose the task-scope and protected-approval workflow'
   assert.ok(setBranchTool.inputSchema.properties.releaseVersion, 'set_branch_governance should expose releaseVersion');
   assert.ok(approveTool.inputSchema.required.includes('pathGlobs'), 'approve_protected_action should require pathGlobs');
   assert.ok(integrityTool.inputSchema.properties.requirePrForReleaseSensitive, 'check_operational_integrity should expose release-sensitive enforcement');
-  assert.ok(sentinelTool.inputSchema.required.includes('toolName'), 'workflow_sentinel should require toolName');
+  assert.equal(sentinelTool.inputSchema.required, undefined, 'workflow_sentinel should allow provider-native tool calls without toolName');
+  assert.ok(sentinelTool.inputSchema.properties.providerToolCall, 'workflow_sentinel should expose provider-native tool calls');
   assert.ok(sentinelTool.inputSchema.properties.changedFiles, 'workflow_sentinel should expose changedFiles');
+  assert.ok(sentinelTool.inputSchema.properties.workflowPattern, 'workflow_sentinel should expose workflowPattern');
+  assert.ok(sentinelTool.inputSchema.properties.workflow, 'workflow_sentinel should expose workflow metadata');
+  assert.ok(sentinelTool.inputSchema.properties.goal, 'workflow_sentinel should expose agent goals');
+  assert.ok(sentinelTool.inputSchema.properties.tools, 'workflow_sentinel should expose available agent tools');
+  assert.ok(sentinelTool.inputSchema.properties.branches, 'workflow_sentinel should expose parallel branches');
+  assert.ok(sentinelTool.inputSchema.properties.steps, 'workflow_sentinel should expose workflow steps');
+  assert.ok(sentinelTool.inputSchema.properties.routes, 'workflow_sentinel should expose routing destinations');
+  assert.match(sentinelTool.inputSchema.properties.budget.description, /maxParallelBranches/);
 });
 
 test('tool names are unique', () => {

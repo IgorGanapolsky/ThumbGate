@@ -1,0 +1,44 @@
+{
+  "topOpportunityQuery": {
+    "id": "kw_1_thumbgate-vs-speclock",
+    "query": "thumbgate vs speclock",
+    "source": "seed",
+    "notes": "Bottom-of-funnel comparison against manual spec alternatives.",
+    "impressions": null,
+    "clicks": null,
+    "ctr": null,
+    "position": null,
+    "businessValue": 100,
+    "intent": "comparison",
+    "pillar": "comparison",
+    "persona": "tool-evaluator",
+    "pageType": "comparison",
+    "opportunityScore": 100
+  },
+  "recommendedOrder": [
+    "/compare/speclock",
+    "/compare/mem0",
+    "/guides/claude-code-feedback",
+    "/guides/cursor-agent-guardrails",
+    "/guides/codex-cli-guardrails",
+    "/guides/gemini-cli-feedback-memory",
+    "/guides/claude-desktop",
+    "/guides/pre-action-checks",
+    "/guides/agent-harness-optimization",
+    "/guides/stop-repeated-ai-agent-mistakes",
+    "/guides/autoresearch-agent-safety",
+    "/guides/browser-automation-safety",
+    "/guides/native-messaging-host-security",
+    "/guides/best-tools-stop-ai-agents-breaking-production",
+    "/guides/ai-search-topical-presence",
+    "/guides/relational-knowledge-ai-recommendations"
+  ],
+  "proofAssets": [
+    "thumbs-up/down feedback loop",
+    "pre-action checks",
+    "verification evidence",
+    "automation proof",
+    "SQLite+FTS5 lesson DB",
+    "Thompson Sampling"
+  ]
+}
