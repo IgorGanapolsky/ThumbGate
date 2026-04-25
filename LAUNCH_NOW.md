@@ -36,6 +36,11 @@ Review three files before sending anything:
 - `gtm-revenue-loop.json` for the machine-readable queue
 - `gtm-target-queue.csv` for operator copy/paste into a tracker or CRM
 
+The generated queue now includes two lanes in one artifact:
+
+- warm discovery targets from the current comment-engager list
+- cold GitHub targets ranked by workflow evidence
+
 Rule: if a target has weak workflow evidence, do not contact them just because they are recent.
 
 ---
@@ -54,7 +59,7 @@ The lead only exists after it is in the ledger. A repo URL or social profile alo
 
 ## Step 3 — send the warm discovery messages first
 
-Start with the warm targets in [docs/marketing/team-outreach-messages.md](docs/marketing/team-outreach-messages.md). The first-touch offer stays:
+Start with the warm targets surfaced at the top of the generated queue and mirrored in [docs/marketing/team-outreach-messages.md](docs/marketing/team-outreach-messages.md). The first-touch offer stays:
 
 > I will harden one AI-agent workflow for you.
 

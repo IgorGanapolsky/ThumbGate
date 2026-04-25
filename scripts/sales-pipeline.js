@@ -260,19 +260,26 @@ function loadSalesLeads(options = {}) {
 
 function buildLeadFromRevenueTarget(target = {}, { sourcePath = null } = {}) {
   const username = normalizeText(target.username, 160);
+  const source = normalizeText(target.source, 80) || 'github';
+  const channel = normalizeText(target.channel, 80) || source;
   const repoName = normalizeText(target.repoName, 200);
   const repoUrl = normalizeUrl(target.repoUrl);
+  const contactUrl = normalizeUrl(target.contactUrl) || (username && source === 'github'
+    ? `https://github.com/${username}`
+    : username && source === 'reddit'
+      ? `https://www.reddit.com/user/${username}/`
+      : null);
   return sanitizeSalesLead({
-    source: 'github',
-    channel: 'github',
+    source,
+    channel,
     stage: 'targeted',
-    offer: 'workflow_hardening_sprint',
+    offer: normalizeText(target.offer, 120) || 'workflow_hardening_sprint',
     contact: {
       username,
-      url: username ? `https://github.com/${username}` : null,
+      url: contactUrl,
     },
     account: {
-      name: username,
+      name: normalizeText(target.accountName, 200) || username,
       repoName,
       repoUrl,
       description: target.description,
@@ -291,10 +298,10 @@ function buildLeadFromRevenueTarget(target = {}, { sourcePath = null } = {}) {
     },
     attribution: {
       sourceReport: sourcePath,
-      campaign: 'workflow_hardening_sprint_outbound',
-      utmSource: 'github',
-      utmMedium: 'direct_outbound',
-      utmCampaign: 'workflow_hardening_sprint',
+      campaign: normalizeText(target.offer, 160) || 'workflow_hardening_sprint_outbound',
+      utmSource: source,
+      utmMedium: channel === 'reddit_dm' ? 'warm_outbound' : 'direct_outbound',
+      utmCampaign: normalizeText(target.offer, 160) || 'workflow_hardening_sprint',
     },
   });
 }
