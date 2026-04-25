@@ -1354,7 +1354,7 @@ function summarizeMcpServerInventory(projectRoot = PROJECT_ROOT) {
   const configPath = path.join(projectRoot, '.mcp.json');
   const parsed = readJsonFile(configPath);
   const mcpServers = parsed && parsed.mcpServers && typeof parsed.mcpServers === 'object'
-    ? Object.keys(parsed.mcpServers).sort()
+    ? Object.keys(parsed.mcpServers).sort((left, right) => left.localeCompare(right))
     : [];
   return {
     configPath: fs.existsSync(configPath) ? configPath : null,
