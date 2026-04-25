@@ -85,7 +85,7 @@ function evaluateKnowledgeLayerRun(run = {}) {
   const issues = [];
   if (!run.userId) issues.push('missing_user_id');
   if (!run.recommendationId) issues.push('missing_recommendation_id');
-  if (!run.evidencePath || !run.evidencePath.explainable) issues.push('missing_explainable_evidence_path');
+  if (!run.evidencePath?.explainable) issues.push('missing_explainable_evidence_path');
   if (!run.auditNodeId) issues.push('missing_audit_node_id');
   if (run.reusedReasoning && !run.reasoningVersion) issues.push('missing_reasoning_version');
   if (run.profileUpdate && !run.outcomeEventId) issues.push('missing_outcome_event_id');

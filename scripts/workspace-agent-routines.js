@@ -43,17 +43,17 @@ function normalizeConnector(connector) {
     };
   }
   return {
-    name: normalizeText(connector && connector.name) || 'custom',
-    mode: normalizeText(connector && connector.mode) || 'read',
-    auth: normalizeText(connector && connector.auth) || 'user_or_service_account',
-    approval: normalizeText(connector && connector.approval) || 'always_ask_for_write',
+    name: normalizeText(connector?.name) || 'custom',
+    mode: normalizeText(connector?.mode) || 'read',
+    auth: normalizeText(connector?.auth) || 'user_or_service_account',
+    approval: normalizeText(connector?.approval) || 'always_ask_for_write',
   };
 }
 
 function buildWorkspaceAgentRoutine(input = {}) {
   const type = normalizeText(input.type) || 'post_merge_hygiene';
   const defaults = ROUTINE_TYPES[type] || ROUTINE_TYPES.post_merge_hygiene;
-  const name = normalizeText(input.name) || `ThumbGate ${type.replace(/_/g, ' ')}`;
+  const name = normalizeText(input.name) || `ThumbGate ${type.replaceAll('_', ' ')}`;
   const connectors = Array.isArray(input.connectors) ? input.connectors.map(normalizeConnector) : [];
   const checks = Array.isArray(input.checks) && input.checks.length > 0 ? input.checks : defaults.checks;
   const routine = {
@@ -116,8 +116,3 @@ module.exports = {
   buildWorkspaceAgentDirectory,
   buildWorkspaceAgentRoutine,
 };
-
-if (require.main === module) {
-  const result = buildWorkspaceAgentDirectory();
-  console.log(JSON.stringify(result, null, 2));
-}

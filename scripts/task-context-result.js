@@ -23,6 +23,14 @@ function buildTaskContextResultQuery(input = {}) {
   if (!task) missing.push('task');
   if (context.length === 0 && files.length === 0 && tools.length === 0) missing.push('context');
   if (!result) missing.push('result');
+  const contextParts = [
+    ...context,
+    ...files.map((file) => `file:${file}`),
+    ...tools.map((tool) => `tool:${tool}`),
+  ];
+  const sequenceText = sequence
+    .map((step, index) => `${index + 1}. ${step}`)
+    .join(' ');
 
   return {
     pattern: 'TaskContextResult',
@@ -30,10 +38,10 @@ function buildTaskContextResultQuery(input = {}) {
     missing,
     query: [
       `Task: ${task || '[required]'}`,
-      `Context: ${[...context, ...files.map((file) => `file:${file}`), ...tools.map((tool) => `tool:${tool}`)].join('; ') || '[required]'}`,
+      `Context: ${contextParts.join('; ') || '[required]'}`,
       `Result: ${result || '[required]'}`,
       audience ? `Audience: ${audience}` : null,
-      sequence.length > 0 ? `Sequence: ${sequence.map((step, index) => `${index + 1}. ${step}`).join(' ')}` : null,
+      sequence.length > 0 ? `Sequence: ${sequenceText}` : null,
       `Credit budget: ${creditBudget}`,
     ].filter(Boolean).join('\n'),
     governance: {

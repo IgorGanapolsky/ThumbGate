@@ -15,6 +15,12 @@ function classifyMemoryFile(filePath) {
   return 'general';
 }
 
+function actionForClassification(classification) {
+  if (classification === 'blocked_secret') return 'block';
+  if (classification === 'sensitive_context') return 'redact_before_export';
+  return 'allow_reviewed_promotion';
+}
+
 function buildMemoryStoreGovernance(input = {}) {
   const files = Array.isArray(input.files) ? input.files : [];
   const records = files.map((file) => {
@@ -24,11 +30,7 @@ function buildMemoryStoreGovernance(input = {}) {
       path: normalizeText(path),
       classification,
       promotable: !['blocked_secret', 'sensitive_context'].includes(classification),
-      action: classification === 'blocked_secret'
-        ? 'block'
-        : classification === 'sensitive_context'
-          ? 'redact_before_export'
-          : 'allow_reviewed_promotion',
+      action: actionForClassification(classification),
     };
   }).filter((record) => record.path);
 
@@ -52,6 +54,7 @@ function buildMemoryStoreGovernance(input = {}) {
 }
 
 module.exports = {
+  actionForClassification,
   buildMemoryStoreGovernance,
   classifyMemoryFile,
 };

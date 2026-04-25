@@ -100,7 +100,7 @@ function evaluateAgentReadinessPlan(plan) {
     if (byId.get(id)?.status !== 'present') issues.push(`missing_${id}`);
   }
 
-  if (!plan.baseUrl || !plan.baseUrl.startsWith('https://')) {
+  if (!plan.baseUrl?.startsWith('https://')) {
     issues.push('https_base_url_required');
   }
 

@@ -9,9 +9,10 @@ function computeCostPerMillionTokens(input = {}) {
 }
 
 function evaluateInferenceTco(input = {}) {
-  const costPerMillionTokens = input.costPerMillionTokens !== undefined
-    ? Number(input.costPerMillionTokens)
-    : computeCostPerMillionTokens(input);
+  let costPerMillionTokens = computeCostPerMillionTokens(input);
+  if (input.costPerMillionTokens !== undefined) {
+    costPerMillionTokens = Number(input.costPerMillionTokens);
+  }
   const tokensPerRun = Number(input.tokensPerRun || 0);
   const runsPerDay = Number(input.runsPerDay || 0);
   const usefulBlocksPerDay = Number(input.usefulBlocksPerDay || 0);

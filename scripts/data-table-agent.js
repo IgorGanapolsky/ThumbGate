@@ -20,8 +20,8 @@ function normalizeText(value) {
 function normalizeIdentifier(value, fallback = 'field') {
   const normalized = normalizeText(value)
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
+    .replaceAll(/[^a-z0-9]+/g, '_')
+    .replaceAll(/^_+|_+$/g, '');
   return normalized || fallback;
 }
 
@@ -66,7 +66,7 @@ function inspectSampleRows(rows = []) {
     if (!row || typeof row !== 'object' || Array.isArray(row)) continue;
     for (const key of Object.keys(row)) fields.add(key);
   }
-  return [...fields].sort().map((field) => summarizeColumn(field, rows));
+  return [...fields].sort((a, b) => a.localeCompare(b)).map((field) => summarizeColumn(field, rows));
 }
 
 function buildDataTableSchemaPlan(input = {}) {
@@ -164,7 +164,13 @@ function buildDataTableSchemaPlan(input = {}) {
 function stableStringify(value) {
   if (Array.isArray(value)) return `[${value.map((entry) => stableStringify(entry)).join(',')}]`;
   if (value && typeof value === 'object') {
-    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
+    const parts = Object.keys(value)
+      .sort((a, b) => a.localeCompare(b))
+      .map((key) => {
+        const encodedKey = JSON.stringify(key);
+        return `${encodedKey}:${stableStringify(value[key])}`;
+      });
+    return `{${parts.join(',')}}`;
   }
   return JSON.stringify(value);
 }
@@ -203,7 +209,7 @@ function buildRowsForSchema(schema, rawRows = [], options = {}) {
       else if (column.id === 'ingested_at') row[column.id] = generatedAt;
       else if (column.id === 'qa_status') row[column.id] = 'pass';
       else if (column.id === 'qa_notes') row[column.id] = '';
-      else row[column.id] = coerceValue(rawRow && rawRow[column.name], column);
+      else row[column.id] = coerceValue(rawRow?.[column.name], column);
     }
     return row;
   });
@@ -240,7 +246,7 @@ function reviewRowsAgainstSchema(schema, rows = [], options = {}) {
   for (const column of emptyRequiredColumns) {
     issues.push({ rowIndex: null, column, issue: 'required_column_empty_for_all_rows' });
   }
-  const status = issues.length === 0 ? 'pass' : issues.length <= Number(options.warningThreshold || 3) ? 'warn' : 'fail';
+  const status = computeReviewStatus(issues.length, Number(options.warningThreshold || 3));
   return {
     status,
     rowCount: rows.length,
@@ -248,6 +254,12 @@ function reviewRowsAgainstSchema(schema, rows = [], options = {}) {
     issues,
     proposedSchemaChanges: buildSchemaEvolutionProposals(schema, rows, issues),
   };
+}
+
+function computeReviewStatus(issueCount, warningThreshold) {
+  if (issueCount === 0) return 'pass';
+  if (issueCount <= warningThreshold) return 'warn';
+  return 'fail';
 }
 
 function buildSchemaEvolutionProposals(schema, rows, issues) {
@@ -282,7 +294,12 @@ function buildSchemaEvolutionProposals(schema, rows, issues) {
 
 function buildDataTableAgentRun(input = {}) {
   const schema = input.schema || buildDataTableSchemaPlan(input);
-  const rawRows = Array.isArray(input.rawRows) ? input.rawRows : Array.isArray(input.sampleRows) ? input.sampleRows : [];
+  let rawRows = [];
+  if (Array.isArray(input.rawRows)) {
+    rawRows = input.rawRows;
+  } else if (Array.isArray(input.sampleRows)) {
+    rawRows = input.sampleRows;
+  }
   const rows = buildRowsForSchema(schema, rawRows, input);
   const review = reviewRowsAgainstSchema(schema, rows, input);
   return {

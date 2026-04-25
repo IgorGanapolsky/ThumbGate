@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 'use strict';
 
+function readinessStatus(score, missing) {
+  if (missing.length === 0) return 'production_ready';
+  if (score >= 60) return 'needs_hardening';
+  return 'prototype';
+}
+
 function evaluateProductionAgentReadiness(input = {}) {
   const signals = {
     subAgents: Array.isArray(input.subAgents) && input.subAgents.length >= 2,
@@ -14,7 +20,7 @@ function evaluateProductionAgentReadiness(input = {}) {
     .map(([name]) => name);
   const score = Math.round((Object.values(signals).filter(Boolean).length / Object.keys(signals).length) * 100);
   return {
-    status: missing.length === 0 ? 'production_ready' : score >= 60 ? 'needs_hardening' : 'prototype',
+    status: readinessStatus(score, missing),
     score,
     signals,
     missing,
@@ -30,4 +36,5 @@ function evaluateProductionAgentReadiness(input = {}) {
 
 module.exports = {
   evaluateProductionAgentReadiness,
+  readinessStatus,
 };

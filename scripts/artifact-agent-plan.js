@@ -7,12 +7,12 @@ function normalizeText(value) {
 }
 
 function normalizeTask(task, index = 0) {
-  const id = normalizeText(task && task.id) || `task-${index + 1}`;
+  const id = normalizeText(task?.id) || `task-${index + 1}`;
   return {
     id,
-    description: normalizeText(task && task.description),
-    branchName: normalizeText(task && task.branchName) || id.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-    priority: Number.isFinite(Number(task && task.priority)) ? Number(task.priority) : index + 1,
+    description: normalizeText(task?.description),
+    branchName: normalizeText(task?.branchName) || id.toLowerCase().replaceAll(/[^a-z0-9]+/g, '-'),
+    priority: Number.isFinite(Number(task?.priority)) ? Number(task.priority) : index + 1,
   };
 }
 
@@ -22,7 +22,7 @@ function buildArtifactAgentPlan(input = {}) {
   const tasks = Array.isArray(input.tasks) ? input.tasks.map(normalizeTask) : [];
   const forks = tasks.map((task) => ({
     taskId: task.id,
-    forkName: `${baselineName}-${task.id}`.toLowerCase().replace(/[^a-z0-9-]+/g, '-'),
+    forkName: `${baselineName}-${task.id}`.toLowerCase().replaceAll(/[^a-z0-9-]+/g, '-'),
     branchName: task.branchName,
     artifactRemote: null,
     tokenRef: `artifact_token_${task.id}`,

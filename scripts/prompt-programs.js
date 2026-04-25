@@ -43,8 +43,8 @@ function buildCrePromptProgram(input = {}) {
         : ['Never invent data; say unknown when evidence is missing.'],
       examples: examples.map((example, index) => ({
         id: `example_${index + 1}`,
-        input: normalizeText(example && example.input),
-        output: normalizeText(example && example.output),
+        input: normalizeText(example?.input),
+        output: normalizeText(example?.output),
       })).filter((example) => example.input && example.output),
     },
     prompt: [
@@ -60,7 +60,7 @@ function buildCrePromptProgram(input = {}) {
 }
 
 function reviewPromptProgram(input = {}) {
-  const program = input.program && input.program.pattern === 'CRE'
+  const program = input.program?.pattern === 'CRE'
     ? input.program
     : buildCrePromptProgram(input);
   const issues = [];

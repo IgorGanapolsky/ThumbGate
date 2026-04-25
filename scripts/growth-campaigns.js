@@ -47,7 +47,3 @@ function buildCreatorGrowthCampaign(input = {}) {
 module.exports = {
   buildCreatorGrowthCampaign,
 };
-
-if (require.main === module) {
-  console.log(JSON.stringify(buildCreatorGrowthCampaign(), null, 2));
-}

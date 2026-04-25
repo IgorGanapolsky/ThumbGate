@@ -32,15 +32,22 @@ function routeRetrievalSkill(input = {}) {
     failure,
     skill,
     retrieve: failure !== 'none' && failure !== 'irreducible',
-    reason: failure === 'none'
-      ? 'Model answer is sufficiently confident; retrieval would waste budget.'
-      : failure === 'irreducible'
-        ? 'Query lacks enough structure for retrieval; ask for clarification or return unknown.'
-        : 'Failure state detected; route to a typed retrieval repair skill before retrying generation.',
+    reason: reasonForFailure(failure),
   };
+}
+
+function reasonForFailure(failure) {
+  if (failure === 'none') {
+    return 'Model answer is sufficiently confident; retrieval would waste budget.';
+  }
+  if (failure === 'irreducible') {
+    return 'Query lacks enough structure for retrieval; ask for clarification or return unknown.';
+  }
+  return 'Failure state detected; route to a typed retrieval repair skill before retrying generation.';
 }
 
 module.exports = {
   classifyRetrievalFailure,
+  reasonForFailure,
   routeRetrievalSkill,
 };

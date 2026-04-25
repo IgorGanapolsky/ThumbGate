@@ -30,26 +30,16 @@ function buildSyntheticDataProvenanceRecord(input = {}) {
 }
 
 function evaluateSyntheticDataPromotion(record = {}) {
-  const issues = [];
   const teacher = record.teacher || {};
   const student = record.student || {};
   const generation = record.generation || {};
   const evals = record.evals || {};
-
-  if (!record.sampleId) issues.push('missing_sample_id');
-  if (!record.sourceFeedbackId) issues.push('missing_source_feedback_id');
-  if (!teacher.model) issues.push('missing_teacher_model');
-  if (!teacher.baseModelFamily) issues.push('missing_teacher_base_model_family');
-  if (!student.model) issues.push('missing_student_model');
-  if (!student.baseModelFamily) issues.push('missing_student_base_model_family');
-  if (!generation.filterReportId) issues.push('missing_filter_report');
-  if (!generation.redactionReportId) issues.push('missing_redaction_report');
-  if (!generation.datasetVersion) issues.push('missing_dataset_version');
-  if (!evals.semanticFilterPassed) issues.push('semantic_filter_failed_or_missing');
-  if (!evals.behavioralHoldoutPassed) issues.push('behavioral_holdout_required');
-  if (!evals.hiddenTraitProbePassed) issues.push('hidden_trait_probe_required');
-  if (evals.styleDriftScore === null) issues.push('missing_style_drift_score');
-  if (evals.styleDriftScore !== null && evals.styleDriftScore > 0.15) issues.push('style_drift_too_high');
+  const issues = [
+    ...missingIdentityIssues(record),
+    ...missingModelIssues(teacher, student),
+    ...missingGenerationIssues(generation),
+    ...failedEvalIssues(evals),
+  ];
 
   const sameBaseFamily = Boolean(
     teacher.baseModelFamily
@@ -66,6 +56,40 @@ function evaluateSyntheticDataPromotion(record = {}) {
     sameBaseFamily,
     riskClass: sameBaseFamily ? 'subliminal_learning_sensitive' : 'standard_distillation',
   };
+}
+
+function missingIdentityIssues(record) {
+  const issues = [];
+  if (!record.sampleId) issues.push('missing_sample_id');
+  if (!record.sourceFeedbackId) issues.push('missing_source_feedback_id');
+  return issues;
+}
+
+function missingModelIssues(teacher, student) {
+  const issues = [];
+  if (!teacher.model) issues.push('missing_teacher_model');
+  if (!teacher.baseModelFamily) issues.push('missing_teacher_base_model_family');
+  if (!student.model) issues.push('missing_student_model');
+  if (!student.baseModelFamily) issues.push('missing_student_base_model_family');
+  return issues;
+}
+
+function missingGenerationIssues(generation) {
+  const issues = [];
+  if (!generation.filterReportId) issues.push('missing_filter_report');
+  if (!generation.redactionReportId) issues.push('missing_redaction_report');
+  if (!generation.datasetVersion) issues.push('missing_dataset_version');
+  return issues;
+}
+
+function failedEvalIssues(evals) {
+  const issues = [];
+  if (!evals.semanticFilterPassed) issues.push('semantic_filter_failed_or_missing');
+  if (!evals.behavioralHoldoutPassed) issues.push('behavioral_holdout_required');
+  if (!evals.hiddenTraitProbePassed) issues.push('hidden_trait_probe_required');
+  if (evals.styleDriftScore === null) issues.push('missing_style_drift_score');
+  if (evals.styleDriftScore !== null && evals.styleDriftScore > 0.15) issues.push('style_drift_too_high');
+  return issues;
 }
 
 module.exports = {
