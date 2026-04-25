@@ -6,6 +6,7 @@ const path = require('node:path');
 const { resolveHostedBillingConfig } = require('./hosted-config');
 const { getOperationalBillingSummary } = require('./operational-summary');
 const { ensureDir } = require('./fs-utils');
+const { getWarmOutboundTargets } = require('./warm-outreach-targets');
 
 const GITHUB_API_BASE_URL = 'https://api.github.com/';
 const COMMERCIAL_TRUTH_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md';
@@ -604,36 +605,49 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
       verificationEvidenceLink: motionCatalog.pro.proof,
     },
     snapshot,
-    targets: targets.map((target) => ({
-      username: target.username,
-      repoName: target.repoName,
-      repoUrl: target.repoUrl,
-      description: target.description,
-      stars: target.stars,
-      updatedAt: target.updatedAt,
-      evidenceScore: target.evidence?.score || 0,
-      evidence: target.evidence?.evidence || [],
-      outreachAngle: target.evidence?.outreachAngle || '',
-      evidenceSource: target.repoUrl || '',
-      motion: target.selectedMotion.key,
-      motionLabel: target.selectedMotion.label,
-      motionReason: target.selectedMotion.reason,
-      pipelineStage: 'targeted',
-      offer: target.selectedMotion.key === motionCatalog.sprint.key ? 'workflow_hardening_sprint' : 'pro_self_serve',
-      cta: motionCatalog[target.selectedMotion.key].cta,
-      proofPackTrigger: target.proofPackTrigger || 'Use proof pack only after the buyer confirms pain.',
-      firstTouchDraft: target.message,
-      painConfirmedFollowUpDraft: target.followUpMessage || '',
-      message: target.message,
-    })),
+    targets: targets.map((target) => {
+      const followUpMessage = target.followUpMessage
+        || buildPainConfirmedFollowUp(target, target.selectedMotion, motionCatalog);
+
+      return {
+        temperature: normalizeText(target.temperature) || 'cold',
+        source: normalizeText(target.source) || 'github',
+        channel: normalizeText(target.channel) || normalizeText(target.source) || 'github',
+        username: target.username,
+        accountName: normalizeText(target.accountName) || normalizeText(target.username) || '',
+        contactUrl: normalizeText(target.contactUrl) || '',
+        repoName: target.repoName,
+        repoUrl: target.repoUrl,
+        description: target.description,
+        stars: target.stars,
+        updatedAt: target.updatedAt,
+        evidenceScore: target.evidence?.score || 0,
+        evidence: target.evidence?.evidence || [],
+        outreachAngle: target.evidence?.outreachAngle || '',
+        evidenceSource: target.repoUrl || '',
+        motion: target.selectedMotion.key,
+        motionLabel: target.selectedMotion.label,
+        motionReason: target.selectedMotion.reason,
+        pipelineStage: 'targeted',
+        offer: target.selectedMotion.key === motionCatalog.sprint.key ? 'workflow_hardening_sprint' : 'pro_self_serve',
+        cta: motionCatalog[target.selectedMotion.key].cta,
+        proofPackTrigger: target.proofPackTrigger || 'Use proof pack only after the buyer confirms pain.',
+        firstTouchDraft: target.message,
+        painConfirmedFollowUpDraft: followUpMessage,
+        message: target.message,
+      };
+    }),
   };
 }
 
 function renderRevenueTargetMarkdown(target) {
   return [
-    `### @${target.username} — ${target.repoName}`,
+    `### @${target.username} — ${target.repoName || target.accountName || 'warm discovery lead'}`,
+    `- Temperature: ${target.temperature || 'cold'}`,
+    `- Source: ${target.source || 'github'} / ${target.channel || target.source || 'github'}`,
     `- Pipeline stage: ${target.pipelineStage}`,
     `- Offer: ${target.offer}`,
+    `- Contact: ${target.contactUrl || 'n/a'}`,
     `- Repo: ${target.repoUrl || 'n/a'}`,
     `- Repo last updated: ${target.updatedAt || 'n/a'}`,
     `- Evidence score: ${target.evidenceScore}`,
@@ -651,9 +665,14 @@ function renderRevenueTargetMarkdown(target) {
 
 function renderRevenueLoopMarkdown(report) {
   const fallbackReason = report.fallbackReason ? ` (${report.fallbackReason})` : '';
-  const targetLines = report.targets.length
-    ? report.targets.flatMap(renderRevenueTargetMarkdown)
-    : ['- No GitHub targets were discovered in this run. Re-run with authenticated `gh` access.'];
+  const warmTargets = report.targets.filter((target) => target.temperature === 'warm');
+  const coldTargets = report.targets.filter((target) => target.temperature !== 'warm');
+  const warmTargetLines = warmTargets.length
+    ? warmTargets.flatMap(renderRevenueTargetMarkdown)
+    : ['- No warm discovery targets were loaded for this run.'];
+  const coldTargetLines = coldTargets.length
+    ? coldTargets.flatMap(renderRevenueTargetMarkdown)
+    : ['- No cold GitHub targets were discovered in this run. Re-run with authenticated `gh` access.'];
   const lines = [
     '# GSD Revenue Loop',
     '',
@@ -687,8 +706,11 @@ function renderRevenueLoopMarkdown(report) {
     '## Immediate Actions',
     ...report.directive.actions.map((action) => `- ${action}`),
     '',
-    '## Target Queue',
-    ...targetLines,
+    '## Warm Discovery Queue',
+    ...warmTargetLines,
+    '',
+    '## Cold GitHub Queue',
+    ...coldTargetLines,
   ];
 
   return `${lines.join('\n').trim()}\n`;
@@ -704,7 +726,12 @@ function escapeCsvValue(value) {
 function renderRevenueLoopCsv(report) {
   const rows = [
     [
+      'temperature',
+      'source',
+      'channel',
       'username',
+      'accountName',
+      'contactUrl',
       'repoName',
       'repoUrl',
       'updatedAt',
@@ -722,7 +749,12 @@ function renderRevenueLoopCsv(report) {
       'painConfirmedFollowUpDraft',
     ],
     ...report.targets.map((target) => ([
+      target.temperature || 'cold',
+      target.source || 'github',
+      target.channel || target.source || 'github',
       target.username,
+      target.accountName || '',
+      target.contactUrl || '',
       target.repoName,
       target.repoUrl,
       target.updatedAt,
@@ -781,6 +813,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
 async function runRevenueLoop(options = {}) {
   const links = buildRevenueLinks();
   const motionCatalog = buildMotionCatalog(links);
+  const warmTargets = getWarmOutboundTargets(motionCatalog.sprint.cta);
   const { source, summary, fallbackReason } = await getOperationalBillingSummary();
   const directive = deriveRevenueDirective(summary, motionCatalog);
   const { targets, errors } = await prospectTargets(options.maxTargets || 6, {
@@ -793,7 +826,7 @@ async function runRevenueLoop(options = {}) {
     summary,
     motionCatalog,
     directive,
-    targets: enrichedTargets,
+    targets: warmTargets.concat(enrichedTargets),
   });
 
   if (errors.length) {

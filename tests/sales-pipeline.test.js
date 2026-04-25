@@ -28,6 +28,26 @@ function makeReport() {
     generatedAt: '2026-04-14T00:00:00.000Z',
     targets: [
       {
+        temperature: 'warm',
+        source: 'reddit',
+        channel: 'reddit_dm',
+        username: 'game-of-kton',
+        accountName: 'r/cursor',
+        contactUrl: 'https://www.reddit.com/user/game-of-kton/',
+        repoName: '',
+        repoUrl: '',
+        description: 'Discussed ACT-R engrams and stale context failures.',
+        motion: 'sprint',
+        motionLabel: 'Workflow Hardening Sprint',
+        motionReason: 'Warm Reddit engager already named a repeated workflow risk.',
+        offer: 'workflow_hardening_sprint',
+        cta: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+        message: 'I can harden one AI-agent workflow for you.',
+      },
+      {
+        temperature: 'cold',
+        source: 'github',
+        channel: 'github',
         username: 'builder',
         repoName: 'production-mcp-server',
         repoUrl: 'https://github.com/builder/production-mcp-server',
@@ -53,14 +73,18 @@ test('imports GTM revenue targets as workflow sprint leads without marking them 
   });
   const leads = loadSalesLeads({ statePath });
 
-  assert.equal(result.imported.length, 1);
+  assert.equal(result.imported.length, 2);
   assert.equal(result.skipped.length, 0);
-  assert.equal(leads.length, 1);
+  assert.equal(leads.length, 2);
   assert.equal(leads[0].stage, 'targeted');
+  assert.equal(leads[0].source, 'reddit');
+  assert.equal(leads[0].channel, 'reddit_dm');
   assert.equal(leads[0].offer, 'workflow_hardening_sprint');
   assert.match(leads[0].qualification.concreteOffer, /harden one AI-agent workflow/);
   assert.match(leads[0].outbound.draft, /harden one AI-agent workflow/);
   assert.equal(leads[0].outbound.followUpDraft, null);
+  assert.equal(leads[1].source, 'github');
+  assert.equal(leads[1].offer, 'workflow_hardening_sprint');
 });
 
 test('imports follow-up proof drafts from evidence-backed GTM targets', () => {
@@ -77,7 +101,7 @@ test('imports follow-up proof drafts from evidence-backed GTM targets', () => {
   });
   const leads = loadSalesLeads({ statePath });
 
-  assert.equal(leads.length, 1);
+  assert.equal(leads.length, 2);
   assert.match(leads[0].outbound.draft, /harden one AI-agent workflow/);
   assert.match(leads[0].outbound.followUpDraft, /proof pack/);
   assert.match(leads[0].qualification.proofTiming, /buyer confirms pain/);
@@ -92,8 +116,8 @@ test('deduplicates repeated GTM imports by stable lead id', () => {
   const leads = loadSalesLeads({ statePath });
 
   assert.equal(result.imported.length, 0);
-  assert.equal(result.skipped.length, 1);
-  assert.equal(leads.length, 1);
+  assert.equal(result.skipped.length, 2);
+  assert.equal(leads.length, 2);
 });
 
 test('adds known engaged leads without requiring a generated GTM report', () => {
@@ -150,7 +174,7 @@ test('advances leads through the required first-dollar funnel stages', () => {
   const tempDir = makeTempDir();
   const statePath = path.join(tempDir, 'sales-pipeline.jsonl');
   importRevenueLoopReport(makeReport(), { statePath });
-  const leadId = loadSalesLeads({ statePath })[0].leadId;
+  const leadId = loadSalesLeads({ statePath }).find((lead) => lead.source === 'github').leadId;
 
   advanceSalesLead({
     leadId,
@@ -163,7 +187,7 @@ test('advances leads through the required first-dollar funnel stages', () => {
   advanceSalesLead({ leadId, stage: 'sprint_intake', note: 'Converted to sprint intake.' }, { statePath });
   advanceSalesLead({ leadId, stage: 'paid', amountCents: 4900, note: 'Paid sprint deposit.' }, { statePath });
 
-  const [lead] = loadSalesLeads({ statePath });
+  const lead = loadSalesLeads({ statePath }).find((entry) => entry.leadId === leadId);
   const summary = summarizeSalesPipeline([lead]);
 
   assert.equal(lead.stage, 'paid');
@@ -178,7 +202,7 @@ test('rejects skipped funnel stages unless explicitly forced', () => {
   const tempDir = makeTempDir();
   const statePath = path.join(tempDir, 'sales-pipeline.jsonl');
   importRevenueLoopReport(makeReport(), { statePath });
-  const leadId = loadSalesLeads({ statePath })[0].leadId;
+  const leadId = loadSalesLeads({ statePath }).find((lead) => lead.source === 'github').leadId;
 
   assert.throws(
     () => advanceSalesLead({ leadId, stage: 'paid', amountCents: 4900 }, { statePath }),
@@ -190,7 +214,7 @@ test('same-stage advance is idempotent and forced jumps are explicit', () => {
   const tempDir = makeTempDir();
   const statePath = path.join(tempDir, 'sales-pipeline.jsonl');
   importRevenueLoopReport(makeReport(), { statePath });
-  const leadId = loadSalesLeads({ statePath })[0].leadId;
+  const leadId = loadSalesLeads({ statePath }).find((lead) => lead.source === 'github').leadId;
 
   const unchanged = advanceSalesLead({ leadId, stage: 'targeted' }, { statePath });
   const forced = advanceSalesLead({
@@ -214,7 +238,7 @@ test('renders an operator report that separates targeting from actual sales prog
   const markdown = renderSalesPipelineMarkdown({ leads: loadSalesLeads({ statePath }) });
 
   assert.match(markdown, /Posts are not sales/);
-  assert.match(markdown, /targeted: 1/);
+  assert.match(markdown, /targeted: 2/);
   assert.match(markdown, /Contacted: 0/);
   assert.match(markdown, /Proof rule: Use proof pack only after the buyer confirms pain/);
 });
@@ -305,7 +329,7 @@ test('CLI imports a report and writes a markdown pipeline report', () => {
 
   const result = runCli(['import', '--source', sourcePath, '--state', statePath, '--out', outPath]);
 
-  assert.equal(result.imported, 1);
+  assert.equal(result.imported, 2);
   assert.equal(result.skipped, 0);
   assert.equal(result.reportPath, outPath);
   assert.match(fs.readFileSync(outPath, 'utf8'), /Sales Pipeline/);
