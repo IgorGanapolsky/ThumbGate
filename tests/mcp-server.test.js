@@ -246,6 +246,43 @@ test('settings_status tool returns resolved settings with origin metadata', asyn
   assert.ok(payload.origins.some((entry) => entry.path === 'mcp.defaultProfile'));
 });
 
+test('workflow_sentinel accepts provider-native MCP tools/call budget payloads', async () => {
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 29,
+    method: 'tools/call',
+    params: {
+      name: 'workflow_sentinel',
+      arguments: {
+        method: 'tools/call',
+        params: {
+          server: 'filesystem',
+          name: 'run_command',
+          arguments: {
+            command: 'npm test',
+            changedFiles: ['tests/mcp-server.test.js'],
+          },
+        },
+        usage: {
+          input_tokens: 7000,
+          output_tokens: 500,
+        },
+        budget: {
+          maxTokensPerAction: 2000,
+        },
+      },
+    },
+  });
+
+  const payload = JSON.parse(result.content[0].text);
+  assert.equal(payload.normalizedAction.provider, 'mcp');
+  assert.equal(payload.normalizedAction.mcpServer, 'filesystem');
+  assert.equal(payload.toolName, 'run_command');
+  assert.equal(payload.costControl.mode, 'block');
+  assert.equal(payload.decision, 'deny');
+  assert.equal(payload.decisionControl.executionMode, 'blocked');
+});
+
 test('native_messaging_audit tool returns local browser bridge findings over MCP', async () => {
   const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-mcp-native-messaging-'));
   try {

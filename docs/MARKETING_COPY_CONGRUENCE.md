@@ -68,6 +68,27 @@
 - Say: "your team's actual standards" (not "best practices")
 - Avoid claiming ThumbGate prevents "bad content" — it prevents bad *agent actions*
 
+## Production Agent Auditability Angle
+
+**Context**: The 2026 buyer anxiety is no longer "can AI do impressive work?" It is "can we trust it repeatedly in production?" VentureBeat's coverage of Stanford HAI's 2026 AI Index frames the gap clearly: frontier systems can look spectacular in demos while still failing in roughly one in three structured production-style attempts, and model/eval transparency is getting worse. The New Stack's Claude Code Desktop coverage adds the operator reality: parallel agent sessions, integrated terminals, side chats, and large diffs increase throughput, but they also make token burn, review burden, and auditability harder.
+
+**ThumbGate's answer**: ThumbGate is the pre-action audit layer for production agent work. It does not claim the model is safe. It asks whether the next action is safe enough to execute: does the agent have a known workflow, an inspection plan, a cost budget, and a recovery path before it touches files, CI, external APIs, social posts, or production workflows?
+
+**Key messages to use on this angle:**
+- "Close the gap between AI demos and production reliability."
+- "Agents are getting faster. ThumbGate makes each action auditable before it runs."
+- "Parallel agent sessions need parallel budgets and inspection evidence."
+- "Prefer workflows when the path is known. Gate open-ended agents when the path is not."
+- "Every risky tool call should answer one question first: how will we know this worked?"
+- "ThumbGate catches the action before the benchmark misses the failure."
+
+**When to use**: Enterprise AI reliability pages, Claude Code/Codex/Cursor desktop-agent comparisons, posts about auditability, parallel sessions, token burn, agent orchestration, and any buyer conversation where the prospect is already using agents but does not trust unattended execution.
+
+**Source hooks to cite in content:**
+- VentureBeat, April 15, 2026: frontier models are failing about one in three production attempts and becoming harder to audit.
+- The New Stack, April 14, 2026: Claude Code Desktop redesign centers on parallel agent work, integrated terminal, diffs, previews, and faster token consumption.
+- Anthropic Academy lessons: workflows are easier to evaluate and more reliable; agents are more flexible but harder to instrument, test, evaluate, and budget.
+
 ## Surface Rules
 - Root landing page stays vendor-neutral. Claude-first positioning belongs only on Claude-specific distribution pages, extension docs, and Anthropic-facing partner assets.
 - Promote shipped surfaces explicitly: Claude Code, Cursor plugin, Codex, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent.

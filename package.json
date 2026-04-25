@@ -158,6 +158,7 @@
     "scripts/pro-local-dashboard.js",
     "scripts/problem-detail.js",
     "scripts/product-feedback.js",
+    "scripts/provider-action-normalizer.js",
     "scripts/profile-router.js",
     "scripts/prompt-programs.js",
     "scripts/prompt-eval.js",

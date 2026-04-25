@@ -876,10 +876,79 @@ paths:
           application/json:
             schema:
               type: object
-              required: [toolName]
               properties:
                 toolName:
                   type: string
+                  description: Tool name is optional when provider-native tool call payload is supplied.
+                provider:
+                  type: string
+                model:
+                  type: string
+                providerToolCall:
+                  type: object
+                  additionalProperties: true
+                toolCall:
+                  type: object
+                  additionalProperties: true
+                toolUse:
+                  type: object
+                  additionalProperties: true
+                content:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: true
+                input:
+                  type: object
+                  additionalProperties: true
+                arguments:
+                  type: object
+                  additionalProperties: true
+                method:
+                  type: string
+                params:
+                  type: object
+                  additionalProperties: true
+                mcp:
+                  type: object
+                  additionalProperties: true
+                mcpToolCall:
+                  type: object
+                  additionalProperties: true
+                usage:
+                  type: object
+                  additionalProperties: true
+                tokenEstimate:
+                  type: number
+                costUsd:
+                  type: number
+                budget:
+                  type: object
+                  additionalProperties: true
+                workflowPattern:
+                  type: string
+                  enum: [single_action, chaining, routing, parallelization, evaluator-optimizer, agent]
+                workflow:
+                  type: object
+                  additionalProperties: true
+                goal:
+                  type: string
+                tools:
+                  type: array
+                  items:
+                    type: string
+                branches:
+                  type: array
+                  items:
+                    type: string
+                steps:
+                  type: array
+                  items:
+                    type: string
+                routes:
+                  type: array
+                  items:
+                    type: string
                 command:
                   type: string
                 filePath:

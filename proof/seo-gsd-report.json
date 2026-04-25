@@ -1,0 +1,33 @@
+{
+  "phase": "10-seo-gsd",
+  "generatedAt": "2026-04-24T23:32:52.078Z",
+  "passed": 6,
+  "failed": 0,
+  "total": 6,
+  "requirements": {
+    "SEO-GSD-01": {
+      "status": "pass",
+      "desc": "buildThumbGateSeoPlan returns GSD stages and four high-ROI public pages"
+    },
+    "SEO-GSD-02": {
+      "status": "pass",
+      "desc": "comparison pages stay prioritized ahead of guide pages for bottom-of-funnel demand"
+    },
+    "SEO-GSD-03": {
+      "status": "pass",
+      "desc": "renderSeoPageHtml includes schema, thumbs messaging, and proof-backed CTA links"
+    },
+    "SEO-GSD-04": {
+      "status": "pass",
+      "desc": "seo-gsd CLI writes capture, clarify, organize, execute, review, and page-spec outputs"
+    },
+    "SEO-GSD-05": {
+      "status": "pass",
+      "desc": "public sitemap lists the homepage plus every SEO comparison and guide page"
+    },
+    "SEO-GSD-06": {
+      "status": "pass",
+      "desc": "landing page internally links to the high-intent comparison and guide pages"
+    }
+  }
+}

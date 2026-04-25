@@ -26,7 +26,7 @@ __GOOGLE_SITE_VERIFICATION_META__
 <title>ThumbGate — Stop paying for the same AI mistake twice</title>
 <meta name="description" content="Stop paying for the same AI mistake twice. ThumbGate is the enforcement layer for AI agent orchestration: 👍 thumbs up and 👎 thumbs down become history-aware lessons, shared lessons and org visibility, plus Pre-Action Checks that block repeat mistakes before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode.">
 <meta property="og:title" content="ThumbGate — Stop paying for the same AI mistake twice">
-<meta property="og:description" content="Frontier LLMs are expensive and repeat mistakes cost real money. ThumbGate blocks known-bad AI agent actions before they hit the model — zero tokens spent on retries, hallucinations, or repeat commands. Fix it once, your bill never sees it again.">
+<meta property="og:description" content="Frontier LLMs are expensive, opaque, and unreliable in production. ThumbGate gates risky agent actions before they run: workflow shape, inspection evidence, token budget, and repeated-failure memory in one pre-action check.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://thumbgate-production.up.railway.app/og.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -53,7 +53,7 @@ __GA_BOOTSTRAP__
   "@type": "SoftwareApplication",
   "name": "ThumbGate",
   "alternateName": "thumbgate",
-  "description": "ThumbGate stops you from paying for the same AI mistake twice. Frontier LLMs are expensive — and every repeated hallucination, retry loop, or known-bad tool call burns more tokens. ThumbGate's Pre-Action Checks intercept the call before it hits the model, so you spend zero tokens on mistakes you've already corrected once. Works with Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and any MCP-compatible agent.",
+  "description": "ThumbGate stops you from paying for the same AI mistake twice. Frontier LLMs are expensive, opaque, and unreliable in production — every repeated hallucination, retry loop, or known-bad tool call burns more tokens. ThumbGate's Pre-Action Checks inspect workflow shape, environment evidence, budget, and repeated-failure memory before the action runs. Works with Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and any MCP-compatible agent.",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Cross-platform, Node.js >=18.18.0",
   "license": "https://opensource.org/licenses/MIT",
@@ -72,6 +72,9 @@ __GA_BOOTSTRAP__
     "Turn AI into a reliable operator — checkpoint risky actions, enforce safe patterns, and keep proof of what changed",
     "ThumbGate GPT for ChatGPT — check proposed agent actions, capture thumbs-up/down lessons, and route users into local enforcement",
     "Workflow Sentinel — score blast radius before PR, merge, release, and publish actions fire",
+    "Workflow architecture checks — distinguish predefined workflows, parallel fan-out, and open-ended agents before execution",
+    "Environment inspection evidence — require read-before-write, screenshots, API response checks, tests, or output validation for open-ended agent loops",
+    "Parallel branch budgets — prevent agent desktops and fan-out workflows from silently multiplying token spend",
     "Docker Sandboxes routing — move high-risk local runs into isolated microVM-backed execution",
     "Hosted sandbox dispatch — signed isolated lane for team automations",
     "Domain Skill Packs — Stripe, Railway, database migration best practices",
@@ -97,7 +100,7 @@ __GA_BOOTSTRAP__
     {
       "@type": "Offer",
       "name": "Team",
-      "price": "99",
+      "price": "49",
       "priceCurrency": "USD",
       "description": "Intake-led team rollout with a workflow hardening sprint, shared enforcement memory, org dashboard visibility, approval boundaries, release confidence, Docker Sandboxes guidance for risky local autonomy, and pilot support for teams shipping AI-generated changes",
       "url": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
@@ -572,6 +575,7 @@ __GA_BOOTSTRAP__
     <div class="hero-badge">● Your AI coding bill has a leak</div>
     <h1>Stop paying $ for the same AI mistake.</h1>
     <p style="font-size:18px;color:var(--text-muted);max-width:720px;margin:0 auto 20px;line-height:1.6;">Every retry loop, every hallucinated import, every "let me try a different approach" — those are billable tokens on every LLM vendor's bill. Thumbs-down once; ThumbGate blocks that exact mistake on every future call. Across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — any MCP-compatible agent, forever, including fast-moving vibe coding workflows.</p>
+    <p style="font-size:15px;color:var(--text-dim);max-width:760px;margin:0 auto 24px;line-height:1.6;">As desktop agents move into parallel sessions, terminals, and production workflows, ThumbGate checks the thing benchmarks miss: is this next action a known workflow, an open-ended agent, a costly fan-out, or a blind tool call with no way to verify it worked?</p>
 
     <!-- HERO PRICING CARD — visible in first viewport so $19/mo and $149/yr never get buried -->
     <div id="pro-pitch" style="max-width:820px;margin:0 auto 32px;padding:24px 28px;background:linear-gradient(180deg,rgba(17,17,19,0.94) 0%,rgba(22,22,24,0.94) 100%);border:1px solid rgba(34,211,238,0.32);border-radius:20px;box-shadow:0 0 0 1px rgba(34,211,238,0.18),0 24px 64px rgba(0,0,0,0.35);text-align:left;">
@@ -974,6 +978,12 @@ __GA_BOOTSTRAP__
         <p>Why AI tools recommend the brands they repeatedly see tied to a buyer problem, and how ThumbGate builds that association with proof-backed pages.</p>
         <div class="card-arrow">Strengthen the association →</div>
       </a>
+      <a class="seo-card" href="/guides/best-tools-stop-ai-agents-breaking-production">
+        <div class="seo-kicker">AEO Listicle</div>
+        <h3>Best Tools to Stop AI Agents From Breaking Production</h3>
+        <p>A long-tail answer-engine page for buyers asking how to gate Claude Code, Cursor, Codex, and parallel coding agents before risky execution.</p>
+        <div class="card-arrow">Own the buyer prompt →</div>
+      </a>
       <a class="seo-card" href="/guides/chatgpt-ads-trust">
         <div class="seo-kicker">ChatGPT Ads</div>
         <h3>ChatGPT Ads Need Pre-Action Checks</h3>
@@ -1278,7 +1288,7 @@ __GA_BOOTSTRAP__
         <div class="price-sub">3-seat minimum · One engineer's correction protects the whole team</div>
         <p style="font-size:13px;color:var(--green);margin-bottom:16px;font-weight:500;">When one engineer teaches the agent not to delete staging data, that lesson applies to every agent on the team. Stop paying the same mistake tax across different developers.</p>
         <div class="pro-upgrade-triggers" style="font-size:12px;color:#aaa;margin-bottom:12px;">
-          <strong style="color:#fff;">Previously $99/seat.</strong> Now $49/seat. Start with one repo, one workflow, one repeat failure.
+          Start with one repo, one workflow, one repeat failure at $49/seat.
         </div>
         <ul>
           <li>Workflow hardening sprint — map one painful workflow, one repeated failure, and one buyer proof review before wider rollout</li>
