@@ -4,6 +4,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { ensureDir } = require('./fs-utils');
+const { buildUTMLink } = require('./social-analytics/utm');
 const {
   COMMERCIAL_TRUTH_LINK,
   VERIFICATION_EVIDENCE_LINK,
@@ -13,9 +14,58 @@ const {
 const DASHBOARD_URL = 'https://aiventyx.com/dashboard';
 const AI_CODING_CATEGORY = 'AI Coding';
 const STANDARD_MARKETPLACE_FEE = 'Accept the standard Aiventyx marketplace fee for the first listing phase.';
+const AIVENTYX_SOURCE = 'aiventyx';
+const AIVENTYX_MEDIUM = 'marketplace';
+const AIVENTYX_CONTENT = 'dashboard';
 
 function normalizeText(value) {
   return value === undefined || value === null ? '' : String(value).trim();
+}
+
+function csvCell(value) {
+  const text = normalizeText(value);
+  return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+}
+
+function buildTrackedMarketplaceLink(baseUrl, tracking = {}) {
+  const url = new URL(buildUTMLink(baseUrl, {
+    source: tracking.utmSource,
+    medium: tracking.utmMedium,
+    campaign: tracking.utmCampaign,
+    content: tracking.utmContent,
+  }));
+
+  const extras = {
+    campaign_variant: tracking.campaignVariant,
+    offer_code: tracking.offerCode,
+    cta_id: tracking.ctaId,
+    cta_placement: tracking.ctaPlacement,
+    plan_id: tracking.planId,
+    landing_path: tracking.landingPath,
+  };
+  for (const [key, value] of Object.entries(extras)) {
+    if (normalizeText(value)) {
+      url.searchParams.set(key, normalizeText(value));
+    }
+  }
+
+  return url.toString();
+}
+
+function buildAiventyxTrackingMetadata(key) {
+  const normalizedKey = normalizeText(key).toLowerCase();
+  const upperKey = normalizedKey.toUpperCase();
+  return {
+    utmSource: AIVENTYX_SOURCE,
+    utmMedium: AIVENTYX_MEDIUM,
+    utmCampaign: `aiventyx_${normalizedKey}_listing`,
+    utmContent: AIVENTYX_CONTENT,
+    campaignVariant: normalizedKey,
+    offerCode: `AIVENTYX-${upperKey}`,
+    ctaPlacement: 'marketplace_listing',
+    ctaId: `aiventyx_${normalizedKey}_listing`,
+    landingPath: '/',
+  };
 }
 
 function parseArgs(argv = []) {
@@ -44,6 +94,13 @@ function parseArgs(argv = []) {
 }
 
 function buildAiventyxListings(links = buildRevenueLinks()) {
+  const freeTracking = buildAiventyxTrackingMetadata('free');
+  const proTracking = {
+    ...buildAiventyxTrackingMetadata('pro'),
+    planId: 'pro',
+  };
+  const teamsTracking = buildAiventyxTrackingMetadata('teams');
+
   return [
     {
       key: 'free',
@@ -52,7 +109,7 @@ function buildAiventyxListings(links = buildRevenueLinks()) {
       category: AI_CODING_CATEGORY,
       pricingModel: 'Free',
       APIEndpoint: links.appOrigin,
-      primaryCTA: 'https://www.npmjs.com/package/thumbgate',
+      primaryCTA: buildTrackedMarketplaceLink(`${links.appOrigin}/go/install`, freeTracking),
       headline: 'Turn AI-agent feedback into reusable pre-action gates.',
       description: [
         'ThumbGate captures thumbs up/down style corrections from AI coding sessions, turns them into searchable lessons, and regenerates pre-action gates so agents check known failure patterns before they act.',
@@ -60,6 +117,7 @@ function buildAiventyxListings(links = buildRevenueLinks()) {
       ].join(' '),
       buyer: 'Solo builders evaluating local AI coding reliability.',
       conversionGoal: 'install_or_free_usage',
+      attribution: freeTracking,
       proofLinks: [COMMERCIAL_TRUTH_LINK, VERIFICATION_EVIDENCE_LINK],
     },
     {
@@ -69,7 +127,7 @@ function buildAiventyxListings(links = buildRevenueLinks()) {
       category: AI_CODING_CATEGORY,
       pricingModel: '$19/mo or $149/yr',
       APIEndpoint: links.appOrigin,
-      primaryCTA: links.proCheckoutLink,
+      primaryCTA: buildTrackedMarketplaceLink(`${links.appOrigin}/go/pro`, proTracking),
       headline: 'Personal AI reliability memory with proof-ready exports.',
       description: [
         'ThumbGate Pro is for builders who want a personal reliability layer across AI coding sessions: synced lessons, feedback-to-gate enforcement, local dashboard views, DPO/KTO-ready exports, and evidence checks before completion claims.',
@@ -77,6 +135,7 @@ function buildAiventyxListings(links = buildRevenueLinks()) {
       ].join(' '),
       buyer: 'Solo operators and small teams with repeated AI coding mistakes but no team rollout yet.',
       conversionGoal: 'paid_pro_conversion',
+      attribution: proTracking,
       proofLinks: [COMMERCIAL_TRUTH_LINK, VERIFICATION_EVIDENCE_LINK],
     },
     {
@@ -86,7 +145,7 @@ function buildAiventyxListings(links = buildRevenueLinks()) {
       category: AI_CODING_CATEGORY,
       pricingModel: 'Workflow Hardening Sprint, then Team at $49/seat/mo with 3-seat minimum after qualification',
       APIEndpoint: links.appOrigin,
-      primaryCTA: links.sprintLink,
+      primaryCTA: buildTrackedMarketplaceLink(links.sprintLink, teamsTracking),
       headline: 'Harden one AI-agent workflow before scaling it team-wide.',
       description: [
         'ThumbGate Teams starts with a Workflow Hardening Sprint: one workflow, one owner, one repeated failure, one proof review.',
@@ -94,6 +153,7 @@ function buildAiventyxListings(links = buildRevenueLinks()) {
       ].join(' '),
       buyer: 'Teams with one valuable AI-agent workflow that keeps repeating the same mistake or losing operational context.',
       conversionGoal: 'qualified_team_conversation',
+      attribution: teamsTracking,
       proofLinks: [COMMERCIAL_TRUTH_LINK, VERIFICATION_EVIDENCE_LINK],
     },
   ];
@@ -177,12 +237,63 @@ function renderListingMarkdown(listing) {
     `- Conversion goal: ${listing.conversionGoal}`,
     `- Buyer: ${listing.buyer}`,
     `- Headline: ${listing.headline}`,
+    `- Attribution: utm_source=${listing.attribution.utmSource}, utm_medium=${listing.attribution.utmMedium}, utm_campaign=${listing.attribution.utmCampaign}, offer_code=${listing.attribution.offerCode}`,
     '',
     listing.description,
     '',
     `Proof: ${listing.proofLinks.join(' | ')}`,
     '',
   ];
+}
+
+function renderAiventyxMarketplaceCsv(plan) {
+  const header = [
+    'key',
+    'name',
+    'dashboardStatus',
+    'category',
+    'pricingModel',
+    'primaryCTA',
+    'conversionGoal',
+    'buyer',
+    'headline',
+    'utm_source',
+    'utm_medium',
+    'utm_campaign',
+    'utm_content',
+    'campaign_variant',
+    'offer_code',
+    'cta_id',
+    'cta_placement',
+    'plan_id',
+    'landing_path',
+    'proof_links',
+  ];
+
+  const rows = plan.listings.map((listing) => ([
+    listing.key,
+    listing.name,
+    listing.dashboardStatus,
+    listing.category,
+    listing.pricingModel,
+    listing.primaryCTA,
+    listing.conversionGoal,
+    listing.buyer,
+    listing.headline,
+    listing.attribution.utmSource,
+    listing.attribution.utmMedium,
+    listing.attribution.utmCampaign,
+    listing.attribution.utmContent,
+    listing.attribution.campaignVariant,
+    listing.attribution.offerCode,
+    listing.attribution.ctaId,
+    listing.attribution.ctaPlacement,
+    listing.attribution.planId,
+    listing.attribution.landingPath,
+    listing.proofLinks.join(' | '),
+  ]));
+
+  return `${[header, ...rows].map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
 }
 
 function renderAiventyxMarketplaceMarkdown(plan) {
@@ -212,6 +323,10 @@ function renderAiventyxMarketplaceMarkdown(plan) {
     'Tracked metrics:',
     ...plan.ninetyDayPlan.metrics.map((metric) => `- ${metric}`),
     '',
+    'Attribution contract:',
+    '- Use only the tracked first-party CTAs below so Aiventyx clicks land with explicit source, medium, campaign, and offer metadata.',
+    '- Free routes through `/go/install`, Pro routes through `/go/pro`, and Teams routes to the sprint intake with Aiventyx UTMs attached.',
+    '',
     'Milestones:',
     ...plan.ninetyDayPlan.milestones.flatMap((milestone) => [
       `- ${milestone.window}: ${milestone.goal}`,
@@ -233,6 +348,7 @@ function renderAiventyxMarketplaceMarkdown(plan) {
 function writeAiventyxMarketplaceOutputs(plan, options = {}) {
   const repoRoot = path.resolve(__dirname, '..');
   const markdown = renderAiventyxMarketplaceMarkdown(plan);
+  const csv = renderAiventyxMarketplaceCsv(plan);
   const reportDir = normalizeText(options.reportDir)
     ? path.resolve(repoRoot, options.reportDir)
     : '';
@@ -242,6 +358,7 @@ function writeAiventyxMarketplaceOutputs(plan, options = {}) {
     ensureDir(reportDir);
     fs.writeFileSync(path.join(reportDir, 'aiventyx-marketplace-plan.md'), markdown, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'aiventyx-marketplace-plan.json'), `${JSON.stringify(plan, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(path.join(reportDir, 'aiventyx-marketplace-listings.csv'), csv, 'utf8');
   }
 
   if (options.writeDocs) {
@@ -288,14 +405,18 @@ if (isCliInvocation()) {
 
 module.exports = {
   AI_CODING_CATEGORY,
+  AIVENTYX_CONTENT,
   DASHBOARD_URL,
   STANDARD_MARKETPLACE_FEE,
   buildAiventyxFollowUp,
   buildAiventyxListings,
   buildAiventyxMarketplacePlan,
   buildAiventyxNinetyDayPlan,
+  buildAiventyxTrackingMetadata,
+  buildTrackedMarketplaceLink,
   isCliInvocation,
   parseArgs,
+  renderAiventyxMarketplaceCsv,
   renderAiventyxMarketplaceMarkdown,
   writeAiventyxMarketplaceOutputs,
 };
