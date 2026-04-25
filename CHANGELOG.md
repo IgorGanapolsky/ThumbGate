@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.16.1
+
+### Patch Changes
+
+- [#1282](https://github.com/IgorGanapolsky/ThumbGate/pull/1282) [`ae0587c`](https://github.com/IgorGanapolsky/ThumbGate/commit/ae0587c0c1e0dcdd929e648ccfe81b4a4085937f) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add an Aiventyx marketplace revenue lane with Free, Pro, and Teams listing payloads, a 90-day paid-conversion plan, and generator coverage for repeatable operator artifacts.
+
+- [#1276](https://github.com/IgorGanapolsky/ThumbGate/pull/1276) [`6c66dab`](https://github.com/IgorGanapolsky/ThumbGate/commit/6c66dabc572a2ff2273c4dd3bbed256890b79f89) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add provider-native action normalization for Anthropic tool use, OpenAI tool calls, and MCP tools/resources/prompts payloads, including token/cost budget enforcement before workflow execution.
+
 ## 1.16.0
 
 ### Minor Changes
