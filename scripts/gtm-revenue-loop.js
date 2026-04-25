@@ -487,7 +487,9 @@ function buildFallbackMessage(target, selectedMotion, motionCatalog = buildMotio
 
 function buildPainConfirmedFollowUp(target, selectedMotion, motionCatalog = buildMotionCatalog()) {
   const motion = motionCatalog[selectedMotion.key];
-  const repoRef = `\`${target.repoName}\``;
+  const repoName = normalizeText(target.repoName);
+  const repoRef = repoName ? `\`${repoName}\`` : 'your workflow';
+  const proRef = repoName ? ` for ${repoRef}` : '';
   if (selectedMotion.key === motionCatalog.sprint.key) {
     return [
       `If ${repoRef} really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: ${motion.cta}`,
@@ -496,7 +498,7 @@ function buildPainConfirmedFollowUp(target, selectedMotion, motionCatalog = buil
   }
 
   return [
-    `If you want the self-serve path for ${repoRef}, here is the live Pro checkout: ${motion.cta}`,
+    `If you want the self-serve path${proRef}, here is the live Pro checkout: ${motion.cta}`,
     `Commercial truth: ${motion.truth} Verification evidence: ${motion.proof}`,
   ].join(' ');
 }
