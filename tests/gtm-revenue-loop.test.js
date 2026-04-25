@@ -8,6 +8,7 @@ const {
   analyzeTargetEvidence,
   buildFallbackMessage,
   buildMotionCatalog,
+  buildPainConfirmedFollowUp,
   buildRevenueLoopReport,
   buildRevenueLinks,
   clampTargetCount,
@@ -332,6 +333,24 @@ test('first-touch outreach does not push proof before pain is confirmed', () => 
   assert.doesNotMatch(message, /COMMERCIAL_TRUTH/);
 });
 
+test('pain-confirmed follow-up adds proof links only after the buyer confirms pain', () => {
+  const catalog = buildMotionCatalog(buildRevenueLinks());
+  const selectedMotion = selectOutreachMotion({
+    username: 'builder',
+    repoName: 'production-mcp-server',
+    description: 'MCP server for production agent workflows.',
+  }, catalog);
+  const message = buildPainConfirmedFollowUp({
+    username: 'builder',
+    repoName: 'production-mcp-server',
+  }, selectedMotion, catalog);
+
+  assert.equal(selectedMotion.key, 'sprint');
+  assert.match(message, /VERIFICATION_EVIDENCE/);
+  assert.match(message, /COMMERCIAL_TRUTH/);
+  assert.match(message, /Workflow Hardening Sprint/i);
+});
+
 test('revenue loop report keeps evidence metadata on each target', () => {
   const links = buildRevenueLinks();
   const catalog = buildMotionCatalog(links);
@@ -365,19 +384,25 @@ test('revenue loop report keeps evidence metadata on each target', () => {
         evidence: ['workflow control surface', '42 GitHub stars'],
         outreachAngle: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
       },
+      proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
       selectedMotion: {
         key: 'sprint',
         label: catalog.sprint.label,
         reason: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
       },
       message: 'I can harden one production workflow for you this week.',
+      followUpMessage: 'I can send the proof pack once the buyer confirms pain.',
     }],
   });
 
   assert.equal(report.targets[0].evidenceScore, 9);
   assert.deepEqual(report.targets[0].evidence, ['workflow control surface', '42 GitHub stars']);
   assert.match(report.targets[0].outreachAngle, /rollout proof/);
+  assert.equal(report.targets[0].evidenceSource, 'https://github.com/example/production-mcp-server');
   assert.equal(report.targets[0].offer, 'workflow_hardening_sprint');
+  assert.match(report.targets[0].proofPackTrigger, /buyer confirms pain/);
+  assert.match(report.targets[0].firstTouchDraft, /harden one production workflow/);
+  assert.match(report.targets[0].painConfirmedFollowUpDraft, /proof pack/);
 });
 
 test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for operator import', () => {
@@ -413,15 +438,19 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
       username: 'builder',
       repoName: 'production-mcp-server',
       repoUrl: 'https://github.com/example/production-mcp-server',
+      updatedAt: '2026-04-20T00:00:00.000Z',
       offer: 'workflow_hardening_sprint',
       pipelineStage: 'targeted',
       evidenceScore: 9,
       evidence: ['workflow control surface', '42 GitHub stars'],
+      evidenceSource: 'https://github.com/example/production-mcp-server',
       outreachAngle: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
       motionLabel: catalog.sprint.label,
       motionReason: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
+      proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
       cta: catalog.sprint.cta,
-      message: 'I can harden one workflow, then prove it.',
+      firstTouchDraft: 'I can harden one workflow, then prove it.',
+      painConfirmedFollowUpDraft: 'If the workflow pain is real, I can send the proof pack.',
     }],
   };
   const reportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-gtm-'));
@@ -436,8 +465,10 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.ok(fs.existsSync(path.join(reportDir, 'gtm-revenue-loop.md')));
     assert.ok(fs.existsSync(path.join(reportDir, 'gtm-revenue-loop.json')));
     assert.ok(fs.existsSync(csvPath));
-    assert.match(csv, /^username,repoName,repoUrl,offer,pipelineStage,evidenceScore,evidence,outreachAngle,motionLabel,cta,message/m);
+    assert.ok(fs.existsSync(path.join(reportDir, 'gtm-target-queue.jsonl')));
+    assert.match(csv, /^username,repoName,repoUrl,updatedAt,offer,pipelineStage,evidenceScore,evidence,evidenceSource,outreachAngle,motionLabel,motionReason,proofPackTrigger,cta,firstTouchDraft,painConfirmedFollowUpDraft/m);
     assert.match(csv, /"I can harden one workflow, then prove it\."/);
+    assert.match(csv, /"If the workflow pain is real, I can send the proof pack\."/);
   } finally {
     fs.rmSync(reportDir, { recursive: true, force: true });
   }
@@ -485,8 +516,11 @@ test('runRevenueLoop writes an evidence-backed target queue with discovery warni
     assert.ok(Array.isArray(report.discoveryWarnings));
     assert.equal(report.discoveryWarnings.length, 1);
     assert.match(report.discoveryWarnings[0], /temporarily unavailable/);
+    assert.match(report.targets[0].proofPackTrigger, /buyer confirms pain/);
+    assert.match(report.targets[0].painConfirmedFollowUpDraft, /VERIFICATION_EVIDENCE/);
     assert.equal(written.reportDir, reportDir);
     assert.ok(fs.existsSync(path.join(reportDir, 'gtm-target-queue.csv')));
+    assert.ok(fs.existsSync(path.join(reportDir, 'gtm-target-queue.jsonl')));
   } finally {
     if (originalGeminiKey === undefined) {
       delete process.env.GEMINI_API_KEY;

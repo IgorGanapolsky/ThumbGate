@@ -60,6 +60,27 @@ test('imports GTM revenue targets as workflow sprint leads without marking them 
   assert.equal(leads[0].offer, 'workflow_hardening_sprint');
   assert.match(leads[0].qualification.concreteOffer, /harden one AI-agent workflow/);
   assert.match(leads[0].outbound.draft, /harden one AI-agent workflow/);
+  assert.equal(leads[0].outbound.followUpDraft, null);
+});
+
+test('imports follow-up proof drafts from evidence-backed GTM targets', () => {
+  const tempDir = makeTempDir();
+  const statePath = path.join(tempDir, 'sales-pipeline.jsonl');
+  const report = makeReport();
+  report.targets[0].firstTouchDraft = 'I can harden one AI-agent workflow for you.';
+  report.targets[0].painConfirmedFollowUpDraft = 'If the workflow pain is real, I can send the proof pack.';
+  report.targets[0].proofPackTrigger = 'Use proof pack only after the buyer confirms pain.';
+
+  importRevenueLoopReport(report, {
+    statePath,
+    sourcePath: path.join(tempDir, 'gtm-revenue-loop.json'),
+  });
+  const leads = loadSalesLeads({ statePath });
+
+  assert.equal(leads.length, 1);
+  assert.match(leads[0].outbound.draft, /harden one AI-agent workflow/);
+  assert.match(leads[0].outbound.followUpDraft, /proof pack/);
+  assert.match(leads[0].qualification.proofTiming, /buyer confirms pain/);
 });
 
 test('deduplicates repeated GTM imports by stable lead id', () => {
