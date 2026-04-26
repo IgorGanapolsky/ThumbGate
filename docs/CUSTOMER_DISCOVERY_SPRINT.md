@@ -46,7 +46,7 @@ Generate a target queue:
 npm run gtm:revenue-loop -- --report-dir reports/gtm/$(date +%F)-selling-now --max-targets=12
 ```
 
-The revenue loop now emits twenty operator artifacts in that folder:
+The revenue loop now emits a full operator bundle in that folder:
 
 - `gtm-revenue-loop.md` for the human summary
 - `gtm-revenue-loop.json` for machine-readable truth
@@ -54,8 +54,11 @@ The revenue loop now emits twenty operator artifacts in that folder:
 - `gtm-marketplace-copy.json` for machine-readable listing copy and target themes
 - `gtm-target-queue.csv` for spreadsheet sorting
 - `gtm-target-queue.jsonl` for line-by-line operator handoff with first-touch and pain-confirmed follow-up drafts
+- `team-outreach-messages.md` for warm-lead first-touch and pain-confirmed follow-up drafts
+- `operator-priority-handoff.md` for the ranked send order across warm and cold targets
 - `claude-workflow-hardening-pack.md` for Claude-first positioning, buyer lanes, and evidence-backed outbound copy
 - `claude-workflow-hardening-pack.json` for the same Claude-first outbound pack in machine-readable form
+- `claude-prospect-queue.csv` for Claude-specific buyer lanes and next asks
 - `cursor-marketplace-revenue-pack.md` for Cursor Marketplace, Cursor Directory, and Team Marketplace submission copy
 - `cursor-marketplace-revenue-pack.json` for machine-readable Cursor listing metadata and follow-on offers
 - `cursor-marketplace-surfaces.csv` for one-sheet operator submission fields
@@ -68,6 +71,13 @@ The revenue loop now emits twenty operator artifacts in that folder:
 - `gemini-cli-demand-pack.md` for Gemini CLI memory-demand, local-first, and cloud-workflow conversion copy
 - `gemini-cli-demand-pack.json` for the same Gemini operator pack in machine-readable form
 - `gemini-cli-operator-queue.csv` for Gemini-specific queue rows and next asks
+- `gemini-cli-channel-drafts.csv` for Gemini Reddit, LinkedIn, Threads, and Bluesky channel drafts
+- `chatgpt-gpt-revenue-pack.md` for ChatGPT GPT acquisition, trust-guide, and Actions-install conversion copy
+- `chatgpt-gpt-revenue-pack.json` for the same ChatGPT operator pack in machine-readable form
+- `chatgpt-gpt-operator-queue.csv` for ChatGPT-first buyer lanes and next asks
+- `aiventyx-marketplace-plan.md` for Aiventyx Free, Pro, and Teams marketplace submission copy
+- `aiventyx-marketplace-plan.json` for the same Aiventyx plan in machine-readable form
+- `aiventyx-marketplace-listings.csv` for dashboard-ready Aiventyx listing fields and attribution metadata
 
 That report now carries both warm discovery leads and cold GitHub prospects in one machine-readable queue so the operator can import a single artifact and still contact the warm engagers first.
 Every artifact inherits the same evidence backstop:

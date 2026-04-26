@@ -1,6 +1,6 @@
 # Codex Plugin Revenue Pack
 
-Updated: 2026-04-26T22:36:45.611Z
+Updated: 2026-04-26T23:27:02.025Z
 
 This is a sales operator artifact. It is not proof of bundle downloads, installs, paid revenue, or marketplace publication by itself.
 
@@ -24,14 +24,14 @@ ThumbGate gives Codex a proof-backed install path, pre-action gate enforcement, 
 - Examples: @Deep_Ad1959, @game-of-kton, @leogodin217
 
 ### Workflow control surfaces remain the strongest buyer signal
-- Count: 8
-- Summary: 8 current targets expose review, approval, governance, or workflow control surfaces where a Codex install story can convert into a workflow-hardening offer.
-- Examples: freema/mcp-jira-stdio, makafeli/n8n-workflow-builder, salacoste/mcp-n8n-workflow-builder
+- Count: 4
+- Summary: 4 current targets expose review, approval, governance, or workflow control surfaces where a Codex install story can convert into a workflow-hardening offer.
+- Examples: freema/mcp-jira-stdio, manki-review/manki, salacoste/mcp-n8n-workflow-builder
 
 ### Production rollout proof matters
-- Count: 5
-- Summary: 5 targets touch production-sensitive workflows where proof and rollback safety should appear before the buyer expands usage.
-- Examples: WagnerAgent/awesome-mcp-servers-devops, bjeans/homelab-mcp, Shashankk1907/Learning-about-MCP
+- Count: 2
+- Summary: 2 targets touch production-sensitive workflows where proof and rollback safety should appear before the buyer expands usage.
+- Examples: WagnerAgent/awesome-mcp-servers-devops, bjeans/homelab-mcp
 
 ## Submission Surfaces
 ### Codex plugin install page
@@ -102,7 +102,7 @@ Proof links: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCI
 - @leogodin217 (warm): Warm Reddit engager already described a mature workflow, so the next step is a targeted diagnostic on one failure mode.
 - @Enthu-Cutlet-1337 (warm): Warm Reddit engager already understands the adaptive-gate thesis, so offer one concrete workflow hardening diagnostic.
 - freema/mcp-jira-stdio (cold): Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
-- makafeli/n8n-workflow-builder (cold): Lead with context-drift hardening for one workflow before proposing any broader agent platform story.
+- manki-review/manki (cold): Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
 
 ## 90-Day Measurement Plan
 - North star: codex_install_intent_to_paid_intent

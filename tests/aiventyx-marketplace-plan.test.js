@@ -106,6 +106,25 @@ test('rendered pack is dashboard-ready and anchored to proof links', () => {
   assert.doesNotMatch(rendered, /guaranteed revenue|approved partner/i);
 });
 
+test('checked-in Aiventyx pack stays in sync with the generator output', () => {
+  const docsPath = path.join(__dirname, '..', 'docs', 'marketing', 'aiventyx-marketplace-revenue-pack.md');
+  const committed = fs.readFileSync(docsPath, 'utf8');
+  const updatedMatch = committed.match(/^Updated: (.+)$/m);
+
+  assert.ok(updatedMatch, 'expected checked-in pack to include an Updated line');
+
+  const markdown = renderAiventyxMarketplaceMarkdown({
+    ...buildAiventyxMarketplacePlan({
+      appOrigin: 'https://thumbgate-production.up.railway.app',
+      proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
+      sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+    }),
+    generatedAt: updatedMatch[1],
+  });
+
+  assert.equal(markdown, committed);
+});
+
 test('CSV export keeps listing submission fields and attribution in one operator file', () => {
   const csv = renderAiventyxMarketplaceCsv(buildAiventyxMarketplacePlan({
     appOrigin: 'https://thumbgate-production.up.railway.app',
