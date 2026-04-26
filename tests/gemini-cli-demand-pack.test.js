@@ -12,6 +12,7 @@ const {
   GCP_GUIDE_URL,
   GEMINI_GUIDE_URL,
   MEM0_COMPARE_URL,
+  buildChannelDrafts,
   buildEvidenceSurfaces,
   buildFollowOnOffers,
   buildGeminiCliDemandPack,
@@ -21,6 +22,8 @@ const {
   buildMeasurementPlan,
   isCliInvocation,
   parseArgs,
+  readRevenueLoopReport,
+  renderGeminiCliChannelDraftsCsv,
   renderGeminiCliDemandPackMarkdown,
   renderGeminiCliOperatorQueueCsv,
   writeGeminiCliDemandPack,
@@ -129,6 +132,33 @@ test('outreach drafts avoid leading with proof before pain is confirmed', () => 
   assert.match(drafts[2].draft, /workflow hardening sprint/i);
 });
 
+test('active channel drafts stay tied to Gemini guides, comparison, and first-touch guardrails', () => {
+  const drafts = buildChannelDrafts(LINKS_FIXTURE, REPORT_FIXTURE);
+
+  assert.equal(drafts.length, 4);
+  assert.deepEqual(drafts.map((draft) => draft.channel), [
+    'Reddit',
+    'LinkedIn',
+    'Threads',
+    'Bluesky',
+  ]);
+  assert.match(drafts[0].cta, /guides\/gemini-cli-feedback-memory/);
+  assert.match(drafts[1].cta, /guides\/gcp-mcp-guardrails/);
+  assert.match(drafts[2].cta, /guides\/gemini-cli-feedback-memory/);
+  assert.match(drafts[3].cta, /compare\/mem0/);
+  assert.ok(drafts.every((draft) => !draft.draft.includes('VERIFICATION_EVIDENCE.md')));
+  assert.ok(drafts.every((draft) => !draft.draft.includes('COMMERCIAL_TRUTH.md')));
+});
+
+test('revenue-loop report reader falls back safely and parses live JSON when present', () => {
+  const tempDir = makeTempDir();
+  const reportPath = path.join(tempDir, 'gtm-revenue-loop.json');
+  fs.writeFileSync(reportPath, JSON.stringify({ directive: { state: 'cold-start' } }), 'utf8');
+
+  assert.deepEqual(readRevenueLoopReport(path.join(tempDir, 'missing.json')), {});
+  assert.deepEqual(readRevenueLoopReport(reportPath), { directive: { state: 'cold-start' } });
+});
+
 test('measurement plan stays honest about paid intent versus guide traffic', () => {
   const plan = buildMeasurementPlan();
 
@@ -151,6 +181,8 @@ test('rendered pack is operator-ready and anchored to guides plus proof', () => 
   assert.match(markdown, new RegExp(CANONICAL_SHORT_DESCRIPTION.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(markdown, /guides\/gemini-cli-feedback-memory/);
   assert.match(markdown, /guides\/gcp-mcp-guardrails/);
+  assert.match(markdown, /Active Channel Drafts/);
+  assert.match(markdown, /LinkedIn — Founder post/);
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
   assert.doesNotMatch(markdown, /guaranteed revenue|approved marketplace|top ranking/i);
@@ -162,6 +194,15 @@ test('CSV export keeps one operator queue file for Gemini lanes', () => {
   assert.match(csv, /^key,audience,evidence,proofTrigger,proofAsset,nextAsk,recommendedMotion/);
   assert.match(csv, /memory_first_builder/);
   assert.match(csv, /gcp_workflow_owner/);
+});
+
+test('channel draft CSV keeps active Gemini outbound surfaces in one operator file', () => {
+  const csv = renderGeminiCliChannelDraftsCsv(buildGeminiCliDemandPack(REPORT_FIXTURE, LINKS_FIXTURE, ABOUT_FIXTURE));
+
+  assert.match(csv, /^key,channel,format,audience,evidenceSummary,cta,proofTiming,draft/);
+  assert.match(csv, /Reddit/);
+  assert.match(csv, /LinkedIn/);
+  assert.match(csv, /compare\/mem0/);
 });
 
 test('CLI options and artifact writing emit markdown, JSON, and queue CSV', () => {
@@ -179,6 +220,7 @@ test('CLI options and artifact writing emit markdown, JSON, and queue CSV', () =
   assert.equal(fs.existsSync(path.join(tempDir, 'gemini-cli-demand-pack.md')), true);
   assert.equal(fs.existsSync(path.join(tempDir, 'gemini-cli-demand-pack.json')), true);
   assert.equal(fs.existsSync(path.join(tempDir, 'gemini-cli-operator-queue.csv')), true);
+  assert.equal(fs.existsSync(path.join(tempDir, 'gemini-cli-channel-drafts.csv')), true);
 });
 
 test('CLI entrypoint detection is path based', () => {

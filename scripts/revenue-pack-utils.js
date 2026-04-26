@@ -232,8 +232,12 @@ function writeStandardRevenuePack({
     markdown: renderMarkdown(pack),
     jsonName,
     jsonValue: pack,
-    csvName,
-    csvValue: renderOperatorQueueCsv(pack?.operatorQueue),
+    csvArtifacts: [
+      {
+        name: csvName,
+        value: renderOperatorQueueCsv(pack?.operatorQueue),
+      },
+    ],
   });
 }
 
@@ -247,10 +251,16 @@ function writeRevenuePackArtifacts({
   jsonValue,
   csvName,
   csvValue,
+  csvArtifacts,
 } = {}) {
   const resolvedReportDir = normalizeText(reportDir)
     ? path.resolve(repoRoot, reportDir)
     : '';
+  const artifacts = Array.isArray(csvArtifacts) && csvArtifacts.length
+    ? csvArtifacts
+    : (csvName
+      ? [{ name: csvName, value: csvValue }]
+      : []);
 
   if (resolvedReportDir) {
     ensureDir(resolvedReportDir);
@@ -258,8 +268,12 @@ function writeRevenuePackArtifacts({
     if (jsonName) {
       fs.writeFileSync(path.join(resolvedReportDir, jsonName), `${JSON.stringify(jsonValue, null, 2)}\n`, 'utf8');
     }
-    if (csvName) {
-      fs.writeFileSync(path.join(resolvedReportDir, csvName), csvValue, 'utf8');
+    for (const artifact of artifacts) {
+      const name = normalizeText(artifact?.name);
+      if (!name) {
+        continue;
+      }
+      fs.writeFileSync(path.join(resolvedReportDir, name), normalizeText(artifact?.value) ? artifact.value : '', 'utf8');
     }
   }
 
