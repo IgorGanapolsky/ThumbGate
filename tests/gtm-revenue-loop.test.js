@@ -541,6 +541,58 @@ test('first-touch outreach applies the evidence angle without leaking operator i
   assert.doesNotMatch(message, /approval boundaries/i);
 });
 
+test('first-touch outreach specializes sprint hooks without repo names', () => {
+  const catalog = buildMotionCatalog(buildRevenueLinks());
+  const cases = [{
+    target: {
+      username: 'opsbuilder',
+      accountName: 'OpenOps',
+      repoName: '',
+      description: 'Slack approval routing for CRM analytics handoffs.',
+    },
+    expectedRef: '@OpenOps',
+    expectedHook: /approval, handoff, or rollback step/i,
+  }, {
+    target: {
+      username: 'releaseops',
+      accountName: '@shipguard',
+      repoName: '',
+      description: 'CI/CD release compliance monitor for production incidents.',
+    },
+    expectedRef: '@shipguard',
+    expectedHook: /deploy, release, or incident workflow/i,
+  }, {
+    target: {
+      username: 'memorylab',
+      accountName: 'memory-lab',
+      repoName: '',
+      description: 'Agent context memory orchestrator for tool use recovery.',
+    },
+    expectedRef: '@memory-lab',
+    expectedHook: /context, memory, or tool-use failure/i,
+  }, {
+    target: {
+      username: 'plainbuilder',
+      accountName: '',
+      repoName: '',
+      description: 'Lightweight helper for repeated operational mistakes.',
+    },
+    expectedRef: 'your workflow',
+    expectedHook: /workflow keeps repeating the same mistake/i,
+  }];
+
+  for (const { target, expectedRef, expectedHook } of cases) {
+    const selectedMotion = selectOutreachMotion(target, catalog);
+    const message = buildFallbackMessage(target, selectedMotion, catalog);
+
+    assert.equal(selectedMotion.key, 'sprint');
+    assert.match(message, new RegExp(`shipping ${expectedRef.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+    assert.match(message, expectedHook);
+    assert.doesNotMatch(message, /``/);
+    assert.doesNotMatch(message, /Lead with/i);
+  }
+});
+
 test('pain-confirmed follow-up adds proof links only after the buyer confirms pain', () => {
   const catalog = buildMotionCatalog(buildRevenueLinks());
   const selectedMotion = selectOutreachMotion({
