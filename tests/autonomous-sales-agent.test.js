@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 
 const { isCliInvocation, main } = require('../scripts/autonomous-sales-agent');
 
-test('automation emits Codex alongside Claude, Cursor, and Gemini packs', async () => {
+test('automation emits ChatGPT and Codex alongside Claude, Cursor, and Gemini packs', async () => {
   const calls = [];
   const logs = [];
   const originalLog = console.log;
@@ -58,6 +58,14 @@ test('automation emits Codex alongside Claude, Cursor, and Gemini packs', async 
         calls.push(['writeGeminiCliDemandPack', pack.channel, options.writeDocs]);
         return { docsPath: '/tmp/gemini.md' };
       },
+      buildChatgptGptRevenuePack(report) {
+        calls.push(['buildChatgptGptRevenuePack', report.targets.length]);
+        return { channel: 'chatgpt' };
+      },
+      writeChatgptGptRevenuePack(pack, options) {
+        calls.push(['writeChatgptGptRevenuePack', pack.channel, options.writeDocs]);
+        return { docsPath: '/tmp/chatgpt.md' };
+      },
       buildCodexMarketplaceRevenuePack() {
         calls.push(['buildCodexMarketplaceRevenuePack']);
         return { channel: 'codex' };
@@ -80,9 +88,12 @@ test('automation emits Codex alongside Claude, Cursor, and Gemini packs', async 
     ['writeCursorMarketplaceRevenuePack', 'cursor', true],
     ['buildGeminiCliDemandPack', 2],
     ['writeGeminiCliDemandPack', 'gemini', true],
+    ['buildChatgptGptRevenuePack', 2],
+    ['writeChatgptGptRevenuePack', 'chatgpt', true],
     ['buildCodexMarketplaceRevenuePack'],
     ['writeCodexMarketplaceRevenuePack', 'codex', true],
   ]);
+  assert.ok(logs.some((line) => line.includes('ChatGPT pack updated: /tmp/chatgpt.md')));
   assert.ok(logs.some((line) => line.includes('Codex pack updated: /tmp/codex.md')));
   assert.ok(logs.some((line) => line.includes('State: cold-start | Targets: 2')));
 });
