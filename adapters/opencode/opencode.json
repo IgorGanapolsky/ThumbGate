@@ -7,7 +7,7 @@
         "npx",
         "--yes",
         "--package",
-        "thumbgate@1.16.4",
+        "thumbgate@1.16.5",
         "thumbgate",
         "serve"
       ],
