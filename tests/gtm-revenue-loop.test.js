@@ -20,6 +20,7 @@ const {
   parseArgs,
   prospectTargets,
   renderMarketplaceCopyMarkdown,
+  renderOperatorHandoffMarkdown,
   renderRevenueLoopMarkdown,
   renderTeamOutreachMessagesMarkdown,
   runRevenueLoop,
@@ -429,12 +430,72 @@ test('team outreach markdown stays discovery-first and evidence-backed', () => {
   });
 
   assert.match(markdown, /CUSTOMER_DISCOVERY_SPRINT\.md/);
+  assert.match(markdown, /operator-priority-handoff\.md/);
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
   assert.match(markdown, /I will harden one AI-agent workflow for you/);
   assert.match(markdown, /Evidence sources:/);
   assert.match(markdown, /Pain-confirmed follow-up:/);
   assert.doesNotMatch(markdown, /checkout\/pro/);
+});
+
+test('operator handoff markdown ranks warm discovery ahead of cold GitHub targets', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const markdown = renderOperatorHandoffMarkdown({
+    generatedAt: '2026-04-26T00:00:00.000Z',
+    directive: {
+      state: 'cold-start',
+      headline: 'No verified revenue and no active pipeline.',
+    },
+    snapshot: {
+      paidOrders: 0,
+      checkoutStarts: 0,
+    },
+    targets: [
+      {
+        temperature: 'cold',
+        source: 'github',
+        channel: 'github',
+        username: 'builder',
+        repoName: 'production-mcp-server',
+        repoUrl: 'https://github.com/builder/production-mcp-server',
+        evidenceScore: 11,
+        evidence: ['production or platform workflow', '42 GitHub stars'],
+        motion: 'sprint',
+        motionLabel: catalog.sprint.label,
+        motionReason: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
+        proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+        cta: catalog.sprint.cta,
+        firstTouchDraft: 'I will harden one production workflow for you.',
+        painConfirmedFollowUpDraft: 'If the workflow pain is real, I can send the proof pack.',
+      },
+      {
+        temperature: 'warm',
+        source: 'reddit',
+        channel: 'reddit_dm',
+        username: 'warm_builder',
+        accountName: 'r/ClaudeCode',
+        contactUrl: 'https://www.reddit.com/user/warm_builder/',
+        evidenceScore: 8,
+        evidence: ['warm inbound engagement', 'workflow pain named'],
+        motion: 'sprint',
+        motionLabel: catalog.sprint.label,
+        motionReason: 'Warm target already named a repeated workflow blocker.',
+        proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+        cta: catalog.sprint.cta,
+        firstTouchDraft: 'I will harden one AI-agent workflow for you.',
+        painConfirmedFollowUpDraft: 'If the workflow pain is real, I can send the proof pack.',
+      },
+    ],
+  });
+
+  assert.match(markdown, /sales:pipeline -- import --source docs\/marketing\/gtm-revenue-loop\.json/);
+  assert.match(markdown, /Warm targets ready now: 1/);
+  assert.match(markdown, /Cold GitHub targets ready next: 1/);
+  assert.ok(markdown.indexOf('@warm_builder') < markdown.indexOf('@builder'));
+  assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
+  assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
 });
 
 test('first-touch outreach does not push proof before pain is confirmed', () => {
@@ -778,6 +839,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     const marketplaceCopy = JSON.parse(fs.readFileSync(path.join(reportDir, 'gtm-marketplace-copy.json'), 'utf8'));
     const jsonl = fs.readFileSync(path.join(reportDir, 'gtm-target-queue.jsonl'), 'utf8');
     const teamOutreach = fs.readFileSync(path.join(reportDir, 'team-outreach-messages.md'), 'utf8');
+    const operatorHandoff = fs.readFileSync(path.join(reportDir, 'operator-priority-handoff.md'), 'utf8');
 
     assert.equal(written.reportDir, reportDir);
     assert.equal(written.docsPath, null);
@@ -788,6 +850,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.ok(fs.existsSync(csvPath));
     assert.ok(fs.existsSync(path.join(reportDir, 'gtm-target-queue.jsonl')));
     assert.ok(fs.existsSync(path.join(reportDir, 'team-outreach-messages.md')));
+    assert.ok(fs.existsSync(path.join(reportDir, 'operator-priority-handoff.md')));
     assert.match(csv, /^temperature,source,channel,username,accountName,contactUrl,repoName,repoUrl,updatedAt,offer,pipelineStage,evidenceScore,evidence,evidenceSource,evidenceLinks,claimGuardrails,outreachAngle,motionLabel,motionReason,proofPackTrigger,cta,firstTouchDraft,painConfirmedFollowUpDraft/m);
     assert.match(csv, /"I can harden one workflow, then prove it\."/);
     assert.match(csv, /"If the workflow pain is real, I can send the proof pack\."/);
@@ -799,8 +862,12 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.ok(Array.isArray(marketplaceCopy.topSignals));
     assert.equal(JSON.parse(jsonl.trim()).repoName, 'production-mcp-server');
     assert.match(teamOutreach, /CUSTOMER_DISCOVERY_SPRINT\.md/);
+    assert.match(teamOutreach, /operator-priority-handoff\.md/);
     assert.match(teamOutreach, /I will harden one AI-agent workflow for you/);
     assert.match(teamOutreach, /If the workflow pain is real, I can send the proof pack\./);
+    assert.match(operatorHandoff, /Revenue Operator Priority Handoff/);
+    assert.match(operatorHandoff, /sales:pipeline -- import --source docs\/marketing\/gtm-revenue-loop\.json/);
+    assert.match(operatorHandoff, /Send Now: Warm Discovery/);
   } finally {
     fs.rmSync(reportDir, { recursive: true, force: true });
   }
@@ -900,6 +967,7 @@ test('writeRevenueLoopOutputs mirrors dedicated GTM docs instead of overwriting 
     assert.ok(fs.existsSync(path.join(marketingDir, 'gtm-target-queue.csv')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'gtm-target-queue.jsonl')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'team-outreach-messages.md')));
+    assert.ok(fs.existsSync(path.join(marketingDir, 'operator-priority-handoff.md')));
   } finally {
     fs.rmSync(repoRoot, { recursive: true, force: true });
   }
