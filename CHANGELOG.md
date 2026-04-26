@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.16.8
+
+### Patch Changes
+
+- [#1346](https://github.com/IgorGanapolsky/ThumbGate/pull/1346) [`7ac5e9b`](https://github.com/IgorGanapolsky/ThumbGate/commit/7ac5e9beeca8c1fba98e785f22cdcd0d225f28d0) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Clean first-touch GTM outreach drafts so cold outreach stays buyer-facing, removes internal strategy leakage, and keeps generated operator sales assets aligned with evidence-backed messaging.
+
 ## 1.16.7
 
 ### Patch Changes
