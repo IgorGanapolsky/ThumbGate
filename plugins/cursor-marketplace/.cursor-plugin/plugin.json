@@ -2,7 +2,7 @@
   "name": "thumbgate",
   "displayName": "ThumbGate",
   "description": "👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.",
-  "version": "1.16.5",
+  "version": "1.16.6",
   "author": {
     "name": "Igor Ganapolsky"
   },
