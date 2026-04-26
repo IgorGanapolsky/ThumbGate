@@ -327,6 +327,95 @@ function buildOutreachDrafts(links = buildRevenueLinks()) {
   ];
 }
 
+function buildChannelDrafts(report = {}, links = buildRevenueLinks()) {
+  const warmClaudeTargetCount = countTargets((target) => isWarmTarget(target) && isClaudeTarget(target), report);
+  const productionTargetCount = countTargets((target) => hasEvidence(target, 'production or platform workflow'), report);
+  const businessSystemTargetCount = countTargets((target) => hasEvidence(target, 'business-system integration'), report);
+  const redditSprintLink = buildTrackedClaudeLink(links.sprintLink, {
+    utmMedium: 'reddit_dm',
+    utmCampaign: 'claude_channel_reddit',
+    utmContent: 'workflow_sprint',
+    campaignVariant: 'warm_discovery',
+    offerCode: 'CLAUDE-CHANNEL-REDDIT',
+    ctaId: 'claude_channel_reddit',
+    ctaPlacement: 'channel_draft',
+    surface: 'claude_reddit',
+  });
+  const linkedinLaneLink = buildTrackedClaudeLink(CLAUDE_SECTION_URL, {
+    utmMedium: 'linkedin_post',
+    utmCampaign: 'claude_channel_linkedin',
+    utmContent: 'landing_section',
+    campaignVariant: 'review_ready',
+    offerCode: 'CLAUDE-CHANNEL-LINKEDIN',
+    ctaId: 'claude_channel_linkedin',
+    ctaPlacement: 'channel_draft',
+    surface: 'claude_linkedin',
+  });
+  const threadsGuideLink = buildTrackedClaudeLink(CLAUDE_DESKTOP_GUIDE_URL, {
+    utmMedium: 'threads_post',
+    utmCampaign: 'claude_channel_threads',
+    utmContent: 'guide',
+    campaignVariant: 'desktop_install',
+    offerCode: 'CLAUDE-CHANNEL-THREADS',
+    ctaId: 'claude_channel_threads',
+    ctaPlacement: 'channel_draft',
+    surface: 'claude_threads',
+  });
+  const blueskyGuideLink = buildTrackedClaudeLink(CLAUDE_CODE_GUIDE_URL, {
+    utmMedium: 'bluesky_post',
+    utmCampaign: 'claude_channel_bluesky',
+    utmContent: 'guide',
+    campaignVariant: 'workflow_pain',
+    offerCode: 'CLAUDE-CHANNEL-BLUESKY',
+    ctaId: 'claude_channel_bluesky',
+    ctaPlacement: 'channel_draft',
+    surface: 'claude_bluesky',
+  });
+
+  return [
+    {
+      key: 'reddit_warm_discovery',
+      channel: 'Reddit',
+      format: 'DM or reply follow-up',
+      audience: 'Warm Claude or Cursor engager who already named a repeated workflow risk',
+      evidenceSummary: `${warmClaudeTargetCount} warm Claude-flavored target(s) in the current report already named context risk, rollback risk, or brittle review boundaries.`,
+      cta: redditSprintLink,
+      proofTiming: 'Do not attach Commercial Truth or Verification Evidence until the buyer confirms the failure pattern.',
+      draft: `You already called out the risky part of Claude workflows: the same failure keeps coming back when context shifts or review boundaries get blurry. I am not trying to sell you another agent platform. I am offering to harden one workflow end-to-end so the repeated failure becomes a Pre-Action Check with proof behind it. If you want to pick one workflow, start here: ${redditSprintLink} .`,
+    },
+    {
+      key: 'linkedin_platform_post',
+      channel: 'LinkedIn',
+      format: 'Founder post',
+      audience: 'Platform lead, consultancy owner, or AI delivery lead evaluating Claude rollout risk',
+      evidenceSummary: `${productionTargetCount} production/platform targets and ${businessSystemTargetCount} business-system targets in the current report point to approval boundaries, rollback safety, and review-ready rollout proof as the strongest B2B angle.`,
+      cta: linkedinLaneLink,
+      proofTiming: 'Public post can mention proof-ready rollout, but keep the proof links for the reply or DM after pain is confirmed.',
+      draft: `Teams already shipping with Claude usually do not need another agent platform. They need one workflow that stops repeating the same mistake before it touches a repo, approval step, or customer system. ThumbGate is the lane I use for that: local-first install, repeated-mistake capture, and Pre-Action Checks before the next risky action runs. If you are evaluating Claude rollout risk, start with the review-ready install lane here: ${linkedinLaneLink} .`,
+    },
+    {
+      key: 'threads_operator_post',
+      channel: 'Threads',
+      format: 'Short post',
+      audience: 'Solo Claude Desktop or Claude Code operator who wants a fast install-first proof path',
+      evidenceSummary: 'Claude Desktop already has a live guide plus direct bundle path, so the strongest Threads motion is install-first and proof-second.',
+      cta: threadsGuideLink,
+      proofTiming: 'Keep the first touch install-first. Bring proof links in only after the buyer names the repeated mistake.',
+      draft: `If Claude keeps repeating the same branch, review-boundary, or file-edit mistake, the useful fix is not another reminder in chat. Install a local-first gate and block the repeat before it runs again. ThumbGate for Claude starts here: ${threadsGuideLink} .`,
+    },
+    {
+      key: 'bluesky_workflow_post',
+      channel: 'Bluesky',
+      format: 'Short post',
+      audience: 'AI tooling builder or Claude Code operator who can already name one repeated workflow mistake',
+      evidenceSummary: 'The current report shows the best cold-fit targets are workflow-control and production-proof buyers, so Bluesky should lead with one repeated workflow failure instead of generic governance.',
+      cta: blueskyGuideLink,
+      proofTiming: 'Use the guide link first. Only send Commercial Truth and Verification Evidence after the buyer replies with a concrete failure mode.',
+      draft: `Claude Code is useful right up until it repeats the same risky workflow mistake. ThumbGate turns that repeat into a Pre-Action Check instead of another memory note. If you already know the failure pattern, start with the repeated-mistakes guide: ${blueskyGuideLink} .`,
+    },
+  ];
+}
+
 function buildMeasurementPlan() {
   return {
     northStar: 'claude_install_to_paid_intent',
@@ -406,6 +495,7 @@ function buildClaudeWorkflowHardeningPack(report = {}, links = buildRevenueLinks
     followOnOffers: buildFollowOnOffers(links),
     prospectQueue: buildProspectQueue(report),
     outreachDrafts: buildOutreachDrafts(links),
+    channelDrafts: buildChannelDrafts(report, links),
     measurementPlan: buildMeasurementPlan(),
     proofLinks: [...PROOF_LINKS],
     evidenceBackstop: {
@@ -482,6 +572,20 @@ function renderClaudeDraftLines(pack = {}) {
     : ['- No outreach drafts available.', ''];
 }
 
+function renderClaudeChannelDraftLines(pack = {}) {
+  return Array.isArray(pack.channelDrafts) && pack.channelDrafts.length
+    ? pack.channelDrafts.flatMap((draft) => ([
+      `### ${draft.channel} — ${draft.format}`,
+      `- Audience: ${draft.audience}`,
+      `- Evidence: ${draft.evidenceSummary}`,
+      `- CTA: ${draft.cta}`,
+      `- Proof timing: ${draft.proofTiming}`,
+      draft.draft,
+      '',
+    ]))
+    : ['- No active-channel drafts available.', ''];
+}
+
 function renderClaudeMilestoneLines(pack = {}) {
   return Array.isArray(pack.measurementPlan?.milestones) && pack.measurementPlan.milestones.length
     ? pack.measurementPlan.milestones.map((milestone) => `- ${milestone.window}: ${milestone.goal} Decision rule: ${milestone.decisionRule}`)
@@ -547,6 +651,8 @@ function renderClaudeWorkflowHardeningPackMarkdown(pack = {}) {
     '',
     '## Outreach Drafts',
     ...renderClaudeDraftLines(pack),
+    '## Active Channel Drafts',
+    ...renderClaudeChannelDraftLines(pack),
     '## 90-Day Measurement Plan',
     `- North star: ${pack.measurementPlan?.northStar || 'n/a'}`,
     `- Policy: ${pack.measurementPlan?.policy || 'n/a'}`,
@@ -634,6 +740,7 @@ module.exports = {
   buildClaudeWorkflowHardeningPack,
   buildEvidenceSurfaces,
   buildFollowOnOffers,
+  buildChannelDrafts,
   buildListingCopy,
   buildMeasurementPlan,
   buildOutreachDrafts,
