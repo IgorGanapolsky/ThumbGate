@@ -78,6 +78,12 @@ const MARKETPLACE_SIGNAL_THEMES = [
     match: (target) => hasEvidenceLabel(target, 'workflow control surface'),
   },
 ];
+const CLAIM_GUARDRAILS = [
+  'Do not claim revenue, installs, or marketplace approval without direct command evidence.',
+  'Do not lead with proof links before the buyer confirms pain.',
+  'Keep public pricing and traction claims aligned with COMMERCIAL_TRUTH.md.',
+  'Keep proof and quality claims aligned with VERIFICATION_EVIDENCE.md.',
+];
 
 function getGoogleGenAI() {
   try {
@@ -189,6 +195,62 @@ function dedupeList(values = []) {
     deduped.push(normalized);
   }
   return deduped;
+}
+
+function buildClaimGuardrails() {
+  return [...CLAIM_GUARDRAILS];
+}
+
+function buildEvidenceSources(target, motionCatalog = buildMotionCatalog()) {
+  const motionKey = normalizeText(target?.selectedMotion?.key || target?.motion).toLowerCase();
+  const motion = motionCatalog[motionKey] || motionCatalog.sprint;
+  const sources = [
+    {
+      label: 'Target signal',
+      url: normalizeText(target?.repoUrl) || normalizeText(target?.contactUrl) || '',
+      reason: 'Source of the workflow or buyer signal behind this outreach row.',
+    },
+    {
+      label: 'Commercial truth',
+      url: normalizeText(motion?.truth),
+      reason: 'Current pricing, traction, and offer guardrail.',
+    },
+    {
+      label: 'Verification evidence',
+      url: normalizeText(motion?.proof),
+      reason: 'Current engineering proof pack and verification artifact.',
+    },
+  ];
+
+  const seen = new Set();
+  return sources.filter((source) => {
+    const url = normalizeText(source.url);
+    if (!url) return false;
+    const key = `${normalizeText(source.label).toLowerCase()}::${url}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function buildEvidenceBackstop(currentTruth = {}) {
+  return {
+    proofLinks: dedupeList([
+      currentTruth.commercialTruthLink,
+      currentTruth.verificationEvidenceLink,
+    ]),
+    claimGuardrails: buildClaimGuardrails(),
+    sourceRule: 'Every listing, queue row, and pain-confirmed follow-up must inherit these sources before it is treated as operator-ready.',
+  };
+}
+
+function renderEvidenceSources(sources = []) {
+  if (!Array.isArray(sources) || !sources.length) {
+    return 'n/a';
+  }
+  return sources
+    .map((source) => `${source.label}: ${source.url}`)
+    .join('; ');
 }
 
 function buildRevenueLinks(config = resolveHostedBillingConfig({
@@ -629,6 +691,12 @@ async function generateOutreachMessages(targets, motionCatalog = buildMotionCata
 
 function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog, directive, targets }) {
   const snapshot = summarizeCommercialSnapshot(summary);
+  const currentTruth = {
+    publicSelfServeOffer: motionCatalog.pro.label,
+    teamPilotOffer: motionCatalog.sprint.label,
+    commercialTruthLink: motionCatalog.pro.truth,
+    verificationEvidenceLink: motionCatalog.pro.proof,
+  };
 
   return {
     generatedAt: new Date().toISOString(),
@@ -636,16 +704,13 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
     fallbackReason: fallbackReason || null,
     objective: 'First 10 paying customers',
     directive,
-    currentTruth: {
-      publicSelfServeOffer: motionCatalog.pro.label,
-      teamPilotOffer: motionCatalog.sprint.label,
-      commercialTruthLink: motionCatalog.pro.truth,
-      verificationEvidenceLink: motionCatalog.pro.proof,
-    },
+    currentTruth,
+    evidenceBackstop: buildEvidenceBackstop(currentTruth),
     snapshot,
     targets: targets.map((target) => {
       const followUpMessage = target.followUpMessage
         || buildPainConfirmedFollowUp(target, target.selectedMotion, motionCatalog);
+      const evidenceSources = buildEvidenceSources(target, motionCatalog);
 
       return {
         temperature: normalizeText(target.temperature) || 'cold',
@@ -663,6 +728,8 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
         evidence: target.evidence?.evidence || [],
         outreachAngle: target.evidence?.outreachAngle || '',
         evidenceSource: target.repoUrl || '',
+        evidenceSources,
+        claimGuardrails: buildClaimGuardrails(),
         motion: target.selectedMotion.key,
         motionLabel: target.selectedMotion.label,
         motionReason: target.selectedMotion.reason,
@@ -771,6 +838,7 @@ function buildMarketplaceCopy(report) {
     ]),
     topSignals: signalThemes,
     sampleTargets,
+    evidenceBackstop: buildEvidenceBackstop(report.currentTruth || {}),
     proofLinks: [
       report.currentTruth?.commercialTruthLink || '',
       report.currentTruth?.verificationEvidenceLink || '',
@@ -790,6 +858,7 @@ function renderRevenueTargetMarkdown(target) {
     `- Repo last updated: ${target.updatedAt || 'n/a'}`,
     `- Evidence score: ${target.evidenceScore}`,
     `- Evidence: ${target.evidence.length ? target.evidence.join(', ') : 'n/a'}`,
+    `- Evidence sources: ${renderEvidenceSources(target.evidenceSources)}`,
     `- Outreach angle: ${target.outreachAngle || 'n/a'}`,
     `- Motion: ${target.motionLabel}`,
     `- Why: ${target.motionReason}`,
@@ -825,6 +894,11 @@ function renderRevenueLoopMarkdown(report) {
     `- Team/pilot motion: ${report.currentTruth.teamPilotOffer}`,
     `- Commercial truth: ${report.currentTruth.commercialTruthLink}`,
     `- Verification evidence: ${report.currentTruth.verificationEvidenceLink}`,
+    '',
+    '## Evidence Backstop',
+    `- Source rule: ${report.evidenceBackstop?.sourceRule || 'Every listing, queue row, and pain-confirmed follow-up must inherit truth and proof links.'}`,
+    ...((report.evidenceBackstop?.claimGuardrails || []).map((guardrail) => `- ${guardrail}`)),
+    ...((report.evidenceBackstop?.proofLinks || []).map((link) => `- Proof link: ${link}`)),
     '',
     '## Revenue Snapshot',
     `- Paid orders: ${report.snapshot.paidOrders}`,
@@ -867,6 +941,10 @@ function renderMarketplaceCopyMarkdown(pack) {
   const proofLines = pack.proofLinks.length
     ? pack.proofLinks.map((link) => `- ${link}`)
     : ['- No proof links available in this run.'];
+  const evidenceBackstopLines = [
+    `- Source rule: ${pack.evidenceBackstop?.sourceRule || 'Every listing should inherit truth and proof links.'}`,
+    ...((pack.evidenceBackstop?.claimGuardrails || []).map((guardrail) => `- ${guardrail}`)),
+  ];
 
   return [
     '# Marketplace Copy Pack',
@@ -893,6 +971,9 @@ function renderMarketplaceCopyMarkdown(pack) {
     '',
     '## Proof Policy',
     `- ${pack.proofPolicy}`,
+    '',
+    '## Evidence Backstop',
+    ...evidenceBackstopLines,
     '',
     '## Sample Targets Behind This Copy',
     ...sampleTargetLines,
@@ -927,6 +1008,8 @@ function renderRevenueLoopCsv(report) {
       'evidenceScore',
       'evidence',
       'evidenceSource',
+      'evidenceLinks',
+      'claimGuardrails',
       'outreachAngle',
       'motionLabel',
       'motionReason',
@@ -950,6 +1033,8 @@ function renderRevenueLoopCsv(report) {
       String(target.evidenceScore),
       target.evidence.join('; '),
       target.evidenceSource,
+      renderEvidenceSources(target.evidenceSources),
+      (target.claimGuardrails || []).join('; '),
       target.outreachAngle,
       target.motionLabel,
       target.motionReason,
