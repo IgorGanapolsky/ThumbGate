@@ -89,6 +89,35 @@ Now that the failure pattern is concrete, the next useful step is proof plus the
 ### Founder note — Data or platform team owner
 Google turned BigQuery, Spanner, AlloyDB, and Cloud SQL into MCP-call surfaces for Gemini CLI. If one of those workflows already has a repeated failure or approval-boundary risk, I am not pitching a generic plugin. I am pitching one workflow hardening sprint with proof: https://thumbgate-production.up.railway.app/?utm_source=gemini&utm_medium=operator_outreach&utm_campaign=gemini_outreach_sprint&utm_content=workflow_sprint&campaign_variant=cloud_workflow&offer_code=GEMINI-OUTREACH_SPRINT&cta_id=gemini_outreach_sprint&cta_placement=outreach_draft&surface=gemini_outreach#workflow-sprint-intake .
 
+## Active Channel Drafts
+### Reddit — DM or reply follow-up
+- Audience: Warm Gemini CLI or agent-memory builder who already named one repeated workflow mistake
+- Evidence: 4 current warm target(s) already named repeated workflow pain, so Reddit should stay memory-first and pain-specific instead of broad governance-first.
+- CTA: https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=gemini&utm_medium=reddit_dm&utm_campaign=gemini_channel_reddit&utm_content=guide&campaign_variant=memory_first&offer_code=GEMINI-CHANNEL-REDDIT&cta_id=gemini_channel_reddit&cta_placement=channel_draft&surface=gemini_reddit
+- Proof timing: Keep first touch guide-first. Send Commercial Truth and Verification Evidence only after the buyer confirms the repeated failure.
+If Gemini CLI keeps repeating the same mistake, the missing piece is not more memory in chat. It is turning that repeated failure into a Pre-Action Check before the next risky MCP call runs. If you already know the repeat you want blocked, start here: https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=gemini&utm_medium=reddit_dm&utm_campaign=gemini_channel_reddit&utm_content=guide&campaign_variant=memory_first&offer_code=GEMINI-CHANNEL-REDDIT&cta_id=gemini_channel_reddit&cta_placement=channel_draft&surface=gemini_reddit .
+
+### LinkedIn — Founder post
+- Audience: Platform, cloud, or data team lead evaluating Gemini CLI near production systems
+- Evidence: 4 current production-style target(s) point to BigQuery, Spanner, AlloyDB, Cloud SQL, and approval-boundary risk as the strongest B2B Gemini angle.
+- CTA: https://thumbgate-production.up.railway.app/guides/gcp-mcp-guardrails?utm_source=gemini&utm_medium=linkedin_post&utm_campaign=gemini_channel_linkedin&utm_content=guide&campaign_variant=gcp_guardrails&offer_code=GEMINI-CHANNEL-LINKEDIN&cta_id=gemini_channel_linkedin&cta_placement=channel_draft&surface=gemini_linkedin
+- Proof timing: Public post can mention blast radius and guardrails, but hold proof links for the DM or reply after the workflow risk is named.
+Gemini CLI gets interesting when it moves from drafts into BigQuery, Spanner, AlloyDB, Cloud SQL, or approval-boundary workflows. At that point the question is not “does memory exist,” it is “what stops the same risky MCP call from running again?” ThumbGate is the lane I use for that boundary. If you are evaluating Gemini near production systems, start with the guardrails guide: https://thumbgate-production.up.railway.app/guides/gcp-mcp-guardrails?utm_source=gemini&utm_medium=linkedin_post&utm_campaign=gemini_channel_linkedin&utm_content=guide&campaign_variant=gcp_guardrails&offer_code=GEMINI-CHANNEL-LINKEDIN&cta_id=gemini_channel_linkedin&cta_placement=channel_draft&surface=gemini_linkedin .
+
+### Threads — Short post
+- Audience: Solo Gemini CLI builder who wants a fast guide-led path from memory to enforcement
+- Evidence: The strongest solo Gemini motion is still memory-first: guide click first, proof second, paid path only after one blocked repeat is concrete.
+- CTA: https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=gemini&utm_medium=threads_post&utm_campaign=gemini_channel_threads&utm_content=guide&campaign_variant=memory_repeat&offer_code=GEMINI-CHANNEL-THREADS&cta_id=gemini_channel_threads&cta_placement=channel_draft&surface=gemini_threads
+- Proof timing: Do not attach proof links in the first touch. Keep the post guide-first and move proof into follow-up only after pain is confirmed.
+Gemini CLI memory is not enough if the same mistake still runs again tomorrow. ThumbGate turns one repeated failure into a Pre-Action Check instead of another note in history. Start with the memory guide here: https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=gemini&utm_medium=threads_post&utm_campaign=gemini_channel_threads&utm_content=guide&campaign_variant=memory_repeat&offer_code=GEMINI-CHANNEL-THREADS&cta_id=gemini_channel_threads&cta_placement=channel_draft&surface=gemini_threads .
+
+### Bluesky — Short post
+- Audience: Security-sensitive evaluator comparing hosted memory to local-first enforcement
+- Evidence: 1 current business-system target(s) reinforce the local-first posture: keep workflow memory local, then prove enforcement before the next risky call.
+- CTA: https://thumbgate-production.up.railway.app/compare/mem0?utm_source=gemini&utm_medium=bluesky_post&utm_campaign=gemini_channel_bluesky&utm_content=comparison&campaign_variant=local_first&offer_code=GEMINI-CHANNEL-BLUESKY&cta_id=gemini_channel_bluesky&cta_placement=channel_draft&surface=gemini_bluesky
+- Proof timing: Lead with the comparison surface first. Send Commercial Truth and Verification Evidence only after the buyer replies with a concrete privacy or workflow objection.
+Hosted memory is not the only option for Gemini CLI. If you want the workflow history to stay local and still become enforceable checks before the next MCP call runs, start with the local-first comparison: https://thumbgate-production.up.railway.app/compare/mem0?utm_source=gemini&utm_medium=bluesky_post&utm_campaign=gemini_channel_bluesky&utm_content=comparison&campaign_variant=local_first&offer_code=GEMINI-CHANNEL-BLUESKY&cta_id=gemini_channel_bluesky&cta_placement=channel_draft&surface=gemini_bluesky .
+
 ## 90-Day Measurement Plan
 - North star: gemini_guide_to_paid_intent
 - Policy: Treat Gemini guide visits as acquisition evidence only after a tracked proof click, Pro checkout start, or qualified sprint conversation exists.
