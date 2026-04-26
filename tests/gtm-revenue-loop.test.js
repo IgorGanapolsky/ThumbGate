@@ -32,6 +32,7 @@ test('motion catalog stays aligned with current commercial truth and proof links
   const links = buildRevenueLinks();
   const catalog = buildMotionCatalog(links);
 
+  assert.match(links.guideLink, /\/guide$/);
   assert.match(catalog.pro.label, /Pro at \$19\/mo or \$149\/yr/);
   assert.match(catalog.pro.cta, /\/checkout\/pro$/);
   assert.match(catalog.sprint.cta, /#workflow-sprint-intake$/);
