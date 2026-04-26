@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.16.6
+
+### Patch Changes
+
+- [#1336](https://github.com/IgorGanapolsky/ThumbGate/pull/1336) [`e643a65`](https://github.com/IgorGanapolsky/ThumbGate/commit/e643a65897c36895c9ff30fa370989658913452a) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Generate the warm outreach handoff directly from the GTM revenue loop so the shipped sales assets, prospect queue, marketplace copy, and operator outreach drafts stay evidence-backed and synchronized.
+
 ## 1.16.5
 
 ### Patch Changes
