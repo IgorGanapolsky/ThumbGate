@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
+const fs = require('node:fs');
 const path = require('node:path');
 const {
   COMMERCIAL_TRUTH_LINK,
@@ -10,12 +11,12 @@ const {
 const {
   buildTrackedPackLink,
   isCliInvocation: isCliCall,
+  csvCell,
   normalizeText,
   parseReportArgs,
   readGitHubAbout,
   renderOperatorQueueCsv,
-  renderRevenuePackMarkdown,
-  writeStandardRevenuePack,
+  writeRevenuePackArtifacts,
 } = require('./revenue-pack-utils');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
@@ -23,6 +24,10 @@ const GEMINI_SOURCE = 'gemini';
 const GUIDE_MEDIUM = 'seo_guide';
 const OUTREACH_MEDIUM = 'operator_outreach';
 const GEMINI_SURFACE = 'gemini_cli';
+const REDDIT_MEDIUM = 'reddit_dm';
+const LINKEDIN_MEDIUM = 'linkedin_post';
+const THREADS_MEDIUM = 'threads_post';
+const BLUESKY_MEDIUM = 'bluesky_post';
 const CANONICAL_HEADLINE = 'Turn Gemini CLI memory demand into enforced workflow safety.';
 const CANONICAL_SHORT_DESCRIPTION = 'ThumbGate gives Gemini CLI local-first memory that can become prevention rules and Pre-Action Checks before the next risky MCP call runs.';
 const GEMINI_GUIDE_URL = 'https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory';
@@ -32,6 +37,7 @@ const MEM0_COMPARE_URL = 'https://thumbgate-production.up.railway.app/compare/me
 const GEMINI_GUIDE_SOURCE_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/gemini-cli-feedback-memory.html';
 const GCP_GUIDE_SOURCE_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/gcp-mcp-guardrails.html';
 const MEM0_COMPARE_SOURCE_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/compare/mem0.html';
+const REVENUE_LOOP_REPORT_PATH = path.join(REPO_ROOT, 'docs', 'marketing', 'gtm-revenue-loop.json');
 const PROOF_LINKS = [COMMERCIAL_TRUTH_LINK, VERIFICATION_EVIDENCE_LINK];
 const TRACKING_DEFAULTS = {
   utmSource: GEMINI_SOURCE,
@@ -47,16 +53,17 @@ const CANONICAL_FIELDS = [
   { label: 'Commercial truth', key: 'commercialTruthUrl' },
   { label: 'Verification evidence', key: 'verificationEvidenceUrl' },
 ];
-const SURFACE_FIELDS = [
-  { label: 'Buyer signal', key: 'buyerSignal' },
-  { label: 'Operator use', key: 'operatorUse' },
-  { label: 'Surface URL', key: 'url' },
-  { label: 'Support', key: 'supportUrl' },
-  { label: 'Proof', key: 'proofUrl' },
-];
 
 function buildTrackedGeminiLink(baseUrl, tracking = {}) {
   return buildTrackedPackLink(baseUrl, tracking, TRACKING_DEFAULTS);
+}
+
+function readRevenueLoopReport(reportPath = REVENUE_LOOP_REPORT_PATH) {
+  try {
+    return JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+  } catch {
+    return {};
+  }
 }
 
 function buildEvidenceSurfaces(links = buildRevenueLinks(), about = readGitHubAbout()) {
@@ -294,6 +301,96 @@ function buildOutreachDrafts(links = buildRevenueLinks()) {
   ];
 }
 
+function buildChannelDrafts(links = buildRevenueLinks(), report = {}) {
+  const warmTargetCount = countTargets(report, (target) => normalizeText(target.temperature).toLowerCase() === 'warm');
+  const productionTargetCount = countTargets(report, (target) => hasEvidence(target, 'production or platform workflow'));
+  const businessSystemTargetCount = countTargets(report, (target) => hasEvidence(target, 'business-system integration'));
+
+  const redditCta = buildTrackedGeminiLink(GEMINI_GUIDE_URL, {
+    utmMedium: REDDIT_MEDIUM,
+    utmCampaign: 'gemini_channel_reddit',
+    utmContent: 'guide',
+    campaignVariant: 'memory_first',
+    offerCode: 'GEMINI-CHANNEL-REDDIT',
+    ctaId: 'gemini_channel_reddit',
+    ctaPlacement: 'channel_draft',
+    surface: 'gemini_reddit',
+  });
+  const linkedinCta = buildTrackedGeminiLink(GCP_GUIDE_URL, {
+    utmMedium: LINKEDIN_MEDIUM,
+    utmCampaign: 'gemini_channel_linkedin',
+    utmContent: 'guide',
+    campaignVariant: 'gcp_guardrails',
+    offerCode: 'GEMINI-CHANNEL-LINKEDIN',
+    ctaId: 'gemini_channel_linkedin',
+    ctaPlacement: 'channel_draft',
+    surface: 'gemini_linkedin',
+  });
+  const threadsCta = buildTrackedGeminiLink(GEMINI_GUIDE_URL, {
+    utmMedium: THREADS_MEDIUM,
+    utmCampaign: 'gemini_channel_threads',
+    utmContent: 'guide',
+    campaignVariant: 'memory_repeat',
+    offerCode: 'GEMINI-CHANNEL-THREADS',
+    ctaId: 'gemini_channel_threads',
+    ctaPlacement: 'channel_draft',
+    surface: 'gemini_threads',
+  });
+  const blueskyCta = buildTrackedGeminiLink(MEM0_COMPARE_URL, {
+    utmMedium: BLUESKY_MEDIUM,
+    utmCampaign: 'gemini_channel_bluesky',
+    utmContent: 'comparison',
+    campaignVariant: 'local_first',
+    offerCode: 'GEMINI-CHANNEL-BLUESKY',
+    ctaId: 'gemini_channel_bluesky',
+    ctaPlacement: 'channel_draft',
+    surface: 'gemini_bluesky',
+  });
+
+  return [
+    {
+      key: 'gemini_reddit_memory',
+      channel: 'Reddit',
+      format: 'DM or reply follow-up',
+      audience: 'Warm Gemini CLI or agent-memory builder who already named one repeated workflow mistake',
+      evidenceSummary: `${warmTargetCount} current warm target(s) already named repeated workflow pain, so Reddit should stay memory-first and pain-specific instead of broad governance-first.`,
+      cta: redditCta,
+      proofTiming: 'Keep first touch guide-first. Send Commercial Truth and Verification Evidence only after the buyer confirms the repeated failure.',
+      draft: `If Gemini CLI keeps repeating the same mistake, the missing piece is not more memory in chat. It is turning that repeated failure into a Pre-Action Check before the next risky MCP call runs. If you already know the repeat you want blocked, start here: ${redditCta} .`,
+    },
+    {
+      key: 'gemini_linkedin_gcp',
+      channel: 'LinkedIn',
+      format: 'Founder post',
+      audience: 'Platform, cloud, or data team lead evaluating Gemini CLI near production systems',
+      evidenceSummary: `${productionTargetCount} current production-style target(s) point to BigQuery, Spanner, AlloyDB, Cloud SQL, and approval-boundary risk as the strongest B2B Gemini angle.`,
+      cta: linkedinCta,
+      proofTiming: 'Public post can mention blast radius and guardrails, but hold proof links for the DM or reply after the workflow risk is named.',
+      draft: `Gemini CLI gets interesting when it moves from drafts into BigQuery, Spanner, AlloyDB, Cloud SQL, or approval-boundary workflows. At that point the question is not “does memory exist,” it is “what stops the same risky MCP call from running again?” ThumbGate is the lane I use for that boundary. If you are evaluating Gemini near production systems, start with the guardrails guide: ${linkedinCta} .`,
+    },
+    {
+      key: 'gemini_threads_repeat',
+      channel: 'Threads',
+      format: 'Short post',
+      audience: 'Solo Gemini CLI builder who wants a fast guide-led path from memory to enforcement',
+      evidenceSummary: 'The strongest solo Gemini motion is still memory-first: guide click first, proof second, paid path only after one blocked repeat is concrete.',
+      cta: threadsCta,
+      proofTiming: 'Do not attach proof links in the first touch. Keep the post guide-first and move proof into follow-up only after pain is confirmed.',
+      draft: `Gemini CLI memory is not enough if the same mistake still runs again tomorrow. ThumbGate turns one repeated failure into a Pre-Action Check instead of another note in history. Start with the memory guide here: ${threadsCta} .`,
+    },
+    {
+      key: 'gemini_bluesky_local_first',
+      channel: 'Bluesky',
+      format: 'Short post',
+      audience: 'Security-sensitive evaluator comparing hosted memory to local-first enforcement',
+      evidenceSummary: `${businessSystemTargetCount} current business-system target(s) reinforce the local-first posture: keep workflow memory local, then prove enforcement before the next risky call.`,
+      cta: blueskyCta,
+      proofTiming: 'Lead with the comparison surface first. Send Commercial Truth and Verification Evidence only after the buyer replies with a concrete privacy or workflow objection.',
+      draft: `Hosted memory is not the only option for Gemini CLI. If you want the workflow history to stay local and still become enforceable checks before the next MCP call runs, start with the local-first comparison: ${blueskyCta} .`,
+    },
+  ];
+}
+
 function buildMeasurementPlan() {
   return {
     northStar: 'gemini_guide_to_paid_intent',
@@ -367,6 +464,7 @@ function buildGeminiCliDemandPack(report = {}, links = buildRevenueLinks(), abou
     followOnOffers: buildFollowOnOffers(links),
     operatorQueue: buildOperatorQueue(links, report),
     outreachDrafts: buildOutreachDrafts(links),
+    channelDrafts: buildChannelDrafts(links, report),
     measurementPlan: buildMeasurementPlan(),
     proofLinks: [...PROOF_LINKS],
   };
@@ -376,31 +474,149 @@ function renderGeminiCliOperatorQueueCsv(pack = {}) {
   return renderOperatorQueueCsv(pack.operatorQueue);
 }
 
+function renderGeminiCliChannelDraftsCsv(pack = {}) {
+  const drafts = Array.isArray(pack.channelDrafts) ? pack.channelDrafts : [];
+  const rows = [
+    ['key', 'channel', 'format', 'audience', 'evidenceSummary', 'cta', 'proofTiming', 'draft'],
+    ...drafts.map((draft) => ([
+      draft.key,
+      draft.channel,
+      draft.format,
+      draft.audience,
+      draft.evidenceSummary,
+      draft.cta,
+      draft.proofTiming,
+      draft.draft,
+    ])),
+  ];
+
+  return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
+}
+
 function renderGeminiCliDemandPackMarkdown(pack = {}) {
-  return renderRevenuePackMarkdown({
-    title: 'Gemini CLI Demand Pack',
-    disclaimer: 'This is a sales operator artifact. It is not proof of rankings, sent outreach, installs, paid revenue, or marketplace approval by itself.',
-    pack,
-    canonicalFields: CANONICAL_FIELDS,
-    surfaceFields: SURFACE_FIELDS,
-  });
+  const surfaceLines = Array.isArray(pack.surfaces) && pack.surfaces.length
+    ? pack.surfaces.flatMap((surface) => ([
+      `### ${surface.name}`,
+      `- Buyer signal: ${surface.buyerSignal}`,
+      `- Operator use: ${surface.operatorUse}`,
+      `- Surface URL: ${surface.url}`,
+      `- Support: ${surface.supportUrl}`,
+      `- Proof: ${surface.proofUrl}`,
+      '',
+    ]))
+    : ['- No demand surfaces available.', ''];
+  const offerLines = Array.isArray(pack.followOnOffers) && pack.followOnOffers.length
+    ? pack.followOnOffers.map((offer) => `- ${offer.label}: ${offer.pricing}\n  Buyer: ${offer.buyer}\n  CTA: ${offer.cta}`)
+    : ['- No follow-on offers available.'];
+  const queueLines = Array.isArray(pack.operatorQueue) && pack.operatorQueue.length
+    ? pack.operatorQueue.flatMap((entry) => ([
+      `### ${entry.audience}`,
+      `- Evidence: ${entry.evidence}`,
+      `- Proof trigger: ${entry.proofTrigger}`,
+      `- Proof asset: ${entry.proofAsset}`,
+      `- Next ask: ${entry.nextAsk}`,
+      `- Recommended motion: ${entry.recommendedMotion}`,
+      '',
+    ]))
+    : ['- No operator queue entries available.', ''];
+  const outreachLines = Array.isArray(pack.outreachDrafts) && pack.outreachDrafts.length
+    ? pack.outreachDrafts.flatMap((draft) => ([
+      `### ${draft.channel} — ${draft.audience}`,
+      draft.draft,
+      '',
+    ]))
+    : ['- No outreach drafts available.', ''];
+  const channelLines = Array.isArray(pack.channelDrafts) && pack.channelDrafts.length
+    ? pack.channelDrafts.flatMap((draft) => ([
+      `### ${draft.channel} — ${draft.format}`,
+      `- Audience: ${draft.audience}`,
+      `- Evidence: ${draft.evidenceSummary}`,
+      `- CTA: ${draft.cta}`,
+      `- Proof timing: ${draft.proofTiming}`,
+      draft.draft,
+      '',
+    ]))
+    : ['- No active channel drafts available.', ''];
+  const listLines = (values = []) => (Array.isArray(values) && values.length ? values.map((entry) => `- ${entry}`) : ['- n/a']);
+  const milestoneLines = Array.isArray(pack.measurementPlan?.milestones) && pack.measurementPlan.milestones.length
+    ? pack.measurementPlan.milestones.map((milestone) => `- ${milestone.window}: ${milestone.goal} Decision rule: ${milestone.decisionRule}`)
+    : ['- No milestones available.'];
+
+  return [
+    '# Gemini CLI Demand Pack',
+    '',
+    `Updated: ${pack.generatedAt}`,
+    '',
+    'This is a sales operator artifact. It is not proof of rankings, sent outreach, installs, paid revenue, or marketplace approval by itself.',
+    '',
+    '## Objective',
+    pack.objective,
+    '',
+    '## Positioning',
+    `- State: ${pack.state}`,
+    `- Headline: ${pack.headline}`,
+    `- Short description: ${pack.shortDescription}`,
+    `- Summary: ${pack.summary}`,
+    '',
+    '## Canonical Identity',
+    ...CANONICAL_FIELDS.map((field) => `- ${field.label}: ${pack.canonicalIdentity?.[field.key] || field.fallback || ''}`),
+    '',
+    '## Demand Surfaces',
+    ...surfaceLines,
+    '## Follow-On Offers',
+    ...offerLines,
+    '',
+    '## Operator Queue',
+    ...queueLines,
+    '## Outreach Drafts',
+    ...outreachLines,
+    '## Active Channel Drafts',
+    ...channelLines,
+    '## 90-Day Measurement Plan',
+    `- North star: ${pack.measurementPlan?.northStar || 'n/a'}`,
+    `- Policy: ${pack.measurementPlan?.policy || 'n/a'}`,
+    `- Minimum useful signal: ${pack.measurementPlan?.minimumUsefulSignal || 'n/a'}`,
+    `- Strong signal: ${pack.measurementPlan?.strongSignal || 'n/a'}`,
+    'Tracked metrics:',
+    ...listLines(pack.measurementPlan?.metrics),
+    'Guardrails:',
+    ...listLines(pack.measurementPlan?.guardrails),
+    'Milestones:',
+    ...milestoneLines,
+    'Do not count as success:',
+    ...listLines(pack.measurementPlan?.doNotCountAsSuccess),
+    '',
+    '## Proof Links',
+    ...listLines(pack.proofLinks),
+    '',
+  ].join('\n');
 }
 
 function writeGeminiCliDemandPack(pack, options = {}) {
-  return writeStandardRevenuePack({
+  return writeRevenuePackArtifacts({
     repoRoot: REPO_ROOT,
+    reportDir: options.reportDir,
+    writeDocs: options.writeDocs,
     docsPath: path.join(REPO_ROOT, 'docs', 'marketing', 'gemini-cli-demand-pack.md'),
-    pack,
-    options,
-    renderMarkdown: renderGeminiCliDemandPackMarkdown,
+    markdown: renderGeminiCliDemandPackMarkdown(pack),
     jsonName: 'gemini-cli-demand-pack.json',
-    csvName: 'gemini-cli-operator-queue.csv',
+    jsonValue: pack,
+    csvArtifacts: [
+      {
+        name: 'gemini-cli-operator-queue.csv',
+        value: renderGeminiCliOperatorQueueCsv(pack),
+      },
+      {
+        name: 'gemini-cli-channel-drafts.csv',
+        value: renderGeminiCliChannelDraftsCsv(pack),
+      },
+    ],
   });
 }
 
 async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
-  const pack = buildGeminiCliDemandPack();
+  const pack = buildGeminiCliDemandPack(readRevenueLoopReport());
   const written = writeGeminiCliDemandPack(pack, options);
 
   console.log('Gemini CLI demand pack ready.');
@@ -414,6 +630,7 @@ async function main(argv = process.argv.slice(2)) {
     surfaces: pack.surfaces.length,
     followOnOffers: pack.followOnOffers.length,
     operatorQueue: pack.operatorQueue.length,
+    channelDrafts: pack.channelDrafts.length,
     northStar: pack.measurementPlan.northStar,
   }, null, 2));
 }
@@ -439,6 +656,8 @@ module.exports = {
   GCP_GUIDE_URL,
   GEMINI_GUIDE_URL,
   MEM0_COMPARE_URL,
+  REVENUE_LOOP_REPORT_PATH,
+  buildChannelDrafts,
   buildEvidenceSurfaces,
   buildFollowOnOffers,
   buildGeminiCliDemandPack,
@@ -448,6 +667,8 @@ module.exports = {
   buildMeasurementPlan,
   isCliInvocation,
   parseArgs,
+  readRevenueLoopReport,
+  renderGeminiCliChannelDraftsCsv,
   renderGeminiCliDemandPackMarkdown,
   renderGeminiCliOperatorQueueCsv,
   writeGeminiCliDemandPack,
