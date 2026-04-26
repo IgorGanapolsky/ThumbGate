@@ -432,15 +432,15 @@ function parseArgs(argv = []) {
     writeDocs: false,
   };
 
-  for (let index = 0; index < argv.length; index += 1) {
-    const arg = argv[index];
+  const args = [...argv];
+  while (args.length > 0) {
+    const arg = args.shift();
     if (arg === '--write-docs') {
       options.writeDocs = true;
       continue;
     }
     if (arg === '--report-dir') {
-      options.reportDir = normalizeText(argv[index + 1]);
-      index += 1;
+      options.reportDir = normalizeText(args.shift());
       continue;
     }
     if (arg.startsWith('--report-dir=')) {
