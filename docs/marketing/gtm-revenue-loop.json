@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-26T13:14:47.481Z",
+  "generatedAt": "2026-04-26T15:17:35.402Z",
   "source": "local",
   "fallbackReason": "Hosted operational summary is not configured.",
   "objective": "First 10 paying customers",
@@ -331,7 +331,7 @@
       "repoUrl": "https://github.com/manki-review/manki",
       "description": "Multi-stage, multi-agent AI code review for GitHub — self-hosted, provider-neutral. A planner picks the team, agents review in parallel, a judge filters the noise.",
       "stars": 5,
-      "updatedAt": "2026-04-26T12:37:01Z",
+      "updatedAt": "2026-04-26T14:10:12Z",
       "evidenceScore": 13,
       "evidence": [
         "workflow control surface",
@@ -598,7 +598,7 @@
     }
   ],
   "marketplaceCopy": {
-    "generatedAt": "2026-04-26T13:14:47.481Z",
+    "generatedAt": "2026-04-26T15:17:35.402Z",
     "state": "cold-start",
     "headline": "Harden one AI-agent workflow before you roll it out.",
     "shortDescription": "No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive.",

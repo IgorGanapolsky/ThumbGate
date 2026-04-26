@@ -21,6 +21,7 @@ const {
   prospectTargets,
   renderMarketplaceCopyMarkdown,
   renderRevenueLoopMarkdown,
+  renderTeamOutreachMessagesMarkdown,
   runRevenueLoop,
   selectOutreachMotion,
   summarizeCommercialSnapshot,
@@ -389,6 +390,53 @@ test('rendered revenue loop markdown anchors every target to truth and proof', (
   assert.doesNotMatch(markdown, /founding users today/i);
 });
 
+test('team outreach markdown stays discovery-first and evidence-backed', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const markdown = renderTeamOutreachMessagesMarkdown({
+    generatedAt: '2026-04-26T00:00:00.000Z',
+    targets: [{
+      temperature: 'warm',
+      source: 'reddit',
+      channel: 'reddit_dm',
+      username: 'builder',
+      accountName: 'r/ClaudeCode',
+      contactUrl: 'https://www.reddit.com/user/builder/',
+      evidenceScore: 9,
+      evidence: ['warm inbound engagement', 'workflow pain named'],
+      evidenceSources: [
+        {
+          label: 'Target signal',
+          url: 'https://www.reddit.com/user/builder/',
+        },
+        {
+          label: 'Commercial truth',
+          url: catalog.pro.truth,
+        },
+        {
+          label: 'Verification evidence',
+          url: catalog.pro.proof,
+        },
+      ],
+      outreachAngle: 'Lead with one repeated workflow blocker.',
+      motionLabel: catalog.sprint.label,
+      motionReason: 'Warm target already named a repeated workflow blocker.',
+      proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+      cta: catalog.sprint.cta,
+      firstTouchDraft: 'I will harden one AI-agent workflow for you.',
+      painConfirmedFollowUpDraft: 'If the workflow pain is real, I can send the proof pack.',
+    }],
+  });
+
+  assert.match(markdown, /CUSTOMER_DISCOVERY_SPRINT\.md/);
+  assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
+  assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
+  assert.match(markdown, /I will harden one AI-agent workflow for you/);
+  assert.match(markdown, /Evidence sources:/);
+  assert.match(markdown, /Pain-confirmed follow-up:/);
+  assert.doesNotMatch(markdown, /checkout\/pro/);
+});
+
 test('first-touch outreach does not push proof before pain is confirmed', () => {
   const catalog = buildMotionCatalog(buildRevenueLinks());
   const selectedMotion = selectOutreachMotion({
@@ -729,6 +777,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     const csv = fs.readFileSync(csvPath, 'utf8');
     const marketplaceCopy = JSON.parse(fs.readFileSync(path.join(reportDir, 'gtm-marketplace-copy.json'), 'utf8'));
     const jsonl = fs.readFileSync(path.join(reportDir, 'gtm-target-queue.jsonl'), 'utf8');
+    const teamOutreach = fs.readFileSync(path.join(reportDir, 'team-outreach-messages.md'), 'utf8');
 
     assert.equal(written.reportDir, reportDir);
     assert.equal(written.docsPath, null);
@@ -738,6 +787,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.ok(fs.existsSync(path.join(reportDir, 'gtm-marketplace-copy.json')));
     assert.ok(fs.existsSync(csvPath));
     assert.ok(fs.existsSync(path.join(reportDir, 'gtm-target-queue.jsonl')));
+    assert.ok(fs.existsSync(path.join(reportDir, 'team-outreach-messages.md')));
     assert.match(csv, /^temperature,source,channel,username,accountName,contactUrl,repoName,repoUrl,updatedAt,offer,pipelineStage,evidenceScore,evidence,evidenceSource,evidenceLinks,claimGuardrails,outreachAngle,motionLabel,motionReason,proofPackTrigger,cta,firstTouchDraft,painConfirmedFollowUpDraft/m);
     assert.match(csv, /"I can harden one workflow, then prove it\."/);
     assert.match(csv, /"If the workflow pain is real, I can send the proof pack\."/);
@@ -748,6 +798,9 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.match(marketplaceCopy.recommendedCtas[0].cta, /thumbgate-production\.up\.railway\.app\/guide/);
     assert.ok(Array.isArray(marketplaceCopy.topSignals));
     assert.equal(JSON.parse(jsonl.trim()).repoName, 'production-mcp-server');
+    assert.match(teamOutreach, /CUSTOMER_DISCOVERY_SPRINT\.md/);
+    assert.match(teamOutreach, /I will harden one AI-agent workflow for you/);
+    assert.match(teamOutreach, /If the workflow pain is real, I can send the proof pack\./);
   } finally {
     fs.rmSync(reportDir, { recursive: true, force: true });
   }
@@ -846,6 +899,7 @@ test('writeRevenueLoopOutputs mirrors dedicated GTM docs instead of overwriting 
     assert.ok(fs.existsSync(path.join(marketingDir, 'gtm-marketplace-copy.json')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'gtm-target-queue.csv')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'gtm-target-queue.jsonl')));
+    assert.ok(fs.existsSync(path.join(marketingDir, 'team-outreach-messages.md')));
   } finally {
     fs.rmSync(repoRoot, { recursive: true, force: true });
   }
