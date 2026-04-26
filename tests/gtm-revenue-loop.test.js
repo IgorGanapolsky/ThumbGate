@@ -512,8 +512,33 @@ test('first-touch outreach does not push proof before pain is confirmed', () => 
 
   assert.equal(selectedMotion.key, 'sprint');
   assert.match(message, /harden/);
+  assert.match(message, /prevention gate and proof run/);
+  assert.doesNotMatch(message, /Lead with/i);
   assert.doesNotMatch(message, /VERIFICATION_EVIDENCE/);
   assert.doesNotMatch(message, /COMMERCIAL_TRUTH/);
+});
+
+test('first-touch outreach applies the evidence angle without leaking operator instructions', () => {
+  const catalog = buildMotionCatalog(buildRevenueLinks());
+  const selectedMotion = selectOutreachMotion({
+    username: 'freema',
+    repoName: 'mcp-jira-stdio',
+    description: 'MCP server for Jira integration with workflow approvals and issue handoffs.',
+    evidence: {
+      score: 10,
+      outreachAngle: 'Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.',
+    },
+  }, catalog);
+  const message = buildFallbackMessage({
+    username: 'freema',
+    repoName: 'mcp-jira-stdio',
+    description: 'MCP server for Jira integration with workflow approvals and issue handoffs.',
+  }, selectedMotion, catalog);
+
+  assert.match(message, /approval, handoff, or rollback step/i);
+  assert.match(message, /mcp-jira-stdio/);
+  assert.doesNotMatch(message, /Lead with/i);
+  assert.doesNotMatch(message, /approval boundaries/i);
 });
 
 test('pain-confirmed follow-up adds proof links only after the buyer confirms pain', () => {
