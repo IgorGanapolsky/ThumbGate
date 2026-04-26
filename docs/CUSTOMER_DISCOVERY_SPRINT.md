@@ -46,7 +46,7 @@ Generate a target queue:
 npm run gtm:revenue-loop -- --report-dir reports/gtm/$(date +%F)-selling-now --max-targets=12
 ```
 
-The revenue loop now emits eleven operator artifacts in that folder:
+The revenue loop now emits fourteen operator artifacts in that folder:
 
 - `gtm-revenue-loop.md` for the human summary
 - `gtm-revenue-loop.json` for machine-readable truth
@@ -59,6 +59,9 @@ The revenue loop now emits eleven operator artifacts in that folder:
 - `cursor-marketplace-revenue-pack.md` for Cursor Marketplace, Cursor Directory, and Team Marketplace submission copy
 - `cursor-marketplace-revenue-pack.json` for machine-readable Cursor listing metadata and follow-on offers
 - `cursor-marketplace-surfaces.csv` for one-sheet operator submission fields
+- `codex-plugin-revenue-pack.md` for Codex install-page, setup-guide, and release-bundle submission copy
+- `codex-plugin-revenue-pack.json` for machine-readable Codex listing metadata and follow-on offers
+- `codex-plugin-surfaces.csv` for one-sheet Codex operator submission fields
 
 That report now carries both warm discovery leads and cold GitHub prospects in one machine-readable queue so the operator can import a single artifact and still contact the warm engagers first.
 Every artifact inherits the same evidence backstop:
