@@ -1,7 +1,7 @@
 # GSD Revenue Loop
 
 Status: cold-start
-Updated: 2026-04-26T13:14:47.481Z
+Updated: 2026-04-26T15:17:35.402Z
 
 This report is an operator artifact for landing the first 10 paying customers. It is not proof of sent messages or booked revenue by itself.
 Outbound rule: do not treat posts as sales. A lead only moves when it is tracked as contacted, replied, call booked, checkout/sprint, or paid.
@@ -147,7 +147,7 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Offer: workflow_hardening_sprint
 - Contact: n/a
 - Repo: https://github.com/manki-review/manki
-- Repo last updated: 2026-04-26T12:37:01Z
+- Repo last updated: 2026-04-26T14:10:12Z
 - Evidence score: 13
 - Evidence: workflow control surface, business-system integration, agent infrastructure, 5 GitHub stars, updated in the last 7 days
 - Evidence sources: Target signal: https://github.com/manki-review/manki; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md

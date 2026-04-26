@@ -936,6 +936,70 @@ function renderRevenueLoopMarkdown(report) {
   return `${lines.join('\n').trim()}\n`;
 }
 
+function renderQuotedText(text) {
+  const normalized = normalizeText(text);
+  if (!normalized) {
+    return ['> n/a'];
+  }
+  return normalized.split('\n').map((line) => `> ${line}`);
+}
+
+function renderWarmTargetOutreachMarkdown(target, index) {
+  return [
+    `## ${index + 1}. ${target.username} (${target.accountName || target.source || 'warm lead'})`,
+    `- Source: ${target.source || 'github'} / ${target.channel || target.source || 'github'}`,
+    `- Contact: ${target.contactUrl || 'n/a'}`,
+    `- Evidence score: ${target.evidenceScore}`,
+    `- Evidence: ${target.evidence.length ? target.evidence.join(', ') : 'n/a'}`,
+    `- Evidence sources: ${renderEvidenceSources(target.evidenceSources)}`,
+    `- Outreach angle: ${target.outreachAngle || 'n/a'}`,
+    `- Motion: ${target.motionLabel}`,
+    `- Why: ${target.motionReason}`,
+    `- Proof timing: ${target.proofPackTrigger || 'Use proof pack only after the buyer confirms pain.'}`,
+    `- CTA: ${target.cta}`,
+    '',
+    'First-touch draft:',
+    ...renderQuotedText(target.firstTouchDraft || target.message),
+    '',
+    'Pain-confirmed follow-up:',
+    ...renderQuotedText(target.painConfirmedFollowUpDraft),
+    '',
+  ];
+}
+
+function renderTeamOutreachMessagesMarkdown(report) {
+  const warmTargets = Array.isArray(report?.targets)
+    ? report.targets.filter((target) => target.temperature === 'warm')
+    : [];
+  const warmTargetLines = warmTargets.length
+    ? warmTargets.flatMap(renderWarmTargetOutreachMarkdown)
+    : ['- No warm discovery targets were loaded for this run.', ''];
+
+  return [
+    '# Workflow Hardening Sprint Outreach Messages',
+    '',
+    `Updated: ${report.generatedAt}`,
+    '',
+    'These drafts are generated from the same evidence-backed revenue-loop report as `gtm-revenue-loop.md`, `gtm-target-queue.csv`, and `gtm-marketplace-copy.md`.',
+    '',
+    'Track each lead in the sales ledger before sending anything:',
+    '',
+    '```bash',
+    'npm run sales:pipeline -- add --source reddit --channel reddit_dm --username <name> --pain "<specific pain hypothesis>"',
+    '```',
+    '',
+    'Use them as part of the one-week discovery loop in [CUSTOMER_DISCOVERY_SPRINT.md](../CUSTOMER_DISCOVERY_SPRINT.md). The goal is not to sell on first touch. The goal is to learn whether the real buyer problem is team agent governance, approval boundaries, and rollout proof.',
+    '',
+    'First-touch rule: lead with one concrete offer, not generic Pro and not the proof pack.',
+    '',
+    '> I will harden one AI-agent workflow for you.',
+    '',
+    'Use [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) and [COMMERCIAL_TRUTH.md](../COMMERCIAL_TRUTH.md) only after the buyer confirms the workflow pain.',
+    '',
+    ...warmTargetLines,
+  ].join('\n');
+}
+
 function renderMarketplaceCopyMarkdown(pack) {
   const signalLines = pack.topSignals.length
     ? pack.topSignals.map((signal) => `- ${signal.label} (${signal.count}): ${signal.summary}${signal.examples.length ? ` Examples: ${signal.examples.join(', ')}` : ''}`)
@@ -1071,11 +1135,13 @@ function writeRevenueLoopOutputs(report, options = {}) {
   const marketplaceJsonDocsPath = path.join(docsDir, 'gtm-marketplace-copy.json');
   const queueCsvDocsPath = path.join(docsDir, 'gtm-target-queue.csv');
   const queueJsonlDocsPath = path.join(docsDir, 'gtm-target-queue.jsonl');
+  const teamOutreachDocsPath = path.join(docsDir, 'team-outreach-messages.md');
   const markdown = renderRevenueLoopMarkdown(report);
   const marketplaceCopy = report.marketplaceCopy || buildMarketplaceCopy(report);
   const marketplaceMarkdown = renderMarketplaceCopyMarkdown(marketplaceCopy);
   const csv = renderRevenueLoopCsv(report);
   const jsonl = renderRevenueLoopJsonl(report);
+  const teamOutreachMarkdown = renderTeamOutreachMessagesMarkdown(report);
   const reportDir = normalizeText(options.reportDir)
     ? path.resolve(repoRoot, options.reportDir)
     : '';
@@ -1089,6 +1155,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     fs.writeFileSync(path.join(reportDir, 'gtm-marketplace-copy.json'), `${JSON.stringify(marketplaceCopy, null, 2)}\n`, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'gtm-target-queue.csv'), csv, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'gtm-target-queue.jsonl'), jsonl, 'utf8');
+    fs.writeFileSync(path.join(reportDir, 'team-outreach-messages.md'), teamOutreachMarkdown, 'utf8');
   }
 
   if (shouldWriteDocs) {
@@ -1099,11 +1166,13 @@ function writeRevenueLoopOutputs(report, options = {}) {
     fs.writeFileSync(marketplaceJsonDocsPath, `${JSON.stringify(marketplaceCopy, null, 2)}\n`, 'utf8');
     fs.writeFileSync(queueCsvDocsPath, csv, 'utf8');
     fs.writeFileSync(queueJsonlDocsPath, jsonl, 'utf8');
+    fs.writeFileSync(teamOutreachDocsPath, teamOutreachMarkdown, 'utf8');
   }
 
   return {
     markdown,
     marketplaceMarkdown,
+    teamOutreachMarkdown,
     reportDir: reportDir || null,
     docsPath: shouldWriteDocs ? defaultDocsPath : null,
   };
@@ -1189,6 +1258,7 @@ module.exports = {
   prospectTargets,
   renderRevenueLoopMarkdown,
   renderMarketplaceCopyMarkdown,
+  renderTeamOutreachMessagesMarkdown,
   runRevenueLoop,
   selectOutreachMotion,
   summarizeCommercialSnapshot,
