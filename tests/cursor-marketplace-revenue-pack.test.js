@@ -24,22 +24,30 @@ const {
   writeCursorMarketplaceRevenuePack,
 } = require('../scripts/cursor-marketplace-revenue-pack');
 
+const LINKS_FIXTURE = {
+  appOrigin: 'https://thumbgate-production.up.railway.app',
+  proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
+  sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+  proPriceLabel: '$19/mo or $149/yr',
+};
+
+const ABOUT_FIXTURE = {
+  repositoryUrl: 'https://github.com/IgorGanapolsky/ThumbGate',
+  homepageUrl: 'https://thumbgate-production.up.railway.app',
+  githubDescription: 'Agent governance for ThumbGate.',
+  topics: ['thumbgate', 'pre-action-checks', 'cursor', 'agent-reliability', 'guardrails', 'developer-tools'],
+};
+
 function makeTempDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-cursor-marketplace-'));
 }
 
+function buildPack() {
+  return buildCursorMarketplaceRevenuePack(LINKS_FIXTURE, ABOUT_FIXTURE);
+}
+
 test('Cursor surfaces cover marketplace, directory, and team rollout lanes without fake approval claims', () => {
-  const surfaces = buildCursorMarketplaceSurfaces({
-    appOrigin: 'https://thumbgate-production.up.railway.app',
-    proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
-    sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
-    proPriceLabel: '$19/mo or $149/yr',
-  }, {
-    repositoryUrl: 'https://github.com/IgorGanapolsky/ThumbGate',
-    homepageUrl: 'https://thumbgate-production.up.railway.app',
-    githubDescription: 'Agent governance for ThumbGate.',
-    topics: ['thumbgate', 'pre-action-checks', 'cursor', 'agent-reliability', 'guardrails', 'developer-tools'],
-  });
+  const surfaces = buildCursorMarketplaceSurfaces(LINKS_FIXTURE, ABOUT_FIXTURE);
 
   assert.deepEqual(surfaces.map((surface) => surface.key), ['marketplace', 'directory', 'team_marketplace']);
   assert.equal(surfaces[0].submissionUrl, CURSOR_PUBLISH_URL);
@@ -78,12 +86,7 @@ test('tracked Cursor links keep source, medium, and campaign machine-readable', 
 });
 
 test('follow-on offers keep Pro and team motions explicit after install', () => {
-  const offers = buildFollowOnOffers({
-    appOrigin: 'https://thumbgate-production.up.railway.app',
-    proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
-    sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
-    proPriceLabel: '$19/mo or $149/yr',
-  });
+  const offers = buildFollowOnOffers(LINKS_FIXTURE);
 
   assert.deepEqual(offers.map((offer) => offer.key), ['pro', 'teams']);
   assert.equal(offers[0].pricingModel, '$19/mo or $149/yr');
@@ -103,17 +106,7 @@ test('measurement plan stays honest about paid intent versus bare installs', () 
 
 test('rendered pack is operator-ready and anchored to proof plus screenshots', () => {
   const rendered = renderCursorMarketplaceRevenuePackMarkdown({
-    ...buildCursorMarketplaceRevenuePack({
-      appOrigin: 'https://thumbgate-production.up.railway.app',
-      proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
-      sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
-      proPriceLabel: '$19/mo or $149/yr',
-    }, {
-      repositoryUrl: 'https://github.com/IgorGanapolsky/ThumbGate',
-      homepageUrl: 'https://thumbgate-production.up.railway.app',
-      githubDescription: 'Agent governance for ThumbGate.',
-      topics: ['thumbgate', 'pre-action-checks', 'cursor', 'agent-reliability', 'guardrails', 'developer-tools'],
-    }),
+    ...buildPack(),
     generatedAt: '2026-04-25T00:00:00.000Z',
   });
 
@@ -129,17 +122,7 @@ test('rendered pack is operator-ready and anchored to proof plus screenshots', (
 });
 
 test('CSV export keeps submission fields in one operator file', () => {
-  const csv = renderCursorMarketplaceRevenuePackCsv(buildCursorMarketplaceRevenuePack({
-    appOrigin: 'https://thumbgate-production.up.railway.app',
-    proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
-    sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
-    proPriceLabel: '$19/mo or $149/yr',
-  }, {
-    repositoryUrl: 'https://github.com/IgorGanapolsky/ThumbGate',
-    homepageUrl: 'https://thumbgate-production.up.railway.app',
-    githubDescription: 'Agent governance for ThumbGate.',
-    topics: ['thumbgate', 'pre-action-checks', 'cursor', 'agent-reliability', 'guardrails', 'developer-tools'],
-  }));
+  const csv = renderCursorMarketplaceRevenuePackCsv(buildPack());
 
   assert.match(csv, /^key,name,role,operatorStatus,conversionGoal,/);
   assert.match(csv, /Cursor Marketplace/);
@@ -151,17 +134,7 @@ test('CSV export keeps submission fields in one operator file', () => {
 test('CLI options and report writing produce markdown, JSON, and CSV artifacts', () => {
   const tempDir = makeTempDir();
   const options = parseArgs(['--write-docs', '--report-dir', tempDir]);
-  const plan = buildCursorMarketplaceRevenuePack({
-    appOrigin: 'https://thumbgate-production.up.railway.app',
-    proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
-    sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
-    proPriceLabel: '$19/mo or $149/yr',
-  }, {
-    repositoryUrl: 'https://github.com/IgorGanapolsky/ThumbGate',
-    homepageUrl: 'https://thumbgate-production.up.railway.app',
-    githubDescription: 'Agent governance for ThumbGate.',
-    topics: ['thumbgate', 'pre-action-checks', 'cursor', 'agent-reliability', 'guardrails', 'developer-tools'],
-  });
+  const plan = buildPack();
   const written = writeCursorMarketplaceRevenuePack(plan, {
     ...options,
     writeDocs: false,
