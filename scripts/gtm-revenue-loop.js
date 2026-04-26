@@ -1022,7 +1022,7 @@ function renderOperatorHandoffMarkdown(report) {
   const warmTargets = rankedTargets.filter((target) => normalizeText(target.temperature).toLowerCase() === 'warm');
   const coldTargets = rankedTargets.filter((target) => normalizeText(target.temperature).toLowerCase() !== 'warm');
   const warmLines = warmTargets.length
-    ? warmTargets.flatMap(renderOperatorPriorityTargetMarkdown)
+    ? warmTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index))
     : ['- No warm discovery targets are available for this run.', ''];
   const coldLines = coldTargets.length
     ? coldTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index + warmTargets.length))
