@@ -1,6 +1,6 @@
 # Claude Workflow Hardening Pack
 
-Updated: 2026-04-26T14:17:13.172Z
+Updated: 2026-04-26T17:15:59.268Z
 
 This is a sales operator artifact. It is not proof of sent outreach, directory approval, paid revenue, or deployment success by itself.
 
@@ -79,7 +79,7 @@ Follow-on listing offers:
 - @leogodin217 (warm) -> Workflow Hardening Sprint. Reason: Warm Reddit engager already described a mature workflow, so the next step is a targeted diagnostic on one failure mode. Evidence: warm inbound engagement, mature multi-step workflow described, workflow pain named: review boundaries and context risk Next ask: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - @Enthu-Cutlet-1337 (warm) -> Workflow Hardening Sprint. Reason: Warm Reddit engager already understands the adaptive-gate thesis, so offer one concrete workflow hardening diagnostic. Evidence: warm inbound engagement, responded to adaptive-gate positioning, workflow pain named: brittle guardrails Next ask: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - freema/mcp-jira-stdio (cold) -> Workflow Hardening Sprint. Reason: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof. Evidence: workflow control surface, business-system integration, agent infrastructure, 11 GitHub stars, updated in the last 7 days Next ask: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-- manki-review/manki (cold) -> Workflow Hardening Sprint. Reason: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof. Evidence: workflow control surface, business-system integration, agent infrastructure, 5 GitHub stars, updated in the last 7 days Next ask: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- salacoste/mcp-n8n-workflow-builder (cold) -> Workflow Hardening Sprint. Reason: Lead with context-drift hardening for one workflow before proposing any broader agent platform story. Evidence: workflow control surface, agent infrastructure, 221 GitHub stars, updated in the last 7 days Next ask: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 
 ## Outreach Drafts
 ### GitHub DM or email — Claude Desktop or Claude Code operator
