@@ -151,7 +151,7 @@ Always include:
 
 1. Tighten the public landing page around the Workflow Hardening Sprint.
 2. Use the proof pack in direct outreach to consultancies, platform teams, and Claude-first engineering leaders.
-3. Support the outreach with a role-based X thread and LinkedIn post.
+3. Support the outreach with the generated Claude workflow hardening pack plus role-based LinkedIn, Reddit, or Bluesky follow-ups.
 4. Keep the ask narrow: one workflow, one pilot, one proof review.
 5. Use partner-network status only as supporting credibility once it is real.
 
