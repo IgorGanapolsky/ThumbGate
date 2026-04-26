@@ -566,21 +566,45 @@ function selectOutreachMotion(target, motionCatalog = buildMotionCatalog()) {
   };
 }
 
+function buildTargetReference(target) {
+  const repoName = normalizeText(target.repoName);
+  if (repoName) {
+    return `\`${repoName}\``;
+  }
+  const accountName = normalizeText(target.accountName);
+  if (accountName) {
+    return accountName.startsWith('@') ? accountName : `@${accountName}`;
+  }
+  return 'your workflow';
+}
+
+function buildSprintProblemHook(target) {
+  const haystack = `${normalizeText(target.repoName)} ${normalizeText(target.description)}`.toLowerCase();
+  if (/\b(jira|github|gitlab|microsoft ?365|office|google drive|calendar|slack|salesforce|crm|analytics)\b/.test(haystack)) {
+    return 'If one approval, handoff, or rollback step keeps creating trouble';
+  }
+  if (/\b(production|platform|deploy|deployment|incident|sre|ci|cd|release|security|compliance)\b/.test(haystack)) {
+    return 'If one deploy, release, or incident workflow keeps needing extra guardrails';
+  }
+  if (/\b(memory|context|agent|orchestrator|tool use)\b/.test(haystack)) {
+    return 'If one context, memory, or tool-use failure keeps repeating';
+  }
+  return 'If one workflow keeps repeating the same mistake';
+}
+
 function buildFallbackMessage(target, selectedMotion, motionCatalog = buildMotionCatalog()) {
   const motion = motionCatalog[selectedMotion.key];
-  const repoRef = `\`${target.repoName}\``;
-  const angle = normalizeText(target.evidence?.outreachAngle);
+  const targetRef = buildTargetReference(target);
   if (selectedMotion.key === motionCatalog.sprint.key) {
     return [
-      `Hey @${target.username}, saw you're shipping ${repoRef}. I am looking for one AI-agent workflow to harden end-to-end this week: repeated failure, prevention gate, and a proof run.`,
-      angle ? `${angle}` : '',
-      `If ${repoRef} has one workflow that keeps breaking or losing context, I can harden that workflow for you: ${motion.cta}`
+      `Hey @${target.username}, saw you're shipping ${targetRef}.`,
+      `${buildSprintProblemHook(target)}, I can harden that workflow for you with a prevention gate and proof run: ${motion.cta}`,
     ].join(' ');
   }
 
   return [
-    `Hey @${target.username}, saw you're building around ${repoRef}. If you only want the self-serve path, ThumbGate Pro gives you compaction-safe memory and feedback-to-gate enforcement: ${motion.cta}`,
-    'If you have a painful workflow instead, I can harden one concrete workflow first.'
+    `Hey @${target.username}, saw you're building around ${targetRef}.`,
+    `If you only want the self-serve path, ThumbGate Pro gives you compaction-safe memory and feedback-to-gate enforcement: ${motion.cta} If you have one painful workflow instead, I can harden that first.`,
   ].join(' ');
 }
 

@@ -512,8 +512,85 @@ test('first-touch outreach does not push proof before pain is confirmed', () => 
 
   assert.equal(selectedMotion.key, 'sprint');
   assert.match(message, /harden/);
+  assert.match(message, /prevention gate and proof run/);
+  assert.doesNotMatch(message, /Lead with/i);
   assert.doesNotMatch(message, /VERIFICATION_EVIDENCE/);
   assert.doesNotMatch(message, /COMMERCIAL_TRUTH/);
+});
+
+test('first-touch outreach applies the evidence angle without leaking operator instructions', () => {
+  const catalog = buildMotionCatalog(buildRevenueLinks());
+  const selectedMotion = selectOutreachMotion({
+    username: 'freema',
+    repoName: 'mcp-jira-stdio',
+    description: 'MCP server for Jira integration with workflow approvals and issue handoffs.',
+    evidence: {
+      score: 10,
+      outreachAngle: 'Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.',
+    },
+  }, catalog);
+  const message = buildFallbackMessage({
+    username: 'freema',
+    repoName: 'mcp-jira-stdio',
+    description: 'MCP server for Jira integration with workflow approvals and issue handoffs.',
+  }, selectedMotion, catalog);
+
+  assert.match(message, /approval, handoff, or rollback step/i);
+  assert.match(message, /mcp-jira-stdio/);
+  assert.doesNotMatch(message, /Lead with/i);
+  assert.doesNotMatch(message, /approval boundaries/i);
+});
+
+test('first-touch outreach specializes sprint hooks without repo names', () => {
+  const catalog = buildMotionCatalog(buildRevenueLinks());
+  const cases = [{
+    target: {
+      username: 'opsbuilder',
+      accountName: 'OpenOps',
+      repoName: '',
+      description: 'Slack approval routing for CRM analytics handoffs.',
+    },
+    expectedRef: '@OpenOps',
+    expectedHook: /approval, handoff, or rollback step/i,
+  }, {
+    target: {
+      username: 'releaseops',
+      accountName: '@shipguard',
+      repoName: '',
+      description: 'CI/CD release compliance monitor for production incidents.',
+    },
+    expectedRef: '@shipguard',
+    expectedHook: /deploy, release, or incident workflow/i,
+  }, {
+    target: {
+      username: 'memorylab',
+      accountName: 'memory-lab',
+      repoName: '',
+      description: 'Agent context memory orchestrator for tool use recovery.',
+    },
+    expectedRef: '@memory-lab',
+    expectedHook: /context, memory, or tool-use failure/i,
+  }, {
+    target: {
+      username: 'plainbuilder',
+      accountName: '',
+      repoName: '',
+      description: 'Lightweight helper for repeated operational mistakes.',
+    },
+    expectedRef: 'your workflow',
+    expectedHook: /workflow keeps repeating the same mistake/i,
+  }];
+
+  for (const { target, expectedRef, expectedHook } of cases) {
+    const selectedMotion = selectOutreachMotion(target, catalog);
+    const message = buildFallbackMessage(target, selectedMotion, catalog);
+
+    assert.equal(selectedMotion.key, 'sprint');
+    assert.match(message, new RegExp(`shipping ${expectedRef.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+    assert.match(message, expectedHook);
+    assert.doesNotMatch(message, /``/);
+    assert.doesNotMatch(message, /Lead with/i);
+  }
 });
 
 test('pain-confirmed follow-up adds proof links only after the buyer confirms pain', () => {
