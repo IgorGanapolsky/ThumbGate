@@ -208,6 +208,18 @@ test('public landing page gives cold users a first-dollar activation path', () =
   assert.match(landingPage, /Upgrade after one real blocked repeat/i);
 });
 
+test('Codex plugin page keeps proof and follow-on CTAs close to the install path', () => {
+  const codexPluginPage = readCodexPluginPage();
+
+  assert.match(codexPluginPage, /aria-label="Codex proof and conversion links"/);
+  assert.match(codexPluginPage, /VERIFICATION_EVIDENCE\.md/);
+  assert.match(codexPluginPage, /COMMERCIAL_TRUTH\.md/);
+  assert.match(codexPluginPage, /\/checkout\/pro\?utm_source=codex/);
+  assert.match(codexPluginPage, /#workflow-sprint-intake/);
+  assert.match(codexPluginPage, /Upgrade after one blocked repeat/i);
+  assert.match(codexPluginPage, /Team workflow sprint/i);
+});
+
 test('public landing page proof bar uses individually clickable link chips', () => {
   const landingPage = readLandingPage();
 
