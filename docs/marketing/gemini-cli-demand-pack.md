@@ -1,6 +1,6 @@
 # Gemini CLI Demand Pack
 
-Updated: 2026-04-26T22:22:58.180Z
+Updated: 2026-04-26T22:36:45.611Z
 
 This is a sales operator artifact. It is not proof of rankings, sent outreach, installs, paid revenue, or marketplace approval by itself.
 
@@ -99,7 +99,7 @@ If Gemini CLI keeps repeating the same mistake, the missing piece is not more me
 
 ### LinkedIn — Founder post
 - Audience: Platform, cloud, or data team lead evaluating Gemini CLI near production systems
-- Evidence: 4 current production-style target(s) point to BigQuery, Spanner, AlloyDB, Cloud SQL, and approval-boundary risk as the strongest B2B Gemini angle.
+- Evidence: 5 current production-style target(s) point to BigQuery, Spanner, AlloyDB, Cloud SQL, and approval-boundary risk as the strongest B2B Gemini angle.
 - CTA: https://thumbgate-production.up.railway.app/guides/gcp-mcp-guardrails?utm_source=gemini&utm_medium=linkedin_post&utm_campaign=gemini_channel_linkedin&utm_content=guide&campaign_variant=gcp_guardrails&offer_code=GEMINI-CHANNEL-LINKEDIN&cta_id=gemini_channel_linkedin&cta_placement=channel_draft&surface=gemini_linkedin
 - Proof timing: Public post can mention blast radius and guardrails, but hold proof links for the DM or reply after the workflow risk is named.
 Gemini CLI gets interesting when it moves from drafts into BigQuery, Spanner, AlloyDB, Cloud SQL, or approval-boundary workflows. At that point the question is not “does memory exist,” it is “what stops the same risky MCP call from running again?” ThumbGate is the lane I use for that boundary. If you are evaluating Gemini near production systems, start with the guardrails guide: https://thumbgate-production.up.railway.app/guides/gcp-mcp-guardrails?utm_source=gemini&utm_medium=linkedin_post&utm_campaign=gemini_channel_linkedin&utm_content=guide&campaign_variant=gcp_guardrails&offer_code=GEMINI-CHANNEL-LINKEDIN&cta_id=gemini_channel_linkedin&cta_placement=channel_draft&surface=gemini_linkedin .
@@ -113,7 +113,7 @@ Gemini CLI memory is not enough if the same mistake still runs again tomorrow. T
 
 ### Bluesky — Short post
 - Audience: Security-sensitive evaluator comparing hosted memory to local-first enforcement
-- Evidence: 1 current business-system target(s) reinforce the local-first posture: keep workflow memory local, then prove enforcement before the next risky call.
+- Evidence: 2 current business-system target(s) reinforce the local-first posture: keep workflow memory local, then prove enforcement before the next risky call.
 - CTA: https://thumbgate-production.up.railway.app/compare/mem0?utm_source=gemini&utm_medium=bluesky_post&utm_campaign=gemini_channel_bluesky&utm_content=comparison&campaign_variant=local_first&offer_code=GEMINI-CHANNEL-BLUESKY&cta_id=gemini_channel_bluesky&cta_placement=channel_draft&surface=gemini_bluesky
 - Proof timing: Lead with the comparison surface first. Send Commercial Truth and Verification Evidence only after the buyer replies with a concrete privacy or workflow objection.
 Hosted memory is not the only option for Gemini CLI. If you want the workflow history to stay local and still become enforceable checks before the next MCP call runs, start with the local-first comparison: https://thumbgate-production.up.railway.app/compare/mem0?utm_source=gemini&utm_medium=bluesky_post&utm_campaign=gemini_channel_bluesky&utm_content=comparison&campaign_variant=local_first&offer_code=GEMINI-CHANNEL-BLUESKY&cta_id=gemini_channel_bluesky&cta_placement=channel_draft&surface=gemini_bluesky .
