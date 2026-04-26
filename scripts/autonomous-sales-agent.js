@@ -20,6 +20,10 @@ const {
   buildCursorMarketplaceRevenuePack,
   writeCursorMarketplaceRevenuePack,
 } = require('./cursor-marketplace-revenue-pack');
+const {
+  buildGeminiCliDemandPack,
+  writeGeminiCliDemandPack,
+} = require('./gemini-cli-demand-pack');
 
 async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
@@ -28,6 +32,8 @@ async function main(argv = process.argv.slice(2)) {
   const claudeWritten = writeClaudeWorkflowHardeningPack(claudePack, options);
   const cursorPack = buildCursorMarketplaceRevenuePack();
   const cursorWritten = writeCursorMarketplaceRevenuePack(cursorPack, options);
+  const geminiPack = buildGeminiCliDemandPack(report);
+  const geminiWritten = writeGeminiCliDemandPack(geminiPack, options);
 
   console.log('\n✅ GTM automation complete.');
   if (written.docsPath) {
@@ -41,6 +47,9 @@ async function main(argv = process.argv.slice(2)) {
   }
   if (cursorWritten.docsPath) {
     console.log(`Cursor pack updated: ${cursorWritten.docsPath}`);
+  }
+  if (geminiWritten.docsPath) {
+    console.log(`Gemini pack updated: ${geminiWritten.docsPath}`);
   }
   console.log(`State: ${report.directive.state} | Targets: ${report.targets.length}`);
 }
