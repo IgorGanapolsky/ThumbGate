@@ -12,10 +12,16 @@
 'use strict';
 
 const { parseArgs, runRevenueLoop } = require('./gtm-revenue-loop');
+const {
+  buildCursorMarketplaceRevenuePack,
+  writeCursorMarketplaceRevenuePack,
+} = require('./cursor-marketplace-revenue-pack');
 
 async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
   const { report, written } = await runRevenueLoop(options);
+  const cursorPack = buildCursorMarketplaceRevenuePack();
+  const cursorWritten = writeCursorMarketplaceRevenuePack(cursorPack, options);
 
   console.log('\n✅ GTM automation complete.');
   if (written.docsPath) {
@@ -23,6 +29,9 @@ async function main(argv = process.argv.slice(2)) {
   }
   if (written.reportDir) {
     console.log(`Artifacts written to ${written.reportDir}.`);
+  }
+  if (cursorWritten.docsPath) {
+    console.log(`Cursor pack updated: ${cursorWritten.docsPath}`);
   }
   console.log(`State: ${report.directive.state} | Targets: ${report.targets.length}`);
 }
