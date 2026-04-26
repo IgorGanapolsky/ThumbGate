@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.16.7
+
+### Patch Changes
+
+- [#1338](https://github.com/IgorGanapolsky/ThumbGate/pull/1338) [`bfd8901`](https://github.com/IgorGanapolsky/ThumbGate/commit/bfd89011d2647639ee9d659476fab984a12783f0) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a ranked revenue operator handoff artifact to the GTM revenue loop so warm outreach, cold GitHub targets, proof rules, and sales-ledger import steps stay synchronized.
+
 ## 1.16.6
 
 ### Patch Changes
