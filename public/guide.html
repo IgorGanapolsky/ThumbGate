@@ -31,7 +31,7 @@
     "url": "https://thumbgate-production.up.railway.app"
   },
   "datePublished": "2026-03-27",
-  "dateModified": "2026-03-27",
+  "dateModified": "2026-04-25",
   "mainEntityOfPage": "https://thumbgate-production.up.railway.app/guide",
   "about": [
     {"@type": "Thing", "name": "AI coding agents"},
@@ -184,8 +184,23 @@
   .comparison-table td:first-child { font-weight: 600; }
   .cta { display: inline-block; background: var(--cyan); color: #000; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 1rem 0; }
   .cta:hover { opacity: 0.9; }
+  .cta-secondary { background: transparent; color: var(--text); border: 1px solid var(--border); margin-left: 0.75rem; }
+  .cta-secondary:hover { border-color: var(--cyan); color: var(--cyan); }
   .breadcrumb { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
   .breadcrumb a { color: var(--muted); }
+  .proof-links { display: grid; gap: 0.85rem; margin: 1.25rem 0 0; }
+  .proof-links a {
+    display: block;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    text-decoration: none;
+    color: var(--text);
+    background: #111113;
+  }
+  .proof-links a strong { color: var(--cyan); display: block; margin-bottom: 0.2rem; }
+  .proof-links a span { color: var(--muted); font-size: 0.95rem; }
+  .buyer-paths { margin-top: 1rem; }
   @media (max-width: 600px) { h1 { font-size: 1.6rem; } .container { padding: 1rem; } }
 </style>
 </head>
@@ -306,10 +321,39 @@ npx thumbgate init --agent gemini</code></pre>
 <h3>Agent uses wrong API endpoint</h3>
 <p>Give a thumbs-down: "called staging API in production code." The check blocks tool calls that reference staging URLs in production contexts.</p>
 
+<h2>When ThumbGate becomes a paid decision</h2>
+<p>Stay on the free install path while one operator is proving the workflow locally. The paid motion starts when a workflow owner asks for proof, shared enforcement, or a safer rollout path.</p>
+<div class="card buyer-paths">
+  <h3>Three honest next steps</h3>
+  <ul>
+    <li><strong>Free:</strong> use <code>npx thumbgate init</code> to prove one workflow on one machine.</li>
+    <li><strong>Pro:</strong> buy the self-serve lane only when you want a personal local dashboard, DPO export, and proof-ready workflow review for the next risky flow.</li>
+    <li><strong>Workflow Hardening Sprint:</strong> use the team intake path once one workflow, one owner, and one repeated failure are already clear.</li>
+  </ul>
+</div>
+
+<h2>Proof before a buyer says yes</h2>
+<p>The repo sales plan is proof-led, not hype-led. Commercial claims stay anchored to the current truth file, and engineering claims stay anchored to verification evidence and machine-readable proof reports.</p>
+<div class="proof-links">
+  <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md" target="_blank" rel="noopener">
+    <strong>Commercial Truth</strong>
+    <span>Current pricing, traction guardrails, and what the product can honestly claim today.</span>
+  </a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">
+    <strong>Verification Evidence</strong>
+    <span>Human-readable proof log for the engineering and workflow claims used across the site.</span>
+  </a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json" target="_blank" rel="noopener">
+    <strong>Automation Proof</strong>
+    <span>Machine-readable report for the feedback, enforcement, and automation surfaces behind ThumbGate.</span>
+  </a>
+</div>
+
 <h2>Get Started</h2>
 <pre><code>npx thumbgate init</code></pre>
 <p>One command. Works with Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode. Claude Code can also call Codex for review, adversarial review, and second-pass handoffs through the repo-local bridge plugin.</p>
 <a href="https://thumbgate-production.up.railway.app/checkout/pro?utm_source=guide&utm_medium=cta_button&utm_campaign=pro_pack" class="cta">Get Pro — $19/mo or $149/yr</a>
+<a href="https://thumbgate-production.up.railway.app/#workflow-sprint-intake" class="cta cta-secondary">Start a Workflow Hardening Sprint</a>
 <p style="color:var(--muted); font-size:0.85rem;">Free keeps local enforcement with 3 daily feedback captures, 5 lesson searches, unlimited recall, blocking, and history-aware lesson distillation. Pro is $19/mo or $149/yr for a personal local dashboard and DPO export. Team rollout starts intake-first at $49/seat/mo with a 3-seat minimum for the hosted shared lesson DB, org dashboard, and generated review views.</p>
 
 </div>
