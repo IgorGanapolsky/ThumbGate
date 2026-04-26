@@ -752,6 +752,104 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
   }
 });
 
+test('writeRevenueLoopOutputs mirrors dedicated GTM docs instead of overwriting GitOps docs', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-gtm-docs-'));
+  const docsDir = path.join(repoRoot, 'docs');
+  const marketingDir = path.join(docsDir, 'marketing');
+  const gitopsPath = path.join(docsDir, 'AUTONOMOUS_GITOPS.md');
+  const report = {
+    generatedAt: '2026-04-25T00:00:00.000Z',
+    source: 'local',
+    fallbackReason: 'Hosted operational summary is not configured.',
+    currentTruth: {
+      publicSelfServeOffer: catalog.pro.label,
+      teamPilotOffer: catalog.sprint.label,
+      guideLink: links.guideLink,
+      commercialTruthLink: catalog.pro.truth,
+      verificationEvidenceLink: catalog.pro.proof,
+    },
+    directive: {
+      state: 'cold-start',
+      objective: 'First 10 paying customers',
+      headline: 'No verified revenue and no active pipeline.',
+      primaryMotion: 'sprint',
+      secondaryMotion: 'pro',
+      actions: ['Lead with one workflow.'],
+    },
+    snapshot: {
+      paidOrders: 0,
+      bookedRevenueCents: 0,
+      checkoutStarts: 0,
+      uniqueLeads: 0,
+      sprintLeads: 0,
+      qualifiedSprintLeads: 0,
+    },
+    targets: [{
+      temperature: 'warm',
+      source: 'reddit',
+      channel: 'reddit_dm',
+      username: 'builder',
+      accountName: 'r/ClaudeCode',
+      contactUrl: 'https://www.reddit.com/user/builder/',
+      repoName: 'production-mcp-server',
+      repoUrl: 'https://github.com/example/production-mcp-server',
+      updatedAt: '2026-04-20T00:00:00.000Z',
+      offer: 'workflow_hardening_sprint',
+      pipelineStage: 'targeted',
+      evidenceScore: 9,
+      evidence: ['workflow control surface', '42 GitHub stars'],
+      evidenceSource: 'https://github.com/example/production-mcp-server',
+      evidenceSources: [
+        {
+          label: 'Target signal',
+          url: 'https://github.com/example/production-mcp-server',
+        },
+        {
+          label: 'Commercial truth',
+          url: catalog.pro.truth,
+        },
+        {
+          label: 'Verification evidence',
+          url: catalog.pro.proof,
+        },
+      ],
+      claimGuardrails: [
+        'Do not claim revenue, installs, or marketplace approval without direct command evidence.',
+      ],
+      outreachAngle: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
+      motionLabel: catalog.sprint.label,
+      motionReason: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
+      proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+      cta: catalog.sprint.cta,
+      firstTouchDraft: 'I can harden one workflow, then prove it.',
+      painConfirmedFollowUpDraft: 'If the workflow pain is real, I can send the proof pack.',
+    }],
+  };
+
+  try {
+    fs.mkdirSync(marketingDir, { recursive: true });
+    fs.writeFileSync(gitopsPath, '# Keep this GitOps guide intact.\n', 'utf8');
+
+    const written = writeRevenueLoopOutputs(report, {
+      writeDocs: true,
+      repoRoot,
+    });
+
+    assert.equal(written.docsPath, path.join(marketingDir, 'gtm-revenue-loop.md'));
+    assert.equal(fs.readFileSync(gitopsPath, 'utf8'), '# Keep this GitOps guide intact.\n');
+    assert.ok(fs.existsSync(path.join(marketingDir, 'gtm-revenue-loop.md')));
+    assert.ok(fs.existsSync(path.join(marketingDir, 'gtm-revenue-loop.json')));
+    assert.ok(fs.existsSync(path.join(marketingDir, 'gtm-marketplace-copy.md')));
+    assert.ok(fs.existsSync(path.join(marketingDir, 'gtm-marketplace-copy.json')));
+    assert.ok(fs.existsSync(path.join(marketingDir, 'gtm-target-queue.csv')));
+    assert.ok(fs.existsSync(path.join(marketingDir, 'gtm-target-queue.jsonl')));
+  } finally {
+    fs.rmSync(repoRoot, { recursive: true, force: true });
+  }
+});
+
 test('warm-target report output does not emit blank repo placeholders in follow-up drafts', () => {
   const links = buildRevenueLinks();
   const catalog = buildMotionCatalog(links);

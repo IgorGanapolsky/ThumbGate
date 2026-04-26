@@ -1,6 +1,6 @@
 # Claude Workflow Hardening Pack
 
-Updated: 2026-04-26T04:03:15.030Z
+Updated: 2026-04-26T13:14:47.481Z
 
 This is a sales operator artifact. It is not proof of sent outreach, partner acceptance, booked revenue, or deployment success by itself.
 
@@ -25,14 +25,14 @@ Turn current Claude-first buyer signals into booked workflow-hardening diagnosti
 - Examples: @leogodin217, @Enthu-Cutlet-1337
 
 ### Production rollout proof is the strongest cold signal
-- Count: 5
-- Summary: 5 current targets touch releases, incidents, or other production-sensitive workflows that need approval boundaries and proof.
-- Examples: WagnerAgent/awesome-mcp-servers-devops, bjeans/homelab-mcp, Shashankk1907/Learning-about-MCP
+- Count: 3
+- Summary: 3 current targets touch releases, incidents, or other production-sensitive workflows that need approval boundaries and proof.
+- Examples: WagnerAgent/awesome-mcp-servers-devops, bjeans/homelab-mcp, gensecaihq/MCP-Developer-SubAgent
 
 ### Business-system approvals are present but secondary
-- Count: 1
-- Summary: 1 current targets wire agents into business systems where rollback safety and approvals matter.
-- Examples: freema/mcp-jira-stdio
+- Count: 2
+- Summary: 2 current targets wire agents into business systems where rollback safety and approvals matter.
+- Examples: freema/mcp-jira-stdio, manki-review/manki
 
 ## Buyer Lanes
 ### Claude-first builders and workflow owners
@@ -42,13 +42,13 @@ Turn current Claude-first buyer signals into booked workflow-hardening diagnosti
 - Pain-confirmed follow-up: If that Claude workflow really has one repeated failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence so the next step stays grounded.
 
 ### Platform teams shipping agents near release, incident, or compliance surfaces
-- Evidence: 5 current targets expose production or platform workflows where proof matters before rollout. Examples: WagnerAgent/awesome-mcp-servers-devops, bjeans/homelab-mcp, Shashankk1907/Learning-about-MCP.
+- Evidence: 3 current targets expose production or platform workflows where proof matters before rollout. Examples: WagnerAgent/awesome-mcp-servers-devops, bjeans/homelab-mcp, gensecaihq/MCP-Developer-SubAgent.
 - Angle: Lead with approval boundaries, rollback safety, and proof for one production workflow.
 - First touch: I am looking for one production workflow to harden end-to-end this week: repeated failure, prevention gate, and proof run. If one release, incident, or compliance-adjacent workflow keeps needing manual rescue, I can harden that workflow for you.
 - Pain-confirmed follow-up: If that production workflow is real, I can send the Workflow Hardening Sprint brief with commercial truth and verification evidence after the buyer confirms the specific blocker.
 
 ### Teams wiring agents into Jira, ServiceNow, Slack, or other business systems
-- Evidence: 1 current targets touch business-system workflows where approvals and rollback safety are explicit buying triggers. Examples: freema/mcp-jira-stdio.
+- Evidence: 2 current targets touch business-system workflows where approvals and rollback safety are explicit buying triggers. Examples: freema/mcp-jira-stdio, manki-review/manki.
 - Angle: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
 - First touch: I am looking for one agent workflow touching Jira, ServiceNow, Slack, or another business system to harden end-to-end this week. If one approval or handoff failure keeps repeating, I can harden that workflow for you.
 - Pain-confirmed follow-up: Once the buyer confirms the failing business-system workflow, send the Workflow Hardening Sprint brief plus commercial truth and verification evidence. Do not lead with the proof pack.
@@ -59,7 +59,7 @@ Turn current Claude-first buyer signals into booked workflow-hardening diagnosti
 - @leogodin217 (warm): Warm Reddit engager already described a mature workflow, so the next step is a targeted diagnostic on one failure mode.
 - @Enthu-Cutlet-1337 (warm): Warm Reddit engager already understands the adaptive-gate thesis, so offer one concrete workflow hardening diagnostic.
 - freema/mcp-jira-stdio (cold): Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
-- wanshuiyin/Auto-claude-code-research-in-sleep (cold): Lead with context-drift hardening for one workflow before proposing any broader agent platform story.
+- manki-review/manki (cold): Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
 
 ## Proof Links
 - https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md
