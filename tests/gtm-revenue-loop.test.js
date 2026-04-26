@@ -350,6 +350,20 @@ test('rendered revenue loop markdown anchors every target to truth and proof', (
       repoUrl: 'https://github.com/example/mcp-solo-helper',
       evidenceScore: 8,
       evidence: ['agent infrastructure', 'updated in the last 7 days'],
+      evidenceSources: [
+        {
+          label: 'Target signal',
+          url: 'https://github.com/example/mcp-solo-helper',
+        },
+        {
+          label: 'Commercial truth',
+          url: catalog.pro.truth,
+        },
+        {
+          label: 'Verification evidence',
+          url: catalog.pro.proof,
+        },
+      ],
       outreachAngle: 'Lead with context-drift hardening for one workflow before proposing any broader agent platform story.',
       motion: selectedMotion.key,
       motionLabel: selectedMotion.label,
@@ -363,6 +377,8 @@ test('rendered revenue loop markdown anchors every target to truth and proof', (
 
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
+  assert.match(markdown, /Evidence Backstop/);
+  assert.match(markdown, /Evidence sources:/);
   assert.match(markdown, /Warm Discovery Queue/);
   assert.match(markdown, /Source: reddit \/ reddit_dm/);
   assert.match(markdown, /Workflow Hardening Sprint/);
@@ -499,10 +515,15 @@ test('revenue loop report keeps evidence metadata on each target', () => {
   assert.deepEqual(report.targets[0].evidence, ['workflow control surface', '42 GitHub stars']);
   assert.match(report.targets[0].outreachAngle, /rollout proof/);
   assert.equal(report.targets[0].evidenceSource, 'https://github.com/example/production-mcp-server');
+  assert.equal(report.targets[0].evidenceSources[0].label, 'Target signal');
+  assert.ok(report.targets[0].evidenceSources.some((entry) => /COMMERCIAL_TRUTH\.md/.test(entry.url)));
+  assert.ok(report.targets[0].evidenceSources.some((entry) => /VERIFICATION_EVIDENCE\.md/.test(entry.url)));
+  assert.ok(report.targets[0].claimGuardrails.some((entry) => /Do not claim revenue/i.test(entry)));
   assert.equal(report.targets[0].offer, 'workflow_hardening_sprint');
   assert.match(report.targets[0].proofPackTrigger, /buyer confirms pain/);
   assert.match(report.targets[0].firstTouchDraft, /harden one production workflow/);
   assert.match(report.targets[0].painConfirmedFollowUpDraft, /proof pack/);
+  assert.match(report.evidenceBackstop.sourceRule, /Every listing, queue row, and pain-confirmed follow-up/);
 });
 
 test('marketplace copy pack stays tied to current revenue-loop evidence', () => {
@@ -619,8 +640,10 @@ test('marketplace copy pack stays tied to current revenue-loop evidence', () => 
   assert.ok(pack.topSignals.some((signal) => /Warm discovery workflows/.test(signal.label)));
   assert.ok(pack.topSignals.some((signal) => /Business-system workflow approvals/.test(signal.label)));
   assert.match(markdown, /Proof Policy/);
+  assert.match(markdown, /Evidence Backstop/);
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
+  assert.ok(pack.evidenceBackstop.claimGuardrails.some((entry) => /Do not lead with proof links/i.test(entry)));
   assert.doesNotMatch(markdown, /paid customers already exist/i);
 });
 
@@ -668,6 +691,23 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
       evidenceScore: 9,
       evidence: ['workflow control surface', '42 GitHub stars'],
       evidenceSource: 'https://github.com/example/production-mcp-server',
+      evidenceSources: [
+        {
+          label: 'Target signal',
+          url: 'https://github.com/example/production-mcp-server',
+        },
+        {
+          label: 'Commercial truth',
+          url: catalog.pro.truth,
+        },
+        {
+          label: 'Verification evidence',
+          url: catalog.pro.proof,
+        },
+      ],
+      claimGuardrails: [
+        'Do not claim revenue, installs, or marketplace approval without direct command evidence.',
+      ],
       outreachAngle: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
       motionLabel: catalog.sprint.label,
       motionReason: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
@@ -694,9 +734,11 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.ok(fs.existsSync(path.join(reportDir, 'gtm-marketplace-copy.json')));
     assert.ok(fs.existsSync(csvPath));
     assert.ok(fs.existsSync(path.join(reportDir, 'gtm-target-queue.jsonl')));
-    assert.match(csv, /^temperature,source,channel,username,accountName,contactUrl,repoName,repoUrl,updatedAt,offer,pipelineStage,evidenceScore,evidence,evidenceSource,outreachAngle,motionLabel,motionReason,proofPackTrigger,cta,firstTouchDraft,painConfirmedFollowUpDraft/m);
+    assert.match(csv, /^temperature,source,channel,username,accountName,contactUrl,repoName,repoUrl,updatedAt,offer,pipelineStage,evidenceScore,evidence,evidenceSource,evidenceLinks,claimGuardrails,outreachAngle,motionLabel,motionReason,proofPackTrigger,cta,firstTouchDraft,painConfirmedFollowUpDraft/m);
     assert.match(csv, /"I can harden one workflow, then prove it\."/);
     assert.match(csv, /"If the workflow pain is real, I can send the proof pack\."/);
+    assert.match(csv, /Commercial truth: .*COMMERCIAL_TRUTH\.md/);
+    assert.match(csv, /Do not claim revenue, installs, or marketplace approval without direct command evidence\./);
     assert.match(marketplaceCopy.headline, /workflow/i);
     assert.ok(Array.isArray(marketplaceCopy.topSignals));
     assert.equal(JSON.parse(jsonl.trim()).repoName, 'production-mcp-server');

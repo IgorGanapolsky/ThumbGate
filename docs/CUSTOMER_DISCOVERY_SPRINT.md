@@ -1,7 +1,7 @@
 # Customer Discovery Sprint
 
 Status: current
-Updated: April 9, 2026
+Updated: April 25, 2026
 
 This document turns the current go-to-market recommendation into one week of concrete execution.
 
@@ -56,6 +56,12 @@ The revenue loop now emits six operator artifacts in that folder:
 - `gtm-target-queue.jsonl` for line-by-line operator handoff with first-touch and pain-confirmed follow-up drafts
 
 That report now carries both warm discovery leads and cold GitHub prospects in one machine-readable queue so the operator can import a single artifact and still contact the warm engagers first.
+Every artifact inherits the same evidence backstop:
+
+- `docs/COMMERCIAL_TRUTH.md` for pricing and traction guardrails
+- `docs/VERIFICATION_EVIDENCE.md` for proof-pack links
+- explicit claim guardrails so operator-ready copy does not drift into unverified revenue, install, or marketplace claims
+
 Import the queue into the local sales ledger:
 
 ```bash
