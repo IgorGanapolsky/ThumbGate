@@ -31,7 +31,7 @@ function normalizeText(value) {
 
 function csvCell(value) {
   const text = normalizeText(value);
-  if (!text.match(/[",\n]/)) {
+  if (!/[",\n]/.exec(text)) {
     return text;
   }
   return `"${text.replaceAll('"', '""')}"`;
@@ -69,7 +69,7 @@ function buildTrackedCodexLink(baseUrl, tracking = {}) {
 
 function buildCodexTrackingMetadata(key, overrides = {}) {
   const normalizedKey = normalizeText(key).toLowerCase();
-  const upperKey = normalizedKey.toUpperCase().replace(/[^A-Z0-9]+/g, '_');
+  const upperKey = normalizedKey.toUpperCase().replaceAll(/[^A-Z0-9]+/g, '_');
 
   return {
     utmSource: CODEX_SOURCE,
@@ -144,11 +144,12 @@ function buildPackTargets(report = {}) {
 
 function buildCodexSurface(config, links, about) {
   const tracking = buildCodexTrackingMetadata(config.trackingKey, config.tracking);
-  const baseUrl = config.baseUrl === 'guide'
-    ? links.guideLink
-    : config.baseUrl === 'bundle'
-      ? CODEX_BUNDLE_URL
-      : CODEX_INSTALL_PAGE_URL;
+  let baseUrl = CODEX_INSTALL_PAGE_URL;
+  if (config.baseUrl === 'guide') {
+    baseUrl = links.guideLink;
+  } else if (config.baseUrl === 'bundle') {
+    baseUrl = CODEX_BUNDLE_URL;
+  }
   const tags = typeof config.tags === 'function' ? config.tags(about) : config.tags;
 
   return {
