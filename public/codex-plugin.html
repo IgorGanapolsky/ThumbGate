@@ -159,6 +159,29 @@
   .caption { color: var(--muted); font-size: 14px; margin-top: 10px; }
   h2 { font-size: 32px; line-height: 1.15; margin: 0 0 16px; letter-spacing: 0; }
   .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin: 24px 0 44px; }
+  .proof-bar {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 28px 0 10px;
+  }
+  .proof-bar a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 700;
+  }
+  .proof-bar a:hover, .proof-bar a:focus-visible {
+    border-color: var(--cyan);
+    color: var(--cyan);
+  }
   code {
     background: rgba(34, 211, 238, 0.1);
     border: 1px solid rgba(34, 211, 238, 0.2);
@@ -201,6 +224,12 @@
         <a class="button secondary" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/codex-profile/INSTALL.md" target="_blank" rel="noopener">Read install docs</a>
         <a class="button secondary" href="/guide">Use CLI setup</a>
       </div>
+      <nav class="proof-bar" aria-label="Codex proof and conversion links">
+        <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+        <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md" target="_blank" rel="noopener">Commercial truth</a>
+        <a href="/checkout/pro?utm_source=codex&utm_medium=plugin_page&utm_campaign=codex_plugin_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=CODEX-PRO_FOLLOW_ON&cta_id=codex_pro_follow_on&cta_placement=plugin_page&plan_id=pro&surface=codex_plugin">Upgrade after one blocked repeat</a>
+        <a href="/?utm_source=codex&utm_medium=plugin_page&utm_campaign=codex_team_follow_on&utm_content=workflow_sprint&campaign_variant=teams_follow_on&offer_code=CODEX-TEAMS_FOLLOW_ON&cta_id=codex_team_follow_on&cta_placement=plugin_page&surface=codex_plugin#workflow-sprint-intake">Team workflow sprint</a>
+      </nav>
       <pre class="terminal">$ npx thumbgate init --agent codex
 # Writes ~/.codex/config.toml and ~/.codex/config.json
 # MCP + hooks install thumbgate@latest before serving or checking gates</pre>
@@ -251,6 +280,21 @@
         <h3>3. Verify in Codex</h3>
         <p>Open Codex settings, confirm <code>thumbgate</code> is toggled on, then restart Codex after npm releases to pick up the latest runtime.</p>
       </div>
+    </div>
+  </section>
+
+  <section class="wrap grid" aria-label="Proof-backed next steps">
+    <div class="tile">
+      <h3>Pro only after proof</h3>
+      <p>Use the free Codex path to prove one real blocked repeat first. Upgrade to Pro only when you want the personal dashboard, proof-ready exports, and a review surface after that proof exists.</p>
+    </div>
+    <div class="tile">
+      <h3>Commercial truth stays inspectable</h3>
+      <p>Pricing, traction guardrails, and what must not be claimed live in the Commercial Truth document, not in launch copy or vibes.</p>
+    </div>
+    <div class="tile">
+      <h3>Team motion starts with one workflow</h3>
+      <p>If your buyer already named one repeated workflow failure, one owner, and one approval boundary, route them to the Workflow Hardening Sprint instead of a generic plugin pitch.</p>
     </div>
   </section>
 
