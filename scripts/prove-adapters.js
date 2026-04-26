@@ -12,6 +12,7 @@ const { ensureDir } = require('./fs-utils');
 
 const ROOT = path.join(__dirname, '..');
 const DEFAULT_PROOF_DIR = path.join(ROOT, 'proof', 'compatibility');
+const DEFAULT_STDIO_TIMEOUT_MS = 30_000;
 
 
 function check(condition, message) {
@@ -72,7 +73,7 @@ async function fetchWithRetry(url, options, { retries = 5, delayMs = 100 } = {})
 async function proveMcpStdioTransport({
   root,
   transport = 'ndjson',
-  timeoutMs = 10000,
+  timeoutMs = Number(process.env.THUMBGATE_PROOF_STDIO_TIMEOUT_MS || DEFAULT_STDIO_TIMEOUT_MS),
   cwd = root,
   env = process.env,
 }) {

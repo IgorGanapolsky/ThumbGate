@@ -967,6 +967,100 @@ function renderWarmTargetOutreachMarkdown(target, index) {
   ];
 }
 
+function rankOperatorTargets(targets = []) {
+  return [...targets].sort((left, right) => {
+    const leftWarm = normalizeText(left.temperature).toLowerCase() === 'warm' ? 1 : 0;
+    const rightWarm = normalizeText(right.temperature).toLowerCase() === 'warm' ? 1 : 0;
+    if (rightWarm !== leftWarm) {
+      return rightWarm - leftWarm;
+    }
+
+    const leftScore = Number(left.evidenceScore || 0);
+    const rightScore = Number(right.evidenceScore || 0);
+    if (rightScore !== leftScore) {
+      return rightScore - leftScore;
+    }
+
+    const leftSprint = normalizeText(left.motion).toLowerCase() === 'sprint' ? 1 : 0;
+    const rightSprint = normalizeText(right.motion).toLowerCase() === 'sprint' ? 1 : 0;
+    if (rightSprint !== leftSprint) {
+      return rightSprint - leftSprint;
+    }
+
+    return String(right.updatedAt || '').localeCompare(String(left.updatedAt || ''));
+  });
+}
+
+function renderOperatorPriorityTargetMarkdown(target, index) {
+  const label = normalizeText(target.repoName)
+    ? `@${target.username} — ${target.repoName}`
+    : `@${target.username} — ${target.accountName || target.source || 'discovery lead'}`;
+  const contactSurface = target.contactUrl || target.repoUrl || 'n/a';
+  return [
+    `## ${index + 1}. ${label}`,
+    `- Temperature: ${target.temperature || 'cold'}`,
+    `- Source: ${target.source || 'github'} / ${target.channel || target.source || 'github'}`,
+    `- Contact surface: ${contactSurface}`,
+    `- Evidence score: ${target.evidenceScore}`,
+    `- Evidence: ${target.evidence.length ? target.evidence.join(', ') : 'n/a'}`,
+    `- Motion: ${target.motionLabel}`,
+    `- Why now: ${target.motionReason || target.outreachAngle || 'n/a'}`,
+    `- Proof rule: ${target.proofPackTrigger || 'Use proof pack only after the buyer confirms pain.'}`,
+    `- CTA: ${target.cta}`,
+    '',
+    'First-touch draft:',
+    ...renderQuotedText(target.firstTouchDraft || target.message),
+    '',
+    'Pain-confirmed follow-up:',
+    ...renderQuotedText(target.painConfirmedFollowUpDraft),
+    '',
+  ];
+}
+
+function renderOperatorHandoffMarkdown(report) {
+  const rankedTargets = rankOperatorTargets(Array.isArray(report?.targets) ? report.targets : []);
+  const warmTargets = rankedTargets.filter((target) => normalizeText(target.temperature).toLowerCase() === 'warm');
+  const coldTargets = rankedTargets.filter((target) => normalizeText(target.temperature).toLowerCase() !== 'warm');
+  const warmLines = warmTargets.length
+    ? warmTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index))
+    : ['- No warm discovery targets are available for this run.', ''];
+  const coldLines = coldTargets.length
+    ? coldTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index + warmTargets.length))
+    : ['- No cold GitHub targets are available for this run.', ''];
+
+  return [
+    '# Revenue Operator Priority Handoff',
+    '',
+    `Updated: ${report.generatedAt}`,
+    '',
+    'This is the ranked send order for the current zero-to-one revenue loop. Work warm discovery targets first, then expand into cold GitHub targets with the same proof discipline.',
+    '',
+    'This handoff sits on top of `gtm-revenue-loop.md`, `gtm-target-queue.csv`, and `team-outreach-messages.md` so an operator can decide who to contact next without re-ranking the queue manually.',
+    '',
+    '## Current Snapshot',
+    `- Revenue state: ${report.directive?.state || 'cold-start'}`,
+    `- Headline: ${report.directive?.headline || 'No verified revenue and no active pipeline.'}`,
+    `- Paid orders: ${report.snapshot?.paidOrders || 0}`,
+    `- Checkout starts: ${report.snapshot?.checkoutStarts || 0}`,
+    `- Warm targets ready now: ${warmTargets.length}`,
+    `- Cold GitHub targets ready next: ${coldTargets.length}`,
+    '',
+    '## Operator Rules',
+    '- Import the queue into the sales ledger before sending anything.',
+    '- Lead with one concrete workflow-hardening offer, not generic Pro and not the proof pack.',
+    '- Use [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) and [COMMERCIAL_TRUTH.md](../COMMERCIAL_TRUTH.md) only after the buyer confirms pain.',
+    '',
+    '```bash',
+    'npm run sales:pipeline -- import --source docs/marketing/gtm-revenue-loop.json',
+    '```',
+    '',
+    '## Send Now: Warm Discovery',
+    ...warmLines,
+    '## Seed Next: Cold GitHub',
+    ...coldLines,
+  ].join('\n');
+}
+
 function renderTeamOutreachMessagesMarkdown(report) {
   const warmTargets = Array.isArray(report?.targets)
     ? report.targets.filter((target) => target.temperature === 'warm')
@@ -981,6 +1075,7 @@ function renderTeamOutreachMessagesMarkdown(report) {
     `Updated: ${report.generatedAt}`,
     '',
     'These drafts are generated from the same evidence-backed revenue-loop report as `gtm-revenue-loop.md`, `gtm-target-queue.csv`, and `gtm-marketplace-copy.md`.',
+    'Use `operator-priority-handoff.md` for the ranked send order; this file is the copy layer for warm outreach only.',
     '',
     'Track each lead in the sales ledger before sending anything:',
     '',
@@ -1136,12 +1231,14 @@ function writeRevenueLoopOutputs(report, options = {}) {
   const queueCsvDocsPath = path.join(docsDir, 'gtm-target-queue.csv');
   const queueJsonlDocsPath = path.join(docsDir, 'gtm-target-queue.jsonl');
   const teamOutreachDocsPath = path.join(docsDir, 'team-outreach-messages.md');
+  const operatorHandoffDocsPath = path.join(docsDir, 'operator-priority-handoff.md');
   const markdown = renderRevenueLoopMarkdown(report);
   const marketplaceCopy = report.marketplaceCopy || buildMarketplaceCopy(report);
   const marketplaceMarkdown = renderMarketplaceCopyMarkdown(marketplaceCopy);
   const csv = renderRevenueLoopCsv(report);
   const jsonl = renderRevenueLoopJsonl(report);
   const teamOutreachMarkdown = renderTeamOutreachMessagesMarkdown(report);
+  const operatorHandoffMarkdown = renderOperatorHandoffMarkdown(report);
   const reportDir = normalizeText(options.reportDir)
     ? path.resolve(repoRoot, options.reportDir)
     : '';
@@ -1156,6 +1253,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     fs.writeFileSync(path.join(reportDir, 'gtm-target-queue.csv'), csv, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'gtm-target-queue.jsonl'), jsonl, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'team-outreach-messages.md'), teamOutreachMarkdown, 'utf8');
+    fs.writeFileSync(path.join(reportDir, 'operator-priority-handoff.md'), operatorHandoffMarkdown, 'utf8');
   }
 
   if (shouldWriteDocs) {
@@ -1167,12 +1265,14 @@ function writeRevenueLoopOutputs(report, options = {}) {
     fs.writeFileSync(queueCsvDocsPath, csv, 'utf8');
     fs.writeFileSync(queueJsonlDocsPath, jsonl, 'utf8');
     fs.writeFileSync(teamOutreachDocsPath, teamOutreachMarkdown, 'utf8');
+    fs.writeFileSync(operatorHandoffDocsPath, operatorHandoffMarkdown, 'utf8');
   }
 
   return {
     markdown,
     marketplaceMarkdown,
     teamOutreachMarkdown,
+    operatorHandoffMarkdown,
     reportDir: reportDir || null,
     docsPath: shouldWriteDocs ? defaultDocsPath : null,
   };
@@ -1258,6 +1358,7 @@ module.exports = {
   prospectTargets,
   renderRevenueLoopMarkdown,
   renderMarketplaceCopyMarkdown,
+  renderOperatorHandoffMarkdown,
   renderTeamOutreachMessagesMarkdown,
   runRevenueLoop,
   selectOutreachMotion,
