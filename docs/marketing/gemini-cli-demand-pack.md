@@ -1,6 +1,6 @@
 # Gemini CLI Demand Pack
 
-Updated: 2026-04-26T20:19:47.716Z
+Updated: 2026-04-26T22:22:58.180Z
 
 This is a sales operator artifact. It is not proof of rankings, sent outreach, installs, paid revenue, or marketplace approval by itself.
 
@@ -66,14 +66,14 @@ Turn Gemini CLI memory demand and Google Cloud MCP guardrail demand into tracked
 - Recommended motion: Guide -> proof -> Pro once one blocked repeat is real.
 
 ### Google Cloud workflow owner running Gemini CLI near data or production systems
-- Evidence: The GCP guardrails guide documents BigQuery, Spanner, AlloyDB, Cloud SQL, and IAM escalation patterns. Current report production-style targets: 4.
+- Evidence: The GCP guardrails guide documents BigQuery, Spanner, AlloyDB, Cloud SQL, and IAM escalation patterns. Current report production-style targets: 5.
 - Proof trigger: They already described one risky BigQuery, Spanner, or MCP-backed workflow that cannot afford another destructive repeat.
 - Proof asset: https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/gcp-mcp-guardrails.html
 - Next ask: https://thumbgate-production.up.railway.app/?utm_source=gemini&utm_medium=operator_outreach&utm_campaign=gemini_queue_gcp_sprint&utm_content=workflow_sprint&campaign_variant=gcp_workflow_owner&offer_code=GEMINI-QUEUE_GCP_SPRINT&cta_id=gemini_queue_gcp_sprint&cta_placement=operator_queue&surface=gemini_workflow_queue#workflow-sprint-intake
 - Recommended motion: Qualify one high-risk workflow for the Workflow Hardening Sprint.
 
 ### Security-sensitive evaluator comparing hosted memory versus local-first enforcement
-- Evidence: The Gemini guide keeps local-first posture explicit, and the compare surface supports buyers who object to hosted memory first. Current business-system targets: 1.
+- Evidence: The Gemini guide keeps local-first posture explicit, and the compare surface supports buyers who object to hosted memory first. Current business-system targets: 2.
 - Proof trigger: They care about keeping workflow history local and need proof that enforcement happens without a hosted memory dependency.
 - Proof asset: https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/compare/mem0.html
 - Next ask: https://thumbgate-production.up.railway.app/guide?utm_source=gemini&utm_medium=seo_guide&utm_campaign=gemini_queue_local_first&utm_content=setup&campaign_variant=local_first_evaluator&offer_code=GEMINI-QUEUE_LOCAL_FIRST&cta_id=gemini_queue_local_first&cta_placement=operator_queue&surface=gemini_cli
