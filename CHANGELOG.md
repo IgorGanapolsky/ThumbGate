@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.16.5
+
+### Patch Changes
+
+- [#1322](https://github.com/IgorGanapolsky/ThumbGate/pull/1322) [`5e375d2`](https://github.com/IgorGanapolsky/ThumbGate/commit/5e375d20f69accfd11a04ff5dd573d0c5b904a1b) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Restore the autonomous sales agent's Codex revenue-pack emission so GTM runs ship Codex listing copy, operator queue rows, and proof-linked follow-on assets alongside the Claude, Cursor, and Gemini packs.
+
+- [#1325](https://github.com/IgorGanapolsky/ThumbGate/pull/1325) [`22dc6e0`](https://github.com/IgorGanapolsky/ThumbGate/commit/22dc6e09731ac3dfebcdbce865c8a39ec3b58930) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Emit a ChatGPT GPT revenue pack from the GTM automation so ThumbGate ships evidence-backed GPT discovery surfaces, builder-repair assets, tracked follow-on offers, and operator queue rows alongside the Claude, Cursor, Gemini, and Codex packs.
+
+- [#1311](https://github.com/IgorGanapolsky/ThumbGate/pull/1311) [`4e71af4`](https://github.com/IgorGanapolsky/ThumbGate/commit/4e71af451943eab31dfab79e56d498db490c8ce0) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a Claude workflow hardening pack to the GTM automation so each revenue-loop run emits operator-ready Claude-first outbound copy, buyer lanes, and proof-linked follow-up guidance.
+
+- [#1318](https://github.com/IgorGanapolsky/ThumbGate/pull/1318) [`910515f`](https://github.com/IgorGanapolsky/ThumbGate/commit/910515fe590f69239d9c2688d61adf35d5c5282e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Emit a Codex operator revenue pack from the GTM automation so the repo ships evidence-backed listing copy, operator prospect queues, outreach drafts, and proof-first follow-on CTAs for the Codex install surface.
+
+- [#1317](https://github.com/IgorGanapolsky/ThumbGate/pull/1317) [`39aaaf7`](https://github.com/IgorGanapolsky/ThumbGate/commit/39aaaf73f552e58f466fe546f43984841c605989) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a Codex plugin revenue pack with proof-backed install, guide, and bundle sales assets.
+
+- [#1307](https://github.com/IgorGanapolsky/ThumbGate/pull/1307) [`2af4acb`](https://github.com/IgorGanapolsky/ThumbGate/commit/2af4acbc65b7e7fd4b80473b9bc93e65fa64ee4f) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Emit a Cursor marketplace revenue pack from the GTM automation so the repo ships operator-ready Marketplace, Directory, and Team Marketplace copy with tracked follow-on offers and proof links.
+
+- [#1308](https://github.com/IgorGanapolsky/ThumbGate/pull/1308) [`69c2c71`](https://github.com/IgorGanapolsky/ThumbGate/commit/69c2c712dc1cb9fb72c022d797dd0ddd8ad8538a) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Keep GTM revenue-loop assets tied to explicit proof links and claim guardrails.
+
+- [#1320](https://github.com/IgorGanapolsky/ThumbGate/pull/1320) [`e58be96`](https://github.com/IgorGanapolsky/ThumbGate/commit/e58be9637e233f822797992ef8e7fd4ae8aa087e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Emit a Gemini CLI demand pack from the GTM automation so the repo ships evidence-backed Gemini guide surfaces, operator queue rows, outreach drafts, and corrected Gemini install copy.
+
+- [#1328](https://github.com/IgorGanapolsky/ThumbGate/pull/1328) [`8261d36`](https://github.com/IgorGanapolsky/ThumbGate/commit/8261d361f22955391bada3f61f593fb2ce3eb5e1) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Write GTM revenue loop docs into dedicated `docs/marketing` artifacts instead of overwriting the GitOps guide, and ship the generated marketplace copy and target-queue outputs with the repo.
+
+- [#1313](https://github.com/IgorGanapolsky/ThumbGate/pull/1313) [`688796c`](https://github.com/IgorGanapolsky/ThumbGate/commit/688796cc99dea39ac342b00faf06680645d3e127) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a proof-backed conversion path to the public guide so operators can move from free install education into Pro or Workflow Hardening Sprint next steps with linked Commercial Truth and verification evidence.
+
+- [#1315](https://github.com/IgorGanapolsky/ThumbGate/pull/1315) [`394253c`](https://github.com/IgorGanapolsky/ThumbGate/commit/394253cc364ea145070ef3dfe7b1ffc287b43056) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Route install-intent marketplace and Claude operator surfaces through the proof-backed guide so listing traffic lands on the setup path that already carries Commercial Truth, verification evidence, and clear Pro versus Workflow Hardening Sprint next steps.
+
+- [#1324](https://github.com/IgorGanapolsky/ThumbGate/pull/1324) [`4294a5a`](https://github.com/IgorGanapolsky/ThumbGate/commit/4294a5af68b96f0b39ec037be9fca3513e563b59) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Refresh the Claude workflow hardening pack with verified install surfaces, tracked listing copy, and a live prospect queue.
+
 ## 1.16.4
 
 ### Patch Changes
