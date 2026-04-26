@@ -23,6 +23,7 @@ const CANONICAL_LONG_DESCRIPTION = [
   'ThumbGate adds pre-action checks, prevention rules, history-aware lesson distillation, and proof-ready workflow evidence for Cursor agents.',
   'When the feedback starts as a vague thumbs-down, ThumbGate can ground it in up to 8 prior recorded entries plus the failed tool call, then keep a linked 60-second follow-up open so the lesson becomes reusable instead of getting lost in chat history.',
 ].join(' ');
+const CURSOR_PROOF_LINKS = [COMMERCIAL_TRUTH_LINK, VERIFICATION_EVIDENCE_LINK];
 
 function normalizeText(value) {
   return value === undefined || value === null ? '' : String(value).trim();
@@ -109,27 +110,34 @@ function buildScreenshotManifest() {
   ];
 }
 
-function buildCursorMarketplaceSurfaces(links = buildRevenueLinks(), about = readGitHubAbout()) {
-  const homepageTracking = buildCursorTrackingMetadata('plugin_homepage', {
-    utmMedium: MARKETPLACE_MEDIUM,
-    utmCampaign: 'cursor_plugin_listing',
-    utmContent: 'homepage',
-    surface: 'cursor_marketplace',
-  });
-  const directoryTracking = buildCursorTrackingMetadata('directory_homepage', {
-    utmMedium: DIRECTORY_MEDIUM,
-    utmCampaign: 'cursor_directory_profile',
-    utmContent: 'homepage',
-    surface: 'cursor_directory',
-  });
-  const teamTracking = buildCursorTrackingMetadata('team_marketplace_homepage', {
-    utmMedium: TEAM_MARKETPLACE_MEDIUM,
-    utmCampaign: 'cursor_team_marketplace',
-    utmContent: 'homepage',
-    surface: 'team_marketplace',
-  });
+function buildCursorSurface(config, links, about) {
+  const tracking = buildCursorTrackingMetadata(config.trackingKey, config.tracking);
+  const homepageBaseUrl = config.homepageBase === 'sprint' ? links.sprintLink : links.appOrigin;
+  const tags = typeof config.tags === 'function' ? config.tags(about) : config.tags;
 
-  return [
+  return {
+    key: config.key,
+    name: config.name,
+    role: config.role,
+    operatorStatus: config.operatorStatus,
+    buyer: config.buyer,
+    conversionGoal: config.conversionGoal,
+    submissionUrl: config.submissionUrl,
+    shortDescription: config.shortDescription,
+    longDescription: Array.isArray(config.longDescription)
+      ? config.longDescription.join(' ')
+      : config.longDescription,
+    repositoryUrl: about.repositoryUrl,
+    homepageUrl: buildTrackedCursorLink(homepageBaseUrl, tracking),
+    proofUrl: VERIFICATION_EVIDENCE_LINK,
+    supportUrl: `${about.repositoryUrl}/blob/main/${config.supportPath}`,
+    tags,
+    proofLinks: [...CURSOR_PROOF_LINKS],
+  };
+}
+
+function buildCursorMarketplaceSurfaces(links = buildRevenueLinks(), about = readGitHubAbout()) {
+  const surfaceConfigs = [
     {
       key: 'marketplace',
       name: 'Cursor Marketplace',
@@ -140,11 +148,15 @@ function buildCursorMarketplaceSurfaces(links = buildRevenueLinks(), about = rea
       submissionUrl: CURSOR_PUBLISH_URL,
       shortDescription: CANONICAL_SHORT_DESCRIPTION,
       longDescription: CANONICAL_LONG_DESCRIPTION,
-      repositoryUrl: about.repositoryUrl,
-      homepageUrl: buildTrackedCursorLink(links.appOrigin, homepageTracking),
-      proofUrl: VERIFICATION_EVIDENCE_LINK,
-      supportUrl: `${about.repositoryUrl}/blob/main/plugins/cursor-marketplace/README.md`,
-      tags: about.topics.filter((topic) => [
+      supportPath: 'plugins/cursor-marketplace/README.md',
+      trackingKey: 'plugin_homepage',
+      tracking: {
+        utmMedium: MARKETPLACE_MEDIUM,
+        utmCampaign: 'cursor_plugin_listing',
+        utmContent: 'homepage',
+        surface: 'cursor_marketplace',
+      },
+      tags: ({ topics }) => topics.filter((topic) => [
         'thumbgate',
         'pre-action-checks',
         'cursor',
@@ -152,7 +164,6 @@ function buildCursorMarketplaceSurfaces(links = buildRevenueLinks(), about = rea
         'guardrails',
         'developer-tools',
       ].includes(topic)),
-      proofLinks: [COMMERCIAL_TRUTH_LINK, VERIFICATION_EVIDENCE_LINK],
     },
     {
       key: 'directory',
@@ -166,13 +177,16 @@ function buildCursorMarketplaceSurfaces(links = buildRevenueLinks(), about = rea
       longDescription: [
         'Use the directory profile to explain the repeated-mistake problem, then route serious readers to the Marketplace or homepage with tracked links.',
         'Lead with the outcome before architecture: stop costly AI agent mistakes, then mention pre-action checks, prevention rules, and proof.',
-      ].join(' '),
-      repositoryUrl: about.repositoryUrl,
-      homepageUrl: buildTrackedCursorLink(links.appOrigin, directoryTracking),
-      proofUrl: VERIFICATION_EVIDENCE_LINK,
-      supportUrl: `${about.repositoryUrl}/blob/main/docs/CURSOR_PLUGIN_OPERATIONS.md`,
+      ],
+      supportPath: 'docs/CURSOR_PLUGIN_OPERATIONS.md',
+      trackingKey: 'directory_homepage',
+      tracking: {
+        utmMedium: DIRECTORY_MEDIUM,
+        utmCampaign: 'cursor_directory_profile',
+        utmContent: 'homepage',
+        surface: 'cursor_directory',
+      },
       tags: ['cursor', 'pre-action-checks', 'agent-reliability', 'guardrails'],
-      proofLinks: [COMMERCIAL_TRUTH_LINK, VERIFICATION_EVIDENCE_LINK],
     },
     {
       key: 'team_marketplace',
@@ -186,15 +200,21 @@ function buildCursorMarketplaceSurfaces(links = buildRevenueLinks(), about = rea
       longDescription: [
         'Pitch the Team Marketplace only after a buyer already named one repeated workflow failure, one owner, and one approval boundary.',
         'ThumbGate Teams starts with the Workflow Hardening Sprint, then expands to shared prevention gates, proof review, and repo-backed refresh.',
-      ].join(' '),
-      repositoryUrl: about.repositoryUrl,
-      homepageUrl: buildTrackedCursorLink(links.sprintLink, teamTracking),
-      proofUrl: VERIFICATION_EVIDENCE_LINK,
-      supportUrl: `${about.repositoryUrl}/blob/main/docs/CUSTOMER_DISCOVERY_SPRINT.md`,
+      ],
+      supportPath: 'docs/CUSTOMER_DISCOVERY_SPRINT.md',
+      homepageBase: 'sprint',
+      trackingKey: 'team_marketplace_homepage',
+      tracking: {
+        utmMedium: TEAM_MARKETPLACE_MEDIUM,
+        utmCampaign: 'cursor_team_marketplace',
+        utmContent: 'homepage',
+        surface: 'team_marketplace',
+      },
       tags: ['cursor', 'workflow-hardening', 'team-marketplace', 'proof'],
-      proofLinks: [COMMERCIAL_TRUTH_LINK, VERIFICATION_EVIDENCE_LINK],
     },
   ];
+
+  return surfaceConfigs.map((config) => buildCursorSurface(config, links, about));
 }
 
 function buildFollowOnOffers(links = buildRevenueLinks()) {
