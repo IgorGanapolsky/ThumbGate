@@ -80,11 +80,11 @@ function isClaudeTarget(target) {
     target?.description,
     target?.source,
     target?.channel,
-  ].map(normalizeText).join(' ').toLowerCase();
+  ].map((value) => normalizeText(value)).join(' ').toLowerCase();
   return /claude/.test(haystack);
 }
 
-function countTargets(report = {}, matcher) {
+function countTargets(matcher, report = {}) {
   const targets = Array.isArray(report.targets) ? report.targets : [];
   return targets.filter((target) => matcher(target)).length;
 }
@@ -383,9 +383,9 @@ function buildPackSummary(report = {}) {
 }
 
 function buildClaudeWorkflowHardeningPack(report = {}, links = buildRevenueLinks(), about = readGitHubAbout()) {
-  const warmClaudeTargetCount = countTargets(report, (target) => isWarmTarget(target) && isClaudeTarget(target));
-  const productionTargetCount = countTargets(report, (target) => hasEvidence(target, 'production or platform workflow'));
-  const businessSystemTargetCount = countTargets(report, (target) => hasEvidence(target, 'business-system integration'));
+  const warmClaudeTargetCount = countTargets((target) => isWarmTarget(target) && isClaudeTarget(target), report);
+  const productionTargetCount = countTargets((target) => hasEvidence(target, 'production or platform workflow'), report);
+  const businessSystemTargetCount = countTargets((target) => hasEvidence(target, 'business-system integration'), report);
 
   return {
     generatedAt: normalizeText(report.generatedAt) || new Date().toISOString(),
@@ -437,8 +437,8 @@ function renderClaudeProspectQueueCsv(pack = {}) {
   return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
 }
 
-function renderClaudeWorkflowHardeningPackMarkdown(pack = {}) {
-  const surfaceLines = Array.isArray(pack.surfaces) && pack.surfaces.length
+function renderClaudeSurfaceLines(pack = {}) {
+  return Array.isArray(pack.surfaces) && pack.surfaces.length
     ? pack.surfaces.flatMap((surface) => ([
       `### ${surface.name}`,
       `- Buyer signal: ${surface.buyerSignal}`,
@@ -449,28 +449,57 @@ function renderClaudeWorkflowHardeningPackMarkdown(pack = {}) {
       '',
     ]))
     : ['- No verified Claude surfaces available.', ''];
-  const proofBulletLines = Array.isArray(pack.listingCopy?.proofBullets) && pack.listingCopy.proofBullets.length
+}
+
+function renderClaudeProofBulletLines(pack = {}) {
+  return Array.isArray(pack.listingCopy?.proofBullets) && pack.listingCopy.proofBullets.length
     ? pack.listingCopy.proofBullets.map((entry) => `- ${entry}`)
     : ['- No proof bullets available.'];
-  const followOnOfferLines = Array.isArray(pack.followOnOffers) && pack.followOnOffers.length
+}
+
+function renderClaudeFollowOnOfferLines(pack = {}) {
+  return Array.isArray(pack.followOnOffers) && pack.followOnOffers.length
     ? pack.followOnOffers.map((offer) => `- ${offer.label}: ${offer.pricing}\n  Buyer: ${offer.buyer}\n  CTA: ${offer.cta}`)
     : ['- No follow-on offers available.'];
-  const prospectLines = Array.isArray(pack.prospectQueue) && pack.prospectQueue.length
-    ? pack.prospectQueue.map((entry) => `- ${entry.account} (${entry.temperature}) -> ${entry.motion}. Reason: ${entry.reason} Evidence: ${entry.evidence}${entry.nextAsk ? ` Next ask: ${entry.nextAsk}` : ''}`)
+}
+
+function renderClaudeProspectLines(pack = {}) {
+  return Array.isArray(pack.prospectQueue) && pack.prospectQueue.length
+    ? pack.prospectQueue.map((entry) => {
+      const nextAsk = entry.nextAsk ? ` Next ask: ${entry.nextAsk}` : '';
+      return `- ${entry.account} (${entry.temperature}) -> ${entry.motion}. Reason: ${entry.reason} Evidence: ${entry.evidence}${nextAsk}`;
+    })
     : ['- No queued prospects were available in this run.'];
-  const draftLines = Array.isArray(pack.outreachDrafts) && pack.outreachDrafts.length
+}
+
+function renderClaudeDraftLines(pack = {}) {
+  return Array.isArray(pack.outreachDrafts) && pack.outreachDrafts.length
     ? pack.outreachDrafts.flatMap((draft) => ([
       `### ${draft.channel} — ${draft.audience}`,
       draft.draft,
       '',
     ]))
     : ['- No outreach drafts available.', ''];
-  const milestoneLines = Array.isArray(pack.measurementPlan?.milestones) && pack.measurementPlan.milestones.length
+}
+
+function renderClaudeMilestoneLines(pack = {}) {
+  return Array.isArray(pack.measurementPlan?.milestones) && pack.measurementPlan.milestones.length
     ? pack.measurementPlan.milestones.map((milestone) => `- ${milestone.window}: ${milestone.goal} Decision rule: ${milestone.decisionRule}`)
     : ['- No milestones available.'];
-  const proofLines = Array.isArray(pack.proofLinks) && pack.proofLinks.length
+}
+
+function renderClaudeProofLines(pack = {}) {
+  return Array.isArray(pack.proofLinks) && pack.proofLinks.length
     ? pack.proofLinks.map((link) => `- ${link}`)
     : ['- No proof links available.'];
+}
+
+function renderClaudeListLines(values = []) {
+  return Array.isArray(values) ? values.map((entry) => `- ${entry}`) : ['- n/a'];
+}
+
+function renderClaudeWorkflowHardeningPackMarkdown(pack = {}) {
+  const listingOfferLines = renderClaudeListLines(pack.listingCopy?.followOnOffers?.map((offer) => `${offer.label} -> ${offer.url}`));
 
   return [
     '# Claude Workflow Hardening Pack',
@@ -496,43 +525,41 @@ function renderClaudeWorkflowHardeningPackMarkdown(pack = {}) {
     `- Verification evidence: ${pack.canonicalIdentity?.verificationEvidenceUrl || ''}`,
     '',
     '## Verified Claude Surfaces',
-    ...surfaceLines,
+    ...renderClaudeSurfaceLines(pack),
     '## Marketplace Listing Copy',
     `- Headline: ${pack.listingCopy?.headline || 'n/a'}`,
     `- Subhead: ${pack.listingCopy?.subhead || 'n/a'}`,
     `- Short description: ${pack.listingCopy?.shortDescription || 'n/a'}`,
     'Proof bullets:',
-    ...proofBulletLines,
+    ...renderClaudeProofBulletLines(pack),
     `- Primary CTA: ${pack.listingCopy?.primaryCta?.label || 'n/a'} -> ${pack.listingCopy?.primaryCta?.url || ''}`,
     `- Secondary CTA: ${pack.listingCopy?.secondaryCta?.label || 'n/a'} -> ${pack.listingCopy?.secondaryCta?.url || ''}`,
     `- Proof CTA: ${pack.listingCopy?.proofCta?.label || 'n/a'} -> ${pack.listingCopy?.proofCta?.url || ''}`,
     `- Marketplace note: ${pack.listingCopy?.marketplaceNote || 'n/a'}`,
     'Follow-on listing offers:',
-    ...(Array.isArray(pack.listingCopy?.followOnOffers)
-      ? pack.listingCopy.followOnOffers.map((offer) => `- ${offer.label} -> ${offer.url}`)
-      : ['- n/a']),
+    ...listingOfferLines,
     '',
     '## Follow-On Offers',
-    ...followOnOfferLines,
+    ...renderClaudeFollowOnOfferLines(pack),
     '',
     '## Prospect Queue',
-    ...prospectLines,
+    ...renderClaudeProspectLines(pack),
     '',
     '## Outreach Drafts',
-    ...draftLines,
+    ...renderClaudeDraftLines(pack),
     '## 90-Day Measurement Plan',
     `- North star: ${pack.measurementPlan?.northStar || 'n/a'}`,
     `- Policy: ${pack.measurementPlan?.policy || 'n/a'}`,
     `- Minimum useful signal: ${pack.measurementPlan?.minimumUsefulSignal || 'n/a'}`,
     `- Strong signal: ${pack.measurementPlan?.strongSignal || 'n/a'}`,
     'Tracked metrics:',
-    ...(Array.isArray(pack.measurementPlan?.metrics) ? pack.measurementPlan.metrics.map((metric) => `- ${metric}`) : ['- n/a']),
+    ...renderClaudeListLines(pack.measurementPlan?.metrics),
     'Guardrails:',
-    ...(Array.isArray(pack.measurementPlan?.guardrails) ? pack.measurementPlan.guardrails.map((entry) => `- ${entry}`) : ['- n/a']),
+    ...renderClaudeListLines(pack.measurementPlan?.guardrails),
     'Milestones:',
-    ...milestoneLines,
+    ...renderClaudeMilestoneLines(pack),
     'Do not count as success:',
-    ...(Array.isArray(pack.measurementPlan?.doNotCountAsSuccess) ? pack.measurementPlan.doNotCountAsSuccess.map((entry) => `- ${entry}`) : ['- n/a']),
+    ...renderClaudeListLines(pack.measurementPlan?.doNotCountAsSuccess),
     '',
     '## Evidence Backstop',
     `- Warm Claude targets in current report: ${pack.evidenceBackstop?.warmClaudeTargetCount ?? 0}`,
@@ -542,7 +569,7 @@ function renderClaudeWorkflowHardeningPackMarkdown(pack = {}) {
     `- Review packet: ${pack.evidenceBackstop?.reviewPacketUrl || ''}`,
     '',
     '## Proof Links',
-    ...proofLines,
+    ...renderClaudeProofLines(pack),
     '',
   ].join('\n');
 }
