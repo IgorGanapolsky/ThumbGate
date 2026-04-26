@@ -22,6 +22,7 @@ function makeReportFixture() {
     currentTruth: {
       teamPilotOffer: 'Workflow Hardening Sprint',
       publicSelfServeOffer: 'Pro at $19/mo or $149/yr',
+      guideLink: 'https://thumbgate-production.up.railway.app/guide',
       commercialTruthLink: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md',
       verificationEvidenceLink: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
     },
@@ -125,6 +126,8 @@ test('rendered pack is operator-ready and anchored to proof links', () => {
   assert.match(markdown, /Make one Claude-first workflow safe enough to ship team-wide/);
   assert.match(markdown, /Workflow Hardening Sprint/);
   assert.match(markdown, /Pro at \$19\/mo or \$149\/yr/);
+  assert.match(markdown, /Proof-backed setup guide/);
+  assert.match(markdown, /thumbgate-production\.up\.railway\.app\/guide/);
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
   assert.doesNotMatch(markdown, /official partner|booked revenue exists/i);

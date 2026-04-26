@@ -1,6 +1,6 @@
 # Cursor Marketplace Revenue Pack
 
-Updated: 2026-04-26T00:00:32.567Z
+Updated: 2026-04-26T04:03:15.038Z
 
 This is a sales operator artifact. It is not proof of installs, paid revenue, directory approval, or marketplace publication by itself.
 
@@ -25,7 +25,7 @@ Turn Cursor plugin discovery into tracked installs, Pro checkout starts, and qua
 - Buyer: Cursor users who want the fastest install path for repeated-mistake prevention.
 - Submission path: https://cursor.com/marketplace/publish
 - Repository: https://github.com/IgorGanapolsky/ThumbGate
-- Homepage: https://thumbgate-production.up.railway.app/?utm_source=cursor&utm_medium=marketplace&utm_campaign=cursor_plugin_listing&utm_content=homepage&campaign_variant=plugin_homepage&offer_code=CURSOR-PLUGIN_HOMEPAGE&cta_id=cursor_plugin_homepage&cta_placement=cursor_listing&surface=cursor_marketplace
+- Homepage: https://thumbgate-production.up.railway.app/guide?utm_source=cursor&utm_medium=marketplace&utm_campaign=cursor_plugin_guide&utm_content=guide&campaign_variant=plugin_homepage&offer_code=CURSOR-PLUGIN_HOMEPAGE&cta_id=cursor_plugin_homepage&cta_placement=cursor_listing&surface=cursor_marketplace
 - Proof: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 - Support: https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/cursor-marketplace/README.md
 - Tags: thumbgate, pre-action-checks, agent-reliability, guardrails, developer-tools, cursor
@@ -43,7 +43,7 @@ Proof links: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCI
 - Buyer: Researchers and buyers comparing Cursor plugins before install.
 - Submission path: https://cursor.directory/plugins/thumbgate
 - Repository: https://github.com/IgorGanapolsky/ThumbGate
-- Homepage: https://thumbgate-production.up.railway.app/?utm_source=cursor&utm_medium=directory&utm_campaign=cursor_directory_profile&utm_content=homepage&campaign_variant=directory_homepage&offer_code=CURSOR-DIRECTORY_HOMEPAGE&cta_id=cursor_directory_homepage&cta_placement=cursor_listing&surface=cursor_directory
+- Homepage: https://thumbgate-production.up.railway.app/guide?utm_source=cursor&utm_medium=directory&utm_campaign=cursor_directory_guide&utm_content=guide&campaign_variant=directory_homepage&offer_code=CURSOR-DIRECTORY_HOMEPAGE&cta_id=cursor_directory_homepage&cta_placement=cursor_listing&surface=cursor_directory
 - Proof: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 - Support: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/CURSOR_PLUGIN_OPERATIONS.md
 - Tags: cursor, pre-action-checks, agent-reliability, guardrails
@@ -103,7 +103,7 @@ Tracked metrics:
 - paid_pro_conversions
 
 Milestones:
-- days_0_30: Refresh the Marketplace listing, directory profile, and screenshot set with tracked homepage plus proof links. Decision rule: Do not rewrite the value prop until homepage clicks or installs show a clear mismatch.
+- days_0_30: Refresh the Marketplace listing, directory profile, and screenshot set with the tracked setup guide plus proof links. Decision rule: Do not rewrite the value prop until guide clicks or installs show a clear mismatch.
 - days_31_60: Promote whichever follow-on motion converts better: Pro self-serve or Workflow Hardening Sprint. Decision rule: If installs happen without paid intent, move proof and follow-on offers higher in post-install docs.
 - days_61_90: Decide whether Cursor should stay a plugin-only lane or become a team rollout channel. Decision rule: Only prioritize Team Marketplace motion when qualified conversations exist.
 

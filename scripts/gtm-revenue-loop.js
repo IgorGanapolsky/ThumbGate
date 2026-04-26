@@ -259,6 +259,7 @@ function buildRevenueLinks(config = resolveHostedBillingConfig({
   const appOrigin = config.appOrigin;
   return {
     appOrigin,
+    guideLink: `${appOrigin}/guide`,
     proCheckoutLink: `${appOrigin}/checkout/pro`,
     sprintLink: `${appOrigin}/#workflow-sprint-intake`,
     commercialTruthLink: COMMERCIAL_TRUTH_LINK,
@@ -694,6 +695,7 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
   const currentTruth = {
     publicSelfServeOffer: motionCatalog.pro.label,
     teamPilotOffer: motionCatalog.sprint.label,
+    guideLink: buildRevenueLinks().guideLink,
     commercialTruthLink: motionCatalog.pro.truth,
     verificationEvidenceLink: motionCatalog.pro.proof,
   };
@@ -819,6 +821,11 @@ function buildMarketplaceCopy(report) {
     proofPolicy: 'Do not lead with proof links. Use Commercial Truth and Verification Evidence only after the buyer confirms pain.',
     recommendedCtas: [
       {
+        motion: 'guide',
+        label: 'Proof-backed setup guide',
+        cta: normalizeText(report.currentTruth?.guideLink),
+      },
+      {
         motion: primaryMotion,
         label: resolveMotionLabel(report, primaryMotion),
         cta: resolveMotionCta(report, primaryMotion),
@@ -832,6 +839,7 @@ function buildMarketplaceCopy(report) {
     listingBullets: dedupeList([
       'Turn repeated AI-agent mistakes into enforceable pre-action gates.',
       topTheme ? topTheme.listingAngle : '',
+      'Route install-intent buyers through the proof-backed setup guide before direct checkout.',
       `Primary offer: ${resolveMotionLabel(report, primaryMotion)}.`,
       `Secondary offer: ${resolveMotionLabel(report, secondaryMotion)} after the buyer asks for the tool path.`,
       'Keep approval boundaries, rollback safety, and proof attached to the workflow before rollout.',

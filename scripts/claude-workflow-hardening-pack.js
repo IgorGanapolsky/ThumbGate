@@ -166,6 +166,10 @@ function buildClaudeWorkflowHardeningPack(report = {}) {
       label: normalizeText(report.currentTruth?.publicSelfServeOffer) || 'Pro at $19/mo or $149/yr',
       cta: normalizeText(report.targets?.find((target) => normalizeText(target.motion) === 'pro')?.cta),
     },
+    selfServeGuide: {
+      label: 'Proof-backed setup guide',
+      cta: normalizeText(report.currentTruth?.guideLink),
+    },
     proofPolicy: 'Do not lead with proof links. Use Commercial Truth and Verification Evidence only after the buyer confirms workflow pain.',
     signals,
     buyerLanes,
@@ -222,6 +226,7 @@ function renderClaudeWorkflowHardeningPackMarkdown(pack = {}) {
     '## Offer Stack',
     `- Primary: ${pack.primaryOffer?.label || 'n/a'}${pack.primaryOffer?.cta ? ` -> ${pack.primaryOffer.cta}` : ''}`,
     `- Secondary: ${pack.secondaryOffer?.label || 'n/a'}${pack.secondaryOffer?.cta ? ` -> ${pack.secondaryOffer.cta}` : ''}`,
+    `- Self-serve guide: ${pack.selfServeGuide?.label || 'n/a'}${pack.selfServeGuide?.cta ? ` -> ${pack.selfServeGuide.cta}` : ''}`,
     `- Proof policy: ${pack.proofPolicy}`,
     '',
     '## Evidence-Backed Signals',
