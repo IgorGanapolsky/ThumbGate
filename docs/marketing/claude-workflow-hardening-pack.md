@@ -1,6 +1,6 @@
 # Claude Workflow Hardening Pack
 
-Updated: 2026-04-26T02:01:28.625Z
+Updated: 2026-04-26T04:03:15.030Z
 
 This is a sales operator artifact. It is not proof of sent outreach, partner acceptance, booked revenue, or deployment success by itself.
 
@@ -15,6 +15,7 @@ Turn current Claude-first buyer signals into booked workflow-hardening diagnosti
 ## Offer Stack
 - Primary: Workflow Hardening Sprint -> https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - Secondary: Pro at $19/mo or $149/yr -> https://thumbgate-production.up.railway.app/checkout/pro
+- Self-serve guide: Proof-backed setup guide -> https://thumbgate-production.up.railway.app/guide
 - Proof policy: Do not lead with proof links. Use Commercial Truth and Verification Evidence only after the buyer confirms workflow pain.
 
 ## Evidence-Backed Signals
@@ -58,7 +59,7 @@ Turn current Claude-first buyer signals into booked workflow-hardening diagnosti
 - @leogodin217 (warm): Warm Reddit engager already described a mature workflow, so the next step is a targeted diagnostic on one failure mode.
 - @Enthu-Cutlet-1337 (warm): Warm Reddit engager already understands the adaptive-gate thesis, so offer one concrete workflow hardening diagnostic.
 - freema/mcp-jira-stdio (cold): Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
-- salacoste/mcp-n8n-workflow-builder (cold): Lead with context-drift hardening for one workflow before proposing any broader agent platform story.
+- wanshuiyin/Auto-claude-code-research-in-sleep (cold): Lead with context-drift hardening for one workflow before proposing any broader agent platform story.
 
 ## Proof Links
 - https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md

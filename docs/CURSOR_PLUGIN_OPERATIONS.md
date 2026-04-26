@@ -52,5 +52,5 @@ When the feedback is a vague thumbs-down, ThumbGate can distill the lesson from 
 - Name: `ThumbGate`
 - Description: `👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.`
 - Repository URL: `https://github.com/IgorGanapolsky/ThumbGate`
-- Homepage: `https://thumbgate-production.up.railway.app`
+- Homepage: `https://thumbgate-production.up.railway.app/guide`
 - Revenue pack: `node scripts/cursor-marketplace-revenue-pack.js --write-docs`

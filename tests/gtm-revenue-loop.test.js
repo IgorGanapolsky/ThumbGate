@@ -635,8 +635,10 @@ test('marketplace copy pack stays tied to current revenue-loop evidence', () => 
   const markdown = renderMarketplaceCopyMarkdown(pack);
 
   assert.match(pack.headline, /Harden one AI-agent workflow/i);
-  assert.equal(pack.recommendedCtas[0].label, catalog.sprint.label);
-  assert.equal(pack.recommendedCtas[1].label, catalog.pro.label);
+  assert.equal(pack.recommendedCtas[0].label, 'Proof-backed setup guide');
+  assert.match(pack.recommendedCtas[0].cta, /thumbgate-production\.up\.railway\.app\/guide/);
+  assert.equal(pack.recommendedCtas[1].label, catalog.sprint.label);
+  assert.equal(pack.recommendedCtas[2].label, catalog.pro.label);
   assert.ok(pack.topSignals.some((signal) => /Warm discovery workflows/.test(signal.label)));
   assert.ok(pack.topSignals.some((signal) => /Business-system workflow approvals/.test(signal.label)));
   assert.match(markdown, /Proof Policy/);
@@ -657,6 +659,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     currentTruth: {
       publicSelfServeOffer: catalog.pro.label,
       teamPilotOffer: catalog.sprint.label,
+      guideLink: links.guideLink,
       commercialTruthLink: catalog.pro.truth,
       verificationEvidenceLink: catalog.pro.proof,
     },
@@ -740,6 +743,8 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.match(csv, /Commercial truth: .*COMMERCIAL_TRUTH\.md/);
     assert.match(csv, /Do not claim revenue, installs, or marketplace approval without direct command evidence\./);
     assert.match(marketplaceCopy.headline, /workflow/i);
+    assert.equal(marketplaceCopy.recommendedCtas[0].label, 'Proof-backed setup guide');
+    assert.match(marketplaceCopy.recommendedCtas[0].cta, /thumbgate-production\.up\.railway\.app\/guide/);
     assert.ok(Array.isArray(marketplaceCopy.topSignals));
     assert.equal(JSON.parse(jsonl.trim()).repoName, 'production-mcp-server');
   } finally {
@@ -844,7 +849,9 @@ test('runRevenueLoop writes an evidence-backed target queue with discovery warni
     assert.equal(report.discoveryWarnings.length, 1);
     assert.match(report.discoveryWarnings[0], /temporarily unavailable/);
     assert.ok(report.marketplaceCopy);
+    assert.match(report.currentTruth.guideLink, /thumbgate-production\.up\.railway\.app\/guide/);
     assert.ok(Array.isArray(report.marketplaceCopy.topSignals));
+    assert.equal(report.marketplaceCopy.recommendedCtas[0].label, 'Proof-backed setup guide');
     assert.match(report.targets[0].proofPackTrigger, /buyer confirms pain/);
     assert.match(report.targets[0].painConfirmedFollowUpDraft, /VERIFICATION_EVIDENCE/);
     assert.equal(written.reportDir, reportDir);
