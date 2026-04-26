@@ -98,6 +98,8 @@ Or copy the plugin MCP config into `.cursor/mcp.json`:
 }
 ```
 
+Full setup guide: https://thumbgate-production.up.railway.app/guide
+
 ## Update behavior
 
 - Runtime updates: the plugin asks npm for `thumbgate@latest`, so new npm releases can flow into the Cursor runtime without editing the plugin config.
@@ -122,3 +124,4 @@ ThumbGate gives Cursor agents a practical guardrail layer:
 
 Verification evidence for shipped behavior lives in `docs/VERIFICATION_EVIDENCE.md`.
 Release and promotion rules live in `docs/CURSOR_PLUGIN_OPERATIONS.md`.
+Proof-backed setup path: https://thumbgate-production.up.railway.app/guide

@@ -26,6 +26,7 @@ const {
 
 const LINKS_FIXTURE = {
   appOrigin: 'https://thumbgate-production.up.railway.app',
+  guideLink: 'https://thumbgate-production.up.railway.app/guide',
   proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
   sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
   proPriceLabel: '$19/mo or $149/yr',
@@ -60,27 +61,29 @@ test('Cursor surfaces cover marketplace, directory, and team rollout lanes witho
 test('tracked Cursor links keep source, medium, and campaign machine-readable', () => {
   const marketplaceTracking = buildCursorTrackingMetadata('plugin_homepage', {
     utmMedium: MARKETPLACE_MEDIUM,
-    utmCampaign: 'cursor_plugin_listing',
-    utmContent: 'homepage',
+    utmCampaign: 'cursor_plugin_guide',
+    utmContent: 'guide',
   });
   const directoryTracking = buildCursorTrackingMetadata('directory_homepage', {
     utmMedium: DIRECTORY_MEDIUM,
-    utmCampaign: 'cursor_directory_profile',
-    utmContent: 'homepage',
+    utmCampaign: 'cursor_directory_guide',
+    utmContent: 'guide',
   });
   const teamTracking = buildCursorTrackingMetadata('team_marketplace_homepage', {
     utmMedium: TEAM_MARKETPLACE_MEDIUM,
     utmCampaign: 'cursor_team_marketplace',
     utmContent: 'homepage',
   });
-  const marketplaceUrl = new URL(buildTrackedCursorLink('https://thumbgate-production.up.railway.app', marketplaceTracking));
-  const directoryUrl = new URL(buildTrackedCursorLink('https://thumbgate-production.up.railway.app', directoryTracking));
+  const marketplaceUrl = new URL(buildTrackedCursorLink('https://thumbgate-production.up.railway.app/guide', marketplaceTracking));
+  const directoryUrl = new URL(buildTrackedCursorLink('https://thumbgate-production.up.railway.app/guide', directoryTracking));
   const teamUrl = new URL(buildTrackedCursorLink('https://thumbgate-production.up.railway.app/#workflow-sprint-intake', teamTracking));
 
   assert.equal(marketplaceUrl.searchParams.get('utm_source'), 'cursor');
   assert.equal(marketplaceUrl.searchParams.get('utm_medium'), MARKETPLACE_MEDIUM);
-  assert.equal(marketplaceUrl.searchParams.get('utm_campaign'), 'cursor_plugin_listing');
+  assert.equal(marketplaceUrl.pathname, '/guide');
+  assert.equal(marketplaceUrl.searchParams.get('utm_campaign'), 'cursor_plugin_guide');
   assert.equal(directoryUrl.searchParams.get('utm_medium'), DIRECTORY_MEDIUM);
+  assert.equal(directoryUrl.pathname, '/guide');
   assert.equal(teamUrl.searchParams.get('utm_medium'), TEAM_MARKETPLACE_MEDIUM);
   assert.equal(teamUrl.searchParams.get('surface'), 'team_marketplace_homepage');
 });
@@ -116,6 +119,7 @@ test('rendered pack is operator-ready and anchored to proof plus screenshots', (
   assert.match(rendered, /Cursor Marketplace/);
   assert.match(rendered, /Cursor Directory/);
   assert.match(rendered, /Cursor Team Marketplace/);
+  assert.match(rendered, /thumbgate-production\.up\.railway\.app\/guide/);
   assert.match(rendered, /VERIFICATION_EVIDENCE\.md/);
   assert.match(rendered, /docs\/marketing\/gallery\/05-hero\.png/);
   assert.doesNotMatch(rendered, /approved partner|guaranteed installs|guaranteed revenue/i);
@@ -128,7 +132,8 @@ test('CSV export keeps submission fields in one operator file', () => {
   assert.match(csv, /Cursor Marketplace/);
   assert.match(csv, /Cursor Directory/);
   assert.match(csv, /Cursor Team Marketplace/);
-  assert.match(csv, /cursor_plugin_listing/);
+  assert.match(csv, /cursor_plugin_guide/);
+  assert.match(csv, /thumbgate-production\.up\.railway\.app\/guide/);
 });
 
 test('CLI options and report writing produce markdown, JSON, and CSV artifacts', () => {

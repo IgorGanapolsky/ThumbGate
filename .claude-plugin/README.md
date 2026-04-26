@@ -39,6 +39,8 @@ Or use the project bootstrap:
 npx thumbgate init
 ```
 
+Full setup guide: https://thumbgate-production.up.railway.app/guide
+
 ### Direct bundle download
 
 Download the latest packaged Claude Desktop bundle from GitHub Releases:
@@ -159,6 +161,7 @@ For complete privacy information, see: https://thumbgate-production.up.railway.a
 
 - GitHub Issues: https://github.com/IgorGanapolsky/ThumbGate/issues
 - Security Advisories: https://github.com/IgorGanapolsky/ThumbGate/security
+- Full setup guide: https://thumbgate-production.up.railway.app/guide
 - Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 - Product Hunt: https://www.producthunt.com/products/thumbgate
 

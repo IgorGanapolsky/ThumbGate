@@ -115,7 +115,11 @@ function buildScreenshotManifest() {
 
 function buildCursorSurface(config, links, about) {
   const tracking = buildCursorTrackingMetadata(config.trackingKey, config.tracking);
-  const homepageBaseUrl = config.homepageBase === 'sprint' ? links.sprintLink : links.appOrigin;
+  const homepageBaseUrl = config.homepageBase === 'sprint'
+    ? links.sprintLink
+    : config.homepageBase === 'guide'
+      ? links.guideLink
+      : links.appOrigin;
   const tags = typeof config.tags === 'function' ? config.tags(about) : config.tags;
 
   return {
@@ -152,11 +156,12 @@ function buildCursorMarketplaceSurfaces(links = buildRevenueLinks(), about = rea
       shortDescription: CANONICAL_SHORT_DESCRIPTION,
       longDescription: CANONICAL_LONG_DESCRIPTION,
       supportPath: 'plugins/cursor-marketplace/README.md',
+      homepageBase: 'guide',
       trackingKey: 'plugin_homepage',
       tracking: {
         utmMedium: MARKETPLACE_MEDIUM,
-        utmCampaign: 'cursor_plugin_listing',
-        utmContent: 'homepage',
+        utmCampaign: 'cursor_plugin_guide',
+        utmContent: 'guide',
         surface: 'cursor_marketplace',
       },
       tags: ({ topics }) => topics.filter((topic) => [
@@ -182,11 +187,12 @@ function buildCursorMarketplaceSurfaces(links = buildRevenueLinks(), about = rea
         'Lead with the outcome before architecture: stop costly AI agent mistakes, then mention pre-action checks, prevention rules, and proof.',
       ],
       supportPath: 'docs/CURSOR_PLUGIN_OPERATIONS.md',
+      homepageBase: 'guide',
       trackingKey: 'directory_homepage',
       tracking: {
         utmMedium: DIRECTORY_MEDIUM,
-        utmCampaign: 'cursor_directory_profile',
-        utmContent: 'homepage',
+        utmCampaign: 'cursor_directory_guide',
+        utmContent: 'guide',
         surface: 'cursor_directory',
       },
       tags: ['cursor', 'pre-action-checks', 'agent-reliability', 'guardrails'],
@@ -273,8 +279,8 @@ function buildMeasurementPlan() {
     milestones: [
       {
         window: 'days_0_30',
-        goal: 'Refresh the Marketplace listing, directory profile, and screenshot set with tracked homepage plus proof links.',
-        decision: 'Do not rewrite the value prop until homepage clicks or installs show a clear mismatch.',
+        goal: 'Refresh the Marketplace listing, directory profile, and screenshot set with the tracked setup guide plus proof links.',
+        decision: 'Do not rewrite the value prop until guide clicks or installs show a clear mismatch.',
       },
       {
         window: 'days_31_60',
