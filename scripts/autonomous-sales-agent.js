@@ -11,6 +11,7 @@
 
 'use strict';
 
+const path = require('node:path');
 const { parseArgs, runRevenueLoop } = require('./gtm-revenue-loop');
 const {
   buildClaudeWorkflowHardeningPack,
@@ -24,16 +25,47 @@ const {
   buildGeminiCliDemandPack,
   writeGeminiCliDemandPack,
 } = require('./gemini-cli-demand-pack');
+const {
+  buildCodexMarketplaceRevenuePack,
+  writeCodexMarketplaceRevenuePack,
+} = require('./codex-marketplace-revenue-pack');
 
-async function main(argv = process.argv.slice(2)) {
-  const options = parseArgs(argv);
-  const { report, written } = await runRevenueLoop(options);
-  const claudePack = buildClaudeWorkflowHardeningPack(report);
-  const claudeWritten = writeClaudeWorkflowHardeningPack(claudePack, options);
-  const cursorPack = buildCursorMarketplaceRevenuePack();
-  const cursorWritten = writeCursorMarketplaceRevenuePack(cursorPack, options);
-  const geminiPack = buildGeminiCliDemandPack(report);
-  const geminiWritten = writeGeminiCliDemandPack(geminiPack, options);
+function buildDependencies(overrides = {}) {
+  return {
+    parseArgs,
+    runRevenueLoop,
+    buildClaudeWorkflowHardeningPack,
+    writeClaudeWorkflowHardeningPack,
+    buildCursorMarketplaceRevenuePack,
+    writeCursorMarketplaceRevenuePack,
+    buildGeminiCliDemandPack,
+    writeGeminiCliDemandPack,
+    buildCodexMarketplaceRevenuePack,
+    writeCodexMarketplaceRevenuePack,
+    ...overrides,
+  };
+}
+
+function isCliInvocation(argv = process.argv) {
+  const scriptPath = argv[1];
+  if (!scriptPath) {
+    return false;
+  }
+  return path.resolve(scriptPath) === path.resolve(__filename);
+}
+
+async function main(argv = process.argv.slice(2), overrides = {}) {
+  const deps = buildDependencies(overrides);
+  const options = deps.parseArgs(argv);
+  const { report, written } = await deps.runRevenueLoop(options);
+  const claudePack = deps.buildClaudeWorkflowHardeningPack(report);
+  const claudeWritten = deps.writeClaudeWorkflowHardeningPack(claudePack, options);
+  const cursorPack = deps.buildCursorMarketplaceRevenuePack();
+  const cursorWritten = deps.writeCursorMarketplaceRevenuePack(cursorPack, options);
+  const geminiPack = deps.buildGeminiCliDemandPack(report);
+  const geminiWritten = deps.writeGeminiCliDemandPack(geminiPack, options);
+  const codexPack = deps.buildCodexMarketplaceRevenuePack();
+  const codexWritten = deps.writeCodexMarketplaceRevenuePack(codexPack, options);
 
   console.log('\n✅ GTM automation complete.');
   if (written.docsPath) {
@@ -51,10 +83,13 @@ async function main(argv = process.argv.slice(2)) {
   if (geminiWritten.docsPath) {
     console.log(`Gemini pack updated: ${geminiWritten.docsPath}`);
   }
+  if (codexWritten.docsPath) {
+    console.log(`Codex pack updated: ${codexWritten.docsPath}`);
+  }
   console.log(`State: ${report.directive.state} | Targets: ${report.targets.length}`);
 }
 
-if (require.main === module) {
+if (isCliInvocation(process.argv)) {
   main().catch((err) => {
     console.error(err && err.message ? err.message : err);
     process.exit(1);
@@ -62,5 +97,6 @@ if (require.main === module) {
 }
 
 module.exports = {
+  isCliInvocation,
   main,
 };
