@@ -46,7 +46,10 @@ Generate a target queue:
 npm run gtm:revenue-loop -- --report-dir reports/gtm/$(date +%F)-selling-now --max-targets=12
 ```
 
-The revenue loop now emits twenty operator artifacts in that folder:
+Without `--report-dir`, `npm run gtm:revenue-loop` refreshes the checked-in operator pack in `docs/marketing/`.
+Use `--report-dir` when you want a dated handoff folder for one selling session.
+
+The revenue loop emits these operator artifacts in that folder:
 
 - `gtm-revenue-loop.md` for the human summary
 - `gtm-revenue-loop.json` for machine-readable truth
@@ -54,11 +57,16 @@ The revenue loop now emits twenty operator artifacts in that folder:
 - `gtm-marketplace-copy.json` for machine-readable listing copy and target themes
 - `gtm-target-queue.csv` for spreadsheet sorting
 - `gtm-target-queue.jsonl` for line-by-line operator handoff with first-touch and pain-confirmed follow-up drafts
+- `team-outreach-messages.md` for the warm-outbound copy layer tied to the same ranked queue
+- `operator-priority-handoff.md` for the ranked send order across warm discovery and cold GitHub targets
 - `claude-workflow-hardening-pack.md` for Claude-first positioning, buyer lanes, and evidence-backed outbound copy
 - `claude-workflow-hardening-pack.json` for the same Claude-first outbound pack in machine-readable form
 - `cursor-marketplace-revenue-pack.md` for Cursor Marketplace, Cursor Directory, and Team Marketplace submission copy
 - `cursor-marketplace-revenue-pack.json` for machine-readable Cursor listing metadata and follow-on offers
 - `cursor-marketplace-surfaces.csv` for one-sheet operator submission fields
+- `chatgpt-gpt-revenue-pack.md` for the ChatGPT GPT acquisition lane, trust surfaces, and paid-intent handoff copy
+- `chatgpt-gpt-revenue-pack.json` for the same ChatGPT operator pack in machine-readable form
+- `chatgpt-gpt-operator-queue.csv` for the ChatGPT lane's open-GPT, builder-repair, and trust-boundary next asks
 - `codex-plugin-revenue-pack.md` for Codex install-page, setup-guide, and release-bundle submission copy
 - `codex-plugin-revenue-pack.json` for machine-readable Codex listing metadata and follow-on offers
 - `codex-plugin-surfaces.csv` for one-sheet Codex operator submission fields
@@ -82,6 +90,14 @@ Import the queue into the local sales ledger:
 npm run sales:pipeline -- import \
   --source reports/gtm/$(date +%F)-selling-now/gtm-revenue-loop.json \
   --out reports/gtm/$(date +%F)-selling-now/sales-pipeline.md
+```
+
+If you are working from the checked-in operator pack instead of a dated export:
+
+```bash
+npm run sales:pipeline -- import \
+  --source docs/marketing/gtm-revenue-loop.json \
+  --out docs/marketing/sales-pipeline.md
 ```
 
 Advance a lead only when the real-world event happened:
