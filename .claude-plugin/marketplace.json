@@ -1,6 +1,6 @@
 {
   "name": "thumbgate-marketplace",
-  "version": "1.16.6",
+  "version": "1.16.7",
   "owner": {
     "name": "Igor Ganapolsky",
     "email": "ig5973700@gmail.com"
@@ -13,7 +13,7 @@
         "source": "npm",
         "package": "thumbgate"
       },
-      "version": "1.16.6",
+      "version": "1.16.7",
       "author": {
         "name": "Igor Ganapolsky"
       },
