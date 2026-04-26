@@ -1,15 +1,69 @@
+#!/usr/bin/env node
 'use strict';
 
-const fs = require('node:fs');
 const path = require('node:path');
+const { buildUTMLink } = require('./social-analytics/utm');
+const {
+  COMMERCIAL_TRUTH_LINK,
+  VERIFICATION_EVIDENCE_LINK,
+  buildRevenueLinks,
+} = require('./gtm-revenue-loop');
+const {
+  csvCell,
+  isCliInvocation: isCliCall,
+  normalizeText,
+  parseReportArgs,
+  readGitHubAbout,
+  writeRevenuePackArtifacts,
+} = require('./revenue-pack-utils');
 
-const { ensureDir } = require('./fs-utils');
+const REPO_ROOT = path.resolve(__dirname, '..');
+const CLAUDE_SOURCE = 'claude';
+const GUIDE_MEDIUM = 'guide_surface';
+const OUTREACH_MEDIUM = 'operator_outreach';
+const CLAUDE_SURFACE = 'claude';
+const CLAUDE_DESKTOP_GUIDE_URL = 'https://thumbgate-production.up.railway.app/guides/claude-desktop';
+const CLAUDE_CODE_GUIDE_URL = 'https://thumbgate-production.up.railway.app/guides/claude-code-prevent-repeated-mistakes';
+const CLAUDE_SECTION_URL = 'https://thumbgate-production.up.railway.app/#claude-desktop';
+const GUIDE_URL = 'https://thumbgate-production.up.railway.app/guide';
+const CLAUDE_BUNDLE_URL = 'https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb';
+const CLAUDE_REVIEW_PACKET_URL = 'https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-plugin-review.zip';
+const CLAUDE_DESKTOP_GUIDE_SOURCE_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/claude-desktop.html';
+const CLAUDE_CODE_GUIDE_SOURCE_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/claude-code-prevent-repeated-mistakes.html';
+const CLAUDE_PLUGIN_README_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/.claude-plugin/README.md';
+const CLAUDE_EXTENSION_PLAN_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/CLAUDE_DESKTOP_EXTENSION.md';
+const CLAUDE_LANDING_SOURCE_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/landing-page.html';
+const PROOF_LINKS = [COMMERCIAL_TRUTH_LINK, VERIFICATION_EVIDENCE_LINK];
+const CANONICAL_HEADLINE = 'Turn Claude install demand into workflow-hardening revenue.';
+const CANONICAL_SHORT_DESCRIPTION = 'ThumbGate gives Claude Desktop and Claude Code a proof-backed install path, thumbs-up/down feedback capture, and Pre-Action Checks that block repeated workflow mistakes before the next risky action runs.';
 
-function normalizeText(value) {
-  return String(value ?? '').trim();
+function buildTrackedClaudeLink(baseUrl, tracking = {}) {
+  const url = new URL(buildUTMLink(baseUrl, {
+    source: tracking.utmSource || CLAUDE_SOURCE,
+    medium: tracking.utmMedium || GUIDE_MEDIUM,
+    campaign: tracking.utmCampaign || 'claude_workflow_hardening',
+    content: tracking.utmContent || 'guide',
+  }));
+  const extras = {
+    campaign_variant: tracking.campaignVariant,
+    offer_code: tracking.offerCode,
+    cta_id: tracking.ctaId,
+    cta_placement: tracking.ctaPlacement,
+    plan_id: tracking.planId,
+    surface: tracking.surface || CLAUDE_SURFACE,
+  };
+
+  for (const [key, value] of Object.entries(extras)) {
+    const normalized = normalizeText(value);
+    if (normalized) {
+      url.searchParams.set(key, normalized);
+    }
+  }
+
+  return url.toString();
 }
 
-function hasEvidenceLabel(target, label) {
+function hasEvidence(target, label) {
   const evidence = Array.isArray(target?.evidence) ? target.evidence : [];
   const needle = normalizeText(label).toLowerCase();
   return evidence.some((entry) => normalizeText(entry).toLowerCase() === needle);
@@ -26,194 +80,433 @@ function isClaudeTarget(target) {
     target?.description,
     target?.source,
     target?.channel,
-  ].map(normalizeText).join(' ').toLowerCase();
+  ].map((value) => normalizeText(value)).join(' ').toLowerCase();
   return /claude/.test(haystack);
 }
 
-function hasRepo(target) {
-  return Boolean(normalizeText(target?.repoName) && normalizeText(target?.repoUrl));
-}
-
-function summarizeExamples(targets = [], limit = 3) {
-  return targets.slice(0, limit).map((target) => {
-    if (hasRepo(target)) {
-      return `${target.username}/${target.repoName}`;
-    }
-    return `@${target.username}`;
-  });
-}
-
-function buildSignalSummary(report = {}) {
+function countTargets(matcher, report = {}) {
   const targets = Array.isArray(report.targets) ? report.targets : [];
-  const warmClaudeTargets = targets.filter((target) => isWarmTarget(target) && isClaudeTarget(target));
-  const productionTargets = targets.filter((target) => hasEvidenceLabel(target, 'production or platform workflow'));
-  const businessSystemTargets = targets.filter((target) => hasEvidenceLabel(target, 'business-system integration'));
+  return targets.filter((target) => matcher(target)).length;
+}
 
+function buildEvidenceSurfaces(links = buildRevenueLinks(), about = readGitHubAbout()) {
   return [
     {
-      key: 'warm_claude_workflows',
-      label: 'Warm Claude workflow pain already exists',
-      count: warmClaudeTargets.length,
-      summary: `${warmClaudeTargets.length} warm Claude-first signals already named review boundaries, brittle guardrails, or context-risk pain.`,
-      examples: summarizeExamples(warmClaudeTargets),
+      key: 'claude_desktop_guide',
+      name: 'Claude Desktop guide',
+      url: buildTrackedClaudeLink(CLAUDE_DESKTOP_GUIDE_URL, {
+        utmCampaign: 'claude_desktop_guide',
+        utmContent: 'seo_page',
+        campaignVariant: 'desktop_install',
+        offerCode: 'CLAUDE-DESKTOP_GUIDE',
+        ctaId: 'claude_desktop_guide',
+        ctaPlacement: 'guide_surface',
+      }),
+      supportUrl: CLAUDE_DESKTOP_GUIDE_SOURCE_URL,
+      evidenceSource: 'public/guides/claude-desktop.html',
+      operatorUse: 'Primary install and buyer-education surface for Claude Desktop users who want a proof-backed local setup path.',
+      buyerSignal: 'High-intent evaluators who want to install now, keep data local, and avoid building a bundle from source.',
     },
     {
-      key: 'production_rollout',
-      label: 'Production rollout proof is the strongest cold signal',
-      count: productionTargets.length,
-      summary: `${productionTargets.length} current targets touch releases, incidents, or other production-sensitive workflows that need approval boundaries and proof.`,
-      examples: summarizeExamples(productionTargets),
+      key: 'claude_code_repeat_mistakes_guide',
+      name: 'Claude Code repeated-mistakes guide',
+      url: buildTrackedClaudeLink(CLAUDE_CODE_GUIDE_URL, {
+        utmCampaign: 'claude_code_repeat_mistakes',
+        utmContent: 'seo_page',
+        campaignVariant: 'workflow_pain',
+        offerCode: 'CLAUDE-CODE_REPEAT',
+        ctaId: 'claude_code_repeat_mistakes',
+        ctaPlacement: 'guide_surface',
+      }),
+      supportUrl: CLAUDE_CODE_GUIDE_SOURCE_URL,
+      evidenceSource: 'public/guides/claude-code-prevent-repeated-mistakes.html',
+      operatorUse: 'Use when the buyer already feels repeated Claude Code mistakes and needs the shortest path from pain to prevention.',
+      buyerSignal: 'Claude Code users who can already name one repeated command, branch, or file-edit mistake they want blocked.',
     },
     {
-      key: 'business_system_approvals',
-      label: 'Business-system approvals are present but secondary',
-      count: businessSystemTargets.length,
-      summary: `${businessSystemTargets.length} current targets wire agents into business systems where rollback safety and approvals matter.`,
-      examples: summarizeExamples(businessSystemTargets),
+      key: 'claude_bundle_download',
+      name: 'Direct Claude Desktop bundle download',
+      url: CLAUDE_BUNDLE_URL,
+      supportUrl: CLAUDE_PLUGIN_README_URL,
+      evidenceSource: '.claude-plugin/README.md',
+      operatorUse: 'Portable install lane for buyers who want a ready-to-install bundle instead of a local build.',
+      buyerSignal: 'Warm evaluators ready to install if the bundle, privacy path, and proof links are explicit.',
     },
-  ].filter((entry) => entry.count > 0);
-}
-
-function buildLaneEvidenceSentence(count, noun, examples = []) {
-  const exampleText = examples.length ? ` Examples: ${examples.join(', ')}.` : '';
-  return `${count} ${noun}.${exampleText}`;
-}
-
-function buildBuyerLanes(report = {}) {
-  const targets = Array.isArray(report.targets) ? report.targets : [];
-  const warmClaudeTargets = targets.filter((target) => isWarmTarget(target) && isClaudeTarget(target));
-  const productionTargets = targets.filter((target) => hasEvidenceLabel(target, 'production or platform workflow'));
-  const businessSystemTargets = targets.filter((target) => hasEvidenceLabel(target, 'business-system integration'));
-
-  const lanes = [];
-
-  if (warmClaudeTargets.length) {
-    lanes.push({
-      key: 'claude_first_workflow_owner',
-      audience: 'Claude-first builders and workflow owners',
-      evidence: buildLaneEvidenceSentence(
-        warmClaudeTargets.length,
-        'warm Claude-first signals already named concrete workflow pain',
-        summarizeExamples(warmClaudeTargets)
-      ),
-      angle: 'Lead with one repeated workflow failure inside an already-serious Claude process. Do not open with proof.',
-      firstTouchDraft: 'You are already running a serious Claude workflow. I am looking for one Claude-first workflow to harden end-to-end this week: repeated failure, pre-action gate, and proof run. If one review boundary or brittle-guardrail failure keeps coming back, I can harden that workflow for you.',
-      painConfirmedFollowUpDraft: 'If that Claude workflow really has one repeated failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence so the next step stays grounded.',
-    });
-  }
-
-  if (productionTargets.length) {
-    lanes.push({
-      key: 'platform_rollout_owner',
-      audience: 'Platform teams shipping agents near release, incident, or compliance surfaces',
-      evidence: buildLaneEvidenceSentence(
-        productionTargets.length,
-        'current targets expose production or platform workflows where proof matters before rollout',
-        summarizeExamples(productionTargets)
-      ),
-      angle: 'Lead with approval boundaries, rollback safety, and proof for one production workflow.',
-      firstTouchDraft: 'I am looking for one production workflow to harden end-to-end this week: repeated failure, prevention gate, and proof run. If one release, incident, or compliance-adjacent workflow keeps needing manual rescue, I can harden that workflow for you.',
-      painConfirmedFollowUpDraft: 'If that production workflow is real, I can send the Workflow Hardening Sprint brief with commercial truth and verification evidence after the buyer confirms the specific blocker.',
-    });
-  }
-
-  if (businessSystemTargets.length) {
-    lanes.push({
-      key: 'business_system_operator',
-      audience: 'Teams wiring agents into Jira, ServiceNow, Slack, or other business systems',
-      evidence: buildLaneEvidenceSentence(
-        businessSystemTargets.length,
-        'current targets touch business-system workflows where approvals and rollback safety are explicit buying triggers',
-        summarizeExamples(businessSystemTargets)
-      ),
-      angle: 'Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.',
-      firstTouchDraft: 'I am looking for one agent workflow touching Jira, ServiceNow, Slack, or another business system to harden end-to-end this week. If one approval or handoff failure keeps repeating, I can harden that workflow for you.',
-      painConfirmedFollowUpDraft: 'Once the buyer confirms the failing business-system workflow, send the Workflow Hardening Sprint brief plus commercial truth and verification evidence. Do not lead with the proof pack.',
-    });
-  }
-
-  return lanes;
-}
-
-function buildPackTargets(report = {}) {
-  const targets = Array.isArray(report.targets) ? report.targets : [];
-  return targets.slice(0, 6).map((target) => ({
-    account: hasRepo(target) ? `${target.username}/${target.repoName}` : `@${target.username}`,
-    temperature: normalizeText(target.temperature) || 'cold',
-    why: normalizeText(target.motionReason) || normalizeText(target.outreachAngle),
-    motion: normalizeText(target.motionLabel),
+    {
+      key: 'claude_review_ready_lane',
+      name: 'Review-ready Claude install lane',
+      url: buildTrackedClaudeLink(CLAUDE_SECTION_URL, {
+        utmCampaign: 'claude_review_ready_lane',
+        utmContent: 'landing_section',
+        campaignVariant: 'marketplace_review',
+        offerCode: 'CLAUDE-REVIEW_READY',
+        ctaId: 'claude_review_ready_lane',
+        ctaPlacement: 'landing_surface',
+      }),
+      supportUrl: CLAUDE_EXTENSION_PLAN_URL,
+      evidenceSource: 'docs/CLAUDE_DESKTOP_EXTENSION.md',
+      operatorUse: 'Use when a team wants install-now clarity, repo marketplace fallback, and review-packet evidence without claiming directory approval.',
+      buyerSignal: 'Platform owners who need privacy, proof, and rollout documentation before broader team distribution.',
+    },
+  ].map((surface) => ({
+    ...surface,
+    repositoryUrl: about.repositoryUrl,
+    proofUrl: VERIFICATION_EVIDENCE_LINK,
+    proofLinks: [...PROOF_LINKS],
+    appOrigin: links.appOrigin,
   }));
 }
 
-function buildClaudeWorkflowHardeningPack(report = {}) {
-  const signals = buildSignalSummary(report);
-  const buyerLanes = buildBuyerLanes(report);
-
+function buildListingCopy(links = buildRevenueLinks()) {
   return {
-    generatedAt: normalizeText(report.generatedAt) || new Date().toISOString(),
-    objective: 'Turn current Claude-first buyer signals into booked workflow-hardening diagnostics and self-serve follow-up only after pain is confirmed.',
-    state: normalizeText(report.directive?.state) || 'cold-start',
-    headline: 'Make one Claude-first workflow safe enough to ship team-wide.',
-    summary: [
-      'ThumbGate should sell Claude workflow hardening as a concrete delivery motion, not generic AI governance.',
-      normalizeText(report.directive?.headline),
-    ].filter(Boolean).join(' '),
-    primaryOffer: {
-      label: normalizeText(report.currentTruth?.teamPilotOffer) || 'Workflow Hardening Sprint',
-      cta: normalizeText(report.targets?.find((target) => normalizeText(target.motion) === 'sprint')?.cta),
+    headline: 'Install ThumbGate for Claude and block the same mistake before it runs again.',
+    subhead: 'ThumbGate gives Claude Desktop and Claude Code a local-first install path, proof-backed docs, and Pre-Action Checks that turn repeated workflow mistakes into enforced gates.',
+    shortDescription: CANONICAL_SHORT_DESCRIPTION,
+    proofBullets: [
+      'Claude Desktop has a real install lane today: guide, direct .mcpb bundle, and review-ready source packet.',
+      'Claude Code can install from the repo marketplace path while official directory review remains separate.',
+      'Commercial Truth and Verification Evidence stay one click from the install and workflow-hardening path.',
+    ],
+    primaryCta: {
+      label: 'Open Claude Desktop guide',
+      url: buildTrackedClaudeLink(CLAUDE_DESKTOP_GUIDE_URL, {
+        utmCampaign: 'claude_listing_primary',
+        utmContent: 'guide',
+        campaignVariant: 'desktop_install',
+        offerCode: 'CLAUDE-LISTING_PRIMARY',
+        ctaId: 'claude_listing_primary',
+        ctaPlacement: 'listing_copy',
+      }),
     },
-    secondaryOffer: {
-      label: normalizeText(report.currentTruth?.publicSelfServeOffer) || 'Pro at $19/mo or $149/yr',
-      cta: normalizeText(report.targets?.find((target) => normalizeText(target.motion) === 'pro')?.cta),
+    secondaryCta: {
+      label: 'Download Claude bundle',
+      url: CLAUDE_BUNDLE_URL,
     },
-    selfServeGuide: {
-      label: 'Proof-backed setup guide',
-      cta: normalizeText(report.currentTruth?.guideLink),
+    proofCta: {
+      label: 'Verification evidence',
+      url: VERIFICATION_EVIDENCE_LINK,
     },
-    proofPolicy: 'Do not lead with proof links. Use Commercial Truth and Verification Evidence only after the buyer confirms workflow pain.',
-    signals,
-    buyerLanes,
-    sampleTargets: buildPackTargets(report),
-    proofLinks: [
-      normalizeText(report.currentTruth?.commercialTruthLink),
-      normalizeText(report.currentTruth?.verificationEvidenceLink),
-    ].filter(Boolean),
+    marketplaceNote: 'Official directory review is separate. Use the repo marketplace path and review packet honestly while approval is pending.',
+    followOnOffers: [
+      {
+        label: 'Workflow Hardening Sprint',
+        url: buildTrackedClaudeLink(links.sprintLink, {
+          utmCampaign: 'claude_listing_sprint',
+          utmContent: 'workflow_sprint',
+          campaignVariant: 'team_follow_on',
+          offerCode: 'CLAUDE-LISTING_SPRINT',
+          ctaId: 'claude_listing_sprint',
+          ctaPlacement: 'listing_copy',
+          surface: 'claude_post_install',
+        }),
+      },
+      {
+        label: 'ThumbGate Pro',
+        url: buildTrackedClaudeLink(links.proCheckoutLink, {
+          utmCampaign: 'claude_listing_pro',
+          utmContent: 'pro',
+          campaignVariant: 'solo_follow_on',
+          offerCode: 'CLAUDE-LISTING_PRO',
+          ctaId: 'claude_listing_pro',
+          ctaPlacement: 'listing_copy',
+          planId: 'pro',
+          surface: 'claude_post_install',
+        }),
+      },
+    ],
   };
 }
 
-function renderClaudeWorkflowHardeningPackMarkdown(pack = {}) {
-  const signalLines = Array.isArray(pack.signals) && pack.signals.length
-    ? pack.signals.flatMap((signal) => ([
-      `### ${signal.label}`,
-      `- Count: ${signal.count}`,
-      `- Summary: ${signal.summary}`,
-      `- Examples: ${signal.examples.length ? signal.examples.join(', ') : 'n/a'}`,
+function buildFollowOnOffers(links = buildRevenueLinks()) {
+  return [
+    {
+      key: 'sprint',
+      label: 'Workflow Hardening Sprint',
+      pricing: 'Intake-led sprint, then Team at $49/seat/mo with a 3-seat minimum after qualification',
+      buyer: 'Teams that already named one repeated Claude workflow failure, one owner, and one approval boundary.',
+      cta: buildTrackedClaudeLink(links.sprintLink, {
+        utmCampaign: 'claude_workflow_team_follow_on',
+        utmContent: 'workflow_sprint',
+        campaignVariant: 'team_follow_on',
+        offerCode: 'CLAUDE-TEAMS_FOLLOW_ON',
+        ctaId: 'claude_team_follow_on',
+        ctaPlacement: 'post_install',
+        surface: 'claude_post_install',
+      }),
+    },
+    {
+      key: 'pro',
+      label: 'ThumbGate Pro',
+      pricing: links.proPriceLabel,
+      buyer: 'Solo Claude Desktop or Claude Code operators who proved one blocked repeat and want the personal dashboard plus proof-ready exports.',
+      cta: buildTrackedClaudeLink(links.proCheckoutLink, {
+        utmCampaign: 'claude_workflow_pro_follow_on',
+        utmContent: 'pro',
+        campaignVariant: 'solo_follow_on',
+        offerCode: 'CLAUDE-PRO_FOLLOW_ON',
+        ctaId: 'claude_pro_follow_on',
+        ctaPlacement: 'post_install',
+        planId: 'pro',
+        surface: 'claude_post_install',
+      }),
+    },
+  ];
+}
+
+function buildProspectQueue(report = {}) {
+  const targets = Array.isArray(report.targets) ? report.targets : [];
+
+  return targets.slice(0, 6).map((target, index) => ({
+    key: `prospect_${index + 1}`,
+    account: normalizeText(target.repoName)
+      ? `${normalizeText(target.username)}/${normalizeText(target.repoName)}`
+      : `@${normalizeText(target.username) || 'unknown'}`,
+    temperature: normalizeText(target.temperature) || 'cold',
+    motion: normalizeText(target.motionLabel || target.motion) || 'Workflow Hardening Sprint',
+    reason: normalizeText(target.motionReason || target.outreachAngle || target.description) || 'No motion reason recorded.',
+    evidence: Array.isArray(target.evidence) && target.evidence.length
+      ? target.evidence.map((entry) => normalizeText(entry)).filter(Boolean).join(', ')
+      : 'n/a',
+    sourceUrl: normalizeText(target.repoUrl || target.contactUrl) || '',
+    nextAsk: normalizeText(target.cta) || '',
+  }));
+}
+
+function buildOutreachDrafts(links = buildRevenueLinks()) {
+  const installGuideLink = buildTrackedClaudeLink(CLAUDE_DESKTOP_GUIDE_URL, {
+    utmMedium: OUTREACH_MEDIUM,
+    utmCampaign: 'claude_outreach_install',
+    utmContent: 'guide',
+    campaignVariant: 'desktop_install',
+    offerCode: 'CLAUDE-OUTREACH_INSTALL',
+    ctaId: 'claude_outreach_install',
+    ctaPlacement: 'outreach_draft',
+    surface: 'claude_outreach',
+  });
+  const sprintLink = buildTrackedClaudeLink(links.sprintLink, {
+    utmMedium: OUTREACH_MEDIUM,
+    utmCampaign: 'claude_outreach_sprint',
+    utmContent: 'workflow_sprint',
+    campaignVariant: 'pain_confirmed',
+    offerCode: 'CLAUDE-OUTREACH_SPRINT',
+    ctaId: 'claude_outreach_sprint',
+    ctaPlacement: 'outreach_draft',
+    surface: 'claude_outreach',
+  });
+  const proLink = buildTrackedClaudeLink(links.proCheckoutLink, {
+    utmMedium: OUTREACH_MEDIUM,
+    utmCampaign: 'claude_outreach_pro',
+    utmContent: 'pro',
+    campaignVariant: 'solo_follow_up',
+    offerCode: 'CLAUDE-OUTREACH_PRO',
+    ctaId: 'claude_outreach_pro',
+    ctaPlacement: 'outreach_draft',
+    planId: 'pro',
+    surface: 'claude_outreach',
+  });
+
+  return [
+    {
+      key: 'desktop_install_follow_up',
+      channel: 'GitHub DM or email',
+      audience: 'Claude Desktop or Claude Code operator',
+      draft: `Claude already has a real ThumbGate install lane: local-first setup guide, direct bundle download, and repo-backed docs without pretending directory approval already happened. If one repeated branch, review-boundary, or file-edit mistake keeps showing up, start here: ${installGuideLink} .`,
+    },
+    {
+      key: 'pain_confirmed_sprint',
+      channel: 'Pain-confirmed follow-up',
+      audience: 'Team owner who confirmed one repeated Claude workflow failure',
+      draft: `Once the failure pattern is real, the next useful step is one workflow hardening sprint with proof, not another generic governance conversation. Use the sprint intake first, then attach Commercial Truth and Verification Evidence so the rollout stays inspectable: ${sprintLink} then ${COMMERCIAL_TRUTH_LINK} and ${VERIFICATION_EVIDENCE_LINK} .`,
+    },
+    {
+      key: 'solo_pro_follow_up',
+      channel: 'Follow-up note',
+      audience: 'Solo operator who already proved one blocked repeat',
+      draft: `If the local install already blocked one repeated Claude mistake, the paid next step is the personal dashboard plus proof-ready exports, not a bigger team rollout. Route that buyer to the Pro path only after the blocked repeat is concrete: ${proLink} .`,
+    },
+  ];
+}
+
+function buildMeasurementPlan() {
+  return {
+    northStar: 'claude_install_to_paid_intent',
+    policy: 'Treat Claude installs as useful only when they produce a tracked sprint intake, Pro checkout start, or qualified team conversation.',
+    minimumUsefulSignal: 'One tracked Workflow Hardening Sprint intake or Pro checkout start sourced from a Claude-tagged surface.',
+    strongSignal: 'Three tracked paid-intent events across sprint intakes, Pro checkout starts, or qualified team conversations.',
+    metrics: [
+      'claude_desktop_guide_views',
+      'claude_code_repeat_mistakes_views',
+      'claude_bundle_downloads',
+      'claude_marketplace_doc_clicks',
+      'claude_proof_clicks',
+      'claude_sprint_intake_submissions',
+      'claude_pro_checkout_starts',
+      'claude_qualified_team_conversations',
+    ],
+    guardrails: [
+      'Do not claim directory approval, installs, revenue, or outreach sends without direct command evidence.',
+      'Do not lead first-touch Claude outreach with proof links before the buyer confirms pain.',
+      'Keep pricing aligned with COMMERCIAL_TRUTH.md.',
+      'Keep proof claims aligned with VERIFICATION_EVIDENCE.md.',
+    ],
+    milestones: [
+      {
+        window: 'days_0_30',
+        goal: 'Keep the Claude Desktop guide, bundle path, and review-ready landing section aligned so install demand can convert into a named workflow problem.',
+        decisionRule: 'Do not rewrite the Claude value proposition unless guide visits or bundle downloads fail to create paid-intent events.',
+      },
+      {
+        window: 'days_31_60',
+        goal: 'Promote whichever Claude lane converts best: install-first Pro or workflow-hardening sprint.',
+        decisionRule: 'If install demand exists without paid intent, move the sprint CTA and proof path closer to the highest-intent Claude surface.',
+      },
+      {
+        window: 'days_61_90',
+        goal: 'Decide whether to scale marketplace-style promotion or stay focused on workflow-hardening outreach.',
+        decisionRule: 'Only increase marketplace/distribution effort once Claude-tagged installs or guide visits generate qualified conversations or checkout starts.',
+      },
+    ],
+    doNotCountAsSuccess: [
+      'bundle downloads without paid-intent events',
+      'proof clicks without sprint intake or Pro checkout starts',
+      'unverified directory approval or revenue claims',
+    ],
+  };
+}
+
+function buildPackSummary(report = {}) {
+  const directiveHeadline = normalizeText(report?.directive?.headline);
+  return [
+    'Claude demand in ThumbGate should stay install-first for evaluators and workflow-hardening-first for teams that already feel the pain.',
+    directiveHeadline || 'No verified revenue and no active pipeline. Use the Claude install lane to create proof-backed paid intent, not vanity distribution.',
+  ].join(' ');
+}
+
+function buildClaudeWorkflowHardeningPack(report = {}, links = buildRevenueLinks(), about = readGitHubAbout()) {
+  const warmClaudeTargetCount = countTargets((target) => isWarmTarget(target) && isClaudeTarget(target), report);
+  const productionTargetCount = countTargets((target) => hasEvidence(target, 'production or platform workflow'), report);
+  const businessSystemTargetCount = countTargets((target) => hasEvidence(target, 'business-system integration'), report);
+
+  return {
+    generatedAt: normalizeText(report.generatedAt) || new Date().toISOString(),
+    state: normalizeText(report?.directive?.state) || 'cold-start',
+    objective: 'Turn Claude install demand and workflow-hardening pain into tracked sprint intakes, proof clicks, and Pro checkout starts without making approval or revenue claims the repo cannot verify.',
+    headline: CANONICAL_HEADLINE,
+    shortDescription: CANONICAL_SHORT_DESCRIPTION,
+    summary: buildPackSummary(report),
+    canonicalIdentity: {
+      displayName: 'ThumbGate for Claude',
+      repositoryUrl: about.repositoryUrl,
+      homepageUrl: about.homepageUrl,
+      commercialTruthUrl: COMMERCIAL_TRUTH_LINK,
+      verificationEvidenceUrl: VERIFICATION_EVIDENCE_LINK,
+    },
+    surfaces: buildEvidenceSurfaces(links, about),
+    listingCopy: buildListingCopy(links),
+    followOnOffers: buildFollowOnOffers(links),
+    prospectQueue: buildProspectQueue(report),
+    outreachDrafts: buildOutreachDrafts(links),
+    measurementPlan: buildMeasurementPlan(),
+    proofLinks: [...PROOF_LINKS],
+    evidenceBackstop: {
+      warmClaudeTargetCount,
+      productionTargetCount,
+      businessSystemTargetCount,
+      landingSourceUrl: CLAUDE_LANDING_SOURCE_URL,
+      reviewPacketUrl: CLAUDE_REVIEW_PACKET_URL,
+    },
+  };
+}
+
+function renderClaudeProspectQueueCsv(pack = {}) {
+  const queue = Array.isArray(pack.prospectQueue) ? pack.prospectQueue : [];
+  const rows = [
+    ['key', 'account', 'temperature', 'motion', 'reason', 'evidence', 'sourceUrl', 'nextAsk'],
+    ...queue.map((entry) => ([
+      entry.key,
+      entry.account,
+      entry.temperature,
+      entry.motion,
+      entry.reason,
+      entry.evidence,
+      entry.sourceUrl,
+      entry.nextAsk,
+    ])),
+  ];
+
+  return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
+}
+
+function renderClaudeSurfaceLines(pack = {}) {
+  return Array.isArray(pack.surfaces) && pack.surfaces.length
+    ? pack.surfaces.flatMap((surface) => ([
+      `### ${surface.name}`,
+      `- Buyer signal: ${surface.buyerSignal}`,
+      `- Operator use: ${surface.operatorUse}`,
+      `- Surface URL: ${surface.url}`,
+      `- Support: ${surface.supportUrl}`,
+      `- Proof: ${surface.proofUrl}`,
       '',
     ]))
-    : ['- No evidence-backed Claude signals were available in this run.', ''];
-  const laneLines = Array.isArray(pack.buyerLanes) && pack.buyerLanes.length
-    ? pack.buyerLanes.flatMap((lane) => ([
-      `### ${lane.audience}`,
-      `- Evidence: ${lane.evidence}`,
-      `- Angle: ${lane.angle}`,
-      `- First touch: ${lane.firstTouchDraft}`,
-      `- Pain-confirmed follow-up: ${lane.painConfirmedFollowUpDraft}`,
+    : ['- No verified Claude surfaces available.', ''];
+}
+
+function renderClaudeProofBulletLines(pack = {}) {
+  return Array.isArray(pack.listingCopy?.proofBullets) && pack.listingCopy.proofBullets.length
+    ? pack.listingCopy.proofBullets.map((entry) => `- ${entry}`)
+    : ['- No proof bullets available.'];
+}
+
+function renderClaudeFollowOnOfferLines(pack = {}) {
+  return Array.isArray(pack.followOnOffers) && pack.followOnOffers.length
+    ? pack.followOnOffers.map((offer) => `- ${offer.label}: ${offer.pricing}\n  Buyer: ${offer.buyer}\n  CTA: ${offer.cta}`)
+    : ['- No follow-on offers available.'];
+}
+
+function renderClaudeProspectLines(pack = {}) {
+  return Array.isArray(pack.prospectQueue) && pack.prospectQueue.length
+    ? pack.prospectQueue.map((entry) => {
+      const nextAsk = entry.nextAsk ? ` Next ask: ${entry.nextAsk}` : '';
+      return `- ${entry.account} (${entry.temperature}) -> ${entry.motion}. Reason: ${entry.reason} Evidence: ${entry.evidence}${nextAsk}`;
+    })
+    : ['- No queued prospects were available in this run.'];
+}
+
+function renderClaudeDraftLines(pack = {}) {
+  return Array.isArray(pack.outreachDrafts) && pack.outreachDrafts.length
+    ? pack.outreachDrafts.flatMap((draft) => ([
+      `### ${draft.channel} — ${draft.audience}`,
+      draft.draft,
       '',
     ]))
-    : ['- No buyer lanes were available in this run.', ''];
-  const sampleTargetLines = Array.isArray(pack.sampleTargets) && pack.sampleTargets.length
-    ? pack.sampleTargets.map((target) => `- ${target.account} (${target.temperature}): ${target.why}`)
-    : ['- No sample targets available in this run.'];
-  const proofLines = Array.isArray(pack.proofLinks) && pack.proofLinks.length
+    : ['- No outreach drafts available.', ''];
+}
+
+function renderClaudeMilestoneLines(pack = {}) {
+  return Array.isArray(pack.measurementPlan?.milestones) && pack.measurementPlan.milestones.length
+    ? pack.measurementPlan.milestones.map((milestone) => `- ${milestone.window}: ${milestone.goal} Decision rule: ${milestone.decisionRule}`)
+    : ['- No milestones available.'];
+}
+
+function renderClaudeProofLines(pack = {}) {
+  return Array.isArray(pack.proofLinks) && pack.proofLinks.length
     ? pack.proofLinks.map((link) => `- ${link}`)
-    : ['- No proof links available in this run.'];
+    : ['- No proof links available.'];
+}
+
+function renderClaudeListLines(values = []) {
+  return Array.isArray(values) ? values.map((entry) => `- ${entry}`) : ['- n/a'];
+}
+
+function renderClaudeWorkflowHardeningPackMarkdown(pack = {}) {
+  const listingOfferLines = renderClaudeListLines(pack.listingCopy?.followOnOffers?.map((offer) => `${offer.label} -> ${offer.url}`));
 
   return [
     '# Claude Workflow Hardening Pack',
     '',
     `Updated: ${pack.generatedAt}`,
     '',
-    'This is a sales operator artifact. It is not proof of sent outreach, partner acceptance, booked revenue, or deployment success by itself.',
+    'This is a sales operator artifact. It is not proof of sent outreach, directory approval, paid revenue, or deployment success by itself.',
     '',
     '## Objective',
     pack.objective,
@@ -221,56 +514,134 @@ function renderClaudeWorkflowHardeningPackMarkdown(pack = {}) {
     '## Positioning',
     `- State: ${pack.state}`,
     `- Headline: ${pack.headline}`,
+    `- Short description: ${pack.shortDescription}`,
     `- Summary: ${pack.summary}`,
     '',
-    '## Offer Stack',
-    `- Primary: ${pack.primaryOffer?.label || 'n/a'}${pack.primaryOffer?.cta ? ` -> ${pack.primaryOffer.cta}` : ''}`,
-    `- Secondary: ${pack.secondaryOffer?.label || 'n/a'}${pack.secondaryOffer?.cta ? ` -> ${pack.secondaryOffer.cta}` : ''}`,
-    `- Self-serve guide: ${pack.selfServeGuide?.label || 'n/a'}${pack.selfServeGuide?.cta ? ` -> ${pack.selfServeGuide.cta}` : ''}`,
-    `- Proof policy: ${pack.proofPolicy}`,
+    '## Canonical Identity',
+    `- Display name: ${pack.canonicalIdentity?.displayName || 'ThumbGate for Claude'}`,
+    `- Repository: ${pack.canonicalIdentity?.repositoryUrl || ''}`,
+    `- Homepage: ${pack.canonicalIdentity?.homepageUrl || ''}`,
+    `- Commercial truth: ${pack.canonicalIdentity?.commercialTruthUrl || ''}`,
+    `- Verification evidence: ${pack.canonicalIdentity?.verificationEvidenceUrl || ''}`,
     '',
-    '## Evidence-Backed Signals',
-    ...signalLines,
-    '## Buyer Lanes',
-    ...laneLines,
-    '## Sample Targets Behind This Pack',
-    ...sampleTargetLines,
+    '## Verified Claude Surfaces',
+    ...renderClaudeSurfaceLines(pack),
+    '## Marketplace Listing Copy',
+    `- Headline: ${pack.listingCopy?.headline || 'n/a'}`,
+    `- Subhead: ${pack.listingCopy?.subhead || 'n/a'}`,
+    `- Short description: ${pack.listingCopy?.shortDescription || 'n/a'}`,
+    'Proof bullets:',
+    ...renderClaudeProofBulletLines(pack),
+    `- Primary CTA: ${pack.listingCopy?.primaryCta?.label || 'n/a'} -> ${pack.listingCopy?.primaryCta?.url || ''}`,
+    `- Secondary CTA: ${pack.listingCopy?.secondaryCta?.label || 'n/a'} -> ${pack.listingCopy?.secondaryCta?.url || ''}`,
+    `- Proof CTA: ${pack.listingCopy?.proofCta?.label || 'n/a'} -> ${pack.listingCopy?.proofCta?.url || ''}`,
+    `- Marketplace note: ${pack.listingCopy?.marketplaceNote || 'n/a'}`,
+    'Follow-on listing offers:',
+    ...listingOfferLines,
+    '',
+    '## Follow-On Offers',
+    ...renderClaudeFollowOnOfferLines(pack),
+    '',
+    '## Prospect Queue',
+    ...renderClaudeProspectLines(pack),
+    '',
+    '## Outreach Drafts',
+    ...renderClaudeDraftLines(pack),
+    '## 90-Day Measurement Plan',
+    `- North star: ${pack.measurementPlan?.northStar || 'n/a'}`,
+    `- Policy: ${pack.measurementPlan?.policy || 'n/a'}`,
+    `- Minimum useful signal: ${pack.measurementPlan?.minimumUsefulSignal || 'n/a'}`,
+    `- Strong signal: ${pack.measurementPlan?.strongSignal || 'n/a'}`,
+    'Tracked metrics:',
+    ...renderClaudeListLines(pack.measurementPlan?.metrics),
+    'Guardrails:',
+    ...renderClaudeListLines(pack.measurementPlan?.guardrails),
+    'Milestones:',
+    ...renderClaudeMilestoneLines(pack),
+    'Do not count as success:',
+    ...renderClaudeListLines(pack.measurementPlan?.doNotCountAsSuccess),
+    '',
+    '## Evidence Backstop',
+    `- Warm Claude targets in current report: ${pack.evidenceBackstop?.warmClaudeTargetCount ?? 0}`,
+    `- Production or platform targets in current report: ${pack.evidenceBackstop?.productionTargetCount ?? 0}`,
+    `- Business-system targets in current report: ${pack.evidenceBackstop?.businessSystemTargetCount ?? 0}`,
+    `- Landing source: ${pack.evidenceBackstop?.landingSourceUrl || ''}`,
+    `- Review packet: ${pack.evidenceBackstop?.reviewPacketUrl || ''}`,
     '',
     '## Proof Links',
-    ...proofLines,
+    ...renderClaudeProofLines(pack),
     '',
   ].join('\n');
 }
 
 function writeClaudeWorkflowHardeningPack(pack, options = {}) {
-  const repoRoot = path.resolve(__dirname, '..');
-  const markdown = renderClaudeWorkflowHardeningPackMarkdown(pack);
-  const reportDir = normalizeText(options.reportDir)
-    ? path.resolve(repoRoot, options.reportDir)
-    : '';
-  const docsPath = path.join(repoRoot, 'docs', 'marketing', 'claude-workflow-hardening-pack.md');
+  const docsPath = path.join(REPO_ROOT, 'docs', 'marketing', 'claude-workflow-hardening-pack.md');
 
-  if (reportDir) {
-    ensureDir(reportDir);
-    fs.writeFileSync(path.join(reportDir, 'claude-workflow-hardening-pack.md'), markdown, 'utf8');
-    fs.writeFileSync(path.join(reportDir, 'claude-workflow-hardening-pack.json'), `${JSON.stringify(pack, null, 2)}\n`, 'utf8');
+  return writeRevenuePackArtifacts({
+    repoRoot: REPO_ROOT,
+    reportDir: options.reportDir,
+    writeDocs: options.writeDocs,
+    docsPath,
+    markdown: renderClaudeWorkflowHardeningPackMarkdown(pack),
+    jsonName: 'claude-workflow-hardening-pack.json',
+    jsonValue: pack,
+    csvName: 'claude-prospect-queue.csv',
+    csvValue: renderClaudeProspectQueueCsv(pack),
+  });
+}
+
+async function main(argv = process.argv.slice(2)) {
+  const options = parseArgs(argv);
+  const pack = buildClaudeWorkflowHardeningPack();
+  const written = writeClaudeWorkflowHardeningPack(pack, options);
+
+  console.log('Claude workflow hardening pack ready.');
+  if (written.docsPath) {
+    console.log(`Docs updated: ${written.docsPath}`);
   }
-
-  if (options.writeDocs) {
-    fs.writeFileSync(docsPath, markdown, 'utf8');
+  if (written.reportDir) {
+    console.log(`Artifacts written to ${written.reportDir}`);
   }
+  console.log(JSON.stringify({
+    surfaces: pack.surfaces.length,
+    prospectQueue: pack.prospectQueue.length,
+    northStar: pack.measurementPlan.northStar,
+  }, null, 2));
+}
 
-  return {
-    markdown,
-    docsPath: options.writeDocs ? docsPath : null,
-    reportDir: reportDir || null,
-  };
+function parseArgs(argv = []) {
+  return parseReportArgs(argv);
+}
+
+function isCliInvocation(argv = process.argv) {
+  return isCliCall(argv, __filename);
+}
+
+if (isCliInvocation()) {
+  main().catch((err) => {
+    console.error(err?.message || err);
+    process.exit(1);
+  });
 }
 
 module.exports = {
+  CANONICAL_HEADLINE,
+  CANONICAL_SHORT_DESCRIPTION,
+  CLAUDE_BUNDLE_URL,
+  CLAUDE_CODE_GUIDE_URL,
+  CLAUDE_DESKTOP_GUIDE_URL,
+  CLAUDE_REVIEW_PACKET_URL,
   buildClaudeWorkflowHardeningPack,
-  buildSignalSummary,
-  buildBuyerLanes,
+  buildEvidenceSurfaces,
+  buildFollowOnOffers,
+  buildListingCopy,
+  buildMeasurementPlan,
+  buildOutreachDrafts,
+  buildProspectQueue,
+  buildTrackedClaudeLink,
+  isCliInvocation,
+  parseArgs,
+  renderClaudeProspectQueueCsv,
   renderClaudeWorkflowHardeningPackMarkdown,
   writeClaudeWorkflowHardeningPack,
 };
