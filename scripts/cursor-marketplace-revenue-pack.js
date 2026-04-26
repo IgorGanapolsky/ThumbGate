@@ -26,12 +26,15 @@ const CANONICAL_LONG_DESCRIPTION = [
 const CURSOR_PROOF_LINKS = [COMMERCIAL_TRUTH_LINK, VERIFICATION_EVIDENCE_LINK];
 
 function normalizeText(value) {
-  return value === undefined || value === null ? '' : String(value).trim();
+  return String(value ?? '').trim();
 }
 
 function csvCell(value) {
   const text = normalizeText(value);
-  return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+  if (!text.match(/[",\n]/)) {
+    return text;
+  }
+  return `"${text.replaceAll('"', '""')}"`;
 }
 
 function readGitHubAbout(repoRoot = path.resolve(__dirname, '..')) {
@@ -432,19 +435,18 @@ function parseArgs(argv = []) {
     writeDocs: false,
   };
 
-  const args = [...argv];
-  while (args.length > 0) {
-    const arg = args.shift();
+  for (const [index, arg] of argv.entries()) {
     if (arg === '--write-docs') {
       options.writeDocs = true;
       continue;
     }
     if (arg === '--report-dir') {
-      options.reportDir = normalizeText(args.shift());
+      options.reportDir = normalizeText(argv[index + 1]);
       continue;
     }
     if (arg.startsWith('--report-dir=')) {
-      options.reportDir = normalizeText(arg.slice('--report-dir='.length));
+      const [, value = ''] = arg.split(/=(.*)/s);
+      options.reportDir = normalizeText(value);
     }
   }
 
@@ -498,8 +500,7 @@ async function main(argv = process.argv.slice(2)) {
 }
 
 function isCliInvocation(argv = process.argv) {
-  const invokedPath = argv[1];
-  return invokedPath ? path.resolve(invokedPath) === __filename : false;
+  return Boolean(argv[1] && path.resolve(argv[1]) === __filename);
 }
 
 if (isCliInvocation()) {
