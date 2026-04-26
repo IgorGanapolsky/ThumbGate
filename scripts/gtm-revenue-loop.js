@@ -1061,8 +1061,16 @@ function renderRevenueLoopJsonl(report) {
 }
 
 function writeRevenueLoopOutputs(report, options = {}) {
-  const repoRoot = path.resolve(__dirname, '..');
-  const defaultDocsPath = path.join(repoRoot, 'docs', 'AUTONOMOUS_GITOPS.md');
+  const repoRoot = options.repoRoot
+    ? path.resolve(options.repoRoot)
+    : path.resolve(__dirname, '..');
+  const docsDir = path.join(repoRoot, 'docs', 'marketing');
+  const defaultDocsPath = path.join(docsDir, 'gtm-revenue-loop.md');
+  const reportJsonDocsPath = path.join(docsDir, 'gtm-revenue-loop.json');
+  const marketplaceDocsPath = path.join(docsDir, 'gtm-marketplace-copy.md');
+  const marketplaceJsonDocsPath = path.join(docsDir, 'gtm-marketplace-copy.json');
+  const queueCsvDocsPath = path.join(docsDir, 'gtm-target-queue.csv');
+  const queueJsonlDocsPath = path.join(docsDir, 'gtm-target-queue.jsonl');
   const markdown = renderRevenueLoopMarkdown(report);
   const marketplaceCopy = report.marketplaceCopy || buildMarketplaceCopy(report);
   const marketplaceMarkdown = renderMarketplaceCopyMarkdown(marketplaceCopy);
@@ -1084,7 +1092,13 @@ function writeRevenueLoopOutputs(report, options = {}) {
   }
 
   if (shouldWriteDocs) {
+    ensureDir(docsDir);
     fs.writeFileSync(defaultDocsPath, markdown, 'utf8');
+    fs.writeFileSync(reportJsonDocsPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(marketplaceDocsPath, marketplaceMarkdown, 'utf8');
+    fs.writeFileSync(marketplaceJsonDocsPath, `${JSON.stringify(marketplaceCopy, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(queueCsvDocsPath, csv, 'utf8');
+    fs.writeFileSync(queueJsonlDocsPath, jsonl, 'utf8');
   }
 
   return {
