@@ -1,0 +1,54 @@
+'use strict';
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const DOC_PATH = path.join(__dirname, '..', 'docs', 'CUSTOMER_DISCOVERY_SPRINT.md');
+const DOC = fs.readFileSync(DOC_PATH, 'utf8');
+const EXPECTED_ARTIFACTS = [
+  'gtm-revenue-loop.md',
+  'gtm-revenue-loop.json',
+  'gtm-marketplace-copy.md',
+  'gtm-marketplace-copy.json',
+  'gtm-target-queue.csv',
+  'gtm-target-queue.jsonl',
+  'team-outreach-messages.md',
+  'operator-priority-handoff.md',
+  'claude-workflow-hardening-pack.md',
+  'claude-workflow-hardening-pack.json',
+  'cursor-marketplace-revenue-pack.md',
+  'cursor-marketplace-revenue-pack.json',
+  'cursor-marketplace-surfaces.csv',
+  'chatgpt-gpt-revenue-pack.md',
+  'chatgpt-gpt-revenue-pack.json',
+  'chatgpt-gpt-operator-queue.csv',
+  'codex-plugin-revenue-pack.md',
+  'codex-plugin-revenue-pack.json',
+  'codex-plugin-surfaces.csv',
+  'codex-marketplace-revenue-pack.md',
+  'codex-marketplace-revenue-pack.json',
+  'codex-operator-queue.csv',
+  'gemini-cli-demand-pack.md',
+  'gemini-cli-demand-pack.json',
+  'gemini-cli-operator-queue.csv',
+];
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+test('customer discovery sprint doc stays aligned with the revenue-loop artifact surface', () => {
+  assert.doesNotMatch(DOC, /emits twenty operator artifacts/i);
+  assert.match(DOC, /docs\/marketing\/gtm-revenue-loop\.json/);
+  assert.match(DOC, /docs\/marketing\//);
+
+  for (const artifact of EXPECTED_ARTIFACTS) {
+    assert.match(
+      DOC,
+      new RegExp(`\`${escapeRegExp(artifact)}\``),
+      `Expected ${artifact} to be documented in ${DOC_PATH}`,
+    );
+  }
+});
