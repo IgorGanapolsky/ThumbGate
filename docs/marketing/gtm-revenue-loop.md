@@ -1,7 +1,7 @@
 # GSD Revenue Loop
 
 Status: cold-start
-Updated: 2026-04-26T20:19:47.716Z
+Updated: 2026-04-26T22:36:45.611Z
 
 This report is an operator artifact for landing the first 10 paying customers. It is not proof of sent messages or booked revenue by itself.
 Outbound rule: do not treat posts as sales. A lead only moves when it is tracked as contacted, replied, call booked, checkout/sprint, or paid.
@@ -140,6 +140,25 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - First-touch draft: Hey @freema, saw you're shipping `mcp-jira-stdio`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - Pain-confirmed follow-up: If `mcp-jira-stdio` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
+### @makafeli — n8n-workflow-builder
+- Temperature: cold
+- Source: github / github
+- Pipeline stage: targeted
+- Offer: workflow_hardening_sprint
+- Contact: n/a
+- Repo: https://github.com/makafeli/n8n-workflow-builder
+- Repo last updated: 2026-04-20T13:30:14Z
+- Evidence score: 12
+- Evidence: workflow control surface, agent infrastructure, 512 GitHub stars, updated in the last 7 days
+- Evidence sources: Target signal: https://github.com/makafeli/n8n-workflow-builder; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Outreach angle: Lead with context-drift hardening for one workflow before proposing any broader agent platform story.
+- Motion: Workflow Hardening Sprint
+- Why: Lead with context-drift hardening for one workflow before proposing any broader agent platform story.
+- Proof timing: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- First-touch draft: Hey @makafeli, saw you're shipping `n8n-workflow-builder`. If one context, memory, or tool-use failure keeps repeating, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Pain-confirmed follow-up: If `n8n-workflow-builder` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
 ### @salacoste — mcp-n8n-workflow-builder
 - Temperature: cold
 - Source: github / github
@@ -158,6 +177,25 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - First-touch draft: Hey @salacoste, saw you're shipping `mcp-n8n-workflow-builder`. If one context, memory, or tool-use failure keeps repeating, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - Pain-confirmed follow-up: If `mcp-n8n-workflow-builder` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+### @yungookim — oh-my-pr
+- Temperature: cold
+- Source: github / github
+- Pipeline stage: targeted
+- Offer: workflow_hardening_sprint
+- Contact: n/a
+- Repo: https://github.com/yungookim/oh-my-pr
+- Repo last updated: 2026-04-26T16:45:40Z
+- Evidence score: 12
+- Evidence: workflow control surface, business-system integration, 39 GitHub stars, updated in the last 7 days
+- Evidence sources: Target signal: https://github.com/yungookim/oh-my-pr; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Outreach angle: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
+- Motion: Workflow Hardening Sprint
+- Why: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
+- Proof timing: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- First-touch draft: Hey @yungookim, saw you're shipping `oh-my-pr`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Pain-confirmed follow-up: If `oh-my-pr` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ### @WagnerAgent — awesome-mcp-servers-devops
 - Temperature: cold
@@ -197,6 +235,25 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - First-touch draft: Hey @bjeans, saw you're shipping `homelab-mcp`. If one deploy, release, or incident workflow keeps needing extra guardrails, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - Pain-confirmed follow-up: If `homelab-mcp` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
+### @Shashankk1907 — Learning-about-MCP
+- Temperature: cold
+- Source: github / github
+- Pipeline stage: targeted
+- Offer: workflow_hardening_sprint
+- Contact: n/a
+- Repo: https://github.com/Shashankk1907/Learning-about-MCP
+- Repo last updated: 2026-04-17T11:28:44Z
+- Evidence score: 11
+- Evidence: workflow control surface, production or platform workflow, agent infrastructure, updated in the last 30 days
+- Evidence sources: Target signal: https://github.com/Shashankk1907/Learning-about-MCP; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Outreach angle: Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.
+- Motion: Workflow Hardening Sprint
+- Why: Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.
+- Proof timing: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- First-touch draft: Hey @Shashankk1907, saw you're shipping `Learning-about-MCP`. If one deploy, release, or incident workflow keeps needing extra guardrails, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Pain-confirmed follow-up: If `Learning-about-MCP` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
 ### @gensecaihq — MCP-Developer-SubAgent
 - Temperature: cold
 - Source: github / github
@@ -234,3 +291,60 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - First-touch draft: Hey @aartiq, saw you're shipping `servicenow-mcp`. If one deploy, release, or incident workflow keeps needing extra guardrails, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - Pain-confirmed follow-up: If `servicenow-mcp` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+### @verygoodplugins — mcp-freescout
+- Temperature: cold
+- Source: github / github
+- Pipeline stage: targeted
+- Offer: workflow_hardening_sprint
+- Contact: n/a
+- Repo: https://github.com/verygoodplugins/mcp-freescout
+- Repo last updated: 2026-04-23T13:11:30Z
+- Evidence score: 10
+- Evidence: workflow control surface, agent infrastructure, 15 GitHub stars, updated in the last 7 days
+- Evidence sources: Target signal: https://github.com/verygoodplugins/mcp-freescout; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Outreach angle: Lead with context-drift hardening for one workflow before proposing any broader agent platform story.
+- Motion: Workflow Hardening Sprint
+- Why: Lead with context-drift hardening for one workflow before proposing any broader agent platform story.
+- Proof timing: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- First-touch draft: Hey @verygoodplugins, saw you're shipping `mcp-freescout`. If one context, memory, or tool-use failure keeps repeating, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Pain-confirmed follow-up: If `mcp-freescout` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+### @atomicinnovation — accelerator
+- Temperature: cold
+- Source: github / github
+- Pipeline stage: targeted
+- Offer: workflow_hardening_sprint
+- Contact: n/a
+- Repo: https://github.com/atomicinnovation/accelerator
+- Repo last updated: 2026-04-26T21:12:25Z
+- Evidence score: 10
+- Evidence: workflow control surface, agent infrastructure, 11 GitHub stars, updated in the last 7 days
+- Evidence sources: Target signal: https://github.com/atomicinnovation/accelerator; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Outreach angle: Pitch one repeated workflow failure, then offer proof-backed hardening instead of a generic tool trial.
+- Motion: Workflow Hardening Sprint
+- Why: Pitch one repeated workflow failure, then offer proof-backed hardening instead of a generic tool trial.
+- Proof timing: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- First-touch draft: Hey @atomicinnovation, saw you're shipping `accelerator`. If one workflow keeps repeating the same mistake, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Pain-confirmed follow-up: If `accelerator` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+### @Cake-sweet — agents
+- Temperature: cold
+- Source: github / github
+- Pipeline stage: targeted
+- Offer: workflow_hardening_sprint
+- Contact: n/a
+- Repo: https://github.com/Cake-sweet/agents
+- Repo last updated: 2026-04-26T18:05:43Z
+- Evidence score: 10
+- Evidence: workflow control surface, agent infrastructure, 6 GitHub stars, updated in the last 7 days
+- Evidence sources: Target signal: https://github.com/Cake-sweet/agents; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Outreach angle: Pitch one repeated workflow failure, then offer proof-backed hardening instead of a generic tool trial.
+- Motion: Workflow Hardening Sprint
+- Why: Pitch one repeated workflow failure, then offer proof-backed hardening instead of a generic tool trial.
+- Proof timing: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- First-touch draft: Hey @Cake-sweet, saw you're shipping `agents`. If one workflow keeps repeating the same mistake, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Pain-confirmed follow-up: If `agents` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
