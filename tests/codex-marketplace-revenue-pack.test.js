@@ -120,6 +120,21 @@ test('rendered markdown and CSV stay operator-ready', () => {
   assert.match(csv, /solo_repeat_mistake/);
 });
 
+test('checked-in Codex marketplace pack stays in sync with the generator output', () => {
+  const docsPath = path.join(__dirname, '..', 'docs', 'marketing', 'codex-marketplace-revenue-pack.md');
+  const committed = fs.readFileSync(docsPath, 'utf8');
+  const updatedMatch = committed.match(/^Updated: (.+)$/m);
+
+  assert.ok(updatedMatch, 'expected checked-in pack to include an Updated line');
+
+  const markdown = renderCodexMarketplaceRevenuePackMarkdown({
+    ...buildCodexMarketplaceRevenuePack(LINKS_FIXTURE, ABOUT_FIXTURE, path.join(__dirname, '..')),
+    generatedAt: updatedMatch[1],
+  });
+
+  assert.equal(markdown, committed);
+});
+
 test('CLI options and artifact writing emit markdown, JSON, and queue CSV', () => {
   const tempDir = makeTempDir();
   const options = parseArgs(['--write-docs', '--report-dir', tempDir]);
