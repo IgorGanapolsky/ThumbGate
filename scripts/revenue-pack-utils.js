@@ -149,7 +149,7 @@ function renderOfferLines(followOnOffers = []) {
   return followOnOffers.map((offer) => `- ${offer.label}: ${offer.pricing}\n  Buyer: ${offer.buyer}\n  CTA: ${offer.cta}`);
 }
 
-function renderListLines(values = [], emptyLine) {
+function renderListLines(emptyLine, values = []) {
   if (!Array.isArray(values) || !values.length) {
     return [emptyLine];
   }
@@ -201,16 +201,16 @@ function renderRevenuePackMarkdown({
     `- Minimum useful signal: ${pack.measurementPlan?.minimumUsefulSignal || 'n/a'}`,
     `- Strong signal: ${pack.measurementPlan?.strongSignal || 'n/a'}`,
     'Tracked metrics:',
-    ...renderListLines(pack.measurementPlan?.metrics, '- n/a'),
+    ...renderListLines('- n/a', pack.measurementPlan?.metrics),
     'Guardrails:',
-    ...renderListLines(pack.measurementPlan?.guardrails, '- n/a'),
+    ...renderListLines('- n/a', pack.measurementPlan?.guardrails),
     'Milestones:',
     ...milestoneLines,
     'Do not count as success:',
-    ...renderListLines(pack.measurementPlan?.doNotCountAsSuccess, '- n/a'),
+    ...renderListLines('- n/a', pack.measurementPlan?.doNotCountAsSuccess),
     '',
     '## Proof Links',
-    ...renderListLines(pack.proofLinks, '- No proof links available.'),
+    ...renderListLines('- No proof links available.', pack.proofLinks),
     '',
   ].join('\n');
 }
