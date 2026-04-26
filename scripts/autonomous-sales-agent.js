@@ -13,6 +13,10 @@
 
 const { parseArgs, runRevenueLoop } = require('./gtm-revenue-loop');
 const {
+  buildClaudeWorkflowHardeningPack,
+  writeClaudeWorkflowHardeningPack,
+} = require('./claude-workflow-hardening-pack');
+const {
   buildCursorMarketplaceRevenuePack,
   writeCursorMarketplaceRevenuePack,
 } = require('./cursor-marketplace-revenue-pack');
@@ -20,6 +24,8 @@ const {
 async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
   const { report, written } = await runRevenueLoop(options);
+  const claudePack = buildClaudeWorkflowHardeningPack(report);
+  const claudeWritten = writeClaudeWorkflowHardeningPack(claudePack, options);
   const cursorPack = buildCursorMarketplaceRevenuePack();
   const cursorWritten = writeCursorMarketplaceRevenuePack(cursorPack, options);
 
@@ -29,6 +35,9 @@ async function main(argv = process.argv.slice(2)) {
   }
   if (written.reportDir) {
     console.log(`Artifacts written to ${written.reportDir}.`);
+  }
+  if (claudeWritten.docsPath) {
+    console.log(`Claude outbound pack updated: ${claudeWritten.docsPath}`);
   }
   if (cursorWritten.docsPath) {
     console.log(`Cursor pack updated: ${cursorWritten.docsPath}`);

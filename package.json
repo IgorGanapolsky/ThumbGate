@@ -303,7 +303,7 @@
     "test:hosted-config": "node --test tests/hosted-config.test.js",
     "test:operational-summary": "node --test tests/operational-summary.test.js",
     "test:operational-dashboard": "node --test tests/operational-dashboard.test.js",
-    "test:operator-artifacts": "node --test tests/operator-artifacts.test.js",
+    "test:operator-artifacts": "node --test tests/operator-artifacts.test.js tests/claude-workflow-hardening-pack.test.js",
     "test:operator-key-auth": "node --test tests/api-operator-key-auth.test.js",
     "test:cloudflare-sandbox": "node --test tests/cloudflare-dynamic-sandbox.test.js tests/cloudflare-sandbox-api.test.js",
     "test:mcp-config": "node --test tests/mcp-config.test.js",
