@@ -1,6 +1,6 @@
 # Gemini CLI Demand Pack
 
-Updated: 2026-04-26T08:12:07.409Z
+Updated: 2026-04-26T13:14:47.481Z
 
 This is a sales operator artifact. It is not proof of rankings, sent outreach, installs, paid revenue, or marketplace approval by itself.
 
@@ -11,7 +11,7 @@ Turn Gemini CLI memory demand and Google Cloud MCP guardrail demand into tracked
 - State: cold-start
 - Headline: Turn Gemini CLI memory demand into enforced workflow safety.
 - Short description: ThumbGate gives Gemini CLI local-first memory that can become prevention rules and Pre-Action Checks before the next risky MCP call runs.
-- Summary: Gemini CLI demand in ThumbGate is guide-led: memory query first, then enforcement proof, then paid intent. No verified revenue and no active pipeline. Use Gemini demand surfaces to create proof-backed intent, not vanity traffic.
+- Summary: Gemini CLI demand in ThumbGate is guide-led: memory query first, then enforcement proof, then paid intent. No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.
 
 ## Canonical Identity
 - Display name: ThumbGate
@@ -66,14 +66,14 @@ Turn Gemini CLI memory demand and Google Cloud MCP guardrail demand into tracked
 - Recommended motion: Guide -> proof -> Pro once one blocked repeat is real.
 
 ### Google Cloud workflow owner running Gemini CLI near data or production systems
-- Evidence: The GCP guardrails guide documents BigQuery, Spanner, AlloyDB, Cloud SQL, and IAM escalation patterns. Current report production-style targets: 0.
+- Evidence: The GCP guardrails guide documents BigQuery, Spanner, AlloyDB, Cloud SQL, and IAM escalation patterns. Current report production-style targets: 3.
 - Proof trigger: They already described one risky BigQuery, Spanner, or MCP-backed workflow that cannot afford another destructive repeat.
 - Proof asset: https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/gcp-mcp-guardrails.html
 - Next ask: https://thumbgate-production.up.railway.app/?utm_source=gemini&utm_medium=operator_outreach&utm_campaign=gemini_queue_gcp_sprint&utm_content=workflow_sprint&campaign_variant=gcp_workflow_owner&offer_code=GEMINI-QUEUE_GCP_SPRINT&cta_id=gemini_queue_gcp_sprint&cta_placement=operator_queue&surface=gemini_workflow_queue#workflow-sprint-intake
 - Recommended motion: Qualify one high-risk workflow for the Workflow Hardening Sprint.
 
 ### Security-sensitive evaluator comparing hosted memory versus local-first enforcement
-- Evidence: The Gemini guide keeps local-first posture explicit, and the compare surface supports buyers who object to hosted memory first. Current business-system targets: 0.
+- Evidence: The Gemini guide keeps local-first posture explicit, and the compare surface supports buyers who object to hosted memory first. Current business-system targets: 2.
 - Proof trigger: They care about keeping workflow history local and need proof that enforcement happens without a hosted memory dependency.
 - Proof asset: https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/compare/mem0.html
 - Next ask: https://thumbgate-production.up.railway.app/guide?utm_source=gemini&utm_medium=seo_guide&utm_campaign=gemini_queue_local_first&utm_content=setup&campaign_variant=local_first_evaluator&offer_code=GEMINI-QUEUE_LOCAL_FIRST&cta_id=gemini_queue_local_first&cta_placement=operator_queue&surface=gemini_cli
