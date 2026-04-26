@@ -72,7 +72,15 @@ test('automation emits ChatGPT and Codex alongside Claude, Cursor, and Gemini pa
       },
       writeCodexMarketplaceRevenuePack(pack, options) {
         calls.push(['writeCodexMarketplaceRevenuePack', pack.channel, options.writeDocs]);
-        return { docsPath: '/tmp/codex.md' };
+        return { docsPath: '/tmp/codex-marketplace.md' };
+      },
+      buildCodexPluginRevenuePack(report) {
+        calls.push(['buildCodexPluginRevenuePack', report.targets.length]);
+        return { channel: 'codex-plugin' };
+      },
+      writeCodexPluginRevenuePack(pack, options) {
+        calls.push(['writeCodexPluginRevenuePack', pack.channel, options.writeDocs]);
+        return { docsPath: '/tmp/codex-plugin.md' };
       },
     });
   } finally {
@@ -92,9 +100,12 @@ test('automation emits ChatGPT and Codex alongside Claude, Cursor, and Gemini pa
     ['writeChatgptGptRevenuePack', 'chatgpt', true],
     ['buildCodexMarketplaceRevenuePack'],
     ['writeCodexMarketplaceRevenuePack', 'codex', true],
+    ['buildCodexPluginRevenuePack', 2],
+    ['writeCodexPluginRevenuePack', 'codex-plugin', true],
   ]);
   assert.ok(logs.some((line) => line.includes('ChatGPT pack updated: /tmp/chatgpt.md')));
-  assert.ok(logs.some((line) => line.includes('Codex pack updated: /tmp/codex.md')));
+  assert.ok(logs.some((line) => line.includes('Codex marketplace pack updated: /tmp/codex-marketplace.md')));
+  assert.ok(logs.some((line) => line.includes('Codex plugin pack updated: /tmp/codex-plugin.md')));
   assert.ok(logs.some((line) => line.includes('State: cold-start | Targets: 2')));
 });
 
