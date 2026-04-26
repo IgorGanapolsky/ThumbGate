@@ -11,6 +11,7 @@ const {
   CLAUDE_DESKTOP_GUIDE_URL,
   CLAUDE_REVIEW_PACKET_URL,
   buildClaudeWorkflowHardeningPack,
+  buildChannelDrafts,
   buildEvidenceSurfaces,
   buildListingCopy,
   buildMeasurementPlan,
@@ -135,6 +136,24 @@ test('prospect queue stays grounded in current report targets', () => {
   assert.equal(queue[2].motion, 'ThumbGate Pro');
 });
 
+test('active channel drafts stay tied to live Claude surfaces and first-touch guardrails', () => {
+  const drafts = buildChannelDrafts(makeReportFixture());
+
+  assert.equal(drafts.length, 4);
+  assert.deepEqual(drafts.map((draft) => draft.channel), [
+    'Reddit',
+    'LinkedIn',
+    'Threads',
+    'Bluesky',
+  ]);
+  assert.equal(drafts[0].cta.includes('#workflow-sprint-intake'), true);
+  assert.equal(drafts[1].cta.includes('#claude-desktop'), true);
+  assert.equal(drafts[2].cta.includes(CLAUDE_DESKTOP_GUIDE_URL), true);
+  assert.equal(drafts[3].cta.includes(CLAUDE_CODE_GUIDE_URL), true);
+  assert.equal(drafts.every((draft) => !draft.draft.includes('VERIFICATION_EVIDENCE.md')), true);
+  assert.equal(drafts.every((draft) => !draft.draft.includes('COMMERCIAL_TRUTH.md')), true);
+});
+
 test('pack includes verified surfaces, listing copy, measurement plan, and evidence backstop', () => {
   const pack = buildClaudeWorkflowHardeningPack(makeReportFixture());
 
@@ -142,6 +161,7 @@ test('pack includes verified surfaces, listing copy, measurement plan, and evide
   assert.equal(pack.surfaces.length, 4);
   assert.equal(pack.listingCopy.followOnOffers.length, 2);
   assert.equal(pack.outreachDrafts.length, 3);
+  assert.equal(pack.channelDrafts.length, 4);
   assert.equal(pack.measurementPlan.northStar, 'claude_install_to_paid_intent');
   assert.equal(pack.evidenceBackstop.warmClaudeTargetCount, 1);
   assert.equal(pack.evidenceBackstop.productionTargetCount, 2);
@@ -165,6 +185,8 @@ test('rendered markdown exposes listing copy, prospect queue, and proof backstop
   assert.match(markdown, /Marketplace Listing Copy/);
   assert.match(markdown, /Verified Claude Surfaces/);
   assert.match(markdown, /Prospect Queue/);
+  assert.match(markdown, /Active Channel Drafts/);
+  assert.match(markdown, /LinkedIn — Founder post/);
   assert.match(markdown, /Evidence Backstop/);
   assert.match(markdown, /claude_install_to_paid_intent/);
   assert.match(markdown, /Official directory review is separate/);
