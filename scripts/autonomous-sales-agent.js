@@ -22,6 +22,10 @@ const {
   writeCursorMarketplaceRevenuePack,
 } = require('./cursor-marketplace-revenue-pack');
 const {
+  buildCodexPluginRevenuePack,
+  writeCodexPluginRevenuePack,
+} = require('./codex-plugin-revenue-pack');
+const {
   buildGeminiCliDemandPack,
   writeGeminiCliDemandPack,
 } = require('./gemini-cli-demand-pack');
@@ -48,6 +52,8 @@ function buildDependencies(overrides = {}) {
     writeChatgptGptRevenuePack,
     buildCodexMarketplaceRevenuePack,
     writeCodexMarketplaceRevenuePack,
+    buildCodexPluginRevenuePack,
+    writeCodexPluginRevenuePack,
     ...overrides,
   };
 }
@@ -72,8 +78,10 @@ async function main(argv = process.argv.slice(2), overrides = {}) {
   const geminiWritten = deps.writeGeminiCliDemandPack(geminiPack, options);
   const chatgptPack = deps.buildChatgptGptRevenuePack(report);
   const chatgptWritten = deps.writeChatgptGptRevenuePack(chatgptPack, options);
-  const codexPack = deps.buildCodexMarketplaceRevenuePack();
-  const codexWritten = deps.writeCodexMarketplaceRevenuePack(codexPack, options);
+  const codexMarketplacePack = deps.buildCodexMarketplaceRevenuePack();
+  const codexMarketplaceWritten = deps.writeCodexMarketplaceRevenuePack(codexMarketplacePack, options);
+  const codexPluginPack = deps.buildCodexPluginRevenuePack(report);
+  const codexPluginWritten = deps.writeCodexPluginRevenuePack(codexPluginPack, options);
 
   console.log('\n✅ GTM automation complete.');
   if (written.docsPath) {
@@ -94,8 +102,11 @@ async function main(argv = process.argv.slice(2), overrides = {}) {
   if (chatgptWritten.docsPath) {
     console.log(`ChatGPT pack updated: ${chatgptWritten.docsPath}`);
   }
-  if (codexWritten.docsPath) {
-    console.log(`Codex pack updated: ${codexWritten.docsPath}`);
+  if (codexMarketplaceWritten.docsPath) {
+    console.log(`Codex marketplace pack updated: ${codexMarketplaceWritten.docsPath}`);
+  }
+  if (codexPluginWritten.docsPath) {
+    console.log(`Codex plugin pack updated: ${codexPluginWritten.docsPath}`);
   }
   console.log(`State: ${report.directive.state} | Targets: ${report.targets.length}`);
 }
@@ -108,6 +119,7 @@ if (isCliInvocation(process.argv)) {
 }
 
 module.exports = {
+  buildDependencies,
   isCliInvocation,
   main,
 };
