@@ -28,6 +28,8 @@
 
 - [#1324](https://github.com/IgorGanapolsky/ThumbGate/pull/1324) [`4294a5a`](https://github.com/IgorGanapolsky/ThumbGate/commit/4294a5af68b96f0b39ec037be9fca3513e563b59) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Refresh the Claude workflow hardening pack with verified install surfaces, tracked listing copy, and a live prospect queue.
 
+- [#1332](https://github.com/IgorGanapolsky/ThumbGate/pull/1332) [`ae27b84`](https://github.com/IgorGanapolsky/ThumbGate/commit/ae27b84f55314e767e82bb4e8cea874697985b4b) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Extend the Claude workflow hardening pack with active-channel acquisition drafts so each revenue pass ships evidence-backed Reddit, LinkedIn, Threads, and Bluesky copy tied to live Claude install surfaces and proof-timing guardrails.
+
 ## 1.16.4
 
 ### Patch Changes
