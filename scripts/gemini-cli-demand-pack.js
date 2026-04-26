@@ -2,19 +2,20 @@
 'use strict';
 
 const path = require('node:path');
-const { buildUTMLink } = require('./social-analytics/utm');
 const {
   COMMERCIAL_TRUTH_LINK,
   VERIFICATION_EVIDENCE_LINK,
   buildRevenueLinks,
 } = require('./gtm-revenue-loop');
 const {
-  csvCell,
+  buildTrackedPackLink,
   isCliInvocation: isCliCall,
   normalizeText,
   parseReportArgs,
   readGitHubAbout,
-  writeRevenuePackArtifacts,
+  renderOperatorQueueCsv,
+  renderRevenuePackMarkdown,
+  writeStandardRevenuePack,
 } = require('./revenue-pack-utils');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
@@ -32,31 +33,30 @@ const GEMINI_GUIDE_SOURCE_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blo
 const GCP_GUIDE_SOURCE_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/gcp-mcp-guardrails.html';
 const MEM0_COMPARE_SOURCE_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/compare/mem0.html';
 const PROOF_LINKS = [COMMERCIAL_TRUTH_LINK, VERIFICATION_EVIDENCE_LINK];
+const TRACKING_DEFAULTS = {
+  utmSource: GEMINI_SOURCE,
+  utmMedium: GUIDE_MEDIUM,
+  utmCampaign: 'gemini_cli_demand',
+  utmContent: 'guide',
+  surface: GEMINI_SURFACE,
+};
+const CANONICAL_FIELDS = [
+  { label: 'Display name', key: 'displayName', fallback: 'ThumbGate' },
+  { label: 'Repository', key: 'repositoryUrl' },
+  { label: 'Homepage', key: 'homepageUrl' },
+  { label: 'Commercial truth', key: 'commercialTruthUrl' },
+  { label: 'Verification evidence', key: 'verificationEvidenceUrl' },
+];
+const SURFACE_FIELDS = [
+  { label: 'Buyer signal', key: 'buyerSignal' },
+  { label: 'Operator use', key: 'operatorUse' },
+  { label: 'Surface URL', key: 'url' },
+  { label: 'Support', key: 'supportUrl' },
+  { label: 'Proof', key: 'proofUrl' },
+];
 
 function buildTrackedGeminiLink(baseUrl, tracking = {}) {
-  const url = new URL(buildUTMLink(baseUrl, {
-    source: tracking.utmSource || GEMINI_SOURCE,
-    medium: tracking.utmMedium || GUIDE_MEDIUM,
-    campaign: tracking.utmCampaign || 'gemini_cli_demand',
-    content: tracking.utmContent || 'guide',
-  }));
-  const extras = {
-    campaign_variant: tracking.campaignVariant,
-    offer_code: tracking.offerCode,
-    cta_id: tracking.ctaId,
-    cta_placement: tracking.ctaPlacement,
-    plan_id: tracking.planId,
-    surface: tracking.surface || GEMINI_SURFACE,
-  };
-
-  for (const [key, value] of Object.entries(extras)) {
-    const normalized = normalizeText(value);
-    if (normalized) {
-      url.searchParams.set(key, normalized);
-    }
-  }
-
-  return url.toString();
+  return buildTrackedPackLink(baseUrl, tracking, TRACKING_DEFAULTS);
 }
 
 function buildEvidenceSurfaces(links = buildRevenueLinks(), about = readGitHubAbout()) {
@@ -373,128 +373,28 @@ function buildGeminiCliDemandPack(report = {}, links = buildRevenueLinks(), abou
 }
 
 function renderGeminiCliOperatorQueueCsv(pack = {}) {
-  const queue = Array.isArray(pack.operatorQueue) ? pack.operatorQueue : [];
-  const rows = [
-    ['key', 'audience', 'evidence', 'proofTrigger', 'proofAsset', 'nextAsk', 'recommendedMotion'],
-    ...queue.map((entry) => ([
-      entry.key,
-      entry.audience,
-      entry.evidence,
-      entry.proofTrigger,
-      entry.proofAsset,
-      entry.nextAsk,
-      entry.recommendedMotion,
-    ])),
-  ];
-
-  return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
+  return renderOperatorQueueCsv(pack.operatorQueue);
 }
 
 function renderGeminiCliDemandPackMarkdown(pack = {}) {
-  const surfaceLines = Array.isArray(pack.surfaces) && pack.surfaces.length
-    ? pack.surfaces.flatMap((surface) => ([
-      `### ${surface.name}`,
-      `- Buyer signal: ${surface.buyerSignal}`,
-      `- Operator use: ${surface.operatorUse}`,
-      `- Surface URL: ${surface.url}`,
-      `- Support: ${surface.supportUrl}`,
-      `- Proof: ${surface.proofUrl}`,
-      '',
-    ]))
-    : ['- No evidence surfaces available.', ''];
-  const offerLines = Array.isArray(pack.followOnOffers) && pack.followOnOffers.length
-    ? pack.followOnOffers.map((offer) => `- ${offer.label}: ${offer.pricing}\n  Buyer: ${offer.buyer}\n  CTA: ${offer.cta}`)
-    : ['- No follow-on offers available.'];
-  const queueLines = Array.isArray(pack.operatorQueue) && pack.operatorQueue.length
-    ? pack.operatorQueue.flatMap((entry) => ([
-      `### ${entry.audience}`,
-      `- Evidence: ${entry.evidence}`,
-      `- Proof trigger: ${entry.proofTrigger}`,
-      `- Proof asset: ${entry.proofAsset}`,
-      `- Next ask: ${entry.nextAsk}`,
-      `- Recommended motion: ${entry.recommendedMotion}`,
-      '',
-    ]))
-    : ['- No operator queue entries available.', ''];
-  const draftLines = Array.isArray(pack.outreachDrafts) && pack.outreachDrafts.length
-    ? pack.outreachDrafts.flatMap((draft) => ([
-      `### ${draft.channel} — ${draft.audience}`,
-      draft.draft,
-      '',
-    ]))
-    : ['- No outreach drafts available.', ''];
-  const milestoneLines = Array.isArray(pack.measurementPlan?.milestones) && pack.measurementPlan.milestones.length
-    ? pack.measurementPlan.milestones.map((milestone) => `- ${milestone.window}: ${milestone.goal} Decision rule: ${milestone.decisionRule}`)
-    : ['- No milestones available.'];
-  const proofLines = Array.isArray(pack.proofLinks) && pack.proofLinks.length
-    ? pack.proofLinks.map((link) => `- ${link}`)
-    : ['- No proof links available.'];
-
-  return [
-    '# Gemini CLI Demand Pack',
-    '',
-    `Updated: ${pack.generatedAt}`,
-    '',
-    'This is a sales operator artifact. It is not proof of rankings, sent outreach, installs, paid revenue, or marketplace approval by itself.',
-    '',
-    '## Objective',
-    pack.objective,
-    '',
-    '## Positioning',
-    `- State: ${pack.state}`,
-    `- Headline: ${pack.headline}`,
-    `- Short description: ${pack.shortDescription}`,
-    `- Summary: ${pack.summary}`,
-    '',
-    '## Canonical Identity',
-    `- Display name: ${pack.canonicalIdentity?.displayName || 'ThumbGate'}`,
-    `- Repository: ${pack.canonicalIdentity?.repositoryUrl || ''}`,
-    `- Homepage: ${pack.canonicalIdentity?.homepageUrl || ''}`,
-    `- Commercial truth: ${pack.canonicalIdentity?.commercialTruthUrl || ''}`,
-    `- Verification evidence: ${pack.canonicalIdentity?.verificationEvidenceUrl || ''}`,
-    '',
-    '## Demand Surfaces',
-    ...surfaceLines,
-    '## Follow-On Offers',
-    ...offerLines,
-    '',
-    '## Operator Queue',
-    ...queueLines,
-    '## Outreach Drafts',
-    ...draftLines,
-    '## 90-Day Measurement Plan',
-    `- North star: ${pack.measurementPlan?.northStar || 'n/a'}`,
-    `- Policy: ${pack.measurementPlan?.policy || 'n/a'}`,
-    `- Minimum useful signal: ${pack.measurementPlan?.minimumUsefulSignal || 'n/a'}`,
-    `- Strong signal: ${pack.measurementPlan?.strongSignal || 'n/a'}`,
-    'Tracked metrics:',
-    ...(Array.isArray(pack.measurementPlan?.metrics) ? pack.measurementPlan.metrics.map((metric) => `- ${metric}`) : ['- n/a']),
-    'Guardrails:',
-    ...(Array.isArray(pack.measurementPlan?.guardrails) ? pack.measurementPlan.guardrails.map((entry) => `- ${entry}`) : ['- n/a']),
-    'Milestones:',
-    ...milestoneLines,
-    'Do not count as success:',
-    ...(Array.isArray(pack.measurementPlan?.doNotCountAsSuccess) ? pack.measurementPlan.doNotCountAsSuccess.map((entry) => `- ${entry}`) : ['- n/a']),
-    '',
-    '## Proof Links',
-    ...proofLines,
-    '',
-  ].join('\n');
+  return renderRevenuePackMarkdown({
+    title: 'Gemini CLI Demand Pack',
+    disclaimer: 'This is a sales operator artifact. It is not proof of rankings, sent outreach, installs, paid revenue, or marketplace approval by itself.',
+    pack,
+    canonicalFields: CANONICAL_FIELDS,
+    surfaceFields: SURFACE_FIELDS,
+  });
 }
 
 function writeGeminiCliDemandPack(pack, options = {}) {
-  const docsPath = path.join(REPO_ROOT, 'docs', 'marketing', 'gemini-cli-demand-pack.md');
-
-  return writeRevenuePackArtifacts({
+  return writeStandardRevenuePack({
     repoRoot: REPO_ROOT,
-    reportDir: options.reportDir,
-    writeDocs: options.writeDocs,
-    docsPath,
-    markdown: renderGeminiCliDemandPackMarkdown(pack),
+    docsPath: path.join(REPO_ROOT, 'docs', 'marketing', 'gemini-cli-demand-pack.md'),
+    pack,
+    options,
+    renderMarkdown: renderGeminiCliDemandPackMarkdown,
     jsonName: 'gemini-cli-demand-pack.json',
-    jsonValue: pack,
     csvName: 'gemini-cli-operator-queue.csv',
-    csvValue: renderGeminiCliOperatorQueueCsv(pack),
   });
 }
 

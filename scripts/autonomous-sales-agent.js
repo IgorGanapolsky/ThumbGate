@@ -30,6 +30,10 @@ const {
   writeGeminiCliDemandPack,
 } = require('./gemini-cli-demand-pack');
 const {
+  buildChatgptGptRevenuePack,
+  writeChatgptGptRevenuePack,
+} = require('./chatgpt-gpt-revenue-pack');
+const {
   buildCodexMarketplaceRevenuePack,
   writeCodexMarketplaceRevenuePack,
 } = require('./codex-marketplace-revenue-pack');
@@ -44,6 +48,8 @@ function buildDependencies(overrides = {}) {
     writeCursorMarketplaceRevenuePack,
     buildGeminiCliDemandPack,
     writeGeminiCliDemandPack,
+    buildChatgptGptRevenuePack,
+    writeChatgptGptRevenuePack,
     buildCodexMarketplaceRevenuePack,
     writeCodexMarketplaceRevenuePack,
     buildCodexPluginRevenuePack,
@@ -70,6 +76,8 @@ async function main(argv = process.argv.slice(2), overrides = {}) {
   const cursorWritten = deps.writeCursorMarketplaceRevenuePack(cursorPack, options);
   const geminiPack = deps.buildGeminiCliDemandPack(report);
   const geminiWritten = deps.writeGeminiCliDemandPack(geminiPack, options);
+  const chatgptPack = deps.buildChatgptGptRevenuePack(report);
+  const chatgptWritten = deps.writeChatgptGptRevenuePack(chatgptPack, options);
   const codexMarketplacePack = deps.buildCodexMarketplaceRevenuePack();
   const codexMarketplaceWritten = deps.writeCodexMarketplaceRevenuePack(codexMarketplacePack, options);
   const codexPluginPack = deps.buildCodexPluginRevenuePack(report);
@@ -90,6 +98,9 @@ async function main(argv = process.argv.slice(2), overrides = {}) {
   }
   if (geminiWritten.docsPath) {
     console.log(`Gemini pack updated: ${geminiWritten.docsPath}`);
+  }
+  if (chatgptWritten.docsPath) {
+    console.log(`ChatGPT pack updated: ${chatgptWritten.docsPath}`);
   }
   if (codexMarketplaceWritten.docsPath) {
     console.log(`Codex marketplace pack updated: ${codexMarketplaceWritten.docsPath}`);
