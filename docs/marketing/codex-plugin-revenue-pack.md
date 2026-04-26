@@ -1,6 +1,6 @@
 # Codex Plugin Revenue Pack
 
-Updated: 2026-04-26T05:07:27.391Z
+Updated: 2026-04-26T17:15:59.268Z
 
 This is a sales operator artifact. It is not proof of bundle downloads, installs, paid revenue, or marketplace publication by itself.
 
@@ -24,14 +24,14 @@ ThumbGate gives Codex a proof-backed install path, pre-action gate enforcement, 
 - Examples: @Deep_Ad1959, @game-of-kton, @leogodin217
 
 ### Workflow control surfaces remain the strongest buyer signal
-- Count: 4
-- Summary: 4 current targets expose review, approval, governance, or workflow control surfaces where a Codex install story can convert into a workflow-hardening offer.
-- Examples: freema/mcp-jira-stdio, salacoste/mcp-n8n-workflow-builder, Shashankk1907/Learning-about-MCP
+- Count: 3
+- Summary: 3 current targets expose review, approval, governance, or workflow control surfaces where a Codex install story can convert into a workflow-hardening offer.
+- Examples: freema/mcp-jira-stdio, salacoste/mcp-n8n-workflow-builder, yungookim/oh-my-pr
 
 ### Production rollout proof matters
-- Count: 5
-- Summary: 5 targets touch production-sensitive workflows where proof and rollback safety should appear before the buyer expands usage.
-- Examples: WagnerAgent/awesome-mcp-servers-devops, bjeans/homelab-mcp, Shashankk1907/Learning-about-MCP
+- Count: 3
+- Summary: 3 targets touch production-sensitive workflows where proof and rollback safety should appear before the buyer expands usage.
+- Examples: WagnerAgent/awesome-mcp-servers-devops, bjeans/homelab-mcp, gensecaihq/MCP-Developer-SubAgent
 
 ## Submission Surfaces
 ### Codex plugin install page

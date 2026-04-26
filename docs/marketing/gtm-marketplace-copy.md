@@ -27,7 +27,7 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 ## Evidence-Backed Buyer Signals
 - Warm discovery workflows (4): Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Examples: @Deep_Ad1959, @game-of-kton, @leogodin217
 - Production rollout proof (3): Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Examples: WagnerAgent/awesome-mcp-servers-devops, bjeans/homelab-mcp, gensecaihq/MCP-Developer-SubAgent
-- Workflow control surfaces (3): The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Examples: freema/mcp-jira-stdio, manki-review/manki, salacoste/mcp-n8n-workflow-builder
+- Workflow control surfaces (3): The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Examples: freema/mcp-jira-stdio, salacoste/mcp-n8n-workflow-builder, yungookim/oh-my-pr
 
 ## Proof Policy
 - Do not lead with proof links. Use Commercial Truth and Verification Evidence only after the buyer confirms pain.
