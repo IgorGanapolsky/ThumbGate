@@ -477,6 +477,114 @@ test('GitHub discovery reports API and parser failures as non-fatal warnings', a
   assert.equal(prospects.errors.length, 5);
 });
 
+test('GitHub discovery falls back to gh auth token when env tokens are absent', async () => {
+  const originalGithubToken = process.env.GITHUB_TOKEN;
+  const originalGhToken = process.env.GH_TOKEN;
+  const originalGhPat = process.env.GH_PAT;
+  delete process.env.GITHUB_TOKEN;
+  delete process.env.GH_TOKEN;
+  delete process.env.GH_PAT;
+
+  try {
+    let execCalls = 0;
+    const result = await fetchGitHubJson('search/repositories?q=test', {
+      execFileSyncImpl(command, args, options) {
+        execCalls += 1;
+        assert.equal(command, 'gh');
+        assert.deepEqual(args, ['auth', 'token']);
+        assert.equal(options.encoding, 'utf8');
+        return 'gh-cli-token\n';
+      },
+      fetchImpl: async (_url, options) => {
+        assert.equal(options.headers.authorization, 'Bearer gh-cli-token');
+        return {
+          ok: true,
+          async text() {
+            return '{"items":[]}';
+          },
+        };
+      },
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(execCalls, 1);
+  } finally {
+    if (originalGithubToken === undefined) delete process.env.GITHUB_TOKEN;
+    else process.env.GITHUB_TOKEN = originalGithubToken;
+    if (originalGhToken === undefined) delete process.env.GH_TOKEN;
+    else process.env.GH_TOKEN = originalGhToken;
+    if (originalGhPat === undefined) delete process.env.GH_PAT;
+    else process.env.GH_PAT = originalGhPat;
+  }
+});
+
+test('prospecting reuses gh auth token fallback for search and profile enrichment', async () => {
+  const originalGithubToken = process.env.GITHUB_TOKEN;
+  const originalGhToken = process.env.GH_TOKEN;
+  const originalGhPat = process.env.GH_PAT;
+  delete process.env.GITHUB_TOKEN;
+  delete process.env.GH_TOKEN;
+  delete process.env.GH_PAT;
+
+  try {
+    let execCalls = 0;
+    const requestedAuthHeaders = [];
+    const result = await prospectTargets(2, {
+      execFileSyncImpl() {
+        execCalls += 1;
+        return 'gh-cli-token\n';
+      },
+      fetchImpl: async (url, options) => {
+        requestedAuthHeaders.push(options.headers.authorization);
+        if (String(url).includes('/users/builder')) {
+          return {
+            ok: true,
+            async text() {
+              return JSON.stringify({
+                html_url: 'https://github.com/builder',
+                blog: 'builder.dev',
+                company: '@builder-labs',
+              });
+            },
+          };
+        }
+        return {
+          ok: true,
+          async text() {
+            return JSON.stringify({
+              items: [
+                {
+                  owner: {
+                    login: 'builder',
+                    html_url: 'https://github.com/builder',
+                  },
+                  name: 'production-mcp-server',
+                  html_url: 'https://github.com/builder/production-mcp-server',
+                  description: 'Production MCP server for deployment workflow approvals and audit proof.',
+                  stargazers_count: 42,
+                  updated_at: new Date().toISOString(),
+                },
+              ],
+            });
+          },
+        };
+      },
+    });
+
+    assert.equal(result.targets.length, 1);
+    assert.ok(execCalls >= 1);
+    assert.ok(requestedAuthHeaders.length >= 2);
+    assert.ok(requestedAuthHeaders.every((value) => value === 'Bearer gh-cli-token'));
+  } finally {
+    if (originalGithubToken === undefined) delete process.env.GITHUB_TOKEN;
+    else process.env.GITHUB_TOKEN = originalGithubToken;
+    if (originalGhToken === undefined) delete process.env.GH_TOKEN;
+    else process.env.GH_TOKEN = originalGhToken;
+    if (originalGhPat === undefined) delete process.env.GH_PAT;
+    else process.env.GH_PAT = originalGhPat;
+  }
+});
+
 test('rendered revenue loop markdown anchors every target to truth and proof', () => {
   const links = buildRevenueLinks();
   const catalog = buildMotionCatalog(links);
