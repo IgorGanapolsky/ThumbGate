@@ -288,6 +288,106 @@ function buildNextOperatorAction(stage) {
   }
 }
 
+function quoteShellArg(value) {
+  const normalized = normalizeText(value, 4000);
+  if (!normalized) {
+    return "''";
+  }
+  return `'${normalized.replace(/'/g, `'\"'\"'`)}'`;
+}
+
+function buildTargetPainHypothesis(target = {}) {
+  const sanitizePain = (value) => normalizeText(value, 240)?.replace(/[.!?\s]+$/g, '') || null;
+  const evidenceEntries = Array.isArray(target.evidence)
+    ? target.evidence
+    : Array.isArray(target.evidence?.evidence)
+      ? target.evidence.evidence
+      : [];
+  for (const entry of evidenceEntries) {
+    const normalized = normalizeText(entry, 400);
+    if (!normalized) continue;
+    const workflowMatch = normalized.match(/workflow pain named:\s*(.+)$/i);
+    if (workflowMatch) {
+      return sanitizePain(workflowMatch[1]);
+    }
+    const repeatedFailureMatch = normalized.match(/repeated workflow failure:\s*(.+)$/i);
+    if (repeatedFailureMatch) {
+      return sanitizePain(repeatedFailureMatch[1]);
+    }
+  }
+
+  const outreachAngle = normalizeText(target.outreachAngle || target.evidence?.outreachAngle, 240);
+  if (outreachAngle) {
+    return sanitizePain(outreachAngle.replace(/^Lead with\s+/i, ''));
+  }
+
+  return sanitizePain(target.motionReason || target.selectedMotion?.reason)
+    || 'one repeated workflow failure';
+}
+
+function buildSalesPipelineCommand(command, args = {}) {
+  const parts = ['npm', 'run', 'sales:pipeline', '--', command];
+  for (const [key, rawValue] of Object.entries(args)) {
+    const value = normalizeText(rawValue, 4000);
+    if (!value) continue;
+    parts.push(`--${key}`);
+    parts.push(quoteShellArg(value));
+  }
+  return parts.join(' ');
+}
+
+function buildTargetSalesCommands(target = {}) {
+  const leadId = normalizeText(target.pipelineLeadId) || buildLeadFromRevenueTarget(target).leadId;
+  const channel = normalizeText(target.channel) || normalizeText(target.source) || 'manual';
+  const pain = buildTargetPainHypothesis(target);
+  const motionLabel = normalizeText(target.motionLabel) || 'Workflow Hardening Sprint';
+  const commandBase = { lead: leadId, channel };
+
+  return {
+    markContacted: buildSalesPipelineCommand('advance', {
+      ...commandBase,
+      stage: 'contacted',
+      note: `Sent ${motionLabel} first touch focused on ${pain}.`,
+    }),
+    markReplied: buildSalesPipelineCommand('advance', {
+      ...commandBase,
+      stage: 'replied',
+      note: `Buyer confirmed pain around ${pain}.`,
+    }),
+    markCallBooked: buildSalesPipelineCommand('advance', {
+      ...commandBase,
+      stage: 'call_booked',
+      note: `Booked a 15-minute workflow hardening diagnostic for ${pain}.`,
+    }),
+    markCheckoutStarted: buildSalesPipelineCommand('advance', {
+      ...commandBase,
+      stage: 'checkout_started',
+      note: `Buyer started the self-serve checkout after discussing ${pain}.`,
+    }),
+    markSprintIntake: buildSalesPipelineCommand('advance', {
+      ...commandBase,
+      stage: 'sprint_intake',
+      note: `Buyer moved into Workflow Hardening Sprint intake for ${pain}.`,
+    }),
+  };
+}
+
+function enrichRenderableTarget(target = {}) {
+  const pipelineLeadId = normalizeText(target.pipelineLeadId) || buildLeadFromRevenueTarget(target).leadId;
+  const pipelineStage = normalizePipelineStage(target.pipelineStage);
+  return {
+    ...target,
+    pipelineLeadId,
+    pipelineStage,
+    nextOperatorAction: normalizeText(target.nextOperatorAction) || buildNextOperatorAction(pipelineStage),
+    salesCommands: target.salesCommands || buildTargetSalesCommands({
+      ...target,
+      pipelineLeadId,
+      pipelineStage,
+    }),
+  };
+}
+
 function applyPipelineStateToTargets(targets = [], { salesStatePath = null } = {}) {
   const leads = loadSalesLeads({ statePath: salesStatePath });
   const leadMap = new Map(leads.map((lead) => [lead.leadId, lead]));
@@ -297,13 +397,19 @@ function applyPipelineStateToTargets(targets = [], { salesStatePath = null } = {
       const candidateLead = buildLeadFromRevenueTarget(target);
       const existingLead = leadMap.get(candidateLead.leadId);
       const pipelineStage = normalizePipelineStage(existingLead?.stage || target.pipelineStage);
+      const pipelineLeadId = existingLead?.leadId || candidateLead.leadId;
 
       return {
         ...target,
-        pipelineLeadId: existingLead?.leadId || candidateLead.leadId,
+        pipelineLeadId,
         pipelineStage,
         pipelineUpdatedAt: normalizeText(existingLead?.updatedAt),
         nextOperatorAction: buildNextOperatorAction(pipelineStage),
+        salesCommands: buildTargetSalesCommands({
+          ...target,
+          pipelineLeadId,
+          pipelineStage,
+        }),
       };
     })
     .filter((target) => !TERMINAL_PIPELINE_STAGES.has(normalizePipelineStage(target.pipelineStage)));
@@ -807,6 +913,13 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
       const followUpMessage = target.followUpMessage
         || buildPainConfirmedFollowUp(target, target.selectedMotion, motionCatalog);
       const evidenceSources = buildEvidenceSources(target, motionCatalog);
+      const pipelineLeadId = normalizeText(target.pipelineLeadId) || buildLeadFromRevenueTarget(target).leadId;
+      const pipelineStage = normalizePipelineStage(target.pipelineStage);
+      const salesCommands = target.salesCommands || buildTargetSalesCommands({
+        ...target,
+        pipelineLeadId,
+        pipelineStage,
+      });
 
       return {
         temperature: normalizeText(target.temperature) || 'cold',
@@ -829,15 +942,16 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
         motion: target.selectedMotion.key,
         motionLabel: target.selectedMotion.label,
         motionReason: target.selectedMotion.reason,
-        pipelineLeadId: normalizeText(target.pipelineLeadId),
-        pipelineStage: normalizePipelineStage(target.pipelineStage),
+        pipelineLeadId,
+        pipelineStage,
         pipelineUpdatedAt: normalizeText(target.pipelineUpdatedAt),
-        nextOperatorAction: normalizeText(target.nextOperatorAction) || buildNextOperatorAction(target.pipelineStage),
+        nextOperatorAction: normalizeText(target.nextOperatorAction) || buildNextOperatorAction(pipelineStage),
         offer: target.selectedMotion.key === motionCatalog.sprint.key ? 'workflow_hardening_sprint' : 'pro_self_serve',
         cta: motionCatalog[target.selectedMotion.key].cta,
         proofPackTrigger: target.proofPackTrigger || 'Use proof pack only after the buyer confirms pain.',
         firstTouchDraft: target.message,
         painConfirmedFollowUpDraft: followUpMessage,
+        salesCommands,
         message: target.message,
       };
     }),
@@ -979,8 +1093,9 @@ function renderRevenueTargetMarkdown(target) {
 
 function renderRevenueLoopMarkdown(report) {
   const fallbackReason = report.fallbackReason ? ` (${report.fallbackReason})` : '';
-  const warmTargets = report.targets.filter((target) => target.temperature === 'warm');
-  const coldTargets = report.targets.filter((target) => target.temperature !== 'warm');
+  const targets = Array.isArray(report.targets) ? report.targets.map(enrichRenderableTarget) : [];
+  const warmTargets = targets.filter((target) => target.temperature === 'warm');
+  const coldTargets = targets.filter((target) => target.temperature !== 'warm');
   const warmTargetLines = warmTargets.length
     ? warmTargets.flatMap(renderRevenueTargetMarkdown)
     : ['- No warm discovery targets were loaded for this run.'];
@@ -1044,24 +1159,28 @@ function renderQuotedText(text) {
 }
 
 function renderWarmTargetOutreachMarkdown(target, index) {
+  const enrichedTarget = enrichRenderableTarget(target);
+  const salesCommands = enrichedTarget.salesCommands;
   return [
-    `## ${index + 1}. ${target.username} (${target.accountName || target.source || 'warm lead'})`,
-    `- Source: ${target.source || 'github'} / ${target.channel || target.source || 'github'}`,
-    `- Contact: ${target.contactUrl || 'n/a'}`,
-    `- Evidence score: ${target.evidenceScore}`,
-    `- Evidence: ${target.evidence.length ? target.evidence.join(', ') : 'n/a'}`,
-    `- Evidence sources: ${renderEvidenceSources(target.evidenceSources)}`,
-    `- Outreach angle: ${target.outreachAngle || 'n/a'}`,
-    `- Motion: ${target.motionLabel}`,
-    `- Why: ${target.motionReason}`,
-    `- Proof timing: ${target.proofPackTrigger || 'Use proof pack only after the buyer confirms pain.'}`,
-    `- CTA: ${target.cta}`,
+    `## ${index + 1}. ${enrichedTarget.username} (${enrichedTarget.accountName || enrichedTarget.source || 'warm lead'})`,
+    `- Source: ${enrichedTarget.source || 'github'} / ${enrichedTarget.channel || enrichedTarget.source || 'github'}`,
+    `- Contact: ${enrichedTarget.contactUrl || 'n/a'}`,
+    `- Evidence score: ${enrichedTarget.evidenceScore}`,
+    `- Evidence: ${enrichedTarget.evidence.length ? enrichedTarget.evidence.join(', ') : 'n/a'}`,
+    `- Evidence sources: ${renderEvidenceSources(enrichedTarget.evidenceSources)}`,
+    `- Outreach angle: ${enrichedTarget.outreachAngle || 'n/a'}`,
+    `- Motion: ${enrichedTarget.motionLabel}`,
+    `- Why: ${enrichedTarget.motionReason}`,
+    `- Proof timing: ${enrichedTarget.proofPackTrigger || 'Use proof pack only after the buyer confirms pain.'}`,
+    `- CTA: ${enrichedTarget.cta}`,
+    `- Log after send: \`${salesCommands.markContacted || 'n/a'}\``,
+    `- Log after pain-confirmed reply: \`${salesCommands.markReplied || 'n/a'}\``,
     '',
     'First-touch draft:',
-    ...renderQuotedText(target.firstTouchDraft || target.message),
+    ...renderQuotedText(enrichedTarget.firstTouchDraft || enrichedTarget.message),
     '',
     'Pain-confirmed follow-up:',
-    ...renderQuotedText(target.painConfirmedFollowUpDraft),
+    ...renderQuotedText(enrichedTarget.painConfirmedFollowUpDraft),
     '',
   ];
 }
@@ -1097,36 +1216,43 @@ function rankOperatorTargets(targets = []) {
 }
 
 function renderOperatorPriorityTargetMarkdown(target, index) {
-  const label = normalizeText(target.repoName)
-    ? `@${target.username} — ${target.repoName}`
-    : `@${target.username} — ${target.accountName || target.source || 'discovery lead'}`;
-  const contactSurface = target.contactUrl || target.repoUrl || 'n/a';
+  const enrichedTarget = enrichRenderableTarget(target);
+  const label = normalizeText(enrichedTarget.repoName)
+    ? `@${enrichedTarget.username} — ${enrichedTarget.repoName}`
+    : `@${enrichedTarget.username} — ${enrichedTarget.accountName || enrichedTarget.source || 'discovery lead'}`;
+  const contactSurface = enrichedTarget.contactUrl || enrichedTarget.repoUrl || 'n/a';
+  const salesCommands = enrichedTarget.salesCommands;
   return [
     `## ${index + 1}. ${label}`,
-    `- Temperature: ${target.temperature || 'cold'}`,
-    `- Source: ${target.source || 'github'} / ${target.channel || target.source || 'github'}`,
-    `- Pipeline stage: ${target.pipelineStage || 'targeted'}`,
-    `- Next operator step: ${target.nextOperatorAction || buildNextOperatorAction(target.pipelineStage)}`,
-    `- Pipeline last updated: ${target.pipelineUpdatedAt || 'n/a'}`,
+    `- Temperature: ${enrichedTarget.temperature || 'cold'}`,
+    `- Source: ${enrichedTarget.source || 'github'} / ${enrichedTarget.channel || enrichedTarget.source || 'github'}`,
+    `- Pipeline stage: ${enrichedTarget.pipelineStage || 'targeted'}`,
+    `- Pipeline lead id: ${enrichedTarget.pipelineLeadId || 'n/a'}`,
+    `- Next operator step: ${enrichedTarget.nextOperatorAction || buildNextOperatorAction(enrichedTarget.pipelineStage)}`,
+    `- Pipeline last updated: ${enrichedTarget.pipelineUpdatedAt || 'n/a'}`,
+    `- Log after send: \`${salesCommands.markContacted || 'n/a'}\``,
+    `- Log after pain-confirmed reply: \`${salesCommands.markReplied || 'n/a'}\``,
+    `- Log after call booked: \`${salesCommands.markCallBooked || 'n/a'}\``,
+    `- Log after sprint intake: \`${salesCommands.markSprintIntake || 'n/a'}\``,
     `- Contact surface: ${contactSurface}`,
-    `- Evidence score: ${target.evidenceScore}`,
-    `- Evidence: ${target.evidence.length ? target.evidence.join(', ') : 'n/a'}`,
-    `- Motion: ${target.motionLabel}`,
-    `- Why now: ${target.motionReason || target.outreachAngle || 'n/a'}`,
-    `- Proof rule: ${target.proofPackTrigger || 'Use proof pack only after the buyer confirms pain.'}`,
-    `- CTA: ${target.cta}`,
+    `- Evidence score: ${enrichedTarget.evidenceScore}`,
+    `- Evidence: ${enrichedTarget.evidence.length ? enrichedTarget.evidence.join(', ') : 'n/a'}`,
+    `- Motion: ${enrichedTarget.motionLabel}`,
+    `- Why now: ${enrichedTarget.motionReason || enrichedTarget.outreachAngle || 'n/a'}`,
+    `- Proof rule: ${enrichedTarget.proofPackTrigger || 'Use proof pack only after the buyer confirms pain.'}`,
+    `- CTA: ${enrichedTarget.cta}`,
     '',
     'First-touch draft:',
-    ...renderQuotedText(target.firstTouchDraft || target.message),
+    ...renderQuotedText(enrichedTarget.firstTouchDraft || enrichedTarget.message),
     '',
     'Pain-confirmed follow-up:',
-    ...renderQuotedText(target.painConfirmedFollowUpDraft),
+    ...renderQuotedText(enrichedTarget.painConfirmedFollowUpDraft),
     '',
   ];
 }
 
 function renderOperatorHandoffMarkdown(report) {
-  const rankedTargets = rankOperatorTargets(Array.isArray(report?.targets) ? report.targets : []);
+  const rankedTargets = rankOperatorTargets(Array.isArray(report?.targets) ? report.targets.map(enrichRenderableTarget) : []);
   const followUpTargets = rankedTargets.filter((target) => normalizePipelineStage(target.pipelineStage) !== 'targeted');
   const freshTargets = rankedTargets.filter((target) => normalizePipelineStage(target.pipelineStage) === 'targeted');
   const warmTargets = freshTargets.filter((target) => normalizeText(target.temperature).toLowerCase() === 'warm');
@@ -1179,7 +1305,7 @@ function renderOperatorHandoffMarkdown(report) {
 
 function renderTeamOutreachMessagesMarkdown(report) {
   const warmTargets = Array.isArray(report?.targets)
-    ? report.targets.filter((target) => target.temperature === 'warm')
+    ? report.targets.map(enrichRenderableTarget).filter((target) => target.temperature === 'warm')
     : [];
   const warmTargetLines = warmTargets.length
     ? warmTargets.flatMap(renderWarmTargetOutreachMarkdown)
@@ -1275,6 +1401,7 @@ function escapeCsvValue(value) {
 }
 
 function renderRevenueLoopCsv(report) {
+  const targets = Array.isArray(report.targets) ? report.targets.map(enrichRenderableTarget) : [];
   const rows = [
     [
       'temperature',
@@ -1301,7 +1428,7 @@ function renderRevenueLoopCsv(report) {
       'firstTouchDraft',
       'painConfirmedFollowUpDraft',
     ],
-    ...report.targets.map((target) => ([
+    ...targets.map((target) => ([
       target.temperature || 'cold',
       target.source || 'github',
       target.channel || target.source || 'github',
@@ -1332,7 +1459,8 @@ function renderRevenueLoopCsv(report) {
 }
 
 function renderRevenueLoopJsonl(report) {
-  return `${report.targets.map((target) => JSON.stringify(target)).join('\n')}\n`;
+  const targets = Array.isArray(report.targets) ? report.targets.map(enrichRenderableTarget) : [];
+  return `${targets.map((target) => JSON.stringify(target)).join('\n')}\n`;
 }
 
 function writeRevenueLoopOutputs(report, options = {}) {
