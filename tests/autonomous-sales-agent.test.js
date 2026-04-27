@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 
 const { isCliInvocation, main } = require('../scripts/autonomous-sales-agent');
 
-test('automation emits ChatGPT and Codex alongside Claude, Cursor, and Gemini packs', async () => {
+test('automation emits Aiventyx, ChatGPT, and Codex alongside Claude, Cursor, and Gemini packs', async () => {
   const calls = [];
   const logs = [];
   const originalLog = console.log;
@@ -49,6 +49,14 @@ test('automation emits ChatGPT and Codex alongside Claude, Cursor, and Gemini pa
       writeCursorMarketplaceRevenuePack(pack, options) {
         calls.push(['writeCursorMarketplaceRevenuePack', pack.channel, options.writeDocs]);
         return { docsPath: '/tmp/cursor.md' };
+      },
+      buildAiventyxMarketplacePlan() {
+        calls.push(['buildAiventyxMarketplacePlan']);
+        return { channel: 'aiventyx' };
+      },
+      writeAiventyxMarketplaceOutputs(pack, options) {
+        calls.push(['writeAiventyxMarketplaceOutputs', pack.channel, options.writeDocs]);
+        return { docsPath: '/tmp/aiventyx.md' };
       },
       buildGeminiCliDemandPack(report) {
         calls.push(['buildGeminiCliDemandPack', report.targets.length]);
@@ -94,6 +102,8 @@ test('automation emits ChatGPT and Codex alongside Claude, Cursor, and Gemini pa
     ['writeClaudeWorkflowHardeningPack', 'claude', true],
     ['buildCursorMarketplaceRevenuePack'],
     ['writeCursorMarketplaceRevenuePack', 'cursor', true],
+    ['buildAiventyxMarketplacePlan'],
+    ['writeAiventyxMarketplaceOutputs', 'aiventyx', true],
     ['buildGeminiCliDemandPack', 2],
     ['writeGeminiCliDemandPack', 'gemini', true],
     ['buildChatgptGptRevenuePack', 2],
@@ -103,6 +113,7 @@ test('automation emits ChatGPT and Codex alongside Claude, Cursor, and Gemini pa
     ['buildCodexPluginRevenuePack', 2],
     ['writeCodexPluginRevenuePack', 'codex-plugin', true],
   ]);
+  assert.ok(logs.some((line) => line.includes('Aiventyx pack updated: /tmp/aiventyx.md')));
   assert.ok(logs.some((line) => line.includes('ChatGPT pack updated: /tmp/chatgpt.md')));
   assert.ok(logs.some((line) => line.includes('Codex marketplace pack updated: /tmp/codex-marketplace.md')));
   assert.ok(logs.some((line) => line.includes('Codex plugin pack updated: /tmp/codex-plugin.md')));

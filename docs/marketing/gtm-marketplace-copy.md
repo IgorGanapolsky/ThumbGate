@@ -6,14 +6,14 @@ This pack is operator-ready listing copy derived from the current GTM revenue lo
 Harden one AI-agent workflow before you roll it out.
 
 ## Short Description
-No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain.
+No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof.
 
 ## Long Description
-ThumbGate is a reliability gateway for AI coding workflows. It captures repeated failures, regenerates pre-action gates, and keeps approval boundaries, rollback safety, and proof attached to the workflow before the next risky tool call. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Primary motion: Workflow Hardening Sprint. Secondary motion: Pro at $19/mo or $149/yr after the buyer asks for the self-serve path.
+ThumbGate is a reliability gateway for AI coding workflows. It captures repeated failures, regenerates pre-action gates, and keeps approval boundaries, rollback safety, and proof attached to the workflow before the next risky tool call. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Primary motion: Workflow Hardening Sprint. Secondary motion: Pro at $19/mo or $149/yr after the buyer asks for the self-serve path.
 
 ## Listing Bullets
 - Turn repeated AI-agent mistakes into enforceable pre-action gates.
-- Lead with one repeated workflow failure, then show how ThumbGate turns it into an enforceable pre-action gate.
+- Lead with one repeated workflow failure and a founder-led diagnostic before any generic tool pitch.
 - Route install-intent buyers through the proof-backed setup guide before direct checkout.
 - Primary offer: Workflow Hardening Sprint.
 - Secondary offer: Pro at $19/mo or $149/yr after the buyer asks for the tool path.
@@ -25,9 +25,9 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 - Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro
 
 ## Evidence-Backed Buyer Signals
-- Workflow control surfaces (8): The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Examples: freema/mcp-jira-stdio, makafeli/n8n-workflow-builder, salacoste/mcp-n8n-workflow-builder
-- Production rollout proof (5): Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Examples: WagnerAgent/awesome-mcp-servers-devops, bjeans/homelab-mcp, Shashankk1907/Learning-about-MCP
 - Warm discovery workflows (4): Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Examples: @Deep_Ad1959, @game-of-kton, @leogodin217
+- Workflow control surfaces (4): The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Examples: freema/mcp-jira-stdio, manki-review/manki, salacoste/mcp-n8n-workflow-builder
+- Business-system workflow approvals (3): Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Examples: freema/mcp-jira-stdio, manki-review/manki, yungookim/oh-my-pr
 
 ## Proof Policy
 - Do not lead with proof links. Use Commercial Truth and Verification Evidence only after the buyer confirms pain.
