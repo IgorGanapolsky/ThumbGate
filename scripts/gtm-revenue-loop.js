@@ -1481,12 +1481,95 @@ function renderOperatorPriorityTargetMarkdown(target, index) {
   ];
 }
 
-function renderOperatorHandoffMarkdown(report) {
+function buildOperatorPriorityTargetSummary(target, index) {
+  const enrichedTarget = enrichRenderableTarget(target);
+  const label = normalizeText(enrichedTarget.repoName)
+    ? `@${enrichedTarget.username} - ${enrichedTarget.repoName}`
+    : `@${enrichedTarget.username} - ${enrichedTarget.accountName || enrichedTarget.source || 'discovery lead'}`;
+  return {
+    rank: index + 1,
+    label,
+    username: normalizeText(enrichedTarget.username),
+    accountName: normalizeText(enrichedTarget.accountName),
+    repoName: normalizeText(enrichedTarget.repoName),
+    repoUrl: normalizeText(enrichedTarget.repoUrl),
+    temperature: normalizeText(enrichedTarget.temperature) || 'cold',
+    source: normalizeText(enrichedTarget.source) || 'github',
+    channel: normalizeText(enrichedTarget.channel) || normalizeText(enrichedTarget.source) || 'github',
+    pipelineStage: normalizeText(enrichedTarget.pipelineStage) || 'targeted',
+    pipelineLeadId: normalizeText(enrichedTarget.pipelineLeadId) || 'n/a',
+    nextOperatorStep: normalizeText(enrichedTarget.nextOperatorAction) || buildNextOperatorAction(enrichedTarget.pipelineStage),
+    pipelineUpdatedAt: normalizeText(enrichedTarget.pipelineUpdatedAt),
+    contactSurface: normalizeText(enrichedTarget.contactUrl) || normalizeText(enrichedTarget.repoUrl) || 'n/a',
+    contactSurfaces: dedupeContactSurfaces(enrichedTarget.contactSurfaces),
+    company: normalizeText(enrichedTarget.company),
+    evidenceScore: Number(enrichedTarget.evidenceScore || 0),
+    evidence: Array.isArray(enrichedTarget.evidence) ? enrichedTarget.evidence : [],
+    evidenceSources: Array.isArray(enrichedTarget.evidenceSources) ? enrichedTarget.evidenceSources : [],
+    motionLabel: normalizeText(enrichedTarget.motionLabel),
+    whyNow: normalizeText(enrichedTarget.motionReason) || normalizeText(enrichedTarget.outreachAngle),
+    proofRule: normalizeText(enrichedTarget.proofPackTrigger) || 'Use proof pack only after the buyer confirms pain.',
+    cta: normalizeText(enrichedTarget.cta),
+    firstTouchDraft: normalizeText(enrichedTarget.firstTouchDraft || enrichedTarget.message),
+    painConfirmedFollowUpDraft: normalizeText(enrichedTarget.painConfirmedFollowUpDraft),
+    salesCommands: enrichedTarget.salesCommands || {},
+  };
+}
+
+function buildOperatorHandoffPayload(report) {
   const rankedTargets = rankOperatorTargets(Array.isArray(report?.targets) ? report.targets.map(enrichRenderableTarget) : []);
   const followUpTargets = rankedTargets.filter((target) => normalizePipelineStage(target.pipelineStage) !== 'targeted');
   const freshTargets = rankedTargets.filter((target) => normalizePipelineStage(target.pipelineStage) === 'targeted');
   const warmTargets = freshTargets.filter((target) => normalizeText(target.temperature).toLowerCase() === 'warm');
   const coldTargets = freshTargets.filter((target) => normalizeText(target.temperature).toLowerCase() !== 'warm');
+  const sections = [
+    {
+      key: 'follow_up_now',
+      label: 'Follow Up Now',
+      targets: followUpTargets,
+    },
+    {
+      key: 'send_now_warm_discovery',
+      label: 'Send Now: Warm Discovery',
+      targets: warmTargets,
+    },
+    {
+      key: 'seed_next_cold_github',
+      label: 'Seed Next: Cold GitHub',
+      targets: coldTargets,
+    },
+  ];
+
+  return {
+    generatedAt: report?.generatedAt || new Date().toISOString(),
+    summary: {
+      revenueState: normalizeText(report?.directive?.state) || 'cold-start',
+      headline: normalizeText(report?.directive?.headline) || 'No verified revenue and no active pipeline.',
+      paidOrders: Number(report?.snapshot?.paidOrders || 0),
+      checkoutStarts: Number(report?.snapshot?.checkoutStarts || 0),
+      activeFollowUps: followUpTargets.length,
+      warmTargetsReadyNow: warmTargets.length,
+      coldGitHubTargetsReadyNext: coldTargets.length,
+    },
+    operatorRules: [
+      'Import the queue into the sales ledger before sending anything.',
+      'Lead with one concrete workflow-hardening offer, not generic Pro and not the proof pack.',
+      'Use VERIFICATION_EVIDENCE.md and COMMERCIAL_TRUTH.md only after the buyer confirms pain.',
+    ],
+    importCommand: 'npm run sales:pipeline -- import --source docs/marketing/gtm-revenue-loop.json',
+    sections: sections.map((section) => ({
+      key: section.key,
+      label: section.label,
+      targets: section.targets.map((target, index) => buildOperatorPriorityTargetSummary(target, index)),
+    })),
+  };
+}
+
+function renderOperatorHandoffMarkdown(report) {
+  const handoff = buildOperatorHandoffPayload(report);
+  const followUpTargets = handoff.sections.find((section) => section.key === 'follow_up_now')?.targets || [];
+  const warmTargets = handoff.sections.find((section) => section.key === 'send_now_warm_discovery')?.targets || [];
+  const coldTargets = handoff.sections.find((section) => section.key === 'seed_next_cold_github')?.targets || [];
   const followUpLines = followUpTargets.length
     ? followUpTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index))
     : ['- No in-flight follow-ups are currently tracked.', ''];
@@ -1500,28 +1583,31 @@ function renderOperatorHandoffMarkdown(report) {
   return [
     '# Revenue Operator Priority Handoff',
     '',
-    `Updated: ${report.generatedAt}`,
+    `Updated: ${handoff.generatedAt}`,
     '',
     'This is the ranked send order for the current zero-to-one revenue loop. Work warm discovery targets first, then expand into cold GitHub targets with the same proof discipline.',
     '',
     'This handoff sits on top of `gtm-revenue-loop.md`, `gtm-target-queue.csv`, and `team-outreach-messages.md` so an operator can decide who to contact next without re-ranking the queue manually.',
     '',
     '## Current Snapshot',
-    `- Revenue state: ${report.directive?.state || 'cold-start'}`,
-    `- Headline: ${report.directive?.headline || 'No verified revenue and no active pipeline.'}`,
-    `- Paid orders: ${report.snapshot?.paidOrders || 0}`,
-    `- Checkout starts: ${report.snapshot?.checkoutStarts || 0}`,
-    `- Active follow-ups: ${followUpTargets.length}`,
-    `- Warm targets ready now: ${warmTargets.length}`,
-    `- Cold GitHub targets ready next: ${coldTargets.length}`,
+    `- Revenue state: ${handoff.summary.revenueState}`,
+    `- Headline: ${handoff.summary.headline}`,
+    `- Paid orders: ${handoff.summary.paidOrders}`,
+    `- Checkout starts: ${handoff.summary.checkoutStarts}`,
+    `- Active follow-ups: ${handoff.summary.activeFollowUps}`,
+    `- Warm targets ready now: ${handoff.summary.warmTargetsReadyNow}`,
+    `- Cold GitHub targets ready next: ${handoff.summary.coldGitHubTargetsReadyNext}`,
     '',
     '## Operator Rules',
-    '- Import the queue into the sales ledger before sending anything.',
-    '- Lead with one concrete workflow-hardening offer, not generic Pro and not the proof pack.',
-    '- Use [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) and [COMMERCIAL_TRUTH.md](../COMMERCIAL_TRUTH.md) only after the buyer confirms pain.',
+    ...handoff.operatorRules.map((rule) => {
+      if (/VERIFICATION_EVIDENCE\.md/.test(rule) && /COMMERCIAL_TRUTH\.md/.test(rule)) {
+        return '- Use [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) and [COMMERCIAL_TRUTH.md](../COMMERCIAL_TRUTH.md) only after the buyer confirms pain.';
+      }
+      return `- ${rule}`;
+    }),
     '',
     '```bash',
-    'npm run sales:pipeline -- import --source docs/marketing/gtm-revenue-loop.json',
+    handoff.importCommand,
     '```',
     '',
     '## Follow Up Now',
@@ -1710,12 +1796,14 @@ function writeRevenueLoopOutputs(report, options = {}) {
   const queueJsonlDocsPath = path.join(docsDir, 'gtm-target-queue.jsonl');
   const teamOutreachDocsPath = path.join(docsDir, 'team-outreach-messages.md');
   const operatorHandoffDocsPath = path.join(docsDir, 'operator-priority-handoff.md');
+  const operatorHandoffJsonDocsPath = path.join(docsDir, 'operator-priority-handoff.json');
   const markdown = renderRevenueLoopMarkdown(report);
   const marketplaceCopy = report.marketplaceCopy || buildMarketplaceCopy(report);
   const marketplaceMarkdown = renderMarketplaceCopyMarkdown(marketplaceCopy);
   const csv = renderRevenueLoopCsv(report);
   const jsonl = renderRevenueLoopJsonl(report);
   const teamOutreachMarkdown = renderTeamOutreachMessagesMarkdown(report);
+  const operatorHandoff = buildOperatorHandoffPayload(report);
   const operatorHandoffMarkdown = renderOperatorHandoffMarkdown(report);
   const reportDir = normalizeText(options.reportDir)
     ? path.resolve(repoRoot, options.reportDir)
@@ -1732,6 +1820,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     fs.writeFileSync(path.join(reportDir, 'gtm-target-queue.jsonl'), jsonl, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'team-outreach-messages.md'), teamOutreachMarkdown, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'operator-priority-handoff.md'), operatorHandoffMarkdown, 'utf8');
+    fs.writeFileSync(path.join(reportDir, 'operator-priority-handoff.json'), `${JSON.stringify(operatorHandoff, null, 2)}\n`, 'utf8');
   }
 
   if (shouldWriteDocs) {
@@ -1744,6 +1833,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     fs.writeFileSync(queueJsonlDocsPath, jsonl, 'utf8');
     fs.writeFileSync(teamOutreachDocsPath, teamOutreachMarkdown, 'utf8');
     fs.writeFileSync(operatorHandoffDocsPath, operatorHandoffMarkdown, 'utf8');
+    fs.writeFileSync(operatorHandoffJsonDocsPath, `${JSON.stringify(operatorHandoff, null, 2)}\n`, 'utf8');
   }
 
   return {
@@ -1845,6 +1935,7 @@ module.exports = {
   applyPipelineStateToTargets,
   renderRevenueLoopMarkdown,
   renderMarketplaceCopyMarkdown,
+  buildOperatorHandoffPayload,
   renderOperatorHandoffMarkdown,
   renderTeamOutreachMessagesMarkdown,
   resolveRevenueLoopSummary,
