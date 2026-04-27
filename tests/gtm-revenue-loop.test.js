@@ -29,6 +29,7 @@ const {
   resolveRevenueLoopSummary,
   runRevenueLoop,
   selectOutreachMotion,
+  slugifyTrackingToken,
   summarizeCommercialSnapshot,
   writeRevenueLoopOutputs,
 } = require('../scripts/gtm-revenue-loop');
@@ -289,6 +290,12 @@ test('URL normalization keeps bare domains useful without accepting malformed co
   assert.equal(normalizeUrlLikeValue('builder'), '');
   assert.equal(normalizeUrlLikeValue('builder@dev'), '');
   assert.equal(normalizeUrlLikeValue('bad domain.dev'), '');
+});
+
+test('tracking token slugger stays trimmed and collapses repeated separators', () => {
+  assert.equal(slugifyTrackingToken('  game-of-kton  '), 'game_of_kton');
+  assert.equal(slugifyTrackingToken('___review flow___'), 'review_flow');
+  assert.equal(slugifyTrackingToken('!!!'), 'unknown');
 });
 
 test('low buyer-intent signals identify educational discovery surfaces', () => {

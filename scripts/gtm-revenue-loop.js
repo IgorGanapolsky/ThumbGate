@@ -197,9 +197,26 @@ function normalizeText(value, maxLength = Number.POSITIVE_INFINITY) {
 
 function slugifyTrackingToken(value, fallback = 'unknown') {
   const normalized = normalizeText(value).toLowerCase();
-  const slug = normalized
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
+  let slug = '';
+  let pendingSeparator = false;
+
+  for (const char of normalized) {
+    const code = char.charCodeAt(0);
+    const isDigit = code >= 48 && code <= 57;
+    const isLower = code >= 97 && code <= 122;
+
+    if (isDigit || isLower) {
+      if (pendingSeparator && slug) {
+        slug += '_';
+      }
+      slug += char;
+      pendingSeparator = false;
+      continue;
+    }
+
+    pendingSeparator = slug.length > 0;
+  }
+
   return slug || fallback;
 }
 
@@ -1956,6 +1973,7 @@ module.exports = {
   hasLowBuyerIntentSignals,
   isCliInvocation,
   normalizeUrlLikeValue,
+  slugifyTrackingToken,
   parseArgs,
   prospectTargets,
   applyPipelineStateToTargets,
