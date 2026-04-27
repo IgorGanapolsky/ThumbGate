@@ -185,9 +185,12 @@ function clampTargetCount(value) {
   return Math.max(1, Math.min(parsed, 12));
 }
 
-function normalizeText(value) {
+function normalizeText(value, maxLength = Number.POSITIVE_INFINITY) {
   if (value === undefined || value === null) return '';
-  return String(value).trim();
+  const normalized = String(value).trim();
+  return Number.isFinite(maxLength)
+    ? normalized.slice(0, maxLength)
+    : normalized;
 }
 
 function hasEvidenceLabel(target, label) {
@@ -297,23 +300,37 @@ function quoteShellArg(value) {
 }
 
 function buildTargetPainHypothesis(target = {}) {
-  const sanitizePain = (value) => normalizeText(value, 240)?.replace(/[.!?\s]+$/g, '') || null;
+  const sanitizePain = (value) => {
+    const normalized = normalizeText(value, 240);
+    if (!normalized) return null;
+    let end = normalized.length;
+    while (end > 0) {
+      const char = normalized[end - 1];
+      if (char !== '.' && char !== '!' && char !== '?' && !/\s/.test(char)) {
+        break;
+      }
+      end -= 1;
+    }
+    return normalized.slice(0, end) || null;
+  };
+  const extractSuffix = (entry, prefix) => {
+    const normalized = normalizeText(entry, 400);
+    if (!normalized) return null;
+    const lower = normalized.toLowerCase();
+    return lower.startsWith(prefix)
+      ? sanitizePain(normalized.slice(prefix.length))
+      : null;
+  };
   const evidenceEntries = Array.isArray(target.evidence)
     ? target.evidence
     : Array.isArray(target.evidence?.evidence)
       ? target.evidence.evidence
       : [];
   for (const entry of evidenceEntries) {
-    const normalized = normalizeText(entry, 400);
-    if (!normalized) continue;
-    const workflowMatch = normalized.match(/workflow pain named:\s*(.+)$/i);
-    if (workflowMatch) {
-      return sanitizePain(workflowMatch[1]);
-    }
-    const repeatedFailureMatch = normalized.match(/repeated workflow failure:\s*(.+)$/i);
-    if (repeatedFailureMatch) {
-      return sanitizePain(repeatedFailureMatch[1]);
-    }
+    const workflowPain = extractSuffix(entry, 'workflow pain named:');
+    if (workflowPain) return workflowPain;
+    const repeatedFailure = extractSuffix(entry, 'repeated workflow failure:');
+    if (repeatedFailure) return repeatedFailure;
   }
 
   const outreachAngle = normalizeText(target.outreachAngle || target.evidence?.outreachAngle, 240);
