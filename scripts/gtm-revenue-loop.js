@@ -223,6 +223,49 @@ function dedupeList(values = []) {
   return deduped;
 }
 
+function normalizeUrlLikeValue(value) {
+  const normalized = normalizeText(value, 2000);
+  if (!normalized) return '';
+  const looksLikeDomain = /^[a-z0-9.-]+\.[a-z]{2,}(?:\/.*)?$/i.test(normalized);
+  const candidate = /^https?:\/\//i.test(normalized)
+    ? normalized
+    : (normalized.startsWith('www.') || looksLikeDomain)
+      ? `https://${normalized}`
+      : '';
+  if (!candidate) return '';
+  try {
+    const parsed = new URL(candidate);
+    return /^https?:$/i.test(parsed.protocol) ? parsed.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
+function dedupeContactSurfaces(surfaces = []) {
+  const seen = new Set();
+  const deduped = [];
+
+  for (const surface of surfaces) {
+    const label = normalizeText(surface?.label, 120);
+    const url = normalizeUrlLikeValue(surface?.url);
+    if (!label || !url) continue;
+    const key = `${label.toLowerCase()}::${url.toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push({ label, url });
+  }
+
+  return deduped;
+}
+
+function renderContactSurfaces(surfaces = []) {
+  const normalized = dedupeContactSurfaces(surfaces);
+  if (!normalized.length) {
+    return 'n/a';
+  }
+  return normalized.map((surface) => `${surface.label}: ${surface.url}`).join('; ');
+}
+
 function buildClaimGuardrails() {
   return [...CLAIM_GUARDRAILS];
 }
@@ -602,6 +645,13 @@ async function resolveRevenueLoopSummary(options = {}) {
     return localResult;
   }
 
+  if (
+    localResult.source === 'local' &&
+    /hosted operational summary is disabled/i.test(normalizeText(localResult.fallbackReason))
+  ) {
+    return localResult;
+  }
+
   try {
     const hostedReport = await generateRevenueStatusReportFn(revenueStatusOptions);
     const hostedToday = hostedReport?.hostedAudit?.summaries?.today;
@@ -712,6 +762,49 @@ async function fetchGitHubJson(endpoint, { fetchImpl = globalThis.fetch } = {}) 
   } catch (err) {
     return { ok: false, error: err.message, data: null };
   }
+}
+
+async function enrichGitHubTarget(target, { fetchImpl = globalThis.fetch } = {}) {
+  const username = normalizeText(target?.username);
+  if (!username) {
+    return {
+      ...target,
+      company: normalizeText(target?.company),
+      websiteUrl: normalizeUrlLikeValue(target?.websiteUrl),
+      contactSurfaces: dedupeContactSurfaces(target?.contactSurfaces),
+    };
+  }
+
+  const fallbackContactSurfaces = dedupeContactSurfaces([
+    ...(Array.isArray(target?.contactSurfaces) ? target.contactSurfaces : []),
+    { label: 'GitHub profile', url: target?.contactUrl },
+    { label: 'Repository', url: target?.repoUrl },
+  ]);
+  const response = await fetchGitHubJson(`users/${encodeURIComponent(username)}`, { fetchImpl });
+  if (!response.ok) {
+    return {
+      ...target,
+      company: normalizeText(target?.company),
+      websiteUrl: normalizeUrlLikeValue(target?.websiteUrl),
+      contactSurfaces: fallbackContactSurfaces,
+    };
+  }
+
+  const profile = response.data || {};
+  const websiteUrl = normalizeUrlLikeValue(profile.blog) || normalizeUrlLikeValue(target?.websiteUrl);
+  const contactSurfaces = dedupeContactSurfaces([
+    websiteUrl ? { label: 'Website', url: websiteUrl } : null,
+    { label: 'GitHub profile', url: profile.html_url || target?.contactUrl },
+    { label: 'Repository', url: target?.repoUrl },
+  ]);
+
+  return {
+    ...target,
+    company: normalizeText(profile.company || target?.company),
+    websiteUrl,
+    contactSurfaces,
+    contactUrl: websiteUrl || normalizeText(profile.html_url || target?.contactUrl),
+  };
 }
 
 function dedupeTargets(targets) {
@@ -857,8 +950,14 @@ async function prospectTargets(maxTargets = 6, { fetchImpl = globalThis.fetch } 
       return String(right.updatedAt || '').localeCompare(String(left.updatedAt || ''));
     });
 
+  const topTargets = ranked.slice(0, maxTargets);
+  const enrichedTargets = [];
+  for (const target of topTargets) {
+    enrichedTargets.push(await enrichGitHubTarget(target, { fetchImpl }));
+  }
+
   return {
-    targets: ranked.slice(0, maxTargets),
+    targets: enrichedTargets,
     errors,
   };
 }
@@ -1084,7 +1183,10 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
         channel: normalizeText(target.channel) || normalizeText(target.source) || 'github',
         username: target.username,
         accountName: normalizeText(target.accountName) || normalizeText(target.username) || '',
+        company: normalizeText(target.company),
         contactUrl: normalizeText(target.contactUrl) || '',
+        contactSurfaces: dedupeContactSurfaces(target.contactSurfaces),
+        websiteUrl: normalizeUrlLikeValue(target.websiteUrl),
         repoName: target.repoName,
         repoUrl: target.repoUrl,
         description: target.description,
@@ -1268,6 +1370,8 @@ function renderRevenueTargetMarkdown(target) {
     `- Pipeline last updated: ${target.pipelineUpdatedAt || 'n/a'}`,
     `- Offer: ${target.offer}`,
     `- Contact: ${target.contactUrl || 'n/a'}`,
+    `- Contact surfaces: ${renderContactSurfaces(target.contactSurfaces)}`,
+    `- Company: ${target.company || 'n/a'}`,
     `- Repo: ${target.repoUrl || 'n/a'}`,
     `- Repo last updated: ${target.updatedAt || 'n/a'}`,
     `- Evidence score: ${target.evidenceScore}`,
@@ -1358,6 +1462,8 @@ function renderWarmTargetOutreachMarkdown(target, index) {
     `## ${index + 1}. ${enrichedTarget.username} (${enrichedTarget.accountName || enrichedTarget.source || 'warm lead'})`,
     `- Source: ${enrichedTarget.source || 'github'} / ${enrichedTarget.channel || enrichedTarget.source || 'github'}`,
     `- Contact: ${enrichedTarget.contactUrl || 'n/a'}`,
+    `- Contact surfaces: ${renderContactSurfaces(enrichedTarget.contactSurfaces)}`,
+    `- Company: ${enrichedTarget.company || 'n/a'}`,
     `- Evidence score: ${enrichedTarget.evidenceScore}`,
     `- Evidence: ${enrichedTarget.evidence.length ? enrichedTarget.evidence.join(', ') : 'n/a'}`,
     `- Evidence sources: ${renderEvidenceSources(enrichedTarget.evidenceSources)}`,
@@ -1414,6 +1520,7 @@ function renderOperatorPriorityTargetMarkdown(target, index) {
     ? `@${enrichedTarget.username} — ${enrichedTarget.repoName}`
     : `@${enrichedTarget.username} — ${enrichedTarget.accountName || enrichedTarget.source || 'discovery lead'}`;
   const contactSurface = enrichedTarget.contactUrl || enrichedTarget.repoUrl || 'n/a';
+  const contactSurfaces = renderContactSurfaces(enrichedTarget.contactSurfaces);
   const salesCommands = enrichedTarget.salesCommands;
   return [
     `## ${index + 1}. ${label}`,
@@ -1428,6 +1535,8 @@ function renderOperatorPriorityTargetMarkdown(target, index) {
     `- Log after call booked: \`${salesCommands.markCallBooked || 'n/a'}\``,
     `- Log after sprint intake: \`${salesCommands.markSprintIntake || 'n/a'}\``,
     `- Contact surface: ${contactSurface}`,
+    `- Contact surfaces: ${contactSurfaces}`,
+    `- Company: ${enrichedTarget.company || 'n/a'}`,
     `- Evidence score: ${enrichedTarget.evidenceScore}`,
     `- Evidence: ${enrichedTarget.evidence.length ? enrichedTarget.evidence.join(', ') : 'n/a'}`,
     `- Motion: ${enrichedTarget.motionLabel}`,
@@ -1602,7 +1711,9 @@ function renderRevenueLoopCsv(report) {
       'channel',
       'username',
       'accountName',
+      'company',
       'contactUrl',
+      'contactSurfaces',
       'repoName',
       'repoUrl',
       'updatedAt',
@@ -1627,7 +1738,9 @@ function renderRevenueLoopCsv(report) {
       target.channel || target.source || 'github',
       target.username,
       target.accountName || '',
+      target.company || '',
       target.contactUrl || '',
+      renderContactSurfaces(target.contactSurfaces),
       target.repoName,
       target.repoUrl,
       target.updatedAt,
@@ -1809,4 +1922,6 @@ module.exports = {
   summarizeCommercialSnapshot,
   writeRevenueLoopOutputs,
   buildMarketplaceCopy,
+  enrichGitHubTarget,
+  renderContactSurfaces,
 };

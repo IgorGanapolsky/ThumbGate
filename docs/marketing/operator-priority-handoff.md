@@ -1,16 +1,16 @@
 # Revenue Operator Priority Handoff
 
-Updated: 2026-04-27T13:58:18.991Z
+Updated: 2026-04-27T14:49:34.513Z
 
 This is the ranked send order for the current zero-to-one revenue loop. Work warm discovery targets first, then expand into cold GitHub targets with the same proof discipline.
 
 This handoff sits on top of `gtm-revenue-loop.md`, `gtm-target-queue.csv`, and `team-outreach-messages.md` so an operator can decide who to contact next without re-ranking the queue manually.
 
 ## Current Snapshot
-- Revenue state: post-first-dollar
-- Headline: Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
-- Paid orders: 2
-- Checkout starts: 1
+- Revenue state: cold-start
+- Headline: No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.
+- Paid orders: 0
+- Checkout starts: 0
 - Active follow-ups: 0
 - Warm targets ready now: 4
 - Cold GitHub targets ready next: 6
@@ -40,6 +40,8 @@ npm run sales:pipeline -- import --source docs/marketing/gtm-revenue-loop.json
 - Log after call booked: `npm run sales:pipeline -- advance --lead 'reddit_deep_ad1959_r_cursor' --channel 'reddit_dm' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for rollback risk.'`
 - Log after sprint intake: `npm run sales:pipeline -- advance --lead 'reddit_deep_ad1959_r_cursor' --channel 'reddit_dm' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for rollback risk.'`
 - Contact surface: https://www.reddit.com/user/Deep_Ad1959/
+- Contact surfaces: n/a
+- Company: n/a
 - Evidence score: 10
 - Evidence: warm inbound engagement, workflow pain named: rollback risk, already in DMs
 - Motion: Workflow Hardening Sprint
@@ -65,6 +67,8 @@ Pain-confirmed follow-up:
 - Log after call booked: `npm run sales:pipeline -- advance --lead 'reddit_game_of_kton_r_cursor' --channel 'reddit_dm' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for stale context and conflicting facts.'`
 - Log after sprint intake: `npm run sales:pipeline -- advance --lead 'reddit_game_of_kton_r_cursor' --channel 'reddit_dm' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for stale context and conflicting facts.'`
 - Contact surface: https://www.reddit.com/user/game-of-kton/
+- Contact surfaces: n/a
+- Company: n/a
 - Evidence score: 9
 - Evidence: warm inbound engagement, built serious memory systems, workflow pain named: stale context and conflicting facts
 - Motion: Workflow Hardening Sprint
@@ -90,6 +94,8 @@ Pain-confirmed follow-up:
 - Log after call booked: `npm run sales:pipeline -- advance --lead 'reddit_leogodin217_r_claudecode' --channel 'reddit_dm' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for review boundaries and context risk.'`
 - Log after sprint intake: `npm run sales:pipeline -- advance --lead 'reddit_leogodin217_r_claudecode' --channel 'reddit_dm' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for review boundaries and context risk.'`
 - Contact surface: https://www.reddit.com/user/leogodin217/
+- Contact surfaces: n/a
+- Company: n/a
 - Evidence score: 9
 - Evidence: warm inbound engagement, mature multi-step workflow described, workflow pain named: review boundaries and context risk
 - Motion: Workflow Hardening Sprint
@@ -115,6 +121,8 @@ Pain-confirmed follow-up:
 - Log after call booked: `npm run sales:pipeline -- advance --lead 'reddit_enthu_cutlet_1337_r_claudecode' --channel 'reddit_dm' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for brittle guardrails.'`
 - Log after sprint intake: `npm run sales:pipeline -- advance --lead 'reddit_enthu_cutlet_1337_r_claudecode' --channel 'reddit_dm' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for brittle guardrails.'`
 - Contact surface: https://www.reddit.com/user/Enthu-Cutlet-1337/
+- Contact surfaces: n/a
+- Company: n/a
 - Evidence score: 8
 - Evidence: warm inbound engagement, responded to adaptive-gate positioning, workflow pain named: brittle guardrails
 - Motion: Workflow Hardening Sprint
@@ -129,82 +137,7 @@ Pain-confirmed follow-up:
 > If your workflow really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=reddit_dm&utm_campaign=reddit_warm_workflow_sprint&utm_content=enthu_cutlet_1337&campaign_variant=revenue_loop&offer_code=REDDIT-SPRINT&cta_id=reddit_enthu_cutlet_1337_workflow_sprint&cta_placement=warm_outreach&surface=gtm_revenue_loop&lead_id=reddit_enthu_cutlet_1337_r_claudecode&landing_path=%2F#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ## Seed Next: Cold GitHub
-## 5. @Adqui9608 — ai-code-review-agent
-- Temperature: cold
-- Source: github / github
-- Pipeline stage: targeted
-- Pipeline lead id: github_adqui9608_ai_code_review_agent
-- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
-- Pipeline last updated: n/a
-- Log after send: `npm run sales:pipeline -- advance --lead 'github_adqui9608_ai_code_review_agent' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
-- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_adqui9608_ai_code_review_agent' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
-- Log after call booked: `npm run sales:pipeline -- advance --lead 'github_adqui9608_ai_code_review_agent' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
-- Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_adqui9608_ai_code_review_agent' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
-- Contact surface: https://github.com/Adqui9608
-- Evidence score: 15
-- Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, updated in the last 7 days
-- Motion: Workflow Hardening Sprint
-- Why now: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
-- Proof rule: Use proof pack only after the buyer confirms pain.
-- CTA: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=ai_code_review_agent&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_ai_code_review_agent_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_adqui9608_ai_code_review_agent&landing_path=%2F#workflow-sprint-intake
-
-First-touch draft:
-> Hey @Adqui9608, saw you're shipping `ai-code-review-agent`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=ai_code_review_agent&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_ai_code_review_agent_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_adqui9608_ai_code_review_agent&landing_path=%2F#workflow-sprint-intake
-
-Pain-confirmed follow-up:
-> If `ai-code-review-agent` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=ai_code_review_agent&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_ai_code_review_agent_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_adqui9608_ai_code_review_agent&landing_path=%2F#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
-
-## 6. @DGouron — review-flow
-- Temperature: cold
-- Source: github / github
-- Pipeline stage: targeted
-- Pipeline lead id: github_dgouron_review_flow
-- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
-- Pipeline last updated: n/a
-- Log after send: `npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
-- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
-- Log after call booked: `npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
-- Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
-- Contact surface: https://github.com/DGouron
-- Evidence score: 14
-- Evidence: workflow control surface, business-system integration, agent infrastructure, 36 GitHub stars, updated in the last 7 days
-- Motion: Workflow Hardening Sprint
-- Why now: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
-- Proof rule: Use proof pack only after the buyer confirms pain.
-- CTA: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=review_flow&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_review_flow_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_dgouron_review_flow&landing_path=%2F#workflow-sprint-intake
-
-First-touch draft:
-> Hey @DGouron, saw you're shipping `review-flow`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=review_flow&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_review_flow_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_dgouron_review_flow&landing_path=%2F#workflow-sprint-intake
-
-Pain-confirmed follow-up:
-> If `review-flow` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=review_flow&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_review_flow_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_dgouron_review_flow&landing_path=%2F#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
-
-## 7. @nihannihu — Omni-SRE
-- Temperature: cold
-- Source: github / github
-- Pipeline stage: targeted
-- Pipeline lead id: github_nihannihu_omni_sre
-- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
-- Pipeline last updated: n/a
-- Log after send: `npm run sales:pipeline -- advance --lead 'github_nihannihu_omni_sre' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
-- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_nihannihu_omni_sre' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
-- Log after call booked: `npm run sales:pipeline -- advance --lead 'github_nihannihu_omni_sre' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
-- Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_nihannihu_omni_sre' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
-- Contact surface: https://github.com/nihannihu
-- Evidence score: 14
-- Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, updated in the last 30 days
-- Motion: Workflow Hardening Sprint
-- Why now: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
-- Proof rule: Use proof pack only after the buyer confirms pain.
-- CTA: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=omni_sre&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_omni_sre_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_nihannihu_omni_sre&landing_path=%2F#workflow-sprint-intake
-
-First-touch draft:
-> Hey @nihannihu, saw you're shipping `Omni-SRE`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=omni_sre&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_omni_sre_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_nihannihu_omni_sre&landing_path=%2F#workflow-sprint-intake
-
-Pain-confirmed follow-up:
-> If `Omni-SRE` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=omni_sre&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_omni_sre_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_nihannihu_omni_sre&landing_path=%2F#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
-
-## 8. @manki-review — manki
+## 5. @manki-review — manki
 - Temperature: cold
 - Source: github / github
 - Pipeline stage: targeted
@@ -215,7 +148,9 @@ Pain-confirmed follow-up:
 - Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_manki_review_manki' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
 - Log after call booked: `npm run sales:pipeline -- advance --lead 'github_manki_review_manki' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
 - Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_manki_review_manki' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
-- Contact surface: https://github.com/manki-review
+- Contact surface: https://manki.dustinface.me/
+- Contact surfaces: Website: https://manki.dustinface.me/; GitHub profile: https://github.com/manki-review; Repository: https://github.com/manki-review/manki
+- Company: n/a
 - Evidence score: 13
 - Evidence: workflow control surface, business-system integration, agent infrastructure, 5 GitHub stars, updated in the last 7 days
 - Motion: Workflow Hardening Sprint
@@ -229,52 +164,137 @@ First-touch draft:
 Pain-confirmed follow-up:
 > If `manki` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=manki&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_manki_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_manki_review_manki&landing_path=%2F#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
-## 9. @freema — mcp-jira-stdio
+## 6. @mj9733246-cloud — code-review-expert
 - Temperature: cold
 - Source: github / github
 - Pipeline stage: targeted
-- Pipeline lead id: github_freema_mcp_jira_stdio
+- Pipeline lead id: github_mj9733246_cloud_code_review_expert
 - Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
 - Pipeline last updated: n/a
-- Log after send: `npm run sales:pipeline -- advance --lead 'github_freema_mcp_jira_stdio' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
-- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_freema_mcp_jira_stdio' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
-- Log after call booked: `npm run sales:pipeline -- advance --lead 'github_freema_mcp_jira_stdio' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
-- Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_freema_mcp_jira_stdio' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
-- Contact surface: https://github.com/freema
-- Evidence score: 13
-- Evidence: workflow control surface, business-system integration, agent infrastructure, 11 GitHub stars, updated in the last 7 days
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_mj9733246_cloud_code_review_expert' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on rollout proof for one production workflow that cannot afford repeated agent mistakes.'`
+- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_mj9733246_cloud_code_review_expert' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around rollout proof for one production workflow that cannot afford repeated agent mistakes.'`
+- Log after call booked: `npm run sales:pipeline -- advance --lead 'github_mj9733246_cloud_code_review_expert' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for rollout proof for one production workflow that cannot afford repeated agent mistakes.'`
+- Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_mj9733246_cloud_code_review_expert' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for rollout proof for one production workflow that cannot afford repeated agent mistakes.'`
+- Contact surface: https://github.com/mj9733246-cloud
+- Contact surfaces: GitHub profile: https://github.com/mj9733246-cloud; Repository: https://github.com/mj9733246-cloud/code-review-expert
+- Company: n/a
+- Evidence score: 10
+- Evidence: workflow control surface, production or platform workflow, updated in the last 7 days
+- Motion: Workflow Hardening Sprint
+- Why now: Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=code_review_expert&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_code_review_expert_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_mj9733246_cloud_code_review_expert&landing_path=%2F#workflow-sprint-intake
+
+First-touch draft:
+> Hey @mj9733246-cloud, saw you're shipping `code-review-expert`. If one deploy, release, or incident workflow keeps needing extra guardrails, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=code_review_expert&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_code_review_expert_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_mj9733246_cloud_code_review_expert&landing_path=%2F#workflow-sprint-intake
+
+Pain-confirmed follow-up:
+> If `code-review-expert` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=code_review_expert&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_code_review_expert_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_mj9733246_cloud_code_review_expert&landing_path=%2F#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+## 7. @alimeramiovens — claude-software-factory
+- Temperature: cold
+- Source: github / github
+- Pipeline stage: targeted
+- Pipeline lead id: github_alimeramiovens_claude_software_factory
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_alimeramiovens_claude_software_factory' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_alimeramiovens_claude_software_factory' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after call booked: `npm run sales:pipeline -- advance --lead 'github_alimeramiovens_claude_software_factory' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_alimeramiovens_claude_software_factory' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Contact surface: https://github.com/alimeramiovens
+- Contact surfaces: GitHub profile: https://github.com/alimeramiovens; Repository: https://github.com/alimeramiovens/claude-software-factory
+- Company: n/a
+- Evidence score: 9
+- Evidence: workflow control surface, business-system integration, updated in the last 7 days
 - Motion: Workflow Hardening Sprint
 - Why now: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
 - Proof rule: Use proof pack only after the buyer confirms pain.
-- CTA: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=mcp_jira_stdio&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_mcp_jira_stdio_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_freema_mcp_jira_stdio&landing_path=%2F#workflow-sprint-intake
+- CTA: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=claude_software_factory&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_claude_software_factory_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_alimeramiovens_claude_software_factory&landing_path=%2F#workflow-sprint-intake
 
 First-touch draft:
-> Hey @freema, saw you're shipping `mcp-jira-stdio`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=mcp_jira_stdio&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_mcp_jira_stdio_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_freema_mcp_jira_stdio&landing_path=%2F#workflow-sprint-intake
+> Hey @alimeramiovens, saw you're shipping `claude-software-factory`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=claude_software_factory&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_claude_software_factory_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_alimeramiovens_claude_software_factory&landing_path=%2F#workflow-sprint-intake
 
 Pain-confirmed follow-up:
-> If `mcp-jira-stdio` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=mcp_jira_stdio&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_mcp_jira_stdio_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_freema_mcp_jira_stdio&landing_path=%2F#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+> If `claude-software-factory` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=claude_software_factory&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_claude_software_factory_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_alimeramiovens_claude_software_factory&landing_path=%2F#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
-## 10. @salacoste — mcp-n8n-workflow-builder
+## 8. @Javith-tech — pr-review-ai
 - Temperature: cold
 - Source: github / github
 - Pipeline stage: targeted
-- Pipeline lead id: github_salacoste_mcp_n8n_workflow_builder
+- Pipeline lead id: github_javith_tech_pr_review_ai
 - Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
 - Pipeline last updated: n/a
-- Log after send: `npm run sales:pipeline -- advance --lead 'github_salacoste_mcp_n8n_workflow_builder' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on context-drift hardening for one workflow before proposing any broader agent platform story.'`
-- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_salacoste_mcp_n8n_workflow_builder' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around context-drift hardening for one workflow before proposing any broader agent platform story.'`
-- Log after call booked: `npm run sales:pipeline -- advance --lead 'github_salacoste_mcp_n8n_workflow_builder' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for context-drift hardening for one workflow before proposing any broader agent platform story.'`
-- Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_salacoste_mcp_n8n_workflow_builder' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for context-drift hardening for one workflow before proposing any broader agent platform story.'`
-- Contact surface: https://github.com/salacoste
-- Evidence score: 12
-- Evidence: workflow control surface, agent infrastructure, 221 GitHub stars, updated in the last 7 days
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_javith_tech_pr_review_ai' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_javith_tech_pr_review_ai' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after call booked: `npm run sales:pipeline -- advance --lead 'github_javith_tech_pr_review_ai' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_javith_tech_pr_review_ai' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Contact surface: https://github.com/Javith-tech
+- Contact surfaces: GitHub profile: https://github.com/Javith-tech; Repository: https://github.com/Javith-tech/pr-review-ai
+- Company: n/a
+- Evidence score: 9
+- Evidence: workflow control surface, business-system integration, updated in the last 7 days
 - Motion: Workflow Hardening Sprint
-- Why now: Lead with context-drift hardening for one workflow before proposing any broader agent platform story.
+- Why now: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
 - Proof rule: Use proof pack only after the buyer confirms pain.
-- CTA: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=mcp_n8n_workflow_builder&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_mcp_n8n_workflow_builder_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_salacoste_mcp_n8n_workflow_builder&landing_path=%2F#workflow-sprint-intake
+- CTA: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=pr_review_ai&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_pr_review_ai_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_javith_tech_pr_review_ai&landing_path=%2F#workflow-sprint-intake
 
 First-touch draft:
-> Hey @salacoste, saw you're shipping `mcp-n8n-workflow-builder`. If one context, memory, or tool-use failure keeps repeating, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=mcp_n8n_workflow_builder&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_mcp_n8n_workflow_builder_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_salacoste_mcp_n8n_workflow_builder&landing_path=%2F#workflow-sprint-intake
+> Hey @Javith-tech, saw you're shipping `pr-review-ai`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=pr_review_ai&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_pr_review_ai_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_javith_tech_pr_review_ai&landing_path=%2F#workflow-sprint-intake
 
 Pain-confirmed follow-up:
-> If `mcp-n8n-workflow-builder` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=mcp_n8n_workflow_builder&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_mcp_n8n_workflow_builder_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_salacoste_mcp_n8n_workflow_builder&landing_path=%2F#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+> If `pr-review-ai` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=pr_review_ai&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_pr_review_ai_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_javith_tech_pr_review_ai&landing_path=%2F#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+## 9. @Jodre11 — claude-code-plugins
+- Temperature: cold
+- Source: github / github
+- Pipeline stage: targeted
+- Pipeline lead id: github_jodre11_claude_code_plugins
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_jodre11_claude_code_plugins' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on Pitch one repeated workflow failure, then offer proof-backed hardening instead of a generic tool trial.'`
+- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_jodre11_claude_code_plugins' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around Pitch one repeated workflow failure, then offer proof-backed hardening instead of a generic tool trial.'`
+- Log after call booked: `npm run sales:pipeline -- advance --lead 'github_jodre11_claude_code_plugins' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for Pitch one repeated workflow failure, then offer proof-backed hardening instead of a generic tool trial.'`
+- Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_jodre11_claude_code_plugins' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for Pitch one repeated workflow failure, then offer proof-backed hardening instead of a generic tool trial.'`
+- Contact surface: https://www.haddrell.co.uk/
+- Contact surfaces: Website: https://www.haddrell.co.uk/; GitHub profile: https://github.com/Jodre11; Repository: https://github.com/Jodre11/claude-code-plugins
+- Company: n/a
+- Evidence score: 8
+- Evidence: workflow control surface, agent infrastructure, updated in the last 7 days
+- Motion: Pro at $19/mo or $149/yr
+- Why now: Target looks like a self-serve tooling surface, so Pro is the cleaner CTA unless a concrete workflow pain is confirmed.
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=github&utm_campaign=github_cold_pro_follow_on&utm_content=claude_code_plugins&campaign_variant=revenue_loop&offer_code=GITHUB-PRO&cta_id=github_claude_code_plugins_pro&cta_placement=cold_outreach&plan_id=pro&surface=gtm_revenue_loop&lead_id=github_jodre11_claude_code_plugins&landing_path=%2Fcheckout%2Fpro
+
+First-touch draft:
+> Hey @Jodre11, saw you're building around `claude-code-plugins`. If one repeated agent mistake or brittle handoff is slowing adoption, I can harden that workflow first. If you only want the self-serve tool path after that, I can point you there.
+
+Pain-confirmed follow-up:
+> If you want the self-serve path for `claude-code-plugins`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=github&utm_campaign=github_cold_pro_follow_on&utm_content=claude_code_plugins&campaign_variant=revenue_loop&offer_code=GITHUB-PRO&cta_id=github_claude_code_plugins_pro&cta_placement=cold_outreach&plan_id=pro&surface=gtm_revenue_loop&lead_id=github_jodre11_claude_code_plugins&landing_path=%2Fcheckout%2Fpro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+## 10. @jack-009 — claude-review-loop
+- Temperature: cold
+- Source: github / github
+- Pipeline stage: targeted
+- Pipeline lead id: github_jack_009_claude_review_loop
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_jack_009_claude_review_loop' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on Pitch one repeated workflow failure, then offer proof-backed hardening instead of a generic tool trial.'`
+- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_jack_009_claude_review_loop' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around Pitch one repeated workflow failure, then offer proof-backed hardening instead of a generic tool trial.'`
+- Log after call booked: `npm run sales:pipeline -- advance --lead 'github_jack_009_claude_review_loop' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for Pitch one repeated workflow failure, then offer proof-backed hardening instead of a generic tool trial.'`
+- Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_jack_009_claude_review_loop' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for Pitch one repeated workflow failure, then offer proof-backed hardening instead of a generic tool trial.'`
+- Contact surface: https://github.com/jack-009
+- Contact surfaces: GitHub profile: https://github.com/jack-009; Repository: https://github.com/jack-009/claude-review-loop
+- Company: n/a
+- Evidence score: 6
+- Evidence: workflow control surface, updated in the last 7 days
+- Motion: Workflow Hardening Sprint
+- Why now: Pitch one repeated workflow failure, then offer proof-backed hardening instead of a generic tool trial.
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=claude_review_loop&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_claude_review_loop_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_jack_009_claude_review_loop&landing_path=%2F#workflow-sprint-intake
+
+First-touch draft:
+> Hey @jack-009, saw you're shipping `claude-review-loop`. If one workflow keeps repeating the same mistake, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=claude_review_loop&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_claude_review_loop_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_jack_009_claude_review_loop&landing_path=%2F#workflow-sprint-intake
+
+Pain-confirmed follow-up:
+> If `claude-review-loop` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=github&utm_campaign=github_cold_workflow_sprint&utm_content=claude_review_loop&campaign_variant=revenue_loop&offer_code=GITHUB-SPRINT&cta_id=github_claude_review_loop_workflow_sprint&cta_placement=cold_outreach&surface=gtm_revenue_loop&lead_id=github_jack_009_claude_review_loop&landing_path=%2F#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
