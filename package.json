@@ -217,6 +217,7 @@
   "scripts": {
     "postinstall": "node bin/postinstall.js || true",
     "start": "node src/api/server.js",
+    "numbers:generate": "node scripts/generate-numbers-page.js",
     "changeset": "changeset",
     "changeset:version": "changeset version && node scripts/sync-version.js",
     "changeset:status": "changeset status",

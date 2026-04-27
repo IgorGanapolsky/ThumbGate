@@ -176,10 +176,10 @@ function renderNumbersPage(input) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="ThumbGate">
 <meta name="author" content="Igor Ganapolsky">
-<title>ThumbGate — The Numbers | Live First-Party Data</title>
-<meta name="description" content="ThumbGate's live operational numbers: active pre-action checks, AI agent actions blocked, estimated LLM tokens and dollars saved, and the Bayes error rate of our intervention scorer. First-party data, regenerated on every release.">
+<title>ThumbGate — The Numbers | First-Party Data Snapshot</title>
+<meta name="description" content="ThumbGate's generated first-party operational snapshot: active pre-action checks, AI agent actions blocked, estimated LLM tokens and dollars saved, and the Bayes error rate of the intervention scorer.">
 <meta property="og:title" content="ThumbGate — The Numbers">
-<meta property="og:description" content="Live first-party operational metrics: gates, blocks, token savings, and scorer calibration. Regenerated on every release.">
+<meta property="og:description" content="Generated first-party operational metrics: gates, blocks, token savings, and scorer calibration.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://thumbgate-production.up.railway.app/numbers">
 <meta name="twitter:card" content="summary_large_image">
@@ -278,7 +278,7 @@ ${JSON.stringify(datasetLd, null, 2)}
 
 <main class="container">
   <h1>The Numbers</h1>
-  <p class="subtitle">Live first-party operational data from the ThumbGate runtime. No surveys, no projections — counts pulled from the same local scripts that power the CLI and dashboard.</p>
+  <p class="subtitle">Generated first-party operational data from the ThumbGate runtime. No surveys or projections — this page is a release-time snapshot produced by the same local scripts that power the CLI and dashboard.</p>
   <div class="freshness">Updated: ${escapeHtml(nowDate)} · Version ${escapeHtml(version)}</div>
 
   <h2>Gate enforcement</h2>

@@ -1065,20 +1065,20 @@ function buildDemoGeneratedViewSpec(viewName) {
   }
   if (viewName === 'workflow-rollout') {
     base.components = [
-      { type: 'hero', title: 'Generated Workflow Rollout View', description: 'Turn funnel, attribution, and predictive data into a constrained operator dashboard for team rollout.' },
+      { type: 'hero', title: 'Generated Workflow Rollout View', description: 'Turn funnel, attribution, and predictive data into a constrained operator dashboard for team rollout. Demo mode shows sample structure only and waits for hosted evidence before showing paid signals.' },
       { type: 'stat_grid', title: 'Rollout pipeline', items: [
-        { label: 'Workflow sprint leads', value: '4', note: 'intake-first hosted funnel' },
-        { label: 'Qualified leads', value: '2', note: 'ready for proof-backed rollout' },
-        { label: 'Booked revenue', value: '$128.00', note: '1 paid order' },
-        { label: 'Team propensity', value: 'medium', note: 'score 0.54' }
+        { label: 'Workflow sprint leads', value: 'Sample', note: 'connect hosted funnel for live intake counts' },
+        { label: 'Qualified leads', value: 'Sample', note: 'proof-backed rollout data appears after intake review' },
+        { label: 'Booked revenue', value: 'Awaiting evidence', note: 'demo mode omits paid numbers until hosted analytics load' },
+        { label: 'Team propensity', value: 'Sample', note: 'score loads from hosted predictive analytics' }
       ] },
       { type: 'list', title: 'Top acquisition sources', emptyMessage: 'No sources.', items: [
-        { title: 'producthunt', subtitle: 'captured acquisition source', badge: '3 leads' },
-        { title: 'website', subtitle: 'captured acquisition source', badge: '1 lead' }
+        { title: 'producthunt', subtitle: 'example acquisition source', badge: 'sample only' },
+        { title: 'website', subtitle: 'example acquisition source', badge: 'sample only' }
       ] },
       { type: 'list', title: 'Next rollout moves', emptyMessage: 'No rollout moves.', items: [
-        { title: 'Double down on reach_vb', subtitle: 'Best creator opportunity from predictive revenue scoring.', badge: '+$31.00' },
-        { title: 'Qualify pending sprint leads', subtitle: 'More leads than qualified workflows today.', badge: '4 total' }
+        { title: 'Load hosted conversion signals', subtitle: 'Use authenticated funnel and revenue data before prioritizing paid rollout moves.', badge: 'evidence gate' },
+        { title: 'Qualify pending sprint leads', subtitle: 'Promote real workflow owners only after intake and proof review exist.', badge: 'proof-first' }
       ] }
     ];
     return base;
@@ -1086,20 +1086,20 @@ function buildDemoGeneratedViewSpec(viewName) {
   base.components = [
     { type: 'hero', title: 'Generated Team Reliability Review', description: 'A constrained hosted view assembled from approved dashboard components.' },
     { type: 'stat_grid', title: 'Team snapshot', items: [
-      { label: 'Active agents', value: '5', note: 'of 8 registered agents' },
-      { label: 'Org adherence', value: '92.4%', note: 'rolling 24h view' },
-      { label: 'Team propensity', value: 'medium', note: 'score 0.54' },
-      { label: 'Forecast revenue', value: '$128.00', note: 'opportunity $49.00' }
+      { label: 'Active agents', value: 'Sample', note: 'connect your workspace for live counts' },
+      { label: 'Org adherence', value: 'Sample', note: 'rolling view loads from your own telemetry' },
+      { label: 'Team propensity', value: 'Sample', note: 'score loads from hosted predictive analytics' },
+      { label: 'Forecast revenue', value: 'Awaiting evidence', note: 'demo mode never invents forecast dollars' }
     ] },
     { type: 'list', title: 'Highest-risk agents', emptyMessage: 'No risky agents.', items: [
-      { title: 'claude-reviewer', subtitle: 'checkout-flow · fix/stripe-timeout', badge: '67.5% adherence' },
-      { title: 'codex-second-pass', subtitle: 'dashboard · feat/team-rollout', badge: '74.2% adherence' }
+      { title: 'claude-reviewer', subtitle: 'example workflow · sample branch', badge: 'sample only' },
+      { title: 'codex-second-pass', subtitle: 'example workflow · sample branch', badge: 'sample only' }
     ] },
     { type: 'list', title: 'Predictive watchlist', emptyMessage: 'No anomalies.', items: [
       { title: 'pricing_resistance', subtitle: 'Price sensitivity dominates current loss reasons.', badge: 'warning' },
       { title: 'creator_underperformance', subtitle: 'Creator reach_vb is generating intent without revenue conversion.', badge: 'warning' }
     ] },
-    { type: 'callout', title: 'Commercial signal', body: 'Pro propensity is high and Team propensity is medium. Workflow sprint leads currently total 4.', tone: 'warning' }
+    { type: 'callout', title: 'Commercial signal', body: 'Demo mode keeps commercial numbers gated until hosted analytics and proof-backed workflow data are available.', tone: 'warning' }
   ];
   return base;
 }
@@ -1499,8 +1499,8 @@ function loadDemo() {
   var teaserHtml = demoData.map(renderResult).join('');
   var upgradeBanner = '<div style="margin-bottom:12px;padding:12px 16px;background:linear-gradient(90deg,rgba(184,92,45,0.14),rgba(184,92,45,0.06));border:1px solid rgba(184,92,45,0.35);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">' +
     '<div style="color:#ddd;font-size:14px;">' +
-    '<span style="color:#ffb98a;font-weight:700;">Live demo data below.</span> ' +
-    'Point ThumbGate at your own feedback to see <em>your</em> gates, lessons, and team signals — no signup required.' +
+    '<span style="color:#ffb98a;font-weight:700;">Sample demo data below.</span> ' +
+    'Point ThumbGate at your own feedback to see <em>your</em> gates, lessons, and team signals. Paid and revenue fields stay hidden until hosted evidence loads.' +
     '</div>' +
     '<a href="/go/pro?utm_source=dashboard_live" rel="noopener" ' +
     'style="flex:none;background:#b85c2d;color:#fff;padding:8px 18px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;white-space:nowrap;">Go Pro — $19/mo</a>' +

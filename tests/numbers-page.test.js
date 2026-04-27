@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
+const pkg = require('../package.json');
 
 const {
   generate,
@@ -208,6 +209,18 @@ describe('public/numbers.html generated artifact', () => {
       /"dateModified":\s*"\d{4}-\d{2}-\d{2}"/,
       'expected JSON-LD dateModified ISO date',
     );
+  });
+
+  it('stays synced to the current package version and snapshot wording', () => {
+    const contents = fs.readFileSync(numbersPath, 'utf8');
+
+    assert.match(
+      contents,
+      new RegExp(`"softwareVersion": "${pkg.version.replaceAll('.', '\\.')}"`),
+      'expected public/numbers.html to match package.json version',
+    );
+    assert.match(contents, /First-Party Data Snapshot/);
+    assert.doesNotMatch(contents, /Live First-Party Data/);
   });
 });
 
