@@ -16,6 +16,7 @@ const EXPECTED_ARTIFACTS = [
   'gtm-target-queue.jsonl',
   'team-outreach-messages.md',
   'operator-priority-handoff.md',
+  'operator-priority-handoff.json',
   'claude-workflow-hardening-pack.md',
   'claude-workflow-hardening-pack.json',
   'cursor-marketplace-revenue-pack.md',
