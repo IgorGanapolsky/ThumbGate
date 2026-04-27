@@ -1,7 +1,7 @@
 # GSD Revenue Loop
 
 Status: post-first-dollar
-Updated: 2026-04-27T10:43:39.459Z
+Updated: 2026-04-27T12:10:34.193Z
 
 This report is an operator artifact for landing the first 10 paying customers. It is not proof of sent messages or booked revenue by itself.
 Outbound rule: do not treat posts as sales. A lead only moves when it is tracked as contacted, replied, call booked, checkout/sprint, or paid.
@@ -32,7 +32,7 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 
 ## GSD Directive
 - Objective: Scale the first-10-customers loop with direct workflow hardening and self-serve follow-up.
-- Headline: Revenue is proven. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
+- Headline: Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
 - Primary motion: sprint
 - Secondary motion: pro
 
@@ -222,7 +222,7 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Offer: workflow_hardening_sprint
 - Contact: https://github.com/manki-review
 - Repo: https://github.com/manki-review/manki
-- Repo last updated: 2026-04-27T00:31:43Z
+- Repo last updated: 2026-04-27T11:07:15Z
 - Evidence score: 13
 - Evidence: workflow control surface, business-system integration, agent infrastructure, 5 GitHub stars, updated in the last 7 days
 - Evidence sources: Target signal: https://github.com/manki-review/manki; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
