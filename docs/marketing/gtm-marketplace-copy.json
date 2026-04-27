@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-04-27T12:59:31.009Z",
-  "state": "cold-start",
+  "generatedAt": "2026-04-27T17:22:01.540Z",
+  "state": "post-first-dollar",
   "headline": "Harden one AI-agent workflow before you roll it out.",
-  "shortDescription": "No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain.",
-  "longDescription": "ThumbGate is a reliability gateway for AI coding workflows. It captures repeated failures, regenerates pre-action gates, and keeps approval boundaries, rollback safety, and proof attached to the workflow before the next risky tool call. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Primary motion: Workflow Hardening Sprint. Secondary motion: Pro at $19/mo or $149/yr after the buyer asks for the self-serve path.",
+  "shortDescription": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain.",
+  "longDescription": "ThumbGate is a reliability gateway for AI coding workflows. It captures repeated failures, regenerates pre-action gates, and keeps approval boundaries, rollback safety, and proof attached to the workflow before the next risky tool call. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Primary motion: Workflow Hardening Sprint. Secondary motion: Pro at $19/mo or $149/yr after the buyer asks for the self-serve path.",
   "proofPolicy": "Do not lead with proof links. Use Commercial Truth and Verification Evidence only after the buyer confirms pain.",
   "recommendedCtas": [
     {
@@ -24,7 +24,7 @@
   ],
   "listingBullets": [
     "Turn repeated AI-agent mistakes into enforceable pre-action gates.",
-    "Lead with one repeated workflow failure, then show how ThumbGate turns it into an enforceable pre-action gate.",
+    "Lead with approval boundaries, rollback safety, and proof for one workflow.",
     "Route install-intent buyers through the proof-backed setup guide before direct checkout.",
     "Primary offer: Workflow Hardening Sprint.",
     "Secondary offer: Pro at $19/mo or $149/yr after the buyer asks for the tool path.",
@@ -32,10 +32,10 @@
   ],
   "topSignals": [
     {
-      "key": "workflow_control",
-      "label": "Workflow control surfaces",
-      "summary": "The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive.",
-      "listingAngle": "Lead with one repeated workflow failure, then show how ThumbGate turns it into an enforceable pre-action gate.",
+      "key": "business_system_workflows",
+      "label": "Business-system workflow approvals",
+      "summary": "Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof.",
+      "listingAngle": "Lead with approval boundaries, rollback safety, and proof for one workflow.",
       "count": 6,
       "examples": [
         "Adqui9608/ai-code-review-agent",
@@ -44,11 +44,11 @@
       ]
     },
     {
-      "key": "business_system_workflows",
-      "label": "Business-system workflow approvals",
-      "summary": "Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof.",
-      "listingAngle": "Lead with approval boundaries, rollback safety, and proof for one workflow.",
-      "count": 5,
+      "key": "workflow_control",
+      "label": "Workflow control surfaces",
+      "summary": "The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive.",
+      "listingAngle": "Lead with one repeated workflow failure, then show how ThumbGate turns it into an enforceable pre-action gate.",
+      "count": 6,
       "examples": [
         "Adqui9608/ai-code-review-agent",
         "DGouron/review-flow",
