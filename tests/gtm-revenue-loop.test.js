@@ -623,6 +623,8 @@ test('team outreach markdown stays discovery-first and evidence-backed', () => {
   assert.match(markdown, /I will harden one AI-agent workflow for you/);
   assert.match(markdown, /Evidence sources:/);
   assert.match(markdown, /Pain-confirmed follow-up:/);
+  assert.match(markdown, /Log after send: `npm run sales:pipeline -- advance --lead 'reddit_builder_/);
+  assert.match(markdown, /Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'reddit_builder_/);
   assert.doesNotMatch(markdown, /checkout\/pro/);
 });
 
@@ -708,6 +710,9 @@ test('operator handoff markdown prioritizes follow-ups, then warm discovery, the
   assert.ok(markdown.indexOf('@warm_builder') < markdown.indexOf('@builder'));
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
+  assert.match(markdown, /Pipeline lead id: reddit_follow_builder_/);
+  assert.match(markdown, /Log after send: `npm run sales:pipeline -- advance --lead 'reddit_follow_builder_/);
+  assert.match(markdown, /Log after sprint intake: `npm run sales:pipeline -- advance --lead 'reddit_follow_builder_/);
 });
 
 test('first-touch outreach does not push proof before pain is confirmed', () => {
@@ -1171,13 +1176,18 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.match(marketplaceCopy.recommendedCtas[0].cta, /thumbgate-production\.up\.railway\.app\/guide/);
     assert.ok(Array.isArray(marketplaceCopy.topSignals));
     assert.equal(JSON.parse(jsonl.trim()).repoName, 'production-mcp-server');
+    assert.match(jsonl, /"pipelineLeadId":"reddit_builder_production_mcp_server"/);
+    assert.match(jsonl, /"salesCommands":\{"markContacted":"npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
     assert.match(teamOutreach, /CUSTOMER_DISCOVERY_SPRINT\.md/);
     assert.match(teamOutreach, /operator-priority-handoff\.md/);
     assert.match(teamOutreach, /I will harden one AI-agent workflow for you/);
     assert.match(teamOutreach, /If the workflow pain is real, I can send the proof pack\./);
+    assert.match(teamOutreach, /Log after send: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
     assert.match(operatorHandoff, /Revenue Operator Priority Handoff/);
     assert.match(operatorHandoff, /sales:pipeline -- import --source docs\/marketing\/gtm-revenue-loop\.json/);
     assert.match(operatorHandoff, /Send Now: Warm Discovery/);
+    assert.match(operatorHandoff, /Pipeline lead id: reddit_builder_production_mcp_server/);
+    assert.match(operatorHandoff, /Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
   } finally {
     fs.rmSync(reportDir, { recursive: true, force: true });
   }
