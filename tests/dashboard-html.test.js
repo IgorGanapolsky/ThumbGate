@@ -124,3 +124,16 @@ test('dashboard has noindex and meta description for SEO safety', () => {
 test('dashboard inline script parses after generated-view additions', () => {
   assert.doesNotThrow(() => new vm.Script(readDashboardScript()));
 });
+
+test('dashboard demo keeps paid and revenue placeholders evidence-safe', () => {
+  const dashboard = readDashboard();
+
+  assert.match(dashboard, /Sample demo data below\./);
+  assert.match(dashboard, /Paid and revenue fields stay hidden until hosted evidence loads\./);
+  assert.match(dashboard, /Awaiting evidence/);
+  assert.match(dashboard, /demo mode never invents forecast dollars/);
+  assert.doesNotMatch(dashboard, /\$128\.00/);
+  assert.doesNotMatch(dashboard, /1 paid order/);
+  assert.doesNotMatch(dashboard, /opportunity \$49\.00/);
+  assert.doesNotMatch(dashboard, /Live demo data below\./);
+});
