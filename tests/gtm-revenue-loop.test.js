@@ -1128,10 +1128,13 @@ test('marketplace copy pack stays tied to current revenue-loop evidence', () => 
   assert.match(pack.headline, /Harden one AI-agent workflow/i);
   assert.equal(pack.recommendedCtas[0].label, 'Proof-backed setup guide');
   assert.match(pack.recommendedCtas[0].cta, /thumbgate-production\.up\.railway\.app\/guide/);
+  assert.match(pack.recommendedCtas[0].cta, /utm_source=marketplace/);
   assert.equal(pack.recommendedCtas[1].label, catalog.sprint.label);
+  assert.match(pack.recommendedCtas[1].cta, /utm_campaign=gtm_marketplace_sprint/);
   assert.match(pack.recommendedCtas[1].cta, /#workflow-sprint-intake$/);
   assert.equal(pack.recommendedCtas[2].label, catalog.pro.label);
-  assert.match(pack.recommendedCtas[2].cta, /\/checkout\/pro$/);
+  assert.match(pack.recommendedCtas[2].cta, /\/checkout\/pro\?/);
+  assert.match(pack.recommendedCtas[2].cta, /utm_campaign=gtm_marketplace_pro/);
   assert.ok(pack.topSignals.some((signal) => /Warm discovery workflows/.test(signal.label)));
   assert.ok(pack.topSignals.some((signal) => /Business-system workflow approvals/.test(signal.label)));
   assert.match(markdown, /Proof Policy/);
@@ -1194,8 +1197,9 @@ test('marketplace copy keeps the Pro CTA when no target currently uses the Pro m
   const markdown = renderMarketplaceCopyMarkdown(pack);
 
   assert.equal(pack.recommendedCtas[2].label, catalog.pro.label);
-  assert.equal(pack.recommendedCtas[2].cta, catalog.pro.cta);
-  assert.match(markdown, /Pro at \$19\/mo or \$149\/yr: https:\/\/thumbgate-production\.up\.railway\.app\/checkout\/pro/);
+  assert.match(pack.recommendedCtas[2].cta, /\/checkout\/pro\?/);
+  assert.match(pack.recommendedCtas[2].cta, /utm_source=marketplace/);
+  assert.match(markdown, /Pro at \$19\/mo or \$149\/yr: https:\/\/thumbgate-production\.up\.railway\.app\/checkout\/pro\?/);
   assert.doesNotMatch(markdown, /cta unavailable in this run/);
 });
 
@@ -1299,10 +1303,14 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.match(marketplaceCopy.headline, /workflow/i);
     assert.equal(marketplaceCopy.recommendedCtas[0].label, 'Proof-backed setup guide');
     assert.match(marketplaceCopy.recommendedCtas[0].cta, /thumbgate-production\.up\.railway\.app\/guide/);
+    assert.match(marketplaceCopy.recommendedCtas[0].cta, /utm_source=marketplace/);
+    assert.match(marketplaceCopy.recommendedCtas[1].cta, /utm_campaign=gtm_marketplace_sprint/);
     assert.match(marketplaceCopy.recommendedCtas[1].cta, /#workflow-sprint-intake$/);
-    assert.match(marketplaceCopy.recommendedCtas[2].cta, /\/checkout\/pro$/);
+    assert.match(marketplaceCopy.recommendedCtas[2].cta, /\/checkout\/pro\?/);
+    assert.match(marketplaceCopy.recommendedCtas[2].cta, /utm_campaign=gtm_marketplace_pro/);
     assert.ok(Array.isArray(marketplaceCopy.topSignals));
     assert.equal(JSON.parse(jsonl.trim()).repoName, 'production-mcp-server');
+    assert.match(jsonl, /"cta":"https:\/\/thumbgate-production\.up\.railway\.app\/#workflow-sprint-intake"/);
     assert.match(jsonl, /"pipelineLeadId":"reddit_builder_production_mcp_server"/);
     assert.match(jsonl, /"salesCommands":\{"markContacted":"npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
     assert.match(teamOutreach, /CUSTOMER_DISCOVERY_SPRINT\.md/);
@@ -1520,10 +1528,16 @@ test('runRevenueLoop writes an evidence-backed target queue with discovery warni
     assert.match(report.currentTruth.guideLink, /thumbgate-production\.up\.railway\.app\/guide/);
     assert.ok(Array.isArray(report.marketplaceCopy.topSignals));
     assert.equal(report.marketplaceCopy.recommendedCtas[0].label, 'Proof-backed setup guide');
+    assert.match(report.marketplaceCopy.recommendedCtas[0].cta, /utm_source=marketplace/);
+    assert.match(report.marketplaceCopy.recommendedCtas[1].cta, /utm_campaign=gtm_marketplace_sprint/);
     assert.match(report.marketplaceCopy.recommendedCtas[1].cta, /#workflow-sprint-intake$/);
-    assert.match(report.marketplaceCopy.recommendedCtas[2].cta, /\/checkout\/pro$/);
+    assert.match(report.marketplaceCopy.recommendedCtas[2].cta, /\/checkout\/pro\?/);
+    assert.match(report.marketplaceCopy.recommendedCtas[2].cta, /utm_campaign=gtm_marketplace_pro/);
     assert.match(report.targets[0].proofPackTrigger, /buyer confirms pain/);
     assert.match(report.targets[0].painConfirmedFollowUpDraft, /VERIFICATION_EVIDENCE/);
+    assert.match(report.targets[0].cta, /utm_source=reddit/);
+    assert.match(report.targets[0].cta, /utm_medium=reddit_dm/);
+    assert.match(report.targets[0].cta, /lead_id=reddit_deep_ad1959_r_cursor/);
     assert.equal(written.reportDir, reportDir);
     assert.ok(fs.existsSync(path.join(reportDir, 'gtm-marketplace-copy.md')));
     assert.ok(fs.existsSync(path.join(reportDir, 'gtm-marketplace-copy.json')));

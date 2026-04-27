@@ -20,9 +20,9 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 - Keep approval boundaries, rollback safety, and proof attached to the workflow before rollout.
 
 ## Recommended CTAs
-- Proof-backed setup guide: https://thumbgate-production.up.railway.app/guide
-- Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-- Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro
+- Proof-backed setup guide: https://thumbgate-production.up.railway.app/guide?utm_source=marketplace&utm_medium=listing_copy&utm_campaign=gtm_marketplace_guide&utm_content=proof_backed_setup_guide&campaign_variant=post_first_dollar&offer_code=MARKETPLACE-GUIDE&cta_id=marketplace_guide&cta_placement=listing_copy&surface=gtm_marketplace_copy&landing_path=%2Fguide
+- Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/?utm_source=marketplace&utm_medium=listing_copy&utm_campaign=gtm_marketplace_sprint&utm_content=workflow_hardening_sprint&campaign_variant=post_first_dollar&offer_code=MARKETPLACE-SPRINT&cta_id=marketplace_sprint&cta_placement=listing_copy&surface=gtm_marketplace_copy&landing_path=%2F#workflow-sprint-intake
+- Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro?utm_source=marketplace&utm_medium=listing_copy&utm_campaign=gtm_marketplace_pro&utm_content=pro_at_19_mo_or_149_yr&campaign_variant=post_first_dollar&offer_code=MARKETPLACE-PRO&cta_id=marketplace_pro&cta_placement=listing_copy&plan_id=pro&surface=gtm_marketplace_copy&landing_path=%2Fcheckout%2Fpro
 
 ## Evidence-Backed Buyer Signals
 - Workflow control surfaces (6): The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Examples: Adqui9608/ai-code-review-agent, DGouron/review-flow, nihannihu/Omni-SRE

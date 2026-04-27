@@ -6,6 +6,7 @@ const path = require('node:path');
 const { resolveHostedBillingConfig } = require('./hosted-config');
 const { getOperationalBillingSummary } = require('./operational-summary');
 const { generateRevenueStatusReport } = require('./revenue-status');
+const { buildUTMLink } = require('./social-analytics/utm');
 const { ensureDir } = require('./fs-utils');
 const { buildLeadFromRevenueTarget, loadSalesLeads } = require('./sales-pipeline');
 const { getWarmOutboundTargets } = require('./warm-outreach-targets');
@@ -192,6 +193,14 @@ function normalizeText(value, maxLength = Number.POSITIVE_INFINITY) {
   return Number.isFinite(maxLength)
     ? normalized.slice(0, maxLength)
     : normalized;
+}
+
+function slugifyTrackingToken(value, fallback = 'unknown') {
+  const normalized = normalizeText(value).toLowerCase();
+  const slug = normalized
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return slug || fallback;
 }
 
 function hasEvidenceLabel(target, label) {
@@ -446,6 +455,86 @@ function buildRevenueLinks(config = resolveHostedBillingConfig({
     verificationEvidenceLink: VERIFICATION_EVIDENCE_LINK,
     proPriceLabel: '$19/mo or $149/yr',
     proOfferLabel: 'Pro at $19/mo or $149/yr',
+  };
+}
+
+function buildTrackedRevenueLink(baseUrl, tracking = {}) {
+  const normalizedBaseUrl = normalizeText(baseUrl);
+  if (!normalizedBaseUrl) {
+    return '';
+  }
+
+  const parsedBaseUrl = new URL(normalizedBaseUrl);
+  const trackedUrl = new URL(buildUTMLink(normalizedBaseUrl, {
+    source: normalizeText(tracking.source) || 'website',
+    medium: normalizeText(tracking.medium) || 'manual',
+    campaign: normalizeText(tracking.campaign) || 'thumbgate_revenue_loop',
+    content: normalizeText(tracking.content) || undefined,
+  }));
+  const extras = {
+    campaign_variant: tracking.campaignVariant,
+    offer_code: tracking.offerCode,
+    cta_id: tracking.ctaId,
+    cta_placement: tracking.ctaPlacement,
+    plan_id: tracking.planId,
+    surface: tracking.surface,
+    lead_id: tracking.leadId,
+    landing_path: tracking.landingPath || parsedBaseUrl.pathname || '/',
+  };
+
+  for (const [key, value] of Object.entries(extras)) {
+    const normalized = normalizeText(value);
+    if (normalized) {
+      trackedUrl.searchParams.set(key, normalized);
+    }
+  }
+
+  return trackedUrl.toString();
+}
+
+function buildTargetMotionCatalog(target = {}, motionCatalog = buildMotionCatalog()) {
+  const source = slugifyTrackingToken(target.source || 'github', 'github');
+  const medium = slugifyTrackingToken(target.channel || target.source || 'github', source);
+  const identifier = slugifyTrackingToken(target.repoName || target.username || target.accountName, 'lead');
+  const temperature = slugifyTrackingToken(target.temperature || 'cold', 'cold');
+  const ctaPlacement = normalizeText(target.temperature).toLowerCase() === 'warm'
+    ? 'warm_outreach'
+    : 'cold_outreach';
+  const leadId = buildLeadFromRevenueTarget(target).leadId;
+
+  return {
+    ...motionCatalog,
+    pro: {
+      ...motionCatalog.pro,
+      cta: buildTrackedRevenueLink(motionCatalog.pro.cta, {
+        source,
+        medium,
+        campaign: `${source}_${temperature}_pro_follow_on`,
+        content: identifier,
+        campaignVariant: 'revenue_loop',
+        offerCode: `${source.toUpperCase()}-PRO`,
+        ctaId: `${source}_${identifier}_pro`,
+        ctaPlacement,
+        planId: 'pro',
+        surface: 'gtm_revenue_loop',
+        leadId,
+      }),
+    },
+    sprint: {
+      ...motionCatalog.sprint,
+      cta: buildTrackedRevenueLink(motionCatalog.sprint.cta, {
+        source,
+        medium,
+        campaign: `${source}_${temperature}_workflow_sprint`,
+        content: identifier,
+        campaignVariant: 'revenue_loop',
+        offerCode: `${source.toUpperCase()}-SPRINT`,
+        ctaId: `${source}_${identifier}_workflow_sprint`,
+        ctaPlacement,
+        surface: 'gtm_revenue_loop',
+        leadId,
+      }),
+    },
   };
 }
 
@@ -892,12 +981,14 @@ async function generateOutreachMessages(targets, motionCatalog = buildMotionCata
   if (!apiKey) {
     return targets.map((target) => {
       const selectedMotion = selectOutreachMotion(target, motionCatalog);
+      const targetMotionCatalog = buildTargetMotionCatalog(target, motionCatalog);
       return {
         ...target,
         selectedMotion,
         proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
-        followUpMessage: buildPainConfirmedFollowUp(target, selectedMotion, motionCatalog),
-        message: buildFallbackMessage(target, selectedMotion, motionCatalog),
+        followUpMessage: buildPainConfirmedFollowUp(target, selectedMotion, targetMotionCatalog),
+        message: buildFallbackMessage(target, selectedMotion, targetMotionCatalog),
+        cta: targetMotionCatalog[selectedMotion.key].cta,
       };
     });
   }
@@ -906,12 +997,14 @@ async function generateOutreachMessages(targets, motionCatalog = buildMotionCata
   if (!GoogleGenAI) {
     return targets.map((target) => {
       const selectedMotion = selectOutreachMotion(target, motionCatalog);
+      const targetMotionCatalog = buildTargetMotionCatalog(target, motionCatalog);
       return {
         ...target,
         selectedMotion,
         proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
-        followUpMessage: buildPainConfirmedFollowUp(target, selectedMotion, motionCatalog),
-        message: buildFallbackMessage(target, selectedMotion, motionCatalog),
+        followUpMessage: buildPainConfirmedFollowUp(target, selectedMotion, targetMotionCatalog),
+        message: buildFallbackMessage(target, selectedMotion, targetMotionCatalog),
+        cta: targetMotionCatalog[selectedMotion.key].cta,
       };
     });
   }
@@ -921,12 +1014,13 @@ async function generateOutreachMessages(targets, motionCatalog = buildMotionCata
 
   for (const target of targets) {
     const selectedMotion = selectOutreachMotion(target, motionCatalog);
-    let message = buildFallbackMessage(target, selectedMotion, motionCatalog);
+    const targetMotionCatalog = buildTargetMotionCatalog(target, motionCatalog);
+    let message = buildFallbackMessage(target, selectedMotion, targetMotionCatalog);
 
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: buildGeminiPrompt(target, selectedMotion, motionCatalog),
+        contents: buildGeminiPrompt(target, selectedMotion, targetMotionCatalog),
       });
       const candidate = normalizeText(response.text);
       if (candidate) {
@@ -940,7 +1034,8 @@ async function generateOutreachMessages(targets, motionCatalog = buildMotionCata
       ...target,
       selectedMotion,
       proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
-      followUpMessage: buildPainConfirmedFollowUp(target, selectedMotion, motionCatalog),
+      followUpMessage: buildPainConfirmedFollowUp(target, selectedMotion, targetMotionCatalog),
+      cta: targetMotionCatalog[selectedMotion.key].cta,
       message,
     });
   }
@@ -970,8 +1065,10 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
     evidenceBackstop: buildEvidenceBackstop(currentTruth),
     snapshot,
     targets: targets.map((target) => {
+      const selectedMotion = target.selectedMotion || selectOutreachMotion(target, motionCatalog);
+      const targetMotionCatalog = buildTargetMotionCatalog(target, motionCatalog);
       const followUpMessage = target.followUpMessage
-        || buildPainConfirmedFollowUp(target, target.selectedMotion, motionCatalog);
+        || buildPainConfirmedFollowUp(target, selectedMotion, targetMotionCatalog);
       const evidenceSources = buildEvidenceSources(target, motionCatalog);
       const pipelineLeadId = normalizeText(target.pipelineLeadId) || buildLeadFromRevenueTarget(target).leadId;
       const pipelineStage = normalizePipelineStage(target.pipelineStage);
@@ -999,15 +1096,15 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
         evidenceSource: target.repoUrl || '',
         evidenceSources,
         claimGuardrails: buildClaimGuardrails(),
-        motion: target.selectedMotion.key,
-        motionLabel: target.selectedMotion.label,
-        motionReason: target.selectedMotion.reason,
+        motion: selectedMotion.key,
+        motionLabel: selectedMotion.label,
+        motionReason: selectedMotion.reason,
         pipelineLeadId,
         pipelineStage,
         pipelineUpdatedAt: normalizeText(target.pipelineUpdatedAt),
         nextOperatorAction: normalizeText(target.nextOperatorAction) || buildNextOperatorAction(pipelineStage),
-        offer: target.selectedMotion.key === motionCatalog.sprint.key ? 'workflow_hardening_sprint' : 'pro_self_serve',
-        cta: motionCatalog[target.selectedMotion.key].cta,
+        offer: selectedMotion.key === motionCatalog.sprint.key ? 'workflow_hardening_sprint' : 'pro_self_serve',
+        cta: targetMotionCatalog[selectedMotion.key].cta,
         proofPackTrigger: target.proofPackTrigger || 'Use proof pack only after the buyer confirms pain.',
         firstTouchDraft: target.message,
         painConfirmedFollowUpDraft: followUpMessage,
@@ -1026,12 +1123,6 @@ function resolveMotionLabel(report, motionKey) {
 
 function resolveMotionCta(report, motionKey) {
   const links = buildRevenueLinks();
-  const matchingTarget = Array.isArray(report.targets)
-    ? report.targets.find((target) => normalizeText(target.motion) === normalizeText(motionKey) && normalizeText(target.cta))
-    : null;
-  if (matchingTarget) {
-    return matchingTarget.cta;
-  }
   if (motionKey === 'pro') {
     return normalizeText(report.currentTruth?.publicSelfServeCta) || links.proCheckoutLink;
   }
@@ -1104,17 +1195,49 @@ function buildMarketplaceCopy(report) {
       {
         motion: 'guide',
         label: 'Proof-backed setup guide',
-        cta: normalizeText(report.currentTruth?.guideLink),
+        cta: buildTrackedRevenueLink(normalizeText(report.currentTruth?.guideLink), {
+          source: 'marketplace',
+          medium: 'listing_copy',
+          campaign: 'gtm_marketplace_guide',
+          content: 'proof_backed_setup_guide',
+          campaignVariant: slugifyTrackingToken(report.directive?.state, 'cold_start'),
+          offerCode: 'MARKETPLACE-GUIDE',
+          ctaId: 'marketplace_guide',
+          ctaPlacement: 'listing_copy',
+          surface: 'gtm_marketplace_copy',
+        }),
       },
       {
         motion: primaryMotion,
         label: resolveMotionLabel(report, primaryMotion),
-        cta: resolveMotionCta(report, primaryMotion),
+        cta: buildTrackedRevenueLink(resolveMotionCta(report, primaryMotion), {
+          source: 'marketplace',
+          medium: 'listing_copy',
+          campaign: `gtm_marketplace_${slugifyTrackingToken(primaryMotion)}`,
+          content: slugifyTrackingToken(resolveMotionLabel(report, primaryMotion), primaryMotion),
+          campaignVariant: slugifyTrackingToken(report.directive?.state, 'cold_start'),
+          offerCode: `MARKETPLACE-${slugifyTrackingToken(primaryMotion).toUpperCase()}`,
+          ctaId: `marketplace_${slugifyTrackingToken(primaryMotion)}`,
+          ctaPlacement: 'listing_copy',
+          planId: primaryMotion === 'pro' ? 'pro' : '',
+          surface: 'gtm_marketplace_copy',
+        }),
       },
       {
         motion: secondaryMotion,
         label: resolveMotionLabel(report, secondaryMotion),
-        cta: resolveMotionCta(report, secondaryMotion),
+        cta: buildTrackedRevenueLink(resolveMotionCta(report, secondaryMotion), {
+          source: 'marketplace',
+          medium: 'listing_copy',
+          campaign: `gtm_marketplace_${slugifyTrackingToken(secondaryMotion)}`,
+          content: slugifyTrackingToken(resolveMotionLabel(report, secondaryMotion), secondaryMotion),
+          campaignVariant: slugifyTrackingToken(report.directive?.state, 'cold_start'),
+          offerCode: `MARKETPLACE-${slugifyTrackingToken(secondaryMotion).toUpperCase()}`,
+          ctaId: `marketplace_${slugifyTrackingToken(secondaryMotion)}`,
+          ctaPlacement: 'listing_copy',
+          planId: secondaryMotion === 'pro' ? 'pro' : '',
+          surface: 'gtm_marketplace_copy',
+        }),
       },
     ],
     listingBullets: dedupeList([
