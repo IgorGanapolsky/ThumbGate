@@ -1,6 +1,6 @@
 # Codex Plugin Revenue Pack
 
-Updated: 2026-04-27T01:47:17.003Z
+Updated: 2026-04-27T03:34:51.570Z
 
 This is a sales operator artifact. It is not proof of bundle downloads, installs, paid revenue, or marketplace publication by itself.
 
@@ -24,14 +24,14 @@ ThumbGate gives Codex a proof-backed install path, pre-action gate enforcement, 
 - Examples: @Deep_Ad1959, @game-of-kton, @leogodin217
 
 ### Workflow control surfaces remain the strongest buyer signal
-- Count: 12
-- Summary: 12 current targets expose review, approval, governance, or workflow control surfaces where a Codex install story can convert into a workflow-hardening offer.
-- Examples: montenegronyc/backporcher, Adqui9608/ai-code-review-agent, DGouron/review-flow
+- Count: 6
+- Summary: 6 current targets expose review, approval, governance, or workflow control surfaces where a Codex install story can convert into a workflow-hardening offer.
+- Examples: Adqui9608/ai-code-review-agent, DGouron/review-flow, nihannihu/Omni-SRE
 
 ### Production rollout proof matters
-- Count: 6
-- Summary: 6 targets touch production-sensitive workflows where proof and rollback safety should appear before the buyer expands usage.
-- Examples: montenegronyc/backporcher, Adqui9608/ai-code-review-agent, nihannihu/Omni-SRE
+- Count: 2
+- Summary: 2 targets touch production-sensitive workflows where proof and rollback safety should appear before the buyer expands usage.
+- Examples: Adqui9608/ai-code-review-agent, nihannihu/Omni-SRE
 
 ## Submission Surfaces
 ### Codex plugin install page
@@ -96,13 +96,48 @@ Proof links: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCI
   Buyer: Teams who already named one repeated Codex-adjacent workflow failure and need rollout proof.
   CTA: https://thumbgate-production.up.railway.app/?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_sprint_follow_on&utm_content=workflow_sprint&campaign_variant=sprint_follow_on&offer_code=CODEX-SPRINT_FOLLOW_ON&cta_id=codex_sprint_follow_on&cta_placement=codex_follow_on&surface=codex_follow_on#workflow-sprint-intake
 
+## Operator Follow-Up Sequences
+### Buyer wants a documented Codex path before trusting a zip or CLI setup.
+- Goal: Move cold install curiosity into a tracked guide or setup click.
+- Evidence: The install page is the primary human trust surface and keeps proof plus support links close to the download path.
+- CTA: https://thumbgate-production.up.railway.app/codex-plugin?utm_source=codex&utm_medium=install_page&utm_campaign=codex_plugin_install_page&utm_content=page&campaign_variant=install_page&offer_code=CODEX-INSTALL_PAGE&cta_id=codex_install_page&cta_placement=codex_surface&surface=codex_install_page
+
+Draft:
+> If you want to see the Codex install path before downloading anything, start with the install page: https://thumbgate-production.up.railway.app/codex-plugin?utm_source=codex&utm_medium=install_page&utm_campaign=codex_plugin_install_page&utm_content=page&campaign_variant=install_page&offer_code=CODEX-INSTALL_PAGE&cta_id=codex_install_page&cta_placement=codex_surface&surface=codex_install_page . It shows the bundle path, install docs, and proof links in one place so you can decide whether the free setup is enough first.
+
+### Buyer already wants the tool path and asks for steps, proof, or setup clarity.
+- Goal: Move install intent into either a qualified sprint conversation or a tracked Pro checkout start.
+- Evidence: The setup guide is the designated self-serve bridge between Codex install intent and paid intent.
+- CTA: https://thumbgate-production.up.railway.app/guide?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_setup_guide&utm_content=guide&campaign_variant=setup_guide&offer_code=CODEX-SETUP_GUIDE&cta_id=codex_setup_guide&cta_placement=codex_surface&surface=codex_setup_guide
+
+Draft:
+> Here is the proof-backed Codex setup guide: https://thumbgate-production.up.railway.app/guide?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_setup_guide&utm_content=guide&campaign_variant=setup_guide&offer_code=CODEX-SETUP_GUIDE&cta_id=codex_setup_guide&cta_placement=codex_surface&surface=codex_setup_guide . Use it when the buyer wants the exact install flow plus Commercial Truth and verification evidence before choosing between free install, Pro, or a workflow-hardening conversation.
+
+### Solo operator already proved one blocked repeat and wants the self-serve lane.
+- Goal: Move proven solo usage into tracked Pro checkout intent.
+- Evidence: The pack keeps Pro as the post-proof follow-on after one blocked repeat is real.
+- CTA: https://thumbgate-production.up.railway.app/checkout/pro?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_pro_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=CODEX-PRO_FOLLOW_ON&cta_id=codex_pro_follow_on&cta_placement=codex_follow_on&plan_id=pro&surface=codex_follow_on
+
+Draft:
+> If you already proved one blocked repeat in Codex and just want the self-serve lane, Pro is the clean next step: https://thumbgate-production.up.railway.app/checkout/pro?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_pro_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=CODEX-PRO_FOLLOW_ON&cta_id=codex_pro_follow_on&cta_placement=codex_follow_on&plan_id=pro&surface=codex_follow_on . That keeps the dashboard and proof-ready exports attached without forcing a services motion.
+
+### Team already named one repeated approval-boundary, handoff, or rollout failure.
+- Goal: Move team pain into a qualified workflow-hardening conversation.
+- Evidence: The Workflow Hardening Sprint remains the primary paid motion when one owner and one repeated failure are explicit.
+- CTA: https://thumbgate-production.up.railway.app/?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_sprint_follow_on&utm_content=workflow_sprint&campaign_variant=sprint_follow_on&offer_code=CODEX-SPRINT_FOLLOW_ON&cta_id=codex_sprint_follow_on&cta_placement=codex_follow_on&surface=codex_follow_on#workflow-sprint-intake
+
+Draft:
+> If one approval, handoff, or rollout failure keeps repeating around Codex or a neighboring review lane, route it to the Workflow Hardening Sprint instead of a generic plugin pitch: https://thumbgate-production.up.railway.app/?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_sprint_follow_on&utm_content=workflow_sprint&campaign_variant=sprint_follow_on&offer_code=CODEX-SPRINT_FOLLOW_ON&cta_id=codex_sprint_follow_on&cta_placement=codex_follow_on&surface=codex_follow_on#workflow-sprint-intake . That keeps the conversation anchored on one workflow, one owner, and one proof review.
+
+Use Commercial Truth and Verification Evidence only after the buyer confirms the workflow pain or asks for proof.
+
 ## Sample Targets Behind This Pack
 - @Deep_Ad1959 (warm): Warm Reddit engager already named a repeated workflow risk, so the fastest path is a founder-led diagnostic.
 - @game-of-kton (warm): Warm Reddit engager already works on advanced agent memory, so discovery should center on one repeated failure pattern.
 - @leogodin217 (warm): Warm Reddit engager already described a mature workflow, so the next step is a targeted diagnostic on one failure mode.
 - @Enthu-Cutlet-1337 (warm): Warm Reddit engager already understands the adaptive-gate thesis, so offer one concrete workflow hardening diagnostic.
-- montenegronyc/backporcher (cold): Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
 - Adqui9608/ai-code-review-agent (cold): Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
+- DGouron/review-flow (cold): Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
 
 ## 90-Day Measurement Plan
 - North star: codex_install_intent_to_paid_intent
