@@ -223,13 +223,59 @@ function dedupeList(values = []) {
   return deduped;
 }
 
+function isHostnameLabel(value, { alphaOnly = false } = {}) {
+  if (!value) return false;
+  for (const char of value) {
+    const code = char.charCodeAt(0);
+    const isDigit = code >= 48 && code <= 57;
+    const isUpper = code >= 65 && code <= 90;
+    const isLower = code >= 97 && code <= 122;
+    const isHyphen = code === 45;
+    if (alphaOnly) {
+      if (!isUpper && !isLower) {
+        return false;
+      }
+      continue;
+    }
+    if (!isDigit && !isUpper && !isLower && !isHyphen) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function isLikelyBareDomainUrl(value) {
+  const normalized = normalizeText(value, 2000);
+  if (!normalized || normalized.includes(' ') || normalized.includes('@')) return false;
+  try {
+    const parsed = new URL(`https://${normalized}`);
+    if (parsed.username || parsed.password) return false;
+    const hostname = normalizeText(parsed.hostname).toLowerCase();
+    if (!hostname || !hostname.includes('.') || hostname.startsWith('.') || hostname.endsWith('.') || hostname.includes('..')) {
+      return false;
+    }
+    const labels = hostname.split('.');
+    const tld = labels[labels.length - 1];
+    if (!isHostnameLabel(tld, { alphaOnly: true }) || tld.length < 2) {
+      return false;
+    }
+    return labels.every((label) => (
+      label
+      && !label.startsWith('-')
+      && !label.endsWith('-')
+      && isHostnameLabel(label)
+    ));
+  } catch {
+    return false;
+  }
+}
+
 function normalizeUrlLikeValue(value) {
   const normalized = normalizeText(value, 2000);
   if (!normalized) return '';
-  const looksLikeDomain = /^[a-z0-9.-]+\.[a-z]{2,}(?:\/.*)?$/i.test(normalized);
   const candidate = /^https?:\/\//i.test(normalized)
     ? normalized
-    : (normalized.startsWith('www.') || looksLikeDomain)
+    : (normalized.startsWith('www.') || isLikelyBareDomainUrl(normalized))
       ? `https://${normalized}`
       : '';
   if (!candidate) return '';
@@ -1909,6 +1955,7 @@ module.exports = {
   hasCredibleRepoIdentity,
   hasLowBuyerIntentSignals,
   isCliInvocation,
+  normalizeUrlLikeValue,
   parseArgs,
   prospectTargets,
   applyPipelineStateToTargets,

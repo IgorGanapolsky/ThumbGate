@@ -19,6 +19,7 @@ const {
   hasCredibleRepoDescription,
   hasCredibleRepoIdentity,
   hasLowBuyerIntentSignals,
+  normalizeUrlLikeValue,
   parseArgs,
   prospectTargets,
   renderMarketplaceCopyMarkdown,
@@ -279,6 +280,15 @@ test('repo description sanity gate rejects corrupted GitHub metadata', () => {
   assert.equal(hasCredibleRepoDescription({
     description: 'x'.repeat(501),
   }), false);
+});
+
+test('URL normalization keeps bare domains useful without accepting malformed contact surfaces', () => {
+  assert.equal(normalizeUrlLikeValue('builder.dev'), 'https://builder.dev/');
+  assert.equal(normalizeUrlLikeValue('builder.dev/docs'), 'https://builder.dev/docs');
+  assert.equal(normalizeUrlLikeValue('www.builder.dev'), 'https://www.builder.dev/');
+  assert.equal(normalizeUrlLikeValue('builder'), '');
+  assert.equal(normalizeUrlLikeValue('builder@dev'), '');
+  assert.equal(normalizeUrlLikeValue('bad domain.dev'), '');
 });
 
 test('low buyer-intent signals identify educational discovery surfaces', () => {
