@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { resolveHostedBillingConfig } = require('./hosted-config');
 const { getOperationalBillingSummary } = require('./operational-summary');
+const { generateRevenueStatusReport } = require('./revenue-status');
 const { ensureDir } = require('./fs-utils');
 const { buildLeadFromRevenueTarget, loadSalesLeads } = require('./sales-pipeline');
 const { getWarmOutboundTargets } = require('./warm-outreach-targets');
@@ -488,6 +489,46 @@ function summarizeCommercialSnapshot(summary = {}) {
     qualifiedSprintLeads: qualifiedWorkflowSprintLeads.total || 0,
     latestPaidAt: revenue.latestPaidAt || null,
   };
+}
+
+function normalizeRevenueWindowSummary(summary = {}) {
+  return {
+    trafficMetrics: summary.trafficMetrics || {},
+    signups: summary.signups || {},
+    revenue: summary.revenue || {},
+    pipeline: summary.pipeline || {},
+    dataQuality: summary.dataQuality || {},
+  };
+}
+
+async function resolveRevenueLoopSummary(options = {}) {
+  const {
+    getOperationalBillingSummaryFn = getOperationalBillingSummary,
+    generateRevenueStatusReportFn = generateRevenueStatusReport,
+    revenueStatusOptions = {},
+  } = options;
+
+  const localResult = await getOperationalBillingSummaryFn();
+  if (localResult.source === 'hosted') {
+    return localResult;
+  }
+
+  try {
+    const hostedReport = await generateRevenueStatusReportFn(revenueStatusOptions);
+    const hostedToday = hostedReport?.hostedAudit?.summaries?.today;
+    if (hostedReport?.source === 'local-fallback' || Number(hostedToday?.status) !== 200) {
+      return localResult;
+    }
+
+    return {
+      source: hostedReport.source,
+      summary: normalizeRevenueWindowSummary(hostedToday),
+      fallbackReason: null,
+      hostedStatus: hostedToday.status,
+    };
+  } catch {
+    return localResult;
+  }
 }
 
 function deriveRevenueDirective(summary = {}, motionCatalog = buildMotionCatalog()) {
@@ -1543,7 +1584,7 @@ async function runRevenueLoop(options = {}) {
   const links = buildRevenueLinks();
   const motionCatalog = buildMotionCatalog(links);
   const warmTargets = getWarmOutboundTargets(motionCatalog.sprint.cta);
-  const { source, summary, fallbackReason } = await getOperationalBillingSummary();
+  const { source, summary, fallbackReason } = await resolveRevenueLoopSummary(options);
   const directive = deriveRevenueDirective(summary, motionCatalog);
   const { targets, errors } = await prospectTargets(options.maxTargets || 6, {
     fetchImpl: options.fetchImpl || globalThis.fetch,
@@ -1627,6 +1668,7 @@ module.exports = {
   renderMarketplaceCopyMarkdown,
   renderOperatorHandoffMarkdown,
   renderTeamOutreachMessagesMarkdown,
+  resolveRevenueLoopSummary,
   runRevenueLoop,
   selectOutreachMotion,
   summarizeCommercialSnapshot,
