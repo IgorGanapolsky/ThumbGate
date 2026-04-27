@@ -17,6 +17,7 @@ const {
   buildCodexTrackingMetadata,
   buildFollowOnOffers,
   buildMeasurementPlan,
+  buildOperatorSequences,
   buildTrackedCodexLink,
   isCliInvocation,
   parseArgs,
@@ -140,6 +141,22 @@ test('measurement plan stays honest about paid intent versus bare downloads', ()
   assert.ok(plan.successThresholds.doNotCountAsSuccess.some((item) => /bundle downloads without a tracked follow-on event/i.test(item)));
 });
 
+test('operator sequences stay evidence-backed and route to real Codex follow-up surfaces', () => {
+  const sequences = buildOperatorSequences(LINKS_FIXTURE);
+
+  assert.deepEqual(sequences.map((sequence) => sequence.key), [
+    'install_trust_surface',
+    'setup_guide_follow_up',
+    'post_proof_pro_upgrade',
+    'workflow_hardening_escalation',
+  ]);
+  assert.match(sequences[0].cta, /\/codex-plugin\?/);
+  assert.match(sequences[1].cta, /\/guide\?/);
+  assert.match(sequences[2].cta, /\/checkout\/pro\?/);
+  assert.match(sequences[3].cta, /#workflow-sprint-intake/);
+  assert.ok(sequences.every((sequence) => !/guaranteed installs|guaranteed revenue|approved marketplace/i.test(sequence.draft)));
+});
+
 test('rendered pack is operator-ready and anchored to proof, guide, and bundle surfaces', () => {
   const rendered = renderCodexPluginRevenuePackMarkdown({
     ...buildPack(),
@@ -152,6 +169,8 @@ test('rendered pack is operator-ready and anchored to proof, guide, and bundle s
   assert.match(rendered, /Codex plugin install page/);
   assert.match(rendered, /Proof-backed setup guide/);
   assert.match(rendered, /GitHub release bundle/);
+  assert.match(rendered, /Operator Follow-Up Sequences/);
+  assert.match(rendered, /proof-backed Codex setup guide/i);
   assert.match(rendered, /VERIFICATION_EVIDENCE\.md/);
   assert.match(rendered, /workflow control surfaces/i);
   assert.doesNotMatch(rendered, /approved partner|guaranteed installs|guaranteed revenue/i);
