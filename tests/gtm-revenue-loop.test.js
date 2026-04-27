@@ -17,6 +17,7 @@ const {
   fetchGitHubJson,
   hasCredibleRepoDescription,
   hasCredibleRepoIdentity,
+  hasLowBuyerIntentSignals,
   parseArgs,
   prospectTargets,
   renderMarketplaceCopyMarkdown,
@@ -182,6 +183,17 @@ test('repo description sanity gate rejects corrupted GitHub metadata', () => {
   }), false);
 });
 
+test('low buyer-intent signals identify educational discovery surfaces', () => {
+  assert.equal(hasLowBuyerIntentSignals({
+    repoName: 'Learning-about-MCP',
+    description: 'Course notes and learning repo for MCP experiments.',
+  }), true);
+  assert.equal(hasLowBuyerIntentSignals({
+    repoName: 'mcp-jira-stdio',
+    description: 'Production Jira workflow automation with approval handoffs.',
+  }), false);
+});
+
 test('prospects GitHub targets via REST search, filters low-signal repos, and dedupes repeated repos', async () => {
   const requestedUrls = [];
   const fetchImpl = async (url, options) => {
@@ -256,6 +268,40 @@ test('prospecting drops repositories with corrupted descriptions even when score
               html_url: 'https://github.com/Sfedfcv/redesigned-pancake',
               description: "Skip to content github / docs @@ -10,23 +10,8 @@ .github/workflows/repo-sync.yml Showing 501 changed files with 5,397 additions and 1,362 deletions.",
               stargazers_count: 224,
+              updated_at: new Date().toISOString(),
+            },
+            {
+              owner: { login: 'freema' },
+              name: 'mcp-jira-stdio',
+              html_url: 'https://github.com/freema/mcp-jira-stdio',
+              description: 'MCP server for Jira integration with stdio transport. Issue management, project tracking, and workflow automation via Model Context Protocol.',
+              stargazers_count: 11,
+              updated_at: new Date().toISOString(),
+            },
+          ],
+        });
+      },
+    }),
+  });
+
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.targets.length, 1);
+  assert.equal(result.targets[0].repoName, 'mcp-jira-stdio');
+});
+
+test('prospecting drops educational learning repos that look active but have low buyer intent', async () => {
+  const result = await prospectTargets(5, {
+    fetchImpl: async () => ({
+      ok: true,
+      async text() {
+        return JSON.stringify({
+          items: [
+            {
+              owner: { login: 'builder' },
+              name: 'Learning-about-MCP',
+              html_url: 'https://github.com/builder/Learning-about-MCP',
+              description: 'Learning repo for MCP workflow experiments, production notes, and agent patterns.',
+              stargazers_count: 0,
               updated_at: new Date().toISOString(),
             },
             {
@@ -639,6 +685,27 @@ test('pain-confirmed follow-up supports self-serve Pro targets', () => {
   assert.match(message, /self-serve path/);
   assert.match(message, /VERIFICATION_EVIDENCE/);
   assert.match(message, /COMMERCIAL_TRUTH/);
+});
+
+test('pro first-touch outreach stays discovery-first and defers checkout links', () => {
+  const catalog = buildMotionCatalog(buildRevenueLinks());
+  const selectedMotion = selectOutreachMotion({
+    username: 'builder',
+    repoName: 'mcp-demo-template',
+    description: 'Tutorial and demo template for Claude Code builders.',
+  }, catalog);
+  const message = buildFallbackMessage({
+    username: 'builder',
+    repoName: 'mcp-demo-template',
+    description: 'Tutorial and demo template for Claude Code builders.',
+  }, selectedMotion, catalog);
+
+  assert.equal(selectedMotion.key, 'pro');
+  assert.match(message, /self-serve tool path/i);
+  assert.match(message, /harden that workflow first/i);
+  assert.doesNotMatch(message, /checkout\/pro/);
+  assert.doesNotMatch(message, /VERIFICATION_EVIDENCE/);
+  assert.doesNotMatch(message, /COMMERCIAL_TRUTH/);
 });
 
 test('pain-confirmed follow-up falls back to workflow language for warm targets without a repo', () => {
