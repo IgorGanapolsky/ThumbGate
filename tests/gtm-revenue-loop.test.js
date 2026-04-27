@@ -1140,6 +1140,62 @@ test('marketplace copy pack stays tied to current revenue-loop evidence', () => 
   assert.doesNotMatch(markdown, /paid customers already exist/i);
 });
 
+test('marketplace copy keeps the Pro CTA when no target currently uses the Pro motion', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const report = buildRevenueLoopReport({
+    source: 'local',
+    fallbackReason: 'Hosted operational summary is not configured.',
+    summary: {
+      revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    },
+    motionCatalog: catalog,
+    directive: {
+      state: 'cold-start',
+      objective: 'First 10 paying customers',
+      headline: 'No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.',
+      primaryMotion: 'sprint',
+      secondaryMotion: 'pro',
+      actions: ['Lead with one workflow.'],
+    },
+    targets: [
+      {
+        temperature: 'warm',
+        source: 'reddit',
+        channel: 'reddit_dm',
+        username: 'builder',
+        accountName: 'r/ClaudeCode',
+        contactUrl: 'https://www.reddit.com/user/builder/',
+        repoName: '',
+        repoUrl: '',
+        evidence: {
+          score: 8,
+          evidence: ['warm inbound engagement'],
+          outreachAngle: 'Lead with one repeated workflow failure.',
+        },
+        selectedMotion: {
+          key: 'sprint',
+          label: catalog.sprint.label,
+          reason: 'Warm workflow pain already exists.',
+        },
+        pipelineStage: 'targeted',
+        message: 'I can harden one workflow for you this week.',
+      },
+    ],
+  });
+
+  const pack = buildMarketplaceCopy(report);
+  const markdown = renderMarketplaceCopyMarkdown(pack);
+
+  assert.equal(pack.recommendedCtas[2].label, catalog.pro.label);
+  assert.equal(pack.recommendedCtas[2].cta, catalog.pro.cta);
+  assert.match(markdown, /Pro at \$19\/mo or \$149\/yr: https:\/\/thumbgate-production\.up\.railway\.app\/checkout\/pro/);
+  assert.doesNotMatch(markdown, /cta unavailable in this run/);
+});
+
 test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for operator import', () => {
   const links = buildRevenueLinks();
   const catalog = buildMotionCatalog(links);

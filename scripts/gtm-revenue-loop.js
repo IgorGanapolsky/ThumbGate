@@ -952,7 +952,9 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
   const snapshot = summarizeCommercialSnapshot(summary);
   const currentTruth = {
     publicSelfServeOffer: motionCatalog.pro.label,
+    publicSelfServeCta: motionCatalog.pro.cta,
     teamPilotOffer: motionCatalog.sprint.label,
+    teamPilotCta: motionCatalog.sprint.cta,
     guideLink: buildRevenueLinks().guideLink,
     commercialTruthLink: motionCatalog.pro.truth,
     verificationEvidenceLink: motionCatalog.pro.proof,
@@ -1026,7 +1028,16 @@ function resolveMotionCta(report, motionKey) {
   const matchingTarget = Array.isArray(report.targets)
     ? report.targets.find((target) => normalizeText(target.motion) === normalizeText(motionKey) && normalizeText(target.cta))
     : null;
-  return matchingTarget ? matchingTarget.cta : '';
+  if (matchingTarget) {
+    return matchingTarget.cta;
+  }
+  if (motionKey === 'pro') {
+    return normalizeText(report.currentTruth?.publicSelfServeCta);
+  }
+  if (motionKey === 'sprint') {
+    return normalizeText(report.currentTruth?.teamPilotCta);
+  }
+  return '';
 }
 
 function buildMarketplaceCopy(report) {

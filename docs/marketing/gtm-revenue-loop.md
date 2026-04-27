@@ -1,7 +1,7 @@
 # GSD Revenue Loop
 
 Status: post-first-dollar
-Updated: 2026-04-27T09:46:33.392Z
+Updated: 2026-04-27T10:43:39.459Z
 
 This report is an operator artifact for landing the first 10 paying customers. It is not proof of sent messages or booked revenue by itself.
 Outbound rule: do not treat posts as sales. A lead only moves when it is tracked as contacted, replied, call booked, checkout/sprint, or paid.
