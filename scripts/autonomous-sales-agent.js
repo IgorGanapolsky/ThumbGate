@@ -22,6 +22,10 @@ const {
   writeCursorMarketplaceRevenuePack,
 } = require('./cursor-marketplace-revenue-pack');
 const {
+  buildAiventyxMarketplacePlan,
+  writeAiventyxMarketplaceOutputs,
+} = require('./aiventyx-marketplace-plan');
+const {
   buildCodexPluginRevenuePack,
   writeCodexPluginRevenuePack,
 } = require('./codex-plugin-revenue-pack');
@@ -46,6 +50,8 @@ function buildDependencies(overrides = {}) {
     writeClaudeWorkflowHardeningPack,
     buildCursorMarketplaceRevenuePack,
     writeCursorMarketplaceRevenuePack,
+    buildAiventyxMarketplacePlan,
+    writeAiventyxMarketplaceOutputs,
     buildGeminiCliDemandPack,
     writeGeminiCliDemandPack,
     buildChatgptGptRevenuePack,
@@ -74,6 +80,8 @@ async function main(argv = process.argv.slice(2), overrides = {}) {
   const claudeWritten = deps.writeClaudeWorkflowHardeningPack(claudePack, options);
   const cursorPack = deps.buildCursorMarketplaceRevenuePack();
   const cursorWritten = deps.writeCursorMarketplaceRevenuePack(cursorPack, options);
+  const aiventyxPlan = deps.buildAiventyxMarketplacePlan();
+  const aiventyxWritten = deps.writeAiventyxMarketplaceOutputs(aiventyxPlan, options);
   const geminiPack = deps.buildGeminiCliDemandPack(report);
   const geminiWritten = deps.writeGeminiCliDemandPack(geminiPack, options);
   const chatgptPack = deps.buildChatgptGptRevenuePack(report);
@@ -95,6 +103,9 @@ async function main(argv = process.argv.slice(2), overrides = {}) {
   }
   if (cursorWritten.docsPath) {
     console.log(`Cursor pack updated: ${cursorWritten.docsPath}`);
+  }
+  if (aiventyxWritten.docsPath) {
+    console.log(`Aiventyx pack updated: ${aiventyxWritten.docsPath}`);
   }
   if (geminiWritten.docsPath) {
     console.log(`Gemini pack updated: ${geminiWritten.docsPath}`);
