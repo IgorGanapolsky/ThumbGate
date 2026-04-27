@@ -22,7 +22,7 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 ## Recommended CTAs
 - Proof-backed setup guide: https://thumbgate-production.up.railway.app/guide
 - Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-- Pro at $19/mo or $149/yr: cta unavailable in this run
+- Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro
 
 ## Evidence-Backed Buyer Signals
 - Workflow control surfaces (6): The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Examples: Adqui9608/ai-code-review-agent, DGouron/review-flow, nihannihu/Omni-SRE
