@@ -1,65 +1,300 @@
 #!/usr/bin/env node
-/**
- * github-outreach.js
- * Scans recent GitHub activity for developers working with MCP (Model Context Protocol)
- * and generates targeted outreach messages pointing to the sprint intake.
- */
-
 'use strict';
 
-const { spawnSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
-const { resolveHostedBillingConfig } = require('./hosted-config');
+const fs = require('node:fs');
+const path = require('node:path');
 
-const APP_ORIGIN = resolveHostedBillingConfig({
-  requestOrigin: 'https://thumbgate-production.up.railway.app',
-}).appOrigin;
-const SPRINT_LINK = `${APP_ORIGIN}/#workflow-sprint-intake`;
+const { ensureParentDir, readJsonl } = require('./fs-utils');
+const { buildLeadFromRevenueTarget, getSalesPipelinePath, loadSalesLeads } = require('./sales-pipeline');
 
-function runGH(args) {
-  const result = spawnSync('gh', ['api', ...args], { encoding: 'utf-8' });
-  if (result.status !== 0) {
-    console.error(`GH API Error: ${result.stderr}`);
-    return null;
-  }
-  return JSON.parse(result.stdout);
+const DEFAULT_QUEUE_PATH = path.join(__dirname, '..', 'docs', 'marketing', 'gtm-target-queue.jsonl');
+const DEFAULT_REPORT_PATH = path.join(__dirname, '..', 'docs', 'marketing', 'gtm-revenue-loop.json');
+const DEFAULT_DOCS_PATH = path.join(__dirname, '..', 'docs', 'OUTREACH_TARGETS.md');
+const DEFAULT_CORE_LINKS = {
+  sprint: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+  guide: 'https://thumbgate-production.up.railway.app/guide',
+  proof: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
+  truth: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md',
+};
+const FOLLOW_UP_STAGES = new Set([
+  'contacted',
+  'replied',
+  'call_booked',
+  'checkout_started',
+  'sprint_intake',
+]);
+const TERMINAL_STAGES = new Set(['paid', 'lost']);
+const FOLLOW_UP_PRIORITY = {
+  sprint_intake: 5,
+  checkout_started: 4,
+  call_booked: 3,
+  replied: 2,
+  contacted: 1,
+};
+const TARGETED_STAGE = 'targeted';
+
+function normalizeText(value, maxLength = 4000) {
+  if (value === undefined || value === null) return '';
+  return String(value).trim().slice(0, maxLength);
 }
 
-function findMCPDevelopers() {
-  console.log('🔍 Scanning GitHub for recent MCP developers...');
-  // Search for recent repos with MCP in the name or description
-  const searchResult = runGH(['search/repositories?q=MCP+Model+Context+Protocol&sort=updated']);
-  
-  if (!searchResult || !searchResult.items) {
-    console.log('No recent MCP activity found or API rate limited.');
-    return [];
+function readJsonObject(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) return {};
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch {
+    return {};
   }
-
-  const targets = searchResult.items.slice(0, 5).map(repo => ({
-    username: repo.owner.login,
-    repoName: repo.name,
-    repoUrl: repo.html_url
-  }));
-
-  return targets;
 }
 
-function generateOutreachScript(targets) {
-  if (targets.length === 0) return;
+function loadQueue(queuePath = DEFAULT_QUEUE_PATH) {
+  return readJsonl(queuePath)
+    .filter((entry) => entry && typeof entry === 'object');
+}
 
-  let report = '# 🚀 First Dollar Outreach Targets\n\nSend these notes only when the target already has one workflow, one owner, and one repeated failure pattern:\n\n';
+function buildPipelineIndex(options = {}) {
+  const leads = loadSalesLeads(options);
+  return new Map(leads.map((lead) => [lead.leadId, lead]));
+}
 
-  targets.forEach(t => {
-    report += `### Target: @${t.username} (Author of ${t.repoName})\n`;
-    report += `**DM Script:**\n`;
-    report += `> "Hey @${t.username}, saw you're building with MCP on \`${t.repoName}\`. I am not pitching another agent platform. I am pitching a Workflow Hardening Sprint for one workflow that keeps repeating the same failure pattern. If that pain is real on your side, the intake is here: ${SPRINT_LINK}"\n\n`;
+function toStagePriority(stage) {
+  return FOLLOW_UP_PRIORITY[normalizeText(stage)] || 0;
+}
+
+function compareTargetPriority(left, right) {
+  const leftFollowUp = toStagePriority(left.stage);
+  const rightFollowUp = toStagePriority(right.stage);
+  if (leftFollowUp !== rightFollowUp) {
+    return rightFollowUp - leftFollowUp;
+  }
+
+  const leftScore = Number(left.evidenceScore || 0);
+  const rightScore = Number(right.evidenceScore || 0);
+  if (leftScore !== rightScore) {
+    return rightScore - leftScore;
+  }
+
+  return normalizeText(left.username).localeCompare(normalizeText(right.username));
+}
+
+function buildTargetSummary(target = {}) {
+  const username = normalizeText(target.username);
+  const accountName = normalizeText(target.accountName);
+  const repo = normalizeText(target.repoName);
+  if (repo) {
+    const owner = username || accountName || 'Unknown target';
+    return `${owner} — ${repo}`;
+  }
+  if (username && accountName && accountName !== username) {
+    return `${username} — ${accountName}`;
+  }
+  return username || accountName || 'Unknown target';
+}
+
+function getNextTrackingCommand(target = {}) {
+  const commands = target.salesCommands || {};
+  switch (normalizeText(target.stage)) {
+    case TARGETED_STAGE:
+      return commands.markContacted || '';
+    case 'contacted':
+      return commands.markReplied || '';
+    case 'replied':
+      return commands.markCallBooked || '';
+    case 'call_booked':
+      return commands.markCheckoutStarted || commands.markSprintIntake || '';
+    case 'checkout_started':
+      return commands.markSprintIntake || '';
+    default:
+      return '';
+  }
+}
+
+function enrichTarget(target = {}, pipelineIndex = new Map(), queuePath = DEFAULT_QUEUE_PATH) {
+  const lead = buildLeadFromRevenueTarget(target, { sourcePath: queuePath });
+  const pipelineLead = pipelineIndex.get(lead.leadId);
+  const stage = normalizeText(pipelineLead?.stage || target.pipelineStage || lead.stage || TARGETED_STAGE);
+  const evidence = Array.isArray(target.evidence) ? target.evidence : [];
+
+  return {
+    ...target,
+    leadId: lead.leadId,
+    stage: TERMINAL_STAGES.has(stage) ? stage : (stage || TARGETED_STAGE),
+    queuePath,
+    pipelineUpdatedAt: normalizeText(pipelineLead?.updatedAt || target.pipelineUpdatedAt || ''),
+    nextTrackingCommand: getNextTrackingCommand({
+      ...target,
+      stage,
+    }),
+    summary: buildTargetSummary(target),
+    contactSurface: normalizeText(target.contactUrl || lead.contact?.url || ''),
+    evidenceScore: Number(target.evidenceScore || 0),
+    evidence,
+  };
+}
+
+function buildOutreachTargetsReport({
+  queuePath = DEFAULT_QUEUE_PATH,
+  reportPath = DEFAULT_REPORT_PATH,
+  statePath = null,
+} = {}) {
+  const revenueLoopReport = readJsonObject(reportPath);
+  const pipelinePath = getSalesPipelinePath(statePath ? { statePath } : {});
+  const pipelineExists = fs.existsSync(pipelinePath);
+  const pipelineIndex = buildPipelineIndex(statePath ? { statePath } : {});
+  const targets = loadQueue(queuePath)
+    .map((target) => enrichTarget(target, pipelineIndex, queuePath))
+    .filter((target) => !TERMINAL_STAGES.has(target.stage))
+    .sort(compareTargetPriority);
+  const followUpTargets = targets.filter((target) => FOLLOW_UP_STAGES.has(target.stage));
+  const warmTargets = targets.filter((target) => target.stage === TARGETED_STAGE && normalizeText(target.temperature) === 'warm');
+  const coldTargets = targets.filter((target) => {
+    return target.stage === TARGETED_STAGE
+      && normalizeText(target.temperature) !== 'warm'
+      && normalizeText(target.source) === 'github';
   });
 
-  const reportPath = path.join(__dirname, '../docs/OUTREACH_TARGETS.md');
-  fs.writeFileSync(reportPath, report);
-  console.log(`✅ Generated 5 targeted leads. Open docs/OUTREACH_TARGETS.md and send the DMs.`);
+  return {
+    generatedAt: normalizeText(revenueLoopReport.generatedAt) || new Date().toISOString(),
+    state: normalizeText(revenueLoopReport.directive?.state) || 'cold-start',
+    headline: normalizeText(revenueLoopReport.directive?.headline) || 'No verified revenue and no active pipeline.',
+    queuePath,
+    reportPath,
+    pipelinePath,
+    pipelineTrackedLeadCount: pipelineIndex.size,
+    pipelineExists,
+    proofRule: 'Use proof links only after the buyer confirms the workflow pain.',
+    qualificationRules: [
+      'One workflow with business value.',
+      'One buyer or champion who owns the rollout.',
+      'One repeated failure pattern or rollout blocker that is expensive to repeat.',
+    ],
+    coreLinks: {
+      sprint: normalizeText(revenueLoopReport.currentTruth?.teamPilotCta || DEFAULT_CORE_LINKS.sprint),
+      guide: normalizeText(revenueLoopReport.currentTruth?.guideLink || DEFAULT_CORE_LINKS.guide),
+      proof: normalizeText(revenueLoopReport.currentTruth?.verificationEvidenceLink || DEFAULT_CORE_LINKS.proof),
+      truth: normalizeText(revenueLoopReport.currentTruth?.commercialTruthLink || DEFAULT_CORE_LINKS.truth),
+    },
+    followUpTargets,
+    warmTargets,
+    coldTargets,
+    totalTargets: targets.length,
+  };
 }
 
-const targets = findMCPDevelopers();
-generateOutreachScript(targets);
+function renderTargetMarkdown(target = {}, index = 0) {
+  const lines = [
+    `### ${index + 1}. ${target.summary}`,
+    `- Temperature: ${normalizeText(target.temperature) || 'cold'}`,
+    `- Current stage: ${target.stage || TARGETED_STAGE}`,
+    `- Contact surface: ${target.contactSurface || 'n/a'}`,
+    `- Evidence score: ${Number(target.evidenceScore || 0)}`,
+    `- Evidence: ${target.evidence.length ? target.evidence.join(', ') : 'n/a'}`,
+    `- Why now: ${normalizeText(target.motionReason || target.nextOperatorAction || 'Use the current queue row before widening the search.')}`,
+    `- CTA: ${normalizeText(target.cta || DEFAULT_CORE_LINKS.sprint)}`,
+  ];
+
+  if (target.firstTouchDraft) {
+    lines.push('', 'First-touch draft:', `> ${target.firstTouchDraft}`);
+  }
+
+  if (target.painConfirmedFollowUpDraft) {
+    lines.push('', 'Pain-confirmed follow-up:', `> ${target.painConfirmedFollowUpDraft}`);
+  }
+
+  if (target.nextTrackingCommand) {
+    lines.push('', `Track next step: \`${target.nextTrackingCommand}\``);
+  }
+
+  return [...lines, ''];
+}
+
+function renderOutreachTargetsMarkdown(report = {}) {
+  const followUpLines = report.followUpTargets.length
+    ? report.followUpTargets.flatMap((target, index) => renderTargetMarkdown(target, index))
+    : ['- No in-flight follow-ups are currently tracked.', ''];
+  const warmLines = report.warmTargets.length
+    ? report.warmTargets.flatMap((target, index) => renderTargetMarkdown(target, index))
+    : ['- No warm discovery targets are currently ready.', ''];
+  const coldLines = report.coldTargets.length
+    ? report.coldTargets.flatMap((target, index) => renderTargetMarkdown(target, index))
+    : ['- No cold GitHub targets are currently ready.', ''];
+
+  return [
+    '# Revenue Pipeline Outreach Targets',
+    '',
+    'Status: current',
+    `Updated: ${report.generatedAt}`,
+    '',
+    'This file mirrors the evidence-backed GTM queue in `docs/marketing/gtm-target-queue.jsonl`.',
+    'It is the qualification screen and send surface for the current Workflow Hardening Sprint revenue loop, not a raw GitHub scrape.',
+    '',
+    '## Current Queue',
+    `- Revenue state: ${report.state || 'cold-start'}`,
+    `- Headline: ${report.headline || 'No verified revenue and no active pipeline.'}`,
+    `- Follow-ups now: ${report.followUpTargets.length}`,
+    `- Warm discovery ready: ${report.warmTargets.length}`,
+    `- Cold GitHub ready: ${report.coldTargets.length}`,
+    `- Sales ledger tracked leads: ${report.pipelineTrackedLeadCount || 0}${report.pipelineExists ? '' : ' (pipeline file not created yet)'}`,
+    `- Proof rule: ${report.proofRule}`,
+    '',
+    '## Qualification Rules',
+    ...report.qualificationRules.map((rule, index) => `${index + 1}. ${rule}`),
+    '',
+    '## Follow Up Now',
+    ...followUpLines,
+    '## Warm Discovery',
+    ...warmLines,
+    '## Cold GitHub',
+    ...coldLines,
+    '## Core Links',
+    `- Sprint intake: ${report.coreLinks?.sprint || DEFAULT_CORE_LINKS.sprint}`,
+    `- Proof-backed setup guide: ${report.coreLinks?.guide || DEFAULT_CORE_LINKS.guide}`,
+    `- Commercial truth: ${report.coreLinks?.truth || DEFAULT_CORE_LINKS.truth}`,
+    `- Verification evidence: ${report.coreLinks?.proof || DEFAULT_CORE_LINKS.proof}`,
+    '',
+  ].join('\n');
+}
+
+function writeOutreachTargetsDoc(markdown, outPath = DEFAULT_DOCS_PATH) {
+  ensureParentDir(outPath);
+  fs.writeFileSync(outPath, markdown, 'utf8');
+  return path.resolve(outPath);
+}
+
+function isCliInvocation(argv = process.argv) {
+  const scriptPath = argv[1];
+  if (!scriptPath) return false;
+  return path.resolve(scriptPath) === path.resolve(__filename);
+}
+
+function main(options = {}) {
+  const report = buildOutreachTargetsReport(options);
+  const markdown = renderOutreachTargetsMarkdown(report);
+  const docsPath = writeOutreachTargetsDoc(markdown, options.outPath || DEFAULT_DOCS_PATH);
+  console.log(`Updated ${docsPath} from the current evidence-backed queue.`);
+  console.log(`Warm: ${report.warmTargets.length} | Cold: ${report.coldTargets.length} | Follow-up: ${report.followUpTargets.length}`);
+  return {
+    docsPath,
+    report,
+  };
+}
+
+if (isCliInvocation(process.argv)) {
+  try {
+    main();
+  } catch (err) {
+    console.error(err && err.message ? err.message : err);
+    process.exit(1);
+  }
+}
+
+module.exports = {
+  DEFAULT_DOCS_PATH,
+  DEFAULT_QUEUE_PATH,
+  DEFAULT_REPORT_PATH,
+  buildOutreachTargetsReport,
+  isCliInvocation,
+  main,
+  renderOutreachTargetsMarkdown,
+  writeOutreachTargetsDoc,
+};
