@@ -76,15 +76,16 @@ function collectPainSignals(report = {}) {
   const targets = Array.isArray(report.targets) ? report.targets : [];
   const seen = new Set();
   const signals = [];
+  const painPrefix = 'workflow pain named:';
 
   for (const target of targets) {
     const evidence = Array.isArray(target?.evidence) ? target.evidence : [];
     for (const entry of evidence) {
-      const match = normalizeText(entry).match(/^workflow pain named:\s*(.+)$/i);
-      if (!match) {
+      const normalizedEntry = normalizeText(entry);
+      if (!normalizedEntry.toLowerCase().startsWith(painPrefix)) {
         continue;
       }
-      const signal = normalizeText(match[1]).replace(/\.$/, '');
+      const signal = normalizedEntry.slice(painPrefix.length).trim().replace(/\.$/, '');
       const key = signal.toLowerCase();
       if (!signal || seen.has(key)) {
         continue;
