@@ -59,6 +59,7 @@ The revenue loop emits these operator artifacts in that folder:
 - `gtm-target-queue.jsonl` for line-by-line operator handoff with first-touch and pain-confirmed follow-up drafts
 - `team-outreach-messages.md` for the warm-outbound copy layer tied to the same ranked queue
 - `operator-priority-handoff.md` for the ranked send order across warm discovery and cold GitHub targets
+- `operator-priority-handoff.json` for the same ranked send order, CTA, proof rule, and sales commands in machine-readable form
 - `claude-workflow-hardening-pack.md` for Claude-first positioning, buyer lanes, and evidence-backed outbound copy
 - `claude-workflow-hardening-pack.json` for the same Claude-first outbound pack in machine-readable form
 - `cursor-marketplace-revenue-pack.md` for Cursor Marketplace, Cursor Directory, and Team Marketplace submission copy
