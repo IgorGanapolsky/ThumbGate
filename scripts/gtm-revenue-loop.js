@@ -18,7 +18,8 @@ const TARGET_SEARCH_QUERIES = [
   'search/repositories?q=Claude+Code+review+automation+sort:updated',
   'search/repositories?q=github+review+automation+agent+sort:updated',
 ];
-const SELF_SERVE_ONLY_SIGNALS = /\b(awesome|list|example|template|demo|tutorial|course|personal|dotfiles|toy|boilerplate)\b/;
+const SELF_SERVE_ONLY_SIGNALS = /\b(awesome|list|example|template|demo|tutorial|course|personal|dotfiles|toy|boilerplate|learn|learning|playground|starter|sample|sandbox|quickstart|lab)\b/;
+const LOW_BUYER_INTENT_SIGNALS = /\b(learn|learning|tutorial|course|playground|starter|sample|sandbox|quickstart|boilerplate|template|demo|example|lab)\b/;
 const MAX_CREDIBLE_DESCRIPTION_LENGTH = 500;
 const SUSPICIOUS_REPO_DESCRIPTION_PATTERNS = [
   /^\s*skip to content\b/i,
@@ -434,6 +435,11 @@ function hasCredibleRepoDescription(target) {
   return !SUSPICIOUS_REPO_DESCRIPTION_PATTERNS.some((pattern) => pattern.test(description));
 }
 
+function hasLowBuyerIntentSignals(target) {
+  const haystack = `${normalizeText(target.repoName)} ${normalizeText(target.description)}`.toLowerCase();
+  return LOW_BUYER_INTENT_SIGNALS.test(haystack);
+}
+
 function analyzeTargetEvidence(target) {
   const haystack = `${normalizeText(target.repoName)} ${normalizeText(target.description)}`.toLowerCase();
   const evidence = [];
@@ -469,6 +475,10 @@ function analyzeTargetEvidence(target) {
         evidence.push('updated in the last 30 days');
       }
     }
+  }
+
+  if (hasLowBuyerIntentSignals(target)) {
+    score = Math.max(0, score - 4);
   }
 
   let outreachAngle = 'Pitch one repeated workflow failure, then offer proof-backed hardening instead of a generic tool trial.';
@@ -523,6 +533,9 @@ async function prospectTargets(maxTargets = 6, { fetchImpl = globalThis.fetch } 
       };
     })
     .filter((target) => {
+      if (hasLowBuyerIntentSignals(target)) {
+        return target.evidence.score >= 9;
+      }
       if (SELF_SERVE_ONLY_SIGNALS.test(`${target.repoName} ${target.description}`.toLowerCase())) {
         return target.evidence.score >= 6;
       }
@@ -608,7 +621,7 @@ function buildFallbackMessage(target, selectedMotion, motionCatalog = buildMotio
 
   return [
     `Hey @${target.username}, saw you're building around ${targetRef}.`,
-    `If you only want the self-serve path, ThumbGate Pro gives you compaction-safe memory and feedback-to-gate enforcement: ${motion.cta} If you have one painful workflow instead, I can harden that first.`,
+    'If one repeated agent mistake or brittle handoff is slowing adoption, I can harden that workflow first. If you only want the self-serve tool path after that, I can point you there.',
   ].join(' ');
 }
 
@@ -1381,6 +1394,7 @@ module.exports = {
   fetchGitHubJson,
   hasCredibleRepoDescription,
   hasCredibleRepoIdentity,
+  hasLowBuyerIntentSignals,
   isCliInvocation,
   parseArgs,
   prospectTargets,
