@@ -1,16 +1,16 @@
 # Revenue Operator Priority Handoff
 
-Updated: 2026-04-27T12:10:34.193Z
+Updated: 2026-04-27T12:59:31.009Z
 
 This is the ranked send order for the current zero-to-one revenue loop. Work warm discovery targets first, then expand into cold GitHub targets with the same proof discipline.
 
 This handoff sits on top of `gtm-revenue-loop.md`, `gtm-target-queue.csv`, and `team-outreach-messages.md` so an operator can decide who to contact next without re-ranking the queue manually.
 
 ## Current Snapshot
-- Revenue state: post-first-dollar
-- Headline: Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
-- Paid orders: 2
-- Checkout starts: 1
+- Revenue state: cold-start
+- Headline: No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.
+- Paid orders: 0
+- Checkout starts: 0
 - Active follow-ups: 0
 - Warm targets ready now: 4
 - Cold GitHub targets ready next: 6
@@ -40,6 +40,8 @@ npm run sales:pipeline -- import --source docs/marketing/gtm-revenue-loop.json
 - Log after call booked: `npm run sales:pipeline -- advance --lead 'reddit_deep_ad1959_r_cursor' --channel 'reddit_dm' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for rollback risk.'`
 - Log after sprint intake: `npm run sales:pipeline -- advance --lead 'reddit_deep_ad1959_r_cursor' --channel 'reddit_dm' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for rollback risk.'`
 - Contact surface: https://www.reddit.com/user/Deep_Ad1959/
+- Contact surfaces: n/a
+- Company: n/a
 - Evidence score: 10
 - Evidence: warm inbound engagement, workflow pain named: rollback risk, already in DMs
 - Motion: Workflow Hardening Sprint
@@ -65,6 +67,8 @@ Pain-confirmed follow-up:
 - Log after call booked: `npm run sales:pipeline -- advance --lead 'reddit_game_of_kton_r_cursor' --channel 'reddit_dm' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for stale context and conflicting facts.'`
 - Log after sprint intake: `npm run sales:pipeline -- advance --lead 'reddit_game_of_kton_r_cursor' --channel 'reddit_dm' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for stale context and conflicting facts.'`
 - Contact surface: https://www.reddit.com/user/game-of-kton/
+- Contact surfaces: n/a
+- Company: n/a
 - Evidence score: 9
 - Evidence: warm inbound engagement, built serious memory systems, workflow pain named: stale context and conflicting facts
 - Motion: Workflow Hardening Sprint
@@ -90,6 +94,8 @@ Pain-confirmed follow-up:
 - Log after call booked: `npm run sales:pipeline -- advance --lead 'reddit_leogodin217_r_claudecode' --channel 'reddit_dm' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for review boundaries and context risk.'`
 - Log after sprint intake: `npm run sales:pipeline -- advance --lead 'reddit_leogodin217_r_claudecode' --channel 'reddit_dm' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for review boundaries and context risk.'`
 - Contact surface: https://www.reddit.com/user/leogodin217/
+- Contact surfaces: n/a
+- Company: n/a
 - Evidence score: 9
 - Evidence: warm inbound engagement, mature multi-step workflow described, workflow pain named: review boundaries and context risk
 - Motion: Workflow Hardening Sprint
@@ -115,6 +121,8 @@ Pain-confirmed follow-up:
 - Log after call booked: `npm run sales:pipeline -- advance --lead 'reddit_enthu_cutlet_1337_r_claudecode' --channel 'reddit_dm' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for brittle guardrails.'`
 - Log after sprint intake: `npm run sales:pipeline -- advance --lead 'reddit_enthu_cutlet_1337_r_claudecode' --channel 'reddit_dm' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for brittle guardrails.'`
 - Contact surface: https://www.reddit.com/user/Enthu-Cutlet-1337/
+- Contact surfaces: n/a
+- Company: n/a
 - Evidence score: 8
 - Evidence: warm inbound engagement, responded to adaptive-gate positioning, workflow pain named: brittle guardrails
 - Motion: Workflow Hardening Sprint
@@ -141,6 +149,8 @@ Pain-confirmed follow-up:
 - Log after call booked: `npm run sales:pipeline -- advance --lead 'github_adqui9608_ai_code_review_agent' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
 - Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_adqui9608_ai_code_review_agent' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
 - Contact surface: https://github.com/Adqui9608
+- Contact surfaces: GitHub profile: https://github.com/Adqui9608; Repository: https://github.com/Adqui9608/ai-code-review-agent
+- Company: n/a
 - Evidence score: 15
 - Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, updated in the last 7 days
 - Motion: Workflow Hardening Sprint
@@ -165,7 +175,9 @@ Pain-confirmed follow-up:
 - Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
 - Log after call booked: `npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
 - Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
-- Contact surface: https://github.com/DGouron
+- Contact surface: https://dgouron.fr/
+- Contact surfaces: Website: https://dgouron.fr/; GitHub profile: https://github.com/DGouron; Repository: https://github.com/DGouron/review-flow
+- Company: Mentor Goal
 - Evidence score: 14
 - Evidence: workflow control surface, business-system integration, agent infrastructure, 36 GitHub stars, updated in the last 7 days
 - Motion: Workflow Hardening Sprint
@@ -191,6 +203,8 @@ Pain-confirmed follow-up:
 - Log after call booked: `npm run sales:pipeline -- advance --lead 'github_nihannihu_omni_sre' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
 - Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_nihannihu_omni_sre' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
 - Contact surface: https://github.com/nihannihu
+- Contact surfaces: GitHub profile: https://github.com/nihannihu; Repository: https://github.com/nihannihu/Omni-SRE
+- Company: @Omni-IDE
 - Evidence score: 14
 - Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, updated in the last 30 days
 - Motion: Workflow Hardening Sprint
@@ -215,7 +229,9 @@ Pain-confirmed follow-up:
 - Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_manki_review_manki' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
 - Log after call booked: `npm run sales:pipeline -- advance --lead 'github_manki_review_manki' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
 - Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_manki_review_manki' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
-- Contact surface: https://github.com/manki-review
+- Contact surface: https://manki.dustinface.me/
+- Contact surfaces: Website: https://manki.dustinface.me/; GitHub profile: https://github.com/manki-review; Repository: https://github.com/manki-review/manki
+- Company: n/a
 - Evidence score: 13
 - Evidence: workflow control surface, business-system integration, agent infrastructure, 5 GitHub stars, updated in the last 7 days
 - Motion: Workflow Hardening Sprint
@@ -240,7 +256,9 @@ Pain-confirmed follow-up:
 - Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_freema_mcp_jira_stdio' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
 - Log after call booked: `npm run sales:pipeline -- advance --lead 'github_freema_mcp_jira_stdio' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
 - Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_freema_mcp_jira_stdio' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
-- Contact surface: https://github.com/freema
+- Contact surface: http://www.tomasgrasl.cz/
+- Contact surfaces: Website: http://www.tomasgrasl.cz/; GitHub profile: https://github.com/freema; Repository: https://github.com/freema/mcp-jira-stdio
+- Company: n/a
 - Evidence score: 13
 - Evidence: workflow control surface, business-system integration, agent infrastructure, 11 GitHub stars, updated in the last 7 days
 - Motion: Workflow Hardening Sprint
@@ -266,6 +284,8 @@ Pain-confirmed follow-up:
 - Log after call booked: `npm run sales:pipeline -- advance --lead 'github_oliver_kriska_claude_elixir_phoenix' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for context-drift hardening for one workflow before proposing any broader agent platform story.'`
 - Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_oliver_kriska_claude_elixir_phoenix' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for context-drift hardening for one workflow before proposing any broader agent platform story.'`
 - Contact surface: https://github.com/oliver-kriska
+- Contact surfaces: GitHub profile: https://github.com/oliver-kriska; Repository: https://github.com/oliver-kriska/claude-elixir-phoenix
+- Company: n/a
 - Evidence score: 12
 - Evidence: workflow control surface, agent infrastructure, 290 GitHub stars, updated in the last 7 days
 - Motion: Workflow Hardening Sprint

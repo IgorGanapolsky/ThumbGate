@@ -1,6 +1,6 @@
 # Workflow Hardening Sprint Outreach Messages
 
-Updated: 2026-04-27T12:10:34.193Z
+Updated: 2026-04-27T12:59:31.009Z
 
 These drafts are generated from the same evidence-backed revenue-loop report as `gtm-revenue-loop.md`, `gtm-target-queue.csv`, and `gtm-marketplace-copy.md`.
 Use `operator-priority-handoff.md` for the ranked send order; this file is the copy layer for warm outreach only.
@@ -22,6 +22,8 @@ Use [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) and [COMMERCIAL_TRUT
 ## 1. Deep_Ad1959 (r/cursor)
 - Source: reddit / reddit_dm
 - Contact: https://www.reddit.com/user/Deep_Ad1959/
+- Contact surfaces: n/a
+- Company: n/a
 - Evidence score: 10
 - Evidence: warm inbound engagement, workflow pain named: rollback risk, already in DMs
 - Evidence sources: Target signal: https://www.reddit.com/user/Deep_Ad1959/; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
@@ -42,6 +44,8 @@ Pain-confirmed follow-up:
 ## 2. game-of-kton (r/cursor)
 - Source: reddit / reddit_dm
 - Contact: https://www.reddit.com/user/game-of-kton/
+- Contact surfaces: n/a
+- Company: n/a
 - Evidence score: 9
 - Evidence: warm inbound engagement, built serious memory systems, workflow pain named: stale context and conflicting facts
 - Evidence sources: Target signal: https://www.reddit.com/user/game-of-kton/; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
@@ -62,6 +66,8 @@ Pain-confirmed follow-up:
 ## 3. leogodin217 (r/ClaudeCode)
 - Source: reddit / reddit_dm
 - Contact: https://www.reddit.com/user/leogodin217/
+- Contact surfaces: n/a
+- Company: n/a
 - Evidence score: 9
 - Evidence: warm inbound engagement, mature multi-step workflow described, workflow pain named: review boundaries and context risk
 - Evidence sources: Target signal: https://www.reddit.com/user/leogodin217/; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
@@ -82,6 +88,8 @@ Pain-confirmed follow-up:
 ## 4. Enthu-Cutlet-1337 (r/ClaudeCode)
 - Source: reddit / reddit_dm
 - Contact: https://www.reddit.com/user/Enthu-Cutlet-1337/
+- Contact surfaces: n/a
+- Company: n/a
 - Evidence score: 8
 - Evidence: warm inbound engagement, responded to adaptive-gate positioning, workflow pain named: brittle guardrails
 - Evidence sources: Target signal: https://www.reddit.com/user/Enthu-Cutlet-1337/; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
