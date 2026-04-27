@@ -135,6 +135,35 @@ test('active follow-ups are promoted ahead of fresh sends using sales ledger sta
   assert.match(markdown, /stage 'call_booked'/);
 });
 
+test('report core links inherit the current team pilot CTA when provided', () => {
+  const tempDir = makeTempDir();
+  const queuePath = path.join(tempDir, 'gtm-target-queue.jsonl');
+  const reportPath = path.join(tempDir, 'gtm-revenue-loop.json');
+  const statePath = path.join(tempDir, 'sales-pipeline.jsonl');
+
+  writeJsonl(queuePath, [makeWarmTarget()]);
+  fs.writeFileSync(reportPath, JSON.stringify({
+    generatedAt: '2026-04-27T17:00:00.000Z',
+    directive: {
+      state: 'post-first-dollar',
+      headline: 'Verified booked revenue exists.',
+    },
+    currentTruth: {
+      teamPilotCta: 'https://thumbgate-production.up.railway.app/#custom-sprint-intake',
+      guideLink: 'https://thumbgate-production.up.railway.app/custom-guide',
+      commercialTruthLink: 'https://example.com/commercial-truth',
+      verificationEvidenceLink: 'https://example.com/verification-evidence',
+    },
+  }, null, 2));
+
+  const report = buildOutreachTargetsReport({ queuePath, reportPath, statePath });
+  const markdown = renderOutreachTargetsMarkdown(report);
+
+  assert.equal(report.coreLinks.sprint, 'https://thumbgate-production.up.railway.app/#custom-sprint-intake');
+  assert.match(markdown, /Sprint intake: https:\/\/thumbgate-production\.up\.railway\.app\/#custom-sprint-intake/);
+  assert.match(markdown, /Proof-backed setup guide: https:\/\/thumbgate-production\.up\.railway\.app\/custom-guide/);
+});
+
 test('CLI entrypoint detection is path based', () => {
   const scriptPath = require.resolve('../scripts/github-outreach');
 

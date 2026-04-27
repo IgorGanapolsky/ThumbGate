@@ -169,7 +169,7 @@ function buildOutreachTargetsReport({
       'One repeated failure pattern or rollout blocker that is expensive to repeat.',
     ],
     coreLinks: {
-      sprint: normalizeText(revenueLoopReport.currentTruth?.teamPilotOffer ? DEFAULT_CORE_LINKS.sprint : DEFAULT_CORE_LINKS.sprint),
+      sprint: normalizeText(revenueLoopReport.currentTruth?.teamPilotCta || DEFAULT_CORE_LINKS.sprint),
       guide: normalizeText(revenueLoopReport.currentTruth?.guideLink || DEFAULT_CORE_LINKS.guide),
       proof: normalizeText(revenueLoopReport.currentTruth?.verificationEvidenceLink || DEFAULT_CORE_LINKS.proof),
       truth: normalizeText(revenueLoopReport.currentTruth?.commercialTruthLink || DEFAULT_CORE_LINKS.truth),
