@@ -66,7 +66,8 @@ test('README keeps the business sprint-first while preserving the Pro side lane'
   assert.match(readme, /Workflow Hardening Sprint/i);
   assert.match(readme, /Paid path for individual operators/i);
   assert.match(readme, /self-serve side lane/i);
-  assert.match(readme, /https:\/\/usethumbgate\.com\/pro\?utm_source=github&utm_medium=readme&utm_campaign=pro_page/);
+  assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app\/checkout\/pro\?utm_source=github&utm_medium=readme&utm_campaign=pro_page/);
+  assert.doesNotMatch(readme, /https:\/\/usethumbgate\.com/i);
 });
 
 test('README exposes prompt-shaped buyer questions with tracked guide links', () => {
@@ -83,7 +84,8 @@ test('README exposes prompt-shaped buyer questions with tracked guide links', ()
   assert.match(readme, /guides\/cursor-agent-guardrails\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/codex-cli-guardrails\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/gemini-cli-feedback-memory\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
-  assert.match(readme, /https:\/\/usethumbgate\.com/);
+  assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app/);
+  assert.doesNotMatch(readme, /https:\/\/usethumbgate\.com/i);
   assert.match(readme, /\/\?utm_source=github&utm_medium=readme&utm_campaign=top_cta#workflow-sprint-intake/);
   assert.match(readme, /\/\?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake/);
   assert.match(readme, /First Dollar Playbook/i);
