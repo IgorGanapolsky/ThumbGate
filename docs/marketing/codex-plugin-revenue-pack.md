@@ -1,6 +1,6 @@
 # Codex Plugin Revenue Pack
 
-Updated: 2026-04-27T00:28:47.997Z
+Updated: 2026-04-27T01:47:17.003Z
 
 This is a sales operator artifact. It is not proof of bundle downloads, installs, paid revenue, or marketplace publication by itself.
 
@@ -24,14 +24,14 @@ ThumbGate gives Codex a proof-backed install path, pre-action gate enforcement, 
 - Examples: @Deep_Ad1959, @game-of-kton, @leogodin217
 
 ### Workflow control surfaces remain the strongest buyer signal
-- Count: 4
-- Summary: 4 current targets expose review, approval, governance, or workflow control surfaces where a Codex install story can convert into a workflow-hardening offer.
-- Examples: freema/mcp-jira-stdio, manki-review/manki, salacoste/mcp-n8n-workflow-builder
+- Count: 12
+- Summary: 12 current targets expose review, approval, governance, or workflow control surfaces where a Codex install story can convert into a workflow-hardening offer.
+- Examples: montenegronyc/backporcher, Adqui9608/ai-code-review-agent, DGouron/review-flow
 
 ### Production rollout proof matters
-- Count: 2
-- Summary: 2 targets touch production-sensitive workflows where proof and rollback safety should appear before the buyer expands usage.
-- Examples: WagnerAgent/awesome-mcp-servers-devops, bjeans/homelab-mcp
+- Count: 6
+- Summary: 6 targets touch production-sensitive workflows where proof and rollback safety should appear before the buyer expands usage.
+- Examples: montenegronyc/backporcher, Adqui9608/ai-code-review-agent, nihannihu/Omni-SRE
 
 ## Submission Surfaces
 ### Codex plugin install page
@@ -101,8 +101,8 @@ Proof links: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCI
 - @game-of-kton (warm): Warm Reddit engager already works on advanced agent memory, so discovery should center on one repeated failure pattern.
 - @leogodin217 (warm): Warm Reddit engager already described a mature workflow, so the next step is a targeted diagnostic on one failure mode.
 - @Enthu-Cutlet-1337 (warm): Warm Reddit engager already understands the adaptive-gate thesis, so offer one concrete workflow hardening diagnostic.
-- freema/mcp-jira-stdio (cold): Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
-- manki-review/manki (cold): Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
+- montenegronyc/backporcher (cold): Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
+- Adqui9608/ai-code-review-agent (cold): Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
 
 ## 90-Day Measurement Plan
 - North star: codex_install_intent_to_paid_intent

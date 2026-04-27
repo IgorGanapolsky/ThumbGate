@@ -13,8 +13,10 @@ const COMMERCIAL_TRUTH_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/
 const VERIFICATION_EVIDENCE_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
 const TARGET_SEARCH_QUERIES = [
   'search/repositories?q=Model+Context+Protocol+workflow+automation+sort:updated',
-  'search/repositories?q=Model+Context+Protocol+production+security+sort:stars',
+  'search/repositories?q=Model+Context+Protocol+approval+workflow+sort:updated',
+  'search/repositories?q=ServiceNow+MCP+workflow+sort:updated',
   'search/repositories?q=Claude+Code+review+automation+sort:updated',
+  'search/repositories?q=github+review+automation+agent+sort:updated',
 ];
 const SELF_SERVE_ONLY_SIGNALS = /\b(awesome|list|example|template|demo|tutorial|course|personal|dotfiles|toy|boilerplate)\b/;
 const MAX_CREDIBLE_DESCRIPTION_LENGTH = 500;
@@ -499,6 +501,8 @@ async function prospectTargets(maxTargets = 6, { fetchImpl = globalThis.fetch } 
     for (const repo of items.slice(0, maxTargets * 2)) {
       combined.push({
         username: repo.owner?.login || 'unknown',
+        accountName: repo.owner?.login || 'unknown',
+        contactUrl: repo.owner?.html_url || '',
         repoName: repo.name || 'unknown-repo',
         repoUrl: repo.html_url || '',
         description: normalizeText(repo.description) || 'No description provided.',
