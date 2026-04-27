@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
+const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const { resolveHostedBillingConfig } = require('./hosted-config');
@@ -630,30 +631,60 @@ function deriveRevenueDirective(summary = {}, motionCatalog = buildMotionCatalog
   };
 }
 
-function buildGitHubApiHeaders(token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN) {
+function resolveGitHubApiToken(explicitToken = '', { execFileSyncImpl = execFileSync } = {}) {
+  const envToken = normalizeText(
+    explicitToken || process.env.GITHUB_TOKEN || process.env.GH_TOKEN || process.env.GH_PAT,
+    4000
+  );
+  if (envToken) {
+    return envToken;
+  }
+
+  if (typeof execFileSyncImpl !== 'function') {
+    return '';
+  }
+
+  try {
+    const ghToken = execFileSyncImpl('gh', ['auth', 'token'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    return normalizeText(ghToken, 4000) || '';
+  } catch {
+    return '';
+  }
+}
+
+function buildGitHubApiHeaders(token = '') {
   const headers = {
     accept: 'application/vnd.github+json',
     'user-agent': 'thumbgate-gtm-revenue-loop',
     'x-github-api-version': '2022-11-28',
   };
 
-  if (normalizeText(token)) {
-    headers.authorization = `Bearer ${normalizeText(token)}`;
+  const resolvedToken = normalizeText(token, 4000);
+  if (resolvedToken) {
+    headers.authorization = `Bearer ${resolvedToken}`;
   }
 
   return headers;
 }
 
-async function fetchGitHubJson(endpoint, { fetchImpl = globalThis.fetch } = {}) {
+async function fetchGitHubJson(endpoint, {
+  fetchImpl = globalThis.fetch,
+  githubToken = '',
+  execFileSyncImpl = execFileSync,
+} = {}) {
   if (typeof fetchImpl !== 'function') {
     return { ok: false, error: 'global fetch is unavailable', data: null };
   }
 
+  const resolvedToken = resolveGitHubApiToken(githubToken, { execFileSyncImpl });
   let response;
   try {
     const requestUrl = new URL(endpoint, GITHUB_API_BASE_URL);
     response = await fetchImpl(requestUrl, {
-      headers: buildGitHubApiHeaders(),
+      headers: buildGitHubApiHeaders(resolvedToken),
     });
   } catch (err) {
     return { ok: false, error: err?.message || String(err), data: null };
@@ -675,7 +706,11 @@ async function fetchGitHubJson(endpoint, { fetchImpl = globalThis.fetch } = {}) 
   }
 }
 
-async function enrichGitHubTarget(target, { fetchImpl = globalThis.fetch } = {}) {
+async function enrichGitHubTarget(target, {
+  fetchImpl = globalThis.fetch,
+  githubToken = '',
+  execFileSyncImpl = execFileSync,
+} = {}) {
   const username = normalizeText(target?.username);
   if (!username) {
     return {
@@ -691,7 +726,11 @@ async function enrichGitHubTarget(target, { fetchImpl = globalThis.fetch } = {})
     { label: 'GitHub profile', url: target?.contactUrl },
     { label: 'Repository', url: target?.repoUrl },
   ]);
-  const response = await fetchGitHubJson(`users/${encodeURIComponent(username)}`, { fetchImpl });
+  const response = await fetchGitHubJson(`users/${encodeURIComponent(username)}`, {
+    fetchImpl,
+    githubToken,
+    execFileSyncImpl,
+  });
   if (!response.ok) {
     return {
       ...target,
@@ -807,11 +846,19 @@ function analyzeTargetEvidence(target) {
   };
 }
 
-async function prospectTargets(maxTargets = 6, { fetchImpl = globalThis.fetch } = {}) {
+async function prospectTargets(maxTargets = 6, {
+  fetchImpl = globalThis.fetch,
+  githubToken = '',
+  execFileSyncImpl = execFileSync,
+} = {}) {
   const combined = [];
   const errors = [];
   for (const endpoint of TARGET_SEARCH_QUERIES) {
-    const response = await fetchGitHubJson(endpoint, { fetchImpl });
+    const response = await fetchGitHubJson(endpoint, {
+      fetchImpl,
+      githubToken,
+      execFileSyncImpl,
+    });
     if (!response.ok) {
       errors.push(response.error);
       continue;
@@ -864,7 +911,11 @@ async function prospectTargets(maxTargets = 6, { fetchImpl = globalThis.fetch } 
   const topTargets = ranked.slice(0, maxTargets);
   const enrichedTargets = [];
   for (const target of topTargets) {
-    enrichedTargets.push(await enrichGitHubTarget(target, { fetchImpl }));
+    enrichedTargets.push(await enrichGitHubTarget(target, {
+      fetchImpl,
+      githubToken,
+      execFileSyncImpl,
+    }));
   }
 
   return {
@@ -1713,6 +1764,8 @@ async function runRevenueLoop(options = {}) {
   const directive = deriveRevenueDirective(summary, motionCatalog);
   const { targets, errors } = await prospectTargets(options.maxTargets || 6, {
     fetchImpl: options.fetchImpl || globalThis.fetch,
+    githubToken: options.githubToken || '',
+    execFileSyncImpl: options.execFileSyncImpl || execFileSync,
   });
   const enrichedTargets = await generateOutreachMessages(targets, motionCatalog);
   const pipelineAwareTargets = applyPipelineStateToTargets(
@@ -1785,6 +1838,7 @@ module.exports = {
   hasCredibleRepoDescription,
   hasCredibleRepoIdentity,
   hasLowBuyerIntentSignals,
+  resolveGitHubApiToken,
   isCliInvocation,
   parseArgs,
   prospectTargets,

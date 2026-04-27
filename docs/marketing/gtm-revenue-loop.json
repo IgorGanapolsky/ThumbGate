@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-04-27T12:59:31.009Z",
-  "source": "local",
-  "fallbackReason": "Hosted operational summary is disabled.",
+  "generatedAt": "2026-04-27T16:58:51.603Z",
+  "source": "hosted-via-railway-env",
+  "fallbackReason": null,
   "objective": "First 10 paying customers",
   "directive": {
-    "state": "cold-start",
-    "objective": "Land the first 10 paying customers with founder-led workflow hardening.",
+    "state": "post-first-dollar",
+    "objective": "Scale the first-10-customers loop with direct workflow hardening and self-serve follow-up.",
     "primaryMotion": "sprint",
     "secondaryMotion": "pro",
-    "headline": "No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.",
+    "headline": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.",
     "actions": [
-      "Directly contact qualified buyers with: \"I will harden one AI-agent workflow for you.\"",
-      "Use Pro at $19/mo or $149/yr only as the self-serve follow-up after the buyer asks for the tool path.",
-      "Track every lead as contacted -> replied -> call booked -> checkout or sprint intake -> paid.",
-      "Treat stars, traffic, and model praise as noise until they become paid orders or named pilot agreements."
+      "Reply to every qualified lead with one offer: \"I will harden one AI-agent workflow for you.\"",
+      "Use the proof pack after the buyer names the repeated workflow pain, not as the opener.",
+      "Route buyers who only want a tool to the Pro monthly/annual checkout after the pain is qualified.",
+      "Publish only booked revenue and paid-order proof from the billing summary or named pilot agreements."
     ]
   },
   "currentTruth": {
@@ -39,15 +39,15 @@
     "sourceRule": "Every listing, queue row, and pain-confirmed follow-up must inherit these sources before it is treated as operator-ready."
   },
   "snapshot": {
-    "paidOrders": 0,
-    "bookedRevenueCents": 0,
-    "checkoutStarts": 0,
-    "ctaClicks": 0,
-    "visitors": 0,
-    "uniqueLeads": 0,
+    "paidOrders": 2,
+    "bookedRevenueCents": 2000,
+    "checkoutStarts": 1,
+    "ctaClicks": 13,
+    "visitors": 397,
+    "uniqueLeads": 1,
     "sprintLeads": 0,
     "qualifiedSprintLeads": 0,
-    "latestPaidAt": null
+    "latestPaidAt": "2025-11-18T12:36:00.000Z"
   },
   "targets": [
     {
@@ -341,7 +341,7 @@
       "repoUrl": "https://github.com/Adqui9608/ai-code-review-agent",
       "description": "Review GitHub pull requests with AI to catch bugs, security issues, and code quality problems with built-in eval and observability",
       "stars": 0,
-      "updatedAt": "2026-04-27T04:00:33Z",
+      "updatedAt": "2026-04-27T16:07:18Z",
       "evidenceScore": 15,
       "evidence": [
         "workflow control surface",
@@ -560,88 +560,6 @@
       "temperature": "cold",
       "source": "github",
       "channel": "github",
-      "username": "freema",
-      "accountName": "freema",
-      "company": "",
-      "contactUrl": "http://www.tomasgrasl.cz/",
-      "contactSurfaces": [
-        {
-          "label": "Website",
-          "url": "http://www.tomasgrasl.cz/"
-        },
-        {
-          "label": "GitHub profile",
-          "url": "https://github.com/freema"
-        },
-        {
-          "label": "Repository",
-          "url": "https://github.com/freema/mcp-jira-stdio"
-        }
-      ],
-      "websiteUrl": "http://www.tomasgrasl.cz/",
-      "repoName": "mcp-jira-stdio",
-      "repoUrl": "https://github.com/freema/mcp-jira-stdio",
-      "description": "MCP server for Jira integration with stdio transport. Issue management, project tracking, and workflow automation via Model Context Protocol.",
-      "stars": 11,
-      "updatedAt": "2026-04-21T14:40:45Z",
-      "evidenceScore": 13,
-      "evidence": [
-        "workflow control surface",
-        "business-system integration",
-        "agent infrastructure",
-        "11 GitHub stars",
-        "updated in the last 7 days"
-      ],
-      "outreachAngle": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
-      "evidenceSource": "https://github.com/freema/mcp-jira-stdio",
-      "evidenceSources": [
-        {
-          "label": "Target signal",
-          "url": "https://github.com/freema/mcp-jira-stdio",
-          "reason": "Source of the workflow or buyer signal behind this outreach row."
-        },
-        {
-          "label": "Commercial truth",
-          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
-          "reason": "Current pricing, traction, and offer guardrail."
-        },
-        {
-          "label": "Verification evidence",
-          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
-          "reason": "Current engineering proof pack and verification artifact."
-        }
-      ],
-      "claimGuardrails": [
-        "Do not claim revenue, installs, or marketplace approval without direct command evidence.",
-        "Do not lead with proof links before the buyer confirms pain.",
-        "Keep public pricing and traction claims aligned with COMMERCIAL_TRUTH.md.",
-        "Keep proof and quality claims aligned with VERIFICATION_EVIDENCE.md."
-      ],
-      "motion": "sprint",
-      "motionLabel": "Workflow Hardening Sprint",
-      "motionReason": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
-      "pipelineLeadId": "github_freema_mcp_jira_stdio",
-      "pipelineStage": "targeted",
-      "pipelineUpdatedAt": "",
-      "nextOperatorAction": "Send the first-touch draft and log the outreach in the sales pipeline.",
-      "offer": "workflow_hardening_sprint",
-      "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
-      "proofPackTrigger": "Use proof pack only after the buyer confirms pain.",
-      "firstTouchDraft": "Hey @freema, saw you're shipping `mcp-jira-stdio`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
-      "painConfirmedFollowUpDraft": "If `mcp-jira-stdio` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
-      "salesCommands": {
-        "markContacted": "npm run sales:pipeline -- advance --lead 'github_freema_mcp_jira_stdio' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-        "markReplied": "npm run sales:pipeline -- advance --lead 'github_freema_mcp_jira_stdio' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-        "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_freema_mcp_jira_stdio' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-        "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_freema_mcp_jira_stdio' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-        "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_freema_mcp_jira_stdio' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'"
-      },
-      "message": "Hey @freema, saw you're shipping `mcp-jira-stdio`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
-    },
-    {
-      "temperature": "cold",
-      "source": "github",
-      "channel": "github",
       "username": "manki-review",
       "accountName": "manki-review",
       "company": "",
@@ -665,7 +583,7 @@
       "repoUrl": "https://github.com/manki-review/manki",
       "description": "Multi-stage, multi-agent AI code review for GitHub — self-hosted, provider-neutral. A planner picks the team, agents review in parallel, a judge filters the noise.",
       "stars": 5,
-      "updatedAt": "2026-04-27T11:07:15Z",
+      "updatedAt": "2026-04-27T15:02:18Z",
       "evidenceScore": 13,
       "evidence": [
         "workflow control surface",
@@ -724,39 +642,39 @@
       "temperature": "cold",
       "source": "github",
       "channel": "github",
-      "username": "oliver-kriska",
-      "accountName": "oliver-kriska",
+      "username": "yungookim",
+      "accountName": "yungookim",
       "company": "",
-      "contactUrl": "https://github.com/oliver-kriska",
+      "contactUrl": "https://github.com/yungookim",
       "contactSurfaces": [
         {
           "label": "GitHub profile",
-          "url": "https://github.com/oliver-kriska"
+          "url": "https://github.com/yungookim"
         },
         {
           "label": "Repository",
-          "url": "https://github.com/oliver-kriska/claude-elixir-phoenix"
+          "url": "https://github.com/yungookim/oh-my-pr"
         }
       ],
       "websiteUrl": "",
-      "repoName": "claude-elixir-phoenix",
-      "repoUrl": "https://github.com/oliver-kriska/claude-elixir-phoenix",
-      "description": "Claude Code plugin for Elixir/Phoenix/LiveView — 20 specialist agents, Iron Laws enforcement, and Tidewave MCP integration. Plan features with parallel research agents, execute with automatic verification, review with 4-agent parallel audits, and capture learnings as reusable knowledge.",
-      "stars": 290,
-      "updatedAt": "2026-04-27T06:29:27Z",
+      "repoName": "oh-my-pr",
+      "repoUrl": "https://github.com/yungookim/oh-my-pr",
+      "description": "Autonomous GitHub PR babysitter — watches your repos, triages review feedback, and dispatches AI agents to fix code.",
+      "stars": 39,
+      "updatedAt": "2026-04-26T23:27:48Z",
       "evidenceScore": 12,
       "evidence": [
         "workflow control surface",
-        "agent infrastructure",
-        "290 GitHub stars",
+        "business-system integration",
+        "39 GitHub stars",
         "updated in the last 7 days"
       ],
-      "outreachAngle": "Lead with context-drift hardening for one workflow before proposing any broader agent platform story.",
-      "evidenceSource": "https://github.com/oliver-kriska/claude-elixir-phoenix",
+      "outreachAngle": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
+      "evidenceSource": "https://github.com/yungookim/oh-my-pr",
       "evidenceSources": [
         {
           "label": "Target signal",
-          "url": "https://github.com/oliver-kriska/claude-elixir-phoenix",
+          "url": "https://github.com/yungookim/oh-my-pr",
           "reason": "Source of the workflow or buyer signal behind this outreach row."
         },
         {
@@ -778,32 +696,113 @@
       ],
       "motion": "sprint",
       "motionLabel": "Workflow Hardening Sprint",
-      "motionReason": "Lead with context-drift hardening for one workflow before proposing any broader agent platform story.",
-      "pipelineLeadId": "github_oliver_kriska_claude_elixir_phoenix",
+      "motionReason": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
+      "pipelineLeadId": "github_yungookim_oh_my_pr",
       "pipelineStage": "targeted",
       "pipelineUpdatedAt": "",
       "nextOperatorAction": "Send the first-touch draft and log the outreach in the sales pipeline.",
       "offer": "workflow_hardening_sprint",
       "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
       "proofPackTrigger": "Use proof pack only after the buyer confirms pain.",
-      "firstTouchDraft": "Hey @oliver-kriska, saw you're shipping `claude-elixir-phoenix`. If one context, memory, or tool-use failure keeps repeating, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
-      "painConfirmedFollowUpDraft": "If `claude-elixir-phoenix` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "firstTouchDraft": "Hey @yungookim, saw you're shipping `oh-my-pr`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+      "painConfirmedFollowUpDraft": "If `oh-my-pr` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
       "salesCommands": {
-        "markContacted": "npm run sales:pipeline -- advance --lead 'github_oliver_kriska_claude_elixir_phoenix' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on context-drift hardening for one workflow before proposing any broader agent platform story.'",
-        "markReplied": "npm run sales:pipeline -- advance --lead 'github_oliver_kriska_claude_elixir_phoenix' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around context-drift hardening for one workflow before proposing any broader agent platform story.'",
-        "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_oliver_kriska_claude_elixir_phoenix' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for context-drift hardening for one workflow before proposing any broader agent platform story.'",
-        "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_oliver_kriska_claude_elixir_phoenix' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing context-drift hardening for one workflow before proposing any broader agent platform story.'",
-        "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_oliver_kriska_claude_elixir_phoenix' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for context-drift hardening for one workflow before proposing any broader agent platform story.'"
+        "markContacted": "npm run sales:pipeline -- advance --lead 'github_yungookim_oh_my_pr' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markReplied": "npm run sales:pipeline -- advance --lead 'github_yungookim_oh_my_pr' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_yungookim_oh_my_pr' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_yungookim_oh_my_pr' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_yungookim_oh_my_pr' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'"
       },
-      "message": "Hey @oliver-kriska, saw you're shipping `claude-elixir-phoenix`. If one context, memory, or tool-use failure keeps repeating, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+      "message": "Hey @yungookim, saw you're shipping `oh-my-pr`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+    },
+    {
+      "temperature": "cold",
+      "source": "github",
+      "channel": "github",
+      "username": "tarinagarwal",
+      "accountName": "tarinagarwal",
+      "company": "",
+      "contactUrl": "https://tarinagarwal.in/",
+      "contactSurfaces": [
+        {
+          "label": "Website",
+          "url": "https://tarinagarwal.in/"
+        },
+        {
+          "label": "GitHub profile",
+          "url": "https://github.com/tarinagarwal"
+        },
+        {
+          "label": "Repository",
+          "url": "https://github.com/tarinagarwal/lgtm-feedback"
+        }
+      ],
+      "websiteUrl": "https://tarinagarwal.in/",
+      "repoName": "lgtm-feedback",
+      "repoUrl": "https://github.com/tarinagarwal/lgtm-feedback",
+      "description": "LGTM (Looks Good To Meow) — AI-powered code review platform for GitHub PRs. 6 specialist agents, BYOK, CLI, and auto-review.",
+      "stars": 0,
+      "updatedAt": "2026-04-16T16:19:06Z",
+      "evidenceScore": 12,
+      "evidence": [
+        "workflow control surface",
+        "production or platform workflow",
+        "business-system integration",
+        "updated in the last 30 days"
+      ],
+      "outreachAngle": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
+      "evidenceSource": "https://github.com/tarinagarwal/lgtm-feedback",
+      "evidenceSources": [
+        {
+          "label": "Target signal",
+          "url": "https://github.com/tarinagarwal/lgtm-feedback",
+          "reason": "Source of the workflow or buyer signal behind this outreach row."
+        },
+        {
+          "label": "Commercial truth",
+          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+          "reason": "Current pricing, traction, and offer guardrail."
+        },
+        {
+          "label": "Verification evidence",
+          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+          "reason": "Current engineering proof pack and verification artifact."
+        }
+      ],
+      "claimGuardrails": [
+        "Do not claim revenue, installs, or marketplace approval without direct command evidence.",
+        "Do not lead with proof links before the buyer confirms pain.",
+        "Keep public pricing and traction claims aligned with COMMERCIAL_TRUTH.md.",
+        "Keep proof and quality claims aligned with VERIFICATION_EVIDENCE.md."
+      ],
+      "motion": "sprint",
+      "motionLabel": "Workflow Hardening Sprint",
+      "motionReason": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
+      "pipelineLeadId": "github_tarinagarwal_lgtm_feedback",
+      "pipelineStage": "targeted",
+      "pipelineUpdatedAt": "",
+      "nextOperatorAction": "Send the first-touch draft and log the outreach in the sales pipeline.",
+      "offer": "workflow_hardening_sprint",
+      "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+      "proofPackTrigger": "Use proof pack only after the buyer confirms pain.",
+      "firstTouchDraft": "Hey @tarinagarwal, saw you're shipping `lgtm-feedback`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+      "painConfirmedFollowUpDraft": "If `lgtm-feedback` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "salesCommands": {
+        "markContacted": "npm run sales:pipeline -- advance --lead 'github_tarinagarwal_lgtm_feedback' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markReplied": "npm run sales:pipeline -- advance --lead 'github_tarinagarwal_lgtm_feedback' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_tarinagarwal_lgtm_feedback' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_tarinagarwal_lgtm_feedback' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_tarinagarwal_lgtm_feedback' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'"
+      },
+      "message": "Hey @tarinagarwal, saw you're shipping `lgtm-feedback`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
     }
   ],
   "marketplaceCopy": {
-    "generatedAt": "2026-04-27T12:59:31.009Z",
-    "state": "cold-start",
+    "generatedAt": "2026-04-27T16:58:51.603Z",
+    "state": "post-first-dollar",
     "headline": "Harden one AI-agent workflow before you roll it out.",
-    "shortDescription": "No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain.",
-    "longDescription": "ThumbGate is a reliability gateway for AI coding workflows. It captures repeated failures, regenerates pre-action gates, and keeps approval boundaries, rollback safety, and proof attached to the workflow before the next risky tool call. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Primary motion: Workflow Hardening Sprint. Secondary motion: Pro at $19/mo or $149/yr after the buyer asks for the self-serve path.",
+    "shortDescription": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain.",
+    "longDescription": "ThumbGate is a reliability gateway for AI coding workflows. It captures repeated failures, regenerates pre-action gates, and keeps approval boundaries, rollback safety, and proof attached to the workflow before the next risky tool call. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Primary motion: Workflow Hardening Sprint. Secondary motion: Pro at $19/mo or $149/yr after the buyer asks for the self-serve path.",
     "proofPolicy": "Do not lead with proof links. Use Commercial Truth and Verification Evidence only after the buyer confirms pain.",
     "recommendedCtas": [
       {
@@ -824,7 +823,7 @@
     ],
     "listingBullets": [
       "Turn repeated AI-agent mistakes into enforceable pre-action gates.",
-      "Lead with one repeated workflow failure, then show how ThumbGate turns it into an enforceable pre-action gate.",
+      "Lead with approval boundaries, rollback safety, and proof for one workflow.",
       "Route install-intent buyers through the proof-backed setup guide before direct checkout.",
       "Primary offer: Workflow Hardening Sprint.",
       "Secondary offer: Pro at $19/mo or $149/yr after the buyer asks for the tool path.",
@@ -832,10 +831,10 @@
     ],
     "topSignals": [
       {
-        "key": "workflow_control",
-        "label": "Workflow control surfaces",
-        "summary": "The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive.",
-        "listingAngle": "Lead with one repeated workflow failure, then show how ThumbGate turns it into an enforceable pre-action gate.",
+        "key": "business_system_workflows",
+        "label": "Business-system workflow approvals",
+        "summary": "Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof.",
+        "listingAngle": "Lead with approval boundaries, rollback safety, and proof for one workflow.",
         "count": 6,
         "examples": [
           "Adqui9608/ai-code-review-agent",
@@ -844,11 +843,11 @@
         ]
       },
       {
-        "key": "business_system_workflows",
-        "label": "Business-system workflow approvals",
-        "summary": "Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof.",
-        "listingAngle": "Lead with approval boundaries, rollback safety, and proof for one workflow.",
-        "count": 5,
+        "key": "workflow_control",
+        "label": "Workflow control surfaces",
+        "summary": "The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive.",
+        "listingAngle": "Lead with one repeated workflow failure, then show how ThumbGate turns it into an enforceable pre-action gate.",
+        "count": 6,
         "examples": [
           "Adqui9608/ai-code-review-agent",
           "DGouron/review-flow",
