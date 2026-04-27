@@ -170,6 +170,32 @@ test('resolveRevenueLoopSummary keeps local numbers when hosted revenue status s
   assert.equal(result.summary.revenue.paidOrders, 0);
 });
 
+test('resolveRevenueLoopSummary skips hosted audit when local metrics are explicitly requested', async () => {
+  let hostedAuditCalls = 0;
+  const result = await resolveRevenueLoopSummary({
+    getOperationalBillingSummaryFn: async () => ({
+      source: 'local',
+      summary: {
+        revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+        trafficMetrics: { checkoutStarts: 0 },
+        signups: { uniqueLeads: 0 },
+        pipeline: {},
+      },
+      fallbackReason: 'Hosted operational summary is disabled.',
+      hostedStatus: null,
+    }),
+    generateRevenueStatusReportFn: async () => {
+      hostedAuditCalls += 1;
+      return {
+        source: 'hosted-http-api',
+      };
+    },
+  });
+
+  assert.equal(result.source, 'local');
+  assert.equal(hostedAuditCalls, 0);
+});
+
 test('argument and commercial snapshot helpers stay bounded and explicit', () => {
   assert.deepEqual(parseArgs(['--write-docs', '--report-dir', 'reports/gtm', '--max-targets=99']), {
     maxTargets: 12,
@@ -271,6 +297,18 @@ test('prospects GitHub targets via REST search, filters low-signal repos, and de
   const fetchImpl = async (url, options) => {
     requestedUrls.push(String(url));
     assert.equal(options.headers.accept, 'application/vnd.github+json');
+    if (String(url).includes('/users/builder')) {
+      return {
+        ok: true,
+        async text() {
+          return JSON.stringify({
+            html_url: 'https://github.com/builder',
+            blog: 'builder.dev',
+            company: '@builder-labs',
+          });
+        },
+      };
+    }
     return {
       ok: true,
       async text() {
@@ -321,10 +359,17 @@ test('prospects GitHub targets via REST search, filters low-signal repos, and de
   assert.equal(result.targets.length, 1);
   assert.equal(result.targets[0].username, 'builder');
   assert.equal(result.targets[0].accountName, 'builder');
-  assert.equal(result.targets[0].contactUrl, 'https://github.com/builder');
+  assert.equal(result.targets[0].contactUrl, 'https://builder.dev/');
+  assert.equal(result.targets[0].company, '@builder-labs');
+  assert.deepEqual(result.targets[0].contactSurfaces, [
+    { label: 'Website', url: 'https://builder.dev/' },
+    { label: 'GitHub profile', url: 'https://github.com/builder' },
+    { label: 'Repository', url: 'https://github.com/builder/production-mcp-server' },
+  ]);
   assert.ok(result.targets[0].evidence.score >= 5);
-  assert.equal(requestedUrls.length, 5);
-  assert.ok(requestedUrls.every((url) => url.startsWith('https://api.github.com/search/repositories')));
+  assert.equal(requestedUrls.length, 6);
+  assert.equal(requestedUrls.filter((url) => url.startsWith('https://api.github.com/search/repositories')).length, 5);
+  assert.ok(requestedUrls.some((url) => url === 'https://api.github.com/users/builder'));
 });
 
 test('prospecting drops repositories with corrupted descriptions even when scores look high', async () => {
@@ -477,7 +522,14 @@ test('rendered revenue loop markdown anchors every target to truth and proof', (
       channel: 'reddit_dm',
       username: 'builder',
       accountName: 'r/ClaudeCode',
+      company: 'Builder Labs',
       contactUrl: 'https://www.reddit.com/user/builder/',
+      contactSurfaces: [
+        {
+          label: 'Reddit DM',
+          url: 'https://www.reddit.com/user/builder/',
+        },
+      ],
       repoName: 'mcp-solo-helper',
       repoUrl: 'https://github.com/example/mcp-solo-helper',
       evidenceScore: 8,
@@ -511,6 +563,8 @@ test('rendered revenue loop markdown anchors every target to truth and proof', (
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
   assert.match(markdown, /Evidence Backstop/);
   assert.match(markdown, /Evidence sources:/);
+  assert.match(markdown, /Contact surfaces: Reddit DM: https:\/\/www\.reddit\.com\/user\/builder\//);
+  assert.match(markdown, /Company: Builder Labs/);
   assert.match(markdown, /Warm Discovery Queue/);
   assert.match(markdown, /Source: reddit \/ reddit_dm/);
   assert.match(markdown, /Workflow Hardening Sprint/);
@@ -606,6 +660,12 @@ test('pipeline-aware targets inherit follow-up stages and drop terminal leads', 
         username: 'builder',
         accountName: 'builder',
         contactUrl: 'https://github.com/builder',
+        contactSurfaces: [
+          {
+            label: 'GitHub profile',
+            url: 'https://github.com/builder',
+          },
+        ],
         repoName: 'production-mcp-server',
         repoUrl: 'https://github.com/builder/production-mcp-server',
         description: 'Production workflow automation with GitHub integrations.',
@@ -617,6 +677,12 @@ test('pipeline-aware targets inherit follow-up stages and drop terminal leads', 
         username: 'paid_builder',
         accountName: 'paid_builder',
         contactUrl: 'https://github.com/paid_builder',
+        contactSurfaces: [
+          {
+            label: 'GitHub profile',
+            url: 'https://github.com/paid_builder',
+          },
+        ],
         repoName: 'approval-gates',
         repoUrl: 'https://github.com/paid_builder/approval-gates',
         description: 'Approval gates for agent workflows.',
@@ -628,6 +694,12 @@ test('pipeline-aware targets inherit follow-up stages and drop terminal leads', 
         username: 'fresh_builder',
         accountName: 'r/ClaudeCode',
         contactUrl: 'https://www.reddit.com/user/fresh_builder/',
+        contactSurfaces: [
+          {
+            label: 'Reddit DM',
+            url: 'https://www.reddit.com/user/fresh_builder/',
+          },
+        ],
         repoName: '',
         repoUrl: '',
         description: 'Warm discovery lead with review-boundary pain.',
@@ -656,6 +728,12 @@ test('team outreach markdown stays discovery-first and evidence-backed', () => {
       username: 'builder',
       accountName: 'r/ClaudeCode',
       contactUrl: 'https://www.reddit.com/user/builder/',
+      contactSurfaces: [
+        {
+          label: 'Reddit DM',
+          url: 'https://www.reddit.com/user/builder/',
+        },
+      ],
       evidenceScore: 9,
       evidence: ['warm inbound engagement', 'workflow pain named'],
       evidenceSources: [
@@ -688,6 +766,7 @@ test('team outreach markdown stays discovery-first and evidence-backed', () => {
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
   assert.match(markdown, /I will harden one AI-agent workflow for you/);
   assert.match(markdown, /Evidence sources:/);
+  assert.match(markdown, /Contact surfaces: Reddit DM: https:\/\/www\.reddit\.com\/user\/builder\//);
   assert.match(markdown, /Pain-confirmed follow-up:/);
   assert.match(markdown, /Log after send: `npm run sales:pipeline -- advance --lead 'reddit_builder_/);
   assert.match(markdown, /Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'reddit_builder_/);
@@ -715,6 +794,12 @@ test('operator handoff markdown prioritizes follow-ups, then warm discovery, the
         username: 'follow_builder',
         accountName: 'r/ClaudeCode',
         contactUrl: 'https://www.reddit.com/user/follow_builder/',
+        contactSurfaces: [
+          {
+            label: 'Reddit DM',
+            url: 'https://www.reddit.com/user/follow_builder/',
+          },
+        ],
         evidenceScore: 10,
         evidence: ['warm inbound engagement', 'buyer replied'],
         motion: 'sprint',
@@ -733,6 +818,18 @@ test('operator handoff markdown prioritizes follow-ups, then warm discovery, the
         source: 'github',
         channel: 'github',
         username: 'builder',
+        company: 'Builder Labs',
+        contactUrl: 'https://builder.dev/',
+        contactSurfaces: [
+          {
+            label: 'Website',
+            url: 'https://builder.dev/',
+          },
+          {
+            label: 'GitHub profile',
+            url: 'https://github.com/builder',
+          },
+        ],
         repoName: 'production-mcp-server',
         repoUrl: 'https://github.com/builder/production-mcp-server',
         evidenceScore: 11,
@@ -753,6 +850,12 @@ test('operator handoff markdown prioritizes follow-ups, then warm discovery, the
         username: 'warm_builder',
         accountName: 'r/ClaudeCode',
         contactUrl: 'https://www.reddit.com/user/warm_builder/',
+        contactSurfaces: [
+          {
+            label: 'Reddit DM',
+            url: 'https://www.reddit.com/user/warm_builder/',
+          },
+        ],
         evidenceScore: 8,
         evidence: ['warm inbound engagement', 'workflow pain named'],
         motion: 'sprint',
@@ -776,6 +879,8 @@ test('operator handoff markdown prioritizes follow-ups, then warm discovery, the
   assert.ok(markdown.indexOf('@warm_builder') < markdown.indexOf('@builder'));
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
+  assert.match(markdown, /Contact surfaces: Website: https:\/\/builder\.dev\/; GitHub profile: https:\/\/github\.com\/builder/);
+  assert.match(markdown, /Company: Builder Labs/);
   assert.match(markdown, /Pipeline lead id: reddit_follow_builder_/);
   assert.match(markdown, /Log after send: `npm run sales:pipeline -- advance --lead 'reddit_follow_builder_/);
   assert.match(markdown, /Log after sprint intake: `npm run sales:pipeline -- advance --lead 'reddit_follow_builder_/);
@@ -978,7 +1083,14 @@ test('revenue loop report keeps evidence metadata on each target', () => {
       channel: 'reddit_dm',
       username: 'builder',
       accountName: 'r/ClaudeCode',
+      company: 'Builder Labs',
       contactUrl: 'https://www.reddit.com/user/builder/',
+      contactSurfaces: [
+        {
+          label: 'Reddit DM',
+          url: 'https://www.reddit.com/user/builder/',
+        },
+      ],
       repoName: 'production-mcp-server',
       repoUrl: 'https://github.com/example/production-mcp-server',
       description: 'Production workflow automation with GitHub integrations.',
@@ -1235,7 +1347,14 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
       channel: 'reddit_dm',
       username: 'builder',
       accountName: 'r/ClaudeCode',
+      company: 'Builder Labs',
       contactUrl: 'https://www.reddit.com/user/builder/',
+      contactSurfaces: [
+        {
+          label: 'Reddit DM',
+          url: 'https://www.reddit.com/user/builder/',
+        },
+      ],
       repoName: 'production-mcp-server',
       repoUrl: 'https://github.com/example/production-mcp-server',
       updatedAt: '2026-04-20T00:00:00.000Z',
@@ -1291,9 +1410,11 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.ok(fs.existsSync(path.join(reportDir, 'gtm-target-queue.jsonl')));
     assert.ok(fs.existsSync(path.join(reportDir, 'team-outreach-messages.md')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-priority-handoff.md')));
-    assert.match(csv, /^temperature,source,channel,username,accountName,contactUrl,repoName,repoUrl,updatedAt,offer,pipelineStage,evidenceScore,evidence,evidenceSource,evidenceLinks,claimGuardrails,outreachAngle,motionLabel,motionReason,proofPackTrigger,cta,firstTouchDraft,painConfirmedFollowUpDraft/m);
+    assert.match(csv, /^temperature,source,channel,username,accountName,company,contactUrl,contactSurfaces,repoName,repoUrl,updatedAt,offer,pipelineStage,evidenceScore,evidence,evidenceSource,evidenceLinks,claimGuardrails,outreachAngle,motionLabel,motionReason,proofPackTrigger,cta,firstTouchDraft,painConfirmedFollowUpDraft/m);
     assert.match(csv, /"I can harden one workflow, then prove it\."/);
     assert.match(csv, /"If the workflow pain is real, I can send the proof pack\."/);
+    assert.match(csv, /Builder Labs/);
+    assert.match(csv, /Reddit DM: https:\/\/www\.reddit\.com\/user\/builder\//);
     assert.match(csv, /Commercial truth: .*COMMERCIAL_TRUTH\.md/);
     assert.match(csv, /Do not claim revenue, installs, or marketplace approval without direct command evidence\./);
     assert.match(marketplaceCopy.headline, /workflow/i);

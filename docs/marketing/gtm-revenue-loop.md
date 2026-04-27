@@ -1,7 +1,7 @@
 # GSD Revenue Loop
 
-Status: post-first-dollar
-Updated: 2026-04-27T12:10:34.193Z
+Status: cold-start
+Updated: 2026-04-27T12:59:31.009Z
 
 This report is an operator artifact for landing the first 10 paying customers. It is not proof of sent messages or booked revenue by itself.
 Outbound rule: do not treat posts as sales. A lead only moves when it is tracked as contacted, replied, call booked, checkout/sprint, or paid.
@@ -22,25 +22,25 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Proof link: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ## Revenue Snapshot
-- Paid orders: 2
-- Booked revenue: $20.00
-- Checkout starts: 1
-- Unique leads: 1
+- Paid orders: 0
+- Booked revenue: $0.00
+- Checkout starts: 0
+- Unique leads: 0
 - Workflow sprint leads: 0
 - Qualified sprint leads: 0
-- Billing source: hosted-via-railway-env
+- Billing source: local (Hosted operational summary is disabled.)
 
 ## GSD Directive
-- Objective: Scale the first-10-customers loop with direct workflow hardening and self-serve follow-up.
-- Headline: Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
+- Objective: Land the first 10 paying customers with founder-led workflow hardening.
+- Headline: No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.
 - Primary motion: sprint
 - Secondary motion: pro
 
 ## Immediate Actions
-- Reply to every qualified lead with one offer: "I will harden one AI-agent workflow for you."
-- Use the proof pack after the buyer names the repeated workflow pain, not as the opener.
-- Route buyers who only want a tool to the Pro monthly/annual checkout after the pain is qualified.
-- Publish only booked revenue and paid-order proof from the billing summary or named pilot agreements.
+- Directly contact qualified buyers with: "I will harden one AI-agent workflow for you."
+- Use Pro at $19/mo or $149/yr only as the self-serve follow-up after the buyer asks for the tool path.
+- Track every lead as contacted -> replied -> call booked -> checkout or sprint intake -> paid.
+- Treat stars, traffic, and model praise as noise until they become paid orders or named pilot agreements.
 
 ## Warm Discovery Queue
 ### @Deep_Ad1959 — r/cursor
@@ -51,6 +51,8 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Pipeline last updated: n/a
 - Offer: workflow_hardening_sprint
 - Contact: https://www.reddit.com/user/Deep_Ad1959/
+- Contact surfaces: n/a
+- Company: n/a
 - Repo: n/a
 - Repo last updated: n/a
 - Evidence score: 10
@@ -72,6 +74,8 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Pipeline last updated: n/a
 - Offer: workflow_hardening_sprint
 - Contact: https://www.reddit.com/user/game-of-kton/
+- Contact surfaces: n/a
+- Company: n/a
 - Repo: n/a
 - Repo last updated: n/a
 - Evidence score: 9
@@ -93,6 +97,8 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Pipeline last updated: n/a
 - Offer: workflow_hardening_sprint
 - Contact: https://www.reddit.com/user/leogodin217/
+- Contact surfaces: n/a
+- Company: n/a
 - Repo: n/a
 - Repo last updated: n/a
 - Evidence score: 9
@@ -114,6 +120,8 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Pipeline last updated: n/a
 - Offer: workflow_hardening_sprint
 - Contact: https://www.reddit.com/user/Enthu-Cutlet-1337/
+- Contact surfaces: n/a
+- Company: n/a
 - Repo: n/a
 - Repo last updated: n/a
 - Evidence score: 8
@@ -137,6 +145,8 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Pipeline last updated: n/a
 - Offer: workflow_hardening_sprint
 - Contact: https://github.com/Adqui9608
+- Contact surfaces: GitHub profile: https://github.com/Adqui9608; Repository: https://github.com/Adqui9608/ai-code-review-agent
+- Company: n/a
 - Repo: https://github.com/Adqui9608/ai-code-review-agent
 - Repo last updated: 2026-04-27T04:00:33Z
 - Evidence score: 15
@@ -157,7 +167,9 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
 - Pipeline last updated: n/a
 - Offer: workflow_hardening_sprint
-- Contact: https://github.com/DGouron
+- Contact: https://dgouron.fr/
+- Contact surfaces: Website: https://dgouron.fr/; GitHub profile: https://github.com/DGouron; Repository: https://github.com/DGouron/review-flow
+- Company: Mentor Goal
 - Repo: https://github.com/DGouron/review-flow
 - Repo last updated: 2026-04-25T03:12:00Z
 - Evidence score: 14
@@ -179,6 +191,8 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Pipeline last updated: n/a
 - Offer: workflow_hardening_sprint
 - Contact: https://github.com/nihannihu
+- Contact surfaces: GitHub profile: https://github.com/nihannihu; Repository: https://github.com/nihannihu/Omni-SRE
+- Company: @Omni-IDE
 - Repo: https://github.com/nihannihu/Omni-SRE
 - Repo last updated: 2026-04-17T15:11:02Z
 - Evidence score: 14
@@ -199,7 +213,9 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
 - Pipeline last updated: n/a
 - Offer: workflow_hardening_sprint
-- Contact: https://github.com/freema
+- Contact: http://www.tomasgrasl.cz/
+- Contact surfaces: Website: http://www.tomasgrasl.cz/; GitHub profile: https://github.com/freema; Repository: https://github.com/freema/mcp-jira-stdio
+- Company: n/a
 - Repo: https://github.com/freema/mcp-jira-stdio
 - Repo last updated: 2026-04-21T14:40:45Z
 - Evidence score: 13
@@ -220,7 +236,9 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
 - Pipeline last updated: n/a
 - Offer: workflow_hardening_sprint
-- Contact: https://github.com/manki-review
+- Contact: https://manki.dustinface.me/
+- Contact surfaces: Website: https://manki.dustinface.me/; GitHub profile: https://github.com/manki-review; Repository: https://github.com/manki-review/manki
+- Company: n/a
 - Repo: https://github.com/manki-review/manki
 - Repo last updated: 2026-04-27T11:07:15Z
 - Evidence score: 13
@@ -242,6 +260,8 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Pipeline last updated: n/a
 - Offer: workflow_hardening_sprint
 - Contact: https://github.com/oliver-kriska
+- Contact surfaces: GitHub profile: https://github.com/oliver-kriska; Repository: https://github.com/oliver-kriska/claude-elixir-phoenix
+- Company: n/a
 - Repo: https://github.com/oliver-kriska/claude-elixir-phoenix
 - Repo last updated: 2026-04-27T06:29:27Z
 - Evidence score: 12
