@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-27T02:58:42.099Z",
+  "generatedAt": "2026-04-27T04:33:51.571Z",
   "source": "local",
   "fallbackReason": "Hosted operational summary is not configured.",
   "objective": "First 10 paying customers",
@@ -275,7 +275,7 @@
       "repoUrl": "https://github.com/Adqui9608/ai-code-review-agent",
       "description": "Review GitHub pull requests with AI to catch bugs, security issues, and code quality problems with built-in eval and observability",
       "stars": 0,
-      "updatedAt": "2026-04-27T01:30:57Z",
+      "updatedAt": "2026-04-27T04:00:33Z",
       "evidenceScore": 15,
       "evidence": [
         "workflow control surface",
@@ -601,7 +601,7 @@
     }
   ],
   "marketplaceCopy": {
-    "generatedAt": "2026-04-27T02:58:42.099Z",
+    "generatedAt": "2026-04-27T04:33:51.571Z",
     "state": "cold-start",
     "headline": "Harden one AI-agent workflow before you roll it out.",
     "shortDescription": "No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain.",

@@ -333,6 +333,57 @@ function buildMeasurementPlan() {
   };
 }
 
+function buildOperatorSequences(links = buildRevenueLinks()) {
+  const installPageCta = buildTrackedCodexLink(CODEX_INSTALL_PAGE_URL, buildCodexTrackingMetadata('install_page', {
+    utmMedium: INSTALL_PAGE_MEDIUM,
+    utmCampaign: 'codex_plugin_install_page',
+    utmContent: 'page',
+    surface: 'codex_install_page',
+  }));
+  const guideCta = buildTrackedCodexLink(links.guideLink, buildCodexTrackingMetadata('setup_guide', {
+    utmMedium: SETUP_GUIDE_MEDIUM,
+    utmCampaign: 'codex_setup_guide',
+    utmContent: 'guide',
+    surface: 'codex_setup_guide',
+  }));
+  const [proOffer, sprintOffer] = buildFollowOnOffers(links);
+
+  return [
+    {
+      key: 'install_trust_surface',
+      trigger: 'Buyer wants a documented Codex path before trusting a zip or CLI setup.',
+      evidence: 'The install page is the primary human trust surface and keeps proof plus support links close to the download path.',
+      goal: 'Move cold install curiosity into a tracked guide or setup click.',
+      cta: installPageCta,
+      draft: `If you want to see the Codex install path before downloading anything, start with the install page: ${installPageCta} . It shows the bundle path, install docs, and proof links in one place so you can decide whether the free setup is enough first.`,
+    },
+    {
+      key: 'setup_guide_follow_up',
+      trigger: 'Buyer already wants the tool path and asks for steps, proof, or setup clarity.',
+      evidence: 'The setup guide is the designated self-serve bridge between Codex install intent and paid intent.',
+      goal: 'Move install intent into either a qualified sprint conversation or a tracked Pro checkout start.',
+      cta: guideCta,
+      draft: `Here is the proof-backed Codex setup guide: ${guideCta} . Use it when the buyer wants the exact install flow plus Commercial Truth and verification evidence before choosing between free install, Pro, or a workflow-hardening conversation.`,
+    },
+    {
+      key: 'post_proof_pro_upgrade',
+      trigger: 'Solo operator already proved one blocked repeat and wants the self-serve lane.',
+      evidence: 'The pack keeps Pro as the post-proof follow-on after one blocked repeat is real.',
+      goal: 'Move proven solo usage into tracked Pro checkout intent.',
+      cta: proOffer.cta,
+      draft: `If you already proved one blocked repeat in Codex and just want the self-serve lane, Pro is the clean next step: ${proOffer.cta} . That keeps the dashboard and proof-ready exports attached without forcing a services motion.`,
+    },
+    {
+      key: 'workflow_hardening_escalation',
+      trigger: 'Team already named one repeated approval-boundary, handoff, or rollout failure.',
+      evidence: 'The Workflow Hardening Sprint remains the primary paid motion when one owner and one repeated failure are explicit.',
+      goal: 'Move team pain into a qualified workflow-hardening conversation.',
+      cta: sprintOffer.cta,
+      draft: `If one approval, handoff, or rollout failure keeps repeating around Codex or a neighboring review lane, route it to the Workflow Hardening Sprint instead of a generic plugin pitch: ${sprintOffer.cta} . That keeps the conversation anchored on one workflow, one owner, and one proof review.`,
+    },
+  ];
+}
+
 function buildCodexPluginRevenuePack(report = {}, links = buildRevenueLinks(), about = readGitHubAbout()) {
   return {
     generatedAt: normalizeText(report.generatedAt) || new Date().toISOString(),
@@ -350,6 +401,7 @@ function buildCodexPluginRevenuePack(report = {}, links = buildRevenueLinks(), a
     signals: buildSignalSummary(report),
     surfaces: buildCodexPluginSurfaces(links, about),
     followOnOffers: buildFollowOnOffers(links),
+    operatorSequences: buildOperatorSequences(links),
     sampleTargets: buildPackTargets(report),
     measurementPlan: buildMeasurementPlan(),
   };
@@ -390,6 +442,18 @@ function renderCodexPluginRevenuePackMarkdown(pack) {
     `  Buyer: ${offer.buyer}`,
     `  CTA: ${offer.cta}`,
   ]));
+  const operatorSequenceLines = Array.isArray(pack.operatorSequences) && pack.operatorSequences.length
+    ? pack.operatorSequences.flatMap((sequence) => ([
+      `### ${sequence.trigger}`,
+      `- Goal: ${sequence.goal}`,
+      `- Evidence: ${sequence.evidence}`,
+      `- CTA: ${sequence.cta}`,
+      '',
+      'Draft:',
+      `> ${sequence.draft}`,
+      '',
+    ]))
+    : ['- No Codex operator sequences were generated in this run.', ''];
   const sampleTargetLines = Array.isArray(pack.sampleTargets) && pack.sampleTargets.length
     ? pack.sampleTargets.map((target) => `- ${target.account} (${target.temperature}): ${target.why}`)
     : ['- No sample targets available in this run.'];
@@ -420,6 +484,10 @@ function renderCodexPluginRevenuePackMarkdown(pack) {
     ...surfaceLines,
     '## Follow-On Offers',
     ...offerLines,
+    '',
+    '## Operator Follow-Up Sequences',
+    ...operatorSequenceLines,
+    'Use Commercial Truth and Verification Evidence only after the buyer confirms the workflow pain or asks for proof.',
     '',
     '## Sample Targets Behind This Pack',
     ...sampleTargetLines,
@@ -571,6 +639,7 @@ module.exports = {
   buildCodexTrackingMetadata,
   buildFollowOnOffers,
   buildMeasurementPlan,
+  buildOperatorSequences,
   buildTrackedCodexLink,
   isCliInvocation,
   parseArgs,
