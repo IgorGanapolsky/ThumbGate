@@ -8,6 +8,7 @@ const {
   analyzeTargetEvidence,
   applyPipelineStateToTargets,
   buildFallbackMessage,
+  buildOperatorHandoffPayload,
   buildMarketplaceCopy,
   buildMotionCatalog,
   buildPainConfirmedFollowUp,
@@ -1011,6 +1012,116 @@ test('operator handoff markdown prioritizes follow-ups, then warm discovery, the
   assert.match(markdown, /Log after sprint intake: `npm run sales:pipeline -- advance --lead 'reddit_follow_builder_/);
 });
 
+test('operator handoff payload mirrors the ranked queue and sales commands in machine-readable form', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const payload = buildOperatorHandoffPayload({
+    generatedAt: '2026-04-26T00:00:00.000Z',
+    directive: {
+      state: 'post-first-dollar',
+      headline: 'Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.',
+    },
+    snapshot: {
+      paidOrders: 2,
+      checkoutStarts: 1,
+    },
+    targets: [
+      {
+        temperature: 'warm',
+        source: 'reddit',
+        channel: 'reddit_dm',
+        username: 'follow_builder',
+        accountName: 'r/ClaudeCode',
+        contactUrl: 'https://www.reddit.com/user/follow_builder/',
+        contactSurfaces: [
+          {
+            label: 'Reddit DM',
+            url: 'https://www.reddit.com/user/follow_builder/',
+          },
+        ],
+        evidenceScore: 10,
+        evidence: ['warm inbound engagement', 'buyer replied'],
+        motion: 'sprint',
+        motionLabel: catalog.sprint.label,
+        motionReason: 'Warm target already replied and should be converted now.',
+        pipelineStage: 'replied',
+        nextOperatorAction: 'Convert the reply into a 15-minute diagnostic or sprint intake.',
+        pipelineUpdatedAt: '2026-04-26T01:00:00.000Z',
+        proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+        cta: catalog.sprint.cta,
+        firstTouchDraft: 'I will harden one AI-agent workflow for you.',
+        painConfirmedFollowUpDraft: 'If the workflow pain is real, I can send the proof pack.',
+      },
+      {
+        temperature: 'warm',
+        source: 'reddit',
+        channel: 'reddit_dm',
+        username: 'warm_builder',
+        accountName: 'r/ClaudeCode',
+        contactUrl: 'https://www.reddit.com/user/warm_builder/',
+        contactSurfaces: [
+          {
+            label: 'Reddit DM',
+            url: 'https://www.reddit.com/user/warm_builder/',
+          },
+        ],
+        evidenceScore: 8,
+        evidence: ['warm inbound engagement', 'workflow pain named'],
+        motion: 'sprint',
+        motionLabel: catalog.sprint.label,
+        motionReason: 'Warm target already named a repeated workflow blocker.',
+        pipelineStage: 'targeted',
+        proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+        cta: catalog.sprint.cta,
+        firstTouchDraft: 'I will harden one AI-agent workflow for you.',
+        painConfirmedFollowUpDraft: 'If the workflow pain is real, I can send the proof pack.',
+      },
+      {
+        temperature: 'cold',
+        source: 'github',
+        channel: 'github',
+        username: 'builder',
+        company: 'Builder Labs',
+        contactUrl: 'https://builder.dev/',
+        contactSurfaces: [
+          {
+            label: 'Website',
+            url: 'https://builder.dev/',
+          },
+          {
+            label: 'GitHub profile',
+            url: 'https://github.com/builder',
+          },
+        ],
+        repoName: 'production-mcp-server',
+        repoUrl: 'https://github.com/builder/production-mcp-server',
+        evidenceScore: 11,
+        evidence: ['production or platform workflow', '42 GitHub stars'],
+        motion: 'sprint',
+        motionLabel: catalog.sprint.label,
+        motionReason: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
+        pipelineStage: 'targeted',
+        proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+        cta: catalog.sprint.cta,
+        firstTouchDraft: 'I will harden one production workflow for you.',
+        painConfirmedFollowUpDraft: 'If the workflow pain is real, I can send the proof pack.',
+      },
+    ],
+  });
+
+  assert.equal(payload.summary.revenueState, 'post-first-dollar');
+  assert.equal(payload.summary.activeFollowUps, 1);
+  assert.equal(payload.summary.warmTargetsReadyNow, 1);
+  assert.equal(payload.summary.coldGitHubTargetsReadyNext, 1);
+  assert.equal(payload.importCommand, 'npm run sales:pipeline -- import --source docs/marketing/gtm-revenue-loop.json');
+  assert.equal(payload.sections[0].key, 'follow_up_now');
+  assert.equal(payload.sections[0].targets[0].label, '@follow_builder - r/ClaudeCode');
+  assert.equal(payload.sections[0].targets[0].salesCommands.markSprintIntake.includes('reddit_follow_builder_'), true);
+  assert.equal(payload.sections[1].targets[0].contactSurfaces[0].label, 'Reddit DM');
+  assert.equal(payload.sections[2].targets[0].label, '@builder - production-mcp-server');
+  assert.equal(payload.sections[2].targets[0].contactSurfaces[1].url, 'https://github.com/builder');
+});
+
 test('first-touch outreach does not push proof before pain is confirmed', () => {
   const catalog = buildMotionCatalog(buildRevenueLinks());
   const selectedMotion = selectOutreachMotion({
@@ -1528,6 +1639,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     const jsonl = fs.readFileSync(path.join(reportDir, 'gtm-target-queue.jsonl'), 'utf8');
     const teamOutreach = fs.readFileSync(path.join(reportDir, 'team-outreach-messages.md'), 'utf8');
     const operatorHandoff = fs.readFileSync(path.join(reportDir, 'operator-priority-handoff.md'), 'utf8');
+    const operatorHandoffJson = JSON.parse(fs.readFileSync(path.join(reportDir, 'operator-priority-handoff.json'), 'utf8'));
 
     assert.equal(written.reportDir, reportDir);
     assert.equal(written.docsPath, null);
@@ -1539,6 +1651,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.ok(fs.existsSync(path.join(reportDir, 'gtm-target-queue.jsonl')));
     assert.ok(fs.existsSync(path.join(reportDir, 'team-outreach-messages.md')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-priority-handoff.md')));
+    assert.ok(fs.existsSync(path.join(reportDir, 'operator-priority-handoff.json')));
     assert.match(csv, /^temperature,source,channel,username,accountName,company,contactUrl,contactSurfaces,repoName,repoUrl,updatedAt,offer,pipelineStage,evidenceScore,evidence,evidenceSource,evidenceLinks,claimGuardrails,outreachAngle,motionLabel,motionReason,proofPackTrigger,cta,firstTouchDraft,painConfirmedFollowUpDraft/m);
     assert.match(csv, /"I can harden one workflow, then prove it\."/);
     assert.match(csv, /"If the workflow pain is real, I can send the proof pack\."/);
@@ -1569,6 +1682,8 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.match(operatorHandoff, /Send Now: Warm Discovery/);
     assert.match(operatorHandoff, /Pipeline lead id: reddit_builder_production_mcp_server/);
     assert.match(operatorHandoff, /Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
+    assert.equal(operatorHandoffJson.sections[1].label, 'Send Now: Warm Discovery');
+    assert.equal(operatorHandoffJson.sections[1].targets[0].pipelineLeadId, 'reddit_builder_production_mcp_server');
   } finally {
     fs.rmSync(reportDir, { recursive: true, force: true });
   }
@@ -1669,6 +1784,7 @@ test('writeRevenueLoopOutputs mirrors dedicated GTM docs instead of overwriting 
     assert.ok(fs.existsSync(path.join(marketingDir, 'gtm-target-queue.jsonl')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'team-outreach-messages.md')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'operator-priority-handoff.md')));
+    assert.ok(fs.existsSync(path.join(marketingDir, 'operator-priority-handoff.json')));
   } finally {
     fs.rmSync(repoRoot, { recursive: true, force: true });
   }
