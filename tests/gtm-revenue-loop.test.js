@@ -6,6 +6,7 @@ const assert = require('node:assert/strict');
 
 const {
   analyzeTargetEvidence,
+  applyPipelineStateToTargets,
   buildFallbackMessage,
   buildMarketplaceCopy,
   buildMotionCatalog,
@@ -30,6 +31,11 @@ const {
   writeRevenueLoopOutputs,
 } = require('../scripts/gtm-revenue-loop');
 const { getWarmOutboundTargets } = require('../scripts/warm-outreach-targets');
+const {
+  advanceSalesLead,
+  importRevenueLoopReport,
+  loadSalesLeads,
+} = require('../scripts/sales-pipeline');
 
 test('motion catalog stays aligned with current commercial truth and proof links', () => {
   const links = buildRevenueLinks();
@@ -448,6 +454,130 @@ test('rendered revenue loop markdown anchors every target to truth and proof', (
   assert.doesNotMatch(markdown, /founding users today/i);
 });
 
+test('pipeline-aware targets inherit follow-up stages and drop terminal leads', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-gtm-pipeline-'));
+  const statePath = path.join(tempDir, 'sales-pipeline.jsonl');
+
+  try {
+    importRevenueLoopReport({
+      generatedAt: '2026-04-26T00:00:00.000Z',
+      targets: [
+        {
+          source: 'github',
+          channel: 'github',
+          username: 'builder',
+          repoName: 'production-mcp-server',
+          repoUrl: 'https://github.com/builder/production-mcp-server',
+          description: 'Production workflow automation with GitHub integrations.',
+          motion: 'sprint',
+          motionLabel: 'Workflow Hardening Sprint',
+          motionReason: 'Target can be approached with one concrete workflow-hardening offer.',
+          cta: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+          message: 'I can harden one AI-agent workflow for you.',
+        },
+        {
+          source: 'github',
+          channel: 'github',
+          username: 'paid_builder',
+          repoName: 'approval-gates',
+          repoUrl: 'https://github.com/paid_builder/approval-gates',
+          description: 'Approval gates for agent workflows.',
+          motion: 'sprint',
+          motionLabel: 'Workflow Hardening Sprint',
+          motionReason: 'Target can be approached with one concrete workflow-hardening offer.',
+          cta: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+          message: 'I can harden one AI-agent workflow for you.',
+        },
+      ],
+    }, { statePath });
+
+    const leads = loadSalesLeads({ statePath });
+    const repliedLead = leads.find((lead) => lead.contact.username === 'builder');
+    const paidLead = leads.find((lead) => lead.contact.username === 'paid_builder');
+
+    advanceSalesLead({
+      leadId: repliedLead.leadId,
+      stage: 'contacted',
+      note: 'Sent first touch.',
+    }, { statePath });
+    advanceSalesLead({
+      leadId: repliedLead.leadId,
+      stage: 'replied',
+      note: 'Buyer confirmed pain.',
+    }, { statePath });
+    advanceSalesLead({
+      leadId: paidLead.leadId,
+      stage: 'contacted',
+      note: 'Sent first touch.',
+    }, { statePath });
+    advanceSalesLead({
+      leadId: paidLead.leadId,
+      stage: 'replied',
+      note: 'Buyer replied.',
+    }, { statePath });
+    advanceSalesLead({
+      leadId: paidLead.leadId,
+      stage: 'call_booked',
+      note: 'Call booked.',
+    }, { statePath });
+    advanceSalesLead({
+      leadId: paidLead.leadId,
+      stage: 'sprint_intake',
+      note: 'Sprint intake completed.',
+    }, { statePath });
+    advanceSalesLead({
+      leadId: paidLead.leadId,
+      stage: 'paid',
+      amountCents: 4900,
+      note: 'Paid sprint.',
+    }, { statePath });
+
+    const targets = applyPipelineStateToTargets([
+      {
+        temperature: 'cold',
+        source: 'github',
+        channel: 'github',
+        username: 'builder',
+        accountName: 'builder',
+        contactUrl: 'https://github.com/builder',
+        repoName: 'production-mcp-server',
+        repoUrl: 'https://github.com/builder/production-mcp-server',
+        description: 'Production workflow automation with GitHub integrations.',
+      },
+      {
+        temperature: 'cold',
+        source: 'github',
+        channel: 'github',
+        username: 'paid_builder',
+        accountName: 'paid_builder',
+        contactUrl: 'https://github.com/paid_builder',
+        repoName: 'approval-gates',
+        repoUrl: 'https://github.com/paid_builder/approval-gates',
+        description: 'Approval gates for agent workflows.',
+      },
+      {
+        temperature: 'warm',
+        source: 'reddit',
+        channel: 'reddit_dm',
+        username: 'fresh_builder',
+        accountName: 'r/ClaudeCode',
+        contactUrl: 'https://www.reddit.com/user/fresh_builder/',
+        repoName: '',
+        repoUrl: '',
+        description: 'Warm discovery lead with review-boundary pain.',
+      },
+    ], { salesStatePath: statePath });
+
+    assert.equal(targets.length, 2);
+    assert.equal(targets[0].pipelineStage, 'replied');
+    assert.match(targets[0].nextOperatorAction, /15-minute diagnostic|sprint intake/);
+    assert.equal(targets[1].pipelineStage, 'targeted');
+    assert.equal(targets.some((target) => target.username === 'paid_builder'), false);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
 test('team outreach markdown stays discovery-first and evidence-backed', () => {
   const links = buildRevenueLinks();
   const catalog = buildMotionCatalog(links);
@@ -496,7 +626,7 @@ test('team outreach markdown stays discovery-first and evidence-backed', () => {
   assert.doesNotMatch(markdown, /checkout\/pro/);
 });
 
-test('operator handoff markdown ranks warm discovery ahead of cold GitHub targets', () => {
+test('operator handoff markdown prioritizes follow-ups, then warm discovery, then cold GitHub targets', () => {
   const links = buildRevenueLinks();
   const catalog = buildMotionCatalog(links);
   const markdown = renderOperatorHandoffMarkdown({
@@ -511,6 +641,26 @@ test('operator handoff markdown ranks warm discovery ahead of cold GitHub target
     },
     targets: [
       {
+        temperature: 'warm',
+        source: 'reddit',
+        channel: 'reddit_dm',
+        username: 'follow_builder',
+        accountName: 'r/ClaudeCode',
+        contactUrl: 'https://www.reddit.com/user/follow_builder/',
+        evidenceScore: 10,
+        evidence: ['warm inbound engagement', 'buyer replied'],
+        motion: 'sprint',
+        motionLabel: catalog.sprint.label,
+        motionReason: 'Warm target already replied and should be converted now.',
+        pipelineStage: 'replied',
+        nextOperatorAction: 'Convert the reply into a 15-minute diagnostic or sprint intake.',
+        pipelineUpdatedAt: '2026-04-26T01:00:00.000Z',
+        proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+        cta: catalog.sprint.cta,
+        firstTouchDraft: 'I will harden one AI-agent workflow for you.',
+        painConfirmedFollowUpDraft: 'If the workflow pain is real, I can send the proof pack.',
+      },
+      {
         temperature: 'cold',
         source: 'github',
         channel: 'github',
@@ -522,6 +672,7 @@ test('operator handoff markdown ranks warm discovery ahead of cold GitHub target
         motion: 'sprint',
         motionLabel: catalog.sprint.label,
         motionReason: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
+        pipelineStage: 'targeted',
         proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
         cta: catalog.sprint.cta,
         firstTouchDraft: 'I will harden one production workflow for you.',
@@ -539,6 +690,7 @@ test('operator handoff markdown ranks warm discovery ahead of cold GitHub target
         motion: 'sprint',
         motionLabel: catalog.sprint.label,
         motionReason: 'Warm target already named a repeated workflow blocker.',
+        pipelineStage: 'targeted',
         proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
         cta: catalog.sprint.cta,
         firstTouchDraft: 'I will harden one AI-agent workflow for you.',
@@ -548,8 +700,11 @@ test('operator handoff markdown ranks warm discovery ahead of cold GitHub target
   });
 
   assert.match(markdown, /sales:pipeline -- import --source docs\/marketing\/gtm-revenue-loop\.json/);
+  assert.match(markdown, /Follow Up Now/);
+  assert.match(markdown, /Active follow-ups: 1/);
   assert.match(markdown, /Warm targets ready now: 1/);
   assert.match(markdown, /Cold GitHub targets ready next: 1/);
+  assert.ok(markdown.indexOf('@follow_builder') < markdown.indexOf('@warm_builder'));
   assert.ok(markdown.indexOf('@warm_builder') < markdown.indexOf('@builder'));
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);

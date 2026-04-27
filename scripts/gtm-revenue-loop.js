@@ -6,6 +6,7 @@ const path = require('node:path');
 const { resolveHostedBillingConfig } = require('./hosted-config');
 const { getOperationalBillingSummary } = require('./operational-summary');
 const { ensureDir } = require('./fs-utils');
+const { buildLeadFromRevenueTarget, loadSalesLeads } = require('./sales-pipeline');
 const { getWarmOutboundTargets } = require('./warm-outreach-targets');
 
 const GITHUB_API_BASE_URL = 'https://api.github.com/';
@@ -87,6 +88,15 @@ const CLAIM_GUARDRAILS = [
   'Keep public pricing and traction claims aligned with COMMERCIAL_TRUTH.md.',
   'Keep proof and quality claims aligned with VERIFICATION_EVIDENCE.md.',
 ];
+const TERMINAL_PIPELINE_STAGES = new Set(['paid', 'lost']);
+const PIPELINE_STAGE_PRIORITY = {
+  sprint_intake: 6,
+  checkout_started: 5,
+  call_booked: 4,
+  replied: 3,
+  contacted: 2,
+  targeted: 1,
+};
 
 function getGoogleGenAI() {
   try {
@@ -254,6 +264,49 @@ function renderEvidenceSources(sources = []) {
   return sources
     .map((source) => `${source.label}: ${source.url}`)
     .join('; ');
+}
+
+function normalizePipelineStage(stage) {
+  const normalized = normalizeText(stage).toLowerCase();
+  return normalized || 'targeted';
+}
+
+function buildNextOperatorAction(stage) {
+  switch (normalizePipelineStage(stage)) {
+    case 'contacted':
+      return 'Send the pain-confirmation follow-up and ask for the repeated workflow blocker.';
+    case 'replied':
+      return 'Convert the reply into a 15-minute diagnostic or sprint intake.';
+    case 'call_booked':
+      return 'Confirm the diagnostic agenda and capture the exact repeated failure to harden.';
+    case 'checkout_started':
+      return 'Close the self-serve checkout and keep proof links ready for objections.';
+    case 'sprint_intake':
+      return 'Review the sprint intake, scope the workflow, and close the paid sprint.';
+    default:
+      return 'Send the first-touch draft and log the outreach in the sales pipeline.';
+  }
+}
+
+function applyPipelineStateToTargets(targets = [], { salesStatePath = null } = {}) {
+  const leads = loadSalesLeads({ statePath: salesStatePath });
+  const leadMap = new Map(leads.map((lead) => [lead.leadId, lead]));
+
+  return targets
+    .map((target) => {
+      const candidateLead = buildLeadFromRevenueTarget(target);
+      const existingLead = leadMap.get(candidateLead.leadId);
+      const pipelineStage = normalizePipelineStage(existingLead?.stage || target.pipelineStage);
+
+      return {
+        ...target,
+        pipelineLeadId: existingLead?.leadId || candidateLead.leadId,
+        pipelineStage,
+        pipelineUpdatedAt: normalizeText(existingLead?.updatedAt),
+        nextOperatorAction: buildNextOperatorAction(pipelineStage),
+      };
+    })
+    .filter((target) => !TERMINAL_PIPELINE_STAGES.has(normalizePipelineStage(target.pipelineStage)));
 }
 
 function buildRevenueLinks(config = resolveHostedBillingConfig({
@@ -776,7 +829,10 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
         motion: target.selectedMotion.key,
         motionLabel: target.selectedMotion.label,
         motionReason: target.selectedMotion.reason,
-        pipelineStage: 'targeted',
+        pipelineLeadId: normalizeText(target.pipelineLeadId),
+        pipelineStage: normalizePipelineStage(target.pipelineStage),
+        pipelineUpdatedAt: normalizeText(target.pipelineUpdatedAt),
+        nextOperatorAction: normalizeText(target.nextOperatorAction) || buildNextOperatorAction(target.pipelineStage),
         offer: target.selectedMotion.key === motionCatalog.sprint.key ? 'workflow_hardening_sprint' : 'pro_self_serve',
         cta: motionCatalog[target.selectedMotion.key].cta,
         proofPackTrigger: target.proofPackTrigger || 'Use proof pack only after the buyer confirms pain.',
@@ -901,6 +957,8 @@ function renderRevenueTargetMarkdown(target) {
     `- Temperature: ${target.temperature || 'cold'}`,
     `- Source: ${target.source || 'github'} / ${target.channel || target.source || 'github'}`,
     `- Pipeline stage: ${target.pipelineStage}`,
+    `- Next operator step: ${target.nextOperatorAction || buildNextOperatorAction(target.pipelineStage)}`,
+    `- Pipeline last updated: ${target.pipelineUpdatedAt || 'n/a'}`,
     `- Offer: ${target.offer}`,
     `- Contact: ${target.contactUrl || 'n/a'}`,
     `- Repo: ${target.repoUrl || 'n/a'}`,
@@ -1010,6 +1068,12 @@ function renderWarmTargetOutreachMarkdown(target, index) {
 
 function rankOperatorTargets(targets = []) {
   return [...targets].sort((left, right) => {
+    const leftStagePriority = PIPELINE_STAGE_PRIORITY[normalizePipelineStage(left.pipelineStage)] || 0;
+    const rightStagePriority = PIPELINE_STAGE_PRIORITY[normalizePipelineStage(right.pipelineStage)] || 0;
+    if (rightStagePriority !== leftStagePriority) {
+      return rightStagePriority - leftStagePriority;
+    }
+
     const leftWarm = normalizeText(left.temperature).toLowerCase() === 'warm' ? 1 : 0;
     const rightWarm = normalizeText(right.temperature).toLowerCase() === 'warm' ? 1 : 0;
     if (rightWarm !== leftWarm) {
@@ -1041,6 +1105,9 @@ function renderOperatorPriorityTargetMarkdown(target, index) {
     `## ${index + 1}. ${label}`,
     `- Temperature: ${target.temperature || 'cold'}`,
     `- Source: ${target.source || 'github'} / ${target.channel || target.source || 'github'}`,
+    `- Pipeline stage: ${target.pipelineStage || 'targeted'}`,
+    `- Next operator step: ${target.nextOperatorAction || buildNextOperatorAction(target.pipelineStage)}`,
+    `- Pipeline last updated: ${target.pipelineUpdatedAt || 'n/a'}`,
     `- Contact surface: ${contactSurface}`,
     `- Evidence score: ${target.evidenceScore}`,
     `- Evidence: ${target.evidence.length ? target.evidence.join(', ') : 'n/a'}`,
@@ -1060,13 +1127,18 @@ function renderOperatorPriorityTargetMarkdown(target, index) {
 
 function renderOperatorHandoffMarkdown(report) {
   const rankedTargets = rankOperatorTargets(Array.isArray(report?.targets) ? report.targets : []);
-  const warmTargets = rankedTargets.filter((target) => normalizeText(target.temperature).toLowerCase() === 'warm');
-  const coldTargets = rankedTargets.filter((target) => normalizeText(target.temperature).toLowerCase() !== 'warm');
+  const followUpTargets = rankedTargets.filter((target) => normalizePipelineStage(target.pipelineStage) !== 'targeted');
+  const freshTargets = rankedTargets.filter((target) => normalizePipelineStage(target.pipelineStage) === 'targeted');
+  const warmTargets = freshTargets.filter((target) => normalizeText(target.temperature).toLowerCase() === 'warm');
+  const coldTargets = freshTargets.filter((target) => normalizeText(target.temperature).toLowerCase() !== 'warm');
+  const followUpLines = followUpTargets.length
+    ? followUpTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index))
+    : ['- No in-flight follow-ups are currently tracked.', ''];
   const warmLines = warmTargets.length
-    ? warmTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index))
+    ? warmTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index + followUpTargets.length))
     : ['- No warm discovery targets are available for this run.', ''];
   const coldLines = coldTargets.length
-    ? coldTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index + warmTargets.length))
+    ? coldTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index + followUpTargets.length + warmTargets.length))
     : ['- No cold GitHub targets are available for this run.', ''];
 
   return [
@@ -1083,6 +1155,7 @@ function renderOperatorHandoffMarkdown(report) {
     `- Headline: ${report.directive?.headline || 'No verified revenue and no active pipeline.'}`,
     `- Paid orders: ${report.snapshot?.paidOrders || 0}`,
     `- Checkout starts: ${report.snapshot?.checkoutStarts || 0}`,
+    `- Active follow-ups: ${followUpTargets.length}`,
     `- Warm targets ready now: ${warmTargets.length}`,
     `- Cold GitHub targets ready next: ${coldTargets.length}`,
     '',
@@ -1095,6 +1168,8 @@ function renderOperatorHandoffMarkdown(report) {
     'npm run sales:pipeline -- import --source docs/marketing/gtm-revenue-loop.json',
     '```',
     '',
+    '## Follow Up Now',
+    ...followUpLines,
     '## Send Now: Warm Discovery',
     ...warmLines,
     '## Seed Next: Cold GitHub',
@@ -1329,13 +1404,17 @@ async function runRevenueLoop(options = {}) {
     fetchImpl: options.fetchImpl || globalThis.fetch,
   });
   const enrichedTargets = await generateOutreachMessages(targets, motionCatalog);
+  const pipelineAwareTargets = applyPipelineStateToTargets(
+    warmTargets.concat(enrichedTargets),
+    { salesStatePath: options.salesStatePath || null }
+  );
   const report = buildRevenueLoopReport({
     source,
     fallbackReason,
     summary,
     motionCatalog,
     directive,
-    targets: warmTargets.concat(enrichedTargets),
+    targets: pipelineAwareTargets,
   });
   report.marketplaceCopy = buildMarketplaceCopy(report);
 
@@ -1398,6 +1477,7 @@ module.exports = {
   isCliInvocation,
   parseArgs,
   prospectTargets,
+  applyPipelineStateToTargets,
   renderRevenueLoopMarkdown,
   renderMarketplaceCopyMarkdown,
   renderOperatorHandoffMarkdown,

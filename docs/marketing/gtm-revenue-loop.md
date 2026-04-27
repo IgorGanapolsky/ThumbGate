@@ -1,7 +1,7 @@
 # GSD Revenue Loop
 
 Status: cold-start
-Updated: 2026-04-27T04:33:51.571Z
+Updated: 2026-04-27T06:41:11.518Z
 
 This report is an operator artifact for landing the first 10 paying customers. It is not proof of sent messages or booked revenue by itself.
 Outbound rule: do not treat posts as sales. A lead only moves when it is tracked as contacted, replied, call booked, checkout/sprint, or paid.
@@ -47,6 +47,8 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Temperature: warm
 - Source: reddit / reddit_dm
 - Pipeline stage: targeted
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
 - Offer: workflow_hardening_sprint
 - Contact: https://www.reddit.com/user/Deep_Ad1959/
 - Repo: n/a
@@ -66,6 +68,8 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Temperature: warm
 - Source: reddit / reddit_dm
 - Pipeline stage: targeted
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
 - Offer: workflow_hardening_sprint
 - Contact: https://www.reddit.com/user/game-of-kton/
 - Repo: n/a
@@ -85,6 +89,8 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Temperature: warm
 - Source: reddit / reddit_dm
 - Pipeline stage: targeted
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
 - Offer: workflow_hardening_sprint
 - Contact: https://www.reddit.com/user/leogodin217/
 - Repo: n/a
@@ -104,6 +110,8 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Temperature: warm
 - Source: reddit / reddit_dm
 - Pipeline stage: targeted
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
 - Offer: workflow_hardening_sprint
 - Contact: https://www.reddit.com/user/Enthu-Cutlet-1337/
 - Repo: n/a
@@ -125,6 +133,8 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Temperature: cold
 - Source: github / github
 - Pipeline stage: targeted
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
 - Offer: workflow_hardening_sprint
 - Contact: https://github.com/Adqui9608
 - Repo: https://github.com/Adqui9608/ai-code-review-agent
@@ -144,6 +154,8 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Temperature: cold
 - Source: github / github
 - Pipeline stage: targeted
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
 - Offer: workflow_hardening_sprint
 - Contact: https://github.com/DGouron
 - Repo: https://github.com/DGouron/review-flow
@@ -163,6 +175,8 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Temperature: cold
 - Source: github / github
 - Pipeline stage: targeted
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
 - Offer: workflow_hardening_sprint
 - Contact: https://github.com/nihannihu
 - Repo: https://github.com/nihannihu/Omni-SRE
@@ -182,6 +196,8 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Temperature: cold
 - Source: github / github
 - Pipeline stage: targeted
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
 - Offer: workflow_hardening_sprint
 - Contact: https://github.com/freema
 - Repo: https://github.com/freema/mcp-jira-stdio
@@ -201,6 +217,8 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Temperature: cold
 - Source: github / github
 - Pipeline stage: targeted
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
 - Offer: workflow_hardening_sprint
 - Contact: https://github.com/manki-review
 - Repo: https://github.com/manki-review/manki
@@ -216,21 +234,23 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - First-touch draft: Hey @manki-review, saw you're shipping `manki`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - Pain-confirmed follow-up: If `manki` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
-### @salacoste — mcp-n8n-workflow-builder
+### @oliver-kriska — claude-elixir-phoenix
 - Temperature: cold
 - Source: github / github
 - Pipeline stage: targeted
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
 - Offer: workflow_hardening_sprint
-- Contact: https://github.com/salacoste
-- Repo: https://github.com/salacoste/mcp-n8n-workflow-builder
-- Repo last updated: 2026-04-22T23:45:33Z
+- Contact: https://github.com/oliver-kriska
+- Repo: https://github.com/oliver-kriska/claude-elixir-phoenix
+- Repo last updated: 2026-04-27T06:29:27Z
 - Evidence score: 12
-- Evidence: workflow control surface, agent infrastructure, 221 GitHub stars, updated in the last 7 days
-- Evidence sources: Target signal: https://github.com/salacoste/mcp-n8n-workflow-builder; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Evidence: workflow control surface, agent infrastructure, 290 GitHub stars, updated in the last 7 days
+- Evidence sources: Target signal: https://github.com/oliver-kriska/claude-elixir-phoenix; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 - Outreach angle: Lead with context-drift hardening for one workflow before proposing any broader agent platform story.
 - Motion: Workflow Hardening Sprint
 - Why: Lead with context-drift hardening for one workflow before proposing any broader agent platform story.
 - Proof timing: Use proof pack only after the buyer confirms pain.
 - CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-- First-touch draft: Hey @salacoste, saw you're shipping `mcp-n8n-workflow-builder`. If one context, memory, or tool-use failure keeps repeating, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-- Pain-confirmed follow-up: If `mcp-n8n-workflow-builder` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- First-touch draft: Hey @oliver-kriska, saw you're shipping `claude-elixir-phoenix`. If one context, memory, or tool-use failure keeps repeating, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Pain-confirmed follow-up: If `claude-elixir-phoenix` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
