@@ -193,7 +193,10 @@ test('prospects GitHub targets via REST search, filters low-signal repos, and de
         return JSON.stringify({
           items: [
             {
-              owner: { login: 'builder' },
+              owner: {
+                login: 'builder',
+                html_url: 'https://github.com/builder',
+              },
               name: 'production-mcp-server',
               html_url: 'https://github.com/builder/production-mcp-server',
               description: 'Production MCP server for deployment workflow approvals and audit proof.',
@@ -201,7 +204,10 @@ test('prospects GitHub targets via REST search, filters low-signal repos, and de
               updated_at: new Date().toISOString(),
             },
             {
-              owner: { login: 'builder' },
+              owner: {
+                login: 'builder',
+                html_url: 'https://github.com/builder',
+              },
               name: 'production-mcp-server',
               html_url: 'https://github.com/builder/production-mcp-server',
               description: 'Duplicate target',
@@ -209,7 +215,10 @@ test('prospects GitHub targets via REST search, filters low-signal repos, and de
               updated_at: new Date().toISOString(),
             },
             {
-              owner: { login: 'builder' },
+              owner: {
+                login: 'builder',
+                html_url: 'https://github.com/builder',
+              },
               name: 'mcp-demo-template',
               html_url: 'https://github.com/builder/mcp-demo-template',
               description: 'Template demo for Claude Code builders.',
@@ -227,8 +236,10 @@ test('prospects GitHub targets via REST search, filters low-signal repos, and de
   assert.equal(result.errors.length, 0);
   assert.equal(result.targets.length, 1);
   assert.equal(result.targets[0].username, 'builder');
+  assert.equal(result.targets[0].accountName, 'builder');
+  assert.equal(result.targets[0].contactUrl, 'https://github.com/builder');
   assert.ok(result.targets[0].evidence.score >= 5);
-  assert.equal(requestedUrls.length, 3);
+  assert.equal(requestedUrls.length, 5);
   assert.ok(requestedUrls.every((url) => url.startsWith('https://api.github.com/search/repositories')));
 });
 
@@ -300,7 +311,7 @@ test('GitHub discovery reports API and parser failures as non-fatal warnings', a
   assert.equal(invalid.ok, false);
   assert.equal(unavailable.ok, false);
   assert.equal(prospects.targets.length, 0);
-  assert.equal(prospects.errors.length, 3);
+  assert.equal(prospects.errors.length, 5);
 });
 
 test('rendered revenue loop markdown anchors every target to truth and proof', () => {
