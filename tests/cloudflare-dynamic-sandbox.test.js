@@ -91,6 +91,9 @@ test('worker package test script uses shell-expanded test paths so CI does not p
     fs.readFileSync(path.join(__dirname, '..', 'workers', 'package.json'), 'utf8'),
   );
 
-  assert.equal(workerPackage.scripts.test, 'npm run typecheck && tsx --test src/*.test.ts');
+  assert.equal(
+    workerPackage.scripts.test,
+    'npm run typecheck && node ./node_modules/tsx/dist/cli.mjs --test src/*.test.ts',
+  );
   assert.doesNotMatch(workerPackage.scripts.test, /\*\*/);
 });
