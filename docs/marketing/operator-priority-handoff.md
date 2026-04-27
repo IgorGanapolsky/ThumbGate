@@ -1,6 +1,6 @@
 # Revenue Operator Priority Handoff
 
-Updated: 2026-04-27T04:33:51.571Z
+Updated: 2026-04-27T06:41:11.518Z
 
 This is the ranked send order for the current zero-to-one revenue loop. Work warm discovery targets first, then expand into cold GitHub targets with the same proof discipline.
 
@@ -11,6 +11,7 @@ This handoff sits on top of `gtm-revenue-loop.md`, `gtm-target-queue.csv`, and `
 - Headline: No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.
 - Paid orders: 0
 - Checkout starts: 0
+- Active follow-ups: 0
 - Warm targets ready now: 4
 - Cold GitHub targets ready next: 6
 
@@ -23,10 +24,16 @@ This handoff sits on top of `gtm-revenue-loop.md`, `gtm-target-queue.csv`, and `
 npm run sales:pipeline -- import --source docs/marketing/gtm-revenue-loop.json
 ```
 
+## Follow Up Now
+- No in-flight follow-ups are currently tracked.
+
 ## Send Now: Warm Discovery
 ## 1. @Deep_Ad1959 — r/cursor
 - Temperature: warm
 - Source: reddit / reddit_dm
+- Pipeline stage: targeted
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
 - Contact surface: https://www.reddit.com/user/Deep_Ad1959/
 - Evidence score: 10
 - Evidence: warm inbound engagement, workflow pain named: rollback risk, already in DMs
@@ -44,6 +51,9 @@ Pain-confirmed follow-up:
 ## 2. @game-of-kton — r/cursor
 - Temperature: warm
 - Source: reddit / reddit_dm
+- Pipeline stage: targeted
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
 - Contact surface: https://www.reddit.com/user/game-of-kton/
 - Evidence score: 9
 - Evidence: warm inbound engagement, built serious memory systems, workflow pain named: stale context and conflicting facts
@@ -61,6 +71,9 @@ Pain-confirmed follow-up:
 ## 3. @leogodin217 — r/ClaudeCode
 - Temperature: warm
 - Source: reddit / reddit_dm
+- Pipeline stage: targeted
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
 - Contact surface: https://www.reddit.com/user/leogodin217/
 - Evidence score: 9
 - Evidence: warm inbound engagement, mature multi-step workflow described, workflow pain named: review boundaries and context risk
@@ -78,6 +91,9 @@ Pain-confirmed follow-up:
 ## 4. @Enthu-Cutlet-1337 — r/ClaudeCode
 - Temperature: warm
 - Source: reddit / reddit_dm
+- Pipeline stage: targeted
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
 - Contact surface: https://www.reddit.com/user/Enthu-Cutlet-1337/
 - Evidence score: 8
 - Evidence: warm inbound engagement, responded to adaptive-gate positioning, workflow pain named: brittle guardrails
@@ -96,6 +112,9 @@ Pain-confirmed follow-up:
 ## 5. @Adqui9608 — ai-code-review-agent
 - Temperature: cold
 - Source: github / github
+- Pipeline stage: targeted
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
 - Contact surface: https://github.com/Adqui9608
 - Evidence score: 15
 - Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, updated in the last 7 days
@@ -113,6 +132,9 @@ Pain-confirmed follow-up:
 ## 6. @DGouron — review-flow
 - Temperature: cold
 - Source: github / github
+- Pipeline stage: targeted
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
 - Contact surface: https://github.com/DGouron
 - Evidence score: 14
 - Evidence: workflow control surface, business-system integration, agent infrastructure, 36 GitHub stars, updated in the last 7 days
@@ -130,6 +152,9 @@ Pain-confirmed follow-up:
 ## 7. @nihannihu — Omni-SRE
 - Temperature: cold
 - Source: github / github
+- Pipeline stage: targeted
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
 - Contact surface: https://github.com/nihannihu
 - Evidence score: 14
 - Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, updated in the last 30 days
@@ -147,6 +172,9 @@ Pain-confirmed follow-up:
 ## 8. @manki-review — manki
 - Temperature: cold
 - Source: github / github
+- Pipeline stage: targeted
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
 - Contact surface: https://github.com/manki-review
 - Evidence score: 13
 - Evidence: workflow control surface, business-system integration, agent infrastructure, 5 GitHub stars, updated in the last 7 days
@@ -164,6 +192,9 @@ Pain-confirmed follow-up:
 ## 9. @freema — mcp-jira-stdio
 - Temperature: cold
 - Source: github / github
+- Pipeline stage: targeted
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
 - Contact surface: https://github.com/freema
 - Evidence score: 13
 - Evidence: workflow control surface, business-system integration, agent infrastructure, 11 GitHub stars, updated in the last 7 days
@@ -178,19 +209,22 @@ First-touch draft:
 Pain-confirmed follow-up:
 > If `mcp-jira-stdio` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
-## 10. @salacoste — mcp-n8n-workflow-builder
+## 10. @oliver-kriska — claude-elixir-phoenix
 - Temperature: cold
 - Source: github / github
-- Contact surface: https://github.com/salacoste
+- Pipeline stage: targeted
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
+- Contact surface: https://github.com/oliver-kriska
 - Evidence score: 12
-- Evidence: workflow control surface, agent infrastructure, 221 GitHub stars, updated in the last 7 days
+- Evidence: workflow control surface, agent infrastructure, 290 GitHub stars, updated in the last 7 days
 - Motion: Workflow Hardening Sprint
 - Why now: Lead with context-drift hardening for one workflow before proposing any broader agent platform story.
 - Proof rule: Use proof pack only after the buyer confirms pain.
 - CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 
 First-touch draft:
-> Hey @salacoste, saw you're shipping `mcp-n8n-workflow-builder`. If one context, memory, or tool-use failure keeps repeating, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+> Hey @oliver-kriska, saw you're shipping `claude-elixir-phoenix`. If one context, memory, or tool-use failure keeps repeating, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 
 Pain-confirmed follow-up:
-> If `mcp-n8n-workflow-builder` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+> If `claude-elixir-phoenix` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
