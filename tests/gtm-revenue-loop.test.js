@@ -25,6 +25,7 @@ const {
   renderOperatorHandoffMarkdown,
   renderRevenueLoopMarkdown,
   renderTeamOutreachMessagesMarkdown,
+  resolveRevenueLoopSummary,
   runRevenueLoop,
   selectOutreachMotion,
   summarizeCommercialSnapshot,
@@ -102,6 +103,71 @@ test('revenue directives switch once interest or paid orders exist', () => {
   assert.match(pipelineActive.headline, /paid conversion is still zero/);
   assert.equal(postFirstDollar.state, 'post-first-dollar');
   assert.match(postFirstDollar.headline, /Revenue is proven/);
+});
+
+test('resolveRevenueLoopSummary prefers hosted revenue status when local operator auth is missing', async () => {
+  const result = await resolveRevenueLoopSummary({
+    getOperationalBillingSummaryFn: async () => ({
+      source: 'local',
+      summary: {
+        revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+        trafficMetrics: { checkoutStarts: 0 },
+        signups: { uniqueLeads: 0 },
+        pipeline: {},
+      },
+      fallbackReason: 'Hosted operational summary is not configured.',
+    }),
+    generateRevenueStatusReportFn: async () => ({
+      source: 'hosted-via-railway-env',
+      hostedAudit: {
+        summaries: {
+          today: {
+            status: 200,
+            revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+            trafficMetrics: { checkoutStarts: 1, visitors: 10 },
+            signups: { uniqueLeads: 1 },
+            pipeline: {},
+          },
+        },
+      },
+    }),
+  });
+
+  assert.equal(result.source, 'hosted-via-railway-env');
+  assert.equal(result.fallbackReason, null);
+  assert.equal(result.summary.revenue.paidOrders, 2);
+  assert.equal(result.summary.revenue.bookedRevenueCents, 2000);
+  assert.equal(result.summary.trafficMetrics.checkoutStarts, 1);
+});
+
+test('resolveRevenueLoopSummary keeps local numbers when hosted revenue status still falls back', async () => {
+  const result = await resolveRevenueLoopSummary({
+    getOperationalBillingSummaryFn: async () => ({
+      source: 'local',
+      summary: {
+        revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+        trafficMetrics: { checkoutStarts: 0 },
+        signups: { uniqueLeads: 0 },
+        pipeline: {},
+      },
+      fallbackReason: 'Hosted operational summary is not configured.',
+    }),
+    generateRevenueStatusReportFn: async () => ({
+      source: 'local-fallback',
+      hostedAudit: {
+        summaries: {
+          today: {
+            status: 200,
+            revenue: { paidOrders: 99, bookedRevenueCents: 9900 },
+          },
+        },
+      },
+    }),
+  });
+
+  assert.equal(result.source, 'local');
+  assert.equal(result.fallbackReason, 'Hosted operational summary is not configured.');
+  assert.equal(result.summary.revenue.paidOrders, 0);
 });
 
 test('argument and commercial snapshot helpers stay bounded and explicit', () => {

@@ -1,7 +1,7 @@
 # GSD Revenue Loop
 
-Status: cold-start
-Updated: 2026-04-27T08:00:28.548Z
+Status: post-first-dollar
+Updated: 2026-04-27T09:46:33.392Z
 
 This report is an operator artifact for landing the first 10 paying customers. It is not proof of sent messages or booked revenue by itself.
 Outbound rule: do not treat posts as sales. A lead only moves when it is tracked as contacted, replied, call booked, checkout/sprint, or paid.
@@ -22,25 +22,25 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Proof link: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ## Revenue Snapshot
-- Paid orders: 0
-- Booked revenue: $0.00
-- Checkout starts: 0
-- Unique leads: 0
+- Paid orders: 2
+- Booked revenue: $20.00
+- Checkout starts: 1
+- Unique leads: 1
 - Workflow sprint leads: 0
 - Qualified sprint leads: 0
-- Billing source: local (Hosted operational summary is not configured.)
+- Billing source: hosted-via-railway-env
 
 ## GSD Directive
-- Objective: Land the first 10 paying customers with founder-led workflow hardening.
-- Headline: No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.
+- Objective: Scale the first-10-customers loop with direct workflow hardening and self-serve follow-up.
+- Headline: Revenue is proven. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
 - Primary motion: sprint
 - Secondary motion: pro
 
 ## Immediate Actions
-- Directly contact qualified buyers with: "I will harden one AI-agent workflow for you."
-- Use Pro at $19/mo or $149/yr only as the self-serve follow-up after the buyer asks for the tool path.
-- Track every lead as contacted -> replied -> call booked -> checkout or sprint intake -> paid.
-- Treat stars, traffic, and model praise as noise until they become paid orders or named pilot agreements.
+- Reply to every qualified lead with one offer: "I will harden one AI-agent workflow for you."
+- Use the proof pack after the buyer names the repeated workflow pain, not as the opener.
+- Route buyers who only want a tool to the Pro monthly/annual checkout after the pain is qualified.
+- Publish only booked revenue and paid-order proof from the billing summary or named pilot agreements.
 
 ## Warm Discovery Queue
 ### @Deep_Ad1959 — r/cursor

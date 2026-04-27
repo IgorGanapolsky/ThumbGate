@@ -1,16 +1,16 @@
 # Revenue Operator Priority Handoff
 
-Updated: 2026-04-27T08:00:28.548Z
+Updated: 2026-04-27T09:46:33.392Z
 
 This is the ranked send order for the current zero-to-one revenue loop. Work warm discovery targets first, then expand into cold GitHub targets with the same proof discipline.
 
 This handoff sits on top of `gtm-revenue-loop.md`, `gtm-target-queue.csv`, and `team-outreach-messages.md` so an operator can decide who to contact next without re-ranking the queue manually.
 
 ## Current Snapshot
-- Revenue state: cold-start
-- Headline: No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.
-- Paid orders: 0
-- Checkout starts: 0
+- Revenue state: post-first-dollar
+- Headline: Revenue is proven. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
+- Paid orders: 2
+- Checkout starts: 1
 - Active follow-ups: 0
 - Warm targets ready now: 4
 - Cold GitHub targets ready next: 6
