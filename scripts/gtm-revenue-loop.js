@@ -1025,6 +1025,7 @@ function resolveMotionLabel(report, motionKey) {
 }
 
 function resolveMotionCta(report, motionKey) {
+  const links = buildRevenueLinks();
   const matchingTarget = Array.isArray(report.targets)
     ? report.targets.find((target) => normalizeText(target.motion) === normalizeText(motionKey) && normalizeText(target.cta))
     : null;
@@ -1032,10 +1033,10 @@ function resolveMotionCta(report, motionKey) {
     return matchingTarget.cta;
   }
   if (motionKey === 'pro') {
-    return normalizeText(report.currentTruth?.publicSelfServeCta);
+    return normalizeText(report.currentTruth?.publicSelfServeCta) || links.proCheckoutLink;
   }
   if (motionKey === 'sprint') {
-    return normalizeText(report.currentTruth?.teamPilotCta);
+    return normalizeText(report.currentTruth?.teamPilotCta) || links.sprintLink;
   }
   return '';
 }
