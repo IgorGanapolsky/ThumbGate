@@ -102,7 +102,7 @@ test('revenue directives switch once interest or paid orders exist', () => {
   assert.equal(pipelineActive.state, 'pipeline-active-no-revenue');
   assert.match(pipelineActive.headline, /paid conversion is still zero/);
   assert.equal(postFirstDollar.state, 'post-first-dollar');
-  assert.match(postFirstDollar.headline, /Revenue is proven/);
+  assert.match(postFirstDollar.headline, /Verified booked revenue exists/);
 });
 
 test('resolveRevenueLoopSummary prefers hosted revenue status when local operator auth is missing', async () => {
@@ -1129,7 +1129,9 @@ test('marketplace copy pack stays tied to current revenue-loop evidence', () => 
   assert.equal(pack.recommendedCtas[0].label, 'Proof-backed setup guide');
   assert.match(pack.recommendedCtas[0].cta, /thumbgate-production\.up\.railway\.app\/guide/);
   assert.equal(pack.recommendedCtas[1].label, catalog.sprint.label);
+  assert.match(pack.recommendedCtas[1].cta, /#workflow-sprint-intake$/);
   assert.equal(pack.recommendedCtas[2].label, catalog.pro.label);
+  assert.match(pack.recommendedCtas[2].cta, /\/checkout\/pro$/);
   assert.ok(pack.topSignals.some((signal) => /Warm discovery workflows/.test(signal.label)));
   assert.ok(pack.topSignals.some((signal) => /Business-system workflow approvals/.test(signal.label)));
   assert.match(markdown, /Proof Policy/);
@@ -1137,6 +1139,7 @@ test('marketplace copy pack stays tied to current revenue-loop evidence', () => 
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
   assert.ok(pack.evidenceBackstop.claimGuardrails.some((entry) => /Do not lead with proof links/i.test(entry)));
+  assert.doesNotMatch(markdown, /cta unavailable in this run/i);
   assert.doesNotMatch(markdown, /paid customers already exist/i);
 });
 
@@ -1296,6 +1299,8 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.match(marketplaceCopy.headline, /workflow/i);
     assert.equal(marketplaceCopy.recommendedCtas[0].label, 'Proof-backed setup guide');
     assert.match(marketplaceCopy.recommendedCtas[0].cta, /thumbgate-production\.up\.railway\.app\/guide/);
+    assert.match(marketplaceCopy.recommendedCtas[1].cta, /#workflow-sprint-intake$/);
+    assert.match(marketplaceCopy.recommendedCtas[2].cta, /\/checkout\/pro$/);
     assert.ok(Array.isArray(marketplaceCopy.topSignals));
     assert.equal(JSON.parse(jsonl.trim()).repoName, 'production-mcp-server');
     assert.match(jsonl, /"pipelineLeadId":"reddit_builder_production_mcp_server"/);
@@ -1515,6 +1520,8 @@ test('runRevenueLoop writes an evidence-backed target queue with discovery warni
     assert.match(report.currentTruth.guideLink, /thumbgate-production\.up\.railway\.app\/guide/);
     assert.ok(Array.isArray(report.marketplaceCopy.topSignals));
     assert.equal(report.marketplaceCopy.recommendedCtas[0].label, 'Proof-backed setup guide');
+    assert.match(report.marketplaceCopy.recommendedCtas[1].cta, /#workflow-sprint-intake$/);
+    assert.match(report.marketplaceCopy.recommendedCtas[2].cta, /\/checkout\/pro$/);
     assert.match(report.targets[0].proofPackTrigger, /buyer confirms pain/);
     assert.match(report.targets[0].painConfirmedFollowUpDraft, /VERIFICATION_EVIDENCE/);
     assert.equal(written.reportDir, reportDir);

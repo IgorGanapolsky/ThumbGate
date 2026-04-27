@@ -540,7 +540,7 @@ function deriveRevenueDirective(summary = {}, motionCatalog = buildMotionCatalog
       objective: 'Scale the first-10-customers loop with direct workflow hardening and self-serve follow-up.',
       primaryMotion: motionCatalog.sprint.key,
       secondaryMotion: motionCatalog.pro.key,
-      headline: 'Revenue is proven. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.',
+      headline: 'Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.',
       actions: [
         'Reply to every qualified lead with one offer: "I will harden one AI-agent workflow for you."',
         'Use the proof pack after the buyer names the repeated workflow pain, not as the opener.',

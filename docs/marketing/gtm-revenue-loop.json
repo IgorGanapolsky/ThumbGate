@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-27T10:43:39.459Z",
+  "generatedAt": "2026-04-27T12:10:34.193Z",
   "source": "hosted-via-railway-env",
   "fallbackReason": null,
   "objective": "First 10 paying customers",
@@ -8,7 +8,7 @@
     "objective": "Scale the first-10-customers loop with direct workflow hardening and self-serve follow-up.",
     "primaryMotion": "sprint",
     "secondaryMotion": "pro",
-    "headline": "Revenue is proven. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.",
+    "headline": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.",
     "actions": [
       "Reply to every qualified lead with one offer: \"I will harden one AI-agent workflow for you.\"",
       "Use the proof pack after the buyer names the repeated workflow pain, not as the opener.",
@@ -43,7 +43,7 @@
     "bookedRevenueCents": 2000,
     "checkoutStarts": 1,
     "ctaClicks": 3,
-    "visitors": 108,
+    "visitors": 155,
     "uniqueLeads": 1,
     "sprintLeads": 0,
     "qualifiedSprintLeads": 0,
@@ -581,7 +581,7 @@
       "repoUrl": "https://github.com/manki-review/manki",
       "description": "Multi-stage, multi-agent AI code review for GitHub — self-hosted, provider-neutral. A planner picks the team, agents review in parallel, a judge filters the noise.",
       "stars": 5,
-      "updatedAt": "2026-04-27T00:31:43Z",
+      "updatedAt": "2026-04-27T11:07:15Z",
       "evidenceScore": 13,
       "evidence": [
         "workflow control surface",
@@ -703,10 +703,10 @@
     }
   ],
   "marketplaceCopy": {
-    "generatedAt": "2026-04-27T10:43:39.459Z",
+    "generatedAt": "2026-04-27T12:10:34.193Z",
     "state": "post-first-dollar",
     "headline": "Harden one AI-agent workflow before you roll it out.",
-    "shortDescription": "Revenue is proven. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain.",
+    "shortDescription": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain.",
     "longDescription": "ThumbGate is a reliability gateway for AI coding workflows. It captures repeated failures, regenerates pre-action gates, and keeps approval boundaries, rollback safety, and proof attached to the workflow before the next risky tool call. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Primary motion: Workflow Hardening Sprint. Secondary motion: Pro at $19/mo or $149/yr after the buyer asks for the self-serve path.",
     "proofPolicy": "Do not lead with proof links. Use Commercial Truth and Verification Evidence only after the buyer confirms pain.",
     "recommendedCtas": [
