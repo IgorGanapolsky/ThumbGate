@@ -106,6 +106,23 @@ test('revenue directives switch once interest or paid orders exist', () => {
   assert.match(postFirstDollar.headline, /Verified booked revenue exists/);
 });
 
+test('revenue directives refuse post-first-dollar language when revenue evidence is fallback-only', () => {
+  const catalog = buildMotionCatalog(buildRevenueLinks());
+  const directive = deriveRevenueDirective({
+    revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+    trafficMetrics: { checkoutStarts: 0 },
+    signups: { uniqueLeads: 0 },
+    pipeline: {},
+  }, catalog, {
+    source: 'local',
+    fallbackReason: 'Hosted operational summary is not configured.',
+  });
+
+  assert.equal(directive.state, 'cold-start');
+  assert.doesNotMatch(directive.headline, /Verified booked revenue exists/);
+  assert.match(directive.headline, /No verified revenue/);
+});
+
 test('resolveRevenueLoopSummary prefers hosted revenue status when local operator auth is missing', async () => {
   const result = await resolveRevenueLoopSummary({
     getOperationalBillingSummaryFn: async () => ({
