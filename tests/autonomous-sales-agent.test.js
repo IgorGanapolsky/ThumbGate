@@ -2,10 +2,15 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const path = require('node:path');
 
-const { isCliInvocation, main } = require('../scripts/autonomous-sales-agent');
+const {
+  buildGitHubOutreachJobs,
+  isCliInvocation,
+  main,
+} = require('../scripts/autonomous-sales-agent');
 
-test('automation emits LinkedIn, Aiventyx, ChatGPT, and Codex alongside Claude, Cursor, and Gemini packs', async () => {
+test('automation emits LinkedIn, Aiventyx, ChatGPT, Codex, and GitHub outreach assets from the revenue loop outputs', async () => {
   const calls = [];
   const logs = [];
   const originalLog = console.log;
@@ -98,11 +103,16 @@ test('automation emits LinkedIn, Aiventyx, ChatGPT, and Codex alongside Claude, 
         calls.push(['writeCodexPluginRevenuePack', pack.channel, options.writeDocs]);
         return { docsPath: '/tmp/codex-plugin.md' };
       },
+      runGitHubOutreach(options) {
+        calls.push(['runGitHubOutreach', options]);
+        return { docsPath: options.outPath };
+      },
     });
   } finally {
     console.log = originalLog;
   }
 
+  const repoRoot = path.resolve(__dirname, '..');
   assert.deepEqual(calls, [
     ['parseArgs', ['--write-docs']],
     ['runRevenueLoop', { writeDocs: true, reportDir: 'reports/gtm/test' }],
@@ -122,13 +132,46 @@ test('automation emits LinkedIn, Aiventyx, ChatGPT, and Codex alongside Claude, 
     ['writeCodexMarketplaceRevenuePack', 'codex', true],
     ['buildCodexPluginRevenuePack', 2],
     ['writeCodexPluginRevenuePack', 'codex-plugin', true],
+    ['runGitHubOutreach', {
+      queuePath: path.resolve('/tmp/reports/gtm', 'gtm-target-queue.jsonl'),
+      reportPath: path.resolve('/tmp/reports/gtm', 'gtm-revenue-loop.json'),
+      outPath: path.resolve('/tmp/reports/gtm', 'OUTREACH_TARGETS.md'),
+    }],
+    ['runGitHubOutreach', {
+      queuePath: path.resolve(repoRoot, 'docs/marketing/gtm-target-queue.jsonl'),
+      reportPath: path.resolve(repoRoot, 'docs/marketing/gtm-revenue-loop.json'),
+      outPath: path.resolve(repoRoot, 'docs/OUTREACH_TARGETS.md'),
+    }],
   ]);
   assert.ok(logs.some((line) => line.includes('Aiventyx pack updated: /tmp/aiventyx.md')));
   assert.ok(logs.some((line) => line.includes('LinkedIn pack updated: /tmp/linkedin.md')));
   assert.ok(logs.some((line) => line.includes('ChatGPT pack updated: /tmp/chatgpt.md')));
   assert.ok(logs.some((line) => line.includes('Codex marketplace pack updated: /tmp/codex-marketplace.md')));
   assert.ok(logs.some((line) => line.includes('Codex plugin pack updated: /tmp/codex-plugin.md')));
+  assert.ok(logs.some((line) => line.includes('GitHub outreach asset updated: /tmp/reports/gtm/OUTREACH_TARGETS.md')));
+  assert.ok(logs.some((line) => line.includes(`GitHub outreach asset updated: ${path.resolve(repoRoot, 'docs/OUTREACH_TARGETS.md')}`)));
   assert.ok(logs.some((line) => line.includes('State: cold-start | Targets: 2')));
+});
+
+test('buildGitHubOutreachJobs writes report-dir and repo docs assets from the current revenue loop outputs', () => {
+  const repoRoot = path.resolve(__dirname, '..');
+  const jobs = buildGitHubOutreachJobs({
+    reportDir: '/tmp/reports/gtm',
+    docsPath: path.join(repoRoot, 'docs', 'marketing', 'gtm-revenue-loop.md'),
+  }, repoRoot);
+
+  assert.deepEqual(jobs, [
+    {
+      queuePath: path.resolve('/tmp/reports/gtm', 'gtm-target-queue.jsonl'),
+      reportPath: path.resolve('/tmp/reports/gtm', 'gtm-revenue-loop.json'),
+      outPath: path.resolve('/tmp/reports/gtm', 'OUTREACH_TARGETS.md'),
+    },
+    {
+      queuePath: path.resolve(repoRoot, 'docs/marketing/gtm-target-queue.jsonl'),
+      reportPath: path.resolve(repoRoot, 'docs/marketing/gtm-revenue-loop.json'),
+      outPath: path.resolve(repoRoot, 'docs/OUTREACH_TARGETS.md'),
+    },
+  ]);
 });
 
 test('CLI entrypoint detection is path based', () => {
