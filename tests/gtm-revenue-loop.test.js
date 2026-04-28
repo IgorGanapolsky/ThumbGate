@@ -173,6 +173,66 @@ test('resolveRevenueLoopSummary keeps local numbers when hosted revenue status s
   assert.equal(result.summary.revenue.paidOrders, 0);
 });
 
+test('resolveRevenueLoopSummary preserves the last hosted-proof snapshot when live hosted access is unavailable', async () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-gtm-hosted-artifact-'));
+  const reportPath = path.join(tempDir, 'gtm-revenue-loop.json');
+
+  try {
+    fs.writeFileSync(reportPath, `${JSON.stringify({
+      generatedAt: '2026-04-28T10:16:20.911Z',
+      source: 'hosted-via-railway-env',
+      snapshot: {
+        paidOrders: 2,
+        bookedRevenueCents: 2000,
+        checkoutStarts: 1,
+        ctaClicks: 31,
+        visitors: 209,
+        uniqueLeads: 1,
+        sprintLeads: 0,
+        qualifiedSprintLeads: 0,
+        latestPaidAt: '2025-11-18T12:36:00.000Z',
+      },
+    }, null, 2)}\n`, 'utf8');
+
+    const result = await resolveRevenueLoopSummary({
+      existingReportPath: reportPath,
+      getOperationalBillingSummaryFn: async () => ({
+        source: 'local',
+        summary: {
+          revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+          trafficMetrics: { checkoutStarts: 0 },
+          signups: { uniqueLeads: 0 },
+          pipeline: {},
+        },
+        fallbackReason: 'Hosted operational summary is not configured.',
+      }),
+      generateRevenueStatusReportFn: async () => ({
+        source: 'local-fallback',
+        hostedAudit: {
+          error: 'failed to get variables: HTTP 403',
+          summaries: {
+            today: {
+              status: 200,
+              revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+            },
+          },
+        },
+      }),
+    });
+
+    assert.equal(result.source, 'hosted-artifact');
+    assert.match(result.fallbackReason, /preserved the last hosted-proof snapshot/i);
+    assert.match(result.fallbackReason, /HTTP 403/);
+    assert.equal(result.summary.revenue.paidOrders, 2);
+    assert.equal(result.summary.revenue.bookedRevenueCents, 2000);
+    assert.equal(result.summary.trafficMetrics.checkoutStarts, 1);
+    assert.equal(result.summary.signups.uniqueLeads, 1);
+    assert.equal(result.summary.pipeline.workflowSprintLeads.total, 0);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
 test('resolveRevenueLoopSummary skips hosted audit when local metrics are explicitly requested', async () => {
   let hostedAuditCalls = 0;
   const result = await resolveRevenueLoopSummary({

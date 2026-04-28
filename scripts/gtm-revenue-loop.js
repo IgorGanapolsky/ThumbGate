@@ -602,14 +602,79 @@ function normalizeRevenueWindowSummary(summary = {}) {
   };
 }
 
+function isHostedRevenueSource(source = '') {
+  return /^hosted\b/i.test(normalizeText(source));
+}
+
+function loadHostedArtifactSnapshot(reportPath = '') {
+  const resolvedPath = normalizeText(reportPath);
+  if (!resolvedPath) return null;
+
+  try {
+    const raw = fs.readFileSync(path.resolve(resolvedPath), 'utf8');
+    const parsed = JSON.parse(raw);
+    if (!isHostedRevenueSource(parsed.source)) return null;
+
+    const snapshot = parsed.snapshot || {};
+    return {
+      generatedAt: normalizeText(parsed.generatedAt),
+      summary: {
+        revenue: {
+          paidOrders: Number(snapshot.paidOrders || 0),
+          bookedRevenueCents: Number(snapshot.bookedRevenueCents || 0),
+          latestPaidAt: normalizeText(snapshot.latestPaidAt) || null,
+        },
+        trafficMetrics: {
+          checkoutStarts: Number(snapshot.checkoutStarts || 0),
+          ctaClicks: Number(snapshot.ctaClicks || 0),
+          visitors: Number(snapshot.visitors || 0),
+        },
+        signups: {
+          uniqueLeads: Number(snapshot.uniqueLeads || 0),
+        },
+        pipeline: {
+          workflowSprintLeads: {
+            total: Number(snapshot.sprintLeads || 0),
+          },
+          qualifiedWorkflowSprintLeads: {
+            total: Number(snapshot.qualifiedSprintLeads || 0),
+          },
+        },
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
+function buildHostedArtifactFallbackReason(reason = '', generatedAt = '') {
+  const preservedAt = normalizeText(generatedAt);
+  const normalizedReason = normalizeText(reason);
+  const prefix = preservedAt
+    ? `Live hosted revenue summary unavailable; preserved the last hosted-proof snapshot from ${preservedAt}.`
+    : 'Live hosted revenue summary unavailable; preserved the last hosted-proof snapshot.';
+  return normalizedReason ? `${prefix} ${normalizedReason}` : prefix;
+}
+
 async function resolveRevenueLoopSummary(options = {}) {
   const {
     getOperationalBillingSummaryFn = getOperationalBillingSummary,
     generateRevenueStatusReportFn = generateRevenueStatusReport,
     revenueStatusOptions = {},
+    existingReportPath = '',
   } = options;
 
   const localResult = await getOperationalBillingSummaryFn();
+  const fallbackArtifact = (reason = '') => {
+    const artifact = loadHostedArtifactSnapshot(existingReportPath);
+    if (!artifact) return null;
+    return {
+      source: 'hosted-artifact',
+      summary: artifact.summary,
+      fallbackReason: buildHostedArtifactFallbackReason(reason, artifact.generatedAt),
+      hostedStatus: null,
+    };
+  };
   if (localResult.source === 'hosted') {
     return localResult;
   }
@@ -625,7 +690,7 @@ async function resolveRevenueLoopSummary(options = {}) {
     const hostedReport = await generateRevenueStatusReportFn(revenueStatusOptions);
     const hostedToday = hostedReport?.hostedAudit?.summaries?.today;
     if (hostedReport?.source === 'local-fallback' || Number(hostedToday?.status) !== 200) {
-      return localResult;
+      return fallbackArtifact(hostedReport?.hostedAudit?.error || localResult.fallbackReason) || localResult;
     }
 
     return {
@@ -635,7 +700,7 @@ async function resolveRevenueLoopSummary(options = {}) {
       hostedStatus: hostedToday.status,
     };
   } catch {
-    return localResult;
+    return fallbackArtifact(localResult.fallbackReason) || localResult;
   }
 }
 
@@ -2074,10 +2139,17 @@ function writeRevenueLoopOutputs(report, options = {}) {
 }
 
 async function runRevenueLoop(options = {}) {
+  const repoRoot = options.repoRoot
+    ? path.resolve(options.repoRoot)
+    : path.resolve(__dirname, '..');
   const links = buildRevenueLinks();
   const motionCatalog = buildMotionCatalog(links);
   const warmTargets = getWarmOutboundTargets(motionCatalog.sprint.cta);
-  const { source, summary, fallbackReason } = await resolveRevenueLoopSummary(options);
+  const { source, summary, fallbackReason } = await resolveRevenueLoopSummary({
+    ...options,
+    existingReportPath: options.existingReportPath
+      || path.join(repoRoot, 'docs', 'marketing', 'gtm-revenue-loop.json'),
+  });
   const directive = deriveRevenueDirective(summary, motionCatalog);
   const { targets, errors } = await prospectTargets(options.maxTargets || 6, {
     fetchImpl: options.fetchImpl || globalThis.fetch,
