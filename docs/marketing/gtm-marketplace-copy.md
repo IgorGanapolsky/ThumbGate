@@ -25,9 +25,9 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 - Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro
 
 ## Evidence-Backed Buyer Signals
-- Workflow control surfaces (6): The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Examples: Adqui9608/ai-code-review-agent, DGouron/review-flow, nihannihu/Omni-SRE
-- Warm discovery workflows (4): Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Examples: @Deep_Ad1959, @game-of-kton, @leogodin217
-- Business-system workflow approvals (4): Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Examples: Adqui9608/ai-code-review-agent, DGouron/review-flow, nihannihu/Omni-SRE
+- Workflow control surfaces (6, weighted intent 110): The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Examples: Adqui9608/ai-code-review-agent, getaxonflow/axonflow-codex-plugin, DGouron/review-flow
+- Warm discovery workflows (4, weighted intent 76): Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Examples: @Deep_Ad1959, @game-of-kton, @leogodin217
+- Business-system workflow approvals (3, weighted intent 57): Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Examples: Adqui9608/ai-code-review-agent, DGouron/review-flow, nihannihu/Omni-SRE
 
 ## Proof Policy
 - Do not lead with proof links. Use Commercial Truth and Verification Evidence only after the buyer confirms pain.
@@ -43,8 +43,8 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 - @Deep_Ad1959 (warm): Warm Reddit engager already named a repeated workflow risk, so the fastest path is a founder-led diagnostic.
 - @game-of-kton (warm): Warm Reddit engager already works on advanced agent memory, so discovery should center on one repeated failure pattern.
 - @leogodin217 (warm): Warm Reddit engager already described a mature workflow, so the next step is a targeted diagnostic on one failure mode.
-- @Enthu-Cutlet-1337 (warm): Warm Reddit engager already understands the adaptive-gate thesis, so offer one concrete workflow hardening diagnostic.
 - Adqui9608/ai-code-review-agent (cold): Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
+- DGouron/review-flow (cold): Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
 
 ## Proof Links
 - https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md

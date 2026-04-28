@@ -143,7 +143,7 @@ test('resolveRevenueLoopSummary prefers hosted revenue status when local operato
   assert.equal(result.summary.trafficMetrics.checkoutStarts, 1);
 });
 
-test('resolveRevenueLoopSummary keeps local numbers when hosted revenue status still falls back', async () => {
+test('resolveRevenueLoopSummary applies the documented revenue floor when hosted revenue status still falls back', async () => {
   const result = await resolveRevenueLoopSummary({
     getOperationalBillingSummaryFn: async () => ({
       source: 'local',
@@ -170,7 +170,10 @@ test('resolveRevenueLoopSummary keeps local numbers when hosted revenue status s
 
   assert.equal(result.source, 'local');
   assert.equal(result.fallbackReason, 'Hosted operational summary is not configured.');
-  assert.equal(result.summary.revenue.paidOrders, 0);
+  assert.equal(result.summary.revenue.paidOrders, 2);
+  assert.equal(result.summary.revenue.bookedRevenueCents, 2000);
+  assert.equal(result.commercialTruthFloor.source, 'docs/COMMERCIAL_TRUTH.md');
+  assert.match(result.commercialTruthFloor.asOf, /March 19, 2026/);
 });
 
 test('resolveRevenueLoopSummary skips hosted audit when local metrics are explicitly requested', async () => {
@@ -614,6 +617,12 @@ test('rendered revenue loop markdown anchors every target to truth and proof', (
     generatedAt: '2026-03-18T00:00:00.000Z',
     source: 'local',
     fallbackReason: 'Hosted operational summary is not configured.',
+    commercialTruthFloor: {
+      bookedRevenueCents: 2000,
+      paidOrders: 2,
+      source: 'docs/COMMERCIAL_TRUTH.md',
+      asOf: 'March 19, 2026',
+    },
     currentTruth: {
       publicSelfServeOffer: catalog.pro.label,
       teamPilotOffer: catalog.sprint.label,
@@ -683,6 +692,7 @@ test('rendered revenue loop markdown anchors every target to truth and proof', (
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
   assert.match(markdown, /Evidence Backstop/);
   assert.match(markdown, /Evidence sources:/);
+  assert.match(markdown, /Commercial truth floor: \$20\.00 from 2 paid orders/);
   assert.match(markdown, /Contact surfaces: Reddit DM: https:\/\/www\.reddit\.com\/user\/builder\//);
   assert.match(markdown, /Company: Builder Labs/);
   assert.match(markdown, /Warm Discovery Queue/);
@@ -1606,15 +1616,115 @@ test('marketplace copy pack stays tied to current revenue-loop evidence', () => 
   assert.match(pack.recommendedCtas[1].cta, /#workflow-sprint-intake$/);
   assert.equal(pack.recommendedCtas[2].label, catalog.pro.label);
   assert.match(pack.recommendedCtas[2].cta, /\/checkout\/pro$/);
+  assert.equal(pack.topSignals[0].label, 'Warm discovery workflows');
+  assert.ok(pack.topSignals[0].weightedIntent > 0);
   assert.ok(pack.topSignals.some((signal) => /Warm discovery workflows/.test(signal.label)));
   assert.ok(pack.topSignals.some((signal) => /Business-system workflow approvals/.test(signal.label)));
   assert.match(markdown, /Proof Policy/);
   assert.match(markdown, /Evidence Backstop/);
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
+  assert.match(markdown, /weighted intent/);
   assert.ok(pack.evidenceBackstop.claimGuardrails.some((entry) => /Do not lead with proof links/i.test(entry)));
   assert.doesNotMatch(markdown, /cta unavailable in this run/i);
   assert.doesNotMatch(markdown, /paid customers already exist/i);
+});
+
+test('marketplace copy prioritizes weighted intent over raw target count', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const report = buildRevenueLoopReport({
+    source: 'local',
+    fallbackReason: 'Hosted operational summary is not configured.',
+    summary: {
+      revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    },
+    motionCatalog: catalog,
+    directive: {
+      state: 'cold-start',
+      objective: 'First 10 paying customers',
+      headline: 'No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.',
+      primaryMotion: 'sprint',
+      secondaryMotion: 'pro',
+      actions: ['Lead with one workflow.'],
+    },
+    targets: [
+      {
+        temperature: 'warm',
+        source: 'reddit',
+        channel: 'reddit_dm',
+        username: 'builder',
+        accountName: 'r/ClaudeCode',
+        contactUrl: 'https://www.reddit.com/user/builder/',
+        repoName: '',
+        repoUrl: '',
+        evidence: {
+          score: 11,
+          evidence: ['warm inbound engagement'],
+          outreachAngle: 'Lead with one repeated workflow failure.',
+        },
+        selectedMotion: {
+          key: 'sprint',
+          label: catalog.sprint.label,
+          reason: 'Warm workflow pain already exists.',
+        },
+        pipelineStage: 'targeted',
+        message: 'I can harden one workflow for you this week.',
+      },
+      {
+        temperature: 'cold',
+        source: 'github',
+        channel: 'github',
+        username: 'plugin-one',
+        accountName: 'plugin-one',
+        repoName: 'codex-plugin-alpha',
+        repoUrl: 'https://github.com/example/codex-plugin-alpha',
+        description: 'Local Codex plugin with install guide and hooks.',
+        evidence: {
+          score: 4,
+          evidence: ['self-serve agent tooling'],
+          outreachAngle: 'Lead with the proof-backed setup guide first.',
+        },
+        selectedMotion: {
+          key: 'pro',
+          label: catalog.pro.label,
+          reason: 'Self-serve path first.',
+        },
+        pipelineStage: 'targeted',
+        message: 'Start with the guide.',
+      },
+      {
+        temperature: 'cold',
+        source: 'github',
+        channel: 'github',
+        username: 'plugin-two',
+        accountName: 'plugin-two',
+        repoName: 'codex-plugin-beta',
+        repoUrl: 'https://github.com/example/codex-plugin-beta',
+        description: 'Another local Codex plugin with install docs and hooks.',
+        evidence: {
+          score: 4,
+          evidence: ['self-serve agent tooling'],
+          outreachAngle: 'Lead with the proof-backed setup guide first.',
+        },
+        selectedMotion: {
+          key: 'pro',
+          label: catalog.pro.label,
+          reason: 'Self-serve path first.',
+        },
+        pipelineStage: 'targeted',
+        message: 'Start with the guide.',
+      },
+    ],
+  });
+
+  const pack = buildMarketplaceCopy(report);
+
+  assert.equal(pack.topSignals[0].label, 'Warm discovery workflows');
+  assert.ok(pack.topSignals[0].weightedIntent > pack.topSignals[1].weightedIntent);
 });
 
 test('marketplace copy keeps the Pro CTA when no target currently uses the Pro motion', () => {

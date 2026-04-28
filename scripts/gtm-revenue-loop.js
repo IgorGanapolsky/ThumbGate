@@ -13,6 +13,7 @@ const { getWarmOutboundTargets } = require('./warm-outreach-targets');
 
 const GITHUB_API_BASE_URL = 'https://api.github.com/';
 const COMMERCIAL_TRUTH_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md';
+const COMMERCIAL_TRUTH_PATH = path.join(__dirname, '..', 'docs', 'COMMERCIAL_TRUTH.md');
 const VERIFICATION_EVIDENCE_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
 const TARGET_SEARCH_QUERIES = [
   'search/repositories?q=Model+Context+Protocol+workflow+automation+sort:updated',
@@ -115,6 +116,14 @@ const PIPELINE_STAGE_PRIORITY = {
   contacted: 2,
   targeted: 1,
 };
+
+function computeMarketplaceIntentWeight(target = {}) {
+  const stagePriority = PIPELINE_STAGE_PRIORITY[normalizePipelineStage(target.pipelineStage)] || 0;
+  const evidenceScore = Number(target.evidenceScore || target.evidence?.score || 0);
+  const warmBonus = normalizeText(target.temperature).toLowerCase() === 'warm' ? 3 : 0;
+  const sprintBonus = normalizeText(target.motion).toLowerCase() === 'sprint' ? 1 : 0;
+  return 1 + (stagePriority * 5) + Math.min(12, evidenceScore) + warmBonus + sprintBonus;
+}
 
 function getGoogleGenAI() {
   try {
@@ -602,6 +611,66 @@ function normalizeRevenueWindowSummary(summary = {}) {
   };
 }
 
+function loadCommercialTruthRevenueFloor(filePath = COMMERCIAL_TRUTH_PATH) {
+  try {
+    const markdown = fs.readFileSync(filePath, 'utf8');
+    const match = markdown.match(/Verified cumulative booked revenue through ([^.]+?) is \*\*\$([0-9][0-9,]*(?:\.\d{2})?)\*\* from `(\d+)` reconciled Stripe charges/i);
+    if (!match) {
+      return null;
+    }
+    const bookedRevenueCents = Math.round(Number.parseFloat(match[2].replace(/,/g, '')) * 100);
+    const paidOrders = Number.parseInt(match[3], 10);
+    if (!Number.isFinite(bookedRevenueCents) || !Number.isFinite(paidOrders)) {
+      return null;
+    }
+    return {
+      asOf: normalizeText(match[1]),
+      bookedRevenueCents,
+      paidOrders,
+      source: 'docs/COMMERCIAL_TRUTH.md',
+    };
+  } catch {
+    return null;
+  }
+}
+
+function applyCommercialTruthRevenueFloor(summary = {}, fallbackReason = '') {
+  if (!/hosted operational summary is (not configured|disabled)/i.test(normalizeText(fallbackReason))) {
+    return {
+      summary,
+      commercialTruthFloor: null,
+    };
+  }
+
+  const revenue = summary.revenue || {};
+  if (Number(revenue.paidOrders || 0) > 0 || Number(revenue.bookedRevenueCents || 0) > 0) {
+    return {
+      summary,
+      commercialTruthFloor: null,
+    };
+  }
+
+  const commercialTruthFloor = loadCommercialTruthRevenueFloor();
+  if (!commercialTruthFloor) {
+    return {
+      summary,
+      commercialTruthFloor: null,
+    };
+  }
+
+  return {
+    summary: {
+      ...summary,
+      revenue: {
+        ...revenue,
+        paidOrders: Math.max(Number(revenue.paidOrders || 0), commercialTruthFloor.paidOrders),
+        bookedRevenueCents: Math.max(Number(revenue.bookedRevenueCents || 0), commercialTruthFloor.bookedRevenueCents),
+      },
+    },
+    commercialTruthFloor,
+  };
+}
+
 async function resolveRevenueLoopSummary(options = {}) {
   const {
     getOperationalBillingSummaryFn = getOperationalBillingSummary,
@@ -609,7 +678,16 @@ async function resolveRevenueLoopSummary(options = {}) {
     revenueStatusOptions = {},
   } = options;
 
-  const localResult = await getOperationalBillingSummaryFn();
+  const withCommercialTruthFloor = (result) => {
+    const applied = applyCommercialTruthRevenueFloor(result.summary || {}, result.fallbackReason || '');
+    return {
+      ...result,
+      summary: applied.summary,
+      commercialTruthFloor: applied.commercialTruthFloor,
+    };
+  };
+
+  const localResult = withCommercialTruthFloor(await getOperationalBillingSummaryFn());
   if (localResult.source === 'hosted') {
     return localResult;
   }
@@ -633,6 +711,7 @@ async function resolveRevenueLoopSummary(options = {}) {
       summary: normalizeRevenueWindowSummary(hostedToday),
       fallbackReason: null,
       hostedStatus: hostedToday.status,
+      commercialTruthFloor: null,
     };
   } catch {
     return localResult;
@@ -1246,7 +1325,7 @@ async function generateOutreachMessages(targets, motionCatalog = buildMotionCata
   return results;
 }
 
-function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog, directive, targets }) {
+function buildRevenueLoopReport({ source, fallbackReason, commercialTruthFloor = null, summary, motionCatalog, directive, targets }) {
   const snapshot = summarizeCommercialSnapshot(summary);
   const currentTruth = {
     publicSelfServeOffer: motionCatalog.pro.label,
@@ -1262,6 +1341,7 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
     generatedAt: new Date().toISOString(),
     source,
     fallbackReason: fallbackReason || null,
+    commercialTruthFloor,
     objective: 'First 10 paying customers',
     directive,
     currentTruth,
@@ -1355,13 +1435,15 @@ function buildMarketplaceCopy(report) {
   const signalThemes = MARKETPLACE_SIGNAL_THEMES
     .map((theme) => {
       const matches = targets.filter((target) => theme.match(target));
+      const rankedMatches = rankOperatorTargets(matches);
       return {
         key: theme.key,
         label: theme.label,
         summary: theme.summary,
         listingAngle: theme.listingAngle,
         count: matches.length,
-        examples: matches.slice(0, 3).map((target) => (
+        weightedIntent: matches.reduce((total, target) => total + computeMarketplaceIntentWeight(target), 0),
+        examples: rankedMatches.slice(0, 3).map((target) => (
           normalizeText(target.repoName)
             ? `${target.username}/${target.repoName}`
             : `@${target.username}`
@@ -1369,7 +1451,12 @@ function buildMarketplaceCopy(report) {
       };
     })
     .filter((theme) => theme.count > 0)
-    .sort((left, right) => right.count - left.count)
+    .sort((left, right) => {
+      if (right.weightedIntent !== left.weightedIntent) {
+        return right.weightedIntent - left.weightedIntent;
+      }
+      return right.count - left.count;
+    })
     .slice(0, 3);
   const topTheme = signalThemes[0];
   const primaryMotion = normalizeText(report.directive?.primaryMotion) || 'sprint';
@@ -1391,7 +1478,8 @@ function buildMarketplaceCopy(report) {
     `Primary motion: ${resolveMotionLabel(report, primaryMotion)}.`,
     `Secondary motion: ${resolveMotionLabel(report, secondaryMotion)} after the buyer asks for the self-serve path.`,
   ].join(' ');
-  const sampleTargets = targets
+  const sampleTargets = [...targets]
+    .sort((left, right) => computeMarketplaceIntentWeight(right) - computeMarketplaceIntentWeight(left))
     .slice(0, 5)
     .map((target) => ({
       account: normalizeText(target.repoName)
@@ -1508,6 +1596,9 @@ function renderRevenueLoopMarkdown(report) {
     '## Revenue Snapshot',
     `- Paid orders: ${report.snapshot.paidOrders}`,
     `- Booked revenue: $${(report.snapshot.bookedRevenueCents / 100).toFixed(2)}`,
+    ...(report.commercialTruthFloor ? [
+      `- Commercial truth floor: $${(report.commercialTruthFloor.bookedRevenueCents / 100).toFixed(2)} from ${report.commercialTruthFloor.paidOrders} paid orders (${report.commercialTruthFloor.source}${report.commercialTruthFloor.asOf ? `, as of ${report.commercialTruthFloor.asOf}` : ''})`,
+    ] : []),
     `- Checkout starts: ${report.snapshot.checkoutStarts}`,
     `- Unique leads: ${report.snapshot.uniqueLeads}`,
     `- Workflow sprint leads: ${report.snapshot.sprintLeads}`,
@@ -1857,7 +1948,7 @@ function renderTeamOutreachMessagesMarkdown(report) {
 
 function renderMarketplaceCopyMarkdown(pack) {
   const signalLines = pack.topSignals.length
-    ? pack.topSignals.map((signal) => `- ${signal.label} (${signal.count}): ${signal.summary}${signal.examples.length ? ` Examples: ${signal.examples.join(', ')}` : ''}`)
+    ? pack.topSignals.map((signal) => `- ${signal.label} (${signal.count}, weighted intent ${signal.weightedIntent}): ${signal.summary}${signal.examples.length ? ` Examples: ${signal.examples.join(', ')}` : ''}`)
     : ['- No target evidence was available for this run.'];
   const ctaLines = pack.recommendedCtas
     .filter((entry) => entry.label || entry.cta)
@@ -2077,7 +2168,7 @@ async function runRevenueLoop(options = {}) {
   const links = buildRevenueLinks();
   const motionCatalog = buildMotionCatalog(links);
   const warmTargets = getWarmOutboundTargets(motionCatalog.sprint.cta);
-  const { source, summary, fallbackReason } = await resolveRevenueLoopSummary(options);
+  const { source, summary, fallbackReason, commercialTruthFloor } = await resolveRevenueLoopSummary(options);
   const directive = deriveRevenueDirective(summary, motionCatalog);
   const { targets, errors } = await prospectTargets(options.maxTargets || 6, {
     fetchImpl: options.fetchImpl || globalThis.fetch,
@@ -2092,6 +2183,7 @@ async function runRevenueLoop(options = {}) {
   const report = buildRevenueLoopReport({
     source,
     fallbackReason,
+    commercialTruthFloor,
     summary,
     motionCatalog,
     directive,

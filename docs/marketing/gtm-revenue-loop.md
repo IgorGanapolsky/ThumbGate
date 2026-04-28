@@ -1,7 +1,7 @@
 # GSD Revenue Loop
 
 Status: post-first-dollar
-Updated: 2026-04-28T10:16:20.911Z
+Updated: 2026-04-28T16:25:44.563Z
 
 This report is an operator artifact for landing the first 10 paying customers. It is not proof of sent messages or booked revenue by itself.
 Outbound rule: do not treat posts as sales. A lead only moves when it is tracked as contacted, replied, call booked, checkout/sprint, or paid.
@@ -24,11 +24,12 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 ## Revenue Snapshot
 - Paid orders: 2
 - Booked revenue: $20.00
-- Checkout starts: 1
-- Unique leads: 1
+- Commercial truth floor: $20.00 from 2 paid orders (docs/COMMERCIAL_TRUTH.md, as of March 19, 2026)
+- Checkout starts: 0
+- Unique leads: 0
 - Workflow sprint leads: 0
 - Qualified sprint leads: 0
-- Billing source: hosted-via-railway-env
+- Billing source: local (Hosted operational summary is not configured.)
 
 ## GSD Directive
 - Objective: Scale the first-10-customers loop with direct workflow hardening and self-serve follow-up.
@@ -156,7 +157,7 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Contact surfaces: GitHub profile: https://github.com/Adqui9608; Repository: https://github.com/Adqui9608/ai-code-review-agent
 - Company: n/a
 - Repo: https://github.com/Adqui9608/ai-code-review-agent
-- Repo last updated: 2026-04-28T08:58:34Z
+- Repo last updated: 2026-04-28T15:26:46Z
 - Evidence score: 15
 - Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, updated in the last 7 days
 - Evidence sources: Target signal: https://github.com/Adqui9608/ai-code-review-agent; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
@@ -195,6 +196,31 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Tool-path follow-up: If you want to inspect the self-serve path while you evaluate `review-flow`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - Checkout close draft: If you are already comparing close options for `review-flow`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
+### @getaxonflow — axonflow-codex-plugin
+- Temperature: cold
+- Source: github / github
+- Pipeline stage: targeted
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
+- Offer: workflow_hardening_sprint
+- Contact: https://github.com/getaxonflow
+- Contact surfaces: GitHub profile: https://github.com/getaxonflow; Repository: https://github.com/getaxonflow/axonflow-codex-plugin
+- Company: n/a
+- Repo: https://github.com/getaxonflow/axonflow-codex-plugin
+- Repo last updated: 2026-04-28T15:59:41Z
+- Evidence score: 14
+- Evidence: workflow control surface, production or platform workflow, agent infrastructure, self-serve agent tooling, updated in the last 7 days
+- Evidence sources: Target signal: https://github.com/getaxonflow/axonflow-codex-plugin; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Outreach angle: Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.
+- Motion: Workflow Hardening Sprint
+- Why: Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.
+- Proof timing: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- First-touch draft: Hey @getaxonflow, saw you're shipping `axonflow-codex-plugin`. If one deploy, release, or incident workflow keeps needing extra guardrails, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Pain-confirmed follow-up: If `axonflow-codex-plugin` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Tool-path follow-up: If you want to inspect the self-serve path while you evaluate `axonflow-codex-plugin`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Checkout close draft: If you are already comparing close options for `axonflow-codex-plugin`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
 ### @nihannihu — Omni-SRE
 - Temperature: cold
 - Source: github / github
@@ -220,77 +246,52 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Tool-path follow-up: If you want to inspect the self-serve path while you evaluate `Omni-SRE`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - Checkout close draft: If you are already comparing close options for `Omni-SRE`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
-### @freema — mcp-jira-stdio
-- Temperature: cold
-- Source: github / github
-- Pipeline stage: targeted
-- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
-- Pipeline last updated: n/a
-- Offer: workflow_hardening_sprint
-- Contact: http://www.tomasgrasl.cz/
-- Contact surfaces: Website: http://www.tomasgrasl.cz/; GitHub profile: https://github.com/freema; Repository: https://github.com/freema/mcp-jira-stdio
-- Company: n/a
-- Repo: https://github.com/freema/mcp-jira-stdio
-- Repo last updated: 2026-04-21T14:40:45Z
-- Evidence score: 13
-- Evidence: workflow control surface, business-system integration, agent infrastructure, 11 GitHub stars, updated in the last 7 days
-- Evidence sources: Target signal: https://github.com/freema/mcp-jira-stdio; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
-- Outreach angle: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
-- Motion: Workflow Hardening Sprint
-- Why: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
-- Proof timing: Use proof pack only after the buyer confirms pain.
-- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-- First-touch draft: Hey @freema, saw you're shipping `mcp-jira-stdio`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-- Pain-confirmed follow-up: If `mcp-jira-stdio` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
-- Tool-path follow-up: If you want to inspect the self-serve path while you evaluate `mcp-jira-stdio`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-- Checkout close draft: If you are already comparing close options for `mcp-jira-stdio`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
-
-### @oliver-kriska — claude-elixir-phoenix
+### @zaxbysauce — opencode-swarm
 - Temperature: cold
 - Source: github / github
 - Pipeline stage: targeted
 - Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
 - Pipeline last updated: n/a
 - Offer: pro_self_serve
-- Contact: https://github.com/oliver-kriska
-- Contact surfaces: GitHub profile: https://github.com/oliver-kriska; Repository: https://github.com/oliver-kriska/claude-elixir-phoenix
+- Contact: https://github.com/zaxbysauce
+- Contact surfaces: GitHub profile: https://github.com/zaxbysauce; Repository: https://github.com/zaxbysauce/opencode-swarm
 - Company: n/a
-- Repo: https://github.com/oliver-kriska/claude-elixir-phoenix
-- Repo last updated: 2026-04-28T08:17:45Z
-- Evidence score: 14
-- Evidence: workflow control surface, agent infrastructure, self-serve agent tooling, 290 GitHub stars, updated in the last 7 days
-- Evidence sources: Target signal: https://github.com/oliver-kriska/claude-elixir-phoenix; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
-- Outreach angle: Lead with the proof-backed setup guide and local-first enforcement before any team-motion pitch.
-- Motion: Pro at $19/mo or $149/yr
-- Why: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
-- Proof timing: Use proof pack only after the buyer confirms pain.
-- CTA: https://thumbgate-production.up.railway.app/guide
-- First-touch draft: Hey @oliver-kriska, saw you're building around `claude-elixir-phoenix`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
-- Pain-confirmed follow-up: If you want the self-serve path for `claude-elixir-phoenix`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
-- Tool-path follow-up: If you want the self-serve path for `claude-elixir-phoenix`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro
-- Checkout close draft: If you are already comparing close options for `claude-elixir-phoenix`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
-
-### @gmickel — flow-next
-- Temperature: cold
-- Source: github / github
-- Pipeline stage: targeted
-- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
-- Pipeline last updated: n/a
-- Offer: pro_self_serve
-- Contact: https://mickel.tech/
-- Contact surfaces: Website: https://mickel.tech/; GitHub profile: https://github.com/gmickel; Repository: https://github.com/gmickel/flow-next
-- Company: Mickel Tech
-- Repo: https://github.com/gmickel/flow-next
-- Repo last updated: 2026-04-28T09:51:46Z
+- Repo: https://github.com/zaxbysauce/opencode-swarm
+- Repo last updated: 2026-04-28T15:16:42Z
 - Evidence score: 12
-- Evidence: workflow control surface, self-serve agent tooling, 576 GitHub stars, updated in the last 7 days
-- Evidence sources: Target signal: https://github.com/gmickel/flow-next; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Evidence: workflow control surface, self-serve agent tooling, 241 GitHub stars, updated in the last 7 days
+- Evidence sources: Target signal: https://github.com/zaxbysauce/opencode-swarm; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 - Outreach angle: Lead with the proof-backed setup guide and local-first enforcement before any team-motion pitch.
 - Motion: Pro at $19/mo or $149/yr
 - Why: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
 - Proof timing: Use proof pack only after the buyer confirms pain.
 - CTA: https://thumbgate-production.up.railway.app/guide
-- First-touch draft: Hey @gmickel, saw you're building around `flow-next`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
-- Pain-confirmed follow-up: If you want the self-serve path for `flow-next`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
-- Tool-path follow-up: If you want the self-serve path for `flow-next`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro
-- Checkout close draft: If you are already comparing close options for `flow-next`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- First-touch draft: Hey @zaxbysauce, saw you're building around `opencode-swarm`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
+- Pain-confirmed follow-up: If you want the self-serve path for `opencode-swarm`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Tool-path follow-up: If you want the self-serve path for `opencode-swarm`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro
+- Checkout close draft: If you are already comparing close options for `opencode-swarm`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+### @threeseeded-sistinechapel521 — claude-code-workflow-notes
+- Temperature: cold
+- Source: github / github
+- Pipeline stage: targeted
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
+- Offer: pro_self_serve
+- Contact: https://github.com/threeseeded-sistinechapel521
+- Contact surfaces: GitHub profile: https://github.com/threeseeded-sistinechapel521; Repository: https://github.com/threeseeded-sistinechapel521/claude-code-workflow-notes
+- Company: n/a
+- Repo: https://github.com/threeseeded-sistinechapel521/claude-code-workflow-notes
+- Repo last updated: 2026-04-28T15:35:39Z
+- Evidence score: 10
+- Evidence: workflow control surface, agent infrastructure, self-serve agent tooling, updated in the last 7 days
+- Evidence sources: Target signal: https://github.com/threeseeded-sistinechapel521/claude-code-workflow-notes; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Outreach angle: Lead with the proof-backed setup guide and local-first enforcement before any team-motion pitch.
+- Motion: Pro at $19/mo or $149/yr
+- Why: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
+- Proof timing: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/guide
+- First-touch draft: Hey @threeseeded-sistinechapel521, saw you're building around `claude-code-workflow-notes`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
+- Pain-confirmed follow-up: If you want the self-serve path for `claude-code-workflow-notes`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Tool-path follow-up: If you want the self-serve path for `claude-code-workflow-notes`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro
+- Checkout close draft: If you are already comparing close options for `claude-code-workflow-notes`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md

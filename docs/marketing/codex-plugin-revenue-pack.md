@@ -1,6 +1,6 @@
 # Codex Plugin Revenue Pack
 
-Updated: 2026-04-27T10:43:39.459Z
+Updated: 2026-04-28T16:25:44.563Z
 
 This is a sales operator artifact. It is not proof of bundle downloads, installs, paid revenue, or marketplace publication by itself.
 
@@ -26,12 +26,12 @@ ThumbGate gives Codex a proof-backed install path, pre-action gate enforcement, 
 ### Workflow control surfaces remain the strongest buyer signal
 - Count: 6
 - Summary: 6 current targets expose review, approval, governance, or workflow control surfaces where a Codex install story can convert into a workflow-hardening offer.
-- Examples: Adqui9608/ai-code-review-agent, DGouron/review-flow, nihannihu/Omni-SRE
+- Examples: Adqui9608/ai-code-review-agent, DGouron/review-flow, getaxonflow/axonflow-codex-plugin
 
 ### Production rollout proof matters
-- Count: 2
-- Summary: 2 targets touch production-sensitive workflows where proof and rollback safety should appear before the buyer expands usage.
-- Examples: Adqui9608/ai-code-review-agent, nihannihu/Omni-SRE
+- Count: 3
+- Summary: 3 targets touch production-sensitive workflows where proof and rollback safety should appear before the buyer expands usage.
+- Examples: Adqui9608/ai-code-review-agent, getaxonflow/axonflow-codex-plugin, nihannihu/Omni-SRE
 
 ## Submission Surfaces
 ### Codex plugin install page
