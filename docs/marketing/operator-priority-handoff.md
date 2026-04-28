@@ -1,6 +1,6 @@
 # Revenue Operator Priority Handoff
 
-Updated: 2026-04-28T00:21:01.659Z
+Updated: 2026-04-28T06:14:20.362Z
 
 This is the ranked send order for the current zero-to-one revenue loop. Work warm discovery targets first, then expand into cold GitHub targets with the same proof discipline.
 
@@ -9,8 +9,10 @@ This handoff sits on top of `gtm-revenue-loop.md`, `gtm-target-queue.csv`, and `
 ## Current Snapshot
 - Revenue state: post-first-dollar
 - Headline: Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
+- Evidence status: hosted-verified
+- Evidence note: Paid-order and booked-revenue fields in this artifact are backed by hosted billing summary evidence from this run.
 - Paid orders: 2
-- Checkout starts: 1
+- Checkout starts: 0
 - Active follow-ups: 0
 - Warm targets ready now: 4
 - Cold GitHub targets ready next: 6
@@ -272,29 +274,29 @@ First-touch draft:
 Pain-confirmed follow-up:
 > If `mcp-jira-stdio` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
-## 10. @salacoste — mcp-n8n-workflow-builder
+## 10. @oliver-kriska — claude-elixir-phoenix
 - Temperature: cold
 - Source: github / github
 - Pipeline stage: targeted
-- Pipeline lead id: github_salacoste_mcp_n8n_workflow_builder
+- Pipeline lead id: github_oliver_kriska_claude_elixir_phoenix
 - Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
 - Pipeline last updated: n/a
-- Log after send: `npm run sales:pipeline -- advance --lead 'github_salacoste_mcp_n8n_workflow_builder' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on context-drift hardening for one workflow before proposing any broader agent platform story.'`
-- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_salacoste_mcp_n8n_workflow_builder' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around context-drift hardening for one workflow before proposing any broader agent platform story.'`
-- Log after call booked: `npm run sales:pipeline -- advance --lead 'github_salacoste_mcp_n8n_workflow_builder' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for context-drift hardening for one workflow before proposing any broader agent platform story.'`
-- Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_salacoste_mcp_n8n_workflow_builder' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for context-drift hardening for one workflow before proposing any broader agent platform story.'`
-- Contact surface: https://github.com/salacoste
-- Contact surfaces: GitHub profile: https://github.com/salacoste; Repository: https://github.com/salacoste/mcp-n8n-workflow-builder
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_oliver_kriska_claude_elixir_phoenix' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on context-drift hardening for one workflow before proposing any broader agent platform story.'`
+- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_oliver_kriska_claude_elixir_phoenix' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around context-drift hardening for one workflow before proposing any broader agent platform story.'`
+- Log after call booked: `npm run sales:pipeline -- advance --lead 'github_oliver_kriska_claude_elixir_phoenix' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for context-drift hardening for one workflow before proposing any broader agent platform story.'`
+- Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_oliver_kriska_claude_elixir_phoenix' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for context-drift hardening for one workflow before proposing any broader agent platform story.'`
+- Contact surface: https://github.com/oliver-kriska
+- Contact surfaces: GitHub profile: https://github.com/oliver-kriska; Repository: https://github.com/oliver-kriska/claude-elixir-phoenix
 - Company: n/a
 - Evidence score: 12
-- Evidence: workflow control surface, agent infrastructure, 221 GitHub stars, updated in the last 7 days
+- Evidence: workflow control surface, agent infrastructure, 290 GitHub stars, updated in the last 7 days
 - Motion: Workflow Hardening Sprint
 - Why now: Lead with context-drift hardening for one workflow before proposing any broader agent platform story.
 - Proof rule: Use proof pack only after the buyer confirms pain.
 - CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 
 First-touch draft:
-> Hey @salacoste, saw you're shipping `mcp-n8n-workflow-builder`. If one context, memory, or tool-use failure keeps repeating, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+> Hey @oliver-kriska, saw you're shipping `claude-elixir-phoenix`. If one context, memory, or tool-use failure keeps repeating, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 
 Pain-confirmed follow-up:
-> If `mcp-n8n-workflow-builder` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+> If `claude-elixir-phoenix` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md

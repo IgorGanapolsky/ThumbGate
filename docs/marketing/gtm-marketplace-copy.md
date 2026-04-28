@@ -1,6 +1,7 @@
 # Marketplace Copy Pack
 
 This pack is operator-ready listing copy derived from the current GTM revenue loop. It is not proof of sent outreach, installs, or revenue by itself.
+Current evidence status: hosted-verified. Paid-order and booked-revenue fields in this artifact are backed by hosted billing summary evidence from this run.
 
 ## Listing Headline
 Harden one AI-agent workflow before you roll it out.

@@ -215,6 +215,53 @@ function dedupeList(values = []) {
   return deduped;
 }
 
+function buildRevenueEvidenceStatus({ source, fallbackReason }) {
+  const normalizedSource = normalizeText(source) || 'unknown';
+  const normalizedFallbackReason = normalizeText(fallbackReason);
+
+  if (
+    normalizedSource === 'hosted'
+    || normalizedSource === 'hosted-http-api'
+    || normalizedSource === 'hosted-via-railway-env'
+  ) {
+    return {
+      state: 'hosted-verified',
+      source: normalizedSource,
+      headline: 'Hosted billing proof was available for this run.',
+      operatorNote: 'Paid-order and booked-revenue fields in this artifact are backed by hosted billing summary evidence from this run.',
+      warnings: normalizedFallbackReason ? [`Fallback note: ${normalizedFallbackReason}`] : [],
+    };
+  }
+
+  if (normalizedSource === 'local-unverified') {
+    return {
+      state: 'local-unverified',
+      source: normalizedSource,
+      headline: 'Hosted billing proof was unreachable during this run.',
+      operatorNote: 'Do not cite paid orders, booked revenue, or traction from this artifact. Use it only for workflow-hardening copy and targeting until hosted proof is restored.',
+      warnings: normalizedFallbackReason ? [`Fallback reason: ${normalizedFallbackReason}`] : [],
+    };
+  }
+
+  if (normalizedSource === 'local') {
+    return {
+      state: 'local-only',
+      source: normalizedSource,
+      headline: 'This run used local-only metrics.',
+      operatorNote: 'Treat revenue and pipeline numbers here as environment-scoped. Do not use them as public traction proof unless you separately verify hosted billing.',
+      warnings: normalizedFallbackReason ? [`Fallback reason: ${normalizedFallbackReason}`] : [],
+    };
+  }
+
+  return {
+    state: normalizedSource,
+    source: normalizedSource,
+    headline: 'Revenue proof source is unknown for this run.',
+    operatorNote: 'Do not cite traction from this artifact until the revenue proof source is verified.',
+    warnings: normalizedFallbackReason ? [`Fallback reason: ${normalizedFallbackReason}`] : [],
+  };
+}
+
 function normalizeUrlLikeValue(value) {
   const normalized = normalizeText(value, 2000);
   if (!normalized) return '';
@@ -1109,6 +1156,7 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
     commercialTruthLink: motionCatalog.pro.truth,
     verificationEvidenceLink: motionCatalog.pro.proof,
   };
+  const evidenceStatus = buildRevenueEvidenceStatus({ source, fallbackReason });
 
   return {
     generatedAt: new Date().toISOString(),
@@ -1118,6 +1166,7 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
     directive,
     currentTruth,
     evidenceBackstop: buildEvidenceBackstop(currentTruth),
+    evidenceStatus,
     snapshot,
     targets: targets.map((target) => {
       const followUpMessage = target.followUpMessage
@@ -1196,6 +1245,7 @@ function resolveMotionCta(report, motionKey) {
 
 function buildMarketplaceCopy(report) {
   const targets = Array.isArray(report?.targets) ? report.targets : [];
+  const evidenceStatus = report?.evidenceStatus || buildRevenueEvidenceStatus(report || {});
   const signalThemes = MARKETPLACE_SIGNAL_THEMES
     .map((theme) => {
       const matches = targets.filter((target) => theme.match(target));
@@ -1249,6 +1299,8 @@ function buildMarketplaceCopy(report) {
   return {
     generatedAt: report.generatedAt,
     state: report.directive?.state || 'cold-start',
+    runtimeEvidenceState: evidenceStatus.state,
+    runtimeEvidenceNote: evidenceStatus.operatorNote,
     headline,
     shortDescription,
     longDescription,
@@ -1319,6 +1371,7 @@ function renderRevenueTargetMarkdown(target) {
 function renderRevenueLoopMarkdown(report) {
   const fallbackReason = report.fallbackReason ? ` (${report.fallbackReason})` : '';
   const targets = Array.isArray(report.targets) ? report.targets.map(enrichRenderableTarget) : [];
+  const evidenceStatus = report.evidenceStatus || buildRevenueEvidenceStatus(report);
   const warmTargets = targets.filter((target) => target.temperature === 'warm');
   const coldTargets = targets.filter((target) => target.temperature !== 'warm');
   const warmTargetLines = warmTargets.length
@@ -1355,6 +1408,13 @@ function renderRevenueLoopMarkdown(report) {
     `- Workflow sprint leads: ${report.snapshot.sprintLeads}`,
     `- Qualified sprint leads: ${report.snapshot.qualifiedSprintLeads}`,
     `- Billing source: ${report.source}${fallbackReason}`,
+    '',
+    '## Evidence Status',
+    `- State: ${evidenceStatus.state}`,
+    `- Source: ${evidenceStatus.source}`,
+    `- Headline: ${evidenceStatus.headline}`,
+    `- Operator note: ${evidenceStatus.operatorNote}`,
+    ...((evidenceStatus.warnings || []).map((warning) => `- ${warning}`)),
     '',
     '## GSD Directive',
     `- Objective: ${report.directive.objective}`,
@@ -1524,6 +1584,7 @@ function buildOperatorPriorityTargetSummary(target, index) {
 
 function buildOperatorHandoffPayload(report) {
   const rankedTargets = rankOperatorTargets(Array.isArray(report?.targets) ? report.targets.map(enrichRenderableTarget) : []);
+  const evidenceStatus = report?.evidenceStatus || buildRevenueEvidenceStatus(report || {});
   const followUpTargets = rankedTargets.filter((target) => normalizePipelineStage(target.pipelineStage) !== 'targeted');
   const freshTargets = rankedTargets.filter((target) => normalizePipelineStage(target.pipelineStage) === 'targeted');
   const warmTargets = freshTargets.filter((target) => normalizeText(target.temperature).toLowerCase() === 'warm');
@@ -1551,6 +1612,9 @@ function buildOperatorHandoffPayload(report) {
     summary: {
       revenueState: normalizeText(report?.directive?.state) || 'cold-start',
       headline: normalizeText(report?.directive?.headline) || 'No verified revenue and no active pipeline.',
+      evidenceState: normalizeText(evidenceStatus.state) || 'unknown',
+      evidenceHeadline: normalizeText(evidenceStatus.headline),
+      evidenceNote: normalizeText(evidenceStatus.operatorNote),
       paidOrders: Number(report?.snapshot?.paidOrders || 0),
       checkoutStarts: Number(report?.snapshot?.checkoutStarts || 0),
       activeFollowUps: followUpTargets.length,
@@ -1598,6 +1662,8 @@ function renderOperatorHandoffMarkdown(report) {
     '## Current Snapshot',
     `- Revenue state: ${handoff.summary.revenueState}`,
     `- Headline: ${handoff.summary.headline}`,
+    `- Evidence status: ${handoff.summary.evidenceState}`,
+    `- Evidence note: ${handoff.summary.evidenceNote}`,
     `- Paid orders: ${handoff.summary.paidOrders}`,
     `- Checkout starts: ${handoff.summary.checkoutStarts}`,
     `- Active follow-ups: ${handoff.summary.activeFollowUps}`,
@@ -1681,6 +1747,7 @@ function renderMarketplaceCopyMarkdown(pack) {
     '# Marketplace Copy Pack',
     '',
     'This pack is operator-ready listing copy derived from the current GTM revenue loop. It is not proof of sent outreach, installs, or revenue by itself.',
+    `Current evidence status: ${pack.runtimeEvidenceState || 'unknown'}. ${pack.runtimeEvidenceNote || 'Do not cite traction without current proof.'}`,
     '',
     '## Listing Headline',
     pack.headline,
@@ -1926,6 +1993,7 @@ module.exports = {
   buildPainConfirmedFollowUp,
   analyzeTargetEvidence,
   buildMotionCatalog,
+  buildRevenueEvidenceStatus,
   buildRevenueLinks,
   buildRevenueLoopReport,
   clampTargetCount,
