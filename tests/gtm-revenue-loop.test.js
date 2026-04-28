@@ -25,6 +25,7 @@ const {
   parseArgs,
   prospectTargets,
   renderMarketplaceCopyMarkdown,
+  renderColdOutreachSequenceMarkdown,
   renderOperatorHandoffMarkdown,
   renderRevenueLoopMarkdown,
   renderTeamOutreachMessagesMarkdown,
@@ -1763,6 +1764,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     const teamOutreach = fs.readFileSync(path.join(reportDir, 'team-outreach-messages.md'), 'utf8');
     const operatorHandoff = fs.readFileSync(path.join(reportDir, 'operator-priority-handoff.md'), 'utf8');
     const operatorHandoffJson = JSON.parse(fs.readFileSync(path.join(reportDir, 'operator-priority-handoff.json'), 'utf8'));
+    const coldOutreach = fs.readFileSync(path.join(reportDir, 'cold-outreach-sequence.md'), 'utf8');
 
     assert.equal(written.reportDir, reportDir);
     assert.equal(written.docsPath, null);
@@ -1775,6 +1777,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.ok(fs.existsSync(path.join(reportDir, 'team-outreach-messages.md')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-priority-handoff.md')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-priority-handoff.json')));
+    assert.ok(fs.existsSync(path.join(reportDir, 'cold-outreach-sequence.md')));
     assert.match(csv, /^temperature,source,channel,username,accountName,company,contactUrl,contactSurfaces,repoName,repoUrl,updatedAt,offer,pipelineStage,pipelineLeadId,nextOperatorAction,pipelineUpdatedAt,evidenceScore,evidence,evidenceSource,evidenceLinks,claimGuardrails,outreachAngle,motionLabel,motionReason,proofPackTrigger,cta,firstTouchDraft,painConfirmedFollowUpDraft,selfServeFollowUpDraft,checkoutCloseDraft,markContactedCommand,markRepliedCommand,markCallBookedCommand,markCheckoutStartedCommand,markSprintIntakeCommand,markPaidCommand/m);
     assert.match(csv, /"I can harden one workflow, then prove it\."/);
     assert.match(csv, /"If the workflow pain is real, I can send the proof pack\."/);
@@ -1809,6 +1812,9 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.match(operatorHandoff, /Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
     assert.equal(operatorHandoffJson.sections.find((section) => section.key === 'send_now_warm_discovery').label, 'Send Now: Warm Discovery');
     assert.equal(operatorHandoffJson.sections.find((section) => section.key === 'send_now_warm_discovery').targets[0].pipelineLeadId, 'reddit_builder_production_mcp_server');
+    assert.match(coldOutreach, /Cold Outreach Sequence: Evidence-Backed Queue/);
+    assert.match(coldOutreach, /No self-serve close targets are available for this run\./);
+    assert.match(coldOutreach, /No cold GitHub targets are available for this run\./);
   } finally {
     fs.rmSync(reportDir, { recursive: true, force: true });
   }
@@ -1911,9 +1917,120 @@ test('writeRevenueLoopOutputs mirrors dedicated GTM docs instead of overwriting 
     assert.ok(fs.existsSync(path.join(marketingDir, 'team-outreach-messages.md')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'operator-priority-handoff.md')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'operator-priority-handoff.json')));
+    assert.ok(fs.existsSync(path.join(marketingDir, 'cold-outreach-sequence.md')));
   } finally {
     fs.rmSync(repoRoot, { recursive: true, force: true });
   }
+});
+
+test('cold outreach sequence stays tied to self-serve and cold GitHub queue rows', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const report = {
+    generatedAt: '2026-04-28T10:16:20.911Z',
+    currentTruth: {
+      publicSelfServeOffer: catalog.pro.label,
+      teamPilotOffer: catalog.sprint.label,
+      guideLink: links.guideLink,
+      commercialTruthLink: catalog.pro.truth,
+      verificationEvidenceLink: catalog.pro.proof,
+    },
+    directive: {
+      state: 'post-first-dollar',
+      headline: 'Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.',
+    },
+    snapshot: {
+      paidOrders: 2,
+      checkoutStarts: 1,
+    },
+    targets: [
+      {
+        temperature: 'cold',
+        source: 'github',
+        channel: 'github',
+        username: 'gmickel',
+        accountName: 'gmickel',
+        company: 'Mickel Tech',
+        contactUrl: 'https://mickel.tech/',
+        contactSurfaces: [
+          { label: 'Website', url: 'https://mickel.tech/' },
+          { label: 'Repository', url: 'https://github.com/gmickel/flow-next' },
+        ],
+        repoName: 'flow-next',
+        repoUrl: 'https://github.com/gmickel/flow-next',
+        updatedAt: '2026-04-28T09:51:46Z',
+        offer: 'pro_self_serve',
+        selectedMotion: catalog.pro,
+        pipelineStage: 'targeted',
+        evidenceScore: 12,
+        evidence: ['workflow control surface', 'self-serve agent tooling', '576 GitHub stars'],
+        evidenceSource: 'https://github.com/gmickel/flow-next',
+        evidenceSources: [
+          { label: 'Target signal', url: 'https://github.com/gmickel/flow-next' },
+          { label: 'Commercial truth', url: catalog.pro.truth },
+          { label: 'Verification evidence', url: catalog.pro.proof },
+        ],
+        claimGuardrails: ['Do not lead with proof links before the buyer confirms pain.'],
+        outreachAngle: 'Lead with the proof-backed setup guide first, then convert proven local usage into Pro.',
+        motionLabel: catalog.pro.label,
+        motionReason: 'Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.',
+        proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+        cta: links.guideLink,
+        firstTouchDraft: 'Hey @gmickel, saw you are building around `flow-next`. If you want the clean self-serve tool path first, start with the proof-backed setup guide.',
+        painConfirmedFollowUpDraft: 'If you want the self-serve path for `flow-next`, here is the live Pro checkout.',
+        selfServeFollowUpDraft: 'If you want the self-serve path for `flow-next`, start with the proof-backed setup guide, then use the live Pro checkout.',
+        checkoutCloseDraft: 'If you are already comparing close options for `flow-next`, the primary path is Pro at $19/mo or $149/yr.',
+      },
+      {
+        temperature: 'cold',
+        source: 'github',
+        channel: 'github',
+        username: 'DGouron',
+        accountName: 'DGouron',
+        company: 'Mentor Goal',
+        contactUrl: 'https://dgouron.fr/',
+        contactSurfaces: [
+          { label: 'Website', url: 'https://dgouron.fr/' },
+          { label: 'Repository', url: 'https://github.com/DGouron/review-flow' },
+        ],
+        repoName: 'review-flow',
+        repoUrl: 'https://github.com/DGouron/review-flow',
+        updatedAt: '2026-04-25T03:12:00Z',
+        offer: 'workflow_hardening_sprint',
+        selectedMotion: catalog.sprint,
+        pipelineStage: 'targeted',
+        evidenceScore: 14,
+        evidence: ['workflow control surface', 'business-system integration', '36 GitHub stars'],
+        evidenceSource: 'https://github.com/DGouron/review-flow',
+        evidenceSources: [
+          { label: 'Target signal', url: 'https://github.com/DGouron/review-flow' },
+          { label: 'Commercial truth', url: catalog.pro.truth },
+          { label: 'Verification evidence', url: catalog.pro.proof },
+        ],
+        claimGuardrails: ['Do not lead with proof links before the buyer confirms pain.'],
+        outreachAngle: 'Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.',
+        motionLabel: catalog.sprint.label,
+        motionReason: 'Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.',
+        proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+        cta: catalog.sprint.cta,
+        firstTouchDraft: 'Hey @DGouron, saw you are shipping `review-flow`. If one approval or rollback step keeps creating trouble, I can harden that workflow for you.',
+        painConfirmedFollowUpDraft: 'If `review-flow` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence.',
+        selfServeFollowUpDraft: 'If you want to inspect the self-serve path while you evaluate `review-flow`, start with the proof-backed setup guide.',
+        checkoutCloseDraft: 'If you are already comparing close options for `review-flow`, the primary path is Workflow Hardening Sprint.',
+      },
+    ],
+  };
+
+  const markdown = renderColdOutreachSequenceMarkdown(report);
+
+  assert.match(markdown, /Use `operator-priority-handoff\.md` for rank order/);
+  assert.match(markdown, /## Self-Serve Close Lane/);
+  assert.match(markdown, /## Cold GitHub Sprint Lane/);
+  assert.match(markdown, /Suggested subject: Proof-backed setup path for flow-next/);
+  assert.match(markdown, /Suggested subject: One review-flow workflow that should stop repeating mistakes/);
+  assert.match(markdown, /Sprint brief: https:\/\/github\.com\/IgorGanapolsky\/ThumbGate\/blob\/main\/docs\/WORKFLOW_HARDENING_SPRINT\.md/);
+  assert.match(markdown, /Log after checkout started: `npm run sales:pipeline -- advance --lead 'github_gmickel_flow_next'/);
+  assert.match(markdown, /Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow'/);
 });
 
 test('warm-target report output does not emit blank repo placeholders in follow-up drafts', () => {

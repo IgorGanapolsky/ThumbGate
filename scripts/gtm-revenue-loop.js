@@ -14,6 +14,7 @@ const { getWarmOutboundTargets } = require('./warm-outreach-targets');
 const GITHUB_API_BASE_URL = 'https://api.github.com/';
 const COMMERCIAL_TRUTH_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md';
 const VERIFICATION_EVIDENCE_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
+const WORKFLOW_HARDENING_SPRINT_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md';
 const TARGET_SEARCH_QUERIES = [
   'search/repositories?q=Model+Context+Protocol+workflow+automation+sort:updated',
   'search/repositories?q=Model+Context+Protocol+approval+workflow+sort:updated',
@@ -1855,6 +1856,112 @@ function renderTeamOutreachMessagesMarkdown(report) {
   ].join('\n');
 }
 
+function findOperatorHandoffTargets(handoff, key) {
+  return handoff.sections.find((section) => section.key === key)?.targets || [];
+}
+
+function buildColdOutreachSubject(target) {
+  const repoName = normalizeText(target?.repoName);
+  const motionLabel = normalizeText(target?.motionLabel);
+  if (normalizeText(target?.pipelineLeadId).startsWith('github_') && repoName) {
+    if (normalizeText(target?.motionLabel).toLowerCase() === 'pro at $19/mo or $149/yr') {
+      return `Proof-backed setup path for ${repoName}`;
+    }
+    return `One ${repoName} workflow that should stop repeating mistakes`;
+  }
+  if (repoName && motionLabel) {
+    return `${motionLabel} for ${repoName}`;
+  }
+  if (repoName) {
+    return `Workflow follow-up for ${repoName}`;
+  }
+  return 'Workflow hardening follow-up';
+}
+
+function renderColdOutreachTargetMarkdown(target, index) {
+  const evidenceLine = Array.isArray(target.evidence) && target.evidence.length
+    ? target.evidence.join(', ')
+    : 'n/a';
+  const contactSurfacesLine = Array.isArray(target.contactSurfaces) && target.contactSurfaces.length
+    ? target.contactSurfaces.map((surface) => `${surface.label}: ${surface.url}`).join('; ')
+    : 'n/a';
+  const salesCommands = target.salesCommands || {};
+
+  return [
+    `## ${index + 1}. @${target.username || 'unknown'}${target.repoName ? ` — ${target.repoName}` : ''}`,
+    `- Motion: ${target.motionLabel || 'n/a'}`,
+    `- Pipeline stage: ${target.pipelineStage || 'targeted'}`,
+    `- Company: ${target.company || 'n/a'}`,
+    `- Contact surface: ${target.contactSurface || 'n/a'}`,
+    `- Contact surfaces: ${contactSurfacesLine}`,
+    `- Evidence score: ${target.evidenceScore || 0}`,
+    `- Evidence: ${evidenceLine}`,
+    `- Why now: ${target.whyNow || 'n/a'}`,
+    `- Proof rule: ${target.proofRule || 'Use proof pack only after the buyer confirms pain.'}`,
+    `- Suggested subject: ${buildColdOutreachSubject(target)}`,
+    `- CTA: ${target.cta || 'n/a'}`,
+    `- Sprint brief: ${WORKFLOW_HARDENING_SPRINT_LINK}`,
+    `- Commercial truth: ${COMMERCIAL_TRUTH_LINK}`,
+    `- Verification evidence: ${VERIFICATION_EVIDENCE_LINK}`,
+    `- Log after send: \`${salesCommands.markContacted || 'n/a'}\``,
+    `- Log after pain-confirmed reply: \`${salesCommands.markReplied || 'n/a'}\``,
+    `- Log after call booked: \`${salesCommands.markCallBooked || 'n/a'}\``,
+    `- Log after checkout started: \`${salesCommands.markCheckoutStarted || 'n/a'}\``,
+    `- Log after sprint intake: \`${salesCommands.markSprintIntake || 'n/a'}\``,
+    `- Log after paid: \`${salesCommands.markPaid || 'n/a'}\``,
+    '',
+    'First-touch draft:',
+    `> ${target.firstTouchDraft || 'n/a'}`,
+    '',
+    'Pain-confirmed follow-up:',
+    `> ${target.painConfirmedFollowUpDraft || 'n/a'}`,
+    '',
+    'Tool-path follow-up:',
+    `> ${target.selfServeFollowUpDraft || 'n/a'}`,
+    '',
+    'Checkout close draft:',
+    `> ${target.checkoutCloseDraft || 'n/a'}`,
+    '',
+  ];
+}
+
+function renderColdOutreachSequenceMarkdown(report) {
+  const handoff = buildOperatorHandoffPayload(report);
+  const selfServeTargets = findOperatorHandoffTargets(handoff, 'close_now_self_serve_pro');
+  const coldTargets = findOperatorHandoffTargets(handoff, 'seed_next_cold_github');
+  const selfServeLines = selfServeTargets.length
+    ? selfServeTargets.flatMap((target, index) => renderColdOutreachTargetMarkdown(target, index))
+    : ['- No self-serve close targets are available for this run.', ''];
+  const coldLines = coldTargets.length
+    ? coldTargets.flatMap((target, index) => renderColdOutreachTargetMarkdown(target, index + selfServeTargets.length))
+    : ['- No cold GitHub targets are available for this run.', ''];
+
+  return [
+    '# Cold Outreach Sequence: Evidence-Backed Queue',
+    '',
+    `Updated: ${handoff.generatedAt}`,
+    '',
+    'This asset mirrors the evidence-backed GTM queue for self-serve closes and cold GitHub outbound. It is not proof of sent outreach, installs, replies, or revenue by itself.',
+    '',
+    'Use `operator-priority-handoff.md` for rank order, `gtm-target-queue.csv` for imports, and `team-outreach-messages.md` for warm discovery DMs.',
+    '',
+    '## Sequence Rules',
+    '- Import the queue into the sales ledger before sending anything.',
+    '- Do not lead with proof links before the buyer confirms pain.',
+    '- Keep pricing and traction aligned with COMMERCIAL_TRUTH.md.',
+    '- Keep quality and engineering claims aligned with VERIFICATION_EVIDENCE.md.',
+    '',
+    '```bash',
+    handoff.importCommand,
+    '```',
+    '',
+    '## Self-Serve Close Lane',
+    ...selfServeLines,
+    '## Cold GitHub Sprint Lane',
+    ...coldLines,
+  ].join('\n');
+}
+
 function renderMarketplaceCopyMarkdown(pack) {
   const signalLines = pack.topSignals.length
     ? pack.topSignals.map((signal) => `- ${signal.label} (${signal.count}): ${signal.summary}${signal.examples.length ? ` Examples: ${signal.examples.join(', ')}` : ''}`)
@@ -2024,6 +2131,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
   const teamOutreachDocsPath = path.join(docsDir, 'team-outreach-messages.md');
   const operatorHandoffDocsPath = path.join(docsDir, 'operator-priority-handoff.md');
   const operatorHandoffJsonDocsPath = path.join(docsDir, 'operator-priority-handoff.json');
+  const coldOutreachDocsPath = path.join(docsDir, 'cold-outreach-sequence.md');
   const markdown = renderRevenueLoopMarkdown(report);
   const marketplaceCopy = report.marketplaceCopy || buildMarketplaceCopy(report);
   const marketplaceMarkdown = renderMarketplaceCopyMarkdown(marketplaceCopy);
@@ -2032,6 +2140,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
   const teamOutreachMarkdown = renderTeamOutreachMessagesMarkdown(report);
   const operatorHandoff = buildOperatorHandoffPayload(report);
   const operatorHandoffMarkdown = renderOperatorHandoffMarkdown(report);
+  const coldOutreachMarkdown = renderColdOutreachSequenceMarkdown(report);
   const reportDir = normalizeText(options.reportDir)
     ? path.resolve(repoRoot, options.reportDir)
     : '';
@@ -2048,6 +2157,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     fs.writeFileSync(path.join(reportDir, 'team-outreach-messages.md'), teamOutreachMarkdown, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'operator-priority-handoff.md'), operatorHandoffMarkdown, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'operator-priority-handoff.json'), `${JSON.stringify(operatorHandoff, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(path.join(reportDir, 'cold-outreach-sequence.md'), coldOutreachMarkdown, 'utf8');
   }
 
   if (shouldWriteDocs) {
@@ -2061,6 +2171,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     fs.writeFileSync(teamOutreachDocsPath, teamOutreachMarkdown, 'utf8');
     fs.writeFileSync(operatorHandoffDocsPath, operatorHandoffMarkdown, 'utf8');
     fs.writeFileSync(operatorHandoffJsonDocsPath, `${JSON.stringify(operatorHandoff, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(coldOutreachDocsPath, coldOutreachMarkdown, 'utf8');
   }
 
   return {
@@ -2068,6 +2179,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     marketplaceMarkdown,
     teamOutreachMarkdown,
     operatorHandoffMarkdown,
+    coldOutreachMarkdown,
     reportDir: reportDir || null,
     docsPath: shouldWriteDocs ? defaultDocsPath : null,
   };
@@ -2167,6 +2279,7 @@ module.exports = {
   buildOperatorHandoffPayload,
   renderOperatorHandoffMarkdown,
   renderTeamOutreachMessagesMarkdown,
+  renderColdOutreachSequenceMarkdown,
   resolveRevenueLoopSummary,
   runRevenueLoop,
   selectOutreachMotion,
