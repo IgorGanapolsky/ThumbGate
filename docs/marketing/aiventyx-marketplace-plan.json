@@ -1,0 +1,134 @@
+{
+  "generatedAt": "2026-04-28T23:31:18.527Z",
+  "channel": "Aiventyx",
+  "dashboardUrl": "https://aiventyx.com/dashboard",
+  "objective": "Turn existing marketplace visibility into tracked Pro conversions and qualified team conversations.",
+  "listings": [
+    {
+      "key": "free",
+      "name": "ThumbGate Free",
+      "dashboardStatus": "keep existing free listing live",
+      "category": "AI Coding",
+      "pricingModel": "Free",
+      "APIEndpoint": "https://thumbgate-production.up.railway.app",
+      "primaryCTA": "https://thumbgate-production.up.railway.app/go/install?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_free_listing&utm_content=dashboard&campaign_variant=free&offer_code=AIVENTYX-FREE&cta_id=aiventyx_free_listing&cta_placement=marketplace_listing&landing_path=%2F",
+      "headline": "Turn AI-agent feedback into reusable pre-action gates.",
+      "description": "ThumbGate captures thumbs up/down style corrections from AI coding sessions, turns them into searchable lessons, and regenerates pre-action gates so agents check known failure patterns before they act. Use the free package when you want local feedback capture, memory search, and CLI-first reliability checks for a single operator.",
+      "buyer": "Solo builders evaluating local AI coding reliability.",
+      "conversionGoal": "install_or_free_usage",
+      "attribution": {
+        "utmSource": "aiventyx",
+        "utmMedium": "marketplace",
+        "utmCampaign": "aiventyx_free_listing",
+        "utmContent": "dashboard",
+        "campaignVariant": "free",
+        "offerCode": "AIVENTYX-FREE",
+        "ctaPlacement": "marketplace_listing",
+        "ctaId": "aiventyx_free_listing",
+        "landingPath": "/"
+      },
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ]
+    },
+    {
+      "key": "pro",
+      "name": "ThumbGate Pro",
+      "dashboardStatus": "submit as paid listing",
+      "category": "AI Coding",
+      "pricingModel": "$19/mo or $149/yr",
+      "APIEndpoint": "https://thumbgate-production.up.railway.app",
+      "primaryCTA": "https://thumbgate-production.up.railway.app/go/pro?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_pro_listing&utm_content=dashboard&campaign_variant=pro&offer_code=AIVENTYX-PRO&cta_id=aiventyx_pro_listing&cta_placement=marketplace_listing&plan_id=pro&landing_path=%2F",
+      "headline": "Personal AI reliability memory with proof-ready exports.",
+      "description": "ThumbGate Pro is for builders who want a personal reliability layer across AI coding sessions: synced lessons, feedback-to-gate enforcement, local dashboard views, DPO/KTO-ready exports, and evidence checks before completion claims. It keeps the free local loop intact while giving serious operators the paid path for durable memory and proof artifacts.",
+      "buyer": "Solo operators and small teams with repeated AI coding mistakes but no team rollout yet.",
+      "conversionGoal": "paid_pro_conversion",
+      "attribution": {
+        "utmSource": "aiventyx",
+        "utmMedium": "marketplace",
+        "utmCampaign": "aiventyx_pro_listing",
+        "utmContent": "dashboard",
+        "campaignVariant": "pro",
+        "offerCode": "AIVENTYX-PRO",
+        "ctaPlacement": "marketplace_listing",
+        "ctaId": "aiventyx_pro_listing",
+        "landingPath": "/",
+        "planId": "pro"
+      },
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ]
+    },
+    {
+      "key": "teams",
+      "name": "ThumbGate Teams",
+      "dashboardStatus": "submit as team/service listing",
+      "category": "AI Coding",
+      "pricingModel": "Workflow Hardening Sprint, then Team at $49/seat/mo with 3-seat minimum after qualification",
+      "APIEndpoint": "https://thumbgate-production.up.railway.app",
+      "primaryCTA": "https://thumbgate-production.up.railway.app/?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_teams_listing&utm_content=dashboard&campaign_variant=teams&offer_code=AIVENTYX-TEAMS&cta_id=aiventyx_teams_listing&cta_placement=marketplace_listing&landing_path=%2F#workflow-sprint-intake",
+      "headline": "Harden one AI-agent workflow before scaling it team-wide.",
+      "description": "ThumbGate Teams starts with a Workflow Hardening Sprint: one workflow, one owner, one repeated failure, one proof review. The sprint turns repeated AI-agent mistakes into shared prevention gates, audit-ready evidence, and a rollout path for teams that need approvals, compliance, and repeatability.",
+      "buyer": "Teams with one valuable AI-agent workflow that keeps repeating the same mistake or losing operational context.",
+      "conversionGoal": "qualified_team_conversation",
+      "attribution": {
+        "utmSource": "aiventyx",
+        "utmMedium": "marketplace",
+        "utmCampaign": "aiventyx_teams_listing",
+        "utmContent": "dashboard",
+        "campaignVariant": "teams",
+        "offerCode": "AIVENTYX-TEAMS",
+        "ctaPlacement": "marketplace_listing",
+        "ctaId": "aiventyx_teams_listing",
+        "landingPath": "/"
+      },
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ]
+    }
+  ],
+  "ninetyDayPlan": {
+    "northStar": "paid_conversion",
+    "standardFeePosition": "Accept the standard Aiventyx marketplace fee for the first listing phase.",
+    "integrationPosition": "Defer pre-action review integration until 60-90 days of listing distribution data exists.",
+    "metrics": [
+      "listing_views",
+      "cta_clicks",
+      "free_installs",
+      "pro_checkout_starts",
+      "pro_paid_conversions",
+      "team_sprint_intake_submissions",
+      "qualified_team_conversations"
+    ],
+    "milestones": [
+      {
+        "window": "days_0_30",
+        "goal": "Get Pro and Teams listings live, baseline listing views, and record every CTA click with UTM attribution.",
+        "decision": "Keep copy unchanged unless click-through is clearly below marketplace average."
+      },
+      {
+        "window": "days_31_60",
+        "goal": "Optimize headline, screenshots, and CTA order around the listing that produces the highest paid-intent rate.",
+        "decision": "If free installs happen without paid intent, move Pro proof and sprint qualification higher in the listing."
+      },
+      {
+        "window": "days_61_90",
+        "goal": "Decide whether Aiventyx deserves deeper integration, bundles, or partner-specific onboarding.",
+        "decision": "Only revisit pre-action review integration or rev-share bundles after paid conversions or qualified team conversations exist."
+      }
+    ],
+    "successThresholds": {
+      "minimumUsefulSignal": "one paid Pro conversion or one qualified team conversation",
+      "strongSignal": "three paid conversions or three qualified team conversations",
+      "doNotCountAsSuccess": [
+        "views without CTA clicks",
+        "likes or comments without a tracked lead stage",
+        "unverified revenue claims"
+      ]
+    }
+  },
+  "followUpDraft": "Thanks again. I submitted the Aiventyx path internally as a distribution-first lane.\n\nFor the first 90 days, the north star is paid conversion: Pro paid conversions first, with qualified team conversations as the second signal.\n\nI am good with the standard marketplace fee for this phase.\n\nIf you can expose listing views, CTA clicks, and conversion source fields in the dashboard, I will use those to decide whether we should revisit bundles or the deeper pre-action review integration after day 60-90."
+}
