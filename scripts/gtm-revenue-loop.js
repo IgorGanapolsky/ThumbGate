@@ -20,9 +20,13 @@ const TARGET_SEARCH_QUERIES = [
   'search/repositories?q=ServiceNow+MCP+workflow+sort:updated',
   'search/repositories?q=Claude+Code+review+automation+sort:updated',
   'search/repositories?q=github+review+automation+agent+sort:updated',
+  'search/repositories?q=Claude+Code+hooks+sort:updated',
+  'search/repositories?q=Codex+plugin+sort:updated',
+  'search/repositories?q=Cursor+rules+sort:updated',
 ];
 const SELF_SERVE_ONLY_SIGNALS = /\b(awesome|list|example|template|demo|tutorial|course|personal|dotfiles|toy|boilerplate|learn|learning|playground|starter|sample|sandbox|quickstart|lab)\b/;
 const LOW_BUYER_INTENT_SIGNALS = /\b(learn|learning|tutorial|course|playground|starter|sample|sandbox|quickstart|boilerplate|template|demo|example|lab)\b/;
+const SELF_SERVE_TOOLING_SIGNALS = /\b(plugin|plugins|extension|extensions|hook|hooks|statusline|status line|config|profile|installer|install|setup|rule pack|ruleset|local-first|local first|workspace rules)\b/;
 const MAX_CREDIBLE_DESCRIPTION_LENGTH = 500;
 const SUSPICIOUS_REPO_DESCRIPTION_PATTERNS = [
   /^\s*skip to content\b/i,
@@ -51,6 +55,11 @@ const TARGET_SIGNAL_RULES = [
   {
     label: 'agent infrastructure',
     pattern: /\b(mcp|model context protocol|agent|automation|memory|context|tool use|orchestrator)\b/,
+    weight: 2,
+  },
+  {
+    label: 'self-serve agent tooling',
+    pattern: SELF_SERVE_TOOLING_SIGNALS,
     weight: 2,
   },
 ];
@@ -82,6 +91,13 @@ const MARKETPLACE_SIGNAL_THEMES = [
     summary: 'The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive.',
     listingAngle: 'Lead with one repeated workflow failure, then show how ThumbGate turns it into an enforceable pre-action gate.',
     match: (target) => hasEvidenceLabel(target, 'workflow control surface'),
+  },
+  {
+    key: 'self_serve_tooling',
+    label: 'Self-serve agent tooling',
+    summary: 'Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.',
+    listingAngle: 'Lead with the proof-backed setup guide first, then convert proven local usage into Pro.',
+    match: (target) => hasEvidenceLabel(target, 'self-serve agent tooling'),
   },
 ];
 const CLAIM_GUARDRAILS = [
@@ -402,14 +418,18 @@ function buildTargetSalesCommands(target = {}) {
   const leadId = normalizeText(target.pipelineLeadId) || buildLeadFromRevenueTarget(target).leadId;
   const channel = normalizeText(target.channel) || normalizeText(target.source) || 'manual';
   const pain = buildTargetPainHypothesis(target);
-  const motionLabel = normalizeText(target.motionLabel) || 'Workflow Hardening Sprint';
+  const motionKey = normalizeText(target.motion) || normalizeText(target.selectedMotion?.key);
+  const motionLabel = normalizeText(target.motionLabel) || normalizeText(target.selectedMotion?.label) || 'Workflow Hardening Sprint';
   const commandBase = { lead: leadId, channel };
+  const isProMotion = motionKey === 'pro';
 
   return {
     markContacted: buildSalesPipelineCommand('advance', {
       ...commandBase,
       stage: 'contacted',
-      note: `Sent ${motionLabel} first touch focused on ${pain}.`,
+      note: isProMotion
+        ? `Sent ${motionLabel} self-serve first touch focused on ${pain}.`
+        : `Sent ${motionLabel} first touch focused on ${pain}.`,
     }),
     markReplied: buildSalesPipelineCommand('advance', {
       ...commandBase,
@@ -419,7 +439,9 @@ function buildTargetSalesCommands(target = {}) {
     markCallBooked: buildSalesPipelineCommand('advance', {
       ...commandBase,
       stage: 'call_booked',
-      note: `Booked a 15-minute workflow hardening diagnostic for ${pain}.`,
+      note: isProMotion
+        ? `Booked a 15-minute diagnostic after the self-serve conversation exposed repeated pain around ${pain}.`
+        : `Booked a 15-minute workflow hardening diagnostic for ${pain}.`,
     }),
     markCheckoutStarted: buildSalesPipelineCommand('advance', {
       ...commandBase,
@@ -429,7 +451,9 @@ function buildTargetSalesCommands(target = {}) {
     markSprintIntake: buildSalesPipelineCommand('advance', {
       ...commandBase,
       stage: 'sprint_intake',
-      note: `Buyer moved into Workflow Hardening Sprint intake for ${pain}.`,
+      note: isProMotion
+        ? `Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for ${pain}.`
+        : `Buyer moved into Workflow Hardening Sprint intake for ${pain}.`,
     }),
   };
 }
@@ -789,6 +813,20 @@ function hasLowBuyerIntentSignals(target) {
   return LOW_BUYER_INTENT_SIGNALS.test(haystack);
 }
 
+function hasSelfServeToolingSignals(target) {
+  const haystack = `${normalizeText(target.repoName)} ${normalizeText(target.description)}`.toLowerCase();
+  return SELF_SERVE_TOOLING_SIGNALS.test(haystack);
+}
+
+function isSelfServeToolingProspect(target) {
+  if (!hasSelfServeToolingSignals(target)) {
+    return false;
+  }
+
+  const haystack = `${normalizeText(target.repoName)} ${normalizeText(target.description)}`.toLowerCase();
+  return !/\b(jira|gitlab|servicenow|salesforce|slack|crm|calendar|office|google drive|analytics|production|deploy|deployment|incident|sre|release|security|compliance)\b/.test(haystack);
+}
+
 function analyzeTargetEvidence(target) {
   const haystack = `${normalizeText(target.repoName)} ${normalizeText(target.description)}`.toLowerCase();
   const evidence = [];
@@ -835,6 +873,8 @@ function analyzeTargetEvidence(target) {
     outreachAngle = 'Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.';
   } else if (/\b(production|platform|deploy|deployment|incident|sre|ci|cd|release|security|compliance)\b/.test(haystack)) {
     outreachAngle = 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.';
+  } else if (isSelfServeToolingProspect(target)) {
+    outreachAngle = 'Lead with the proof-backed setup guide and local-first enforcement before any team-motion pitch.';
   } else if (/\b(memory|context|agent|orchestrator|tool use)\b/.test(haystack)) {
     outreachAngle = 'Lead with context-drift hardening for one workflow before proposing any broader agent platform story.';
   }
@@ -844,6 +884,35 @@ function analyzeTargetEvidence(target) {
     evidence: dedupeList(evidence),
     outreachAngle,
   };
+}
+
+function diversifyRankedTargets(ranked = [], maxTargets = 6) {
+  const targetCount = clampTargetCount(maxTargets);
+  const reservedSelfServeSlots = Math.min(2, Math.floor(targetCount / 3));
+  const selfServeTargets = ranked.filter(isSelfServeToolingProspect);
+  const coreTargets = ranked.filter((target) => !isSelfServeToolingProspect(target));
+  const selected = [];
+  const seen = new Set();
+
+  const pushTargets = (targets, limit = targets.length) => {
+    for (const target of targets) {
+      if (selected.length >= targetCount || limit <= 0) {
+        break;
+      }
+      const key = `${normalizeText(target.username)}/${normalizeText(target.repoName)}`.toLowerCase();
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      selected.push(target);
+      limit -= 1;
+    }
+  };
+
+  pushTargets(coreTargets, Math.max(0, targetCount - reservedSelfServeSlots));
+  pushTargets(selfServeTargets, reservedSelfServeSlots);
+  pushTargets(ranked, targetCount);
+  return selected.slice(0, targetCount);
 }
 
 async function prospectTargets(maxTargets = 6, {
@@ -896,6 +965,9 @@ async function prospectTargets(maxTargets = 6, {
       if (SELF_SERVE_ONLY_SIGNALS.test(`${target.repoName} ${target.description}`.toLowerCase())) {
         return target.evidence.score >= 6;
       }
+      if (isSelfServeToolingProspect(target)) {
+        return target.evidence.score >= 4;
+      }
       return target.evidence.score >= 5;
     })
     .sort((left, right) => {
@@ -908,7 +980,7 @@ async function prospectTargets(maxTargets = 6, {
       return String(right.updatedAt || '').localeCompare(String(left.updatedAt || ''));
     });
 
-  const topTargets = ranked.slice(0, maxTargets);
+  const topTargets = diversifyRankedTargets(ranked, maxTargets);
   const enrichedTargets = [];
   for (const target of topTargets) {
     enrichedTargets.push(await enrichGitHubTarget(target, {
@@ -931,6 +1003,14 @@ function selectOutreachMotion(target, motionCatalog = buildMotionCatalog()) {
       key: motionCatalog.pro.key,
       label: motionCatalog.pro.label,
       reason: 'Target looks like a self-serve tooling surface, so Pro is the cleaner CTA unless a concrete workflow pain is confirmed.',
+    };
+  }
+
+  if (isSelfServeToolingProspect(target)) {
+    return {
+      key: motionCatalog.pro.key,
+      label: motionCatalog.pro.label,
+      reason: 'Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.',
     };
   }
 
@@ -986,9 +1066,10 @@ function buildFallbackMessage(target, selectedMotion, motionCatalog = buildMotio
     ].join(' ');
   }
 
+  const guideLink = buildRevenueLinks().guideLink;
   return [
     `Hey @${target.username}, saw you're building around ${targetRef}.`,
-    'If one repeated agent mistake or brittle handoff is slowing adoption, I can harden that workflow first. If you only want the self-serve tool path after that, I can point you there.',
+    `If you want the clean self-serve tool path first, start with the proof-backed setup guide: ${guideLink}. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.`,
   ].join(' ');
 }
 
@@ -1160,7 +1241,9 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
         pipelineUpdatedAt: normalizeText(target.pipelineUpdatedAt),
         nextOperatorAction: normalizeText(target.nextOperatorAction) || buildNextOperatorAction(pipelineStage),
         offer: target.selectedMotion.key === motionCatalog.sprint.key ? 'workflow_hardening_sprint' : 'pro_self_serve',
-        cta: motionCatalog[target.selectedMotion.key].cta,
+        cta: target.selectedMotion.key === motionCatalog.sprint.key
+          ? motionCatalog.sprint.cta
+          : currentTruth.guideLink,
         proofPackTrigger: target.proofPackTrigger || 'Use proof pack only after the buyer confirms pain.',
         firstTouchDraft: target.message,
         painConfirmedFollowUpDraft: followUpMessage,
@@ -1179,17 +1262,17 @@ function resolveMotionLabel(report, motionKey) {
 
 function resolveMotionCta(report, motionKey) {
   const links = buildRevenueLinks();
-  const matchingTarget = Array.isArray(report.targets)
-    ? report.targets.find((target) => normalizeText(target.motion) === normalizeText(motionKey) && normalizeText(target.cta))
-    : null;
-  if (matchingTarget) {
-    return matchingTarget.cta;
-  }
   if (motionKey === 'pro') {
     return normalizeText(report.currentTruth?.publicSelfServeCta) || links.proCheckoutLink;
   }
   if (motionKey === 'sprint') {
     return normalizeText(report.currentTruth?.teamPilotCta) || links.sprintLink;
+  }
+  const matchingTarget = Array.isArray(report.targets)
+    ? report.targets.find((target) => normalizeText(target.motion) === normalizeText(motionKey) && normalizeText(target.cta))
+    : null;
+  if (matchingTarget) {
+    return matchingTarget.cta;
   }
   return '';
 }

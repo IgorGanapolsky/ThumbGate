@@ -241,9 +241,18 @@ test('target classification leads with sprint unless target is clearly self-serv
     repoName: 'mcp-demo-template',
     description: 'Tutorial and demo template for Claude Code builders.',
   }, catalog);
+  const proToolingTarget = selectOutreachMotion({
+    repoName: 'claude-code-hooks',
+    description: 'Hook bundle for Claude Code local-first guardrails and safer agent setup.',
+    evidence: {
+      score: 7,
+      outreachAngle: 'Lead with the proof-backed setup guide and local-first enforcement before any team-motion pitch.',
+    },
+  }, catalog);
 
   assert.equal(sprintTarget.key, 'sprint');
   assert.equal(proTarget.key, 'pro');
+  assert.equal(proToolingTarget.key, 'pro');
 });
 
 test('target evidence favors production workflows over generic fresh repos', () => {
@@ -368,8 +377,8 @@ test('prospects GitHub targets via REST search, filters low-signal repos, and de
     { label: 'Repository', url: 'https://github.com/builder/production-mcp-server' },
   ]);
   assert.ok(result.targets[0].evidence.score >= 5);
-  assert.equal(requestedUrls.length, 6);
-  assert.equal(requestedUrls.filter((url) => url.startsWith('https://api.github.com/search/repositories')).length, 5);
+  assert.equal(requestedUrls.length, 9);
+  assert.equal(requestedUrls.filter((url) => url.startsWith('https://api.github.com/search/repositories')).length, 8);
   assert.ok(requestedUrls.some((url) => url === 'https://api.github.com/users/builder'));
 });
 
@@ -475,7 +484,7 @@ test('GitHub discovery reports API and parser failures as non-fatal warnings', a
   assert.equal(invalid.ok, false);
   assert.equal(unavailable.ok, false);
   assert.equal(prospects.targets.length, 0);
-  assert.equal(prospects.errors.length, 5);
+  assert.equal(prospects.errors.length, 8);
 });
 
 test('GitHub discovery falls back to gh auth token when env tokens are absent', async () => {
@@ -1252,10 +1261,60 @@ test('pro first-touch outreach stays discovery-first and defers checkout links',
 
   assert.equal(selectedMotion.key, 'pro');
   assert.match(message, /self-serve tool path/i);
-  assert.match(message, /harden that workflow first/i);
+  assert.match(message, /proof-backed setup guide/i);
+  assert.match(message, /thumbgate-production\.up\.railway\.app\/guide/);
   assert.doesNotMatch(message, /checkout\/pro/);
   assert.doesNotMatch(message, /VERIFICATION_EVIDENCE/);
   assert.doesNotMatch(message, /COMMERCIAL_TRUTH/);
+});
+
+test('self-serve targets generate self-serve sales-command notes instead of sprint notes', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const report = buildRevenueLoopReport({
+    source: 'local',
+    fallbackReason: null,
+    summary: {
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    },
+    motionCatalog: catalog,
+    directive: deriveRevenueDirective({
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    }, catalog),
+    targets: [{
+      temperature: 'cold',
+      source: 'github',
+      channel: 'github',
+      username: 'builder',
+      accountName: 'builder',
+      contactUrl: 'https://github.com/builder',
+      repoName: 'claude-code-hooks',
+      repoUrl: 'https://github.com/builder/claude-code-hooks',
+      description: 'Hook bundle for Claude Code local-first guardrails and safer agent setup.',
+      evidence: {
+        score: 8,
+        evidence: ['self-serve agent tooling'],
+        outreachAngle: 'Lead with the proof-backed setup guide and local-first enforcement before any team-motion pitch.',
+      },
+      selectedMotion: {
+        key: 'pro',
+        label: catalog.pro.label,
+        reason: 'Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.',
+      },
+      message: 'Start with the guide.',
+      proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+    }],
+  });
+
+  assert.match(report.targets[0].salesCommands.markContacted, /self-serve first touch/i);
+  assert.match(report.targets[0].salesCommands.markCallBooked, /self-serve conversation exposed repeated pain/i);
+  assert.match(report.targets[0].salesCommands.markSprintIntake, /escalated from the self-serve lane/i);
 });
 
 test('pain-confirmed follow-up falls back to workflow language for warm targets without a repo', () => {
