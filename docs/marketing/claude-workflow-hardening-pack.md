@@ -1,6 +1,6 @@
 # Claude Workflow Hardening Pack
 
-Updated: 2026-04-27T10:43:39.459Z
+Updated: 2026-04-28T23:31:18.501Z
 
 This is a sales operator artifact. It is not proof of sent outreach, directory approval, paid revenue, or deployment success by itself.
 
@@ -11,7 +11,7 @@ Turn Claude install demand and workflow-hardening pain into tracked sprint intak
 - State: post-first-dollar
 - Headline: Turn Claude install demand into workflow-hardening revenue.
 - Short description: ThumbGate gives Claude Desktop and Claude Code a proof-backed install path, thumbs-up/down feedback capture, and Pre-Action Checks that block repeated workflow mistakes before the next risky action runs.
-- Summary: Claude demand in ThumbGate should stay install-first for evaluators and workflow-hardening-first for teams that already feel the pain. Revenue is proven. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
+- Summary: Claude demand in ThumbGate should stay install-first for evaluators and workflow-hardening-first for teams that already feel the pain. Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
 
 ## Canonical Identity
 - Display name: ThumbGate for Claude
@@ -101,7 +101,7 @@ You already called out the risky part of Claude workflows: the same failure keep
 
 ### LinkedIn — Founder post
 - Audience: Platform lead, consultancy owner, or AI delivery lead evaluating Claude rollout risk
-- Evidence: 2 production/platform targets and 5 business-system targets in the current report point to approval boundaries, rollback safety, and review-ready rollout proof as the strongest B2B angle.
+- Evidence: 2 production/platform targets and 4 business-system targets in the current report point to approval boundaries, rollback safety, and review-ready rollout proof as the strongest B2B angle.
 - CTA: https://thumbgate-production.up.railway.app/?utm_source=claude&utm_medium=linkedin_post&utm_campaign=claude_channel_linkedin&utm_content=landing_section&campaign_variant=review_ready&offer_code=CLAUDE-CHANNEL-LINKEDIN&cta_id=claude_channel_linkedin&cta_placement=channel_draft&surface=claude_linkedin#claude-desktop
 - Proof timing: Public post can mention proof-ready rollout, but keep the proof links for the reply or DM after pain is confirmed.
 Teams already shipping with Claude usually do not need another agent platform. They need one workflow that stops repeating the same mistake before it touches a repo, approval step, or customer system. ThumbGate is the lane I use for that: local-first install, repeated-mistake capture, and Pre-Action Checks before the next risky action runs. If you are evaluating Claude rollout risk, start with the review-ready install lane here: https://thumbgate-production.up.railway.app/?utm_source=claude&utm_medium=linkedin_post&utm_campaign=claude_channel_linkedin&utm_content=landing_section&campaign_variant=review_ready&offer_code=CLAUDE-CHANNEL-LINKEDIN&cta_id=claude_channel_linkedin&cta_placement=channel_draft&surface=claude_linkedin#claude-desktop .
@@ -151,7 +151,7 @@ Do not count as success:
 ## Evidence Backstop
 - Warm Claude targets in current report: 2
 - Production or platform targets in current report: 2
-- Business-system targets in current report: 5
+- Business-system targets in current report: 4
 - Landing source: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/landing-page.html
 - Review packet: https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-plugin-review.zip
 
