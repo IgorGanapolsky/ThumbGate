@@ -1887,6 +1887,66 @@ test('operator handoff markdown preserves summary why-now and contact-surface fi
   assert.match(markdown, /- Why now: Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes\./);
 });
 
+test('operator handoff falls back to repo contact surface and outreach angle when direct fields are absent', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const report = {
+    generatedAt: '2026-04-25T00:00:00.000Z',
+    source: 'local',
+    fallbackReason: '',
+    currentTruth: {
+      publicSelfServeOffer: catalog.pro.label,
+      teamPilotOffer: catalog.sprint.label,
+      guideLink: links.guideLink,
+      commercialTruthLink: catalog.pro.truth,
+      verificationEvidenceLink: catalog.pro.proof,
+    },
+    directive: {
+      state: 'cold-start',
+      objective: 'First 10 paying customers',
+      headline: 'No verified revenue and no active pipeline.',
+      primaryMotion: 'sprint',
+      secondaryMotion: 'pro',
+      actions: ['Lead with one workflow.'],
+    },
+    snapshot: {
+      paidOrders: 0,
+      bookedRevenueCents: 0,
+      checkoutStarts: 0,
+    },
+    targets: [{
+      temperature: 'cold',
+      source: 'github',
+      channel: 'github',
+      username: 'fallback',
+      accountName: 'fallback',
+      repoName: 'autonomy-gates',
+      repoUrl: 'https://github.com/example/autonomy-gates',
+      updatedAt: '2026-04-20T00:00:00.000Z',
+      pipelineStage: 'targeted',
+      pipelineLeadId: 'github_fallback_autonomy_gates',
+      evidenceScore: 7,
+      evidence: ['workflow control surface'],
+      motionLabel: catalog.sprint.label,
+      outreachAngle: 'Lead with one approval boundary before rollout.',
+      proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+      cta: catalog.sprint.cta,
+      firstTouchDraft: 'I can harden one workflow, then prove it.',
+      painConfirmedFollowUpDraft: 'If the workflow pain is real, I can send the proof pack.',
+    }],
+  };
+
+  const markdown = renderOperatorHandoffMarkdown(report);
+  const payload = buildOperatorHandoffPayload(report);
+
+  assert.match(markdown, /- Contact surface: https:\/\/github\.com\/example\/autonomy-gates/);
+  assert.match(markdown, /- Contact surfaces: n\/a/);
+  assert.match(markdown, /- Why now: Lead with one approval boundary before rollout\./);
+  assert.equal(payload.sections[2].targets[0].contactSurface, 'https://github.com/example/autonomy-gates');
+  assert.deepEqual(payload.sections[2].targets[0].contactSurfaces, []);
+  assert.equal(payload.sections[2].targets[0].whyNow, 'Lead with one approval boundary before rollout.');
+});
+
 test('runRevenueLoop writes an evidence-backed target queue with discovery warnings when GitHub search fails', async () => {
   const reportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-revenue-loop-'));
   const originalGeminiKey = process.env.GEMINI_API_KEY;
