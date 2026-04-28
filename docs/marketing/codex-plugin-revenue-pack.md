@@ -1,6 +1,6 @@
 # Codex Plugin Revenue Pack
 
-Updated: 2026-04-27T10:43:39.459Z
+Updated: 2026-04-28T18:24:06.772Z
 
 This is a sales operator artifact. It is not proof of bundle downloads, installs, paid revenue, or marketplace publication by itself.
 
@@ -24,14 +24,14 @@ ThumbGate gives Codex a proof-backed install path, pre-action gate enforcement, 
 - Examples: @Deep_Ad1959, @game-of-kton, @leogodin217
 
 ### Workflow control surfaces remain the strongest buyer signal
-- Count: 6
-- Summary: 6 current targets expose review, approval, governance, or workflow control surfaces where a Codex install story can convert into a workflow-hardening offer.
+- Count: 4
+- Summary: 4 current targets expose review, approval, governance, or workflow control surfaces where a Codex install story can convert into a workflow-hardening offer.
 - Examples: Adqui9608/ai-code-review-agent, DGouron/review-flow, nihannihu/Omni-SRE
 
 ### Production rollout proof matters
-- Count: 2
-- Summary: 2 targets touch production-sensitive workflows where proof and rollback safety should appear before the buyer expands usage.
-- Examples: Adqui9608/ai-code-review-agent, nihannihu/Omni-SRE
+- Count: 3
+- Summary: 3 targets touch production-sensitive workflows where proof and rollback safety should appear before the buyer expands usage.
+- Examples: Adqui9608/ai-code-review-agent, arcasilesgroup/ai-engineering, nihannihu/Omni-SRE
 
 ## Submission Surfaces
 ### Codex plugin install page
@@ -130,6 +130,105 @@ Draft:
 > If one approval, handoff, or rollout failure keeps repeating around Codex or a neighboring review lane, route it to the Workflow Hardening Sprint instead of a generic plugin pitch: https://thumbgate-production.up.railway.app/?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_sprint_follow_on&utm_content=workflow_sprint&campaign_variant=sprint_follow_on&offer_code=CODEX-SPRINT_FOLLOW_ON&cta_id=codex_sprint_follow_on&cta_placement=codex_follow_on&surface=codex_follow_on#workflow-sprint-intake . That keeps the conversation anchored on one workflow, one owner, and one proof review.
 
 Use Commercial Truth and Verification Evidence only after the buyer confirms the workflow pain or asks for proof.
+
+## Ready-Now Target Queue
+### Send Now: Codex-Adjacent Workflow Hardening
+- Motion: Workflow Hardening Sprint
+- Summary: Use these when the buyer already named one repeated failure, mature review boundary, or rollout risk.
+
+#### 1. @Deep_Ad1959
+- Temperature: warm
+- Source: reddit / reddit_dm
+- Evidence score: 10
+- Why now: Warm Reddit engager already named a repeated workflow risk, so the fastest path is a founder-led diagnostic.
+- Evidence: warm inbound engagement; workflow pain named: rollback risk; already in DMs
+- Contact: https://www.reddit.com/user/Deep_Ad1959/
+- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- Pipeline lead id: reddit_deep_ad1959_r_cursor
+- Log after send: `npm run sales:pipeline -- advance --lead 'reddit_deep_ad1959_r_cursor' --channel 'reddit_dm' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on rollback risk.'`
+
+First-touch draft:
+> Your question about rollback rates when context changes is exactly the right one. I am looking for one AI-agent workflow to harden end-to-end this week: repeated failure, prevention rule, and proof run. If you have one workflow where context drift or rollback risk keeps showing up, I can harden that workflow for you. Worth a 15-minute diagnostic?
+
+#### 2. @game-of-kton
+- Temperature: warm
+- Source: reddit / reddit_dm
+- Evidence score: 9
+- Why now: Warm Reddit engager already works on advanced agent memory, so discovery should center on one repeated failure pattern.
+- Evidence: warm inbound engagement; built serious memory systems; workflow pain named: stale context and conflicting facts
+- Contact: https://www.reddit.com/user/game-of-kton/
+- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- Pipeline lead id: reddit_game_of_kton_r_cursor
+- Log after send: `npm run sales:pipeline -- advance --lead 'reddit_game_of_kton_r_cursor' --channel 'reddit_dm' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on stale context and conflicting facts.'`
+
+First-touch draft:
+> Your ACT-R engram work is fascinating, especially the conflict resolution for opposing facts and the decay model. I am looking for one serious AI-agent workflow to harden end-to-end this week. If your memory system has one recurring failure mode such as stale context, opposing facts, bad handoffs, or unsafe tool calls, I can turn that into a prevention rule and proof run. Open to a 15-minute diagnostic?
+
+#### 3. @leogodin217
+- Temperature: warm
+- Source: reddit / reddit_dm
+- Evidence score: 9
+- Why now: Warm Reddit engager already described a mature workflow, so the next step is a targeted diagnostic on one failure mode.
+- Evidence: warm inbound engagement; mature multi-step workflow described; workflow pain named: review boundaries and context risk
+- Contact: https://www.reddit.com/user/leogodin217/
+- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- Pipeline lead id: reddit_leogodin217_r_claudecode
+- Log after send: `npm run sales:pipeline -- advance --lead 'reddit_leogodin217_r_claudecode' --channel 'reddit_dm' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on review boundaries and context risk.'`
+
+First-touch draft:
+> Your arch-create to sprint workflow is one of the most mature agent processes I have seen anyone describe. I am looking for one AI-agent workflow to harden end-to-end this week. Your workflow already has phases, review boundaries, and context risk, so it is a strong fit: pick one repeating failure and I will help turn it into an enforceable Pre-Action Check plus proof run. Worth 15 minutes?
+
+#### 4. @Enthu-Cutlet-1337
+- Temperature: warm
+- Source: reddit / reddit_dm
+- Evidence score: 8
+- Why now: Warm Reddit engager already understands the adaptive-gate thesis, so offer one concrete workflow hardening diagnostic.
+- Evidence: warm inbound engagement; responded to adaptive-gate positioning; workflow pain named: brittle guardrails
+- Contact: https://www.reddit.com/user/Enthu-Cutlet-1337/
+- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- Pipeline lead id: reddit_enthu_cutlet_1337_r_claudecode
+- Log after send: `npm run sales:pipeline -- advance --lead 'reddit_enthu_cutlet_1337_r_claudecode' --channel 'reddit_dm' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on brittle guardrails.'`
+
+First-touch draft:
+> Appreciate the kind words on the Thompson Sampling approach. You nailed the core insight: most guardrails are brittle prompt hacks that break when context shifts. I am looking for one AI-agent workflow to harden end-to-end this week: repeated failure, prevention rule, and proof run. If you have a workflow where brittle guardrails keep failing, I can harden that workflow with you. Open to a 15-minute diagnostic?
+
+### Send Next: Codex Self-Serve Install + Pro
+- Motion: Pro at $19/mo or $149/yr
+- Summary: Use these when the buyer already exposes a plugin, local-hook, or repo-backed tooling surface and should start with the guide path.
+
+#### 1. zaxbysauce/opencode-swarm
+- Temperature: cold
+- Source: github / github
+- Evidence score: 12
+- Why now: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
+- Evidence: workflow control surface; self-serve agent tooling; 241 GitHub stars; updated in the last 7 days
+- Contact: https://github.com/zaxbysauce
+- CTA: https://thumbgate-production.up.railway.app/guide
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- Pipeline lead id: github_zaxbysauce_opencode_swarm
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_zaxbysauce_opencode_swarm' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'`
+
+First-touch draft:
+> Hey @zaxbysauce, saw you're building around `opencode-swarm`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
+
+#### 2. yvgude/lean-ctx
+- Temperature: cold
+- Source: github / github
+- Evidence score: 10
+- Why now: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
+- Evidence: agent infrastructure; self-serve agent tooling; 907 GitHub stars; updated in the last 7 days
+- Contact: https://yvesgugger.ch/
+- CTA: https://thumbgate-production.up.railway.app/guide
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- Pipeline lead id: github_yvgude_lean_ctx
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_yvgude_lean_ctx' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'`
+
+First-touch draft:
+> Hey @yvgude, saw you're building around `lean-ctx`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
 
 ## Sample Targets Behind This Pack
 - @Deep_Ad1959 (warm): Warm Reddit engager already named a repeated workflow risk, so the fastest path is a founder-led diagnostic.
