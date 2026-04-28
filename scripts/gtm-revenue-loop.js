@@ -1702,8 +1702,15 @@ function buildOperatorHandoffPayload(report) {
   const rankedTargets = rankOperatorTargets(Array.isArray(report?.targets) ? report.targets.map(enrichRenderableTarget) : []);
   const followUpTargets = rankedTargets.filter((target) => normalizePipelineStage(target.pipelineStage) !== 'targeted');
   const freshTargets = rankedTargets.filter((target) => normalizePipelineStage(target.pipelineStage) === 'targeted');
-  const warmTargets = freshTargets.filter((target) => normalizeText(target.temperature).toLowerCase() === 'warm');
-  const coldTargets = freshTargets.filter((target) => normalizeText(target.temperature).toLowerCase() !== 'warm');
+  const selfServeTargets = freshTargets.filter((target) => normalizeText(target.motion).toLowerCase() === 'pro');
+  const warmTargets = freshTargets.filter((target) => (
+    normalizeText(target.temperature).toLowerCase() === 'warm'
+      && normalizeText(target.motion).toLowerCase() !== 'pro'
+  ));
+  const coldTargets = freshTargets.filter((target) => (
+    normalizeText(target.temperature).toLowerCase() !== 'warm'
+      && normalizeText(target.motion).toLowerCase() !== 'pro'
+  ));
   const sections = [
     {
       key: 'follow_up_now',
@@ -1714,6 +1721,11 @@ function buildOperatorHandoffPayload(report) {
       key: 'send_now_warm_discovery',
       label: 'Send Now: Warm Discovery',
       targets: warmTargets,
+    },
+    {
+      key: 'close_now_self_serve_pro',
+      label: 'Close Now: Self-Serve Pro',
+      targets: selfServeTargets,
     },
     {
       key: 'seed_next_cold_github',
@@ -1731,11 +1743,12 @@ function buildOperatorHandoffPayload(report) {
       checkoutStarts: Number(report?.snapshot?.checkoutStarts || 0),
       activeFollowUps: followUpTargets.length,
       warmTargetsReadyNow: warmTargets.length,
+      selfServeTargetsReadyNow: selfServeTargets.length,
       coldGitHubTargetsReadyNext: coldTargets.length,
     },
     operatorRules: [
       'Import the queue into the sales ledger before sending anything.',
-      'Lead with one concrete workflow-hardening offer, not generic Pro and not the proof pack.',
+      'Follow the row motion: sprint rows get one workflow-hardening offer; self-serve rows get the guide-to-Pro lane unless pain is confirmed.',
       'Use VERIFICATION_EVIDENCE.md and COMMERCIAL_TRUTH.md only after the buyer confirms pain.',
     ],
     importCommand: 'npm run sales:pipeline -- import --source docs/marketing/gtm-revenue-loop.json',
@@ -1751,6 +1764,7 @@ function renderOperatorHandoffMarkdown(report) {
   const handoff = buildOperatorHandoffPayload(report);
   const followUpTargets = handoff.sections.find((section) => section.key === 'follow_up_now')?.targets || [];
   const warmTargets = handoff.sections.find((section) => section.key === 'send_now_warm_discovery')?.targets || [];
+  const selfServeTargets = handoff.sections.find((section) => section.key === 'close_now_self_serve_pro')?.targets || [];
   const coldTargets = handoff.sections.find((section) => section.key === 'seed_next_cold_github')?.targets || [];
   const followUpLines = followUpTargets.length
     ? followUpTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index))
@@ -1758,8 +1772,11 @@ function renderOperatorHandoffMarkdown(report) {
   const warmLines = warmTargets.length
     ? warmTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index + followUpTargets.length))
     : ['- No warm discovery targets are available for this run.', ''];
+  const selfServeLines = selfServeTargets.length
+    ? selfServeTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index + followUpTargets.length + warmTargets.length))
+    : ['- No self-serve close targets are available for this run.', ''];
   const coldLines = coldTargets.length
-    ? coldTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index + followUpTargets.length + warmTargets.length))
+    ? coldTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index + followUpTargets.length + warmTargets.length + selfServeTargets.length))
     : ['- No cold GitHub targets are available for this run.', ''];
 
   return [
@@ -1767,7 +1784,7 @@ function renderOperatorHandoffMarkdown(report) {
     '',
     `Updated: ${handoff.generatedAt}`,
     '',
-    'This is the ranked send order for the current zero-to-one revenue loop. Work warm discovery targets first, then expand into cold GitHub targets with the same proof discipline.',
+    'This is the ranked send order for the current zero-to-one revenue loop. Work follow-ups first, then warm discovery, then self-serve closes, then expand into cold GitHub targets with the same proof discipline.',
     '',
     'This handoff sits on top of `gtm-revenue-loop.md`, `gtm-target-queue.csv`, and `team-outreach-messages.md` so an operator can decide who to contact next without re-ranking the queue manually.',
     '',
@@ -1778,6 +1795,7 @@ function renderOperatorHandoffMarkdown(report) {
     `- Checkout starts: ${handoff.summary.checkoutStarts}`,
     `- Active follow-ups: ${handoff.summary.activeFollowUps}`,
     `- Warm targets ready now: ${handoff.summary.warmTargetsReadyNow}`,
+    `- Self-serve closes ready now: ${handoff.summary.selfServeTargetsReadyNow}`,
     `- Cold GitHub targets ready next: ${handoff.summary.coldGitHubTargetsReadyNext}`,
     '',
     '## Operator Rules',
@@ -1796,6 +1814,8 @@ function renderOperatorHandoffMarkdown(report) {
     ...followUpLines,
     '## Send Now: Warm Discovery',
     ...warmLines,
+    '## Close Now: Self-Serve Pro',
+    ...selfServeLines,
     '## Seed Next: Cold GitHub',
     ...coldLines,
   ].join('\n');
