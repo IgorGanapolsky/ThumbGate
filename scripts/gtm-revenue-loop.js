@@ -1447,9 +1447,10 @@ function renderOperatorPriorityTargetMarkdown(target, index) {
   const label = normalizeText(enrichedTarget.repoName)
     ? `@${enrichedTarget.username} — ${enrichedTarget.repoName}`
     : `@${enrichedTarget.username} — ${enrichedTarget.accountName || enrichedTarget.source || 'discovery lead'}`;
-  const contactSurface = enrichedTarget.contactUrl || enrichedTarget.repoUrl || 'n/a';
+  const contactSurface = enrichedTarget.contactSurface || enrichedTarget.contactUrl || enrichedTarget.repoUrl || 'n/a';
   const contactSurfaces = renderContactSurfaces(enrichedTarget.contactSurfaces);
   const salesCommands = enrichedTarget.salesCommands;
+  const whyNow = enrichedTarget.whyNow || enrichedTarget.motionReason || enrichedTarget.outreachAngle || 'n/a';
   return [
     `## ${index + 1}. ${label}`,
     `- Temperature: ${enrichedTarget.temperature || 'cold'}`,
@@ -1468,7 +1469,7 @@ function renderOperatorPriorityTargetMarkdown(target, index) {
     `- Evidence score: ${enrichedTarget.evidenceScore}`,
     `- Evidence: ${enrichedTarget.evidence.length ? enrichedTarget.evidence.join(', ') : 'n/a'}`,
     `- Motion: ${enrichedTarget.motionLabel}`,
-    `- Why now: ${enrichedTarget.motionReason || enrichedTarget.outreachAngle || 'n/a'}`,
+    `- Why now: ${whyNow}`,
     `- Proof rule: ${enrichedTarget.proofPackTrigger || 'Use proof pack only after the buyer confirms pain.'}`,
     `- CTA: ${enrichedTarget.cta}`,
     '',
@@ -1500,14 +1501,19 @@ function buildOperatorPriorityTargetSummary(target, index) {
     pipelineLeadId: normalizeText(enrichedTarget.pipelineLeadId) || 'n/a',
     nextOperatorStep: normalizeText(enrichedTarget.nextOperatorAction) || buildNextOperatorAction(enrichedTarget.pipelineStage),
     pipelineUpdatedAt: normalizeText(enrichedTarget.pipelineUpdatedAt),
-    contactSurface: normalizeText(enrichedTarget.contactUrl) || normalizeText(enrichedTarget.repoUrl) || 'n/a',
+    contactSurface: normalizeText(enrichedTarget.contactSurface)
+      || normalizeText(enrichedTarget.contactUrl)
+      || normalizeText(enrichedTarget.repoUrl)
+      || 'n/a',
     contactSurfaces: dedupeContactSurfaces(enrichedTarget.contactSurfaces),
     company: normalizeText(enrichedTarget.company),
     evidenceScore: Number(enrichedTarget.evidenceScore || 0),
     evidence: Array.isArray(enrichedTarget.evidence) ? enrichedTarget.evidence : [],
     evidenceSources: Array.isArray(enrichedTarget.evidenceSources) ? enrichedTarget.evidenceSources : [],
     motionLabel: normalizeText(enrichedTarget.motionLabel),
-    whyNow: normalizeText(enrichedTarget.motionReason) || normalizeText(enrichedTarget.outreachAngle),
+    whyNow: normalizeText(enrichedTarget.whyNow)
+      || normalizeText(enrichedTarget.motionReason)
+      || normalizeText(enrichedTarget.outreachAngle),
     proofRule: normalizeText(enrichedTarget.proofPackTrigger) || 'Use proof pack only after the buyer confirms pain.',
     cta: normalizeText(enrichedTarget.cta),
     firstTouchDraft: normalizeText(enrichedTarget.firstTouchDraft || enrichedTarget.message),
