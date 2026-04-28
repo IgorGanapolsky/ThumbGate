@@ -8,12 +8,14 @@ const {
   analyzeTargetEvidence,
   applyPipelineStateToTargets,
   buildFallbackMessage,
+  buildCheckoutCloseDraft,
   buildOperatorHandoffPayload,
   buildMarketplaceCopy,
   buildMotionCatalog,
   buildPainConfirmedFollowUp,
   buildRevenueLoopReport,
   buildRevenueLinks,
+  buildSelfServeFollowUp,
   clampTargetCount,
   deriveRevenueDirective,
   fetchGitHubJson,
@@ -886,9 +888,13 @@ test('team outreach markdown stays discovery-first and evidence-backed', () => {
   assert.match(markdown, /Evidence sources:/);
   assert.match(markdown, /Contact surfaces: Reddit DM: https:\/\/www\.reddit\.com\/user\/builder\//);
   assert.match(markdown, /Pain-confirmed follow-up:/);
+  assert.match(markdown, /Tool-path follow-up:/);
+  assert.match(markdown, /Checkout close draft:/);
   assert.match(markdown, /Log after send: `npm run sales:pipeline -- advance --lead 'reddit_builder_/);
   assert.match(markdown, /Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'reddit_builder_/);
-  assert.doesNotMatch(markdown, /checkout\/pro/);
+  assert.match(markdown, /Log after checkout started: `npm run sales:pipeline -- advance --lead 'reddit_builder_/);
+  assert.match(markdown, /Log after paid: `npm run sales:pipeline -- advance --lead 'reddit_builder_/);
+  assert.match(markdown, /checkout\/pro/);
 });
 
 test('operator handoff markdown prioritizes follow-ups, then warm discovery, then cold GitHub targets', () => {
@@ -1001,7 +1007,11 @@ test('operator handoff markdown prioritizes follow-ups, then warm discovery, the
   assert.match(markdown, /Company: Builder Labs/);
   assert.match(markdown, /Pipeline lead id: reddit_follow_builder_/);
   assert.match(markdown, /Log after send: `npm run sales:pipeline -- advance --lead 'reddit_follow_builder_/);
+  assert.match(markdown, /Log after checkout started: `npm run sales:pipeline -- advance --lead 'reddit_follow_builder_/);
   assert.match(markdown, /Log after sprint intake: `npm run sales:pipeline -- advance --lead 'reddit_follow_builder_/);
+  assert.match(markdown, /Log after paid: `npm run sales:pipeline -- advance --lead 'reddit_follow_builder_/);
+  assert.match(markdown, /Tool-path follow-up:/);
+  assert.match(markdown, /Checkout close draft:/);
 });
 
 test('operator handoff payload mirrors the ranked queue and sales commands in machine-readable form', () => {
@@ -1109,6 +1119,9 @@ test('operator handoff payload mirrors the ranked queue and sales commands in ma
   assert.equal(payload.sections[0].key, 'follow_up_now');
   assert.equal(payload.sections[0].targets[0].label, '@follow_builder - r/ClaudeCode');
   assert.equal(payload.sections[0].targets[0].salesCommands.markSprintIntake.includes('reddit_follow_builder_'), true);
+  assert.equal(payload.sections[0].targets[0].salesCommands.markPaid.includes('reddit_follow_builder_'), true);
+  assert.match(payload.sections[0].targets[0].selfServeFollowUpDraft, /guide/);
+  assert.match(payload.sections[0].targets[0].checkoutCloseDraft, /Commercial truth:/);
   assert.equal(payload.sections[1].targets[0].contactSurfaces[0].label, 'Reddit DM');
   assert.equal(payload.sections[2].targets[0].label, '@builder - production-mcp-server');
   assert.equal(payload.sections[2].targets[0].contactSurfaces[1].url, 'https://github.com/builder');
@@ -1244,6 +1257,38 @@ test('pain-confirmed follow-up supports self-serve Pro targets', () => {
   assert.match(message, /self-serve path/);
   assert.match(message, /VERIFICATION_EVIDENCE/);
   assert.match(message, /COMMERCIAL_TRUTH/);
+});
+
+test('conversion follow-ups keep the guide before checkout and truth plus proof at close', () => {
+  const catalog = buildMotionCatalog(buildRevenueLinks());
+  const sprintMotion = selectOutreachMotion({
+    username: 'builder',
+    repoName: 'production-mcp-server',
+    description: 'Production MCP server for deployment workflow approvals and audit proof.',
+    evidence: {
+      score: 10,
+      outreachAngle: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
+    },
+  }, catalog);
+  const proMotion = selectOutreachMotion({
+    username: 'demo_builder',
+    repoName: 'mcp-demo-template',
+    description: 'Tutorial and demo template for Claude Code builders.',
+  }, catalog);
+
+  const selfServeDraft = buildSelfServeFollowUp({
+    repoName: 'production-mcp-server',
+  }, sprintMotion, catalog);
+  const closeDraft = buildCheckoutCloseDraft({
+    repoName: 'mcp-demo-template',
+  }, proMotion, catalog);
+
+  assert.match(selfServeDraft, /proof-backed setup guide/i);
+  assert.match(selfServeDraft, /checkout\/pro/);
+  assert.doesNotMatch(selfServeDraft, /VERIFICATION_EVIDENCE/);
+  assert.match(closeDraft, /Commercial truth:/);
+  assert.match(closeDraft, /Verification evidence:/);
+  assert.match(closeDraft, /checkout\/pro/);
 });
 
 test('pro first-touch outreach stays discovery-first and defers checkout links', () => {
@@ -1691,9 +1736,11 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.ok(fs.existsSync(path.join(reportDir, 'team-outreach-messages.md')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-priority-handoff.md')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-priority-handoff.json')));
-    assert.match(csv, /^temperature,source,channel,username,accountName,company,contactUrl,contactSurfaces,repoName,repoUrl,updatedAt,offer,pipelineStage,evidenceScore,evidence,evidenceSource,evidenceLinks,claimGuardrails,outreachAngle,motionLabel,motionReason,proofPackTrigger,cta,firstTouchDraft,painConfirmedFollowUpDraft/m);
+    assert.match(csv, /^temperature,source,channel,username,accountName,company,contactUrl,contactSurfaces,repoName,repoUrl,updatedAt,offer,pipelineStage,evidenceScore,evidence,evidenceSource,evidenceLinks,claimGuardrails,outreachAngle,motionLabel,motionReason,proofPackTrigger,cta,firstTouchDraft,painConfirmedFollowUpDraft,selfServeFollowUpDraft,checkoutCloseDraft/m);
     assert.match(csv, /"I can harden one workflow, then prove it\."/);
     assert.match(csv, /"If the workflow pain is real, I can send the proof pack\."/);
+    assert.match(csv, /proof-backed setup guide/);
+    assert.match(csv, /Commercial truth:/);
     assert.match(csv, /Builder Labs/);
     assert.match(csv, /Reddit DM: https:\/\/www\.reddit\.com\/user\/builder\//);
     assert.match(csv, /Commercial truth: .*COMMERCIAL_TRUTH\.md/);

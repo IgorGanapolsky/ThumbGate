@@ -455,19 +455,52 @@ function buildTargetSalesCommands(target = {}) {
         ? `Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for ${pain}.`
         : `Buyer moved into Workflow Hardening Sprint intake for ${pain}.`,
     }),
+    markPaid: buildSalesPipelineCommand('advance', {
+      ...commandBase,
+      stage: 'paid',
+      note: `Closed ${motionLabel} and booked revenue after resolving ${pain}.`,
+    }),
+  };
+}
+
+function resolveSelectedMotion(target = {}, motionCatalog = buildMotionCatalog()) {
+  const motionKey = normalizeText(target.motion) || normalizeText(target.selectedMotion?.key);
+  if (motionKey === motionCatalog.pro.key) {
+    return {
+      key: motionCatalog.pro.key,
+      label: normalizeText(target.motionLabel) || motionCatalog.pro.label,
+      reason: normalizeText(target.motionReason) || normalizeText(target.selectedMotion?.reason),
+    };
+  }
+
+  return {
+    key: motionCatalog.sprint.key,
+    label: normalizeText(target.motionLabel) || motionCatalog.sprint.label,
+    reason: normalizeText(target.motionReason) || normalizeText(target.selectedMotion?.reason),
   };
 }
 
 function enrichRenderableTarget(target = {}) {
+  const motionCatalog = buildMotionCatalog();
+  const selectedMotion = resolveSelectedMotion(target, motionCatalog);
   const pipelineLeadId = normalizeText(target.pipelineLeadId) || buildLeadFromRevenueTarget(target).leadId;
   const pipelineStage = normalizePipelineStage(target.pipelineStage);
   return {
     ...target,
+    motion: normalizeText(target.motion) || selectedMotion.key,
+    motionLabel: normalizeText(target.motionLabel) || selectedMotion.label,
+    motionReason: normalizeText(target.motionReason) || selectedMotion.reason,
+    selfServeFollowUpDraft: normalizeText(target.selfServeFollowUpDraft)
+      || buildSelfServeFollowUp(target, selectedMotion, motionCatalog),
+    checkoutCloseDraft: normalizeText(target.checkoutCloseDraft)
+      || buildCheckoutCloseDraft(target, selectedMotion, motionCatalog),
     pipelineLeadId,
     pipelineStage,
     nextOperatorAction: normalizeText(target.nextOperatorAction) || buildNextOperatorAction(pipelineStage),
     salesCommands: target.salesCommands || buildTargetSalesCommands({
       ...target,
+      motion: normalizeText(target.motion) || selectedMotion.key,
+      motionLabel: normalizeText(target.motionLabel) || selectedMotion.label,
       pipelineLeadId,
       pipelineStage,
     }),
@@ -1091,6 +1124,40 @@ function buildPainConfirmedFollowUp(target, selectedMotion, motionCatalog = buil
   ].join(' ');
 }
 
+function buildSelfServeFollowUp(target, selectedMotion, motionCatalog = buildMotionCatalog()) {
+  const links = buildRevenueLinks();
+  const repoName = normalizeText(target.repoName);
+  const repoRef = repoName ? `\`${repoName}\`` : 'your workflow';
+
+  if (selectedMotion.key === motionCatalog.pro.key) {
+    return [
+      `If you want the self-serve path for ${repoRef}, start with the proof-backed setup guide: ${links.guideLink}`,
+      `If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is ${motionCatalog.pro.cta}`,
+    ].join(' ');
+  }
+
+  return [
+    `If you want to inspect the self-serve path while you evaluate ${repoRef}, start with the proof-backed setup guide: ${links.guideLink}`,
+    `If you decide the tool path is enough, the live Pro checkout is ${motionCatalog.pro.cta}. If the blocker needs hands-on workflow hardening, keep the sprint intake here: ${motionCatalog.sprint.cta}`,
+  ].join(' ');
+}
+
+function buildCheckoutCloseDraft(target, selectedMotion, motionCatalog = buildMotionCatalog()) {
+  const repoName = normalizeText(target.repoName);
+  const repoRef = repoName ? `\`${repoName}\`` : 'your workflow';
+  const primaryLabel = selectedMotion.key === motionCatalog.pro.key
+    ? motionCatalog.pro.label
+    : motionCatalog.sprint.label;
+  const primaryCta = selectedMotion.key === motionCatalog.pro.key
+    ? motionCatalog.pro.cta
+    : motionCatalog.sprint.cta;
+
+  return [
+    `If you are already comparing close options for ${repoRef}, the primary path is ${primaryLabel}: ${primaryCta}`,
+    `Self-serve Pro: ${motionCatalog.pro.cta} Commercial truth: ${motionCatalog.pro.truth} Verification evidence: ${motionCatalog.pro.proof}`,
+  ].join(' ');
+}
+
 function buildGeminiPrompt(target, selectedMotion, motionCatalog = buildMotionCatalog()) {
   const motion = motionCatalog[selectedMotion.key];
   return `
@@ -1203,6 +1270,10 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
     targets: targets.map((target) => {
       const followUpMessage = target.followUpMessage
         || buildPainConfirmedFollowUp(target, target.selectedMotion, motionCatalog);
+      const selfServeFollowUpDraft = target.selfServeFollowUpDraft
+        || buildSelfServeFollowUp(target, target.selectedMotion, motionCatalog);
+      const checkoutCloseDraft = target.checkoutCloseDraft
+        || buildCheckoutCloseDraft(target, target.selectedMotion, motionCatalog);
       const evidenceSources = buildEvidenceSources(target, motionCatalog);
       const pipelineLeadId = normalizeText(target.pipelineLeadId) || buildLeadFromRevenueTarget(target).leadId;
       const pipelineStage = normalizePipelineStage(target.pipelineStage);
@@ -1247,6 +1318,8 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
         proofPackTrigger: target.proofPackTrigger || 'Use proof pack only after the buyer confirms pain.',
         firstTouchDraft: target.message,
         painConfirmedFollowUpDraft: followUpMessage,
+        selfServeFollowUpDraft,
+        checkoutCloseDraft,
         salesCommands,
         message: target.message,
       };
@@ -1395,6 +1468,8 @@ function renderRevenueTargetMarkdown(target) {
     `- CTA: ${target.cta}`,
     `- First-touch draft: ${target.firstTouchDraft || target.message}`,
     `- Pain-confirmed follow-up: ${target.painConfirmedFollowUpDraft || 'n/a'}`,
+    `- Tool-path follow-up: ${target.selfServeFollowUpDraft || 'n/a'}`,
+    `- Checkout close draft: ${target.checkoutCloseDraft || 'n/a'}`,
     '',
   ];
 }
@@ -1485,12 +1560,20 @@ function renderWarmTargetOutreachMarkdown(target, index) {
     `- CTA: ${enrichedTarget.cta}`,
     `- Log after send: \`${salesCommands.markContacted || 'n/a'}\``,
     `- Log after pain-confirmed reply: \`${salesCommands.markReplied || 'n/a'}\``,
+    `- Log after checkout started: \`${salesCommands.markCheckoutStarted || 'n/a'}\``,
+    `- Log after paid: \`${salesCommands.markPaid || 'n/a'}\``,
     '',
     'First-touch draft:',
     ...renderQuotedText(enrichedTarget.firstTouchDraft || enrichedTarget.message),
     '',
     'Pain-confirmed follow-up:',
     ...renderQuotedText(enrichedTarget.painConfirmedFollowUpDraft),
+    '',
+    'Tool-path follow-up:',
+    ...renderQuotedText(enrichedTarget.selfServeFollowUpDraft),
+    '',
+    'Checkout close draft:',
+    ...renderQuotedText(enrichedTarget.checkoutCloseDraft),
     '',
   ];
 }
@@ -1545,7 +1628,9 @@ function renderOperatorPriorityTargetMarkdown(target, index) {
     `- Log after send: \`${salesCommands.markContacted || 'n/a'}\``,
     `- Log after pain-confirmed reply: \`${salesCommands.markReplied || 'n/a'}\``,
     `- Log after call booked: \`${salesCommands.markCallBooked || 'n/a'}\``,
+    `- Log after checkout started: \`${salesCommands.markCheckoutStarted || 'n/a'}\``,
     `- Log after sprint intake: \`${salesCommands.markSprintIntake || 'n/a'}\``,
+    `- Log after paid: \`${salesCommands.markPaid || 'n/a'}\``,
     `- Contact surface: ${contactSurface}`,
     `- Contact surfaces: ${contactSurfaces}`,
     `- Company: ${enrichedTarget.company || 'n/a'}`,
@@ -1561,6 +1646,12 @@ function renderOperatorPriorityTargetMarkdown(target, index) {
     '',
     'Pain-confirmed follow-up:',
     ...renderQuotedText(enrichedTarget.painConfirmedFollowUpDraft),
+    '',
+    'Tool-path follow-up:',
+    ...renderQuotedText(enrichedTarget.selfServeFollowUpDraft),
+    '',
+    'Checkout close draft:',
+    ...renderQuotedText(enrichedTarget.checkoutCloseDraft),
     '',
   ];
 }
@@ -1601,6 +1692,8 @@ function buildOperatorPriorityTargetSummary(target, index) {
     cta: normalizeText(enrichedTarget.cta),
     firstTouchDraft: normalizeText(enrichedTarget.firstTouchDraft || enrichedTarget.message),
     painConfirmedFollowUpDraft: normalizeText(enrichedTarget.painConfirmedFollowUpDraft),
+    selfServeFollowUpDraft: normalizeText(enrichedTarget.selfServeFollowUpDraft),
+    checkoutCloseDraft: normalizeText(enrichedTarget.checkoutCloseDraft),
     salesCommands: enrichedTarget.salesCommands || {},
   };
 }
@@ -1834,6 +1927,8 @@ function renderRevenueLoopCsv(report) {
       'cta',
       'firstTouchDraft',
       'painConfirmedFollowUpDraft',
+      'selfServeFollowUpDraft',
+      'checkoutCloseDraft',
     ],
     ...targets.map((target) => ([
       target.temperature || 'cold',
@@ -1861,6 +1956,8 @@ function renderRevenueLoopCsv(report) {
       target.cta,
       target.firstTouchDraft || target.message,
       target.painConfirmedFollowUpDraft,
+      target.selfServeFollowUpDraft,
+      target.checkoutCloseDraft,
     ])),
   ];
 
@@ -2007,6 +2104,8 @@ module.exports = {
   VERIFICATION_EVIDENCE_LINK,
   buildFallbackMessage,
   buildPainConfirmedFollowUp,
+  buildSelfServeFollowUp,
+  buildCheckoutCloseDraft,
   analyzeTargetEvidence,
   buildMotionCatalog,
   buildRevenueLinks,

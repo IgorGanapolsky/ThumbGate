@@ -27,7 +27,7 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 ## Evidence-Backed Buyer Signals
 - Workflow control surfaces (5): The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Examples: Adqui9608/ai-code-review-agent, DGouron/review-flow, nihannihu/Omni-SRE
 - Warm discovery workflows (4): Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Examples: @Deep_Ad1959, @game-of-kton, @leogodin217
-- Business-system workflow approvals (4): Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Examples: Adqui9608/ai-code-review-agent, DGouron/review-flow, nihannihu/Omni-SRE
+- Business-system workflow approvals (3): Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Examples: Adqui9608/ai-code-review-agent, DGouron/review-flow, nihannihu/Omni-SRE
 
 ## Proof Policy
 - Do not lead with proof links. Use Commercial Truth and Verification Evidence only after the buyer confirms pain.
