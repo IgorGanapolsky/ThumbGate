@@ -66,13 +66,39 @@ function makeColdTarget() {
   };
 }
 
-test('queue-backed outreach report keeps warm and cold targets tied to current evidence', () => {
+function makeSelfServeTarget() {
+  return {
+    temperature: 'cold',
+    source: 'github',
+    channel: 'github',
+    username: 'gmickel',
+    accountName: 'gmickel',
+    repoName: 'flow-next',
+    repoUrl: 'https://github.com/gmickel/flow-next',
+    contactUrl: 'https://mickel.tech/',
+    evidenceScore: 12,
+    evidence: ['workflow control surface', 'self-serve agent tooling', '576 GitHub stars'],
+    motion: 'pro',
+    offer: 'pro_self_serve',
+    motionReason: 'Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.',
+    cta: 'https://thumbgate-production.up.railway.app/guide',
+    firstTouchDraft: 'Hey @gmickel, start with the proof-backed setup guide and move to Pro if the local path fits.',
+    painConfirmedFollowUpDraft: 'If the self-serve path looks right, I can send the Pro checkout plus proof links.',
+    salesCommands: {
+      markContacted: 'npm run sales:pipeline -- advance --lead \'github_gmickel_flow_next\' --stage \'contacted\'',
+      markReplied: 'npm run sales:pipeline -- advance --lead \'github_gmickel_flow_next\' --stage \'replied\'',
+      markCallBooked: 'npm run sales:pipeline -- advance --lead \'github_gmickel_flow_next\' --stage \'call_booked\'',
+    },
+  };
+}
+
+test('queue-backed outreach report separates warm, self-serve, and cold sprint lanes', () => {
   const tempDir = makeTempDir();
   const queuePath = path.join(tempDir, 'gtm-target-queue.jsonl');
   const reportPath = path.join(tempDir, 'gtm-revenue-loop.json');
   const statePath = path.join(tempDir, 'sales-pipeline.jsonl');
 
-  writeJsonl(queuePath, [makeWarmTarget(), makeColdTarget()]);
+  writeJsonl(queuePath, [makeWarmTarget(), makeSelfServeTarget(), makeColdTarget()]);
   fs.writeFileSync(reportPath, JSON.stringify({
     generatedAt: '2026-04-27T17:00:00.000Z',
     directive: {
@@ -87,12 +113,16 @@ test('queue-backed outreach report keeps warm and cold targets tied to current e
 
   assert.equal(report.followUpTargets.length, 0);
   assert.equal(report.warmTargets.length, 1);
+  assert.equal(report.selfServeTargets.length, 1);
   assert.equal(report.coldTargets.length, 1);
   assert.equal(report.pipelineTrackedLeadCount, 0);
   assert.equal(report.pipelineExists, false);
   assert.match(markdown, /mirrors the evidence-backed GTM queue/i);
   assert.match(markdown, /Warm discovery ready: 1/);
+  assert.match(markdown, /Self-serve closes ready: 1/);
   assert.match(markdown, /Cold GitHub ready: 1/);
+  assert.match(markdown, /## Self-Serve Closes/);
+  assert.match(markdown, /flow-next/);
   assert.match(markdown, /review-flow/);
   assert.match(markdown, /stage 'contacted'/);
   assert.equal(fs.existsSync(outPath), true);
@@ -104,10 +134,11 @@ test('active follow-ups are promoted ahead of fresh sends using sales ledger sta
   const reportPath = path.join(tempDir, 'gtm-revenue-loop.json');
   const statePath = path.join(tempDir, 'sales-pipeline.jsonl');
   const warmTarget = makeWarmTarget();
+  const selfServeTarget = makeSelfServeTarget();
   const coldTarget = makeColdTarget();
   const lead = buildLeadFromRevenueTarget(coldTarget, { sourcePath: queuePath });
 
-  writeJsonl(queuePath, [warmTarget, coldTarget]);
+  writeJsonl(queuePath, [warmTarget, selfServeTarget, coldTarget]);
   fs.writeFileSync(reportPath, JSON.stringify({
     generatedAt: '2026-04-27T17:00:00.000Z',
     directive: {
@@ -127,10 +158,12 @@ test('active follow-ups are promoted ahead of fresh sends using sales ledger sta
   assert.equal(report.followUpTargets.length, 1);
   assert.equal(report.followUpTargets[0].stage, 'replied');
   assert.equal(report.warmTargets.length, 1);
+  assert.equal(report.selfServeTargets.length, 1);
   assert.equal(report.coldTargets.length, 0);
   assert.equal(report.pipelineTrackedLeadCount, 1);
   assert.equal(report.pipelineExists, true);
   assert.match(markdown, /## Follow Up Now/);
+  assert.match(markdown, /## Self-Serve Closes/);
   assert.match(markdown, /Current stage: replied/);
   assert.match(markdown, /stage 'call_booked'/);
 });
