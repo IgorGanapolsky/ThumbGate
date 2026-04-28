@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 
 const { isCliInvocation, main } = require('../scripts/autonomous-sales-agent');
 
-test('automation emits Aiventyx, ChatGPT, and Codex alongside Claude, Cursor, and Gemini packs', async () => {
+test('automation emits LinkedIn, Aiventyx, ChatGPT, and Codex alongside Claude, Cursor, and Gemini packs', async () => {
   const calls = [];
   const logs = [];
   const originalLog = console.log;
@@ -66,6 +66,14 @@ test('automation emits Aiventyx, ChatGPT, and Codex alongside Claude, Cursor, an
         calls.push(['writeGeminiCliDemandPack', pack.channel, options.writeDocs]);
         return { docsPath: '/tmp/gemini.md' };
       },
+      buildLinkedinWorkflowHardeningPack(report) {
+        calls.push(['buildLinkedinWorkflowHardeningPack', report.targets.length]);
+        return { channel: 'linkedin' };
+      },
+      writeLinkedinWorkflowHardeningPack(pack, options) {
+        calls.push(['writeLinkedinWorkflowHardeningPack', pack.channel, options.writeDocs]);
+        return { docsPath: '/tmp/linkedin.md' };
+      },
       buildChatgptGptRevenuePack(report) {
         calls.push(['buildChatgptGptRevenuePack', report.targets.length]);
         return { channel: 'chatgpt' };
@@ -106,6 +114,8 @@ test('automation emits Aiventyx, ChatGPT, and Codex alongside Claude, Cursor, an
     ['writeAiventyxMarketplaceOutputs', 'aiventyx', true],
     ['buildGeminiCliDemandPack', 2],
     ['writeGeminiCliDemandPack', 'gemini', true],
+    ['buildLinkedinWorkflowHardeningPack', 2],
+    ['writeLinkedinWorkflowHardeningPack', 'linkedin', true],
     ['buildChatgptGptRevenuePack', 2],
     ['writeChatgptGptRevenuePack', 'chatgpt', true],
     ['buildCodexMarketplaceRevenuePack'],
@@ -114,6 +124,7 @@ test('automation emits Aiventyx, ChatGPT, and Codex alongside Claude, Cursor, an
     ['writeCodexPluginRevenuePack', 'codex-plugin', true],
   ]);
   assert.ok(logs.some((line) => line.includes('Aiventyx pack updated: /tmp/aiventyx.md')));
+  assert.ok(logs.some((line) => line.includes('LinkedIn pack updated: /tmp/linkedin.md')));
   assert.ok(logs.some((line) => line.includes('ChatGPT pack updated: /tmp/chatgpt.md')));
   assert.ok(logs.some((line) => line.includes('Codex marketplace pack updated: /tmp/codex-marketplace.md')));
   assert.ok(logs.some((line) => line.includes('Codex plugin pack updated: /tmp/codex-plugin.md')));

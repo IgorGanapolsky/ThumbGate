@@ -34,6 +34,10 @@ const {
   writeGeminiCliDemandPack,
 } = require('./gemini-cli-demand-pack');
 const {
+  buildLinkedinWorkflowHardeningPack,
+  writeLinkedinWorkflowHardeningPack,
+} = require('./linkedin-workflow-hardening-pack');
+const {
   buildChatgptGptRevenuePack,
   writeChatgptGptRevenuePack,
 } = require('./chatgpt-gpt-revenue-pack');
@@ -54,6 +58,8 @@ function buildDependencies(overrides = {}) {
     writeAiventyxMarketplaceOutputs,
     buildGeminiCliDemandPack,
     writeGeminiCliDemandPack,
+    buildLinkedinWorkflowHardeningPack,
+    writeLinkedinWorkflowHardeningPack,
     buildChatgptGptRevenuePack,
     writeChatgptGptRevenuePack,
     buildCodexMarketplaceRevenuePack,
@@ -84,6 +90,8 @@ async function main(argv = process.argv.slice(2), overrides = {}) {
   const aiventyxWritten = deps.writeAiventyxMarketplaceOutputs(aiventyxPlan, options);
   const geminiPack = deps.buildGeminiCliDemandPack(report);
   const geminiWritten = deps.writeGeminiCliDemandPack(geminiPack, options);
+  const linkedinPack = deps.buildLinkedinWorkflowHardeningPack(report);
+  const linkedinWritten = deps.writeLinkedinWorkflowHardeningPack(linkedinPack, options);
   const chatgptPack = deps.buildChatgptGptRevenuePack(report);
   const chatgptWritten = deps.writeChatgptGptRevenuePack(chatgptPack, options);
   const codexMarketplacePack = deps.buildCodexMarketplaceRevenuePack();
@@ -109,6 +117,9 @@ async function main(argv = process.argv.slice(2), overrides = {}) {
   }
   if (geminiWritten.docsPath) {
     console.log(`Gemini pack updated: ${geminiWritten.docsPath}`);
+  }
+  if (linkedinWritten.docsPath) {
+    console.log(`LinkedIn pack updated: ${linkedinWritten.docsPath}`);
   }
   if (chatgptWritten.docsPath) {
     console.log(`ChatGPT pack updated: ${chatgptWritten.docsPath}`);

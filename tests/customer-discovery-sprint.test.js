@@ -34,6 +34,9 @@ const EXPECTED_ARTIFACTS = [
   'gemini-cli-demand-pack.md',
   'gemini-cli-demand-pack.json',
   'gemini-cli-operator-queue.csv',
+  'linkedin-workflow-hardening-pack.md',
+  'linkedin-workflow-hardening-pack.json',
+  'linkedin-operator-queue.csv',
 ];
 
 function escapeRegExp(value) {
