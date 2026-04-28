@@ -51,6 +51,7 @@ Use `--report-dir` when you want a dated handoff folder for one selling session.
 
 The revenue loop emits these operator artifacts in that folder:
 
+- `OUTREACH_TARGETS.md` for the ranked GitHub outreach screen across follow-ups, warm discovery, and cold targets
 - `gtm-revenue-loop.md` for the human summary
 - `gtm-revenue-loop.json` for machine-readable truth
 - `gtm-marketplace-copy.md` for listing-ready copy based on the same target evidence
@@ -122,6 +123,7 @@ Do not mark a lead replied, call-booked, sprint-intake, checkout-started, or pai
 ## Target Interviews
 
 Start with the engagers already identified in [team-outreach-messages.md](marketing/team-outreach-messages.md).
+Use [OUTREACH_TARGETS.md](OUTREACH_TARGETS.md) to reject weak-fit GitHub targets before sending first touch.
 
 - Deep_Ad1959
 - game-of-kton

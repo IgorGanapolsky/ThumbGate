@@ -36,6 +36,7 @@ Review four files before sending anything:
 - `gtm-revenue-loop.json` for the machine-readable queue
 - `gtm-target-queue.csv` for operator copy/paste into a tracker or CRM
 - `gtm-marketplace-copy.md` for listing-ready copy derived from the same target evidence
+- `OUTREACH_TARGETS.md` for the ranked GitHub outreach screen before cold contact
 
 The generated queue now includes two lanes in one artifact:
 
