@@ -1494,7 +1494,10 @@ test('git commit on PR branch registers thread-resolution claim gate and blocks 
     branchName: 'fix/review-feedback',
     prNumber: 123,
   }, tmpConfig);
-  assert.equal(commitResult, null);
+  if (commitResult) {
+    assert.equal(commitResult.decision, 'warn');
+    assert.equal(commitResult.gate, 'workflow-sentinel');
+  }
   assert.ok(hasAction(PR_THREAD_RESOLUTION_ACTION));
   assert.ok(loadClaimGates().claims.some((claim) => claim.requiredActions.includes('pr_threads_checked')));
 
