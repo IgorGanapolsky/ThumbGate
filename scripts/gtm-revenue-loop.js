@@ -1447,9 +1447,10 @@ function renderOperatorPriorityTargetMarkdown(target, index) {
   const label = normalizeText(enrichedTarget.repoName)
     ? `@${enrichedTarget.username} — ${enrichedTarget.repoName}`
     : `@${enrichedTarget.username} — ${enrichedTarget.accountName || enrichedTarget.source || 'discovery lead'}`;
-  const contactSurface = enrichedTarget.contactUrl || enrichedTarget.repoUrl || 'n/a';
+  const contactSurface = enrichedTarget.contactSurface || enrichedTarget.contactUrl || enrichedTarget.repoUrl || 'n/a';
   const contactSurfaces = renderContactSurfaces(enrichedTarget.contactSurfaces);
   const salesCommands = enrichedTarget.salesCommands;
+  const whyNow = enrichedTarget.whyNow || enrichedTarget.motionReason || enrichedTarget.outreachAngle || 'n/a';
   return [
     `## ${index + 1}. ${label}`,
     `- Temperature: ${enrichedTarget.temperature || 'cold'}`,
@@ -1468,7 +1469,7 @@ function renderOperatorPriorityTargetMarkdown(target, index) {
     `- Evidence score: ${enrichedTarget.evidenceScore}`,
     `- Evidence: ${enrichedTarget.evidence.length ? enrichedTarget.evidence.join(', ') : 'n/a'}`,
     `- Motion: ${enrichedTarget.motionLabel}`,
-    `- Why now: ${enrichedTarget.motionReason || enrichedTarget.outreachAngle || 'n/a'}`,
+    `- Why now: ${whyNow}`,
     `- Proof rule: ${enrichedTarget.proofPackTrigger || 'Use proof pack only after the buyer confirms pain.'}`,
     `- CTA: ${enrichedTarget.cta}`,
     '',

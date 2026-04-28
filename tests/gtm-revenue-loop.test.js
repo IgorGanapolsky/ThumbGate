@@ -1578,6 +1578,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
       repoUrl: 'https://github.com/example/production-mcp-server',
       updatedAt: '2026-04-20T00:00:00.000Z',
       offer: 'workflow_hardening_sprint',
+      selectedMotion: catalog.sprint,
       pipelineStage: 'targeted',
       evidenceScore: 9,
       evidence: ['workflow control surface', '42 GitHub stars'],
@@ -1709,6 +1710,7 @@ test('writeRevenueLoopOutputs mirrors dedicated GTM docs instead of overwriting 
       repoUrl: 'https://github.com/example/production-mcp-server',
       updatedAt: '2026-04-20T00:00:00.000Z',
       offer: 'workflow_hardening_sprint',
+      selectedMotion: catalog.sprint,
       pipelineStage: 'targeted',
       evidenceScore: 9,
       evidence: ['workflow control surface', '42 GitHub stars'],
@@ -1815,6 +1817,74 @@ test('warm-target report output does not emit blank repo placeholders in follow-
 
   assert.match(report.targets[0].painConfirmedFollowUpDraft, /If your workflow really has one repeated workflow failure blocking rollout/);
   assert.doesNotMatch(report.targets[0].painConfirmedFollowUpDraft, /``/);
+});
+
+test('operator handoff markdown preserves summary why-now and contact-surface fields', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const report = {
+    generatedAt: '2026-04-28T00:22:35.266Z',
+    directive: {
+      state: 'cold-start',
+      objective: 'First 10 paying customers',
+      headline: 'No verified revenue and no active pipeline.',
+      primaryMotion: 'sprint',
+      secondaryMotion: 'pro',
+      actions: ['Lead with one workflow.'],
+    },
+    snapshot: {
+      paidOrders: 0,
+      bookedRevenueCents: 0,
+      checkoutStarts: 0,
+    },
+    targets: [{
+      temperature: 'warm',
+      source: 'github',
+      channel: 'github',
+      username: 'builder',
+      accountName: 'builder',
+      contactUrl: 'https://builder.example/contact',
+      contactSurfaces: [
+        { label: 'Website', url: 'https://builder.example/contact' },
+        { label: 'Repository', url: 'https://github.com/example/production-mcp-server' },
+      ],
+      repoName: 'production-mcp-server',
+      repoUrl: 'https://github.com/example/production-mcp-server',
+      updatedAt: '2026-04-20T00:00:00.000Z',
+      pipelineStage: 'targeted',
+      pipelineLeadId: 'github_builder_production_mcp_server',
+      evidenceScore: 9,
+      evidence: ['workflow control surface', '42 GitHub stars'],
+      evidenceSources: [
+        {
+          label: 'Target signal',
+          url: 'https://github.com/example/production-mcp-server',
+        },
+        {
+          label: 'Commercial truth',
+          url: catalog.pro.truth,
+        },
+        {
+          label: 'Verification evidence',
+          url: catalog.pro.proof,
+        },
+      ],
+      claimGuardrails: [
+        'Do not claim revenue, installs, or marketplace approval without direct command evidence.',
+      ],
+      motionLabel: catalog.sprint.label,
+      motionReason: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
+      proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+      cta: catalog.sprint.cta,
+      firstTouchDraft: 'I can harden one workflow, then prove it.',
+      painConfirmedFollowUpDraft: 'If the workflow pain is real, I can send the proof pack.',
+    }],
+  };
+
+  const markdown = renderOperatorHandoffMarkdown(report);
+
+  assert.match(markdown, /- Contact surface: https:\/\/builder\.example\/contact/);
+  assert.match(markdown, /- Why now: Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes\./);
 });
 
 test('runRevenueLoop writes an evidence-backed target queue with discovery warnings when GitHub search fails', async () => {
