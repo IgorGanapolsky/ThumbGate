@@ -14,6 +14,12 @@
 const path = require('node:path');
 const { parseArgs, runRevenueLoop } = require('./gtm-revenue-loop');
 const {
+  main: runGitHubOutreach,
+  DEFAULT_DOCS_PATH: DEFAULT_GITHUB_OUTREACH_DOCS_PATH,
+  DEFAULT_QUEUE_PATH: DEFAULT_GITHUB_OUTREACH_QUEUE_PATH,
+  DEFAULT_REPORT_PATH: DEFAULT_GITHUB_OUTREACH_REPORT_PATH,
+} = require('./github-outreach');
+const {
   buildClaudeWorkflowHardeningPack,
   writeClaudeWorkflowHardeningPack,
 } = require('./claude-workflow-hardening-pack');
@@ -50,6 +56,7 @@ function buildDependencies(overrides = {}) {
   return {
     parseArgs,
     runRevenueLoop,
+    runGitHubOutreach,
     buildClaudeWorkflowHardeningPack,
     writeClaudeWorkflowHardeningPack,
     buildCursorMarketplaceRevenuePack,
@@ -78,6 +85,29 @@ function isCliInvocation(argv = process.argv) {
   return path.resolve(scriptPath) === path.resolve(__filename);
 }
 
+function buildGitHubOutreachJobs(written = {}, repoRoot = path.resolve(__dirname, '..')) {
+  const jobs = [];
+
+  if (written.reportDir) {
+    const reportDir = path.resolve(written.reportDir);
+    jobs.push({
+      queuePath: path.join(reportDir, 'gtm-target-queue.jsonl'),
+      reportPath: path.join(reportDir, 'gtm-revenue-loop.json'),
+      outPath: path.join(reportDir, 'OUTREACH_TARGETS.md'),
+    });
+  }
+
+  if (written.docsPath) {
+    jobs.push({
+      queuePath: path.resolve(repoRoot, DEFAULT_GITHUB_OUTREACH_QUEUE_PATH),
+      reportPath: path.resolve(repoRoot, DEFAULT_GITHUB_OUTREACH_REPORT_PATH),
+      outPath: path.resolve(repoRoot, DEFAULT_GITHUB_OUTREACH_DOCS_PATH),
+    });
+  }
+
+  return jobs;
+}
+
 async function main(argv = process.argv.slice(2), overrides = {}) {
   const deps = buildDependencies(overrides);
   const options = deps.parseArgs(argv);
@@ -98,6 +128,8 @@ async function main(argv = process.argv.slice(2), overrides = {}) {
   const codexMarketplaceWritten = deps.writeCodexMarketplaceRevenuePack(codexMarketplacePack, options);
   const codexPluginPack = deps.buildCodexPluginRevenuePack(report);
   const codexPluginWritten = deps.writeCodexPluginRevenuePack(codexPluginPack, options);
+  const githubOutreachJobs = buildGitHubOutreachJobs(written);
+  const githubOutreachWritten = githubOutreachJobs.map((job) => deps.runGitHubOutreach(job));
 
   console.log('\n✅ GTM automation complete.');
   if (written.docsPath) {
@@ -130,6 +162,11 @@ async function main(argv = process.argv.slice(2), overrides = {}) {
   if (codexPluginWritten.docsPath) {
     console.log(`Codex plugin pack updated: ${codexPluginWritten.docsPath}`);
   }
+  for (const asset of githubOutreachWritten) {
+    if (asset?.docsPath) {
+      console.log(`GitHub outreach asset updated: ${asset.docsPath}`);
+    }
+  }
   console.log(`State: ${report.directive.state} | Targets: ${report.targets.length}`);
 }
 
@@ -141,6 +178,7 @@ if (isCliInvocation(process.argv)) {
 }
 
 module.exports = {
+  buildGitHubOutreachJobs,
   buildDependencies,
   isCliInvocation,
   main,
