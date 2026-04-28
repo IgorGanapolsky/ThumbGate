@@ -45,6 +45,12 @@ const {
   buildCodexMarketplaceRevenuePack,
   writeCodexMarketplaceRevenuePack,
 } = require('./codex-marketplace-revenue-pack');
+const {
+  DEFAULT_DOCS_PATH: DEFAULT_OUTREACH_DOCS_PATH,
+  buildOutreachTargetsReport,
+  renderOutreachTargetsMarkdown,
+  writeOutreachTargetsDoc,
+} = require('./github-outreach');
 
 function buildDependencies(overrides = {}) {
   return {
@@ -66,8 +72,21 @@ function buildDependencies(overrides = {}) {
     writeCodexMarketplaceRevenuePack,
     buildCodexPluginRevenuePack,
     writeCodexPluginRevenuePack,
+    buildOutreachTargetsReport,
+    renderOutreachTargetsMarkdown,
+    writeOutreachTargetsDoc,
     ...overrides,
   };
+}
+
+function resolveReportArtifactPath(options = {}, fileName) {
+  if (!options.reportDir) {
+    return '';
+  }
+  const repoRoot = options.repoRoot
+    ? path.resolve(options.repoRoot)
+    : path.resolve(__dirname, '..');
+  return path.resolve(repoRoot, options.reportDir, fileName);
 }
 
 function isCliInvocation(argv = process.argv) {
@@ -98,6 +117,28 @@ async function main(argv = process.argv.slice(2), overrides = {}) {
   const codexMarketplaceWritten = deps.writeCodexMarketplaceRevenuePack(codexMarketplacePack, options);
   const codexPluginPack = deps.buildCodexPluginRevenuePack(report);
   const codexPluginWritten = deps.writeCodexPluginRevenuePack(codexPluginPack, options);
+  const outreachReportPath = resolveReportArtifactPath(options, 'gtm-revenue-loop.json');
+  const outreachQueuePath = resolveReportArtifactPath(options, 'gtm-target-queue.jsonl');
+  const shouldWriteDocs = options.writeDocs || !options.reportDir;
+  let outreachDocsPath = '';
+
+  if (outreachReportPath && outreachQueuePath) {
+    const outreachReport = deps.buildOutreachTargetsReport({
+      reportPath: outreachReportPath,
+      queuePath: outreachQueuePath,
+    });
+    const outreachMarkdown = deps.renderOutreachTargetsMarkdown(outreachReport);
+    outreachDocsPath = deps.writeOutreachTargetsDoc(
+      outreachMarkdown,
+      resolveReportArtifactPath(options, 'OUTREACH_TARGETS.md')
+    );
+  }
+
+  if (shouldWriteDocs) {
+    const outreachReport = deps.buildOutreachTargetsReport();
+    const outreachMarkdown = deps.renderOutreachTargetsMarkdown(outreachReport);
+    outreachDocsPath = deps.writeOutreachTargetsDoc(outreachMarkdown, DEFAULT_OUTREACH_DOCS_PATH);
+  }
 
   console.log('\n✅ GTM automation complete.');
   if (written.docsPath) {
@@ -130,6 +171,9 @@ async function main(argv = process.argv.slice(2), overrides = {}) {
   if (codexPluginWritten.docsPath) {
     console.log(`Codex plugin pack updated: ${codexPluginWritten.docsPath}`);
   }
+  if (outreachDocsPath) {
+    console.log(`Outreach targets updated: ${outreachDocsPath}`);
+  }
   console.log(`State: ${report.directive.state} | Targets: ${report.targets.length}`);
 }
 
@@ -144,4 +188,5 @@ module.exports = {
   buildDependencies,
   isCliInvocation,
   main,
+  resolveReportArtifactPath,
 };

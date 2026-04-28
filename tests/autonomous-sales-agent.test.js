@@ -2,12 +2,19 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const path = require('node:path');
 
-const { isCliInvocation, main } = require('../scripts/autonomous-sales-agent');
+const {
+  isCliInvocation,
+  main,
+  resolveReportArtifactPath,
+} = require('../scripts/autonomous-sales-agent');
 
 test('automation emits LinkedIn, Aiventyx, ChatGPT, and Codex alongside Claude, Cursor, and Gemini packs', async () => {
   const calls = [];
   const logs = [];
+  const reportDir = path.resolve('reports/gtm/test');
+  const outreachDocsPath = path.resolve('docs/OUTREACH_TARGETS.md');
   const originalLog = console.log;
   console.log = (message) => {
     logs.push(String(message));
@@ -98,6 +105,18 @@ test('automation emits LinkedIn, Aiventyx, ChatGPT, and Codex alongside Claude, 
         calls.push(['writeCodexPluginRevenuePack', pack.channel, options.writeDocs]);
         return { docsPath: '/tmp/codex-plugin.md' };
       },
+      buildOutreachTargetsReport(options) {
+        calls.push(['buildOutreachTargetsReport', options || null]);
+        return { warmTargets: [{ id: 'warm-1' }], coldTargets: [{ id: 'cold-1' }], followUpTargets: [] };
+      },
+      renderOutreachTargetsMarkdown(report) {
+        calls.push(['renderOutreachTargetsMarkdown', report.warmTargets.length, report.coldTargets.length]);
+        return '# Outreach Targets';
+      },
+      writeOutreachTargetsDoc(markdown, outPath) {
+        calls.push(['writeOutreachTargetsDoc', markdown, outPath]);
+        return outPath;
+      },
     });
   } finally {
     console.log = originalLog;
@@ -122,12 +141,19 @@ test('automation emits LinkedIn, Aiventyx, ChatGPT, and Codex alongside Claude, 
     ['writeCodexMarketplaceRevenuePack', 'codex', true],
     ['buildCodexPluginRevenuePack', 2],
     ['writeCodexPluginRevenuePack', 'codex-plugin', true],
+    ['buildOutreachTargetsReport', { reportPath: path.join(reportDir, 'gtm-revenue-loop.json'), queuePath: path.join(reportDir, 'gtm-target-queue.jsonl') }],
+    ['renderOutreachTargetsMarkdown', 1, 1],
+    ['writeOutreachTargetsDoc', '# Outreach Targets', path.join(reportDir, 'OUTREACH_TARGETS.md')],
+    ['buildOutreachTargetsReport', null],
+    ['renderOutreachTargetsMarkdown', 1, 1],
+    ['writeOutreachTargetsDoc', '# Outreach Targets', outreachDocsPath],
   ]);
   assert.ok(logs.some((line) => line.includes('Aiventyx pack updated: /tmp/aiventyx.md')));
   assert.ok(logs.some((line) => line.includes('LinkedIn pack updated: /tmp/linkedin.md')));
   assert.ok(logs.some((line) => line.includes('ChatGPT pack updated: /tmp/chatgpt.md')));
   assert.ok(logs.some((line) => line.includes('Codex marketplace pack updated: /tmp/codex-marketplace.md')));
   assert.ok(logs.some((line) => line.includes('Codex plugin pack updated: /tmp/codex-plugin.md')));
+  assert.ok(logs.some((line) => line.includes(`Outreach targets updated: ${outreachDocsPath}`)));
   assert.ok(logs.some((line) => line.includes('State: cold-start | Targets: 2')));
 });
 
@@ -136,4 +162,13 @@ test('CLI entrypoint detection is path based', () => {
 
   assert.equal(isCliInvocation(['node', scriptPath]), true);
   assert.equal(isCliInvocation(['node', __filename]), false);
+});
+
+test('report artifact paths resolve under the requested report directory', () => {
+  const reportDir = path.resolve('reports/gtm/test');
+  assert.equal(
+    resolveReportArtifactPath({ reportDir: 'reports/gtm/test' }, 'OUTREACH_TARGETS.md'),
+    path.join(reportDir, 'OUTREACH_TARGETS.md')
+  );
+  assert.equal(resolveReportArtifactPath({}, 'OUTREACH_TARGETS.md'), '');
 });
