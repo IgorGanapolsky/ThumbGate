@@ -535,6 +535,35 @@ function summarizeCommercialSnapshot(summary = {}) {
   };
 }
 
+function summarizeRevenueEvidence(summary = {}, { source = '', fallbackReason = '' } = {}) {
+  const snapshot = summarizeCommercialSnapshot(summary);
+  const normalizedSource = normalizeText(source).toLowerCase();
+  const normalizedFallbackReason = normalizeText(fallbackReason);
+  const usesHostedSummary = Boolean(normalizedSource) && normalizedSource !== 'local';
+  const hasFallbackGap = Boolean(normalizedFallbackReason);
+  const hasRevenue = snapshot.paidOrders > 0 || snapshot.bookedRevenueCents > 0;
+  const hasPipeline = snapshot.checkoutStarts > 0 || snapshot.uniqueLeads > 0 || snapshot.sprintLeads > 0;
+  const hasLiveRevenueProof = hasRevenue && (usesHostedSummary || !hasFallbackGap);
+
+  let note = '';
+  if (!hasLiveRevenueProof && hasFallbackGap) {
+    note = `Live revenue proof unavailable for this run: ${normalizedFallbackReason}`;
+  } else if (!hasLiveRevenueProof && !hasRevenue && usesHostedSummary) {
+    note = 'Hosted revenue summary is available, but it currently shows no paid orders or booked revenue.';
+  } else if (!hasLiveRevenueProof && !hasRevenue && !hasPipeline) {
+    note = 'No paid orders or active pipeline are visible in the current revenue source.';
+  }
+
+  return {
+    hasRevenue,
+    hasPipeline,
+    hasFallbackGap,
+    usesHostedSummary,
+    hasLiveRevenueProof,
+    note,
+  };
+}
+
 function normalizeRevenueWindowSummary(summary = {}) {
   return {
     trafficMetrics: summary.trafficMetrics || {},
@@ -582,10 +611,10 @@ async function resolveRevenueLoopSummary(options = {}) {
   }
 }
 
-function deriveRevenueDirective(summary = {}, motionCatalog = buildMotionCatalog()) {
-  const snapshot = summarizeCommercialSnapshot(summary);
+function deriveRevenueDirective(summary = {}, motionCatalog = buildMotionCatalog(), evidenceContext = {}) {
+  const evidence = summarizeRevenueEvidence(summary, evidenceContext);
 
-  if (snapshot.paidOrders > 0 || snapshot.bookedRevenueCents > 0) {
+  if (evidence.hasLiveRevenueProof) {
     return {
       state: 'post-first-dollar',
       objective: 'Scale the first-10-customers loop with direct workflow hardening and self-serve follow-up.',
@@ -601,7 +630,7 @@ function deriveRevenueDirective(summary = {}, motionCatalog = buildMotionCatalog
     };
   }
 
-  if (snapshot.checkoutStarts > 0 || snapshot.uniqueLeads > 0 || snapshot.sprintLeads > 0) {
+  if (evidence.hasPipeline) {
     return {
       state: 'pipeline-active-no-revenue',
       objective: 'Convert existing interest into the first paid orders without inventing traction.',
@@ -1100,6 +1129,7 @@ async function generateOutreachMessages(targets, motionCatalog = buildMotionCata
 
 function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog, directive, targets }) {
   const snapshot = summarizeCommercialSnapshot(summary);
+  const revenueEvidence = summarizeRevenueEvidence(summary, { source, fallbackReason });
   const currentTruth = {
     publicSelfServeOffer: motionCatalog.pro.label,
     publicSelfServeCta: motionCatalog.pro.cta,
@@ -1116,6 +1146,7 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
     fallbackReason: fallbackReason || null,
     objective: 'First 10 paying customers',
     directive,
+    revenueEvidence,
     currentTruth,
     evidenceBackstop: buildEvidenceBackstop(currentTruth),
     snapshot,
@@ -1355,6 +1386,8 @@ function renderRevenueLoopMarkdown(report) {
     `- Workflow sprint leads: ${report.snapshot.sprintLeads}`,
     `- Qualified sprint leads: ${report.snapshot.qualifiedSprintLeads}`,
     `- Billing source: ${report.source}${fallbackReason}`,
+    `- Live revenue proof: ${report.revenueEvidence?.hasLiveRevenueProof ? 'yes' : 'no'}`,
+    ...(report.revenueEvidence?.note ? [`- Evidence note: ${report.revenueEvidence.note}`] : []),
     '',
     '## GSD Directive',
     `- Objective: ${report.directive.objective}`,
@@ -1857,7 +1890,10 @@ async function runRevenueLoop(options = {}) {
   const motionCatalog = buildMotionCatalog(links);
   const warmTargets = getWarmOutboundTargets(motionCatalog.sprint.cta);
   const { source, summary, fallbackReason } = await resolveRevenueLoopSummary(options);
-  const directive = deriveRevenueDirective(summary, motionCatalog);
+  const directive = deriveRevenueDirective(summary, motionCatalog, {
+    source,
+    fallbackReason,
+  });
   const { targets, errors } = await prospectTargets(options.maxTargets || 6, {
     fetchImpl: options.fetchImpl || globalThis.fetch,
     githubToken: options.githubToken || '',
@@ -1948,6 +1984,7 @@ module.exports = {
   runRevenueLoop,
   selectOutreachMotion,
   summarizeCommercialSnapshot,
+  summarizeRevenueEvidence,
   writeRevenueLoopOutputs,
   buildMarketplaceCopy,
   enrichGitHubTarget,

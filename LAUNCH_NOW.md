@@ -1,6 +1,9 @@
 # LAUNCH NOW — Discovery-First Revenue Checklist
 
-**Status as of 2026-04-25:** local revenue status shows `0` lifetime revenue, `0` paid orders, `0` tracked leads, and `0` checkout starts. Treat this file as an operator playbook for creating qualified conversations, not as proof of traction.
+Treat this file as an operator playbook for creating qualified conversations, not as proof of traction.
+Before each run, compare the current `npm run revenue:status:local` output with the freshly generated `docs/marketing/gtm-revenue-loop.md` report.
+If they disagree, prefer the artifact that shows `Billing source: hosted-via-railway-env` or another hosted-backed source.
+If neither artifact has hosted-backed revenue proof, operate in zero-proof mode and do not reuse older booked-revenue language from historical docs.
 
 Every line below is evidence-backed and channel-current. Do them in order.
 
@@ -36,6 +39,8 @@ Review four files before sending anything:
 - `gtm-revenue-loop.json` for the machine-readable queue
 - `gtm-target-queue.csv` for operator copy/paste into a tracker or CRM
 - `gtm-marketplace-copy.md` for listing-ready copy derived from the same target evidence
+
+If the generated report says `Live revenue proof: no`, keep outreach in cold-start language even if older docs mention historical booked revenue.
 
 The generated queue now includes two lanes in one artifact:
 
