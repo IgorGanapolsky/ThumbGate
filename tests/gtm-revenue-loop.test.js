@@ -1775,7 +1775,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.ok(fs.existsSync(path.join(reportDir, 'team-outreach-messages.md')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-priority-handoff.md')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-priority-handoff.json')));
-    assert.match(csv, /^temperature,source,channel,username,accountName,company,contactUrl,contactSurfaces,repoName,repoUrl,updatedAt,offer,pipelineStage,evidenceScore,evidence,evidenceSource,evidenceLinks,claimGuardrails,outreachAngle,motionLabel,motionReason,proofPackTrigger,cta,firstTouchDraft,painConfirmedFollowUpDraft,selfServeFollowUpDraft,checkoutCloseDraft/m);
+    assert.match(csv, /^temperature,source,channel,username,accountName,company,contactUrl,contactSurfaces,repoName,repoUrl,updatedAt,offer,pipelineStage,pipelineLeadId,nextOperatorAction,pipelineUpdatedAt,evidenceScore,evidence,evidenceSource,evidenceLinks,claimGuardrails,outreachAngle,motionLabel,motionReason,proofPackTrigger,cta,firstTouchDraft,painConfirmedFollowUpDraft,selfServeFollowUpDraft,checkoutCloseDraft,markContactedCommand,markRepliedCommand,markCallBookedCommand,markCheckoutStartedCommand,markSprintIntakeCommand,markPaidCommand/m);
     assert.match(csv, /"I can harden one workflow, then prove it\."/);
     assert.match(csv, /"If the workflow pain is real, I can send the proof pack\."/);
     assert.match(csv, /proof-backed setup guide/);
@@ -1784,6 +1784,10 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.match(csv, /Reddit DM: https:\/\/www\.reddit\.com\/user\/builder\//);
     assert.match(csv, /Commercial truth: .*COMMERCIAL_TRUTH\.md/);
     assert.match(csv, /Do not claim revenue, installs, or marketplace approval without direct command evidence\./);
+    assert.match(csv, /reddit_builder_production_mcp_server/);
+    assert.match(csv, /Send the first-touch draft and log the outreach in the sales pipeline\./);
+    assert.match(csv, /markSprintIntakeCommand/);
+    assert.match(csv, /Buyer moved into Workflow Hardening Sprint intake/);
     assert.match(marketplaceCopy.headline, /workflow/i);
     assert.equal(marketplaceCopy.recommendedCtas[0].label, 'Proof-backed setup guide');
     assert.match(marketplaceCopy.recommendedCtas[0].cta, /thumbgate-production\.up\.railway\.app\/guide/);
