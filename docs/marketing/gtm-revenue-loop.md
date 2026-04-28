@@ -1,7 +1,7 @@
 # GSD Revenue Loop
 
 Status: post-first-dollar
-Updated: 2026-04-28T00:21:01.659Z
+Updated: 2026-04-28T07:15:35.485Z
 
 This report is an operator artifact for landing the first 10 paying customers. It is not proof of sent messages or booked revenue by itself.
 Outbound rule: do not treat posts as sales. A lead only moves when it is tracked as contacted, replied, call booked, checkout/sprint, or paid.
@@ -24,8 +24,8 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 ## Revenue Snapshot
 - Paid orders: 2
 - Booked revenue: $20.00
-- Checkout starts: 1
-- Unique leads: 1
+- Checkout starts: 0
+- Unique leads: 0
 - Workflow sprint leads: 0
 - Qualified sprint leads: 0
 - Billing source: hosted-via-railway-env
@@ -148,7 +148,7 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Contact surfaces: GitHub profile: https://github.com/Adqui9608; Repository: https://github.com/Adqui9608/ai-code-review-agent
 - Company: n/a
 - Repo: https://github.com/Adqui9608/ai-code-review-agent
-- Repo last updated: 2026-04-27T20:46:32Z
+- Repo last updated: 2026-04-28T04:26:40Z
 - Evidence score: 15
 - Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, updated in the last 7 days
 - Evidence sources: Target signal: https://github.com/Adqui9608/ai-code-review-agent; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
@@ -229,48 +229,48 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - First-touch draft: Hey @freema, saw you're shipping `mcp-jira-stdio`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - Pain-confirmed follow-up: If `mcp-jira-stdio` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
-### @manki-review — manki
+### @zaxbysauce — opencode-swarm
 - Temperature: cold
 - Source: github / github
 - Pipeline stage: targeted
 - Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
 - Pipeline last updated: n/a
-- Offer: workflow_hardening_sprint
-- Contact: https://manki.dustinface.me/
-- Contact surfaces: Website: https://manki.dustinface.me/; GitHub profile: https://github.com/manki-review; Repository: https://github.com/manki-review/manki
+- Offer: pro_self_serve
+- Contact: https://github.com/zaxbysauce
+- Contact surfaces: GitHub profile: https://github.com/zaxbysauce; Repository: https://github.com/zaxbysauce/opencode-swarm
 - Company: n/a
-- Repo: https://github.com/manki-review/manki
-- Repo last updated: 2026-04-27T15:02:18Z
-- Evidence score: 13
-- Evidence: workflow control surface, business-system integration, agent infrastructure, 5 GitHub stars, updated in the last 7 days
-- Evidence sources: Target signal: https://github.com/manki-review/manki; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
-- Outreach angle: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
-- Motion: Workflow Hardening Sprint
-- Why: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
-- Proof timing: Use proof pack only after the buyer confirms pain.
-- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-- First-touch draft: Hey @manki-review, saw you're shipping `manki`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-- Pain-confirmed follow-up: If `manki` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
-
-### @salacoste — mcp-n8n-workflow-builder
-- Temperature: cold
-- Source: github / github
-- Pipeline stage: targeted
-- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
-- Pipeline last updated: n/a
-- Offer: workflow_hardening_sprint
-- Contact: https://github.com/salacoste
-- Contact surfaces: GitHub profile: https://github.com/salacoste; Repository: https://github.com/salacoste/mcp-n8n-workflow-builder
-- Company: n/a
-- Repo: https://github.com/salacoste/mcp-n8n-workflow-builder
-- Repo last updated: 2026-04-22T23:45:33Z
+- Repo: https://github.com/zaxbysauce/opencode-swarm
+- Repo last updated: 2026-04-28T06:40:23Z
 - Evidence score: 12
-- Evidence: workflow control surface, agent infrastructure, 221 GitHub stars, updated in the last 7 days
-- Evidence sources: Target signal: https://github.com/salacoste/mcp-n8n-workflow-builder; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
-- Outreach angle: Lead with context-drift hardening for one workflow before proposing any broader agent platform story.
-- Motion: Workflow Hardening Sprint
-- Why: Lead with context-drift hardening for one workflow before proposing any broader agent platform story.
+- Evidence: workflow control surface, self-serve agent tooling, 241 GitHub stars, updated in the last 7 days
+- Evidence sources: Target signal: https://github.com/zaxbysauce/opencode-swarm; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Outreach angle: Lead with the proof-backed setup guide and local-first enforcement before any team-motion pitch.
+- Motion: Pro at $19/mo or $149/yr
+- Why: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
 - Proof timing: Use proof pack only after the buyer confirms pain.
-- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-- First-touch draft: Hey @salacoste, saw you're shipping `mcp-n8n-workflow-builder`. If one context, memory, or tool-use failure keeps repeating, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-- Pain-confirmed follow-up: If `mcp-n8n-workflow-builder` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- CTA: https://thumbgate-production.up.railway.app/guide
+- First-touch draft: Hey @zaxbysauce, saw you're building around `opencode-swarm`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
+- Pain-confirmed follow-up: If you want the self-serve path for `opencode-swarm`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+### @CharlesMulic — equip
+- Temperature: cold
+- Source: github / github
+- Pipeline stage: targeted
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
+- Offer: pro_self_serve
+- Contact: https://cg3.io/
+- Contact surfaces: Website: https://cg3.io/; GitHub profile: https://github.com/CharlesMulic; Repository: https://github.com/CharlesMulic/equip
+- Company: CG3, Inc.
+- Repo: https://github.com/CharlesMulic/equip
+- Repo last updated: 2026-04-28T07:08:58Z
+- Evidence score: 10
+- Evidence: production or platform workflow, agent infrastructure, self-serve agent tooling, updated in the last 7 days
+- Evidence sources: Target signal: https://github.com/CharlesMulic/equip; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Outreach angle: Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.
+- Motion: Pro at $19/mo or $149/yr
+- Why: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
+- Proof timing: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/guide
+- First-touch draft: Hey @CharlesMulic, saw you're building around `equip`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
+- Pain-confirmed follow-up: If you want the self-serve path for `equip`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
