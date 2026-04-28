@@ -32,6 +32,8 @@ const FOLLOW_UP_PRIORITY = {
   contacted: 1,
 };
 const TARGETED_STAGE = 'targeted';
+const SELF_SERVE_MOTIONS = new Set(['pro']);
+const SELF_SERVE_OFFERS = new Set(['pro_self_serve']);
 
 function normalizeText(value, maxLength = 4000) {
   if (value === undefined || value === null) return '';
@@ -59,6 +61,12 @@ function buildPipelineIndex(options = {}) {
 
 function toStagePriority(stage) {
   return FOLLOW_UP_PRIORITY[normalizeText(stage)] || 0;
+}
+
+function isSelfServeTarget(target = {}) {
+  const motion = normalizeText(target.motion).toLowerCase();
+  const offer = normalizeText(target.offer).toLowerCase();
+  return SELF_SERVE_MOTIONS.has(motion) || SELF_SERVE_OFFERS.has(offer);
 }
 
 function compareTargetPriority(left, right) {
@@ -147,10 +155,17 @@ function buildOutreachTargetsReport({
     .sort(compareTargetPriority);
   const followUpTargets = targets.filter((target) => FOLLOW_UP_STAGES.has(target.stage));
   const warmTargets = targets.filter((target) => target.stage === TARGETED_STAGE && normalizeText(target.temperature) === 'warm');
+  const selfServeTargets = targets.filter((target) => {
+    return target.stage === TARGETED_STAGE
+      && normalizeText(target.temperature) !== 'warm'
+      && normalizeText(target.source) === 'github'
+      && isSelfServeTarget(target);
+  });
   const coldTargets = targets.filter((target) => {
     return target.stage === TARGETED_STAGE
       && normalizeText(target.temperature) !== 'warm'
-      && normalizeText(target.source) === 'github';
+      && normalizeText(target.source) === 'github'
+      && !isSelfServeTarget(target);
   });
 
   return {
@@ -176,6 +191,7 @@ function buildOutreachTargetsReport({
     },
     followUpTargets,
     warmTargets,
+    selfServeTargets,
     coldTargets,
     totalTargets: targets.length,
   };
@@ -215,6 +231,9 @@ function renderOutreachTargetsMarkdown(report = {}) {
   const warmLines = report.warmTargets.length
     ? report.warmTargets.flatMap((target, index) => renderTargetMarkdown(target, index))
     : ['- No warm discovery targets are currently ready.', ''];
+  const selfServeLines = report.selfServeTargets.length
+    ? report.selfServeTargets.flatMap((target, index) => renderTargetMarkdown(target, index))
+    : ['- No self-serve close targets are currently ready.', ''];
   const coldLines = report.coldTargets.length
     ? report.coldTargets.flatMap((target, index) => renderTargetMarkdown(target, index))
     : ['- No cold GitHub targets are currently ready.', ''];
@@ -233,6 +252,7 @@ function renderOutreachTargetsMarkdown(report = {}) {
     `- Headline: ${report.headline || 'No verified revenue and no active pipeline.'}`,
     `- Follow-ups now: ${report.followUpTargets.length}`,
     `- Warm discovery ready: ${report.warmTargets.length}`,
+    `- Self-serve closes ready: ${report.selfServeTargets.length}`,
     `- Cold GitHub ready: ${report.coldTargets.length}`,
     `- Sales ledger tracked leads: ${report.pipelineTrackedLeadCount || 0}${report.pipelineExists ? '' : ' (pipeline file not created yet)'}`,
     `- Proof rule: ${report.proofRule}`,
@@ -244,6 +264,8 @@ function renderOutreachTargetsMarkdown(report = {}) {
     ...followUpLines,
     '## Warm Discovery',
     ...warmLines,
+    '## Self-Serve Closes',
+    ...selfServeLines,
     '## Cold GitHub',
     ...coldLines,
     '## Core Links',
@@ -272,7 +294,9 @@ function main(options = {}) {
   const markdown = renderOutreachTargetsMarkdown(report);
   const docsPath = writeOutreachTargetsDoc(markdown, options.outPath || DEFAULT_DOCS_PATH);
   console.log(`Updated ${docsPath} from the current evidence-backed queue.`);
-  console.log(`Warm: ${report.warmTargets.length} | Cold: ${report.coldTargets.length} | Follow-up: ${report.followUpTargets.length}`);
+  console.log(
+    `Warm: ${report.warmTargets.length} | Self-serve: ${report.selfServeTargets.length} | Cold: ${report.coldTargets.length} | Follow-up: ${report.followUpTargets.length}`
+  );
   return {
     docsPath,
     report,
