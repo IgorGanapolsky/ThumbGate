@@ -998,6 +998,7 @@ test('operator handoff markdown prioritizes follow-ups, then warm discovery, the
   assert.match(markdown, /Follow Up Now/);
   assert.match(markdown, /Active follow-ups: 1/);
   assert.match(markdown, /Warm targets ready now: 1/);
+  assert.match(markdown, /Self-serve closes ready now: 0/);
   assert.match(markdown, /Cold GitHub targets ready next: 1/);
   assert.ok(markdown.indexOf('@follow_builder') < markdown.indexOf('@warm_builder'));
   assert.ok(markdown.indexOf('@warm_builder') < markdown.indexOf('@builder'));
@@ -1082,6 +1083,38 @@ test('operator handoff payload mirrors the ranked queue and sales commands in ma
         temperature: 'cold',
         source: 'github',
         channel: 'github',
+        username: 'self_serve_builder',
+        company: 'Solo Builder LLC',
+        contactUrl: 'https://solo.builder.dev/',
+        contactSurfaces: [
+          {
+            label: 'Website',
+            url: 'https://solo.builder.dev/',
+          },
+          {
+            label: 'GitHub profile',
+            url: 'https://github.com/self_serve_builder',
+          },
+        ],
+        repoName: 'claude-code-hooks',
+        repoUrl: 'https://github.com/self_serve_builder/claude-code-hooks',
+        evidenceScore: 9,
+        evidence: ['self-serve agent tooling', 'updated in the last 7 days'],
+        motion: 'pro',
+        motionLabel: catalog.pro.label,
+        motionReason: 'Target looks like a local hook surface, so the guide-to-Pro lane is the faster close.',
+        pipelineStage: 'targeted',
+        proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+        cta: catalog.pro.cta,
+        firstTouchDraft: 'Start with the setup guide, then move to Pro if the tool path fits.',
+        painConfirmedFollowUpDraft: 'If you want the tool path, I can send the live Pro checkout.',
+        selfServeFollowUpDraft: 'Use the setup guide first, then move to Pro.',
+        checkoutCloseDraft: 'If you are ready for the self-serve lane, here is the live Pro checkout.',
+      },
+      {
+        temperature: 'cold',
+        source: 'github',
+        channel: 'github',
         username: 'builder',
         company: 'Builder Labs',
         contactUrl: 'https://builder.dev/',
@@ -1114,17 +1147,23 @@ test('operator handoff payload mirrors the ranked queue and sales commands in ma
   assert.equal(payload.summary.revenueState, 'post-first-dollar');
   assert.equal(payload.summary.activeFollowUps, 1);
   assert.equal(payload.summary.warmTargetsReadyNow, 1);
+  assert.equal(payload.summary.selfServeTargetsReadyNow, 1);
   assert.equal(payload.summary.coldGitHubTargetsReadyNext, 1);
   assert.equal(payload.importCommand, 'npm run sales:pipeline -- import --source docs/marketing/gtm-revenue-loop.json');
-  assert.equal(payload.sections[0].key, 'follow_up_now');
-  assert.equal(payload.sections[0].targets[0].label, '@follow_builder - r/ClaudeCode');
-  assert.equal(payload.sections[0].targets[0].salesCommands.markSprintIntake.includes('reddit_follow_builder_'), true);
-  assert.equal(payload.sections[0].targets[0].salesCommands.markPaid.includes('reddit_follow_builder_'), true);
-  assert.match(payload.sections[0].targets[0].selfServeFollowUpDraft, /guide/);
-  assert.match(payload.sections[0].targets[0].checkoutCloseDraft, /Commercial truth:/);
-  assert.equal(payload.sections[1].targets[0].contactSurfaces[0].label, 'Reddit DM');
-  assert.equal(payload.sections[2].targets[0].label, '@builder - production-mcp-server');
-  assert.equal(payload.sections[2].targets[0].contactSurfaces[1].url, 'https://github.com/builder');
+  const followUpSection = payload.sections.find((section) => section.key === 'follow_up_now');
+  const warmSection = payload.sections.find((section) => section.key === 'send_now_warm_discovery');
+  const selfServeSection = payload.sections.find((section) => section.key === 'close_now_self_serve_pro');
+  const coldSection = payload.sections.find((section) => section.key === 'seed_next_cold_github');
+  assert.equal(followUpSection.targets[0].label, '@follow_builder - r/ClaudeCode');
+  assert.equal(followUpSection.targets[0].salesCommands.markSprintIntake.includes('reddit_follow_builder_'), true);
+  assert.equal(followUpSection.targets[0].salesCommands.markPaid.includes('reddit_follow_builder_'), true);
+  assert.match(followUpSection.targets[0].selfServeFollowUpDraft, /guide/);
+  assert.match(followUpSection.targets[0].checkoutCloseDraft, /Commercial truth:/);
+  assert.equal(warmSection.targets[0].contactSurfaces[0].label, 'Reddit DM');
+  assert.equal(selfServeSection.targets[0].label, '@self_serve_builder - claude-code-hooks');
+  assert.equal(selfServeSection.targets[0].motionLabel, catalog.pro.label);
+  assert.equal(coldSection.targets[0].label, '@builder - production-mcp-server');
+  assert.equal(coldSection.targets[0].contactSurfaces[1].url, 'https://github.com/builder');
 });
 
 test('first-touch outreach does not push proof before pain is confirmed', () => {
@@ -1764,8 +1803,8 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.match(operatorHandoff, /Send Now: Warm Discovery/);
     assert.match(operatorHandoff, /Pipeline lead id: reddit_builder_production_mcp_server/);
     assert.match(operatorHandoff, /Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
-    assert.equal(operatorHandoffJson.sections[1].label, 'Send Now: Warm Discovery');
-    assert.equal(operatorHandoffJson.sections[1].targets[0].pipelineLeadId, 'reddit_builder_production_mcp_server');
+    assert.equal(operatorHandoffJson.sections.find((section) => section.key === 'send_now_warm_discovery').label, 'Send Now: Warm Discovery');
+    assert.equal(operatorHandoffJson.sections.find((section) => section.key === 'send_now_warm_discovery').targets[0].pipelineLeadId, 'reddit_builder_production_mcp_server');
   } finally {
     fs.rmSync(reportDir, { recursive: true, force: true });
   }
@@ -2044,13 +2083,14 @@ test('operator handoff falls back to repo contact surface and outreach angle whe
 
   const markdown = renderOperatorHandoffMarkdown(report);
   const payload = buildOperatorHandoffPayload(report);
+  const coldSection = payload.sections.find((section) => section.key === 'seed_next_cold_github');
 
   assert.match(markdown, /- Contact surface: https:\/\/github\.com\/example\/autonomy-gates/);
   assert.match(markdown, /- Contact surfaces: n\/a/);
   assert.match(markdown, /- Why now: Lead with one approval boundary before rollout\./);
-  assert.equal(payload.sections[2].targets[0].contactSurface, 'https://github.com/example/autonomy-gates');
-  assert.deepEqual(payload.sections[2].targets[0].contactSurfaces, []);
-  assert.equal(payload.sections[2].targets[0].whyNow, 'Lead with one approval boundary before rollout.');
+  assert.equal(coldSection.targets[0].contactSurface, 'https://github.com/example/autonomy-gates');
+  assert.deepEqual(coldSection.targets[0].contactSurfaces, []);
+  assert.equal(coldSection.targets[0].whyNow, 'Lead with one approval boundary before rollout.');
 });
 
 test('operator handoff payload preserves explicit summary contact-surface and why-now fields', () => {
@@ -2102,11 +2142,12 @@ test('operator handoff payload preserves explicit summary contact-surface and wh
 
   const markdown = renderOperatorHandoffMarkdown(report);
   const payload = buildOperatorHandoffPayload(report);
+  const warmSection = payload.sections.find((section) => section.key === 'send_now_warm_discovery');
 
   assert.match(markdown, /- Contact surface: https:\/\/operators\.example\/hello/);
   assert.match(markdown, /- Why now: Lead with the operator intake that already matches their rollout workflow\./);
-  assert.equal(payload.sections[1].targets[0].contactSurface, 'https://operators.example/hello');
-  assert.equal(payload.sections[1].targets[0].whyNow, 'Lead with the operator intake that already matches their rollout workflow.');
+  assert.equal(warmSection.targets[0].contactSurface, 'https://operators.example/hello');
+  assert.equal(warmSection.targets[0].whyNow, 'Lead with the operator intake that already matches their rollout workflow.');
 });
 
 test('operator handoff falls back to n/a when no contact surface or why-now context exists', () => {
@@ -2147,11 +2188,12 @@ test('operator handoff falls back to n/a when no contact surface or why-now cont
 
   const markdown = renderOperatorHandoffMarkdown(report);
   const payload = buildOperatorHandoffPayload(report);
+  const coldSection = payload.sections.find((section) => section.key === 'seed_next_cold_github');
 
   assert.match(markdown, /- Contact surface: n\/a/);
   assert.match(markdown, /- Why now: n\/a/);
-  assert.equal(payload.sections[2].targets[0].contactSurface, 'n/a');
-  assert.equal(payload.sections[2].targets[0].whyNow, '');
+  assert.equal(coldSection.targets[0].contactSurface, 'n/a');
+  assert.equal(coldSection.targets[0].whyNow, '');
 });
 
 test('runRevenueLoop writes an evidence-backed target queue with discovery warnings when GitHub search fails', async () => {
