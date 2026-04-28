@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-04-27T17:22:01.540Z",
+  "generatedAt": "2026-04-28T05:09:09.260Z",
   "summary": {
     "revenueState": "post-first-dollar",
     "headline": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.",
     "paidOrders": 2,
-    "checkoutStarts": 1,
+    "checkoutStarts": 0,
     "activeFollowUps": 0,
     "warmTargetsReadyNow": 4,
     "coldGitHubTargetsReadyNext": 6
@@ -517,41 +517,46 @@
         },
         {
           "rank": 5,
-          "label": "@yungookim - oh-my-pr",
-          "username": "yungookim",
-          "accountName": "yungookim",
-          "repoName": "oh-my-pr",
-          "repoUrl": "https://github.com/yungookim/oh-my-pr",
+          "label": "@freema - mcp-jira-stdio",
+          "username": "freema",
+          "accountName": "freema",
+          "repoName": "mcp-jira-stdio",
+          "repoUrl": "https://github.com/freema/mcp-jira-stdio",
           "temperature": "cold",
           "source": "github",
           "channel": "github",
           "pipelineStage": "targeted",
-          "pipelineLeadId": "github_yungookim_oh_my_pr",
+          "pipelineLeadId": "github_freema_mcp_jira_stdio",
           "nextOperatorStep": "Send the first-touch draft and log the outreach in the sales pipeline.",
           "pipelineUpdatedAt": "",
-          "contactSurface": "https://github.com/yungookim",
+          "contactSurface": "http://www.tomasgrasl.cz/",
           "contactSurfaces": [
             {
+              "label": "Website",
+              "url": "http://www.tomasgrasl.cz/"
+            },
+            {
               "label": "GitHub profile",
-              "url": "https://github.com/yungookim"
+              "url": "https://github.com/freema"
             },
             {
               "label": "Repository",
-              "url": "https://github.com/yungookim/oh-my-pr"
+              "url": "https://github.com/freema/mcp-jira-stdio"
             }
           ],
           "company": "",
-          "evidenceScore": 12,
+          "evidenceScore": 13,
           "evidence": [
             "workflow control surface",
             "business-system integration",
-            "39 GitHub stars",
+            "agent infrastructure",
+            "11 GitHub stars",
             "updated in the last 7 days"
           ],
           "evidenceSources": [
             {
               "label": "Target signal",
-              "url": "https://github.com/yungookim/oh-my-pr",
+              "url": "https://github.com/freema/mcp-jira-stdio",
               "reason": "Source of the workflow or buyer signal behind this outreach row."
             },
             {
@@ -569,57 +574,53 @@
           "whyNow": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
           "proofRule": "Use proof pack only after the buyer confirms pain.",
           "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
-          "firstTouchDraft": "Hey @yungookim, saw you're shipping `oh-my-pr`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
-          "painConfirmedFollowUpDraft": "If `oh-my-pr` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+          "firstTouchDraft": "Hey @freema, saw you're shipping `mcp-jira-stdio`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+          "painConfirmedFollowUpDraft": "If `mcp-jira-stdio` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
           "salesCommands": {
-            "markContacted": "npm run sales:pipeline -- advance --lead 'github_yungookim_oh_my_pr' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markReplied": "npm run sales:pipeline -- advance --lead 'github_yungookim_oh_my_pr' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_yungookim_oh_my_pr' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_yungookim_oh_my_pr' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_yungookim_oh_my_pr' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'"
+            "markContacted": "npm run sales:pipeline -- advance --lead 'github_freema_mcp_jira_stdio' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markReplied": "npm run sales:pipeline -- advance --lead 'github_freema_mcp_jira_stdio' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_freema_mcp_jira_stdio' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_freema_mcp_jira_stdio' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_freema_mcp_jira_stdio' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'"
           }
         },
         {
           "rank": 6,
-          "label": "@tarinagarwal - lgtm-feedback",
-          "username": "tarinagarwal",
-          "accountName": "tarinagarwal",
-          "repoName": "lgtm-feedback",
-          "repoUrl": "https://github.com/tarinagarwal/lgtm-feedback",
+          "label": "@salacoste - mcp-n8n-workflow-builder",
+          "username": "salacoste",
+          "accountName": "salacoste",
+          "repoName": "mcp-n8n-workflow-builder",
+          "repoUrl": "https://github.com/salacoste/mcp-n8n-workflow-builder",
           "temperature": "cold",
           "source": "github",
           "channel": "github",
           "pipelineStage": "targeted",
-          "pipelineLeadId": "github_tarinagarwal_lgtm_feedback",
+          "pipelineLeadId": "github_salacoste_mcp_n8n_workflow_builder",
           "nextOperatorStep": "Send the first-touch draft and log the outreach in the sales pipeline.",
           "pipelineUpdatedAt": "",
-          "contactSurface": "https://tarinagarwal.in/",
+          "contactSurface": "https://github.com/salacoste",
           "contactSurfaces": [
             {
-              "label": "Website",
-              "url": "https://tarinagarwal.in/"
-            },
-            {
               "label": "GitHub profile",
-              "url": "https://github.com/tarinagarwal"
+              "url": "https://github.com/salacoste"
             },
             {
               "label": "Repository",
-              "url": "https://github.com/tarinagarwal/lgtm-feedback"
+              "url": "https://github.com/salacoste/mcp-n8n-workflow-builder"
             }
           ],
           "company": "",
           "evidenceScore": 12,
           "evidence": [
             "workflow control surface",
-            "production or platform workflow",
-            "business-system integration",
-            "updated in the last 30 days"
+            "agent infrastructure",
+            "221 GitHub stars",
+            "updated in the last 7 days"
           ],
           "evidenceSources": [
             {
               "label": "Target signal",
-              "url": "https://github.com/tarinagarwal/lgtm-feedback",
+              "url": "https://github.com/salacoste/mcp-n8n-workflow-builder",
               "reason": "Source of the workflow or buyer signal behind this outreach row."
             },
             {
@@ -634,17 +635,17 @@
             }
           ],
           "motionLabel": "Workflow Hardening Sprint",
-          "whyNow": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
+          "whyNow": "Lead with context-drift hardening for one workflow before proposing any broader agent platform story.",
           "proofRule": "Use proof pack only after the buyer confirms pain.",
           "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
-          "firstTouchDraft": "Hey @tarinagarwal, saw you're shipping `lgtm-feedback`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
-          "painConfirmedFollowUpDraft": "If `lgtm-feedback` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+          "firstTouchDraft": "Hey @salacoste, saw you're shipping `mcp-n8n-workflow-builder`. If one context, memory, or tool-use failure keeps repeating, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+          "painConfirmedFollowUpDraft": "If `mcp-n8n-workflow-builder` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
           "salesCommands": {
-            "markContacted": "npm run sales:pipeline -- advance --lead 'github_tarinagarwal_lgtm_feedback' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markReplied": "npm run sales:pipeline -- advance --lead 'github_tarinagarwal_lgtm_feedback' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_tarinagarwal_lgtm_feedback' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_tarinagarwal_lgtm_feedback' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_tarinagarwal_lgtm_feedback' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'"
+            "markContacted": "npm run sales:pipeline -- advance --lead 'github_salacoste_mcp_n8n_workflow_builder' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on context-drift hardening for one workflow before proposing any broader agent platform story.'",
+            "markReplied": "npm run sales:pipeline -- advance --lead 'github_salacoste_mcp_n8n_workflow_builder' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around context-drift hardening for one workflow before proposing any broader agent platform story.'",
+            "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_salacoste_mcp_n8n_workflow_builder' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for context-drift hardening for one workflow before proposing any broader agent platform story.'",
+            "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_salacoste_mcp_n8n_workflow_builder' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing context-drift hardening for one workflow before proposing any broader agent platform story.'",
+            "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_salacoste_mcp_n8n_workflow_builder' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for context-drift hardening for one workflow before proposing any broader agent platform story.'"
           }
         }
       ]

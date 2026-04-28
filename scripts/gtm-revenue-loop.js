@@ -545,6 +545,92 @@ function normalizeRevenueWindowSummary(summary = {}) {
   };
 }
 
+function normalizeRevenueWarning(entry = {}) {
+  const code = normalizeText(entry?.code, 120);
+  const message = normalizeText(entry?.message, 400);
+  if (!code && !message) {
+    return null;
+  }
+  return {
+    code: code || 'warning',
+    message: message || code,
+  };
+}
+
+function collectRevenueWarnings(summary = {}) {
+  const warnings = [];
+  const seen = new Set();
+  const addWarning = (entry) => {
+    const normalized = normalizeRevenueWarning(entry);
+    if (!normalized) {
+      return;
+    }
+    const key = `${normalized.code}::${normalized.message}`;
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    warnings.push(normalized);
+  };
+
+  const sourceDiagnostics = summary?.sourceDiagnostics || {};
+  if (Array.isArray(sourceDiagnostics.warnings)) {
+    sourceDiagnostics.warnings.forEach(addWarning);
+  }
+
+  for (const fileDiagnostics of Object.values(sourceDiagnostics.files || {})) {
+    if (Array.isArray(fileDiagnostics?.warnings)) {
+      fileDiagnostics.warnings.forEach(addWarning);
+    }
+  }
+
+  return warnings;
+}
+
+function formatCoverageMetric(value) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) {
+    return 'n/a';
+  }
+  const normalized = numericValue > 1 ? numericValue : numericValue * 100;
+  return `${normalized.toFixed(1)}%`;
+}
+
+function buildRevenueEvidenceStatus(summary = {}, { source = '', fallbackReason = '' } = {}) {
+  const warnings = collectRevenueWarnings(summary);
+  const warningCodes = warnings.map((entry) => normalizeText(entry.code).toLowerCase()).filter(Boolean);
+  const normalizedSource = normalizeText(source) || 'unknown';
+  const normalizedFallbackReason = normalizeText(fallbackReason) || null;
+  const dataQuality = summary?.dataQuality || {};
+  const hasInstrumentationGap = Boolean(normalizedFallbackReason) && warningCodes.some((code) => (
+    code === 'telemetry_missing'
+    || code === 'key_store_missing'
+    || code === 'funnel_ledger_missing'
+    || code === 'revenue_ledger_missing'
+  ));
+
+  let proofStatus = 'live-proof-available';
+  if (hasInstrumentationGap) {
+    proofStatus = 'local-fallback-missing-instrumentation';
+  } else if (normalizedFallbackReason) {
+    proofStatus = 'local-fallback';
+  } else if (normalizedSource === 'local') {
+    proofStatus = 'local-only';
+  }
+
+  return {
+    proofStatus,
+    hasInstrumentationGap,
+    source: normalizedSource,
+    fallbackReason: normalizedFallbackReason,
+    warnings,
+    warningCodes,
+    telemetryCoverage: Number(dataQuality.telemetryCoverage || 0),
+    attributionCoverage: Number(dataQuality.attributionCoverage || 0),
+    amountKnownCoverage: Number(dataQuality.amountKnownCoverage || 0),
+  };
+}
+
 async function resolveRevenueLoopSummary(options = {}) {
   const {
     getOperationalBillingSummaryFn = getOperationalBillingSummary,
@@ -582,8 +668,37 @@ async function resolveRevenueLoopSummary(options = {}) {
   }
 }
 
-function deriveRevenueDirective(summary = {}, motionCatalog = buildMotionCatalog()) {
+function deriveRevenueDirective(
+  summary = {},
+  motionCatalog = buildMotionCatalog(),
+  evidenceOptions = {}
+) {
   const snapshot = summarizeCommercialSnapshot(summary);
+  const evidenceStatus = buildRevenueEvidenceStatus(summary, evidenceOptions);
+
+  if (
+    evidenceStatus.hasInstrumentationGap
+    && snapshot.paidOrders === 0
+    && snapshot.bookedRevenueCents === 0
+    && snapshot.checkoutStarts === 0
+    && snapshot.uniqueLeads === 0
+    && snapshot.sprintLeads === 0
+    && snapshot.qualifiedSprintLeads === 0
+  ) {
+    return {
+      state: 'instrumentation-gap',
+      objective: 'Restore proof-ready telemetry before scaling founder-led workflow hardening.',
+      primaryMotion: motionCatalog.sprint.key,
+      secondaryMotion: motionCatalog.pro.key,
+      headline: 'Revenue proof is unavailable in this workspace. Restore telemetry, lead capture, and attribution before scaling outreach.',
+      actions: [
+        'Restore telemetry, funnel, revenue, and key-store ledgers before reusing any traction or conversion claim.',
+        'Regenerate the GTM pack from live evidence before sending marketplace copy or outreach that references proof.',
+        'Keep founder-led Workflow Hardening Sprint outreach active, but pitch one repeated workflow failure instead of implying traction you cannot inspect in this run.',
+        'Track every lead as contacted -> replied -> call booked -> checkout or sprint intake -> paid.',
+      ],
+    };
+  }
 
   if (snapshot.paidOrders > 0 || snapshot.bookedRevenueCents > 0) {
     return {
@@ -1100,6 +1215,7 @@ async function generateOutreachMessages(targets, motionCatalog = buildMotionCata
 
 function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog, directive, targets }) {
   const snapshot = summarizeCommercialSnapshot(summary);
+  const evidenceStatus = buildRevenueEvidenceStatus(summary, { source, fallbackReason });
   const currentTruth = {
     publicSelfServeOffer: motionCatalog.pro.label,
     publicSelfServeCta: motionCatalog.pro.cta,
@@ -1118,6 +1234,8 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
     directive,
     currentTruth,
     evidenceBackstop: buildEvidenceBackstop(currentTruth),
+    dataQuality: summary?.dataQuality || {},
+    evidenceStatus,
     snapshot,
     targets: targets.map((target) => {
       const followUpMessage = target.followUpMessage
@@ -1242,9 +1360,12 @@ function buildMarketplaceCopy(report) {
         ? `${target.username}/${target.repoName}`
         : `@${target.username}`,
       temperature: target.temperature || 'cold',
-      motion: target.motionLabel || resolveMotionLabel(report, target.motion),
-      why: target.motionReason || target.outreachAngle || '',
+        motion: target.motionLabel || resolveMotionLabel(report, target.motion),
+        why: target.motionReason || target.outreachAngle || '',
     }));
+  const operatorGuardrail = report.evidenceStatus?.hasInstrumentationGap
+    ? 'This run is on local fallback with missing telemetry or revenue ledgers. Keep listing copy focused on workflow-hardening pain and proof links; do not reuse traction language until this pack is regenerated from live evidence.'
+    : '';
 
   return {
     generatedAt: report.generatedAt,
@@ -1281,6 +1402,8 @@ function buildMarketplaceCopy(report) {
     topSignals: signalThemes,
     sampleTargets,
     evidenceBackstop: buildEvidenceBackstop(report.currentTruth || {}),
+    evidenceStatus: report.evidenceStatus || null,
+    operatorGuardrail,
     proofLinks: [
       report.currentTruth?.commercialTruthLink || '',
       report.currentTruth?.verificationEvidenceLink || '',
@@ -1346,6 +1469,16 @@ function renderRevenueLoopMarkdown(report) {
     `- Source rule: ${report.evidenceBackstop?.sourceRule || 'Every listing, queue row, and pain-confirmed follow-up must inherit truth and proof links.'}`,
     ...((report.evidenceBackstop?.claimGuardrails || []).map((guardrail) => `- ${guardrail}`)),
     ...((report.evidenceBackstop?.proofLinks || []).map((link) => `- Proof link: ${link}`)),
+    '',
+    '## Evidence Availability',
+    `- Proof status: ${report.evidenceStatus?.proofStatus || 'unknown'}`,
+    `- Revenue source: ${report.source}${fallbackReason}`,
+    `- Telemetry coverage: ${formatCoverageMetric(report.evidenceStatus?.telemetryCoverage)}`,
+    `- Attribution coverage: ${formatCoverageMetric(report.evidenceStatus?.attributionCoverage)}`,
+    `- Known-amount coverage: ${formatCoverageMetric(report.evidenceStatus?.amountKnownCoverage)}`,
+    ...((report.evidenceStatus?.warnings || []).length
+      ? report.evidenceStatus.warnings.map((warning) => `- Warning [${warning.code}]: ${warning.message}`)
+      : ['- Warnings: none recorded in this run.']),
     '',
     '## Revenue Snapshot',
     `- Paid orders: ${report.snapshot.paidOrders}`,
@@ -1676,6 +1809,13 @@ function renderMarketplaceCopyMarkdown(pack) {
     '',
     'This pack is operator-ready listing copy derived from the current GTM revenue loop. It is not proof of sent outreach, installs, or revenue by itself.',
     '',
+    ...(pack.operatorGuardrail
+      ? [
+        '## Operator Guardrail',
+        `- ${pack.operatorGuardrail}`,
+        '',
+      ]
+      : []),
     '## Listing Headline',
     pack.headline,
     '',
@@ -1851,7 +1991,7 @@ async function runRevenueLoop(options = {}) {
   const motionCatalog = buildMotionCatalog(links);
   const warmTargets = getWarmOutboundTargets(motionCatalog.sprint.cta);
   const { source, summary, fallbackReason } = await resolveRevenueLoopSummary(options);
-  const directive = deriveRevenueDirective(summary, motionCatalog);
+  const directive = deriveRevenueDirective(summary, motionCatalog, { source, fallbackReason });
   const { targets, errors } = await prospectTargets(options.maxTargets || 6, {
     fetchImpl: options.fetchImpl || globalThis.fetch,
     githubToken: options.githubToken || '',

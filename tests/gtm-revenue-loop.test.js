@@ -106,6 +106,38 @@ test('revenue directives switch once interest or paid orders exist', () => {
   assert.match(postFirstDollar.headline, /Verified booked revenue exists/);
 });
 
+test('revenue directive falls back to instrumentation gap when local proof is unavailable', () => {
+  const catalog = buildMotionCatalog(buildRevenueLinks());
+  const directive = deriveRevenueDirective({
+    revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+    trafficMetrics: { checkoutStarts: 0 },
+    signups: { uniqueLeads: 0 },
+    pipeline: {
+      workflowSprintLeads: { total: 0 },
+      qualifiedWorkflowSprintLeads: { total: 0 },
+    },
+    dataQuality: {
+      telemetryCoverage: 0,
+      attributionCoverage: 0,
+      amountKnownCoverage: 0,
+    },
+    sourceDiagnostics: {
+      warnings: [
+        { code: 'telemetry_missing', message: 'Telemetry is missing from both the active and legacy feedback directories.' },
+        { code: 'revenue_ledger_missing', message: 'Revenue events are missing from both the active and legacy feedback directories.' },
+      ],
+    },
+  }, catalog, {
+    source: 'local',
+    fallbackReason: 'Hosted operational summary is not configured.',
+  });
+
+  assert.equal(directive.state, 'instrumentation-gap');
+  assert.match(directive.headline, /Revenue proof is unavailable in this workspace/);
+  assert.ok(directive.actions.some((entry) => /Restore telemetry, funnel, revenue, and key-store ledgers/i.test(entry)));
+  assert.ok(directive.actions.some((entry) => /Regenerate the GTM pack from live evidence/i.test(entry)));
+});
+
 test('resolveRevenueLoopSummary prefers hosted revenue status when local operator auth is missing', async () => {
   const result = await resolveRevenueLoopSummary({
     getOperationalBillingSummaryFn: async () => ({
@@ -1528,6 +1560,52 @@ test('marketplace copy keeps the Pro CTA when no target currently uses the Pro m
   assert.equal(pack.recommendedCtas[2].cta, catalog.pro.cta);
   assert.match(markdown, /Pro at \$19\/mo or \$149\/yr: https:\/\/thumbgate-production\.up\.railway\.app\/checkout\/pro/);
   assert.doesNotMatch(markdown, /cta unavailable in this run/);
+});
+
+test('revenue loop markdown and marketplace pack expose local instrumentation gaps', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const report = buildRevenueLoopReport({
+    source: 'local',
+    fallbackReason: 'Hosted operational summary is not configured.',
+    summary: {
+      revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+      dataQuality: {
+        telemetryCoverage: 0,
+        attributionCoverage: 0,
+        amountKnownCoverage: 0,
+      },
+      sourceDiagnostics: {
+        warnings: [
+          { code: 'telemetry_missing', message: 'Telemetry is missing from both the active and legacy feedback directories.' },
+          { code: 'funnel_ledger_missing', message: 'Funnel events are missing from both the active and legacy feedback directories.' },
+        ],
+      },
+    },
+    motionCatalog: catalog,
+    directive: {
+      state: 'instrumentation-gap',
+      objective: 'Restore proof-ready telemetry before scaling founder-led workflow hardening.',
+      headline: 'Revenue proof is unavailable in this workspace. Restore telemetry, lead capture, and attribution before scaling outreach.',
+      primaryMotion: 'sprint',
+      secondaryMotion: 'pro',
+      actions: ['Restore telemetry first.'],
+    },
+    targets: [],
+  });
+
+  const markdown = renderRevenueLoopMarkdown(report);
+  const pack = buildMarketplaceCopy(report);
+  const packMarkdown = renderMarketplaceCopyMarkdown(pack);
+
+  assert.match(markdown, /## Evidence Availability/);
+  assert.match(markdown, /Proof status: local-fallback-missing-instrumentation/);
+  assert.match(markdown, /Warning \[telemetry_missing\]/);
+  assert.match(packMarkdown, /## Operator Guardrail/);
+  assert.match(packMarkdown, /do not reuse traction language until this pack is regenerated from live evidence/i);
 });
 
 test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for operator import', () => {
