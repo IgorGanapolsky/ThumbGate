@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-28T09:17:27.929Z",
+  "generatedAt": "2026-04-28T10:16:20.911Z",
   "state": "post-first-dollar",
   "headline": "Harden one AI-agent workflow before you roll it out.",
   "shortDescription": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof.",
@@ -36,7 +36,7 @@
       "label": "Workflow control surfaces",
       "summary": "The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive.",
       "listingAngle": "Lead with one repeated workflow failure, then show how ThumbGate turns it into an enforceable pre-action gate.",
-      "count": 5,
+      "count": 6,
       "examples": [
         "Adqui9608/ai-code-review-agent",
         "DGouron/review-flow",
@@ -60,7 +60,7 @@
       "label": "Business-system workflow approvals",
       "summary": "Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof.",
       "listingAngle": "Lead with approval boundaries, rollback safety, and proof for one workflow.",
-      "count": 3,
+      "count": 4,
       "examples": [
         "Adqui9608/ai-code-review-agent",
         "DGouron/review-flow",
