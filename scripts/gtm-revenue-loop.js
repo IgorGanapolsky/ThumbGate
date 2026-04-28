@@ -1501,14 +1501,19 @@ function buildOperatorPriorityTargetSummary(target, index) {
     pipelineLeadId: normalizeText(enrichedTarget.pipelineLeadId) || 'n/a',
     nextOperatorStep: normalizeText(enrichedTarget.nextOperatorAction) || buildNextOperatorAction(enrichedTarget.pipelineStage),
     pipelineUpdatedAt: normalizeText(enrichedTarget.pipelineUpdatedAt),
-    contactSurface: normalizeText(enrichedTarget.contactUrl) || normalizeText(enrichedTarget.repoUrl) || 'n/a',
+    contactSurface: normalizeText(enrichedTarget.contactSurface)
+      || normalizeText(enrichedTarget.contactUrl)
+      || normalizeText(enrichedTarget.repoUrl)
+      || 'n/a',
     contactSurfaces: dedupeContactSurfaces(enrichedTarget.contactSurfaces),
     company: normalizeText(enrichedTarget.company),
     evidenceScore: Number(enrichedTarget.evidenceScore || 0),
     evidence: Array.isArray(enrichedTarget.evidence) ? enrichedTarget.evidence : [],
     evidenceSources: Array.isArray(enrichedTarget.evidenceSources) ? enrichedTarget.evidenceSources : [],
     motionLabel: normalizeText(enrichedTarget.motionLabel),
-    whyNow: normalizeText(enrichedTarget.motionReason) || normalizeText(enrichedTarget.outreachAngle),
+    whyNow: normalizeText(enrichedTarget.whyNow)
+      || normalizeText(enrichedTarget.motionReason)
+      || normalizeText(enrichedTarget.outreachAngle),
     proofRule: normalizeText(enrichedTarget.proofPackTrigger) || 'Use proof pack only after the buyer confirms pain.',
     cta: normalizeText(enrichedTarget.cta),
     firstTouchDraft: normalizeText(enrichedTarget.firstTouchDraft || enrichedTarget.message),

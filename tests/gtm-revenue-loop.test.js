@@ -1947,6 +1947,62 @@ test('operator handoff falls back to repo contact surface and outreach angle whe
   assert.equal(payload.sections[2].targets[0].whyNow, 'Lead with one approval boundary before rollout.');
 });
 
+test('operator handoff payload preserves explicit summary contact-surface and why-now fields', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const report = {
+    generatedAt: '2026-04-28T00:22:35.266Z',
+    directive: {
+      state: 'cold-start',
+      objective: 'First 10 paying customers',
+      headline: 'No verified revenue and no active pipeline.',
+      primaryMotion: 'sprint',
+      secondaryMotion: 'pro',
+      actions: ['Lead with one workflow.'],
+    },
+    snapshot: {
+      paidOrders: 0,
+      bookedRevenueCents: 0,
+      checkoutStarts: 0,
+    },
+    targets: [{
+      temperature: 'warm',
+      source: 'github',
+      channel: 'github',
+      username: 'builder',
+      accountName: 'builder',
+      contactSurface: 'https://operators.example/hello',
+      contactUrl: 'https://builder.example/contact',
+      contactSurfaces: [
+        { label: 'Operator form', url: 'https://operators.example/hello' },
+      ],
+      repoName: 'production-mcp-server',
+      repoUrl: 'https://github.com/example/production-mcp-server',
+      updatedAt: '2026-04-20T00:00:00.000Z',
+      pipelineStage: 'targeted',
+      pipelineLeadId: 'github_builder_production_mcp_server',
+      evidenceScore: 9,
+      evidence: ['workflow control surface', '42 GitHub stars'],
+      motionLabel: catalog.sprint.label,
+      whyNow: 'Lead with the operator intake that already matches their rollout workflow.',
+      motionReason: 'This fallback should not win when whyNow exists.',
+      outreachAngle: 'This fallback should not win either.',
+      proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+      cta: catalog.sprint.cta,
+      firstTouchDraft: 'I can harden one workflow, then prove it.',
+      painConfirmedFollowUpDraft: 'If the workflow pain is real, I can send the proof pack.',
+    }],
+  };
+
+  const markdown = renderOperatorHandoffMarkdown(report);
+  const payload = buildOperatorHandoffPayload(report);
+
+  assert.match(markdown, /- Contact surface: https:\/\/operators\.example\/hello/);
+  assert.match(markdown, /- Why now: Lead with the operator intake that already matches their rollout workflow\./);
+  assert.equal(payload.sections[1].targets[0].contactSurface, 'https://operators.example/hello');
+  assert.equal(payload.sections[1].targets[0].whyNow, 'Lead with the operator intake that already matches their rollout workflow.');
+});
+
 test('runRevenueLoop writes an evidence-backed target queue with discovery warnings when GitHub search fails', async () => {
   const reportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-revenue-loop-'));
   const originalGeminiKey = process.env.GEMINI_API_KEY;
