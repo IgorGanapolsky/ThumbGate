@@ -1960,7 +1960,7 @@ function renderRevenueLoopCsv(report) {
       'markPaidCommand',
     ],
     ...targets.map((target) => {
-      const salesCommands = target.salesCommands || {};
+      const salesCommands = target.salesCommands;
       return [
         target.temperature || 'cold',
         target.source || 'github',
@@ -1976,7 +1976,7 @@ function renderRevenueLoopCsv(report) {
         target.offer,
         target.pipelineStage,
         target.pipelineLeadId,
-        target.nextOperatorAction || buildNextOperatorAction(target.pipelineStage),
+        target.nextOperatorAction,
         target.pipelineUpdatedAt,
         String(target.evidenceScore),
         target.evidence.join('; '),
@@ -1992,12 +1992,12 @@ function renderRevenueLoopCsv(report) {
         target.painConfirmedFollowUpDraft,
         target.selfServeFollowUpDraft,
         target.checkoutCloseDraft,
-        salesCommands.markContacted || '',
-        salesCommands.markReplied || '',
-        salesCommands.markCallBooked || '',
-        salesCommands.markCheckoutStarted || '',
-        salesCommands.markSprintIntake || '',
-        salesCommands.markPaid || '',
+        salesCommands.markContacted,
+        salesCommands.markReplied,
+        salesCommands.markCallBooked,
+        salesCommands.markCheckoutStarted,
+        salesCommands.markSprintIntake,
+        salesCommands.markPaid,
       ];
     }),
   ];
