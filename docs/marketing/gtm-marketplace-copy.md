@@ -6,14 +6,14 @@ This pack is operator-ready listing copy derived from the current GTM revenue lo
 Harden one AI-agent workflow before you roll it out.
 
 ## Short Description
-No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive.
+Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems.
 
 ## Long Description
-ThumbGate is a reliability gateway for AI coding workflows. It captures repeated failures, regenerates pre-action gates, and keeps approval boundaries, rollback safety, and proof attached to the workflow before the next risky tool call. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Primary motion: Workflow Hardening Sprint. Secondary motion: Pro at $19/mo or $149/yr after the buyer asks for the self-serve path.
+ThumbGate is a reliability gateway for AI coding workflows. It captures repeated failures, regenerates pre-action gates, and keeps approval boundaries, rollback safety, and proof attached to the workflow before the next risky tool call. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Primary motion: Workflow Hardening Sprint. Secondary motion: Pro at $19/mo or $149/yr after the buyer asks for the self-serve path.
 
 ## Listing Bullets
 - Turn repeated AI-agent mistakes into enforceable pre-action gates.
-- Lead with one repeated workflow failure and a founder-led diagnostic before any generic tool pitch.
+- Lead with approval boundaries, rollback safety, and proof for one workflow.
 - Route install-intent buyers through the proof-backed setup guide before direct checkout.
 - Primary offer: Workflow Hardening Sprint.
 - Secondary offer: Pro at $19/mo or $149/yr after the buyer asks for the tool path.
@@ -25,9 +25,9 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 - Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro
 
 ## Evidence-Backed Buyer Signals
+- Business-system workflow approvals (5): Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Examples: hatch3r/hatch3r, Adqui9608/ai-code-review-agent, DGouron/review-flow
 - Warm discovery workflows (4): Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Examples: @Deep_Ad1959, @game-of-kton, @leogodin217
-- Business-system workflow approvals (4): Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Examples: Adqui9608/ai-code-review-agent, DGouron/review-flow, arcasilesgroup/ai-engineering
-- Workflow control surfaces (4): The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Examples: Adqui9608/ai-code-review-agent, DGouron/review-flow, nihannihu/Omni-SRE
+- Production rollout proof (4): Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Examples: hatch3r/hatch3r, Adqui9608/ai-code-review-agent, nihannihu/Omni-SRE
 
 ## Proof Policy
 - Do not lead with proof links. Use Commercial Truth and Verification Evidence only after the buyer confirms pain.
@@ -44,7 +44,7 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 - @game-of-kton (warm): Warm Reddit engager already works on advanced agent memory, so discovery should center on one repeated failure pattern.
 - @leogodin217 (warm): Warm Reddit engager already described a mature workflow, so the next step is a targeted diagnostic on one failure mode.
 - @Enthu-Cutlet-1337 (warm): Warm Reddit engager already understands the adaptive-gate thesis, so offer one concrete workflow hardening diagnostic.
-- Adqui9608/ai-code-review-agent (cold): Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
+- hatch3r/hatch3r (cold): Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
 
 ## Proof Links
 - https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md

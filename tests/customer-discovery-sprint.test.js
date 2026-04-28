@@ -8,6 +8,7 @@ const path = require('node:path');
 const DOC_PATH = path.join(__dirname, '..', 'docs', 'CUSTOMER_DISCOVERY_SPRINT.md');
 const DOC = fs.readFileSync(DOC_PATH, 'utf8');
 const EXPECTED_ARTIFACTS = [
+  'OUTREACH_TARGETS.md',
   'gtm-revenue-loop.md',
   'gtm-revenue-loop.json',
   'gtm-marketplace-copy.md',
