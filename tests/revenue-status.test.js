@@ -279,6 +279,23 @@ test('getHostedAuditViaHttp reads hosted billing summary without Railway CLI', a
   assert.equal(hostedAudit.summaries['30d'].revenue.bookedRevenueCents, 4900);
 });
 
+test('getHostedAuditViaHttp surfaces a bounded timeout error', async () => {
+  await assert.rejects(
+    () => getHostedAuditViaHttp({
+      appOrigin: 'https://example.com',
+      apiKey: 'tg_test_key',
+      timeZone: 'America/New_York',
+      timeoutMs: 5,
+      fetchImpl: async (_url, { signal }) => new Promise((_, reject) => {
+        signal.addEventListener('abort', () => {
+          reject(signal.reason || Object.assign(new Error('aborted'), { name: 'AbortError' }));
+        }, { once: true });
+      }),
+    }),
+    /Hosted billing summary today timed out after 5ms/
+  );
+});
+
 test('generateRevenueStatusReport prefers hosted HTTP API when THUMBGATE_API_KEY is available', async () => {
   const runCalls = [];
   const report = await generateRevenueStatusReport({

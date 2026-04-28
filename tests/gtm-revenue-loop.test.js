@@ -12,6 +12,7 @@ const {
   buildMarketplaceCopy,
   buildMotionCatalog,
   buildPainConfirmedFollowUp,
+  buildRevenueEvidenceStatus,
   buildRevenueLoopReport,
   buildRevenueLinks,
   clampTargetCount,
@@ -104,6 +105,21 @@ test('revenue directives switch once interest or paid orders exist', () => {
   assert.match(pipelineActive.headline, /paid conversion is still zero/);
   assert.equal(postFirstDollar.state, 'post-first-dollar');
   assert.match(postFirstDollar.headline, /Verified booked revenue exists/);
+});
+
+test('revenue evidence status distinguishes hosted proof from local fallback states', () => {
+  assert.equal(
+    buildRevenueEvidenceStatus({ source: 'hosted-via-railway-env', fallbackReason: '' }).state,
+    'hosted-verified'
+  );
+  assert.equal(
+    buildRevenueEvidenceStatus({ source: 'local-unverified', fallbackReason: 'Hosted operational summary request timed out after 10000ms.' }).state,
+    'local-unverified'
+  );
+  assert.equal(
+    buildRevenueEvidenceStatus({ source: 'local', fallbackReason: 'Hosted operational summary is disabled.' }).state,
+    'local-only'
+  );
 });
 
 test('resolveRevenueLoopSummary prefers hosted revenue status when local operator auth is missing', async () => {
@@ -1103,6 +1119,61 @@ test('operator handoff payload mirrors the ranked queue and sales commands in ma
   assert.equal(payload.sections[1].targets[0].contactSurfaces[0].label, 'Reddit DM');
   assert.equal(payload.sections[2].targets[0].label, '@builder - production-mcp-server');
   assert.equal(payload.sections[2].targets[0].contactSurfaces[1].url, 'https://github.com/builder');
+});
+
+test('GTM markdown surfaces local-unverified revenue proof warnings for operators', () => {
+  const report = {
+    generatedAt: '2026-04-28T00:00:00.000Z',
+    source: 'local-unverified',
+    fallbackReason: 'Hosted operational summary request timed out after 10000ms.',
+    currentTruth: {
+      publicSelfServeOffer: 'Pro at $19/mo or $149/yr',
+      teamPilotOffer: 'Workflow Hardening Sprint',
+      commercialTruthLink: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md',
+      verificationEvidenceLink: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
+    },
+    evidenceBackstop: {
+      sourceRule: 'Every listing, queue row, and pain-confirmed follow-up must inherit truth and proof links.',
+      claimGuardrails: [
+        'Do not claim revenue, installs, or marketplace approval without direct command evidence.',
+      ],
+      proofLinks: [
+        'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md',
+      ],
+    },
+    evidenceStatus: buildRevenueEvidenceStatus({
+      source: 'local-unverified',
+      fallbackReason: 'Hosted operational summary request timed out after 10000ms.',
+    }),
+    directive: {
+      state: 'cold-start',
+      objective: 'Land the first 10 paying customers with founder-led workflow hardening.',
+      headline: 'No verified revenue and no active pipeline.',
+      primaryMotion: 'sprint',
+      secondaryMotion: 'pro',
+      actions: ['Directly contact qualified buyers with: "I will harden one AI-agent workflow for you."'],
+    },
+    snapshot: {
+      paidOrders: 0,
+      bookedRevenueCents: 0,
+      checkoutStarts: 0,
+      uniqueLeads: 0,
+      sprintLeads: 0,
+      qualifiedSprintLeads: 0,
+    },
+    targets: [],
+  };
+
+  const markdown = renderRevenueLoopMarkdown(report);
+  const handoff = renderOperatorHandoffMarkdown(report);
+  const marketplace = renderMarketplaceCopyMarkdown(buildMarketplaceCopy(report));
+
+  assert.match(markdown, /## Evidence Status/);
+  assert.match(markdown, /State: local-unverified/);
+  assert.match(markdown, /Do not cite paid orders, booked revenue, or traction from this artifact/);
+  assert.match(handoff, /Evidence status: local-unverified/);
+  assert.match(handoff, /Evidence note: Do not cite paid orders, booked revenue, or traction from this artifact/);
+  assert.match(marketplace, /Current evidence status: local-unverified\./);
 });
 
 test('first-touch outreach does not push proof before pain is confirmed', () => {

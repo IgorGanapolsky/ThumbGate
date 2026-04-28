@@ -1,7 +1,7 @@
 # GSD Revenue Loop
 
 Status: post-first-dollar
-Updated: 2026-04-28T00:21:01.659Z
+Updated: 2026-04-28T06:14:20.362Z
 
 This report is an operator artifact for landing the first 10 paying customers. It is not proof of sent messages or booked revenue by itself.
 Outbound rule: do not treat posts as sales. A lead only moves when it is tracked as contacted, replied, call booked, checkout/sprint, or paid.
@@ -24,11 +24,17 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 ## Revenue Snapshot
 - Paid orders: 2
 - Booked revenue: $20.00
-- Checkout starts: 1
-- Unique leads: 1
+- Checkout starts: 0
+- Unique leads: 0
 - Workflow sprint leads: 0
 - Qualified sprint leads: 0
 - Billing source: hosted-via-railway-env
+
+## Evidence Status
+- State: hosted-verified
+- Source: hosted-via-railway-env
+- Headline: Hosted billing proof was available for this run.
+- Operator note: Paid-order and booked-revenue fields in this artifact are backed by hosted billing summary evidence from this run.
 
 ## GSD Directive
 - Objective: Scale the first-10-customers loop with direct workflow hardening and self-serve follow-up.
@@ -148,7 +154,7 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Contact surfaces: GitHub profile: https://github.com/Adqui9608; Repository: https://github.com/Adqui9608/ai-code-review-agent
 - Company: n/a
 - Repo: https://github.com/Adqui9608/ai-code-review-agent
-- Repo last updated: 2026-04-27T20:46:32Z
+- Repo last updated: 2026-04-28T04:26:40Z
 - Evidence score: 15
 - Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, updated in the last 7 days
 - Evidence sources: Target signal: https://github.com/Adqui9608/ai-code-review-agent; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
@@ -240,7 +246,7 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Contact surfaces: Website: https://manki.dustinface.me/; GitHub profile: https://github.com/manki-review; Repository: https://github.com/manki-review/manki
 - Company: n/a
 - Repo: https://github.com/manki-review/manki
-- Repo last updated: 2026-04-27T15:02:18Z
+- Repo last updated: 2026-04-28T03:30:18Z
 - Evidence score: 13
 - Evidence: workflow control surface, business-system integration, agent infrastructure, 5 GitHub stars, updated in the last 7 days
 - Evidence sources: Target signal: https://github.com/manki-review/manki; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
@@ -252,25 +258,25 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - First-touch draft: Hey @manki-review, saw you're shipping `manki`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - Pain-confirmed follow-up: If `manki` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
-### @salacoste — mcp-n8n-workflow-builder
+### @oliver-kriska — claude-elixir-phoenix
 - Temperature: cold
 - Source: github / github
 - Pipeline stage: targeted
 - Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
 - Pipeline last updated: n/a
 - Offer: workflow_hardening_sprint
-- Contact: https://github.com/salacoste
-- Contact surfaces: GitHub profile: https://github.com/salacoste; Repository: https://github.com/salacoste/mcp-n8n-workflow-builder
+- Contact: https://github.com/oliver-kriska
+- Contact surfaces: GitHub profile: https://github.com/oliver-kriska; Repository: https://github.com/oliver-kriska/claude-elixir-phoenix
 - Company: n/a
-- Repo: https://github.com/salacoste/mcp-n8n-workflow-builder
-- Repo last updated: 2026-04-22T23:45:33Z
+- Repo: https://github.com/oliver-kriska/claude-elixir-phoenix
+- Repo last updated: 2026-04-28T05:10:39Z
 - Evidence score: 12
-- Evidence: workflow control surface, agent infrastructure, 221 GitHub stars, updated in the last 7 days
-- Evidence sources: Target signal: https://github.com/salacoste/mcp-n8n-workflow-builder; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Evidence: workflow control surface, agent infrastructure, 290 GitHub stars, updated in the last 7 days
+- Evidence sources: Target signal: https://github.com/oliver-kriska/claude-elixir-phoenix; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 - Outreach angle: Lead with context-drift hardening for one workflow before proposing any broader agent platform story.
 - Motion: Workflow Hardening Sprint
 - Why: Lead with context-drift hardening for one workflow before proposing any broader agent platform story.
 - Proof timing: Use proof pack only after the buyer confirms pain.
 - CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-- First-touch draft: Hey @salacoste, saw you're shipping `mcp-n8n-workflow-builder`. If one context, memory, or tool-use failure keeps repeating, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-- Pain-confirmed follow-up: If `mcp-n8n-workflow-builder` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- First-touch draft: Hey @oliver-kriska, saw you're shipping `claude-elixir-phoenix`. If one context, memory, or tool-use failure keeps repeating, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Pain-confirmed follow-up: If `claude-elixir-phoenix` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md

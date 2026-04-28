@@ -9,6 +9,7 @@ const {
 
 const DEFAULT_REPO = 'IgorGanapolsky/ThumbGate';
 const DEFAULT_RAILWAY_SERVICE = 'thumbgate';
+const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
 const HOSTED_WINDOWS = ['today', '30d', 'lifetime'];
 const RUNTIME_KEYS = [
   'THUMBGATE_FEEDBACK_DIR',
@@ -74,6 +75,75 @@ function centsToDollars(value) {
 
 function formatRatio(value) {
   return Number.isFinite(Number(value)) ? Number(value).toFixed(4) : '0.0000';
+}
+
+function resolveTimeoutMs(value, fallback = DEFAULT_REQUEST_TIMEOUT_MS) {
+  const parsed = Number(value ?? process.env.THUMBGATE_HOSTED_SUMMARY_TIMEOUT_MS);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function createTimeoutControl(timeoutMs, message) {
+  if (
+    !Number.isFinite(timeoutMs)
+    || timeoutMs <= 0
+    || typeof AbortController !== 'function'
+  ) {
+    return {
+      signal: undefined,
+      cancel() {},
+      timeoutError: null,
+    };
+  }
+
+  const controller = new AbortController();
+  const timeoutError = new Error(`${message} after ${timeoutMs}ms.`);
+  timeoutError.code = 'request_timeout';
+  const handle = setTimeout(() => {
+    controller.abort(timeoutError);
+  }, timeoutMs);
+  if (typeof handle.unref === 'function') {
+    handle.unref();
+  }
+
+  return {
+    signal: controller.signal,
+    cancel() {
+      clearTimeout(handle);
+    },
+    timeoutError,
+  };
+}
+
+function isTimedOutAbort(err, timeoutError, signal) {
+  return Boolean(
+    err === timeoutError
+    || err?.code === 'request_timeout'
+    || err?.name === 'TimeoutError'
+    || (err?.name === 'AbortError' && signal?.aborted)
+  );
+}
+
+async function fetchWithTimeout(url, options = {}, {
+  fetchImpl = fetch,
+  timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
+  message = 'Request timed out',
+} = {}) {
+  const timeoutControl = createTimeoutControl(timeoutMs, message);
+  try {
+    return await fetchImpl(url, {
+      ...options,
+      signal: timeoutControl.signal,
+    });
+  } catch (err) {
+    if (isTimedOutAbort(err, timeoutControl.timeoutError, timeoutControl.signal)) {
+      const timeoutErr = new Error(`${message} after ${timeoutMs}ms.`);
+      timeoutErr.code = 'request_timeout';
+      throw timeoutErr;
+    }
+    throw err;
+  } finally {
+    timeoutControl.cancel();
+  }
 }
 
 function normalizeWindowSummary(status, payload = {}) {
@@ -251,18 +321,29 @@ function getRepoVariables({ repo = DEFAULT_REPO, runCommandFn = runCommand } = {
   return parseGhVariableList(stdout);
 }
 
-async function probePublicRuntime(appOrigin) {
+async function probePublicRuntime(appOrigin, {
+  fetchImpl = fetch,
+  timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
+} = {}) {
   const healthUrl = new URL('/health', appOrigin);
   const rootUrl = new URL('/', appOrigin);
   const telemetryUrl = new URL('/v1/telemetry/ping', appOrigin);
 
-  const healthRes = await fetch(healthUrl);
+  const healthRes = await fetchWithTimeout(healthUrl, {}, {
+    fetchImpl,
+    timeoutMs,
+    message: 'Public health probe timed out',
+  });
   const healthJson = await healthRes.json();
-  const rootRes = await fetch(rootUrl);
+  const rootRes = await fetchWithTimeout(rootUrl, {}, {
+    fetchImpl,
+    timeoutMs,
+    message: 'Public root probe timed out',
+  });
   const rootHtml = await rootRes.text();
 
   const probeId = crypto.randomUUID();
-  const telemetryRes = await fetch(telemetryUrl, {
+  const telemetryRes = await fetchWithTimeout(telemetryUrl, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -282,6 +363,10 @@ async function probePublicRuntime(appOrigin) {
       utmCampaign: 'ops_live_audit',
       ctaId: 'ops_live_audit',
     }),
+  }, {
+    fetchImpl,
+    timeoutMs,
+    message: 'Telemetry probe timed out',
   });
 
   return {
@@ -382,6 +467,7 @@ async function getHostedAuditViaHttp({
   apiKey = process.env.THUMBGATE_API_KEY,
   timeZone = 'America/New_York',
   fetchImpl = fetch,
+  timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
 } = {}) {
   if (!apiKey) {
     throw new Error('THUMBGATE_API_KEY is not set for hosted billing summary audit.');
@@ -392,11 +478,15 @@ async function getHostedAuditViaHttp({
     const url = new URL('/v1/billing/summary', appOrigin);
     url.searchParams.set('window', window);
     url.searchParams.set('timezone', timeZone);
-    const response = await fetchImpl(url, {
+    const response = await fetchWithTimeout(url, {
       headers: {
         authorization: `Bearer ${apiKey}`,
         accept: 'application/json',
       },
+    }, {
+      fetchImpl,
+      timeoutMs,
+      message: `Hosted billing summary ${window} timed out`,
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -437,6 +527,7 @@ async function generateRevenueStatusReport({
   fetchPublicProbe = probePublicRuntime,
   fetchImpl = fetch,
   apiKey = process.env.THUMBGATE_API_KEY,
+  requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
 } = {}) {
   let repoVars = {};
   let repoVarError = null;
@@ -447,7 +538,10 @@ async function generateRevenueStatusReport({
   }
 
   const appOrigin = repoVars.THUMBGATE_PUBLIC_APP_ORIGIN || DEFAULT_PUBLIC_APP_ORIGIN;
-  const publicProbe = await fetchPublicProbe(appOrigin);
+  const publicProbe = await fetchPublicProbe(appOrigin, {
+    fetchImpl,
+    timeoutMs: resolveTimeoutMs(requestTimeoutMs),
+  });
   const hostedApiOrigin = repoVars.THUMBGATE_BILLING_API_BASE_URL || appOrigin;
   let hostedHttpError = null;
 
@@ -457,6 +551,7 @@ async function generateRevenueStatusReport({
       apiKey,
       timeZone,
       fetchImpl,
+      timeoutMs: resolveTimeoutMs(requestTimeoutMs),
     });
 
     return {

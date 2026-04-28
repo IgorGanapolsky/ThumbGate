@@ -21,6 +21,7 @@ const { resolveHostedBillingConfig } = require('./hosted-config');
 }());
 
 const OPERATOR_CONFIG_PATH = path.join(os.homedir(), '.config', 'thumbgate', 'operator.json');
+const DEFAULT_HOSTED_SUMMARY_TIMEOUT_MS = 10_000;
 
 function normalizeText(value) {
   if (value === undefined || value === null) return null;
@@ -39,6 +40,52 @@ function loadOperatorConfig(configPath = OPERATOR_CONFIG_PATH) {
   } catch {
     return { operatorKey: null, baseUrl: null };
   }
+}
+
+function resolveTimeoutMs(value, fallback = DEFAULT_HOSTED_SUMMARY_TIMEOUT_MS) {
+  const parsed = Number(value ?? process.env.THUMBGATE_HOSTED_SUMMARY_TIMEOUT_MS);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function createTimeoutControl(timeoutMs, message) {
+  if (
+    !Number.isFinite(timeoutMs)
+    || timeoutMs <= 0
+    || typeof AbortController !== 'function'
+  ) {
+    return {
+      signal: undefined,
+      cancel() {},
+      timeoutError: null,
+    };
+  }
+
+  const controller = new AbortController();
+  const timeoutError = new Error(`${message} after ${timeoutMs}ms.`);
+  timeoutError.code = 'hosted_summary_timeout';
+  const handle = setTimeout(() => {
+    controller.abort(timeoutError);
+  }, timeoutMs);
+  if (typeof handle.unref === 'function') {
+    handle.unref();
+  }
+
+  return {
+    signal: controller.signal,
+    cancel() {
+      clearTimeout(handle);
+    },
+    timeoutError,
+  };
+}
+
+function isTimedOutAbort(err, timeoutError, signal) {
+  return Boolean(
+    err === timeoutError
+    || err?.code === 'hosted_summary_timeout'
+    || err?.name === 'TimeoutError'
+    || (err?.name === 'AbortError' && signal?.aborted)
+  );
 }
 
 function shouldPreferHostedSummary() {
@@ -63,6 +110,8 @@ function resolveHostedSummaryConfig() {
 
 async function fetchHostedBillingSummary(options = {}, config = resolveHostedSummaryConfig()) {
   const analyticsWindow = resolveAnalyticsWindow(options);
+  const fetchImpl = options.fetchImpl || global.fetch;
+  const timeoutMs = resolveTimeoutMs(options.timeoutMs);
   if (!shouldPreferHostedSummary()) {
     const err = new Error('Hosted operational summary is disabled.');
     err.code = 'hosted_summary_disabled';
@@ -81,13 +130,30 @@ async function fetchHostedBillingSummary(options = {}, config = resolveHostedSum
     requestUrl.searchParams.set('now', analyticsWindow.now);
   }
 
-  const response = await fetch(requestUrl, {
-    method: 'GET',
-    headers: {
-      authorization: `Bearer ${config.apiKey}`,
-      accept: 'application/json',
-    },
-  });
+  const timeoutControl = createTimeoutControl(
+    timeoutMs,
+    'Hosted operational summary request timed out'
+  );
+  let response;
+  try {
+    response = await fetchImpl(requestUrl, {
+      method: 'GET',
+      headers: {
+        authorization: `Bearer ${config.apiKey}`,
+        accept: 'application/json',
+      },
+      signal: timeoutControl.signal,
+    });
+  } catch (err) {
+    if (isTimedOutAbort(err, timeoutControl.timeoutError, timeoutControl.signal)) {
+      const timeoutErr = new Error(`Hosted operational summary request timed out after ${timeoutMs}ms.`);
+      timeoutErr.code = 'hosted_summary_timeout';
+      throw timeoutErr;
+    }
+    throw err;
+  } finally {
+    timeoutControl.cancel();
+  }
 
   if (!response.ok) {
     const detail = await response.text().catch(() => '');

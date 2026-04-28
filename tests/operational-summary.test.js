@@ -178,6 +178,25 @@ describe('operational-summary', () => {
         );
       });
     });
+
+    it('throws hosted_summary_timeout when the hosted request exceeds the timeout budget', async () => {
+      await withEnv({ THUMBGATE_METRICS_SOURCE: undefined }, async () => {
+        await assert.rejects(
+          () => fetchHostedBillingSummary({
+            timeoutMs: 5,
+            fetchImpl: async (_url, { signal }) => new Promise((_, reject) => {
+              signal.addEventListener('abort', () => {
+                reject(signal.reason || Object.assign(new Error('aborted'), { name: 'AbortError' }));
+              }, { once: true });
+            }),
+          }, {
+            apiBaseUrl: 'https://x.com',
+            apiKey: 'tg_op_k',
+          }),
+          (err) => err.code === 'hosted_summary_timeout'
+        );
+      });
+    });
   });
 
   // ── getOperationalBillingSummary auth-failure contract ──────────────────────
