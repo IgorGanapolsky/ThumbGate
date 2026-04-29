@@ -37,6 +37,9 @@ const EXPECTED_ARTIFACTS = [
   'linkedin-workflow-hardening-pack.md',
   'linkedin-workflow-hardening-pack.json',
   'linkedin-operator-queue.csv',
+  'mcp-directory-revenue-pack.md',
+  'mcp-directory-revenue-pack.json',
+  'mcp-directory-operator-queue.csv',
 ];
 
 function escapeRegExp(value) {

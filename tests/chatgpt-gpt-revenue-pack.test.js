@@ -14,6 +14,7 @@ const {
   GPT_SUBMISSION_PACKET_URL,
   GPT_TRUST_GUIDE_URL,
   PUBLISHED_GPT_URL,
+  REVENUE_LOOP_REPORT_PATH,
   buildChatgptGptRevenuePack,
   buildEvidenceSurfaces,
   buildFollowOnOffers,
@@ -23,6 +24,7 @@ const {
   buildTrackedChatgptLink,
   isCliInvocation,
   parseArgs,
+  readRevenueLoopReport,
   renderChatgptGptRevenuePackMarkdown,
   renderChatgptOperatorQueueCsv,
   writeChatgptGptRevenuePack,
@@ -143,6 +145,24 @@ test('rendered pack is operator-ready and anchored to GPT plus proof surfaces', 
   assert.match(markdown, /chatgpt-live-audit-2026-04-24\.md/);
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
+});
+
+test('pack summary stays tied to the live revenue-loop directive instead of invented wins', () => {
+  const pack = buildChatgptGptRevenuePack(REPORT_FIXTURE, LINKS_FIXTURE, ABOUT_FIXTURE);
+
+  assert.equal(pack.state, 'cold-start');
+  assert.match(pack.summary, /No verified revenue and no active pipeline/);
+  assert.doesNotMatch(pack.summary, /Revenue is proven/i);
+});
+
+test('revenue-loop report reader falls back safely and parses live JSON when present', () => {
+  const tempDir = makeTempDir();
+  const reportPath = path.join(tempDir, 'gtm-revenue-loop.json');
+  fs.writeFileSync(reportPath, JSON.stringify({ directive: { state: 'cold-start' } }), 'utf8');
+
+  assert.equal(REVENUE_LOOP_REPORT_PATH.endsWith('docs/marketing/gtm-revenue-loop.json'), true);
+  assert.deepEqual(readRevenueLoopReport(path.join(tempDir, 'missing.json')), {});
+  assert.deepEqual(readRevenueLoopReport(reportPath), { directive: { state: 'cold-start' } });
 });
 
 test('CSV export keeps one operator queue file for ChatGPT lane', () => {
