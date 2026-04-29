@@ -173,6 +173,115 @@ test('resolveRevenueLoopSummary keeps local numbers when hosted revenue status s
   assert.equal(result.summary.revenue.paidOrders, 0);
 });
 
+test('resolveRevenueLoopSummary retries hosted revenue status before accepting local fallback', async () => {
+  let hostedCalls = 0;
+  let retryWaits = 0;
+
+  const result = await resolveRevenueLoopSummary({
+    getOperationalBillingSummaryFn: async () => ({
+      source: 'local',
+      summary: {
+        revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+        trafficMetrics: { checkoutStarts: 0 },
+        signups: { uniqueLeads: 0 },
+        pipeline: {},
+      },
+      fallbackReason: 'Hosted operational summary is not configured.',
+    }),
+    generateRevenueStatusReportFn: async () => {
+      hostedCalls += 1;
+      if (hostedCalls === 1) {
+        return {
+          source: 'local-fallback',
+          hostedAudit: {
+            summaries: {
+              today: {
+                status: 200,
+                revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+              },
+            },
+          },
+        };
+      }
+
+      return {
+        source: 'hosted-via-railway-env',
+        hostedAudit: {
+          summaries: {
+            today: {
+              status: 200,
+              revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+              trafficMetrics: { checkoutStarts: 1 },
+              signups: { uniqueLeads: 1 },
+              pipeline: {},
+            },
+          },
+        },
+      };
+    },
+    waitForRetryFn: async () => {
+      retryWaits += 1;
+    },
+    hostedRetryDelayMs: 0,
+  });
+
+  assert.equal(hostedCalls, 2);
+  assert.equal(retryWaits, 1);
+  assert.equal(result.source, 'hosted-via-railway-env');
+  assert.equal(result.fallbackReason, null);
+  assert.equal(result.summary.revenue.paidOrders, 2);
+  assert.equal(result.summary.revenue.bookedRevenueCents, 2000);
+});
+
+test('resolveRevenueLoopSummary selects the freshest hosted window with commercial signal', async () => {
+  const result = await resolveRevenueLoopSummary({
+    getOperationalBillingSummaryFn: async () => ({
+      source: 'local',
+      summary: {
+        revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+        trafficMetrics: { checkoutStarts: 0 },
+        signups: { uniqueLeads: 0 },
+        pipeline: {},
+      },
+      fallbackReason: 'Hosted operational summary is not configured.',
+    }),
+    generateRevenueStatusReportFn: async () => ({
+      source: 'hosted-via-railway-env',
+      hostedAudit: {
+        summaries: {
+          today: {
+            status: 200,
+            revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+            trafficMetrics: { checkoutStarts: 0 },
+            signups: { uniqueLeads: 0 },
+            pipeline: {},
+          },
+          '30d': {
+            status: 200,
+            revenue: { paidOrders: 6, bookedRevenueCents: 16900 },
+            trafficMetrics: { checkoutStarts: 531 },
+            signups: { uniqueLeads: 346 },
+            pipeline: {},
+          },
+          lifetime: {
+            status: 200,
+            revenue: { paidOrders: 6, bookedRevenueCents: 16900 },
+            trafficMetrics: { checkoutStarts: 615 },
+            signups: { uniqueLeads: 352 },
+            pipeline: {},
+          },
+        },
+      },
+    }),
+  });
+
+  assert.equal(result.source, 'hosted-via-railway-env');
+  assert.equal(result.summaryWindow, '30d');
+  assert.equal(result.summary.revenue.paidOrders, 6);
+  assert.equal(result.summary.revenue.bookedRevenueCents, 16900);
+  assert.equal(result.summary.trafficMetrics.checkoutStarts, 531);
+});
+
 test('resolveRevenueLoopSummary skips hosted audit when local metrics are explicitly requested', async () => {
   let hostedAuditCalls = 0;
   const result = await resolveRevenueLoopSummary({
@@ -1571,24 +1680,24 @@ test('marketplace copy pack stays tied to current revenue-loop evidence', () => 
         temperature: 'cold',
         source: 'github',
         channel: 'github',
-        username: 'platform',
-        accountName: 'platform',
+        username: 'buildertools',
+        accountName: 'buildertools',
         contactUrl: '',
-        repoName: 'release-governor',
-        repoUrl: 'https://github.com/example/release-governor',
+        repoName: 'codex-hook-pack',
+        repoUrl: 'https://github.com/example/codex-hook-pack',
         evidence: {
           score: 9,
-          evidence: ['production or platform workflow'],
-          outreachAngle: 'Lead with rollout proof for one production workflow.',
+          evidence: ['self-serve agent tooling', 'updated in the last 7 days'],
+          outreachAngle: 'Lead with the proof-backed setup guide and local-first enforcement before any team-motion pitch.',
         },
-        outreachAngle: 'Lead with rollout proof for one production workflow.',
+        outreachAngle: 'Lead with the proof-backed setup guide and local-first enforcement before any team-motion pitch.',
         motion: 'pro',
         motionLabel: catalog.pro.label,
-        motionReason: 'Self-serve path is secondary.',
+        motionReason: 'Target looks like a local hook surface, so the guide-to-Pro lane is the faster close.',
         selectedMotion: {
           key: 'pro',
           label: catalog.pro.label,
-          reason: 'Self-serve path is secondary.',
+          reason: 'Target looks like a local hook surface, so the guide-to-Pro lane is the faster close.',
         },
         pipelineStage: 'targeted',
         offer: 'pro_self_serve',
@@ -1608,8 +1717,11 @@ test('marketplace copy pack stays tied to current revenue-loop evidence', () => 
   assert.match(pack.recommendedCtas[2].cta, /\/checkout\/pro$/);
   assert.ok(pack.topSignals.some((signal) => /Warm discovery workflows/.test(signal.label)));
   assert.ok(pack.topSignals.some((signal) => /Business-system workflow approvals/.test(signal.label)));
+  assert.ok(pack.topSignals.some((signal) => /Self-serve agent tooling/.test(signal.label)));
+  assert.ok(pack.sampleTargets.some((target) => target.account === 'buildertools/codex-hook-pack'));
   assert.match(markdown, /Proof Policy/);
   assert.match(markdown, /Evidence Backstop/);
+  assert.match(markdown, /Self-serve agent tooling/);
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
   assert.ok(pack.evidenceBackstop.claimGuardrails.some((entry) => /Do not lead with proof links/i.test(entry)));

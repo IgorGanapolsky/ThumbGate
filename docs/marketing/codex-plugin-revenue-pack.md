@@ -1,6 +1,6 @@
 # Codex Plugin Revenue Pack
 
-Updated: 2026-04-28T18:24:06.772Z
+Updated: 2026-04-29T06:51:58.963Z
 
 This is a sales operator artifact. It is not proof of bundle downloads, installs, paid revenue, or marketplace publication by itself.
 
@@ -24,14 +24,14 @@ ThumbGate gives Codex a proof-backed install path, pre-action gate enforcement, 
 - Examples: @Deep_Ad1959, @game-of-kton, @leogodin217
 
 ### Workflow control surfaces remain the strongest buyer signal
-- Count: 4
-- Summary: 4 current targets expose review, approval, governance, or workflow control surfaces where a Codex install story can convert into a workflow-hardening offer.
+- Count: 6
+- Summary: 6 current targets expose review, approval, governance, or workflow control surfaces where a Codex install story can convert into a workflow-hardening offer.
 - Examples: Adqui9608/ai-code-review-agent, DGouron/review-flow, nihannihu/Omni-SRE
 
 ### Production rollout proof matters
 - Count: 3
 - Summary: 3 targets touch production-sensitive workflows where proof and rollback safety should appear before the buyer expands usage.
-- Examples: Adqui9608/ai-code-review-agent, arcasilesgroup/ai-engineering, nihannihu/Omni-SRE
+- Examples: Adqui9608/ai-code-review-agent, nihannihu/Omni-SRE, BaseInfinity/claude-sdlc-wizard
 
 ## Submission Surfaces
 ### Codex plugin install page
@@ -200,12 +200,27 @@ First-touch draft:
 - Motion: Pro at $19/mo or $149/yr
 - Summary: Use these when the buyer already exposes a plugin, local-hook, or repo-backed tooling surface and should start with the guide path.
 
-#### 1. zaxbysauce/opencode-swarm
+#### 1. BaseInfinity/claude-sdlc-wizard
+- Temperature: cold
+- Source: github / github
+- Evidence score: 14
+- Why now: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
+- Evidence: workflow control surface; production or platform workflow; self-serve agent tooling; 10 GitHub stars; updated in the last 7 days
+- Contact: https://www.youtube.com/@Basecase_/featured
+- CTA: https://thumbgate-production.up.railway.app/guide
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- Pipeline lead id: github_baseinfinity_claude_sdlc_wizard
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_baseinfinity_claude_sdlc_wizard' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on rollout proof for one production workflow that cannot afford repeated agent mistakes.'`
+
+First-touch draft:
+> Hey @BaseInfinity, saw you're building around `claude-sdlc-wizard`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
+
+#### 2. zaxbysauce/opencode-swarm
 - Temperature: cold
 - Source: github / github
 - Evidence score: 12
 - Why now: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
-- Evidence: workflow control surface; self-serve agent tooling; 241 GitHub stars; updated in the last 7 days
+- Evidence: workflow control surface; self-serve agent tooling; 242 GitHub stars; updated in the last 7 days
 - Contact: https://github.com/zaxbysauce
 - CTA: https://thumbgate-production.up.railway.app/guide
 - Proof rule: Use proof pack only after the buyer confirms pain.
@@ -214,21 +229,6 @@ First-touch draft:
 
 First-touch draft:
 > Hey @zaxbysauce, saw you're building around `opencode-swarm`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
-
-#### 2. yvgude/lean-ctx
-- Temperature: cold
-- Source: github / github
-- Evidence score: 10
-- Why now: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
-- Evidence: agent infrastructure; self-serve agent tooling; 907 GitHub stars; updated in the last 7 days
-- Contact: https://yvesgugger.ch/
-- CTA: https://thumbgate-production.up.railway.app/guide
-- Proof rule: Use proof pack only after the buyer confirms pain.
-- Pipeline lead id: github_yvgude_lean_ctx
-- Log after send: `npm run sales:pipeline -- advance --lead 'github_yvgude_lean_ctx' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'`
-
-First-touch draft:
-> Hey @yvgude, saw you're building around `lean-ctx`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
 
 ## Sample Targets Behind This Pack
 - @Deep_Ad1959 (warm): Warm Reddit engager already named a repeated workflow risk, so the fastest path is a founder-led diagnostic.
