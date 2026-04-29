@@ -1352,7 +1352,7 @@ function resolveMotionCta(report, motionKey) {
 
 function buildMarketplaceCopy(report) {
   const targets = Array.isArray(report?.targets) ? report.targets : [];
-  const signalThemes = MARKETPLACE_SIGNAL_THEMES
+  const rankedSignalThemes = MARKETPLACE_SIGNAL_THEMES
     .map((theme) => {
       const matches = targets.filter((target) => theme.match(target));
       return {
@@ -1369,8 +1369,12 @@ function buildMarketplaceCopy(report) {
       };
     })
     .filter((theme) => theme.count > 0)
-    .sort((left, right) => right.count - left.count)
-    .slice(0, 3);
+    .sort((left, right) => right.count - left.count);
+  const signalThemes = rankedSignalThemes.slice(0, 3);
+  const selfServeSignal = rankedSignalThemes.find((theme) => theme.key === 'self_serve_tooling');
+  if (selfServeSignal && !signalThemes.some((theme) => theme.key === selfServeSignal.key)) {
+    signalThemes.push(selfServeSignal);
+  }
   const topTheme = signalThemes[0];
   const primaryMotion = normalizeText(report.directive?.primaryMotion) || 'sprint';
   const secondaryMotion = normalizeText(report.directive?.secondaryMotion) || 'pro';
@@ -1391,8 +1395,30 @@ function buildMarketplaceCopy(report) {
     `Primary motion: ${resolveMotionLabel(report, primaryMotion)}.`,
     `Secondary motion: ${resolveMotionLabel(report, secondaryMotion)} after the buyer asks for the self-serve path.`,
   ].join(' ');
-  const sampleTargets = targets
-    .slice(0, 5)
+  const featuredTargets = [];
+  const featuredKeys = new Set();
+  const featureTarget = (predicate) => {
+    const match = targets.find((target) => predicate(target));
+    if (!match) return;
+    const key = `${normalizeText(match.username)}::${normalizeText(match.repoName)}::${normalizeText(match.contactUrl)}`;
+    if (featuredKeys.has(key)) return;
+    featuredKeys.add(key);
+    featuredTargets.push(match);
+  };
+
+  featureTarget((target) => normalizeText(target.temperature).toLowerCase() === 'warm');
+  featureTarget((target) => normalizeText(target.motion).toLowerCase() === 'pro' && hasEvidenceLabel(target, 'self-serve agent tooling'));
+  featureTarget((target) => normalizeText(target.motion).toLowerCase() === 'sprint' && normalizeText(target.temperature).toLowerCase() !== 'warm');
+
+  for (const target of targets) {
+    if (featuredTargets.length >= 5) break;
+    const key = `${normalizeText(target.username)}::${normalizeText(target.repoName)}::${normalizeText(target.contactUrl)}`;
+    if (featuredKeys.has(key)) continue;
+    featuredKeys.add(key);
+    featuredTargets.push(target);
+  }
+
+  const sampleTargets = featuredTargets
     .map((target) => ({
       account: normalizeText(target.repoName)
         ? `${target.username}/${target.repoName}`
@@ -1430,6 +1456,7 @@ function buildMarketplaceCopy(report) {
       'Turn repeated AI-agent mistakes into enforceable pre-action gates.',
       topTheme ? topTheme.listingAngle : '',
       'Route install-intent buyers through the proof-backed setup guide before direct checkout.',
+      selfServeSignal ? selfServeSignal.listingAngle : '',
       `Primary offer: ${resolveMotionLabel(report, primaryMotion)}.`,
       `Secondary offer: ${resolveMotionLabel(report, secondaryMotion)} after the buyer asks for the tool path.`,
       'Keep approval boundaries, rollback safety, and proof attached to the workflow before rollout.',
