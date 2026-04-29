@@ -27,6 +27,7 @@
     "Lead with one repeated workflow failure, then show how ThumbGate turns it into an enforceable pre-action gate.",
     "Route install-intent buyers through the proof-backed setup guide before direct checkout.",
     "Lead with the proof-backed setup guide first, then convert proven local usage into Pro.",
+    "Use Pro after one blocked repeat or explicit self-serve install intent. Use the Workflow Hardening Sprint when one workflow owner needs approval boundaries, rollback safety, and proof before wider rollout.",
     "Primary offer: Workflow Hardening Sprint.",
     "Secondary offer: Pro at $19/mo or $149/yr after the buyer asks for the tool path.",
     "Keep approval boundaries, rollback safety, and proof attached to the workflow before rollout."
