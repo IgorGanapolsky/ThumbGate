@@ -144,69 +144,33 @@ GitHub: https://github.com/IgorGanapolsky/ThumbGate
 
 ---
 
-## Post 4: Twitter/X Thread
+## Post 4: LinkedIn Founder Post
 
 ---
 
-**Tweet 1:**
-I watched Claude Code repeat the same mistakes for 3 weeks before I realized the problem: there's no system-level enforcement for "don't do that again."
+Most AI coding agents do not fail because they forgot your prompt. They fail because nothing sits between the model and the next risky tool call.
 
-You can give feedback, but the agent doesn't *learn*. You can write more context, but the agent doesn't *enforce* anything.
+ThumbGate turns structured thumbs-down feedback into PreToolUse enforcement:
 
-So I built ThumbGate. A PreToolUse gate that actually works.
+1. The agent repeats a known bad pattern.
+2. You capture what went wrong and what should change.
+3. ThumbGate turns that into a prevention rule.
+4. The next matching tool call gets blocked before execution.
 
-**Tweet 2:**
-Here's the workflow:
+That is the difference between memory and enforcement.
 
-1. Claude (or Cursor, or Codex) tries something broken
-2. You give it a thumbs down
-3. ThumbGate captures the feedback and generates a prevention rule
-4. Next session, that rule blocks the same mistake at the tool-use level
+The free path stays local-first. Pro is for the personal dashboard, exports, and proof when a workflow owner asks what changed.
 
-No weight training. No fine-tuning required. Just enforced prevention backed by local lessons and gates in `.thumbgate/`.
+If you already have one repeated workflow failure in Claude Code, Cursor, Codex, Gemini, or Amp, start here:
+https://thumbgate-production.up.railway.app/?utm_source=linkedin&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=founder_post&creator=IgorGanapolsky&campaign_variant=workflow_hardening
 
-**Tweet 3:**
-Why this matters:
+Repo:
+https://github.com/IgorGanapolsky/ThumbGate
 
-Vibe coding with agents is *powerful* but risky. One bad pattern repeated across 10 sessions costs you hours. You can't write enough context to override training. But you *can* enforce a rule.
-
-ThumbGate: local-first free tier. $19/mo Pro with a dashboard + DPO export.
-
-**Tweet 4:**
-The tech stack is small and lean:
-
-- SQLite + FTS5 for lesson storage
-- Thompson Sampling for rule ranking
-- PreToolUse hooks for enforcement
-- ContextFS for rule assembly
-
-Local-first. Free runs on your machine, and feedback state lives in `.thumbgate/` while hooks run inside your agent config.
-
-**Tweet 5:**
-Install it in 30 seconds:
-
-```
-npx thumbgate init --agent claude-code
-```
-
-Then give Claude a thumbs down next time it breaks something. Watch it never make that mistake again.
-
-Free to use. Pro trial is 7 days.
-
-**Tweet 6:**
-Dashboard demo + local walkthrough:
-
-Give Claude Code a thumbs down, watch the prevention rule appear, and see the same pattern get blocked in the next session.
-
-On the workflows I had explicitly marked down, it stopped the repeats that kept wasting my time.
-
-https://thumbgate-production.up.railway.app/?utm_source=x&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=launch_thread&creator=IgorGanapolsky&campaign_variant=founder_story
-
-**Tweet 7:**
-Repo: https://github.com/IgorGanapolsky/ThumbGate
-Tracked landing: https://thumbgate-production.up.railway.app/?utm_source=x&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=launch_thread_cta&creator=IgorGanapolsky&campaign_variant=founder_story
-
-Built by @IgorGanapolsky. If you're tired of your AI agent making the same mistakes over and over—this is for you.
+Optional first comment:
+Proof and commercial truth stay public:
+- https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md
 
 ---
 
@@ -218,7 +182,7 @@ npx thumbgate init --agent claude-code
 ```
 
 **Checkout/Pricing Link:**
-https://thumbgate-production.up.railway.app/checkout/pro?plan_id=pro&billing_cycle=monthly&utm_source=x&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=thread_direct_checkout&creator=IgorGanapolsky
+https://thumbgate-production.up.railway.app/checkout/pro?plan_id=pro&billing_cycle=monthly&utm_source=linkedin&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=founder_post_checkout&creator=IgorGanapolsky
 
 **Landing Page:**
 https://thumbgate-production.up.railway.app/?utm_source=direct&utm_medium=manual_link&utm_campaign=first_customer_push&utm_content=launch_assets
@@ -226,8 +190,8 @@ https://thumbgate-production.up.railway.app/?utm_source=direct&utm_medium=manual
 **GitHub:**
 https://github.com/IgorGanapolsky/ThumbGate
 
-**Hashtags (for Twitter/X):**
-#ClaudeAI #Cursor #AI #CodingAgents #MCP #DevTools
+**LinkedIn Topic Tags:**
+#ClaudeCode #AICoding #CodingAgents #MCP #DevTools #WorkflowHardening
 
 ---
 
@@ -239,6 +203,6 @@ https://github.com/IgorGanapolsky/ThumbGate
 
 3. **HN post** — Lead with architecture. Use proper terminology (PreToolUse hooks, Thompson Sampling, FTS5). No marketing speak. Just clear technical description.
 
-4. **Twitter thread** — Hook hard with the problem. Build momentum. End with the install link and honest proof from your own repeated-failure workflows.
+4. **LinkedIn founder post** — Lead with one repeated workflow failure, explain the enforcement loop, and keep proof links ready in the first comment if the buyer asks.
 
 **Timing:** Post these ~30 minutes apart to avoid clustering. Monitor comments and respond authentically to questions.
