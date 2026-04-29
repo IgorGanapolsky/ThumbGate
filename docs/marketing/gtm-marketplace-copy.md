@@ -26,10 +26,10 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 - Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro
 
 ## Evidence-Backed Buyer Signals
-- Workflow control surfaces (6): The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Examples: Adqui9608/ai-code-review-agent, DGouron/review-flow, nihannihu/Omni-SRE
+- Workflow control surfaces (5): The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Examples: Adqui9608/ai-code-review-agent, DGouron/review-flow, nihannihu/Omni-SRE
 - Warm discovery workflows (4): Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Examples: @Deep_Ad1959, @game-of-kton, @leogodin217
 - Business-system workflow approvals (4): Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Examples: Adqui9608/ai-code-review-agent, DGouron/review-flow, nihannihu/Omni-SRE
-- Self-serve agent tooling (2): Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible. Examples: BaseInfinity/claude-sdlc-wizard, zaxbysauce/opencode-swarm
+- Self-serve agent tooling (2): Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible. Examples: zaxbysauce/opencode-swarm, mann1x/claude-hooks
 
 ## Proof Policy
 - Do not lead with proof links. Use Commercial Truth and Verification Evidence only after the buyer confirms pain.
@@ -43,7 +43,7 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 
 ## Sample Targets Behind This Copy
 - @Deep_Ad1959 (warm): Warm Reddit engager already named a repeated workflow risk, so the fastest path is a founder-led diagnostic.
-- BaseInfinity/claude-sdlc-wizard (cold): Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
+- zaxbysauce/opencode-swarm (cold): Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
 - Adqui9608/ai-code-review-agent (cold): Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
 - @game-of-kton (warm): Warm Reddit engager already works on advanced agent memory, so discovery should center on one repeated failure pattern.
 - @leogodin217 (warm): Warm Reddit engager already described a mature workflow, so the next step is a targeted diagnostic on one failure mode.
