@@ -18,7 +18,6 @@ const TARGET_SEARCH_QUERIES = [
   'search/repositories?q=Model+Context+Protocol+workflow+automation+sort:updated',
   'search/repositories?q=Model+Context+Protocol+approval+workflow+sort:updated',
   'search/repositories?q=ServiceNow+MCP+workflow+sort:updated',
-  'search/repositories?q=ServiceNow+agent+workflow+sort:updated',
   'search/repositories?q=Claude+Code+review+automation+sort:updated',
   'search/repositories?q=GitLab+review+automation+agent+sort:updated',
   'search/repositories?q=github+review+automation+agent+sort:updated',
@@ -26,8 +25,6 @@ const TARGET_SEARCH_QUERIES = [
   'search/repositories?q=approval+workflow+github+agent+sort:updated',
   'search/repositories?q=incident+workflow+automation+agent+sort:updated',
   'search/repositories?q=jira+approval+workflow+agent+sort:updated',
-  'search/repositories?q=agent+approval+policy+sort:updated',
-  'search/repositories?q=workflow+guardrails+agent+sort:updated',
   'search/repositories?q=Claude+Code+hooks+sort:updated',
   'search/repositories?q=Codex+plugin+sort:updated',
   'search/repositories?q=Cursor+rules+sort:updated',
@@ -404,14 +401,16 @@ function buildTargetPainHypothesis(target = {}) {
   }
 
   const outreachAngle = normalizeText(target.outreachAngle || target.evidence?.outreachAngle, 240);
+  const motionReason = normalizeText(target.motionReason || target.selectedMotion?.reason, 240);
   const motionKey = normalizeText(target.motion || target.selectedMotion?.key).toLowerCase();
+  const sanitizedMotionReason = sanitizePain(motionReason.replace(/^Lead with\s+/i, ''));
   const sanitizedOutreachAngle = sanitizePain(outreachAngle.replace(/^Lead with\s+/i, ''));
 
   if (motionKey === 'pro' && sanitizedOutreachAngle) {
     return sanitizedOutreachAngle;
   }
 
-  return sanitizePain(target.motionReason || target.selectedMotion?.reason)
+  return sanitizedMotionReason
     || sanitizedOutreachAngle
     || 'one repeated workflow failure';
 }
