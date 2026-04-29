@@ -10,6 +10,7 @@ const {
   buildRevenueLinks,
 } = require('./gtm-revenue-loop');
 const {
+  buildRevenueEvidenceContext,
   csvCell,
   isCliInvocation: isCliCall,
   normalizeText,
@@ -493,6 +494,7 @@ function buildClaudeWorkflowHardeningPack(report = {}, links = buildRevenueLinks
     headline: CANONICAL_HEADLINE,
     shortDescription: CANONICAL_SHORT_DESCRIPTION,
     summary: buildPackSummary(report),
+    revenueEvidence: buildRevenueEvidenceContext(report),
     canonicalIdentity: {
       displayName: 'ThumbGate for Claude',
       repositoryUrl: about.repositoryUrl,
@@ -631,6 +633,12 @@ function renderClaudeWorkflowHardeningPackMarkdown(pack = {}) {
     `- Short description: ${pack.shortDescription}`,
     `- Summary: ${pack.summary}`,
     '',
+    '## Revenue Evidence',
+    `- Billing source: ${normalizeText(pack.revenueEvidence?.source) || 'local'}`,
+    `- Billing verification: ${normalizeText(pack.revenueEvidence?.label) || 'Current run is using local billing context.'}`,
+    ...(normalizeText(pack.revenueEvidence?.fallbackReason)
+      ? [`- Fallback reason: ${normalizeText(pack.revenueEvidence.fallbackReason)}`, '']
+      : ['']),
     '## Canonical Identity',
     `- Display name: ${pack.canonicalIdentity?.displayName || 'ThumbGate for Claude'}`,
     `- Repository: ${pack.canonicalIdentity?.repositoryUrl || ''}`,

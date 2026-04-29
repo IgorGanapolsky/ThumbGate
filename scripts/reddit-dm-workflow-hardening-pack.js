@@ -9,6 +9,7 @@ const {
   buildRevenueLinks,
 } = require('./gtm-revenue-loop');
 const {
+  buildRevenueEvidenceContext,
   buildTrackedPackLink,
   csvCell,
   isCliInvocation: isCliCall,
@@ -325,6 +326,7 @@ function buildRedditDmWorkflowHardeningPack(report = readRevenueLoopReport()) {
     headline: CANONICAL_HEADLINE,
     shortDescription: CANONICAL_SHORT_DESCRIPTION,
     summary: normalizeText(report.directive?.headline) || 'No verified revenue and no active pipeline.',
+    revenueEvidence: buildRevenueEvidenceContext(report),
     canonicalIdentity: buildCanonicalIdentity(about),
     evidenceBackstop,
     surfaces: buildEvidenceSurfaces(links, about),
@@ -425,6 +427,12 @@ function renderRedditDmWorkflowHardeningPackMarkdown(pack = {}) {
     `- Short description: ${pack.shortDescription}`,
     `- Summary: ${pack.summary}`,
     '',
+    '## Revenue Evidence',
+    `- Billing source: ${normalizeText(pack.revenueEvidence?.source) || 'local'}`,
+    `- Billing verification: ${normalizeText(pack.revenueEvidence?.label) || 'Current run is using local billing context.'}`,
+    ...(normalizeText(pack.revenueEvidence?.fallbackReason)
+      ? [`- Fallback reason: ${normalizeText(pack.revenueEvidence.fallbackReason)}`, '']
+      : ['']),
     '## Canonical Identity',
     ...renderFieldLines(CANONICAL_FIELDS, pack.canonicalIdentity),
     '',

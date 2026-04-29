@@ -25,6 +25,10 @@ const {
 function makeReportFixture() {
   return {
     generatedAt: '2026-04-27T17:22:01.540Z',
+    source: 'hosted-via-railway-env',
+    verification: {
+      label: 'Live hosted billing summary verified for this run.',
+    },
     directive: {
       state: 'cold-start',
       headline: 'No verified revenue and no active pipeline. Keep one Workflow Hardening Sprint offer live, then route self-serve buyers to Pro only after the buyer asks for the tool path.',
@@ -182,6 +186,7 @@ test('pack includes evidence backstop, LinkedIn drafts, and proof-linked follow-
   assert.equal(pack.evidenceBackstop.warmTargetCount, 2);
   assert.equal(pack.evidenceBackstop.proMotionCount, 1);
   assert.equal(pack.measurementPlan.northStar, 'linkedin_workflow_risk_to_paid_intent');
+  assert.equal(pack.revenueEvidence.source, 'hosted-via-railway-env');
 });
 
 test('rendered markdown exposes LinkedIn drafts and evidence backstop without fake claims', () => {
@@ -192,6 +197,9 @@ test('rendered markdown exposes LinkedIn drafts and evidence backstop without fa
   assert.match(markdown, /LinkedIn Workflow Hardening Pack/);
   assert.match(markdown, /Active Channel Drafts/);
   assert.match(markdown, /Evidence Backstop/);
+  assert.match(markdown, /Revenue Evidence/);
+  assert.match(markdown, /Billing source: hosted-via-railway-env/);
+  assert.match(markdown, /Billing verification: Live hosted billing summary verified for this run\./);
   assert.match(markdown, /Named pain signals: rollback risk, review boundaries and context risk/);
   assert.doesNotMatch(markdown, /approved marketplace|guaranteed revenue|guaranteed installs/i);
 });

@@ -24,6 +24,10 @@ const {
 function makeReportFixture() {
   return {
     generatedAt: '2026-04-29T01:20:00.000Z',
+    source: 'hosted-via-railway-env',
+    verification: {
+      label: 'Live hosted billing summary verified for this run.',
+    },
     directive: {
       state: 'cold-start',
       headline: 'No verified revenue and no active pipeline. Work the warm Reddit queue before widening cold outreach.',
@@ -152,6 +156,7 @@ test('pack exposes the warm Reddit revenue lane without fake claims', () => {
   assert.equal(pack.outreachDrafts.length, 2);
   assert.equal(pack.evidenceBackstop.warmTargetCount, 2);
   assert.equal(pack.measurementPlan.northStar, 'reddit_warm_dm_to_paid_intent');
+  assert.equal(pack.revenueEvidence.source, 'hosted-via-railway-env');
 });
 
 test('rendered markdown and CSV exports expose the Reddit DM send surface', () => {
@@ -162,6 +167,9 @@ test('rendered markdown and CSV exports expose the Reddit DM send surface', () =
 
   assert.match(markdown, /Reddit DM Workflow Hardening Pack/);
   assert.match(markdown, /Evidence Backstop/);
+  assert.match(markdown, /Revenue Evidence/);
+  assert.match(markdown, /Billing source: hosted-via-railway-env/);
+  assert.match(markdown, /Billing verification: Live hosted billing summary verified for this run\./);
   assert.match(markdown, /Pain signal: rollback risk/);
   assert.match(markdown, /Active DM Drafts/);
   assert.doesNotMatch(markdown, /guaranteed revenue|guaranteed installs/i);

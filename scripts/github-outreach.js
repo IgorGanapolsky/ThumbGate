@@ -99,6 +99,15 @@ function buildTargetSummary(target = {}) {
   return username || accountName || 'Unknown target';
 }
 
+function buildRevenueEvidenceContext(revenueLoopReport = {}) {
+  return {
+    source: normalizeText(revenueLoopReport.source) || 'local',
+    label: normalizeText(revenueLoopReport.verification?.label)
+      || 'Current run is using local billing context.',
+    fallbackReason: normalizeText(revenueLoopReport.fallbackReason),
+  };
+}
+
 function getNextTrackingCommand(target = {}) {
   const commands = target.salesCommands || {};
   switch (normalizeText(target.stage)) {
@@ -172,6 +181,7 @@ function buildOutreachTargetsReport({
     generatedAt: normalizeText(revenueLoopReport.generatedAt) || new Date().toISOString(),
     state: normalizeText(revenueLoopReport.directive?.state) || 'cold-start',
     headline: normalizeText(revenueLoopReport.directive?.headline) || 'No verified revenue and no active pipeline.',
+    revenueEvidence: buildRevenueEvidenceContext(revenueLoopReport),
     queuePath,
     reportPath,
     pipelinePath,
@@ -250,6 +260,11 @@ function renderOutreachTargetsMarkdown(report = {}) {
     '## Current Queue',
     `- Revenue state: ${report.state || 'cold-start'}`,
     `- Headline: ${report.headline || 'No verified revenue and no active pipeline.'}`,
+    `- Billing source: ${report.revenueEvidence?.source || 'local'}`,
+    `- Billing verification: ${report.revenueEvidence?.label || 'Current run is using local billing context.'}`,
+    ...(report.revenueEvidence?.fallbackReason
+      ? [`- Fallback reason: ${report.revenueEvidence.fallbackReason}`]
+      : []),
     `- Follow-ups now: ${report.followUpTargets.length}`,
     `- Warm discovery ready: ${report.warmTargets.length}`,
     `- Self-serve closes ready: ${report.selfServeTargets.length}`,

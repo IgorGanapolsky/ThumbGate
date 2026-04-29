@@ -1,6 +1,6 @@
 # ChatGPT GPT Revenue Pack
 
-Updated: 2026-04-29T08:47:07.667Z
+Updated: 2026-04-29T12:51:34.925Z
 
 This is a sales operator artifact. It is not proof of GPT traffic, sent outreach, saved feedback, paid revenue, or GPT Store ranking by itself.
 
@@ -12,6 +12,10 @@ Turn ChatGPT GPT discovery and trust-boundary demand into tracked proof clicks, 
 - Headline: Use ChatGPT for discovery, then force risky actions through real checks.
 - Short description: ThumbGate turns the published ChatGPT GPT into a proof-backed front door for action checks, typed feedback capture, and local enforcement handoff.
 - Summary: ChatGPT demand in ThumbGate should start with one useful action check or typed lesson, then hand the buyer into proof and local enforcement. Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
+
+## Revenue Evidence
+- Billing source: hosted-via-railway-env
+- Billing verification: Live hosted billing summary verified for this run.
 
 ## Canonical Identity
 - Display name: ThumbGate GPT

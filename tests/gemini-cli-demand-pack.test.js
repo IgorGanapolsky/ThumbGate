@@ -43,6 +43,10 @@ const ABOUT_FIXTURE = {
 };
 
 const REPORT_FIXTURE = {
+  source: 'hosted-via-railway-env',
+  verification: {
+    label: 'Live hosted billing summary verified for this run.',
+  },
   directive: {
     state: 'cold-start',
     headline: 'No verified revenue and no active pipeline. Use proof-backed demand surfaces to create paid intent.',
@@ -182,6 +186,9 @@ test('rendered pack is operator-ready and anchored to guides plus proof', () => 
   assert.match(markdown, /guides\/gemini-cli-feedback-memory/);
   assert.match(markdown, /guides\/gcp-mcp-guardrails/);
   assert.match(markdown, /Active Channel Drafts/);
+  assert.match(markdown, /Revenue Evidence/);
+  assert.match(markdown, /Billing source: hosted-via-railway-env/);
+  assert.match(markdown, /Billing verification: Live hosted billing summary verified for this run\./);
   assert.match(markdown, /LinkedIn — Founder post/);
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
@@ -221,6 +228,7 @@ test('CLI options and artifact writing emit markdown, JSON, and queue CSV', () =
   assert.equal(fs.existsSync(path.join(tempDir, 'gemini-cli-demand-pack.json')), true);
   assert.equal(fs.existsSync(path.join(tempDir, 'gemini-cli-operator-queue.csv')), true);
   assert.equal(fs.existsSync(path.join(tempDir, 'gemini-cli-channel-drafts.csv')), true);
+  assert.equal(pack.revenueEvidence.source, 'hosted-via-railway-env');
 });
 
 test('CLI entrypoint detection is path based', () => {

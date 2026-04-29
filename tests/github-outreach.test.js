@@ -101,6 +101,10 @@ test('queue-backed outreach report separates warm, self-serve, and cold sprint l
   writeJsonl(queuePath, [makeWarmTarget(), makeSelfServeTarget(), makeColdTarget()]);
   fs.writeFileSync(reportPath, JSON.stringify({
     generatedAt: '2026-04-27T17:00:00.000Z',
+    source: 'hosted-via-railway-env',
+    verification: {
+      label: 'Live hosted billing summary verified for this run.',
+    },
     directive: {
       state: 'cold-start',
       headline: 'No verified revenue and no active pipeline.',
@@ -118,6 +122,8 @@ test('queue-backed outreach report separates warm, self-serve, and cold sprint l
   assert.equal(report.pipelineTrackedLeadCount, 0);
   assert.equal(report.pipelineExists, false);
   assert.match(markdown, /mirrors the evidence-backed GTM queue/i);
+  assert.match(markdown, /Billing source: hosted-via-railway-env/);
+  assert.match(markdown, /Billing verification: Live hosted billing summary verified for this run\./);
   assert.match(markdown, /Warm discovery ready: 1/);
   assert.match(markdown, /Self-serve closes ready: 1/);
   assert.match(markdown, /Cold GitHub ready: 1/);
@@ -141,6 +147,10 @@ test('active follow-ups are promoted ahead of fresh sends using sales ledger sta
   writeJsonl(queuePath, [warmTarget, selfServeTarget, coldTarget]);
   fs.writeFileSync(reportPath, JSON.stringify({
     generatedAt: '2026-04-27T17:00:00.000Z',
+    source: 'hosted-via-railway-env',
+    verification: {
+      label: 'Live hosted billing summary verified for this run.',
+    },
     directive: {
       state: 'cold-start',
       headline: 'No verified revenue and no active pipeline.',
@@ -177,6 +187,10 @@ test('report core links inherit the current team pilot CTA when provided', () =>
   writeJsonl(queuePath, [makeWarmTarget()]);
   fs.writeFileSync(reportPath, JSON.stringify({
     generatedAt: '2026-04-27T17:00:00.000Z',
+    source: 'hosted-via-railway-env',
+    verification: {
+      label: 'Live hosted billing summary verified for this run.',
+    },
     directive: {
       state: 'post-first-dollar',
       headline: 'Verified booked revenue exists.',

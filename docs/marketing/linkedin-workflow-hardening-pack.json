@@ -1,10 +1,15 @@
 {
-  "generatedAt": "2026-04-29T08:47:07.667Z",
+  "generatedAt": "2026-04-29T12:51:34.925Z",
   "state": "post-first-dollar",
   "objective": "Turn LinkedIn workflow-risk conversations into tracked guide clicks, qualified workflow-hardening conversations, sprint-intake movement, and self-serve follow-on only after pain is qualified.",
   "headline": "Turn LinkedIn workflow-risk conversations into sprint-qualified paid intent.",
   "shortDescription": "ThumbGate gives founder-led LinkedIn outreach one honest offer: harden one AI-agent workflow with approval boundaries, rollback safety, and proof before wider rollout.",
   "summary": "LinkedIn should carry one offer: workflow hardening for teams that already feel rollout risk. Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.",
+  "revenueEvidence": {
+    "source": "hosted-via-railway-env",
+    "label": "Live hosted billing summary verified for this run.",
+    "fallbackReason": ""
+  },
   "canonicalIdentity": {
     "displayName": "ThumbGate",
     "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
@@ -107,7 +112,7 @@
     {
       "key": "business_system_operator",
       "audience": "Platform or ops lead wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM workflows",
-      "evidence": "3 production-style target(s), 4 business-system target(s), and 5 workflow-control target(s) point to approval boundaries and rollback safety as the strongest LinkedIn angle.",
+      "evidence": "2 production-style target(s), 5 business-system target(s), and 6 workflow-control target(s) point to approval boundaries and rollback safety as the strongest LinkedIn angle.",
       "proofTrigger": "They can name one approval boundary, rollback risk, or bad handoff that blocks broader rollout.",
       "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
       "nextAsk": "https://thumbgate-production.up.railway.app/?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_queue_sprint&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=LINKEDIN-QUEUE_SPRINT&cta_id=linkedin_queue_sprint&cta_placement=operator_queue&surface=linkedin_outreach#workflow-sprint-intake",
@@ -149,7 +154,7 @@
       "channel": "LinkedIn",
       "format": "Founder post",
       "audience": "Platform, engineering, and AI-product leaders",
-      "evidenceSummary": "4 warm target(s) plus 3 production-style target(s) show the strongest LinkedIn motion is workflow hardening, not generic AI hype.",
+      "evidenceSummary": "4 warm target(s) plus 2 production-style target(s) show the strongest LinkedIn motion is workflow hardening, not generic AI hype.",
       "cta": "https://thumbgate-production.up.railway.app/guide?utm_source=linkedin&utm_medium=organic_social&utm_campaign=linkedin_channel_guide&utm_content=guide&campaign_variant=proof_backed_setup&offer_code=LINKEDIN-CHANNEL_GUIDE&cta_id=linkedin_channel_guide&cta_placement=channel_draft&surface=linkedin_post",
       "proofTiming": "Keep the public post workflow-first and guide-first. Hold proof links for comments or DMs after the buyer names the workflow risk.",
       "draft": "The strongest AI workflow conversations I am seeing right now are not about replacing engineers. They are about one workflow that still is not safe enough to roll out. The repeated pain shows up as rollback risk, stale context and conflicting facts, review boundaries and context risk, and brittle guardrails. Once agents touch repos, approvals, or customer systems, the real question becomes: what stops the same mistake from running again? My answer is one workflow hardening lane: feedback, prevention rules, approval boundaries, rollback safety, and proof. If that is the problem you are evaluating, start with the proof-backed guide here: https://thumbgate-production.up.railway.app/guide?utm_source=linkedin&utm_medium=organic_social&utm_campaign=linkedin_channel_guide&utm_content=guide&campaign_variant=proof_backed_setup&offer_code=LINKEDIN-CHANNEL_GUIDE&cta_id=linkedin_channel_guide&cta_placement=channel_draft&surface=linkedin_post ."
@@ -169,7 +174,7 @@
       "channel": "LinkedIn",
       "format": "Reply or DM follow-up",
       "audience": "Commenter who named repeated workflow risk",
-      "evidenceSummary": "5 workflow-control target(s) and 4 business-system target(s) make workflow-risk follow-up more credible than a generic product pitch.",
+      "evidenceSummary": "6 workflow-control target(s) and 5 business-system target(s) make workflow-risk follow-up more credible than a generic product pitch.",
       "cta": "https://thumbgate-production.up.railway.app/guides/claude-code-prevent-repeated-mistakes?utm_source=linkedin&utm_medium=linkedin_comment&utm_campaign=linkedin_channel_repeat_guide&utm_content=guide&campaign_variant=workflow_risk&offer_code=LINKEDIN-CHANNEL_REPEAT&cta_id=linkedin_channel_repeat_guide&cta_placement=channel_draft&surface=linkedin_comment",
       "proofTiming": "Use the repeated-mistakes guide in the reply first. Send proof links only if they ask for evidence after naming the workflow.",
       "draft": "That is exactly the kind of workflow risk I am talking about. The useful next step is not a bigger AI pitch. It is isolating the repeated mistake and deciding what check should fire before the next risky action runs. This guide is the shortest explanation of that loop: https://thumbgate-production.up.railway.app/guides/claude-code-prevent-repeated-mistakes?utm_source=linkedin&utm_medium=linkedin_comment&utm_campaign=linkedin_channel_repeat_guide&utm_content=guide&campaign_variant=workflow_risk&offer_code=LINKEDIN-CHANNEL_REPEAT&cta_id=linkedin_channel_repeat_guide&cta_placement=channel_draft&surface=linkedin_comment ."
@@ -220,9 +225,9 @@
   },
   "evidenceBackstop": {
     "warmTargetCount": 4,
-    "productionTargetCount": 3,
-    "businessSystemTargetCount": 4,
-    "workflowControlSurfaceCount": 5,
+    "productionTargetCount": 2,
+    "businessSystemTargetCount": 5,
+    "workflowControlSurfaceCount": 6,
     "sprintMotionCount": 8,
     "proMotionCount": 2,
     "painSignals": [
