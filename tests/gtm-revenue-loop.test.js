@@ -108,6 +108,22 @@ test('revenue directives switch once interest or paid orders exist', () => {
   assert.match(postFirstDollar.headline, /Verified booked revenue exists/);
 });
 
+test('post-first-dollar directive downgrades to historical proof language when hosted billing is not verified', () => {
+  const catalog = buildMotionCatalog(buildRevenueLinks());
+  const directive = deriveRevenueDirective({
+    revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+    trafficMetrics: {},
+    signups: {},
+    pipeline: {},
+  }, catalog, {
+    mode: 'historical-local',
+  });
+
+  assert.equal(directive.state, 'post-first-dollar');
+  assert.match(directive.headline, /Historical booked revenue is verified/);
+  assert.ok(directive.actions.some((entry) => /current live revenue/i.test(entry)));
+});
+
 test('resolveRevenueLoopSummary prefers hosted revenue status when local operator auth is missing', async () => {
   const result = await resolveRevenueLoopSummary({
     getOperationalBillingSummaryFn: async () => ({
@@ -488,8 +504,8 @@ test('prospects GitHub targets via REST search, filters low-signal repos, and de
     { label: 'Repository', url: 'https://github.com/builder/production-mcp-server' },
   ]);
   assert.ok(result.targets[0].evidence.score >= 5);
-  assert.equal(requestedUrls.length, 9);
-  assert.equal(requestedUrls.filter((url) => url.startsWith('https://api.github.com/search/repositories')).length, 8);
+  assert.equal(requestedUrls.length, 13);
+  assert.equal(requestedUrls.filter((url) => url.startsWith('https://api.github.com/search/repositories')).length, 12);
   assert.ok(requestedUrls.some((url) => url === 'https://api.github.com/users/builder'));
 });
 
@@ -561,6 +577,40 @@ test('prospecting drops educational learning repos that look active but have low
   assert.equal(result.targets[0].repoName, 'mcp-jira-stdio');
 });
 
+test('prospecting drops portfolio-style repos even when they mention workflows', async () => {
+  const result = await prospectTargets(5, {
+    fetchImpl: async () => ({
+      ok: true,
+      async text() {
+        return JSON.stringify({
+          items: [
+            {
+              owner: { login: 'builder' },
+              name: 'agent-workflow-portfolio',
+              html_url: 'https://github.com/builder/agent-workflow-portfolio',
+              description: 'Portfolio of workflow automation projects, approval demos, and AI agent experiments.',
+              stargazers_count: 0,
+              updated_at: new Date().toISOString(),
+            },
+            {
+              owner: { login: 'freema' },
+              name: 'mcp-jira-stdio',
+              html_url: 'https://github.com/freema/mcp-jira-stdio',
+              description: 'MCP server for Jira integration with stdio transport. Issue management, project tracking, and workflow automation via Model Context Protocol.',
+              stargazers_count: 11,
+              updated_at: new Date().toISOString(),
+            },
+          ],
+        });
+      },
+    }),
+  });
+
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.targets.length, 1);
+  assert.equal(result.targets[0].repoName, 'mcp-jira-stdio');
+});
+
 test('GitHub discovery reports API and parser failures as non-fatal warnings', async () => {
   const failed = await fetchGitHubJson('search/repositories?q=test', {
     fetchImpl: async () => ({
@@ -595,7 +645,7 @@ test('GitHub discovery reports API and parser failures as non-fatal warnings', a
   assert.equal(invalid.ok, false);
   assert.equal(unavailable.ok, false);
   assert.equal(prospects.targets.length, 0);
-  assert.equal(prospects.errors.length, 8);
+  assert.equal(prospects.errors.length, 12);
 });
 
 test('GitHub discovery falls back to gh auth token when env tokens are absent', async () => {
@@ -1258,6 +1308,7 @@ test('operator handoff payload mirrors the ranked queue and sales commands in ma
   assert.equal(payload.summary.warmTargetsReadyNow, 1);
   assert.equal(payload.summary.selfServeTargetsReadyNow, 1);
   assert.equal(payload.summary.coldGitHubTargetsReadyNext, 1);
+  assert.ok(payload.operatorRules.some((rule) => /Use Pro after one blocked repeat/i.test(rule)));
   assert.equal(payload.importCommand, 'npm run sales:pipeline -- import --source docs/marketing/gtm-revenue-loop.json');
   const followUpSection = payload.sections.find((section) => section.key === 'follow_up_now');
   const warmSection = payload.sections.find((section) => section.key === 'send_now_warm_discovery');
@@ -1600,6 +1651,34 @@ test('revenue loop report keeps evidence metadata on each target', () => {
   assert.match(report.evidenceBackstop.sourceRule, /Every listing, queue row, and pain-confirmed follow-up/);
 });
 
+test('revenue loop report records billing verification context for historical local runs', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const report = buildRevenueLoopReport({
+    source: 'local',
+    fallbackReason: 'Hosted operational summary is not configured.',
+    summary: {
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      trafficMetrics: { checkoutStarts: 1 },
+      signups: {},
+      pipeline: {},
+    },
+    motionCatalog: catalog,
+    directive: deriveRevenueDirective({
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      trafficMetrics: { checkoutStarts: 1 },
+      signups: {},
+      pipeline: {},
+    }, catalog, {
+      mode: 'historical-local',
+    }),
+    targets: [],
+  });
+
+  assert.equal(report.verification.mode, 'historical-local');
+  assert.match(report.verification.label, /Historical booked revenue is verified/);
+});
+
 test('marketplace copy pack stays tied to current revenue-loop evidence', () => {
   const links = buildRevenueLinks();
   const catalog = buildMotionCatalog(links);
@@ -1719,14 +1798,46 @@ test('marketplace copy pack stays tied to current revenue-loop evidence', () => 
   assert.ok(pack.topSignals.some((signal) => /Business-system workflow approvals/.test(signal.label)));
   assert.ok(pack.topSignals.some((signal) => /Self-serve agent tooling/.test(signal.label)));
   assert.ok(pack.sampleTargets.some((target) => target.account === 'buildertools/codex-hook-pack'));
+  assert.ok(pack.listingBullets.some((bullet) => /Use Pro after one blocked repeat/i.test(bullet)));
   assert.match(markdown, /Proof Policy/);
   assert.match(markdown, /Evidence Backstop/);
+  assert.match(markdown, /Use Pro after one blocked repeat or explicit self-serve install intent/i);
   assert.match(markdown, /Self-serve agent tooling/);
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
   assert.ok(pack.evidenceBackstop.claimGuardrails.some((entry) => /Do not lead with proof links/i.test(entry)));
   assert.doesNotMatch(markdown, /cta unavailable in this run/i);
   assert.doesNotMatch(markdown, /paid customers already exist/i);
+});
+
+test('marketplace copy avoids live revenue language when only historical proof is available', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const report = buildRevenueLoopReport({
+    source: 'local',
+    fallbackReason: 'Hosted operational summary is not configured.',
+    summary: {
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    },
+    motionCatalog: catalog,
+    directive: deriveRevenueDirective({
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    }, catalog, {
+      mode: 'historical-local',
+    }),
+    targets: [],
+  });
+
+  const pack = buildMarketplaceCopy(report);
+
+  assert.match(pack.shortDescription, /Harden one AI-agent workflow/i);
+  assert.doesNotMatch(pack.shortDescription, /Verified booked revenue exists/i);
 });
 
 test('marketplace copy keeps the Pro CTA when no target currently uses the Pro motion', () => {
