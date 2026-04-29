@@ -83,6 +83,10 @@ The revenue loop emits these operator artifacts in that folder:
 - `linkedin-workflow-hardening-pack.md` for LinkedIn founder-post, comment, and DM workflow-hardening copy
 - `linkedin-workflow-hardening-pack.json` for the same LinkedIn operator pack in machine-readable form
 - `linkedin-operator-queue.csv` for LinkedIn-specific queue rows and next asks
+- `reddit-dm-workflow-hardening-pack.md` for the warm Reddit DM send surface, proof timing, and follow-up drafts
+- `reddit-dm-workflow-hardening-pack.json` for the same Reddit DM operator pack in machine-readable form
+- `reddit-dm-operator-queue.csv` for Reddit DM send order and tracking commands
+- `reddit-dm-drafts.csv` for copy-paste first-touch, proof-timed, and close drafts per warm Reddit target
 
 That report now carries both warm discovery leads and cold GitHub prospects in one machine-readable queue so the operator can import a single artifact and still contact the warm engagers first.
 Every artifact inherits the same evidence backstop:
