@@ -1571,24 +1571,24 @@ test('marketplace copy pack stays tied to current revenue-loop evidence', () => 
         temperature: 'cold',
         source: 'github',
         channel: 'github',
-        username: 'platform',
-        accountName: 'platform',
+        username: 'buildertools',
+        accountName: 'buildertools',
         contactUrl: '',
-        repoName: 'release-governor',
-        repoUrl: 'https://github.com/example/release-governor',
+        repoName: 'codex-hook-pack',
+        repoUrl: 'https://github.com/example/codex-hook-pack',
         evidence: {
           score: 9,
-          evidence: ['production or platform workflow'],
-          outreachAngle: 'Lead with rollout proof for one production workflow.',
+          evidence: ['self-serve agent tooling', 'updated in the last 7 days'],
+          outreachAngle: 'Lead with the proof-backed setup guide and local-first enforcement before any team-motion pitch.',
         },
-        outreachAngle: 'Lead with rollout proof for one production workflow.',
+        outreachAngle: 'Lead with the proof-backed setup guide and local-first enforcement before any team-motion pitch.',
         motion: 'pro',
         motionLabel: catalog.pro.label,
-        motionReason: 'Self-serve path is secondary.',
+        motionReason: 'Target looks like a local hook surface, so the guide-to-Pro lane is the faster close.',
         selectedMotion: {
           key: 'pro',
           label: catalog.pro.label,
-          reason: 'Self-serve path is secondary.',
+          reason: 'Target looks like a local hook surface, so the guide-to-Pro lane is the faster close.',
         },
         pipelineStage: 'targeted',
         offer: 'pro_self_serve',
@@ -1608,8 +1608,11 @@ test('marketplace copy pack stays tied to current revenue-loop evidence', () => 
   assert.match(pack.recommendedCtas[2].cta, /\/checkout\/pro$/);
   assert.ok(pack.topSignals.some((signal) => /Warm discovery workflows/.test(signal.label)));
   assert.ok(pack.topSignals.some((signal) => /Business-system workflow approvals/.test(signal.label)));
+  assert.ok(pack.topSignals.some((signal) => /Self-serve agent tooling/.test(signal.label)));
+  assert.ok(pack.sampleTargets.some((target) => target.account === 'buildertools/codex-hook-pack'));
   assert.match(markdown, /Proof Policy/);
   assert.match(markdown, /Evidence Backstop/);
+  assert.match(markdown, /Self-serve agent tooling/);
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
   assert.ok(pack.evidenceBackstop.claimGuardrails.some((entry) => /Do not lead with proof links/i.test(entry)));
