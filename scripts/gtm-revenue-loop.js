@@ -641,6 +641,60 @@ function selectHostedRevenueWindow(summaries = {}) {
   };
 }
 
+function isHostedRevenueSource(source = '') {
+  return normalizeText(source).toLowerCase().startsWith('hosted');
+}
+
+function buildBillingVerification({ source, fallbackReason, snapshot = {} } = {}) {
+  const normalizedSource = normalizeText(source);
+  const normalizedFallback = normalizeText(fallbackReason);
+  const hasHistoricalRevenue = Number(snapshot.paidOrders || 0) > 0
+    || Number(snapshot.bookedRevenueCents || 0) > 0;
+
+  if (isHostedRevenueSource(normalizedSource)) {
+    return {
+      mode: 'live-hosted',
+      label: 'Live hosted billing summary verified for this run.',
+      source: normalizedSource || 'hosted',
+      fallbackReason: normalizedFallback || null,
+    };
+  }
+
+  if (normalizedSource === 'local-unverified') {
+    return {
+      mode: 'local-unverified',
+      label: 'Hosted billing could not be verified in this run; local fallback is not safe for fresh traction claims.',
+      source: normalizedSource,
+      fallbackReason: normalizedFallback || null,
+    };
+  }
+
+  if (hasHistoricalRevenue) {
+    return {
+      mode: 'historical-local',
+      label: 'Historical booked revenue is verified, but the current hosted billing summary was not verified in this run.',
+      source: normalizedSource || 'local',
+      fallbackReason: normalizedFallback || null,
+    };
+  }
+
+  if (normalizedFallback) {
+    return {
+      mode: 'local-fallback',
+      label: 'Current run is using local billing context because the hosted billing summary is unavailable.',
+      source: normalizedSource || 'local',
+      fallbackReason: normalizedFallback,
+    };
+  }
+
+  return {
+    mode: 'local',
+    label: 'Current run is using local billing context.',
+    source: normalizedSource || 'local',
+    fallbackReason: null,
+  };
+}
+
 async function resolveRevenueLoopSummary(options = {}) {
   const {
     getOperationalBillingSummaryFn = getOperationalBillingSummary,
@@ -695,21 +749,31 @@ async function resolveRevenueLoopSummary(options = {}) {
   return localResult;
 }
 
-function deriveRevenueDirective(summary = {}, motionCatalog = buildMotionCatalog()) {
+function deriveRevenueDirective(
+  summary = {},
+  motionCatalog = buildMotionCatalog(),
+  verification = { mode: 'live-hosted' }
+) {
   const snapshot = summarizeCommercialSnapshot(summary);
 
   if (snapshot.paidOrders > 0 || snapshot.bookedRevenueCents > 0) {
+    const liveHostedRevenue = verification?.mode === 'live-hosted';
     return {
       state: 'post-first-dollar',
       objective: 'Scale the first-10-customers loop with direct workflow hardening and self-serve follow-up.',
       primaryMotion: motionCatalog.sprint.key,
       secondaryMotion: motionCatalog.pro.key,
-      headline: 'Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.',
+      headline: liveHostedRevenue
+        ? 'Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.'
+        : 'Historical booked revenue is verified, but the current hosted billing summary is unavailable in this run. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.',
       actions: [
         'Reply to every qualified lead with one offer: "I will harden one AI-agent workflow for you."',
         'Use the proof pack after the buyer names the repeated workflow pain, not as the opener.',
         'Route buyers who only want a tool to the Pro monthly/annual checkout after the pain is qualified.',
         'Publish only booked revenue and paid-order proof from the billing summary or named pilot agreements.',
+        ...(!liveHostedRevenue ? [
+          'When asked for current live revenue, cite the historical commercial proof and disclose that hosted billing was not verified in this run.',
+        ] : []),
       ],
     };
   }
@@ -1304,6 +1368,11 @@ async function generateOutreachMessages(targets, motionCatalog = buildMotionCata
 
 function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog, directive, targets }) {
   const snapshot = summarizeCommercialSnapshot(summary);
+  const verification = buildBillingVerification({
+    source,
+    fallbackReason,
+    snapshot,
+  });
   const currentTruth = {
     publicSelfServeOffer: motionCatalog.pro.label,
     publicSelfServeCta: motionCatalog.pro.cta,
@@ -1318,6 +1387,7 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
     generatedAt: new Date().toISOString(),
     source,
     fallbackReason: fallbackReason || null,
+    verification,
     objective: 'First 10 paying customers',
     directive,
     currentTruth,
@@ -1441,7 +1511,9 @@ function buildMarketplaceCopy(report) {
     ? signalThemes.map((theme) => theme.summary).join(' ')
     : 'Current target evidence still points to workflow hardening and proof-first positioning.';
   const shortDescription = [
-    report.directive?.headline || headline,
+    report.verification?.mode === 'live-hosted'
+      ? (report.directive?.headline || headline)
+      : headline,
     signalSentence,
   ].join(' ');
   const longDescription = [
@@ -1597,6 +1669,7 @@ function renderRevenueLoopMarkdown(report) {
     `- Workflow sprint leads: ${report.snapshot.sprintLeads}`,
     `- Qualified sprint leads: ${report.snapshot.qualifiedSprintLeads}`,
     `- Billing source: ${report.source}${fallbackReason}`,
+    `- Billing verification: ${report.verification?.label || 'n/a'}`,
     '',
     '## GSD Directive',
     `- Objective: ${report.directive.objective}`,
@@ -1823,6 +1896,7 @@ function buildOperatorHandoffPayload(report) {
     summary: {
       revenueState: normalizeText(report?.directive?.state) || 'cold-start',
       headline: normalizeText(report?.directive?.headline) || 'No verified revenue and no active pipeline.',
+      billingVerification: normalizeText(report?.verification?.label) || 'n/a',
       paidOrders: Number(report?.snapshot?.paidOrders || 0),
       checkoutStarts: Number(report?.snapshot?.checkoutStarts || 0),
       activeFollowUps: followUpTargets.length,
@@ -1875,6 +1949,7 @@ function renderOperatorHandoffMarkdown(report) {
     '## Current Snapshot',
     `- Revenue state: ${handoff.summary.revenueState}`,
     `- Headline: ${handoff.summary.headline}`,
+    `- Billing verification: ${handoff.summary.billingVerification}`,
     `- Paid orders: ${handoff.summary.paidOrders}`,
     `- Checkout starts: ${handoff.summary.checkoutStarts}`,
     `- Active follow-ups: ${handoff.summary.activeFollowUps}`,
@@ -2162,7 +2237,15 @@ async function runRevenueLoop(options = {}) {
   const motionCatalog = buildMotionCatalog(links);
   const warmTargets = getWarmOutboundTargets(motionCatalog.sprint.cta);
   const { source, summary, fallbackReason, summaryWindow } = await resolveRevenueLoopSummary(options);
-  const directive = deriveRevenueDirective(summary, motionCatalog);
+  const directive = deriveRevenueDirective(
+    summary,
+    motionCatalog,
+    buildBillingVerification({
+      source,
+      fallbackReason,
+      snapshot: summarizeCommercialSnapshot(summary),
+    })
+  );
   const { targets, errors } = await prospectTargets(options.maxTargets || 6, {
     fetchImpl: options.fetchImpl || globalThis.fetch,
     githubToken: options.githubToken || '',
