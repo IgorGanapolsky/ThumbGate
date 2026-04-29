@@ -769,6 +769,7 @@ function writeCodexPluginRevenuePack(pack, options = {}) {
     ? path.resolve(repoRoot, options.reportDir)
     : '';
   const docsPath = path.join(repoRoot, 'docs', 'marketing', 'codex-plugin-revenue-pack.md');
+  const docsDir = path.dirname(docsPath);
 
   if (reportDir) {
     ensureDir(reportDir);
@@ -779,7 +780,11 @@ function writeCodexPluginRevenuePack(pack, options = {}) {
   }
 
   if (options.writeDocs) {
+    ensureDir(docsDir);
     fs.writeFileSync(docsPath, markdown, 'utf8');
+    fs.writeFileSync(path.join(docsDir, 'codex-plugin-revenue-pack.json'), `${JSON.stringify(pack, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(path.join(docsDir, 'codex-plugin-surfaces.csv'), csv, 'utf8');
+    fs.writeFileSync(path.join(docsDir, 'codex-ready-targets.csv'), readyTargetsCsv, 'utf8');
   }
 
   return {

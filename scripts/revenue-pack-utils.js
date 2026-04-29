@@ -261,6 +261,7 @@ function writeRevenuePackArtifacts({
     : (csvName
       ? [{ name: csvName, value: csvValue }]
       : []);
+  const docsDir = docsPath ? path.dirname(docsPath) : '';
 
   if (resolvedReportDir) {
     ensureDir(resolvedReportDir);
@@ -278,7 +279,22 @@ function writeRevenuePackArtifacts({
   }
 
   if (writeDocs) {
+    if (docsDir) {
+      ensureDir(docsDir);
+    }
     fs.writeFileSync(docsPath, markdown, 'utf8');
+    if (docsDir) {
+      if (jsonName) {
+        fs.writeFileSync(path.join(docsDir, jsonName), `${JSON.stringify(jsonValue, null, 2)}\n`, 'utf8');
+      }
+      for (const artifact of artifacts) {
+        const name = normalizeText(artifact?.name);
+        if (!name) {
+          continue;
+        }
+        fs.writeFileSync(path.join(docsDir, name), normalizeText(artifact?.value) ? artifact.value : '', 'utf8');
+      }
+    }
   }
 
   return {
