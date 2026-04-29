@@ -497,7 +497,7 @@ function renderOperatorQueueCsv(queue = []) {
     ])),
   ];
 
-  return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
+  return `${rows.map((row) => row.map((cell) => csvCell(cell)).join(',')).join('\n')}\n`;
 }
 
 function renderDraftsCsv(drafts = []) {
@@ -516,7 +516,7 @@ function renderDraftsCsv(drafts = []) {
     ])),
   ];
 
-  return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
+  return `${rows.map((row) => row.map((cell) => csvCell(cell)).join(',')).join('\n')}\n`;
 }
 
 function writeRedditDmWorkflowHardeningPack(pack, options = {}) {
