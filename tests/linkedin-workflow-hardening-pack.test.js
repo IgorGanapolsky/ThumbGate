@@ -26,8 +26,8 @@ function makeReportFixture() {
   return {
     generatedAt: '2026-04-27T17:22:01.540Z',
     directive: {
-      state: 'post-first-dollar',
-      headline: 'Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.',
+      state: 'cold-start',
+      headline: 'No verified revenue and no active pipeline. Keep one Workflow Hardening Sprint offer live, then route self-serve buyers to Pro only after the buyer asks for the tool path.',
     },
     targets: [
       {
@@ -171,7 +171,10 @@ test('LinkedIn channel drafts stay workflow-first and keep proof out of the publ
 test('pack includes evidence backstop, LinkedIn drafts, and proof-linked follow-on offers', () => {
   const pack = buildLinkedinWorkflowHardeningPack(makeReportFixture());
 
+  assert.equal(pack.state, 'cold-start');
   assert.equal(pack.headline, CANONICAL_HEADLINE);
+  assert.match(pack.summary, /No verified revenue and no active pipeline/);
+  assert.doesNotMatch(pack.summary, /Revenue is proven/i);
   assert.equal(pack.surfaces.length, 4);
   assert.equal(pack.followOnOffers.length, 2);
   assert.equal(pack.operatorQueue.length, 3);
