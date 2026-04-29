@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-04-29T18:24:17.563Z",
+  "generatedAt": "2026-04-29T18:59:26.663Z",
   "state": "post-first-dollar",
   "headline": "Harden one AI-agent workflow before you roll it out.",
-  "shortDescription": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.",
-  "longDescription": "ThumbGate is a reliability gateway for AI coding workflows. It captures repeated failures, regenerates pre-action gates, and keeps approval boundaries, rollback safety, and proof attached to the workflow before the next risky tool call. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible. Primary motion: Workflow Hardening Sprint. Secondary motion: Pro at $19/mo or $149/yr after the buyer asks for the self-serve path.",
+  "shortDescription": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.",
+  "longDescription": "ThumbGate is a reliability gateway for AI coding workflows. It captures repeated failures, regenerates pre-action gates, and keeps approval boundaries, rollback safety, and proof attached to the workflow before the next risky tool call. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible. Primary motion: Workflow Hardening Sprint. Secondary motion: Pro at $19/mo or $149/yr after the buyer asks for the self-serve path.",
   "proofPolicy": "Do not lead with proof links. Use Commercial Truth and Verification Evidence only after the buyer confirms pain.",
   "recommendedCtas": [
     {
@@ -38,7 +38,7 @@
       "label": "Workflow control surfaces",
       "summary": "The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive.",
       "listingAngle": "Lead with one repeated workflow failure, then show how ThumbGate turns it into an enforceable pre-action gate.",
-      "count": 6,
+      "count": 5,
       "examples": [
         "dolutech/engine_context",
         "Adqui9608/ai-code-review-agent",
@@ -58,10 +58,10 @@
       ]
     },
     {
-      "key": "business_system_workflows",
-      "label": "Business-system workflow approvals",
-      "summary": "Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof.",
-      "listingAngle": "Lead with approval boundaries, rollback safety, and proof for one workflow.",
+      "key": "production_rollout",
+      "label": "Production rollout proof",
+      "summary": "Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems.",
+      "listingAngle": "Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.",
       "count": 4,
       "examples": [
         "dolutech/engine_context",
@@ -74,11 +74,11 @@
       "label": "Self-serve agent tooling",
       "summary": "Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.",
       "listingAngle": "Lead with the proof-backed setup guide first, then convert proven local usage into Pro.",
-      "count": 3,
+      "count": 4,
       "examples": [
         "Abhi268170/Stagix",
-        "zaxbysauce/opencode-swarm",
-        "iliaal/compound-engineering-plugin"
+        "SethGammon/Citadel",
+        "zaxbysauce/opencode-swarm"
       ]
     }
   ],

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-29T18:24:17.563Z",
+  "generatedAt": "2026-04-29T18:59:26.663Z",
   "summary": {
     "revenueState": "post-first-dollar",
     "headline": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.",
@@ -467,12 +467,12 @@
           "selfServeFollowUpDraft": "If you want to inspect the self-serve path while you evaluate `ai-code-review-agent`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
           "checkoutCloseDraft": "If you are already comparing close options for `ai-code-review-agent`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
           "salesCommands": {
-            "markContacted": "npm run sales:pipeline -- advance --lead 'github_adqui9608_ai_code_review_agent' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markReplied": "npm run sales:pipeline -- advance --lead 'github_adqui9608_ai_code_review_agent' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_adqui9608_ai_code_review_agent' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_adqui9608_ai_code_review_agent' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_adqui9608_ai_code_review_agent' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markPaid": "npm run sales:pipeline -- advance --lead 'github_adqui9608_ai_code_review_agent' --channel 'manual' --stage 'paid' --note 'Closed Workflow Hardening Sprint and booked revenue after resolving one business-system workflow that needs approval boundaries, rollback safety, and proof.'"
+            "markContacted": "npm run sales:pipeline -- advance --lead 'github_adqui9608_ai_code_review_agent' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markReplied": "npm run sales:pipeline -- advance --lead 'github_adqui9608_ai_code_review_agent' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_adqui9608_ai_code_review_agent' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_adqui9608_ai_code_review_agent' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_adqui9608_ai_code_review_agent' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markPaid": "npm run sales:pipeline -- advance --lead 'github_adqui9608_ai_code_review_agent' --channel 'manual' --stage 'paid' --note 'Closed Workflow Hardening Sprint and booked revenue after resolving Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.'"
           }
         },
         {
@@ -535,12 +535,12 @@
           "selfServeFollowUpDraft": "If you want to inspect the self-serve path while you evaluate `Stagix`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
           "checkoutCloseDraft": "If you are already comparing close options for `Stagix`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
           "salesCommands": {
-            "markContacted": "npm run sales:pipeline -- advance --lead 'github_abhi268170_stagix' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markReplied": "npm run sales:pipeline -- advance --lead 'github_abhi268170_stagix' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_abhi268170_stagix' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_abhi268170_stagix' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_abhi268170_stagix' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markPaid": "npm run sales:pipeline -- advance --lead 'github_abhi268170_stagix' --channel 'manual' --stage 'paid' --note 'Closed Workflow Hardening Sprint and booked revenue after resolving one business-system workflow that needs approval boundaries, rollback safety, and proof.'"
+            "markContacted": "npm run sales:pipeline -- advance --lead 'github_abhi268170_stagix' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markReplied": "npm run sales:pipeline -- advance --lead 'github_abhi268170_stagix' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_abhi268170_stagix' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_abhi268170_stagix' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_abhi268170_stagix' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markPaid": "npm run sales:pipeline -- advance --lead 'github_abhi268170_stagix' --channel 'manual' --stage 'paid' --note 'Closed Workflow Hardening Sprint and booked revenue after resolving Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.'"
           }
         },
         {
@@ -607,56 +607,52 @@
           "selfServeFollowUpDraft": "If you want to inspect the self-serve path while you evaluate `engine_context`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
           "checkoutCloseDraft": "If you are already comparing close options for `engine_context`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
           "salesCommands": {
-            "markContacted": "npm run sales:pipeline -- advance --lead 'github_dolutech_engine_context' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markReplied": "npm run sales:pipeline -- advance --lead 'github_dolutech_engine_context' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_dolutech_engine_context' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_dolutech_engine_context' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_dolutech_engine_context' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markPaid": "npm run sales:pipeline -- advance --lead 'github_dolutech_engine_context' --channel 'manual' --stage 'paid' --note 'Closed Workflow Hardening Sprint and booked revenue after resolving one business-system workflow that needs approval boundaries, rollback safety, and proof.'"
+            "markContacted": "npm run sales:pipeline -- advance --lead 'github_dolutech_engine_context' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markReplied": "npm run sales:pipeline -- advance --lead 'github_dolutech_engine_context' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_dolutech_engine_context' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_dolutech_engine_context' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_dolutech_engine_context' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markPaid": "npm run sales:pipeline -- advance --lead 'github_dolutech_engine_context' --channel 'manual' --stage 'paid' --note 'Closed Workflow Hardening Sprint and booked revenue after resolving Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.'"
           }
         },
         {
           "rank": 4,
-          "label": "@DGouron - review-flow",
-          "username": "DGouron",
-          "accountName": "DGouron",
-          "repoName": "review-flow",
-          "repoUrl": "https://github.com/DGouron/review-flow",
+          "label": "@SethGammon - Citadel",
+          "username": "SethGammon",
+          "accountName": "SethGammon",
+          "repoName": "Citadel",
+          "repoUrl": "https://github.com/SethGammon/Citadel",
           "temperature": "cold",
           "source": "github",
           "channel": "github",
           "pipelineStage": "targeted",
-          "pipelineLeadId": "github_dgouron_review_flow",
+          "pipelineLeadId": "github_sethgammon_citadel",
           "nextOperatorStep": "Send the first-touch draft and log the outreach in the sales pipeline.",
           "pipelineUpdatedAt": "",
-          "contactSurface": "https://dgouron.fr/",
+          "contactSurface": "https://github.com/SethGammon",
           "contactSurfaces": [
             {
-              "label": "Website",
-              "url": "https://dgouron.fr/"
-            },
-            {
               "label": "GitHub profile",
-              "url": "https://github.com/DGouron"
+              "url": "https://github.com/SethGammon"
             },
             {
               "label": "Repository",
-              "url": "https://github.com/DGouron/review-flow"
+              "url": "https://github.com/SethGammon/Citadel"
             }
           ],
-          "company": "Mentor Goal",
+          "company": "",
           "evidenceScore": 14,
           "evidence": [
-            "workflow control surface",
-            "business-system integration",
+            "production or platform workflow",
             "agent infrastructure",
-            "36 GitHub stars",
+            "self-serve agent tooling",
+            "525 GitHub stars",
             "updated in the last 7 days"
           ],
           "evidenceSources": [
             {
               "label": "Target signal",
-              "url": "https://github.com/DGouron/review-flow",
+              "url": "https://github.com/SethGammon/Citadel",
               "reason": "Source of the workflow or buyer signal behind this outreach row."
             },
             {
@@ -671,20 +667,20 @@
             }
           ],
           "motionLabel": "Workflow Hardening Sprint",
-          "whyNow": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
+          "whyNow": "Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.",
           "proofRule": "Use proof pack only after the buyer confirms pain.",
           "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
-          "firstTouchDraft": "Hey @DGouron, saw you're shipping `review-flow`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
-          "painConfirmedFollowUpDraft": "If `review-flow` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
-          "selfServeFollowUpDraft": "If you want to inspect the self-serve path while you evaluate `review-flow`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
-          "checkoutCloseDraft": "If you are already comparing close options for `review-flow`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+          "firstTouchDraft": "Hey @SethGammon, saw you're shipping `Citadel`. If one deploy, release, or incident workflow keeps needing extra guardrails, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+          "painConfirmedFollowUpDraft": "If `Citadel` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+          "selfServeFollowUpDraft": "If you want to inspect the self-serve path while you evaluate `Citadel`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+          "checkoutCloseDraft": "If you are already comparing close options for `Citadel`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
           "salesCommands": {
-            "markContacted": "npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markReplied": "npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
-            "markPaid": "npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'paid' --note 'Closed Workflow Hardening Sprint and booked revenue after resolving one business-system workflow that needs approval boundaries, rollback safety, and proof.'"
+            "markContacted": "npm run sales:pipeline -- advance --lead 'github_sethgammon_citadel' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.'",
+            "markReplied": "npm run sales:pipeline -- advance --lead 'github_sethgammon_citadel' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.'",
+            "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_sethgammon_citadel' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.'",
+            "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_sethgammon_citadel' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.'",
+            "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_sethgammon_citadel' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.'",
+            "markPaid": "npm run sales:pipeline -- advance --lead 'github_sethgammon_citadel' --channel 'manual' --stage 'paid' --note 'Closed Workflow Hardening Sprint and booked revenue after resolving Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.'"
           }
         }
       ]
