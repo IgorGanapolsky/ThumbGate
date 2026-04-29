@@ -23,7 +23,13 @@ const TARGET_SEARCH_QUERIES = [
   'search/repositories?q=Claude+Code+hooks+sort:updated',
   'search/repositories?q=Codex+plugin+sort:updated',
   'search/repositories?q=Cursor+rules+sort:updated',
+  'search/repositories?q=Codex+workflow+automation+sort:updated',
+  'search/repositories?q=OpenCode+workflow+automation+sort:updated',
+  'search/repositories?q=OpenCode+swarm+sort:updated',
+  'search/repositories?q=agent+review+workflow+sort:updated',
 ];
+const GITHUB_FETCH_TIMEOUT_MS = 15_000;
+const MIN_ZERO_STAR_REPO_AGE_DAYS = 14;
 const SELF_SERVE_ONLY_SIGNALS = /\b(awesome|list|example|template|demo|tutorial|course|personal|dotfiles|toy|boilerplate|learn|learning|playground|starter|sample|sandbox|quickstart|lab)\b/;
 const LOW_BUYER_INTENT_SIGNALS = /\b(learn|learning|tutorial|course|playground|starter|sample|sandbox|quickstart|boilerplate|template|demo|example|lab)\b/;
 const SELF_SERVE_TOOLING_SIGNALS = /\b(plugin|plugins|extension|extensions|hook|hooks|statusline|status line|config|profile|installer|install|setup|rule pack|ruleset|local-first|local first|workspace rules)\b/;
@@ -727,6 +733,21 @@ function buildGitHubApiHeaders(token = '') {
   return headers;
 }
 
+function createTimeoutSignal(timeoutMs = GITHUB_FETCH_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  if (typeof timer.unref === 'function') {
+    timer.unref();
+  }
+
+  return {
+    signal: controller.signal,
+    clear() {
+      clearTimeout(timer);
+    },
+  };
+}
+
 async function fetchGitHubJson(endpoint, {
   fetchImpl = globalThis.fetch,
   githubToken = '',
@@ -738,13 +759,24 @@ async function fetchGitHubJson(endpoint, {
 
   const resolvedToken = resolveGitHubApiToken(githubToken, { execFileSyncImpl });
   let response;
+  const timeout = createTimeoutSignal();
   try {
     const requestUrl = new URL(endpoint, GITHUB_API_BASE_URL);
     response = await fetchImpl(requestUrl, {
       headers: buildGitHubApiHeaders(resolvedToken),
+      signal: timeout.signal,
     });
   } catch (err) {
+    if (err?.name === 'AbortError') {
+      return {
+        ok: false,
+        error: `GitHub API request timed out after ${GITHUB_FETCH_TIMEOUT_MS}ms`,
+        data: null,
+      };
+    }
     return { ok: false, error: err?.message || String(err), data: null };
+  } finally {
+    timeout.clear();
   }
 
   const responseText = await response.text();
@@ -839,6 +871,29 @@ function hasCredibleRepoDescription(target) {
   if (!description) return false;
   if (description.length > MAX_CREDIBLE_DESCRIPTION_LENGTH) return false;
   return !SUSPICIOUS_REPO_DESCRIPTION_PATTERNS.some((pattern) => pattern.test(description));
+}
+
+function getRepoAgeDays(target) {
+  const createdAt = normalizeText(target?.createdAt);
+  if (!createdAt) return Number.NaN;
+  const createdAtMs = Date.parse(createdAt);
+  if (!Number.isFinite(createdAtMs)) return Number.NaN;
+  const ageMs = Date.now() - createdAtMs;
+  if (!Number.isFinite(ageMs) || ageMs < 0) return Number.NaN;
+  return ageMs / (24 * 60 * 60 * 1000);
+}
+
+function hasCredibleRepoMarketSignal(target) {
+  if (Number(target?.stars || 0) > 0) {
+    return true;
+  }
+
+  const repoAgeDays = getRepoAgeDays(target);
+  if (!Number.isFinite(repoAgeDays)) {
+    return true;
+  }
+
+  return repoAgeDays >= MIN_ZERO_STAR_REPO_AGE_DAYS;
 }
 
 function hasLowBuyerIntentSignals(target) {
@@ -975,6 +1030,7 @@ async function prospectTargets(maxTargets = 6, {
         repoName: repo.name || 'unknown-repo',
         repoUrl: repo.html_url || '',
         description: normalizeText(repo.description) || 'No description provided.',
+        createdAt: repo.created_at || null,
         stars: Number(repo.stargazers_count || 0),
         updatedAt: repo.updated_at || null,
       });
@@ -984,6 +1040,7 @@ async function prospectTargets(maxTargets = 6, {
   const ranked = dedupeTargets(combined)
     .filter(hasCredibleRepoIdentity)
     .filter(hasCredibleRepoDescription)
+    .filter(hasCredibleRepoMarketSignal)
     .map((target) => {
       const evidence = analyzeTargetEvidence(target);
       return {
@@ -2183,6 +2240,7 @@ module.exports = {
   fetchGitHubJson,
   hasCredibleRepoDescription,
   hasCredibleRepoIdentity,
+  hasCredibleRepoMarketSignal,
   hasLowBuyerIntentSignals,
   resolveGitHubApiToken,
   isCliInvocation,
