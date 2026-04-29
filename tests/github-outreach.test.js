@@ -7,9 +7,14 @@ const path = require('node:path');
 const { buildLeadFromRevenueTarget } = require('../scripts/sales-pipeline');
 const {
   buildOutreachTargetsReport,
+  buildOperatorQueueRows,
+  deriveOutreachArtifactPaths,
+  getPrimaryContactSurface,
+  inferContactRoute,
   isCliInvocation,
+  renderOperatorQueueCsv,
   renderOutreachTargetsMarkdown,
-  writeOutreachTargetsDoc,
+  writeOutreachTargetsArtifacts,
 } = require('../scripts/github-outreach');
 
 function makeTempDir() {
@@ -52,6 +57,11 @@ function makeColdTarget() {
     repoName: 'review-flow',
     repoUrl: 'https://github.com/DGouron/review-flow',
     contactUrl: 'https://dgouron.fr/',
+    contactSurfaces: [
+      { label: 'Website', url: 'https://dgouron.fr/' },
+      { label: 'GitHub profile', url: 'https://github.com/DGouron' },
+      { label: 'Repository', url: 'https://github.com/DGouron/review-flow' },
+    ],
     evidenceScore: 14,
     evidence: ['workflow control surface', 'business-system integration', '36 GitHub stars'],
     motionReason: 'Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.',
@@ -76,6 +86,11 @@ function makeSelfServeTarget() {
     repoName: 'flow-next',
     repoUrl: 'https://github.com/gmickel/flow-next',
     contactUrl: 'https://mickel.tech/',
+    contactSurfaces: [
+      { label: 'Website', url: 'https://mickel.tech/' },
+      { label: 'GitHub profile', url: 'https://github.com/gmickel' },
+      { label: 'Repository', url: 'https://github.com/gmickel/flow-next' },
+    ],
     evidenceScore: 12,
     evidence: ['workflow control surface', 'self-serve agent tooling', '576 GitHub stars'],
     motion: 'pro',
@@ -109,7 +124,11 @@ test('queue-backed outreach report separates warm, self-serve, and cold sprint l
 
   const report = buildOutreachTargetsReport({ queuePath, reportPath, statePath });
   const markdown = renderOutreachTargetsMarkdown(report);
-  const outPath = writeOutreachTargetsDoc(markdown, path.join(tempDir, 'OUTREACH_TARGETS.md'));
+  const paths = writeOutreachTargetsArtifacts({
+    markdown,
+    report,
+    outPath: path.join(tempDir, 'OUTREACH_TARGETS.md'),
+  });
 
   assert.equal(report.followUpTargets.length, 0);
   assert.equal(report.warmTargets.length, 1);
@@ -122,10 +141,14 @@ test('queue-backed outreach report separates warm, self-serve, and cold sprint l
   assert.match(markdown, /Self-serve closes ready: 1/);
   assert.match(markdown, /Cold GitHub ready: 1/);
   assert.match(markdown, /## Self-Serve Closes/);
+  assert.match(markdown, /Preferred route: Website/);
+  assert.match(markdown, /Backup surfaces: GitHub profile: https:\/\/github\.com\/gmickel; Repository: https:\/\/github\.com\/gmickel\/flow-next/);
   assert.match(markdown, /flow-next/);
   assert.match(markdown, /review-flow/);
   assert.match(markdown, /stage 'contacted'/);
-  assert.equal(fs.existsSync(outPath), true);
+  assert.equal(fs.existsSync(paths.markdownPath), true);
+  assert.equal(fs.existsSync(paths.csvPath), true);
+  assert.equal(fs.existsSync(paths.jsonPath), true);
 });
 
 test('active follow-ups are promoted ahead of fresh sends using sales ledger state', () => {
@@ -168,6 +191,60 @@ test('active follow-ups are promoted ahead of fresh sends using sales ledger sta
   assert.match(markdown, /stage 'call_booked'/);
 });
 
+test('contact routes prefer websites for GitHub targets and Reddit DM for warm Reddit targets', () => {
+  const warmTarget = makeWarmTarget();
+  const coldTarget = makeColdTarget();
+
+  const warmSurface = getPrimaryContactSurface(warmTarget);
+  const coldSurface = getPrimaryContactSurface(coldTarget);
+
+  assert.deepEqual(warmSurface, {
+    label: 'Reddit DM',
+    url: 'https://www.reddit.com/user/game-of-kton/',
+  });
+  assert.deepEqual(coldSurface, {
+    label: 'Website',
+    url: 'https://dgouron.fr/',
+  });
+  assert.equal(inferContactRoute(warmTarget, warmSurface), 'reddit_dm');
+  assert.equal(inferContactRoute(coldTarget, coldSurface), 'website');
+});
+
+test('operator queue export keeps the preferred route and fallback surfaces per row', () => {
+  const tempDir = makeTempDir();
+  const queuePath = path.join(tempDir, 'gtm-target-queue.jsonl');
+  const reportPath = path.join(tempDir, 'gtm-revenue-loop.json');
+  const statePath = path.join(tempDir, 'sales-pipeline.jsonl');
+
+  writeJsonl(queuePath, [makeWarmTarget(), makeSelfServeTarget(), makeColdTarget()]);
+  fs.writeFileSync(reportPath, JSON.stringify({
+    generatedAt: '2026-04-27T17:00:00.000Z',
+    directive: {
+      state: 'cold-start',
+      headline: 'No verified revenue and no active pipeline.',
+    },
+  }, null, 2));
+
+  const report = buildOutreachTargetsReport({ queuePath, reportPath, statePath });
+  const rows = buildOperatorQueueRows(report);
+  const csv = renderOperatorQueueCsv(rows);
+  const written = writeOutreachTargetsArtifacts({
+    markdown: renderOutreachTargetsMarkdown(report),
+    report,
+    outPath: path.join(tempDir, 'OUTREACH_TARGETS.md'),
+  });
+  const jsonPayload = JSON.parse(fs.readFileSync(written.jsonPath, 'utf8'));
+
+  assert.equal(rows.length, 3);
+  assert.equal(rows[0].preferredRoute, 'reddit_dm');
+  assert.equal(rows[1].preferredRoute, 'website');
+  assert.equal(rows[1].backupContactSurfaces, 'GitHub profile: https://github.com/gmickel; Repository: https://github.com/gmickel/flow-next');
+  assert.match(csv, /^lane,summary,temperature,source,channel,stage,username,accountName,repoName,repoUrl,company,evidenceScore,preferredRoute,preferredRouteLabel,preferredContactUrl,backupContactSurfaces,allContactSurfaces,motion,offer,cta,nextTrackingCommand,evidence,firstTouchDraft,painConfirmedFollowUpDraft/m);
+  assert.match(csv, /website,Website,https:\/\/mickel\.tech\//);
+  assert.equal(Array.isArray(jsonPayload.rows), true);
+  assert.equal(jsonPayload.rows[2].preferredContactUrl, 'https://dgouron.fr/');
+});
+
 test('report core links inherit the current team pilot CTA when provided', () => {
   const tempDir = makeTempDir();
   const queuePath = path.join(tempDir, 'gtm-target-queue.jsonl');
@@ -202,4 +279,12 @@ test('CLI entrypoint detection is path based', () => {
 
   assert.equal(isCliInvocation(['node', scriptPath]), true);
   assert.equal(isCliInvocation(['node', __filename]), false);
+});
+
+test('artifact paths stay adjacent to the markdown surface', () => {
+  const paths = deriveOutreachArtifactPaths('/tmp/reports/OUTREACH_TARGETS.md');
+
+  assert.equal(paths.markdownPath, '/tmp/reports/OUTREACH_TARGETS.md');
+  assert.equal(paths.csvPath, '/tmp/reports/OUTREACH_TARGETS.csv');
+  assert.equal(paths.jsonPath, '/tmp/reports/OUTREACH_TARGETS.json');
 });
