@@ -18,12 +18,15 @@ const TARGET_SEARCH_QUERIES = [
   'search/repositories?q=Model+Context+Protocol+workflow+automation+sort:updated',
   'search/repositories?q=Model+Context+Protocol+approval+workflow+sort:updated',
   'search/repositories?q=ServiceNow+MCP+workflow+sort:updated',
+  'search/repositories?q=ServiceNow+agent+workflow+sort:updated',
   'search/repositories?q=Claude+Code+review+automation+sort:updated',
   'search/repositories?q=github+review+automation+agent+sort:updated',
   'search/repositories?q=review+workflow+automation+agent+sort:updated',
   'search/repositories?q=approval+workflow+github+agent+sort:updated',
   'search/repositories?q=incident+workflow+automation+agent+sort:updated',
   'search/repositories?q=jira+approval+workflow+agent+sort:updated',
+  'search/repositories?q=agent+approval+policy+sort:updated',
+  'search/repositories?q=workflow+guardrails+agent+sort:updated',
   'search/repositories?q=Claude+Code+hooks+sort:updated',
   'search/repositories?q=Codex+plugin+sort:updated',
   'search/repositories?q=Cursor+rules+sort:updated',
@@ -2317,6 +2320,7 @@ if (isCliInvocation()) {
 
 module.exports = {
   COMMERCIAL_TRUTH_LINK,
+  TARGET_SEARCH_QUERIES,
   VERIFICATION_EVIDENCE_LINK,
   buildFallbackMessage,
   buildPainConfirmedFollowUp,
