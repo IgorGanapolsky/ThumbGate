@@ -21,6 +21,7 @@ const {
   fetchGitHubJson,
   hasCredibleRepoDescription,
   hasCredibleRepoIdentity,
+  hasCredibleRepoMarketSignal,
   hasLowBuyerIntentSignals,
   parseArgs,
   prospectTargets,
@@ -293,6 +294,24 @@ test('repo description sanity gate rejects corrupted GitHub metadata', () => {
   }), false);
 });
 
+test('repo market-signal gate rejects brand-new zero-star repos', () => {
+  assert.equal(hasCredibleRepoMarketSignal({
+    repoName: 'claude-codex-handoff',
+    stars: 0,
+    createdAt: new Date(Date.now() - (2 * 24 * 60 * 60 * 1000)).toISOString(),
+  }), false);
+  assert.equal(hasCredibleRepoMarketSignal({
+    repoName: 'production-mcp-server',
+    stars: 3,
+    createdAt: new Date(Date.now() - (2 * 24 * 60 * 60 * 1000)).toISOString(),
+  }), true);
+  assert.equal(hasCredibleRepoMarketSignal({
+    repoName: 'legacy-mcp-server',
+    stars: 0,
+    createdAt: new Date(Date.now() - (30 * 24 * 60 * 60 * 1000)).toISOString(),
+  }), true);
+});
+
 test('low buyer-intent signals identify educational discovery surfaces', () => {
   assert.equal(hasLowBuyerIntentSignals({
     repoName: 'Learning-about-MCP',
@@ -334,6 +353,7 @@ test('prospects GitHub targets via REST search, filters low-signal repos, and de
               name: 'production-mcp-server',
               html_url: 'https://github.com/builder/production-mcp-server',
               description: 'Production MCP server for deployment workflow approvals and audit proof.',
+              created_at: '2026-03-01T00:00:00.000Z',
               stargazers_count: 42,
               updated_at: new Date().toISOString(),
             },
@@ -345,6 +365,7 @@ test('prospects GitHub targets via REST search, filters low-signal repos, and de
               name: 'production-mcp-server',
               html_url: 'https://github.com/builder/production-mcp-server',
               description: 'Duplicate target',
+              created_at: '2026-03-01T00:00:00.000Z',
               stargazers_count: 42,
               updated_at: new Date().toISOString(),
             },
@@ -356,6 +377,7 @@ test('prospects GitHub targets via REST search, filters low-signal repos, and de
               name: 'mcp-demo-template',
               html_url: 'https://github.com/builder/mcp-demo-template',
               description: 'Template demo for Claude Code builders.',
+              created_at: new Date().toISOString(),
               stargazers_count: 0,
               updated_at: new Date().toISOString(),
             },
@@ -379,8 +401,8 @@ test('prospects GitHub targets via REST search, filters low-signal repos, and de
     { label: 'Repository', url: 'https://github.com/builder/production-mcp-server' },
   ]);
   assert.ok(result.targets[0].evidence.score >= 5);
-  assert.equal(requestedUrls.length, 9);
-  assert.equal(requestedUrls.filter((url) => url.startsWith('https://api.github.com/search/repositories')).length, 8);
+  assert.equal(requestedUrls.length, 13);
+  assert.equal(requestedUrls.filter((url) => url.startsWith('https://api.github.com/search/repositories')).length, 12);
   assert.ok(requestedUrls.some((url) => url === 'https://api.github.com/users/builder'));
 });
 
@@ -396,6 +418,7 @@ test('prospecting drops repositories with corrupted descriptions even when score
               name: 'redesigned-pancake',
               html_url: 'https://github.com/Sfedfcv/redesigned-pancake',
               description: "Skip to content github / docs @@ -10,23 +10,8 @@ .github/workflows/repo-sync.yml Showing 501 changed files with 5,397 additions and 1,362 deletions.",
+              created_at: '2026-03-01T00:00:00.000Z',
               stargazers_count: 224,
               updated_at: new Date().toISOString(),
             },
@@ -404,6 +427,7 @@ test('prospecting drops repositories with corrupted descriptions even when score
               name: 'mcp-jira-stdio',
               html_url: 'https://github.com/freema/mcp-jira-stdio',
               description: 'MCP server for Jira integration with stdio transport. Issue management, project tracking, and workflow automation via Model Context Protocol.',
+              created_at: '2026-03-01T00:00:00.000Z',
               stargazers_count: 11,
               updated_at: new Date().toISOString(),
             },
@@ -430,6 +454,7 @@ test('prospecting drops educational learning repos that look active but have low
               name: 'Learning-about-MCP',
               html_url: 'https://github.com/builder/Learning-about-MCP',
               description: 'Learning repo for MCP workflow experiments, production notes, and agent patterns.',
+              created_at: '2026-03-01T00:00:00.000Z',
               stargazers_count: 0,
               updated_at: new Date().toISOString(),
             },
@@ -438,6 +463,7 @@ test('prospecting drops educational learning repos that look active but have low
               name: 'mcp-jira-stdio',
               html_url: 'https://github.com/freema/mcp-jira-stdio',
               description: 'MCP server for Jira integration with stdio transport. Issue management, project tracking, and workflow automation via Model Context Protocol.',
+              created_at: '2026-03-01T00:00:00.000Z',
               stargazers_count: 11,
               updated_at: new Date().toISOString(),
             },
@@ -486,7 +512,20 @@ test('GitHub discovery reports API and parser failures as non-fatal warnings', a
   assert.equal(invalid.ok, false);
   assert.equal(unavailable.ok, false);
   assert.equal(prospects.targets.length, 0);
-  assert.equal(prospects.errors.length, 8);
+  assert.equal(prospects.errors.length, 12);
+});
+
+test('GitHub discovery converts aborted fetches into timeout warnings', async () => {
+  const timedOut = await fetchGitHubJson('search/repositories?q=test', {
+    fetchImpl: async () => {
+      const error = new Error('This operation was aborted');
+      error.name = 'AbortError';
+      throw error;
+    },
+  });
+
+  assert.equal(timedOut.ok, false);
+  assert.match(timedOut.error, /timed out after 15000ms/);
 });
 
 test('GitHub discovery falls back to gh auth token when env tokens are absent', async () => {
@@ -573,6 +612,7 @@ test('prospecting reuses gh auth token fallback for search and profile enrichmen
                   name: 'production-mcp-server',
                   html_url: 'https://github.com/builder/production-mcp-server',
                   description: 'Production MCP server for deployment workflow approvals and audit proof.',
+                  created_at: '2026-03-01T00:00:00.000Z',
                   stargazers_count: 42,
                   updated_at: new Date().toISOString(),
                 },
@@ -595,6 +635,42 @@ test('prospecting reuses gh auth token fallback for search and profile enrichmen
     if (originalGhPat === undefined) delete process.env.GH_PAT;
     else process.env.GH_PAT = originalGhPat;
   }
+});
+
+test('prospecting drops same-week zero-star repos even when their descriptions look relevant', async () => {
+  const result = await prospectTargets(5, {
+    fetchImpl: async () => ({
+      ok: true,
+      async text() {
+        return JSON.stringify({
+          items: [
+            {
+              owner: { login: 'noise' },
+              name: 'claude-codex-handoff',
+              html_url: 'https://github.com/noise/claude-codex-handoff',
+              description: 'Sync Claude Code and Codex in VS Code to keep context, switch tools cleanly, and avoid reworking the same project setup.',
+              created_at: new Date(Date.now() - (2 * 24 * 60 * 60 * 1000)).toISOString(),
+              stargazers_count: 0,
+              updated_at: new Date().toISOString(),
+            },
+            {
+              owner: { login: 'builder' },
+              name: 'production-mcp-server',
+              html_url: 'https://github.com/builder/production-mcp-server',
+              description: 'Production MCP server for deployment workflow approvals and audit proof.',
+              created_at: '2026-03-01T00:00:00.000Z',
+              stargazers_count: 8,
+              updated_at: new Date().toISOString(),
+            },
+          ],
+        });
+      },
+    }),
+  });
+
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.targets.length, 1);
+  assert.equal(result.targets[0].repoName, 'production-mcp-server');
 });
 
 test('rendered revenue loop markdown anchors every target to truth and proof', () => {
