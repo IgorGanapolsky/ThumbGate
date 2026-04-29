@@ -20,12 +20,16 @@ const TARGET_SEARCH_QUERIES = [
   'search/repositories?q=ServiceNow+MCP+workflow+sort:updated',
   'search/repositories?q=Claude+Code+review+automation+sort:updated',
   'search/repositories?q=github+review+automation+agent+sort:updated',
+  'search/repositories?q=review+workflow+automation+agent+sort:updated',
+  'search/repositories?q=approval+workflow+github+agent+sort:updated',
+  'search/repositories?q=incident+workflow+automation+agent+sort:updated',
+  'search/repositories?q=jira+approval+workflow+agent+sort:updated',
   'search/repositories?q=Claude+Code+hooks+sort:updated',
   'search/repositories?q=Codex+plugin+sort:updated',
   'search/repositories?q=Cursor+rules+sort:updated',
 ];
 const SELF_SERVE_ONLY_SIGNALS = /\b(awesome|list|example|template|demo|tutorial|course|personal|dotfiles|toy|boilerplate|learn|learning|playground|starter|sample|sandbox|quickstart|lab)\b/;
-const LOW_BUYER_INTENT_SIGNALS = /\b(learn|learning|tutorial|course|playground|starter|sample|sandbox|quickstart|boilerplate|template|demo|example|lab)\b/;
+const LOW_BUYER_INTENT_SIGNALS = /\b(learn|learning|tutorial|course|playground|starter|sample|sandbox|quickstart|boilerplate|template|demo|example|lab|portfolio|showcase|case study)\b/;
 const SELF_SERVE_TOOLING_SIGNALS = /\b(plugin|plugins|extension|extensions|hook|hooks|statusline|status line|config|profile|installer|install|setup|rule pack|ruleset|local-first|local first|workspace rules)\b/;
 const MAX_CREDIBLE_DESCRIPTION_LENGTH = 500;
 const SUSPICIOUS_REPO_DESCRIPTION_PATTERNS = [
