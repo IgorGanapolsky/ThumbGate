@@ -15,6 +15,8 @@ ThumbGate is a **human-in-the-loop enforcement layer** for AI coding agents — 
 
 ## 2. Distribution Channels
 
+Active outbound channels as of April 20, 2026: Reddit, LinkedIn, Threads, Bluesky, Instagram, and YouTube. X/Twitter is retired from active distribution and should stay archival only.
+
 | Channel | URL |
 |---------|-----|
 | npm | https://www.npmjs.com/package/thumbgate |
@@ -25,17 +27,16 @@ ThumbGate is a **human-in-the-loop enforcement layer** for AI coding agents — 
 
 ## 3. Acquisition: Social Post Templates
 
-### Twitter/X
+### Bluesky / Threads
 
-> "Your AI agent just mass-deleted prod data. Again.
+> "Most AI agent memory tools help the model remember. ThumbGate also enforces.
 >
-> We built **Pre-Action Gates** for MCP agents — configurable checkpoints that block dangerous tool calls before they execute.
+> One thumbs-down on a repeated failure becomes a Pre-Action Check that blocks the same tool-call pattern before execution.
 >
-> Free: 5 built-in gates + feedback capture + prevention rules
-> Pro ($19/mo): auto-gate promotion, unlimited custom gates, multi-repo sync
+> That is the difference between context and enforcement.
 >
-> OSS core: https://github.com/IgorGanapolsky/thumbgate
-> Pro: https://thumbgate-production.up.railway.app/checkout/pro"
+> Start with one repeated workflow failure, not a generic AI-agent pitch:
+> https://thumbgate-production.up.railway.app/?utm_source=bluesky&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=workflow_enforcement_post&campaign_variant=workflow_hardening"
 
 ### LinkedIn
 

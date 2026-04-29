@@ -76,7 +76,8 @@ test('launch content uses tracked landing links for community distribution', () 
 
   assert.match(launchContent, /thumbgate-production\.up\.railway\.app\/\?utm_source=reddit/i);
   assert.match(launchContent, /thumbgate-production\.up\.railway\.app\/\?utm_source=hackernews/i);
-  assert.match(launchContent, /thumbgate-production\.up\.railway\.app\/\?utm_source=x/i);
+  assert.match(launchContent, /thumbgate-production\.up\.railway\.app\/\?utm_source=linkedin/i);
+  assert.doesNotMatch(launchContent, /utm_source=x/i);
   assert.doesNotMatch(launchContent, /buy\.stripe\.com/i);
 });
 
