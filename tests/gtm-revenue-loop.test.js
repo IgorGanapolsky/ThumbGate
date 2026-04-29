@@ -1389,6 +1389,51 @@ test('first-touch outreach applies the evidence angle without leaking operator i
   assert.doesNotMatch(message, /approval boundaries/i);
 });
 
+test('sales pipeline commands do not leak outreach instruction prefixes', () => {
+  const report = buildRevenueLoopReport({
+    source: 'local',
+    fallbackReason: null,
+    summary: {
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    },
+    motionCatalog: buildMotionCatalog(buildRevenueLinks()),
+    directive: deriveRevenueDirective({
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    }, buildMotionCatalog(buildRevenueLinks())),
+    targets: [{
+      temperature: 'cold',
+      source: 'github',
+      channel: 'github',
+      username: 'freema',
+      accountName: 'freema',
+      contactUrl: 'https://github.com/freema',
+      repoName: 'mcp-jira-stdio',
+      repoUrl: 'https://github.com/freema/mcp-jira-stdio',
+      description: 'MCP server for Jira integration with workflow approvals and issue handoffs.',
+      evidence: {
+        score: 10,
+        evidence: ['business-system integration'],
+        outreachAngle: 'Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.',
+      },
+      selectedMotion: {
+        key: 'sprint',
+        label: 'Workflow Hardening Sprint',
+        reason: 'Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.',
+      },
+    }],
+  });
+
+  assert.match(report.targets[0].salesCommands.markContacted, /focused on one business-system workflow that needs approval boundaries, rollback safety, and proof\./);
+  assert.doesNotMatch(report.targets[0].salesCommands.markContacted, /Lead with/i);
+  assert.doesNotMatch(report.targets[0].salesCommands.markPaid, /Lead with/i);
+});
+
 test('first-touch outreach specializes sprint hooks without repo names', () => {
   const catalog = buildMotionCatalog(buildRevenueLinks());
   const cases = [{
