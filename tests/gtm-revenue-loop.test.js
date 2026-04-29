@@ -402,6 +402,10 @@ test('target evidence favors production workflows over generic fresh repos', () 
   assert.match(strong.outreachAngle, /rollout proof|approval boundaries/i);
 });
 
+test('target search queries keep the GitLab review discovery lane active', () => {
+  assert.ok(TARGET_SEARCH_QUERIES.includes('search/repositories?q=GitLab+review+automation+agent+sort:updated'));
+});
+
 test('self-serve hook surfaces keep the guide-first outreach angle even when they mention platforms', () => {
   const target = analyzeTargetEvidence({
     repoName: 'claude-hooks',
@@ -1338,10 +1342,6 @@ test('operator handoff payload mirrors the ranked queue and sales commands in ma
   assert.equal(warmSection.targets[0].contactSurfaces[0].label, 'Reddit DM');
   assert.equal(selfServeSection.targets[0].label, '@self_serve_builder - claude-code-hooks');
   assert.equal(selfServeSection.targets[0].motionLabel, catalog.pro.label);
-  assert.match(
-    selfServeSection.targets[0].salesCommands.markContacted,
-    /guide-to-Pro lane is the faster close/
-  );
   assert.equal(coldSection.targets[0].label, '@builder - production-mcp-server');
   assert.equal(coldSection.targets[0].contactSurfaces[1].url, 'https://github.com/builder');
 });
@@ -1577,8 +1577,56 @@ test('self-serve targets generate self-serve sales-command notes instead of spri
   });
 
   assert.match(report.targets[0].salesCommands.markContacted, /self-serve first touch/i);
+  assert.match(report.targets[0].salesCommands.markContacted, /proof-backed setup guide and local-first enforcement/i);
   assert.match(report.targets[0].salesCommands.markCallBooked, /self-serve conversation exposed repeated pain/i);
   assert.match(report.targets[0].salesCommands.markSprintIntake, /escalated from the self-serve lane/i);
+});
+
+test('sprint target sales-command notes strip operator phrasing from the pain hypothesis', () => {
+  const catalog = buildMotionCatalog(buildRevenueLinks());
+  const report = buildRevenueLoopReport({
+    source: 'local',
+    fallbackReason: null,
+    summary: {
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    },
+    motionCatalog: catalog,
+    directive: deriveRevenueDirective({
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    }, catalog),
+    targets: [{
+      temperature: 'cold',
+      source: 'github',
+      channel: 'github',
+      username: 'builder',
+      accountName: 'builder',
+      contactUrl: 'https://github.com/builder',
+      repoName: 'production-mcp-server',
+      repoUrl: 'https://github.com/builder/production-mcp-server',
+      description: 'Production workflow governance for platform teams.',
+      evidence: {
+        score: 10,
+        evidence: ['production or platform workflow'],
+        outreachAngle: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
+      },
+      selectedMotion: {
+        key: 'sprint',
+        label: catalog.sprint.label,
+        reason: 'Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.',
+      },
+      message: 'Start with workflow hardening.',
+      proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+    }],
+  });
+
+  assert.doesNotMatch(report.targets[0].salesCommands.markContacted, /focused on Lead with/i);
+  assert.match(report.targets[0].salesCommands.markContacted, /focused on one business-system workflow/i);
 });
 
 test('pain-confirmed follow-up falls back to workflow language for warm targets without a repo', () => {
