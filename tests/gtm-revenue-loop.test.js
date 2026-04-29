@@ -1308,6 +1308,7 @@ test('operator handoff payload mirrors the ranked queue and sales commands in ma
   assert.equal(payload.summary.warmTargetsReadyNow, 1);
   assert.equal(payload.summary.selfServeTargetsReadyNow, 1);
   assert.equal(payload.summary.coldGitHubTargetsReadyNext, 1);
+  assert.ok(payload.operatorRules.some((rule) => /Use Pro after one blocked repeat/i.test(rule)));
   assert.equal(payload.importCommand, 'npm run sales:pipeline -- import --source docs/marketing/gtm-revenue-loop.json');
   const followUpSection = payload.sections.find((section) => section.key === 'follow_up_now');
   const warmSection = payload.sections.find((section) => section.key === 'send_now_warm_discovery');
@@ -1797,8 +1798,10 @@ test('marketplace copy pack stays tied to current revenue-loop evidence', () => 
   assert.ok(pack.topSignals.some((signal) => /Business-system workflow approvals/.test(signal.label)));
   assert.ok(pack.topSignals.some((signal) => /Self-serve agent tooling/.test(signal.label)));
   assert.ok(pack.sampleTargets.some((target) => target.account === 'buildertools/codex-hook-pack'));
+  assert.ok(pack.listingBullets.some((bullet) => /Use Pro after one blocked repeat/i.test(bullet)));
   assert.match(markdown, /Proof Policy/);
   assert.match(markdown, /Evidence Backstop/);
+  assert.match(markdown, /Use Pro after one blocked repeat or explicit self-serve install intent/i);
   assert.match(markdown, /Self-serve agent tooling/);
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
