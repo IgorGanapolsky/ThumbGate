@@ -602,11 +602,53 @@ function normalizeRevenueWindowSummary(summary = {}) {
   };
 }
 
+function hasRevenueLoopCommercialSignal(summary = {}) {
+  const snapshot = summarizeCommercialSnapshot(summary);
+  return snapshot.paidOrders > 0
+    || snapshot.bookedRevenueCents > 0
+    || snapshot.checkoutStarts > 0
+    || snapshot.uniqueLeads > 0
+    || snapshot.sprintLeads > 0
+    || snapshot.qualifiedSprintLeads > 0;
+}
+
+function selectHostedRevenueWindow(summaries = {}) {
+  const candidateOrder = ['today', '30d', 'lifetime'];
+
+  for (const windowName of candidateOrder) {
+    const candidate = summaries?.[windowName];
+    if (Number(candidate?.status) === 200 && hasRevenueLoopCommercialSignal(candidate)) {
+      return {
+        window: windowName,
+        summary: candidate,
+      };
+    }
+  }
+
+  for (const windowName of candidateOrder) {
+    const candidate = summaries?.[windowName];
+    if (Number(candidate?.status) === 200) {
+      return {
+        window: windowName,
+        summary: candidate,
+      };
+    }
+  }
+
+  return {
+    window: 'today',
+    summary: summaries?.today || {},
+  };
+}
+
 async function resolveRevenueLoopSummary(options = {}) {
   const {
     getOperationalBillingSummaryFn = getOperationalBillingSummary,
     generateRevenueStatusReportFn = generateRevenueStatusReport,
     revenueStatusOptions = {},
+    hostedStatusRetries = 1,
+    hostedRetryDelayMs = 1000,
+    waitForRetryFn = (delayMs) => new Promise((resolve) => setTimeout(resolve, delayMs)),
   } = options;
 
   const localResult = await getOperationalBillingSummaryFn();
@@ -621,22 +663,36 @@ async function resolveRevenueLoopSummary(options = {}) {
     return localResult;
   }
 
-  try {
-    const hostedReport = await generateRevenueStatusReportFn(revenueStatusOptions);
-    const hostedToday = hostedReport?.hostedAudit?.summaries?.today;
-    if (hostedReport?.source === 'local-fallback' || Number(hostedToday?.status) !== 200) {
-      return localResult;
+  let hostedFailure = null;
+  const retryCount = Math.max(0, Number.parseInt(hostedStatusRetries, 10) || 0);
+
+  for (let attempt = 0; attempt <= retryCount; attempt += 1) {
+    try {
+      const hostedReport = await generateRevenueStatusReportFn(revenueStatusOptions);
+      const selectedHostedWindow = selectHostedRevenueWindow(hostedReport?.hostedAudit?.summaries);
+      if (hostedReport?.source !== 'local-fallback' && Number(selectedHostedWindow.summary?.status) === 200) {
+        return {
+          source: hostedReport.source,
+          summary: normalizeRevenueWindowSummary(selectedHostedWindow.summary),
+          fallbackReason: null,
+          hostedStatus: selectedHostedWindow.summary.status,
+          summaryWindow: selectedHostedWindow.window,
+        };
+      }
+      hostedFailure = new Error(
+        `Hosted revenue summary unavailable: ${normalizeText(hostedReport?.source) || 'unknown source'}`
+      );
+    } catch (error) {
+      hostedFailure = error;
     }
 
-    return {
-      source: hostedReport.source,
-      summary: normalizeRevenueWindowSummary(hostedToday),
-      fallbackReason: null,
-      hostedStatus: hostedToday.status,
-    };
-  } catch {
-    return localResult;
+    if (attempt < retryCount) {
+      await waitForRetryFn(hostedRetryDelayMs);
+    }
   }
+
+  void hostedFailure;
+  return localResult;
 }
 
 function deriveRevenueDirective(summary = {}, motionCatalog = buildMotionCatalog()) {
@@ -1352,7 +1408,7 @@ function resolveMotionCta(report, motionKey) {
 
 function buildMarketplaceCopy(report) {
   const targets = Array.isArray(report?.targets) ? report.targets : [];
-  const signalThemes = MARKETPLACE_SIGNAL_THEMES
+  const rankedSignalThemes = MARKETPLACE_SIGNAL_THEMES
     .map((theme) => {
       const matches = targets.filter((target) => theme.match(target));
       return {
@@ -1369,8 +1425,12 @@ function buildMarketplaceCopy(report) {
       };
     })
     .filter((theme) => theme.count > 0)
-    .sort((left, right) => right.count - left.count)
-    .slice(0, 3);
+    .sort((left, right) => right.count - left.count);
+  const signalThemes = rankedSignalThemes.slice(0, 3);
+  const selfServeSignal = rankedSignalThemes.find((theme) => theme.key === 'self_serve_tooling');
+  if (selfServeSignal && !signalThemes.some((theme) => theme.key === selfServeSignal.key)) {
+    signalThemes.push(selfServeSignal);
+  }
   const topTheme = signalThemes[0];
   const primaryMotion = normalizeText(report.directive?.primaryMotion) || 'sprint';
   const secondaryMotion = normalizeText(report.directive?.secondaryMotion) || 'pro';
@@ -1391,8 +1451,30 @@ function buildMarketplaceCopy(report) {
     `Primary motion: ${resolveMotionLabel(report, primaryMotion)}.`,
     `Secondary motion: ${resolveMotionLabel(report, secondaryMotion)} after the buyer asks for the self-serve path.`,
   ].join(' ');
-  const sampleTargets = targets
-    .slice(0, 5)
+  const featuredTargets = [];
+  const featuredKeys = new Set();
+  const featureTarget = (predicate) => {
+    const match = targets.find((target) => predicate(target));
+    if (!match) return;
+    const key = `${normalizeText(match.username)}::${normalizeText(match.repoName)}::${normalizeText(match.contactUrl)}`;
+    if (featuredKeys.has(key)) return;
+    featuredKeys.add(key);
+    featuredTargets.push(match);
+  };
+
+  featureTarget((target) => normalizeText(target.temperature).toLowerCase() === 'warm');
+  featureTarget((target) => normalizeText(target.motion).toLowerCase() === 'pro' && hasEvidenceLabel(target, 'self-serve agent tooling'));
+  featureTarget((target) => normalizeText(target.motion).toLowerCase() === 'sprint' && normalizeText(target.temperature).toLowerCase() !== 'warm');
+
+  for (const target of targets) {
+    if (featuredTargets.length >= 5) break;
+    const key = `${normalizeText(target.username)}::${normalizeText(target.repoName)}::${normalizeText(target.contactUrl)}`;
+    if (featuredKeys.has(key)) continue;
+    featuredKeys.add(key);
+    featuredTargets.push(target);
+  }
+
+  const sampleTargets = featuredTargets
     .map((target) => ({
       account: normalizeText(target.repoName)
         ? `${target.username}/${target.repoName}`
@@ -1430,6 +1512,7 @@ function buildMarketplaceCopy(report) {
       'Turn repeated AI-agent mistakes into enforceable pre-action gates.',
       topTheme ? topTheme.listingAngle : '',
       'Route install-intent buyers through the proof-backed setup guide before direct checkout.',
+      selfServeSignal ? selfServeSignal.listingAngle : '',
       `Primary offer: ${resolveMotionLabel(report, primaryMotion)}.`,
       `Secondary offer: ${resolveMotionLabel(report, secondaryMotion)} after the buyer asks for the tool path.`,
       'Keep approval boundaries, rollback safety, and proof attached to the workflow before rollout.',
@@ -1506,6 +1589,7 @@ function renderRevenueLoopMarkdown(report) {
     ...((report.evidenceBackstop?.proofLinks || []).map((link) => `- Proof link: ${link}`)),
     '',
     '## Revenue Snapshot',
+    `- Revenue window: ${report.snapshotWindow || 'today'}`,
     `- Paid orders: ${report.snapshot.paidOrders}`,
     `- Booked revenue: $${(report.snapshot.bookedRevenueCents / 100).toFixed(2)}`,
     `- Checkout starts: ${report.snapshot.checkoutStarts}`,
@@ -2077,7 +2161,7 @@ async function runRevenueLoop(options = {}) {
   const links = buildRevenueLinks();
   const motionCatalog = buildMotionCatalog(links);
   const warmTargets = getWarmOutboundTargets(motionCatalog.sprint.cta);
-  const { source, summary, fallbackReason } = await resolveRevenueLoopSummary(options);
+  const { source, summary, fallbackReason, summaryWindow } = await resolveRevenueLoopSummary(options);
   const directive = deriveRevenueDirective(summary, motionCatalog);
   const { targets, errors } = await prospectTargets(options.maxTargets || 6, {
     fetchImpl: options.fetchImpl || globalThis.fetch,
@@ -2097,6 +2181,7 @@ async function runRevenueLoop(options = {}) {
     directive,
     targets: pipelineAwareTargets,
   });
+  report.snapshotWindow = summaryWindow || 'today';
   report.marketplaceCopy = buildMarketplaceCopy(report);
 
   if (errors.length) {
