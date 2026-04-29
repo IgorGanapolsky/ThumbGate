@@ -19,6 +19,7 @@ const TARGET_SEARCH_QUERIES = [
   'search/repositories?q=Model+Context+Protocol+approval+workflow+sort:updated',
   'search/repositories?q=ServiceNow+MCP+workflow+sort:updated',
   'search/repositories?q=Claude+Code+review+automation+sort:updated',
+  'search/repositories?q=GitLab+review+automation+agent+sort:updated',
   'search/repositories?q=github+review+automation+agent+sort:updated',
   'search/repositories?q=review+workflow+automation+agent+sort:updated',
   'search/repositories?q=approval+workflow+github+agent+sort:updated',
@@ -399,11 +400,15 @@ function buildTargetPainHypothesis(target = {}) {
   }
 
   const outreachAngle = normalizeText(target.outreachAngle || target.evidence?.outreachAngle, 240);
-  if (outreachAngle) {
-    return sanitizePain(outreachAngle.replace(/^Lead with\s+/i, ''));
+  const motionKey = normalizeText(target.motion || target.selectedMotion?.key).toLowerCase();
+  const sanitizedOutreachAngle = sanitizePain(outreachAngle.replace(/^Lead with\s+/i, ''));
+
+  if (motionKey === 'pro' && sanitizedOutreachAngle) {
+    return sanitizedOutreachAngle;
   }
 
   return sanitizePain(target.motionReason || target.selectedMotion?.reason)
+    || sanitizedOutreachAngle
     || 'one repeated workflow failure';
 }
 
@@ -1028,10 +1033,10 @@ function analyzeTargetEvidence(target) {
   let outreachAngle = 'Pitch one repeated workflow failure, then offer proof-backed hardening instead of a generic tool trial.';
   if (/\b(jira|github|gitlab|microsoft ?365|office|google drive|calendar|slack|salesforce|crm|analytics)\b/.test(haystack)) {
     outreachAngle = 'Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.';
-  } else if (/\b(production|platform|deploy|deployment|incident|sre|ci|cd|release|security|compliance)\b/.test(haystack)) {
-    outreachAngle = 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.';
   } else if (isSelfServeToolingProspect(target)) {
     outreachAngle = 'Lead with the proof-backed setup guide and local-first enforcement before any team-motion pitch.';
+  } else if (/\b(production|platform|deploy|deployment|incident|sre|ci|cd|release|security|compliance)\b/.test(haystack)) {
+    outreachAngle = 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.';
   } else if (/\b(memory|context|agent|orchestrator|tool use)\b/.test(haystack)) {
     outreachAngle = 'Lead with context-drift hardening for one workflow before proposing any broader agent platform story.';
   }

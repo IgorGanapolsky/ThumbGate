@@ -1,6 +1,6 @@
 # Codex Plugin Revenue Pack
 
-Updated: 2026-04-29T08:47:07.667Z
+Updated: 2026-04-29T17:02:50.698Z
 
 This is a sales operator artifact. It is not proof of bundle downloads, installs, paid revenue, or marketplace publication by itself.
 
@@ -24,14 +24,14 @@ ThumbGate gives Codex a proof-backed install path, pre-action gate enforcement, 
 - Examples: @Deep_Ad1959, @game-of-kton, @leogodin217
 
 ### Workflow control surfaces remain the strongest buyer signal
-- Count: 5
-- Summary: 5 current targets expose review, approval, governance, or workflow control surfaces where a Codex install story can convert into a workflow-hardening offer.
-- Examples: Adqui9608/ai-code-review-agent, DGouron/review-flow, nihannihu/Omni-SRE
+- Count: 6
+- Summary: 6 current targets expose review, approval, governance, or workflow control surfaces where a Codex install story can convert into a workflow-hardening offer.
+- Examples: dolutech/engine_context, Adqui9608/ai-code-review-agent, Abhi268170/Stagix
 
 ### Production rollout proof matters
 - Count: 3
 - Summary: 3 targets touch production-sensitive workflows where proof and rollback safety should appear before the buyer expands usage.
-- Examples: Adqui9608/ai-code-review-agent, nihannihu/Omni-SRE, mann1x/claude-hooks
+- Examples: dolutech/engine_context, Adqui9608/ai-code-review-agent, Abhi268170/Stagix
 
 ## Submission Surfaces
 ### Codex plugin install page
@@ -200,27 +200,27 @@ First-touch draft:
 - Motion: Pro at $19/mo or $149/yr
 - Summary: Use these when the buyer already exposes a plugin, local-hook, or repo-backed tooling surface and should start with the guide path.
 
-#### 1. mann1x/claude-hooks
+#### 1. iliaal/compound-engineering-plugin
 - Temperature: cold
 - Source: github / github
 - Evidence score: 12
 - Why now: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
-- Evidence: production or platform workflow; agent infrastructure; self-serve agent tooling; 17 GitHub stars; updated in the last 7 days
-- Contact: https://github.com/mann1x
+- Evidence: workflow control surface; agent infrastructure; self-serve agent tooling; 11 GitHub stars; updated in the last 7 days
+- Contact: http://ilia.ws/
 - CTA: https://thumbgate-production.up.railway.app/guide
 - Proof rule: Use proof pack only after the buyer confirms pain.
-- Pipeline lead id: github_mann1x_claude_hooks
-- Log after send: `npm run sales:pipeline -- advance --lead 'github_mann1x_claude_hooks' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on rollout proof for one production workflow that cannot afford repeated agent mistakes.'`
+- Pipeline lead id: github_iliaal_compound_engineering_plugin
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_iliaal_compound_engineering_plugin' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'`
 
 First-touch draft:
-> Hey @mann1x, saw you're building around `claude-hooks`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
+> Hey @iliaal, saw you're building around `compound-engineering-plugin`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
 
 #### 2. zaxbysauce/opencode-swarm
 - Temperature: cold
 - Source: github / github
 - Evidence score: 12
 - Why now: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
-- Evidence: workflow control surface; self-serve agent tooling; 242 GitHub stars; updated in the last 7 days
+- Evidence: workflow control surface; self-serve agent tooling; 245 GitHub stars; updated in the last 7 days
 - Contact: https://github.com/zaxbysauce
 - CTA: https://thumbgate-production.up.railway.app/guide
 - Proof rule: Use proof pack only after the buyer confirms pain.
@@ -235,8 +235,8 @@ First-touch draft:
 - @game-of-kton (warm): Warm Reddit engager already works on advanced agent memory, so discovery should center on one repeated failure pattern.
 - @leogodin217 (warm): Warm Reddit engager already described a mature workflow, so the next step is a targeted diagnostic on one failure mode.
 - @Enthu-Cutlet-1337 (warm): Warm Reddit engager already understands the adaptive-gate thesis, so offer one concrete workflow hardening diagnostic.
+- dolutech/engine_context (cold): Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
 - Adqui9608/ai-code-review-agent (cold): Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
-- DGouron/review-flow (cold): Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
 
 ## 90-Day Measurement Plan
 - North star: codex_install_intent_to_paid_intent
