@@ -87,6 +87,9 @@ The revenue loop emits these operator artifacts in that folder:
 - `reddit-dm-workflow-hardening-pack.json` for the same Reddit DM operator pack in machine-readable form
 - `reddit-dm-operator-queue.csv` for Reddit DM send order and tracking commands
 - `reddit-dm-drafts.csv` for copy-paste first-touch, proof-timed, and close drafts per warm Reddit target
+- `mcp-directory-revenue-pack.md` for MCP directory repair priorities, proof-backed listing status, and canonical naming fixes
+- `mcp-directory-revenue-pack.json` for the same MCP directory repair pack in machine-readable form
+- `mcp-directory-operator-queue.csv` for MCP directory-specific repair tasks and next asks
 
 That report now carries both warm discovery leads and cold GitHub prospects in one machine-readable queue so the operator can import a single artifact and still contact the warm engagers first.
 Every artifact inherits the same evidence backstop:
