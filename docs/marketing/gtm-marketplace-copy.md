@@ -27,10 +27,10 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 - Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro
 
 ## Evidence-Backed Buyer Signals
-- Workflow control surfaces (5): The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Examples: dolutech/engine_context, Adqui9608/ai-code-review-agent, Abhi268170/Stagix
+- Workflow control surfaces (6): The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Examples: dolutech/engine_context, Adqui9608/ai-code-review-agent, Abhi268170/Stagix
 - Warm discovery workflows (4): Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Examples: @Deep_Ad1959, @game-of-kton, @leogodin217
 - Business-system workflow approvals (4): Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Examples: dolutech/engine_context, Adqui9608/ai-code-review-agent, Abhi268170/Stagix
-- Self-serve agent tooling (3): Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible. Examples: Abhi268170/Stagix, zaxbysauce/opencode-swarm, mann1x/claude-hooks
+- Self-serve agent tooling (3): Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible. Examples: Abhi268170/Stagix, zaxbysauce/opencode-swarm, iliaal/compound-engineering-plugin
 
 ## Proof Policy
 - Do not lead with proof links. Use Commercial Truth and Verification Evidence only after the buyer confirms pain.
