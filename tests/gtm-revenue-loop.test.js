@@ -108,6 +108,22 @@ test('revenue directives switch once interest or paid orders exist', () => {
   assert.match(postFirstDollar.headline, /Verified booked revenue exists/);
 });
 
+test('post-first-dollar directive downgrades to historical proof language when hosted billing is not verified', () => {
+  const catalog = buildMotionCatalog(buildRevenueLinks());
+  const directive = deriveRevenueDirective({
+    revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+    trafficMetrics: {},
+    signups: {},
+    pipeline: {},
+  }, catalog, {
+    mode: 'historical-local',
+  });
+
+  assert.equal(directive.state, 'post-first-dollar');
+  assert.match(directive.headline, /Historical booked revenue is verified/);
+  assert.ok(directive.actions.some((entry) => /current live revenue/i.test(entry)));
+});
+
 test('resolveRevenueLoopSummary prefers hosted revenue status when local operator auth is missing', async () => {
   const result = await resolveRevenueLoopSummary({
     getOperationalBillingSummaryFn: async () => ({
@@ -1600,6 +1616,34 @@ test('revenue loop report keeps evidence metadata on each target', () => {
   assert.match(report.evidenceBackstop.sourceRule, /Every listing, queue row, and pain-confirmed follow-up/);
 });
 
+test('revenue loop report records billing verification context for historical local runs', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const report = buildRevenueLoopReport({
+    source: 'local',
+    fallbackReason: 'Hosted operational summary is not configured.',
+    summary: {
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      trafficMetrics: { checkoutStarts: 1 },
+      signups: {},
+      pipeline: {},
+    },
+    motionCatalog: catalog,
+    directive: deriveRevenueDirective({
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      trafficMetrics: { checkoutStarts: 1 },
+      signups: {},
+      pipeline: {},
+    }, catalog, {
+      mode: 'historical-local',
+    }),
+    targets: [],
+  });
+
+  assert.equal(report.verification.mode, 'historical-local');
+  assert.match(report.verification.label, /Historical booked revenue is verified/);
+});
+
 test('marketplace copy pack stays tied to current revenue-loop evidence', () => {
   const links = buildRevenueLinks();
   const catalog = buildMotionCatalog(links);
@@ -1727,6 +1771,36 @@ test('marketplace copy pack stays tied to current revenue-loop evidence', () => 
   assert.ok(pack.evidenceBackstop.claimGuardrails.some((entry) => /Do not lead with proof links/i.test(entry)));
   assert.doesNotMatch(markdown, /cta unavailable in this run/i);
   assert.doesNotMatch(markdown, /paid customers already exist/i);
+});
+
+test('marketplace copy avoids live revenue language when only historical proof is available', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const report = buildRevenueLoopReport({
+    source: 'local',
+    fallbackReason: 'Hosted operational summary is not configured.',
+    summary: {
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    },
+    motionCatalog: catalog,
+    directive: deriveRevenueDirective({
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    }, catalog, {
+      mode: 'historical-local',
+    }),
+    targets: [],
+  });
+
+  const pack = buildMarketplaceCopy(report);
+
+  assert.match(pack.shortDescription, /Harden one AI-agent workflow/i);
+  assert.doesNotMatch(pack.shortDescription, /Verified booked revenue exists/i);
 });
 
 test('marketplace copy keeps the Pro CTA when no target currently uses the Pro motion', () => {
