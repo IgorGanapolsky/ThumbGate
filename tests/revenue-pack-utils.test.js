@@ -42,3 +42,26 @@ test('writeRevenuePackArtifacts writes markdown sidecars alongside docs when wri
     fs.rmSync(repoRoot, { recursive: true, force: true });
   }
 });
+
+test('writeRevenuePackArtifacts uses csvName fallback when csvArtifacts are omitted', () => {
+  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-revenue-pack-utils-'));
+  const docsPath = path.join(repoRoot, 'docs', 'marketing', 'fallback-pack.md');
+
+  try {
+    writeRevenuePackArtifacts({
+      repoRoot,
+      writeDocs: true,
+      docsPath,
+      markdown: '# Fallback Pack\n',
+      csvName: 'fallback-pack.csv',
+      csvValue: 'key,value\nstate,fallback\n',
+    });
+
+    assert.equal(
+      fs.readFileSync(path.join(repoRoot, 'docs', 'marketing', 'fallback-pack.csv'), 'utf8'),
+      'key,value\nstate,fallback\n',
+    );
+  } finally {
+    fs.rmSync(repoRoot, { recursive: true, force: true });
+  }
+});
