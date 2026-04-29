@@ -1910,8 +1910,16 @@ test('marketplace copy pack stays tied to current revenue-loop evidence', () => 
   assert.ok(pack.topSignals.some((signal) => /Warm discovery workflows/.test(signal.label)));
   assert.ok(pack.topSignals.some((signal) => /Business-system workflow approvals/.test(signal.label)));
   assert.ok(pack.topSignals.some((signal) => /Self-serve agent tooling/.test(signal.label)));
+  assert.ok(Array.isArray(pack.listingVariants));
+  assert.ok(pack.listingVariants.some((variant) => /Warm discovery workflows/.test(variant.label)));
+  assert.ok(pack.listingVariants.some((variant) => variant.primaryCta.label === 'Proof-backed setup guide'));
+  assert.ok(pack.listingVariants.some((variant) => variant.secondaryCta.label === catalog.pro.label));
   assert.ok(pack.sampleTargets.some((target) => target.account === 'buildertools/codex-hook-pack'));
   assert.ok(pack.listingBullets.some((bullet) => /Use Pro after one blocked repeat/i.test(bullet)));
+  assert.match(markdown, /Listing Variants/);
+  assert.match(markdown, /Audience: Warm buyers who already named a repeated workflow failure\./);
+  assert.match(markdown, /Headline: Turn one repeated AI-agent workflow failure into a proof-backed sprint\./);
+  assert.match(markdown, /Primary CTA: Proof-backed setup guide: https:\/\/thumbgate-production\.up\.railway\.app\/guide/);
   assert.match(markdown, /Proof Policy/);
   assert.match(markdown, /Evidence Backstop/);
   assert.match(markdown, /Use Pro after one blocked repeat or explicit self-serve install intent/i);
@@ -2130,6 +2138,8 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.match(marketplaceCopy.recommendedCtas[1].cta, /#workflow-sprint-intake$/);
     assert.match(marketplaceCopy.recommendedCtas[2].cta, /\/checkout\/pro$/);
     assert.ok(Array.isArray(marketplaceCopy.topSignals));
+    assert.ok(Array.isArray(marketplaceCopy.listingVariants));
+    assert.ok(marketplaceCopy.listingVariants.some((variant) => /Warm discovery workflows|Workflow control surfaces/.test(variant.label)));
     assert.equal(JSON.parse(jsonl.trim()).repoName, 'production-mcp-server');
     assert.match(jsonl, /"pipelineLeadId":"reddit_builder_production_mcp_server"/);
     assert.match(jsonl, /"salesCommands":\{"markContacted":"npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
