@@ -99,6 +99,96 @@ function summarizeExamples(targets = [], limit = 3) {
   ));
 }
 
+function formatTargetAccount(target = {}) {
+  const username = normalizeText(target.username);
+  const repoName = normalizeText(target.repoName);
+
+  if (username && repoName) {
+    return `${username}/${repoName}`;
+  }
+
+  if (username) {
+    return `@${username}`;
+  }
+
+  return 'unknown-target';
+}
+
+function summarizeEvidence(target = {}) {
+  const evidence = Array.isArray(target.evidence) ? target.evidence : [];
+  return evidence
+    .map((entry) => normalizeText(entry))
+    .filter(Boolean)
+    .join('; ');
+}
+
+function pickPrimaryContact(target = {}) {
+  const directContact = normalizeText(target.contactUrl);
+  if (directContact) {
+    return directContact;
+  }
+
+  const contactSurfaces = Array.isArray(target.contactSurfaces) ? target.contactSurfaces : [];
+  for (const surface of contactSurfaces) {
+    const url = normalizeText(surface?.url);
+    if (url) {
+      return url;
+    }
+  }
+
+  return 'n/a';
+}
+
+function targetTemperatureRank(target = {}) {
+  const temperature = normalizeText(target.temperature).toLowerCase();
+  if (temperature === 'warm') {
+    return 0;
+  }
+  if (temperature === 'cold') {
+    return 1;
+  }
+  return 2;
+}
+
+function compareReadyTargets(a = {}, b = {}) {
+  const temperatureDelta = targetTemperatureRank(a) - targetTemperatureRank(b);
+  if (temperatureDelta !== 0) {
+    return temperatureDelta;
+  }
+
+  const scoreDelta = Number(b.evidenceScore || 0) - Number(a.evidenceScore || 0);
+  if (scoreDelta !== 0) {
+    return scoreDelta;
+  }
+
+  return formatTargetAccount(a).localeCompare(formatTargetAccount(b));
+}
+
+function buildReadyTarget(target = {}) {
+  const source = [normalizeText(target.source), normalizeText(target.channel)]
+    .filter(Boolean)
+    .join(' / ');
+  const firstTouchDraft = normalizeText(target.firstTouchDraft) || normalizeText(target.message);
+  const markContactedCommand = normalizeText(target.salesCommands?.markContacted)
+    || normalizeText(target.markContactedCommand);
+
+  return {
+    account: formatTargetAccount(target),
+    temperature: normalizeText(target.temperature) || 'cold',
+    source: source || 'n/a',
+    evidenceScore: Number.isFinite(Number(target.evidenceScore)) ? Number(target.evidenceScore) : null,
+    whyNow: normalizeText(target.motionReason) || normalizeText(target.outreachAngle) || 'n/a',
+    evidence: summarizeEvidence(target) || 'n/a',
+    contact: pickPrimaryContact(target),
+    cta: normalizeText(target.cta) || 'n/a',
+    proofTrigger: normalizeText(target.proofPackTrigger)
+      || 'Use Commercial Truth and Verification Evidence only after the buyer confirms pain.',
+    firstTouchDraft: firstTouchDraft || 'n/a',
+    markContactedCommand: markContactedCommand || '',
+    pipelineLeadId: normalizeText(target.pipelineLeadId) || '',
+  };
+}
+
 function buildSignalSummary(report = {}) {
   const targets = Array.isArray(report.targets) ? report.targets : [];
   const warmTargets = targets.filter((target) => normalizeText(target.temperature).toLowerCase() === 'warm');
@@ -140,6 +230,37 @@ function buildPackTargets(report = {}) {
     why: normalizeText(target.motionReason) || normalizeText(target.outreachAngle),
     motion: normalizeText(target.motionLabel),
   }));
+}
+
+function buildReadyTargetLanes(report = {}) {
+  const targets = Array.isArray(report.targets) ? report.targets : [];
+  const workflowTargets = targets
+    .filter((target) => /workflow hardening sprint/i.test(normalizeText(target.motionLabel)))
+    .sort(compareReadyTargets)
+    .slice(0, 4)
+    .map(buildReadyTarget);
+  const selfServeTargets = targets
+    .filter((target) => /pro at/i.test(normalizeText(target.motionLabel)))
+    .sort(compareReadyTargets)
+    .slice(0, 3)
+    .map(buildReadyTarget);
+
+  return [
+    {
+      key: 'workflow_hardening',
+      label: 'Send Now: Codex-Adjacent Workflow Hardening',
+      motion: 'Workflow Hardening Sprint',
+      summary: 'Use these when the buyer already named one repeated failure, mature review boundary, or rollout risk.',
+      targets: workflowTargets,
+    },
+    {
+      key: 'self_serve',
+      label: 'Send Next: Codex Self-Serve Install + Pro',
+      motion: 'Pro at $19/mo or $149/yr',
+      summary: 'Use these when the buyer already exposes a plugin, local-hook, or repo-backed tooling surface and should start with the guide path.',
+      targets: selfServeTargets,
+    },
+  ].filter((lane) => lane.targets.length > 0);
 }
 
 function buildCodexSurface(config, links, about) {
@@ -402,6 +523,7 @@ function buildCodexPluginRevenuePack(report = {}, links = buildRevenueLinks(), a
     surfaces: buildCodexPluginSurfaces(links, about),
     followOnOffers: buildFollowOnOffers(links),
     operatorSequences: buildOperatorSequences(links),
+    readyTargetLanes: buildReadyTargetLanes(report),
     sampleTargets: buildPackTargets(report),
     measurementPlan: buildMeasurementPlan(),
   };
@@ -454,6 +576,31 @@ function renderCodexPluginRevenuePackMarkdown(pack) {
       '',
     ]))
     : ['- No Codex operator sequences were generated in this run.', ''];
+  const readyTargetLines = Array.isArray(pack.readyTargetLanes) && pack.readyTargetLanes.length
+    ? pack.readyTargetLanes.flatMap((lane) => ([
+      `### ${lane.label}`,
+      `- Motion: ${lane.motion}`,
+      `- Summary: ${lane.summary}`,
+      '',
+      ...lane.targets.flatMap((target, index) => ([
+        `#### ${index + 1}. ${target.account}`,
+        `- Temperature: ${target.temperature}`,
+        `- Source: ${target.source}`,
+        `- Evidence score: ${target.evidenceScore ?? 'n/a'}`,
+        `- Why now: ${target.whyNow}`,
+        `- Evidence: ${target.evidence}`,
+        `- Contact: ${target.contact}`,
+        `- CTA: ${target.cta}`,
+        `- Proof rule: ${target.proofTrigger}`,
+        `- Pipeline lead id: ${target.pipelineLeadId || 'n/a'}`,
+        `- Log after send: ${target.markContactedCommand ? `\`${target.markContactedCommand}\`` : 'n/a'}`,
+        '',
+        'First-touch draft:',
+        `> ${target.firstTouchDraft}`,
+        '',
+      ])),
+    ]))
+    : ['- No Codex-ready targets were generated in this run.', ''];
   const sampleTargetLines = Array.isArray(pack.sampleTargets) && pack.sampleTargets.length
     ? pack.sampleTargets.map((target) => `- ${target.account} (${target.temperature}): ${target.why}`)
     : ['- No sample targets available in this run.'];
@@ -489,6 +636,8 @@ function renderCodexPluginRevenuePackMarkdown(pack) {
     ...operatorSequenceLines,
     'Use Commercial Truth and Verification Evidence only after the buyer confirms the workflow pain or asks for proof.',
     '',
+    '## Ready-Now Target Queue',
+    ...readyTargetLines,
     '## Sample Targets Behind This Pack',
     ...sampleTargetLines,
     '',
@@ -545,6 +694,48 @@ function renderCodexPluginRevenuePackCsv(pack) {
   return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
 }
 
+function renderCodexReadyTargetsCsv(pack) {
+  const readyTargetLanes = Array.isArray(pack.readyTargetLanes) ? pack.readyTargetLanes : [];
+  const rows = [
+    [
+      'laneKey',
+      'laneLabel',
+      'motion',
+      'account',
+      'temperature',
+      'source',
+      'evidenceScore',
+      'whyNow',
+      'evidence',
+      'contact',
+      'cta',
+      'proofTrigger',
+      'pipelineLeadId',
+      'markContactedCommand',
+      'firstTouchDraft',
+    ],
+    ...readyTargetLanes.flatMap((lane) => lane.targets.map((target) => ([
+      lane.key,
+      lane.label,
+      lane.motion,
+      target.account,
+      target.temperature,
+      target.source,
+      target.evidenceScore ?? '',
+      target.whyNow,
+      target.evidence,
+      target.contact,
+      target.cta,
+      target.proofTrigger,
+      target.pipelineLeadId,
+      target.markContactedCommand,
+      target.firstTouchDraft,
+    ]))),
+  ];
+
+  return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
+}
+
 function parseArgs(argv = []) {
   const options = {
     reportDir: '',
@@ -573,6 +764,7 @@ function writeCodexPluginRevenuePack(pack, options = {}) {
   const repoRoot = path.resolve(__dirname, '..');
   const markdown = renderCodexPluginRevenuePackMarkdown(pack);
   const csv = renderCodexPluginRevenuePackCsv(pack);
+  const readyTargetsCsv = renderCodexReadyTargetsCsv(pack);
   const reportDir = normalizeText(options.reportDir)
     ? path.resolve(repoRoot, options.reportDir)
     : '';
@@ -583,6 +775,7 @@ function writeCodexPluginRevenuePack(pack, options = {}) {
     fs.writeFileSync(path.join(reportDir, 'codex-plugin-revenue-pack.md'), markdown, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'codex-plugin-revenue-pack.json'), `${JSON.stringify(pack, null, 2)}\n`, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'codex-plugin-surfaces.csv'), csv, 'utf8');
+    fs.writeFileSync(path.join(reportDir, 'codex-ready-targets.csv'), readyTargetsCsv, 'utf8');
   }
 
   if (options.writeDocs) {
@@ -640,10 +833,12 @@ module.exports = {
   buildFollowOnOffers,
   buildMeasurementPlan,
   buildOperatorSequences,
+  buildReadyTargetLanes,
   buildTrackedCodexLink,
   isCliInvocation,
   parseArgs,
   renderCodexPluginRevenuePackCsv,
+  renderCodexReadyTargetsCsv,
   renderCodexPluginRevenuePackMarkdown,
   writeCodexPluginRevenuePack,
 };
