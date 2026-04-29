@@ -1,10 +1,15 @@
 {
-  "generatedAt": "2026-04-29T08:47:07.667Z",
+  "generatedAt": "2026-04-29T12:51:34.925Z",
   "objective": "Convert the current warm Reddit workflow-risk queue into replied conversations, diagnostics, and the first paid Workflow Hardening Sprint.",
   "state": "post-first-dollar",
   "headline": "Turn warm Reddit workflow-risk conversations into sprint-qualified paid intent.",
   "shortDescription": "ThumbGate gives warm Reddit DM outreach one honest offer: harden one AI-agent workflow with rollback safety, approval boundaries, and proof after pain is confirmed.",
   "summary": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.",
+  "revenueEvidence": {
+    "source": "hosted-via-railway-env",
+    "label": "Live hosted billing summary verified for this run.",
+    "fallbackReason": ""
+  },
   "canonicalIdentity": {
     "displayName": "ThumbGate",
     "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",

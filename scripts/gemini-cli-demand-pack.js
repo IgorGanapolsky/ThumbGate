@@ -9,6 +9,7 @@ const {
   buildRevenueLinks,
 } = require('./gtm-revenue-loop');
 const {
+  buildRevenueEvidenceContext,
   buildTrackedPackLink,
   isCliInvocation: isCliCall,
   csvCell,
@@ -453,6 +454,7 @@ function buildGeminiCliDemandPack(report = {}, links = buildRevenueLinks(), abou
     headline: CANONICAL_HEADLINE,
     shortDescription: CANONICAL_SHORT_DESCRIPTION,
     summary: buildPackSummary(report),
+    revenueEvidence: buildRevenueEvidenceContext(report),
     canonicalIdentity: {
       displayName: 'ThumbGate',
       repositoryUrl: about.repositoryUrl,
@@ -558,6 +560,12 @@ function renderGeminiCliDemandPackMarkdown(pack = {}) {
     `- Short description: ${pack.shortDescription}`,
     `- Summary: ${pack.summary}`,
     '',
+    '## Revenue Evidence',
+    `- Billing source: ${normalizeText(pack.revenueEvidence?.source) || 'local'}`,
+    `- Billing verification: ${normalizeText(pack.revenueEvidence?.label) || 'Current run is using local billing context.'}`,
+    ...(normalizeText(pack.revenueEvidence?.fallbackReason)
+      ? [`- Fallback reason: ${normalizeText(pack.revenueEvidence.fallbackReason)}`, '']
+      : ['']),
     '## Canonical Identity',
     ...CANONICAL_FIELDS.map((field) => `- ${field.label}: ${pack.canonicalIdentity?.[field.key] || field.fallback || ''}`),
     '',

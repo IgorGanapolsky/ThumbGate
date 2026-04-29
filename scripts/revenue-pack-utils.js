@@ -21,6 +21,20 @@ function readGitHubAbout(repoRoot = path.resolve(__dirname, '..')) {
   return JSON.parse(fs.readFileSync(path.join(repoRoot, 'config', 'github-about.json'), 'utf8'));
 }
 
+function buildRevenueEvidenceContext(report = {}) {
+  const source = normalizeText(report?.source) || 'local';
+  const label = normalizeText(report?.verification?.label)
+    || normalizeText(report?.directive?.billingVerification)
+    || 'Current run is using local billing context.';
+  const fallbackReason = normalizeText(report?.fallbackReason);
+
+  return {
+    source,
+    label,
+    fallbackReason,
+  };
+}
+
 function parseReportArgs(argv = []) {
   const options = {
     reportDir: '',
@@ -156,6 +170,20 @@ function renderListLines(emptyLine, values = []) {
   return values.map((value) => `- ${value}`);
 }
 
+function renderRevenueEvidenceLines(revenueEvidence = {}) {
+  const lines = [
+    `- Billing source: ${normalizeText(revenueEvidence.source) || 'local'}`,
+    `- Billing verification: ${normalizeText(revenueEvidence.label) || 'Current run is using local billing context.'}`,
+  ];
+
+  const fallbackReason = normalizeText(revenueEvidence.fallbackReason);
+  if (fallbackReason) {
+    lines.push(`- Fallback reason: ${fallbackReason}`);
+  }
+
+  return lines;
+}
+
 function renderRevenuePackMarkdown({
   title,
   disclaimer,
@@ -182,6 +210,9 @@ function renderRevenuePackMarkdown({
     `- Headline: ${pack.headline}`,
     `- Short description: ${pack.shortDescription}`,
     `- Summary: ${pack.summary}`,
+    '',
+    '## Revenue Evidence',
+    ...renderRevenueEvidenceLines(pack.revenueEvidence),
     '',
     '## Canonical Identity',
     ...renderFieldLines(canonicalFields, pack.canonicalIdentity),
@@ -309,12 +340,14 @@ function isCliInvocation(argv = process.argv, filename) {
 }
 
 module.exports = {
+  buildRevenueEvidenceContext,
   buildTrackedPackLink,
   csvCell,
   isCliInvocation,
   normalizeText,
   parseReportArgs,
   readGitHubAbout,
+  renderRevenueEvidenceLines,
   renderOperatorQueueCsv,
   renderRevenuePackMarkdown,
   writeRevenuePackArtifacts,

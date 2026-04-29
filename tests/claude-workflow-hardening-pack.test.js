@@ -28,6 +28,10 @@ const {
 function makeReportFixture() {
   return {
     generatedAt: '2026-04-26T10:30:00.000Z',
+    source: 'hosted-via-railway-env',
+    verification: {
+      label: 'Live hosted billing summary verified for this run.',
+    },
     directive: {
       state: 'cold-start',
       headline: 'No verified revenue and no active pipeline. Use the Claude install lane to create proof-backed paid intent, not vanity distribution.',
@@ -172,6 +176,8 @@ test('pack includes verified surfaces, listing copy, measurement plan, and evide
   assert.equal(pack.evidenceBackstop.productionTargetCount, 2);
   assert.equal(pack.evidenceBackstop.businessSystemTargetCount, 1);
   assert.equal(pack.evidenceBackstop.reviewPacketUrl, CLAUDE_REVIEW_PACKET_URL);
+  assert.equal(pack.revenueEvidence.source, 'hosted-via-railway-env');
+  assert.match(pack.revenueEvidence.label, /Live hosted billing summary verified/);
 });
 
 test('measurement plan keeps approval and revenue guardrails explicit', () => {
@@ -205,6 +211,9 @@ test('rendered markdown exposes listing copy, prospect queue, and proof backstop
   assert.match(markdown, /Active Channel Drafts/);
   assert.match(markdown, /LinkedIn — Founder post/);
   assert.match(markdown, /Evidence Backstop/);
+  assert.match(markdown, /Revenue Evidence/);
+  assert.match(markdown, /Billing source: hosted-via-railway-env/);
+  assert.match(markdown, /Billing verification: Live hosted billing summary verified for this run\./);
   assert.match(markdown, /claude_install_to_paid_intent/);
   assert.match(markdown, /Official directory review is separate/);
   assert.doesNotMatch(markdown, /official partner|approved today|booked revenue exists/i);

@@ -1896,6 +1896,7 @@ function buildOperatorHandoffPayload(report) {
     summary: {
       revenueState: normalizeText(report?.directive?.state) || 'cold-start',
       headline: normalizeText(report?.directive?.headline) || 'No verified revenue and no active pipeline.',
+      billingSource: normalizeText(report?.source) || 'local',
       billingVerification: normalizeText(report?.verification?.label) || 'n/a',
       paidOrders: Number(report?.snapshot?.paidOrders || 0),
       checkoutStarts: Number(report?.snapshot?.checkoutStarts || 0),
@@ -1949,6 +1950,7 @@ function renderOperatorHandoffMarkdown(report) {
     '## Current Snapshot',
     `- Revenue state: ${handoff.summary.revenueState}`,
     `- Headline: ${handoff.summary.headline}`,
+    `- Billing source: ${handoff.summary.billingSource}`,
     `- Billing verification: ${handoff.summary.billingVerification}`,
     `- Paid orders: ${handoff.summary.paidOrders}`,
     `- Checkout starts: ${handoff.summary.checkoutStarts}`,

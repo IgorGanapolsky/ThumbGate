@@ -9,6 +9,7 @@ const {
   buildRevenueLinks,
 } = require('./gtm-revenue-loop');
 const {
+  buildRevenueEvidenceContext,
   buildTrackedPackLink,
   isCliInvocation: isCliCall,
   normalizeText,
@@ -349,6 +350,7 @@ function buildChatgptGptRevenuePack(report = {}, links = buildRevenueLinks(), ab
     headline: CANONICAL_HEADLINE,
     shortDescription: CANONICAL_SHORT_DESCRIPTION,
     summary: buildPackSummary(report),
+    revenueEvidence: buildRevenueEvidenceContext(report),
     canonicalIdentity: {
       displayName: 'ThumbGate GPT',
       repositoryUrl: about.repositoryUrl,

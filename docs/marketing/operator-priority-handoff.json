@@ -1,11 +1,12 @@
 {
-  "generatedAt": "2026-04-29T11:51:48.427Z",
+  "generatedAt": "2026-04-29T12:58:47.171Z",
   "summary": {
-    "revenueState": "cold-start",
-    "headline": "No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.",
-    "billingVerification": "Current run is using local billing context because the hosted billing summary is unavailable.",
-    "paidOrders": 0,
-    "checkoutStarts": 0,
+    "revenueState": "post-first-dollar",
+    "headline": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.",
+    "billingSource": "hosted-via-railway-env",
+    "billingVerification": "Live hosted billing summary verified for this run.",
+    "paidOrders": 2,
+    "checkoutStarts": 1,
     "activeFollowUps": 0,
     "warmTargetsReadyNow": 4,
     "selfServeTargetsReadyNow": 2,
@@ -330,45 +331,41 @@
         },
         {
           "rank": 2,
-          "label": "@NatureBlueee - wow-harness",
-          "username": "NatureBlueee",
-          "accountName": "NatureBlueee",
-          "repoName": "wow-harness",
-          "repoUrl": "https://github.com/NatureBlueee/wow-harness",
+          "label": "@Adiemas - streck-agentic-workflow",
+          "username": "Adiemas",
+          "accountName": "Adiemas",
+          "repoName": "streck-agentic-workflow",
+          "repoUrl": "https://github.com/Adiemas/streck-agentic-workflow",
           "temperature": "cold",
           "source": "github",
           "channel": "github",
           "pipelineStage": "targeted",
-          "pipelineLeadId": "github_natureblueee_wow_harness",
+          "pipelineLeadId": "github_adiemas_streck_agentic_workflow",
           "nextOperatorStep": "Send the first-touch draft and log the outreach in the sales pipeline.",
           "pipelineUpdatedAt": "",
-          "contactSurface": "https://natureblueee.com/",
+          "contactSurface": "https://github.com/Adiemas",
           "contactSurfaces": [
             {
-              "label": "Website",
-              "url": "https://natureblueee.com/"
-            },
-            {
               "label": "GitHub profile",
-              "url": "https://github.com/NatureBlueee"
+              "url": "https://github.com/Adiemas"
             },
             {
               "label": "Repository",
-              "url": "https://github.com/NatureBlueee/wow-harness"
+              "url": "https://github.com/Adiemas/streck-agentic-workflow"
             }
           ],
           "company": "",
           "evidenceScore": 11,
           "evidence": [
             "workflow control surface",
+            "business-system integration",
             "self-serve agent tooling",
-            "81 GitHub stars",
             "updated in the last 7 days"
           ],
           "evidenceSources": [
             {
               "label": "Target signal",
-              "url": "https://github.com/NatureBlueee/wow-harness",
+              "url": "https://github.com/Adiemas/streck-agentic-workflow",
               "reason": "Source of the workflow or buyer signal behind this outreach row."
             },
             {
@@ -386,17 +383,17 @@
           "whyNow": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
           "proofRule": "Use proof pack only after the buyer confirms pain.",
           "cta": "https://thumbgate-production.up.railway.app/guide",
-          "firstTouchDraft": "Hey @NatureBlueee, saw you're building around `wow-harness`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
-          "painConfirmedFollowUpDraft": "If you want the self-serve path for `wow-harness`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
-          "selfServeFollowUpDraft": "If you want the self-serve path for `wow-harness`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro",
-          "checkoutCloseDraft": "If you are already comparing close options for `wow-harness`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+          "firstTouchDraft": "Hey @Adiemas, saw you're building around `streck-agentic-workflow`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
+          "painConfirmedFollowUpDraft": "If you want the self-serve path for `streck-agentic-workflow`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+          "selfServeFollowUpDraft": "If you want the self-serve path for `streck-agentic-workflow`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro",
+          "checkoutCloseDraft": "If you are already comparing close options for `streck-agentic-workflow`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
           "salesCommands": {
-            "markContacted": "npm run sales:pipeline -- advance --lead 'github_natureblueee_wow_harness' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-            "markReplied": "npm run sales:pipeline -- advance --lead 'github_natureblueee_wow_harness' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-            "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_natureblueee_wow_harness' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute diagnostic after the self-serve conversation exposed repeated pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-            "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_natureblueee_wow_harness' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-            "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_natureblueee_wow_harness' --channel 'manual' --stage 'sprint_intake' --note 'Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-            "markPaid": "npm run sales:pipeline -- advance --lead 'github_natureblueee_wow_harness' --channel 'manual' --stage 'paid' --note 'Closed Pro at $19/mo or $149/yr and booked revenue after resolving the proof-backed setup guide and local-first enforcement before any team-motion pitch.'"
+            "markContacted": "npm run sales:pipeline -- advance --lead 'github_adiemas_streck_agentic_workflow' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markReplied": "npm run sales:pipeline -- advance --lead 'github_adiemas_streck_agentic_workflow' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_adiemas_streck_agentic_workflow' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute diagnostic after the self-serve conversation exposed repeated pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_adiemas_streck_agentic_workflow' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_adiemas_streck_agentic_workflow' --channel 'manual' --stage 'sprint_intake' --note 'Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+            "markPaid": "npm run sales:pipeline -- advance --lead 'github_adiemas_streck_agentic_workflow' --channel 'manual' --stage 'paid' --note 'Closed Pro at $19/mo or $149/yr and booked revenue after resolving one business-system workflow that needs approval boundaries, rollback safety, and proof.'"
           }
         }
       ]

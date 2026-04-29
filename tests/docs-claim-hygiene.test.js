@@ -51,3 +51,26 @@ test('README keeps buyer CTAs on current first-party ThumbGate surfaces', () => 
   assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app\/dashboard\?utm_source=github&utm_medium=readme/);
   assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app\/guides\/codex-cli-guardrails\?utm_source=github&utm_medium=readme/);
 });
+
+test('active operator packs pair revenue claims with billing verification context', () => {
+  const operatorDocs = [
+    'docs/OUTREACH_TARGETS.md',
+    'docs/marketing/gtm-revenue-loop.md',
+    'docs/marketing/operator-priority-handoff.md',
+    'docs/marketing/claude-workflow-hardening-pack.md',
+    'docs/marketing/gemini-cli-demand-pack.md',
+    'docs/marketing/chatgpt-gpt-revenue-pack.md',
+    'docs/marketing/linkedin-workflow-hardening-pack.md',
+    'docs/marketing/reddit-dm-workflow-hardening-pack.md',
+  ];
+
+  for (const relativePath of operatorDocs) {
+    const fullPath = path.join(projectRoot, relativePath);
+    const text = fs.readFileSync(fullPath, 'utf8');
+
+    if (/Verified booked revenue exists/i.test(text)) {
+      assert.match(text, /Billing source:/, `${relativePath} should expose billing source when it claims verified revenue.`);
+      assert.match(text, /Billing verification:/, `${relativePath} should expose billing verification when it claims verified revenue.`);
+    }
+  }
+});

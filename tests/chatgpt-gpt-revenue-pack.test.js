@@ -44,6 +44,10 @@ const ABOUT_FIXTURE = {
 };
 
 const REPORT_FIXTURE = {
+  source: 'hosted-via-railway-env',
+  verification: {
+    label: 'Live hosted billing summary verified for this run.',
+  },
   directive: {
     state: 'cold-start',
     headline: 'No verified revenue and no active pipeline. Use the GPT lane to create proof-backed intent, not vanity opens.',
@@ -143,6 +147,9 @@ test('rendered pack is operator-ready and anchored to GPT plus proof surfaces', 
   assert.match(markdown, /chatgpt\.com\/g\/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate/);
   assert.match(markdown, /gpt-store-submission\.md/);
   assert.match(markdown, /chatgpt-live-audit-2026-04-24\.md/);
+  assert.match(markdown, /Revenue Evidence/);
+  assert.match(markdown, /Billing source: hosted-via-railway-env/);
+  assert.match(markdown, /Billing verification: Live hosted billing summary verified for this run\./);
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
 });
@@ -153,6 +160,7 @@ test('pack summary stays tied to the live revenue-loop directive instead of inve
   assert.equal(pack.state, 'cold-start');
   assert.match(pack.summary, /No verified revenue and no active pipeline/);
   assert.doesNotMatch(pack.summary, /Revenue is proven/i);
+  assert.equal(pack.revenueEvidence.source, 'hosted-via-railway-env');
 });
 
 test('revenue-loop report reader falls back safely and parses live JSON when present', () => {
