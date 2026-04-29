@@ -402,6 +402,18 @@ test('target evidence favors production workflows over generic fresh repos', () 
   assert.match(strong.outreachAngle, /rollout proof|approval boundaries/i);
 });
 
+test('self-serve hook surfaces keep the guide-first outreach angle even when they mention platforms', () => {
+  const target = analyzeTargetEvidence({
+    repoName: 'claude-hooks',
+    description: 'Cross-platform Claude Code hooks for deterministic memory recall and local-first guardrails.',
+    stars: 17,
+    updatedAt: new Date().toISOString(),
+  });
+
+  assert.ok(target.score >= 4);
+  assert.match(target.outreachAngle, /proof-backed setup guide|local-first enforcement/i);
+});
+
 test('repo identity filter drops obviously weak identifiers', () => {
   assert.equal(hasCredibleRepoIdentity({ repoName: '-L-' }), false);
   assert.equal(hasCredibleRepoIdentity({ repoName: 'mcp-jira-stdio' }), true);
@@ -1326,6 +1338,10 @@ test('operator handoff payload mirrors the ranked queue and sales commands in ma
   assert.equal(warmSection.targets[0].contactSurfaces[0].label, 'Reddit DM');
   assert.equal(selfServeSection.targets[0].label, '@self_serve_builder - claude-code-hooks');
   assert.equal(selfServeSection.targets[0].motionLabel, catalog.pro.label);
+  assert.match(
+    selfServeSection.targets[0].salesCommands.markContacted,
+    /guide-to-Pro lane is the faster close/
+  );
   assert.equal(coldSection.targets[0].label, '@builder - production-mcp-server');
   assert.equal(coldSection.targets[0].contactSurfaces[1].url, 'https://github.com/builder');
 });
