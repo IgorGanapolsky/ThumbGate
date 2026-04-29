@@ -10,6 +10,7 @@ const {
   CLAUDE_CODE_GUIDE_URL,
   CLAUDE_DESKTOP_GUIDE_URL,
   CLAUDE_REVIEW_PACKET_URL,
+  REVENUE_LOOP_REPORT_PATH,
   buildClaudeWorkflowHardeningPack,
   buildChannelDrafts,
   buildEvidenceSurfaces,
@@ -18,6 +19,7 @@ const {
   buildProspectQueue,
   buildTrackedClaudeLink,
   isCliInvocation,
+  readRevenueLoopReport,
   renderClaudeProspectQueueCsv,
   renderClaudeWorkflowHardeningPackMarkdown,
   writeClaudeWorkflowHardeningPack,
@@ -157,7 +159,10 @@ test('active channel drafts stay tied to live Claude surfaces and first-touch gu
 test('pack includes verified surfaces, listing copy, measurement plan, and evidence backstop', () => {
   const pack = buildClaudeWorkflowHardeningPack(makeReportFixture());
 
+  assert.equal(pack.state, 'cold-start');
   assert.equal(pack.headline, CANONICAL_HEADLINE);
+  assert.match(pack.summary, /No verified revenue and no active pipeline/);
+  assert.doesNotMatch(pack.summary, /Revenue is proven/i);
   assert.equal(pack.surfaces.length, 4);
   assert.equal(pack.listingCopy.followOnOffers.length, 2);
   assert.equal(pack.outreachDrafts.length, 3);
@@ -175,6 +180,18 @@ test('measurement plan keeps approval and revenue guardrails explicit', () => {
   assert.equal(measurementPlan.metrics.includes('claude_bundle_downloads'), true);
   assert.equal(measurementPlan.guardrails.some((entry) => /directory approval/.test(entry)), true);
   assert.equal(measurementPlan.doNotCountAsSuccess.includes('unverified directory approval or revenue claims'), true);
+});
+
+test('revenue-loop report reader falls back safely and parses live JSON when present', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-claude-report-'));
+  const reportPath = path.join(tempDir, 'gtm-revenue-loop.json');
+  fs.writeFileSync(reportPath, JSON.stringify({ directive: { state: 'cold-start' } }), 'utf8');
+
+  assert.equal(REVENUE_LOOP_REPORT_PATH.endsWith('docs/marketing/gtm-revenue-loop.json'), true);
+  assert.deepEqual(readRevenueLoopReport(path.join(tempDir, 'missing.json')), {});
+  assert.deepEqual(readRevenueLoopReport(reportPath), { directive: { state: 'cold-start' } });
+
+  fs.rmSync(tempDir, { recursive: true, force: true });
 });
 
 test('rendered markdown exposes listing copy, prospect queue, and proof backstop', () => {

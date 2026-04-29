@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
+const fs = require('node:fs');
 const path = require('node:path');
 const {
   COMMERCIAL_TRUTH_LINK,
@@ -19,6 +20,7 @@ const {
 } = require('./revenue-pack-utils');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
+const REVENUE_LOOP_REPORT_PATH = path.join(REPO_ROOT, 'docs', 'marketing', 'gtm-revenue-loop.json');
 const CHATGPT_SOURCE = 'chatgpt';
 const GPT_MEDIUM = 'gpt_store';
 const OUTREACH_MEDIUM = 'operator_outreach';
@@ -61,6 +63,14 @@ const SURFACE_FIELDS = [
   { label: 'Evidence source', key: 'evidenceSource' },
   { label: 'Proof', key: 'proofUrl' },
 ];
+
+function readRevenueLoopReport(reportPath = REVENUE_LOOP_REPORT_PATH) {
+  try {
+    return JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+  } catch {
+    return {};
+  }
+}
 
 function buildTrackedChatgptLink(baseUrl, tracking = {}) {
   return buildTrackedPackLink(baseUrl, tracking, TRACKING_DEFAULTS);
@@ -387,7 +397,7 @@ function writeChatgptGptRevenuePack(pack, options = {}) {
 
 function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
-  const pack = buildChatgptGptRevenuePack();
+  const pack = buildChatgptGptRevenuePack(readRevenueLoopReport());
   const written = writeChatgptGptRevenuePack(pack, options);
 
   console.log('ChatGPT GPT revenue pack ready.');
@@ -428,6 +438,7 @@ module.exports = {
   GPT_SUBMISSION_PACKET_URL,
   GPT_TRUST_GUIDE_URL,
   PUBLISHED_GPT_URL,
+  REVENUE_LOOP_REPORT_PATH,
   buildChatgptGptRevenuePack,
   buildEvidenceSurfaces,
   buildFollowOnOffers,
@@ -437,6 +448,7 @@ module.exports = {
   buildTrackedChatgptLink,
   isCliInvocation,
   parseArgs,
+  readRevenueLoopReport,
   renderChatgptGptRevenuePackMarkdown,
   renderChatgptOperatorQueueCsv,
   writeChatgptGptRevenuePack,
