@@ -602,11 +602,53 @@ function normalizeRevenueWindowSummary(summary = {}) {
   };
 }
 
+function hasRevenueLoopCommercialSignal(summary = {}) {
+  const snapshot = summarizeCommercialSnapshot(summary);
+  return snapshot.paidOrders > 0
+    || snapshot.bookedRevenueCents > 0
+    || snapshot.checkoutStarts > 0
+    || snapshot.uniqueLeads > 0
+    || snapshot.sprintLeads > 0
+    || snapshot.qualifiedSprintLeads > 0;
+}
+
+function selectHostedRevenueWindow(summaries = {}) {
+  const candidateOrder = ['today', '30d', 'lifetime'];
+
+  for (const windowName of candidateOrder) {
+    const candidate = summaries?.[windowName];
+    if (Number(candidate?.status) === 200 && hasRevenueLoopCommercialSignal(candidate)) {
+      return {
+        window: windowName,
+        summary: candidate,
+      };
+    }
+  }
+
+  for (const windowName of candidateOrder) {
+    const candidate = summaries?.[windowName];
+    if (Number(candidate?.status) === 200) {
+      return {
+        window: windowName,
+        summary: candidate,
+      };
+    }
+  }
+
+  return {
+    window: 'today',
+    summary: summaries?.today || {},
+  };
+}
+
 async function resolveRevenueLoopSummary(options = {}) {
   const {
     getOperationalBillingSummaryFn = getOperationalBillingSummary,
     generateRevenueStatusReportFn = generateRevenueStatusReport,
     revenueStatusOptions = {},
+    hostedStatusRetries = 1,
+    hostedRetryDelayMs = 1000,
+    waitForRetryFn = (delayMs) => new Promise((resolve) => setTimeout(resolve, delayMs)),
   } = options;
 
   const localResult = await getOperationalBillingSummaryFn();
@@ -621,22 +663,36 @@ async function resolveRevenueLoopSummary(options = {}) {
     return localResult;
   }
 
-  try {
-    const hostedReport = await generateRevenueStatusReportFn(revenueStatusOptions);
-    const hostedToday = hostedReport?.hostedAudit?.summaries?.today;
-    if (hostedReport?.source === 'local-fallback' || Number(hostedToday?.status) !== 200) {
-      return localResult;
+  let hostedFailure = null;
+  const retryCount = Math.max(0, Number.parseInt(hostedStatusRetries, 10) || 0);
+
+  for (let attempt = 0; attempt <= retryCount; attempt += 1) {
+    try {
+      const hostedReport = await generateRevenueStatusReportFn(revenueStatusOptions);
+      const selectedHostedWindow = selectHostedRevenueWindow(hostedReport?.hostedAudit?.summaries);
+      if (hostedReport?.source !== 'local-fallback' && Number(selectedHostedWindow.summary?.status) === 200) {
+        return {
+          source: hostedReport.source,
+          summary: normalizeRevenueWindowSummary(selectedHostedWindow.summary),
+          fallbackReason: null,
+          hostedStatus: selectedHostedWindow.summary.status,
+          summaryWindow: selectedHostedWindow.window,
+        };
+      }
+      hostedFailure = new Error(
+        `Hosted revenue summary unavailable: ${normalizeText(hostedReport?.source) || 'unknown source'}`
+      );
+    } catch (error) {
+      hostedFailure = error;
     }
 
-    return {
-      source: hostedReport.source,
-      summary: normalizeRevenueWindowSummary(hostedToday),
-      fallbackReason: null,
-      hostedStatus: hostedToday.status,
-    };
-  } catch {
-    return localResult;
+    if (attempt < retryCount) {
+      await waitForRetryFn(hostedRetryDelayMs);
+    }
   }
+
+  void hostedFailure;
+  return localResult;
 }
 
 function deriveRevenueDirective(summary = {}, motionCatalog = buildMotionCatalog()) {
@@ -1533,6 +1589,7 @@ function renderRevenueLoopMarkdown(report) {
     ...((report.evidenceBackstop?.proofLinks || []).map((link) => `- Proof link: ${link}`)),
     '',
     '## Revenue Snapshot',
+    `- Revenue window: ${report.snapshotWindow || 'today'}`,
     `- Paid orders: ${report.snapshot.paidOrders}`,
     `- Booked revenue: $${(report.snapshot.bookedRevenueCents / 100).toFixed(2)}`,
     `- Checkout starts: ${report.snapshot.checkoutStarts}`,
@@ -2104,7 +2161,7 @@ async function runRevenueLoop(options = {}) {
   const links = buildRevenueLinks();
   const motionCatalog = buildMotionCatalog(links);
   const warmTargets = getWarmOutboundTargets(motionCatalog.sprint.cta);
-  const { source, summary, fallbackReason } = await resolveRevenueLoopSummary(options);
+  const { source, summary, fallbackReason, summaryWindow } = await resolveRevenueLoopSummary(options);
   const directive = deriveRevenueDirective(summary, motionCatalog);
   const { targets, errors } = await prospectTargets(options.maxTargets || 6, {
     fetchImpl: options.fetchImpl || globalThis.fetch,
@@ -2124,6 +2181,7 @@ async function runRevenueLoop(options = {}) {
     directive,
     targets: pipelineAwareTargets,
   });
+  report.snapshotWindow = summaryWindow || 'today';
   report.marketplaceCopy = buildMarketplaceCopy(report);
 
   if (errors.length) {

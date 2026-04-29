@@ -173,6 +173,115 @@ test('resolveRevenueLoopSummary keeps local numbers when hosted revenue status s
   assert.equal(result.summary.revenue.paidOrders, 0);
 });
 
+test('resolveRevenueLoopSummary retries hosted revenue status before accepting local fallback', async () => {
+  let hostedCalls = 0;
+  let retryWaits = 0;
+
+  const result = await resolveRevenueLoopSummary({
+    getOperationalBillingSummaryFn: async () => ({
+      source: 'local',
+      summary: {
+        revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+        trafficMetrics: { checkoutStarts: 0 },
+        signups: { uniqueLeads: 0 },
+        pipeline: {},
+      },
+      fallbackReason: 'Hosted operational summary is not configured.',
+    }),
+    generateRevenueStatusReportFn: async () => {
+      hostedCalls += 1;
+      if (hostedCalls === 1) {
+        return {
+          source: 'local-fallback',
+          hostedAudit: {
+            summaries: {
+              today: {
+                status: 200,
+                revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+              },
+            },
+          },
+        };
+      }
+
+      return {
+        source: 'hosted-via-railway-env',
+        hostedAudit: {
+          summaries: {
+            today: {
+              status: 200,
+              revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+              trafficMetrics: { checkoutStarts: 1 },
+              signups: { uniqueLeads: 1 },
+              pipeline: {},
+            },
+          },
+        },
+      };
+    },
+    waitForRetryFn: async () => {
+      retryWaits += 1;
+    },
+    hostedRetryDelayMs: 0,
+  });
+
+  assert.equal(hostedCalls, 2);
+  assert.equal(retryWaits, 1);
+  assert.equal(result.source, 'hosted-via-railway-env');
+  assert.equal(result.fallbackReason, null);
+  assert.equal(result.summary.revenue.paidOrders, 2);
+  assert.equal(result.summary.revenue.bookedRevenueCents, 2000);
+});
+
+test('resolveRevenueLoopSummary selects the freshest hosted window with commercial signal', async () => {
+  const result = await resolveRevenueLoopSummary({
+    getOperationalBillingSummaryFn: async () => ({
+      source: 'local',
+      summary: {
+        revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+        trafficMetrics: { checkoutStarts: 0 },
+        signups: { uniqueLeads: 0 },
+        pipeline: {},
+      },
+      fallbackReason: 'Hosted operational summary is not configured.',
+    }),
+    generateRevenueStatusReportFn: async () => ({
+      source: 'hosted-via-railway-env',
+      hostedAudit: {
+        summaries: {
+          today: {
+            status: 200,
+            revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+            trafficMetrics: { checkoutStarts: 0 },
+            signups: { uniqueLeads: 0 },
+            pipeline: {},
+          },
+          '30d': {
+            status: 200,
+            revenue: { paidOrders: 6, bookedRevenueCents: 16900 },
+            trafficMetrics: { checkoutStarts: 531 },
+            signups: { uniqueLeads: 346 },
+            pipeline: {},
+          },
+          lifetime: {
+            status: 200,
+            revenue: { paidOrders: 6, bookedRevenueCents: 16900 },
+            trafficMetrics: { checkoutStarts: 615 },
+            signups: { uniqueLeads: 352 },
+            pipeline: {},
+          },
+        },
+      },
+    }),
+  });
+
+  assert.equal(result.source, 'hosted-via-railway-env');
+  assert.equal(result.summaryWindow, '30d');
+  assert.equal(result.summary.revenue.paidOrders, 6);
+  assert.equal(result.summary.revenue.bookedRevenueCents, 16900);
+  assert.equal(result.summary.trafficMetrics.checkoutStarts, 531);
+});
+
 test('resolveRevenueLoopSummary skips hosted audit when local metrics are explicitly requested', async () => {
   let hostedAuditCalls = 0;
   const result = await resolveRevenueLoopSummary({
