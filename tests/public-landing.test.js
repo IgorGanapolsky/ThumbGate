@@ -28,11 +28,14 @@ test('public landing page keeps FAQPage JSON-LD parity for SEO and GEO', () => {
   assert.match(landingPage, /What is the ThumbGate tech stack\?/);
   assert.match(landingPage, /What AI agents does ThumbGate work with\?/);
   assert.match(landingPage, /Do I have to chat inside the ThumbGate GPT for enforcement\?/);
+  assert.match(landingPage, /When should I use Pro versus the Workflow Hardening Sprint\?/);
   assert.match(landingPage, /How are pre-action checks different from prompt rules\?/);
   assert.match(landingPage, /behavioral immune system/i);
   assert.match(landingPage, /PreToolUse hook enforcement/i);
   assert.match(landingPage, /Thompson Sampling/i);
   assert.match(landingPage, /prompt evaluation/i);
+  assert.match(landingPage, /one real blocked repeat/i);
+  assert.match(landingPage, /workflow owner needs approval boundaries/i);
 });
 
 test('public landing page routes Pro buyers through the hosted checkout surface', () => {
