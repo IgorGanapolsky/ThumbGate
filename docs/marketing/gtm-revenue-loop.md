@@ -1,7 +1,7 @@
 # GSD Revenue Loop
 
 Status: post-first-dollar
-Updated: 2026-04-29T05:42:00.293Z
+Updated: 2026-04-29T06:51:58.963Z
 
 This report is an operator artifact for landing the first 10 paying customers. It is not proof of sent messages or booked revenue by itself.
 Outbound rule: do not treat posts as sales. A lead only moves when it is tracked as contacted, replied, call booked, checkout/sprint, or paid.
@@ -22,6 +22,7 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Proof link: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ## Revenue Snapshot
+- Revenue window: today
 - Paid orders: 2
 - Booked revenue: $20.00
 - Checkout starts: 0
@@ -256,7 +257,7 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Contact surfaces: Website: https://www.youtube.com/@Basecase_/featured; GitHub profile: https://github.com/BaseInfinity; Repository: https://github.com/BaseInfinity/claude-sdlc-wizard
 - Company: n/a
 - Repo: https://github.com/BaseInfinity/claude-sdlc-wizard
-- Repo last updated: 2026-04-29T05:37:52Z
+- Repo last updated: 2026-04-29T06:41:46Z
 - Evidence score: 14
 - Evidence: workflow control surface, production or platform workflow, self-serve agent tooling, 10 GitHub stars, updated in the last 7 days
 - Evidence sources: Target signal: https://github.com/BaseInfinity/claude-sdlc-wizard; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
