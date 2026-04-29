@@ -504,8 +504,8 @@ test('prospects GitHub targets via REST search, filters low-signal repos, and de
     { label: 'Repository', url: 'https://github.com/builder/production-mcp-server' },
   ]);
   assert.ok(result.targets[0].evidence.score >= 5);
-  assert.equal(requestedUrls.length, 9);
-  assert.equal(requestedUrls.filter((url) => url.startsWith('https://api.github.com/search/repositories')).length, 8);
+  assert.equal(requestedUrls.length, 13);
+  assert.equal(requestedUrls.filter((url) => url.startsWith('https://api.github.com/search/repositories')).length, 12);
   assert.ok(requestedUrls.some((url) => url === 'https://api.github.com/users/builder'));
 });
 
@@ -577,6 +577,40 @@ test('prospecting drops educational learning repos that look active but have low
   assert.equal(result.targets[0].repoName, 'mcp-jira-stdio');
 });
 
+test('prospecting drops portfolio-style repos even when they mention workflows', async () => {
+  const result = await prospectTargets(5, {
+    fetchImpl: async () => ({
+      ok: true,
+      async text() {
+        return JSON.stringify({
+          items: [
+            {
+              owner: { login: 'builder' },
+              name: 'agent-workflow-portfolio',
+              html_url: 'https://github.com/builder/agent-workflow-portfolio',
+              description: 'Portfolio of workflow automation projects, approval demos, and AI agent experiments.',
+              stargazers_count: 0,
+              updated_at: new Date().toISOString(),
+            },
+            {
+              owner: { login: 'freema' },
+              name: 'mcp-jira-stdio',
+              html_url: 'https://github.com/freema/mcp-jira-stdio',
+              description: 'MCP server for Jira integration with stdio transport. Issue management, project tracking, and workflow automation via Model Context Protocol.',
+              stargazers_count: 11,
+              updated_at: new Date().toISOString(),
+            },
+          ],
+        });
+      },
+    }),
+  });
+
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.targets.length, 1);
+  assert.equal(result.targets[0].repoName, 'mcp-jira-stdio');
+});
+
 test('GitHub discovery reports API and parser failures as non-fatal warnings', async () => {
   const failed = await fetchGitHubJson('search/repositories?q=test', {
     fetchImpl: async () => ({
@@ -611,7 +645,7 @@ test('GitHub discovery reports API and parser failures as non-fatal warnings', a
   assert.equal(invalid.ok, false);
   assert.equal(unavailable.ok, false);
   assert.equal(prospects.targets.length, 0);
-  assert.equal(prospects.errors.length, 8);
+  assert.equal(prospects.errors.length, 12);
 });
 
 test('GitHub discovery falls back to gh auth token when env tokens are absent', async () => {
