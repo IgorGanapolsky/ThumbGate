@@ -164,6 +164,37 @@ test('CLI options and report writing produce markdown and JSON artifacts', () =>
   assert.match(fs.readFileSync(path.join(tempDir, 'aiventyx-marketplace-listings.csv'), 'utf8'), /utm_source/);
 });
 
+test('writeDocs mode also persists checked-in Aiventyx sidecars alongside markdown', () => {
+  const writes = [];
+  const originalWriteFileSync = fs.writeFileSync;
+  const docsRoot = path.join(__dirname, '..', 'docs', 'marketing');
+
+  fs.writeFileSync = (filePath, ...args) => {
+    writes.push(String(filePath));
+    if (String(filePath).startsWith(`${docsRoot}${path.sep}`)) {
+      return;
+    }
+    return originalWriteFileSync.call(fs, filePath, ...args);
+  };
+
+  try {
+    const written = writeAiventyxMarketplaceOutputs(buildAiventyxMarketplacePlan({
+      appOrigin: 'https://thumbgate-production.up.railway.app',
+      proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
+      sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+    }), {
+      writeDocs: true,
+    });
+
+    assert.match(written.docsPath, /docs\/marketing\/aiventyx-marketplace-revenue-pack\.md$/);
+    assert.ok(writes.some((entry) => entry.endsWith('docs/marketing/aiventyx-marketplace-revenue-pack.md')));
+    assert.ok(writes.some((entry) => entry.endsWith('docs/marketing/aiventyx-marketplace-plan.json')));
+    assert.ok(writes.some((entry) => entry.endsWith('docs/marketing/aiventyx-marketplace-listings.csv')));
+  } finally {
+    fs.writeFileSync = originalWriteFileSync;
+  }
+});
+
 test('CLI entrypoint detection is path based for importer safety', () => {
   const scriptPath = path.join(__dirname, '..', 'scripts', 'aiventyx-marketplace-plan.js');
 

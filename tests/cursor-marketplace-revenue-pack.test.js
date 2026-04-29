@@ -158,6 +158,33 @@ test('CLI options and report writing produce markdown, JSON, and CSV artifacts',
   assert.match(fs.readFileSync(path.join(tempDir, 'cursor-marketplace-surfaces.csv'), 'utf8'), /utm_source/);
 });
 
+test('writeDocs mode also persists checked-in Cursor sidecars alongside markdown', () => {
+  const writes = [];
+  const originalWriteFileSync = fs.writeFileSync;
+  const docsRoot = path.join(__dirname, '..', 'docs', 'marketing');
+
+  fs.writeFileSync = (filePath, ...args) => {
+    writes.push(String(filePath));
+    if (String(filePath).startsWith(`${docsRoot}${path.sep}`)) {
+      return;
+    }
+    return originalWriteFileSync.call(fs, filePath, ...args);
+  };
+
+  try {
+    const written = writeCursorMarketplaceRevenuePack(buildPack(), {
+      writeDocs: true,
+    });
+
+    assert.match(written.docsPath, /docs\/marketing\/cursor-marketplace-revenue-pack\.md$/);
+    assert.ok(writes.some((entry) => entry.endsWith('docs/marketing/cursor-marketplace-revenue-pack.md')));
+    assert.ok(writes.some((entry) => entry.endsWith('docs/marketing/cursor-marketplace-revenue-pack.json')));
+    assert.ok(writes.some((entry) => entry.endsWith('docs/marketing/cursor-marketplace-surfaces.csv')));
+  } finally {
+    fs.writeFileSync = originalWriteFileSync;
+  }
+});
+
 test('CLI entrypoint detection is path based for importer safety', () => {
   const scriptPath = path.join(__dirname, '..', 'scripts', 'cursor-marketplace-revenue-pack.js');
 
