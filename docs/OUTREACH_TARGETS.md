@@ -28,7 +28,9 @@ It is the qualification screen and send surface for the current Workflow Hardeni
 ### 1. Deep_Ad1959 — r/cursor
 - Temperature: warm
 - Current stage: targeted
+- Preferred route: Reddit DM
 - Contact surface: https://www.reddit.com/user/Deep_Ad1959/
+- Backup surfaces: n/a
 - Evidence score: 10
 - Evidence: warm inbound engagement, workflow pain named: rollback risk, already in DMs
 - Why now: Warm Reddit engager already named a repeated workflow risk, so the fastest path is a founder-led diagnostic.
@@ -45,7 +47,9 @@ Track next step: `npm run sales:pipeline -- advance --lead 'reddit_deep_ad1959_r
 ### 2. game-of-kton — r/cursor
 - Temperature: warm
 - Current stage: targeted
+- Preferred route: Reddit DM
 - Contact surface: https://www.reddit.com/user/game-of-kton/
+- Backup surfaces: n/a
 - Evidence score: 9
 - Evidence: warm inbound engagement, built serious memory systems, workflow pain named: stale context and conflicting facts
 - Why now: Warm Reddit engager already works on advanced agent memory, so discovery should center on one repeated failure pattern.
@@ -62,7 +66,9 @@ Track next step: `npm run sales:pipeline -- advance --lead 'reddit_game_of_kton_
 ### 3. leogodin217 — r/ClaudeCode
 - Temperature: warm
 - Current stage: targeted
+- Preferred route: Reddit DM
 - Contact surface: https://www.reddit.com/user/leogodin217/
+- Backup surfaces: n/a
 - Evidence score: 9
 - Evidence: warm inbound engagement, mature multi-step workflow described, workflow pain named: review boundaries and context risk
 - Why now: Warm Reddit engager already described a mature workflow, so the next step is a targeted diagnostic on one failure mode.
@@ -79,7 +85,9 @@ Track next step: `npm run sales:pipeline -- advance --lead 'reddit_leogodin217_r
 ### 4. Enthu-Cutlet-1337 — r/ClaudeCode
 - Temperature: warm
 - Current stage: targeted
+- Preferred route: Reddit DM
 - Contact surface: https://www.reddit.com/user/Enthu-Cutlet-1337/
+- Backup surfaces: n/a
 - Evidence score: 8
 - Evidence: warm inbound engagement, responded to adaptive-gate positioning, workflow pain named: brittle guardrails
 - Why now: Warm Reddit engager already understands the adaptive-gate thesis, so offer one concrete workflow hardening diagnostic.
@@ -97,7 +105,9 @@ Track next step: `npm run sales:pipeline -- advance --lead 'reddit_enthu_cutlet_
 ### 1. zaxbysauce — opencode-swarm
 - Temperature: cold
 - Current stage: targeted
+- Preferred route: GitHub profile
 - Contact surface: https://github.com/zaxbysauce
+- Backup surfaces: Repository: https://github.com/zaxbysauce/opencode-swarm
 - Evidence score: 12
 - Evidence: workflow control surface, self-serve agent tooling, 241 GitHub stars, updated in the last 7 days
 - Why now: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
@@ -114,7 +124,9 @@ Track next step: `npm run sales:pipeline -- advance --lead 'github_zaxbysauce_op
 ### 2. yvgude — lean-ctx
 - Temperature: cold
 - Current stage: targeted
+- Preferred route: Website
 - Contact surface: https://yvesgugger.ch/
+- Backup surfaces: GitHub profile: https://github.com/yvgude; Repository: https://github.com/yvgude/lean-ctx
 - Evidence score: 10
 - Evidence: agent infrastructure, self-serve agent tooling, 907 GitHub stars, updated in the last 7 days
 - Why now: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
@@ -132,7 +144,9 @@ Track next step: `npm run sales:pipeline -- advance --lead 'github_yvgude_lean_c
 ### 1. Adqui9608 — ai-code-review-agent
 - Temperature: cold
 - Current stage: targeted
+- Preferred route: GitHub profile
 - Contact surface: https://github.com/Adqui9608
+- Backup surfaces: Repository: https://github.com/Adqui9608/ai-code-review-agent
 - Evidence score: 15
 - Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, updated in the last 7 days
 - Why now: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
@@ -149,7 +163,9 @@ Track next step: `npm run sales:pipeline -- advance --lead 'github_adqui9608_ai_
 ### 2. arcasilesgroup — ai-engineering
 - Temperature: cold
 - Current stage: targeted
+- Preferred route: Website
 - Contact surface: https://arcasiles.com/
+- Backup surfaces: GitHub profile: https://github.com/arcasilesgroup; Repository: https://github.com/arcasilesgroup/ai-engineering
 - Evidence score: 14
 - Evidence: production or platform workflow, business-system integration, self-serve agent tooling, 25 GitHub stars, updated in the last 7 days
 - Why now: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
@@ -166,7 +182,9 @@ Track next step: `npm run sales:pipeline -- advance --lead 'github_arcasilesgrou
 ### 3. DGouron — review-flow
 - Temperature: cold
 - Current stage: targeted
+- Preferred route: Website
 - Contact surface: https://dgouron.fr/
+- Backup surfaces: GitHub profile: https://github.com/DGouron; Repository: https://github.com/DGouron/review-flow
 - Evidence score: 14
 - Evidence: workflow control surface, business-system integration, agent infrastructure, 36 GitHub stars, updated in the last 7 days
 - Why now: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
@@ -183,7 +201,9 @@ Track next step: `npm run sales:pipeline -- advance --lead 'github_dgouron_revie
 ### 4. nihannihu — Omni-SRE
 - Temperature: cold
 - Current stage: targeted
+- Preferred route: GitHub profile
 - Contact surface: https://github.com/nihannihu
+- Backup surfaces: Repository: https://github.com/nihannihu/Omni-SRE
 - Evidence score: 14
 - Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, updated in the last 30 days
 - Why now: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.

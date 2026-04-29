@@ -16,6 +16,7 @@ const DEFAULT_CORE_LINKS = {
   proof: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
   truth: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md',
 };
+const DEFAULT_OUTREACH_QUEUE_BASENAME = 'OUTREACH_TARGETS';
 const FOLLOW_UP_STAGES = new Set([
   'contacted',
   'replied',
@@ -38,6 +39,179 @@ const SELF_SERVE_OFFERS = new Set(['pro_self_serve']);
 function normalizeText(value, maxLength = 4000) {
   if (value === undefined || value === null) return '';
   return String(value).trim().slice(0, maxLength);
+}
+
+function normalizeUrl(value) {
+  const normalized = normalizeText(value, 4096);
+  if (!normalized) return '';
+  return /^https?:\/\//i.test(normalized) ? normalized : '';
+}
+
+function dedupeContactSurfaces(surfaces = []) {
+  const seen = new Set();
+  const deduped = [];
+
+  for (const surface of Array.isArray(surfaces) ? surfaces : []) {
+    const label = normalizeText(surface?.label || 'Contact');
+    const url = normalizeUrl(surface?.url);
+    if (!url) {
+      continue;
+    }
+
+    const key = `${label.toLowerCase()}::${url.toLowerCase()}`;
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    deduped.push({ label, url });
+  }
+
+  return deduped;
+}
+
+function getContactSurfaces(target = {}) {
+  const surfaces = dedupeContactSurfaces(target.contactSurfaces);
+  if (surfaces.length > 0) {
+    return surfaces;
+  }
+
+  const fallbackUrl = normalizeUrl(target.contactUrl);
+  if (!fallbackUrl) {
+    return [];
+  }
+
+  const fallbackRoute = inferContactRoute(target, {
+    label: normalizeText(target.channel || target.source || 'Contact') || 'Contact',
+    url: fallbackUrl,
+  });
+
+  return [{
+    label: humanizeContactRoute(fallbackRoute),
+    url: fallbackUrl,
+  }];
+}
+
+function scoreContactSurface(target = {}, surface = {}) {
+  const source = normalizeText(target.source).toLowerCase();
+  const channel = normalizeText(target.channel).toLowerCase();
+  const label = normalizeText(surface.label).toLowerCase();
+  const url = normalizeUrl(surface.url).toLowerCase();
+
+  if (source === 'reddit' || channel === 'reddit_dm') {
+    if (/reddit/.test(url)) return 100;
+  }
+
+  if (source === 'github') {
+    if (label === 'website') return 100;
+    if (label === 'github profile') return 90;
+    if (label === 'repository') return 80;
+  }
+
+  if (channel.includes('linkedin')) return 100;
+  if (channel.includes('manual')) return 70;
+  return 50;
+}
+
+function getPrimaryContactSurface(target = {}) {
+  const surfaces = getContactSurfaces(target);
+  if (surfaces.length === 0) {
+    return null;
+  }
+
+  return [...surfaces].sort((left, right) => {
+    return scoreContactSurface(target, right) - scoreContactSurface(target, left);
+  })[0];
+}
+
+function inferContactRoute(target = {}, surface = null) {
+  const source = normalizeText(target.source).toLowerCase();
+  const channel = normalizeText(target.channel).toLowerCase();
+  const label = normalizeText(surface?.label).toLowerCase();
+  const url = normalizeUrl(surface?.url).toLowerCase();
+
+  if (source === 'reddit' || channel === 'reddit_dm' || /reddit/.test(url)) {
+    return 'reddit_dm';
+  }
+
+  if (channel.includes('linkedin')) {
+    return 'linkedin';
+  }
+
+  if (label === 'website') {
+    return 'website';
+  }
+
+  if (label === 'github profile' || /github\.com\/[^/]+\/?$/.test(url)) {
+    return 'github_profile';
+  }
+
+  if (label === 'repository' || /github\.com\/[^/]+\/[^/]+/.test(url)) {
+    return 'repository';
+  }
+
+  return channel || source || 'manual';
+}
+
+function humanizeContactRoute(route) {
+  switch (normalizeText(route).toLowerCase()) {
+    case 'reddit_dm':
+      return 'Reddit DM';
+    case 'linkedin':
+      return 'LinkedIn';
+    case 'website':
+      return 'Website';
+    case 'github_profile':
+      return 'GitHub profile';
+    case 'repository':
+      return 'Repository';
+    default:
+      return normalizeText(route) || 'Manual';
+  }
+}
+
+function renderContactSurfaces(surfaces = [], { excludeUrl = '' } = {}) {
+  const excluded = normalizeUrl(excludeUrl).toLowerCase();
+  const rendered = dedupeContactSurfaces(surfaces)
+    .filter((surface) => normalizeUrl(surface.url).toLowerCase() !== excluded)
+    .map((surface) => `${surface.label}: ${surface.url}`);
+
+  return rendered.length ? rendered.join('; ') : 'n/a';
+}
+
+function getLaneName(target = {}) {
+  const stage = normalizeText(target.stage);
+  const temperature = normalizeText(target.temperature).toLowerCase();
+  const source = normalizeText(target.source).toLowerCase();
+
+  if (FOLLOW_UP_STAGES.has(stage)) return 'follow_up';
+  if (stage === TARGETED_STAGE && temperature === 'warm') return 'warm_discovery';
+  if (stage === TARGETED_STAGE && temperature !== 'warm' && source === 'github' && isSelfServeTarget(target)) {
+    return 'self_serve_close';
+  }
+  if (stage === TARGETED_STAGE && temperature !== 'warm' && source === 'github') return 'cold_github';
+  return 'targeted';
+}
+
+function csvEscape(value) {
+  const normalized = normalizeText(value, 20000);
+  if (!/[",\n]/.test(normalized)) {
+    return normalized;
+  }
+  return `"${normalized.replace(/"/g, '""')}"`;
+}
+
+function deriveOutreachArtifactPaths(outPath = DEFAULT_DOCS_PATH) {
+  const resolved = path.resolve(outPath || DEFAULT_DOCS_PATH);
+  const dir = path.dirname(resolved);
+  const ext = path.extname(resolved) || '.md';
+  const basename = path.basename(resolved, ext) || DEFAULT_OUTREACH_QUEUE_BASENAME;
+
+  return {
+    markdownPath: resolved,
+    csvPath: path.join(dir, `${basename}.csv`),
+    jsonPath: path.join(dir, `${basename}.json`),
+  };
 }
 
 function readJsonObject(filePath) {
@@ -122,6 +296,12 @@ function enrichTarget(target = {}, pipelineIndex = new Map(), queuePath = DEFAUL
   const pipelineLead = pipelineIndex.get(lead.leadId);
   const stage = normalizeText(pipelineLead?.stage || target.pipelineStage || lead.stage || TARGETED_STAGE);
   const evidence = Array.isArray(target.evidence) ? target.evidence : [];
+  const contactSurfaces = getContactSurfaces(target);
+  const primaryContactSurface = getPrimaryContactSurface({
+    ...target,
+    contactSurfaces,
+  });
+  const contactRoute = inferContactRoute(target, primaryContactSurface);
 
   return {
     ...target,
@@ -134,7 +314,12 @@ function enrichTarget(target = {}, pipelineIndex = new Map(), queuePath = DEFAUL
       stage,
     }),
     summary: buildTargetSummary(target),
-    contactSurface: normalizeText(target.contactUrl || lead.contact?.url || ''),
+    contactSurface: normalizeText(primaryContactSurface?.url || target.contactUrl || lead.contact?.url || ''),
+    contactSurfaces,
+    primaryContactSurface,
+    contactRoute,
+    contactRouteLabel: humanizeContactRoute(contactRoute),
+    backupContactSurfaces: contactSurfaces.filter((surface) => surface.url !== primaryContactSurface?.url),
     evidenceScore: Number(target.evidenceScore || 0),
     evidence,
   };
@@ -202,7 +387,9 @@ function renderTargetMarkdown(target = {}, index = 0) {
     `### ${index + 1}. ${target.summary}`,
     `- Temperature: ${normalizeText(target.temperature) || 'cold'}`,
     `- Current stage: ${target.stage || TARGETED_STAGE}`,
+    `- Preferred route: ${target.contactRouteLabel || 'Manual'}`,
     `- Contact surface: ${target.contactSurface || 'n/a'}`,
+    `- Backup surfaces: ${renderContactSurfaces(target.backupContactSurfaces)}`,
     `- Evidence score: ${Number(target.evidenceScore || 0)}`,
     `- Evidence: ${target.evidence.length ? target.evidence.join(', ') : 'n/a'}`,
     `- Why now: ${normalizeText(target.motionReason || target.nextOperatorAction || 'Use the current queue row before widening the search.')}`,
@@ -222,6 +409,79 @@ function renderTargetMarkdown(target = {}, index = 0) {
   }
 
   return [...lines, ''];
+}
+
+function buildOperatorQueueRows(report = {}) {
+  const orderedTargets = [
+    ...(Array.isArray(report.followUpTargets) ? report.followUpTargets : []),
+    ...(Array.isArray(report.warmTargets) ? report.warmTargets : []),
+    ...(Array.isArray(report.selfServeTargets) ? report.selfServeTargets : []),
+    ...(Array.isArray(report.coldTargets) ? report.coldTargets : []),
+  ];
+
+  return orderedTargets.map((target) => {
+    return {
+      lane: getLaneName(target),
+      summary: normalizeText(target.summary),
+      temperature: normalizeText(target.temperature),
+      source: normalizeText(target.source),
+      channel: normalizeText(target.channel),
+      stage: normalizeText(target.stage),
+      username: normalizeText(target.username),
+      accountName: normalizeText(target.accountName),
+      repoName: normalizeText(target.repoName),
+      repoUrl: normalizeText(target.repoUrl),
+      company: normalizeText(target.company),
+      evidenceScore: String(Number(target.evidenceScore || 0)),
+      preferredRoute: normalizeText(target.contactRoute),
+      preferredRouteLabel: normalizeText(target.contactRouteLabel),
+      preferredContactUrl: normalizeText(target.contactSurface),
+      backupContactSurfaces: renderContactSurfaces(target.backupContactSurfaces),
+      allContactSurfaces: renderContactSurfaces(target.contactSurfaces),
+      motion: normalizeText(target.motion),
+      offer: normalizeText(target.offer),
+      cta: normalizeText(target.cta),
+      nextTrackingCommand: normalizeText(target.nextTrackingCommand),
+      evidence: Array.isArray(target.evidence) ? target.evidence.join('; ') : '',
+      firstTouchDraft: normalizeText(target.firstTouchDraft),
+      painConfirmedFollowUpDraft: normalizeText(target.painConfirmedFollowUpDraft),
+    };
+  });
+}
+
+function renderOperatorQueueCsv(rows = []) {
+  const headers = [
+    'lane',
+    'summary',
+    'temperature',
+    'source',
+    'channel',
+    'stage',
+    'username',
+    'accountName',
+    'repoName',
+    'repoUrl',
+    'company',
+    'evidenceScore',
+    'preferredRoute',
+    'preferredRouteLabel',
+    'preferredContactUrl',
+    'backupContactSurfaces',
+    'allContactSurfaces',
+    'motion',
+    'offer',
+    'cta',
+    'nextTrackingCommand',
+    'evidence',
+    'firstTouchDraft',
+    'painConfirmedFollowUpDraft',
+  ];
+
+  const lines = [
+    headers.join(','),
+    ...rows.map((row) => headers.map((header) => csvEscape(row[header] || '')).join(',')),
+  ];
+  return `${lines.join('\n')}\n`;
 }
 
 function renderOutreachTargetsMarkdown(report = {}) {
@@ -277,10 +537,27 @@ function renderOutreachTargetsMarkdown(report = {}) {
   ].join('\n');
 }
 
-function writeOutreachTargetsDoc(markdown, outPath = DEFAULT_DOCS_PATH) {
-  ensureParentDir(outPath);
-  fs.writeFileSync(outPath, markdown, 'utf8');
-  return path.resolve(outPath);
+function writeOutreachTargetsArtifacts({
+  markdown,
+  report,
+  outPath = DEFAULT_DOCS_PATH,
+} = {}) {
+  const paths = deriveOutreachArtifactPaths(outPath);
+  const operatorQueueRows = buildOperatorQueueRows(report);
+  const operatorQueueCsv = renderOperatorQueueCsv(operatorQueueRows);
+  const operatorQueueJson = `${JSON.stringify({
+    generatedAt: normalizeText(report?.generatedAt) || new Date().toISOString(),
+    state: normalizeText(report?.state),
+    headline: normalizeText(report?.headline),
+    rows: operatorQueueRows,
+  }, null, 2)}\n`;
+
+  ensureParentDir(paths.markdownPath);
+  fs.writeFileSync(paths.markdownPath, markdown, 'utf8');
+  fs.writeFileSync(paths.csvPath, operatorQueueCsv, 'utf8');
+  fs.writeFileSync(paths.jsonPath, operatorQueueJson, 'utf8');
+
+  return paths;
 }
 
 function isCliInvocation(argv = process.argv) {
@@ -292,13 +569,19 @@ function isCliInvocation(argv = process.argv) {
 function main(options = {}) {
   const report = buildOutreachTargetsReport(options);
   const markdown = renderOutreachTargetsMarkdown(report);
-  const docsPath = writeOutreachTargetsDoc(markdown, options.outPath || DEFAULT_DOCS_PATH);
-  console.log(`Updated ${docsPath} from the current evidence-backed queue.`);
+  const written = writeOutreachTargetsArtifacts({
+    markdown,
+    report,
+    outPath: options.outPath || DEFAULT_DOCS_PATH,
+  });
+  console.log(`Updated ${written.markdownPath} from the current evidence-backed queue.`);
   console.log(
     `Warm: ${report.warmTargets.length} | Self-serve: ${report.selfServeTargets.length} | Cold: ${report.coldTargets.length} | Follow-up: ${report.followUpTargets.length}`
   );
   return {
-    docsPath,
+    docsPath: written.markdownPath,
+    csvPath: written.csvPath,
+    jsonPath: written.jsonPath,
     report,
   };
 }
@@ -317,8 +600,13 @@ module.exports = {
   DEFAULT_QUEUE_PATH,
   DEFAULT_REPORT_PATH,
   buildOutreachTargetsReport,
+  buildOperatorQueueRows,
+  deriveOutreachArtifactPaths,
+  getPrimaryContactSurface,
+  inferContactRoute,
   isCliInvocation,
   main,
+  renderOperatorQueueCsv,
   renderOutreachTargetsMarkdown,
-  writeOutreachTargetsDoc,
+  writeOutreachTargetsArtifacts,
 };
