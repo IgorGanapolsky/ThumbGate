@@ -87,6 +87,14 @@ test('automation emits LinkedIn, Aiventyx, ChatGPT, Codex, and GitHub outreach a
         calls.push(['writeChatgptGptRevenuePack', pack.channel, options.writeDocs]);
         return { docsPath: '/tmp/chatgpt.md' };
       },
+      buildRedditDmWorkflowHardeningPack(report) {
+        calls.push(['buildRedditDmWorkflowHardeningPack', report.targets.length]);
+        return { channel: 'reddit' };
+      },
+      writeRedditDmWorkflowHardeningPack(pack, options) {
+        calls.push(['writeRedditDmWorkflowHardeningPack', pack.channel, options.writeDocs]);
+        return { docsPath: '/tmp/reddit.md' };
+      },
       buildCodexMarketplaceRevenuePack() {
         calls.push(['buildCodexMarketplaceRevenuePack']);
         return { channel: 'codex' };
@@ -128,6 +136,8 @@ test('automation emits LinkedIn, Aiventyx, ChatGPT, Codex, and GitHub outreach a
     ['writeLinkedinWorkflowHardeningPack', 'linkedin', true],
     ['buildChatgptGptRevenuePack', 2],
     ['writeChatgptGptRevenuePack', 'chatgpt', true],
+    ['buildRedditDmWorkflowHardeningPack', 2],
+    ['writeRedditDmWorkflowHardeningPack', 'reddit', true],
     ['buildCodexMarketplaceRevenuePack'],
     ['writeCodexMarketplaceRevenuePack', 'codex', true],
     ['buildCodexPluginRevenuePack', 2],
@@ -146,6 +156,7 @@ test('automation emits LinkedIn, Aiventyx, ChatGPT, Codex, and GitHub outreach a
   assert.ok(logs.some((line) => line.includes('Aiventyx pack updated: /tmp/aiventyx.md')));
   assert.ok(logs.some((line) => line.includes('LinkedIn pack updated: /tmp/linkedin.md')));
   assert.ok(logs.some((line) => line.includes('ChatGPT pack updated: /tmp/chatgpt.md')));
+  assert.ok(logs.some((line) => line.includes('Reddit DM pack updated: /tmp/reddit.md')));
   assert.ok(logs.some((line) => line.includes('Codex marketplace pack updated: /tmp/codex-marketplace.md')));
   assert.ok(logs.some((line) => line.includes('Codex plugin pack updated: /tmp/codex-plugin.md')));
   assert.ok(logs.some((line) => line.includes('GitHub outreach asset updated: /tmp/reports/gtm/OUTREACH_TARGETS.md')));

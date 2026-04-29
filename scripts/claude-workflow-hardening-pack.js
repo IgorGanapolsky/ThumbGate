@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
+const fs = require('node:fs');
 const path = require('node:path');
 const { buildUTMLink } = require('./social-analytics/utm');
 const {
@@ -18,6 +19,7 @@ const {
 } = require('./revenue-pack-utils');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
+const REVENUE_LOOP_REPORT_PATH = path.join(REPO_ROOT, 'docs', 'marketing', 'gtm-revenue-loop.json');
 const CLAUDE_SOURCE = 'claude';
 const GUIDE_MEDIUM = 'guide_surface';
 const OUTREACH_MEDIUM = 'operator_outreach';
@@ -34,8 +36,16 @@ const CLAUDE_PLUGIN_README_URL = 'https://github.com/IgorGanapolsky/ThumbGate/bl
 const CLAUDE_EXTENSION_PLAN_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/CLAUDE_DESKTOP_EXTENSION.md';
 const CLAUDE_LANDING_SOURCE_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/landing-page.html';
 const PROOF_LINKS = [COMMERCIAL_TRUTH_LINK, VERIFICATION_EVIDENCE_LINK];
-const CANONICAL_HEADLINE = 'Turn Claude install demand into workflow-hardening revenue.';
+const CANONICAL_HEADLINE = 'Turn Claude install demand into workflow-hardening paid intent.';
 const CANONICAL_SHORT_DESCRIPTION = 'ThumbGate gives Claude Desktop and Claude Code a proof-backed install path, thumbs-up/down feedback capture, and Pre-Action Checks that block repeated workflow mistakes before the next risky action runs.';
+
+function readRevenueLoopReport(reportPath = REVENUE_LOOP_REPORT_PATH) {
+  try {
+    return JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+  } catch {
+    return {};
+  }
+}
 
 function buildTrackedClaudeLink(baseUrl, tracking = {}) {
   const url = new URL(buildUTMLink(baseUrl, {
@@ -698,7 +708,7 @@ function writeClaudeWorkflowHardeningPack(pack, options = {}) {
 
 async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
-  const pack = buildClaudeWorkflowHardeningPack();
+  const pack = buildClaudeWorkflowHardeningPack(readRevenueLoopReport());
   const written = writeClaudeWorkflowHardeningPack(pack, options);
 
   console.log('Claude workflow hardening pack ready.');
@@ -737,6 +747,7 @@ module.exports = {
   CLAUDE_CODE_GUIDE_URL,
   CLAUDE_DESKTOP_GUIDE_URL,
   CLAUDE_REVIEW_PACKET_URL,
+  REVENUE_LOOP_REPORT_PATH,
   buildClaudeWorkflowHardeningPack,
   buildEvidenceSurfaces,
   buildFollowOnOffers,
@@ -748,6 +759,7 @@ module.exports = {
   buildTrackedClaudeLink,
   isCliInvocation,
   parseArgs,
+  readRevenueLoopReport,
   renderClaudeProspectQueueCsv,
   renderClaudeWorkflowHardeningPackMarkdown,
   writeClaudeWorkflowHardeningPack,
