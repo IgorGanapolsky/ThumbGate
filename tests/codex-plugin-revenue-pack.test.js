@@ -262,6 +262,34 @@ test('CLI options and report writing produce markdown, JSON, and CSV artifacts',
   assert.match(fs.readFileSync(path.join(tempDir, 'codex-ready-targets.csv'), 'utf8'), /workflow_hardening/);
 });
 
+test('writeDocs mode also persists checked-in Codex sidecars alongside markdown', () => {
+  const writes = [];
+  const originalWriteFileSync = fs.writeFileSync;
+  const docsRoot = path.join(__dirname, '..', 'docs', 'marketing');
+
+  fs.writeFileSync = (filePath, ...args) => {
+    writes.push(String(filePath));
+    if (String(filePath).startsWith(`${docsRoot}${path.sep}`)) {
+      return;
+    }
+    return originalWriteFileSync.call(fs, filePath, ...args);
+  };
+
+  try {
+    const written = writeCodexPluginRevenuePack(buildPack(), {
+      writeDocs: true,
+    });
+
+    assert.match(written.docsPath, /docs\/marketing\/codex-plugin-revenue-pack\.md$/);
+    assert.ok(writes.some((entry) => entry.endsWith('docs/marketing/codex-plugin-revenue-pack.md')));
+    assert.ok(writes.some((entry) => entry.endsWith('docs/marketing/codex-plugin-revenue-pack.json')));
+    assert.ok(writes.some((entry) => entry.endsWith('docs/marketing/codex-plugin-surfaces.csv')));
+    assert.ok(writes.some((entry) => entry.endsWith('docs/marketing/codex-ready-targets.csv')));
+  } finally {
+    fs.writeFileSync = originalWriteFileSync;
+  }
+});
+
 test('CLI entrypoint detection is path based for importer safety', () => {
   const scriptPath = path.join(__dirname, '..', 'scripts', 'codex-plugin-revenue-pack.js');
 
