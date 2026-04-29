@@ -114,61 +114,29 @@ GitHub: https://github.com/IgorGanapolsky/ThumbGate
 
 ---
 
-## 4. X/Twitter Thread
+## 4. LinkedIn Founder Post
 
-**Tweet 1:**
-What if your AI coding agent had a 👎 button that actually worked?
+Most AI coding agents do not fail because they forgot your prompt. They fail because nothing sits between the model and the next risky tool call.
 
-Not "noted." Not "I'll try to remember."
+ThumbGate turns structured thumbs-down feedback into Pre-Action Checks:
 
-👎 = the agent physically cannot repeat that mistake. Ever.
+👎 repeated failure -> prevention rule -> tool-call block before execution
 
-Thread:
+That is the difference between memory and enforcement.
 
-**Tweet 2:**
-How it works:
+The free path stays local-first. Pro ($19/mo or $149/yr) is for the searchable personal dashboard, exports, and proof when a workflow owner asks what changed.
 
-👎 Thumbs down → captures what went wrong → becomes a prevention rule → rule fires before the tool call executes → blocked.
-
-👍 Thumbs up → reinforces what worked → pattern gets stronger.
-
-Your feedback builds an immune system for your agent.
-
-**Tweet 3:**
-Example: my agent kept force-pushing to main.
-
-I gave it a 👎 once. That thumbs-down became a gate.
-
-Now it literally cannot run `git push --force` — the gate blocks it before execution. Not a suggestion. A physical block.
-
-**Tweet 4:**
-The difference from memory tools:
-
-Mem0/Zep: "Here's context about past mistakes" (agent can still ignore it)
-
-ThumbGate: "You cannot execute this action" (gate fires before the tool call)
-
-Memory is advisory. 👎 is enforcement.
-
-**Tweet 5:**
-Works with Claude Code, Codex, Gemini, Amp, Cursor.
+Works with Claude Code, Codex, Gemini, Amp, and Cursor.
 
 One command:
 ```
 npx thumbgate init
 ```
 
-Local-first free path. MIT licensed.
+Landing: https://thumbgate-production.up.railway.app/?utm_source=linkedin&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=founder_post&creator=IgorGanapolsky&campaign_variant=workflow_hardening
+GitHub: https://github.com/IgorGanapolsky/ThumbGate
 
-**Tweet 6:**
-Pro ($19/mo or $149/yr) adds a searchable personal local dashboard to query and export your 👍/👎 entries.
-
-But captures, recalls, Pre-Action Checks, and blocking all work on the free local path. No cloud account required.
-
-Landing: https://thumbgate-production.up.railway.app/?utm_source=x&utm_medium=organic_social&utm_campaign=first_customer_push&utm_content=launch_thread_cta&creator=IgorGanapolsky&campaign_variant=founder_story
-GitHub: github.com/IgorGanapolsky/ThumbGate
-
-#MCP #AIcoding #vibecoding
+#MCP #AICoding #DevTools #WorkflowHardening
 
 ---
 
