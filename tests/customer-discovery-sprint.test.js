@@ -7,6 +7,7 @@ const path = require('node:path');
 
 const DOC_PATH = path.join(__dirname, '..', 'docs', 'CUSTOMER_DISCOVERY_SPRINT.md');
 const DOC = fs.readFileSync(DOC_PATH, 'utf8');
+const MARKETING_DIR = path.join(__dirname, '..', 'docs', 'marketing');
 const EXPECTED_ARTIFACTS = [
   'gtm-revenue-loop.md',
   'gtm-revenue-loop.json',
@@ -56,6 +57,16 @@ test('customer discovery sprint doc stays aligned with the revenue-loop artifact
       DOC,
       new RegExp(`\`${escapeRegExp(artifact)}\``),
       `Expected ${artifact} to be documented in ${DOC_PATH}`,
+    );
+  }
+});
+
+test('documented operator artifacts exist in docs/marketing for the checked-in revenue loop', () => {
+  for (const artifact of EXPECTED_ARTIFACTS) {
+    assert.equal(
+      fs.existsSync(path.join(MARKETING_DIR, artifact)),
+      true,
+      `Expected checked-in operator artifact ${artifact} in ${MARKETING_DIR}`,
     );
   }
 });

@@ -353,6 +353,7 @@ function writeAiventyxMarketplaceOutputs(plan, options = {}) {
     ? path.resolve(repoRoot, options.reportDir)
     : '';
   const docsPath = path.join(repoRoot, 'docs', 'marketing', 'aiventyx-marketplace-revenue-pack.md');
+  const docsDir = path.dirname(docsPath);
 
   if (reportDir) {
     ensureDir(reportDir);
@@ -362,7 +363,10 @@ function writeAiventyxMarketplaceOutputs(plan, options = {}) {
   }
 
   if (options.writeDocs) {
+    ensureDir(docsDir);
     fs.writeFileSync(docsPath, markdown, 'utf8');
+    fs.writeFileSync(path.join(docsDir, 'aiventyx-marketplace-plan.json'), `${JSON.stringify(plan, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(path.join(docsDir, 'aiventyx-marketplace-listings.csv'), csv, 'utf8');
   }
 
   return {
