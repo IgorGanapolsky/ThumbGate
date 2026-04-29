@@ -48,6 +48,10 @@ const {
   writeChatgptGptRevenuePack,
 } = require('./chatgpt-gpt-revenue-pack');
 const {
+  buildRedditDmWorkflowHardeningPack,
+  writeRedditDmWorkflowHardeningPack,
+} = require('./reddit-dm-workflow-hardening-pack');
+const {
   buildCodexMarketplaceRevenuePack,
   writeCodexMarketplaceRevenuePack,
 } = require('./codex-marketplace-revenue-pack');
@@ -69,6 +73,8 @@ function buildDependencies(overrides = {}) {
     writeLinkedinWorkflowHardeningPack,
     buildChatgptGptRevenuePack,
     writeChatgptGptRevenuePack,
+    buildRedditDmWorkflowHardeningPack,
+    writeRedditDmWorkflowHardeningPack,
     buildCodexMarketplaceRevenuePack,
     writeCodexMarketplaceRevenuePack,
     buildCodexPluginRevenuePack,
@@ -124,6 +130,8 @@ async function main(argv = process.argv.slice(2), overrides = {}) {
   const linkedinWritten = deps.writeLinkedinWorkflowHardeningPack(linkedinPack, options);
   const chatgptPack = deps.buildChatgptGptRevenuePack(report);
   const chatgptWritten = deps.writeChatgptGptRevenuePack(chatgptPack, options);
+  const redditPack = deps.buildRedditDmWorkflowHardeningPack(report);
+  const redditWritten = deps.writeRedditDmWorkflowHardeningPack(redditPack, options);
   const codexMarketplacePack = deps.buildCodexMarketplaceRevenuePack();
   const codexMarketplaceWritten = deps.writeCodexMarketplaceRevenuePack(codexMarketplacePack, options);
   const codexPluginPack = deps.buildCodexPluginRevenuePack(report);
@@ -155,6 +163,9 @@ async function main(argv = process.argv.slice(2), overrides = {}) {
   }
   if (chatgptWritten.docsPath) {
     console.log(`ChatGPT pack updated: ${chatgptWritten.docsPath}`);
+  }
+  if (redditWritten.docsPath) {
+    console.log(`Reddit DM pack updated: ${redditWritten.docsPath}`);
   }
   if (codexMarketplaceWritten.docsPath) {
     console.log(`Codex marketplace pack updated: ${codexMarketplaceWritten.docsPath}`);
