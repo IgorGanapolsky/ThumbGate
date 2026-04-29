@@ -110,6 +110,7 @@ const CLAIM_GUARDRAILS = [
   'Keep public pricing and traction claims aligned with COMMERCIAL_TRUTH.md.',
   'Keep proof and quality claims aligned with VERIFICATION_EVIDENCE.md.',
 ];
+const OFFER_SPLIT_RULE = 'Use Pro after one blocked repeat or explicit self-serve install intent. Use the Workflow Hardening Sprint when one workflow owner needs approval boundaries, rollback safety, and proof before wider rollout.';
 const TERMINAL_PIPELINE_STAGES = new Set(['paid', 'lost']);
 const PIPELINE_STAGE_PRIORITY = {
   sprint_intake: 6,
@@ -1589,6 +1590,7 @@ function buildMarketplaceCopy(report) {
       topTheme ? topTheme.listingAngle : '',
       'Route install-intent buyers through the proof-backed setup guide before direct checkout.',
       selfServeSignal ? selfServeSignal.listingAngle : '',
+      OFFER_SPLIT_RULE,
       `Primary offer: ${resolveMotionLabel(report, primaryMotion)}.`,
       `Secondary offer: ${resolveMotionLabel(report, secondaryMotion)} after the buyer asks for the tool path.`,
       'Keep approval boundaries, rollback safety, and proof attached to the workflow before rollout.',
@@ -1911,6 +1913,7 @@ function buildOperatorHandoffPayload(report) {
     operatorRules: [
       'Import the queue into the sales ledger before sending anything.',
       'Follow the row motion: sprint rows get one workflow-hardening offer; self-serve rows get the guide-to-Pro lane unless pain is confirmed.',
+      `Qualify the offer split: ${OFFER_SPLIT_RULE}`,
       'Use VERIFICATION_EVIDENCE.md and COMMERCIAL_TRUTH.md only after the buyer confirms pain.',
     ],
     importCommand: 'npm run sales:pipeline -- import --source docs/marketing/gtm-revenue-loop.json',
