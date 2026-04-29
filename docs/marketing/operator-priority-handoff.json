@@ -14,6 +14,7 @@
   "operatorRules": [
     "Import the queue into the sales ledger before sending anything.",
     "Follow the row motion: sprint rows get one workflow-hardening offer; self-serve rows get the guide-to-Pro lane unless pain is confirmed.",
+    "Qualify the offer split: Use Pro after one blocked repeat or explicit self-serve install intent. Use the Workflow Hardening Sprint when one workflow owner needs approval boundaries, rollback safety, and proof before wider rollout.",
     "Use VERIFICATION_EVIDENCE.md and COMMERCIAL_TRUTH.md only after the buyer confirms pain."
   ],
   "importCommand": "npm run sales:pipeline -- import --source docs/marketing/gtm-revenue-loop.json",
