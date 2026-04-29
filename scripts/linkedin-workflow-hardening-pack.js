@@ -32,7 +32,7 @@ const DM_MEDIUM = 'linkedin_dm';
 const COMMENT_MEDIUM = 'linkedin_comment';
 const LINKEDIN_SURFACE = 'linkedin_workflow_hardening';
 const PROOF_LINKS = [COMMERCIAL_TRUTH_LINK, VERIFICATION_EVIDENCE_LINK];
-const CANONICAL_HEADLINE = 'Turn LinkedIn workflow-risk conversations into sprint-qualified revenue.';
+const CANONICAL_HEADLINE = 'Turn LinkedIn workflow-risk conversations into sprint-qualified paid intent.';
 const CANONICAL_SHORT_DESCRIPTION = 'ThumbGate gives founder-led LinkedIn outreach one honest offer: harden one AI-agent workflow with approval boundaries, rollback safety, and proof before wider rollout.';
 const CANONICAL_FIELDS = [
   { label: 'Display name', key: 'displayName', fallback: 'ThumbGate' },
