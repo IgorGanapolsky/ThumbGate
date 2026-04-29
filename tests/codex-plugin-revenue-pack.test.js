@@ -18,9 +18,11 @@ const {
   buildFollowOnOffers,
   buildMeasurementPlan,
   buildOperatorSequences,
+  buildReadyTargetLanes,
   buildTrackedCodexLink,
   isCliInvocation,
   parseArgs,
+  renderCodexReadyTargetsCsv,
   renderCodexPluginRevenuePackCsv,
   renderCodexPluginRevenuePackMarkdown,
   writeCodexPluginRevenuePack,
@@ -48,26 +50,59 @@ function makeReportFixture() {
       {
         temperature: 'warm',
         username: 'workflow_owner',
+        source: 'reddit',
+        channel: 'reddit_dm',
+        contactUrl: 'https://reddit.com/u/workflow_owner',
         repoName: '',
+        evidenceScore: 11,
         evidence: ['warm inbound engagement'],
         motionLabel: 'Workflow Hardening Sprint',
         motionReason: 'Warm workflow pain is already explicit.',
+        cta: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+        proofPackTrigger: 'Use proof only after pain is confirmed.',
+        firstTouchDraft: 'Warm workflow draft.',
+        pipelineLeadId: 'reddit_workflow_owner',
+        salesCommands: {
+          markContacted: 'npm run sales:pipeline -- advance --lead reddit_workflow_owner',
+        },
       },
       {
         temperature: 'cold',
         username: 'freema',
+        source: 'github',
+        channel: 'manual',
+        contactUrl: 'https://github.com/freema',
         repoName: 'mcp-jira-stdio',
+        evidenceScore: 14,
         evidence: ['workflow control surface', 'production or platform workflow'],
         motionLabel: 'Workflow Hardening Sprint',
         motionReason: 'Production workflow approvals need proof.',
+        cta: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+        proofPackTrigger: 'Use proof only after pain is confirmed.',
+        firstTouchDraft: 'Production workflow draft.',
+        pipelineLeadId: 'github_freema_mcp_jira_stdio',
+        salesCommands: {
+          markContacted: 'npm run sales:pipeline -- advance --lead github_freema_mcp_jira_stdio',
+        },
       },
       {
         temperature: 'cold',
         username: 'builder',
+        source: 'github',
+        channel: 'manual',
+        contactUrl: 'https://github.com/builder',
         repoName: 'agent-handoff',
+        evidenceScore: 10,
         evidence: ['workflow control surface'],
         motionLabel: 'Pro at $19/mo or $149/yr',
         motionReason: 'Self-serve tooling path is explicit.',
+        cta: 'https://thumbgate-production.up.railway.app/guide',
+        proofPackTrigger: 'Use proof only after pain is confirmed.',
+        firstTouchDraft: 'Self-serve draft.',
+        pipelineLeadId: 'github_builder_agent_handoff',
+        salesCommands: {
+          markContacted: 'npm run sales:pipeline -- advance --lead github_builder_agent_handoff',
+        },
       },
     ],
   };
@@ -157,6 +192,16 @@ test('operator sequences stay evidence-backed and route to real Codex follow-up 
   assert.ok(sequences.every((sequence) => !/guaranteed installs|guaranteed revenue|approved marketplace/i.test(sequence.draft)));
 });
 
+test('ready target lanes split workflow-hardening and self-serve targets for operator send order', () => {
+  const lanes = buildReadyTargetLanes(makeReportFixture());
+
+  assert.deepEqual(lanes.map((lane) => lane.key), ['workflow_hardening', 'self_serve']);
+  assert.equal(lanes[0].targets[0].account, '@workflow_owner');
+  assert.equal(lanes[0].targets[1].account, 'freema/mcp-jira-stdio');
+  assert.equal(lanes[1].targets[0].account, 'builder/agent-handoff');
+  assert.match(lanes[0].targets[0].markContactedCommand, /sales:pipeline/);
+});
+
 test('rendered pack is operator-ready and anchored to proof, guide, and bundle surfaces', () => {
   const rendered = renderCodexPluginRevenuePackMarkdown({
     ...buildPack(),
@@ -170,6 +215,9 @@ test('rendered pack is operator-ready and anchored to proof, guide, and bundle s
   assert.match(rendered, /Proof-backed setup guide/);
   assert.match(rendered, /GitHub release bundle/);
   assert.match(rendered, /Operator Follow-Up Sequences/);
+  assert.match(rendered, /Ready-Now Target Queue/);
+  assert.match(rendered, /Send Now: Codex-Adjacent Workflow Hardening/);
+  assert.match(rendered, /Send Next: Codex Self-Serve Install \+ Pro/);
   assert.match(rendered, /proof-backed Codex setup guide/i);
   assert.match(rendered, /VERIFICATION_EVIDENCE\.md/);
   assert.match(rendered, /workflow control surfaces/i);
@@ -178,12 +226,16 @@ test('rendered pack is operator-ready and anchored to proof, guide, and bundle s
 
 test('CSV export keeps Codex submission fields in one operator file', () => {
   const csv = renderCodexPluginRevenuePackCsv(buildPack());
+  const readyTargetsCsv = renderCodexReadyTargetsCsv(buildPack());
 
   assert.match(csv, /^key,name,role,operatorStatus,conversionGoal,/);
   assert.match(csv, /Codex plugin install page/);
   assert.match(csv, /Proof-backed setup guide/);
   assert.match(csv, /GitHub release bundle/);
   assert.match(csv, /codex_plugin_install_page/);
+  assert.match(readyTargetsCsv, /^laneKey,laneLabel,motion,account,/);
+  assert.match(readyTargetsCsv, /workflow_hardening/);
+  assert.match(readyTargetsCsv, /builder\/agent-handoff/);
 });
 
 test('CLI options and report writing produce markdown, JSON, and CSV artifacts', () => {
@@ -201,11 +253,13 @@ test('CLI options and report writing produce markdown, JSON, and CSV artifacts',
   assert.equal(fs.existsSync(path.join(tempDir, 'codex-plugin-revenue-pack.md')), true);
   assert.equal(fs.existsSync(path.join(tempDir, 'codex-plugin-revenue-pack.json')), true);
   assert.equal(fs.existsSync(path.join(tempDir, 'codex-plugin-surfaces.csv')), true);
+  assert.equal(fs.existsSync(path.join(tempDir, 'codex-ready-targets.csv')), true);
 
   const json = JSON.parse(fs.readFileSync(path.join(tempDir, 'codex-plugin-revenue-pack.json'), 'utf8'));
   assert.equal(json.surfaces.length, 3);
   assert.equal(json.measurementPlan.northStar, 'codex_install_intent_to_paid_intent');
   assert.match(fs.readFileSync(path.join(tempDir, 'codex-plugin-surfaces.csv'), 'utf8'), /utm_source/);
+  assert.match(fs.readFileSync(path.join(tempDir, 'codex-ready-targets.csv'), 'utf8'), /workflow_hardening/);
 });
 
 test('CLI entrypoint detection is path based for importer safety', () => {
