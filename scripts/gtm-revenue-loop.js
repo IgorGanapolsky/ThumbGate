@@ -370,15 +370,16 @@ function buildTargetPainHypothesis(target = {}) {
   const sanitizePain = (value) => {
     const normalized = normalizeText(value, 240);
     if (!normalized) return null;
-    let end = normalized.length;
+    const stripped = normalized.replace(/^Lead with\s+/i, '');
+    let end = stripped.length;
     while (end > 0) {
-      const char = normalized[end - 1];
+      const char = stripped[end - 1];
       if (char !== '.' && char !== '!' && char !== '?' && !/\s/.test(char)) {
         break;
       }
       end -= 1;
     }
-    return normalized.slice(0, end) || null;
+    return stripped.slice(0, end) || null;
   };
   const extractSuffix = (entry, prefix) => {
     const normalized = normalizeText(entry, 400);
@@ -403,8 +404,8 @@ function buildTargetPainHypothesis(target = {}) {
   const outreachAngle = normalizeText(target.outreachAngle || target.evidence?.outreachAngle, 240);
   const motionReason = normalizeText(target.motionReason || target.selectedMotion?.reason, 240);
   const motionKey = normalizeText(target.motion || target.selectedMotion?.key).toLowerCase();
-  const sanitizedMotionReason = sanitizePain(motionReason.replace(/^Lead with\s+/i, ''));
-  const sanitizedOutreachAngle = sanitizePain(outreachAngle.replace(/^Lead with\s+/i, ''));
+  const sanitizedMotionReason = sanitizePain(motionReason);
+  const sanitizedOutreachAngle = sanitizePain(outreachAngle);
 
   if (motionKey === 'pro' && sanitizedOutreachAngle) {
     return sanitizedOutreachAngle;
