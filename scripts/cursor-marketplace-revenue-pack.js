@@ -467,6 +467,7 @@ function writeCursorMarketplaceRevenuePack(pack, options = {}) {
     ? path.resolve(repoRoot, options.reportDir)
     : '';
   const docsPath = path.join(repoRoot, 'docs', 'marketing', 'cursor-marketplace-revenue-pack.md');
+  const docsDir = path.dirname(docsPath);
 
   if (reportDir) {
     ensureDir(reportDir);
@@ -476,7 +477,10 @@ function writeCursorMarketplaceRevenuePack(pack, options = {}) {
   }
 
   if (options.writeDocs) {
+    ensureDir(docsDir);
     fs.writeFileSync(docsPath, markdown, 'utf8');
+    fs.writeFileSync(path.join(docsDir, 'cursor-marketplace-revenue-pack.json'), `${JSON.stringify(pack, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(path.join(docsDir, 'cursor-marketplace-surfaces.csv'), csv, 'utf8');
   }
 
   return {

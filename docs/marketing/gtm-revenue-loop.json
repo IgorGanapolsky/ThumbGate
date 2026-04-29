@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-29T06:51:58.963Z",
+  "generatedAt": "2026-04-29T08:47:07.667Z",
   "source": "hosted-via-railway-env",
   "fallbackReason": null,
   "objective": "First 10 paying customers",
@@ -41,10 +41,10 @@
   "snapshot": {
     "paidOrders": 2,
     "bookedRevenueCents": 2000,
-    "checkoutStarts": 0,
-    "ctaClicks": 5,
-    "visitors": 114,
-    "uniqueLeads": 0,
+    "checkoutStarts": 1,
+    "ctaClicks": 6,
+    "visitors": 185,
+    "uniqueLeads": 1,
     "sprintLeads": 0,
     "qualifiedSprintLeads": 0,
     "latestPaidAt": "2025-11-18T12:36:00.000Z"
@@ -353,7 +353,7 @@
       "repoUrl": "https://github.com/Adqui9608/ai-code-review-agent",
       "description": "Review GitHub pull requests with AI to catch bugs, security issues, and code quality problems with built-in eval and observability",
       "stars": 0,
-      "updatedAt": "2026-04-29T04:11:09Z",
+      "updatedAt": "2026-04-29T07:35:24Z",
       "evidenceScore": 15,
       "evidence": [
         "workflow control surface",
@@ -666,91 +666,6 @@
       "temperature": "cold",
       "source": "github",
       "channel": "github",
-      "username": "BaseInfinity",
-      "accountName": "BaseInfinity",
-      "company": "",
-      "contactUrl": "https://www.youtube.com/@Basecase_/featured",
-      "contactSurfaces": [
-        {
-          "label": "Website",
-          "url": "https://www.youtube.com/@Basecase_/featured"
-        },
-        {
-          "label": "GitHub profile",
-          "url": "https://github.com/BaseInfinity"
-        },
-        {
-          "label": "Repository",
-          "url": "https://github.com/BaseInfinity/claude-sdlc-wizard"
-        }
-      ],
-      "websiteUrl": "https://www.youtube.com/@Basecase_/featured",
-      "repoName": "claude-sdlc-wizard",
-      "repoUrl": "https://github.com/BaseInfinity/claude-sdlc-wizard",
-      "description": "SDLC enforcement for Claude Code — hooks, skills, and wizard setup in one command. TDD, planning, self-review, CI shepherd.",
-      "stars": 10,
-      "updatedAt": "2026-04-29T06:41:46Z",
-      "evidenceScore": 14,
-      "evidence": [
-        "workflow control surface",
-        "production or platform workflow",
-        "self-serve agent tooling",
-        "10 GitHub stars",
-        "updated in the last 7 days"
-      ],
-      "outreachAngle": "Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.",
-      "evidenceSource": "https://github.com/BaseInfinity/claude-sdlc-wizard",
-      "evidenceSources": [
-        {
-          "label": "Target signal",
-          "url": "https://github.com/BaseInfinity/claude-sdlc-wizard",
-          "reason": "Source of the workflow or buyer signal behind this outreach row."
-        },
-        {
-          "label": "Commercial truth",
-          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
-          "reason": "Current pricing, traction, and offer guardrail."
-        },
-        {
-          "label": "Verification evidence",
-          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
-          "reason": "Current engineering proof pack and verification artifact."
-        }
-      ],
-      "claimGuardrails": [
-        "Do not claim revenue, installs, or marketplace approval without direct command evidence.",
-        "Do not lead with proof links before the buyer confirms pain.",
-        "Keep public pricing and traction claims aligned with COMMERCIAL_TRUTH.md.",
-        "Keep proof and quality claims aligned with VERIFICATION_EVIDENCE.md."
-      ],
-      "motion": "pro",
-      "motionLabel": "Pro at $19/mo or $149/yr",
-      "motionReason": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
-      "pipelineLeadId": "github_baseinfinity_claude_sdlc_wizard",
-      "pipelineStage": "targeted",
-      "pipelineUpdatedAt": "",
-      "nextOperatorAction": "Send the first-touch draft and log the outreach in the sales pipeline.",
-      "offer": "pro_self_serve",
-      "cta": "https://thumbgate-production.up.railway.app/guide",
-      "proofPackTrigger": "Use proof pack only after the buyer confirms pain.",
-      "firstTouchDraft": "Hey @BaseInfinity, saw you're building around `claude-sdlc-wizard`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
-      "painConfirmedFollowUpDraft": "If you want the self-serve path for `claude-sdlc-wizard`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
-      "selfServeFollowUpDraft": "If you want the self-serve path for `claude-sdlc-wizard`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro",
-      "checkoutCloseDraft": "If you are already comparing close options for `claude-sdlc-wizard`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
-      "salesCommands": {
-        "markContacted": "npm run sales:pipeline -- advance --lead 'github_baseinfinity_claude_sdlc_wizard' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on rollout proof for one production workflow that cannot afford repeated agent mistakes.'",
-        "markReplied": "npm run sales:pipeline -- advance --lead 'github_baseinfinity_claude_sdlc_wizard' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around rollout proof for one production workflow that cannot afford repeated agent mistakes.'",
-        "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_baseinfinity_claude_sdlc_wizard' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute diagnostic after the self-serve conversation exposed repeated pain around rollout proof for one production workflow that cannot afford repeated agent mistakes.'",
-        "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_baseinfinity_claude_sdlc_wizard' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing rollout proof for one production workflow that cannot afford repeated agent mistakes.'",
-        "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_baseinfinity_claude_sdlc_wizard' --channel 'manual' --stage 'sprint_intake' --note 'Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for rollout proof for one production workflow that cannot afford repeated agent mistakes.'",
-        "markPaid": "npm run sales:pipeline -- advance --lead 'github_baseinfinity_claude_sdlc_wizard' --channel 'manual' --stage 'paid' --note 'Closed Pro at $19/mo or $149/yr and booked revenue after resolving rollout proof for one production workflow that cannot afford repeated agent mistakes.'"
-      },
-      "message": "Hey @BaseInfinity, saw you're building around `claude-sdlc-wizard`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step."
-    },
-    {
-      "temperature": "cold",
-      "source": "github",
-      "channel": "github",
       "username": "zaxbysauce",
       "accountName": "zaxbysauce",
       "company": "",
@@ -826,11 +741,92 @@
         "markPaid": "npm run sales:pipeline -- advance --lead 'github_zaxbysauce_opencode_swarm' --channel 'manual' --stage 'paid' --note 'Closed Pro at $19/mo or $149/yr and booked revenue after resolving the proof-backed setup guide and local-first enforcement before any team-motion pitch.'"
       },
       "message": "Hey @zaxbysauce, saw you're building around `opencode-swarm`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step."
+    },
+    {
+      "temperature": "cold",
+      "source": "github",
+      "channel": "github",
+      "username": "mann1x",
+      "accountName": "mann1x",
+      "company": "",
+      "contactUrl": "https://github.com/mann1x",
+      "contactSurfaces": [
+        {
+          "label": "GitHub profile",
+          "url": "https://github.com/mann1x"
+        },
+        {
+          "label": "Repository",
+          "url": "https://github.com/mann1x/claude-hooks"
+        }
+      ],
+      "websiteUrl": "",
+      "repoName": "claude-hooks",
+      "repoUrl": "https://github.com/mann1x/claude-hooks",
+      "description": "Cross-platform Claude Code hooks for deterministic memory recall (Qdrant + Memory KG) with HyDE, attention decay, dedup, instinct extraction, and OpenWolf integration",
+      "stars": 17,
+      "updatedAt": "2026-04-29T08:39:40Z",
+      "evidenceScore": 12,
+      "evidence": [
+        "production or platform workflow",
+        "agent infrastructure",
+        "self-serve agent tooling",
+        "17 GitHub stars",
+        "updated in the last 7 days"
+      ],
+      "outreachAngle": "Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.",
+      "evidenceSource": "https://github.com/mann1x/claude-hooks",
+      "evidenceSources": [
+        {
+          "label": "Target signal",
+          "url": "https://github.com/mann1x/claude-hooks",
+          "reason": "Source of the workflow or buyer signal behind this outreach row."
+        },
+        {
+          "label": "Commercial truth",
+          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+          "reason": "Current pricing, traction, and offer guardrail."
+        },
+        {
+          "label": "Verification evidence",
+          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+          "reason": "Current engineering proof pack and verification artifact."
+        }
+      ],
+      "claimGuardrails": [
+        "Do not claim revenue, installs, or marketplace approval without direct command evidence.",
+        "Do not lead with proof links before the buyer confirms pain.",
+        "Keep public pricing and traction claims aligned with COMMERCIAL_TRUTH.md.",
+        "Keep proof and quality claims aligned with VERIFICATION_EVIDENCE.md."
+      ],
+      "motion": "pro",
+      "motionLabel": "Pro at $19/mo or $149/yr",
+      "motionReason": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
+      "pipelineLeadId": "github_mann1x_claude_hooks",
+      "pipelineStage": "targeted",
+      "pipelineUpdatedAt": "",
+      "nextOperatorAction": "Send the first-touch draft and log the outreach in the sales pipeline.",
+      "offer": "pro_self_serve",
+      "cta": "https://thumbgate-production.up.railway.app/guide",
+      "proofPackTrigger": "Use proof pack only after the buyer confirms pain.",
+      "firstTouchDraft": "Hey @mann1x, saw you're building around `claude-hooks`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
+      "painConfirmedFollowUpDraft": "If you want the self-serve path for `claude-hooks`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "selfServeFollowUpDraft": "If you want the self-serve path for `claude-hooks`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro",
+      "checkoutCloseDraft": "If you are already comparing close options for `claude-hooks`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "salesCommands": {
+        "markContacted": "npm run sales:pipeline -- advance --lead 'github_mann1x_claude_hooks' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on rollout proof for one production workflow that cannot afford repeated agent mistakes.'",
+        "markReplied": "npm run sales:pipeline -- advance --lead 'github_mann1x_claude_hooks' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around rollout proof for one production workflow that cannot afford repeated agent mistakes.'",
+        "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_mann1x_claude_hooks' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute diagnostic after the self-serve conversation exposed repeated pain around rollout proof for one production workflow that cannot afford repeated agent mistakes.'",
+        "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_mann1x_claude_hooks' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing rollout proof for one production workflow that cannot afford repeated agent mistakes.'",
+        "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_mann1x_claude_hooks' --channel 'manual' --stage 'sprint_intake' --note 'Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for rollout proof for one production workflow that cannot afford repeated agent mistakes.'",
+        "markPaid": "npm run sales:pipeline -- advance --lead 'github_mann1x_claude_hooks' --channel 'manual' --stage 'paid' --note 'Closed Pro at $19/mo or $149/yr and booked revenue after resolving rollout proof for one production workflow that cannot afford repeated agent mistakes.'"
+      },
+      "message": "Hey @mann1x, saw you're building around `claude-hooks`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step."
     }
   ],
   "snapshotWindow": "today",
   "marketplaceCopy": {
-    "generatedAt": "2026-04-29T06:51:58.963Z",
+    "generatedAt": "2026-04-29T08:47:07.667Z",
     "state": "post-first-dollar",
     "headline": "Harden one AI-agent workflow before you roll it out.",
     "shortDescription": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.",
@@ -868,7 +864,7 @@
         "label": "Workflow control surfaces",
         "summary": "The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive.",
         "listingAngle": "Lead with one repeated workflow failure, then show how ThumbGate turns it into an enforceable pre-action gate.",
-        "count": 6,
+        "count": 5,
         "examples": [
           "Adqui9608/ai-code-review-agent",
           "DGouron/review-flow",
@@ -906,8 +902,8 @@
         "listingAngle": "Lead with the proof-backed setup guide first, then convert proven local usage into Pro.",
         "count": 2,
         "examples": [
-          "BaseInfinity/claude-sdlc-wizard",
-          "zaxbysauce/opencode-swarm"
+          "zaxbysauce/opencode-swarm",
+          "mann1x/claude-hooks"
         ]
       }
     ],
@@ -919,7 +915,7 @@
         "why": "Warm Reddit engager already named a repeated workflow risk, so the fastest path is a founder-led diagnostic."
       },
       {
-        "account": "BaseInfinity/claude-sdlc-wizard",
+        "account": "zaxbysauce/opencode-swarm",
         "temperature": "cold",
         "motion": "Pro at $19/mo or $149/yr",
         "why": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint."
