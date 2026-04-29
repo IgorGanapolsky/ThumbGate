@@ -5,6 +5,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
+  TARGET_SEARCH_QUERIES,
   analyzeTargetEvidence,
   applyPipelineStateToTargets,
   buildFallbackMessage,
@@ -504,8 +505,11 @@ test('prospects GitHub targets via REST search, filters low-signal repos, and de
     { label: 'Repository', url: 'https://github.com/builder/production-mcp-server' },
   ]);
   assert.ok(result.targets[0].evidence.score >= 5);
-  assert.equal(requestedUrls.length, 13);
-  assert.equal(requestedUrls.filter((url) => url.startsWith('https://api.github.com/search/repositories')).length, 12);
+  assert.equal(requestedUrls.length, TARGET_SEARCH_QUERIES.length + 1);
+  assert.equal(
+    requestedUrls.filter((url) => url.startsWith('https://api.github.com/search/repositories')).length,
+    TARGET_SEARCH_QUERIES.length,
+  );
   assert.ok(requestedUrls.some((url) => url === 'https://api.github.com/users/builder'));
 });
 
@@ -645,7 +649,7 @@ test('GitHub discovery reports API and parser failures as non-fatal warnings', a
   assert.equal(invalid.ok, false);
   assert.equal(unavailable.ok, false);
   assert.equal(prospects.targets.length, 0);
-  assert.equal(prospects.errors.length, 12);
+  assert.equal(prospects.errors.length, TARGET_SEARCH_QUERIES.length);
 });
 
 test('GitHub discovery falls back to gh auth token when env tokens are absent', async () => {
