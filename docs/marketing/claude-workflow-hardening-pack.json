@@ -1,0 +1,309 @@
+{
+  "generatedAt": "2026-04-29T08:47:07.667Z",
+  "state": "post-first-dollar",
+  "objective": "Turn Claude install demand and workflow-hardening pain into tracked sprint intakes, proof clicks, and Pro checkout starts without making approval or revenue claims the repo cannot verify.",
+  "headline": "Turn Claude install demand into workflow-hardening paid intent.",
+  "shortDescription": "ThumbGate gives Claude Desktop and Claude Code a proof-backed install path, thumbs-up/down feedback capture, and Pre-Action Checks that block repeated workflow mistakes before the next risky action runs.",
+  "summary": "Claude demand in ThumbGate should stay install-first for evaluators and workflow-hardening-first for teams that already feel the pain. Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.",
+  "canonicalIdentity": {
+    "displayName": "ThumbGate for Claude",
+    "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+    "homepageUrl": "https://thumbgate-production.up.railway.app",
+    "commercialTruthUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+    "verificationEvidenceUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+  },
+  "surfaces": [
+    {
+      "key": "claude_desktop_guide",
+      "name": "Claude Desktop guide",
+      "url": "https://thumbgate-production.up.railway.app/guides/claude-desktop?utm_source=claude&utm_medium=guide_surface&utm_campaign=claude_desktop_guide&utm_content=seo_page&campaign_variant=desktop_install&offer_code=CLAUDE-DESKTOP_GUIDE&cta_id=claude_desktop_guide&cta_placement=guide_surface&surface=claude",
+      "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/claude-desktop.html",
+      "evidenceSource": "public/guides/claude-desktop.html",
+      "operatorUse": "Primary install and buyer-education surface for Claude Desktop users who want a proof-backed local setup path.",
+      "buyerSignal": "High-intent evaluators who want to install now, keep data local, and avoid building a bundle from source.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ],
+      "appOrigin": "https://thumbgate-production.up.railway.app"
+    },
+    {
+      "key": "claude_code_repeat_mistakes_guide",
+      "name": "Claude Code repeated-mistakes guide",
+      "url": "https://thumbgate-production.up.railway.app/guides/claude-code-prevent-repeated-mistakes?utm_source=claude&utm_medium=guide_surface&utm_campaign=claude_code_repeat_mistakes&utm_content=seo_page&campaign_variant=workflow_pain&offer_code=CLAUDE-CODE_REPEAT&cta_id=claude_code_repeat_mistakes&cta_placement=guide_surface&surface=claude",
+      "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/claude-code-prevent-repeated-mistakes.html",
+      "evidenceSource": "public/guides/claude-code-prevent-repeated-mistakes.html",
+      "operatorUse": "Use when the buyer already feels repeated Claude Code mistakes and needs the shortest path from pain to prevention.",
+      "buyerSignal": "Claude Code users who can already name one repeated command, branch, or file-edit mistake they want blocked.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ],
+      "appOrigin": "https://thumbgate-production.up.railway.app"
+    },
+    {
+      "key": "claude_bundle_download",
+      "name": "Direct Claude Desktop bundle download",
+      "url": "https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb",
+      "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/.claude-plugin/README.md",
+      "evidenceSource": ".claude-plugin/README.md",
+      "operatorUse": "Portable install lane for buyers who want a ready-to-install bundle instead of a local build.",
+      "buyerSignal": "Warm evaluators ready to install if the bundle, privacy path, and proof links are explicit.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ],
+      "appOrigin": "https://thumbgate-production.up.railway.app"
+    },
+    {
+      "key": "claude_review_ready_lane",
+      "name": "Review-ready Claude install lane",
+      "url": "https://thumbgate-production.up.railway.app/?utm_source=claude&utm_medium=guide_surface&utm_campaign=claude_review_ready_lane&utm_content=landing_section&campaign_variant=marketplace_review&offer_code=CLAUDE-REVIEW_READY&cta_id=claude_review_ready_lane&cta_placement=landing_surface&surface=claude#claude-desktop",
+      "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/CLAUDE_DESKTOP_EXTENSION.md",
+      "evidenceSource": "docs/CLAUDE_DESKTOP_EXTENSION.md",
+      "operatorUse": "Use when a team wants install-now clarity, repo marketplace fallback, and review-packet evidence without claiming directory approval.",
+      "buyerSignal": "Platform owners who need privacy, proof, and rollout documentation before broader team distribution.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ],
+      "appOrigin": "https://thumbgate-production.up.railway.app"
+    }
+  ],
+  "listingCopy": {
+    "headline": "Install ThumbGate for Claude and block the same mistake before it runs again.",
+    "subhead": "ThumbGate gives Claude Desktop and Claude Code a local-first install path, proof-backed docs, and Pre-Action Checks that turn repeated workflow mistakes into enforced gates.",
+    "shortDescription": "ThumbGate gives Claude Desktop and Claude Code a proof-backed install path, thumbs-up/down feedback capture, and Pre-Action Checks that block repeated workflow mistakes before the next risky action runs.",
+    "proofBullets": [
+      "Claude Desktop has a real install lane today: guide, direct .mcpb bundle, and review-ready source packet.",
+      "Claude Code can install from the repo marketplace path while official directory review remains separate.",
+      "Commercial Truth and Verification Evidence stay one click from the install and workflow-hardening path."
+    ],
+    "primaryCta": {
+      "label": "Open Claude Desktop guide",
+      "url": "https://thumbgate-production.up.railway.app/guides/claude-desktop?utm_source=claude&utm_medium=guide_surface&utm_campaign=claude_listing_primary&utm_content=guide&campaign_variant=desktop_install&offer_code=CLAUDE-LISTING_PRIMARY&cta_id=claude_listing_primary&cta_placement=listing_copy&surface=claude"
+    },
+    "secondaryCta": {
+      "label": "Download Claude bundle",
+      "url": "https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb"
+    },
+    "proofCta": {
+      "label": "Verification evidence",
+      "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+    },
+    "marketplaceNote": "Official directory review is separate. Use the repo marketplace path and review packet honestly while approval is pending.",
+    "followOnOffers": [
+      {
+        "label": "Workflow Hardening Sprint",
+        "url": "https://thumbgate-production.up.railway.app/?utm_source=claude&utm_medium=guide_surface&utm_campaign=claude_listing_sprint&utm_content=workflow_sprint&campaign_variant=team_follow_on&offer_code=CLAUDE-LISTING_SPRINT&cta_id=claude_listing_sprint&cta_placement=listing_copy&surface=claude_post_install#workflow-sprint-intake"
+      },
+      {
+        "label": "ThumbGate Pro",
+        "url": "https://thumbgate-production.up.railway.app/checkout/pro?utm_source=claude&utm_medium=guide_surface&utm_campaign=claude_listing_pro&utm_content=pro&campaign_variant=solo_follow_on&offer_code=CLAUDE-LISTING_PRO&cta_id=claude_listing_pro&cta_placement=listing_copy&plan_id=pro&surface=claude_post_install"
+      }
+    ]
+  },
+  "followOnOffers": [
+    {
+      "key": "sprint",
+      "label": "Workflow Hardening Sprint",
+      "pricing": "Intake-led sprint, then Team at $49/seat/mo with a 3-seat minimum after qualification",
+      "buyer": "Teams that already named one repeated Claude workflow failure, one owner, and one approval boundary.",
+      "cta": "https://thumbgate-production.up.railway.app/?utm_source=claude&utm_medium=guide_surface&utm_campaign=claude_workflow_team_follow_on&utm_content=workflow_sprint&campaign_variant=team_follow_on&offer_code=CLAUDE-TEAMS_FOLLOW_ON&cta_id=claude_team_follow_on&cta_placement=post_install&surface=claude_post_install#workflow-sprint-intake"
+    },
+    {
+      "key": "pro",
+      "label": "ThumbGate Pro",
+      "pricing": "$19/mo or $149/yr",
+      "buyer": "Solo Claude Desktop or Claude Code operators who proved one blocked repeat and want the personal dashboard plus proof-ready exports.",
+      "cta": "https://thumbgate-production.up.railway.app/checkout/pro?utm_source=claude&utm_medium=guide_surface&utm_campaign=claude_workflow_pro_follow_on&utm_content=pro&campaign_variant=solo_follow_on&offer_code=CLAUDE-PRO_FOLLOW_ON&cta_id=claude_pro_follow_on&cta_placement=post_install&plan_id=pro&surface=claude_post_install"
+    }
+  ],
+  "prospectQueue": [
+    {
+      "key": "prospect_1",
+      "account": "@Deep_Ad1959",
+      "temperature": "warm",
+      "motion": "Workflow Hardening Sprint",
+      "reason": "Warm Reddit engager already named a repeated workflow risk, so the fastest path is a founder-led diagnostic.",
+      "evidence": "warm inbound engagement, workflow pain named: rollback risk, already in DMs",
+      "sourceUrl": "https://www.reddit.com/user/Deep_Ad1959/",
+      "nextAsk": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+    },
+    {
+      "key": "prospect_2",
+      "account": "@game-of-kton",
+      "temperature": "warm",
+      "motion": "Workflow Hardening Sprint",
+      "reason": "Warm Reddit engager already works on advanced agent memory, so discovery should center on one repeated failure pattern.",
+      "evidence": "warm inbound engagement, built serious memory systems, workflow pain named: stale context and conflicting facts",
+      "sourceUrl": "https://www.reddit.com/user/game-of-kton/",
+      "nextAsk": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+    },
+    {
+      "key": "prospect_3",
+      "account": "@leogodin217",
+      "temperature": "warm",
+      "motion": "Workflow Hardening Sprint",
+      "reason": "Warm Reddit engager already described a mature workflow, so the next step is a targeted diagnostic on one failure mode.",
+      "evidence": "warm inbound engagement, mature multi-step workflow described, workflow pain named: review boundaries and context risk",
+      "sourceUrl": "https://www.reddit.com/user/leogodin217/",
+      "nextAsk": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+    },
+    {
+      "key": "prospect_4",
+      "account": "@Enthu-Cutlet-1337",
+      "temperature": "warm",
+      "motion": "Workflow Hardening Sprint",
+      "reason": "Warm Reddit engager already understands the adaptive-gate thesis, so offer one concrete workflow hardening diagnostic.",
+      "evidence": "warm inbound engagement, responded to adaptive-gate positioning, workflow pain named: brittle guardrails",
+      "sourceUrl": "https://www.reddit.com/user/Enthu-Cutlet-1337/",
+      "nextAsk": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+    },
+    {
+      "key": "prospect_5",
+      "account": "Adqui9608/ai-code-review-agent",
+      "temperature": "cold",
+      "motion": "Workflow Hardening Sprint",
+      "reason": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
+      "evidence": "workflow control surface, production or platform workflow, business-system integration, agent infrastructure, updated in the last 7 days",
+      "sourceUrl": "https://github.com/Adqui9608/ai-code-review-agent",
+      "nextAsk": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+    },
+    {
+      "key": "prospect_6",
+      "account": "DGouron/review-flow",
+      "temperature": "cold",
+      "motion": "Workflow Hardening Sprint",
+      "reason": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
+      "evidence": "workflow control surface, business-system integration, agent infrastructure, 36 GitHub stars, updated in the last 7 days",
+      "sourceUrl": "https://github.com/DGouron/review-flow",
+      "nextAsk": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+    }
+  ],
+  "outreachDrafts": [
+    {
+      "key": "desktop_install_follow_up",
+      "channel": "GitHub DM or email",
+      "audience": "Claude Desktop or Claude Code operator",
+      "draft": "Claude already has a real ThumbGate install lane: local-first setup guide, direct bundle download, and repo-backed docs without pretending directory approval already happened. If one repeated branch, review-boundary, or file-edit mistake keeps showing up, start here: https://thumbgate-production.up.railway.app/guides/claude-desktop?utm_source=claude&utm_medium=operator_outreach&utm_campaign=claude_outreach_install&utm_content=guide&campaign_variant=desktop_install&offer_code=CLAUDE-OUTREACH_INSTALL&cta_id=claude_outreach_install&cta_placement=outreach_draft&surface=claude_outreach ."
+    },
+    {
+      "key": "pain_confirmed_sprint",
+      "channel": "Pain-confirmed follow-up",
+      "audience": "Team owner who confirmed one repeated Claude workflow failure",
+      "draft": "Once the failure pattern is real, the next useful step is one workflow hardening sprint with proof, not another generic governance conversation. Use the sprint intake first, then attach Commercial Truth and Verification Evidence so the rollout stays inspectable: https://thumbgate-production.up.railway.app/?utm_source=claude&utm_medium=operator_outreach&utm_campaign=claude_outreach_sprint&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=CLAUDE-OUTREACH_SPRINT&cta_id=claude_outreach_sprint&cta_placement=outreach_draft&surface=claude_outreach#workflow-sprint-intake then https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md and https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md ."
+    },
+    {
+      "key": "solo_pro_follow_up",
+      "channel": "Follow-up note",
+      "audience": "Solo operator who already proved one blocked repeat",
+      "draft": "If the local install already blocked one repeated Claude mistake, the paid next step is the personal dashboard plus proof-ready exports, not a bigger team rollout. Route that buyer to the Pro path only after the blocked repeat is concrete: https://thumbgate-production.up.railway.app/checkout/pro?utm_source=claude&utm_medium=operator_outreach&utm_campaign=claude_outreach_pro&utm_content=pro&campaign_variant=solo_follow_up&offer_code=CLAUDE-OUTREACH_PRO&cta_id=claude_outreach_pro&cta_placement=outreach_draft&plan_id=pro&surface=claude_outreach ."
+    }
+  ],
+  "channelDrafts": [
+    {
+      "key": "reddit_warm_discovery",
+      "channel": "Reddit",
+      "format": "DM or reply follow-up",
+      "audience": "Warm Claude or Cursor engager who already named a repeated workflow risk",
+      "evidenceSummary": "2 warm Claude-flavored target(s) in the current report already named context risk, rollback risk, or brittle review boundaries.",
+      "cta": "https://thumbgate-production.up.railway.app/?utm_source=claude&utm_medium=reddit_dm&utm_campaign=claude_channel_reddit&utm_content=workflow_sprint&campaign_variant=warm_discovery&offer_code=CLAUDE-CHANNEL-REDDIT&cta_id=claude_channel_reddit&cta_placement=channel_draft&surface=claude_reddit#workflow-sprint-intake",
+      "proofTiming": "Do not attach Commercial Truth or Verification Evidence until the buyer confirms the failure pattern.",
+      "draft": "You already called out the risky part of Claude workflows: the same failure keeps coming back when context shifts or review boundaries get blurry. I am not trying to sell you another agent platform. I am offering to harden one workflow end-to-end so the repeated failure becomes a Pre-Action Check with proof behind it. If you want to pick one workflow, start here: https://thumbgate-production.up.railway.app/?utm_source=claude&utm_medium=reddit_dm&utm_campaign=claude_channel_reddit&utm_content=workflow_sprint&campaign_variant=warm_discovery&offer_code=CLAUDE-CHANNEL-REDDIT&cta_id=claude_channel_reddit&cta_placement=channel_draft&surface=claude_reddit#workflow-sprint-intake ."
+    },
+    {
+      "key": "linkedin_platform_post",
+      "channel": "LinkedIn",
+      "format": "Founder post",
+      "audience": "Platform lead, consultancy owner, or AI delivery lead evaluating Claude rollout risk",
+      "evidenceSummary": "3 production/platform targets and 4 business-system targets in the current report point to approval boundaries, rollback safety, and review-ready rollout proof as the strongest B2B angle.",
+      "cta": "https://thumbgate-production.up.railway.app/?utm_source=claude&utm_medium=linkedin_post&utm_campaign=claude_channel_linkedin&utm_content=landing_section&campaign_variant=review_ready&offer_code=CLAUDE-CHANNEL-LINKEDIN&cta_id=claude_channel_linkedin&cta_placement=channel_draft&surface=claude_linkedin#claude-desktop",
+      "proofTiming": "Public post can mention proof-ready rollout, but keep the proof links for the reply or DM after pain is confirmed.",
+      "draft": "Teams already shipping with Claude usually do not need another agent platform. They need one workflow that stops repeating the same mistake before it touches a repo, approval step, or customer system. ThumbGate is the lane I use for that: local-first install, repeated-mistake capture, and Pre-Action Checks before the next risky action runs. If you are evaluating Claude rollout risk, start with the review-ready install lane here: https://thumbgate-production.up.railway.app/?utm_source=claude&utm_medium=linkedin_post&utm_campaign=claude_channel_linkedin&utm_content=landing_section&campaign_variant=review_ready&offer_code=CLAUDE-CHANNEL-LINKEDIN&cta_id=claude_channel_linkedin&cta_placement=channel_draft&surface=claude_linkedin#claude-desktop ."
+    },
+    {
+      "key": "threads_operator_post",
+      "channel": "Threads",
+      "format": "Short post",
+      "audience": "Solo Claude Desktop or Claude Code operator who wants a fast install-first proof path",
+      "evidenceSummary": "Claude Desktop already has a live guide plus direct bundle path, so the strongest Threads motion is install-first and proof-second.",
+      "cta": "https://thumbgate-production.up.railway.app/guides/claude-desktop?utm_source=claude&utm_medium=threads_post&utm_campaign=claude_channel_threads&utm_content=guide&campaign_variant=desktop_install&offer_code=CLAUDE-CHANNEL-THREADS&cta_id=claude_channel_threads&cta_placement=channel_draft&surface=claude_threads",
+      "proofTiming": "Keep the first touch install-first. Bring proof links in only after the buyer names the repeated mistake.",
+      "draft": "If Claude keeps repeating the same branch, review-boundary, or file-edit mistake, the useful fix is not another reminder in chat. Install a local-first gate and block the repeat before it runs again. ThumbGate for Claude starts here: https://thumbgate-production.up.railway.app/guides/claude-desktop?utm_source=claude&utm_medium=threads_post&utm_campaign=claude_channel_threads&utm_content=guide&campaign_variant=desktop_install&offer_code=CLAUDE-CHANNEL-THREADS&cta_id=claude_channel_threads&cta_placement=channel_draft&surface=claude_threads ."
+    },
+    {
+      "key": "bluesky_workflow_post",
+      "channel": "Bluesky",
+      "format": "Short post",
+      "audience": "AI tooling builder or Claude Code operator who can already name one repeated workflow mistake",
+      "evidenceSummary": "The current report shows the best cold-fit targets are workflow-control and production-proof buyers, so Bluesky should lead with one repeated workflow failure instead of generic governance.",
+      "cta": "https://thumbgate-production.up.railway.app/guides/claude-code-prevent-repeated-mistakes?utm_source=claude&utm_medium=bluesky_post&utm_campaign=claude_channel_bluesky&utm_content=guide&campaign_variant=workflow_pain&offer_code=CLAUDE-CHANNEL-BLUESKY&cta_id=claude_channel_bluesky&cta_placement=channel_draft&surface=claude_bluesky",
+      "proofTiming": "Use the guide link first. Only send Commercial Truth and Verification Evidence after the buyer replies with a concrete failure mode.",
+      "draft": "Claude Code is useful right up until it repeats the same risky workflow mistake. ThumbGate turns that repeat into a Pre-Action Check instead of another memory note. If you already know the failure pattern, start with the repeated-mistakes guide: https://thumbgate-production.up.railway.app/guides/claude-code-prevent-repeated-mistakes?utm_source=claude&utm_medium=bluesky_post&utm_campaign=claude_channel_bluesky&utm_content=guide&campaign_variant=workflow_pain&offer_code=CLAUDE-CHANNEL-BLUESKY&cta_id=claude_channel_bluesky&cta_placement=channel_draft&surface=claude_bluesky ."
+    }
+  ],
+  "measurementPlan": {
+    "northStar": "claude_install_to_paid_intent",
+    "policy": "Treat Claude installs as useful only when they produce a tracked sprint intake, Pro checkout start, or qualified team conversation.",
+    "minimumUsefulSignal": "One tracked Workflow Hardening Sprint intake or Pro checkout start sourced from a Claude-tagged surface.",
+    "strongSignal": "Three tracked paid-intent events across sprint intakes, Pro checkout starts, or qualified team conversations.",
+    "metrics": [
+      "claude_desktop_guide_views",
+      "claude_code_repeat_mistakes_views",
+      "claude_bundle_downloads",
+      "claude_marketplace_doc_clicks",
+      "claude_proof_clicks",
+      "claude_sprint_intake_submissions",
+      "claude_pro_checkout_starts",
+      "claude_qualified_team_conversations"
+    ],
+    "guardrails": [
+      "Do not claim directory approval, installs, revenue, or outreach sends without direct command evidence.",
+      "Do not lead first-touch Claude outreach with proof links before the buyer confirms pain.",
+      "Keep pricing aligned with COMMERCIAL_TRUTH.md.",
+      "Keep proof claims aligned with VERIFICATION_EVIDENCE.md."
+    ],
+    "milestones": [
+      {
+        "window": "days_0_30",
+        "goal": "Keep the Claude Desktop guide, bundle path, and review-ready landing section aligned so install demand can convert into a named workflow problem.",
+        "decisionRule": "Do not rewrite the Claude value proposition unless guide visits or bundle downloads fail to create paid-intent events."
+      },
+      {
+        "window": "days_31_60",
+        "goal": "Promote whichever Claude lane converts best: install-first Pro or workflow-hardening sprint.",
+        "decisionRule": "If install demand exists without paid intent, move the sprint CTA and proof path closer to the highest-intent Claude surface."
+      },
+      {
+        "window": "days_61_90",
+        "goal": "Decide whether to scale marketplace-style promotion or stay focused on workflow-hardening outreach.",
+        "decisionRule": "Only increase marketplace/distribution effort once Claude-tagged installs or guide visits generate qualified conversations or checkout starts."
+      }
+    ],
+    "doNotCountAsSuccess": [
+      "bundle downloads without paid-intent events",
+      "proof clicks without sprint intake or Pro checkout starts",
+      "unverified directory approval or revenue claims"
+    ]
+  },
+  "proofLinks": [
+    "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+    "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+  ],
+  "evidenceBackstop": {
+    "warmClaudeTargetCount": 2,
+    "productionTargetCount": 3,
+    "businessSystemTargetCount": 4,
+    "landingSourceUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/landing-page.html",
+    "reviewPacketUrl": "https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-plugin-review.zip"
+  }
+}
