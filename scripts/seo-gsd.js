@@ -122,6 +122,12 @@ const HIGH_ROI_QUERY_SEEDS = [
     notes: 'Guardrail-focused page for Codex CLI buyers who want prevention, not just memory.',
   },
   {
+    query: 'opencode cli guardrails',
+    businessValue: 83,
+    source: 'seed',
+    notes: 'Integration page for OpenCode operators who want a local-first enforcement layer instead of another static rule file.',
+  },
+  {
     query: 'gemini cli feedback memory',
     businessValue: 82,
     source: 'seed',
@@ -828,6 +834,56 @@ const PAGE_BLUEPRINTS = [
       },
     ],
     relatedPaths: ['/guides/pre-action-checks', '/compare/mem0'],
+  },
+  {
+    query: 'opencode cli guardrails',
+    path: '/guides/opencode-cli-guardrails',
+    pageType: 'integration',
+    pillar: 'agent-workflows',
+    title: 'OpenCode Guardrails | Stop Repeated Agent Mistakes with ThumbGate',
+    heroTitle: 'OpenCode Guardrails That Stay Local and Actually Enforce',
+    heroSummary: 'OpenCode already lives close to repo-local config, hooks, and workflow files. ThumbGate adds a local-first reliability gateway so OpenCode feedback becomes searchable lessons, prevention rules, and pre-action checks before the next risky tool call runs.',
+    takeaways: [
+      'OpenCode buyers usually want safe autonomy without giving up local control.',
+      'ThumbGate turns OpenCode feedback into enforceable gates instead of another static instruction file.',
+      'The page should convert self-serve OpenCode operators who already feel repeat-failure pain.',
+    ],
+    sections: [
+      {
+        heading: 'Why OpenCode is a strong fit for ThumbGate',
+        paragraphs: [
+          'OpenCode workflows often run close to repo-local config, hook files, and repeatable automation lanes. That makes every repeated mistake expensive because the agent is acting on the same local control surface over and over.',
+          'A plain instruction file helps on the first run, but it does not create a durable stop when the same bad pattern shows up in a new session, branch, or swarm lane.',
+        ],
+      },
+      {
+        heading: 'What ThumbGate adds to OpenCode',
+        bullets: [
+          'Local-first feedback capture with explicit thumbs-up and thumbs-down signals.',
+          'Searchable lessons tied to the exact repeated failure pattern.',
+          'Prevention rules promoted from real corrections instead of static rule drift.',
+          'Pre-action checks that intercept the next risky OpenCode tool call before execution.',
+        ],
+      },
+      {
+        heading: 'What makes this page commercially useful',
+        paragraphs: [
+          'OpenCode buyers do not need a generic memory story. They need proof that a local-first guardrail layer can keep repo-native automation fast while blocking the exact repeat that already cost them time.',
+          'The clean CTA is `npx thumbgate init --agent opencode`, followed by the Pro path only after the operator confirms the self-serve workflow is worth keeping.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Does ThumbGate work with repo-local OpenCode profiles and swarm-style workflows?',
+        answer: 'Yes. ThumbGate supports OpenCode as a first-class agent surface, so the same local feedback, lesson search, and pre-action checks can protect repo-local profiles and OpenCode-led workflow lanes.',
+      },
+      {
+        question: 'How is this different from an OpenCode rule file?',
+        answer: 'A rule file is static. ThumbGate keeps learning from real corrections, promotes repeated failures into prevention rules, and blocks the known-bad pattern before the next tool call executes.',
+      },
+    ],
+    relatedPaths: ['/guides/pre-action-checks', '/guides/codex-cli-guardrails'],
   },
   {
     query: 'gemini cli feedback memory',
