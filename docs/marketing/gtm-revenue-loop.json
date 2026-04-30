@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-29T23:30:33.806Z",
+  "generatedAt": "2026-04-30T02:05:36.802Z",
   "source": "hosted-via-railway-env",
   "fallbackReason": null,
   "verification": {
@@ -47,10 +47,10 @@
   "snapshot": {
     "paidOrders": 2,
     "bookedRevenueCents": 2000,
-    "checkoutStarts": 9,
-    "ctaClicks": 25,
-    "visitors": 879,
-    "uniqueLeads": 9,
+    "checkoutStarts": 11,
+    "ctaClicks": 32,
+    "visitors": 992,
+    "uniqueLeads": 11,
     "sprintLeads": 0,
     "qualifiedSprintLeads": 0,
     "latestPaidAt": "2025-11-18T12:36:00.000Z"
@@ -444,7 +444,7 @@
       "repoUrl": "https://github.com/Adqui9608/ai-code-review-agent",
       "description": "Review GitHub pull requests with AI to catch bugs, security issues, and code quality problems with built-in eval and observability",
       "stars": 0,
-      "updatedAt": "2026-04-29T21:06:56Z",
+      "updatedAt": "2026-04-30T00:38:31Z",
       "evidenceScore": 15,
       "evidence": [
         "workflow control surface",
@@ -691,7 +691,7 @@
       "repoUrl": "https://github.com/zaxbysauce/opencode-swarm",
       "description": "Architect-centric agentic swarm plugin for OpenCode. Hub-and-spoke orchestration with SME consultation, code generation, and QA review.",
       "stars": 246,
-      "updatedAt": "2026-04-29T22:23:34Z",
+      "updatedAt": "2026-04-30T01:32:44Z",
       "evidenceScore": 12,
       "evidence": [
         "workflow control surface",
@@ -775,7 +775,7 @@
       "repoUrl": "https://github.com/iliaal/compound-engineering-plugin",
       "description": "AI-powered development tools. 19 agents, 22 commands, 30 skills, 1 hook, 1 MCP server for code review, research, design, and workflow automation.",
       "stars": 11,
-      "updatedAt": "2026-04-29T09:24:51Z",
+      "updatedAt": "2026-04-30T00:01:12Z",
       "evidenceScore": 12,
       "evidence": [
         "workflow control surface",
@@ -836,7 +836,7 @@
   ],
   "snapshotWindow": "today",
   "marketplaceCopy": {
-    "generatedAt": "2026-04-29T23:30:33.806Z",
+    "generatedAt": "2026-04-30T02:05:36.802Z",
     "state": "post-first-dollar",
     "headline": "Harden one AI-agent workflow before you roll it out.",
     "shortDescription": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.",

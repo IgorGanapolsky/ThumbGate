@@ -44,6 +44,51 @@ curl -H "Authorization: Bearer YOUR_KEY" \
 
 # Verification log
 
+## April 30, 2026: machine-readable buyer-path schema for acquisition and conversion surfaces
+
+Scope:
+
+- Added explicit machine-readable buyer actions to the public landing page and the generated docs landing page so AI parsers and buyers can distinguish the install path, Pro checkout path, and Workflow Hardening Sprint intake path.
+- Added a dedicated `Service` JSON-LD entity for the Workflow Hardening Sprint offer.
+- Tightened regression coverage around landing-page structured data and customer-discovery artifact documentation.
+- Kept operator-only runtime state out of tracked outputs.
+
+Commands run in the dedicated clean verification worktree at `/Users/ganapolsky_i/.codex/worktrees/verify-revenue-loop-offer-schema-20260429/ThumbGate`:
+
+```bash
+npm ci
+npm test
+npm run test:coverage
+THUMBGATE_PROOF_DIR="$(mktemp -d)/proof" npm run prove:adapters
+THUMBGATE_AUTOMATION_PROOF_DIR="$(mktemp -d)/proof-automation" npm run prove:automation
+npm run self-heal:check
+git diff --check
+```
+
+Observed result:
+
+- `npm ci` exited `0`.
+- `npm test` exited `0`.
+- `npm run test:coverage` exited `0` with all-files coverage at:
+  - `87.16` lines
+  - `72.57` branches
+  - `88.76` functions
+- `THUMBGATE_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `THUMBGATE_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `6/6 healthy` checks.
+- `git diff --check` exited `0`.
+- Targeted regression probes for the changed surfaces also passed before the clean-lane run:
+  - `node --test tests/public-landing.test.js`
+  - `node --test tests/api-server.test.js`
+  - `node --test tests/customer-discovery-sprint.test.js`
+- No tracked `.thumbgate/*` or `.claude/*` runtime artifacts were added or modified by this change.
+
+Requirements verified:
+
+- Public and generated landing surfaces now advertise the three buyer paths in machine-readable form.
+- The Workflow Hardening Sprint offer is represented as a distinct service entity for search/indexing and buyer parsing.
+- Regression coverage now protects both the schema additions and the operator handoff artifact documentation that supports outreach execution.
+
 ## April 9, 2026: technical debt audit follow-through for stale-claim cleanup, docs hygiene regression coverage, and protected-system revalidation
 
 Scope:
