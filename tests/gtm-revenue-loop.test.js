@@ -301,6 +301,56 @@ test('resolveRevenueLoopSummary selects the freshest hosted window with commerci
   assert.equal(result.summary.trafficMetrics.checkoutStarts, 531);
 });
 
+test('resolveRevenueLoopSummary upgrades hosted today pipeline activity to hosted historical revenue proof', async () => {
+  const result = await resolveRevenueLoopSummary({
+    getOperationalBillingSummaryFn: async () => ({
+      source: 'hosted',
+      summary: {
+        revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+        trafficMetrics: { checkoutStarts: 3 },
+        signups: { uniqueLeads: 3 },
+        pipeline: {},
+      },
+      fallbackReason: null,
+      hostedStatus: 200,
+    }),
+    generateRevenueStatusReportFn: async () => ({
+      source: 'hosted-via-railway-env',
+      hostedAudit: {
+        summaries: {
+          today: {
+            status: 200,
+            revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+            trafficMetrics: { checkoutStarts: 3 },
+            signups: { uniqueLeads: 3 },
+            pipeline: {},
+          },
+          '30d': {
+            status: 200,
+            revenue: { paidOrders: 6, bookedRevenueCents: 16900 },
+            trafficMetrics: { checkoutStarts: 547 },
+            signups: { uniqueLeads: 364 },
+            pipeline: {},
+          },
+          lifetime: {
+            status: 200,
+            revenue: { paidOrders: 6, bookedRevenueCents: 16900 },
+            trafficMetrics: { checkoutStarts: 633 },
+            signups: { uniqueLeads: 370 },
+            pipeline: {},
+          },
+        },
+      },
+    }),
+  });
+
+  assert.equal(result.source, 'hosted-via-railway-env');
+  assert.equal(result.summaryWindow, '30d');
+  assert.equal(result.summary.revenue.paidOrders, 6);
+  assert.equal(result.summary.revenue.bookedRevenueCents, 16900);
+  assert.equal(result.summary.trafficMetrics.checkoutStarts, 547);
+});
+
 test('resolveRevenueLoopSummary skips hosted audit when local metrics are explicitly requested', async () => {
   let hostedAuditCalls = 0;
   const result = await resolveRevenueLoopSummary({

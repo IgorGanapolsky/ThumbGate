@@ -1,6 +1,6 @@
 # LAUNCH NOW — Discovery-First Revenue Checklist
 
-**Status as of 2026-04-25:** local revenue status shows `0` lifetime revenue, `0` paid orders, `0` tracked leads, and `0` checkout starts. Treat this file as an operator playbook for creating qualified conversations, not as proof of traction.
+**Status as of 2026-04-30:** the latest hosted revenue snapshot shows paid orders and booked revenue exist, but the Workflow Hardening Sprint pipeline is still `0` qualified leads and the Railway runtime is missing `THUMBGATE_GA_MEASUREMENT_ID`. Treat this file as an operator playbook for creating qualified conversations, not as standalone proof of traction or conversion health.
 
 Every line below is evidence-backed and channel-current. Do them in order.
 
