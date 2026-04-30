@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-04-29T22:23:06.232Z",
+  "generatedAt": "2026-04-29T23:30:33.806Z",
   "summary": {
     "revenueState": "post-first-dollar",
     "headline": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.",
     "billingVerification": "Live hosted billing summary verified for this run.",
     "paidOrders": 2,
-    "checkoutStarts": 6,
+    "checkoutStarts": 9,
     "activeFollowUps": 0,
     "warmTargetsReadyNow": 4,
     "selfServeTargetsReadyNow": 2,
@@ -292,7 +292,7 @@
           "evidence": [
             "workflow control surface",
             "self-serve agent tooling",
-            "245 GitHub stars",
+            "246 GitHub stars",
             "updated in the last 7 days"
           ],
           "evidenceSources": [

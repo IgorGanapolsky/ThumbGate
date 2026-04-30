@@ -1,7 +1,7 @@
 # Revenue Pipeline Outreach Targets
 
 Status: current
-Updated: 2026-04-29T21:20:24.731Z
+Updated: 2026-04-29T23:30:33.806Z
 
 This file mirrors the evidence-backed GTM queue in `docs/marketing/gtm-target-queue.jsonl`.
 It is the qualification screen and send surface for the current Workflow Hardening Sprint revenue loop, not a raw GitHub scrape.
@@ -116,7 +116,7 @@ Track next step: `npm run sales:pipeline -- advance --lead 'github_iliaal_compou
 - Current stage: targeted
 - Contact surface: https://github.com/zaxbysauce
 - Evidence score: 12
-- Evidence: workflow control surface, self-serve agent tooling, 245 GitHub stars, updated in the last 7 days
+- Evidence: workflow control surface, self-serve agent tooling, 246 GitHub stars, updated in the last 7 days
 - Why now: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
 - CTA: https://thumbgate-production.up.railway.app/guide
 
