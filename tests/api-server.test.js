@@ -482,6 +482,10 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /Thompson Sampling/i);
   assert.match(body, /FAQPage/);
   assert.match(body, /SoftwareApplication/);
+  assert.match(body, /InstallAction/);
+  assert.match(body, /BuyAction/);
+  assert.match(body, /CommunicateAction/);
+  assert.match(body, /ThumbGate Workflow Hardening Sprint/);
   assert.match(body, /\$19/);
   assert.match(body, /\$149/);
   assert.match(body, /plausible\.io\/js\/script\.js/);
