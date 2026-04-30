@@ -10,6 +10,8 @@ const { buildLeadFromRevenueTarget, getSalesPipelinePath, loadSalesLeads } = req
 const DEFAULT_QUEUE_PATH = path.join(__dirname, '..', 'docs', 'marketing', 'gtm-target-queue.jsonl');
 const DEFAULT_REPORT_PATH = path.join(__dirname, '..', 'docs', 'marketing', 'gtm-revenue-loop.json');
 const DEFAULT_DOCS_PATH = path.join(__dirname, '..', 'docs', 'OUTREACH_TARGETS.md');
+const DEFAULT_JSON_PATH = path.join(__dirname, '..', 'docs', 'marketing', 'outreach-targets.json');
+const DEFAULT_CSV_PATH = path.join(__dirname, '..', 'docs', 'marketing', 'outreach-targets.csv');
 const DEFAULT_CORE_LINKS = {
   sprint: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
   guide: 'https://thumbgate-production.up.railway.app/guide',
@@ -283,6 +285,193 @@ function writeOutreachTargetsDoc(markdown, outPath = DEFAULT_DOCS_PATH) {
   return path.resolve(outPath);
 }
 
+function getLaneDefinitions(report = {}) {
+  return [
+    { key: 'follow_up', label: 'Follow Up Now', targets: report.followUpTargets || [] },
+    { key: 'warm_discovery', label: 'Warm Discovery', targets: report.warmTargets || [] },
+    { key: 'self_serve_closes', label: 'Self-Serve Closes', targets: report.selfServeTargets || [] },
+    { key: 'cold_github', label: 'Cold GitHub', targets: report.coldTargets || [] },
+  ];
+}
+
+function serializeOutreachTarget(target = {}, lane = {}, index = 0, proofRule = '') {
+  return {
+    laneKey: lane.key || '',
+    laneLabel: lane.label || '',
+    lanePosition: index + 1,
+    summary: normalizeText(target.summary || buildTargetSummary(target)),
+    temperature: normalizeText(target.temperature),
+    stage: normalizeText(target.stage),
+    source: normalizeText(target.source),
+    channel: normalizeText(target.channel),
+    leadId: normalizeText(target.leadId),
+    username: normalizeText(target.username),
+    accountName: normalizeText(target.accountName),
+    repoName: normalizeText(target.repoName),
+    repoUrl: normalizeText(target.repoUrl),
+    company: normalizeText(target.company),
+    contactSurface: normalizeText(target.contactSurface || target.contactUrl),
+    evidenceScore: Number(target.evidenceScore || 0),
+    evidence: Array.isArray(target.evidence) ? target.evidence : [],
+    motion: normalizeText(target.motion),
+    offer: normalizeText(target.offer),
+    whyNow: normalizeText(target.motionReason || target.nextOperatorAction),
+    cta: normalizeText(target.cta),
+    proofRule,
+    firstTouchDraft: normalizeText(target.firstTouchDraft),
+    painConfirmedFollowUpDraft: normalizeText(target.painConfirmedFollowUpDraft),
+    nextTrackingCommand: normalizeText(target.nextTrackingCommand),
+    pipelineUpdatedAt: normalizeText(target.pipelineUpdatedAt),
+    salesCommands: target.salesCommands && typeof target.salesCommands === 'object'
+      ? target.salesCommands
+      : {},
+  };
+}
+
+function buildOutreachTargetsExport(report = {}) {
+  const sections = getLaneDefinitions(report).map((lane) => {
+    const targets = lane.targets.map((target, index) => serializeOutreachTarget(target, lane, index, report.proofRule));
+    return {
+      key: lane.key,
+      label: lane.label,
+      count: targets.length,
+      targets,
+    };
+  });
+  const flatTargets = sections.flatMap((section) => section.targets);
+
+  return {
+    generatedAt: normalizeText(report.generatedAt),
+    state: normalizeText(report.state),
+    headline: normalizeText(report.headline),
+    queuePath: normalizeText(report.queuePath),
+    reportPath: normalizeText(report.reportPath),
+    pipelinePath: normalizeText(report.pipelinePath),
+    proofRule: normalizeText(report.proofRule),
+    qualificationRules: Array.isArray(report.qualificationRules) ? report.qualificationRules : [],
+    coreLinks: report.coreLinks || DEFAULT_CORE_LINKS,
+    counts: {
+      totalTargets: Number(report.totalTargets || 0),
+      followUps: Number(report.followUpTargets?.length || 0),
+      warmDiscovery: Number(report.warmTargets?.length || 0),
+      selfServeCloses: Number(report.selfServeTargets?.length || 0),
+      coldGitHub: Number(report.coldTargets?.length || 0),
+      pipelineTrackedLeadCount: Number(report.pipelineTrackedLeadCount || 0),
+      pipelineExists: Boolean(report.pipelineExists),
+    },
+    sections,
+    flatTargets,
+  };
+}
+
+function escapeCsv(value) {
+  const normalized = Array.isArray(value)
+    ? value.join('; ')
+    : value === undefined || value === null
+      ? ''
+      : String(value);
+  if (/[",\n]/.test(normalized)) {
+    return `"${normalized.replace(/"/g, '""')}"`;
+  }
+  return normalized;
+}
+
+function renderOutreachTargetsCsv(report = {}) {
+  const exported = buildOutreachTargetsExport(report);
+  const rows = [
+    [
+      'lane_key',
+      'lane_label',
+      'lane_position',
+      'summary',
+      'temperature',
+      'stage',
+      'source',
+      'channel',
+      'lead_id',
+      'username',
+      'account_name',
+      'repo_name',
+      'repo_url',
+      'company',
+      'contact_surface',
+      'evidence_score',
+      'evidence',
+      'motion',
+      'offer',
+      'why_now',
+      'cta',
+      'proof_rule',
+      'first_touch_draft',
+      'pain_confirmed_follow_up_draft',
+      'next_tracking_command',
+      'pipeline_updated_at',
+    ],
+  ];
+
+  for (const target of exported.flatTargets) {
+    rows.push([
+      target.laneKey,
+      target.laneLabel,
+      target.lanePosition,
+      target.summary,
+      target.temperature,
+      target.stage,
+      target.source,
+      target.channel,
+      target.leadId,
+      target.username,
+      target.accountName,
+      target.repoName,
+      target.repoUrl,
+      target.company,
+      target.contactSurface,
+      target.evidenceScore,
+      target.evidence,
+      target.motion,
+      target.offer,
+      target.whyNow,
+      target.cta,
+      target.proofRule,
+      target.firstTouchDraft,
+      target.painConfirmedFollowUpDraft,
+      target.nextTrackingCommand,
+      target.pipelineUpdatedAt,
+    ].map(escapeCsv).join(','));
+  }
+
+  return `${rows.map((row) => Array.isArray(row) ? row.join(',') : row).join('\n')}\n`;
+}
+
+function resolveOutreachAssetPaths(options = {}) {
+  const docsPath = path.resolve(options.outPath || DEFAULT_DOCS_PATH);
+  const defaultDocsDir = path.resolve(path.dirname(DEFAULT_DOCS_PATH));
+  const fallbackDir = path.dirname(docsPath) === defaultDocsDir
+    ? path.resolve(path.dirname(DEFAULT_JSON_PATH))
+    : path.dirname(docsPath);
+
+  return {
+    docsPath,
+    jsonPath: path.resolve(options.jsonPath || path.join(fallbackDir, path.basename(DEFAULT_JSON_PATH))),
+    csvPath: path.resolve(options.csvPath || path.join(fallbackDir, path.basename(DEFAULT_CSV_PATH))),
+  };
+}
+
+function writeOutreachTargetsArtifacts(report = {}, options = {}) {
+  const markdown = renderOutreachTargetsMarkdown(report);
+  const exported = buildOutreachTargetsExport(report);
+  const csv = renderOutreachTargetsCsv(report);
+  const paths = resolveOutreachAssetPaths(options);
+
+  ensureParentDir(paths.docsPath);
+  ensureParentDir(paths.jsonPath);
+  ensureParentDir(paths.csvPath);
+  fs.writeFileSync(paths.docsPath, markdown, 'utf8');
+  fs.writeFileSync(paths.jsonPath, `${JSON.stringify(exported, null, 2)}\n`, 'utf8');
+  fs.writeFileSync(paths.csvPath, csv, 'utf8');
+  return paths;
+}
+
 function isCliInvocation(argv = process.argv) {
   const scriptPath = argv[1];
   if (!scriptPath) return false;
@@ -291,14 +480,15 @@ function isCliInvocation(argv = process.argv) {
 
 function main(options = {}) {
   const report = buildOutreachTargetsReport(options);
-  const markdown = renderOutreachTargetsMarkdown(report);
-  const docsPath = writeOutreachTargetsDoc(markdown, options.outPath || DEFAULT_DOCS_PATH);
-  console.log(`Updated ${docsPath} from the current evidence-backed queue.`);
+  const written = writeOutreachTargetsArtifacts(report, options);
+  console.log(`Updated ${written.docsPath} from the current evidence-backed queue.`);
+  console.log(`Machine-readable queue: ${written.jsonPath}`);
+  console.log(`Spreadsheet queue: ${written.csvPath}`);
   console.log(
     `Warm: ${report.warmTargets.length} | Self-serve: ${report.selfServeTargets.length} | Cold: ${report.coldTargets.length} | Follow-up: ${report.followUpTargets.length}`
   );
   return {
-    docsPath,
+    ...written,
     report,
   };
 }
@@ -313,12 +503,20 @@ if (isCliInvocation(process.argv)) {
 }
 
 module.exports = {
+  DEFAULT_CSV_PATH,
   DEFAULT_DOCS_PATH,
+  DEFAULT_JSON_PATH,
   DEFAULT_QUEUE_PATH,
   DEFAULT_REPORT_PATH,
   buildOutreachTargetsReport,
+  buildOutreachTargetsExport,
+  escapeCsv,
   isCliInvocation,
   main,
+  renderOutreachTargetsCsv,
   renderOutreachTargetsMarkdown,
+  resolveOutreachAssetPaths,
+  serializeOutreachTarget,
+  writeOutreachTargetsArtifacts,
   writeOutreachTargetsDoc,
 };

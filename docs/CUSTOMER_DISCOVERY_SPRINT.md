@@ -57,6 +57,8 @@ The revenue loop emits these operator artifacts in that folder:
 - `gtm-marketplace-copy.json` for machine-readable listing copy and target themes
 - `gtm-target-queue.csv` for spreadsheet sorting
 - `gtm-target-queue.jsonl` for line-by-line operator handoff with first-touch and pain-confirmed follow-up drafts
+- `outreach-targets.json` for the mixed warm, self-serve, and cold outreach queue in machine-readable form
+- `outreach-targets.csv` for the same mixed outreach queue in spreadsheet-ready form
 - `team-outreach-messages.md` for the warm-outbound copy layer tied to the same ranked queue
 - `operator-priority-handoff.md` for the ranked send order across warm discovery and cold GitHub targets
 - `operator-priority-handoff.json` for the same ranked send order, CTA, proof rule, and sales commands in machine-readable form
