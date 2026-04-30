@@ -409,11 +409,45 @@ function renderCodexOperatorQueueCsv(pack) {
   return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
 }
 
+function renderCodexMarketplaceSurfacesCsv(pack) {
+  const rows = [
+    [
+      'key',
+      'name',
+      'operatorUse',
+      'buyerSignal',
+      'url',
+      'versionedUrl',
+      'proofUrl',
+      'supportUrl',
+      'evidenceSource',
+      'repositoryUrl',
+      'proofLinks',
+    ],
+    ...pack.evidenceSurfaces.map((surface) => ([
+      surface.key,
+      surface.name,
+      surface.operatorUse,
+      surface.buyerSignal,
+      surface.url,
+      surface.versionedUrl || '',
+      surface.proofUrl,
+      surface.supportUrl,
+      surface.evidenceSource,
+      surface.repositoryUrl,
+      Array.isArray(surface.proofLinks) ? surface.proofLinks.join('; ') : '',
+    ])),
+  ];
+
+  return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
+}
+
 const parseArgs = parseReportArgs;
 
 function writeCodexMarketplaceRevenuePack(pack, options = {}) {
   const markdown = renderCodexMarketplaceRevenuePackMarkdown(pack);
-  const csv = renderCodexOperatorQueueCsv(pack);
+  const queueCsv = renderCodexOperatorQueueCsv(pack);
+  const surfacesCsv = renderCodexMarketplaceSurfacesCsv(pack);
   return writeRevenuePackArtifacts({
     repoRoot: REPO_ROOT,
     reportDir: options.reportDir,
@@ -422,8 +456,16 @@ function writeCodexMarketplaceRevenuePack(pack, options = {}) {
     markdown,
     jsonName: 'codex-marketplace-revenue-pack.json',
     jsonValue: pack,
-    csvName: 'codex-operator-queue.csv',
-    csvValue: csv,
+    csvArtifacts: [
+      {
+        name: 'codex-operator-queue.csv',
+        value: queueCsv,
+      },
+      {
+        name: 'codex-marketplace-surfaces.csv',
+        value: surfacesCsv,
+      },
+    ],
   });
 }
 
@@ -472,6 +514,7 @@ module.exports = {
   isCliInvocation,
   parseArgs,
   renderCodexMarketplaceRevenuePackMarkdown,
+  renderCodexMarketplaceSurfacesCsv,
   renderCodexOperatorQueueCsv,
   writeCodexMarketplaceRevenuePack,
 };

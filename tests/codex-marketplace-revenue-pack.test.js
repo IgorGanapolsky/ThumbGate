@@ -19,6 +19,7 @@ const {
   isCliInvocation,
   parseArgs,
   renderCodexMarketplaceRevenuePackMarkdown,
+  renderCodexMarketplaceSurfacesCsv,
   renderCodexOperatorQueueCsv,
   writeCodexMarketplaceRevenuePack,
 } = require('../scripts/codex-marketplace-revenue-pack');
@@ -107,7 +108,8 @@ test('rendered markdown and CSV stay operator-ready', () => {
     ...pack,
     generatedAt: '2026-04-26T12:00:00.000Z',
   });
-  const csv = renderCodexOperatorQueueCsv(pack);
+  const queueCsv = renderCodexOperatorQueueCsv(pack);
+  const surfacesCsv = renderCodexMarketplaceSurfacesCsv(pack);
 
   assert.match(markdown, /Codex Operator Revenue Pack/);
   assert.match(markdown, /Stop Codex from repeating the same tool mistake/);
@@ -116,8 +118,11 @@ test('rendered markdown and CSV stay operator-ready', () => {
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
   assert.match(markdown, /Workflow Hardening Sprint/);
   assert.doesNotMatch(markdown, /approved marketplace|guaranteed installs|guaranteed revenue/i);
-  assert.match(csv, /^key,persona,evidence,proofTrigger,proofAsset,nextAsk,recommendedMotion/);
-  assert.match(csv, /solo_repeat_mistake/);
+  assert.match(queueCsv, /^key,persona,evidence,proofTrigger,proofAsset,nextAsk,recommendedMotion/);
+  assert.match(queueCsv, /solo_repeat_mistake/);
+  assert.match(surfacesCsv, /^key,name,operatorUse,buyerSignal,url,versionedUrl,proofUrl,supportUrl,evidenceSource,repositoryUrl,proofLinks/);
+  assert.match(surfacesCsv, /standalone_bundle/);
+  assert.match(surfacesCsv, /thumbgate-codex-plugin\.zip/);
 });
 
 test('checked-in Codex marketplace pack stays in sync with the generator output', () => {
@@ -150,6 +155,17 @@ test('CLI options and artifact writing emit markdown, JSON, and queue CSV', () =
   assert.equal(fs.existsSync(path.join(tempDir, 'codex-marketplace-revenue-pack.md')), true);
   assert.equal(fs.existsSync(path.join(tempDir, 'codex-marketplace-revenue-pack.json')), true);
   assert.equal(fs.existsSync(path.join(tempDir, 'codex-operator-queue.csv')), true);
+  assert.equal(fs.existsSync(path.join(tempDir, 'codex-marketplace-surfaces.csv')), true);
+});
+
+test('checked-in Codex marketplace surfaces CSV stays in sync with the generator output', () => {
+  const csvPath = path.join(__dirname, '..', 'docs', 'marketing', 'codex-marketplace-surfaces.csv');
+  const committed = fs.readFileSync(csvPath, 'utf8');
+  const generated = renderCodexMarketplaceSurfacesCsv(
+    buildCodexMarketplaceRevenuePack(LINKS_FIXTURE, ABOUT_FIXTURE, path.join(__dirname, '..'))
+  );
+
+  assert.equal(generated, committed);
 });
 
 test('CLI entrypoint detection is path based', () => {
