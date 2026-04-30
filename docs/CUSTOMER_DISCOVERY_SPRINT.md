@@ -92,6 +92,10 @@ The revenue loop emits these operator artifacts in that folder:
 - `mcp-directory-revenue-pack.md` for MCP directory repair priorities, proof-backed listing status, and canonical naming fixes
 - `mcp-directory-revenue-pack.json` for the same MCP directory repair pack in machine-readable form
 - `mcp-directory-operator-queue.csv` for MCP directory-specific repair tasks and next asks
+- `opencode-revenue-pack.md` for OpenCode install, repo-native config, and self-hosted workflow conversion copy
+- `opencode-revenue-pack.json` for the same OpenCode operator pack in machine-readable form
+- `opencode-operator-queue.csv` for OpenCode buyer lanes and next asks
+- `opencode-prospect-queue.csv` for OpenCode-specific prospects already present in the revenue loop
 
 That report now carries both warm discovery leads and cold GitHub prospects in one machine-readable queue so the operator can import a single artifact and still contact the warm engagers first.
 Every artifact inherits the same evidence backstop:

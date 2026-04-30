@@ -59,6 +59,10 @@ const {
   buildMcpDirectoryRevenuePack,
   writeMcpDirectoryRevenuePack,
 } = require('./mcp-directory-revenue-pack');
+const {
+  buildOpenCodeRevenuePack,
+  writeOpenCodeRevenuePack,
+} = require('./opencode-revenue-pack');
 
 function buildDependencies(overrides = {}) {
   return {
@@ -85,6 +89,8 @@ function buildDependencies(overrides = {}) {
     writeCodexPluginRevenuePack,
     buildMcpDirectoryRevenuePack,
     writeMcpDirectoryRevenuePack,
+    buildOpenCodeRevenuePack,
+    writeOpenCodeRevenuePack,
     ...overrides,
   };
 }
@@ -144,6 +150,8 @@ async function main(argv = process.argv.slice(2), overrides = {}) {
   const codexPluginWritten = deps.writeCodexPluginRevenuePack(codexPluginPack, options);
   const mcpDirectoryPack = deps.buildMcpDirectoryRevenuePack();
   const mcpDirectoryWritten = deps.writeMcpDirectoryRevenuePack(mcpDirectoryPack, options);
+  const openCodePack = deps.buildOpenCodeRevenuePack(report);
+  const openCodeWritten = deps.writeOpenCodeRevenuePack(openCodePack, options);
   const githubOutreachJobs = buildGitHubOutreachJobs(written);
   const githubOutreachWritten = githubOutreachJobs.map((job) => deps.runGitHubOutreach(job));
 
@@ -183,6 +191,9 @@ async function main(argv = process.argv.slice(2), overrides = {}) {
   }
   if (mcpDirectoryWritten.docsPath) {
     console.log(`MCP directory pack updated: ${mcpDirectoryWritten.docsPath}`);
+  }
+  if (openCodeWritten.docsPath) {
+    console.log(`OpenCode pack updated: ${openCodeWritten.docsPath}`);
   }
   for (const asset of githubOutreachWritten) {
     if (asset?.docsPath) {

@@ -43,6 +43,10 @@ const EXPECTED_ARTIFACTS = [
   'mcp-directory-revenue-pack.md',
   'mcp-directory-revenue-pack.json',
   'mcp-directory-operator-queue.csv',
+  'opencode-revenue-pack.md',
+  'opencode-revenue-pack.json',
+  'opencode-operator-queue.csv',
+  'opencode-prospect-queue.csv',
 ];
 
 function escapeRegExp(value) {
