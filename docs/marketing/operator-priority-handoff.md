@@ -1,6 +1,6 @@
 # Revenue Operator Priority Handoff
 
-Updated: 2026-04-30T04:14:20.304Z
+Updated: 2026-04-30T09:12:49.791Z
 
 This is the ranked send order for the current zero-to-one revenue loop. Work follow-ups first, then warm discovery, then self-serve closes, then production-rollout buyers, then expand into the remaining cold GitHub targets with the same proof discipline.
 
@@ -11,12 +11,12 @@ This handoff sits on top of `gtm-revenue-loop.md`, `gtm-target-queue.csv`, and `
 - Headline: Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
 - Billing verification: Live hosted billing summary verified for this run.
 - Paid orders: 2
-- Checkout starts: 0
+- Checkout starts: 3
 - Active follow-ups: 0
 - Warm targets ready now: 4
 - Self-serve closes ready now: 3
-- Production-rollout targets ready now: 3
-- Cold GitHub targets ready next: 0
+- Production-rollout targets ready now: 7
+- Cold GitHub targets ready next: 2
 
 ## Operator Rules
 - Import the queue into the sales ledger before sending anything.
@@ -173,40 +173,40 @@ Checkout close draft:
 > If you are already comparing close options for your workflow, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ## Close Now: Self-Serve Pro
-## 5. @opensesh — KARIMO
+## 5. @agynio — gh-pr-review
 - Temperature: cold
 - Source: github / github
 - Pipeline stage: targeted
-- Pipeline lead id: github_opensesh_karimo
+- Pipeline lead id: github_agynio_gh_pr_review
 - Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
 - Pipeline last updated: n/a
-- Log after send: `npm run sales:pipeline -- advance --lead 'github_opensesh_karimo' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'`
-- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_opensesh_karimo' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'`
-- Log after call booked: `npm run sales:pipeline -- advance --lead 'github_opensesh_karimo' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute diagnostic after the self-serve conversation exposed repeated pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'`
-- Log after checkout started: `npm run sales:pipeline -- advance --lead 'github_opensesh_karimo' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing the proof-backed setup guide and local-first enforcement before any team-motion pitch.'`
-- Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_opensesh_karimo' --channel 'manual' --stage 'sprint_intake' --note 'Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for the proof-backed setup guide and local-first enforcement before any team-motion pitch.'`
-- Log after paid: `npm run sales:pipeline -- advance --lead 'github_opensesh_karimo' --channel 'manual' --stage 'paid' --note 'Closed Pro at $19/mo or $149/yr and booked revenue after resolving the proof-backed setup guide and local-first enforcement before any team-motion pitch.'`
-- Contact surface: https://link.opensession.co/github
-- Contact surfaces: Website: https://link.opensession.co/github; GitHub profile: https://github.com/opensesh; Repository: https://github.com/opensesh/KARIMO
-- Company: opensession
-- Evidence score: 17
-- Evidence: workflow control surface, production or platform workflow, agent infrastructure, self-serve agent tooling, 34 GitHub stars, updated in the last 7 days
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_agynio_gh_pr_review' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_agynio_gh_pr_review' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after call booked: `npm run sales:pipeline -- advance --lead 'github_agynio_gh_pr_review' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute diagnostic after the self-serve conversation exposed repeated pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after checkout started: `npm run sales:pipeline -- advance --lead 'github_agynio_gh_pr_review' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_agynio_gh_pr_review' --channel 'manual' --stage 'sprint_intake' --note 'Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after paid: `npm run sales:pipeline -- advance --lead 'github_agynio_gh_pr_review' --channel 'manual' --stage 'paid' --note 'Closed Pro at $19/mo or $149/yr and booked revenue after resolving one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Contact surface: https://agyn.io/
+- Contact surfaces: Website: https://agyn.io/; GitHub profile: https://github.com/agynio; Repository: https://github.com/agynio/gh-pr-review
+- Company: n/a
+- Evidence score: 15
+- Evidence: workflow control surface, business-system integration, self-serve agent tooling, 143 GitHub stars, updated in the last 7 days
 - Motion: Pro at $19/mo or $149/yr
 - Why now: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
 - Proof rule: Use proof pack only after the buyer confirms pain.
 - CTA: https://thumbgate-production.up.railway.app/guide
 
 First-touch draft:
-> Hey @opensesh, saw you're building around `KARIMO`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
+> Hey @agynio, saw you're building around `gh-pr-review`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
 
 Pain-confirmed follow-up:
-> If you want the self-serve path for `KARIMO`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+> If you want the self-serve path for `gh-pr-review`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 Tool-path follow-up:
-> If you want the self-serve path for `KARIMO`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro
+> If you want the self-serve path for `gh-pr-review`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro
 
 Checkout close draft:
-> If you are already comparing close options for `KARIMO`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+> If you are already comparing close options for `gh-pr-review`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ## 6. @BaseInfinity — claude-sdlc-wizard
 - Temperature: cold
@@ -260,7 +260,7 @@ Checkout close draft:
 - Contact surfaces: GitHub profile: https://github.com/zaxbysauce; Repository: https://github.com/zaxbysauce/opencode-swarm
 - Company: n/a
 - Evidence score: 12
-- Evidence: workflow control surface, self-serve agent tooling, 248 GitHub stars, updated in the last 7 days
+- Evidence: workflow control surface, self-serve agent tooling, 258 GitHub stars, updated in the last 7 days
 - Motion: Pro at $19/mo or $149/yr
 - Why now: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
 - Proof rule: Use proof pack only after the buyer confirms pain.
@@ -279,7 +279,42 @@ Checkout close draft:
 > If you are already comparing close options for `opencode-swarm`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ## Send Next: Production Rollout
-## 8. @Adqui9608 — ai-code-review-agent
+## 8. @montenegronyc — backporcher
+- Temperature: cold
+- Source: github / github
+- Pipeline stage: targeted
+- Pipeline lead id: github_montenegronyc_backporcher
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_montenegronyc_backporcher' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_montenegronyc_backporcher' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after call booked: `npm run sales:pipeline -- advance --lead 'github_montenegronyc_backporcher' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after checkout started: `npm run sales:pipeline -- advance --lead 'github_montenegronyc_backporcher' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_montenegronyc_backporcher' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after paid: `npm run sales:pipeline -- advance --lead 'github_montenegronyc_backporcher' --channel 'manual' --stage 'paid' --note 'Closed Workflow Hardening Sprint and booked revenue after resolving one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Contact surface: https://numberfortyeight.co/
+- Contact surfaces: Website: https://numberfortyeight.co/; GitHub profile: https://github.com/montenegronyc; Repository: https://github.com/montenegronyc/backporcher
+- Company: Number Fortyeight Inc.
+- Evidence score: 16
+- Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, 12 GitHub stars, updated in the last 30 days
+- Motion: Workflow Hardening Sprint
+- Why now: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+First-touch draft:
+> Hey @montenegronyc, saw you're shipping `backporcher`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Pain-confirmed follow-up:
+> If `backporcher` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+Tool-path follow-up:
+> If you want to inspect the self-serve path while you evaluate `backporcher`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Checkout close draft:
+> If you are already comparing close options for `backporcher`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+## 9. @Adqui9608 — ai-code-review-agent
 - Temperature: cold
 - Source: github / github
 - Pipeline stage: targeted
@@ -314,7 +349,7 @@ Tool-path follow-up:
 Checkout close draft:
 > If you are already comparing close options for `ai-code-review-agent`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
-## 9. @Abhi268170 — Stagix
+## 10. @Abhi268170 — Stagix
 - Temperature: cold
 - Source: github / github
 - Pipeline stage: targeted
@@ -349,7 +384,7 @@ Tool-path follow-up:
 Checkout close draft:
 > If you are already comparing close options for `Stagix`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
-## 10. @dolutech — engine_context
+## 11. @dolutech — engine_context
 - Temperature: cold
 - Source: github / github
 - Pipeline stage: targeted
@@ -384,5 +419,178 @@ Tool-path follow-up:
 Checkout close draft:
 > If you are already comparing close options for `engine_context`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
+## 12. @maxritter — pilot-shell
+- Temperature: cold
+- Source: github / github
+- Pipeline stage: targeted
+- Pipeline lead id: github_maxritter_pilot_shell
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_maxritter_pilot_shell' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on rollout proof for one production workflow that cannot afford repeated agent mistakes.'`
+- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_maxritter_pilot_shell' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around rollout proof for one production workflow that cannot afford repeated agent mistakes.'`
+- Log after call booked: `npm run sales:pipeline -- advance --lead 'github_maxritter_pilot_shell' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for rollout proof for one production workflow that cannot afford repeated agent mistakes.'`
+- Log after checkout started: `npm run sales:pipeline -- advance --lead 'github_maxritter_pilot_shell' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing rollout proof for one production workflow that cannot afford repeated agent mistakes.'`
+- Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_maxritter_pilot_shell' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for rollout proof for one production workflow that cannot afford repeated agent mistakes.'`
+- Log after paid: `npm run sales:pipeline -- advance --lead 'github_maxritter_pilot_shell' --channel 'manual' --stage 'paid' --note 'Closed Workflow Hardening Sprint and booked revenue after resolving rollout proof for one production workflow that cannot afford repeated agent mistakes.'`
+- Contact surface: https://www.maxritter.net/
+- Contact surfaces: Website: https://www.maxritter.net/; GitHub profile: https://github.com/maxritter; Repository: https://github.com/maxritter/pilot-shell
+- Company: Max Ritter
+- Evidence score: 14
+- Evidence: production or platform workflow, agent infrastructure, self-serve agent tooling, 1672 GitHub stars, updated in the last 7 days
+- Motion: Workflow Hardening Sprint
+- Why now: Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+First-touch draft:
+> Hey @maxritter, saw you're shipping `pilot-shell`. If one deploy, release, or incident workflow keeps needing extra guardrails, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Pain-confirmed follow-up:
+> If `pilot-shell` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+Tool-path follow-up:
+> If you want to inspect the self-serve path while you evaluate `pilot-shell`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Checkout close draft:
+> If you are already comparing close options for `pilot-shell`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+## 13. @nihannihu — Omni-SRE
+- Temperature: cold
+- Source: github / github
+- Pipeline stage: targeted
+- Pipeline lead id: github_nihannihu_omni_sre
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_nihannihu_omni_sre' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_nihannihu_omni_sre' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after call booked: `npm run sales:pipeline -- advance --lead 'github_nihannihu_omni_sre' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after checkout started: `npm run sales:pipeline -- advance --lead 'github_nihannihu_omni_sre' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_nihannihu_omni_sre' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after paid: `npm run sales:pipeline -- advance --lead 'github_nihannihu_omni_sre' --channel 'manual' --stage 'paid' --note 'Closed Workflow Hardening Sprint and booked revenue after resolving one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Contact surface: https://github.com/nihannihu
+- Contact surfaces: GitHub profile: https://github.com/nihannihu; Repository: https://github.com/nihannihu/Omni-SRE
+- Company: @Omni-IDE
+- Evidence score: 14
+- Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, updated in the last 30 days
+- Motion: Workflow Hardening Sprint
+- Why now: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+First-touch draft:
+> Hey @nihannihu, saw you're shipping `Omni-SRE`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Pain-confirmed follow-up:
+> If `Omni-SRE` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+Tool-path follow-up:
+> If you want to inspect the self-serve path while you evaluate `Omni-SRE`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Checkout close draft:
+> If you are already comparing close options for `Omni-SRE`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+## 14. @Somak-2001 — Automatic-Code-Reviewer
+- Temperature: cold
+- Source: github / github
+- Pipeline stage: targeted
+- Pipeline lead id: github_somak_2001_automatic_code_reviewer
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_somak_2001_automatic_code_reviewer' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_somak_2001_automatic_code_reviewer' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after call booked: `npm run sales:pipeline -- advance --lead 'github_somak_2001_automatic_code_reviewer' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after checkout started: `npm run sales:pipeline -- advance --lead 'github_somak_2001_automatic_code_reviewer' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_somak_2001_automatic_code_reviewer' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after paid: `npm run sales:pipeline -- advance --lead 'github_somak_2001_automatic_code_reviewer' --channel 'manual' --stage 'paid' --note 'Closed Workflow Hardening Sprint and booked revenue after resolving one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Contact surface: https://github.com/Somak-2001
+- Contact surfaces: GitHub profile: https://github.com/Somak-2001; Repository: https://github.com/Somak-2001/Automatic-Code-Reviewer
+- Company: n/a
+- Evidence score: 14
+- Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, updated in the last 30 days
+- Motion: Workflow Hardening Sprint
+- Why now: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+First-touch draft:
+> Hey @Somak-2001, saw you're shipping `Automatic-Code-Reviewer`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Pain-confirmed follow-up:
+> If `Automatic-Code-Reviewer` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+Tool-path follow-up:
+> If you want to inspect the self-serve path while you evaluate `Automatic-Code-Reviewer`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Checkout close draft:
+> If you are already comparing close options for `Automatic-Code-Reviewer`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
 ## Seed Next: Cold GitHub
-- No cold GitHub targets are available for this run.
+## 15. @DGouron — review-flow
+- Temperature: cold
+- Source: github / github
+- Pipeline stage: targeted
+- Pipeline lead id: github_dgouron_review_flow
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after call booked: `npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after checkout started: `npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after paid: `npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'paid' --note 'Closed Workflow Hardening Sprint and booked revenue after resolving one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Contact surface: https://dgouron.fr/
+- Contact surfaces: Website: https://dgouron.fr/; GitHub profile: https://github.com/DGouron; Repository: https://github.com/DGouron/review-flow
+- Company: Mentor Goal
+- Evidence score: 14
+- Evidence: workflow control surface, business-system integration, agent infrastructure, 36 GitHub stars, updated in the last 7 days
+- Motion: Workflow Hardening Sprint
+- Why now: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+First-touch draft:
+> Hey @DGouron, saw you're shipping `review-flow`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Pain-confirmed follow-up:
+> If `review-flow` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+Tool-path follow-up:
+> If you want to inspect the self-serve path while you evaluate `review-flow`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Checkout close draft:
+> If you are already comparing close options for `review-flow`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+## 16. @manki-review — manki
+- Temperature: cold
+- Source: github / github
+- Pipeline stage: targeted
+- Pipeline lead id: github_manki_review_manki
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Pipeline last updated: n/a
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_manki_review_manki' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_manki_review_manki' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after call booked: `npm run sales:pipeline -- advance --lead 'github_manki_review_manki' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after checkout started: `npm run sales:pipeline -- advance --lead 'github_manki_review_manki' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_manki_review_manki' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after paid: `npm run sales:pipeline -- advance --lead 'github_manki_review_manki' --channel 'manual' --stage 'paid' --note 'Closed Workflow Hardening Sprint and booked revenue after resolving one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Contact surface: https://manki.dustinface.me/
+- Contact surfaces: Website: https://manki.dustinface.me/; GitHub profile: https://github.com/manki-review; Repository: https://github.com/manki-review/manki
+- Company: n/a
+- Evidence score: 13
+- Evidence: workflow control surface, business-system integration, agent infrastructure, 5 GitHub stars, updated in the last 7 days
+- Motion: Workflow Hardening Sprint
+- Why now: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+First-touch draft:
+> Hey @manki-review, saw you're shipping `manki`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Pain-confirmed follow-up:
+> If `manki` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+Tool-path follow-up:
+> If you want to inspect the self-serve path while you evaluate `manki`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Checkout close draft:
+> If you are already comparing close options for `manki`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md

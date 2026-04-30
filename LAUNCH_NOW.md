@@ -1,6 +1,6 @@
 # LAUNCH NOW — Discovery-First Revenue Checklist
 
-**Status as of 2026-04-25:** local revenue status shows `0` lifetime revenue, `0` paid orders, `0` tracked leads, and `0` checkout starts. Treat this file as an operator playbook for creating qualified conversations, not as proof of traction.
+**Status as of 2026-04-30:** command evidence from `npm run revenue:status` shows `2` paid orders and `$20.00` booked today, with `3` checkout starts and `3` signups in the live hosted summary. Treat this file as the current operator playbook for the next qualified conversations, not as proof that outreach was already sent.
 
 Every line below is evidence-backed and channel-current. Do them in order.
 
@@ -16,10 +16,12 @@ curl -sS https://thumbgate-production.up.railway.app/ | grep -q 'ThumbGate' && e
 curl -sS https://thumbgate-production.up.railway.app/ | grep -q 'workflow-sprint-intake' && echo "sprint intake linked" || echo "sprint intake missing"
 
 # 3. Current commercial snapshot is explicit
-npm run revenue:status:local
+npm run revenue:status
 ```
 
 If any of those fail, stop and fix the funnel before outreach.
+
+Use `npm run revenue:status:local` only as a local fallback when hosted auth is unavailable. It is not the source of truth for live Stripe-backed revenue.
 
 ---
 
@@ -30,12 +32,15 @@ REPORT_DIR="reports/gtm/$(date +%F)-selling-now"
 npm run gtm:revenue-loop -- --report-dir "$REPORT_DIR" --max-targets=12
 ```
 
-Review four files before sending anything:
+Review the generated send surfaces before sending anything:
 
 - `gtm-revenue-loop.md` for the current commercial truth and directive
 - `gtm-revenue-loop.json` for the machine-readable queue
 - `gtm-target-queue.csv` for operator copy/paste into a tracker or CRM
+- `operator-priority-handoff.md` for the ranked send order
+- `operator-send-now.json` for the top contact set and exact follow-up commands
 - `gtm-marketplace-copy.md` for listing-ready copy derived from the same target evidence
+- `mcp-directory-revenue-pack.md` for directory repair priorities before more discovery traffic is pushed into stale naming
 
 The generated queue now includes two lanes in one artifact:
 
@@ -108,6 +113,7 @@ Do not treat generic posting as sales progress.
 Before refreshing listing copy or directory submissions, make sure these remain aligned:
 
 - the current `gtm-marketplace-copy.md` artifact from the revenue loop
+- the current `mcp-directory-revenue-pack.md` artifact from the revenue loop
 - [docs/COMMERCIAL_TRUTH.md](docs/COMMERCIAL_TRUTH.md)
 - [docs/VERIFICATION_EVIDENCE.md](docs/VERIFICATION_EVIDENCE.md)
 - [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json)
@@ -136,4 +142,4 @@ If the direct outreach language changes, update the listings to match. Never inv
 - `2` discovery calls or sprint-intake starts
 - `1` paid sprint or named pilot agreement
 
-The operating goal is not awareness. The goal is the first booked Workflow Hardening Sprint.
+The operating goal is not awareness. The goal is the next paid Workflow Hardening Sprint or proof-backed Pro close from the current queue.
