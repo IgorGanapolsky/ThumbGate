@@ -402,6 +402,22 @@ test('target evidence favors production workflows over generic fresh repos', () 
   assert.match(strong.outreachAngle, /rollout proof|approval boundaries/i);
 });
 
+test('target search queries keep the GitLab review discovery lane active', () => {
+  assert.ok(TARGET_SEARCH_QUERIES.includes('search/repositories?q=GitLab+review+automation+agent+sort:updated'));
+});
+
+test('self-serve hook surfaces keep the guide-first outreach angle even when they mention platforms', () => {
+  const target = analyzeTargetEvidence({
+    repoName: 'claude-hooks',
+    description: 'Cross-platform Claude Code hooks for deterministic memory recall and local-first guardrails.',
+    stars: 17,
+    updatedAt: new Date().toISOString(),
+  });
+
+  assert.ok(target.score >= 4);
+  assert.match(target.outreachAngle, /proof-backed setup guide|local-first enforcement/i);
+});
+
 test('repo identity filter drops obviously weak identifiers', () => {
   assert.equal(hasCredibleRepoIdentity({ repoName: '-L-' }), false);
   assert.equal(hasCredibleRepoIdentity({ repoName: 'mcp-jira-stdio' }), true);
@@ -1373,6 +1389,51 @@ test('first-touch outreach applies the evidence angle without leaking operator i
   assert.doesNotMatch(message, /approval boundaries/i);
 });
 
+test('sales pipeline commands do not leak outreach instruction prefixes', () => {
+  const report = buildRevenueLoopReport({
+    source: 'local',
+    fallbackReason: null,
+    summary: {
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    },
+    motionCatalog: buildMotionCatalog(buildRevenueLinks()),
+    directive: deriveRevenueDirective({
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    }, buildMotionCatalog(buildRevenueLinks())),
+    targets: [{
+      temperature: 'cold',
+      source: 'github',
+      channel: 'github',
+      username: 'freema',
+      accountName: 'freema',
+      contactUrl: 'https://github.com/freema',
+      repoName: 'mcp-jira-stdio',
+      repoUrl: 'https://github.com/freema/mcp-jira-stdio',
+      description: 'MCP server for Jira integration with workflow approvals and issue handoffs.',
+      evidence: {
+        score: 10,
+        evidence: ['business-system integration'],
+        outreachAngle: 'Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.',
+      },
+      selectedMotion: {
+        key: 'sprint',
+        label: 'Workflow Hardening Sprint',
+        reason: 'Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.',
+      },
+    }],
+  });
+
+  assert.match(report.targets[0].salesCommands.markContacted, /focused on one business-system workflow that needs approval boundaries, rollback safety, and proof\./);
+  assert.doesNotMatch(report.targets[0].salesCommands.markContacted, /Lead with/i);
+  assert.doesNotMatch(report.targets[0].salesCommands.markPaid, /Lead with/i);
+});
+
 test('first-touch outreach specializes sprint hooks without repo names', () => {
   const catalog = buildMotionCatalog(buildRevenueLinks());
   const cases = [{
@@ -1561,8 +1622,56 @@ test('self-serve targets generate self-serve sales-command notes instead of spri
   });
 
   assert.match(report.targets[0].salesCommands.markContacted, /self-serve first touch/i);
+  assert.match(report.targets[0].salesCommands.markContacted, /proof-backed setup guide and local-first enforcement/i);
   assert.match(report.targets[0].salesCommands.markCallBooked, /self-serve conversation exposed repeated pain/i);
   assert.match(report.targets[0].salesCommands.markSprintIntake, /escalated from the self-serve lane/i);
+});
+
+test('sprint target sales-command notes strip operator phrasing from the pain hypothesis', () => {
+  const catalog = buildMotionCatalog(buildRevenueLinks());
+  const report = buildRevenueLoopReport({
+    source: 'local',
+    fallbackReason: null,
+    summary: {
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    },
+    motionCatalog: catalog,
+    directive: deriveRevenueDirective({
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    }, catalog),
+    targets: [{
+      temperature: 'cold',
+      source: 'github',
+      channel: 'github',
+      username: 'builder',
+      accountName: 'builder',
+      contactUrl: 'https://github.com/builder',
+      repoName: 'production-mcp-server',
+      repoUrl: 'https://github.com/builder/production-mcp-server',
+      description: 'Production workflow governance for platform teams.',
+      evidence: {
+        score: 10,
+        evidence: ['production or platform workflow'],
+        outreachAngle: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
+      },
+      selectedMotion: {
+        key: 'sprint',
+        label: catalog.sprint.label,
+        reason: 'Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.',
+      },
+      message: 'Start with workflow hardening.',
+      proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+    }],
+  });
+
+  assert.doesNotMatch(report.targets[0].salesCommands.markContacted, /focused on Lead with/i);
+  assert.match(report.targets[0].salesCommands.markContacted, /focused on one business-system workflow/i);
 });
 
 test('pain-confirmed follow-up falls back to workflow language for warm targets without a repo', () => {
@@ -1801,8 +1910,16 @@ test('marketplace copy pack stays tied to current revenue-loop evidence', () => 
   assert.ok(pack.topSignals.some((signal) => /Warm discovery workflows/.test(signal.label)));
   assert.ok(pack.topSignals.some((signal) => /Business-system workflow approvals/.test(signal.label)));
   assert.ok(pack.topSignals.some((signal) => /Self-serve agent tooling/.test(signal.label)));
+  assert.ok(Array.isArray(pack.listingVariants));
+  assert.ok(pack.listingVariants.some((variant) => /Warm discovery workflows/.test(variant.label)));
+  assert.ok(pack.listingVariants.some((variant) => variant.primaryCta.label === 'Proof-backed setup guide'));
+  assert.ok(pack.listingVariants.some((variant) => variant.secondaryCta.label === catalog.pro.label));
   assert.ok(pack.sampleTargets.some((target) => target.account === 'buildertools/codex-hook-pack'));
   assert.ok(pack.listingBullets.some((bullet) => /Use Pro after one blocked repeat/i.test(bullet)));
+  assert.match(markdown, /Listing Variants/);
+  assert.match(markdown, /Audience: Warm buyers who already named a repeated workflow failure\./);
+  assert.match(markdown, /Headline: Turn one repeated AI-agent workflow failure into a proof-backed sprint\./);
+  assert.match(markdown, /Primary CTA: Proof-backed setup guide: https:\/\/thumbgate-production\.up\.railway\.app\/guide/);
   assert.match(markdown, /Proof Policy/);
   assert.match(markdown, /Evidence Backstop/);
   assert.match(markdown, /Use Pro after one blocked repeat or explicit self-serve install intent/i);
@@ -2021,6 +2138,8 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.match(marketplaceCopy.recommendedCtas[1].cta, /#workflow-sprint-intake$/);
     assert.match(marketplaceCopy.recommendedCtas[2].cta, /\/checkout\/pro$/);
     assert.ok(Array.isArray(marketplaceCopy.topSignals));
+    assert.ok(Array.isArray(marketplaceCopy.listingVariants));
+    assert.ok(marketplaceCopy.listingVariants.some((variant) => /Warm discovery workflows|Workflow control surfaces/.test(variant.label)));
     assert.equal(JSON.parse(jsonl.trim()).repoName, 'production-mcp-server');
     assert.match(jsonl, /"pipelineLeadId":"reddit_builder_production_mcp_server"/);
     assert.match(jsonl, /"salesCommands":\{"markContacted":"npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
