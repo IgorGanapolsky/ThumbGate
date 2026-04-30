@@ -8,6 +8,7 @@ const {
   buildRevenueLinks,
 } = require('./gtm-revenue-loop');
 const {
+  buildTrackedPackLink,
   isCliInvocation: isCliCall,
   parseReportArgs,
   renderRevenuePackMarkdown,
@@ -26,6 +27,17 @@ const APPCYPHER_LIST_URL = 'https://github.com/appcypher/awesome-mcp-servers';
 const MCP_DIRECTORIES_GUIDE_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/marketing/mcp-directories.md';
 const MCP_HUB_SUBMISSION_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/mcp-hub-submission.md';
 const CHECKED_AT = '2026-04-29';
+const DIRECTORY_SOURCE = 'mcp_directories';
+const DIRECTORY_MEDIUM = 'directory';
+const DIRECTORY_SURFACE = 'mcp_directory';
+
+function buildTrackedDirectoryLink(baseUrl, tracking = {}) {
+  return buildTrackedPackLink(baseUrl, tracking, {
+    utmSource: DIRECTORY_SOURCE,
+    utmMedium: DIRECTORY_MEDIUM,
+    surface: tracking.surface || DIRECTORY_SURFACE,
+  });
+}
 
 function buildSurfaces() {
   return [
@@ -108,13 +120,44 @@ function buildFollowOnOffers(links = buildRevenueLinks()) {
       label: 'Proof-backed setup guide',
       pricing: 'Discovery CTA',
       buyer: 'Directory visitors who want a current install and proof surface before anything sales-led.',
-      cta: links.guideLink,
+      cta: buildTrackedDirectoryLink(links.guideLink, {
+        utmCampaign: 'mcp_directory_guide',
+        utmContent: 'guide',
+        campaignVariant: 'directory_repair',
+        offerCode: 'MCP-DIRECTORY_GUIDE',
+        ctaId: 'mcp_directory_guide',
+        ctaPlacement: 'follow_on_offer',
+        surface: 'mcp_directory_guide',
+      }),
+    },
+    {
+      label: 'ThumbGate Pro',
+      pricing: links.proPriceLabel,
+      buyer: 'Directory visitors who already want the self-serve path and need a tracked paid-intent lane after the guide.',
+      cta: buildTrackedDirectoryLink(links.proCheckoutLink, {
+        utmCampaign: 'mcp_directory_pro',
+        utmContent: 'pro',
+        campaignVariant: 'self_serve_paid_intent',
+        offerCode: 'MCP-DIRECTORY_PRO',
+        ctaId: 'mcp_directory_pro',
+        ctaPlacement: 'follow_on_offer',
+        planId: 'pro',
+        surface: 'mcp_directory_pro',
+      }),
     },
     {
       label: 'Workflow Hardening Sprint',
       pricing: 'Primary revenue motion',
       buyer: 'Teams that already named one repeated workflow failure and want rollout proof, not just a directory listing.',
-      cta: links.sprintLink,
+      cta: buildTrackedDirectoryLink(links.sprintLink, {
+        utmCampaign: 'mcp_directory_sprint',
+        utmContent: 'workflow_sprint',
+        campaignVariant: 'repair_to_team_motion',
+        offerCode: 'MCP-DIRECTORY_SPRINT',
+        ctaId: 'mcp_directory_sprint',
+        ctaPlacement: 'follow_on_offer',
+        surface: 'mcp_directory_sprint',
+      }),
     },
   ];
 }
@@ -338,6 +381,9 @@ if (isCliInvocation(process.argv)) {
 module.exports = {
   APPCYPHER_LIST_URL,
   CHECKED_AT,
+  DIRECTORY_MEDIUM,
+  DIRECTORY_SOURCE,
+  DIRECTORY_SURFACE,
   DOCS_PATH,
   GLAMA_LEGACY_URL,
   GLAMA_SEARCH_URL,
@@ -346,6 +392,7 @@ module.exports = {
   SMITHERY_DETAILS_URL,
   SMITHERY_SEARCH_URL,
   buildMcpDirectoryRevenuePack,
+  buildTrackedDirectoryLink,
   isCliInvocation,
   parseArgs,
   renderMcpDirectoryRevenuePackMarkdown,
