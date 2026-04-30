@@ -23,7 +23,11 @@ test('public landing page keeps FAQPage JSON-LD parity for SEO and GEO', () => {
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /"@type": "SoftwareApplication"/);
+  assert.match(landingPage, /"@type": "Service"/);
   assert.match(landingPage, /"@type": "FAQPage"/);
+  assert.match(landingPage, /"@type": "InstallAction"/);
+  assert.match(landingPage, /"@type": "BuyAction"/);
+  assert.match(landingPage, /"@type": "CommunicateAction"/);
   assert.match(landingPage, /How is ThumbGate different from model-training feedback loops\?/);
   assert.match(landingPage, /What is the ThumbGate tech stack\?/);
   assert.match(landingPage, /What AI agents does ThumbGate work with\?/);
