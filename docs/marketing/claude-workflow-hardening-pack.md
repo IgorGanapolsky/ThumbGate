@@ -1,6 +1,6 @@
 # Claude Workflow Hardening Pack
 
-Updated: 2026-04-29T08:47:07.667Z
+Updated: 2026-04-29T23:30:33.806Z
 
 This is a sales operator artifact. It is not proof of sent outreach, directory approval, paid revenue, or deployment success by itself.
 
@@ -78,8 +78,8 @@ Follow-on listing offers:
 - @game-of-kton (warm) -> Workflow Hardening Sprint. Reason: Warm Reddit engager already works on advanced agent memory, so discovery should center on one repeated failure pattern. Evidence: warm inbound engagement, built serious memory systems, workflow pain named: stale context and conflicting facts Next ask: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - @leogodin217 (warm) -> Workflow Hardening Sprint. Reason: Warm Reddit engager already described a mature workflow, so the next step is a targeted diagnostic on one failure mode. Evidence: warm inbound engagement, mature multi-step workflow described, workflow pain named: review boundaries and context risk Next ask: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - @Enthu-Cutlet-1337 (warm) -> Workflow Hardening Sprint. Reason: Warm Reddit engager already understands the adaptive-gate thesis, so offer one concrete workflow hardening diagnostic. Evidence: warm inbound engagement, responded to adaptive-gate positioning, workflow pain named: brittle guardrails Next ask: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- dolutech/engine_context (cold) -> Workflow Hardening Sprint. Reason: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof. Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, 8 GitHub stars Next ask: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - Adqui9608/ai-code-review-agent (cold) -> Workflow Hardening Sprint. Reason: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof. Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, updated in the last 7 days Next ask: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-- DGouron/review-flow (cold) -> Workflow Hardening Sprint. Reason: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof. Evidence: workflow control surface, business-system integration, agent infrastructure, 36 GitHub stars, updated in the last 7 days Next ask: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 
 ## Outreach Drafts
 ### GitHub DM or email — Claude Desktop or Claude Code operator
