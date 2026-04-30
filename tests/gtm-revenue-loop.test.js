@@ -1167,7 +1167,7 @@ test('team outreach markdown stays discovery-first and evidence-backed', () => {
   assert.match(markdown, /checkout\/pro/);
 });
 
-test('operator handoff markdown prioritizes follow-ups, then warm discovery, then cold GitHub targets', () => {
+test('operator handoff markdown prioritizes follow-ups, then warm discovery, then production-rollout buyers before generic cold GitHub', () => {
   const links = buildRevenueLinks();
   const catalog = buildMotionCatalog(links);
   const markdown = renderOperatorHandoffMarkdown({
@@ -1269,9 +1269,11 @@ test('operator handoff markdown prioritizes follow-ups, then warm discovery, the
   assert.match(markdown, /Active follow-ups: 1/);
   assert.match(markdown, /Warm targets ready now: 1/);
   assert.match(markdown, /Self-serve closes ready now: 0/);
-  assert.match(markdown, /Cold GitHub targets ready next: 1/);
+  assert.match(markdown, /Production-rollout targets ready now: 1/);
+  assert.match(markdown, /Cold GitHub targets ready next: 0/);
   assert.ok(markdown.indexOf('@follow_builder') < markdown.indexOf('@warm_builder'));
   assert.ok(markdown.indexOf('@warm_builder') < markdown.indexOf('@builder'));
+  assert.match(markdown, /Send Next: Production Rollout/);
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
   assert.match(markdown, /Contact surfaces: Website: https:\/\/builder\.dev\/; GitHub profile: https:\/\/github\.com\/builder/);
@@ -1418,12 +1420,14 @@ test('operator handoff payload mirrors the ranked queue and sales commands in ma
   assert.equal(payload.summary.activeFollowUps, 1);
   assert.equal(payload.summary.warmTargetsReadyNow, 1);
   assert.equal(payload.summary.selfServeTargetsReadyNow, 1);
-  assert.equal(payload.summary.coldGitHubTargetsReadyNext, 1);
+  assert.equal(payload.summary.productionRolloutTargetsReadyNow, 1);
+  assert.equal(payload.summary.coldGitHubTargetsReadyNext, 0);
   assert.ok(payload.operatorRules.some((rule) => /Use Pro after one blocked repeat/i.test(rule)));
   assert.equal(payload.importCommand, 'npm run sales:pipeline -- import --source docs/marketing/gtm-revenue-loop.json');
   const followUpSection = payload.sections.find((section) => section.key === 'follow_up_now');
   const warmSection = payload.sections.find((section) => section.key === 'send_now_warm_discovery');
   const selfServeSection = payload.sections.find((section) => section.key === 'close_now_self_serve_pro');
+  const productionSection = payload.sections.find((section) => section.key === 'send_next_production_rollout');
   const coldSection = payload.sections.find((section) => section.key === 'seed_next_cold_github');
   assert.equal(followUpSection.targets[0].label, '@follow_builder - r/ClaudeCode');
   assert.equal(followUpSection.targets[0].salesCommands.markSprintIntake.includes('reddit_follow_builder_'), true);
@@ -1433,8 +1437,9 @@ test('operator handoff payload mirrors the ranked queue and sales commands in ma
   assert.equal(warmSection.targets[0].contactSurfaces[0].label, 'Reddit DM');
   assert.equal(selfServeSection.targets[0].label, '@self_serve_builder - claude-code-hooks');
   assert.equal(selfServeSection.targets[0].motionLabel, catalog.pro.label);
-  assert.equal(coldSection.targets[0].label, '@builder - production-mcp-server');
-  assert.equal(coldSection.targets[0].contactSurfaces[1].url, 'https://github.com/builder');
+  assert.equal(productionSection.targets[0].label, '@builder - production-mcp-server');
+  assert.equal(productionSection.targets[0].contactSurfaces[1].url, 'https://github.com/builder');
+  assert.equal(coldSection.targets.length, 0);
 });
 
 test('first-touch outreach does not push proof before pain is confirmed', () => {
