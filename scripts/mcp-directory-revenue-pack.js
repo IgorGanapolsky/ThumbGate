@@ -19,14 +19,14 @@ const REPO_ROOT = path.resolve(__dirname, '..');
 const DOCS_PATH = path.join(REPO_ROOT, 'docs', 'marketing', 'mcp-directory-revenue-pack.md');
 const MCP_SO_URL = 'https://mcp.so/server/thumbgate/IgorGanapolsky';
 const GLAMA_SEARCH_URL = 'https://glama.ai/mcp/servers?query=thumbgate';
-const GLAMA_LEGACY_URL = 'https://glama.ai/mcp/servers/IgorGanapolsky/mcp-memory-gateway';
+const GLAMA_CANONICAL_URL = 'https://glama.ai/mcp/servers/IgorGanapolsky/ThumbGate';
 const SMITHERY_SEARCH_URL = 'https://smithery.ai/search?q=thumbgate';
 const SMITHERY_DETAILS_URL = 'https://smithery.ai/servers/rlhf-loop/thumbgate';
 const PUNKPEYE_LIST_URL = 'https://github.com/punkpeye/awesome-mcp-servers';
 const APPCYPHER_LIST_URL = 'https://github.com/appcypher/awesome-mcp-servers';
 const MCP_DIRECTORIES_GUIDE_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/marketing/mcp-directories.md';
 const MCP_HUB_SUBMISSION_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/mcp-hub-submission.md';
-const CHECKED_AT = '2026-04-29';
+const CHECKED_AT = '2026-04-30';
 const DIRECTORY_SOURCE = 'mcp_directories';
 const DIRECTORY_MEDIUM = 'directory';
 const DIRECTORY_SURFACE = 'mcp_directory';
@@ -57,16 +57,16 @@ function buildSurfaces() {
     },
     {
       key: 'glama',
-      name: 'Glama search result',
-      role: 'High-volume MCP registry search surface that still leaks legacy naming.',
-      publicStatus: 'Search for `thumbgate` resolves to the legacy slug `IgorGanapolsky/mcp-memory-gateway`.',
-      operatorUse: 'Repair the public slug, summary, and package naming before pushing more Glama-facing discovery.',
+      name: 'Glama canonical listing',
+      role: 'High-volume MCP registry surface where the canonical slug is live but listing metadata still leaks legacy positioning.',
+      publicStatus: 'Search for `thumbgate` resolves to the canonical `IgorGanapolsky/ThumbGate` listing.',
+      operatorUse: 'Treat Glama as partially repaired: keep the canonical slug, but refresh the listing description and config language before pushing more discovery.',
       surfaceUrl: GLAMA_SEARCH_URL,
-      submissionPath: GLAMA_LEGACY_URL,
+      submissionPath: GLAMA_CANONICAL_URL,
       support: MCP_DIRECTORIES_GUIDE_URL,
       evidenceCheckedAt: CHECKED_AT,
-      evidenceSummary: 'Search HTML exposes `ThumbGate` as the display name but still points to the legacy `mcp-memory-gateway` slug and legacy plain-text description.',
-      nextRepair: 'Claim or update the listing so the slug, repo name, and summary are ThumbGate-only and no longer mention the old gateway positioning.',
+      evidenceSummary: 'Glama search schema now points to `IgorGanapolsky/ThumbGate`, but the page still exposes the old memory-gateway plain-text description and RLHF-prefixed runtime keys.',
+      nextRepair: 'Refresh the listing description, package-facing copy, and exposed runtime env names so the Glama surface is ThumbGate-only end to end.',
       proof: VERIFICATION_EVIDENCE_LINK,
     },
     {
@@ -163,15 +163,15 @@ function buildFollowOnOffers(links = buildRevenueLinks()) {
 }
 
 function buildOperatorQueue() {
-  return [
+    return [
     {
-      key: 'repair_glama_slug',
+      key: 'repair_glama_listing_copy',
       audience: 'Glama listing owner or claimant',
-      evidence: 'Search for `thumbgate` still resolves to `IgorGanapolsky/mcp-memory-gateway`, which leaks the retired product identity into a major MCP registry.',
-      proofTrigger: 'Do this before sending more discovery traffic into Glama because the current slug and summary still encode legacy positioning.',
+      evidence: 'Glama now resolves `thumbgate` to the canonical `IgorGanapolsky/ThumbGate` listing, but the page still exposes the old memory-gateway description and RLHF-prefixed runtime keys.',
+      proofTrigger: 'Do this before sending more discovery traffic into Glama because the slug is fixed but the buyer-facing copy still leaks retired positioning.',
       proofAsset: GLAMA_SEARCH_URL,
-      nextAsk: GLAMA_LEGACY_URL,
-      recommendedMotion: 'Claim or edit the Glama listing so the slug, summary, and repo link are ThumbGate-only.',
+      nextAsk: GLAMA_CANONICAL_URL,
+      recommendedMotion: 'Update the Glama listing copy so the description, config hints, and repo-facing metadata are ThumbGate-only.',
     },
     {
       key: 'repair_smithery_namespace',
@@ -213,11 +213,11 @@ function buildOperatorQueue() {
 }
 
 function buildOutreachDrafts() {
-  return [
+    return [
     {
-      channel: 'Glama claim or support request',
+      channel: 'Glama listing refresh request',
       audience: 'Glama listing maintainer',
-      draft: 'ThumbGate currently appears in Glama search under the legacy `IgorGanapolsky/mcp-memory-gateway` slug even though the active repository, npm package, and public launch surface are all `ThumbGate`. Please update the slug and summary so the listing points to `IgorGanapolsky/ThumbGate` and uses ThumbGate-only copy.',
+      draft: 'Glama search for `thumbgate` now resolves to the canonical `IgorGanapolsky/ThumbGate` listing, but the buyer-facing plain-text description still describes the old memory gateway and the config hints still expose RLHF-prefixed runtime keys. Please refresh the listing copy and metadata so the Glama surface is ThumbGate-only end to end.',
     },
     {
       channel: 'Smithery publish note',
@@ -259,7 +259,7 @@ function buildMeasurementPlan() {
     milestones: [
       {
         window: 'days_0_30',
-        goal: 'Repair legacy naming on Glama, Smithery, and the highest-reach awesome list before broadening directory distribution.',
+        goal: 'Repair Glama metadata drift, Smithery legacy ownership, and the highest-reach awesome-list repo mismatch before broadening directory distribution.',
         decisionRule: 'Do not add lower-priority directories until the visible legacy-name leaks are fixed or actively queued.',
       },
       {
@@ -287,8 +287,8 @@ function buildMcpDirectoryRevenuePack(links = buildRevenueLinks()) {
     objective: 'Repair MCP directory drift so ThumbGate discovery points to one canonical identity and one proof-backed install path.',
     state: 'directory-repair',
     headline: 'Fix legacy-name MCP directory drift before scaling discovery.',
-    shortDescription: 'ThumbGate already has live MCP directory discovery, but major surfaces still leak retired names and old repo paths. Repair those first, then scale directory acquisition.',
-    summary: 'Current checks show one canonical listing on MCP.so, two legacy-name directory results on Glama and Smithery, one legacy repo entry on the highest-reach awesome list, and one missing awesome-list entry.',
+    shortDescription: 'ThumbGate already has live MCP directory discovery, but major surfaces still leak retired names, old repo paths, or legacy listing metadata. Repair those first, then scale directory acquisition.',
+    summary: 'Current checks show one canonical listing on MCP.so, one canonical-but-copy-stale listing on Glama, one legacy-namespace Smithery result, one legacy repo entry on the highest-reach awesome list, and one missing awesome-list entry.',
     canonicalIdentity: {
       displayName: 'ThumbGate',
       repository: 'https://github.com/IgorGanapolsky/ThumbGate',
@@ -385,7 +385,7 @@ module.exports = {
   DIRECTORY_SOURCE,
   DIRECTORY_SURFACE,
   DOCS_PATH,
-  GLAMA_LEGACY_URL,
+  GLAMA_CANONICAL_URL,
   GLAMA_SEARCH_URL,
   MCP_SO_URL,
   PUNKPEYE_LIST_URL,
