@@ -1446,17 +1446,25 @@ test('first-touch outreach does not push proof before pain is confirmed', () => 
   const catalog = buildMotionCatalog(buildRevenueLinks());
   const selectedMotion = selectOutreachMotion({
     username: 'builder',
+    source: 'github',
+    channel: 'github',
     repoName: 'production-mcp-server',
     description: 'MCP server for production agent workflows.',
   }, catalog);
   const message = buildFallbackMessage({
     username: 'builder',
+    source: 'github',
+    channel: 'github',
     repoName: 'production-mcp-server',
   }, selectedMotion, catalog);
+  const trackedUrl = new URL(message.match(/https:\/\/\S+/)[0]);
 
   assert.equal(selectedMotion.key, 'sprint');
   assert.match(message, /harden/);
   assert.match(message, /prevention gate and proof run/);
+  assert.equal(trackedUrl.searchParams.get('utm_source'), 'github');
+  assert.equal(trackedUrl.searchParams.get('utm_medium'), 'github');
+  assert.equal(trackedUrl.searchParams.get('cta_id'), 'revenue_loop_sprint_first_touch');
   assert.doesNotMatch(message, /Lead with/i);
   assert.doesNotMatch(message, /VERIFICATION_EVIDENCE/);
   assert.doesNotMatch(message, /COMMERCIAL_TRUTH/);
@@ -1466,6 +1474,8 @@ test('first-touch outreach applies the evidence angle without leaking operator i
   const catalog = buildMotionCatalog(buildRevenueLinks());
   const selectedMotion = selectOutreachMotion({
     username: 'freema',
+    source: 'github',
+    channel: 'github',
     repoName: 'mcp-jira-stdio',
     description: 'MCP server for Jira integration with workflow approvals and issue handoffs.',
     evidence: {
@@ -1475,6 +1485,8 @@ test('first-touch outreach applies the evidence angle without leaking operator i
   }, catalog);
   const message = buildFallbackMessage({
     username: 'freema',
+    source: 'github',
+    channel: 'github',
     repoName: 'mcp-jira-stdio',
     description: 'MCP server for Jira integration with workflow approvals and issue handoffs.',
   }, selectedMotion, catalog);
@@ -1655,19 +1667,27 @@ test('pro first-touch outreach stays discovery-first and defers checkout links',
   const catalog = buildMotionCatalog(buildRevenueLinks());
   const selectedMotion = selectOutreachMotion({
     username: 'builder',
+    source: 'github',
+    channel: 'github',
     repoName: 'mcp-demo-template',
     description: 'Tutorial and demo template for Claude Code builders.',
   }, catalog);
   const message = buildFallbackMessage({
     username: 'builder',
+    source: 'github',
+    channel: 'github',
     repoName: 'mcp-demo-template',
     description: 'Tutorial and demo template for Claude Code builders.',
   }, selectedMotion, catalog);
+  const guideUrl = new URL(message.match(/https:\/\/\S+/)[0]);
 
   assert.equal(selectedMotion.key, 'pro');
   assert.match(message, /self-serve tool path/i);
   assert.match(message, /proof-backed setup guide/i);
   assert.match(message, /thumbgate-production\.up\.railway\.app\/guide/);
+  assert.equal(guideUrl.searchParams.get('utm_source'), 'github');
+  assert.equal(guideUrl.searchParams.get('utm_medium'), 'github');
+  assert.equal(guideUrl.searchParams.get('cta_id'), 'revenue_loop_guide_first_touch');
   assert.doesNotMatch(message, /checkout\/pro/);
   assert.doesNotMatch(message, /VERIFICATION_EVIDENCE/);
   assert.doesNotMatch(message, /COMMERCIAL_TRUTH/);
@@ -1995,14 +2015,21 @@ test('marketplace copy pack stays tied to current revenue-loop evidence', () => 
   });
   const pack = buildMarketplaceCopy(report);
   const markdown = renderMarketplaceCopyMarkdown(pack);
+  const guideUrl = new URL(pack.recommendedCtas[0].cta);
+  const sprintUrl = new URL(pack.recommendedCtas[1].cta);
+  const proUrl = new URL(pack.recommendedCtas[2].cta);
 
   assert.match(pack.headline, /Harden one AI-agent workflow/i);
   assert.equal(pack.recommendedCtas[0].label, 'Proof-backed setup guide');
   assert.match(pack.recommendedCtas[0].cta, /thumbgate-production\.up\.railway\.app\/guide/);
+  assert.equal(guideUrl.searchParams.get('utm_medium'), 'marketplace_copy');
+  assert.equal(guideUrl.searchParams.get('cta_id'), 'revenue_loop_marketplace_guide');
   assert.equal(pack.recommendedCtas[1].label, catalog.sprint.label);
-  assert.match(pack.recommendedCtas[1].cta, /#workflow-sprint-intake$/);
+  assert.equal(sprintUrl.searchParams.get('utm_medium'), 'marketplace_copy');
+  assert.equal(sprintUrl.searchParams.get('cta_id'), 'revenue_loop_marketplace_sprint');
   assert.equal(pack.recommendedCtas[2].label, catalog.pro.label);
-  assert.match(pack.recommendedCtas[2].cta, /\/checkout\/pro$/);
+  assert.equal(proUrl.searchParams.get('utm_medium'), 'marketplace_copy');
+  assert.equal(proUrl.searchParams.get('cta_id'), 'revenue_loop_marketplace_pro');
   assert.ok(pack.topSignals.some((signal) => /Warm discovery workflows/.test(signal.label)));
   assert.ok(pack.topSignals.some((signal) => /Business-system workflow approvals/.test(signal.label)));
   assert.ok(pack.topSignals.some((signal) => /Self-serve agent tooling/.test(signal.label)));
@@ -2015,7 +2042,7 @@ test('marketplace copy pack stays tied to current revenue-loop evidence', () => 
   assert.match(markdown, /Listing Variants/);
   assert.match(markdown, /Audience: Warm buyers who already named a repeated workflow failure\./);
   assert.match(markdown, /Headline: Turn one repeated AI-agent workflow failure into a proof-backed sprint\./);
-  assert.match(markdown, /Primary CTA: Proof-backed setup guide: https:\/\/thumbgate-production\.up\.railway\.app\/guide/);
+  assert.match(markdown, /Primary CTA: Proof-backed setup guide: https:\/\/thumbgate-production\.up\.railway\.app\/guide\?utm_source=revenue_loop&utm_medium=marketplace_copy/);
   assert.match(markdown, /Proof Policy/);
   assert.match(markdown, /Evidence Backstop/);
   assert.match(markdown, /Use Pro after one blocked repeat or explicit self-serve install intent/i);
@@ -2108,8 +2135,9 @@ test('marketplace copy keeps the Pro CTA when no target currently uses the Pro m
   const markdown = renderMarketplaceCopyMarkdown(pack);
 
   assert.equal(pack.recommendedCtas[2].label, catalog.pro.label);
-  assert.equal(pack.recommendedCtas[2].cta, catalog.pro.cta);
-  assert.match(markdown, /Pro at \$19\/mo or \$149\/yr: https:\/\/thumbgate-production\.up\.railway\.app\/checkout\/pro/);
+  assert.match(pack.recommendedCtas[2].cta, /utm_source=revenue_loop/);
+  assert.match(pack.recommendedCtas[2].cta, /cta_id=revenue_loop_marketplace_pro/);
+  assert.match(markdown, /Pro at \$19\/mo or \$149\/yr: https:\/\/thumbgate-production\.up\.railway\.app\/checkout\/pro\?utm_source=revenue_loop&utm_medium=marketplace_copy/);
   assert.doesNotMatch(markdown, /cta unavailable in this run/);
 });
 
@@ -2760,8 +2788,10 @@ test('runRevenueLoop writes an evidence-backed target queue with discovery warni
     assert.match(report.currentTruth.guideLink, /thumbgate-production\.up\.railway\.app\/guide/);
     assert.ok(Array.isArray(report.marketplaceCopy.topSignals));
     assert.equal(report.marketplaceCopy.recommendedCtas[0].label, 'Proof-backed setup guide');
-    assert.match(report.marketplaceCopy.recommendedCtas[1].cta, /#workflow-sprint-intake$/);
-    assert.match(report.marketplaceCopy.recommendedCtas[2].cta, /\/checkout\/pro$/);
+    assert.match(report.marketplaceCopy.recommendedCtas[1].cta, /utm_source=revenue_loop/);
+    assert.match(report.marketplaceCopy.recommendedCtas[1].cta, /cta_id=revenue_loop_marketplace_sprint/);
+    assert.match(report.marketplaceCopy.recommendedCtas[2].cta, /utm_source=revenue_loop/);
+    assert.match(report.marketplaceCopy.recommendedCtas[2].cta, /cta_id=revenue_loop_marketplace_pro/);
     assert.match(report.targets[0].proofPackTrigger, /buyer confirms pain/);
     assert.match(report.targets[0].painConfirmedFollowUpDraft, /VERIFICATION_EVIDENCE/);
     assert.equal(written.reportDir, reportDir);
