@@ -11,6 +11,7 @@ const {
   buildFallbackMessage,
   buildCheckoutCloseDraft,
   buildOperatorHandoffPayload,
+  buildOperatorSendNowPayload,
   buildMarketplaceCopy,
   buildMotionCatalog,
   buildPainConfirmedFollowUp,
@@ -27,6 +28,7 @@ const {
   prospectTargets,
   renderMarketplaceCopyMarkdown,
   renderOperatorHandoffMarkdown,
+  renderOperatorSendNowCsv,
   renderRevenueLoopMarkdown,
   renderTeamOutreachMessagesMarkdown,
   resolveRevenueLoopSummary,
@@ -2107,6 +2109,8 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     const teamOutreach = fs.readFileSync(path.join(reportDir, 'team-outreach-messages.md'), 'utf8');
     const operatorHandoff = fs.readFileSync(path.join(reportDir, 'operator-priority-handoff.md'), 'utf8');
     const operatorHandoffJson = JSON.parse(fs.readFileSync(path.join(reportDir, 'operator-priority-handoff.json'), 'utf8'));
+    const operatorSendNowCsv = fs.readFileSync(path.join(reportDir, 'operator-send-now.csv'), 'utf8');
+    const operatorSendNowJson = JSON.parse(fs.readFileSync(path.join(reportDir, 'operator-send-now.json'), 'utf8'));
 
     assert.equal(written.reportDir, reportDir);
     assert.equal(written.docsPath, null);
@@ -2119,6 +2123,8 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.ok(fs.existsSync(path.join(reportDir, 'team-outreach-messages.md')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-priority-handoff.md')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-priority-handoff.json')));
+    assert.ok(fs.existsSync(path.join(reportDir, 'operator-send-now.csv')));
+    assert.ok(fs.existsSync(path.join(reportDir, 'operator-send-now.json')));
     assert.match(csv, /^temperature,source,channel,username,accountName,company,contactUrl,contactSurfaces,repoName,repoUrl,updatedAt,offer,pipelineStage,pipelineLeadId,nextOperatorAction,pipelineUpdatedAt,evidenceScore,evidence,evidenceSource,evidenceLinks,claimGuardrails,outreachAngle,motionLabel,motionReason,proofPackTrigger,cta,firstTouchDraft,painConfirmedFollowUpDraft,selfServeFollowUpDraft,checkoutCloseDraft,markContactedCommand,markRepliedCommand,markCallBookedCommand,markCheckoutStartedCommand,markSprintIntakeCommand,markPaidCommand/m);
     assert.match(csv, /"I can harden one workflow, then prove it\."/);
     assert.match(csv, /"If the workflow pain is real, I can send the proof pack\."/);
@@ -2155,6 +2161,13 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.match(operatorHandoff, /Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
     assert.equal(operatorHandoffJson.sections.find((section) => section.key === 'send_now_warm_discovery').label, 'Send Now: Warm Discovery');
     assert.equal(operatorHandoffJson.sections.find((section) => section.key === 'send_now_warm_discovery').targets[0].pipelineLeadId, 'reddit_builder_production_mcp_server');
+    assert.match(operatorSendNowCsv, /^rank,sectionKey,sectionLabel,temperature,source,channel,pipelineStage,pipelineLeadId,username,accountName,company,repoName,repoUrl,contactSurface,contactSurfaces,pipelineUpdatedAt,nextOperatorStep,evidenceScore,evidence,motionLabel,whyNow,proofRule,cta,firstTouchDraft,painConfirmedFollowUpDraft,selfServeFollowUpDraft,checkoutCloseDraft,markContactedCommand,markRepliedCommand,markCallBookedCommand,markCheckoutStartedCommand,markSprintIntakeCommand,markPaidCommand/m);
+    assert.match(operatorSendNowCsv, /send_now_warm_discovery/);
+    assert.match(operatorSendNowCsv, /reddit_builder_production_mcp_server/);
+    assert.match(operatorSendNowCsv, /Builder Labs/);
+    assert.equal(operatorSendNowJson.rows[0].sectionKey, 'send_now_warm_discovery');
+    assert.equal(operatorSendNowJson.rows[0].pipelineLeadId, 'reddit_builder_production_mcp_server');
+    assert.equal(operatorSendNowJson.rows[0].markSprintIntakeCommand.includes('sprint_intake'), true);
   } finally {
     fs.rmSync(reportDir, { recursive: true, force: true });
   }
@@ -2257,9 +2270,68 @@ test('writeRevenueLoopOutputs mirrors dedicated GTM docs instead of overwriting 
     assert.ok(fs.existsSync(path.join(marketingDir, 'team-outreach-messages.md')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'operator-priority-handoff.md')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'operator-priority-handoff.json')));
+    assert.ok(fs.existsSync(path.join(marketingDir, 'operator-send-now.csv')));
+    assert.ok(fs.existsSync(path.join(marketingDir, 'operator-send-now.json')));
   } finally {
     fs.rmSync(repoRoot, { recursive: true, force: true });
   }
+});
+
+test('operator send-now export flattens ranked handoff rows for batch ops', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const report = {
+    generatedAt: '2026-04-25T00:00:00.000Z',
+    directive: {
+      state: 'post-first-dollar',
+      headline: 'Verified booked revenue exists.',
+    },
+    verification: {
+      label: 'Live hosted billing summary verified for this run.',
+    },
+    snapshot: {
+      paidOrders: 2,
+      checkoutStarts: 5,
+    },
+    targets: [{
+      temperature: 'warm',
+      source: 'reddit',
+      channel: 'reddit_dm',
+      username: 'builder',
+      accountName: 'r/ClaudeCode',
+      company: 'Builder Labs',
+      contactUrl: 'https://www.reddit.com/user/builder/',
+      contactSurfaces: [
+        {
+          label: 'Reddit DM',
+          url: 'https://www.reddit.com/user/builder/',
+        },
+      ],
+      repoName: 'production-mcp-server',
+      repoUrl: 'https://github.com/example/production-mcp-server',
+      selectedMotion: catalog.sprint,
+      pipelineStage: 'targeted',
+      evidenceScore: 9,
+      evidence: ['workflow control surface', '42 GitHub stars'],
+      motionLabel: catalog.sprint.label,
+      motionReason: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
+      proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+      cta: catalog.sprint.cta,
+      firstTouchDraft: 'I can harden one workflow, then prove it.',
+      painConfirmedFollowUpDraft: 'If the workflow pain is real, I can send the proof pack.',
+    }],
+  };
+
+  const payload = buildOperatorSendNowPayload(report);
+  const csv = renderOperatorSendNowCsv(report);
+
+  assert.equal(payload.rows.length, 1);
+  assert.equal(payload.rows[0].sectionKey, 'send_now_warm_discovery');
+  assert.equal(payload.rows[0].pipelineLeadId, 'reddit_builder_production_mcp_server');
+  assert.equal(payload.rows[0].company, 'Builder Labs');
+  assert.match(csv, /send_now_warm_discovery/);
+  assert.match(csv, /Reddit DM: https:\/\/www\.reddit\.com\/user\/builder\//);
+  assert.match(csv, /I can harden one workflow, then prove it\./);
 });
 
 test('warm-target report output does not emit blank repo placeholders in follow-up drafts', () => {

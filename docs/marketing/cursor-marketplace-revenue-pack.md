@@ -1,6 +1,6 @@
 # Cursor Marketplace Revenue Pack
 
-Updated: 2026-04-29T08:47:07.686Z
+Updated: 2026-04-29T23:30:33.829Z
 
 This is a sales operator artifact. It is not proof of installs, paid revenue, directory approval, or marketplace publication by itself.
 

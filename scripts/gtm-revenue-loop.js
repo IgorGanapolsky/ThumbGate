@@ -2073,6 +2073,131 @@ function renderOperatorHandoffMarkdown(report) {
   ].join('\n');
 }
 
+function buildOperatorSendNowPayload(report) {
+  const handoff = buildOperatorHandoffPayload(report);
+  const rows = handoff.sections.flatMap((section) => (
+    section.targets.map((target) => ({
+      rank: Number(target.rank || 0),
+      sectionKey: section.key,
+      sectionLabel: section.label,
+      temperature: normalizeText(target.temperature) || 'cold',
+      source: normalizeText(target.source) || 'github',
+      channel: normalizeText(target.channel) || normalizeText(target.source) || 'github',
+      pipelineStage: normalizeText(target.pipelineStage) || 'targeted',
+      pipelineLeadId: normalizeText(target.pipelineLeadId) || 'n/a',
+      username: normalizeText(target.username),
+      accountName: normalizeText(target.accountName),
+      company: normalizeText(target.company),
+      repoName: normalizeText(target.repoName),
+      repoUrl: normalizeText(target.repoUrl),
+      contactSurface: normalizeText(target.contactSurface),
+      contactSurfaces: dedupeContactSurfaces(target.contactSurfaces),
+      pipelineUpdatedAt: normalizeText(target.pipelineUpdatedAt),
+      nextOperatorStep: normalizeText(target.nextOperatorStep),
+      evidenceScore: Number(target.evidenceScore || 0),
+      evidence: Array.isArray(target.evidence) ? target.evidence : [],
+      motionLabel: normalizeText(target.motionLabel),
+      whyNow: normalizeText(target.whyNow),
+      proofRule: normalizeText(target.proofRule),
+      cta: normalizeText(target.cta),
+      firstTouchDraft: normalizeText(target.firstTouchDraft),
+      painConfirmedFollowUpDraft: normalizeText(target.painConfirmedFollowUpDraft),
+      selfServeFollowUpDraft: normalizeText(target.selfServeFollowUpDraft),
+      checkoutCloseDraft: normalizeText(target.checkoutCloseDraft),
+      markContactedCommand: normalizeText(target.salesCommands?.markContacted),
+      markRepliedCommand: normalizeText(target.salesCommands?.markReplied),
+      markCallBookedCommand: normalizeText(target.salesCommands?.markCallBooked),
+      markCheckoutStartedCommand: normalizeText(target.salesCommands?.markCheckoutStarted),
+      markSprintIntakeCommand: normalizeText(target.salesCommands?.markSprintIntake),
+      markPaidCommand: normalizeText(target.salesCommands?.markPaid),
+    }))
+  ));
+
+  return {
+    generatedAt: handoff.generatedAt,
+    summary: handoff.summary,
+    rows,
+  };
+}
+
+function renderOperatorSendNowCsv(report) {
+  const payload = buildOperatorSendNowPayload(report);
+  const rows = [
+    [
+      'rank',
+      'sectionKey',
+      'sectionLabel',
+      'temperature',
+      'source',
+      'channel',
+      'pipelineStage',
+      'pipelineLeadId',
+      'username',
+      'accountName',
+      'company',
+      'repoName',
+      'repoUrl',
+      'contactSurface',
+      'contactSurfaces',
+      'pipelineUpdatedAt',
+      'nextOperatorStep',
+      'evidenceScore',
+      'evidence',
+      'motionLabel',
+      'whyNow',
+      'proofRule',
+      'cta',
+      'firstTouchDraft',
+      'painConfirmedFollowUpDraft',
+      'selfServeFollowUpDraft',
+      'checkoutCloseDraft',
+      'markContactedCommand',
+      'markRepliedCommand',
+      'markCallBookedCommand',
+      'markCheckoutStartedCommand',
+      'markSprintIntakeCommand',
+      'markPaidCommand',
+    ],
+    ...payload.rows.map((row) => [
+      String(row.rank || 0),
+      row.sectionKey,
+      row.sectionLabel,
+      row.temperature,
+      row.source,
+      row.channel,
+      row.pipelineStage,
+      row.pipelineLeadId,
+      row.username,
+      row.accountName,
+      row.company,
+      row.repoName,
+      row.repoUrl,
+      row.contactSurface,
+      renderContactSurfaces(row.contactSurfaces),
+      row.pipelineUpdatedAt,
+      row.nextOperatorStep,
+      String(row.evidenceScore || 0),
+      row.evidence.join('; '),
+      row.motionLabel,
+      row.whyNow,
+      row.proofRule,
+      row.cta,
+      row.firstTouchDraft,
+      row.painConfirmedFollowUpDraft,
+      row.selfServeFollowUpDraft,
+      row.checkoutCloseDraft,
+      row.markContactedCommand,
+      row.markRepliedCommand,
+      row.markCallBookedCommand,
+      row.markCheckoutStartedCommand,
+      row.markSprintIntakeCommand,
+      row.markPaidCommand,
+    ]),
+  ];
+
+  return `${rows.map((row) => row.map(escapeCsvValue).join(',')).join('\n')}\n`;
+}
+
 function renderTeamOutreachMessagesMarkdown(report) {
   const warmTargets = Array.isArray(report?.targets)
     ? report.targets.map(enrichRenderableTarget).filter((target) => target.temperature === 'warm')
@@ -2292,6 +2417,8 @@ function writeRevenueLoopOutputs(report, options = {}) {
   const teamOutreachDocsPath = path.join(docsDir, 'team-outreach-messages.md');
   const operatorHandoffDocsPath = path.join(docsDir, 'operator-priority-handoff.md');
   const operatorHandoffJsonDocsPath = path.join(docsDir, 'operator-priority-handoff.json');
+  const operatorSendNowCsvDocsPath = path.join(docsDir, 'operator-send-now.csv');
+  const operatorSendNowJsonDocsPath = path.join(docsDir, 'operator-send-now.json');
   const markdown = renderRevenueLoopMarkdown(report);
   const marketplaceCopy = report.marketplaceCopy || buildMarketplaceCopy(report);
   const marketplaceMarkdown = renderMarketplaceCopyMarkdown(marketplaceCopy);
@@ -2300,6 +2427,8 @@ function writeRevenueLoopOutputs(report, options = {}) {
   const teamOutreachMarkdown = renderTeamOutreachMessagesMarkdown(report);
   const operatorHandoff = buildOperatorHandoffPayload(report);
   const operatorHandoffMarkdown = renderOperatorHandoffMarkdown(report);
+  const operatorSendNow = buildOperatorSendNowPayload(report);
+  const operatorSendNowCsv = renderOperatorSendNowCsv(report);
   const reportDir = normalizeText(options.reportDir)
     ? path.resolve(repoRoot, options.reportDir)
     : '';
@@ -2316,6 +2445,8 @@ function writeRevenueLoopOutputs(report, options = {}) {
     fs.writeFileSync(path.join(reportDir, 'team-outreach-messages.md'), teamOutreachMarkdown, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'operator-priority-handoff.md'), operatorHandoffMarkdown, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'operator-priority-handoff.json'), `${JSON.stringify(operatorHandoff, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(path.join(reportDir, 'operator-send-now.csv'), operatorSendNowCsv, 'utf8');
+    fs.writeFileSync(path.join(reportDir, 'operator-send-now.json'), `${JSON.stringify(operatorSendNow, null, 2)}\n`, 'utf8');
   }
 
   if (shouldWriteDocs) {
@@ -2329,6 +2460,8 @@ function writeRevenueLoopOutputs(report, options = {}) {
     fs.writeFileSync(teamOutreachDocsPath, teamOutreachMarkdown, 'utf8');
     fs.writeFileSync(operatorHandoffDocsPath, operatorHandoffMarkdown, 'utf8');
     fs.writeFileSync(operatorHandoffJsonDocsPath, `${JSON.stringify(operatorHandoff, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(operatorSendNowCsvDocsPath, operatorSendNowCsv, 'utf8');
+    fs.writeFileSync(operatorSendNowJsonDocsPath, `${JSON.stringify(operatorSendNow, null, 2)}\n`, 'utf8');
   }
 
   return {
@@ -2443,7 +2576,9 @@ module.exports = {
   renderRevenueLoopMarkdown,
   renderMarketplaceCopyMarkdown,
   buildOperatorHandoffPayload,
+  buildOperatorSendNowPayload,
   renderOperatorHandoffMarkdown,
+  renderOperatorSendNowCsv,
   renderTeamOutreachMessagesMarkdown,
   resolveRevenueLoopSummary,
   runRevenueLoop,
