@@ -123,7 +123,81 @@ __GA_BOOTSTRAP__
       "description": "Annual Pro for individual operators who want personal enforcement proof, the local dashboard, and proof-ready exports",
       "url": "https://thumbgate-production.up.railway.app/checkout/pro?plan_id=pro&billing_cycle=annual&landing_path=%2F"
     }
+  ],
+  "potentialAction": [
+    {
+      "@type": "InstallAction",
+      "name": "Install ThumbGate Free",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://thumbgate-production.up.railway.app/guide",
+        "actionPlatform": [
+          "https://schema.org/DesktopWebPlatform"
+        ]
+      }
+    },
+    {
+      "@type": "BuyAction",
+      "name": "Start ThumbGate Pro",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://thumbgate-production.up.railway.app/checkout/pro?plan_id=pro&landing_path=%2F",
+        "actionPlatform": [
+          "https://schema.org/DesktopWebPlatform"
+        ]
+      },
+      "expectsAcceptanceOf": {
+        "@type": "Offer",
+        "name": "Pro Monthly",
+        "price": "19",
+        "priceCurrency": "USD",
+        "url": "https://thumbgate-production.up.railway.app/checkout/pro?plan_id=pro&landing_path=%2F"
+      }
+    },
+    {
+      "@type": "CommunicateAction",
+      "name": "Start Workflow Hardening Sprint intake",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+        "actionPlatform": [
+          "https://schema.org/DesktopWebPlatform"
+        ]
+      }
+    }
   ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "name": "ThumbGate Workflow Hardening Sprint",
+  "serviceType": "AI-agent workflow hardening sprint",
+  "provider": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate-production.up.railway.app"
+  },
+  "url": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+  "description": "Founder-led workflow hardening for one AI-agent workflow that needs approval boundaries, rollback safety, and rollout proof before wider team rollout.",
+  "offers": {
+    "@type": "Offer",
+    "name": "Workflow Hardening Sprint intake",
+    "url": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+  },
+  "potentialAction": {
+    "@type": "CommunicateAction",
+    "name": "Book a workflow hardening intake",
+    "target": {
+      "@type": "EntryPoint",
+      "urlTemplate": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+      "actionPlatform": [
+        "https://schema.org/DesktopWebPlatform"
+      ]
+    }
+  }
 }
 </script>
 
