@@ -1,6 +1,6 @@
 # Workflow Hardening Sprint Outreach Messages
 
-Updated: 2026-04-30T14:22:08.083Z
+Updated: 2026-04-30T15:00:04.739Z
 
 These drafts are generated from the same evidence-backed revenue-loop report as `gtm-revenue-loop.md`, `gtm-target-queue.csv`, and `gtm-marketplace-copy.md`.
 Use `operator-priority-handoff.md` for the ranked send order; this file is the copy layer for warm outreach only.
