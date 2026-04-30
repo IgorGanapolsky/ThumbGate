@@ -135,10 +135,10 @@ Track next step: `npm run sales:pipeline -- advance --lead 'github_iliaal_compou
 - Evidence score: 12
 - Evidence: workflow control surface, self-serve agent tooling, 247 GitHub stars, updated in the last 7 days
 - Why now: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
-- CTA: https://thumbgate-production.up.railway.app/guide
+- CTA: https://thumbgate-production.up.railway.app/guides/opencode-cli-guardrails
 
 First-touch draft:
-> Hey @zaxbysauce, saw you're building around `opencode-swarm`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
+> Hey @zaxbysauce, saw you're building around `opencode-swarm`. If you want the clean self-serve OpenCode path first, start with the proof-backed OpenCode guardrails guide: https://thumbgate-production.up.railway.app/guides/opencode-cli-guardrails. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
 
 Pain-confirmed follow-up:
 > If you want the self-serve path for `opencode-swarm`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
