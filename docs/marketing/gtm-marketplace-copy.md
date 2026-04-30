@@ -32,6 +32,47 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 - Business-system workflow approvals (4): Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Examples: dolutech/engine_context, Adqui9608/ai-code-review-agent, Abhi268170/Stagix
 - Self-serve agent tooling (3): Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible. Examples: Abhi268170/Stagix, zaxbysauce/opencode-swarm, iliaal/compound-engineering-plugin
 
+## Listing Variants
+### Workflow control surfaces
+- Audience: Operators with visible workflow-control surfaces and repeated handoff failures.
+- Headline: Harden one workflow control surface before the next agent rollout.
+- Short description: Lead with one repeated approval, review, or handoff failure and show how ThumbGate turns it into an enforceable pre-action gate.
+- Evidence: The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive.
+- Listing angle: Lead with one repeated workflow failure, then show how ThumbGate turns it into an enforceable pre-action gate.
+- Primary CTA: Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Secondary CTA: Proof-backed setup guide: https://thumbgate-production.up.railway.app/guide
+- Sample targets: dolutech/engine_context, Adqui9608/ai-code-review-agent, Abhi268170/Stagix
+
+### Warm discovery workflows
+- Audience: Warm buyers who already named a repeated workflow failure.
+- Headline: Turn one repeated AI-agent workflow failure into a proof-backed sprint.
+- Short description: Lead with one concrete workflow failure, then offer a founder-led hardening diagnostic before any generic tool pitch.
+- Evidence: Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain.
+- Listing angle: Lead with one repeated workflow failure and a founder-led diagnostic before any generic tool pitch.
+- Primary CTA: Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Secondary CTA: Proof-backed setup guide: https://thumbgate-production.up.railway.app/guide
+- Sample targets: @Deep_Ad1959, @game-of-kton, @leogodin217
+
+### Business-system workflow approvals
+- Audience: Teams wiring agents into approval-heavy business systems.
+- Headline: Add approval boundaries and rollback safety to one agent workflow.
+- Short description: Lead with one workflow in Jira, GitHub, ServiceNow, Slack, or CRM systems that needs proof before wider rollout.
+- Evidence: Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof.
+- Listing angle: Lead with approval boundaries, rollback safety, and proof for one workflow.
+- Primary CTA: Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Secondary CTA: Proof-backed setup guide: https://thumbgate-production.up.railway.app/guide
+- Sample targets: dolutech/engine_context, Adqui9608/ai-code-review-agent, Abhi268170/Stagix
+
+### Self-serve agent tooling
+- Audience: Plugin, hook, and local-rule buyers who want the fastest self-serve proof path first.
+- Headline: Block repeated agent mistakes before the next install or config rollout.
+- Short description: Lead with the proof-backed setup guide first, then route install-intent buyers to Pro after one blocked repeat or explicit self-serve intent.
+- Evidence: Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.
+- Listing angle: Lead with the proof-backed setup guide first, then convert proven local usage into Pro.
+- Primary CTA: Proof-backed setup guide: https://thumbgate-production.up.railway.app/guide
+- Secondary CTA: Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro
+- Sample targets: Abhi268170/Stagix, zaxbysauce/opencode-swarm, iliaal/compound-engineering-plugin
+
 ## Proof Policy
 - Do not lead with proof links. Use Commercial Truth and Verification Evidence only after the buyer confirms pain.
 

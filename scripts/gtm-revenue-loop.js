@@ -18,15 +18,13 @@ const TARGET_SEARCH_QUERIES = [
   'search/repositories?q=Model+Context+Protocol+workflow+automation+sort:updated',
   'search/repositories?q=Model+Context+Protocol+approval+workflow+sort:updated',
   'search/repositories?q=ServiceNow+MCP+workflow+sort:updated',
-  'search/repositories?q=ServiceNow+agent+workflow+sort:updated',
   'search/repositories?q=Claude+Code+review+automation+sort:updated',
+  'search/repositories?q=GitLab+review+automation+agent+sort:updated',
   'search/repositories?q=github+review+automation+agent+sort:updated',
   'search/repositories?q=review+workflow+automation+agent+sort:updated',
   'search/repositories?q=approval+workflow+github+agent+sort:updated',
   'search/repositories?q=incident+workflow+automation+agent+sort:updated',
   'search/repositories?q=jira+approval+workflow+agent+sort:updated',
-  'search/repositories?q=agent+approval+policy+sort:updated',
-  'search/repositories?q=workflow+guardrails+agent+sort:updated',
   'search/repositories?q=Claude+Code+hooks+sort:updated',
   'search/repositories?q=Codex+plugin+sort:updated',
   'search/repositories?q=Cursor+rules+sort:updated',
@@ -107,6 +105,43 @@ const MARKETPLACE_SIGNAL_THEMES = [
     match: (target) => hasEvidenceLabel(target, 'self-serve agent tooling'),
   },
 ];
+const MARKETPLACE_VARIANT_TEMPLATES = {
+  warm_discovery: {
+    audience: 'Warm buyers who already named a repeated workflow failure.',
+    headline: 'Turn one repeated AI-agent workflow failure into a proof-backed sprint.',
+    shortDescription: 'Lead with one concrete workflow failure, then offer a founder-led hardening diagnostic before any generic tool pitch.',
+    primaryMotion: 'sprint',
+    secondaryMotion: 'guide',
+  },
+  business_system_workflows: {
+    audience: 'Teams wiring agents into approval-heavy business systems.',
+    headline: 'Add approval boundaries and rollback safety to one agent workflow.',
+    shortDescription: 'Lead with one workflow in Jira, GitHub, ServiceNow, Slack, or CRM systems that needs proof before wider rollout.',
+    primaryMotion: 'sprint',
+    secondaryMotion: 'guide',
+  },
+  production_rollout: {
+    audience: 'Platform teams protecting production, release, incident, or compliance workflows.',
+    headline: 'Prove one production agent workflow is safe before the next rollout.',
+    shortDescription: 'Lead with one production workflow where repeated mistakes, rollback risk, or audit pressure already make the pain expensive.',
+    primaryMotion: 'sprint',
+    secondaryMotion: 'guide',
+  },
+  workflow_control: {
+    audience: 'Operators with visible workflow-control surfaces and repeated handoff failures.',
+    headline: 'Harden one workflow control surface before the next agent rollout.',
+    shortDescription: 'Lead with one repeated approval, review, or handoff failure and show how ThumbGate turns it into an enforceable pre-action gate.',
+    primaryMotion: 'sprint',
+    secondaryMotion: 'guide',
+  },
+  self_serve_tooling: {
+    audience: 'Plugin, hook, and local-rule buyers who want the fastest self-serve proof path first.',
+    headline: 'Block repeated agent mistakes before the next install or config rollout.',
+    shortDescription: 'Lead with the proof-backed setup guide first, then route install-intent buyers to Pro after one blocked repeat or explicit self-serve intent.',
+    primaryMotion: 'guide',
+    secondaryMotion: 'pro',
+  },
+};
 const CLAIM_GUARDRAILS = [
   'Do not claim revenue, installs, or marketplace approval without direct command evidence.',
   'Do not lead with proof links before the buyer confirms pain.',
@@ -372,15 +407,16 @@ function buildTargetPainHypothesis(target = {}) {
   const sanitizePain = (value) => {
     const normalized = normalizeText(value, 240);
     if (!normalized) return null;
-    let end = normalized.length;
+    const stripped = normalized.replace(/^Lead with\s+/i, '');
+    let end = stripped.length;
     while (end > 0) {
-      const char = normalized[end - 1];
+      const char = stripped[end - 1];
       if (char !== '.' && char !== '!' && char !== '?' && !/\s/.test(char)) {
         break;
       }
       end -= 1;
     }
-    return normalized.slice(0, end) || null;
+    return stripped.slice(0, end) || null;
   };
   const extractSuffix = (entry, prefix) => {
     const normalized = normalizeText(entry, 400);
@@ -403,11 +439,17 @@ function buildTargetPainHypothesis(target = {}) {
   }
 
   const outreachAngle = normalizeText(target.outreachAngle || target.evidence?.outreachAngle, 240);
-  if (outreachAngle) {
-    return sanitizePain(outreachAngle.replace(/^Lead with\s+/i, ''));
+  const motionReason = normalizeText(target.motionReason || target.selectedMotion?.reason, 240);
+  const motionKey = normalizeText(target.motion || target.selectedMotion?.key).toLowerCase();
+  const sanitizedMotionReason = sanitizePain(motionReason);
+  const sanitizedOutreachAngle = sanitizePain(outreachAngle);
+
+  if (motionKey === 'pro' && sanitizedOutreachAngle) {
+    return sanitizedOutreachAngle;
   }
 
-  return sanitizePain(target.motionReason || target.selectedMotion?.reason)
+  return sanitizedMotionReason
+    || sanitizedOutreachAngle
     || 'one repeated workflow failure';
 }
 
@@ -1032,10 +1074,10 @@ function analyzeTargetEvidence(target) {
   let outreachAngle = 'Pitch one repeated workflow failure, then offer proof-backed hardening instead of a generic tool trial.';
   if (/\b(jira|github|gitlab|microsoft ?365|office|google drive|calendar|slack|salesforce|crm|analytics)\b/.test(haystack)) {
     outreachAngle = 'Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.';
-  } else if (/\b(production|platform|deploy|deployment|incident|sre|ci|cd|release|security|compliance)\b/.test(haystack)) {
-    outreachAngle = 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.';
   } else if (isSelfServeToolingProspect(target)) {
     outreachAngle = 'Lead with the proof-backed setup guide and local-first enforcement before any team-motion pitch.';
+  } else if (/\b(production|platform|deploy|deployment|incident|sre|ci|cd|release|security|compliance)\b/.test(haystack)) {
+    outreachAngle = 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.';
   } else if (/\b(memory|context|agent|orchestrator|tool use)\b/.test(haystack)) {
     outreachAngle = 'Lead with context-drift hardening for one workflow before proposing any broader agent platform story.';
   }
@@ -1469,6 +1511,9 @@ function resolveMotionLabel(report, motionKey) {
 
 function resolveMotionCta(report, motionKey) {
   const links = buildRevenueLinks();
+  if (motionKey === 'guide') {
+    return normalizeText(report.currentTruth?.guideLink) || links.guideLink;
+  }
   if (motionKey === 'pro') {
     return normalizeText(report.currentTruth?.publicSelfServeCta) || links.proCheckoutLink;
   }
@@ -1482,6 +1527,42 @@ function resolveMotionCta(report, motionKey) {
     return matchingTarget.cta;
   }
   return '';
+}
+
+function resolveMarketplaceVariantLabel(report, motionKey) {
+  if (motionKey === 'guide') {
+    return 'Proof-backed setup guide';
+  }
+  return resolveMotionLabel(report, motionKey);
+}
+
+function buildMarketplaceListingVariants(report, signalThemes = []) {
+  return signalThemes.map((theme) => {
+    const template = MARKETPLACE_VARIANT_TEMPLATES[theme.key] || {};
+    const primaryMotion = normalizeText(template.primaryMotion) || 'sprint';
+    const secondaryMotion = normalizeText(template.secondaryMotion) || 'guide';
+
+    return {
+      key: theme.key,
+      label: theme.label,
+      audience: template.audience || 'Buyers already showing evidence for this workflow theme.',
+      headline: template.headline || 'Harden one AI-agent workflow before you roll it out.',
+      shortDescription: template.shortDescription || theme.summary,
+      evidenceSummary: theme.summary,
+      listingAngle: theme.listingAngle,
+      primaryCta: {
+        motion: primaryMotion,
+        label: resolveMarketplaceVariantLabel(report, primaryMotion),
+        cta: resolveMotionCta(report, primaryMotion),
+      },
+      secondaryCta: {
+        motion: secondaryMotion,
+        label: resolveMarketplaceVariantLabel(report, secondaryMotion),
+        cta: resolveMotionCta(report, secondaryMotion),
+      },
+      sampleTargets: Array.isArray(theme.examples) ? theme.examples : [],
+    };
+  });
 }
 
 function buildMarketplaceCopy(report) {
@@ -1563,6 +1644,7 @@ function buildMarketplaceCopy(report) {
       motion: target.motionLabel || resolveMotionLabel(report, target.motion),
       why: target.motionReason || target.outreachAngle || '',
     }));
+  const listingVariants = buildMarketplaceListingVariants(report, signalThemes);
 
   return {
     generatedAt: report.generatedAt,
@@ -1599,6 +1681,7 @@ function buildMarketplaceCopy(report) {
       'Keep approval boundaries, rollback safety, and proof attached to the workflow before rollout.',
     ]),
     topSignals: signalThemes,
+    listingVariants,
     sampleTargets,
     evidenceBackstop: buildEvidenceBackstop(report.currentTruth || {}),
     proofLinks: [
@@ -2028,6 +2111,20 @@ function renderMarketplaceCopyMarkdown(pack) {
   const signalLines = pack.topSignals.length
     ? pack.topSignals.map((signal) => `- ${signal.label} (${signal.count}): ${signal.summary}${signal.examples.length ? ` Examples: ${signal.examples.join(', ')}` : ''}`)
     : ['- No target evidence was available for this run.'];
+  const variantLines = Array.isArray(pack.listingVariants) && pack.listingVariants.length
+    ? pack.listingVariants.flatMap((variant) => [
+      `### ${variant.label}`,
+      `- Audience: ${variant.audience}`,
+      `- Headline: ${variant.headline}`,
+      `- Short description: ${variant.shortDescription}`,
+      `- Evidence: ${variant.evidenceSummary}`,
+      `- Listing angle: ${variant.listingAngle}`,
+      `- Primary CTA: ${variant.primaryCta?.label || 'cta unavailable in this run'}${variant.primaryCta?.cta ? `: ${variant.primaryCta.cta}` : ''}`,
+      `- Secondary CTA: ${variant.secondaryCta?.label || 'cta unavailable in this run'}${variant.secondaryCta?.cta ? `: ${variant.secondaryCta.cta}` : ''}`,
+      `- Sample targets: ${(variant.sampleTargets || []).join(', ') || 'n/a'}`,
+      '',
+    ])
+    : ['- No listing variants available in this run.'];
   const ctaLines = pack.recommendedCtas
     .filter((entry) => entry.label || entry.cta)
     .map((entry) => `- ${entry.label}: ${entry.cta || 'cta unavailable in this run'}`);
@@ -2065,6 +2162,8 @@ function renderMarketplaceCopyMarkdown(pack) {
     '## Evidence-Backed Buyer Signals',
     ...signalLines,
     '',
+    '## Listing Variants',
+    ...variantLines,
     '## Proof Policy',
     `- ${pack.proofPolicy}`,
     '',
