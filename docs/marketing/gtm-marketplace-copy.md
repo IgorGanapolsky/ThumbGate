@@ -6,10 +6,10 @@ This pack is operator-ready listing copy derived from the current GTM revenue lo
 Harden one AI-agent workflow before you roll it out.
 
 ## Short Description
-Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.
+Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.
 
 ## Long Description
-ThumbGate is a reliability gateway for AI coding workflows. It captures repeated failures, regenerates pre-action gates, and keeps approval boundaries, rollback safety, and proof attached to the workflow before the next risky tool call. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible. Primary motion: Workflow Hardening Sprint. Secondary motion: Pro at $19/mo or $149/yr after the buyer asks for the self-serve path.
+ThumbGate is a reliability gateway for AI coding workflows. It captures repeated failures, regenerates pre-action gates, and keeps approval boundaries, rollback safety, and proof attached to the workflow before the next risky tool call. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible. Primary motion: Workflow Hardening Sprint. Secondary motion: Pro at $19/mo or $149/yr after the buyer asks for the self-serve path.
 
 ## Listing Bullets
 - Turn repeated AI-agent mistakes into enforceable pre-action gates.
@@ -27,10 +27,10 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 - Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro
 
 ## Evidence-Backed Buyer Signals
-- Workflow control surfaces (6): The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Examples: dolutech/engine_context, Adqui9608/ai-code-review-agent, Abhi268170/Stagix
+- Workflow control surfaces (5): The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Examples: dolutech/engine_context, Adqui9608/ai-code-review-agent, BaseInfinity/claude-sdlc-wizard
 - Warm discovery workflows (4): Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Examples: @Deep_Ad1959, @game-of-kton, @leogodin217
-- Business-system workflow approvals (4): Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Examples: dolutech/engine_context, Adqui9608/ai-code-review-agent, Abhi268170/Stagix
-- Self-serve agent tooling (3): Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible. Examples: Abhi268170/Stagix, zaxbysauce/opencode-swarm, iliaal/compound-engineering-plugin
+- Production rollout proof (4): Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Examples: jmanhype/claude-code-plugin-marketplace, dolutech/engine_context, Adqui9608/ai-code-review-agent
+- Self-serve agent tooling (4): Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible. Examples: jmanhype/claude-code-plugin-marketplace, BaseInfinity/claude-sdlc-wizard, zaxbysauce/opencode-swarm
 
 ## Listing Variants
 ### Workflow control surfaces
@@ -41,7 +41,7 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 - Listing angle: Lead with one repeated workflow failure, then show how ThumbGate turns it into an enforceable pre-action gate.
 - Primary CTA: Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - Secondary CTA: Proof-backed setup guide: https://thumbgate-production.up.railway.app/guide
-- Sample targets: dolutech/engine_context, Adqui9608/ai-code-review-agent, Abhi268170/Stagix
+- Sample targets: dolutech/engine_context, Adqui9608/ai-code-review-agent, BaseInfinity/claude-sdlc-wizard
 
 ### Warm discovery workflows
 - Audience: Warm buyers who already named a repeated workflow failure.
@@ -53,15 +53,15 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 - Secondary CTA: Proof-backed setup guide: https://thumbgate-production.up.railway.app/guide
 - Sample targets: @Deep_Ad1959, @game-of-kton, @leogodin217
 
-### Business-system workflow approvals
-- Audience: Teams wiring agents into approval-heavy business systems.
-- Headline: Add approval boundaries and rollback safety to one agent workflow.
-- Short description: Lead with one workflow in Jira, GitHub, ServiceNow, Slack, or CRM systems that needs proof before wider rollout.
-- Evidence: Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof.
-- Listing angle: Lead with approval boundaries, rollback safety, and proof for one workflow.
+### Production rollout proof
+- Audience: Platform teams protecting production, release, incident, or compliance workflows.
+- Headline: Prove one production agent workflow is safe before the next rollout.
+- Short description: Lead with one production workflow where repeated mistakes, rollback risk, or audit pressure already make the pain expensive.
+- Evidence: Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems.
+- Listing angle: Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.
 - Primary CTA: Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - Secondary CTA: Proof-backed setup guide: https://thumbgate-production.up.railway.app/guide
-- Sample targets: dolutech/engine_context, Adqui9608/ai-code-review-agent, Abhi268170/Stagix
+- Sample targets: jmanhype/claude-code-plugin-marketplace, dolutech/engine_context, Adqui9608/ai-code-review-agent
 
 ### Self-serve agent tooling
 - Audience: Plugin, hook, and local-rule buyers who want the fastest self-serve proof path first.
@@ -71,7 +71,7 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 - Listing angle: Lead with the proof-backed setup guide first, then convert proven local usage into Pro.
 - Primary CTA: Proof-backed setup guide: https://thumbgate-production.up.railway.app/guide
 - Secondary CTA: Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro
-- Sample targets: Abhi268170/Stagix, zaxbysauce/opencode-swarm, iliaal/compound-engineering-plugin
+- Sample targets: jmanhype/claude-code-plugin-marketplace, BaseInfinity/claude-sdlc-wizard, zaxbysauce/opencode-swarm
 
 ## Proof Policy
 - Do not lead with proof links. Use Commercial Truth and Verification Evidence only after the buyer confirms pain.
@@ -85,8 +85,8 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 
 ## Sample Targets Behind This Copy
 - @Deep_Ad1959 (warm): Warm Reddit engager already named a repeated workflow risk, so the fastest path is a founder-led diagnostic.
-- zaxbysauce/opencode-swarm (cold): Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
-- dolutech/engine_context (cold): Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
+- BaseInfinity/claude-sdlc-wizard (cold): Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
+- jmanhype/claude-code-plugin-marketplace (cold): Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
 - @game-of-kton (warm): Warm Reddit engager already works on advanced agent memory, so discovery should center on one repeated failure pattern.
 - @leogodin217 (warm): Warm Reddit engager already described a mature workflow, so the next step is a targeted diagnostic on one failure mode.
 
