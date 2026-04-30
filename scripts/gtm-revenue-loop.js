@@ -2228,6 +2228,80 @@ function renderOperatorSendNowCsv(report) {
   return `${rows.map((row) => row.map(escapeCsvValue).join(',')).join('\n')}\n`;
 }
 
+function renderOperatorSendNowMarkdown(report) {
+  const payload = buildOperatorSendNowPayload(report);
+  const rowsBySection = payload.rows.reduce((sections, row) => {
+    if (!sections.has(row.sectionKey)) {
+      sections.set(row.sectionKey, {
+        label: row.sectionLabel,
+        rows: [],
+      });
+    }
+    sections.get(row.sectionKey).rows.push(row);
+    return sections;
+  }, new Map());
+  const sectionOrder = [
+    'send_now_warm_discovery',
+    'close_now_self_serve_pro',
+    'send_next_production_rollout',
+    'seed_next_cold_github',
+  ];
+  const sectionLines = sectionOrder.flatMap((sectionKey) => {
+    const section = rowsBySection.get(sectionKey);
+    if (!section || !section.rows.length) {
+      return [];
+    }
+
+    return [
+      `## ${section.label}`,
+      '',
+      ...section.rows.flatMap((row) => ([
+        `### ${row.rank}. ${row.username || row.accountName || row.repoName || row.pipelineLeadId}`,
+        `- Pipeline lead: ${row.pipelineLeadId}`,
+        `- Channel: ${row.source} / ${row.channel}`,
+        `- Stage: ${row.pipelineStage}`,
+        `- Contact surface: ${row.contactSurface || 'n/a'}`,
+        `- Offer: ${row.motionLabel || 'n/a'}`,
+        `- Evidence score: ${Number(row.evidenceScore || 0)}`,
+        `- Evidence: ${row.evidence.length ? row.evidence.join(', ') : 'n/a'}`,
+        `- Why now: ${row.whyNow || row.nextOperatorStep || 'n/a'}`,
+        `- CTA: ${row.cta || 'n/a'}`,
+        `- Proof rule: ${row.proofRule || 'Use proof links only after the buyer confirms pain.'}`,
+        '',
+        'First-touch draft:',
+        `> ${row.firstTouchDraft || 'n/a'}`,
+        '',
+        'Track next step:',
+        `\`${row.markContactedCommand || 'n/a'}\``,
+        '',
+      ])),
+    ];
+  });
+
+  return [
+    '# Operator Send-Now Queue',
+    '',
+    'Status: current',
+    `Updated: ${payload.generatedAt}`,
+    '',
+    'This file is the compact operator send surface derived from the evidence-backed GTM revenue loop.',
+    'It keeps the highest-priority outreach rows, first-touch drafts, and tracking commands in one place.',
+    '',
+    '## Snapshot',
+    `- Revenue state: ${payload.summary?.revenueState || 'unknown'}`,
+    `- Headline: ${payload.summary?.headline || 'No verified headline for this run.'}`,
+    `- Billing verification: ${payload.summary?.billingVerification || 'Billing verification unavailable for this run.'}`,
+    `- Paid orders: ${Number(payload.summary?.paidOrders || 0)}`,
+    `- Warm targets ready now: ${Number(payload.summary?.warmTargetsReadyNow || 0)}`,
+    `- Self-serve targets ready now: ${Number(payload.summary?.selfServeTargetsReadyNow || 0)}`,
+    `- Production rollout targets ready now: ${Number(payload.summary?.productionRolloutTargetsReadyNow || 0)}`,
+    '',
+    'Proof rule: use proof links only after the buyer confirms workflow pain.',
+    '',
+    ...sectionLines,
+  ].join('\n');
+}
+
 function renderTeamOutreachMessagesMarkdown(report) {
   const warmTargets = Array.isArray(report?.targets)
     ? report.targets.map(enrichRenderableTarget).filter((target) => target.temperature === 'warm')
@@ -2447,6 +2521,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
   const teamOutreachDocsPath = path.join(docsDir, 'team-outreach-messages.md');
   const operatorHandoffDocsPath = path.join(docsDir, 'operator-priority-handoff.md');
   const operatorHandoffJsonDocsPath = path.join(docsDir, 'operator-priority-handoff.json');
+  const operatorSendNowMarkdownDocsPath = path.join(docsDir, 'operator-send-now.md');
   const operatorSendNowCsvDocsPath = path.join(docsDir, 'operator-send-now.csv');
   const operatorSendNowJsonDocsPath = path.join(docsDir, 'operator-send-now.json');
   const markdown = renderRevenueLoopMarkdown(report);
@@ -2458,6 +2533,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
   const operatorHandoff = buildOperatorHandoffPayload(report);
   const operatorHandoffMarkdown = renderOperatorHandoffMarkdown(report);
   const operatorSendNow = buildOperatorSendNowPayload(report);
+  const operatorSendNowMarkdown = renderOperatorSendNowMarkdown(report);
   const operatorSendNowCsv = renderOperatorSendNowCsv(report);
   const reportDir = normalizeText(options.reportDir)
     ? path.resolve(repoRoot, options.reportDir)
@@ -2475,6 +2551,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     fs.writeFileSync(path.join(reportDir, 'team-outreach-messages.md'), teamOutreachMarkdown, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'operator-priority-handoff.md'), operatorHandoffMarkdown, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'operator-priority-handoff.json'), `${JSON.stringify(operatorHandoff, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(path.join(reportDir, 'operator-send-now.md'), operatorSendNowMarkdown, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'operator-send-now.csv'), operatorSendNowCsv, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'operator-send-now.json'), `${JSON.stringify(operatorSendNow, null, 2)}\n`, 'utf8');
   }
@@ -2490,6 +2567,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     fs.writeFileSync(teamOutreachDocsPath, teamOutreachMarkdown, 'utf8');
     fs.writeFileSync(operatorHandoffDocsPath, operatorHandoffMarkdown, 'utf8');
     fs.writeFileSync(operatorHandoffJsonDocsPath, `${JSON.stringify(operatorHandoff, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(operatorSendNowMarkdownDocsPath, operatorSendNowMarkdown, 'utf8');
     fs.writeFileSync(operatorSendNowCsvDocsPath, operatorSendNowCsv, 'utf8');
     fs.writeFileSync(operatorSendNowJsonDocsPath, `${JSON.stringify(operatorSendNow, null, 2)}\n`, 'utf8');
   }
@@ -2499,6 +2577,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     marketplaceMarkdown,
     teamOutreachMarkdown,
     operatorHandoffMarkdown,
+    operatorSendNowMarkdown,
     reportDir: reportDir || null,
     docsPath: shouldWriteDocs ? defaultDocsPath : null,
   };
@@ -2608,6 +2687,7 @@ module.exports = {
   buildOperatorHandoffPayload,
   buildOperatorSendNowPayload,
   renderOperatorHandoffMarkdown,
+  renderOperatorSendNowMarkdown,
   renderOperatorSendNowCsv,
   renderTeamOutreachMessagesMarkdown,
   resolveRevenueLoopSummary,
