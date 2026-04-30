@@ -1,6 +1,6 @@
 # MCP Directory Repair Pack
 
-Updated: 2026-04-30T04:26:21.983Z
+Updated: 2026-04-30T06:27:55.921Z
 
 This is a sales operator artifact. It is not proof of directory approval, ranking, installs, or revenue by itself.
 
@@ -86,10 +86,13 @@ Repair MCP directory drift so ThumbGate discovery points to one canonical identi
 ## Follow-On Offers
 - Proof-backed setup guide: Discovery CTA
   Buyer: Directory visitors who want a current install and proof surface before anything sales-led.
-  CTA: https://thumbgate-production.up.railway.app/guide
+  CTA: https://thumbgate-production.up.railway.app/guide?utm_source=mcp_directories&utm_medium=directory&utm_campaign=mcp_directory_guide&utm_content=guide&campaign_variant=directory_repair&offer_code=MCP-DIRECTORY_GUIDE&cta_id=mcp_directory_guide&cta_placement=follow_on_offer&surface=mcp_directory_guide
+- ThumbGate Pro: $19/mo or $149/yr
+  Buyer: Directory visitors who already want the self-serve path and need a tracked paid-intent lane after the guide.
+  CTA: https://thumbgate-production.up.railway.app/checkout/pro?utm_source=mcp_directories&utm_medium=directory&utm_campaign=mcp_directory_pro&utm_content=pro&campaign_variant=self_serve_paid_intent&offer_code=MCP-DIRECTORY_PRO&cta_id=mcp_directory_pro&cta_placement=follow_on_offer&plan_id=pro&surface=mcp_directory_pro
 - Workflow Hardening Sprint: Primary revenue motion
   Buyer: Teams that already named one repeated workflow failure and want rollout proof, not just a directory listing.
-  CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+  CTA: https://thumbgate-production.up.railway.app/?utm_source=mcp_directories&utm_medium=directory&utm_campaign=mcp_directory_sprint&utm_content=workflow_sprint&campaign_variant=repair_to_team_motion&offer_code=MCP-DIRECTORY_SPRINT&cta_id=mcp_directory_sprint&cta_placement=follow_on_offer&surface=mcp_directory_sprint#workflow-sprint-intake
 
 ## Operator Queue
 ### Glama listing owner or claimant
