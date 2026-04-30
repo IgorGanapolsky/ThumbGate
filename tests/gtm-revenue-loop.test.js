@@ -633,6 +633,95 @@ test('prospecting drops portfolio-style repos even when they mention workflows',
   assert.equal(result.targets[0].repoName, 'mcp-jira-stdio');
 });
 
+test('prospecting reserves a third self-serve slot when strong tool-path targets exist', async () => {
+  const selfServeNames = new Set([
+    'codex-plugin-governor',
+    'opencode-swarm',
+    'claude-code-hooks',
+  ]);
+  const result = await prospectTargets(6, {
+    fetchImpl: async (url) => {
+      if (String(url).includes('/users/')) {
+        const username = String(url).split('/').pop();
+        return {
+          ok: true,
+          async text() {
+            return JSON.stringify({
+              html_url: `https://github.com/${username}`,
+              blog: `${username}.dev`,
+              company: `${username}-labs`,
+            });
+          },
+        };
+      }
+
+      return {
+        ok: true,
+        async text() {
+          return JSON.stringify({
+            items: [
+              {
+                owner: { login: 'selfserve1', html_url: 'https://github.com/selfserve1' },
+                name: 'codex-plugin-governor',
+                html_url: 'https://github.com/selfserve1/codex-plugin-governor',
+                description: 'Codex plugin with hooks, status line, local-first install flow, and proof-backed setup.',
+                stargazers_count: 12,
+                updated_at: new Date().toISOString(),
+              },
+              {
+                owner: { login: 'selfserve2', html_url: 'https://github.com/selfserve2' },
+                name: 'opencode-swarm',
+                html_url: 'https://github.com/selfserve2/opencode-swarm',
+                description: 'OpenCode plugin and local hook pack for agent workflow installs and setup.',
+                stargazers_count: 246,
+                updated_at: new Date().toISOString(),
+              },
+              {
+                owner: { login: 'selfserve3', html_url: 'https://github.com/selfserve3' },
+                name: 'claude-code-hooks',
+                html_url: 'https://github.com/selfserve3/claude-code-hooks',
+                description: 'Claude Code hooks, ruleset, installer, and local-first setup for safer coding workflows.',
+                stargazers_count: 8,
+                updated_at: new Date().toISOString(),
+              },
+              {
+                owner: { login: 'core1', html_url: 'https://github.com/core1' },
+                name: 'production-mcp-server',
+                html_url: 'https://github.com/core1/production-mcp-server',
+                description: 'Production MCP server for deployment workflow approvals and audit proof.',
+                stargazers_count: 42,
+                updated_at: new Date().toISOString(),
+              },
+              {
+                owner: { login: 'core2', html_url: 'https://github.com/core2' },
+                name: 'slack-approval-agent',
+                html_url: 'https://github.com/core2/slack-approval-agent',
+                description: 'Slack workflow agent for approval routing, rollback checks, and release governance.',
+                stargazers_count: 19,
+                updated_at: new Date().toISOString(),
+              },
+              {
+                owner: { login: 'core3', html_url: 'https://github.com/core3' },
+                name: 'review-flow',
+                html_url: 'https://github.com/core3/review-flow',
+                description: 'GitHub review workflow automation agent with approval boundaries and audit proof.',
+                stargazers_count: 36,
+                updated_at: new Date().toISOString(),
+              },
+            ],
+          });
+        },
+      };
+    },
+  });
+
+  assert.equal(result.targets.length, 6);
+  assert.equal(
+    result.targets.filter((target) => selfServeNames.has(target.repoName)).length,
+    3,
+  );
+});
+
 test('GitHub discovery reports API and parser failures as non-fatal warnings', async () => {
   const failed = await fetchGitHubJson('search/repositories?q=test', {
     fetchImpl: async () => ({
