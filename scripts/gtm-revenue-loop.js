@@ -25,9 +25,12 @@ const TARGET_SEARCH_QUERIES = [
   'search/repositories?q=approval+workflow+github+agent+sort:updated',
   'search/repositories?q=incident+workflow+automation+agent+sort:updated',
   'search/repositories?q=jira+approval+workflow+agent+sort:updated',
-  'search/repositories?q=Claude+Code+hooks+sort:updated',
-  'search/repositories?q=Codex+plugin+sort:updated',
-  'search/repositories?q=Cursor+rules+sort:updated',
+  'search/repositories?q=Claude+Code+hooks+stars:>=3+sort:updated',
+  'search/repositories?q=Claude+Code+plugin+stars:>=3+sort:updated',
+  'search/repositories?q=Codex+plugin+stars:>=3+sort:updated',
+  'search/repositories?q=OpenCode+plugin+stars:>=3+sort:updated',
+  'search/repositories?q=MCP+plugin+setup+stars:>=3+sort:updated',
+  'search/repositories?q=Cursor+rules+stars:>=3+sort:updated',
 ];
 const SELF_SERVE_ONLY_SIGNALS = /\b(awesome|list|example|template|demo|tutorial|course|personal|dotfiles|toy|boilerplate|learn|learning|playground|starter|sample|sandbox|quickstart|lab)\b/;
 const LOW_BUYER_INTENT_SIGNALS = /\b(learn|learning|tutorial|course|playground|starter|sample|sandbox|quickstart|boilerplate|template|demo|example|lab|portfolio|showcase|case study)\b/;
@@ -1091,8 +1094,13 @@ function analyzeTargetEvidence(target) {
 
 function diversifyRankedTargets(ranked = [], maxTargets = 6) {
   const targetCount = clampTargetCount(maxTargets);
-  const reservedSelfServeSlots = Math.min(2, Math.floor(targetCount / 3));
   const selfServeTargets = ranked.filter(isSelfServeToolingProspect);
+  const strongSelfServeTargets = selfServeTargets.filter((target) => (
+    Number(target.evidence?.score || 0) >= 8 || Number(target.stars || 0) >= 5
+  ));
+  const reservedSelfServeSlots = strongSelfServeTargets.length >= 3 && targetCount >= 6
+    ? 3
+    : Math.min(2, Math.floor(targetCount / 3));
   const coreTargets = ranked.filter((target) => !isSelfServeToolingProspect(target));
   const selected = [];
   const seen = new Set();
@@ -1113,6 +1121,7 @@ function diversifyRankedTargets(ranked = [], maxTargets = 6) {
   };
 
   pushTargets(coreTargets, Math.max(0, targetCount - reservedSelfServeSlots));
+  pushTargets(strongSelfServeTargets, reservedSelfServeSlots);
   pushTargets(selfServeTargets, reservedSelfServeSlots);
   pushTargets(ranked, targetCount);
   return selected.slice(0, targetCount);
