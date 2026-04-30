@@ -9,6 +9,9 @@ const path = require('node:path');
 const {
   APPCYPHER_LIST_URL,
   CHECKED_AT,
+  DIRECTORY_MEDIUM,
+  DIRECTORY_SOURCE,
+  DIRECTORY_SURFACE,
   DOCS_PATH,
   GLAMA_LEGACY_URL,
   GLAMA_SEARCH_URL,
@@ -17,6 +20,7 @@ const {
   SMITHERY_DETAILS_URL,
   SMITHERY_SEARCH_URL,
   buildMcpDirectoryRevenuePack,
+  buildTrackedDirectoryLink,
   isCliInvocation,
   parseArgs,
   renderMcpDirectoryRevenuePackMarkdown,
@@ -73,6 +77,46 @@ test('operator queue focuses on repair before expansion', () => {
   assert.ok(pack.operatorQueue.every((entry) => !/guaranteed ranking|guaranteed revenue/i.test(entry.recommendedMotion)));
 });
 
+test('follow-on offers use tracked directory CTAs for guide, Pro, and sprint lanes', () => {
+  const pack = buildMcpDirectoryRevenuePack(LINKS_FIXTURE);
+
+  assert.equal(pack.followOnOffers.length, 3);
+  assert.equal(pack.followOnOffers[1].label, 'ThumbGate Pro');
+
+  for (const offer of pack.followOnOffers) {
+    const url = new URL(offer.cta);
+    assert.equal(url.searchParams.get('utm_source'), DIRECTORY_SOURCE);
+    assert.equal(url.searchParams.get('utm_medium'), DIRECTORY_MEDIUM);
+    assert.ok(url.searchParams.get('utm_campaign'));
+    assert.ok(url.searchParams.get('cta_id'));
+    assert.ok(url.searchParams.get('offer_code'));
+  }
+
+  const guideUrl = new URL(pack.followOnOffers[0].cta);
+  const proUrl = new URL(pack.followOnOffers[1].cta);
+  const sprintUrl = new URL(pack.followOnOffers[2].cta);
+
+  assert.equal(guideUrl.searchParams.get('surface'), 'mcp_directory_guide');
+  assert.equal(proUrl.searchParams.get('plan_id'), 'pro');
+  assert.equal(proUrl.searchParams.get('surface'), 'mcp_directory_pro');
+  assert.equal(sprintUrl.searchParams.get('surface'), 'mcp_directory_sprint');
+});
+
+test('tracked directory link helper keeps attribution machine-readable', () => {
+  const url = new URL(buildTrackedDirectoryLink('https://thumbgate-production.up.railway.app/guide', {
+    utmCampaign: 'mcp_directory_guide',
+    utmContent: 'guide',
+    campaignVariant: 'directory_repair',
+    offerCode: 'MCP-DIRECTORY_GUIDE',
+    ctaId: 'mcp_directory_guide',
+    ctaPlacement: 'follow_on_offer',
+  }));
+
+  assert.equal(url.searchParams.get('utm_source'), DIRECTORY_SOURCE);
+  assert.equal(url.searchParams.get('utm_medium'), DIRECTORY_MEDIUM);
+  assert.equal(url.searchParams.get('surface'), DIRECTORY_SURFACE);
+});
+
 test('rendered markdown stays operator-ready and names the legacy leaks explicitly', () => {
   const markdown = renderMcpDirectoryRevenuePackMarkdown({
     ...buildMcpDirectoryRevenuePack(LINKS_FIXTURE),
@@ -84,6 +128,8 @@ test('rendered markdown stays operator-ready and names the legacy leaks explicit
   assert.match(markdown, /`rlhf-loop\/thumbgate`/);
   assert.match(markdown, /punkpeye awesome-mcp-servers/);
   assert.match(markdown, /Proof-backed setup guide/);
+  assert.match(markdown, /utm_source=mcp_directories/);
+  assert.match(markdown, /ThumbGate Pro/);
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
   assert.doesNotMatch(markdown, /official registry approved|guaranteed installs|guaranteed revenue/i);
 });
