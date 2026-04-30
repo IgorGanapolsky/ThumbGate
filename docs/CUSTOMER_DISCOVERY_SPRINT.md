@@ -92,6 +92,7 @@ The revenue loop emits these operator artifacts in that folder:
 - `mcp-directory-revenue-pack.md` for MCP directory repair priorities, proof-backed listing status, and canonical naming fixes
 - `mcp-directory-revenue-pack.json` for the same MCP directory repair pack in machine-readable form
 - `mcp-directory-operator-queue.csv` for MCP directory-specific repair tasks and next asks
+- `mcp-directory-surfaces.csv` for one-sheet MCP directory repair and submission fields
 
 That report now carries both warm discovery leads and cold GitHub prospects in one machine-readable queue so the operator can import a single artifact and still contact the warm engagers first.
 Every artifact inherits the same evidence backstop:

@@ -9,10 +9,12 @@ const {
 } = require('./gtm-revenue-loop');
 const {
   buildTrackedPackLink,
+  csvCell,
   isCliInvocation: isCliCall,
   parseReportArgs,
+  renderOperatorQueueCsv,
   renderRevenuePackMarkdown,
-  writeStandardRevenuePack,
+  writeRevenuePackArtifacts,
 } = require('./revenue-pack-utils');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
@@ -336,15 +338,60 @@ function renderMcpDirectoryRevenuePackMarkdown(pack) {
   });
 }
 
+function renderMcpDirectorySurfacesCsv(pack) {
+  const rows = [
+    [
+      'key',
+      'name',
+      'role',
+      'publicStatus',
+      'operatorUse',
+      'surfaceUrl',
+      'submissionPath',
+      'support',
+      'evidenceCheckedAt',
+      'evidenceSummary',
+      'nextRepair',
+      'proof',
+    ],
+    ...(Array.isArray(pack?.surfaces) ? pack.surfaces : []).map((surface) => ([
+      surface.key,
+      surface.name,
+      surface.role,
+      surface.publicStatus,
+      surface.operatorUse,
+      surface.surfaceUrl,
+      surface.submissionPath,
+      surface.support,
+      surface.evidenceCheckedAt,
+      surface.evidenceSummary,
+      surface.nextRepair,
+      surface.proof,
+    ])),
+  ];
+
+  return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
+}
+
 function writeMcpDirectoryRevenuePack(pack, options = {}) {
-  return writeStandardRevenuePack({
+  return writeRevenuePackArtifacts({
     repoRoot: REPO_ROOT,
+    reportDir: options.reportDir,
+    writeDocs: options.writeDocs,
     docsPath: DOCS_PATH,
-    pack,
-    options,
-    renderMarkdown: renderMcpDirectoryRevenuePackMarkdown,
+    markdown: renderMcpDirectoryRevenuePackMarkdown(pack),
     jsonName: 'mcp-directory-revenue-pack.json',
-    csvName: 'mcp-directory-operator-queue.csv',
+    jsonValue: pack,
+    csvArtifacts: [
+      {
+        name: 'mcp-directory-operator-queue.csv',
+        value: renderOperatorQueueCsv(pack?.operatorQueue),
+      },
+      {
+        name: 'mcp-directory-surfaces.csv',
+        value: renderMcpDirectorySurfacesCsv(pack),
+      },
+    ],
   });
 }
 
@@ -396,5 +443,6 @@ module.exports = {
   isCliInvocation,
   parseArgs,
   renderMcpDirectoryRevenuePackMarkdown,
+  renderMcpDirectorySurfacesCsv,
   writeMcpDirectoryRevenuePack,
 };
