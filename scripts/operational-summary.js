@@ -21,11 +21,51 @@ const { resolveHostedBillingConfig } = require('./hosted-config');
 }());
 
 const OPERATOR_CONFIG_PATH = path.join(os.homedir(), '.config', 'thumbgate', 'operator.json');
+const DEFAULT_HOSTED_SUMMARY_TIMEOUT_MS = 10_000;
 
 function normalizeText(value) {
   if (value === undefined || value === null) return null;
   const text = String(value).trim();
   return text || null;
+}
+
+function resolveTimeoutMs(value, fallbackMs = DEFAULT_HOSTED_SUMMARY_TIMEOUT_MS) {
+  const parsed = Number.parseInt(String(value ?? ''), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallbackMs;
+}
+
+async function fetchWithTimeout(url, options = {}, {
+  fetchImpl = global.fetch,
+  timeoutMs = DEFAULT_HOSTED_SUMMARY_TIMEOUT_MS,
+  timeoutLabel = 'Request',
+} = {}) {
+  if (typeof fetchImpl !== 'function') {
+    throw new Error('global fetch is unavailable');
+  }
+
+  const resolvedTimeoutMs = resolveTimeoutMs(timeoutMs);
+  if (typeof AbortController !== 'function' || resolvedTimeoutMs <= 0) {
+    return fetchImpl(url, options);
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), resolvedTimeoutMs);
+
+  try {
+    return await fetchImpl(url, {
+      ...options,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (controller.signal.aborted) {
+      const timeoutError = new Error(`${timeoutLabel} timed out after ${resolvedTimeoutMs}ms`);
+      timeoutError.code = 'hosted_summary_timeout';
+      throw timeoutError;
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function loadOperatorConfig(configPath = OPERATOR_CONFIG_PATH) {
@@ -81,12 +121,16 @@ async function fetchHostedBillingSummary(options = {}, config = resolveHostedSum
     requestUrl.searchParams.set('now', analyticsWindow.now);
   }
 
-  const response = await fetch(requestUrl, {
+  const response = await fetchWithTimeout(requestUrl, {
     method: 'GET',
     headers: {
       authorization: `Bearer ${config.apiKey}`,
       accept: 'application/json',
     },
+  }, {
+    fetchImpl: options.fetchImpl || global.fetch,
+    timeoutMs: options.timeoutMs || process.env.THUMBGATE_HOSTED_SUMMARY_TIMEOUT_MS,
+    timeoutLabel: 'Hosted operational summary request',
   });
 
   if (!response.ok) {
@@ -103,7 +147,11 @@ async function fetchHostedBillingSummary(options = {}, config = resolveHostedSum
 async function getOperationalBillingSummary(options = {}) {
   const analyticsWindow = resolveAnalyticsWindow(options);
   try {
-    const summary = await fetchHostedBillingSummary(analyticsWindow);
+    const summary = await fetchHostedBillingSummary({
+      ...analyticsWindow,
+      fetchImpl: options.fetchImpl,
+      timeoutMs: options.timeoutMs,
+    });
     return {
       source: 'hosted',
       summary,

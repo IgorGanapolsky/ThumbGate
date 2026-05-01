@@ -14,6 +14,8 @@ const { getWarmOutboundTargets } = require('./warm-outreach-targets');
 const GITHUB_API_BASE_URL = 'https://api.github.com/';
 const COMMERCIAL_TRUTH_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md';
 const VERIFICATION_EVIDENCE_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
+const DEFAULT_GITHUB_API_TIMEOUT_MS = 8_000;
+const DEFAULT_HOSTED_STATUS_TIMEOUT_MS = 12_000;
 const TARGET_SEARCH_QUERIES = [
   'search/repositories?q=Model+Context+Protocol+workflow+automation+sort:updated',
   'search/repositories?q=Model+Context+Protocol+approval+workflow+sort:updated',
@@ -219,6 +221,34 @@ const NAMED_OPTION_HANDLERS = {
 function applyNamedOption(options, argv, index) {
   const handler = NAMED_OPTION_HANDLERS[argv[index]];
   return handler ? handler(options, argv, index) : null;
+}
+
+function resolveTimeoutMs(value, fallbackMs) {
+  const parsed = Number.parseInt(String(value ?? ''), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallbackMs;
+}
+
+async function withTimeout(promise, timeoutMs, label) {
+  const resolvedTimeoutMs = resolveTimeoutMs(timeoutMs, 0);
+  if (resolvedTimeoutMs <= 0) {
+    return promise;
+  }
+
+  let timer = null;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(`${label} timed out after ${resolvedTimeoutMs}ms`));
+        }, resolvedTimeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) {
+      clearTimeout(timer);
+    }
+  }
 }
 
 function parseArgs(argv = []) {
@@ -755,6 +785,7 @@ async function resolveRevenueLoopSummary(options = {}) {
     revenueStatusOptions = {},
     hostedStatusRetries = 1,
     hostedRetryDelayMs = 1000,
+    hostedStatusTimeoutMs = process.env.THUMBGATE_REVENUE_STATUS_TIMEOUT_MS,
     waitForRetryFn = (delayMs) => new Promise((resolve) => setTimeout(resolve, delayMs)),
   } = options;
 
@@ -775,7 +806,11 @@ async function resolveRevenueLoopSummary(options = {}) {
 
   for (let attempt = 0; attempt <= retryCount; attempt += 1) {
     try {
-      const hostedReport = await generateRevenueStatusReportFn(revenueStatusOptions);
+      const hostedReport = await withTimeout(
+        generateRevenueStatusReportFn(revenueStatusOptions),
+        hostedStatusTimeoutMs || DEFAULT_HOSTED_STATUS_TIMEOUT_MS,
+        'Hosted revenue status probe'
+      );
       const selectedHostedWindow = selectHostedRevenueWindow(hostedReport?.hostedAudit?.summaries);
       if (hostedReport?.source !== 'local-fallback' && Number(selectedHostedWindow.summary?.status) === 200) {
         return {
@@ -863,7 +898,11 @@ function deriveRevenueDirective(
 
 function resolveGitHubApiToken(explicitToken = '', { execFileSyncImpl = execFileSync } = {}) {
   const envToken = normalizeText(
-    explicitToken || process.env.GITHUB_TOKEN || process.env.GH_TOKEN || process.env.GH_PAT,
+    explicitToken
+      || process.env.GITHUB_TOKEN
+      || process.env.GH_TOKEN
+      || process.env.GH_PAT
+      || process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
     4000
   );
   if (envToken) {
@@ -904,20 +943,40 @@ async function fetchGitHubJson(endpoint, {
   fetchImpl = globalThis.fetch,
   githubToken = '',
   execFileSyncImpl = execFileSync,
+  timeoutMs = process.env.THUMBGATE_GITHUB_API_TIMEOUT_MS,
 } = {}) {
   if (typeof fetchImpl !== 'function') {
     return { ok: false, error: 'global fetch is unavailable', data: null };
   }
 
   const resolvedToken = resolveGitHubApiToken(githubToken, { execFileSyncImpl });
+  const resolvedTimeoutMs = resolveTimeoutMs(timeoutMs, DEFAULT_GITHUB_API_TIMEOUT_MS);
+  const controller = typeof AbortController === 'function' ? new AbortController() : null;
+  let timedOut = false;
+  const timer = controller
+    ? setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, resolvedTimeoutMs)
+    : null;
   let response;
   try {
     const requestUrl = new URL(endpoint, GITHUB_API_BASE_URL);
     response = await fetchImpl(requestUrl, {
       headers: buildGitHubApiHeaders(resolvedToken),
+      ...(controller ? { signal: controller.signal } : {}),
     });
   } catch (err) {
+    if (timer) {
+      clearTimeout(timer);
+    }
+    if (timedOut) {
+      return { ok: false, error: `GitHub API request timed out after ${resolvedTimeoutMs}ms`, data: null };
+    }
     return { ok: false, error: err?.message || String(err), data: null };
+  }
+  if (timer) {
+    clearTimeout(timer);
   }
 
   const responseText = await response.text();
