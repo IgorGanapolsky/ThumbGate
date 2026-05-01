@@ -110,12 +110,14 @@ function formatGhError(result) {
   return (result.stderr || result.stdout || 'Unknown GH CLI failure').trim();
 }
 
-function isMissingCurrentBranchPr(result, prNumber) {
+function canFallbackToOpenPrList(result, prNumber) {
   if (prNumber) {
     return false;
   }
 
-  return /no pull requests found for branch/i.test(formatGhError(result));
+  const error = formatGhError(result);
+  return /no pull requests found for branch/i.test(error)
+    || /could not determine current branch/i.test(error);
 }
 
 /**
@@ -129,7 +131,7 @@ function getPrStatus(prNumber = '', runner = runGh) {
 
   const result = runner(args);
   if (result.status !== 0) {
-    if (isMissingCurrentBranchPr(result, normalizedPrNumber)) {
+    if (canFallbackToOpenPrList(result, normalizedPrNumber)) {
       return null;
     }
 
