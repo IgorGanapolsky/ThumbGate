@@ -1,6 +1,6 @@
 # Reddit DM Workflow Hardening Pack
 
-Updated: 2026-04-30T02:05:36.802Z
+Updated: 2026-05-01T23:06:51.252Z
 
 This pack turns the current warm Reddit workflow-risk queue into an operator-ready send surface. It is evidence-backed acquisition support, not proof of sent outreach or paid revenue.
 
