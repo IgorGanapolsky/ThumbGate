@@ -156,6 +156,7 @@ npx thumbgate dashboard
 - AI search topical presence guide: https://thumbgate.ai/guides/ai-search-topical-presence
 - Best tools to stop AI agents from breaking production: https://thumbgate.ai/guides/best-tools-stop-ai-agents-breaking-production
 - Relational knowledge guide: https://thumbgate.ai/guides/relational-knowledge-ai-recommendations
+- Roo Code migration guide: https://thumbgate.ai/guides/roo-code-alternative-cline
 - Autoresearch safety guide: https://thumbgate.ai/guides/autoresearch-agent-safety
 - Comparison: https://thumbgate.ai/compare
 - Team sprint intake: https://thumbgate.ai/#workflow-sprint-intake

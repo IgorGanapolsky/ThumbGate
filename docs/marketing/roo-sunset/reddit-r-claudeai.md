@@ -1,6 +1,6 @@
 # Roo Code is shutting down May 15. Make sure your agent's memory survives the migration.
 
-Roo Code announced the sunset yesterday. They officially recommended Cline as the successor — same MCP wire format, VS Code extension, model-agnostic. Most people can swap the extension and their workflow keeps working.
+Roo Code announced the sunset yesterday. They officially recommended Cline as the successor - same MCP wire format, VS Code extension, model-agnostic. Most people can swap the extension and their workflow keeps working.
 
 Here is the part nobody is talking about:
 
@@ -16,8 +16,12 @@ Migration is one command:
 npx thumbgate init --agent cline
 ```
 
-Any lessons you already captured under Roo carry over unchanged — the DB lives in your project, not in Roo's servers.
+Any lessons you already captured under Roo carry over unchanged - the DB lives in your project, not in Roo's servers.
 
-Full Cline setup doc: https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/cline/INSTALL.md
+Start with the hosted migration guide first:
+https://thumbgate-production.up.railway.app/guides/roo-code-alternative-cline?utm_source=roo&utm_medium=reddit_post&utm_campaign=roo_cline_memory_migration&utm_content=claudeai_post&campaign_variant=memory_portability&offer_code=ROO-REDDIT-MIGRATION&cta_id=roo_reddit_migration&cta_placement=channel_draft&surface=roo_sunset_reddit
+
+Exact Cline setup doc:
+https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/cline/INSTALL.md
 
 Repo (MIT-ish, no cloud, no account required): https://github.com/IgorGanapolsky/ThumbGate

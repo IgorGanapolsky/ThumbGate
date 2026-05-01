@@ -23,8 +23,48 @@
     "author": { "@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky" },
     "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
     "datePublished": "2026-04-22",
-    "dateModified": "2026-04-22",
+    "dateModified": "2026-05-01",
     "mainEntityOfPage": "https://thumbgate.ai/guides/roo-code-alternative-cline"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "When does Roo Code actually stop working?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Roo Code announced the sunset on 2026-04-21 and the public docs list a final shutdown date of 2026-05-15."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does Cline use the same MCP format as Roo Code?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Cline can reuse the same MCP server wiring, so ThumbGate's local enforcement layer and other MCP servers transfer without a new protocol."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Where does ThumbGate store my lessons during the migration?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "ThumbGate stores lessons in a local SQLite file at .thumbgate/memory.sqlite, so the memory stays with the project instead of the vendor."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "When should I use Pro versus the Workflow Hardening Sprint?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Use Pro when one blocked repeat is already real and you want the personal dashboard plus export-ready evidence. Use the Workflow Hardening Sprint when one workflow owner needs approval boundaries, rollback safety, and proof before wider rollout."
+        }
+      }
+    ]
   }
   </script>
   <style>
@@ -46,6 +86,16 @@
     code.inline { background: var(--bg-card); padding: 2px 6px; border-radius: 4px; color: var(--cyan); }
     .eyebrow { display: inline-block; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(34,211,238,0.22); background: rgba(34,211,238,0.1); color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 700; }
     .cta { display: inline-block; background: var(--cyan); color: #000; padding: 14px 22px; border-radius: 10px; font-weight: 700; margin: 24px 0; }
+    .proof-strip { margin: 24px 0; padding: 16px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-card); }
+    .proof-strip p { margin: 0 0 8px; font-size: 15px; }
+    .proof-strip ul { margin: 0; padding-left: 20px; }
+    .cta-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin: 24px 0 10px; }
+    .cta-card { border: 1px solid var(--line); border-radius: 14px; background: var(--bg-card); padding: 18px; }
+    .cta-card h3 { margin-top: 0; }
+    .cta-card p { font-size: 15px; color: var(--muted); }
+    .related-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-top: 20px; }
+    .related-card { display: block; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-card); padding: 18px; color: var(--text); text-decoration: none; }
+    .related-card strong { display: block; margin-bottom: 8px; }
     article { padding: 24px 0 80px; }
     footer { border-top: 1px solid var(--line); padding: 32px 0; color: var(--muted); font-size: 14px; }
   </style>
@@ -63,9 +113,17 @@
       <span class="eyebrow">Migration Guide</span>
       <h1>Roo Code Alternative: Migrating to Cline with Portable Lesson Memory</h1>
       <p class="muted">Roo Code announced its sunset on 2026-04-21. Final shutdown: 2026-05-15. The team officially recommended Cline as the model-agnostic open-source successor. Here is how to migrate without losing every lesson your agent learned inside Roo.</p>
+      <div class="proof-strip">
+        <p><strong>Evidence behind this migration lane</strong></p>
+        <ul>
+          <li><a href="https://docs.roocode.com/">Official Roo docs</a> now flag the May 15, 2026 shutdown and point users toward Cline.</li>
+          <li><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/cline/INSTALL.md">ThumbGate + Cline install guide</a> documents the repo-local migration path and local lesson DB.</li>
+          <li><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md">Verification Evidence</a> stays attached for proof-backed follow-up after the buyer confirms pain.</li>
+        </ul>
+      </div>
 
       <h2>The quiet cost of agent migrations</h2>
-      <p>Roo Code is a VS Code extension and its MCP wire format transfers to Cline directly. The visible part of the migration — swap the extension, keep the shortcuts — takes five minutes.</p>
+      <p>Roo Code is a VS Code extension and its MCP wire format transfers to Cline directly. The visible part of the migration - swap the extension, keep the shortcuts - takes five minutes.</p>
       <p>The hidden cost is memory. Every thumbs-down you gave Roo lived in Roo's context window and project memory: "don't <code class="inline">git push --force</code> to main," "this repo uses pnpm," "never auto-generate Prisma migrations on prod." When Roo goes dark on May 15, that institutional memory evaporates. You teach Cline the same mistakes from scratch.</p>
       <p>Vendor-scoped lesson memory is a design mistake. In 2026 your agent's memory should outlive any single vendor.</p>
 
@@ -98,11 +156,30 @@
       <pre><code>npx thumbgate verify --agent cline</code></pre>
       <p>Then inside Cline, ask it to run <code class="inline">git push --force</code> on a dummy branch. It should call <code class="inline">thumbgate.gate_check</code> first and refuse.</p>
 
-      <h2>Why portable memory matters</h2>
-      <p>Roo Code's sunset is a lesson about lock-in. Every time an agent vendor controls your lesson memory, a sunset announcement is also an announcement that your corrections evaporate. The only durable fix is to store lessons outside the agent — locally, in a format you own.</p>
-      <p>ThumbGate's lesson DB works with Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, and any MCP-compatible agent. One correction, every agent, every future agent.</p>
+      <h2>Choose the next step</h2>
+      <p>Keep the first move free and guide-led. Move to paid only after one blocked repeat or one workflow owner has a concrete rollout risk.</p>
+      <div class="cta-grid">
+        <div class="cta-card">
+          <h3>Free install path</h3>
+          <p>Use the proof-backed setup guide when you want the shortest install lane before you decide whether the free path is enough.</p>
+          <a class="cta" href="https://thumbgate-production.up.railway.app/guide?utm_source=roo&utm_medium=migration_guide&utm_campaign=roo_setup_guide&utm_content=setup&campaign_variant=free_install&offer_code=ROO-SETUP_GUIDE&cta_id=roo_setup_guide&cta_placement=guide_surface&surface=roo_migration">Open the setup guide</a>
+        </div>
+        <div class="cta-card">
+          <h3>ThumbGate Pro</h3>
+          <p>Use Pro at $19/mo or $149/yr once one blocked repeat is real and you want the personal dashboard plus export-ready evidence.</p>
+          <a class="cta" href="https://thumbgate-production.up.railway.app/checkout/pro?utm_source=roo&utm_medium=migration_guide&utm_campaign=roo_pro_follow_on&utm_content=pro&campaign_variant=solo_follow_on&offer_code=ROO-PRO_FOLLOW_ON&cta_id=roo_pro_follow_on&cta_placement=guide_surface&plan_id=pro&surface=roo_migration">Open Pro</a>
+        </div>
+        <div class="cta-card">
+          <h3>Workflow Hardening Sprint</h3>
+          <p>Use the sprint first when one workflow owner needs approval boundaries, rollback safety, and proof before a wider migration. Team lands at $49/seat/mo after qualification.</p>
+          <a class="cta" href="https://thumbgate-production.up.railway.app/?utm_source=roo&utm_medium=migration_guide&utm_campaign=roo_sprint_follow_on&utm_content=workflow_sprint&campaign_variant=team_follow_on&offer_code=ROO-SPRINT_FOLLOW_ON&cta_id=roo_sprint_follow_on&cta_placement=guide_surface&surface=roo_migration#workflow-sprint-intake">Start the sprint intake</a>
+        </div>
+      </div>
+      <p>If you want the exact Cline config files first, the adapter-specific install instructions stay here: <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/cline/INSTALL.md">ThumbGate + Cline</a>.</p>
 
-      <a class="cta" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/cline/INSTALL.md">Read the full Cline setup doc →</a>
+      <h2>Why portable memory matters</h2>
+      <p>Roo Code's sunset is a lesson about lock-in. Every time an agent vendor controls your lesson memory, a sunset announcement is also an announcement that your corrections evaporate. The only durable fix is to store lessons outside the agent - locally, in a format you own.</p>
+      <p>ThumbGate's lesson DB works with Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, and any MCP-compatible agent. One correction, every agent, every future agent.</p>
 
       <h2>FAQ</h2>
       <h3>When does Roo Code actually stop working?</h3>
@@ -116,6 +193,18 @@
 
       <h3>Does ThumbGate work if I go back to Claude Code or switch to Cursor?</h3>
       <p>Yes. The lesson DB is agent-agnostic. Running <code class="inline">npx thumbgate init --agent &lt;name&gt;</code> wires any supported agent against the same DB.</p>
+
+      <h2>Related buyer guides</h2>
+      <div class="related-grid">
+        <a class="related-card" href="/guides/stop-repeated-ai-agent-mistakes">
+          <strong>Stop repeated AI agent mistakes</strong>
+          <span>Use this when the buyer already knows the pain and needs the shortest explanation of why memory alone is not enough.</span>
+        </a>
+        <a class="related-card" href="/compare/mem0">
+          <strong>Compare hosted memory versus local-first enforcement</strong>
+          <span>Use this when the migration objection is privacy, hosted memory lock-in, or keeping workflow history inside the repo.</span>
+        </a>
+      </div>
     </article>
   </main>
 
