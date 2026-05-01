@@ -21,6 +21,7 @@ const GUIDE_FILES = [
   'guides/cursor-prevent-repeated-mistakes.html',
   'guides/codex-cli-guardrails.html',
   'guides/autoresearch-agent-safety.html',
+  'guides/roo-code-alternative-cline.html',
 ];
 
 const COMPARE_FILES = [
@@ -31,12 +32,12 @@ const COMPARE_FILES = [
 const ALL_FILES = [...GUIDE_FILES, ...COMPARE_FILES];
 
 describe('SEO guide and comparison pages', () => {
-  it('all 15 HTML files exist', () => {
+  it('all 16 HTML files exist', () => {
     for (const file of ALL_FILES) {
       const fullPath = path.join(PUBLIC_DIR, file);
       assert.ok(fs.existsSync(fullPath), `Missing file: ${file}`);
     }
-    assert.equal(ALL_FILES.length, 15);
+    assert.equal(ALL_FILES.length, 16);
   });
 
   for (const file of ALL_FILES) {
@@ -128,5 +129,18 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(productionListicle.includes('Environment inspection requirements'), 'production listicle should mention environment inspection');
     assert.ok(relationalKnowledge.includes('Relational knowledge'), 'relational knowledge guide should mention relational knowledge');
     assert.ok(relationalKnowledge.includes('pre-action checks'), 'relational knowledge guide should tie the topic back to ThumbGate');
+  });
+
+  it('Roo migration guide keeps the sunset, portability, and paid follow-on story together', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/roo-code-alternative-cline.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('Roo Code'), 'Roo migration guide should mention Roo Code');
+    assert.ok(html.includes('Cline'), 'Roo migration guide should mention Cline');
+    assert.ok(html.includes('.thumbgate/memory.sqlite'), 'Roo migration guide should mention the portable lesson DB');
+    assert.ok(html.includes('$19/mo') && html.includes('$149/yr') && html.includes('$49/seat/mo'),
+      'Roo migration guide should include current paid follow-on pricing');
   });
 });

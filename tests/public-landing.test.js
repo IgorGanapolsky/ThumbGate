@@ -177,6 +177,13 @@ test('public landing page exposes AEO listicle for production AI agent safety', 
   assert.match(landingPage, /parallel coding agents/i);
 });
 
+test('public landing page exposes the Roo Code migration guide for sunset-driven demand', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /\/guides\/roo-code-alternative-cline/);
+  assert.match(landingPage, /Roo Code Alternative: Migrate to Cline Without Losing Memory/);
+});
+
 test('public landing page hero features both thumbs up AND thumbs down prominently', () => {
   const landingPage = readLandingPage();
 

@@ -2209,6 +2209,7 @@ function renderSitemapXml(runtimeConfig) {
     // homepage directly.
     { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
     { path: '/codex-plugin', changefreq: 'weekly', priority: '0.75' },
+    { path: '/guides/roo-code-alternative-cline', changefreq: 'weekly', priority: '0.7' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
   ];
   return [

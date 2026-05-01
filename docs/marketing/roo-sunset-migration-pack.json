@@ -1,0 +1,101 @@
+{
+  "updatedAt": "2026-05-01T16:10:00Z",
+  "objective": "Turn the Roo Code shutdown into tracked migration-guide clicks, proof-backed follow-up, and qualified paid-intent conversations.",
+  "positioning": {
+    "state": "post-first-dollar",
+    "headline": "Migrate off Roo Code without losing lesson memory.",
+    "shortDescription": "ThumbGate gives Roo and Cline users a local SQLite lesson DB plus Pre-Action Checks so the migration does not reset every correction.",
+    "summary": "Lead with the hosted migration guide, keep proof close, route solo operators to Pro only after one blocked repeat is real, and route workflow owners to the sprint when rollout risk is explicit."
+  },
+  "canonicalIdentity": {
+    "displayName": "ThumbGate",
+    "repository": "https://github.com/IgorGanapolsky/ThumbGate",
+    "homepage": "https://thumbgate-production.up.railway.app",
+    "commercialTruth": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+    "verificationEvidence": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+  },
+  "evidenceSources": [
+    {
+      "label": "Official Roo docs",
+      "url": "https://docs.roocode.com/"
+    },
+    {
+      "label": "Hosted migration guide",
+      "url": "https://thumbgate-production.up.railway.app/guides/roo-code-alternative-cline"
+    },
+    {
+      "label": "Hosted guide source",
+      "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/roo-code-alternative-cline.html"
+    },
+    {
+      "label": "Cline adapter install doc",
+      "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/cline/INSTALL.md"
+    }
+  ],
+  "surfaces": [
+    {
+      "key": "roo_migration_guide",
+      "label": "Hosted Roo to Cline migration guide",
+      "url": "https://thumbgate-production.up.railway.app/guides/roo-code-alternative-cline?utm_source=roo&utm_medium=seo_guide&utm_campaign=roo_cline_memory_migration&utm_content=guide&campaign_variant=memory_portability&offer_code=ROO-MIGRATION_GUIDE&cta_id=roo_migration_guide&cta_placement=guide_surface&surface=roo_migration",
+      "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/roo-code-alternative-cline.html",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+    },
+    {
+      "key": "cline_install_doc",
+      "label": "Cline adapter install doc",
+      "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/cline/INSTALL.md",
+      "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/cline/INSTALL.md",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+    },
+    {
+      "key": "roo_setup_guide",
+      "label": "Proof-backed setup guide",
+      "url": "https://thumbgate-production.up.railway.app/guide?utm_source=roo&utm_medium=seo_guide&utm_campaign=roo_setup_guide&utm_content=setup&campaign_variant=free_install&offer_code=ROO-SETUP_GUIDE&cta_id=roo_setup_guide&cta_placement=guide_surface&surface=roo_migration",
+      "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guide.html",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+    }
+  ],
+  "followOnOffers": [
+    {
+      "key": "pro",
+      "label": "ThumbGate Pro",
+      "price": "$19/mo or $149/yr",
+      "cta": "https://thumbgate-production.up.railway.app/checkout/pro?utm_source=roo&utm_medium=seo_guide&utm_campaign=roo_pro_follow_on&utm_content=pro&campaign_variant=solo_follow_on&offer_code=ROO-PRO_FOLLOW_ON&cta_id=roo_pro_follow_on&cta_placement=post_install&plan_id=pro&surface=roo_migration"
+    },
+    {
+      "key": "workflow_hardening_sprint",
+      "label": "Workflow Hardening Sprint",
+      "price": "Team at $49/seat/mo after qualification",
+      "cta": "https://thumbgate-production.up.railway.app/?utm_source=roo&utm_medium=seo_guide&utm_campaign=roo_sprint_follow_on&utm_content=workflow_sprint&campaign_variant=team_follow_on&offer_code=ROO-SPRINT_FOLLOW_ON&cta_id=roo_sprint_follow_on&cta_placement=post_install&surface=roo_migration#workflow-sprint-intake"
+    }
+  ],
+  "operatorQueue": [
+    {
+      "key": "memory_portability",
+      "audience": "Roo user who wants memory portability first",
+      "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/roo-code-alternative-cline.html",
+      "nextAsk": "https://thumbgate-production.up.railway.app/guides/roo-code-alternative-cline?utm_source=roo&utm_medium=seo_guide&utm_campaign=roo_queue_memory&utm_content=guide&campaign_variant=memory_portability&offer_code=ROO-QUEUE-MEMORY&cta_id=roo_queue_memory&cta_placement=operator_queue&surface=roo_migration",
+      "recommendedMotion": "Migration guide -> setup guide -> Pro once one blocked repeat is real."
+    },
+    {
+      "key": "setup_evaluator",
+      "audience": "Cline evaluator who wants the shortest proof-backed install path",
+      "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/cline/INSTALL.md",
+      "nextAsk": "https://thumbgate-production.up.railway.app/guide?utm_source=roo&utm_medium=seo_guide&utm_campaign=roo_queue_setup&utm_content=setup&campaign_variant=free_install&offer_code=ROO-QUEUE-SETUP&cta_id=roo_queue_setup&cta_placement=operator_queue&surface=roo_migration",
+      "recommendedMotion": "Migration guide -> exact install doc -> Pro only after proof of one blocked repeat."
+    },
+    {
+      "key": "workflow_owner",
+      "audience": "Workflow owner facing migration plus rollout risk",
+      "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "nextAsk": "https://thumbgate-production.up.railway.app/?utm_source=roo&utm_medium=operator_outreach&utm_campaign=roo_queue_sprint&utm_content=workflow_sprint&campaign_variant=team_follow_on&offer_code=ROO-QUEUE-SPRINT&cta_id=roo_queue_sprint&cta_placement=operator_queue&surface=roo_migration#workflow-sprint-intake",
+      "recommendedMotion": "Qualify one workflow for the Workflow Hardening Sprint before discussing broader rollout."
+    }
+  ],
+  "guardrails": [
+    "Do not claim migration volume, installs, or revenue without direct evidence.",
+    "Do not lead first-touch outreach with proof links before the buyer confirms pain.",
+    "Keep pricing aligned with COMMERCIAL_TRUTH.md.",
+    "Keep proof claims aligned with VERIFICATION_EVIDENCE.md."
+  ]
+}

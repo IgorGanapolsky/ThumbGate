@@ -14,7 +14,8 @@ When Cline eventually gets replaced by whatever ships in 2027, you copy one SQLi
 npx thumbgate init --agent cline
 ```
 
-That is the entire migration.
+That is the entire migration. The hosted migration guide is here:
+https://thumbgate-production.up.railway.app/guides/roo-code-alternative-cline?utm_source=roo&utm_medium=linkedin_post&utm_campaign=roo_cline_memory_migration&utm_content=founder_post&campaign_variant=memory_portability&offer_code=ROO-LINKEDIN-MIGRATION&cta_id=roo_linkedin_migration&cta_placement=channel_draft&surface=roo_sunset_linkedin
 
 Migration guide: https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/cline/INSTALL.md
 
