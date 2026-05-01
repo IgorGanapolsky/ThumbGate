@@ -261,6 +261,31 @@ test('PR Manager - loadManagedPrs falls back to open PR list when branch has no 
   assert.deepEqual(loadManagedPrs('', runner), [mockPr]);
 });
 
+test('PR Manager - loadManagedPrs falls back to open PR list when HEAD is detached', () => {
+  const mockPr = {
+    number: 312,
+    title: 'Repo open PR from detached worktree',
+    mergeable: 'MERGEABLE',
+    mergeStateStatus: 'CLEAN',
+    isDraft: false,
+    statusCheckRollup: []
+  };
+  const runner = createRunner([
+    {
+      status: 1,
+      stdout: '',
+      stderr: 'could not determine current branch: failed to run git: not on any branch\n'
+    },
+    {
+      status: 0,
+      stdout: JSON.stringify([mockPr]),
+      stderr: ''
+    }
+  ]);
+
+  assert.deepEqual(loadManagedPrs('', runner), [mockPr]);
+});
+
 test('PR Manager - isOpenPr returns false for merged PR state', () => {
   assert.equal(isOpenPr({ state: 'MERGED' }), false);
   assert.equal(isOpenPr({ state: 'OPEN' }), true);
