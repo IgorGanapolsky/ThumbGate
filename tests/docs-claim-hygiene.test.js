@@ -50,4 +50,5 @@ test('README keeps buyer CTAs on current first-party ThumbGate surfaces', () => 
   assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app\/checkout\/pro\?utm_source=github&utm_medium=readme/);
   assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app\/dashboard\?utm_source=github&utm_medium=readme/);
   assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app\/guides\/codex-cli-guardrails\?utm_source=github&utm_medium=readme/);
+  assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app\/guides\/opencode-guardrails\?utm_source=github&utm_medium=readme/);
 });

@@ -59,6 +59,7 @@ test('renderPlanMarkdown names all five GSD stages and page briefs', () => {
   assert.match(markdown, /Relational Knowledge in AI Recommendations \| Why Brands Get Picked/);
   assert.match(markdown, /How to Stop AI Coding Agents From Repeating Mistakes \| ThumbGate/);
   assert.match(markdown, /Cursor Agent Guardrails \| Stop Repeated Mistakes with ThumbGate/);
+  assert.match(markdown, /OpenCode Guardrails \| Local-First Enforcement with ThumbGate/);
   assert.match(markdown, /Autoresearch Agent Safety \| Gates for Self-Improving Coding Agents/);
 });
 
@@ -102,6 +103,21 @@ test('Autoresearch safety page is discoverable and commercially classified', () 
   assert.equal(page.pillar, 'pre-action-checks');
   assert.deepEqual(sitemapEntry, {
     path: '/guides/autoresearch-agent-safety',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
+test('OpenCode guardrails page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/opencode-guardrails');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/opencode-guardrails');
+
+  assert.ok(page);
+  assert.equal(page.query, 'opencode guardrails');
+  assert.equal(page.pageType, 'integration');
+  assert.equal(page.pillar, 'agent-workflows');
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/opencode-guardrails',
     changefreq: 'monthly',
     priority: '0.8',
   });
@@ -225,6 +241,7 @@ test('writePlanOutputs persists machine-readable GSD artifacts', () => {
     assert.ok(pages.some((page) => page.path === '/guides/relational-knowledge-ai-recommendations'));
     assert.ok(pages.some((page) => page.path === '/guides/codex-cli-guardrails'));
     assert.ok(pages.some((page) => page.path === '/guides/gemini-cli-feedback-memory'));
+    assert.ok(pages.some((page) => page.path === '/guides/opencode-guardrails'));
     assert.ok(pages.some((page) => page.path === '/guides/browser-automation-safety'));
     assert.ok(pages.some((page) => page.path === '/guides/native-messaging-host-security'));
     assert.ok(pages.some((page) => page.path === '/guides/autoresearch-agent-safety'));
