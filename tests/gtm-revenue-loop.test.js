@@ -759,13 +759,31 @@ test('GitHub discovery reports API and parser failures as non-fatal warnings', a
   assert.equal(prospects.errors.length, TARGET_SEARCH_QUERIES.length);
 });
 
+test('GitHub discovery times out stalled requests instead of hanging the revenue loop', async () => {
+  const stalled = await fetchGitHubJson('search/repositories?q=test', {
+    timeoutMs: 5,
+    fetchImpl: async (_url, options) => new Promise((_, reject) => {
+      options.signal.addEventListener('abort', () => {
+        const error = new Error('aborted');
+        error.name = 'AbortError';
+        reject(error);
+      });
+    }),
+  });
+
+  assert.equal(stalled.ok, false);
+  assert.match(stalled.error, /timed out/i);
+});
+
 test('GitHub discovery falls back to gh auth token when env tokens are absent', async () => {
   const originalGithubToken = process.env.GITHUB_TOKEN;
   const originalGhToken = process.env.GH_TOKEN;
   const originalGhPat = process.env.GH_PAT;
+  const originalPersonalToken = process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
   delete process.env.GITHUB_TOKEN;
   delete process.env.GH_TOKEN;
   delete process.env.GH_PAT;
+  delete process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
 
   try {
     let execCalls = 0;
@@ -797,6 +815,44 @@ test('GitHub discovery falls back to gh auth token when env tokens are absent', 
     else process.env.GH_TOKEN = originalGhToken;
     if (originalGhPat === undefined) delete process.env.GH_PAT;
     else process.env.GH_PAT = originalGhPat;
+    if (originalPersonalToken === undefined) delete process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
+    else process.env.GITHUB_PERSONAL_ACCESS_TOKEN = originalPersonalToken;
+  }
+});
+
+test('GitHub discovery accepts GITHUB_PERSONAL_ACCESS_TOKEN as an auth fallback', async () => {
+  const originalGithubToken = process.env.GITHUB_TOKEN;
+  const originalGhToken = process.env.GH_TOKEN;
+  const originalGhPat = process.env.GH_PAT;
+  const originalPersonalToken = process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
+  delete process.env.GITHUB_TOKEN;
+  delete process.env.GH_TOKEN;
+  delete process.env.GH_PAT;
+  process.env.GITHUB_PERSONAL_ACCESS_TOKEN = 'ghp_personal_token';
+
+  try {
+    const result = await fetchGitHubJson('search/repositories?q=test', {
+      fetchImpl: async (_url, options) => {
+        assert.equal(options.headers.authorization, 'Bearer ghp_personal_token');
+        return {
+          ok: true,
+          async text() {
+            return '{"items":[]}';
+          },
+        };
+      },
+    });
+
+    assert.equal(result.ok, true);
+  } finally {
+    if (originalGithubToken === undefined) delete process.env.GITHUB_TOKEN;
+    else process.env.GITHUB_TOKEN = originalGithubToken;
+    if (originalGhToken === undefined) delete process.env.GH_TOKEN;
+    else process.env.GH_TOKEN = originalGhToken;
+    if (originalGhPat === undefined) delete process.env.GH_PAT;
+    else process.env.GH_PAT = originalGhPat;
+    if (originalPersonalToken === undefined) delete process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
+    else process.env.GITHUB_PERSONAL_ACCESS_TOKEN = originalPersonalToken;
   }
 });
 
@@ -804,9 +860,11 @@ test('prospecting reuses gh auth token fallback for search and profile enrichmen
   const originalGithubToken = process.env.GITHUB_TOKEN;
   const originalGhToken = process.env.GH_TOKEN;
   const originalGhPat = process.env.GH_PAT;
+  const originalPersonalToken = process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
   delete process.env.GITHUB_TOKEN;
   delete process.env.GH_TOKEN;
   delete process.env.GH_PAT;
+  delete process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
 
   try {
     let execCalls = 0;
@@ -864,6 +922,8 @@ test('prospecting reuses gh auth token fallback for search and profile enrichmen
     else process.env.GH_TOKEN = originalGhToken;
     if (originalGhPat === undefined) delete process.env.GH_PAT;
     else process.env.GH_PAT = originalGhPat;
+    if (originalPersonalToken === undefined) delete process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
+    else process.env.GITHUB_PERSONAL_ACCESS_TOKEN = originalPersonalToken;
   }
 });
 
