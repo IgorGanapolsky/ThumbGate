@@ -59,6 +59,7 @@ test('renderPlanMarkdown names all five GSD stages and page briefs', () => {
   assert.match(markdown, /Relational Knowledge in AI Recommendations \| Why Brands Get Picked/);
   assert.match(markdown, /How to Stop AI Coding Agents From Repeating Mistakes \| ThumbGate/);
   assert.match(markdown, /Cursor Agent Guardrails \| Stop Repeated Mistakes with ThumbGate/);
+  assert.match(markdown, /Amp Agent Guardrails \| Local-First Enforcement with ThumbGate/);
   assert.match(markdown, /Autoresearch Agent Safety \| Gates for Self-Improving Coding Agents/);
 });
 
@@ -224,6 +225,7 @@ test('writePlanOutputs persists machine-readable GSD artifacts', () => {
     assert.ok(pages.some((page) => page.path === '/guides/best-tools-stop-ai-agents-breaking-production'));
     assert.ok(pages.some((page) => page.path === '/guides/relational-knowledge-ai-recommendations'));
     assert.ok(pages.some((page) => page.path === '/guides/codex-cli-guardrails'));
+    assert.ok(pages.some((page) => page.path === '/guides/amp-agent-guardrails'));
     assert.ok(pages.some((page) => page.path === '/guides/gemini-cli-feedback-memory'));
     assert.ok(pages.some((page) => page.path === '/guides/browser-automation-safety'));
     assert.ok(pages.some((page) => page.path === '/guides/native-messaging-host-security'));

@@ -391,6 +391,7 @@ test('public landing page internally links to comparison and guide pages without
   assert.match(landingPage, /href="\/guides\/stop-repeated-ai-agent-mistakes"/);
   assert.match(landingPage, /href="\/guides\/cursor-agent-guardrails"/);
   assert.match(landingPage, /href="\/guides\/codex-cli-guardrails"/);
+  assert.match(landingPage, /href="\/guides\/amp-agent-guardrails"/);
   assert.match(landingPage, /href="\/guides\/gemini-cli-feedback-memory"/);
   assert.match(landingPage, /href="\/guides\/autoresearch-agent-safety"/);
   assert.match(landingPage, /Autoresearch Safety for Self-Improving Agents/);
