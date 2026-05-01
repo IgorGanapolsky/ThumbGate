@@ -877,6 +877,54 @@ const PAGE_BLUEPRINTS = [
     ],
     relatedPaths: ['/compare/mem0', '/guides/stop-repeated-ai-agent-mistakes'],
   },
+  {
+    query: 'opencode guardrails',
+    path: '/guides/opencode-local-guardrails',
+    pageType: 'integration',
+    pillar: 'agent-workflows',
+    title: 'OpenCode Guardrails | Local-First Safety with ThumbGate',
+    heroTitle: 'OpenCode Guardrails for Local-First Agent Workflows',
+    heroSummary: 'OpenCode buyers already like local CLI control. ThumbGate adds the missing reliability gateway: repo-native guardrails, feedback memory, and pre-action checks before the next risky automation step runs.',
+    takeaways: [
+      'OpenCode buyers want local control plus proof, not another hosted orchestration layer.',
+      'ThumbGate already ships repo-local OpenCode config, worktree-safe defaults, and a read-only review agent.',
+      'The conversion path is clear: prove one blocked repeat locally, then move self-serve buyers to Pro or shared rollout buyers to the Workflow Hardening Sprint.',
+    ],
+    sections: [
+      {
+        heading: 'Why OpenCode needs more than instructions',
+        paragraphs: [
+          'OpenCode can move fast inside a local repo, which makes the blast radius of repeated mistakes larger. A bad git action, skipped verification step, or unsafe file edit pattern does not become safer just because the workflow stays local.',
+        ],
+      },
+      {
+        heading: 'What ThumbGate adds to the OpenCode path',
+        bullets: [
+          'A repo-local `opencode.json` profile that points OpenCode at the ThumbGate MCP server.',
+          'Worktree-safe defaults that deny edits to runtime-state paths and destructive git commands.',
+          'A read-only review agent for regression and proof checks before risky changes move forward.',
+          'Structured thumbs-up/down feedback that can promote repeated failures into pre-action checks.',
+        ],
+      },
+      {
+        heading: 'What the buyer can prove first',
+        paragraphs: [
+          'The first proof is not a giant rollout. It is one blocked repeat in a local workflow, with the setup guide, verification evidence, and pricing path all aligned. That makes OpenCode a strong self-serve lane for plugin, hook, and config buyers who need visible control before they expand.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Does this replace OpenCode?',
+        answer: 'No. ThumbGate sits alongside OpenCode. The point is to keep the local OpenCode workflow while adding searchable lessons, linked rules, and pre-action enforcement.',
+      },
+      {
+        question: 'Can the OpenCode path stay local-first?',
+        answer: 'Yes. The repo-local OpenCode profile, local feedback memory, and pre-action checks all work without forcing a hosted control plane.',
+      },
+    ],
+    relatedPaths: ['/guides/pre-action-checks', '/guides/codex-cli-guardrails'],
+  },
   ...BROWSER_BRIDGE_GUIDE_SPECS.map(buildBrowserBridgeGuide),
   ...AI_RECOMMENDATION_VISIBILITY_GUIDE_SPECS.map(buildAiRecommendationVisibilityGuide),
   guideBlueprint({

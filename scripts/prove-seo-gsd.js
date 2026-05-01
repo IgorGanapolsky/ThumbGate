@@ -132,6 +132,7 @@ async function run() {
           '/guides/best-tools-stop-ai-agents-breaking-production',
           '/guides/relational-knowledge-ai-recommendations',
           '/guides/claude-code-feedback',
+          '/guides/opencode-local-guardrails',
           '/guides/autoresearch-agent-safety',
         ]) {
           const loc = pathname === '/'
@@ -163,6 +164,7 @@ async function run() {
           '/guides/best-tools-stop-ai-agents-breaking-production',
           '/guides/relational-knowledge-ai-recommendations',
           '/guides/claude-code-feedback',
+          '/guides/opencode-local-guardrails',
           '/guides/autoresearch-agent-safety',
         ]) {
           if (!landingHtml.includes(`href="${pathname}"`)) {

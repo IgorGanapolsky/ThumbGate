@@ -137,6 +137,21 @@ test('browser automation safety page is discoverable and commercially classified
   });
 });
 
+test('OpenCode guardrails page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/opencode-local-guardrails');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/opencode-local-guardrails');
+
+  assert.ok(page);
+  assert.equal(page.query, 'opencode guardrails');
+  assert.equal(page.pageType, 'integration');
+  assert.equal(page.pillar, 'agent-workflows');
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/opencode-local-guardrails',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
 test('AI search topical presence page is discoverable and commercially classified', () => {
   const page = findSeoPageByPath('/guides/ai-search-topical-presence');
   const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/ai-search-topical-presence');
@@ -225,6 +240,7 @@ test('writePlanOutputs persists machine-readable GSD artifacts', () => {
     assert.ok(pages.some((page) => page.path === '/guides/relational-knowledge-ai-recommendations'));
     assert.ok(pages.some((page) => page.path === '/guides/codex-cli-guardrails'));
     assert.ok(pages.some((page) => page.path === '/guides/gemini-cli-feedback-memory'));
+    assert.ok(pages.some((page) => page.path === '/guides/opencode-local-guardrails'));
     assert.ok(pages.some((page) => page.path === '/guides/browser-automation-safety'));
     assert.ok(pages.some((page) => page.path === '/guides/native-messaging-host-security'));
     assert.ok(pages.some((page) => page.path === '/guides/autoresearch-agent-safety'));
