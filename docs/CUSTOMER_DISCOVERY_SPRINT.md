@@ -49,6 +49,19 @@ npm run gtm:revenue-loop -- --report-dir reports/gtm/$(date +%F)-selling-now --m
 Without `--report-dir`, `npm run gtm:revenue-loop` refreshes the checked-in operator pack in `docs/marketing/`.
 Use `--report-dir` when you want a dated handoff folder for one selling session.
 
+Refresh one pack without rewriting the full queue:
+
+- `npm run gtm:claude` for the Claude workflow-hardening pack
+- `npm run gtm:cursor` for the Cursor marketplace pack
+- `npm run gtm:chatgpt` for the ChatGPT GPT pack
+- `npm run gtm:codex` for the Codex marketplace pack
+- `npm run gtm:codex-plugin` for the Codex install-page and setup-guide pack
+- `npm run gtm:gemini` for the Gemini CLI demand pack
+- `npm run gtm:linkedin` for the LinkedIn workflow-hardening pack
+- `npm run gtm:mcp` for the MCP directory repair pack
+- `npm run gtm:reddit` for the Reddit DM workflow-hardening pack
+- `npm run gtm:aiventyx` for the Aiventyx marketplace plan
+
 The revenue loop emits these operator artifacts in that folder:
 
 - `gtm-revenue-loop.md` for the human summary
