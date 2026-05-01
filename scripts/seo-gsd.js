@@ -127,6 +127,12 @@ const HIGH_ROI_QUERY_SEEDS = [
     source: 'seed',
     notes: 'Integration page for Gemini CLI users who need memory plus enforcement.',
   },
+  {
+    query: 'opencode guardrails',
+    businessValue: 80,
+    source: 'seed',
+    notes: 'OpenCode-specific workflow query for buyers who want local-first autonomy with enforceable safety boundaries.',
+  },
 ];
 
 function querySeed(query, businessValue, notes) {
@@ -876,6 +882,55 @@ const PAGE_BLUEPRINTS = [
       },
     ],
     relatedPaths: ['/compare/mem0', '/guides/stop-repeated-ai-agent-mistakes'],
+  },
+  {
+    query: 'opencode guardrails',
+    path: '/guides/opencode-guardrails',
+    pageType: 'integration',
+    pillar: 'agent-workflows',
+    title: 'OpenCode Guardrails | Local-First Enforcement with ThumbGate',
+    heroTitle: 'OpenCode Guardrails That Keep Local Agent Runs Honest',
+    heroSummary: 'OpenCode gives operators a local-first agent surface, but repeated git, shell, and workflow mistakes still need a hard stop. ThumbGate adds repo-local and portable guardrails so feedback becomes worktree-safe pre-action enforcement.',
+    takeaways: [
+      'OpenCode buyers want local-first control without trusting repeated risky actions.',
+      'ThumbGate already ships repo-local and portable OpenCode profiles, which makes this an evidence-backed acquisition lane.',
+      'The page should convert install intent into a proof-backed setup path, then into Pro or a workflow-hardening conversation.',
+    ],
+    sections: [
+      {
+        heading: 'Why OpenCode operators still need guardrails',
+        paragraphs: [
+          'OpenCode keeps the workflow close to the repo, which is exactly why the same repeated mistake becomes expensive quickly. A bad git action, unsafe shell command, or skipped proof step is no longer abstract model output. It is a real local workflow failure.',
+          'The buyer is usually not asking for more prompts. They are asking for a durable control point that keeps the next repeated mistake from reaching the tool call at all.',
+        ],
+      },
+      {
+        heading: 'What ThumbGate already ships for OpenCode',
+        bullets: [
+          'A repo-local `opencode.json` profile with worktree-safe permissions and runtime-state boundaries.',
+          'A portable `adapters/opencode/opencode.json` profile for other OpenCode projects.',
+          'A read-only OpenCode review subagent and concise repo-local workflow instructions.',
+          'Pre-action checks that turn prior feedback into enforced local workflow boundaries before execution.',
+        ],
+      },
+      {
+        heading: 'Why this matters commercially',
+        paragraphs: [
+          'OpenCode is a self-serve lane first. The highest-ROI path is an honest guide that proves the install surface exists, then routes serious buyers into the setup guide, Pro, or a workflow-hardening sprint only after one real failure mode is named.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Does ThumbGate replace OpenCode permissions?',
+        answer: 'No. OpenCode permissions are still useful. ThumbGate sits alongside them so repeated failures become searchable lessons, prevention rules, and pre-action checks before the next risky action runs.',
+      },
+      {
+        question: 'Can I use ThumbGate with OpenCode outside this repository?',
+        answer: 'Yes. ThumbGate ships a portable OpenCode MCP profile plus repo-local guidance, so the same local-first enforcement loop can move into other OpenCode projects when the buyer wants the tool path.',
+      },
+    ],
+    relatedPaths: ['/guides/pre-action-checks', '/guides/codex-cli-guardrails'],
   },
   ...BROWSER_BRIDGE_GUIDE_SPECS.map(buildBrowserBridgeGuide),
   ...AI_RECOMMENDATION_VISIBILITY_GUIDE_SPECS.map(buildAiRecommendationVisibilityGuide),

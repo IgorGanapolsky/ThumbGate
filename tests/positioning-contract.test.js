@@ -84,6 +84,7 @@ test('README exposes prompt-shaped buyer questions with tracked guide links', ()
   assert.match(readme, /guides\/cursor-agent-guardrails\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/codex-cli-guardrails\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/gemini-cli-feedback-memory\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
+  assert.match(readme, /guides\/opencode-guardrails\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app/);
   assert.doesNotMatch(readme, /https:\/\/usethumbgate\.com/i);
   assert.match(readme, /\/\?utm_source=github&utm_medium=readme&utm_campaign=top_cta#workflow-sprint-intake/);
