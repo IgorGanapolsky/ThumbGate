@@ -2258,10 +2258,10 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.match(operatorHandoff, /Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
     assert.equal(operatorHandoffJson.sections.find((section) => section.key === 'send_now_warm_discovery').label, 'Send Now: Warm Discovery');
     assert.equal(operatorHandoffJson.sections.find((section) => section.key === 'send_now_warm_discovery').targets[0].pipelineLeadId, 'reddit_builder_production_mcp_server');
-    assert.match(operatorSendNowMarkdown, /# Operator Send-Now Queue/);
+    assert.match(operatorSendNowMarkdown, /# Operator Send-Now Sheet/);
     assert.match(operatorSendNowMarkdown, /## Send Now: Warm Discovery/);
-    assert.match(operatorSendNowMarkdown, /Track next step:/);
-    assert.match(operatorSendNowMarkdown, /reddit_builder_production_mcp_server/);
+    assert.match(operatorSendNowMarkdown, /First-touch draft:/);
+    assert.match(operatorSendNowMarkdown, /Log after send: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
     assert.match(operatorSendNowCsv, /^rank,sectionKey,sectionLabel,temperature,source,channel,pipelineStage,pipelineLeadId,username,accountName,company,repoName,repoUrl,contactSurface,contactSurfaces,pipelineUpdatedAt,nextOperatorStep,evidenceScore,evidence,motionLabel,whyNow,proofRule,cta,firstTouchDraft,painConfirmedFollowUpDraft,selfServeFollowUpDraft,checkoutCloseDraft,markContactedCommand,markRepliedCommand,markCallBookedCommand,markCheckoutStartedCommand,markSprintIntakeCommand,markPaidCommand/m);
     assert.match(operatorSendNowCsv, /send_now_warm_discovery/);
     assert.match(operatorSendNowCsv, /reddit_builder_production_mcp_server/);
@@ -2432,9 +2432,10 @@ test('operator send-now export flattens ranked handoff rows for batch ops', () =
   assert.equal(payload.rows[0].sectionKey, 'send_now_warm_discovery');
   assert.equal(payload.rows[0].pipelineLeadId, 'reddit_builder_production_mcp_server');
   assert.equal(payload.rows[0].company, 'Builder Labs');
-  assert.match(markdown, /# Operator Send-Now Queue/);
+  assert.match(markdown, /# Operator Send-Now Sheet/);
   assert.match(markdown, /## Send Now: Warm Discovery/);
-  assert.match(markdown, /I can harden one workflow, then prove it\./);
+  assert.match(markdown, /### 1\. @builder — r\/ClaudeCode/);
+  assert.match(markdown, /Log after sprint intake: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
   assert.match(csv, /send_now_warm_discovery/);
   assert.match(csv, /Reddit DM: https:\/\/www\.reddit\.com\/user\/builder\//);
   assert.match(csv, /I can harden one workflow, then prove it\./);

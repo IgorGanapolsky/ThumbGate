@@ -2230,78 +2230,103 @@ function renderOperatorSendNowCsv(report) {
 
 function renderOperatorSendNowMarkdown(report) {
   const payload = buildOperatorSendNowPayload(report);
-  const rowsBySection = payload.rows.reduce((sections, row) => {
-    if (!sections.has(row.sectionKey)) {
-      sections.set(row.sectionKey, {
+  const groupedRows = payload.rows.reduce((accumulator, row) => {
+    if (!accumulator.has(row.sectionKey)) {
+      accumulator.set(row.sectionKey, {
         label: row.sectionLabel,
         rows: [],
       });
     }
-    sections.get(row.sectionKey).rows.push(row);
-    return sections;
+    accumulator.get(row.sectionKey).rows.push(row);
+    return accumulator;
   }, new Map());
-  const sectionOrder = [
-    'send_now_warm_discovery',
-    'close_now_self_serve_pro',
-    'send_next_production_rollout',
-    'seed_next_cold_github',
-  ];
-  const sectionLines = sectionOrder.flatMap((sectionKey) => {
-    const section = rowsBySection.get(sectionKey);
-    if (!section || !section.rows.length) {
-      return [];
-    }
-
-    return [
-      `## ${section.label}`,
-      '',
-      ...section.rows.flatMap((row) => ([
-        `### ${row.rank}. ${row.username || row.accountName || row.repoName || row.pipelineLeadId}`,
-        `- Pipeline lead: ${row.pipelineLeadId}`,
-        `- Channel: ${row.source} / ${row.channel}`,
-        `- Stage: ${row.pipelineStage}`,
-        `- Contact surface: ${row.contactSurface || 'n/a'}`,
-        `- Offer: ${row.motionLabel || 'n/a'}`,
-        `- Evidence score: ${Number(row.evidenceScore || 0)}`,
-        `- Evidence: ${row.evidence.length ? row.evidence.join(', ') : 'n/a'}`,
-        `- Why now: ${row.whyNow || row.nextOperatorStep || 'n/a'}`,
-        `- CTA: ${row.cta || 'n/a'}`,
-        `- Proof rule: ${row.proofRule || 'Use proof links only after the buyer confirms pain.'}`,
-        '',
-        'First-touch draft:',
-        `> ${row.firstTouchDraft || 'n/a'}`,
-        '',
-        'Track next step:',
-        `\`${row.markContactedCommand || 'n/a'}\``,
-        '',
-      ])),
-    ];
-  });
+  const sectionLines = groupedRows.size
+    ? Array.from(groupedRows.values()).flatMap((section) => {
+      const rowLines = section.rows.flatMap((row) => {
+        const accountLine = [row.username ? `@${row.username}` : '', row.accountName || row.repoName || row.company || 'n/a']
+          .filter(Boolean)
+          .join(' — ');
+        const companyLine = row.company ? `- Company: ${row.company}` : null;
+        const repoLine = row.repoName ? `- Repo: ${row.repoName}${row.repoUrl ? ` (${row.repoUrl})` : ''}` : null;
+        const contactSurfaces = renderContactSurfaces(row.contactSurfaces);
+        return [
+          `### ${row.rank}. ${accountLine}`,
+          `- Motion: ${row.motionLabel}`,
+          `- Pipeline lead id: ${row.pipelineLeadId}`,
+          `- Pipeline stage: ${row.pipelineStage}`,
+          `- Contact: ${row.contactSurface || 'n/a'}`,
+          contactSurfaces ? `- Contact surfaces: ${contactSurfaces}` : null,
+          companyLine,
+          repoLine,
+          `- Evidence score: ${row.evidenceScore}`,
+          `- Evidence: ${(row.evidence || []).join('; ') || 'n/a'}`,
+          `- Why now: ${row.whyNow}`,
+          `- Proof rule: ${row.proofRule}`,
+          `- CTA: ${row.cta}`,
+          `- Next operator step: ${row.nextOperatorStep}`,
+          '',
+          'First-touch draft:',
+          `> ${row.firstTouchDraft}`,
+          '',
+          `Log after send: \`${row.markContactedCommand}\``,
+          '',
+          'Pain-confirmed follow-up:',
+          `> ${row.painConfirmedFollowUpDraft}`,
+          '',
+          `Log after pain-confirmed reply: \`${row.markRepliedCommand}\``,
+          '',
+          'Self-serve follow-up:',
+          `> ${row.selfServeFollowUpDraft}`,
+          '',
+          'Checkout close draft:',
+          `> ${row.checkoutCloseDraft}`,
+          '',
+          `Log after call booked: \`${row.markCallBookedCommand}\``,
+          `Log after checkout started: \`${row.markCheckoutStartedCommand}\``,
+          `Log after sprint intake: \`${row.markSprintIntakeCommand}\``,
+          `Log after paid: \`${row.markPaidCommand}\``,
+          '',
+        ].filter(Boolean);
+      });
+      return [
+        `## ${section.label}`,
+        ...rowLines,
+      ];
+    })
+    : ['- No ready-now rows are available for this run.', ''];
 
   return [
-    '# Operator Send-Now Queue',
+    '# Operator Send-Now Sheet',
     '',
-    'Status: current',
     `Updated: ${payload.generatedAt}`,
     '',
-    'This file is the compact operator send surface derived from the evidence-backed GTM revenue loop.',
-    'It keeps the highest-priority outreach rows, first-touch drafts, and tracking commands in one place.',
+    'This is the copy-paste send surface for the current evidence-backed revenue loop. Use it when you need the ready-now rows, first-touch drafts, and logging commands in one markdown handoff.',
     '',
-    '## Snapshot',
-    `- Revenue state: ${payload.summary?.revenueState || 'unknown'}`,
-    `- Headline: ${payload.summary?.headline || 'No verified headline for this run.'}`,
-    `- Billing verification: ${payload.summary?.billingVerification || 'Billing verification unavailable for this run.'}`,
-    `- Paid orders: ${Number(payload.summary?.paidOrders || 0)}`,
-    `- Warm targets ready now: ${Number(payload.summary?.warmTargetsReadyNow || 0)}`,
-    `- Self-serve targets ready now: ${Number(payload.summary?.selfServeTargetsReadyNow || 0)}`,
-    `- Production rollout targets ready now: ${Number(payload.summary?.productionRolloutTargetsReadyNow || 0)}`,
+    '## Current Snapshot',
+    `- Revenue state: ${payload.summary.revenueState}`,
+    `- Headline: ${payload.summary.headline}`,
+    `- Billing verification: ${payload.summary.billingVerification}`,
+    `- Paid orders: ${payload.summary.paidOrders}`,
+    `- Checkout starts: ${payload.summary.checkoutStarts}`,
+    `- Active follow-ups: ${payload.summary.activeFollowUps}`,
+    `- Warm targets ready now: ${payload.summary.warmTargetsReadyNow}`,
+    `- Self-serve closes ready now: ${payload.summary.selfServeTargetsReadyNow}`,
+    `- Production-rollout targets ready now: ${payload.summary.productionRolloutTargetsReadyNow}`,
+    `- Cold GitHub targets ready next: ${payload.summary.coldGitHubTargetsReadyNext}`,
     '',
-    'Proof rule: use proof links only after the buyer confirms workflow pain.',
+    '## Operator Rules',
+    '- Import the queue into the sales ledger before sending anything.',
+    '- Follow the row motion: sprint rows get one workflow-hardening offer; self-serve rows get the guide-to-Pro lane unless pain is confirmed.',
+    `- Qualify the offer split: ${OFFER_SPLIT_RULE}`,
+    '- Use [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) and [COMMERCIAL_TRUTH.md](../COMMERCIAL_TRUTH.md) only after the buyer confirms pain.',
+    '',
+    '```bash',
+    'npm run sales:pipeline -- import --source docs/marketing/gtm-revenue-loop.json',
+    '```',
     '',
     ...sectionLines,
   ].join('\n');
 }
-
 function renderTeamOutreachMessagesMarkdown(report) {
   const warmTargets = Array.isArray(report?.targets)
     ? report.targets.map(enrichRenderableTarget).filter((target) => target.temperature === 'warm')
