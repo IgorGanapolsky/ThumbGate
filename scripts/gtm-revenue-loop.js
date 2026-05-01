@@ -29,6 +29,7 @@ const TARGET_SEARCH_QUERIES = [
   'search/repositories?q=Claude+Code+plugin+stars:>=3+sort:updated',
   'search/repositories?q=Codex+plugin+stars:>=3+sort:updated',
   'search/repositories?q=OpenCode+plugin+stars:>=3+sort:updated',
+  'search/repositories?q=Roo+Code+Cline+rules+sort:updated',
   'search/repositories?q=MCP+plugin+setup+stars:>=3+sort:updated',
   'search/repositories?q=Cursor+rules+stars:>=3+sort:updated',
 ];
@@ -594,6 +595,7 @@ function buildRevenueLinks(config = resolveHostedBillingConfig({
   return {
     appOrigin,
     guideLink: `${appOrigin}/guide`,
+    rooToClineGuideLink: `${appOrigin}/guides/roo-code-alternative-cline`,
     proCheckoutLink: `${appOrigin}/checkout/pro`,
     sprintLink: `${appOrigin}/#workflow-sprint-intake`,
     commercialTruthLink: COMMERCIAL_TRUTH_LINK,
@@ -1024,6 +1026,11 @@ function hasSelfServeToolingSignals(target) {
   return SELF_SERVE_TOOLING_SIGNALS.test(haystack);
 }
 
+function isRooCodeMigrationProspect(target) {
+  const haystack = `${normalizeText(target.repoName)} ${normalizeText(target.description)}`.toLowerCase();
+  return /\b(?:roo(?:\s|-)?code|roo ai|roo)\b/.test(haystack) && /\bcline\b/.test(haystack);
+}
+
 function isSelfServeToolingProspect(target) {
   if (!hasSelfServeToolingSignals(target)) {
     return false;
@@ -1070,6 +1077,11 @@ function analyzeTargetEvidence(target) {
     }
   }
 
+  if (isRooCodeMigrationProspect(target)) {
+    score += 4;
+    evidence.push('Roo Code sunset migration window');
+  }
+
   if (hasLowBuyerIntentSignals(target)) {
     score = Math.max(0, score - 4);
   }
@@ -1077,6 +1089,8 @@ function analyzeTargetEvidence(target) {
   let outreachAngle = 'Pitch one repeated workflow failure, then offer proof-backed hardening instead of a generic tool trial.';
   if (/\b(jira|github|gitlab|microsoft ?365|office|google drive|calendar|slack|salesforce|crm|analytics)\b/.test(haystack)) {
     outreachAngle = 'Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.';
+  } else if (isRooCodeMigrationProspect(target)) {
+    outreachAngle = 'Lead with the Roo Code sunset, portable lesson memory, and safer Cline rollout before any generic tool pitch.';
   } else if (isSelfServeToolingProspect(target)) {
     outreachAngle = 'Lead with the proof-backed setup guide and local-first enforcement before any team-motion pitch.';
   } else if (/\b(production|platform|deploy|deployment|incident|sre|ci|cd|release|security|compliance)\b/.test(haystack)) {
@@ -1125,6 +1139,18 @@ function diversifyRankedTargets(ranked = [], maxTargets = 6) {
   pushTargets(selfServeTargets, reservedSelfServeSlots);
   pushTargets(ranked, targetCount);
   return selected.slice(0, targetCount);
+}
+
+function resolveGuideLinkForTarget(target, links = buildRevenueLinks()) {
+  return isRooCodeMigrationProspect(target)
+    ? links.rooToClineGuideLink
+    : links.guideLink;
+}
+
+function resolveGuideLabelForTarget(target) {
+  return isRooCodeMigrationProspect(target)
+    ? 'Roo Code to Cline migration guide'
+    : 'proof-backed setup guide';
 }
 
 async function prospectTargets(maxTargets = 6, {
@@ -1218,6 +1244,14 @@ function selectOutreachMotion(target, motionCatalog = buildMotionCatalog()) {
     };
   }
 
+  if (isRooCodeMigrationProspect(target)) {
+    return {
+      key: motionCatalog.pro.key,
+      label: motionCatalog.pro.label,
+      reason: 'Target is already evaluating the Roo Code to Cline path, so start with the migration guide and Pro follow-on before pitching a sprint.',
+    };
+  }
+
   if (isSelfServeToolingProspect(target)) {
     return {
       key: motionCatalog.pro.key,
@@ -1278,10 +1312,12 @@ function buildFallbackMessage(target, selectedMotion, motionCatalog = buildMotio
     ].join(' ');
   }
 
-  const guideLink = buildRevenueLinks().guideLink;
+  const links = buildRevenueLinks();
+  const guideLink = resolveGuideLinkForTarget(target, links);
+  const guideLabel = resolveGuideLabelForTarget(target);
   return [
     `Hey @${target.username}, saw you're building around ${targetRef}.`,
-    `If you want the clean self-serve tool path first, start with the proof-backed setup guide: ${guideLink}. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.`,
+    `If you want the clean self-serve tool path first, start with the ${guideLabel}: ${guideLink}. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.`,
   ].join(' ');
 }
 
@@ -1307,16 +1343,18 @@ function buildSelfServeFollowUp(target, selectedMotion, motionCatalog = buildMot
   const links = buildRevenueLinks();
   const repoName = normalizeText(target.repoName);
   const repoRef = repoName ? `\`${repoName}\`` : 'your workflow';
+  const guideLink = resolveGuideLinkForTarget(target, links);
+  const guideLabel = resolveGuideLabelForTarget(target);
 
   if (selectedMotion.key === motionCatalog.pro.key) {
     return [
-      `If you want the self-serve path for ${repoRef}, start with the proof-backed setup guide: ${links.guideLink}`,
+      `If you want the self-serve path for ${repoRef}, start with the ${guideLabel}: ${guideLink}`,
       `If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is ${motionCatalog.pro.cta}`,
     ].join(' ');
   }
 
   return [
-    `If you want to inspect the self-serve path while you evaluate ${repoRef}, start with the proof-backed setup guide: ${links.guideLink}`,
+    `If you want to inspect the self-serve path while you evaluate ${repoRef}, start with the ${guideLabel}: ${guideLink}`,
     `If you decide the tool path is enough, the live Pro checkout is ${motionCatalog.pro.cta}. If the blocker needs hands-on workflow hardening, keep the sprint intake here: ${motionCatalog.sprint.cta}`,
   ].join(' ');
 }
@@ -1432,12 +1470,14 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
     fallbackReason,
     snapshot,
   });
+  const links = buildRevenueLinks();
   const currentTruth = {
     publicSelfServeOffer: motionCatalog.pro.label,
     publicSelfServeCta: motionCatalog.pro.cta,
     teamPilotOffer: motionCatalog.sprint.label,
     teamPilotCta: motionCatalog.sprint.cta,
-    guideLink: buildRevenueLinks().guideLink,
+    guideLink: links.guideLink,
+    rooToClineGuideLink: links.rooToClineGuideLink,
     commercialTruthLink: motionCatalog.pro.truth,
     verificationEvidenceLink: motionCatalog.pro.proof,
   };
@@ -1499,7 +1539,7 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
         offer: target.selectedMotion.key === motionCatalog.sprint.key ? 'workflow_hardening_sprint' : 'pro_self_serve',
         cta: target.selectedMotion.key === motionCatalog.sprint.key
           ? motionCatalog.sprint.cta
-          : currentTruth.guideLink,
+          : resolveGuideLinkForTarget(target, links),
         proofPackTrigger: target.proofPackTrigger || 'Use proof pack only after the buyer confirms pain.',
         firstTouchDraft: target.message,
         painConfirmedFollowUpDraft: followUpMessage,
@@ -2598,6 +2638,7 @@ module.exports = {
   hasCredibleRepoDescription,
   hasCredibleRepoIdentity,
   hasLowBuyerIntentSignals,
+  isRooCodeMigrationProspect,
   resolveGitHubApiToken,
   isCliInvocation,
   parseArgs,

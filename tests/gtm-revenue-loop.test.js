@@ -24,6 +24,7 @@ const {
   hasCredibleRepoDescription,
   hasCredibleRepoIdentity,
   hasLowBuyerIntentSignals,
+  isRooCodeMigrationProspect,
   parseArgs,
   prospectTargets,
   renderMarketplaceCopyMarkdown,
@@ -406,6 +407,7 @@ test('target evidence favors production workflows over generic fresh repos', () 
 
 test('target search queries keep the GitLab review discovery lane active', () => {
   assert.ok(TARGET_SEARCH_QUERIES.includes('search/repositories?q=GitLab+review+automation+agent+sort:updated'));
+  assert.ok(TARGET_SEARCH_QUERIES.includes('search/repositories?q=Roo+Code+Cline+rules+sort:updated'));
 });
 
 test('self-serve hook surfaces keep the guide-first outreach angle even when they mention platforms', () => {
@@ -418,6 +420,24 @@ test('self-serve hook surfaces keep the guide-first outreach angle even when the
 
   assert.ok(target.score >= 4);
   assert.match(target.outreachAngle, /proof-backed setup guide|local-first enforcement/i);
+});
+
+test('roo code migration prospects are detected and routed to the migration angle', () => {
+  const target = {
+    repoName: 'vscode-clinerules',
+    description: 'A VSCode plugin to help you configure rules for the Cline / Roo Code AI programming assistant.',
+  };
+  const evidence = analyzeTargetEvidence({
+    ...target,
+    stars: 41,
+    updatedAt: new Date().toISOString(),
+  });
+
+  assert.equal(isRooCodeMigrationProspect(target), true);
+  assert.ok(evidence.score >= 8);
+  assert.ok(evidence.evidence.includes('Roo Code sunset migration window'));
+  assert.match(evidence.outreachAngle, /Roo Code sunset/i);
+  assert.match(evidence.outreachAngle, /portable lesson memory|safer Cline rollout/i);
 });
 
 test('repo identity filter drops obviously weak identifiers', () => {
@@ -1673,6 +1693,25 @@ test('pro first-touch outreach stays discovery-first and defers checkout links',
   assert.doesNotMatch(message, /COMMERCIAL_TRUTH/);
 });
 
+test('roo code migration outreach swaps in the migration guide', () => {
+  const catalog = buildMotionCatalog(buildRevenueLinks());
+  const target = {
+    username: 'henryalps',
+    repoName: 'vscode-clinerules',
+    description: 'A VSCode plugin to help you quickly configure rules for the Cline / Roo AI programming assistant.',
+  };
+  const selectedMotion = selectOutreachMotion(target, catalog);
+  const message = buildFallbackMessage(target, selectedMotion, catalog);
+  const followUp = buildSelfServeFollowUp(target, selectedMotion, catalog);
+
+  assert.equal(selectedMotion.key, 'pro');
+  assert.match(selectedMotion.reason, /Roo Code to Cline path/i);
+  assert.match(message, /Roo Code to Cline migration guide/i);
+  assert.match(message, /\/guides\/roo-code-alternative-cline/);
+  assert.match(followUp, /Roo Code to Cline migration guide/i);
+  assert.match(followUp, /\/guides\/roo-code-alternative-cline/);
+});
+
 test('self-serve targets generate self-serve sales-command notes instead of sprint notes', () => {
   const links = buildRevenueLinks();
   const catalog = buildMotionCatalog(links);
@@ -1721,6 +1760,54 @@ test('self-serve targets generate self-serve sales-command notes instead of spri
   assert.match(report.targets[0].salesCommands.markContacted, /proof-backed setup guide and local-first enforcement/i);
   assert.match(report.targets[0].salesCommands.markCallBooked, /self-serve conversation exposed repeated pain/i);
   assert.match(report.targets[0].salesCommands.markSprintIntake, /escalated from the self-serve lane/i);
+});
+
+test('roo code migration targets keep the migration guide as their operator CTA', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const report = buildRevenueLoopReport({
+    source: 'local',
+    fallbackReason: null,
+    summary: {
+      revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    },
+    motionCatalog: catalog,
+    directive: deriveRevenueDirective({
+      revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    }, catalog),
+    targets: [{
+      temperature: 'cold',
+      source: 'github',
+      channel: 'github',
+      username: 'henryalps',
+      accountName: 'henryalps',
+      contactUrl: 'https://github.com/henryalps',
+      repoName: 'vscode-clinerules',
+      repoUrl: 'https://github.com/henryalps/vscode-clinerules',
+      description: 'A VSCode plugin to help you quickly configure rules for the Cline / Roo AI programming assistant.',
+      evidence: {
+        score: 10,
+        evidence: ['self-serve agent tooling'],
+        outreachAngle: 'Lead with the Roo Code sunset, portable lesson memory, and safer Cline rollout before any generic tool pitch.',
+      },
+      selectedMotion: {
+        key: 'pro',
+        label: catalog.pro.label,
+        reason: 'Target is already evaluating the Roo Code to Cline path, so start with the migration guide and Pro follow-on before pitching a sprint.',
+      },
+      message: 'Start with the migration guide.',
+      proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+    }],
+  });
+
+  assert.match(report.targets[0].cta, /\/guides\/roo-code-alternative-cline$/);
+  assert.match(report.targets[0].selfServeFollowUpDraft, /Roo Code to Cline migration guide/i);
 });
 
 test('sprint target sales-command notes strip operator phrasing from the pain hypothesis', () => {

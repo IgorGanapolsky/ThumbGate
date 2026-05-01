@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-30T04:14:20.304Z",
+  "generatedAt": "2026-05-01T03:49:32.719Z",
   "source": "hosted-via-railway-env",
   "fallbackReason": null,
   "verification": {
@@ -28,6 +28,7 @@
     "teamPilotOffer": "Workflow Hardening Sprint",
     "teamPilotCta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
     "guideLink": "https://thumbgate-production.up.railway.app/guide",
+    "rooToClineGuideLink": "https://thumbgate-production.up.railway.app/guides/roo-code-alternative-cline",
     "commercialTruthLink": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
     "verificationEvidenceLink": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
   },
@@ -47,10 +48,10 @@
   "snapshot": {
     "paidOrders": 2,
     "bookedRevenueCents": 2000,
-    "checkoutStarts": 0,
-    "ctaClicks": 0,
-    "visitors": 9,
-    "uniqueLeads": 0,
+    "checkoutStarts": 10,
+    "ctaClicks": 27,
+    "visitors": 771,
+    "uniqueLeads": 10,
     "sprintLeads": 0,
     "qualifiedSprintLeads": 0,
     "latestPaidAt": "2025-11-18T12:36:00.000Z"
@@ -340,6 +341,178 @@
       "temperature": "cold",
       "source": "github",
       "channel": "github",
+      "username": "jmanhype",
+      "accountName": "jmanhype",
+      "company": "",
+      "contactUrl": "https://vaos.sh/",
+      "contactSurfaces": [
+        {
+          "label": "Website",
+          "url": "https://vaos.sh/"
+        },
+        {
+          "label": "GitHub profile",
+          "url": "https://github.com/jmanhype"
+        },
+        {
+          "label": "Repository",
+          "url": "https://github.com/jmanhype/claude-code-plugin-marketplace"
+        }
+      ],
+      "websiteUrl": "https://vaos.sh/",
+      "repoName": "claude-code-plugin-marketplace",
+      "repoUrl": "https://github.com/jmanhype/claude-code-plugin-marketplace",
+      "description": "Multi-agent trading, swarm intelligence, and GitHub automation plugins for Claude Code. 19 production-grade plugins built from 68+ specialized agents.",
+      "stars": 27,
+      "updatedAt": "2026-05-01T03:05:52Z",
+      "evidenceScore": 16,
+      "evidence": [
+        "production or platform workflow",
+        "business-system integration",
+        "agent infrastructure",
+        "self-serve agent tooling",
+        "27 GitHub stars",
+        "updated in the last 7 days"
+      ],
+      "outreachAngle": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
+      "evidenceSource": "https://github.com/jmanhype/claude-code-plugin-marketplace",
+      "evidenceSources": [
+        {
+          "label": "Target signal",
+          "url": "https://github.com/jmanhype/claude-code-plugin-marketplace",
+          "reason": "Source of the workflow or buyer signal behind this outreach row."
+        },
+        {
+          "label": "Commercial truth",
+          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+          "reason": "Current pricing, traction, and offer guardrail."
+        },
+        {
+          "label": "Verification evidence",
+          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+          "reason": "Current engineering proof pack and verification artifact."
+        }
+      ],
+      "claimGuardrails": [
+        "Do not claim revenue, installs, or marketplace approval without direct command evidence.",
+        "Do not lead with proof links before the buyer confirms pain.",
+        "Keep public pricing and traction claims aligned with COMMERCIAL_TRUTH.md.",
+        "Keep proof and quality claims aligned with VERIFICATION_EVIDENCE.md."
+      ],
+      "motion": "sprint",
+      "motionLabel": "Workflow Hardening Sprint",
+      "motionReason": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
+      "pipelineLeadId": "github_jmanhype_claude_code_plugin_marketplace",
+      "pipelineStage": "targeted",
+      "pipelineUpdatedAt": "",
+      "nextOperatorAction": "Send the first-touch draft and log the outreach in the sales pipeline.",
+      "offer": "workflow_hardening_sprint",
+      "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+      "proofPackTrigger": "Use proof pack only after the buyer confirms pain.",
+      "firstTouchDraft": "Hey @jmanhype, saw you're shipping `claude-code-plugin-marketplace`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+      "painConfirmedFollowUpDraft": "If `claude-code-plugin-marketplace` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "selfServeFollowUpDraft": "If you want to inspect the self-serve path while you evaluate `claude-code-plugin-marketplace`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+      "checkoutCloseDraft": "If you are already comparing close options for `claude-code-plugin-marketplace`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "salesCommands": {
+        "markContacted": "npm run sales:pipeline -- advance --lead 'github_jmanhype_claude_code_plugin_marketplace' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markReplied": "npm run sales:pipeline -- advance --lead 'github_jmanhype_claude_code_plugin_marketplace' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_jmanhype_claude_code_plugin_marketplace' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_jmanhype_claude_code_plugin_marketplace' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_jmanhype_claude_code_plugin_marketplace' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markPaid": "npm run sales:pipeline -- advance --lead 'github_jmanhype_claude_code_plugin_marketplace' --channel 'manual' --stage 'paid' --note 'Closed Workflow Hardening Sprint and booked revenue after resolving one business-system workflow that needs approval boundaries, rollback safety, and proof.'"
+      },
+      "message": "Hey @jmanhype, saw you're shipping `claude-code-plugin-marketplace`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+    },
+    {
+      "temperature": "cold",
+      "source": "github",
+      "channel": "github",
+      "username": "montenegronyc",
+      "accountName": "montenegronyc",
+      "company": "Number Fortyeight Inc.",
+      "contactUrl": "https://numberfortyeight.co/",
+      "contactSurfaces": [
+        {
+          "label": "Website",
+          "url": "https://numberfortyeight.co/"
+        },
+        {
+          "label": "GitHub profile",
+          "url": "https://github.com/montenegronyc"
+        },
+        {
+          "label": "Repository",
+          "url": "https://github.com/montenegronyc/backporcher"
+        }
+      ],
+      "websiteUrl": "https://numberfortyeight.co/",
+      "repoName": "backporcher",
+      "repoUrl": "https://github.com/montenegronyc/backporcher",
+      "description": "Parallel Claude Code agent dispatcher: GitHub Issues as task queue, sandboxed worktrees, coordinator review, CI gating, auto-merge",
+      "stars": 12,
+      "updatedAt": "2026-04-15T03:26:41Z",
+      "evidenceScore": 16,
+      "evidence": [
+        "workflow control surface",
+        "production or platform workflow",
+        "business-system integration",
+        "agent infrastructure",
+        "12 GitHub stars",
+        "updated in the last 30 days"
+      ],
+      "outreachAngle": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
+      "evidenceSource": "https://github.com/montenegronyc/backporcher",
+      "evidenceSources": [
+        {
+          "label": "Target signal",
+          "url": "https://github.com/montenegronyc/backporcher",
+          "reason": "Source of the workflow or buyer signal behind this outreach row."
+        },
+        {
+          "label": "Commercial truth",
+          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+          "reason": "Current pricing, traction, and offer guardrail."
+        },
+        {
+          "label": "Verification evidence",
+          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+          "reason": "Current engineering proof pack and verification artifact."
+        }
+      ],
+      "claimGuardrails": [
+        "Do not claim revenue, installs, or marketplace approval without direct command evidence.",
+        "Do not lead with proof links before the buyer confirms pain.",
+        "Keep public pricing and traction claims aligned with COMMERCIAL_TRUTH.md.",
+        "Keep proof and quality claims aligned with VERIFICATION_EVIDENCE.md."
+      ],
+      "motion": "sprint",
+      "motionLabel": "Workflow Hardening Sprint",
+      "motionReason": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
+      "pipelineLeadId": "github_montenegronyc_backporcher",
+      "pipelineStage": "targeted",
+      "pipelineUpdatedAt": "",
+      "nextOperatorAction": "Send the first-touch draft and log the outreach in the sales pipeline.",
+      "offer": "workflow_hardening_sprint",
+      "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+      "proofPackTrigger": "Use proof pack only after the buyer confirms pain.",
+      "firstTouchDraft": "Hey @montenegronyc, saw you're shipping `backporcher`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+      "painConfirmedFollowUpDraft": "If `backporcher` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "selfServeFollowUpDraft": "If you want to inspect the self-serve path while you evaluate `backporcher`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+      "checkoutCloseDraft": "If you are already comparing close options for `backporcher`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "salesCommands": {
+        "markContacted": "npm run sales:pipeline -- advance --lead 'github_montenegronyc_backporcher' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markReplied": "npm run sales:pipeline -- advance --lead 'github_montenegronyc_backporcher' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_montenegronyc_backporcher' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_montenegronyc_backporcher' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_montenegronyc_backporcher' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markPaid": "npm run sales:pipeline -- advance --lead 'github_montenegronyc_backporcher' --channel 'manual' --stage 'paid' --note 'Closed Workflow Hardening Sprint and booked revenue after resolving one business-system workflow that needs approval boundaries, rollback safety, and proof.'"
+      },
+      "message": "Hey @montenegronyc, saw you're shipping `backporcher`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+    },
+    {
+      "temperature": "cold",
+      "source": "github",
+      "channel": "github",
       "username": "dolutech",
       "accountName": "dolutech",
       "company": "@dolutech",
@@ -444,7 +617,7 @@
       "repoUrl": "https://github.com/Adqui9608/ai-code-review-agent",
       "description": "Review GitHub pull requests with AI to catch bugs, security issues, and code quality problems with built-in eval and observability",
       "stars": 0,
-      "updatedAt": "2026-04-30T03:10:09Z",
+      "updatedAt": "2026-05-01T01:06:43Z",
       "evidenceScore": 15,
       "evidence": [
         "workflow control surface",
@@ -501,6 +674,87 @@
         "markPaid": "npm run sales:pipeline -- advance --lead 'github_adqui9608_ai_code_review_agent' --channel 'manual' --stage 'paid' --note 'Closed Workflow Hardening Sprint and booked revenue after resolving one business-system workflow that needs approval boundaries, rollback safety, and proof.'"
       },
       "message": "Hey @Adqui9608, saw you're shipping `ai-code-review-agent`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+    },
+    {
+      "temperature": "cold",
+      "source": "github",
+      "channel": "github",
+      "username": "kamaldhingra",
+      "accountName": "kamaldhingra",
+      "company": "",
+      "contactUrl": "https://github.com/kamaldhingra",
+      "contactSurfaces": [
+        {
+          "label": "GitHub profile",
+          "url": "https://github.com/kamaldhingra"
+        },
+        {
+          "label": "Repository",
+          "url": "https://github.com/kamaldhingra/AI-Agents-QA-Automation"
+        }
+      ],
+      "websiteUrl": "",
+      "repoName": "AI-Agents-QA-Automation",
+      "repoUrl": "https://github.com/kamaldhingra/AI-Agents-QA-Automation",
+      "description": "An end-to-end AI-driven QA automation pipeline built with AutoGen and Model Context Protocol (MCP). Two autonomous agents cover the full spectrum of a QA engineer's workflow — from requirements analysis all the way to a live GitHub repository with CI/CD.",
+      "stars": 0,
+      "updatedAt": "2026-04-30T11:52:31Z",
+      "evidenceScore": 15,
+      "evidence": [
+        "workflow control surface",
+        "production or platform workflow",
+        "business-system integration",
+        "agent infrastructure",
+        "updated in the last 7 days"
+      ],
+      "outreachAngle": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
+      "evidenceSource": "https://github.com/kamaldhingra/AI-Agents-QA-Automation",
+      "evidenceSources": [
+        {
+          "label": "Target signal",
+          "url": "https://github.com/kamaldhingra/AI-Agents-QA-Automation",
+          "reason": "Source of the workflow or buyer signal behind this outreach row."
+        },
+        {
+          "label": "Commercial truth",
+          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+          "reason": "Current pricing, traction, and offer guardrail."
+        },
+        {
+          "label": "Verification evidence",
+          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+          "reason": "Current engineering proof pack and verification artifact."
+        }
+      ],
+      "claimGuardrails": [
+        "Do not claim revenue, installs, or marketplace approval without direct command evidence.",
+        "Do not lead with proof links before the buyer confirms pain.",
+        "Keep public pricing and traction claims aligned with COMMERCIAL_TRUTH.md.",
+        "Keep proof and quality claims aligned with VERIFICATION_EVIDENCE.md."
+      ],
+      "motion": "sprint",
+      "motionLabel": "Workflow Hardening Sprint",
+      "motionReason": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
+      "pipelineLeadId": "github_kamaldhingra_ai_agents_qa_automation",
+      "pipelineStage": "targeted",
+      "pipelineUpdatedAt": "",
+      "nextOperatorAction": "Send the first-touch draft and log the outreach in the sales pipeline.",
+      "offer": "workflow_hardening_sprint",
+      "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+      "proofPackTrigger": "Use proof pack only after the buyer confirms pain.",
+      "firstTouchDraft": "Hey @kamaldhingra, saw you're shipping `AI-Agents-QA-Automation`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+      "painConfirmedFollowUpDraft": "If `AI-Agents-QA-Automation` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "selfServeFollowUpDraft": "If you want to inspect the self-serve path while you evaluate `AI-Agents-QA-Automation`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+      "checkoutCloseDraft": "If you are already comparing close options for `AI-Agents-QA-Automation`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "salesCommands": {
+        "markContacted": "npm run sales:pipeline -- advance --lead 'github_kamaldhingra_ai_agents_qa_automation' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markReplied": "npm run sales:pipeline -- advance --lead 'github_kamaldhingra_ai_agents_qa_automation' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_kamaldhingra_ai_agents_qa_automation' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_kamaldhingra_ai_agents_qa_automation' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_kamaldhingra_ai_agents_qa_automation' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markPaid": "npm run sales:pipeline -- advance --lead 'github_kamaldhingra_ai_agents_qa_automation' --channel 'manual' --stage 'paid' --note 'Closed Workflow Hardening Sprint and booked revenue after resolving one business-system workflow that needs approval boundaries, rollback safety, and proof.'"
+      },
+      "message": "Hey @kamaldhingra, saw you're shipping `AI-Agents-QA-Automation`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
     },
     {
       "temperature": "cold",
@@ -587,130 +841,129 @@
       "temperature": "cold",
       "source": "github",
       "channel": "github",
-      "username": "opensesh",
-      "accountName": "opensesh",
-      "company": "opensession",
-      "contactUrl": "https://link.opensession.co/github",
+      "username": "DGouron",
+      "accountName": "DGouron",
+      "company": "Mentor Goal",
+      "contactUrl": "https://dgouron.fr/",
       "contactSurfaces": [
         {
           "label": "Website",
-          "url": "https://link.opensession.co/github"
+          "url": "https://dgouron.fr/"
         },
         {
           "label": "GitHub profile",
-          "url": "https://github.com/opensesh"
+          "url": "https://github.com/DGouron"
         },
         {
           "label": "Repository",
-          "url": "https://github.com/opensesh/KARIMO"
+          "url": "https://github.com/DGouron/review-flow"
         }
       ],
-      "websiteUrl": "https://link.opensession.co/github",
-      "repoName": "KARIMO",
-      "repoUrl": "https://github.com/opensesh/KARIMO",
-      "description": "Claude Code harness engineering plugin — plan mode on steroids. Product design-driven agent orchestration with sub-agents and agent teams, tuned for developers and designers shipping real features. Phased adoption from PRD execution to automated review, code review, and CI-friendly agent teams",
-      "stars": 34,
-      "updatedAt": "2026-04-30T04:00:49Z",
-      "evidenceScore": 17,
-      "evidence": [
-        "workflow control surface",
-        "production or platform workflow",
-        "agent infrastructure",
-        "self-serve agent tooling",
-        "34 GitHub stars",
-        "updated in the last 7 days"
-      ],
-      "outreachAngle": "Lead with the proof-backed setup guide and local-first enforcement before any team-motion pitch.",
-      "evidenceSource": "https://github.com/opensesh/KARIMO",
-      "evidenceSources": [
-        {
-          "label": "Target signal",
-          "url": "https://github.com/opensesh/KARIMO",
-          "reason": "Source of the workflow or buyer signal behind this outreach row."
-        },
-        {
-          "label": "Commercial truth",
-          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
-          "reason": "Current pricing, traction, and offer guardrail."
-        },
-        {
-          "label": "Verification evidence",
-          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
-          "reason": "Current engineering proof pack and verification artifact."
-        }
-      ],
-      "claimGuardrails": [
-        "Do not claim revenue, installs, or marketplace approval without direct command evidence.",
-        "Do not lead with proof links before the buyer confirms pain.",
-        "Keep public pricing and traction claims aligned with COMMERCIAL_TRUTH.md.",
-        "Keep proof and quality claims aligned with VERIFICATION_EVIDENCE.md."
-      ],
-      "motion": "pro",
-      "motionLabel": "Pro at $19/mo or $149/yr",
-      "motionReason": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
-      "pipelineLeadId": "github_opensesh_karimo",
-      "pipelineStage": "targeted",
-      "pipelineUpdatedAt": "",
-      "nextOperatorAction": "Send the first-touch draft and log the outreach in the sales pipeline.",
-      "offer": "pro_self_serve",
-      "cta": "https://thumbgate-production.up.railway.app/guide",
-      "proofPackTrigger": "Use proof pack only after the buyer confirms pain.",
-      "firstTouchDraft": "Hey @opensesh, saw you're building around `KARIMO`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
-      "painConfirmedFollowUpDraft": "If you want the self-serve path for `KARIMO`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
-      "selfServeFollowUpDraft": "If you want the self-serve path for `KARIMO`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro",
-      "checkoutCloseDraft": "If you are already comparing close options for `KARIMO`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
-      "salesCommands": {
-        "markContacted": "npm run sales:pipeline -- advance --lead 'github_opensesh_karimo' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markReplied": "npm run sales:pipeline -- advance --lead 'github_opensesh_karimo' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_opensesh_karimo' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute diagnostic after the self-serve conversation exposed repeated pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_opensesh_karimo' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_opensesh_karimo' --channel 'manual' --stage 'sprint_intake' --note 'Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markPaid": "npm run sales:pipeline -- advance --lead 'github_opensesh_karimo' --channel 'manual' --stage 'paid' --note 'Closed Pro at $19/mo or $149/yr and booked revenue after resolving the proof-backed setup guide and local-first enforcement before any team-motion pitch.'"
-      },
-      "message": "Hey @opensesh, saw you're building around `KARIMO`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step."
-    },
-    {
-      "temperature": "cold",
-      "source": "github",
-      "channel": "github",
-      "username": "BaseInfinity",
-      "accountName": "BaseInfinity",
-      "company": "",
-      "contactUrl": "https://www.youtube.com/@Basecase_/featured",
-      "contactSurfaces": [
-        {
-          "label": "Website",
-          "url": "https://www.youtube.com/@Basecase_/featured"
-        },
-        {
-          "label": "GitHub profile",
-          "url": "https://github.com/BaseInfinity"
-        },
-        {
-          "label": "Repository",
-          "url": "https://github.com/BaseInfinity/claude-sdlc-wizard"
-        }
-      ],
-      "websiteUrl": "https://www.youtube.com/@Basecase_/featured",
-      "repoName": "claude-sdlc-wizard",
-      "repoUrl": "https://github.com/BaseInfinity/claude-sdlc-wizard",
-      "description": "SDLC enforcement for Claude Code — hooks, skills, and wizard setup in one command. TDD, planning, self-review, CI shepherd.",
-      "stars": 10,
-      "updatedAt": "2026-04-30T02:26:45Z",
+      "websiteUrl": "https://dgouron.fr/",
+      "repoName": "review-flow",
+      "repoUrl": "https://github.com/DGouron/review-flow",
+      "description": "Automated AI code reviews powered — webhook-driven, real-time dashboard, MCP integration, smart queue with deduplication, multi-agent audits, and iterative follow-up reviews for GitLab MRs and GitHub PRs",
+      "stars": 36,
+      "updatedAt": "2026-04-25T03:12:00Z",
       "evidenceScore": 14,
       "evidence": [
         "workflow control surface",
-        "production or platform workflow",
-        "self-serve agent tooling",
-        "10 GitHub stars",
+        "business-system integration",
+        "agent infrastructure",
+        "36 GitHub stars",
         "updated in the last 7 days"
       ],
-      "outreachAngle": "Lead with the proof-backed setup guide and local-first enforcement before any team-motion pitch.",
-      "evidenceSource": "https://github.com/BaseInfinity/claude-sdlc-wizard",
+      "outreachAngle": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
+      "evidenceSource": "https://github.com/DGouron/review-flow",
       "evidenceSources": [
         {
           "label": "Target signal",
-          "url": "https://github.com/BaseInfinity/claude-sdlc-wizard",
+          "url": "https://github.com/DGouron/review-flow",
+          "reason": "Source of the workflow or buyer signal behind this outreach row."
+        },
+        {
+          "label": "Commercial truth",
+          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+          "reason": "Current pricing, traction, and offer guardrail."
+        },
+        {
+          "label": "Verification evidence",
+          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+          "reason": "Current engineering proof pack and verification artifact."
+        }
+      ],
+      "claimGuardrails": [
+        "Do not claim revenue, installs, or marketplace approval without direct command evidence.",
+        "Do not lead with proof links before the buyer confirms pain.",
+        "Keep public pricing and traction claims aligned with COMMERCIAL_TRUTH.md.",
+        "Keep proof and quality claims aligned with VERIFICATION_EVIDENCE.md."
+      ],
+      "motion": "sprint",
+      "motionLabel": "Workflow Hardening Sprint",
+      "motionReason": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
+      "pipelineLeadId": "github_dgouron_review_flow",
+      "pipelineStage": "targeted",
+      "pipelineUpdatedAt": "",
+      "nextOperatorAction": "Send the first-touch draft and log the outreach in the sales pipeline.",
+      "offer": "workflow_hardening_sprint",
+      "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+      "proofPackTrigger": "Use proof pack only after the buyer confirms pain.",
+      "firstTouchDraft": "Hey @DGouron, saw you're shipping `review-flow`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+      "painConfirmedFollowUpDraft": "If `review-flow` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "selfServeFollowUpDraft": "If you want to inspect the self-serve path while you evaluate `review-flow`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+      "checkoutCloseDraft": "If you are already comparing close options for `review-flow`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "salesCommands": {
+        "markContacted": "npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markReplied": "npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute workflow hardening diagnostic for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markPaid": "npm run sales:pipeline -- advance --lead 'github_dgouron_review_flow' --channel 'manual' --stage 'paid' --note 'Closed Workflow Hardening Sprint and booked revenue after resolving one business-system workflow that needs approval boundaries, rollback safety, and proof.'"
+      },
+      "message": "Hey @DGouron, saw you're shipping `review-flow`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+    },
+    {
+      "temperature": "cold",
+      "source": "github",
+      "channel": "github",
+      "username": "agynio",
+      "accountName": "agynio",
+      "company": "",
+      "contactUrl": "https://agyn.io/",
+      "contactSurfaces": [
+        {
+          "label": "Website",
+          "url": "https://agyn.io/"
+        },
+        {
+          "label": "GitHub profile",
+          "url": "https://github.com/agynio"
+        },
+        {
+          "label": "Repository",
+          "url": "https://github.com/agynio/gh-pr-review"
+        }
+      ],
+      "websiteUrl": "https://agyn.io/",
+      "repoName": "gh-pr-review",
+      "repoUrl": "https://github.com/agynio/gh-pr-review",
+      "description": "GitHub CLI extension that adds full inline PR review comment support — view, navigate, reply to, and resolve review threads directly from the terminal. LLM-ready and ideal for automated PR review agents.",
+      "stars": 143,
+      "updatedAt": "2026-04-29T19:32:13Z",
+      "evidenceScore": 15,
+      "evidence": [
+        "workflow control surface",
+        "business-system integration",
+        "self-serve agent tooling",
+        "143 GitHub stars",
+        "updated in the last 7 days"
+      ],
+      "outreachAngle": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
+      "evidenceSource": "https://github.com/agynio/gh-pr-review",
+      "evidenceSources": [
+        {
+          "label": "Target signal",
+          "url": "https://github.com/agynio/gh-pr-review",
           "reason": "Source of the workflow or buyer signal behind this outreach row."
         },
         {
@@ -733,64 +986,149 @@
       "motion": "pro",
       "motionLabel": "Pro at $19/mo or $149/yr",
       "motionReason": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
-      "pipelineLeadId": "github_baseinfinity_claude_sdlc_wizard",
+      "pipelineLeadId": "github_agynio_gh_pr_review",
       "pipelineStage": "targeted",
       "pipelineUpdatedAt": "",
       "nextOperatorAction": "Send the first-touch draft and log the outreach in the sales pipeline.",
       "offer": "pro_self_serve",
       "cta": "https://thumbgate-production.up.railway.app/guide",
       "proofPackTrigger": "Use proof pack only after the buyer confirms pain.",
-      "firstTouchDraft": "Hey @BaseInfinity, saw you're building around `claude-sdlc-wizard`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
-      "painConfirmedFollowUpDraft": "If you want the self-serve path for `claude-sdlc-wizard`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
-      "selfServeFollowUpDraft": "If you want the self-serve path for `claude-sdlc-wizard`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro",
-      "checkoutCloseDraft": "If you are already comparing close options for `claude-sdlc-wizard`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "firstTouchDraft": "Hey @agynio, saw you're building around `gh-pr-review`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
+      "painConfirmedFollowUpDraft": "If you want the self-serve path for `gh-pr-review`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "selfServeFollowUpDraft": "If you want the self-serve path for `gh-pr-review`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro",
+      "checkoutCloseDraft": "If you are already comparing close options for `gh-pr-review`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
       "salesCommands": {
-        "markContacted": "npm run sales:pipeline -- advance --lead 'github_baseinfinity_claude_sdlc_wizard' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markReplied": "npm run sales:pipeline -- advance --lead 'github_baseinfinity_claude_sdlc_wizard' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_baseinfinity_claude_sdlc_wizard' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute diagnostic after the self-serve conversation exposed repeated pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_baseinfinity_claude_sdlc_wizard' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_baseinfinity_claude_sdlc_wizard' --channel 'manual' --stage 'sprint_intake' --note 'Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markPaid": "npm run sales:pipeline -- advance --lead 'github_baseinfinity_claude_sdlc_wizard' --channel 'manual' --stage 'paid' --note 'Closed Pro at $19/mo or $149/yr and booked revenue after resolving the proof-backed setup guide and local-first enforcement before any team-motion pitch.'"
+        "markContacted": "npm run sales:pipeline -- advance --lead 'github_agynio_gh_pr_review' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markReplied": "npm run sales:pipeline -- advance --lead 'github_agynio_gh_pr_review' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_agynio_gh_pr_review' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute diagnostic after the self-serve conversation exposed repeated pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_agynio_gh_pr_review' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_agynio_gh_pr_review' --channel 'manual' --stage 'sprint_intake' --note 'Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markPaid": "npm run sales:pipeline -- advance --lead 'github_agynio_gh_pr_review' --channel 'manual' --stage 'paid' --note 'Closed Pro at $19/mo or $149/yr and booked revenue after resolving one business-system workflow that needs approval boundaries, rollback safety, and proof.'"
       },
-      "message": "Hey @BaseInfinity, saw you're building around `claude-sdlc-wizard`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step."
+      "message": "Hey @agynio, saw you're building around `gh-pr-review`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step."
     },
     {
       "temperature": "cold",
       "source": "github",
       "channel": "github",
-      "username": "zaxbysauce",
-      "accountName": "zaxbysauce",
+      "username": "greenpolo",
+      "accountName": "greenpolo",
       "company": "",
-      "contactUrl": "https://github.com/zaxbysauce",
+      "contactUrl": "https://github.com/greenpolo",
       "contactSurfaces": [
         {
           "label": "GitHub profile",
-          "url": "https://github.com/zaxbysauce"
+          "url": "https://github.com/greenpolo"
         },
         {
           "label": "Repository",
-          "url": "https://github.com/zaxbysauce/opencode-swarm"
+          "url": "https://github.com/greenpolo/cc-multi-cli-plugin"
         }
       ],
       "websiteUrl": "",
-      "repoName": "opencode-swarm",
-      "repoUrl": "https://github.com/zaxbysauce/opencode-swarm",
-      "description": "Architect-centric agentic swarm plugin for OpenCode. Hub-and-spoke orchestration with SME consultation, code generation, and QA review.",
-      "stars": 248,
-      "updatedAt": "2026-04-30T03:27:57Z",
+      "repoName": "cc-multi-cli-plugin",
+      "repoUrl": "https://github.com/greenpolo/cc-multi-cli-plugin",
+      "description": "Claude Code plugin: delegate to Codex, Gemini, Cursor, GitHub Copilot, and Qwen CLIs via their native protocols (ACP, ASP). Use /gemini:research, /cursor:debug, /codex:execute, /copilot:review and more — Claude can also auto-dispatch.",
+      "stars": 67,
+      "updatedAt": "2026-05-01T01:26:51Z",
+      "evidenceScore": 14,
+      "evidence": [
+        "workflow control surface",
+        "business-system integration",
+        "self-serve agent tooling",
+        "67 GitHub stars",
+        "updated in the last 7 days"
+      ],
+      "outreachAngle": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
+      "evidenceSource": "https://github.com/greenpolo/cc-multi-cli-plugin",
+      "evidenceSources": [
+        {
+          "label": "Target signal",
+          "url": "https://github.com/greenpolo/cc-multi-cli-plugin",
+          "reason": "Source of the workflow or buyer signal behind this outreach row."
+        },
+        {
+          "label": "Commercial truth",
+          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+          "reason": "Current pricing, traction, and offer guardrail."
+        },
+        {
+          "label": "Verification evidence",
+          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+          "reason": "Current engineering proof pack and verification artifact."
+        }
+      ],
+      "claimGuardrails": [
+        "Do not claim revenue, installs, or marketplace approval without direct command evidence.",
+        "Do not lead with proof links before the buyer confirms pain.",
+        "Keep public pricing and traction claims aligned with COMMERCIAL_TRUTH.md.",
+        "Keep proof and quality claims aligned with VERIFICATION_EVIDENCE.md."
+      ],
+      "motion": "pro",
+      "motionLabel": "Pro at $19/mo or $149/yr",
+      "motionReason": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
+      "pipelineLeadId": "github_greenpolo_cc_multi_cli_plugin",
+      "pipelineStage": "targeted",
+      "pipelineUpdatedAt": "",
+      "nextOperatorAction": "Send the first-touch draft and log the outreach in the sales pipeline.",
+      "offer": "pro_self_serve",
+      "cta": "https://thumbgate-production.up.railway.app/guide",
+      "proofPackTrigger": "Use proof pack only after the buyer confirms pain.",
+      "firstTouchDraft": "Hey @greenpolo, saw you're building around `cc-multi-cli-plugin`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
+      "painConfirmedFollowUpDraft": "If you want the self-serve path for `cc-multi-cli-plugin`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "selfServeFollowUpDraft": "If you want the self-serve path for `cc-multi-cli-plugin`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro",
+      "checkoutCloseDraft": "If you are already comparing close options for `cc-multi-cli-plugin`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "salesCommands": {
+        "markContacted": "npm run sales:pipeline -- advance --lead 'github_greenpolo_cc_multi_cli_plugin' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markReplied": "npm run sales:pipeline -- advance --lead 'github_greenpolo_cc_multi_cli_plugin' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_greenpolo_cc_multi_cli_plugin' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute diagnostic after the self-serve conversation exposed repeated pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_greenpolo_cc_multi_cli_plugin' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_greenpolo_cc_multi_cli_plugin' --channel 'manual' --stage 'sprint_intake' --note 'Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+        "markPaid": "npm run sales:pipeline -- advance --lead 'github_greenpolo_cc_multi_cli_plugin' --channel 'manual' --stage 'paid' --note 'Closed Pro at $19/mo or $149/yr and booked revenue after resolving one business-system workflow that needs approval boundaries, rollback safety, and proof.'"
+      },
+      "message": "Hey @greenpolo, saw you're building around `cc-multi-cli-plugin`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step."
+    },
+    {
+      "temperature": "cold",
+      "source": "github",
+      "channel": "github",
+      "username": "gmickel",
+      "accountName": "gmickel",
+      "company": "Mickel Tech",
+      "contactUrl": "https://mickel.tech/",
+      "contactSurfaces": [
+        {
+          "label": "Website",
+          "url": "https://mickel.tech/"
+        },
+        {
+          "label": "GitHub profile",
+          "url": "https://github.com/gmickel"
+        },
+        {
+          "label": "Repository",
+          "url": "https://github.com/gmickel/flow-next"
+        }
+      ],
+      "websiteUrl": "https://mickel.tech/",
+      "repoName": "flow-next",
+      "repoUrl": "https://github.com/gmickel/flow-next",
+      "description": "Plan-first AI workflow plugin for Claude Code, OpenAI Codex, and Factory Droid. Zero-dep task tracking, worker subagents, Ralph autonomous mode, cross-model reviews.",
+      "stars": 579,
+      "updatedAt": "2026-04-30T19:46:22Z",
       "evidenceScore": 12,
       "evidence": [
         "workflow control surface",
         "self-serve agent tooling",
-        "248 GitHub stars",
+        "579 GitHub stars",
         "updated in the last 7 days"
       ],
       "outreachAngle": "Lead with the proof-backed setup guide and local-first enforcement before any team-motion pitch.",
-      "evidenceSource": "https://github.com/zaxbysauce/opencode-swarm",
+      "evidenceSource": "https://github.com/gmickel/flow-next",
       "evidenceSources": [
         {
           "label": "Target signal",
-          "url": "https://github.com/zaxbysauce/opencode-swarm",
+          "url": "https://github.com/gmickel/flow-next",
           "reason": "Source of the workflow or buyer signal behind this outreach row."
         },
         {
@@ -813,35 +1151,35 @@
       "motion": "pro",
       "motionLabel": "Pro at $19/mo or $149/yr",
       "motionReason": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
-      "pipelineLeadId": "github_zaxbysauce_opencode_swarm",
+      "pipelineLeadId": "github_gmickel_flow_next",
       "pipelineStage": "targeted",
       "pipelineUpdatedAt": "",
       "nextOperatorAction": "Send the first-touch draft and log the outreach in the sales pipeline.",
       "offer": "pro_self_serve",
       "cta": "https://thumbgate-production.up.railway.app/guide",
       "proofPackTrigger": "Use proof pack only after the buyer confirms pain.",
-      "firstTouchDraft": "Hey @zaxbysauce, saw you're building around `opencode-swarm`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
-      "painConfirmedFollowUpDraft": "If you want the self-serve path for `opencode-swarm`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
-      "selfServeFollowUpDraft": "If you want the self-serve path for `opencode-swarm`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro",
-      "checkoutCloseDraft": "If you are already comparing close options for `opencode-swarm`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "firstTouchDraft": "Hey @gmickel, saw you're building around `flow-next`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
+      "painConfirmedFollowUpDraft": "If you want the self-serve path for `flow-next`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "selfServeFollowUpDraft": "If you want the self-serve path for `flow-next`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro",
+      "checkoutCloseDraft": "If you are already comparing close options for `flow-next`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
       "salesCommands": {
-        "markContacted": "npm run sales:pipeline -- advance --lead 'github_zaxbysauce_opencode_swarm' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markReplied": "npm run sales:pipeline -- advance --lead 'github_zaxbysauce_opencode_swarm' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_zaxbysauce_opencode_swarm' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute diagnostic after the self-serve conversation exposed repeated pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_zaxbysauce_opencode_swarm' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_zaxbysauce_opencode_swarm' --channel 'manual' --stage 'sprint_intake' --note 'Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markPaid": "npm run sales:pipeline -- advance --lead 'github_zaxbysauce_opencode_swarm' --channel 'manual' --stage 'paid' --note 'Closed Pro at $19/mo or $149/yr and booked revenue after resolving the proof-backed setup guide and local-first enforcement before any team-motion pitch.'"
+        "markContacted": "npm run sales:pipeline -- advance --lead 'github_gmickel_flow_next' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+        "markReplied": "npm run sales:pipeline -- advance --lead 'github_gmickel_flow_next' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+        "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_gmickel_flow_next' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute diagnostic after the self-serve conversation exposed repeated pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+        "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_gmickel_flow_next' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+        "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_gmickel_flow_next' --channel 'manual' --stage 'sprint_intake' --note 'Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+        "markPaid": "npm run sales:pipeline -- advance --lead 'github_gmickel_flow_next' --channel 'manual' --stage 'paid' --note 'Closed Pro at $19/mo or $149/yr and booked revenue after resolving the proof-backed setup guide and local-first enforcement before any team-motion pitch.'"
       },
-      "message": "Hey @zaxbysauce, saw you're building around `opencode-swarm`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step."
+      "message": "Hey @gmickel, saw you're building around `flow-next`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step."
     }
   ],
   "snapshotWindow": "today",
   "marketplaceCopy": {
-    "generatedAt": "2026-04-30T04:14:20.304Z",
+    "generatedAt": "2026-05-01T03:49:32.719Z",
     "state": "post-first-dollar",
     "headline": "Harden one AI-agent workflow before you roll it out.",
-    "shortDescription": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.",
-    "longDescription": "ThumbGate is a reliability gateway for AI coding workflows. It captures repeated failures, regenerates pre-action gates, and keeps approval boundaries, rollback safety, and proof attached to the workflow before the next risky tool call. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible. Primary motion: Workflow Hardening Sprint. Secondary motion: Pro at $19/mo or $149/yr after the buyer asks for the self-serve path.",
+    "shortDescription": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.",
+    "longDescription": "ThumbGate is a reliability gateway for AI coding workflows. It captures repeated failures, regenerates pre-action gates, and keeps approval boundaries, rollback safety, and proof attached to the workflow before the next risky tool call. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible. Primary motion: Workflow Hardening Sprint. Secondary motion: Pro at $19/mo or $149/yr after the buyer asks for the self-serve path.",
     "proofPolicy": "Do not lead with proof links. Use Commercial Truth and Verification Evidence only after the buyer confirms pain.",
     "recommendedCtas": [
       {
@@ -862,7 +1200,7 @@
     ],
     "listingBullets": [
       "Turn repeated AI-agent mistakes into enforceable pre-action gates.",
-      "Lead with one repeated workflow failure, then show how ThumbGate turns it into an enforceable pre-action gate.",
+      "Lead with approval boundaries, rollback safety, and proof for one workflow.",
       "Route install-intent buyers through the proof-backed setup guide before direct checkout.",
       "Lead with the proof-backed setup guide first, then convert proven local usage into Pro.",
       "Use Pro after one blocked repeat or explicit self-serve install intent. Use the Workflow Hardening Sprint when one workflow owner needs approval boundaries, rollback safety, and proof before wider rollout.",
@@ -872,15 +1210,27 @@
     ],
     "topSignals": [
       {
+        "key": "business_system_workflows",
+        "label": "Business-system workflow approvals",
+        "summary": "Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof.",
+        "listingAngle": "Lead with approval boundaries, rollback safety, and proof for one workflow.",
+        "count": 9,
+        "examples": [
+          "jmanhype/claude-code-plugin-marketplace",
+          "montenegronyc/backporcher",
+          "dolutech/engine_context"
+        ]
+      },
+      {
         "key": "workflow_control",
         "label": "Workflow control surfaces",
         "summary": "The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive.",
         "listingAngle": "Lead with one repeated workflow failure, then show how ThumbGate turns it into an enforceable pre-action gate.",
-        "count": 6,
+        "count": 9,
         "examples": [
+          "montenegronyc/backporcher",
           "dolutech/engine_context",
-          "Adqui9608/ai-code-review-agent",
-          "Abhi268170/Stagix"
+          "Adqui9608/ai-code-review-agent"
         ]
       },
       {
@@ -888,23 +1238,11 @@
         "label": "Production rollout proof",
         "summary": "Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems.",
         "listingAngle": "Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.",
-        "count": 5,
+        "count": 6,
         "examples": [
-          "dolutech/engine_context",
-          "Adqui9608/ai-code-review-agent",
-          "Abhi268170/Stagix"
-        ]
-      },
-      {
-        "key": "warm_discovery",
-        "label": "Warm discovery workflows",
-        "summary": "Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain.",
-        "listingAngle": "Lead with one repeated workflow failure and a founder-led diagnostic before any generic tool pitch.",
-        "count": 4,
-        "examples": [
-          "@Deep_Ad1959",
-          "@game-of-kton",
-          "@leogodin217"
+          "jmanhype/claude-code-plugin-marketplace",
+          "montenegronyc/backporcher",
+          "dolutech/engine_context"
         ]
       },
       {
@@ -912,15 +1250,39 @@
         "label": "Self-serve agent tooling",
         "summary": "Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.",
         "listingAngle": "Lead with the proof-backed setup guide first, then convert proven local usage into Pro.",
-        "count": 4,
+        "count": 5,
         "examples": [
+          "jmanhype/claude-code-plugin-marketplace",
           "Abhi268170/Stagix",
-          "opensesh/KARIMO",
-          "BaseInfinity/claude-sdlc-wizard"
+          "agynio/gh-pr-review"
         ]
       }
     ],
     "listingVariants": [
+      {
+        "key": "business_system_workflows",
+        "label": "Business-system workflow approvals",
+        "audience": "Teams wiring agents into approval-heavy business systems.",
+        "headline": "Add approval boundaries and rollback safety to one agent workflow.",
+        "shortDescription": "Lead with one workflow in Jira, GitHub, ServiceNow, Slack, or CRM systems that needs proof before wider rollout.",
+        "evidenceSummary": "Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof.",
+        "listingAngle": "Lead with approval boundaries, rollback safety, and proof for one workflow.",
+        "primaryCta": {
+          "motion": "sprint",
+          "label": "Workflow Hardening Sprint",
+          "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+        },
+        "secondaryCta": {
+          "motion": "guide",
+          "label": "Proof-backed setup guide",
+          "cta": "https://thumbgate-production.up.railway.app/guide"
+        },
+        "sampleTargets": [
+          "jmanhype/claude-code-plugin-marketplace",
+          "montenegronyc/backporcher",
+          "dolutech/engine_context"
+        ]
+      },
       {
         "key": "workflow_control",
         "label": "Workflow control surfaces",
@@ -940,9 +1302,9 @@
           "cta": "https://thumbgate-production.up.railway.app/guide"
         },
         "sampleTargets": [
+          "montenegronyc/backporcher",
           "dolutech/engine_context",
-          "Adqui9608/ai-code-review-agent",
-          "Abhi268170/Stagix"
+          "Adqui9608/ai-code-review-agent"
         ]
       },
       {
@@ -964,33 +1326,9 @@
           "cta": "https://thumbgate-production.up.railway.app/guide"
         },
         "sampleTargets": [
-          "dolutech/engine_context",
-          "Adqui9608/ai-code-review-agent",
-          "Abhi268170/Stagix"
-        ]
-      },
-      {
-        "key": "warm_discovery",
-        "label": "Warm discovery workflows",
-        "audience": "Warm buyers who already named a repeated workflow failure.",
-        "headline": "Turn one repeated AI-agent workflow failure into a proof-backed sprint.",
-        "shortDescription": "Lead with one concrete workflow failure, then offer a founder-led hardening diagnostic before any generic tool pitch.",
-        "evidenceSummary": "Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain.",
-        "listingAngle": "Lead with one repeated workflow failure and a founder-led diagnostic before any generic tool pitch.",
-        "primaryCta": {
-          "motion": "sprint",
-          "label": "Workflow Hardening Sprint",
-          "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
-        },
-        "secondaryCta": {
-          "motion": "guide",
-          "label": "Proof-backed setup guide",
-          "cta": "https://thumbgate-production.up.railway.app/guide"
-        },
-        "sampleTargets": [
-          "@Deep_Ad1959",
-          "@game-of-kton",
-          "@leogodin217"
+          "jmanhype/claude-code-plugin-marketplace",
+          "montenegronyc/backporcher",
+          "dolutech/engine_context"
         ]
       },
       {
@@ -1012,9 +1350,9 @@
           "cta": "https://thumbgate-production.up.railway.app/checkout/pro"
         },
         "sampleTargets": [
+          "jmanhype/claude-code-plugin-marketplace",
           "Abhi268170/Stagix",
-          "opensesh/KARIMO",
-          "BaseInfinity/claude-sdlc-wizard"
+          "agynio/gh-pr-review"
         ]
       }
     ],
@@ -1026,13 +1364,13 @@
         "why": "Warm Reddit engager already named a repeated workflow risk, so the fastest path is a founder-led diagnostic."
       },
       {
-        "account": "opensesh/KARIMO",
+        "account": "agynio/gh-pr-review",
         "temperature": "cold",
         "motion": "Pro at $19/mo or $149/yr",
         "why": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint."
       },
       {
-        "account": "dolutech/engine_context",
+        "account": "jmanhype/claude-code-plugin-marketplace",
         "temperature": "cold",
         "motion": "Workflow Hardening Sprint",
         "why": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof."
