@@ -8,6 +8,7 @@ const {
   buildGitHubOutreachJobs,
   isCliInvocation,
   main,
+  shouldWriteDocsByDefault,
 } = require('../scripts/autonomous-sales-agent');
 
 test('automation emits LinkedIn, Aiventyx, ChatGPT, Codex, and GitHub outreach assets from the revenue loop outputs', async () => {
@@ -183,6 +184,122 @@ test('buildGitHubOutreachJobs writes report-dir and repo docs assets from the cu
       outPath: path.resolve(repoRoot, 'docs/OUTREACH_TARGETS.md'),
     },
   ]);
+});
+
+test('default revenue loop runs refresh checked-in GTM docs when no report dir is provided', async () => {
+  const calls = [];
+
+  await main([], {
+    parseArgs() {
+      return { writeDocs: false, reportDir: '' };
+    },
+    async runRevenueLoop(options) {
+      calls.push(['runRevenueLoop', options.writeDocs, options.reportDir]);
+      return {
+        report: {
+          directive: { state: 'cold-start' },
+          targets: [],
+        },
+        written: {
+          docsPath: '/tmp/gtm-revenue-loop.md',
+          reportDir: null,
+        },
+      };
+    },
+    buildClaudeWorkflowHardeningPack() {
+      return { channel: 'claude' };
+    },
+    writeClaudeWorkflowHardeningPack(_pack, options) {
+      calls.push(['writeClaudeWorkflowHardeningPack', options.writeDocs]);
+      return {};
+    },
+    buildCursorMarketplaceRevenuePack() {
+      return { channel: 'cursor' };
+    },
+    writeCursorMarketplaceRevenuePack(_pack, options) {
+      calls.push(['writeCursorMarketplaceRevenuePack', options.writeDocs]);
+      return {};
+    },
+    buildAiventyxMarketplacePlan() {
+      return { channel: 'aiventyx' };
+    },
+    writeAiventyxMarketplaceOutputs(_pack, options) {
+      calls.push(['writeAiventyxMarketplaceOutputs', options.writeDocs]);
+      return {};
+    },
+    buildGeminiCliDemandPack() {
+      return { channel: 'gemini' };
+    },
+    writeGeminiCliDemandPack(_pack, options) {
+      calls.push(['writeGeminiCliDemandPack', options.writeDocs]);
+      return {};
+    },
+    buildLinkedinWorkflowHardeningPack() {
+      return { channel: 'linkedin' };
+    },
+    writeLinkedinWorkflowHardeningPack(_pack, options) {
+      calls.push(['writeLinkedinWorkflowHardeningPack', options.writeDocs]);
+      return {};
+    },
+    buildChatgptGptRevenuePack() {
+      return { channel: 'chatgpt' };
+    },
+    writeChatgptGptRevenuePack(_pack, options) {
+      calls.push(['writeChatgptGptRevenuePack', options.writeDocs]);
+      return {};
+    },
+    buildRedditDmWorkflowHardeningPack() {
+      return { channel: 'reddit' };
+    },
+    writeRedditDmWorkflowHardeningPack(_pack, options) {
+      calls.push(['writeRedditDmWorkflowHardeningPack', options.writeDocs]);
+      return {};
+    },
+    buildCodexMarketplaceRevenuePack() {
+      return { channel: 'codex' };
+    },
+    writeCodexMarketplaceRevenuePack(_pack, options) {
+      calls.push(['writeCodexMarketplaceRevenuePack', options.writeDocs]);
+      return {};
+    },
+    buildCodexPluginRevenuePack() {
+      return { channel: 'codex-plugin' };
+    },
+    writeCodexPluginRevenuePack(_pack, options) {
+      calls.push(['writeCodexPluginRevenuePack', options.writeDocs]);
+      return {};
+    },
+    buildMcpDirectoryRevenuePack() {
+      return { channel: 'mcp-directory' };
+    },
+    writeMcpDirectoryRevenuePack(_pack, options) {
+      calls.push(['writeMcpDirectoryRevenuePack', options.writeDocs]);
+      return {};
+    },
+    runGitHubOutreach() {
+      return {};
+    },
+  });
+
+  assert.deepEqual(calls, [
+    ['runRevenueLoop', true, ''],
+    ['writeClaudeWorkflowHardeningPack', true],
+    ['writeCursorMarketplaceRevenuePack', true],
+    ['writeAiventyxMarketplaceOutputs', true],
+    ['writeGeminiCliDemandPack', true],
+    ['writeLinkedinWorkflowHardeningPack', true],
+    ['writeChatgptGptRevenuePack', true],
+    ['writeRedditDmWorkflowHardeningPack', true],
+    ['writeCodexMarketplaceRevenuePack', true],
+    ['writeCodexPluginRevenuePack', true],
+    ['writeMcpDirectoryRevenuePack', true],
+  ]);
+});
+
+test('shouldWriteDocsByDefault keeps report-dir-only runs artifact scoped', () => {
+  assert.equal(shouldWriteDocsByDefault({ writeDocs: false, reportDir: '' }), true);
+  assert.equal(shouldWriteDocsByDefault({ writeDocs: false, reportDir: 'reports/gtm' }), false);
+  assert.equal(shouldWriteDocsByDefault({ writeDocs: true, reportDir: 'reports/gtm' }), true);
 });
 
 test('CLI entrypoint detection is path based', () => {

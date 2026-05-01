@@ -120,9 +120,17 @@ function buildGitHubOutreachJobs(written = {}, repoRoot = path.resolve(__dirname
   return jobs;
 }
 
+function shouldWriteDocsByDefault(options = {}) {
+  return Boolean(options.writeDocs || !String(options.reportDir || '').trim());
+}
+
 async function main(argv = process.argv.slice(2), overrides = {}) {
   const deps = buildDependencies(overrides);
-  const options = deps.parseArgs(argv);
+  const parsedOptions = deps.parseArgs(argv);
+  const options = {
+    ...parsedOptions,
+    writeDocs: shouldWriteDocsByDefault(parsedOptions),
+  };
   const { report, written } = await deps.runRevenueLoop(options);
   const claudePack = deps.buildClaudeWorkflowHardeningPack(report);
   const claudeWritten = deps.writeClaudeWorkflowHardeningPack(claudePack, options);
@@ -203,5 +211,6 @@ module.exports = {
   buildGitHubOutreachJobs,
   buildDependencies,
   isCliInvocation,
+  shouldWriteDocsByDefault,
   main,
 };
