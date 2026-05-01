@@ -122,6 +122,12 @@ const HIGH_ROI_QUERY_SEEDS = [
     notes: 'Guardrail-focused page for Codex CLI buyers who want prevention, not just memory.',
   },
   {
+    query: 'amp agent guardrails',
+    businessValue: 83,
+    source: 'seed',
+    notes: 'Integration page for Amp users who need local-first enforcement and repeat-failure prevention.',
+  },
+  {
     query: 'gemini cli feedback memory',
     businessValue: 82,
     source: 'seed',
@@ -828,6 +834,54 @@ const PAGE_BLUEPRINTS = [
       },
     ],
     relatedPaths: ['/guides/pre-action-checks', '/compare/mem0'],
+  },
+  {
+    query: 'amp agent guardrails',
+    path: '/guides/amp-agent-guardrails',
+    pageType: 'integration',
+    pillar: 'agent-workflows',
+    title: 'Amp Agent Guardrails | Local-First Enforcement with ThumbGate',
+    heroTitle: 'Amp Guardrails That Turn Feedback Into Enforcement',
+    heroSummary: 'Amp users want fast repo iteration without repeating the same risky shell step, skipped verification run, or blind refactor. ThumbGate adds a Reliability Gateway so feedback becomes searchable lessons, linked prevention rules, and Pre-Action Gates before the next tool call runs.',
+    takeaways: [
+      'Amp buyers usually want speed plus control, not a second governance project.',
+      'ThumbGate adds local-first feedback memory and Pre-Action Gates without forcing a workflow reset.',
+      'The clean conversion path is one blocked repeat to Pro, then Workflow Hardening Sprint when a team needs approval boundaries.',
+    ],
+    sections: [
+      {
+        heading: 'What Amp users usually outgrow',
+        paragraphs: [
+          'The first problem is rarely that Amp moves too fast. It is that the same risky shell step, skipped check, or overconfident refactor can come back in the next session because nothing hardened the lesson at the tool boundary.',
+        ],
+      },
+      {
+        heading: 'What ThumbGate adds to the Amp workflow',
+        bullets: [
+          'Structured thumbs-up/down feedback with actionable context.',
+          'Searchable lessons and linked prevention rules that survive the current session.',
+          'Pre-Action Gates that block repeated mistakes before execution.',
+          'Verification evidence that gives solo operators and teams something concrete to inspect.',
+        ],
+      },
+      {
+        heading: 'How buyers usually convert',
+        paragraphs: [
+          'Individual operators usually start when one blocked repeat proves the Reliability Gateway is real. Teams convert when the same workflow also needs approval boundaries, rollback safety, and a proof trail that can survive wider rollout.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Does ThumbGate replace Amp instructions or prompts?',
+        answer: 'No. Amp instructions still matter, but ThumbGate adds the enforcement layer that turns a past correction into a future runtime block.',
+      },
+      {
+        question: 'Can Amp users keep this local-first?',
+        answer: 'Yes. ThumbGate is designed for local-first operation so operators can harden workflows without pushing sensitive history into a hosted memory product by default.',
+      },
+    ],
+    relatedPaths: ['/guides/pre-action-checks', '/guides/stop-repeated-ai-agent-mistakes'],
   },
   {
     query: 'gemini cli feedback memory',
