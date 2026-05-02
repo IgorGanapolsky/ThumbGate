@@ -34,6 +34,7 @@ const FOLLOW_UP_PRIORITY = {
 const TARGETED_STAGE = 'targeted';
 const SELF_SERVE_MOTIONS = new Set(['pro']);
 const SELF_SERVE_OFFERS = new Set(['pro_self_serve']);
+const PRODUCTION_ROLLOUT_EVIDENCE = 'production or platform workflow';
 
 function normalizeText(value, maxLength = 4000) {
   if (value === undefined || value === null) return '';
@@ -67,6 +68,11 @@ function isSelfServeTarget(target = {}) {
   const motion = normalizeText(target.motion).toLowerCase();
   const offer = normalizeText(target.offer).toLowerCase();
   return SELF_SERVE_MOTIONS.has(motion) || SELF_SERVE_OFFERS.has(offer);
+}
+
+function isProductionRolloutTarget(target = {}) {
+  const evidence = Array.isArray(target.evidence) ? target.evidence : [];
+  return evidence.some((entry) => normalizeText(entry).toLowerCase() === PRODUCTION_ROLLOUT_EVIDENCE);
 }
 
 function compareTargetPriority(left, right) {
@@ -161,11 +167,19 @@ function buildOutreachTargetsReport({
       && normalizeText(target.source) === 'github'
       && isSelfServeTarget(target);
   });
+  const productionRolloutTargets = targets.filter((target) => {
+    return target.stage === TARGETED_STAGE
+      && normalizeText(target.temperature) !== 'warm'
+      && normalizeText(target.source) === 'github'
+      && !isSelfServeTarget(target)
+      && isProductionRolloutTarget(target);
+  });
   const coldTargets = targets.filter((target) => {
     return target.stage === TARGETED_STAGE
       && normalizeText(target.temperature) !== 'warm'
       && normalizeText(target.source) === 'github'
-      && !isSelfServeTarget(target);
+      && !isSelfServeTarget(target)
+      && !isProductionRolloutTarget(target);
   });
 
   return {
@@ -192,6 +206,7 @@ function buildOutreachTargetsReport({
     followUpTargets,
     warmTargets,
     selfServeTargets,
+    productionRolloutTargets,
     coldTargets,
     totalTargets: targets.length,
   };
@@ -234,6 +249,9 @@ function renderOutreachTargetsMarkdown(report = {}) {
   const selfServeLines = report.selfServeTargets.length
     ? report.selfServeTargets.flatMap((target, index) => renderTargetMarkdown(target, index))
     : ['- No self-serve close targets are currently ready.', ''];
+  const productionRolloutLines = report.productionRolloutTargets.length
+    ? report.productionRolloutTargets.flatMap((target, index) => renderTargetMarkdown(target, index))
+    : ['- No production-rollout buyers are currently ready.', ''];
   const coldLines = report.coldTargets.length
     ? report.coldTargets.flatMap((target, index) => renderTargetMarkdown(target, index))
     : ['- No cold GitHub targets are currently ready.', ''];
@@ -253,6 +271,7 @@ function renderOutreachTargetsMarkdown(report = {}) {
     `- Follow-ups now: ${report.followUpTargets.length}`,
     `- Warm discovery ready: ${report.warmTargets.length}`,
     `- Self-serve closes ready: ${report.selfServeTargets.length}`,
+    `- Production-rollout buyers ready: ${report.productionRolloutTargets.length}`,
     `- Cold GitHub ready: ${report.coldTargets.length}`,
     `- Sales ledger tracked leads: ${report.pipelineTrackedLeadCount || 0}${report.pipelineExists ? '' : ' (pipeline file not created yet)'}`,
     `- Proof rule: ${report.proofRule}`,
@@ -266,6 +285,8 @@ function renderOutreachTargetsMarkdown(report = {}) {
     ...warmLines,
     '## Self-Serve Closes',
     ...selfServeLines,
+    '## Production Rollout Buyers',
+    ...productionRolloutLines,
     '## Cold GitHub',
     ...coldLines,
     '## Core Links',
@@ -295,7 +316,7 @@ function main(options = {}) {
   const docsPath = writeOutreachTargetsDoc(markdown, options.outPath || DEFAULT_DOCS_PATH);
   console.log(`Updated ${docsPath} from the current evidence-backed queue.`);
   console.log(
-    `Warm: ${report.warmTargets.length} | Self-serve: ${report.selfServeTargets.length} | Cold: ${report.coldTargets.length} | Follow-up: ${report.followUpTargets.length}`
+    `Warm: ${report.warmTargets.length} | Self-serve: ${report.selfServeTargets.length} | Production rollout: ${report.productionRolloutTargets.length} | Cold: ${report.coldTargets.length} | Follow-up: ${report.followUpTargets.length}`
   );
   return {
     docsPath,
@@ -317,6 +338,7 @@ module.exports = {
   DEFAULT_QUEUE_PATH,
   DEFAULT_REPORT_PATH,
   buildOutreachTargetsReport,
+  isProductionRolloutTarget,
   isCliInvocation,
   main,
   renderOutreachTargetsMarkdown,
