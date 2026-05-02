@@ -195,6 +195,18 @@ test('PR Manager - getPrStatus returns null when current branch has no PR', () =
   assert.equal(getPrStatus('', runner), null);
 });
 
+test('PR Manager - getPrStatus returns null when running on detached HEAD', () => {
+  const runner = createRunner([
+    {
+      status: 1,
+      stdout: '',
+      stderr: 'could not determine current branch: failed to run git: not on any branch\n'
+    }
+  ]);
+
+  assert.equal(getPrStatus('', runner), null);
+});
+
 test('PR Manager - normalizePrNumber rejects unsafe values', () => {
   assert.equal(normalizePrNumber('123'), '123');
   assert.throws(() => normalizePrNumber('../665', { allowEmpty: false }), /Unsafe PR number/);
