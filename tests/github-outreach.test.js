@@ -66,6 +66,30 @@ function makeColdTarget() {
   };
 }
 
+function makeProductionTarget() {
+  return {
+    temperature: 'cold',
+    source: 'github',
+    channel: 'github',
+    username: 'Adqui9608',
+    accountName: 'Adqui9608',
+    repoName: 'ai-code-review-agent',
+    repoUrl: 'https://github.com/Adqui9608/ai-code-review-agent',
+    contactUrl: 'https://github.com/Adqui9608',
+    evidenceScore: 15,
+    evidence: ['workflow control surface', 'production or platform workflow', 'agent infrastructure'],
+    motionReason: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
+    cta: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+    firstTouchDraft: 'Hey @Adqui9608, if one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you.',
+    painConfirmedFollowUpDraft: 'If the workflow pain is real, I can send the proof pack.',
+    salesCommands: {
+      markContacted: 'npm run sales:pipeline -- advance --lead \'github_adqui9608_ai_code_review_agent\' --stage \'contacted\'',
+      markReplied: 'npm run sales:pipeline -- advance --lead \'github_adqui9608_ai_code_review_agent\' --stage \'replied\'',
+      markCallBooked: 'npm run sales:pipeline -- advance --lead \'github_adqui9608_ai_code_review_agent\' --stage \'call_booked\'',
+    },
+  };
+}
+
 function makeSelfServeTarget() {
   return {
     temperature: 'cold',
@@ -92,13 +116,13 @@ function makeSelfServeTarget() {
   };
 }
 
-test('queue-backed outreach report separates warm, self-serve, and cold sprint lanes', () => {
+test('queue-backed outreach report separates warm, self-serve, production-rollout, and cold sprint lanes', () => {
   const tempDir = makeTempDir();
   const queuePath = path.join(tempDir, 'gtm-target-queue.jsonl');
   const reportPath = path.join(tempDir, 'gtm-revenue-loop.json');
   const statePath = path.join(tempDir, 'sales-pipeline.jsonl');
 
-  writeJsonl(queuePath, [makeWarmTarget(), makeSelfServeTarget(), makeColdTarget()]);
+  writeJsonl(queuePath, [makeWarmTarget(), makeSelfServeTarget(), makeProductionTarget(), makeColdTarget()]);
   fs.writeFileSync(reportPath, JSON.stringify({
     generatedAt: '2026-04-27T17:00:00.000Z',
     directive: {
@@ -114,14 +138,18 @@ test('queue-backed outreach report separates warm, self-serve, and cold sprint l
   assert.equal(report.followUpTargets.length, 0);
   assert.equal(report.warmTargets.length, 1);
   assert.equal(report.selfServeTargets.length, 1);
+  assert.equal(report.productionRolloutTargets.length, 1);
   assert.equal(report.coldTargets.length, 1);
   assert.equal(report.pipelineTrackedLeadCount, 0);
   assert.equal(report.pipelineExists, false);
   assert.match(markdown, /mirrors the evidence-backed GTM queue/i);
   assert.match(markdown, /Warm discovery ready: 1/);
   assert.match(markdown, /Self-serve closes ready: 1/);
+  assert.match(markdown, /Production-rollout buyers ready: 1/);
   assert.match(markdown, /Cold GitHub ready: 1/);
   assert.match(markdown, /## Self-Serve Closes/);
+  assert.match(markdown, /## Production Rollout Buyers/);
+  assert.match(markdown, /ai-code-review-agent/);
   assert.match(markdown, /flow-next/);
   assert.match(markdown, /review-flow/);
   assert.match(markdown, /stage 'contacted'/);
@@ -138,7 +166,7 @@ test('active follow-ups are promoted ahead of fresh sends using sales ledger sta
   const coldTarget = makeColdTarget();
   const lead = buildLeadFromRevenueTarget(coldTarget, { sourcePath: queuePath });
 
-  writeJsonl(queuePath, [warmTarget, selfServeTarget, coldTarget]);
+  writeJsonl(queuePath, [warmTarget, selfServeTarget, makeProductionTarget(), coldTarget]);
   fs.writeFileSync(reportPath, JSON.stringify({
     generatedAt: '2026-04-27T17:00:00.000Z',
     directive: {
@@ -159,11 +187,13 @@ test('active follow-ups are promoted ahead of fresh sends using sales ledger sta
   assert.equal(report.followUpTargets[0].stage, 'replied');
   assert.equal(report.warmTargets.length, 1);
   assert.equal(report.selfServeTargets.length, 1);
+  assert.equal(report.productionRolloutTargets.length, 1);
   assert.equal(report.coldTargets.length, 0);
   assert.equal(report.pipelineTrackedLeadCount, 1);
   assert.equal(report.pipelineExists, true);
   assert.match(markdown, /## Follow Up Now/);
   assert.match(markdown, /## Self-Serve Closes/);
+  assert.match(markdown, /## Production Rollout Buyers/);
   assert.match(markdown, /Current stage: replied/);
   assert.match(markdown, /stage 'call_booked'/);
 });
