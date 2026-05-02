@@ -79,6 +79,9 @@ The revenue loop emits these operator artifacts in that folder:
 - `codex-marketplace-revenue-pack.md` for Codex install-page, bundle, and bridge submission copy
 - `codex-marketplace-revenue-pack.json` for machine-readable Codex listing metadata and follow-on offers
 - `codex-operator-queue.csv` for Codex-specific queue rows and next asks
+- `amp-workflow-hardening-pack.md` for Amp-specific workflow-hardening positioning, proof lanes, and outbound copy
+- `amp-workflow-hardening-pack.json` for the same Amp operator pack in machine-readable form
+- `amp-operator-queue.csv` for Amp-specific queue rows and next asks
 - `gemini-cli-demand-pack.md` for Gemini CLI memory-demand, local-first, and cloud-workflow conversion copy
 - `gemini-cli-demand-pack.json` for the same Gemini operator pack in machine-readable form
 - `gemini-cli-operator-queue.csv` for Gemini-specific queue rows and next asks
