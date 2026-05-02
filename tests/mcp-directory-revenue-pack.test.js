@@ -13,7 +13,7 @@ const {
   DIRECTORY_SOURCE,
   DIRECTORY_SURFACE,
   DOCS_PATH,
-  GLAMA_LEGACY_URL,
+  GLAMA_CANONICAL_URL,
   GLAMA_SEARCH_URL,
   MCP_SO_URL,
   PUNKPEYE_LIST_URL,
@@ -51,29 +51,31 @@ test('directory surfaces preserve the current repair priorities and evidence dat
   ]);
   assert.equal(pack.surfaces[0].surfaceUrl, MCP_SO_URL);
   assert.equal(pack.surfaces[1].surfaceUrl, GLAMA_SEARCH_URL);
-  assert.equal(pack.surfaces[1].submissionPath, GLAMA_LEGACY_URL);
+  assert.equal(pack.surfaces[1].submissionPath, GLAMA_CANONICAL_URL);
   assert.equal(pack.surfaces[2].surfaceUrl, SMITHERY_SEARCH_URL);
   assert.equal(pack.surfaces[2].submissionPath, 'https://smithery.ai/new');
   assert.equal(pack.surfaces[3].surfaceUrl, PUNKPEYE_LIST_URL);
   assert.equal(pack.surfaces[4].surfaceUrl, APPCYPHER_LIST_URL);
   assert.ok(pack.surfaces.every((surface) => surface.evidenceCheckedAt === CHECKED_AT));
   assert.ok(pack.surfaces.every((surface) => !/guaranteed installs|guaranteed revenue|approved/i.test(surface.evidenceSummary)));
+  assert.match(pack.surfaces[1].evidenceSummary, /memory management and gateway capabilities/);
+  assert.match(pack.surfaces[3].evidenceSummary, /second legacy `IgorGanapolsky\/mcp-memory-gateway` entry/);
 });
 
 test('operator queue focuses on repair before expansion', () => {
   const pack = buildMcpDirectoryRevenuePack(LINKS_FIXTURE);
 
   assert.deepEqual(pack.operatorQueue.map((entry) => entry.key), [
-    'repair_glama_slug',
+    'refresh_glama_description',
     'repair_smithery_namespace',
-    'update_punkpeye_entry',
+    'remove_punkpeye_duplicate',
     'add_appcypher_entry',
     'keep_mcp_so_canonical',
   ]);
-  assert.match(pack.operatorQueue[0].nextAsk, /glama\.ai/);
+  assert.equal(pack.operatorQueue[0].nextAsk, GLAMA_CANONICAL_URL);
   assert.equal(pack.operatorQueue[1].proofAsset, SMITHERY_SEARCH_URL);
   assert.equal(pack.operatorQueue[1].nextAsk, SMITHERY_DETAILS_URL);
-  assert.match(pack.operatorQueue[2].recommendedMotion, /README PR/i);
+  assert.match(pack.operatorQueue[2].recommendedMotion, /duplicate `mcp-memory-gateway` row/);
   assert.ok(pack.operatorQueue.every((entry) => !/guaranteed ranking|guaranteed revenue/i.test(entry.recommendedMotion)));
 });
 
@@ -124,9 +126,10 @@ test('rendered markdown stays operator-ready and names the legacy leaks explicit
   });
 
   assert.match(markdown, /MCP Directory Repair Pack/);
-  assert.match(markdown, /legacy `mcp-memory-gateway`/);
+  assert.match(markdown, /memory management and gateway capabilities/);
   assert.match(markdown, /`rlhf-loop\/thumbgate`/);
   assert.match(markdown, /punkpeye awesome-mcp-servers/);
+  assert.match(markdown, /duplicate legacy row/);
   assert.match(markdown, /Proof-backed setup guide/);
   assert.match(markdown, /utm_source=mcp_directories/);
   assert.match(markdown, /ThumbGate Pro/);
@@ -167,7 +170,7 @@ test('CLI options and artifact writing emit markdown, JSON, and queue CSV', () =
   const json = JSON.parse(fs.readFileSync(path.join(tempDir, 'mcp-directory-revenue-pack.json'), 'utf8'));
   assert.equal(json.operatorQueue.length, 5);
   assert.equal(json.measurementPlan.northStar, 'directory_referral_to_paid_intent');
-  assert.match(fs.readFileSync(path.join(tempDir, 'mcp-directory-operator-queue.csv'), 'utf8'), /repair_glama_slug/);
+  assert.match(fs.readFileSync(path.join(tempDir, 'mcp-directory-operator-queue.csv'), 'utf8'), /refresh_glama_description/);
 });
 
 test('CLI entrypoint detection is path based', () => {
