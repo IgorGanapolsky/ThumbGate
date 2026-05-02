@@ -27,6 +27,46 @@
     "mainEntityOfPage": "https://thumbgate.ai/guides/roo-code-alternative-cline"
   }
   </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "When does Roo Code actually stop working?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Roo Code announced the sunset on 2026-04-21 and the final shutdown is 2026-05-15."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does Cline use the same MCP format as Roo?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Cline reads the same MCP wire format, so MCP server entries transfer directly."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "When should I use Pro versus the Workflow Hardening Sprint?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Use Pro at $19/mo or $149/yr after one real blocked repeat when you want the personal dashboard and proof-ready exports. Use the Workflow Hardening Sprint when one workflow owner needs approval boundaries, rollback safety, and rollout proof before wider team use. The current Team anchor is $49/seat/mo with a 3-seat minimum."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Where does ThumbGate store my lessons?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "ThumbGate stores lessons in a local SQLite file at .thumbgate/memory.sqlite inside your project."
+        }
+      }
+    ]
+  }
+  </script>
   <style>
     :root { --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #161618; --line: #222225; --text: #e8e8ec; --muted: #8b8b96; --cyan: #22d3ee; --green: #4ade80; --red: #f87171; }
     * { box-sizing: border-box; }
@@ -46,6 +86,12 @@
     code.inline { background: var(--bg-card); padding: 2px 6px; border-radius: 4px; color: var(--cyan); }
     .eyebrow { display: inline-block; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(34,211,238,0.22); background: rgba(34,211,238,0.1); color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 700; }
     .cta { display: inline-block; background: var(--cyan); color: #000; padding: 14px 22px; border-radius: 10px; font-weight: 700; margin: 24px 0; }
+    .proof-bar { display: flex; flex-wrap: wrap; gap: 10px; margin: 28px 0 8px; }
+    .proof-bar a { display: inline-flex; align-items: center; min-height: 36px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg-card); color: var(--text); font-size: 14px; font-weight: 600; }
+    .proof-bar a:hover, .proof-bar a:focus-visible { border-color: var(--cyan); color: var(--cyan); text-decoration: none; }
+    .next-step { margin: 28px 0; padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(180deg, rgba(34,211,238,0.08), rgba(17,17,19,0.95)); }
+    .next-step h3 { margin-top: 0; }
+    .next-step ul { margin-bottom: 0; }
     article { padding: 24px 0 80px; }
     footer { border-top: 1px solid var(--line); padding: 32px 0; color: var(--muted); font-size: 14px; }
   </style>
@@ -63,6 +109,13 @@
       <span class="eyebrow">Migration Guide</span>
       <h1>Roo Code Alternative: Migrating to Cline with Portable Lesson Memory</h1>
       <p class="muted">Roo Code announced its sunset on 2026-04-21. Final shutdown: 2026-05-15. The team officially recommended Cline as the model-agnostic open-source successor. Here is how to migrate without losing every lesson your agent learned inside Roo.</p>
+      <nav class="proof-bar" aria-label="Roo migration proof and conversion links">
+        <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/cline/INSTALL.md">Cline setup doc →</a>
+        <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md">Commercial Truth →</a>
+        <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md">Verification evidence →</a>
+        <a href="https://thumbgate-production.up.railway.app/checkout/pro?utm_source=roo_guide&utm_medium=guide&utm_campaign=cline_migration_pro">See Pro →</a>
+        <a href="https://thumbgate-production.up.railway.app/?utm_source=roo_guide&utm_medium=guide&utm_campaign=cline_migration_sprint#workflow-sprint-intake">Workflow Sprint →</a>
+      </nav>
 
       <h2>The quiet cost of agent migrations</h2>
       <p>Roo Code is a VS Code extension and its MCP wire format transfers to Cline directly. The visible part of the migration — swap the extension, keep the shortcuts — takes five minutes.</p>
@@ -98,6 +151,16 @@
       <pre><code>npx thumbgate verify --agent cline</code></pre>
       <p>Then inside Cline, ask it to run <code class="inline">git push --force</code> on a dummy branch. It should call <code class="inline">thumbgate.gate_check</code> first and refuse.</p>
 
+      <section class="next-step" aria-labelledby="next-step-heading">
+        <h2 id="next-step-heading">Upgrade only after proof</h2>
+        <p>Keep the migration install-first. The free Cline path proves whether ThumbGate blocks one real repeated mistake in your workflow. Only then should you route the buyer into the paid path.</p>
+        <ul>
+          <li><strong>Pro at $19/mo or $149/yr:</strong> the self-serve next step after one real blocked repeat when the operator wants the personal dashboard, DPO export, and proof-ready evidence.</li>
+          <li><strong>Workflow Hardening Sprint first, Team later at $49/seat/mo:</strong> use this when one workflow owner needs approval boundaries, rollback safety, and rollout proof before wider team use.</li>
+          <li><strong>Proof timing:</strong> keep pricing, traction, and quality claims aligned with <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md">Commercial Truth</a> and <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md">Verification Evidence</a>.</li>
+        </ul>
+      </section>
+
       <h2>Why portable memory matters</h2>
       <p>Roo Code's sunset is a lesson about lock-in. Every time an agent vendor controls your lesson memory, a sunset announcement is also an announcement that your corrections evaporate. The only durable fix is to store lessons outside the agent — locally, in a format you own.</p>
       <p>ThumbGate's lesson DB works with Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, and any MCP-compatible agent. One correction, every agent, every future agent.</p>
@@ -110,6 +173,9 @@
 
       <h3>Does Cline use the same MCP format as Roo?</h3>
       <p>Yes. Any MCP servers you ran under Roo Code transfer to Cline verbatim.</p>
+
+      <h3>When should I use Pro versus the Workflow Hardening Sprint?</h3>
+      <p>Use Pro at $19/mo or $149/yr after one real blocked repeat when you want the personal dashboard and proof-ready exports. Use the Workflow Hardening Sprint when one workflow owner needs approval boundaries, rollback safety, and rollout proof before wider team use. The current Team anchor is $49/seat/mo with a 3-seat minimum.</p>
 
       <h3>Where does ThumbGate store my lessons?</h3>
       <p>In a local SQLite file at <code class="inline">.thumbgate/memory.sqlite</code> inside your project. No cloud, no account, nothing to orphan if a vendor sunsets again.</p>
