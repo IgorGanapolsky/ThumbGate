@@ -115,7 +115,11 @@ function isMissingCurrentBranchPr(result, prNumber) {
     return false;
   }
 
-  return /no pull requests found for branch/i.test(formatGhError(result));
+  const error = formatGhError(result);
+  return (
+    /no pull requests found for branch/i.test(error) ||
+    /could not determine current branch: failed to run git: not on any branch/i.test(error)
+  );
 }
 
 /**
