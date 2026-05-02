@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-04-30T04:14:20.304Z",
-  "state": "post-first-dollar",
+  "generatedAt": "2026-05-02T04:12:36.981Z",
+  "state": "cold-start",
   "headline": "Harden one AI-agent workflow before you roll it out.",
-  "shortDescription": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.",
-  "longDescription": "ThumbGate is a reliability gateway for AI coding workflows. It captures repeated failures, regenerates pre-action gates, and keeps approval boundaries, rollback safety, and proof attached to the workflow before the next risky tool call. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible. Primary motion: Workflow Hardening Sprint. Secondary motion: Pro at $19/mo or $149/yr after the buyer asks for the self-serve path.",
+  "shortDescription": "Harden one AI-agent workflow before you roll it out. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.",
+  "longDescription": "ThumbGate is a reliability gateway for AI coding workflows. It captures repeated failures, regenerates pre-action gates, and keeps approval boundaries, rollback safety, and proof attached to the workflow before the next risky tool call. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible. Primary motion: Workflow Hardening Sprint. Secondary motion: Pro at $19/mo or $149/yr after the buyer asks for the self-serve path.",
   "proofPolicy": "Do not lead with proof links. Use Commercial Truth and Verification Evidence only after the buyer confirms pain.",
   "recommendedCtas": [
     {
@@ -38,23 +38,11 @@
       "label": "Workflow control surfaces",
       "summary": "The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive.",
       "listingAngle": "Lead with one repeated workflow failure, then show how ThumbGate turns it into an enforceable pre-action gate.",
-      "count": 6,
-      "examples": [
-        "dolutech/engine_context",
-        "Adqui9608/ai-code-review-agent",
-        "Abhi268170/Stagix"
-      ]
-    },
-    {
-      "key": "production_rollout",
-      "label": "Production rollout proof",
-      "summary": "Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems.",
-      "listingAngle": "Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.",
       "count": 5,
       "examples": [
         "dolutech/engine_context",
         "Adqui9608/ai-code-review-agent",
-        "Abhi268170/Stagix"
+        "zaxbysauce/opencode-swarm"
       ]
     },
     {
@@ -76,9 +64,9 @@
       "listingAngle": "Lead with the proof-backed setup guide first, then convert proven local usage into Pro.",
       "count": 4,
       "examples": [
-        "Abhi268170/Stagix",
-        "opensesh/KARIMO",
-        "BaseInfinity/claude-sdlc-wizard"
+        "jmanhype/claude-code-plugin-marketplace",
+        "zaxbysauce/opencode-swarm",
+        "iliaal/compound-engineering-plugin"
       ]
     }
   ],
@@ -104,31 +92,7 @@
       "sampleTargets": [
         "dolutech/engine_context",
         "Adqui9608/ai-code-review-agent",
-        "Abhi268170/Stagix"
-      ]
-    },
-    {
-      "key": "production_rollout",
-      "label": "Production rollout proof",
-      "audience": "Platform teams protecting production, release, incident, or compliance workflows.",
-      "headline": "Prove one production agent workflow is safe before the next rollout.",
-      "shortDescription": "Lead with one production workflow where repeated mistakes, rollback risk, or audit pressure already make the pain expensive.",
-      "evidenceSummary": "Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems.",
-      "listingAngle": "Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.",
-      "primaryCta": {
-        "motion": "sprint",
-        "label": "Workflow Hardening Sprint",
-        "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
-      },
-      "secondaryCta": {
-        "motion": "guide",
-        "label": "Proof-backed setup guide",
-        "cta": "https://thumbgate-production.up.railway.app/guide"
-      },
-      "sampleTargets": [
-        "dolutech/engine_context",
-        "Adqui9608/ai-code-review-agent",
-        "Abhi268170/Stagix"
+        "zaxbysauce/opencode-swarm"
       ]
     },
     {
@@ -174,9 +138,9 @@
         "cta": "https://thumbgate-production.up.railway.app/checkout/pro"
       },
       "sampleTargets": [
-        "Abhi268170/Stagix",
-        "opensesh/KARIMO",
-        "BaseInfinity/claude-sdlc-wizard"
+        "jmanhype/claude-code-plugin-marketplace",
+        "zaxbysauce/opencode-swarm",
+        "iliaal/compound-engineering-plugin"
       ]
     }
   ],
@@ -188,13 +152,13 @@
       "why": "Warm Reddit engager already named a repeated workflow risk, so the fastest path is a founder-led diagnostic."
     },
     {
-      "account": "opensesh/KARIMO",
+      "account": "zaxbysauce/opencode-swarm",
       "temperature": "cold",
       "motion": "Pro at $19/mo or $149/yr",
       "why": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint."
     },
     {
-      "account": "dolutech/engine_context",
+      "account": "jmanhype/claude-code-plugin-marketplace",
       "temperature": "cold",
       "motion": "Workflow Hardening Sprint",
       "why": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof."

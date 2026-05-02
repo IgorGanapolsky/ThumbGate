@@ -1,6 +1,6 @@
 # Gemini CLI Demand Pack
 
-Updated: 2026-04-30T02:05:36.802Z
+Updated: 2026-05-02T04:12:36.981Z
 
 This is a sales operator artifact. It is not proof of rankings, sent outreach, installs, paid revenue, or marketplace approval by itself.
 
@@ -8,10 +8,10 @@ This is a sales operator artifact. It is not proof of rankings, sent outreach, i
 Turn Gemini CLI memory demand and Google Cloud MCP guardrail demand into tracked proof clicks, Pro checkout starts, and qualified workflow-hardening conversations.
 
 ## Positioning
-- State: post-first-dollar
+- State: cold-start
 - Headline: Turn Gemini CLI memory demand into enforced workflow safety.
 - Short description: ThumbGate gives Gemini CLI local-first memory that can become prevention rules and Pre-Action Checks before the next risky MCP call runs.
-- Summary: Gemini CLI demand in ThumbGate is guide-led: memory query first, then enforcement proof, then paid intent. Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
+- Summary: Gemini CLI demand in ThumbGate is guide-led: memory query first, then enforcement proof, then paid intent. No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.
 
 ## Canonical Identity
 - Display name: ThumbGate
@@ -73,7 +73,7 @@ Turn Gemini CLI memory demand and Google Cloud MCP guardrail demand into tracked
 - Recommended motion: Qualify one high-risk workflow for the Workflow Hardening Sprint.
 
 ### Security-sensitive evaluator comparing hosted memory versus local-first enforcement
-- Evidence: The Gemini guide keeps local-first posture explicit, and the compare surface supports buyers who object to hosted memory first. Current business-system targets: 4.
+- Evidence: The Gemini guide keeps local-first posture explicit, and the compare surface supports buyers who object to hosted memory first. Current business-system targets: 3.
 - Proof trigger: They care about keeping workflow history local and need proof that enforcement happens without a hosted memory dependency.
 - Proof asset: https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/compare/mem0.html
 - Next ask: https://thumbgate-production.up.railway.app/guide?utm_source=gemini&utm_medium=seo_guide&utm_campaign=gemini_queue_local_first&utm_content=setup&campaign_variant=local_first_evaluator&offer_code=GEMINI-QUEUE_LOCAL_FIRST&cta_id=gemini_queue_local_first&cta_placement=operator_queue&surface=gemini_cli
@@ -113,7 +113,7 @@ Gemini CLI memory is not enough if the same mistake still runs again tomorrow. T
 
 ### Bluesky — Short post
 - Audience: Security-sensitive evaluator comparing hosted memory to local-first enforcement
-- Evidence: 4 current business-system target(s) reinforce the local-first posture: keep workflow memory local, then prove enforcement before the next risky call.
+- Evidence: 3 current business-system target(s) reinforce the local-first posture: keep workflow memory local, then prove enforcement before the next risky call.
 - CTA: https://thumbgate-production.up.railway.app/compare/mem0?utm_source=gemini&utm_medium=bluesky_post&utm_campaign=gemini_channel_bluesky&utm_content=comparison&campaign_variant=local_first&offer_code=GEMINI-CHANNEL-BLUESKY&cta_id=gemini_channel_bluesky&cta_placement=channel_draft&surface=gemini_bluesky
 - Proof timing: Lead with the comparison surface first. Send Commercial Truth and Verification Evidence only after the buyer replies with a concrete privacy or workflow objection.
 Hosted memory is not the only option for Gemini CLI. If you want the workflow history to stay local and still become enforceable checks before the next MCP call runs, start with the local-first comparison: https://thumbgate-production.up.railway.app/compare/mem0?utm_source=gemini&utm_medium=bluesky_post&utm_campaign=gemini_channel_bluesky&utm_content=comparison&campaign_variant=local_first&offer_code=GEMINI-CHANNEL-BLUESKY&cta_id=gemini_channel_bluesky&cta_placement=channel_draft&surface=gemini_bluesky .

@@ -1,6 +1,6 @@
 # Claude Workflow Hardening Pack
 
-Updated: 2026-04-30T02:05:36.802Z
+Updated: 2026-05-02T04:12:36.981Z
 
 This is a sales operator artifact. It is not proof of sent outreach, directory approval, paid revenue, or deployment success by itself.
 
@@ -8,10 +8,10 @@ This is a sales operator artifact. It is not proof of sent outreach, directory a
 Turn Claude install demand and workflow-hardening pain into tracked sprint intakes, proof clicks, and Pro checkout starts without making approval or revenue claims the repo cannot verify.
 
 ## Positioning
-- State: post-first-dollar
+- State: cold-start
 - Headline: Turn Claude install demand into workflow-hardening paid intent.
 - Short description: ThumbGate gives Claude Desktop and Claude Code a proof-backed install path, thumbs-up/down feedback capture, and Pre-Action Checks that block repeated workflow mistakes before the next risky action runs.
-- Summary: Claude demand in ThumbGate should stay install-first for evaluators and workflow-hardening-first for teams that already feel the pain. Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
+- Summary: Claude demand in ThumbGate should stay install-first for evaluators and workflow-hardening-first for teams that already feel the pain. No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.
 
 ## Canonical Identity
 - Display name: ThumbGate for Claude
@@ -78,8 +78,8 @@ Follow-on listing offers:
 - @game-of-kton (warm) -> Workflow Hardening Sprint. Reason: Warm Reddit engager already works on advanced agent memory, so discovery should center on one repeated failure pattern. Evidence: warm inbound engagement, built serious memory systems, workflow pain named: stale context and conflicting facts Next ask: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - @leogodin217 (warm) -> Workflow Hardening Sprint. Reason: Warm Reddit engager already described a mature workflow, so the next step is a targeted diagnostic on one failure mode. Evidence: warm inbound engagement, mature multi-step workflow described, workflow pain named: review boundaries and context risk Next ask: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - @Enthu-Cutlet-1337 (warm) -> Workflow Hardening Sprint. Reason: Warm Reddit engager already understands the adaptive-gate thesis, so offer one concrete workflow hardening diagnostic. Evidence: warm inbound engagement, responded to adaptive-gate positioning, workflow pain named: brittle guardrails Next ask: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- jmanhype/claude-code-plugin-marketplace (cold) -> Workflow Hardening Sprint. Reason: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof. Evidence: production or platform workflow, business-system integration, agent infrastructure, self-serve agent tooling, 27 GitHub stars, updated in the last 7 days Next ask: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 - dolutech/engine_context (cold) -> Workflow Hardening Sprint. Reason: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof. Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, 8 GitHub stars Next ask: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-- Adqui9608/ai-code-review-agent (cold) -> Workflow Hardening Sprint. Reason: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof. Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, updated in the last 7 days Next ask: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 
 ## Outreach Drafts
 ### GitHub DM or email — Claude Desktop or Claude Code operator
@@ -101,7 +101,7 @@ You already called out the risky part of Claude workflows: the same failure keep
 
 ### LinkedIn — Founder post
 - Audience: Platform lead, consultancy owner, or AI delivery lead evaluating Claude rollout risk
-- Evidence: 3 production/platform targets and 4 business-system targets in the current report point to approval boundaries, rollback safety, and review-ready rollout proof as the strongest B2B angle.
+- Evidence: 3 production/platform targets and 3 business-system targets in the current report point to approval boundaries, rollback safety, and review-ready rollout proof as the strongest B2B angle.
 - CTA: https://thumbgate-production.up.railway.app/?utm_source=claude&utm_medium=linkedin_post&utm_campaign=claude_channel_linkedin&utm_content=landing_section&campaign_variant=review_ready&offer_code=CLAUDE-CHANNEL-LINKEDIN&cta_id=claude_channel_linkedin&cta_placement=channel_draft&surface=claude_linkedin#claude-desktop
 - Proof timing: Public post can mention proof-ready rollout, but keep the proof links for the reply or DM after pain is confirmed.
 Teams already shipping with Claude usually do not need another agent platform. They need one workflow that stops repeating the same mistake before it touches a repo, approval step, or customer system. ThumbGate is the lane I use for that: local-first install, repeated-mistake capture, and Pre-Action Checks before the next risky action runs. If you are evaluating Claude rollout risk, start with the review-ready install lane here: https://thumbgate-production.up.railway.app/?utm_source=claude&utm_medium=linkedin_post&utm_campaign=claude_channel_linkedin&utm_content=landing_section&campaign_variant=review_ready&offer_code=CLAUDE-CHANNEL-LINKEDIN&cta_id=claude_channel_linkedin&cta_placement=channel_draft&surface=claude_linkedin#claude-desktop .
@@ -151,7 +151,7 @@ Do not count as success:
 ## Evidence Backstop
 - Warm Claude targets in current report: 2
 - Production or platform targets in current report: 3
-- Business-system targets in current report: 4
+- Business-system targets in current report: 3
 - Landing source: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/landing-page.html
 - Review packet: https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-plugin-review.zip
 
