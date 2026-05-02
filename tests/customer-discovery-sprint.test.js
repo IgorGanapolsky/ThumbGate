@@ -13,6 +13,7 @@ const EXPECTED_ARTIFACTS = [
   'gtm-revenue-loop.json',
   'gtm-marketplace-copy.md',
   'gtm-marketplace-copy.json',
+  'gtm-marketplace-surfaces.csv',
   'gtm-target-queue.csv',
   'gtm-target-queue.jsonl',
   'team-outreach-messages.md',
