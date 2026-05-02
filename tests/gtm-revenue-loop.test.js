@@ -301,6 +301,54 @@ test('resolveRevenueLoopSummary selects the freshest hosted window with commerci
   assert.equal(result.summary.trafficMetrics.checkoutStarts, 531);
 });
 
+test('resolveRevenueLoopSummary prefers booked-revenue windows over checkout-only windows', async () => {
+  const result = await resolveRevenueLoopSummary({
+    getOperationalBillingSummaryFn: async () => ({
+      source: 'local',
+      summary: {
+        revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+        trafficMetrics: { checkoutStarts: 0 },
+        signups: { uniqueLeads: 0 },
+        pipeline: {},
+      },
+      fallbackReason: 'Hosted operational summary is not configured.',
+    }),
+    generateRevenueStatusReportFn: async () => ({
+      source: 'hosted-via-railway-env',
+      hostedAudit: {
+        summaries: {
+          today: {
+            status: 200,
+            revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+            trafficMetrics: { checkoutStarts: 1 },
+            signups: { uniqueLeads: 1 },
+            pipeline: {},
+          },
+          '30d': {
+            status: 200,
+            revenue: { paidOrders: 4, bookedRevenueCents: 14900 },
+            trafficMetrics: { checkoutStarts: 572 },
+            signups: { uniqueLeads: 388 },
+            pipeline: {},
+          },
+          lifetime: {
+            status: 200,
+            revenue: { paidOrders: 6, bookedRevenueCents: 16900 },
+            trafficMetrics: { checkoutStarts: 663 },
+            signups: { uniqueLeads: 400 },
+            pipeline: {},
+          },
+        },
+      },
+    }),
+  });
+
+  assert.equal(result.source, 'hosted-via-railway-env');
+  assert.equal(result.summaryWindow, '30d');
+  assert.equal(result.summary.revenue.paidOrders, 4);
+  assert.equal(result.summary.revenue.bookedRevenueCents, 14900);
+});
+
 test('resolveRevenueLoopSummary skips hosted audit when local metrics are explicitly requested', async () => {
   let hostedAuditCalls = 0;
   const result = await resolveRevenueLoopSummary({
