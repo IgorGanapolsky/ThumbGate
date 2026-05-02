@@ -38,10 +38,16 @@ const TARGET_SEARCH_QUERIES = [
   'search/repositories?q=MCP+plugin+setup+stars:>=3+sort:updated',
   'search/repositories?q=Cursor+rules+stars:>=3+sort:updated',
 ];
-const HARD_LOW_INTENT_SIGNALS = /\b(awesome|course|curso|tutorial|learn|learning|showcase|portfolio|guide|notes|reference)\b|everything[-\s]+you[-\s]+need[-\s]+to[-\s]+know/i;
+const HARD_LOW_INTENT_SIGNAL_PATTERNS = [
+  /\b(?:awesome|course|curso|tutorial|learn|learning|showcase|portfolio|guide|notes|reference)\b/i,
+  /everything[-\s]+you[-\s]+need[-\s]+to[-\s]+know/i,
+];
 const SELF_SERVE_ONLY_SIGNALS = /\b(awesome|list|example|template|demo|tutorial|course|personal|dotfiles|toy|boilerplate|learn|learning|playground|starter|sample|sandbox|quickstart|lab)\b/;
 const LOW_BUYER_INTENT_SIGNALS = /\b(learn|learning|tutorial|course|playground|starter|sample|sandbox|quickstart|boilerplate|template|demo|example|lab|portfolio|showcase|case study)\b/;
-const SELF_SERVE_TOOLING_SIGNALS = /\b(plugin|plugins|extension|extensions|hook|hooks|command|commands|skill|skills|sub-agent|subagent|statusline|status line|config|profile|installer|install|setup|rule pack|ruleset|local-first|local first|workspace rules|observability)\b/;
+const SELF_SERVE_TOOLING_SIGNAL_PATTERNS = [
+  /\b(?:plugin|plugins|extension|extensions|hook|hooks|command|commands|skill|skills|sub-agent|subagent|statusline|config|profile|installer|install|setup|observability)\b/,
+  /\b(?:status line|rule pack|ruleset|local-first|local first|workspace rules)\b/,
+];
 const MAX_CREDIBLE_DESCRIPTION_LENGTH = 500;
 const SUSPICIOUS_REPO_DESCRIPTION_PATTERNS = [
   /^\s*skip to content\b/i,
@@ -74,7 +80,7 @@ const TARGET_SIGNAL_RULES = [
   },
   {
     label: 'self-serve agent tooling',
-    pattern: SELF_SERVE_TOOLING_SIGNALS,
+    matches: (haystack) => matchesAnyPattern(SELF_SERVE_TOOLING_SIGNAL_PATTERNS, haystack),
     weight: 2,
   },
 ];
@@ -1026,14 +1032,18 @@ function hasLowBuyerIntentSignals(target) {
   return LOW_BUYER_INTENT_SIGNALS.test(haystack);
 }
 
+function matchesAnyPattern(patterns, haystack) {
+  return patterns.some((pattern) => pattern.test(haystack));
+}
+
 function hasHardLowBuyerIntentSignals(target) {
   const haystack = `${normalizeText(target.repoName)} ${normalizeText(target.description)}`.toLowerCase();
-  return HARD_LOW_INTENT_SIGNALS.test(haystack);
+  return matchesAnyPattern(HARD_LOW_INTENT_SIGNAL_PATTERNS, haystack);
 }
 
 function hasSelfServeToolingSignals(target) {
   const haystack = `${normalizeText(target.repoName)} ${normalizeText(target.description)}`.toLowerCase();
-  return SELF_SERVE_TOOLING_SIGNALS.test(haystack);
+  return matchesAnyPattern(SELF_SERVE_TOOLING_SIGNAL_PATTERNS, haystack);
 }
 
 function isSelfServeToolingProspect(target) {
@@ -1051,7 +1061,10 @@ function analyzeTargetEvidence(target) {
   let score = 0;
 
   for (const rule of TARGET_SIGNAL_RULES) {
-    if (!rule.pattern.test(haystack)) continue;
+    const matched = typeof rule.matches === 'function'
+      ? rule.matches(haystack)
+      : rule.pattern.test(haystack);
+    if (!matched) continue;
     score += rule.weight;
     evidence.push(rule.label);
   }
