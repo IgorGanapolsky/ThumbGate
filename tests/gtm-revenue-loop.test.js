@@ -406,6 +406,8 @@ test('target evidence favors production workflows over generic fresh repos', () 
 
 test('target search queries keep the GitLab review discovery lane active', () => {
   assert.ok(TARGET_SEARCH_QUERIES.includes('search/repositories?q=GitLab+review+automation+agent+sort:updated'));
+  assert.ok(TARGET_SEARCH_QUERIES.includes('search/repositories?q=Claude+Code+workflow+hooks+stars:>=3+sort:updated'));
+  assert.ok(TARGET_SEARCH_QUERIES.includes('search/repositories?q=OpenCode+context+plugin+stars:>=3+sort:updated'));
 });
 
 test('self-serve hook surfaces keep the guide-first outreach angle even when they mention platforms', () => {
@@ -418,6 +420,18 @@ test('self-serve hook surfaces keep the guide-first outreach angle even when the
 
   assert.ok(target.score >= 4);
   assert.match(target.outreachAngle, /proof-backed setup guide|local-first enforcement/i);
+});
+
+test('active hook and orchestration repos score as workflow control surfaces', () => {
+  const target = analyzeTargetEvidence({
+    repoName: 'claude-code-maestro',
+    description: 'Multi-agent orchestration framework with hooks, commands, and observability for Claude Code workflows.',
+    stars: 4,
+    updatedAt: new Date().toISOString(),
+  });
+
+  assert.ok(target.score >= 8);
+  assert.ok(target.evidence.some((entry) => /workflow control surface/i.test(entry)));
 });
 
 test('repo identity filter drops obviously weak identifiers', () => {
@@ -578,6 +592,82 @@ test('prospecting drops educational learning repos that look active but have low
               html_url: 'https://github.com/builder/Learning-about-MCP',
               description: 'Learning repo for MCP workflow experiments, production notes, and agent patterns.',
               stargazers_count: 0,
+              updated_at: new Date().toISOString(),
+            },
+            {
+              owner: { login: 'freema' },
+              name: 'mcp-jira-stdio',
+              html_url: 'https://github.com/freema/mcp-jira-stdio',
+              description: 'MCP server for Jira integration with stdio transport. Issue management, project tracking, and workflow automation via Model Context Protocol.',
+              stargazers_count: 11,
+              updated_at: new Date().toISOString(),
+            },
+          ],
+        });
+      },
+    }),
+  });
+
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.targets.length, 1);
+  assert.equal(result.targets[0].repoName, 'mcp-jira-stdio');
+});
+
+test('prospecting drops awesome-list style repos even when stars and hook keywords are high', async () => {
+  const result = await prospectTargets(5, {
+    fetchImpl: async () => ({
+      ok: true,
+      async text() {
+        return JSON.stringify({
+          items: [
+            {
+              owner: { login: 'rohitg00' },
+              name: 'awesome-claude-code-toolkit',
+              html_url: 'https://github.com/rohitg00/awesome-claude-code-toolkit',
+              description: 'Awesome Claude Code toolkit with hooks, commands, observability, and plugins for every workflow.',
+              stargazers_count: 999,
+              updated_at: new Date().toISOString(),
+            },
+            {
+              owner: { login: 'freema' },
+              name: 'mcp-jira-stdio',
+              html_url: 'https://github.com/freema/mcp-jira-stdio',
+              description: 'MCP server for Jira integration with stdio transport. Issue management, project tracking, and workflow automation via Model Context Protocol.',
+              stargazers_count: 11,
+              updated_at: new Date().toISOString(),
+            },
+          ],
+        });
+      },
+    }),
+  });
+
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.targets.length, 1);
+  assert.equal(result.targets[0].repoName, 'mcp-jira-stdio');
+});
+
+test('prospecting drops courseware and everything-you-need-to-know repos even when they are fresh', async () => {
+  const result = await prospectTargets(5, {
+    fetchImpl: async () => ({
+      ok: true,
+      async text() {
+        return JSON.stringify({
+          items: [
+            {
+              owner: { login: 'wesammustafa' },
+              name: 'OpenCode-Everything-You-Need-to-Know',
+              html_url: 'https://github.com/wesammustafa/OpenCode-Everything-You-Need-to-Know',
+              description: 'OpenCode hooks, commands, and plugin notes for new users.',
+              stargazers_count: 204,
+              updated_at: new Date().toISOString(),
+            },
+            {
+              owner: { login: 'josefcohernandez' },
+              name: 'Curso-desarrollo-software-con-Claude-Code',
+              html_url: 'https://github.com/josefcohernandez/Curso-desarrollo-software-con-Claude-Code',
+              description: 'Curso completo de Claude Code con hooks, skills, plugins y agentes.',
+              stargazers_count: 12,
               updated_at: new Date().toISOString(),
             },
             {

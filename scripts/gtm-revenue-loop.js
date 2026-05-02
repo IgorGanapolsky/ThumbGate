@@ -19,22 +19,29 @@ const TARGET_SEARCH_QUERIES = [
   'search/repositories?q=Model+Context+Protocol+approval+workflow+sort:updated',
   'search/repositories?q=ServiceNow+MCP+workflow+sort:updated',
   'search/repositories?q=Claude+Code+review+automation+sort:updated',
+  'search/repositories?q=Claude+Code+workflow+hooks+stars:>=3+sort:updated',
+  'search/repositories?q=Claude+Code+config+hooks+stars:>=3+sort:updated',
+  'search/repositories?q=Claude+Code+observability+hooks+stars:>=3+sort:updated',
   'search/repositories?q=GitLab+review+automation+agent+sort:updated',
   'search/repositories?q=github+review+automation+agent+sort:updated',
   'search/repositories?q=review+workflow+automation+agent+sort:updated',
   'search/repositories?q=approval+workflow+github+agent+sort:updated',
+  'search/repositories?q=agent+hook+approval+workflow+sort:updated',
   'search/repositories?q=incident+workflow+automation+agent+sort:updated',
   'search/repositories?q=jira+approval+workflow+agent+sort:updated',
   'search/repositories?q=Claude+Code+hooks+stars:>=3+sort:updated',
   'search/repositories?q=Claude+Code+plugin+stars:>=3+sort:updated',
   'search/repositories?q=Codex+plugin+stars:>=3+sort:updated',
   'search/repositories?q=OpenCode+plugin+stars:>=3+sort:updated',
+  'search/repositories?q=OpenCode+context+plugin+stars:>=3+sort:updated',
+  'search/repositories?q=OpenCode+workflow+plugin+stars:>=3+sort:updated',
   'search/repositories?q=MCP+plugin+setup+stars:>=3+sort:updated',
   'search/repositories?q=Cursor+rules+stars:>=3+sort:updated',
 ];
+const HARD_LOW_INTENT_SIGNALS = /\b(awesome|course|curso|tutorial|learn|learning|showcase|portfolio|guide|notes|reference)\b|everything[-\s]+you[-\s]+need[-\s]+to[-\s]+know/i;
 const SELF_SERVE_ONLY_SIGNALS = /\b(awesome|list|example|template|demo|tutorial|course|personal|dotfiles|toy|boilerplate|learn|learning|playground|starter|sample|sandbox|quickstart|lab)\b/;
 const LOW_BUYER_INTENT_SIGNALS = /\b(learn|learning|tutorial|course|playground|starter|sample|sandbox|quickstart|boilerplate|template|demo|example|lab|portfolio|showcase|case study)\b/;
-const SELF_SERVE_TOOLING_SIGNALS = /\b(plugin|plugins|extension|extensions|hook|hooks|statusline|status line|config|profile|installer|install|setup|rule pack|ruleset|local-first|local first|workspace rules)\b/;
+const SELF_SERVE_TOOLING_SIGNALS = /\b(plugin|plugins|extension|extensions|hook|hooks|command|commands|skill|skills|sub-agent|subagent|statusline|status line|config|profile|installer|install|setup|rule pack|ruleset|local-first|local first|workspace rules|observability)\b/;
 const MAX_CREDIBLE_DESCRIPTION_LENGTH = 500;
 const SUSPICIOUS_REPO_DESCRIPTION_PATTERNS = [
   /^\s*skip to content\b/i,
@@ -47,7 +54,7 @@ const SUSPICIOUS_REPO_DESCRIPTION_PATTERNS = [
 const TARGET_SIGNAL_RULES = [
   {
     label: 'workflow control surface',
-    pattern: /\b(workflow|approval|review|handoff|governance|gate|guardrail|policy|audit|proof)\b/,
+    pattern: /\b(workflow|approval|review|handoff|governance|gate|guardrail|policy|audit|proof|hook|hooks|command|commands|sub-agent|subagent|observability|orchestration|agreement|agreements)\b/,
     weight: 4,
   },
   {
@@ -1019,6 +1026,11 @@ function hasLowBuyerIntentSignals(target) {
   return LOW_BUYER_INTENT_SIGNALS.test(haystack);
 }
 
+function hasHardLowBuyerIntentSignals(target) {
+  const haystack = `${normalizeText(target.repoName)} ${normalizeText(target.description)}`.toLowerCase();
+  return HARD_LOW_INTENT_SIGNALS.test(haystack);
+}
+
 function hasSelfServeToolingSignals(target) {
   const haystack = `${normalizeText(target.repoName)} ${normalizeText(target.description)}`.toLowerCase();
   return SELF_SERVE_TOOLING_SIGNALS.test(haystack);
@@ -1163,6 +1175,7 @@ async function prospectTargets(maxTargets = 6, {
   const ranked = dedupeTargets(combined)
     .filter(hasCredibleRepoIdentity)
     .filter(hasCredibleRepoDescription)
+    .filter((target) => !hasHardLowBuyerIntentSignals(target))
     .map((target) => {
       const evidence = analyzeTargetEvidence(target);
       return {
