@@ -24,6 +24,7 @@ const {
   hasCredibleRepoDescription,
   hasCredibleRepoIdentity,
   hasLowBuyerIntentSignals,
+  parseCommercialTruthRevenueSnapshot,
   parseArgs,
   prospectTargets,
   renderMarketplaceCopyMarkdown,
@@ -162,7 +163,7 @@ test('resolveRevenueLoopSummary prefers hosted revenue status when local operato
   assert.equal(result.summary.trafficMetrics.checkoutStarts, 1);
 });
 
-test('resolveRevenueLoopSummary keeps local numbers when hosted revenue status still falls back', async () => {
+test('resolveRevenueLoopSummary keeps the local fallback source while hydrating historical booked revenue', async () => {
   const result = await resolveRevenueLoopSummary({
     getOperationalBillingSummaryFn: async () => ({
       source: 'local',
@@ -189,7 +190,8 @@ test('resolveRevenueLoopSummary keeps local numbers when hosted revenue status s
 
   assert.equal(result.source, 'local');
   assert.equal(result.fallbackReason, 'Hosted operational summary is not configured.');
-  assert.equal(result.summary.revenue.paidOrders, 0);
+  assert.equal(result.summary.revenue.paidOrders, 2);
+  assert.equal(result.summary.revenue.bookedRevenueCents, 2000);
 });
 
 test('resolveRevenueLoopSummary retries hosted revenue status before accepting local fallback', async () => {
@@ -325,6 +327,53 @@ test('resolveRevenueLoopSummary skips hosted audit when local metrics are explic
 
   assert.equal(result.source, 'local');
   assert.equal(hostedAuditCalls, 0);
+});
+
+test('commercial truth revenue parser extracts the historical booked snapshot', () => {
+  const snapshot = parseCommercialTruthRevenueSnapshot([
+    '# Commercial Truth',
+    '- Verified cumulative booked revenue through March 19, 2026 is **$20.00** from `2` reconciled Stripe charges tied to the current product;',
+  ].join('\n'));
+
+  assert.deepEqual(snapshot, {
+    paidOrders: 2,
+    bookedRevenueCents: 2000,
+    latestPaidAt: '2026-03-19T00:00:00.000Z',
+  });
+});
+
+test('resolveRevenueLoopSummary preserves historical booked revenue from commercial truth when hosted billing is unavailable', async () => {
+  const result = await resolveRevenueLoopSummary({
+    getOperationalBillingSummaryFn: async () => ({
+      source: 'local',
+      summary: {
+        revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+        trafficMetrics: { checkoutStarts: 0 },
+        signups: { uniqueLeads: 0 },
+        pipeline: {},
+      },
+      fallbackReason: 'Hosted operational summary is not configured.',
+    }),
+    generateRevenueStatusReportFn: async () => ({
+      source: 'local-fallback',
+      hostedAudit: {
+        summaries: {
+          today: { status: 500 },
+          '30d': { status: 500 },
+          lifetime: { status: 500 },
+        },
+      },
+    }),
+    readFileSyncImpl: () => [
+      '# Commercial Truth',
+      '- Verified cumulative booked revenue through March 19, 2026 is **$20.00** from `2` reconciled Stripe charges tied to the current product;',
+    ].join('\n'),
+  });
+
+  assert.equal(result.source, 'local');
+  assert.equal(result.summary.revenue.paidOrders, 2);
+  assert.equal(result.summary.revenue.bookedRevenueCents, 2000);
+  assert.equal(result.summary.revenue.latestPaidAt, '2026-03-19T00:00:00.000Z');
 });
 
 test('argument and commercial snapshot helpers stay bounded and explicit', () => {

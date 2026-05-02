@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-30T02:05:36.802Z",
+  "generatedAt": "2026-05-02T06:16:55.930Z",
   "channel": "Codex",
   "objective": "Turn Codex plugin discovery into tracked guide opens, bundle downloads, Pro checkout starts, and qualified workflow-hardening conversations.",
   "canonicalIdentity": {
@@ -31,7 +31,7 @@
       "examples": [
         "dolutech/engine_context",
         "Adqui9608/ai-code-review-agent",
-        "Abhi268170/Stagix"
+        "kamaldhingra/AI-Agents-QA-Automation"
       ]
     },
     {
@@ -42,7 +42,7 @@
       "examples": [
         "dolutech/engine_context",
         "Adqui9608/ai-code-review-agent",
-        "Abhi268170/Stagix"
+        "kamaldhingra/AI-Agents-QA-Automation"
       ]
     }
   ],
@@ -247,6 +247,20 @@
       "summary": "Use these when the buyer already exposes a plugin, local-hook, or repo-backed tooling surface and should start with the guide path.",
       "targets": [
         {
+          "account": "dancaldera/nvim-config",
+          "temperature": "cold",
+          "source": "github / github",
+          "evidenceScore": 12,
+          "whyNow": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
+          "evidence": "workflow control surface; agent infrastructure; self-serve agent tooling; 5 GitHub stars; updated in the last 7 days",
+          "contact": "https://github.com/dancaldera",
+          "cta": "https://thumbgate-production.up.railway.app/guide",
+          "proofTrigger": "Use proof pack only after the buyer confirms pain.",
+          "firstTouchDraft": "Hey @dancaldera, saw you're building around `nvim-config`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
+          "markContactedCommand": "npm run sales:pipeline -- advance --lead 'github_dancaldera_nvim_config' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+          "pipelineLeadId": "github_dancaldera_nvim_config"
+        },
+        {
           "account": "iliaal/compound-engineering-plugin",
           "temperature": "cold",
           "source": "github / github",
@@ -266,7 +280,7 @@
           "source": "github / github",
           "evidenceScore": 12,
           "whyNow": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
-          "evidence": "workflow control surface; self-serve agent tooling; 246 GitHub stars; updated in the last 7 days",
+          "evidence": "workflow control surface; self-serve agent tooling; 289 GitHub stars; updated in the last 7 days",
           "contact": "https://github.com/zaxbysauce",
           "cta": "https://thumbgate-production.up.railway.app/guide",
           "proofTrigger": "Use proof pack only after the buyer confirms pain.",
