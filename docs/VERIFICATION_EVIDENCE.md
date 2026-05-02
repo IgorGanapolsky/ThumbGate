@@ -44,6 +44,50 @@ curl -H "Authorization: Bearer YOUR_KEY" \
 
 # Verification log
 
+## May 2, 2026: detached-lane PR management hardening and evidence-backed revenue loop refresh
+
+Scope:
+
+- Hardened `scripts/pr-manager.js` so detached-head automation worktrees fall back to repo-wide PR inspection instead of failing on branch lookup.
+- Added regression coverage for detached-head PR scans in `tests/pr-manager.test.js`.
+- Tightened hosted revenue-window selection in `scripts/gtm-revenue-loop.js` so checkout-only `today` windows do not overwrite verified paid-revenue state from richer hosted windows.
+- Added regression coverage in `tests/gtm-revenue-loop.test.js` for the booked-revenue-window preference.
+- Refreshed operator-facing GTM artifacts in `docs/marketing/*` and `docs/OUTREACH_TARGETS.md` from the live hosted billing summary and current GitHub target set.
+
+Commands run in the dedicated clean verification worktree at `/Users/ganapolsky_i/.codex/worktrees/verify-revenue-loop-refresh-detached-pr-20260502/ThumbGate`:
+
+```bash
+npm ci
+npm test
+npm run test:coverage
+THUMBGATE_PROOF_DIR="$(mktemp -d)/proof" npm run prove:adapters
+THUMBGATE_AUTOMATION_PROOF_DIR="$(mktemp -d)/proof-automation" npm run prove:automation
+npm run self-heal:check
+git diff --check
+```
+
+Observed result:
+
+- `npm ci` exited `0`.
+- `npm test` exited `0`.
+- `npm run test:coverage` exited `0`.
+- `THUMBGATE_PROOF_DIR=... npm run prove:adapters` exited `0`: `48` passed, `0` failed.
+- `THUMBGATE_AUTOMATION_PROOF_DIR=... npm run prove:automation` exited `0`: `55` passed, `0` failed.
+- `npm run self-heal:check` exited `0`: `Overall: HEALTHY` with `6/6 healthy` checks.
+- `git diff --check` exited `0`.
+- The refreshed revenue loop resolved against the hosted billing summary with:
+  - Revenue window: `today`
+  - Paid orders: `2`
+  - Booked revenue: `$20.00`
+  - Checkout starts: `1`
+  - Billing source: `hosted-via-railway-env`
+
+Requirements verified:
+
+- Detached automation worktrees can inspect open PRs without crashing on missing branch metadata.
+- Revenue-loop artifacts stay anchored to hosted paid-revenue evidence instead of regressing to a false zero-revenue narrative.
+- Refreshed operator-facing GTM assets remain tied to `COMMERCIAL_TRUTH.md` and `VERIFICATION_EVIDENCE.md`.
+
 ## April 30, 2026: machine-readable buyer-path schema for acquisition and conversion surfaces
 
 Scope:
