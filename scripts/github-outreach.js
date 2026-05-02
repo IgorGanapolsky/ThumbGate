@@ -172,6 +172,11 @@ function buildOutreachTargetsReport({
     generatedAt: normalizeText(revenueLoopReport.generatedAt) || new Date().toISOString(),
     state: normalizeText(revenueLoopReport.directive?.state) || 'cold-start',
     headline: normalizeText(revenueLoopReport.directive?.headline) || 'No verified revenue and no active pipeline.',
+    activeWindow: normalizeText(revenueLoopReport.snapshotWindow) || 'today',
+    trailing30Available: Boolean(revenueLoopReport.trailing30Snapshot),
+    trailing30PaidOrders: Number(revenueLoopReport.trailing30Snapshot?.paidOrders || 0),
+    trailing30CheckoutStarts: Number(revenueLoopReport.trailing30Snapshot?.checkoutStarts || 0),
+    trailing30WorkflowSprintLeads: Number(revenueLoopReport.trailing30Snapshot?.sprintLeads || 0),
     queuePath,
     reportPath,
     pipelinePath,
@@ -250,6 +255,14 @@ function renderOutreachTargetsMarkdown(report = {}) {
     '## Current Queue',
     `- Revenue state: ${report.state || 'cold-start'}`,
     `- Headline: ${report.headline || 'No verified revenue and no active pipeline.'}`,
+    `- Active revenue window: ${report.activeWindow || 'today'}`,
+    ...(report.trailing30Available
+      ? [
+        `- Trailing 30d paid orders: ${report.trailing30PaidOrders}`,
+        `- Trailing 30d checkout starts: ${report.trailing30CheckoutStarts}`,
+        `- Trailing 30d workflow sprint leads: ${report.trailing30WorkflowSprintLeads}`,
+      ]
+      : []),
     `- Follow-ups now: ${report.followUpTargets.length}`,
     `- Warm discovery ready: ${report.warmTargets.length}`,
     `- Self-serve closes ready: ${report.selfServeTargets.length}`,

@@ -299,6 +299,8 @@ test('resolveRevenueLoopSummary selects the freshest hosted window with commerci
   assert.equal(result.summary.revenue.paidOrders, 6);
   assert.equal(result.summary.revenue.bookedRevenueCents, 16900);
   assert.equal(result.summary.trafficMetrics.checkoutStarts, 531);
+  assert.equal(result.summaryWindows['30d'].revenue.paidOrders, 6);
+  assert.equal(result.summaryWindows.today.trafficMetrics.checkoutStarts, 0);
 });
 
 test('resolveRevenueLoopSummary skips hosted audit when local metrics are explicitly requested', async () => {
@@ -1292,6 +1294,7 @@ test('operator handoff payload mirrors the ranked queue and sales commands in ma
   const catalog = buildMotionCatalog(links);
   const payload = buildOperatorHandoffPayload({
     generatedAt: '2026-04-26T00:00:00.000Z',
+    snapshotWindow: 'today',
     directive: {
       state: 'post-first-dollar',
       headline: 'Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.',
@@ -1299,6 +1302,11 @@ test('operator handoff payload mirrors the ranked queue and sales commands in ma
     snapshot: {
       paidOrders: 2,
       checkoutStarts: 1,
+    },
+    trailing30Snapshot: {
+      paidOrders: 6,
+      checkoutStarts: 531,
+      sprintLeads: 0,
     },
     targets: [
       {
@@ -1417,6 +1425,11 @@ test('operator handoff payload mirrors the ranked queue and sales commands in ma
   });
 
   assert.equal(payload.summary.revenueState, 'post-first-dollar');
+  assert.equal(payload.summary.snapshotWindow, 'today');
+  assert.equal(payload.summary.trailing30Available, true);
+  assert.equal(payload.summary.trailing30PaidOrders, 6);
+  assert.equal(payload.summary.trailing30CheckoutStarts, 531);
+  assert.equal(payload.summary.trailing30SprintLeads, 0);
   assert.equal(payload.summary.activeFollowUps, 1);
   assert.equal(payload.summary.warmTargetsReadyNow, 1);
   assert.equal(payload.summary.selfServeTargetsReadyNow, 1);
@@ -2118,6 +2131,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
   const catalog = buildMotionCatalog(links);
   const report = {
     generatedAt: '2026-04-25T00:00:00.000Z',
+    snapshotWindow: 'today',
     source: 'local',
     fallbackReason: 'Hosted operational summary is not configured.',
     currentTruth: {
@@ -2142,6 +2156,11 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
       uniqueLeads: 0,
       sprintLeads: 0,
       qualifiedSprintLeads: 0,
+    },
+    trailing30Snapshot: {
+      paidOrders: 6,
+      checkoutStarts: 5,
+      sprintLeads: 0,
     },
     targets: [{
       temperature: 'warm',
@@ -2249,6 +2268,10 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.match(teamOutreach, /If the workflow pain is real, I can send the proof pack\./);
     assert.match(teamOutreach, /Log after send: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
     assert.match(operatorHandoff, /Revenue Operator Priority Handoff/);
+    assert.match(operatorHandoff, /Active revenue window: today/);
+    assert.match(operatorHandoff, /Trailing 30d paid orders: 6/);
+    assert.match(operatorHandoff, /Trailing 30d checkout starts: 5/);
+    assert.match(operatorHandoff, /Trailing 30d workflow sprint leads: 0/);
     assert.match(operatorHandoff, /sales:pipeline -- import --source docs\/marketing\/gtm-revenue-loop\.json/);
     assert.match(operatorHandoff, /Send Now: Warm Discovery/);
     assert.match(operatorHandoff, /Pipeline lead id: reddit_builder_production_mcp_server/);
@@ -2376,6 +2399,7 @@ test('operator send-now export flattens ranked handoff rows for batch ops', () =
   const catalog = buildMotionCatalog(links);
   const report = {
     generatedAt: '2026-04-25T00:00:00.000Z',
+    snapshotWindow: 'today',
     directive: {
       state: 'post-first-dollar',
       headline: 'Verified booked revenue exists.',
@@ -2386,6 +2410,11 @@ test('operator send-now export flattens ranked handoff rows for batch ops', () =
     snapshot: {
       paidOrders: 2,
       checkoutStarts: 5,
+    },
+    trailing30Snapshot: {
+      paidOrders: 6,
+      checkoutStarts: 5,
+      sprintLeads: 0,
     },
     targets: [{
       temperature: 'warm',

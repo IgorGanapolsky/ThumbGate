@@ -655,6 +655,19 @@ function normalizeRevenueWindowSummary(summary = {}) {
   };
 }
 
+function buildAvailableSummaryWindows(summaries = {}) {
+  const windows = {};
+
+  for (const windowName of ['today', '30d', 'lifetime']) {
+    const candidate = summaries?.[windowName];
+    if (Number(candidate?.status) === 200) {
+      windows[windowName] = normalizeRevenueWindowSummary(candidate);
+    }
+  }
+
+  return windows;
+}
+
 function hasRevenueLoopCommercialSignal(summary = {}) {
   const snapshot = summarizeCommercialSnapshot(summary);
   return snapshot.paidOrders > 0
@@ -781,6 +794,7 @@ async function resolveRevenueLoopSummary(options = {}) {
         return {
           source: hostedReport.source,
           summary: normalizeRevenueWindowSummary(selectedHostedWindow.summary),
+          summaryWindows: buildAvailableSummaryWindows(hostedReport?.hostedAudit?.summaries),
           fallbackReason: null,
           hostedStatus: selectedHostedWindow.summary.status,
           summaryWindow: selectedHostedWindow.window,
@@ -1769,6 +1783,13 @@ function renderRevenueLoopMarkdown(report) {
     `- Unique leads: ${report.snapshot.uniqueLeads}`,
     `- Workflow sprint leads: ${report.snapshot.sprintLeads}`,
     `- Qualified sprint leads: ${report.snapshot.qualifiedSprintLeads}`,
+    ...(report.trailing30Snapshot
+      ? [
+        `- Trailing 30d paid orders: ${report.trailing30Snapshot.paidOrders}`,
+        `- Trailing 30d checkout starts: ${report.trailing30Snapshot.checkoutStarts}`,
+        `- Trailing 30d workflow sprint leads: ${report.trailing30Snapshot.sprintLeads}`,
+      ]
+      : []),
     `- Billing source: ${report.source}${fallbackReason}`,
     `- Billing verification: ${report.verification?.label || 'n/a'}`,
     '',
@@ -2011,8 +2032,13 @@ function buildOperatorHandoffPayload(report) {
       revenueState: normalizeText(report?.directive?.state) || 'cold-start',
       headline: normalizeText(report?.directive?.headline) || 'No verified revenue and no active pipeline.',
       billingVerification: normalizeText(report?.verification?.label) || 'n/a',
+      snapshotWindow: normalizeText(report?.snapshotWindow) || 'today',
       paidOrders: Number(report?.snapshot?.paidOrders || 0),
       checkoutStarts: Number(report?.snapshot?.checkoutStarts || 0),
+      trailing30Available: Boolean(report?.trailing30Snapshot),
+      trailing30PaidOrders: Number(report?.trailing30Snapshot?.paidOrders || 0),
+      trailing30CheckoutStarts: Number(report?.trailing30Snapshot?.checkoutStarts || 0),
+      trailing30SprintLeads: Number(report?.trailing30Snapshot?.sprintLeads || 0),
       activeFollowUps: followUpTargets.length,
       warmTargetsReadyNow: warmTargets.length,
       selfServeTargetsReadyNow: selfServeTargets.length,
@@ -2070,8 +2096,16 @@ function renderOperatorHandoffMarkdown(report) {
     `- Revenue state: ${handoff.summary.revenueState}`,
     `- Headline: ${handoff.summary.headline}`,
     `- Billing verification: ${handoff.summary.billingVerification}`,
+    `- Active revenue window: ${handoff.summary.snapshotWindow}`,
     `- Paid orders: ${handoff.summary.paidOrders}`,
     `- Checkout starts: ${handoff.summary.checkoutStarts}`,
+    ...(handoff.summary.trailing30Available
+      ? [
+        `- Trailing 30d paid orders: ${handoff.summary.trailing30PaidOrders}`,
+        `- Trailing 30d checkout starts: ${handoff.summary.trailing30CheckoutStarts}`,
+        `- Trailing 30d workflow sprint leads: ${handoff.summary.trailing30SprintLeads}`,
+      ]
+      : []),
     `- Active follow-ups: ${handoff.summary.activeFollowUps}`,
     `- Warm targets ready now: ${handoff.summary.warmTargetsReadyNow}`,
     `- Self-serve closes ready now: ${handoff.summary.selfServeTargetsReadyNow}`,
@@ -2508,7 +2542,13 @@ async function runRevenueLoop(options = {}) {
   const links = buildRevenueLinks();
   const motionCatalog = buildMotionCatalog(links);
   const warmTargets = getWarmOutboundTargets(motionCatalog.sprint.cta);
-  const { source, summary, fallbackReason, summaryWindow } = await resolveRevenueLoopSummary(options);
+  const {
+    source,
+    summary,
+    fallbackReason,
+    summaryWindow,
+    summaryWindows = {},
+  } = await resolveRevenueLoopSummary(options);
   const directive = deriveRevenueDirective(
     summary,
     motionCatalog,
@@ -2537,6 +2577,10 @@ async function runRevenueLoop(options = {}) {
     targets: pipelineAwareTargets,
   });
   report.snapshotWindow = summaryWindow || 'today';
+  report.summaryWindows = summaryWindows;
+  report.trailing30Snapshot = summaryWindows['30d']
+    ? summarizeCommercialSnapshot(summaryWindows['30d'])
+    : null;
   report.marketplaceCopy = buildMarketplaceCopy(report);
 
   if (errors.length) {

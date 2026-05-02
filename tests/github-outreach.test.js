@@ -101,6 +101,12 @@ test('queue-backed outreach report separates warm, self-serve, and cold sprint l
   writeJsonl(queuePath, [makeWarmTarget(), makeSelfServeTarget(), makeColdTarget()]);
   fs.writeFileSync(reportPath, JSON.stringify({
     generatedAt: '2026-04-27T17:00:00.000Z',
+    snapshotWindow: 'today',
+    trailing30Snapshot: {
+      paidOrders: 6,
+      checkoutStarts: 571,
+      sprintLeads: 0,
+    },
     directive: {
       state: 'cold-start',
       headline: 'No verified revenue and no active pipeline.',
@@ -117,7 +123,13 @@ test('queue-backed outreach report separates warm, self-serve, and cold sprint l
   assert.equal(report.coldTargets.length, 1);
   assert.equal(report.pipelineTrackedLeadCount, 0);
   assert.equal(report.pipelineExists, false);
+  assert.equal(report.activeWindow, 'today');
+  assert.equal(report.trailing30PaidOrders, 6);
   assert.match(markdown, /mirrors the evidence-backed GTM queue/i);
+  assert.match(markdown, /Active revenue window: today/);
+  assert.match(markdown, /Trailing 30d paid orders: 6/);
+  assert.match(markdown, /Trailing 30d checkout starts: 571/);
+  assert.match(markdown, /Trailing 30d workflow sprint leads: 0/);
   assert.match(markdown, /Warm discovery ready: 1/);
   assert.match(markdown, /Self-serve closes ready: 1/);
   assert.match(markdown, /Cold GitHub ready: 1/);
