@@ -1,6 +1,6 @@
 # MCP Directory Repair Pack
 
-Updated: 2026-04-30T06:27:55.921Z
+Updated: 2026-04-30T08:16:01.075Z
 
 This is a sales operator artifact. It is not proof of directory approval, ranking, installs, or revenue by itself.
 
@@ -26,62 +26,97 @@ Repair MCP directory drift so ThumbGate discovery points to one canonical identi
 ### MCP.so canonical listing
 - Role: Live discovery surface with the current ThumbGate slug.
 - Public status: Live on the canonical `thumbgate/IgorGanapolsky` path.
+- Operator status: Treat as the canonical control listing and keep copy aligned with proof docs.
 - Operator use: Use as the reference listing while repairing drift everywhere else.
+- Buyer: Directory visitors validating the current ThumbGate identity before clicking through.
+- Conversion goal: directory_view_to_guide_click
 - Surface URL: https://mcp.so/server/thumbgate/IgorGanapolsky
 - Submission path: https://mcp.so/submit
+- Homepage CTA: https://thumbgate-production.up.railway.app/guide?utm_source=mcp_directories&utm_medium=directory&utm_campaign=mcp_so_guide&utm_content=guide&campaign_variant=canonical_listing&offer_code=MCP-SO_GUIDE&cta_id=mcp_so_guide&cta_placement=directory_surface&surface=mcp_so_guide
+- Short description: ThumbGate is the pre-action gates layer for AI coding agents: capture explicit feedback, regenerate prevention rules, and block repeated mistakes before risky tool calls run again.
+- Submission copy: ThumbGate is the pre-action gates layer for AI coding agents: capture explicit feedback, regenerate prevention rules, and block repeated mistakes before risky tool calls run again.
 - Support: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/marketing/mcp-directories.md
 - Evidence checked: 2026-04-29
 - Evidence summary: Direct curl check confirmed the page title `Thumbgate MCP Server`, current ThumbGate overview copy, and the canonical GitHub link.
 - Next repair: Keep description and proof links aligned with `COMMERCIAL_TRUTH.md` and `VERIFICATION_EVIDENCE.md` as the canonical directory copy.
 - Proof: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Tags: mcp, directory, thumbgate, pre-action-checks, agent-reliability
 
 ### Glama search result
 - Role: High-volume MCP registry search surface that still leaks legacy naming.
 - Public status: Search for `thumbgate` resolves to the legacy slug `IgorGanapolsky/mcp-memory-gateway`.
+- Operator status: Repair the visible slug and summary before treating Glama as active acquisition.
 - Operator use: Repair the public slug, summary, and package naming before pushing more Glama-facing discovery.
+- Buyer: Glama searchers comparing MCP servers before they click into a listing or repository.
+- Conversion goal: directory_repair_to_guide_click
 - Surface URL: https://glama.ai/mcp/servers?query=thumbgate
 - Submission path: https://glama.ai/mcp/servers/IgorGanapolsky/mcp-memory-gateway
+- Homepage CTA: https://thumbgate-production.up.railway.app/guide?utm_source=mcp_directories&utm_medium=directory&utm_campaign=glama_guide&utm_content=guide&campaign_variant=legacy_slug_repair&offer_code=GLAMA-GUIDE&cta_id=glama_guide&cta_placement=directory_surface&surface=glama_guide
+- Short description: ThumbGate is the pre-action gates layer for AI coding agents: capture explicit feedback, regenerate prevention rules, and block repeated mistakes before risky tool calls run again.
+- Submission copy: Please update the Glama listing so the slug, repository, and description all point to `IgorGanapolsky/ThumbGate` and describe ThumbGate as pre-action gates that block repeated agent mistakes before risky tool calls run again.
 - Support: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/marketing/mcp-directories.md
 - Evidence checked: 2026-04-29
 - Evidence summary: Search HTML exposes `ThumbGate` as the display name but still points to the legacy `mcp-memory-gateway` slug and legacy plain-text description.
 - Next repair: Claim or update the listing so the slug, repo name, and summary are ThumbGate-only and no longer mention the old gateway positioning.
 - Proof: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Tags: glama, mcp, directory-repair, thumbgate
 
 ### Smithery search result
 - Role: Installer-facing directory surface with a legacy namespace result.
 - Public status: Search returns `rlhf-loop/thumbgate` with `0 connections` instead of a canonical ThumbGate namespace.
+- Operator status: Prepare publish-ready metadata before treating Smithery as a live install lane.
 - Operator use: Publish or repair the canonical Smithery listing before treating Smithery as an active acquisition lane.
+- Buyer: Smithery users who want an installable MCP surface and a proof-backed next click.
+- Conversion goal: directory_repair_to_install_surface_click
 - Surface URL: https://smithery.ai/search?q=thumbgate
 - Submission path: https://smithery.ai/new
+- Homepage CTA: https://thumbgate-production.up.railway.app/guide?utm_source=mcp_directories&utm_medium=directory&utm_campaign=smithery_guide&utm_content=guide&campaign_variant=namespace_repair&offer_code=SMITHERY-GUIDE&cta_id=smithery_guide&cta_placement=directory_surface&surface=smithery_guide
+- Short description: ThumbGate is the pre-action gates layer for AI coding agents: capture explicit feedback, regenerate prevention rules, and block repeated mistakes before risky tool calls run again.
+- Submission copy: ThumbGate is the pre-action gates layer for AI coding agents: capture explicit feedback, regenerate prevention rules, and block repeated mistakes before risky tool calls run again. Publish it under the canonical ThumbGate namespace and repository `IgorGanapolsky/ThumbGate`.
 - Support: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/marketing/mcp-directories.md
 - Evidence checked: 2026-04-29
 - Evidence summary: Direct search output shows `thumbgate [remote]`, the legacy `rlhf-loop/thumbgate` namespace, and a details link at the legacy path.
 - Next repair: Publish or migrate Smithery metadata to a canonical ThumbGate namespace and retire the legacy `rlhf-loop` ownership path.
 - Proof: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Tags: smithery, mcp, directory-repair, thumbgate
 
 ### punkpeye awesome-mcp-servers
 - Role: Largest GitHub awesome-list discovery surface in the current repo research.
 - Public status: Listed, but under the legacy repository `IgorGanapolsky/mcp-memory-gateway`.
+- Operator status: Use a minimal README repair PR instead of a net-new positioning rewrite.
 - Operator use: Open a repair PR that swaps the repo name and keeps the description ThumbGate-only.
+- Buyer: GitHub readers scanning trusted awesome lists for a credible MCP starting point.
+- Conversion goal: awesome_list_view_to_guide_click
 - Surface URL: https://github.com/punkpeye/awesome-mcp-servers
 - Submission path: https://github.com/punkpeye/awesome-mcp-servers/blob/main/README.md
+- Homepage CTA: https://thumbgate-production.up.railway.app/guide?utm_source=mcp_directories&utm_medium=directory&utm_campaign=punkpeye_guide&utm_content=guide&campaign_variant=awesome_list_repair&offer_code=PUNKPEYE-GUIDE&cta_id=punkpeye_guide&cta_placement=directory_surface&surface=punkpeye_guide
+- Short description: ThumbGate is the pre-action gates layer for AI coding agents: capture explicit feedback, regenerate prevention rules, and block repeated mistakes before risky tool calls run again.
+- Submission copy: - [thumbgate](https://github.com/IgorGanapolsky/ThumbGate) - Pre-action checks that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.
 - Support: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/marketing/mcp-directories.md
 - Evidence checked: 2026-04-29
 - Evidence summary: README search returns a live entry, but it still points to `IgorGanapolsky/mcp-memory-gateway` instead of `IgorGanapolsky/ThumbGate`.
 - Next repair: Submit a PR replacing the legacy repo path with the ThumbGate repo while keeping the pre-action gates description.
 - Proof: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Tags: github, awesome-list, directory-repair, thumbgate
 
 ### appcypher awesome-mcp-servers
 - Role: Secondary GitHub discovery list that currently has no ThumbGate entry.
 - Public status: No ThumbGate entry found in the current README search.
+- Operator status: Treat as clean expansion only after the higher-reach repair surfaces are already queued.
 - Operator use: Treat this as a clean add-listing submission, not a rename repair.
+- Buyer: Researchers comparing multiple awesome lists before choosing an install surface.
+- Conversion goal: awesome_list_view_to_guide_click
 - Surface URL: https://github.com/appcypher/awesome-mcp-servers
 - Submission path: https://github.com/appcypher/awesome-mcp-servers
+- Homepage CTA: https://thumbgate-production.up.railway.app/guide?utm_source=mcp_directories&utm_medium=directory&utm_campaign=appcypher_guide&utm_content=guide&campaign_variant=awesome_list_expansion&offer_code=APPCYPHER-GUIDE&cta_id=appcypher_guide&cta_placement=directory_surface&surface=appcypher_guide
+- Short description: ThumbGate is the pre-action gates layer for AI coding agents: capture explicit feedback, regenerate prevention rules, and block repeated mistakes before risky tool calls run again.
+- Submission copy: - **[thumbgate](https://github.com/IgorGanapolsky/ThumbGate)** - Pre-action checks that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks. (Node.js)
 - Support: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/marketing/mcp-directories.md
 - Evidence checked: 2026-04-29
 - Evidence summary: README search returned no `thumbgate` or `IgorGanapolsky` matches, so this surface is still missing entirely.
 - Next repair: Open a new listing PR with ThumbGate-only copy and the canonical GitHub repository.
 - Proof: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Tags: github, awesome-list, directory-expansion, thumbgate
 
 ## Follow-On Offers
 - Proof-backed setup guide: Discovery CTA
