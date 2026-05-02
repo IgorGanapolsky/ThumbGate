@@ -13,6 +13,7 @@ const { getWarmOutboundTargets } = require('./warm-outreach-targets');
 
 const GITHUB_API_BASE_URL = 'https://api.github.com/';
 const COMMERCIAL_TRUTH_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md';
+const COMMERCIAL_TRUTH_PATH = path.resolve(__dirname, '..', 'docs', 'COMMERCIAL_TRUTH.md');
 const VERIFICATION_EVIDENCE_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
 const TARGET_SEARCH_QUERIES = [
   'search/repositories?q=Model+Context+Protocol+workflow+automation+sort:updated',
@@ -655,6 +656,61 @@ function normalizeRevenueWindowSummary(summary = {}) {
   };
 }
 
+function parseCommercialTruthRevenueSnapshot(markdown = '') {
+  const content = String(markdown || '');
+  const revenueMatch = content.match(
+    /Verified cumulative booked revenue through ([A-Za-z]+ \d{1,2}, \d{4}) is \*\*\$([0-9]+(?:\.[0-9]{2})?)\*\* from `(\d+)` reconciled Stripe charges/i
+  );
+  if (!revenueMatch) {
+    return null;
+  }
+
+  const [, paidThroughDate, dollars, paidOrders] = revenueMatch;
+  const bookedRevenueCents = Math.round(Number.parseFloat(dollars) * 100);
+  const latestPaidAtMs = Date.parse(`${paidThroughDate} 00:00:00 UTC`);
+
+  if (!Number.isFinite(bookedRevenueCents) || bookedRevenueCents <= 0) {
+    return null;
+  }
+
+  return {
+    paidOrders: Number.parseInt(paidOrders, 10) || 0,
+    bookedRevenueCents,
+    latestPaidAt: Number.isFinite(latestPaidAtMs)
+      ? new Date(latestPaidAtMs).toISOString()
+      : null,
+  };
+}
+
+function hydrateSummaryWithCommercialTruth(summary = {}, {
+  readFileSyncImpl = fs.readFileSync,
+  commercialTruthPath = COMMERCIAL_TRUTH_PATH,
+} = {}) {
+  const snapshot = summarizeCommercialSnapshot(summary);
+  if (snapshot.paidOrders > 0 || snapshot.bookedRevenueCents > 0) {
+    return summary;
+  }
+
+  try {
+    const commercialTruthMarkdown = readFileSyncImpl(commercialTruthPath, 'utf8');
+    const historicalSnapshot = parseCommercialTruthRevenueSnapshot(commercialTruthMarkdown);
+    if (!historicalSnapshot) {
+      return summary;
+    }
+    return {
+      ...summary,
+      revenue: {
+        ...(summary.revenue || {}),
+        paidOrders: historicalSnapshot.paidOrders,
+        bookedRevenueCents: historicalSnapshot.bookedRevenueCents,
+        latestPaidAt: historicalSnapshot.latestPaidAt,
+      },
+    };
+  } catch {
+    return summary;
+  }
+}
+
 function hasRevenueLoopCommercialSignal(summary = {}) {
   const snapshot = summarizeCommercialSnapshot(summary);
   return snapshot.paidOrders > 0
@@ -752,6 +808,8 @@ async function resolveRevenueLoopSummary(options = {}) {
   const {
     getOperationalBillingSummaryFn = getOperationalBillingSummary,
     generateRevenueStatusReportFn = generateRevenueStatusReport,
+    readFileSyncImpl = fs.readFileSync,
+    commercialTruthPath = COMMERCIAL_TRUTH_PATH,
     revenueStatusOptions = {},
     hostedStatusRetries = 1,
     hostedRetryDelayMs = 1000,
@@ -767,7 +825,13 @@ async function resolveRevenueLoopSummary(options = {}) {
     localResult.source === 'local' &&
     /hosted operational summary is disabled/i.test(normalizeText(localResult.fallbackReason))
   ) {
-    return localResult;
+    return {
+      ...localResult,
+      summary: hydrateSummaryWithCommercialTruth(localResult.summary, {
+        readFileSyncImpl,
+        commercialTruthPath,
+      }),
+    };
   }
 
   let hostedFailure = null;
@@ -799,7 +863,13 @@ async function resolveRevenueLoopSummary(options = {}) {
   }
 
   void hostedFailure;
-  return localResult;
+  return {
+    ...localResult,
+    summary: hydrateSummaryWithCommercialTruth(localResult.summary, {
+      readFileSyncImpl,
+      commercialTruthPath,
+    }),
+  };
 }
 
 function deriveRevenueDirective(
@@ -2618,4 +2688,5 @@ module.exports = {
   buildMarketplaceCopy,
   enrichGitHubTarget,
   renderContactSurfaces,
+  parseCommercialTruthRevenueSnapshot,
 };
