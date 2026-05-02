@@ -153,6 +153,12 @@ const CLAIM_GUARDRAILS = [
 ];
 const OFFER_SPLIT_RULE = 'Use Pro after one blocked repeat or explicit self-serve install intent. Use the Workflow Hardening Sprint when one workflow owner needs approval boundaries, rollback safety, and proof before wider rollout.';
 const TERMINAL_PIPELINE_STAGES = new Set(['paid', 'lost']);
+const DEFAULT_EXISTING_REPORT_PATH = path.join(
+  path.resolve(__dirname, '..'),
+  'docs',
+  'marketing',
+  'gtm-revenue-loop.json'
+);
 const PIPELINE_STAGE_PRIORITY = {
   sprint_intake: 6,
   checkout_started: 5,
@@ -214,6 +220,10 @@ const NAMED_OPTION_HANDLERS = {
     options.maxTargets = parsed.value ? clampTargetCount(parsed.value) : options.maxTargets;
     return parsed.index;
   },
+  '--reuse-existing-targets': (options, _argv, index) => {
+    options.reuseExistingTargets = true;
+    return index;
+  },
 };
 
 function applyNamedOption(options, argv, index) {
@@ -225,6 +235,7 @@ function parseArgs(argv = []) {
   const options = {
     maxTargets: 6,
     reportDir: '',
+    reuseExistingTargets: false,
     writeDocs: false,
   };
 
@@ -585,6 +596,53 @@ function applyPipelineStateToTargets(targets = [], { salesStatePath = null } = {
       };
     })
     .filter((target) => !TERMINAL_PIPELINE_STAGES.has(normalizePipelineStage(target.pipelineStage)));
+}
+
+function applyPipelineStateToRenderedTargets(targets = [], { salesStatePath = null } = {}) {
+  const leads = loadSalesLeads({ statePath: salesStatePath });
+  const leadMap = new Map(leads.map((lead) => [lead.leadId, lead]));
+
+  return targets
+    .map((target) => {
+      const fallbackLeadId = buildLeadFromRevenueTarget(target).leadId;
+      const pipelineLeadId = normalizeText(target.pipelineLeadId) || fallbackLeadId;
+      const existingLead = leadMap.get(pipelineLeadId);
+      const resolvedLeadId = existingLead?.leadId || pipelineLeadId;
+      const pipelineStage = normalizePipelineStage(existingLead?.stage || target.pipelineStage);
+
+      return {
+        ...target,
+        pipelineLeadId: resolvedLeadId,
+        pipelineStage,
+        pipelineUpdatedAt: normalizeText(existingLead?.updatedAt),
+        nextOperatorAction: buildNextOperatorAction(pipelineStage),
+        salesCommands: buildTargetSalesCommands({
+          ...target,
+          pipelineLeadId: resolvedLeadId,
+          pipelineStage,
+        }),
+      };
+    })
+    .filter((target) => !TERMINAL_PIPELINE_STAGES.has(normalizePipelineStage(target.pipelineStage)));
+}
+
+function readExistingRevenueLoopReport(reportPath = DEFAULT_EXISTING_REPORT_PATH) {
+  try {
+    return JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+function resolveExistingRevenueLoopReportPath({ repoRoot, reportPath } = {}) {
+  if (normalizeText(reportPath)) {
+    return path.resolve(reportPath);
+  }
+
+  const baseRoot = normalizeText(repoRoot)
+    ? path.resolve(repoRoot)
+    : path.resolve(__dirname, '..');
+  return path.join(baseRoot, 'docs', 'marketing', 'gtm-revenue-loop.json');
 }
 
 function buildRevenueLinks(config = resolveHostedBillingConfig({
@@ -1510,6 +1568,51 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
       };
     }),
   };
+}
+
+function refreshRevenueLoopReport({
+  existingReport = {},
+  source,
+  fallbackReason,
+  summary,
+  motionCatalog,
+  directive,
+  salesStatePath = null,
+  summaryWindow = 'today',
+}) {
+  const snapshot = summarizeCommercialSnapshot(summary);
+  const verification = buildBillingVerification({
+    source,
+    fallbackReason,
+    snapshot,
+  });
+  const currentTruth = {
+    publicSelfServeOffer: motionCatalog.pro.label,
+    publicSelfServeCta: motionCatalog.pro.cta,
+    teamPilotOffer: motionCatalog.sprint.label,
+    teamPilotCta: motionCatalog.sprint.cta,
+    guideLink: buildRevenueLinks().guideLink,
+    commercialTruthLink: motionCatalog.pro.truth,
+    verificationEvidenceLink: motionCatalog.pro.proof,
+  };
+  const refreshedTargets = applyPipelineStateToRenderedTargets(existingReport.targets, { salesStatePath });
+  const report = {
+    ...existingReport,
+    generatedAt: new Date().toISOString(),
+    source,
+    fallbackReason: fallbackReason || null,
+    verification,
+    objective: 'First 10 paying customers',
+    directive,
+    currentTruth,
+    evidenceBackstop: buildEvidenceBackstop(currentTruth),
+    snapshot,
+    snapshotWindow: summaryWindow || existingReport.snapshotWindow || 'today',
+    targets: refreshedTargets,
+  };
+
+  report.marketplaceCopy = buildMarketplaceCopy(report);
+  return report;
 }
 
 function resolveMotionLabel(report, motionKey) {
@@ -2507,7 +2610,6 @@ function writeRevenueLoopOutputs(report, options = {}) {
 async function runRevenueLoop(options = {}) {
   const links = buildRevenueLinks();
   const motionCatalog = buildMotionCatalog(links);
-  const warmTargets = getWarmOutboundTargets(motionCatalog.sprint.cta);
   const { source, summary, fallbackReason, summaryWindow } = await resolveRevenueLoopSummary(options);
   const directive = deriveRevenueDirective(
     summary,
@@ -2518,29 +2620,54 @@ async function runRevenueLoop(options = {}) {
       snapshot: summarizeCommercialSnapshot(summary),
     })
   );
-  const { targets, errors } = await prospectTargets(options.maxTargets || 6, {
-    fetchImpl: options.fetchImpl || globalThis.fetch,
-    githubToken: options.githubToken || '',
-    execFileSyncImpl: options.execFileSyncImpl || execFileSync,
-  });
-  const enrichedTargets = await generateOutreachMessages(targets, motionCatalog);
-  const pipelineAwareTargets = applyPipelineStateToTargets(
-    warmTargets.concat(enrichedTargets),
-    { salesStatePath: options.salesStatePath || null }
-  );
-  const report = buildRevenueLoopReport({
-    source,
-    fallbackReason,
-    summary,
-    motionCatalog,
-    directive,
-    targets: pipelineAwareTargets,
-  });
-  report.snapshotWindow = summaryWindow || 'today';
-  report.marketplaceCopy = buildMarketplaceCopy(report);
+  const existingReport = options.reuseExistingTargets
+    ? readExistingRevenueLoopReport(resolveExistingRevenueLoopReportPath({
+      repoRoot: options.repoRoot,
+      reportPath: options.existingReportPath,
+    }))
+    : {};
+  const canReuseExistingTargets = options.reuseExistingTargets
+    && Array.isArray(existingReport.targets)
+    && existingReport.targets.length > 0;
+  let report;
 
-  if (errors.length) {
-    report.discoveryWarnings = errors;
+  if (canReuseExistingTargets) {
+    report = refreshRevenueLoopReport({
+      existingReport,
+      source,
+      fallbackReason,
+      summary,
+      motionCatalog,
+      directive,
+      salesStatePath: options.salesStatePath || null,
+      summaryWindow: summaryWindow || 'today',
+    });
+  } else {
+    const warmTargets = getWarmOutboundTargets(motionCatalog.sprint.cta);
+    const { targets, errors } = await prospectTargets(options.maxTargets || 6, {
+      fetchImpl: options.fetchImpl || globalThis.fetch,
+      githubToken: options.githubToken || '',
+      execFileSyncImpl: options.execFileSyncImpl || execFileSync,
+    });
+    const enrichedTargets = await generateOutreachMessages(targets, motionCatalog);
+    const pipelineAwareTargets = applyPipelineStateToTargets(
+      warmTargets.concat(enrichedTargets),
+      { salesStatePath: options.salesStatePath || null }
+    );
+    report = buildRevenueLoopReport({
+      source,
+      fallbackReason,
+      summary,
+      motionCatalog,
+      directive,
+      targets: pipelineAwareTargets,
+    });
+    report.snapshotWindow = summaryWindow || 'today';
+    report.marketplaceCopy = buildMarketplaceCopy(report);
+
+    if (errors.length) {
+      report.discoveryWarnings = errors;
+    }
   }
 
   const written = writeRevenueLoopOutputs(report, options);
@@ -2603,6 +2730,7 @@ module.exports = {
   parseArgs,
   prospectTargets,
   applyPipelineStateToTargets,
+  applyPipelineStateToRenderedTargets,
   renderRevenueLoopMarkdown,
   renderMarketplaceCopyMarkdown,
   buildOperatorHandoffPayload,
@@ -2611,6 +2739,8 @@ module.exports = {
   renderOperatorSendNowCsv,
   renderTeamOutreachMessagesMarkdown,
   resolveRevenueLoopSummary,
+  readExistingRevenueLoopReport,
+  refreshRevenueLoopReport,
   runRevenueLoop,
   selectOutreachMotion,
   summarizeCommercialSnapshot,

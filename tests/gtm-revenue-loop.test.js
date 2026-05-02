@@ -8,6 +8,7 @@ const {
   TARGET_SEARCH_QUERIES,
   analyzeTargetEvidence,
   applyPipelineStateToTargets,
+  applyPipelineStateToRenderedTargets,
   buildFallbackMessage,
   buildCheckoutCloseDraft,
   buildOperatorHandoffPayload,
@@ -26,11 +27,13 @@ const {
   hasLowBuyerIntentSignals,
   parseArgs,
   prospectTargets,
+  readExistingRevenueLoopReport,
   renderMarketplaceCopyMarkdown,
   renderOperatorHandoffMarkdown,
   renderOperatorSendNowCsv,
   renderRevenueLoopMarkdown,
   renderTeamOutreachMessagesMarkdown,
+  refreshRevenueLoopReport,
   resolveRevenueLoopSummary,
   runRevenueLoop,
   selectOutreachMotion,
@@ -331,7 +334,14 @@ test('argument and commercial snapshot helpers stay bounded and explicit', () =>
   assert.deepEqual(parseArgs(['--write-docs', '--report-dir', 'reports/gtm', '--max-targets=99']), {
     maxTargets: 12,
     reportDir: 'reports/gtm',
+    reuseExistingTargets: false,
     writeDocs: true,
+  });
+  assert.deepEqual(parseArgs(['--reuse-existing-targets']), {
+    maxTargets: 6,
+    reportDir: '',
+    reuseExistingTargets: true,
+    writeDocs: false,
   });
   assert.equal(clampTargetCount('0'), 6);
   assert.equal(clampTargetCount('3'), 3);
@@ -2775,6 +2785,174 @@ test('runRevenueLoop writes an evidence-backed target queue with discovery warni
     } else {
       process.env.GEMINI_API_KEY = originalGeminiKey;
     }
+    fs.rmSync(reportDir, { recursive: true, force: true });
+  }
+});
+
+test('runRevenueLoop can refresh billing truth while reusing the existing target queue', async () => {
+  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-revenue-reuse-'));
+  const reportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-revenue-reuse-out-'));
+  const marketingDir = path.join(repoRoot, 'docs', 'marketing');
+  fs.mkdirSync(marketingDir, { recursive: true });
+
+  const existingReport = {
+    generatedAt: '2026-04-30T04:14:20.304Z',
+    source: 'hosted-via-railway-env',
+    directive: {
+      state: 'post-first-dollar',
+      headline: 'Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.',
+    },
+    currentTruth: {
+      publicSelfServeOffer: 'Pro at $19/mo or $149/yr',
+      publicSelfServeCta: 'https://thumbgate-production.up.railway.app/checkout/pro',
+      teamPilotOffer: 'Workflow Hardening Sprint',
+      teamPilotCta: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+      guideLink: 'https://thumbgate-production.up.railway.app/guide',
+      commercialTruthLink: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md',
+      verificationEvidenceLink: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
+    },
+    snapshot: {
+      paidOrders: 2,
+      bookedRevenueCents: 2000,
+      checkoutStarts: 0,
+      ctaClicks: 0,
+      visitors: 0,
+      uniqueLeads: 0,
+      sprintLeads: 0,
+      qualifiedSprintLeads: 0,
+      latestPaidAt: null,
+    },
+    targets: [
+      {
+        temperature: 'warm',
+        source: 'reddit',
+        channel: 'reddit_dm',
+        username: 'Deep_Ad1959',
+        accountName: '@Deep_Ad1959',
+        company: '',
+        contactUrl: 'https://www.reddit.com/user/Deep_Ad1959/',
+        contactSurfaces: [],
+        websiteUrl: '',
+        repoName: '',
+        repoUrl: '',
+        description: '',
+        stars: 0,
+        updatedAt: '',
+        evidenceScore: 10,
+        evidence: ['warm inbound engagement', 'workflow pain named: rollback risk'],
+        outreachAngle: 'Lead with rollback safety and context-drift hardening for one workflow before any generic tool pitch.',
+        evidenceSource: 'https://www.reddit.com/user/Deep_Ad1959/',
+        evidenceSources: [],
+        claimGuardrails: [],
+        motion: 'sprint',
+        motionLabel: 'Workflow Hardening Sprint',
+        motionReason: 'Warm Reddit engager already named a repeated workflow risk, so the fastest path is a founder-led diagnostic.',
+        pipelineLeadId: 'reddit_deep_ad1959_r_cursor',
+        pipelineStage: 'targeted',
+        pipelineUpdatedAt: '',
+        nextOperatorAction: 'Send the first-touch draft and log the outreach in the sales pipeline.',
+        offer: 'workflow_hardening_sprint',
+        cta: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+        proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+        firstTouchDraft: 'Initial draft',
+        painConfirmedFollowUpDraft: 'Follow-up draft',
+        selfServeFollowUpDraft: 'Self-serve draft',
+        checkoutCloseDraft: 'Close draft',
+        salesCommands: {
+          markContacted: 'contact',
+          markReplied: 'reply',
+          markCallBooked: 'call',
+          markCheckoutStarted: 'checkout',
+          markSprintIntake: 'sprint',
+          markPaid: 'paid',
+        },
+        message: 'Initial draft',
+      },
+    ],
+    discoveryWarnings: ['stale warning preserved'],
+  };
+  fs.writeFileSync(
+    path.join(marketingDir, 'gtm-revenue-loop.json'),
+    `${JSON.stringify(existingReport, null, 2)}\n`,
+    'utf8'
+  );
+
+  try {
+    const loadedExistingReport = readExistingRevenueLoopReport(path.join(marketingDir, 'gtm-revenue-loop.json'));
+    const refreshedTargets = applyPipelineStateToRenderedTargets(loadedExistingReport.targets);
+    const refreshedReport = refreshRevenueLoopReport({
+      existingReport: loadedExistingReport,
+      source: 'local',
+      fallbackReason: 'Hosted operational summary is disabled for this run.',
+      summary: {
+        trafficMetrics: {},
+        signups: {},
+        revenue: {
+          paidOrders: 0,
+          bookedRevenueCents: 0,
+        },
+        pipeline: {
+          workflowSprintLeads: { total: 0 },
+          qualifiedWorkflowSprintLeads: { total: 0 },
+        },
+      },
+      motionCatalog: buildMotionCatalog(buildRevenueLinks()),
+      directive: deriveRevenueDirective({
+        trafficMetrics: {},
+        signups: {},
+        revenue: {
+          paidOrders: 0,
+          bookedRevenueCents: 0,
+        },
+        pipeline: {
+          workflowSprintLeads: { total: 0 },
+          qualifiedWorkflowSprintLeads: { total: 0 },
+        },
+      }, buildMotionCatalog(buildRevenueLinks())),
+    });
+
+    assert.equal(refreshedTargets.length, 1);
+    assert.equal(refreshedTargets[0].pipelineLeadId, 'reddit_deep_ad1959_r_cursor');
+    assert.match(refreshedTargets[0].salesCommands.markContacted, /sales:pipeline/);
+    assert.equal(refreshedReport.directive.state, 'cold-start');
+    assert.match(refreshedReport.directive.headline, /No verified revenue and no active pipeline/);
+    assert.deepEqual(refreshedReport.discoveryWarnings, ['stale warning preserved']);
+
+    const { report } = await runRevenueLoop({
+      repoRoot,
+      reportDir,
+      reuseExistingTargets: true,
+      getOperationalBillingSummaryFn: async () => ({
+        source: 'local',
+        fallbackReason: 'Hosted operational summary is disabled for this run.',
+        summary: {
+          trafficMetrics: {},
+          signups: {},
+          revenue: {
+            paidOrders: 0,
+            bookedRevenueCents: 0,
+          },
+          pipeline: {
+            workflowSprintLeads: { total: 0 },
+            qualifiedWorkflowSprintLeads: { total: 0 },
+          },
+        },
+      }),
+      fetchImpl: async () => {
+        throw new Error('prospecting should be skipped when reusing targets');
+      },
+    });
+
+    assert.equal(report.directive.state, 'cold-start');
+    assert.match(report.directive.headline, /No verified revenue and no active pipeline/);
+    assert.equal(report.targets.length, 1);
+    assert.equal(report.targets[0].pipelineLeadId, 'reddit_deep_ad1959_r_cursor');
+    assert.match(report.targets[0].salesCommands.markContacted, /sales:pipeline/);
+    assert.deepEqual(report.discoveryWarnings, ['stale warning preserved']);
+    assert.ok(fs.existsSync(path.join(reportDir, 'gtm-revenue-loop.json')));
+    assert.ok(fs.existsSync(path.join(reportDir, 'operator-priority-handoff.md')));
+  } finally {
+    fs.rmSync(repoRoot, { recursive: true, force: true });
     fs.rmSync(reportDir, { recursive: true, force: true });
   }
 });
