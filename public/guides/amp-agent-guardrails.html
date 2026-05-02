@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Amp Agent Guardrails | Local-First Enforcement with ThumbGate</title>
+  <meta name="description" content="Amp users want fast repo iteration without repeating the same risky shell step, skipped verification run, or blind refactor. ThumbGate adds a Reliability Gat..." />
+  <meta property="og:title" content="Amp Agent Guardrails | Local-First Enforcement with ThumbGate" />
+  <meta property="og:description" content="Amp users want fast repo iteration without repeating the same risky shell step, skipped verification run, or blind refactor. ThumbGate adds a Reliability Gat..." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/guides/amp-agent-guardrails" />
+  <link rel="canonical" href="https://thumbgate.ai/guides/amp-agent-guardrails" />
+  <link rel="llm-context" href="/public/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --bg-raised: #111113;
+      --bg-card: #161618;
+      --line: #222225;
+      --text: #e8e8ec;
+      --muted: #8b8b96;
+      --cyan: #22d3ee;
+      --green: #4ade80;
+      --red: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(12px);
+      background: rgba(10, 10, 11, 0.88);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 14px;
+      padding-bottom: 14px;
+    }
+    .brand {
+      font-weight: 700;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 211, 238, 0.22);
+      background: rgba(34, 211, 238, 0.1);
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1.06;
+      letter-spacing: -0.04em;
+      margin: 16px 0;
+      max-width: 760px;
+    }
+    .hero p {
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .signal-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 28px 0 0;
+    }
+    .signal-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .signal-pill.up {
+      border-color: rgba(74, 222, 128, 0.28);
+      color: #b8f7c8;
+      background: rgba(74, 222, 128, 0.1);
+    }
+    .signal-pill.down {
+      border-color: rgba(248, 113, 113, 0.28);
+      color: #ffc0c0;
+      background: rgba(248, 113, 113, 0.1);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+      gap: 24px;
+      padding-bottom: 72px;
+    }
+    .card, .detail-section, .sidebar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .card { padding: 24px; }
+    .detail-section { padding: 24px; margin-bottom: 18px; }
+    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+    .detail-section p { color: var(--muted); }
+    .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
+    .card h2 { margin-top: 0; }
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .sidebar-card {
+      padding: 20px;
+    }
+    /* Only the first sidebar card sticks. Stacking multiple stickies at the
+       same top offset makes them overlap each other on scroll. The related-
+       pages card flows normally below. */
+    .sidebar-card:first-child {
+      position: sticky;
+      top: 84px;
+      max-height: calc(100vh - 104px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .proof-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 18px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: var(--cyan);
+      color: #071116;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .faq-item {
+      border-top: 1px solid var(--line);
+      padding: 14px 0;
+    }
+    .faq-item summary {
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .faq-item p {
+      color: var(--muted);
+    }
+    .related-card {
+      display: block;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      margin-top: 12px;
+      color: var(--text);
+    }
+    .related-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    @media (max-width: 860px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .sidebar-card:first-child {
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
+    }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Amp Guardrails That Turn Feedback Into Enforcement",
+  "description": "Amp users want fast repo iteration without repeating the same risky shell step, skipped verification run, or blind refactor. ThumbGate adds a Reliability Gat...",
+  "about": [
+    "amp agent guardrails"
+  ],
+  "url": "https://thumbgate.ai/guides/amp-agent-guardrails",
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "mainEntityOfPage": "https://thumbgate.ai/guides/amp-agent-guardrails"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does ThumbGate replace Amp instructions or prompts?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Amp instructions still matter, but ThumbGate adds the enforcement layer that turns a past correction into a future runtime block."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can Amp users keep this local-first?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. ThumbGate is designed for local-first operation so operators can harden workflows without pushing sensitive history into a hosted memory product by default."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="container">
+      <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+    </div>
+  </div>
+
+  <main class="container">
+    <section class="hero">
+      <div class="eyebrow">integration | amp agent guardrails</div>
+      <h1>Amp Guardrails That Turn Feedback Into Enforcement</h1>
+      <p>Amp users want fast repo iteration without repeating the same risky shell step, skipped verification run, or blind refactor. ThumbGate adds a Reliability Gateway so feedback becomes searchable lessons, linked prevention rules, and Pre-Action Gates before the next tool call runs.</p>
+      <div class="signal-row">
+        <div class="signal-pill up">👍 Thumbs up reinforces good behavior</div>
+        <div class="signal-pill down">👎 Thumbs down blocks repeated mistakes</div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div>
+        <div class="card">
+          <h2>Why this page exists</h2>
+          <ul><li>Amp buyers usually want speed plus control, not a second governance project.</li><li>ThumbGate adds local-first feedback memory and Pre-Action Gates without forcing a workflow reset.</li><li>The clean conversion path is one blocked repeat to Pro, then Workflow Hardening Sprint when a team needs approval boundaries.</li></ul>
+        </div>
+        
+      <section class="detail-section">
+        <h2>What Amp users usually outgrow</h2>
+        <p>The first problem is rarely that Amp moves too fast. It is that the same risky shell step, skipped check, or overconfident refactor can come back in the next session because nothing hardened the lesson at the tool boundary.</p>
+        
+      </section>
+      <section class="detail-section">
+        <h2>What ThumbGate adds to the Amp workflow</h2>
+        
+        <ul><li>Structured thumbs-up/down feedback with actionable context.</li><li>Searchable lessons and linked prevention rules that survive the current session.</li><li>Pre-Action Gates that block repeated mistakes before execution.</li><li>Verification evidence that gives solo operators and teams something concrete to inspect.</li></ul>
+      </section>
+      <section class="detail-section">
+        <h2>How buyers usually convert</h2>
+        <p>Individual operators usually start when one blocked repeat proves the Reliability Gateway is real. Teams convert when the same workflow also needs approval boundaries, rollback safety, and a proof trail that can survive wider rollout.</p>
+        
+      </section>
+        <div class="detail-section">
+          <h2>FAQ</h2>
+          
+      <details class="faq-item">
+        <summary>Does ThumbGate replace Amp instructions or prompts?</summary>
+        <p>No. Amp instructions still matter, but ThumbGate adds the enforcement layer that turns a past correction into a future runtime block.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Can Amp users keep this local-first?</summary>
+        <p>Yes. ThumbGate is designed for local-first operation so operators can harden workflows without pushing sensitive history into a hosted memory product by default.</p>
+      </details>
+        </div>
+      </div>
+
+      <aside class="sidebar">
+        <div class="sidebar-card">
+          <h2>GSD execution brief</h2>
+          <p>This page was prioritized because it captures high-intent demand around amp agent guardrails and feeds directly into ThumbGate's proof-led conversion path.</p>
+          <p><strong>Opportunity score:</strong> 89</p>
+          <p><strong>Primary persona:</strong> engineering-lead</p>
+          <p><strong>Keyword cluster:</strong> amp agent guardrails</p>
+          <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
+          <div class="proof-links"><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json" target="_blank" rel="noopener">Automation proof</a><a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub repository</a></div>
+          <a class="cta-button" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_amp-agent-guardrails&amp;cta_placement=seo_brief&amp;plan_id=pro" target="_blank" rel="noopener">Go Pro — $19/mo</a>
+        </div>
+        <div class="sidebar-card">
+          <h2>Related pages</h2>
+          
+        <a class="related-card" href="/guides/pre-action-checks">
+          <span class="related-label">Related page</span>
+          <strong>What Are Pre-Action Checks?</strong>
+        </a>
+        <a class="related-card" href="/guides/stop-repeated-ai-agent-mistakes">
+          <span class="related-label">Related page</span>
+          <strong>How to Stop AI Coding Agents From Repeating Mistakes</strong>
+        </a>
+        </div>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>
