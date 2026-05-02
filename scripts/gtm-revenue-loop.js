@@ -2228,6 +2228,105 @@ function renderOperatorSendNowCsv(report) {
   return `${rows.map((row) => row.map(escapeCsvValue).join(',')).join('\n')}\n`;
 }
 
+function renderOperatorSendNowMarkdown(report) {
+  const payload = buildOperatorSendNowPayload(report);
+  const groupedRows = payload.rows.reduce((accumulator, row) => {
+    if (!accumulator.has(row.sectionKey)) {
+      accumulator.set(row.sectionKey, {
+        label: row.sectionLabel,
+        rows: [],
+      });
+    }
+    accumulator.get(row.sectionKey).rows.push(row);
+    return accumulator;
+  }, new Map());
+  const sectionLines = groupedRows.size
+    ? Array.from(groupedRows.values()).flatMap((section) => {
+      const rowLines = section.rows.flatMap((row) => {
+        const accountLine = [row.username ? `@${row.username}` : '', row.accountName || row.repoName || row.company || 'n/a']
+          .filter(Boolean)
+          .join(' — ');
+        const companyLine = row.company ? `- Company: ${row.company}` : null;
+        const repoLine = row.repoName ? `- Repo: ${row.repoName}${row.repoUrl ? ` (${row.repoUrl})` : ''}` : null;
+        const contactSurfaces = renderContactSurfaces(row.contactSurfaces);
+        return [
+          `### ${row.rank}. ${accountLine}`,
+          `- Motion: ${row.motionLabel}`,
+          `- Pipeline lead id: ${row.pipelineLeadId}`,
+          `- Pipeline stage: ${row.pipelineStage}`,
+          `- Contact: ${row.contactSurface || 'n/a'}`,
+          contactSurfaces ? `- Contact surfaces: ${contactSurfaces}` : null,
+          companyLine,
+          repoLine,
+          `- Evidence score: ${row.evidenceScore}`,
+          `- Evidence: ${(row.evidence || []).join('; ') || 'n/a'}`,
+          `- Why now: ${row.whyNow}`,
+          `- Proof rule: ${row.proofRule}`,
+          `- CTA: ${row.cta}`,
+          `- Next operator step: ${row.nextOperatorStep}`,
+          '',
+          'First-touch draft:',
+          `> ${row.firstTouchDraft}`,
+          '',
+          `Log after send: \`${row.markContactedCommand}\``,
+          '',
+          'Pain-confirmed follow-up:',
+          `> ${row.painConfirmedFollowUpDraft}`,
+          '',
+          `Log after pain-confirmed reply: \`${row.markRepliedCommand}\``,
+          '',
+          'Self-serve follow-up:',
+          `> ${row.selfServeFollowUpDraft}`,
+          '',
+          'Checkout close draft:',
+          `> ${row.checkoutCloseDraft}`,
+          '',
+          `Log after call booked: \`${row.markCallBookedCommand}\``,
+          `Log after checkout started: \`${row.markCheckoutStartedCommand}\``,
+          `Log after sprint intake: \`${row.markSprintIntakeCommand}\``,
+          `Log after paid: \`${row.markPaidCommand}\``,
+          '',
+        ].filter(Boolean);
+      });
+      return [
+        `## ${section.label}`,
+        ...rowLines,
+      ];
+    })
+    : ['- No ready-now rows are available for this run.', ''];
+
+  return [
+    '# Operator Send-Now Sheet',
+    '',
+    `Updated: ${payload.generatedAt}`,
+    '',
+    'This is the copy-paste send surface for the current evidence-backed revenue loop. Use it when you need the ready-now rows, first-touch drafts, and logging commands in one markdown handoff.',
+    '',
+    '## Current Snapshot',
+    `- Revenue state: ${payload.summary.revenueState}`,
+    `- Headline: ${payload.summary.headline}`,
+    `- Billing verification: ${payload.summary.billingVerification}`,
+    `- Paid orders: ${payload.summary.paidOrders}`,
+    `- Checkout starts: ${payload.summary.checkoutStarts}`,
+    `- Active follow-ups: ${payload.summary.activeFollowUps}`,
+    `- Warm targets ready now: ${payload.summary.warmTargetsReadyNow}`,
+    `- Self-serve closes ready now: ${payload.summary.selfServeTargetsReadyNow}`,
+    `- Production-rollout targets ready now: ${payload.summary.productionRolloutTargetsReadyNow}`,
+    `- Cold GitHub targets ready next: ${payload.summary.coldGitHubTargetsReadyNext}`,
+    '',
+    '## Operator Rules',
+    '- Import the queue into the sales ledger before sending anything.',
+    '- Follow the row motion: sprint rows get one workflow-hardening offer; self-serve rows get the guide-to-Pro lane unless pain is confirmed.',
+    `- Qualify the offer split: ${OFFER_SPLIT_RULE}`,
+    '- Use [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) and [COMMERCIAL_TRUTH.md](../COMMERCIAL_TRUTH.md) only after the buyer confirms pain.',
+    '',
+    '```bash',
+    'npm run sales:pipeline -- import --source docs/marketing/gtm-revenue-loop.json',
+    '```',
+    '',
+    ...sectionLines,
+  ].join('\n');
+}
 function renderTeamOutreachMessagesMarkdown(report) {
   const warmTargets = Array.isArray(report?.targets)
     ? report.targets.map(enrichRenderableTarget).filter((target) => target.temperature === 'warm')
@@ -2447,6 +2546,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
   const teamOutreachDocsPath = path.join(docsDir, 'team-outreach-messages.md');
   const operatorHandoffDocsPath = path.join(docsDir, 'operator-priority-handoff.md');
   const operatorHandoffJsonDocsPath = path.join(docsDir, 'operator-priority-handoff.json');
+  const operatorSendNowMarkdownDocsPath = path.join(docsDir, 'operator-send-now.md');
   const operatorSendNowCsvDocsPath = path.join(docsDir, 'operator-send-now.csv');
   const operatorSendNowJsonDocsPath = path.join(docsDir, 'operator-send-now.json');
   const markdown = renderRevenueLoopMarkdown(report);
@@ -2458,6 +2558,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
   const operatorHandoff = buildOperatorHandoffPayload(report);
   const operatorHandoffMarkdown = renderOperatorHandoffMarkdown(report);
   const operatorSendNow = buildOperatorSendNowPayload(report);
+  const operatorSendNowMarkdown = renderOperatorSendNowMarkdown(report);
   const operatorSendNowCsv = renderOperatorSendNowCsv(report);
   const reportDir = normalizeText(options.reportDir)
     ? path.resolve(repoRoot, options.reportDir)
@@ -2475,6 +2576,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     fs.writeFileSync(path.join(reportDir, 'team-outreach-messages.md'), teamOutreachMarkdown, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'operator-priority-handoff.md'), operatorHandoffMarkdown, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'operator-priority-handoff.json'), `${JSON.stringify(operatorHandoff, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(path.join(reportDir, 'operator-send-now.md'), operatorSendNowMarkdown, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'operator-send-now.csv'), operatorSendNowCsv, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'operator-send-now.json'), `${JSON.stringify(operatorSendNow, null, 2)}\n`, 'utf8');
   }
@@ -2490,6 +2592,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     fs.writeFileSync(teamOutreachDocsPath, teamOutreachMarkdown, 'utf8');
     fs.writeFileSync(operatorHandoffDocsPath, operatorHandoffMarkdown, 'utf8');
     fs.writeFileSync(operatorHandoffJsonDocsPath, `${JSON.stringify(operatorHandoff, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(operatorSendNowMarkdownDocsPath, operatorSendNowMarkdown, 'utf8');
     fs.writeFileSync(operatorSendNowCsvDocsPath, operatorSendNowCsv, 'utf8');
     fs.writeFileSync(operatorSendNowJsonDocsPath, `${JSON.stringify(operatorSendNow, null, 2)}\n`, 'utf8');
   }
@@ -2499,6 +2602,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     marketplaceMarkdown,
     teamOutreachMarkdown,
     operatorHandoffMarkdown,
+    operatorSendNowMarkdown,
     reportDir: reportDir || null,
     docsPath: shouldWriteDocs ? defaultDocsPath : null,
   };
@@ -2608,6 +2712,7 @@ module.exports = {
   buildOperatorHandoffPayload,
   buildOperatorSendNowPayload,
   renderOperatorHandoffMarkdown,
+  renderOperatorSendNowMarkdown,
   renderOperatorSendNowCsv,
   renderTeamOutreachMessagesMarkdown,
   resolveRevenueLoopSummary,
