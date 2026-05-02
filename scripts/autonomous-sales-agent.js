@@ -40,6 +40,10 @@ const {
   writeGeminiCliDemandPack,
 } = require('./gemini-cli-demand-pack');
 const {
+  buildOpencodeDemandPack,
+  writeOpencodeDemandPack,
+} = require('./opencode-demand-pack');
+const {
   buildLinkedinWorkflowHardeningPack,
   writeLinkedinWorkflowHardeningPack,
 } = require('./linkedin-workflow-hardening-pack');
@@ -73,6 +77,8 @@ function buildDependencies(overrides = {}) {
     writeAiventyxMarketplaceOutputs,
     buildGeminiCliDemandPack,
     writeGeminiCliDemandPack,
+    buildOpencodeDemandPack,
+    writeOpencodeDemandPack,
     buildLinkedinWorkflowHardeningPack,
     writeLinkedinWorkflowHardeningPack,
     buildChatgptGptRevenuePack,
@@ -132,6 +138,8 @@ async function main(argv = process.argv.slice(2), overrides = {}) {
   const aiventyxWritten = deps.writeAiventyxMarketplaceOutputs(aiventyxPlan, options);
   const geminiPack = deps.buildGeminiCliDemandPack(report);
   const geminiWritten = deps.writeGeminiCliDemandPack(geminiPack, options);
+  const opencodePack = deps.buildOpencodeDemandPack(report);
+  const opencodeWritten = deps.writeOpencodeDemandPack(opencodePack, options);
   const linkedinPack = deps.buildLinkedinWorkflowHardeningPack(report);
   const linkedinWritten = deps.writeLinkedinWorkflowHardeningPack(linkedinPack, options);
   const chatgptPack = deps.buildChatgptGptRevenuePack(report);
@@ -165,6 +173,9 @@ async function main(argv = process.argv.slice(2), overrides = {}) {
   }
   if (geminiWritten.docsPath) {
     console.log(`Gemini pack updated: ${geminiWritten.docsPath}`);
+  }
+  if (opencodeWritten.docsPath) {
+    console.log(`OpenCode pack updated: ${opencodeWritten.docsPath}`);
   }
   if (linkedinWritten.docsPath) {
     console.log(`LinkedIn pack updated: ${linkedinWritten.docsPath}`);

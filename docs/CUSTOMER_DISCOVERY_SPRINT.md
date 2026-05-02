@@ -82,6 +82,9 @@ The revenue loop emits these operator artifacts in that folder:
 - `gemini-cli-demand-pack.md` for Gemini CLI memory-demand, local-first, and cloud-workflow conversion copy
 - `gemini-cli-demand-pack.json` for the same Gemini operator pack in machine-readable form
 - `gemini-cli-operator-queue.csv` for Gemini-specific queue rows and next asks
+- `opencode-demand-pack.md` for OpenCode setup-proof, autopilot-risk, and self-serve conversion copy
+- `opencode-demand-pack.json` for the same OpenCode operator pack in machine-readable form
+- `opencode-operator-queue.csv` for OpenCode-specific queue rows and next asks
 - `linkedin-workflow-hardening-pack.md` for LinkedIn founder-post, comment, and DM workflow-hardening copy
 - `linkedin-workflow-hardening-pack.json` for the same LinkedIn operator pack in machine-readable form
 - `linkedin-operator-queue.csv` for LinkedIn-specific queue rows and next asks
