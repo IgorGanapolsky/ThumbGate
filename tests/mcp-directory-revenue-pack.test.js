@@ -24,6 +24,7 @@ const {
   isCliInvocation,
   parseArgs,
   renderMcpDirectoryRevenuePackMarkdown,
+  renderMcpDirectorySurfacesCsv,
   writeMcpDirectoryRevenuePack,
 } = require('../scripts/mcp-directory-revenue-pack');
 
@@ -56,7 +57,12 @@ test('directory surfaces preserve the current repair priorities and evidence dat
   assert.equal(pack.surfaces[2].submissionPath, 'https://smithery.ai/new');
   assert.equal(pack.surfaces[3].surfaceUrl, PUNKPEYE_LIST_URL);
   assert.equal(pack.surfaces[4].surfaceUrl, APPCYPHER_LIST_URL);
+  assert.match(pack.surfaces[0].homepageUrl, /utm_campaign=mcp_so_guide/);
+  assert.match(pack.surfaces[1].submissionCopy, /IgorGanapolsky\/ThumbGate/);
+  assert.match(pack.surfaces[3].submissionCopy, /^\- \[thumbgate\]/);
+  assert.match(pack.surfaces[4].submissionCopy, /^\- \*\*\[thumbgate\]/);
   assert.ok(pack.surfaces.every((surface) => surface.evidenceCheckedAt === CHECKED_AT));
+  assert.ok(pack.surfaces.every((surface) => Array.isArray(surface.tags) && surface.tags.length >= 3));
   assert.ok(pack.surfaces.every((surface) => !/guaranteed installs|guaranteed revenue|approved/i.test(surface.evidenceSummary)));
 });
 
@@ -130,8 +136,21 @@ test('rendered markdown stays operator-ready and names the legacy leaks explicit
   assert.match(markdown, /Proof-backed setup guide/);
   assert.match(markdown, /utm_source=mcp_directories/);
   assert.match(markdown, /ThumbGate Pro/);
+  assert.match(markdown, /Homepage CTA/);
+  assert.match(markdown, /Submission copy/);
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
   assert.doesNotMatch(markdown, /official registry approved|guaranteed installs|guaranteed revenue/i);
+});
+
+test('CSV export keeps submission surfaces in one operator file', () => {
+  const csv = renderMcpDirectorySurfacesCsv(buildMcpDirectoryRevenuePack(LINKS_FIXTURE));
+
+  assert.match(csv, /^key,name,role,operatorStatus,conversionGoal,/);
+  assert.match(csv, /MCP\.so canonical listing/);
+  assert.match(csv, /Glama search result/);
+  assert.match(csv, /punkpeye awesome-mcp-servers/);
+  assert.match(csv, /utm_campaign=glama_guide/);
+  assert.match(csv, /thumbgate-production\.up\.railway\.app\/guide/);
 });
 
 test('checked-in MCP directory pack stays in sync with the generator output', () => {
@@ -148,7 +167,7 @@ test('checked-in MCP directory pack stays in sync with the generator output', ()
   assert.equal(markdown, committed);
 });
 
-test('CLI options and artifact writing emit markdown, JSON, and queue CSV', () => {
+test('CLI options and artifact writing emit markdown, JSON, queue CSV, and surfaces CSV', () => {
   const tempDir = makeTempDir();
   const options = parseArgs(['--write-docs', '--report-dir', tempDir]);
   const pack = buildMcpDirectoryRevenuePack(LINKS_FIXTURE);
@@ -163,11 +182,42 @@ test('CLI options and artifact writing emit markdown, JSON, and queue CSV', () =
   assert.equal(fs.existsSync(path.join(tempDir, 'mcp-directory-revenue-pack.md')), true);
   assert.equal(fs.existsSync(path.join(tempDir, 'mcp-directory-revenue-pack.json')), true);
   assert.equal(fs.existsSync(path.join(tempDir, 'mcp-directory-operator-queue.csv')), true);
+  assert.equal(fs.existsSync(path.join(tempDir, 'mcp-directory-surfaces.csv')), true);
 
   const json = JSON.parse(fs.readFileSync(path.join(tempDir, 'mcp-directory-revenue-pack.json'), 'utf8'));
   assert.equal(json.operatorQueue.length, 5);
+  assert.equal(json.surfaces.length, 5);
   assert.equal(json.measurementPlan.northStar, 'directory_referral_to_paid_intent');
   assert.match(fs.readFileSync(path.join(tempDir, 'mcp-directory-operator-queue.csv'), 'utf8'), /repair_glama_slug/);
+  assert.match(fs.readFileSync(path.join(tempDir, 'mcp-directory-surfaces.csv'), 'utf8'), /utm_source=mcp_directories/);
+});
+
+test('writeDocs mode also persists checked-in MCP directory sidecars alongside markdown', () => {
+  const writes = [];
+  const originalWriteFileSync = fs.writeFileSync;
+  const docsRoot = path.join(__dirname, '..', 'docs', 'marketing');
+
+  fs.writeFileSync = (filePath, ...args) => {
+    writes.push(String(filePath));
+    if (String(filePath).startsWith(`${docsRoot}${path.sep}`)) {
+      return;
+    }
+    return originalWriteFileSync.call(fs, filePath, ...args);
+  };
+
+  try {
+    const written = writeMcpDirectoryRevenuePack(buildMcpDirectoryRevenuePack(LINKS_FIXTURE), {
+      writeDocs: true,
+    });
+
+    assert.match(written.docsPath, /docs\/marketing\/mcp-directory-revenue-pack\.md$/);
+    assert.ok(writes.some((entry) => entry.endsWith('docs/marketing/mcp-directory-revenue-pack.md')));
+    assert.ok(writes.some((entry) => entry.endsWith('docs/marketing/mcp-directory-revenue-pack.json')));
+    assert.ok(writes.some((entry) => entry.endsWith('docs/marketing/mcp-directory-operator-queue.csv')));
+    assert.ok(writes.some((entry) => entry.endsWith('docs/marketing/mcp-directory-surfaces.csv')));
+  } finally {
+    fs.writeFileSync = originalWriteFileSync;
+  }
 });
 
 test('CLI entrypoint detection is path based', () => {
