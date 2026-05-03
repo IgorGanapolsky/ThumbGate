@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.16.10
+
+### Patch Changes
+
+- [#1536](https://github.com/IgorGanapolsky/ThumbGate/pull/1536) [`38c306d`](https://github.com/IgorGanapolsky/ThumbGate/commit/38c306dbc52fbe2f35a9e4225ce0397cf077150e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a generated operator send-now markdown handoff to the GTM revenue loop so operators can execute the ranked outreach and self-serve close queue without converting the checked-in JSON or CSV outputs by hand.
+
+- [#1596](https://github.com/IgorGanapolsky/ThumbGate/pull/1596) [`7fecf17`](https://github.com/IgorGanapolsky/ThumbGate/commit/7fecf174fe797d0eb50e61421155262a1463ccde) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Preserve paid revenue evidence in the GTM operator loop when the current day has only checkout activity but the hosted 30-day or lifetime windows contain booked revenue.
+
 ## 1.16.9
 
 ### Patch Changes
