@@ -665,8 +665,24 @@ function hasRevenueLoopCommercialSignal(summary = {}) {
     || snapshot.qualifiedSprintLeads > 0;
 }
 
+function hasBookedRevenueSignal(summary = {}) {
+  const snapshot = summarizeCommercialSnapshot(summary);
+  return snapshot.paidOrders > 0
+    || snapshot.bookedRevenueCents > 0;
+}
+
 function selectHostedRevenueWindow(summaries = {}) {
   const candidateOrder = ['today', '30d', 'lifetime'];
+
+  for (const windowName of candidateOrder) {
+    const candidate = summaries?.[windowName];
+    if (Number(candidate?.status) === 200 && hasBookedRevenueSignal(candidate)) {
+      return {
+        window: windowName,
+        summary: candidate,
+      };
+    }
+  }
 
   for (const windowName of candidateOrder) {
     const candidate = summaries?.[windowName];
@@ -759,8 +775,11 @@ async function resolveRevenueLoopSummary(options = {}) {
   } = options;
 
   const localResult = await getOperationalBillingSummaryFn();
-  if (localResult.source === 'hosted') {
-    return localResult;
+  if (localResult.source === 'hosted' && hasBookedRevenueSignal(localResult.summary)) {
+    return {
+      ...localResult,
+      summaryWindow: 'today',
+    };
   }
 
   if (
@@ -796,6 +815,13 @@ async function resolveRevenueLoopSummary(options = {}) {
     if (attempt < retryCount) {
       await waitForRetryFn(hostedRetryDelayMs);
     }
+  }
+
+  if (localResult.source === 'hosted') {
+    return {
+      ...localResult,
+      summaryWindow: 'today',
+    };
   }
 
   void hostedFailure;
