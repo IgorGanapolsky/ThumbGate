@@ -3,11 +3,9 @@
 
 const path = require('node:path');
 const {
-  DEFAULT_COMMAND_TIMEOUT_MS,
-  DEFAULT_FETCH_TIMEOUT_MS,
   generateRevenueStatusReport,
   centsToDollars,
-  parsePositiveInteger,
+  parseArgs,
 } = require('./revenue-status');
 
 const DEFAULT_OFFER_STACK = {
@@ -22,52 +20,6 @@ const DEFAULT_OFFER_STACK = {
     envKey: 'THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL',
   },
 };
-
-function parseArgs(argv = []) {
-  const options = {
-    json: false,
-    repo: process.env.THUMBGATE_GITHUB_REPO || 'IgorGanapolsky/ThumbGate',
-    timeZone: process.env.TZ || 'America/New_York',
-    fetchTimeoutMs: parsePositiveInteger(
-      process.env.THUMBGATE_REVENUE_STATUS_FETCH_TIMEOUT_MS,
-      DEFAULT_FETCH_TIMEOUT_MS
-    ),
-    commandTimeoutMs: parsePositiveInteger(
-      process.env.THUMBGATE_REVENUE_STATUS_COMMAND_TIMEOUT_MS,
-      DEFAULT_COMMAND_TIMEOUT_MS
-    ),
-  };
-
-  for (const arg of argv) {
-    if (arg === '--json') {
-      options.json = true;
-      continue;
-    }
-    if (arg.startsWith('--repo=')) {
-      options.repo = arg.slice('--repo='.length).trim() || options.repo;
-      continue;
-    }
-    if (arg.startsWith('--timezone=')) {
-      options.timeZone = arg.slice('--timezone='.length).trim() || options.timeZone;
-      continue;
-    }
-    if (arg.startsWith('--fetch-timeout-ms=')) {
-      options.fetchTimeoutMs = parsePositiveInteger(
-        arg.slice('--fetch-timeout-ms='.length),
-        options.fetchTimeoutMs
-      );
-      continue;
-    }
-    if (arg.startsWith('--command-timeout-ms=')) {
-      options.commandTimeoutMs = parsePositiveInteger(
-        arg.slice('--command-timeout-ms='.length),
-        options.commandTimeoutMs
-      );
-    }
-  }
-
-  return options;
-}
 
 function number(value) {
   const parsed = Number(value || 0);
