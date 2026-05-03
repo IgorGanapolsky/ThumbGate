@@ -60,6 +60,7 @@ The revenue loop emits these operator artifacts in that folder:
 - `team-outreach-messages.md` for the warm-outbound copy layer tied to the same ranked queue
 - `operator-priority-handoff.md` for the ranked send order across warm discovery and cold GitHub targets
 - `operator-priority-handoff.json` for the same ranked send order, CTA, proof rule, and sales commands in machine-readable form
+- `operator-send-now.md` for the flat batch-send markdown handoff with ready-now drafts and logging commands
 - `operator-send-now.csv` for one flat batch-send sheet with the ready-now rows, drafts, and log commands
 - `operator-send-now.json` for the same ready-now batch-send payload in machine-readable form
 - `claude-workflow-hardening-pack.md` for Claude-first positioning, buyer lanes, and evidence-backed outbound copy
