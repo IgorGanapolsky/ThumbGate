@@ -301,6 +301,54 @@ test('resolveRevenueLoopSummary selects the freshest hosted window with commerci
   assert.equal(result.summary.trafficMetrics.checkoutStarts, 531);
 });
 
+test('resolveRevenueLoopSummary prefers booked revenue over checkout-only daily activity', async () => {
+  const result = await resolveRevenueLoopSummary({
+    getOperationalBillingSummaryFn: async () => ({
+      source: 'local',
+      summary: {
+        revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+        trafficMetrics: { checkoutStarts: 0 },
+        signups: { uniqueLeads: 0 },
+        pipeline: {},
+      },
+      fallbackReason: 'Hosted operational summary is not configured.',
+    }),
+    generateRevenueStatusReportFn: async () => ({
+      source: 'hosted-via-railway-env',
+      hostedAudit: {
+        summaries: {
+          today: {
+            status: 200,
+            revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+            trafficMetrics: { checkoutStarts: 13 },
+            signups: { uniqueLeads: 13 },
+            pipeline: {},
+          },
+          '30d': {
+            status: 200,
+            revenue: { paidOrders: 6, bookedRevenueCents: 16900 },
+            trafficMetrics: { checkoutStarts: 583 },
+            signups: { uniqueLeads: 399 },
+            pipeline: {},
+          },
+          lifetime: {
+            status: 200,
+            revenue: { paidOrders: 6, bookedRevenueCents: 16900 },
+            trafficMetrics: { checkoutStarts: 677 },
+            signups: { uniqueLeads: 414 },
+            pipeline: {},
+          },
+        },
+      },
+    }),
+  });
+
+  assert.equal(result.source, 'hosted-via-railway-env');
+  assert.equal(result.summaryWindow, '30d');
+  assert.equal(result.summary.revenue.paidOrders, 6);
+  assert.equal(deriveRevenueDirective(result.summary).state, 'post-first-dollar');
+});
+
 test('resolveRevenueLoopSummary skips hosted audit when local metrics are explicitly requested', async () => {
   let hostedAuditCalls = 0;
   const result = await resolveRevenueLoopSummary({
