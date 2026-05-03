@@ -1,6 +1,6 @@
 # Revenue Operator Priority Handoff
 
-Updated: 2026-05-03T16:57:09.880Z
+Updated: 2026-05-03T17:57:23.317Z
 
 This is the ranked send order for the current zero-to-one revenue loop. Work follow-ups first, then warm discovery, then self-serve closes, then production-rollout buyers, then expand into the remaining cold GitHub targets with the same proof discipline.
 
@@ -11,7 +11,7 @@ This handoff sits on top of `gtm-revenue-loop.md`, `gtm-target-queue.csv`, and `
 - Headline: Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
 - Billing verification: Live hosted billing summary verified for this run.
 - Paid orders: 2
-- Checkout starts: 13
+- Checkout starts: 16
 - Active follow-ups: 0
 - Warm targets ready now: 4
 - Self-serve closes ready now: 3
