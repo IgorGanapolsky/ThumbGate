@@ -2303,18 +2303,27 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.match(operatorHandoff, /Send Now: Warm Discovery/);
     assert.match(operatorHandoff, /Pipeline lead id: reddit_builder_production_mcp_server/);
     assert.match(operatorHandoff, /Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
+    assert.match(operatorHandoff, /Evidence sources: Target signal: https:\/\/github\.com\/example\/production-mcp-server; Commercial truth:/);
+    assert.match(operatorHandoff, /Claim guardrails: Do not claim revenue, installs, or marketplace approval without direct command evidence\./);
     assert.equal(operatorHandoffJson.sections.find((section) => section.key === 'send_now_warm_discovery').label, 'Send Now: Warm Discovery');
     assert.equal(operatorHandoffJson.sections.find((section) => section.key === 'send_now_warm_discovery').targets[0].pipelineLeadId, 'reddit_builder_production_mcp_server');
     assert.match(operatorSendNowMarkdown, /Revenue Operator Send-Now Sheet/);
     assert.match(operatorSendNowMarkdown, /Pair this file with `operator-priority-handoff\.md`/);
     assert.match(operatorSendNowMarkdown, /## Send Now: Warm Discovery/);
     assert.match(operatorSendNowMarkdown, /Log after send: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
-    assert.match(operatorSendNowCsv, /^rank,sectionKey,sectionLabel,temperature,source,channel,pipelineStage,pipelineLeadId,username,accountName,company,repoName,repoUrl,contactSurface,contactSurfaces,pipelineUpdatedAt,nextOperatorStep,evidenceScore,evidence,motionLabel,whyNow,proofRule,cta,firstTouchDraft,painConfirmedFollowUpDraft,selfServeFollowUpDraft,checkoutCloseDraft,markContactedCommand,markRepliedCommand,markCallBookedCommand,markCheckoutStartedCommand,markSprintIntakeCommand,markPaidCommand/m);
+    assert.deepEqual(operatorHandoffJson.sections.find((section) => section.key === 'send_now_warm_discovery').targets[0].claimGuardrails, [
+      'Do not claim revenue, installs, or marketplace approval without direct command evidence.',
+    ]);
+    assert.match(operatorSendNowCsv, /^rank,sectionKey,sectionLabel,temperature,source,channel,pipelineStage,pipelineLeadId,username,accountName,company,repoName,repoUrl,contactSurface,contactSurfaces,pipelineUpdatedAt,nextOperatorStep,evidenceScore,evidence,evidenceLinks,claimGuardrails,motionLabel,whyNow,proofRule,cta,firstTouchDraft,painConfirmedFollowUpDraft,selfServeFollowUpDraft,checkoutCloseDraft,markContactedCommand,markRepliedCommand,markCallBookedCommand,markCheckoutStartedCommand,markSprintIntakeCommand,markPaidCommand/m);
     assert.match(operatorSendNowCsv, /send_now_warm_discovery/);
     assert.match(operatorSendNowCsv, /reddit_builder_production_mcp_server/);
     assert.match(operatorSendNowCsv, /Builder Labs/);
+    assert.match(operatorSendNowCsv, /Target signal: https:\/\/github\.com\/example\/production-mcp-server; Commercial truth:/);
+    assert.match(operatorSendNowCsv, /Do not claim revenue, installs, or marketplace approval without direct command evidence\./);
     assert.equal(operatorSendNowJson.rows[0].sectionKey, 'send_now_warm_discovery');
     assert.equal(operatorSendNowJson.rows[0].pipelineLeadId, 'reddit_builder_production_mcp_server');
+    assert.equal(operatorSendNowJson.rows[0].evidenceSources[0].label, 'Target signal');
+    assert.equal(operatorSendNowJson.rows[0].claimGuardrails[0], 'Do not claim revenue, installs, or marketplace approval without direct command evidence.');
     assert.equal(operatorSendNowJson.rows[0].markSprintIntakeCommand.includes('sprint_intake'), true);
   } finally {
     fs.rmSync(reportDir, { recursive: true, force: true });
@@ -2462,6 +2471,19 @@ test('operator send-now export flattens ranked handoff rows for batch ops', () =
       pipelineStage: 'targeted',
       evidenceScore: 9,
       evidence: ['workflow control surface', '42 GitHub stars'],
+      evidenceSources: [
+        {
+          label: 'Target signal',
+          url: 'https://github.com/example/production-mcp-server',
+        },
+        {
+          label: 'Commercial truth',
+          url: catalog.pro.truth,
+        },
+      ],
+      claimGuardrails: [
+        'Do not claim revenue, installs, or marketplace approval without direct command evidence.',
+      ],
       motionLabel: catalog.sprint.label,
       motionReason: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
       proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
@@ -2478,8 +2500,11 @@ test('operator send-now export flattens ranked handoff rows for batch ops', () =
   assert.equal(payload.rows[0].sectionKey, 'send_now_warm_discovery');
   assert.equal(payload.rows[0].pipelineLeadId, 'reddit_builder_production_mcp_server');
   assert.equal(payload.rows[0].company, 'Builder Labs');
+  assert.equal(payload.rows[0].evidenceSources[0].label, 'Target signal');
+  assert.equal(payload.rows[0].claimGuardrails[0], 'Do not claim revenue, installs, or marketplace approval without direct command evidence.');
   assert.match(csv, /send_now_warm_discovery/);
   assert.match(csv, /Reddit DM: https:\/\/www\.reddit\.com\/user\/builder\//);
+  assert.match(csv, /Target signal: https:\/\/github\.com\/example\/production-mcp-server; Commercial truth:/);
   assert.match(csv, /I can harden one workflow, then prove it\./);
 });
 
