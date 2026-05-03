@@ -29,6 +29,7 @@ const {
   renderMarketplaceCopyMarkdown,
   renderOperatorHandoffMarkdown,
   renderOperatorSendNowCsv,
+  renderSelfServeClosePackMarkdown,
   renderRevenueLoopMarkdown,
   renderTeamOutreachMessagesMarkdown,
   resolveRevenueLoopSummary,
@@ -1442,6 +1443,127 @@ test('operator handoff payload mirrors the ranked queue and sales commands in ma
   assert.equal(coldSection.targets.length, 0);
 });
 
+test('self-serve close pack isolates guide-to-Pro targets and commands', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const markdown = renderSelfServeClosePackMarkdown({
+    generatedAt: '2026-04-26T00:00:00.000Z',
+    directive: {
+      state: 'post-first-dollar',
+      headline: 'Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.',
+    },
+    verification: {
+      label: 'Live hosted billing summary verified for this run.',
+    },
+    snapshot: {
+      paidOrders: 2,
+      checkoutStarts: 1,
+    },
+    targets: [
+      {
+        temperature: 'warm',
+        source: 'reddit',
+        channel: 'reddit_dm',
+        username: 'warm_builder',
+        accountName: 'r/ClaudeCode',
+        contactUrl: 'https://www.reddit.com/user/warm_builder/',
+        contactSurfaces: [
+          {
+            label: 'Reddit DM',
+            url: 'https://www.reddit.com/user/warm_builder/',
+          },
+        ],
+        evidenceScore: 9,
+        evidence: ['warm inbound engagement', 'workflow pain named'],
+        motion: 'sprint',
+        motionLabel: catalog.sprint.label,
+        motionReason: 'Warm target already named a repeated workflow blocker.',
+        pipelineStage: 'targeted',
+        proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+        cta: catalog.sprint.cta,
+        firstTouchDraft: 'I will harden one AI-agent workflow for you.',
+        painConfirmedFollowUpDraft: 'If the workflow pain is real, I can send the proof pack.',
+      },
+      {
+        temperature: 'cold',
+        source: 'github',
+        channel: 'github',
+        username: 'self_serve_builder',
+        company: 'Solo Builder LLC',
+        contactUrl: 'https://solo.builder.dev/',
+        contactSurfaces: [
+          {
+            label: 'Website',
+            url: 'https://solo.builder.dev/',
+          },
+          {
+            label: 'GitHub profile',
+            url: 'https://github.com/self_serve_builder',
+          },
+        ],
+        repoName: 'claude-code-hooks',
+        repoUrl: 'https://github.com/self_serve_builder/claude-code-hooks',
+        updatedAt: '2026-04-26T01:00:00.000Z',
+        evidenceScore: 9,
+        evidence: ['self-serve agent tooling', 'updated in the last 7 days'],
+        motion: 'pro',
+        motionLabel: catalog.pro.label,
+        motionReason: 'Target looks like a local hook surface, so the guide-to-Pro lane is the faster close.',
+        pipelineStage: 'targeted',
+        proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+        cta: links.guideLink,
+        firstTouchDraft: 'Start with the setup guide, then move to Pro if the tool path fits.',
+        painConfirmedFollowUpDraft: 'If you want the tool path, I can send the live Pro checkout.',
+        selfServeFollowUpDraft: 'Use the setup guide first, then move to Pro.',
+        checkoutCloseDraft: 'If you are ready for the self-serve lane, here is the live Pro checkout.',
+      },
+      {
+        temperature: 'cold',
+        source: 'github',
+        channel: 'github',
+        username: 'builder',
+        company: 'Builder Labs',
+        contactUrl: 'https://builder.dev/',
+        contactSurfaces: [
+          {
+            label: 'Website',
+            url: 'https://builder.dev/',
+          },
+          {
+            label: 'GitHub profile',
+            url: 'https://github.com/builder',
+          },
+        ],
+        repoName: 'production-mcp-server',
+        repoUrl: 'https://github.com/builder/production-mcp-server',
+        evidenceScore: 11,
+        evidence: ['production or platform workflow', '42 GitHub stars'],
+        motion: 'sprint',
+        motionLabel: catalog.sprint.label,
+        motionReason: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
+        pipelineStage: 'targeted',
+        proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+        cta: catalog.sprint.cta,
+        firstTouchDraft: 'I will harden one production workflow for you.',
+        painConfirmedFollowUpDraft: 'If the workflow pain is real, I can send the proof pack.',
+      },
+    ],
+  });
+
+  assert.match(markdown, /Self-Serve Close Pack/);
+  assert.match(markdown, /Self-serve closes ready now: 1/);
+  assert.match(markdown, /Close Now: Self-Serve Pro/);
+  assert.match(markdown, /@self_serve_builder - claude-code-hooks/);
+  assert.match(markdown, /Guide CTA: https:\/\/thumbgate-production\.up\.railway\.app\/guide/);
+  assert.match(markdown, /Checkout CTA: https:\/\/thumbgate-production\.up\.railway\.app\/checkout\/pro/);
+  assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
+  assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
+  assert.match(markdown, /Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_self_serve_builder_claude_code_hooks'/);
+  assert.match(markdown, /Guide-to-Pro follow-up:/);
+  assert.doesNotMatch(markdown, /@warm_builder/);
+  assert.doesNotMatch(markdown, /@builder - production-mcp-server/);
+});
+
 test('first-touch outreach does not push proof before pain is confirmed', () => {
   const catalog = buildMotionCatalog(buildRevenueLinks());
   const selectedMotion = selectOutreachMotion({
@@ -2426,6 +2548,117 @@ test('operator send-now export flattens ranked handoff rows for batch ops', () =
   assert.match(csv, /send_now_warm_discovery/);
   assert.match(csv, /Reddit DM: https:\/\/www\.reddit\.com\/user\/builder\//);
   assert.match(csv, /I can harden one workflow, then prove it\./);
+});
+
+test('writeRevenueLoopOutputs persists the self-serve close pack alongside other GTM artifacts', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-gtm-write-'));
+
+  try {
+    const report = {
+      generatedAt: '2026-04-26T00:00:00.000Z',
+      source: 'hosted-via-railway-env',
+      fallbackReason: null,
+      snapshotWindow: 'today',
+      verification: {
+        mode: 'live-hosted',
+        label: 'Live hosted billing summary verified for this run.',
+      },
+      currentTruth: {
+        publicSelfServeOffer: 'Pro at $19/mo or $149/yr',
+        teamPilotOffer: 'Workflow Hardening Sprint',
+        publicSelfServeCta: 'https://thumbgate-production.up.railway.app/checkout/pro',
+        teamPilotCta: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+        guideLink: 'https://thumbgate-production.up.railway.app/guide',
+        commercialTruthLink: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md',
+        verificationEvidenceLink: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
+      },
+      evidenceBackstop: {
+        sourceRule: 'Every listing, queue row, and pain-confirmed follow-up must inherit these sources before it is treated as operator-ready.',
+        claimGuardrails: [
+          'Do not claim revenue, installs, or marketplace approval without direct command evidence.',
+        ],
+        proofLinks: [
+          'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md',
+          'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
+        ],
+      },
+      directive: {
+        state: 'post-first-dollar',
+        objective: 'Scale the first-10-customers loop with direct workflow hardening and self-serve follow-up.',
+        headline: 'Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.',
+        primaryMotion: 'sprint',
+        secondaryMotion: 'pro',
+        actions: ['Route self-serve install-intent buyers through the proof-backed setup guide.'],
+      },
+      snapshot: {
+        paidOrders: 2,
+        bookedRevenueCents: 2000,
+        checkoutStarts: 1,
+        uniqueLeads: 0,
+        sprintLeads: 0,
+        qualifiedSprintLeads: 0,
+      },
+      targets: [
+        {
+          temperature: 'cold',
+          source: 'github',
+          channel: 'github',
+          username: 'self_serve_builder',
+          company: 'Solo Builder LLC',
+          contactUrl: 'https://solo.builder.dev/',
+          contactSurfaces: [
+            {
+              label: 'Website',
+              url: 'https://solo.builder.dev/',
+            },
+            {
+              label: 'GitHub profile',
+              url: 'https://github.com/self_serve_builder',
+            },
+          ],
+          repoName: 'claude-code-hooks',
+          repoUrl: 'https://github.com/self_serve_builder/claude-code-hooks',
+          updatedAt: '2026-04-26T01:00:00.000Z',
+          evidenceScore: 9,
+          evidence: ['self-serve agent tooling', 'updated in the last 7 days'],
+          motion: 'pro',
+          motionLabel: 'Pro at $19/mo or $149/yr',
+          motionReason: 'Target looks like a local hook surface, so the guide-to-Pro lane is the faster close.',
+          pipelineStage: 'targeted',
+          proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+          cta: 'https://thumbgate-production.up.railway.app/guide',
+          firstTouchDraft: 'Start with the setup guide, then move to Pro if the tool path fits.',
+          painConfirmedFollowUpDraft: 'If you want the tool path, I can send the live Pro checkout.',
+          selfServeFollowUpDraft: 'Use the setup guide first, then move to Pro.',
+          checkoutCloseDraft: 'If you are ready for the self-serve lane, here is the live Pro checkout.',
+          offer: 'pro_self_serve',
+          pipelineLeadId: 'github_self_serve_builder_claude_code_hooks',
+          nextOperatorAction: 'Send the first-touch draft and log the outreach in the sales pipeline.',
+          salesCommands: {
+            markContacted: "npm run sales:pipeline -- advance --lead 'github_self_serve_builder_claude_code_hooks' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide.'",
+            markReplied: "npm run sales:pipeline -- advance --lead 'github_self_serve_builder_claude_code_hooks' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around the proof-backed setup guide.'",
+            markCallBooked: "npm run sales:pipeline -- advance --lead 'github_self_serve_builder_claude_code_hooks' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute diagnostic after the self-serve conversation exposed repeated pain around the proof-backed setup guide.'",
+            markCheckoutStarted: "npm run sales:pipeline -- advance --lead 'github_self_serve_builder_claude_code_hooks' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing the proof-backed setup guide.'",
+            markSprintIntake: "npm run sales:pipeline -- advance --lead 'github_self_serve_builder_claude_code_hooks' --channel 'manual' --stage 'sprint_intake' --note 'Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for the proof-backed setup guide.'",
+            markPaid: "npm run sales:pipeline -- advance --lead 'github_self_serve_builder_claude_code_hooks' --channel 'manual' --stage 'paid' --note 'Closed Pro at $19/mo or $149/yr and booked revenue after resolving the proof-backed setup guide.'",
+          },
+        },
+      ],
+    };
+
+    const written = writeRevenueLoopOutputs(report, {
+      repoRoot: tempDir,
+      reportDir: 'artifacts',
+    });
+    const packPath = path.join(tempDir, 'artifacts', 'self-serve-close-pack.md');
+
+    assert.equal(written.reportDir, path.join(tempDir, 'artifacts'));
+    assert.equal(fs.existsSync(packPath), true);
+    assert.match(fs.readFileSync(packPath, 'utf8'), /Self-Serve Close Pack/);
+    assert.match(fs.readFileSync(packPath, 'utf8'), /@self_serve_builder - claude-code-hooks/);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
 });
 
 test('warm-target report output does not emit blank repo placeholders in follow-up drafts', () => {

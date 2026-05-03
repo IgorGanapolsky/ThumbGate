@@ -2262,6 +2262,90 @@ function renderTeamOutreachMessagesMarkdown(report) {
   ].join('\n');
 }
 
+function renderSelfServeCloseTargetMarkdown(target, index) {
+  const enrichedTarget = enrichRenderableTarget(target);
+  const salesCommands = enrichedTarget.salesCommands;
+  const label = normalizeText(enrichedTarget.repoName)
+    ? `@${enrichedTarget.username} - ${enrichedTarget.repoName}`
+    : `@${enrichedTarget.username} - ${enrichedTarget.accountName || enrichedTarget.source || 'self-serve lead'}`;
+
+  return [
+    `## ${index + 1}. ${label}`,
+    `- Source: ${enrichedTarget.source || 'github'} / ${enrichedTarget.channel || enrichedTarget.source || 'github'}`,
+    `- Pipeline stage: ${enrichedTarget.pipelineStage || 'targeted'}`,
+    `- Pipeline lead id: ${enrichedTarget.pipelineLeadId || 'n/a'}`,
+    `- Next operator step: ${enrichedTarget.nextOperatorAction || buildNextOperatorAction(enrichedTarget.pipelineStage)}`,
+    `- Pipeline last updated: ${enrichedTarget.pipelineUpdatedAt || 'n/a'}`,
+    `- Contact surface: ${enrichedTarget.contactSurface || enrichedTarget.contactUrl || enrichedTarget.repoUrl || 'n/a'}`,
+    `- Contact surfaces: ${renderContactSurfaces(enrichedTarget.contactSurfaces)}`,
+    `- Company: ${enrichedTarget.company || 'n/a'}`,
+    `- Repo: ${enrichedTarget.repoUrl || 'n/a'}`,
+    `- Repo last updated: ${enrichedTarget.updatedAt || 'n/a'}`,
+    `- Evidence score: ${enrichedTarget.evidenceScore}`,
+    `- Evidence: ${enrichedTarget.evidence.length ? enrichedTarget.evidence.join(', ') : 'n/a'}`,
+    `- Evidence sources: ${renderEvidenceSources(enrichedTarget.evidenceSources)}`,
+    `- Why now: ${enrichedTarget.whyNow || enrichedTarget.motionReason || enrichedTarget.outreachAngle || 'n/a'}`,
+    `- Proof rule: ${enrichedTarget.proofPackTrigger || 'Use proof pack only after the buyer confirms pain.'}`,
+    `- Guide CTA: ${enrichedTarget.cta || 'n/a'}`,
+    `- Checkout CTA: ${buildRevenueLinks().proCheckoutLink}`,
+    `- Log after send: \`${salesCommands.markContacted || 'n/a'}\``,
+    `- Log after pain-confirmed reply: \`${salesCommands.markReplied || 'n/a'}\``,
+    `- Log after call booked: \`${salesCommands.markCallBooked || 'n/a'}\``,
+    `- Log after checkout started: \`${salesCommands.markCheckoutStarted || 'n/a'}\``,
+    `- Log after sprint intake: \`${salesCommands.markSprintIntake || 'n/a'}\``,
+    `- Log after paid: \`${salesCommands.markPaid || 'n/a'}\``,
+    '',
+    'First-touch draft:',
+    ...renderQuotedText(enrichedTarget.firstTouchDraft || enrichedTarget.message),
+    '',
+    'Pain-confirmed follow-up:',
+    ...renderQuotedText(enrichedTarget.painConfirmedFollowUpDraft),
+    '',
+    'Guide-to-Pro follow-up:',
+    ...renderQuotedText(enrichedTarget.selfServeFollowUpDraft),
+    '',
+    'Checkout close draft:',
+    ...renderQuotedText(enrichedTarget.checkoutCloseDraft),
+    '',
+  ];
+}
+
+function renderSelfServeClosePackMarkdown(report) {
+  const handoff = buildOperatorHandoffPayload(report);
+  const selfServeTargets = handoff.sections.find((section) => section.key === 'close_now_self_serve_pro')?.targets || [];
+  const selfServeLines = selfServeTargets.length
+    ? selfServeTargets.flatMap((target, index) => renderSelfServeCloseTargetMarkdown(target, index))
+    : ['- No self-serve close targets are available for this run.', ''];
+
+  return [
+    '# Self-Serve Close Pack',
+    '',
+    `Updated: ${handoff.generatedAt}`,
+    '',
+    'This pack isolates the evidence-backed self-serve close lane from the broader revenue loop so an operator can work the guide-to-Pro motion without digging through warm discovery or sprint-first rows.',
+    '',
+    'Use `operator-priority-handoff.md` for the full ranked queue and `gtm-marketplace-copy.md` for broader listing language. This pack is the focused conversion layer for current self-serve buyers.',
+    '',
+    '## Current Snapshot',
+    `- Revenue state: ${handoff.summary.revenueState}`,
+    `- Billing verification: ${handoff.summary.billingVerification}`,
+    `- Self-serve closes ready now: ${handoff.summary.selfServeTargetsReadyNow}`,
+    `- Checkout starts: ${handoff.summary.checkoutStarts}`,
+    '',
+    '## Self-Serve Rules',
+    '- Lead with the proof-backed setup guide first.',
+    `- ${OFFER_SPLIT_RULE}`,
+    '- Use [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) and [COMMERCIAL_TRUTH.md](../COMMERCIAL_TRUTH.md) only after the buyer confirms pain.',
+    '',
+    '```bash',
+    handoff.importCommand,
+    '```',
+    '',
+    '## Close Now: Self-Serve Pro',
+    ...selfServeLines,
+  ].join('\n');
+}
+
 function renderMarketplaceCopyMarkdown(pack) {
   const signalLines = pack.topSignals.length
     ? pack.topSignals.map((signal) => `- ${signal.label} (${signal.count}): ${signal.summary}${signal.examples.length ? ` Examples: ${signal.examples.join(', ')}` : ''}`)
@@ -2449,6 +2533,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
   const operatorHandoffJsonDocsPath = path.join(docsDir, 'operator-priority-handoff.json');
   const operatorSendNowCsvDocsPath = path.join(docsDir, 'operator-send-now.csv');
   const operatorSendNowJsonDocsPath = path.join(docsDir, 'operator-send-now.json');
+  const selfServeClosePackDocsPath = path.join(docsDir, 'self-serve-close-pack.md');
   const markdown = renderRevenueLoopMarkdown(report);
   const marketplaceCopy = report.marketplaceCopy || buildMarketplaceCopy(report);
   const marketplaceMarkdown = renderMarketplaceCopyMarkdown(marketplaceCopy);
@@ -2459,6 +2544,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
   const operatorHandoffMarkdown = renderOperatorHandoffMarkdown(report);
   const operatorSendNow = buildOperatorSendNowPayload(report);
   const operatorSendNowCsv = renderOperatorSendNowCsv(report);
+  const selfServeClosePackMarkdown = renderSelfServeClosePackMarkdown(report);
   const reportDir = normalizeText(options.reportDir)
     ? path.resolve(repoRoot, options.reportDir)
     : '';
@@ -2477,6 +2563,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     fs.writeFileSync(path.join(reportDir, 'operator-priority-handoff.json'), `${JSON.stringify(operatorHandoff, null, 2)}\n`, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'operator-send-now.csv'), operatorSendNowCsv, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'operator-send-now.json'), `${JSON.stringify(operatorSendNow, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(path.join(reportDir, 'self-serve-close-pack.md'), selfServeClosePackMarkdown, 'utf8');
   }
 
   if (shouldWriteDocs) {
@@ -2492,6 +2579,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     fs.writeFileSync(operatorHandoffJsonDocsPath, `${JSON.stringify(operatorHandoff, null, 2)}\n`, 'utf8');
     fs.writeFileSync(operatorSendNowCsvDocsPath, operatorSendNowCsv, 'utf8');
     fs.writeFileSync(operatorSendNowJsonDocsPath, `${JSON.stringify(operatorSendNow, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(selfServeClosePackDocsPath, selfServeClosePackMarkdown, 'utf8');
   }
 
   return {
@@ -2499,6 +2587,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     marketplaceMarkdown,
     teamOutreachMarkdown,
     operatorHandoffMarkdown,
+    selfServeClosePackMarkdown,
     reportDir: reportDir || null,
     docsPath: shouldWriteDocs ? defaultDocsPath : null,
   };
@@ -2609,6 +2698,7 @@ module.exports = {
   buildOperatorSendNowPayload,
   renderOperatorHandoffMarkdown,
   renderOperatorSendNowCsv,
+  renderSelfServeClosePackMarkdown,
   renderTeamOutreachMessagesMarkdown,
   resolveRevenueLoopSummary,
   runRevenueLoop,
