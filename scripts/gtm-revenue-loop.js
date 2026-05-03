@@ -1594,11 +1594,15 @@ function buildMarketplaceCopy(report) {
     })
     .filter((theme) => theme.count > 0)
     .sort((left, right) => right.count - left.count);
-  const signalThemes = rankedSignalThemes.slice(0, 3);
-  const selfServeSignal = rankedSignalThemes.find((theme) => theme.key === 'self_serve_tooling');
-  if (selfServeSignal && !signalThemes.some((theme) => theme.key === selfServeSignal.key)) {
-    signalThemes.push(selfServeSignal);
+  const selectedSignalThemeKeys = new Set(rankedSignalThemes.slice(0, 3).map((theme) => theme.key));
+  for (const pinnedThemeKey of ['business_system_workflows', 'self_serve_tooling']) {
+    if (rankedSignalThemes.some((theme) => theme.key === pinnedThemeKey)) {
+      selectedSignalThemeKeys.add(pinnedThemeKey);
+    }
   }
+  const signalThemes = rankedSignalThemes.filter((theme) => selectedSignalThemeKeys.has(theme.key));
+  const selfServeSignal = signalThemes.find((theme) => theme.key === 'self_serve_tooling')
+    || rankedSignalThemes.find((theme) => theme.key === 'self_serve_tooling');
   const topTheme = signalThemes[0];
   const primaryMotion = normalizeText(report.directive?.primaryMotion) || 'sprint';
   const secondaryMotion = normalizeText(report.directive?.secondaryMotion) || 'pro';

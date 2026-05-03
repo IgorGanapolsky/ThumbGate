@@ -2113,6 +2113,131 @@ test('marketplace copy keeps the Pro CTA when no target currently uses the Pro m
   assert.doesNotMatch(markdown, /cta unavailable in this run/);
 });
 
+test('marketplace copy keeps business-system and self-serve variants even when the top-three cutoff would drop them', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const report = buildRevenueLoopReport({
+    source: 'hosted-via-railway-env',
+    fallbackReason: null,
+    summary: {
+      revenue: { paidOrders: 1, bookedRevenueCents: 1900 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    },
+    motionCatalog: catalog,
+    directive: deriveRevenueDirective({
+      revenue: { paidOrders: 1, bookedRevenueCents: 1900 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    }, catalog),
+    targets: [
+      {
+        temperature: 'warm',
+        source: 'reddit',
+        channel: 'reddit_dm',
+        username: 'warm-one',
+        accountName: 'r/ClaudeCode',
+        evidence: {
+          score: 10,
+          evidence: ['workflow control surface'],
+          outreachAngle: 'Lead with one repeated workflow failure.',
+        },
+        selectedMotion: { key: 'sprint', label: catalog.sprint.label, reason: 'Warm pain exists.' },
+        pipelineStage: 'targeted',
+        message: 'Warm note one.',
+      },
+      {
+        temperature: 'warm',
+        source: 'reddit',
+        channel: 'reddit_dm',
+        username: 'warm-two',
+        accountName: 'r/Cursor',
+        evidence: {
+          score: 9,
+          evidence: ['workflow control surface'],
+          outreachAngle: 'Lead with one repeated workflow failure.',
+        },
+        selectedMotion: { key: 'sprint', label: catalog.sprint.label, reason: 'Warm pain exists.' },
+        pipelineStage: 'targeted',
+        message: 'Warm note two.',
+      },
+      {
+        temperature: 'cold',
+        source: 'github',
+        channel: 'github',
+        username: 'prod-one',
+        repoName: 'release-gate',
+        repoUrl: 'https://github.com/example/release-gate',
+        evidence: {
+          score: 12,
+          evidence: ['workflow control surface', 'production or platform workflow'],
+          outreachAngle: 'Lead with rollout proof.',
+        },
+        selectedMotion: { key: 'sprint', label: catalog.sprint.label, reason: 'Production proof matters.' },
+        pipelineStage: 'targeted',
+        message: 'Prod note one.',
+      },
+      {
+        temperature: 'cold',
+        source: 'github',
+        channel: 'github',
+        username: 'prod-two',
+        repoName: 'incident-gate',
+        repoUrl: 'https://github.com/example/incident-gate',
+        evidence: {
+          score: 11,
+          evidence: ['workflow control surface', 'production or platform workflow'],
+          outreachAngle: 'Lead with rollout proof.',
+        },
+        selectedMotion: { key: 'sprint', label: catalog.sprint.label, reason: 'Production proof matters.' },
+        pipelineStage: 'targeted',
+        message: 'Prod note two.',
+      },
+      {
+        temperature: 'cold',
+        source: 'github',
+        channel: 'github',
+        username: 'self-serve',
+        repoName: 'hook-pack',
+        repoUrl: 'https://github.com/example/hook-pack',
+        evidence: {
+          score: 8,
+          evidence: ['self-serve agent tooling'],
+          outreachAngle: 'Lead with the proof-backed setup guide.',
+        },
+        selectedMotion: { key: 'pro', label: catalog.pro.label, reason: 'Self-serve fit.' },
+        pipelineStage: 'targeted',
+        message: 'Self-serve note.',
+      },
+      {
+        temperature: 'cold',
+        source: 'github',
+        channel: 'github',
+        username: 'biz-systems',
+        repoName: 'jira-approvals',
+        repoUrl: 'https://github.com/example/jira-approvals',
+        evidence: {
+          score: 7,
+          evidence: ['business-system integration'],
+          outreachAngle: 'Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.',
+        },
+        selectedMotion: { key: 'sprint', label: catalog.sprint.label, reason: 'Business-system workflows need proof.' },
+        pipelineStage: 'targeted',
+        message: 'Business systems note.',
+      },
+    ],
+  });
+
+  const pack = buildMarketplaceCopy(report);
+
+  assert.ok(pack.topSignals.some((signal) => signal.key === 'business_system_workflows'));
+  assert.ok(pack.topSignals.some((signal) => signal.key === 'self_serve_tooling'));
+  assert.ok(pack.listingVariants.some((variant) => variant.key === 'business_system_workflows'));
+  assert.ok(pack.listingVariants.some((variant) => variant.key === 'self_serve_tooling'));
+});
+
 test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for operator import', () => {
   const links = buildRevenueLinks();
   const catalog = buildMotionCatalog(links);
