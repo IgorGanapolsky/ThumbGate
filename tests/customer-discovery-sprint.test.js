@@ -15,6 +15,8 @@ const EXPECTED_ARTIFACTS = [
   'gtm-marketplace-copy.json',
   'gtm-target-queue.csv',
   'gtm-target-queue.jsonl',
+  'outreach-targets.json',
+  'outreach-targets.csv',
   'team-outreach-messages.md',
   'operator-priority-handoff.md',
   'operator-priority-handoff.json',

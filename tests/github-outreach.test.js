@@ -6,9 +6,13 @@ const path = require('node:path');
 
 const { buildLeadFromRevenueTarget } = require('../scripts/sales-pipeline');
 const {
+  buildOutreachTargetsExport,
   buildOutreachTargetsReport,
   isCliInvocation,
+  renderOutreachTargetsCsv,
   renderOutreachTargetsMarkdown,
+  resolveOutreachAssetPaths,
+  writeOutreachTargetsArtifacts,
   writeOutreachTargetsDoc,
 } = require('../scripts/github-outreach');
 
@@ -109,7 +113,10 @@ test('queue-backed outreach report separates warm, self-serve, and cold sprint l
 
   const report = buildOutreachTargetsReport({ queuePath, reportPath, statePath });
   const markdown = renderOutreachTargetsMarkdown(report);
+  const exported = buildOutreachTargetsExport(report);
+  const csv = renderOutreachTargetsCsv(report);
   const outPath = writeOutreachTargetsDoc(markdown, path.join(tempDir, 'OUTREACH_TARGETS.md'));
+  const written = writeOutreachTargetsArtifacts(report, { outPath });
 
   assert.equal(report.followUpTargets.length, 0);
   assert.equal(report.warmTargets.length, 1);
@@ -117,7 +124,11 @@ test('queue-backed outreach report separates warm, self-serve, and cold sprint l
   assert.equal(report.coldTargets.length, 1);
   assert.equal(report.pipelineTrackedLeadCount, 0);
   assert.equal(report.pipelineExists, false);
+  assert.equal(exported.sections.length, 4);
+  assert.equal(exported.flatTargets.length, 3);
   assert.match(markdown, /mirrors the evidence-backed GTM queue/i);
+  assert.match(csv, /lane_key,lane_label,lane_position,summary/);
+  assert.match(csv, /self_serve_closes,Self-Serve Closes/);
   assert.match(markdown, /Warm discovery ready: 1/);
   assert.match(markdown, /Self-serve closes ready: 1/);
   assert.match(markdown, /Cold GitHub ready: 1/);
@@ -126,6 +137,10 @@ test('queue-backed outreach report separates warm, self-serve, and cold sprint l
   assert.match(markdown, /review-flow/);
   assert.match(markdown, /stage 'contacted'/);
   assert.equal(fs.existsSync(outPath), true);
+  assert.equal(fs.existsSync(written.jsonPath), true);
+  assert.equal(fs.existsSync(written.csvPath), true);
+  assert.equal(JSON.parse(fs.readFileSync(written.jsonPath, 'utf8')).flatTargets.length, 3);
+  assert.match(fs.readFileSync(written.csvPath, 'utf8'), /proof-backed setup guide/i);
 });
 
 test('active follow-ups are promoted ahead of fresh sends using sales ledger state', () => {
@@ -195,6 +210,20 @@ test('report core links inherit the current team pilot CTA when provided', () =>
   assert.equal(report.coreLinks.sprint, 'https://thumbgate-production.up.railway.app/#custom-sprint-intake');
   assert.match(markdown, /Sprint intake: https:\/\/thumbgate-production\.up\.railway\.app\/#custom-sprint-intake/);
   assert.match(markdown, /Proof-backed setup guide: https:\/\/thumbgate-production\.up\.railway\.app\/custom-guide/);
+});
+
+test('asset paths keep repo exports in docs\\/marketing and report-dir exports beside the markdown handoff', () => {
+  const repoRoot = path.resolve(__dirname, '..');
+  const repoPaths = resolveOutreachAssetPaths();
+  const reportDirPaths = resolveOutreachAssetPaths({
+    outPath: path.join('/tmp', 'reports', 'gtm', 'OUTREACH_TARGETS.md'),
+  });
+
+  assert.equal(repoPaths.docsPath, path.join(repoRoot, 'docs', 'OUTREACH_TARGETS.md'));
+  assert.equal(repoPaths.jsonPath, path.join(repoRoot, 'docs', 'marketing', 'outreach-targets.json'));
+  assert.equal(repoPaths.csvPath, path.join(repoRoot, 'docs', 'marketing', 'outreach-targets.csv'));
+  assert.equal(reportDirPaths.jsonPath, path.join('/tmp', 'reports', 'gtm', 'outreach-targets.json'));
+  assert.equal(reportDirPaths.csvPath, path.join('/tmp', 'reports', 'gtm', 'outreach-targets.csv'));
 });
 
 test('CLI entrypoint detection is path based', () => {
