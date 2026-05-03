@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.16.11
+
+### Patch Changes
+
+- [#1632](https://github.com/IgorGanapolsky/ThumbGate/pull/1632) [`a94318c`](https://github.com/IgorGanapolsky/ThumbGate/commit/a94318cc57e7879e5c476b246f0b38f77cfdd1df) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add May 2026 revenue-machine planning, paid Workflow Hardening checkout link support, and GA4 lead/checkout event hooks.
+
+- [#1633](https://github.com/IgorGanapolsky/ThumbGate/pull/1633) [`4b1d58f`](https://github.com/IgorGanapolsky/ThumbGate/commit/4b1d58f849085d3c2e071dfa4be6067aedf6149b) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Keep revenue-loop operator handoffs evidence-backed by carrying proof links and claim guardrails into the send-now exports.
+
 ## 1.16.10
 
 ### Patch Changes
