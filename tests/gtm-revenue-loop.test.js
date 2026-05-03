@@ -2199,6 +2199,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     const csvPath = path.join(reportDir, 'gtm-target-queue.csv');
     const csv = fs.readFileSync(csvPath, 'utf8');
     const marketplaceCopy = JSON.parse(fs.readFileSync(path.join(reportDir, 'gtm-marketplace-copy.json'), 'utf8'));
+    const marketplaceSurfacesCsv = fs.readFileSync(path.join(reportDir, 'gtm-marketplace-surfaces.csv'), 'utf8');
     const jsonl = fs.readFileSync(path.join(reportDir, 'gtm-target-queue.jsonl'), 'utf8');
     const teamOutreach = fs.readFileSync(path.join(reportDir, 'team-outreach-messages.md'), 'utf8');
     const operatorHandoff = fs.readFileSync(path.join(reportDir, 'operator-priority-handoff.md'), 'utf8');
@@ -2212,6 +2213,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.ok(fs.existsSync(path.join(reportDir, 'gtm-revenue-loop.json')));
     assert.ok(fs.existsSync(path.join(reportDir, 'gtm-marketplace-copy.md')));
     assert.ok(fs.existsSync(path.join(reportDir, 'gtm-marketplace-copy.json')));
+    assert.ok(fs.existsSync(path.join(reportDir, 'gtm-marketplace-surfaces.csv')));
     assert.ok(fs.existsSync(csvPath));
     assert.ok(fs.existsSync(path.join(reportDir, 'gtm-target-queue.jsonl')));
     assert.ok(fs.existsSync(path.join(reportDir, 'team-outreach-messages.md')));
@@ -2240,6 +2242,10 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.ok(Array.isArray(marketplaceCopy.topSignals));
     assert.ok(Array.isArray(marketplaceCopy.listingVariants));
     assert.ok(marketplaceCopy.listingVariants.some((variant) => /Warm discovery workflows|Workflow control surfaces/.test(variant.label)));
+    assert.match(marketplaceSurfacesCsv, /^surfaceType,surfaceKey,surfaceLabel,headline,shortDescription,audience,listingAngle,evidenceSummary,primaryCtaLabel,primaryCta,secondaryCtaLabel,secondaryCta,proofPolicy,proofLinks,sampleTargets/m);
+    assert.match(marketplaceSurfacesCsv, /default_listing/);
+    assert.match(marketplaceSurfacesCsv, /Proof-backed setup guide/);
+    assert.match(marketplaceSurfacesCsv, /variant,warm_discovery,|variant,workflow_control,/);
     assert.equal(JSON.parse(jsonl.trim()).repoName, 'production-mcp-server');
     assert.match(jsonl, /"pipelineLeadId":"reddit_builder_production_mcp_server"/);
     assert.match(jsonl, /"salesCommands":\{"markContacted":"npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
@@ -2359,6 +2365,7 @@ test('writeRevenueLoopOutputs mirrors dedicated GTM docs instead of overwriting 
     assert.ok(fs.existsSync(path.join(marketingDir, 'gtm-revenue-loop.json')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'gtm-marketplace-copy.md')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'gtm-marketplace-copy.json')));
+    assert.ok(fs.existsSync(path.join(marketingDir, 'gtm-marketplace-surfaces.csv')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'gtm-target-queue.csv')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'gtm-target-queue.jsonl')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'team-outreach-messages.md')));
