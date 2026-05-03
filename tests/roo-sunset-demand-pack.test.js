@@ -119,7 +119,9 @@ test('follow-on offers and operator queue keep Pro and sprint motions explicit',
 
   assert.deepEqual(offers.map((offer) => offer.key), ['pro', 'sprint']);
   assert.equal(queue.length, 3);
-  assert.match(queue[0].recommendedMotion, /Cline install guide -> setup guide -> Pro/);
+  assert.match(queue[0].proofAsset, /\/guides\/roo-code-alternative-cline/);
+  assert.match(queue[0].nextAsk, /\/guides\/roo-code-alternative-cline/);
+  assert.match(queue[0].recommendedMotion, /Hosted migration guide -> exact Cline install doc -> Pro/);
   assert.match(queue[1].recommendedMotion, /Workflow Hardening Sprint first/);
   assert.match(queue[2].recommendedMotion, /Setup guide -> commercial truth -> Pro/);
 });
@@ -128,6 +130,7 @@ test('outreach drafts keep first touch migration-first and reserve proof for pai
   const drafts = buildOutreachDrafts(LINKS_FIXTURE);
 
   assert.equal(drafts.length, 3);
+  assert.match(drafts[0].draft, /\/guides\/roo-code-alternative-cline/);
   assert.match(drafts[0].draft, /adapters\/cline\/INSTALL\.md/);
   assert.doesNotMatch(drafts[0].draft, /VERIFICATION_EVIDENCE\.md/);
   assert.match(drafts[1].draft, /VERIFICATION_EVIDENCE\.md/);
@@ -144,7 +147,7 @@ test('channel drafts stay tied to migration urgency and guide-first guardrails',
     'Threads',
     'Bluesky',
   ]);
-  assert.match(drafts[0].cta, /adapters\/cline\/INSTALL\.md/);
+  assert.match(drafts[0].cta, /\/guides\/roo-code-alternative-cline/);
   assert.match(drafts[1].cta, /workflow-sprint-intake/);
   assert.match(drafts[2].cta, /\/guide\?/);
   assert.match(drafts[3].cta, /\/guide\?/);

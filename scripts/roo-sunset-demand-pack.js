@@ -188,22 +188,23 @@ function buildOperatorQueue(links, report) {
   const resolvedLinks = links || buildRevenueLinks();
   const resolvedReport = report || {};
   const backstop = buildEvidenceBackstop(resolvedReport);
+  const migrationGuideLink = buildTrackedRooLink(`${resolvedLinks.appOrigin}/guides/roo-code-alternative-cline`, {
+    utmCampaign: 'roo_queue_migration_guide',
+    utmContent: 'guide',
+    campaignVariant: 'memory_migrant',
+    offerCode: 'ROO-QUEUE-MIGRATION-GUIDE',
+    ctaId: 'roo_queue_migration_guide',
+    ctaPlacement: 'operator_queue',
+  });
   return [
     {
       key: 'roo_memory_migrant',
       audience: 'Roo user who needs lesson memory to survive the move to Cline',
-      evidence: 'Roo officially documents the May 15, 2026 shutdown and recommends Cline as the open-source successor. ThumbGate already ships the Cline install guide and keeps lessons in a local SQLite file.',
+      evidence: 'Roo officially documents the May 15, 2026 shutdown and recommends Cline as the open-source successor. ThumbGate already ships a hosted migration guide, the exact Cline install doc, and keeps lessons in a local SQLite file.',
       proofTrigger: 'They can name one correction from Roo they do not want to reteach after migrating.',
-      proofAsset: CLINE_INSTALL_URL,
-      nextAsk: buildTrackedRooLink(CLINE_INSTALL_URL, {
-        utmCampaign: 'roo_queue_install',
-        utmContent: 'install_doc',
-        campaignVariant: 'memory_migrant',
-        offerCode: 'ROO-QUEUE_INSTALL',
-        ctaId: 'roo_queue_install',
-        ctaPlacement: 'operator_queue',
-      }),
-      recommendedMotion: 'Cline install guide -> setup guide -> Pro only after one saved correction is concrete.',
+      proofAsset: `${resolvedLinks.appOrigin}/guides/roo-code-alternative-cline`,
+      nextAsk: migrationGuideLink,
+      recommendedMotion: 'Hosted migration guide -> exact Cline install doc -> Pro only after one saved correction is concrete.',
     },
     {
       key: 'roo_workflow_owner',
@@ -243,6 +244,16 @@ function buildOperatorQueue(links, report) {
 }
 
 function buildOutreachDrafts(links = buildRevenueLinks()) {
+  const migrationGuideLink = buildTrackedRooLink(`${links.appOrigin}/guides/roo-code-alternative-cline`, {
+    utmMedium: OUTREACH_MEDIUM,
+    utmCampaign: 'roo_outreach_migration_guide',
+    utmContent: 'guide',
+    campaignVariant: 'memory_migrant',
+    offerCode: 'ROO-OUTREACH-MIGRATION-GUIDE',
+    ctaId: 'roo_outreach_migration_guide',
+    ctaPlacement: 'outreach_draft',
+    surface: 'roo_outreach',
+  });
   const installLink = buildTrackedRooLink(CLINE_INSTALL_URL, {
     utmMedium: OUTREACH_MEDIUM,
     utmCampaign: 'roo_outreach_install',
@@ -290,7 +301,7 @@ function buildOutreachDrafts(links = buildRevenueLinks()) {
       key: 'memory_migrant_dm',
       channel: 'GitHub DM or founder reply',
       audience: 'Roo user who wants their corrections to survive the move to Cline',
-      draft: `Roo can sunset. Your lesson memory should not. If you already know Cline is the successor, the fastest path is to keep the corrections local and move them with one install lane: ${installLink} .`,
+      draft: `Roo can sunset. Your lesson memory should not. The fastest path is to start with the hosted migration guide so the memory story and the install path stay together: ${migrationGuideLink} . If you want the exact Cline setup doc right away, use ${installLink} .`,
     },
     {
       key: 'proof_after_pain',
@@ -311,6 +322,16 @@ function buildChannelDrafts(links, report) {
   const resolvedLinks = links || buildRevenueLinks();
   const resolvedReport = report || {};
   const backstop = buildEvidenceBackstop(resolvedReport);
+  const redditMigrationGuideLink = buildTrackedRooLink(`${resolvedLinks.appOrigin}/guides/roo-code-alternative-cline`, {
+    utmMedium: REDDIT_MEDIUM,
+    utmCampaign: 'roo_channel_reddit',
+    utmContent: 'guide',
+    campaignVariant: 'memory_portability',
+    offerCode: 'ROO-CHANNEL-REDDIT',
+    ctaId: 'roo_channel_reddit',
+    ctaPlacement: 'channel_draft',
+    surface: 'roo_reddit',
+  });
   return [
     {
       key: 'roo_reddit_memory',
@@ -318,27 +339,9 @@ function buildChannelDrafts(links, report) {
       format: 'Migration post',
       audience: 'Roo user evaluating Cline as the successor',
       evidenceSummary: 'The public Roo shutdown notice creates urgency, but the strongest first-touch angle is still memory portability rather than abstract governance.',
-      cta: buildTrackedRooLink(CLINE_INSTALL_URL, {
-        utmMedium: REDDIT_MEDIUM,
-        utmCampaign: 'roo_channel_reddit',
-        utmContent: 'install_doc',
-        campaignVariant: 'memory_portability',
-        offerCode: 'ROO-CHANNEL-REDDIT',
-        ctaId: 'roo_channel_reddit',
-        ctaPlacement: 'channel_draft',
-        surface: 'roo_reddit',
-      }),
+      cta: redditMigrationGuideLink,
       proofTiming: 'Lead with the migration path first. Hold proof links for replies or DMs after the buyer names the repeated mistake.',
-      draft: `Roo sunsets on May 15, 2026. Cline is the obvious successor, but the real migration question is whether your agent keeps its corrections. ThumbGate keeps those lessons in a local SQLite file so the move is not “reteach everything from scratch.” Migration path: ${buildTrackedRooLink(CLINE_INSTALL_URL, {
-        utmMedium: REDDIT_MEDIUM,
-        utmCampaign: 'roo_channel_reddit',
-        utmContent: 'install_doc',
-        campaignVariant: 'memory_portability',
-        offerCode: 'ROO-CHANNEL-REDDIT',
-        ctaId: 'roo_channel_reddit',
-        ctaPlacement: 'channel_draft',
-        surface: 'roo_reddit',
-      })} .`,
+      draft: `Roo sunsets on May 15, 2026. Cline is the obvious successor, but the real migration question is whether your agent keeps its corrections. ThumbGate keeps those lessons in a local SQLite file so the move is not “reteach everything from scratch.” Start with the hosted migration guide: ${redditMigrationGuideLink} .`,
     },
     {
       key: 'roo_linkedin_workflow',
