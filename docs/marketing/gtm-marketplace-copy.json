@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-04-30T04:14:20.304Z",
+  "generatedAt": "2026-05-02T16:36:54.879Z",
   "state": "post-first-dollar",
   "headline": "Harden one AI-agent workflow before you roll it out.",
-  "shortDescription": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.",
-  "longDescription": "ThumbGate is a reliability gateway for AI coding workflows. It captures repeated failures, regenerates pre-action gates, and keeps approval boundaries, rollback safety, and proof attached to the workflow before the next risky tool call. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible. Primary motion: Workflow Hardening Sprint. Secondary motion: Pro at $19/mo or $149/yr after the buyer asks for the self-serve path.",
+  "shortDescription": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain.",
+  "longDescription": "ThumbGate is a reliability gateway for AI coding workflows. It captures repeated failures, regenerates pre-action gates, and keeps approval boundaries, rollback safety, and proof attached to the workflow before the next risky tool call. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Primary motion: Workflow Hardening Sprint. Secondary motion: Pro at $19/mo or $149/yr after the buyer asks for the self-serve path.",
   "proofPolicy": "Do not lead with proof links. Use Commercial Truth and Verification Evidence only after the buyer confirms pain.",
   "recommendedCtas": [
     {
@@ -40,21 +40,21 @@
       "listingAngle": "Lead with one repeated workflow failure, then show how ThumbGate turns it into an enforceable pre-action gate.",
       "count": 6,
       "examples": [
-        "dolutech/engine_context",
+        "montenegronyc/backporcher",
         "Adqui9608/ai-code-review-agent",
-        "Abhi268170/Stagix"
+        "hey-api/openapi-ts"
       ]
     },
     {
-      "key": "production_rollout",
-      "label": "Production rollout proof",
-      "summary": "Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems.",
-      "listingAngle": "Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.",
+      "key": "self_serve_tooling",
+      "label": "Self-serve agent tooling",
+      "summary": "Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.",
+      "listingAngle": "Lead with the proof-backed setup guide first, then convert proven local usage into Pro.",
       "count": 5,
       "examples": [
-        "dolutech/engine_context",
         "Adqui9608/ai-code-review-agent",
-        "Abhi268170/Stagix"
+        "hey-api/openapi-ts",
+        "disler/claude-code-hooks-multi-agent-observability"
       ]
     },
     {
@@ -67,18 +67,6 @@
         "@Deep_Ad1959",
         "@game-of-kton",
         "@leogodin217"
-      ]
-    },
-    {
-      "key": "self_serve_tooling",
-      "label": "Self-serve agent tooling",
-      "summary": "Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.",
-      "listingAngle": "Lead with the proof-backed setup guide first, then convert proven local usage into Pro.",
-      "count": 4,
-      "examples": [
-        "Abhi268170/Stagix",
-        "opensesh/KARIMO",
-        "BaseInfinity/claude-sdlc-wizard"
       ]
     }
   ],
@@ -102,33 +90,33 @@
         "cta": "https://thumbgate-production.up.railway.app/guide"
       },
       "sampleTargets": [
-        "dolutech/engine_context",
+        "montenegronyc/backporcher",
         "Adqui9608/ai-code-review-agent",
-        "Abhi268170/Stagix"
+        "hey-api/openapi-ts"
       ]
     },
     {
-      "key": "production_rollout",
-      "label": "Production rollout proof",
-      "audience": "Platform teams protecting production, release, incident, or compliance workflows.",
-      "headline": "Prove one production agent workflow is safe before the next rollout.",
-      "shortDescription": "Lead with one production workflow where repeated mistakes, rollback risk, or audit pressure already make the pain expensive.",
-      "evidenceSummary": "Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems.",
-      "listingAngle": "Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.",
+      "key": "self_serve_tooling",
+      "label": "Self-serve agent tooling",
+      "audience": "Plugin, hook, and local-rule buyers who want the fastest self-serve proof path first.",
+      "headline": "Block repeated agent mistakes before the next install or config rollout.",
+      "shortDescription": "Lead with the proof-backed setup guide first, then route install-intent buyers to Pro after one blocked repeat or explicit self-serve intent.",
+      "evidenceSummary": "Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.",
+      "listingAngle": "Lead with the proof-backed setup guide first, then convert proven local usage into Pro.",
       "primaryCta": {
-        "motion": "sprint",
-        "label": "Workflow Hardening Sprint",
-        "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
-      },
-      "secondaryCta": {
         "motion": "guide",
         "label": "Proof-backed setup guide",
         "cta": "https://thumbgate-production.up.railway.app/guide"
       },
+      "secondaryCta": {
+        "motion": "pro",
+        "label": "Pro at $19/mo or $149/yr",
+        "cta": "https://thumbgate-production.up.railway.app/checkout/pro"
+      },
       "sampleTargets": [
-        "dolutech/engine_context",
         "Adqui9608/ai-code-review-agent",
-        "Abhi268170/Stagix"
+        "hey-api/openapi-ts",
+        "disler/claude-code-hooks-multi-agent-observability"
       ]
     },
     {
@@ -154,30 +142,6 @@
         "@game-of-kton",
         "@leogodin217"
       ]
-    },
-    {
-      "key": "self_serve_tooling",
-      "label": "Self-serve agent tooling",
-      "audience": "Plugin, hook, and local-rule buyers who want the fastest self-serve proof path first.",
-      "headline": "Block repeated agent mistakes before the next install or config rollout.",
-      "shortDescription": "Lead with the proof-backed setup guide first, then route install-intent buyers to Pro after one blocked repeat or explicit self-serve intent.",
-      "evidenceSummary": "Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.",
-      "listingAngle": "Lead with the proof-backed setup guide first, then convert proven local usage into Pro.",
-      "primaryCta": {
-        "motion": "guide",
-        "label": "Proof-backed setup guide",
-        "cta": "https://thumbgate-production.up.railway.app/guide"
-      },
-      "secondaryCta": {
-        "motion": "pro",
-        "label": "Pro at $19/mo or $149/yr",
-        "cta": "https://thumbgate-production.up.railway.app/checkout/pro"
-      },
-      "sampleTargets": [
-        "Abhi268170/Stagix",
-        "opensesh/KARIMO",
-        "BaseInfinity/claude-sdlc-wizard"
-      ]
     }
   ],
   "sampleTargets": [
@@ -188,13 +152,13 @@
       "why": "Warm Reddit engager already named a repeated workflow risk, so the fastest path is a founder-led diagnostic."
     },
     {
-      "account": "opensesh/KARIMO",
+      "account": "disler/claude-code-hooks-multi-agent-observability",
       "temperature": "cold",
       "motion": "Pro at $19/mo or $149/yr",
       "why": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint."
     },
     {
-      "account": "dolutech/engine_context",
+      "account": "montenegronyc/backporcher",
       "temperature": "cold",
       "motion": "Workflow Hardening Sprint",
       "why": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof."
