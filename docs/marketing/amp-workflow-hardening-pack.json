@@ -1,0 +1,265 @@
+{
+  "generatedAt": "2026-04-30T04:14:20.304Z",
+  "state": "post-first-dollar",
+  "objective": "Turn Amp skill-install intent into tracked repo-guide clicks, Pro checkout starts, and qualified workflow-hardening conversations.",
+  "headline": "Turn Amp skill-install intent into proof-backed workflow safety.",
+  "shortDescription": "ThumbGate gives Amp a repo-backed skill install path, local feedback capture, and Pre-Action Checks that block repeated workflow mistakes before the next risky action runs.",
+  "summary": "Amp demand in ThumbGate is install-first: prove the repo-backed skill path, then route one concrete repeated failure into either Pro or the Workflow Hardening Sprint. Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.",
+  "canonicalIdentity": {
+    "displayName": "ThumbGate for Amp",
+    "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+    "homepageUrl": "https://thumbgate-production.up.railway.app",
+    "commercialTruthUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+    "verificationEvidenceUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+  },
+  "surfaces": [
+    {
+      "key": "amp_repo_skill_install",
+      "name": "Amp repo-backed skill install",
+      "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/amp-skill/INSTALL.md?utm_source=amp&utm_medium=repo_install&utm_campaign=amp_repo_skill_install&utm_content=install_doc&campaign_variant=repo_backed_skill&offer_code=AMP-REPO_INSTALL&cta_id=amp_repo_install&cta_placement=guide_surface&surface=amp_cli",
+      "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/amp-skill/INSTALL.md",
+      "evidenceSource": "plugins/amp-skill/INSTALL.md",
+      "operatorUse": "Primary install and trust surface for Amp operators who want a repo-backed skill path before they test one repeated failure.",
+      "buyerSignal": "Amp operators evaluating whether ThumbGate already ships a committed skill install path without custom plugin packaging.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ],
+      "appOrigin": "https://thumbgate-production.up.railway.app"
+    },
+    {
+      "key": "amp_supported_agent_path",
+      "name": "Amp supported-agent entry point",
+      "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/README.md?utm_source=amp&utm_medium=repo_install&utm_campaign=amp_supported_agent_path&utm_content=supported_agents&campaign_variant=agent_matrix&offer_code=AMP-AGENT_MATRIX&cta_id=amp_agent_matrix&cta_placement=guide_surface&surface=amp_cli",
+      "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/README.md",
+      "evidenceSource": "README.md",
+      "operatorUse": "Use when the buyer first asks whether ThumbGate already treats Amp as a first-class agent surface before discussing rollout.",
+      "buyerSignal": "Evaluators who want to see Amp listed beside the other supported agents before they invest attention in the install path.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ],
+      "appOrigin": "https://thumbgate-production.up.railway.app"
+    },
+    {
+      "key": "proof_backed_setup_guide",
+      "name": "Proof-backed setup guide",
+      "url": "https://thumbgate-production.up.railway.app/guide?utm_source=amp&utm_medium=setup_guide&utm_campaign=amp_setup_guide&utm_content=setup&campaign_variant=proof_backed_setup&offer_code=AMP-SETUP_GUIDE&cta_id=amp_setup_guide&cta_placement=guide_surface&surface=amp_cli",
+      "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guide.html",
+      "evidenceSource": "public/guide.html",
+      "operatorUse": "General follow-on surface once the Amp buyer accepts the install story and wants proof, pricing guardrails, and next steps in one place.",
+      "buyerSignal": "Operators who want an install path plus explicit proof and pricing guardrails before deciding between self-serve and a workflow-hardening conversation.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ],
+      "appOrigin": "https://thumbgate-production.up.railway.app"
+    }
+  ],
+  "externalEvidence": [
+    {
+      "key": "amp_manual",
+      "label": "Amp manual",
+      "url": "https://ampcode.com/manual",
+      "summary": "Official Amp docs currently describe project-specific and user-wide skills, plus the `amp skill` CLI for managing skills."
+    },
+    {
+      "key": "amp_user_invokable_skills",
+      "label": "Amp user-invokable skills",
+      "url": "https://ampcode.com/news/user-invokable-skills",
+      "summary": "Amp published user-invokable skills on January 7, 2026, which makes evaluation-driven “use this skill on the next prompt” outreach credible."
+    }
+  ],
+  "listingCopy": {
+    "headline": "Install ThumbGate for Amp and block the next repeated workflow mistake before it runs.",
+    "subhead": "ThumbGate gives Amp a repo-backed skill install path, local feedback capture, and Pre-Action Checks that turn repeated workflow failures into enforceable gates.",
+    "shortDescription": "ThumbGate gives Amp a repo-backed skill install path, local feedback capture, and Pre-Action Checks that block repeated workflow mistakes before the next risky action runs.",
+    "proofBullets": [
+      "The repo already ships `plugins/amp-skill/INSTALL.md` with a copy-and-verify path for Amp.",
+      "README.md already keeps `npx thumbgate init --agent amp` visible in the supported-agent matrix.",
+      "Amp's current docs explicitly support project and user skills plus `amp skill` management, so the install-first motion is real."
+    ],
+    "primaryCta": {
+      "label": "Open Amp install doc",
+      "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/amp-skill/INSTALL.md?utm_source=amp&utm_medium=repo_install&utm_campaign=amp_listing_primary&utm_content=install_doc&campaign_variant=repo_backed_skill&offer_code=AMP-LISTING_PRIMARY&cta_id=amp_listing_primary&cta_placement=listing_copy&surface=amp_cli"
+    },
+    "secondaryCta": {
+      "label": "Open proof-backed setup guide",
+      "url": "https://thumbgate-production.up.railway.app/guide?utm_source=amp&utm_medium=setup_guide&utm_campaign=amp_listing_setup_guide&utm_content=setup&campaign_variant=proof_backed_setup&offer_code=AMP-LISTING_SETUP&cta_id=amp_listing_setup&cta_placement=listing_copy&surface=amp_cli"
+    },
+    "proofCta": {
+      "label": "Verification evidence",
+      "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+    },
+    "marketplaceNote": "Do not imply a dedicated Amp marketplace or hosted guide that the repo cannot prove today. Lead with the repo-backed skill install path first.",
+    "followOnOffers": [
+      {
+        "label": "Workflow Hardening Sprint",
+        "url": "https://thumbgate-production.up.railway.app/?utm_source=amp&utm_medium=setup_guide&utm_campaign=amp_listing_sprint&utm_content=workflow_sprint&campaign_variant=team_follow_on&offer_code=AMP-LISTING_SPRINT&cta_id=amp_listing_sprint&cta_placement=listing_copy&surface=amp_post_install#workflow-sprint-intake"
+      },
+      {
+        "label": "ThumbGate Pro",
+        "url": "https://thumbgate-production.up.railway.app/checkout/pro?utm_source=amp&utm_medium=setup_guide&utm_campaign=amp_listing_pro&utm_content=pro&campaign_variant=solo_follow_on&offer_code=AMP-LISTING_PRO&cta_id=amp_listing_pro&cta_placement=listing_copy&plan_id=pro&surface=amp_post_install"
+      }
+    ]
+  },
+  "followOnOffers": [
+    {
+      "key": "pro",
+      "label": "ThumbGate Pro",
+      "pricing": "$19/mo or $149/yr",
+      "buyer": "Solo Amp operators who proved one blocked repeat and want the personal dashboard plus proof-ready exports.",
+      "cta": "https://thumbgate-production.up.railway.app/checkout/pro?utm_source=amp&utm_medium=setup_guide&utm_campaign=amp_pro_follow_on&utm_content=pro&campaign_variant=solo_follow_on&offer_code=AMP-PRO_FOLLOW_ON&cta_id=amp_pro_follow_on&cta_placement=post_install&plan_id=pro&surface=amp_post_install"
+    },
+    {
+      "key": "sprint",
+      "label": "Workflow Hardening Sprint",
+      "pricing": "Intake-led sprint, then Team at $49/seat/mo with 3-seat minimum after qualification",
+      "buyer": "Teams that already named one repeated Amp workflow failure, one owner, and one approval boundary.",
+      "cta": "https://thumbgate-production.up.railway.app/?utm_source=amp&utm_medium=setup_guide&utm_campaign=amp_team_follow_on&utm_content=workflow_sprint&campaign_variant=team_follow_on&offer_code=AMP-TEAM_FOLLOW_ON&cta_id=amp_team_follow_on&cta_placement=post_install&surface=amp_post_install#workflow-sprint-intake"
+    }
+  ],
+  "operatorQueue": [
+    {
+      "key": "repo_skill_operator",
+      "audience": "Amp operator who wants a repo-backed skill install before testing one repeated failure",
+      "evidence": "The repo already ships `plugins/amp-skill/INSTALL.md` with a copy command, verify flow, and feedback-capture smoke test.",
+      "proofTrigger": "They can name one repeated Amp workflow mistake or risky tool call they want blocked after install.",
+      "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/amp-skill/INSTALL.md",
+      "nextAsk": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/amp-skill/INSTALL.md?utm_source=amp&utm_medium=repo_install&utm_campaign=amp_queue_repo_install&utm_content=install_doc&campaign_variant=repo_skill_operator&offer_code=AMP-QUEUE_REPO_INSTALL&cta_id=amp_queue_repo_install&cta_placement=operator_queue&surface=amp_cli",
+      "recommendedMotion": "Repo install -> prove one blocked repeat -> Pro only after the repeat is concrete."
+    },
+    {
+      "key": "committed_skill_rollout",
+      "audience": "Team evaluating Amp project-skill rollout with reviewable repo state",
+      "evidence": "Amp's official manual supports project-specific skills that can be committed to git, and the current report still shows 6 workflow-control target(s) where repo-backed rollout proof matters.",
+      "proofTrigger": "One workflow owner wants a committed skill, approval boundaries, and proof before they roll Amp wider across a team.",
+      "proofAsset": "https://ampcode.com/manual",
+      "nextAsk": "https://thumbgate-production.up.railway.app/?utm_source=amp&utm_medium=operator_outreach&utm_campaign=amp_queue_rollout_sprint&utm_content=workflow_sprint&campaign_variant=committed_skill_rollout&offer_code=AMP-QUEUE_ROLLOUT_SPRINT&cta_id=amp_queue_rollout_sprint&cta_placement=operator_queue&surface=amp_workflow_queue#workflow-sprint-intake",
+      "recommendedMotion": "Commit-ready skill story -> Workflow Hardening Sprint once one owner and one repeated failure are explicit."
+    },
+    {
+      "key": "invokable_skill_evaluator",
+      "audience": "Amp evaluator who wants to force one skill on the next prompt before deciding",
+      "evidence": "Amp published user-invokable skills on January 7, 2026, and the current report still has 4 warm target(s) plus 4 self-serve tooling target(s) where a narrow evaluation ask is stronger than a generic pitch.",
+      "proofTrigger": "They want to invoke the skill on one real repeated failure and judge whether ThumbGate catches it before the next risky action.",
+      "proofAsset": "https://ampcode.com/news/user-invokable-skills",
+      "nextAsk": "https://thumbgate-production.up.railway.app/guide?utm_source=amp&utm_medium=setup_guide&utm_campaign=amp_queue_invokable_eval&utm_content=setup&campaign_variant=invokable_skill_evaluator&offer_code=AMP-QUEUE_INVOKABLE&cta_id=amp_queue_invokable&cta_placement=operator_queue&surface=amp_cli",
+      "recommendedMotion": "Invoke the skill on one repeat -> prove value -> route solo buyers to Pro or teams to the sprint."
+    }
+  ],
+  "outreachDrafts": [
+    {
+      "key": "repo_backed_install",
+      "channel": "GitHub DM or email",
+      "audience": "Amp operator who wants the shortest repo-backed install path",
+      "draft": "Amp already supports project and user skills, and ThumbGate already ships a repo-backed Amp install path here: https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/amp-skill/INSTALL.md?utm_source=amp&utm_medium=operator_outreach&utm_campaign=amp_outreach_install&utm_content=install_doc&campaign_variant=repo_backed_skill&offer_code=AMP-OUTREACH_INSTALL&cta_id=amp_outreach_install&cta_placement=outreach_draft&surface=amp_outreach . If you want to see whether one repeated workflow mistake can become a Pre-Action Check without inventing a new plugin surface first, start there and test one real repeat."
+    },
+    {
+      "key": "pain_confirmed_sprint",
+      "channel": "Pain-confirmed follow-up",
+      "audience": "Team owner who already confirmed one repeated Amp workflow failure",
+      "draft": "Once the repeated failure is real, the next useful step is one workflow-hardening sprint with proof, not another generic guardrails conversation. Use the sprint intake first, then attach Commercial Truth and Verification Evidence so the rollout stays inspectable: https://thumbgate-production.up.railway.app/?utm_source=amp&utm_medium=operator_outreach&utm_campaign=amp_outreach_sprint&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=AMP-OUTREACH_SPRINT&cta_id=amp_outreach_sprint&cta_placement=outreach_draft&surface=amp_outreach#workflow-sprint-intake then https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md and https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md ."
+    },
+    {
+      "key": "solo_pro_follow_up",
+      "channel": "Follow-up note",
+      "audience": "Solo Amp operator who already proved one blocked repeat",
+      "draft": "If the Amp skill already blocked one repeated mistake, the paid next step is the personal dashboard plus proof-ready exports, not a bigger rollout story. Route that buyer to the Pro path only after the blocked repeat is concrete: https://thumbgate-production.up.railway.app/checkout/pro?utm_source=amp&utm_medium=operator_outreach&utm_campaign=amp_outreach_pro&utm_content=pro&campaign_variant=solo_follow_on&offer_code=AMP-OUTREACH_PRO&cta_id=amp_outreach_pro&cta_placement=outreach_draft&plan_id=pro&surface=amp_outreach ."
+    }
+  ],
+  "channelDrafts": [
+    {
+      "key": "amp_reddit_repo_install",
+      "channel": "Reddit",
+      "format": "DM or reply follow-up",
+      "audience": "Warm Amp or agent-tooling builder who already named one repeated workflow mistake",
+      "evidenceSummary": "4 current warm target(s) already named repeated workflow pain, so Reddit should stay install-first and pain-specific instead of broad governance-first.",
+      "cta": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/amp-skill/INSTALL.md?utm_source=amp&utm_medium=reddit_dm&utm_campaign=amp_channel_reddit&utm_content=install_doc&campaign_variant=repo_backed_skill&offer_code=AMP-CHANNEL-REDDIT&cta_id=amp_channel_reddit&cta_placement=channel_draft&surface=amp_reddit",
+      "proofTiming": "Keep first touch install-first. Send Commercial Truth and Verification Evidence only after the buyer confirms the repeated failure.",
+      "draft": "If Amp keeps repeating the same workflow mistake, the fastest useful test is not another abstract guardrails thread. It is installing one repo-backed skill and checking whether it catches the next repeat before the risky action runs. Start here: https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/amp-skill/INSTALL.md?utm_source=amp&utm_medium=reddit_dm&utm_campaign=amp_channel_reddit&utm_content=install_doc&campaign_variant=repo_backed_skill&offer_code=AMP-CHANNEL-REDDIT&cta_id=amp_channel_reddit&cta_placement=channel_draft&surface=amp_reddit ."
+    },
+    {
+      "key": "amp_linkedin_rollout",
+      "channel": "LinkedIn",
+      "format": "Founder post",
+      "audience": "Platform or engineering lead evaluating Amp rollout with reviewable repo state",
+      "evidenceSummary": "6 current workflow-control target(s) still make reviewable rollout state more credible than a generic AI productivity pitch.",
+      "cta": "https://thumbgate-production.up.railway.app/guide?utm_source=amp&utm_medium=linkedin_post&utm_campaign=amp_channel_linkedin&utm_content=setup&campaign_variant=team_rollout&offer_code=AMP-CHANNEL-LINKEDIN&cta_id=amp_channel_linkedin&cta_placement=channel_draft&surface=amp_linkedin",
+      "proofTiming": "Keep the public post workflow-first and guide-first. Hold proof links for replies or DMs after the workflow risk is named.",
+      "draft": "Amp gets materially more interesting when the skill path is project-specific, reviewable, and tied to one repeated workflow failure instead of one-off personal prompts. That is the ThumbGate angle I trust: repo-backed install, local feedback capture, and one enforceable Pre-Action Check before the next risky action runs. If you are evaluating that rollout shape, start with the proof-backed setup guide here: https://thumbgate-production.up.railway.app/guide?utm_source=amp&utm_medium=linkedin_post&utm_campaign=amp_channel_linkedin&utm_content=setup&campaign_variant=team_rollout&offer_code=AMP-CHANNEL-LINKEDIN&cta_id=amp_channel_linkedin&cta_placement=channel_draft&surface=amp_linkedin ."
+    },
+    {
+      "key": "amp_threads_repeat",
+      "channel": "Threads",
+      "format": "Short post",
+      "audience": "Solo Amp operator who wants a fast path from install to one blocked repeat",
+      "evidenceSummary": "4 current self-serve tooling target(s) reinforce the same solo motion: install first, prove one blocked repeat, then ask for the paid lane.",
+      "cta": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/amp-skill/INSTALL.md?utm_source=amp&utm_medium=threads_post&utm_campaign=amp_channel_threads&utm_content=install_doc&campaign_variant=repeat_mistake&offer_code=AMP-CHANNEL-THREADS&cta_id=amp_channel_threads&cta_placement=channel_draft&surface=amp_threads",
+      "proofTiming": "Do not attach proof links in the first touch. Keep the post install-first and move proof into follow-up only after pain is confirmed.",
+      "draft": "Amp skills are useful when they stop the next repeated workflow mistake, not when they only add one more markdown file. ThumbGate already ships the Amp skill path here: https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/amp-skill/INSTALL.md?utm_source=amp&utm_medium=threads_post&utm_campaign=amp_channel_threads&utm_content=install_doc&campaign_variant=repeat_mistake&offer_code=AMP-CHANNEL-THREADS&cta_id=amp_channel_threads&cta_placement=channel_draft&surface=amp_threads . Install it, prove one blocked repeat, then decide whether the workflow needs Pro or a harder team rollout."
+    },
+    {
+      "key": "amp_bluesky_invokable",
+      "channel": "Bluesky",
+      "format": "Short post",
+      "audience": "Evaluator who wants to force one Amp skill on the next prompt and judge the result fast",
+      "evidenceSummary": "Amp now supports user-invokable skills, which makes a narrow “try this on your next repeated failure” message more credible than a broad automation pitch.",
+      "cta": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/amp-skill/INSTALL.md?utm_source=amp&utm_medium=bluesky_post&utm_campaign=amp_channel_bluesky&utm_content=install_doc&campaign_variant=invokable_skill&offer_code=AMP-CHANNEL-BLUESKY&cta_id=amp_channel_bluesky&cta_placement=channel_draft&surface=amp_bluesky",
+      "proofTiming": "Lead with the install path first. Keep proof links in reserve until the buyer replies with a concrete failure pattern.",
+      "draft": "Amp now has user-invokable skills, which means you can test one real workflow failure instead of debating guardrails in the abstract. ThumbGate already ships the repo-backed Amp skill path here: https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/amp-skill/INSTALL.md?utm_source=amp&utm_medium=bluesky_post&utm_campaign=amp_channel_bluesky&utm_content=install_doc&campaign_variant=invokable_skill&offer_code=AMP-CHANNEL-BLUESKY&cta_id=amp_channel_bluesky&cta_placement=channel_draft&surface=amp_bluesky . Use it on one repeated mistake and decide from evidence instead of vibes."
+    }
+  ],
+  "measurementPlan": {
+    "northStar": "amp_install_to_paid_intent",
+    "policy": "Treat Amp install-doc clicks and setup-guide clicks as acquisition evidence only after a tracked Pro checkout start or qualified workflow-hardening conversation exists.",
+    "minimumUsefulSignal": "One tracked Pro checkout start or one qualified team conversation sourced from an Amp-tagged surface.",
+    "strongSignal": "Three tracked paid-intent events across Pro checkout starts or workflow sprint conversations.",
+    "metrics": [
+      "amp_install_doc_clicks",
+      "amp_setup_guide_clicks",
+      "pro_checkout_starts",
+      "sprint_intake_submissions",
+      "qualified_team_conversations",
+      "paid_conversions"
+    ],
+    "guardrails": [
+      "Do not claim a dedicated Amp marketplace, hosted guide, installs, or revenue without direct command evidence.",
+      "Do not lead first-touch outreach with proof links before the buyer confirms pain.",
+      "Keep pricing aligned with COMMERCIAL_TRUTH.md.",
+      "Keep proof claims aligned with VERIFICATION_EVIDENCE.md."
+    ],
+    "milestones": [
+      {
+        "window": "days_0_30",
+        "goal": "Keep the repo-backed Amp install doc, setup guide follow-on, and outreach copy aligned around one blocked repeat.",
+        "decisionRule": "Do not expand the Amp lane into a bigger launch story unless install-path clicks or conversations show real paid intent."
+      },
+      {
+        "window": "days_31_60",
+        "goal": "Decide whether Amp converts better as a solo self-serve lane or as a workflow-hardening entry point for teams.",
+        "decisionRule": "If install interest appears without paid intent, move proof and the offer split higher before adding more top-of-funnel copy."
+      },
+      {
+        "window": "days_61_90",
+        "goal": "Only add a dedicated hosted Amp guide or broader outbound motion if the repo-backed lane produces qualified conversations or checkout starts.",
+        "decisionRule": "Do not build more Amp surface area from speculation alone."
+      }
+    ],
+    "doNotCountAsSuccess": [
+      "install-doc clicks without a paid-intent event",
+      "proof clicks without a tracked Pro checkout start or sprint conversation",
+      "unverified install, marketplace, or revenue claims"
+    ]
+  },
+  "proofLinks": [
+    "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+    "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+  ]
+}
