@@ -1292,9 +1292,14 @@ test('operator handoff payload mirrors the ranked queue and sales commands in ma
   const catalog = buildMotionCatalog(links);
   const payload = buildOperatorHandoffPayload({
     generatedAt: '2026-04-26T00:00:00.000Z',
+    source: 'hosted',
+    snapshotWindow: '30d',
     directive: {
       state: 'post-first-dollar',
       headline: 'Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.',
+    },
+    verification: {
+      label: 'Live hosted billing summary verified for this run.',
     },
     snapshot: {
       paidOrders: 2,
@@ -1417,6 +1422,9 @@ test('operator handoff payload mirrors the ranked queue and sales commands in ma
   });
 
   assert.equal(payload.summary.revenueState, 'post-first-dollar');
+  assert.equal(payload.summary.snapshotWindow, '30d');
+  assert.equal(payload.summary.billingSource, 'hosted');
+  assert.equal(payload.summary.billingVerification, 'Live hosted billing summary verified for this run.');
   assert.equal(payload.summary.activeFollowUps, 1);
   assert.equal(payload.summary.warmTargetsReadyNow, 1);
   assert.equal(payload.summary.selfServeTargetsReadyNow, 1);
@@ -1440,6 +1448,39 @@ test('operator handoff payload mirrors the ranked queue and sales commands in ma
   assert.equal(productionSection.targets[0].label, '@builder - production-mcp-server');
   assert.equal(productionSection.targets[0].contactSurfaces[1].url, 'https://github.com/builder');
   assert.equal(coldSection.targets.length, 0);
+});
+
+test('operator handoff markdown keeps current-run billing context visible for cold-start local evidence', () => {
+  const catalog = buildMotionCatalog(buildRevenueLinks());
+  const report = buildRevenueLoopReport({
+    source: 'local',
+    fallbackReason: 'Hosted operational summary is not configured.',
+    summary: {
+      revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    },
+    motionCatalog: catalog,
+    directive: {
+      state: 'cold-start',
+      objective: 'First 10 paying customers',
+      headline: 'No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.',
+      primaryMotion: 'sprint',
+      secondaryMotion: 'pro',
+      actions: ['Lead with one workflow.'],
+    },
+    targets: [],
+  });
+  report.snapshotWindow = 'today';
+
+  const markdown = renderOperatorHandoffMarkdown(report);
+
+  assert.match(markdown, /- Revenue state: cold-start/);
+  assert.match(markdown, /- Revenue window: today/);
+  assert.match(markdown, /- Billing source: local \(Hosted operational summary is not configured\.\)/);
+  assert.match(markdown, /- Billing verification: Current run is using local billing context because the hosted billing summary is unavailable\./);
+  assert.doesNotMatch(markdown, /Verified booked revenue exists/i);
 });
 
 test('first-touch outreach does not push proof before pain is confirmed', () => {
@@ -2119,6 +2160,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
   const report = {
     generatedAt: '2026-04-25T00:00:00.000Z',
     source: 'local',
+    snapshotWindow: 'today',
     fallbackReason: 'Hosted operational summary is not configured.',
     currentTruth: {
       publicSelfServeOffer: catalog.pro.label,
@@ -2126,6 +2168,9 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
       guideLink: links.guideLink,
       commercialTruthLink: catalog.pro.truth,
       verificationEvidenceLink: catalog.pro.proof,
+    },
+    verification: {
+      label: 'Current run is using local billing context because the hosted billing summary is unavailable.',
     },
     directive: {
       state: 'cold-start',
@@ -2255,8 +2300,9 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.match(operatorHandoff, /Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
     assert.equal(operatorHandoffJson.sections.find((section) => section.key === 'send_now_warm_discovery').label, 'Send Now: Warm Discovery');
     assert.equal(operatorHandoffJson.sections.find((section) => section.key === 'send_now_warm_discovery').targets[0].pipelineLeadId, 'reddit_builder_production_mcp_server');
-    assert.match(operatorSendNowCsv, /^rank,sectionKey,sectionLabel,temperature,source,channel,pipelineStage,pipelineLeadId,username,accountName,company,repoName,repoUrl,contactSurface,contactSurfaces,pipelineUpdatedAt,nextOperatorStep,evidenceScore,evidence,motionLabel,whyNow,proofRule,cta,firstTouchDraft,painConfirmedFollowUpDraft,selfServeFollowUpDraft,checkoutCloseDraft,markContactedCommand,markRepliedCommand,markCallBookedCommand,markCheckoutStartedCommand,markSprintIntakeCommand,markPaidCommand/m);
+    assert.match(operatorSendNowCsv, /^rank,sectionKey,sectionLabel,temperature,source,channel,revenueState,snapshotWindow,billingSource,billingVerification,pipelineStage,pipelineLeadId,username,accountName,company,repoName,repoUrl,contactSurface,contactSurfaces,pipelineUpdatedAt,nextOperatorStep,evidenceScore,evidence,motionLabel,whyNow,proofRule,cta,firstTouchDraft,painConfirmedFollowUpDraft,selfServeFollowUpDraft,checkoutCloseDraft,markContactedCommand,markRepliedCommand,markCallBookedCommand,markCheckoutStartedCommand,markSprintIntakeCommand,markPaidCommand/m);
     assert.match(operatorSendNowCsv, /send_now_warm_discovery/);
+    assert.match(operatorSendNowCsv, /cold-start,today,local \(Hosted operational summary is not configured\.\),Current run is using local billing context because the hosted billing summary is unavailable\./);
     assert.match(operatorSendNowCsv, /reddit_builder_production_mcp_server/);
     assert.match(operatorSendNowCsv, /Builder Labs/);
     assert.equal(operatorSendNowJson.rows[0].sectionKey, 'send_now_warm_discovery');
@@ -2376,6 +2422,8 @@ test('operator send-now export flattens ranked handoff rows for batch ops', () =
   const catalog = buildMotionCatalog(links);
   const report = {
     generatedAt: '2026-04-25T00:00:00.000Z',
+    source: 'hosted',
+    snapshotWindow: '30d',
     directive: {
       state: 'post-first-dollar',
       headline: 'Verified booked revenue exists.',
@@ -2420,10 +2468,14 @@ test('operator send-now export flattens ranked handoff rows for batch ops', () =
   const csv = renderOperatorSendNowCsv(report);
 
   assert.equal(payload.rows.length, 1);
+  assert.equal(payload.summary.snapshotWindow, '30d');
+  assert.equal(payload.summary.billingSource, 'hosted');
   assert.equal(payload.rows[0].sectionKey, 'send_now_warm_discovery');
   assert.equal(payload.rows[0].pipelineLeadId, 'reddit_builder_production_mcp_server');
   assert.equal(payload.rows[0].company, 'Builder Labs');
   assert.match(csv, /send_now_warm_discovery/);
+  assert.match(csv, /revenueState,snapshotWindow,billingSource,billingVerification/);
+  assert.match(csv, /post-first-dollar,30d,hosted,Live hosted billing summary verified for this run\./);
   assert.match(csv, /Reddit DM: https:\/\/www\.reddit\.com\/user\/builder\//);
   assert.match(csv, /I can harden one workflow, then prove it\./);
 });
