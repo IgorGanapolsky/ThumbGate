@@ -64,6 +64,7 @@ The revenue loop emits these operator artifacts in that folder:
 - `operator-send-now.json` for the same ready-now batch-send payload in machine-readable form
 - `claude-workflow-hardening-pack.md` for Claude-first positioning, buyer lanes, and evidence-backed outbound copy
 - `claude-workflow-hardening-pack.json` for the same Claude-first outbound pack in machine-readable form
+- `claude-install-surfaces.csv` for one-sheet Claude install, bundle, and review-ready proof surfaces
 - `cursor-marketplace-revenue-pack.md` for Cursor Marketplace, Cursor Directory, and Team Marketplace submission copy
 - `cursor-marketplace-revenue-pack.json` for machine-readable Cursor listing metadata and follow-on offers
 - `cursor-marketplace-surfaces.csv` for one-sheet operator submission fields
