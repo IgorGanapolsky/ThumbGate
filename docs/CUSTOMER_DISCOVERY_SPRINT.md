@@ -60,6 +60,7 @@ The revenue loop emits these operator artifacts in that folder:
 - `team-outreach-messages.md` for the warm-outbound copy layer tied to the same ranked queue
 - `operator-priority-handoff.md` for the ranked send order across warm discovery and cold GitHub targets
 - `operator-priority-handoff.json` for the same ranked send order, CTA, proof rule, and sales commands in machine-readable form
+- `operator-send-now.md` for the flat human-readable send sheet with ranked rows, drafts, CTA, and log commands
 - `operator-send-now.csv` for one flat batch-send sheet with the ready-now rows, drafts, and log commands
 - `operator-send-now.json` for the same ready-now batch-send payload in machine-readable form
 - `claude-workflow-hardening-pack.md` for Claude-first positioning, buyer lanes, and evidence-backed outbound copy
@@ -92,6 +93,7 @@ The revenue loop emits these operator artifacts in that folder:
 - `mcp-directory-revenue-pack.md` for MCP directory repair priorities, proof-backed listing status, and canonical naming fixes
 - `mcp-directory-revenue-pack.json` for the same MCP directory repair pack in machine-readable form
 - `mcp-directory-operator-queue.csv` for MCP directory-specific repair tasks and next asks
+- `mcp-directory-surfaces.csv` for one-sheet MCP directory repair and submission fields
 
 That report now carries both warm discovery leads and cold GitHub prospects in one machine-readable queue so the operator can import a single artifact and still contact the warm engagers first.
 Every artifact inherits the same evidence backstop:

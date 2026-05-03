@@ -18,6 +18,7 @@ const EXPECTED_ARTIFACTS = [
   'team-outreach-messages.md',
   'operator-priority-handoff.md',
   'operator-priority-handoff.json',
+  'operator-send-now.md',
   'operator-send-now.csv',
   'operator-send-now.json',
   'claude-workflow-hardening-pack.md',
@@ -43,6 +44,7 @@ const EXPECTED_ARTIFACTS = [
   'mcp-directory-revenue-pack.md',
   'mcp-directory-revenue-pack.json',
   'mcp-directory-operator-queue.csv',
+  'mcp-directory-surfaces.csv',
 ];
 
 function escapeRegExp(value) {
