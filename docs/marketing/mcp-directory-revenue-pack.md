@@ -1,6 +1,6 @@
 # MCP Directory Repair Pack
 
-Updated: 2026-04-30T06:27:55.921Z
+Updated: 2026-05-02T22:39:18.647Z
 
 This is a sales operator artifact. It is not proof of directory approval, ranking, installs, or revenue by itself.
 
@@ -9,9 +9,9 @@ Repair MCP directory drift so ThumbGate discovery points to one canonical identi
 
 ## Positioning
 - State: directory-repair
-- Headline: Fix legacy-name MCP directory drift before scaling discovery.
-- Short description: ThumbGate already has live MCP directory discovery, but major surfaces still leak retired names and old repo paths. Repair those first, then scale directory acquisition.
-- Summary: Current checks show one canonical listing on MCP.so, two legacy-name directory results on Glama and Smithery, one legacy repo entry on the highest-reach awesome list, and one missing awesome-list entry.
+- Headline: Fix stale MCP directory positioning before scaling discovery.
+- Short description: ThumbGate already has live MCP directory discovery, but major surfaces still leak retired gateway language, legacy namespaces, or duplicate old rows. Repair those first, then scale directory acquisition.
+- Summary: Current checks show one canonical listing on MCP.so, a canonical-but-stale Glama summary, a legacy Smithery namespace, one punkpeye duplicate legacy row beside the canonical listing, and one missing awesome-list entry.
 
 ## Canonical Identity
 - Display name: ThumbGate
@@ -30,21 +30,21 @@ Repair MCP directory drift so ThumbGate discovery points to one canonical identi
 - Surface URL: https://mcp.so/server/thumbgate/IgorGanapolsky
 - Submission path: https://mcp.so/submit
 - Support: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/marketing/mcp-directories.md
-- Evidence checked: 2026-04-29
-- Evidence summary: Direct curl check confirmed the page title `Thumbgate MCP Server`, current ThumbGate overview copy, and the canonical GitHub link.
+- Evidence checked: 2026-05-02
+- Evidence summary: Live page still shows the canonical ThumbGate title, current overview copy, Workflow Hardening Sprint CTA, and the canonical GitHub repository link.
 - Next repair: Keep description and proof links aligned with `COMMERCIAL_TRUTH.md` and `VERIFICATION_EVIDENCE.md` as the canonical directory copy.
 - Proof: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
-### Glama search result
-- Role: High-volume MCP registry search surface that still leaks legacy naming.
-- Public status: Search for `thumbgate` resolves to the legacy slug `IgorGanapolsky/mcp-memory-gateway`.
-- Operator use: Repair the public slug, summary, and package naming before pushing more Glama-facing discovery.
+### Glama canonical listing
+- Role: High-volume MCP registry search surface with a canonical URL but stale legacy positioning in the summary.
+- Public status: Search now resolves to the canonical `IgorGanapolsky/ThumbGate` page, and the legacy `mcp-memory-gateway` URL 301-redirects there.
+- Operator use: Refresh the public summary so Glama no longer describes ThumbGate as a memory gateway before pushing more directory traffic.
 - Surface URL: https://glama.ai/mcp/servers?query=thumbgate
-- Submission path: https://glama.ai/mcp/servers/IgorGanapolsky/mcp-memory-gateway
+- Submission path: https://glama.ai/mcp/servers/IgorGanapolsky/ThumbGate
 - Support: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/marketing/mcp-directories.md
-- Evidence checked: 2026-04-29
-- Evidence summary: Search HTML exposes `ThumbGate` as the display name but still points to the legacy `mcp-memory-gateway` slug and legacy plain-text description.
-- Next repair: Claim or update the listing so the slug, repo name, and summary are ThumbGate-only and no longer mention the old gateway positioning.
+- Evidence checked: 2026-05-02
+- Evidence summary: Search JSON-LD now points at `IgorGanapolsky/ThumbGate`, but the indexed description still says ThumbGate provides "memory management and gateway capabilities" with persistent storage across sessions.
+- Next repair: Update the canonical Glama description so it leads with pre-action gates, workflow safeguards, and repeat-mistake prevention instead of memory-gateway language.
 - Proof: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ### Smithery search result
@@ -54,21 +54,21 @@ Repair MCP directory drift so ThumbGate discovery points to one canonical identi
 - Surface URL: https://smithery.ai/search?q=thumbgate
 - Submission path: https://smithery.ai/new
 - Support: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/marketing/mcp-directories.md
-- Evidence checked: 2026-04-29
+- Evidence checked: 2026-05-02
 - Evidence summary: Direct search output shows `thumbgate [remote]`, the legacy `rlhf-loop/thumbgate` namespace, and a details link at the legacy path.
 - Next repair: Publish or migrate Smithery metadata to a canonical ThumbGate namespace and retire the legacy `rlhf-loop` ownership path.
 - Proof: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ### punkpeye awesome-mcp-servers
 - Role: Largest GitHub awesome-list discovery surface in the current repo research.
-- Public status: Listed, but under the legacy repository `IgorGanapolsky/mcp-memory-gateway`.
-- Operator use: Open a repair PR that swaps the repo name and keeps the description ThumbGate-only.
+- Public status: README now contains both a canonical `IgorGanapolsky/ThumbGate` entry and a stale duplicate `IgorGanapolsky/mcp-memory-gateway` entry.
+- Operator use: Open a repair PR that removes the duplicate legacy row while preserving the canonical ThumbGate listing.
 - Surface URL: https://github.com/punkpeye/awesome-mcp-servers
 - Submission path: https://github.com/punkpeye/awesome-mcp-servers/blob/main/README.md
 - Support: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/marketing/mcp-directories.md
-- Evidence checked: 2026-04-29
-- Evidence summary: README search returns a live entry, but it still points to `IgorGanapolsky/mcp-memory-gateway` instead of `IgorGanapolsky/ThumbGate`.
-- Next repair: Submit a PR replacing the legacy repo path with the ThumbGate repo while keeping the pre-action gates description.
+- Evidence checked: 2026-05-02
+- Evidence summary: The raw README shows a canonical ThumbGate row around line 893 and a stale `mcp-memory-gateway` duplicate around line 1634, so buyers can still discover the retired identity.
+- Next repair: Submit a PR deleting the legacy duplicate and keeping the canonical ThumbGate row plus its pre-action gates description.
 - Proof: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ### appcypher awesome-mcp-servers
@@ -78,7 +78,7 @@ Repair MCP directory drift so ThumbGate discovery points to one canonical identi
 - Surface URL: https://github.com/appcypher/awesome-mcp-servers
 - Submission path: https://github.com/appcypher/awesome-mcp-servers
 - Support: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/marketing/mcp-directories.md
-- Evidence checked: 2026-04-29
+- Evidence checked: 2026-05-02
 - Evidence summary: README search returned no `thumbgate` or `IgorGanapolsky` matches, so this surface is still missing entirely.
 - Next repair: Open a new listing PR with ThumbGate-only copy and the canonical GitHub repository.
 - Proof: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
@@ -96,11 +96,11 @@ Repair MCP directory drift so ThumbGate discovery points to one canonical identi
 
 ## Operator Queue
 ### Glama listing owner or claimant
-- Evidence: Search for `thumbgate` still resolves to `IgorGanapolsky/mcp-memory-gateway`, which leaks the retired product identity into a major MCP registry.
-- Proof trigger: Do this before sending more discovery traffic into Glama because the current slug and summary still encode legacy positioning.
+- Evidence: Glama search now lands on the canonical ThumbGate page, but the indexed summary still describes ThumbGate as a memory gateway with persistent storage across sessions.
+- Proof trigger: Refresh this before sending more discovery traffic into Glama because the summary still frames ThumbGate around retired gateway language.
 - Proof asset: https://glama.ai/mcp/servers?query=thumbgate
-- Next ask: https://glama.ai/mcp/servers/IgorGanapolsky/mcp-memory-gateway
-- Recommended motion: Claim or edit the Glama listing so the slug, summary, and repo link are ThumbGate-only.
+- Next ask: https://glama.ai/mcp/servers/IgorGanapolsky/ThumbGate
+- Recommended motion: Edit the canonical Glama listing summary so it leads with pre-action gates, repeat-mistake prevention, and workflow safeguards.
 
 ### Smithery publisher or maintainer
 - Evidence: Smithery search returns the legacy `rlhf-loop/thumbgate` namespace with no canonical ThumbGate ownership path.
@@ -110,11 +110,11 @@ Repair MCP directory drift so ThumbGate discovery points to one canonical identi
 - Recommended motion: Publish or migrate Smithery to a canonical ThumbGate namespace and retire `rlhf-loop`.
 
 ### GitHub awesome-list maintainer or contributor
-- Evidence: The most visible awesome list already carries a live entry, but it still points to `IgorGanapolsky/mcp-memory-gateway`.
-- Proof trigger: Repair before doing net-new list work because this is a direct naming mismatch on an already-indexed surface.
+- Evidence: The highest-reach awesome list now has both the canonical `IgorGanapolsky/ThumbGate` row and a stale `IgorGanapolsky/mcp-memory-gateway` duplicate.
+- Proof trigger: Repair this before doing net-new list work because discovery can still hit the retired identity even though the canonical row already exists.
 - Proof asset: https://github.com/punkpeye/awesome-mcp-servers
 - Next ask: https://github.com/punkpeye/awesome-mcp-servers/pulls
-- Recommended motion: Open a small README PR that swaps the repo URL to `IgorGanapolsky/ThumbGate` and preserves the pre-action gates thesis.
+- Recommended motion: Open a small README PR that deletes the legacy duplicate row and preserves the canonical ThumbGate listing.
 
 ### GitHub awesome-list maintainer or contributor
 - Evidence: No current ThumbGate entry exists in the appcypher list, so this is clean acquisition expansion instead of repair.
@@ -132,13 +132,13 @@ Repair MCP directory drift so ThumbGate discovery points to one canonical identi
 
 ## Outreach Drafts
 ### Glama claim or support request — Glama listing maintainer
-ThumbGate currently appears in Glama search under the legacy `IgorGanapolsky/mcp-memory-gateway` slug even though the active repository, npm package, and public launch surface are all `ThumbGate`. Please update the slug and summary so the listing points to `IgorGanapolsky/ThumbGate` and uses ThumbGate-only copy.
+ThumbGate now resolves to the canonical Glama page, but the summary still describes it as a memory gateway with persistent storage across sessions. The active positioning is pre-action gates for AI coding agents: repeated mistakes become enforceable checks before risky actions run. Please refresh the summary so the canonical ThumbGate listing reflects the current product.
 
 ### Smithery publish note — Smithery publisher
 The current Smithery search result for `thumbgate` resolves to the legacy `rlhf-loop/thumbgate` namespace. The active package and repository are `thumbgate` and `IgorGanapolsky/ThumbGate`. Publish or migrate the listing under the canonical ThumbGate namespace before treating Smithery as a live acquisition lane.
 
-### punkpeye README PR body — awesome-mcp-servers maintainer
-This PR updates the ThumbGate entry from the retired `IgorGanapolsky/mcp-memory-gateway` repository to the active `IgorGanapolsky/ThumbGate` repository. The description remains focused on ThumbGate as pre-action gates that prevent AI coding agents from repeating known mistakes.
+### punkpeye duplicate-removal PR body — awesome-mcp-servers maintainer
+This PR removes the stale `IgorGanapolsky/mcp-memory-gateway` duplicate and keeps the canonical `IgorGanapolsky/ThumbGate` row. ThumbGate is the active repository and package; the description remains focused on pre-action gates that prevent AI coding agents from repeating known mistakes.
 
 ### appcypher README PR body — awesome-mcp-servers maintainer
 This PR adds ThumbGate to the list using the canonical repository and current product language. ThumbGate is the pre-action gates layer for AI coding agents: it captures explicit feedback, turns repeated failures into prevention rules, and blocks repeat mistakes before risky actions run again.
@@ -160,7 +160,7 @@ Guardrails:
 - Keep pricing aligned with COMMERCIAL_TRUTH.md.
 - Keep proof claims aligned with VERIFICATION_EVIDENCE.md.
 Milestones:
-- days_0_30: Repair legacy naming on Glama, Smithery, and the highest-reach awesome list before broadening directory distribution. Decision rule: Do not add lower-priority directories until the visible legacy-name leaks are fixed or actively queued.
+- days_0_30: Repair Glama summary drift, Smithery namespace drift, and the punkpeye duplicate before broadening directory distribution. Decision rule: Do not add lower-priority directories until the visible legacy-name leaks are fixed or actively queued.
 - days_31_60: Measure whether repaired directory referrals produce guide clicks or qualified workflow conversations. Decision rule: If referral clicks exist without paid intent, move proof and install CTAs higher on the linked destination pages.
 - days_61_90: Prune low-signal directories and keep only the surfaces that produce tracked downstream intent. Decision rule: If a directory does not create tracked guide clicks or workflow conversations, stop treating it as an active acquisition lane.
 Do not count as success:
