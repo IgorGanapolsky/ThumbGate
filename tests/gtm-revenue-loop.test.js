@@ -301,6 +301,54 @@ test('resolveRevenueLoopSummary selects the freshest hosted window with commerci
   assert.equal(result.summary.trafficMetrics.checkoutStarts, 531);
 });
 
+test('resolveRevenueLoopSummary prefers booked revenue over checkout-only daily activity', async () => {
+  const result = await resolveRevenueLoopSummary({
+    getOperationalBillingSummaryFn: async () => ({
+      source: 'local',
+      summary: {
+        revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+        trafficMetrics: { checkoutStarts: 0 },
+        signups: { uniqueLeads: 0 },
+        pipeline: {},
+      },
+      fallbackReason: 'Hosted operational summary is not configured.',
+    }),
+    generateRevenueStatusReportFn: async () => ({
+      source: 'hosted-via-railway-env',
+      hostedAudit: {
+        summaries: {
+          today: {
+            status: 200,
+            revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+            trafficMetrics: { checkoutStarts: 13 },
+            signups: { uniqueLeads: 13 },
+            pipeline: {},
+          },
+          '30d': {
+            status: 200,
+            revenue: { paidOrders: 6, bookedRevenueCents: 16900 },
+            trafficMetrics: { checkoutStarts: 583 },
+            signups: { uniqueLeads: 399 },
+            pipeline: {},
+          },
+          lifetime: {
+            status: 200,
+            revenue: { paidOrders: 6, bookedRevenueCents: 16900 },
+            trafficMetrics: { checkoutStarts: 677 },
+            signups: { uniqueLeads: 414 },
+            pipeline: {},
+          },
+        },
+      },
+    }),
+  });
+
+  assert.equal(result.source, 'hosted-via-railway-env');
+  assert.equal(result.summaryWindow, '30d');
+  assert.equal(result.summary.revenue.paidOrders, 6);
+  assert.equal(deriveRevenueDirective(result.summary).state, 'post-first-dollar');
+});
+
 test('resolveRevenueLoopSummary skips hosted audit when local metrics are explicitly requested', async () => {
   let hostedAuditCalls = 0;
   const result = await resolveRevenueLoopSummary({
@@ -2206,6 +2254,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     const teamOutreach = fs.readFileSync(path.join(reportDir, 'team-outreach-messages.md'), 'utf8');
     const operatorHandoff = fs.readFileSync(path.join(reportDir, 'operator-priority-handoff.md'), 'utf8');
     const operatorHandoffJson = JSON.parse(fs.readFileSync(path.join(reportDir, 'operator-priority-handoff.json'), 'utf8'));
+    const operatorSendNowMarkdown = fs.readFileSync(path.join(reportDir, 'operator-send-now.md'), 'utf8');
     const operatorSendNowCsv = fs.readFileSync(path.join(reportDir, 'operator-send-now.csv'), 'utf8');
     const operatorSendNowJson = JSON.parse(fs.readFileSync(path.join(reportDir, 'operator-send-now.json'), 'utf8'));
 
@@ -2220,6 +2269,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.ok(fs.existsSync(path.join(reportDir, 'team-outreach-messages.md')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-priority-handoff.md')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-priority-handoff.json')));
+    assert.ok(fs.existsSync(path.join(reportDir, 'operator-send-now.md')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-send-now.csv')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-send-now.json')));
     assert.match(csv, /^temperature,source,channel,username,accountName,company,contactUrl,contactSurfaces,repoName,repoUrl,updatedAt,offer,pipelineStage,pipelineLeadId,nextOperatorAction,pipelineUpdatedAt,evidenceScore,evidence,evidenceSource,evidenceLinks,claimGuardrails,outreachAngle,motionLabel,motionReason,proofPackTrigger,cta,firstTouchDraft,painConfirmedFollowUpDraft,selfServeFollowUpDraft,checkoutCloseDraft,markContactedCommand,markRepliedCommand,markCallBookedCommand,markCheckoutStartedCommand,markSprintIntakeCommand,markPaidCommand/m);
@@ -2258,6 +2308,10 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.match(operatorHandoff, /Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
     assert.equal(operatorHandoffJson.sections.find((section) => section.key === 'send_now_warm_discovery').label, 'Send Now: Warm Discovery');
     assert.equal(operatorHandoffJson.sections.find((section) => section.key === 'send_now_warm_discovery').targets[0].pipelineLeadId, 'reddit_builder_production_mcp_server');
+    assert.match(operatorSendNowMarkdown, /Revenue Operator Send-Now Sheet/);
+    assert.match(operatorSendNowMarkdown, /Pair this file with `operator-priority-handoff\.md`/);
+    assert.match(operatorSendNowMarkdown, /## Send Now: Warm Discovery/);
+    assert.match(operatorSendNowMarkdown, /Log after send: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
     assert.match(operatorSendNowCsv, /^rank,sectionKey,sectionLabel,temperature,source,channel,pipelineStage,pipelineLeadId,username,accountName,company,repoName,repoUrl,contactSurface,contactSurfaces,pipelineUpdatedAt,nextOperatorStep,evidenceScore,evidence,motionLabel,whyNow,proofRule,cta,firstTouchDraft,painConfirmedFollowUpDraft,selfServeFollowUpDraft,checkoutCloseDraft,markContactedCommand,markRepliedCommand,markCallBookedCommand,markCheckoutStartedCommand,markSprintIntakeCommand,markPaidCommand/m);
     assert.match(operatorSendNowCsv, /send_now_warm_discovery/);
     assert.match(operatorSendNowCsv, /reddit_builder_production_mcp_server/);
@@ -2367,6 +2421,7 @@ test('writeRevenueLoopOutputs mirrors dedicated GTM docs instead of overwriting 
     assert.ok(fs.existsSync(path.join(marketingDir, 'team-outreach-messages.md')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'operator-priority-handoff.md')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'operator-priority-handoff.json')));
+    assert.ok(fs.existsSync(path.join(marketingDir, 'operator-send-now.md')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'operator-send-now.csv')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'operator-send-now.json')));
   } finally {
