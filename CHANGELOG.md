@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.16.12
+
+### Patch Changes
+
+- [#1639](https://github.com/IgorGanapolsky/ThumbGate/pull/1639) [`932a96e`](https://github.com/IgorGanapolsky/ThumbGate/commit/932a96e83f1caf725fc37e8912b1915ba05eba7f) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Surface the Roo-to-Cline migration guide in ThumbGate discovery pages and add evidence-backed Roo sunset outreach drafts with regression coverage.
+
+- [#1640](https://github.com/IgorGanapolsky/ThumbGate/pull/1640) [`2a8985d`](https://github.com/IgorGanapolsky/ThumbGate/commit/2a8985dd6c18bd687c2dedbf399e75735b56440d) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix hosted revenue status audits so the Railway fallback honors CLI fetch timeout overrides before falling back to local zero-revenue diagnostics.
+
+- [#1644](https://github.com/IgorGanapolsky/ThumbGate/pull/1644) [`671631a`](https://github.com/IgorGanapolsky/ThumbGate/commit/671631ab6ab636122045503c5b8ef9561efefd98) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add an evidence-backed Roo sunset demand pack with tracked migration surfaces, operator queue exports, and channel draft assets.
+
 ## 1.16.11
 
 ### Patch Changes
