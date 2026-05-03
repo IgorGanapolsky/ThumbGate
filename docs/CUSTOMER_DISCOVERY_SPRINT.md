@@ -83,6 +83,10 @@ The revenue loop emits these operator artifacts in that folder:
 - `gemini-cli-demand-pack.md` for Gemini CLI memory-demand, local-first, and cloud-workflow conversion copy
 - `gemini-cli-demand-pack.json` for the same Gemini operator pack in machine-readable form
 - `gemini-cli-operator-queue.csv` for Gemini-specific queue rows and next asks
+- `roo-sunset-demand-pack.md` for Roo-to-Cline migration demand, proof sequencing, and paid-intent copy
+- `roo-sunset-demand-pack.json` for the same Roo migration operator pack in machine-readable form
+- `roo-sunset-operator-queue.csv` for Roo migration queue rows and next asks
+- `roo-sunset-channel-drafts.csv` for Roo migration post and outreach copy in one operator file
 - `linkedin-workflow-hardening-pack.md` for LinkedIn founder-post, comment, and DM workflow-hardening copy
 - `linkedin-workflow-hardening-pack.json` for the same LinkedIn operator pack in machine-readable form
 - `linkedin-operator-queue.csv` for LinkedIn-specific queue rows and next asks

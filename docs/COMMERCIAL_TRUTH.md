@@ -23,15 +23,13 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 ### Free (local, `npx thumbgate serve`)
 
-- 3 daily feedback captures
-- 5 daily lesson searches
-- Unlimited recall on the local runtime
-- 10 auto-promoted checks plus the core safety policy
-- 5 built-in checks
-- Single user, single machine
-- DPO/KTO export for fine-tuning
-- CLI dashboard
-- History-aware lesson distillation and linked feedback sessions
+- 3 lifetime feedback captures
+- 1 auto-promoted prevention rule
+- No recall or lesson search
+- No exports (DPO, Databricks, HuggingFace)
+- 5 built-in checks plus local PreToolUse hook blocking
+- Local-first enforcement on the operator's machine
+- MCP integrations for Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and compatible agents
 
 ### Pro ($19/mo or $149/yr, hosted checkout on Railway)
 

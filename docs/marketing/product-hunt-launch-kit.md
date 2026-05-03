@@ -60,7 +60,7 @@ I'm here all day — ask me anything.
 
 Happy launch day! A few things to know before you try it:
 
-The free tier gives you the local loop: 3 daily feedback captures, 5 daily lesson searches, auto-generated prevention rules, and local enforcement via PreToolUse hooks. No cloud account, no credit card.
+The free tier gives you the local loop: 3 feedback captures total, 1 auto-promoted prevention rule, and local enforcement via PreToolUse hooks. No cloud account, no credit card.
 
 Pro ($19/mo) adds the personal local dashboard, DPO export pairs for downstream fine-tuning, and a check debugger to trace exactly why a rule fired.
 

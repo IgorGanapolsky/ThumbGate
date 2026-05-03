@@ -27,6 +27,27 @@ const activeDocs = [
   'public/index.html',
 ];
 
+const freeTierTruthFiles = [
+  'docs/COMMERCIAL_TRUTH.md',
+  'public/index.html',
+  'public/guide.html',
+  'public/compare.html',
+  'public/llm-context.md',
+  'docs/landing-page.html',
+  'docs/marketing/product-hunt-launch-kit.md',
+  'docs/marketing/show-hn.md',
+  'docs/marketing/email-nurture-sequence.md',
+];
+
+const staleFreeTierPatterns = [
+  /3 daily feedback captures/i,
+  /5 daily lesson searches/i,
+  /5 lesson searches per day/i,
+  /unlimited recall/i,
+  /3 captures\/day/i,
+  /1 agent/i,
+];
+
 test('active docs avoid brittle hard-coded verification metrics', () => {
   for (const relativePath of activeDocs) {
     const fullPath = path.join(projectRoot, relativePath);
@@ -50,4 +71,25 @@ test('README keeps buyer CTAs on current first-party ThumbGate surfaces', () => 
   assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app\/checkout\/pro\?utm_source=github&utm_medium=readme/);
   assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app\/dashboard\?utm_source=github&utm_medium=readme/);
   assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app\/guides\/codex-cli-guardrails\?utm_source=github&utm_medium=readme/);
+});
+
+test('active commercial surfaces avoid stale free-tier limit claims', () => {
+  for (const relativePath of freeTierTruthFiles) {
+    const text = fs.readFileSync(path.join(projectRoot, relativePath), 'utf8');
+    for (const pattern of staleFreeTierPatterns) {
+      assert.doesNotMatch(
+        text,
+        pattern,
+        `${relativePath} should not claim stale free-tier limits matching ${pattern}`,
+      );
+    }
+  }
+});
+
+test('pricing comparison keeps free-tier pro features out of the free column', () => {
+  const pricing = fs.readFileSync(path.join(projectRoot, 'docs/marketing/pricing-comparison.md'), 'utf8');
+
+  assert.match(pricing, /\|\s*Feedback capture\s*\|\s*3 total\s*\|\s*Unlimited\s*\|/i);
+  assert.match(pricing, /\|\s*Recall \+ lesson search\s*\|\s*No\s*\|\s*Yes\s*\|/i);
+  assert.match(pricing, /\|\s*DPO\/KTO export\s*\|\s*No\s*\|\s*Yes\s*\|/i);
 });
