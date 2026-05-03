@@ -665,8 +665,23 @@ function hasRevenueLoopCommercialSignal(summary = {}) {
     || snapshot.qualifiedSprintLeads > 0;
 }
 
+function hasRevenueLoopBookedRevenue(summary = {}) {
+  const snapshot = summarizeCommercialSnapshot(summary);
+  return snapshot.paidOrders > 0 || snapshot.bookedRevenueCents > 0;
+}
+
 function selectHostedRevenueWindow(summaries = {}) {
   const candidateOrder = ['today', '30d', 'lifetime'];
+
+  for (const windowName of candidateOrder) {
+    const candidate = summaries?.[windowName];
+    if (Number(candidate?.status) === 200 && hasRevenueLoopBookedRevenue(candidate)) {
+      return {
+        window: windowName,
+        summary: candidate,
+      };
+    }
+  }
 
   for (const windowName of candidateOrder) {
     const candidate = summaries?.[windowName];
