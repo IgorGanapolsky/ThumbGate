@@ -178,6 +178,25 @@ describe('operational-summary', () => {
         );
       });
     });
+
+    it('throws hosted_summary_timeout when the hosted billing endpoint stalls', async () => {
+      await withEnv({ THUMBGATE_METRICS_SOURCE: undefined }, async () => {
+        await assert.rejects(
+          () => fetchHostedBillingSummary({
+            timeoutMs: 5,
+            fetchImpl: async (_url, options) => new Promise((_, reject) => {
+              options.signal.addEventListener('abort', () => {
+                const error = new Error('aborted');
+                error.name = 'AbortError';
+                reject(error);
+              });
+            }),
+          }, { apiBaseUrl: 'https://x.com', apiKey: 'tg_op_k' }),
+          (err) => err.code === 'hosted_summary_timeout'
+            && /timed out/i.test(err.message)
+        );
+      });
+    });
   });
 
   // ── getOperationalBillingSummary auth-failure contract ──────────────────────
@@ -267,6 +286,26 @@ describe('operational-summary', () => {
         const result = await getOperationalBillingSummary({ window: 'lifetime' });
         assert.strictEqual(result.source, 'local-unverified');
         assert.strictEqual(result.hostedStatus, null);
+      });
+    });
+
+    it('falls back to local-unverified on hosted summary timeout', async () => {
+      global.fetch = async (_url, options) => new Promise((_, reject) => {
+        options.signal.addEventListener('abort', () => {
+          const error = new Error('aborted');
+          error.name = 'AbortError';
+          reject(error);
+        });
+      });
+      await withEnv({
+        THUMBGATE_METRICS_SOURCE: undefined,
+        THUMBGATE_OPERATOR_KEY: 'tg_op_ok',
+        THUMBGATE_BILLING_API_BASE_URL: 'https://fake.example.com',
+      }, async () => {
+        const result = await getOperationalBillingSummary({ window: 'lifetime', timeoutMs: 5 });
+        assert.strictEqual(result.source, 'local-unverified');
+        assert.strictEqual(result.hostedStatus, null);
+        assert.match(result.fallbackReason, /timed out/i);
       });
     });
   });
