@@ -127,6 +127,12 @@ const HIGH_ROI_QUERY_SEEDS = [
     source: 'seed',
     notes: 'Integration page for Gemini CLI users who need memory plus enforcement.',
   },
+  {
+    query: 'roo code alternative cline',
+    businessValue: 83,
+    source: 'seed',
+    notes: 'Time-sensitive migration query for Roo users who need portable lesson memory before the May 15, 2026 shutdown.',
+  },
 ];
 
 function querySeed(query, businessValue, notes) {
@@ -876,6 +882,55 @@ const PAGE_BLUEPRINTS = [
       },
     ],
     relatedPaths: ['/compare/mem0', '/guides/stop-repeated-ai-agent-mistakes'],
+  },
+  {
+    query: 'roo code alternative cline',
+    path: '/guides/roo-code-alternative-cline',
+    pageType: 'integration',
+    pillar: 'agent-workflows',
+    title: 'Roo Code Alternative: Migrating to Cline with Portable Lesson Memory',
+    heroTitle: 'Roo Code Alternative: Migrate to Cline Without Losing Agent Memory',
+    heroSummary: 'Roo Code is shutting down on May 15, 2026, and its own docs point users to Cline. ThumbGate keeps the migration from resetting every hard-won thumbs-down and workflow correction back to zero.',
+    takeaways: [
+      'Roo users have a time-bound migration problem with clear buyer urgency.',
+      'The real wedge is portable lesson memory, not just swapping one VS Code extension for another.',
+      'The page should answer the migration question and route serious operators into a local-first enforcement path.',
+    ],
+    sections: [
+      {
+        heading: 'Why the migration risk is bigger than the extension swap',
+        paragraphs: [
+          'Roo users can usually move to Cline without much trouble at the MCP layer. The hidden risk is losing every correction that only lived in the old agent context.',
+          'If the same git, deploy, or migration mistake has to be re-taught from scratch after the swap, the migration cost is higher than it looks.',
+        ],
+      },
+      {
+        heading: 'What ThumbGate adds to the move',
+        bullets: [
+          'Keep lessons in a local SQLite plus FTS5 store instead of vendor-scoped memory.',
+          'Turn repeated failures into prevention rules and pre-action checks before the next tool call runs.',
+          'Reuse the same local memory across Cline, Claude Code, Cursor, Codex, Gemini CLI, Amp, and other MCP-compatible agents.',
+          'Give migration buyers a proof-backed install path instead of another generic memory promise.',
+        ],
+      },
+      {
+        heading: 'Why this converts',
+        paragraphs: [
+          'A migration deadline creates urgency, but the stronger buying reason is avoiding repeated rework after the switch. Portable lesson memory plus enforced checks is the part buyers can immediately understand and verify.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Why not just switch from Roo to Cline and keep going?',
+        answer: 'Because the workflow memory can still reset if past corrections only lived inside the old agent context. ThumbGate keeps those lessons in a local store that survives the vendor swap.',
+      },
+      {
+        question: 'Does ThumbGate only help with Cline?',
+        answer: 'No. Cline is the immediate migration path, but the same local lesson memory and pre-action checks work across other MCP-compatible coding agents too.',
+      },
+    ],
+    relatedPaths: ['/guides/codex-cli-guardrails', '/guides/stop-repeated-ai-agent-mistakes'],
   },
   ...BROWSER_BRIDGE_GUIDE_SPECS.map(buildBrowserBridgeGuide),
   ...AI_RECOMMENDATION_VISIBILITY_GUIDE_SPECS.map(buildAiRecommendationVisibilityGuide),
