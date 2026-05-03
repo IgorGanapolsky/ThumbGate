@@ -9,10 +9,12 @@ const {
 } = require('./gtm-revenue-loop');
 const {
   buildTrackedPackLink,
+  csvCell,
   isCliInvocation: isCliCall,
   parseReportArgs,
+  renderOperatorQueueCsv,
   renderRevenuePackMarkdown,
-  writeStandardRevenuePack,
+  writeRevenuePackArtifacts,
 } = require('./revenue-pack-utils');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
@@ -30,6 +32,50 @@ const CHECKED_AT = '2026-04-29';
 const DIRECTORY_SOURCE = 'mcp_directories';
 const DIRECTORY_MEDIUM = 'directory';
 const DIRECTORY_SURFACE = 'mcp_directory';
+const DIRECTORY_GUIDE_SUPPORT_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/marketing/mcp-directories.md';
+const CANONICAL_DIRECTORY_DESCRIPTION = 'ThumbGate is the pre-action gates layer for AI coding agents: capture explicit feedback, regenerate prevention rules, and block repeated mistakes before risky tool calls run again.';
+const PUNKPEYE_ENTRY = '- [thumbgate](https://github.com/IgorGanapolsky/ThumbGate) - Pre-action checks that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.';
+const APPCYPHER_ENTRY = '- **[thumbgate](https://github.com/IgorGanapolsky/ThumbGate)** - Pre-action checks that physically block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks. (Node.js)';
+
+function renderMcpDirectorySurfacesCsv(pack = {}) {
+  const surfaces = Array.isArray(pack.surfaces) ? pack.surfaces : [];
+  const rows = [
+    [
+      'key',
+      'name',
+      'role',
+      'operatorStatus',
+      'conversionGoal',
+      'buyer',
+      'surfaceUrl',
+      'submissionPath',
+      'homepageUrl',
+      'proofUrl',
+      'supportUrl',
+      'shortDescription',
+      'submissionCopy',
+      'tags',
+    ],
+    ...surfaces.map((surface) => ([
+      surface.key,
+      surface.name,
+      surface.role,
+      surface.operatorStatus,
+      surface.conversionGoal,
+      surface.buyer,
+      surface.surfaceUrl,
+      surface.submissionPath,
+      surface.homepageUrl,
+      surface.proof,
+      surface.support,
+      surface.shortDescription,
+      surface.submissionCopy,
+      Array.isArray(surface.tags) ? surface.tags.join('|') : '',
+    ])),
+  ];
+
+  return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
+}
 
 function buildTrackedDirectoryLink(baseUrl, tracking = {}) {
   return buildTrackedPackLink(baseUrl, tracking, {
@@ -39,78 +85,151 @@ function buildTrackedDirectoryLink(baseUrl, tracking = {}) {
   });
 }
 
-function buildSurfaces() {
+function buildDirectorySurface(config, links) {
+  return {
+    key: config.key,
+    name: config.name,
+    role: config.role,
+    publicStatus: config.publicStatus,
+    operatorStatus: config.operatorStatus,
+    operatorUse: config.operatorUse,
+    buyer: config.buyer,
+    conversionGoal: config.conversionGoal,
+    surfaceUrl: config.surfaceUrl,
+    submissionPath: config.submissionPath,
+    homepageUrl: buildTrackedDirectoryLink(links.guideLink, {
+      utmCampaign: config.utmCampaign,
+      utmContent: 'guide',
+      campaignVariant: config.campaignVariant,
+      offerCode: config.offerCode,
+      ctaId: config.ctaId,
+      ctaPlacement: 'directory_surface',
+      surface: config.surfaceKey,
+    }),
+    shortDescription: config.shortDescription,
+    submissionCopy: config.submissionCopy,
+    support: DIRECTORY_GUIDE_SUPPORT_URL,
+    evidenceCheckedAt: CHECKED_AT,
+    evidenceSummary: config.evidenceSummary,
+    nextRepair: config.nextRepair,
+    proof: VERIFICATION_EVIDENCE_LINK,
+    tags: config.tags,
+    tagsLabel: Array.isArray(config.tags) ? config.tags.join(', ') : '',
+  };
+}
+
+function buildSurfaces(links = buildRevenueLinks()) {
   return [
-    {
+    buildDirectorySurface({
       key: 'mcp_so',
       name: 'MCP.so canonical listing',
       role: 'Live discovery surface with the current ThumbGate slug.',
       publicStatus: 'Live on the canonical `thumbgate/IgorGanapolsky` path.',
+      operatorStatus: 'Treat as the canonical control listing and keep copy aligned with proof docs.',
       operatorUse: 'Use as the reference listing while repairing drift everywhere else.',
+      buyer: 'Directory visitors validating the current ThumbGate identity before clicking through.',
+      conversionGoal: 'directory_view_to_guide_click',
       surfaceUrl: MCP_SO_URL,
       submissionPath: 'https://mcp.so/submit',
-      support: MCP_DIRECTORIES_GUIDE_URL,
-      evidenceCheckedAt: CHECKED_AT,
+      utmCampaign: 'mcp_so_guide',
+      campaignVariant: 'canonical_listing',
+      offerCode: 'MCP-SO_GUIDE',
+      ctaId: 'mcp_so_guide',
+      surfaceKey: 'mcp_so_guide',
+      shortDescription: CANONICAL_DIRECTORY_DESCRIPTION,
+      submissionCopy: 'ThumbGate is the pre-action gates layer for AI coding agents: capture explicit feedback, regenerate prevention rules, and block repeated mistakes before risky tool calls run again.',
       evidenceSummary: 'Direct curl check confirmed the page title `Thumbgate MCP Server`, current ThumbGate overview copy, and the canonical GitHub link.',
       nextRepair: 'Keep description and proof links aligned with `COMMERCIAL_TRUTH.md` and `VERIFICATION_EVIDENCE.md` as the canonical directory copy.',
-      proof: VERIFICATION_EVIDENCE_LINK,
-    },
-    {
+      tags: ['mcp', 'directory', 'thumbgate', 'pre-action-checks', 'agent-reliability'],
+    }, links),
+    buildDirectorySurface({
       key: 'glama',
       name: 'Glama search result',
       role: 'High-volume MCP registry search surface that still leaks legacy naming.',
       publicStatus: 'Search for `thumbgate` resolves to the legacy slug `IgorGanapolsky/mcp-memory-gateway`.',
+      operatorStatus: 'Repair the visible slug and summary before treating Glama as active acquisition.',
       operatorUse: 'Repair the public slug, summary, and package naming before pushing more Glama-facing discovery.',
+      buyer: 'Glama searchers comparing MCP servers before they click into a listing or repository.',
+      conversionGoal: 'directory_repair_to_guide_click',
       surfaceUrl: GLAMA_SEARCH_URL,
       submissionPath: GLAMA_LEGACY_URL,
-      support: MCP_DIRECTORIES_GUIDE_URL,
-      evidenceCheckedAt: CHECKED_AT,
+      utmCampaign: 'glama_guide',
+      campaignVariant: 'legacy_slug_repair',
+      offerCode: 'GLAMA-GUIDE',
+      ctaId: 'glama_guide',
+      surfaceKey: 'glama_guide',
+      shortDescription: CANONICAL_DIRECTORY_DESCRIPTION,
+      submissionCopy: 'Please update the Glama listing so the slug, repository, and description all point to `IgorGanapolsky/ThumbGate` and describe ThumbGate as pre-action gates that block repeated agent mistakes before risky tool calls run again.',
       evidenceSummary: 'Search HTML exposes `ThumbGate` as the display name but still points to the legacy `mcp-memory-gateway` slug and legacy plain-text description.',
       nextRepair: 'Claim or update the listing so the slug, repo name, and summary are ThumbGate-only and no longer mention the old gateway positioning.',
-      proof: VERIFICATION_EVIDENCE_LINK,
-    },
-    {
+      tags: ['glama', 'mcp', 'directory-repair', 'thumbgate'],
+    }, links),
+    buildDirectorySurface({
       key: 'smithery',
       name: 'Smithery search result',
       role: 'Installer-facing directory surface with a legacy namespace result.',
       publicStatus: 'Search returns `rlhf-loop/thumbgate` with `0 connections` instead of a canonical ThumbGate namespace.',
+      operatorStatus: 'Prepare publish-ready metadata before treating Smithery as a live install lane.',
       operatorUse: 'Publish or repair the canonical Smithery listing before treating Smithery as an active acquisition lane.',
+      buyer: 'Smithery users who want an installable MCP surface and a proof-backed next click.',
+      conversionGoal: 'directory_repair_to_install_surface_click',
       surfaceUrl: SMITHERY_SEARCH_URL,
       submissionPath: 'https://smithery.ai/new',
-      support: MCP_DIRECTORIES_GUIDE_URL,
-      evidenceCheckedAt: CHECKED_AT,
+      utmCampaign: 'smithery_guide',
+      campaignVariant: 'namespace_repair',
+      offerCode: 'SMITHERY-GUIDE',
+      ctaId: 'smithery_guide',
+      surfaceKey: 'smithery_guide',
+      shortDescription: CANONICAL_DIRECTORY_DESCRIPTION,
+      submissionCopy: 'ThumbGate is the pre-action gates layer for AI coding agents: capture explicit feedback, regenerate prevention rules, and block repeated mistakes before risky tool calls run again. Publish it under the canonical ThumbGate namespace and repository `IgorGanapolsky/ThumbGate`.',
       evidenceSummary: 'Direct search output shows `thumbgate [remote]`, the legacy `rlhf-loop/thumbgate` namespace, and a details link at the legacy path.',
       nextRepair: 'Publish or migrate Smithery metadata to a canonical ThumbGate namespace and retire the legacy `rlhf-loop` ownership path.',
-      proof: VERIFICATION_EVIDENCE_LINK,
-    },
-    {
+      tags: ['smithery', 'mcp', 'directory-repair', 'thumbgate'],
+    }, links),
+    buildDirectorySurface({
       key: 'punkpeye',
       name: 'punkpeye awesome-mcp-servers',
       role: 'Largest GitHub awesome-list discovery surface in the current repo research.',
       publicStatus: 'Listed, but under the legacy repository `IgorGanapolsky/mcp-memory-gateway`.',
+      operatorStatus: 'Use a minimal README repair PR instead of a net-new positioning rewrite.',
       operatorUse: 'Open a repair PR that swaps the repo name and keeps the description ThumbGate-only.',
+      buyer: 'GitHub readers scanning trusted awesome lists for a credible MCP starting point.',
+      conversionGoal: 'awesome_list_view_to_guide_click',
       surfaceUrl: PUNKPEYE_LIST_URL,
       submissionPath: 'https://github.com/punkpeye/awesome-mcp-servers/blob/main/README.md',
-      support: MCP_DIRECTORIES_GUIDE_URL,
-      evidenceCheckedAt: CHECKED_AT,
+      utmCampaign: 'punkpeye_guide',
+      campaignVariant: 'awesome_list_repair',
+      offerCode: 'PUNKPEYE-GUIDE',
+      ctaId: 'punkpeye_guide',
+      surfaceKey: 'punkpeye_guide',
+      shortDescription: CANONICAL_DIRECTORY_DESCRIPTION,
+      submissionCopy: PUNKPEYE_ENTRY,
       evidenceSummary: 'README search returns a live entry, but it still points to `IgorGanapolsky/mcp-memory-gateway` instead of `IgorGanapolsky/ThumbGate`.',
       nextRepair: 'Submit a PR replacing the legacy repo path with the ThumbGate repo while keeping the pre-action gates description.',
-      proof: VERIFICATION_EVIDENCE_LINK,
-    },
-    {
+      tags: ['github', 'awesome-list', 'directory-repair', 'thumbgate'],
+    }, links),
+    buildDirectorySurface({
       key: 'appcypher',
       name: 'appcypher awesome-mcp-servers',
       role: 'Secondary GitHub discovery list that currently has no ThumbGate entry.',
       publicStatus: 'No ThumbGate entry found in the current README search.',
+      operatorStatus: 'Treat as clean expansion only after the higher-reach repair surfaces are already queued.',
       operatorUse: 'Treat this as a clean add-listing submission, not a rename repair.',
+      buyer: 'Researchers comparing multiple awesome lists before choosing an install surface.',
+      conversionGoal: 'awesome_list_view_to_guide_click',
       surfaceUrl: APPCYPHER_LIST_URL,
       submissionPath: 'https://github.com/appcypher/awesome-mcp-servers',
-      support: MCP_DIRECTORIES_GUIDE_URL,
-      evidenceCheckedAt: CHECKED_AT,
+      utmCampaign: 'appcypher_guide',
+      campaignVariant: 'awesome_list_expansion',
+      offerCode: 'APPCYPHER-GUIDE',
+      ctaId: 'appcypher_guide',
+      surfaceKey: 'appcypher_guide',
+      shortDescription: CANONICAL_DIRECTORY_DESCRIPTION,
+      submissionCopy: APPCYPHER_ENTRY,
       evidenceSummary: 'README search returned no `thumbgate` or `IgorGanapolsky` matches, so this surface is still missing entirely.',
       nextRepair: 'Open a new listing PR with ThumbGate-only copy and the canonical GitHub repository.',
-      proof: VERIFICATION_EVIDENCE_LINK,
-    },
+      tags: ['github', 'awesome-list', 'directory-expansion', 'thumbgate'],
+    }, links),
   ];
 }
 
@@ -298,7 +417,7 @@ function buildMcpDirectoryRevenuePack(links = buildRevenueLinks()) {
       verificationEvidence: VERIFICATION_EVIDENCE_LINK,
       supportDocs: MCP_HUB_SUBMISSION_URL,
     },
-    surfaces: buildSurfaces(),
+    surfaces: buildSurfaces(links),
     followOnOffers: buildFollowOnOffers(links),
     operatorQueue: buildOperatorQueue(),
     outreachDrafts: buildOutreachDrafts(),
@@ -324,27 +443,44 @@ function renderMcpDirectoryRevenuePackMarkdown(pack) {
     surfaceFields: [
       { label: 'Role', key: 'role' },
       { label: 'Public status', key: 'publicStatus' },
+      { label: 'Operator status', key: 'operatorStatus' },
       { label: 'Operator use', key: 'operatorUse' },
+      { label: 'Buyer', key: 'buyer' },
+      { label: 'Conversion goal', key: 'conversionGoal' },
       { label: 'Surface URL', key: 'surfaceUrl' },
       { label: 'Submission path', key: 'submissionPath' },
+      { label: 'Homepage CTA', key: 'homepageUrl' },
+      { label: 'Short description', key: 'shortDescription' },
+      { label: 'Submission copy', key: 'submissionCopy' },
       { label: 'Support', key: 'support' },
       { label: 'Evidence checked', key: 'evidenceCheckedAt' },
       { label: 'Evidence summary', key: 'evidenceSummary' },
       { label: 'Next repair', key: 'nextRepair' },
       { label: 'Proof', key: 'proof' },
+      { label: 'Tags', key: 'tagsLabel' },
     ],
   });
 }
 
 function writeMcpDirectoryRevenuePack(pack, options = {}) {
-  return writeStandardRevenuePack({
+  return writeRevenuePackArtifacts({
     repoRoot: REPO_ROOT,
+    reportDir: options.reportDir,
+    writeDocs: options.writeDocs,
     docsPath: DOCS_PATH,
-    pack,
-    options,
-    renderMarkdown: renderMcpDirectoryRevenuePackMarkdown,
+    markdown: renderMcpDirectoryRevenuePackMarkdown(pack),
     jsonName: 'mcp-directory-revenue-pack.json',
-    csvName: 'mcp-directory-operator-queue.csv',
+    jsonValue: pack,
+    csvArtifacts: [
+      {
+        name: 'mcp-directory-operator-queue.csv',
+        value: renderOperatorQueueCsv(pack?.operatorQueue),
+      },
+      {
+        name: 'mcp-directory-surfaces.csv',
+        value: renderMcpDirectorySurfacesCsv(pack),
+      },
+    ],
   });
 }
 
@@ -395,6 +531,7 @@ module.exports = {
   buildTrackedDirectoryLink,
   isCliInvocation,
   parseArgs,
+  renderMcpDirectorySurfacesCsv,
   renderMcpDirectoryRevenuePackMarkdown,
   writeMcpDirectoryRevenuePack,
 };
