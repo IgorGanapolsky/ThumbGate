@@ -62,8 +62,9 @@ function readRevenueLoopReport(reportPath = REVENUE_LOOP_REPORT_PATH) {
   }
 }
 
-function countTargets(report = {}, matcher) {
-  const targets = Array.isArray(report.targets) ? report.targets : [];
+function countTargets(report, matcher) {
+  const resolvedReport = report || {};
+  const targets = Array.isArray(resolvedReport.targets) ? resolvedReport.targets : [];
   return targets.filter((target) => matcher(target)).length;
 }
 
@@ -83,7 +84,10 @@ function buildEvidenceBackstop(report = {}) {
   };
 }
 
-function buildEvidenceSurfaces(links = buildRevenueLinks(), about = readGitHubAbout()) {
+function buildEvidenceSurfaces(links, about) {
+  const resolvedLinks = links || buildRevenueLinks();
+  const resolvedAbout = about || readGitHubAbout();
+
   return [
     {
       key: 'roo_shutdown_notice',
@@ -137,10 +141,10 @@ function buildEvidenceSurfaces(links = buildRevenueLinks(), about = readGitHubAb
     },
   ].map((surface) => ({
     ...surface,
-    repositoryUrl: about.repositoryUrl,
+    repositoryUrl: resolvedAbout.repositoryUrl,
     proofUrl: VERIFICATION_EVIDENCE_LINK,
     proofLinks: [...PROOF_LINKS],
-    appOrigin: links.appOrigin,
+    appOrigin: resolvedLinks.appOrigin,
   }));
 }
 
@@ -180,8 +184,10 @@ function buildFollowOnOffers(links = buildRevenueLinks()) {
   ];
 }
 
-function buildOperatorQueue(links = buildRevenueLinks(), report = {}) {
-  const backstop = buildEvidenceBackstop(report);
+function buildOperatorQueue(links, report) {
+  const resolvedLinks = links || buildRevenueLinks();
+  const resolvedReport = report || {};
+  const backstop = buildEvidenceBackstop(resolvedReport);
   return [
     {
       key: 'roo_memory_migrant',
@@ -205,7 +211,7 @@ function buildOperatorQueue(links = buildRevenueLinks(), report = {}) {
       evidence: `${backstop.workflowControlSurfaceCount} workflow-control target(s), ${backstop.businessSystemTargetCount} business-system target(s), and ${backstop.sprintTargetCount} sprint-fit target(s) already favor workflow hardening over a generic plugin pitch.`,
       proofTrigger: 'They can point to one approval boundary, rollback risk, or repo workflow that cannot afford repeated mistakes during migration.',
       proofAsset: VERIFICATION_EVIDENCE_LINK,
-      nextAsk: buildTrackedRooLink(links.sprintLink, {
+      nextAsk: buildTrackedRooLink(resolvedLinks.sprintLink, {
         utmMedium: OUTREACH_MEDIUM,
         utmCampaign: 'roo_queue_sprint',
         utmContent: 'workflow_sprint',
@@ -301,8 +307,10 @@ function buildOutreachDrafts(links = buildRevenueLinks()) {
   ];
 }
 
-function buildChannelDrafts(links = buildRevenueLinks(), report = {}) {
-  const backstop = buildEvidenceBackstop(report);
+function buildChannelDrafts(links, report) {
+  const resolvedLinks = links || buildRevenueLinks();
+  const resolvedReport = report || {};
+  const backstop = buildEvidenceBackstop(resolvedReport);
   return [
     {
       key: 'roo_reddit_memory',
@@ -338,7 +346,7 @@ function buildChannelDrafts(links = buildRevenueLinks(), report = {}) {
       format: 'Founder post',
       audience: 'Platform or AI-product lead migrating one workflow off Roo',
       evidenceSummary: `${backstop.sprintTargetCount} sprint-fit target(s) plus ${backstop.businessSystemTargetCount} business-system target(s) make workflow-risk migration the strongest B2B Roo angle.`,
-      cta: buildTrackedRooLink(links.sprintLink, {
+      cta: buildTrackedRooLink(resolvedLinks.sprintLink, {
         utmMedium: LINKEDIN_MEDIUM,
         utmCampaign: 'roo_channel_linkedin',
         utmContent: 'workflow_sprint',
@@ -349,7 +357,7 @@ function buildChannelDrafts(links = buildRevenueLinks(), report = {}) {
         surface: 'roo_linkedin',
       }),
       proofTiming: 'Public post can reference the shutdown, but hold proof links until the buyer confirms one workflow risk.',
-      draft: `Roo shutting down is a forcing function, not the real problem. The real problem is migrating one live workflow without reteaching approval boundaries, rollback rules, and repo-specific mistakes from zero. If your team already has that workflow in mind, start with the Workflow Hardening Sprint here: ${buildTrackedRooLink(links.sprintLink, {
+      draft: `Roo shutting down is a forcing function, not the real problem. The real problem is migrating one live workflow without reteaching approval boundaries, rollback rules, and repo-specific mistakes from zero. If your team already has that workflow in mind, start with the Workflow Hardening Sprint here: ${buildTrackedRooLink(resolvedLinks.sprintLink, {
         utmMedium: LINKEDIN_MEDIUM,
         utmCampaign: 'roo_channel_linkedin',
         utmContent: 'workflow_sprint',
@@ -464,14 +472,17 @@ function buildMeasurementPlan() {
   };
 }
 
-function buildRooSunsetDemandPack(report = readRevenueLoopReport(), links = buildRevenueLinks(), about = readGitHubAbout()) {
-  const directive = report.directive || {};
+function buildRooSunsetDemandPack(report, links, about) {
+  const resolvedReport = report || readRevenueLoopReport();
+  const resolvedLinks = links || buildRevenueLinks();
+  const resolvedAbout = about || readGitHubAbout();
+  const directive = resolvedReport.directive || {};
   const state = normalizeText(directive.state) || 'post-first-dollar';
   const summary = normalizeText(directive.headline)
     || 'Use the Roo shutdown window to sell one honest migration outcome: keep lesson memory, prove the install path, then route buyers to Pro or one workflow sprint.';
 
   return {
-    generatedAt: report.generatedAt || new Date().toISOString(),
+    generatedAt: resolvedReport.generatedAt || new Date().toISOString(),
     objective: 'Turn Roo shutdown urgency into tracked migration clicks, proof-backed setup demand, and paid intent without inventing traction.',
     state,
     headline: CANONICAL_HEADLINE,
@@ -479,18 +490,18 @@ function buildRooSunsetDemandPack(report = readRevenueLoopReport(), links = buil
     summary,
     canonicalIdentity: {
       displayName: 'ThumbGate',
-      repositoryUrl: about.repositoryUrl,
-      homepageUrl: about.homepageUrl,
+      repositoryUrl: resolvedAbout.repositoryUrl,
+      homepageUrl: resolvedAbout.homepageUrl,
       commercialTruthUrl: COMMERCIAL_TRUTH_LINK,
       verificationEvidenceUrl: VERIFICATION_EVIDENCE_LINK,
     },
-    surfaces: buildEvidenceSurfaces(links, about),
-    followOnOffers: buildFollowOnOffers(links),
-    operatorQueue: buildOperatorQueue(links, report),
-    outreachDrafts: buildOutreachDrafts(links),
-    channelDrafts: buildChannelDrafts(links, report),
+    surfaces: buildEvidenceSurfaces(resolvedLinks, resolvedAbout),
+    followOnOffers: buildFollowOnOffers(resolvedLinks),
+    operatorQueue: buildOperatorQueue(resolvedLinks, resolvedReport),
+    outreachDrafts: buildOutreachDrafts(resolvedLinks),
+    channelDrafts: buildChannelDrafts(resolvedLinks, resolvedReport),
     measurementPlan: buildMeasurementPlan(),
-    evidenceBackstop: buildEvidenceBackstop(report),
+    evidenceBackstop: buildEvidenceBackstop(resolvedReport),
     proofLinks: [...PROOF_LINKS, ROO_SUNSET_DOC_URL, ROO_SUNSET_BLOG_URL],
   };
 }
