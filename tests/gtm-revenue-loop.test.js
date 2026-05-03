@@ -404,8 +404,10 @@ test('target evidence favors production workflows over generic fresh repos', () 
   assert.match(strong.outreachAngle, /rollout proof|approval boundaries/i);
 });
 
-test('target search queries keep the GitLab review discovery lane active', () => {
+test('target search queries keep the GitLab review and Claude Code SDLC lanes active', () => {
   assert.ok(TARGET_SEARCH_QUERIES.includes('search/repositories?q=GitLab+review+automation+agent+sort:updated'));
+  assert.ok(TARGET_SEARCH_QUERIES.includes('search/repositories?q=Claude+Code+SDLC+stars:>=3+sort:updated'));
+  assert.ok(TARGET_SEARCH_QUERIES.includes('search/repositories?q=Claude+Code+agent+teams+stars:>=3+sort:updated'));
 });
 
 test('self-serve hook surfaces keep the guide-first outreach angle even when they mention platforms', () => {
@@ -418,6 +420,24 @@ test('self-serve hook surfaces keep the guide-first outreach angle even when the
 
   assert.ok(target.score >= 4);
   assert.match(target.outreachAngle, /proof-backed setup guide|local-first enforcement/i);
+});
+
+test('developer workflow surfaces outrank personal automation lookalikes', () => {
+  const developerWorkflow = analyzeTargetEvidence({
+    repoName: 'claude-sdlc-wizard',
+    description: 'SDLC enforcement for Claude Code with hooks, skills, wizard setup, and CI-friendly review gates.',
+    stars: 14,
+    updatedAt: new Date().toISOString(),
+  });
+  const personalAutomation = analyzeTargetEvidence({
+    repoName: 'personal-life-os-core',
+    description: 'Local-first personal automation platform for workflows, RAG/GraphRAG search, review queues, genealogy/media evidence, and operator-guided agents.',
+    stars: 0,
+    updatedAt: new Date().toISOString(),
+  });
+
+  assert.ok(developerWorkflow.score > personalAutomation.score);
+  assert.ok(developerWorkflow.evidence.some((entry) => /developer workflow surface/i.test(entry)));
 });
 
 test('repo identity filter drops obviously weak identifiers', () => {
@@ -720,6 +740,73 @@ test('prospecting reserves a third self-serve slot when strong tool-path targets
     result.targets.filter((target) => selfServeNames.has(target.repoName)).length,
     3,
   );
+});
+
+test('prospecting prefers developer-tooling self-serve targets over personal automation lookalikes', async () => {
+  const result = await prospectTargets(4, {
+    fetchImpl: async (url) => {
+      if (String(url).includes('/users/')) {
+        const username = String(url).split('/').pop();
+        return {
+          ok: true,
+          async text() {
+            return JSON.stringify({
+              html_url: `https://github.com/${username}`,
+              blog: `${username}.dev`,
+              company: `${username}-labs`,
+            });
+          },
+        };
+      }
+
+      return {
+        ok: true,
+        async text() {
+          return JSON.stringify({
+            items: [
+              {
+                owner: { login: 'selfserve1', html_url: 'https://github.com/selfserve1' },
+                name: 'personal-life-os-core',
+                html_url: 'https://github.com/selfserve1/personal-life-os-core',
+                description: 'Local-first personal automation platform for workflows, RAG/GraphRAG search, review queues, genealogy/media evidence, and operator-guided agents.',
+                stargazers_count: 0,
+                updated_at: new Date().toISOString(),
+              },
+              {
+                owner: { login: 'selfserve2', html_url: 'https://github.com/selfserve2' },
+                name: 'KARIMO',
+                html_url: 'https://github.com/selfserve2/KARIMO',
+                description: 'Claude Code harness engineering plugin with plan mode, developer-focused agent orchestration, automated review, and CI-friendly agent teams.',
+                stargazers_count: 102,
+                updated_at: new Date().toISOString(),
+              },
+              {
+                owner: { login: 'selfserve3', html_url: 'https://github.com/selfserve3' },
+                name: 'claude-sdlc-wizard',
+                html_url: 'https://github.com/selfserve3/claude-sdlc-wizard',
+                description: 'SDLC enforcement for Claude Code with hooks, skills, wizard setup, and CI-friendly review gates.',
+                stargazers_count: 14,
+                updated_at: new Date().toISOString(),
+              },
+              {
+                owner: { login: 'core1', html_url: 'https://github.com/core1' },
+                name: 'ai-code-review-agent',
+                html_url: 'https://github.com/core1/ai-code-review-agent',
+                description: 'Review GitHub pull requests with AI to catch bugs, security issues, and code quality problems with built-in eval and observability.',
+                stargazers_count: 0,
+                updated_at: new Date().toISOString(),
+              },
+            ],
+          });
+        },
+      };
+    },
+  });
+
+  const repoNames = result.targets.map((target) => target.repoName);
+  assert.ok(repoNames.includes('KARIMO'));
+  assert.ok(repoNames.includes('claude-sdlc-wizard'));
+  assert.ok(!repoNames.includes('personal-life-os-core'));
 });
 
 test('GitHub discovery reports API and parser failures as non-fatal warnings', async () => {

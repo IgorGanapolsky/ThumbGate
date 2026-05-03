@@ -19,6 +19,8 @@ const TARGET_SEARCH_QUERIES = [
   'search/repositories?q=Model+Context+Protocol+approval+workflow+sort:updated',
   'search/repositories?q=ServiceNow+MCP+workflow+sort:updated',
   'search/repositories?q=Claude+Code+review+automation+sort:updated',
+  'search/repositories?q=Claude+Code+SDLC+stars:>=3+sort:updated',
+  'search/repositories?q=Claude+Code+agent+teams+stars:>=3+sort:updated',
   'search/repositories?q=GitLab+review+automation+agent+sort:updated',
   'search/repositories?q=github+review+automation+agent+sort:updated',
   'search/repositories?q=review+workflow+automation+agent+sort:updated',
@@ -35,6 +37,8 @@ const TARGET_SEARCH_QUERIES = [
 const SELF_SERVE_ONLY_SIGNALS = /\b(awesome|list|example|template|demo|tutorial|course|personal|dotfiles|toy|boilerplate|learn|learning|playground|starter|sample|sandbox|quickstart|lab)\b/;
 const LOW_BUYER_INTENT_SIGNALS = /\b(learn|learning|tutorial|course|playground|starter|sample|sandbox|quickstart|boilerplate|template|demo|example|lab|portfolio|showcase|case study)\b/;
 const SELF_SERVE_TOOLING_SIGNALS = /\b(plugin|plugins|extension|extensions|hook|hooks|statusline|status line|config|profile|installer|install|setup|rule pack|ruleset|local-first|local first|workspace rules)\b/;
+const DEVELOPER_WORKFLOW_SIGNALS = /\b(claude code|codex|opencode|cursor|code review|sdlc|development tools|developer(?:s)?|dev team|software engineering|ci-friendly)\b/;
+const NON_COMMERCIAL_AUTOMATION_SIGNALS = /\b(personal automation|life[- ]os|genealogy|media evidence)\b/;
 const MAX_CREDIBLE_DESCRIPTION_LENGTH = 500;
 const SUSPICIOUS_REPO_DESCRIPTION_PATTERNS = [
   /^\s*skip to content\b/i,
@@ -64,6 +68,11 @@ const TARGET_SIGNAL_RULES = [
     label: 'agent infrastructure',
     pattern: /\b(mcp|model context protocol|agent|automation|memory|context|tool use|orchestrator)\b/,
     weight: 2,
+  },
+  {
+    label: 'developer workflow surface',
+    pattern: DEVELOPER_WORKFLOW_SIGNALS,
+    weight: 3,
   },
   {
     label: 'self-serve agent tooling',
@@ -1024,6 +1033,16 @@ function hasSelfServeToolingSignals(target) {
   return SELF_SERVE_TOOLING_SIGNALS.test(haystack);
 }
 
+function hasDeveloperWorkflowSignals(target) {
+  const haystack = `${normalizeText(target.repoName)} ${normalizeText(target.description)}`.toLowerCase();
+  return DEVELOPER_WORKFLOW_SIGNALS.test(haystack);
+}
+
+function hasNonCommercialAutomationSignals(target) {
+  const haystack = `${normalizeText(target.repoName)} ${normalizeText(target.description)}`.toLowerCase();
+  return NON_COMMERCIAL_AUTOMATION_SIGNALS.test(haystack);
+}
+
 function isSelfServeToolingProspect(target) {
   if (!hasSelfServeToolingSignals(target)) {
     return false;
@@ -1072,6 +1091,9 @@ function analyzeTargetEvidence(target) {
 
   if (hasLowBuyerIntentSignals(target)) {
     score = Math.max(0, score - 4);
+  }
+  if (hasNonCommercialAutomationSignals(target)) {
+    score = Math.max(0, score - 6);
   }
 
   let outreachAngle = 'Pitch one repeated workflow failure, then offer proof-backed hardening instead of a generic tool trial.';
@@ -1171,6 +1193,9 @@ async function prospectTargets(maxTargets = 6, {
       };
     })
     .filter((target) => {
+      if (hasNonCommercialAutomationSignals(target) && !hasDeveloperWorkflowSignals(target)) {
+        return target.evidence.score >= 12;
+      }
       if (hasLowBuyerIntentSignals(target)) {
         return target.evidence.score >= 9;
       }
