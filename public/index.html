@@ -535,7 +535,13 @@ __GA_BOOTSTRAP__
   .btn-pro:hover { opacity: 0.85; }
   .btn-team { display: block; text-align: center; padding: 10px; background: rgba(74,222,128,0.14); color: var(--green); border: 1px solid rgba(74,222,128,0.4); border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; transition: border-color 0.15s, transform 0.15s; }
   .btn-team:hover { border-color: var(--green); transform: translateY(-1px); }
+  .team-intake-panel { max-width: 900px; margin: 24px auto 0; padding: 22px; border: 1px solid rgba(74,222,128,0.28); border-radius: 12px; background: rgba(74,222,128,0.055); box-shadow: inset 0 1px 0 rgba(74,222,128,0.08); }
+  .team-intake-panel-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 16px; }
+  .team-intake-panel h3 { margin: 0 0 6px; font-size: 18px; color: var(--text); }
+  .team-intake-panel p { margin: 0; color: var(--text-dim); font-size: 13px; line-height: 1.55; }
+  .team-intake-badge { flex-shrink: 0; padding: 6px 10px; border: 1px solid rgba(74,222,128,0.35); border-radius: 999px; color: var(--green); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
   .team-form { max-width: 860px; margin: 24px auto 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .team-intake-panel .team-form { max-width: none; margin: 0; }
   .team-form .full { grid-column: 1 / -1; }
   .team-form input, .team-form textarea { width: 100%; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 14px; font-family: inherit; }
   .team-form textarea { min-height: 120px; resize: vertical; }
@@ -597,6 +603,8 @@ __GA_BOOTSTRAP__
     .seo-grid { grid-template-columns: 1fr; }
     .autoresearch-grid { grid-template-columns: 1fr; }
     .pricing-grid { grid-template-columns: 1fr; }
+    .team-intake-panel-head { display: block; }
+    .team-intake-badge { display: inline-block; margin-bottom: 10px; }
     .team-form { grid-template-columns: 1fr; }
     .hero { padding: 72px 0 56px; }
     .hero-actions { flex-direction: column; }
@@ -1391,24 +1399,34 @@ __GA_BOOTSTRAP__
     <div class="section-label">Team Pilot</div>
     <h2 class="section-title">Start with one repo, one workflow, one repeat failure</h2>
     <p style="color:var(--text-dim);max-width:720px;margin:0 auto 16px;">This is the fastest path to first paid value for teams. Start with one workflow, one owner, and one blocker. The intake is designed to prove that ThumbGate reduces review churn, rollout risk, or repeated agent mistakes before a wider rollout.</p>
-    <details style="max-width:860px;margin:0 auto;">
-      <summary style="cursor:pointer;color:var(--green);font-size:16px;font-weight:600;text-align:center;padding:16px;border:1px solid rgba(74,222,128,0.3);border-radius:12px;list-style:none;">Open Team Pilot Intake Form →</summary>
-    <form class="team-form" action="/v1/intake/workflow-sprint" method="POST" style="margin-top:16px;">
-      <input type="hidden" name="ctaId" value="workflow_sprint_intake">
-      <input type="hidden" name="ctaPlacement" value="team_pricing">
-      <input type="hidden" name="planId" value="team">
-      <input type="email" name="email" placeholder="you@company.com" required>
-      <input type="text" name="company" placeholder="Company">
-      <input type="text" name="workflow" placeholder="Workflow to harden (e.g. deploy approvals, migrations, PR review)" required>
-      <input type="text" name="owner" placeholder="Workflow owner" required>
-      <input type="text" name="runtime" placeholder="Current agent/runtime (Claude Code, Codex, Cursor, Gemini...)" required>
-      <textarea class="full" name="blocker" placeholder="What repeat mistake, rollout blocker, or team handoff failure keeps happening?" required></textarea>
-      <textarea class="full" name="note" placeholder="Optional context: team size, repos involved, target rollout date, or what you need to prove internally."></textarea>
-      <div class="full">
-        <button type="submit" class="btn-team">Start Team Pilot Intake</button>
+    <div class="team-intake-panel">
+      <div class="team-intake-panel-head">
+        <div>
+          <h3>Tell us the workflow. Get a proof plan.</h3>
+          <p>The highest-fit Team buyer is already feeling one repeated failure. Capture it here instead of making them click through a hidden form.</p>
+        </div>
+        <span class="team-intake-badge">30-minute intake</span>
       </div>
-    </form>
-    </details>
+      <form id="team-pilot-intake-form" class="team-form" action="/v1/intake/workflow-sprint" method="POST" data-team-intake-form>
+        <input type="hidden" name="ctaId" value="workflow_sprint_intake">
+        <input type="hidden" name="ctaPlacement" value="team_visible_intake">
+        <input type="hidden" name="planId" value="team">
+        <input type="hidden" name="utmSource" value="website">
+        <input type="hidden" name="utmMedium" value="visible_team_intake">
+        <input type="hidden" name="utmCampaign" value="workflow_hardening_sprint">
+        <input type="hidden" name="page" value="/#workflow-sprint-intake">
+        <input type="email" name="email" placeholder="you@company.com" autocomplete="email" required>
+        <input type="text" name="company" placeholder="Company">
+        <input type="text" name="workflow" placeholder="Workflow to harden (e.g. deploy approvals, migrations, PR review)" required>
+        <input type="text" name="owner" placeholder="Workflow owner" required>
+        <input type="text" name="runtime" placeholder="Current agent/runtime (Claude Code, Codex, Cursor, Gemini...)" required>
+        <textarea class="full" name="blocker" placeholder="What repeat mistake, rollout blocker, or team handoff failure keeps happening?" required></textarea>
+        <textarea class="full" name="note" placeholder="Optional context: team size, repos involved, target rollout date, or what you need to prove internally."></textarea>
+        <div class="full">
+          <button type="submit" class="btn-team">Start Team Pilot Intake</button>
+        </div>
+      </form>
+    </div>
   </div>
 </section>
 
@@ -1601,6 +1619,32 @@ function sendFirstPartyTelemetry(eventType, props) {
   }).catch(function() {});
 }
 
+function initializeTeamIntakeTelemetry() {
+  document.querySelectorAll('[data-team-intake-form]').forEach(function(form) {
+    var started = false;
+    function readHidden(name) {
+      var input = form.querySelector('input[name="' + name + '"]');
+      return input ? input.value : null;
+    }
+    form.addEventListener('input', function() {
+      if (started) return;
+      started = true;
+      sendFirstPartyTelemetry('workflow_sprint_intake_started', {
+        ctaId: readHidden('ctaId'),
+        ctaPlacement: readHidden('ctaPlacement'),
+        planId: readHidden('planId') || 'team',
+      });
+    });
+    form.addEventListener('submit', function() {
+      sendFirstPartyTelemetry('workflow_sprint_intake_submit_attempted', {
+        ctaId: readHidden('ctaId'),
+        ctaPlacement: readHidden('ctaPlacement'),
+        planId: readHidden('planId') || 'team',
+      });
+    });
+  });
+}
+
 function resolvePricingClickTier(el) {
   if (el.classList.contains('btn-install-hero')) return 'install';
   if (el.classList.contains('btn-install-link')) return 'install';
@@ -1735,13 +1779,15 @@ function copyInstall(el) {
       { selector: '.price-card.pro .btn-pro', ctaId: 'pricing_pro_monthly', ctaPlacement: 'pricing', planId: 'pro' },
       { selector: '.hero-actions .btn-pro-page', ctaId: 'hero_go_pro', ctaPlacement: 'hero', planId: 'pro' },
       { selector: '.sticky-cta .btn-pro', ctaId: 'sticky_go_pro', ctaPlacement: 'sticky_cta', planId: 'pro' },
-      { selector: '.price-card.team .btn-team', ctaId: 'team_workflow_sprint', ctaPlacement: 'pricing', planId: 'team' }
+      { selector: '.price-card.team .btn-team', ctaId: 'team_workflow_sprint', ctaPlacement: 'pricing', planId: 'team' },
+      { selector: '#team-pilot-intake-form', ctaId: 'workflow_sprint_intake', ctaPlacement: 'team_visible_intake', planId: 'team' }
     ]
   });
 })();
 </script>
 <script>
 initializeBuyerIntentForms();
+initializeTeamIntakeTelemetry();
 
 async function handleProTrial() {
   var buyerIntent = globalThis.ThumbGateBuyerIntent;
