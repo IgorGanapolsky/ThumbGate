@@ -28,3 +28,14 @@ test('roo sunset outreach drafts stay evidence-backed and proof-disciplined', ()
     assert.match(text, /Do not lead with proof links before the buyer confirms pain\./, `${filename} should keep proof timing guardrails`);
   }
 });
+
+test('roo migration guide keeps owned conversion paths and machine-readable FAQ proof', () => {
+  const page = fs.readFileSync(path.join(__dirname, '..', 'public', 'guides', 'roo-code-alternative-cline.html'), 'utf8');
+
+  assert.match(page, /"@type": "FAQPage"/, 'guide should expose FAQ schema');
+  assert.match(page, /utm_campaign=roo_migration_setup_guide/, 'guide should route to the hosted setup path');
+  assert.match(page, /utm_campaign=roo_migration_install_doc/, 'guide should preserve the exact install doc');
+  assert.match(page, /utm_campaign=roo_migration_workflow_sprint/, 'guide should expose the sprint conversion path');
+  assert.match(page, /COMMERCIAL_TRUTH\.md/, 'guide should link commercial truth after pain is explicit');
+  assert.match(page, /VERIFICATION_EVIDENCE\.md/, 'guide should link verification evidence after pain is explicit');
+});

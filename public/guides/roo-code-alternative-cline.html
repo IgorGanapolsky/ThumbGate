@@ -23,8 +23,48 @@
     "author": { "@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky" },
     "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
     "datePublished": "2026-04-22",
-    "dateModified": "2026-04-22",
+    "dateModified": "2026-05-03",
     "mainEntityOfPage": "https://thumbgate.ai/guides/roo-code-alternative-cline"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "When does Roo Code actually stop working?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Roo announced the sunset on April 21, 2026 and the final shutdown date is May 15, 2026."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does Cline use the same MCP format as Roo?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. MCP servers used under Roo transfer to Cline, so the migration friction is mostly around preserving lessons and workflow rules."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Where does ThumbGate store my lessons?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "ThumbGate stores lessons in a local SQLite file at .thumbgate/memory.sqlite inside your project."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does ThumbGate work if I go back to Claude Code or switch to Cursor?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. The lesson database is agent-agnostic, so supported agents can be wired against the same local lesson store."
+        }
+      }
+    ]
   }
   </script>
   <style>
@@ -46,6 +86,11 @@
     code.inline { background: var(--bg-card); padding: 2px 6px; border-radius: 4px; color: var(--cyan); }
     .eyebrow { display: inline-block; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(34,211,238,0.22); background: rgba(34,211,238,0.1); color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 700; }
     .cta { display: inline-block; background: var(--cyan); color: #000; padding: 14px 22px; border-radius: 10px; font-weight: 700; margin: 24px 0; }
+    .decision-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 24px 0 32px; }
+    .decision-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+    .decision-card h3 { margin-top: 0; }
+    .decision-card p { font-size: 15px; color: var(--muted); }
+    .proof-note { background: rgba(74, 222, 128, 0.08); border: 1px solid rgba(74, 222, 128, 0.24); border-radius: 14px; padding: 18px; margin: 28px 0; }
     article { padding: 24px 0 80px; }
     footer { border-top: 1px solid var(--line); padding: 32px 0; color: var(--muted); font-size: 14px; }
   </style>
@@ -102,7 +147,28 @@
       <p>Roo Code's sunset is a lesson about lock-in. Every time an agent vendor controls your lesson memory, a sunset announcement is also an announcement that your corrections evaporate. The only durable fix is to store lessons outside the agent — locally, in a format you own.</p>
       <p>ThumbGate's lesson DB works with Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, and any MCP-compatible agent. One correction, every agent, every future agent.</p>
 
-      <a class="cta" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/cline/INSTALL.md">Read the full Cline setup doc →</a>
+      <h2>Choose the next path</h2>
+      <div class="decision-grid">
+        <section class="decision-card">
+          <h3>Hosted setup path</h3>
+          <p>Use the proof-backed ThumbGate setup flow if you want the owned migration surface before you drop into raw install docs.</p>
+          <a class="cta" href="/guide?utm_source=roo_sunset&utm_medium=seo_page&utm_campaign=roo_migration_setup_guide&utm_content=guide&campaign_variant=hosted_migration&offer_code=ROO-SEO-GUIDE&cta_id=roo_seo_guide&cta_placement=roo_guide&surface=roo_migration">Open the setup guide</a>
+        </section>
+        <section class="decision-card">
+          <h3>Exact Cline install doc</h3>
+          <p>Go straight to the source-controlled Cline install doc when you already accepted the migration path and just want the exact steps.</p>
+          <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/cline/INSTALL.md?utm_source=roo_sunset&utm_medium=seo_page&utm_campaign=roo_migration_install_doc&utm_content=install_doc&campaign_variant=exact_steps&offer_code=ROO-SEO-INSTALL&cta_id=roo_seo_install&cta_placement=roo_guide&surface=roo_migration">Read the full Cline setup doc</a>
+        </section>
+        <section class="decision-card">
+          <h3>One risky workflow</h3>
+          <p>Teams migrating one production workflow should qualify the approval, rollback, or handoff risk before they widen rollout.</p>
+          <a href="/?utm_source=roo_sunset&utm_medium=seo_page&utm_campaign=roo_migration_workflow_sprint&utm_content=workflow_sprint&campaign_variant=migration_workflow&offer_code=ROO-SEO-SPRINT&cta_id=roo_seo_sprint&cta_placement=roo_guide&surface=roo_migration#workflow-sprint-intake">Start the Workflow Hardening Sprint</a>
+        </section>
+      </div>
+
+      <div class="proof-note">
+        <strong>Proof timing:</strong> do not lead with proof before the workflow pain is concrete. Once the migration risk is explicit, use <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md">Commercial Truth</a> and <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md">Verification Evidence</a> to validate pricing, product scope, and engineering proof.
+      </div>
 
       <h2>FAQ</h2>
       <h3>When does Roo Code actually stop working?</h3>
