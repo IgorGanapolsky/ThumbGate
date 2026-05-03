@@ -2496,6 +2496,75 @@ function renderRevenueLoopCsv(report) {
   return `${rows.map((row) => row.map(escapeCsvValue).join(',')).join('\n')}\n`;
 }
 
+function renderOperatorSendNowMarkdown(report) {
+  const payload = buildOperatorSendNowPayload(report);
+  const summaryLines = [
+    `- State: ${normalizeText(report?.directive?.state) || 'unknown'}`,
+    `- Headline: ${normalizeText(report?.directive?.headline) || 'n/a'}`,
+    `- Paid orders snapshot: ${Number(report?.snapshot?.paidOrders || 0)}`,
+    `- Checkout starts snapshot: ${Number(report?.snapshot?.checkoutStarts || 0)}`,
+    `- Ready-now rows: ${payload.rows.length}`,
+  ];
+  const rowLines = payload.rows.length
+    ? payload.rows.flatMap((row) => {
+      const identity = row.username || row.accountName || row.company || row.repoName || 'Unnamed target';
+      const contact = row.contactSurface || renderContactSurfaces(row.contactSurfaces);
+      const repoLabel = row.repoName || row.repoUrl || 'n/a';
+      return [
+        `## ${row.rank}. ${identity}`,
+        `- Section: ${row.sectionLabel}`,
+        `- Channel: ${row.channel || row.source}`,
+        `- Pipeline stage: ${row.pipelineStage}`,
+        `- Lead ID: ${row.pipelineLeadId}`,
+        `- Contact: ${contact || 'n/a'}`,
+        `- Company: ${row.company || 'n/a'}`,
+        `- Repo: ${repoLabel}`,
+        `- Evidence score: ${row.evidenceScore}`,
+        `- Evidence: ${row.evidence.join('; ') || 'n/a'}`,
+        `- Why now: ${row.whyNow || 'n/a'}`,
+        `- Next operator step: ${row.nextOperatorStep || 'n/a'}`,
+        `- Motion: ${row.motionLabel || 'n/a'}`,
+        `- Proof rule: ${row.proofRule || 'n/a'}`,
+        `- CTA: ${row.cta || 'n/a'}`,
+        `- Log after send: \`${row.markContactedCommand || 'n/a'}\``,
+        `- Log after pain-confirmed reply: \`${row.markRepliedCommand || 'n/a'}\``,
+        `- Log after call booked: \`${row.markCallBookedCommand || 'n/a'}\``,
+        `- Log after checkout started: \`${row.markCheckoutStartedCommand || 'n/a'}\``,
+        `- Log after sprint intake: \`${row.markSprintIntakeCommand || 'n/a'}\``,
+        `- Log after paid: \`${row.markPaidCommand || 'n/a'}\``,
+        '',
+        'First-touch draft:',
+        `> ${row.firstTouchDraft || 'n/a'}`,
+        '',
+        'Pain-confirmed follow-up:',
+        `> ${row.painConfirmedFollowUpDraft || 'n/a'}`,
+        '',
+        'Self-serve follow-up:',
+        `> ${row.selfServeFollowUpDraft || 'n/a'}`,
+        '',
+        'Checkout close draft:',
+        `> ${row.checkoutCloseDraft || 'n/a'}`,
+        '',
+      ];
+    })
+    : ['- No ready-now targets were ranked for this run.', ''];
+
+  return [
+    '# Operator Send-Now Queue',
+    '',
+    `Updated: ${payload.generatedAt}`,
+    '',
+    'This is the markdown handoff for the flat ready-now batch queue. Use it when you need ranked send order, drafts, and sales-pipeline log commands in one operator-readable file.',
+    'The CSV (`operator-send-now.csv`) and JSON (`operator-send-now.json`) exports carry the same rows for spreadsheet or automation import.',
+    '',
+    '## Snapshot',
+    ...summaryLines,
+    '',
+    '## Ready-Now Rows',
+    ...rowLines,
+  ].join('\n');
+}
+
 function renderRevenueLoopJsonl(report) {
   const targets = Array.isArray(report.targets) ? report.targets.map(enrichRenderableTarget) : [];
   return `${targets.map((target) => JSON.stringify(target)).join('\n')}\n`;
@@ -2516,6 +2585,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
   const teamOutreachDocsPath = path.join(docsDir, 'team-outreach-messages.md');
   const operatorHandoffDocsPath = path.join(docsDir, 'operator-priority-handoff.md');
   const operatorHandoffJsonDocsPath = path.join(docsDir, 'operator-priority-handoff.json');
+  const operatorSendNowMarkdownDocsPath = path.join(docsDir, 'operator-send-now.md');
   const operatorSendNowCsvDocsPath = path.join(docsDir, 'operator-send-now.csv');
   const operatorSendNowJsonDocsPath = path.join(docsDir, 'operator-send-now.json');
   const markdown = renderRevenueLoopMarkdown(report);
@@ -2528,6 +2598,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
   const operatorHandoff = buildOperatorHandoffPayload(report);
   const operatorHandoffMarkdown = renderOperatorHandoffMarkdown(report);
   const operatorSendNow = buildOperatorSendNowPayload(report);
+  const operatorSendNowMarkdown = renderOperatorSendNowMarkdown(report);
   const operatorSendNowCsv = renderOperatorSendNowCsv(report);
   const reportDir = normalizeText(options.reportDir)
     ? path.resolve(repoRoot, options.reportDir)
@@ -2546,6 +2617,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     fs.writeFileSync(path.join(reportDir, 'team-outreach-messages.md'), teamOutreachMarkdown, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'operator-priority-handoff.md'), operatorHandoffMarkdown, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'operator-priority-handoff.json'), `${JSON.stringify(operatorHandoff, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(path.join(reportDir, 'operator-send-now.md'), operatorSendNowMarkdown, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'operator-send-now.csv'), operatorSendNowCsv, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'operator-send-now.json'), `${JSON.stringify(operatorSendNow, null, 2)}\n`, 'utf8');
   }
@@ -2562,6 +2634,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     fs.writeFileSync(teamOutreachDocsPath, teamOutreachMarkdown, 'utf8');
     fs.writeFileSync(operatorHandoffDocsPath, operatorHandoffMarkdown, 'utf8');
     fs.writeFileSync(operatorHandoffJsonDocsPath, `${JSON.stringify(operatorHandoff, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(operatorSendNowMarkdownDocsPath, operatorSendNowMarkdown, 'utf8');
     fs.writeFileSync(operatorSendNowCsvDocsPath, operatorSendNowCsv, 'utf8');
     fs.writeFileSync(operatorSendNowJsonDocsPath, `${JSON.stringify(operatorSendNow, null, 2)}\n`, 'utf8');
   }
@@ -2681,6 +2754,7 @@ module.exports = {
   buildOperatorHandoffPayload,
   buildOperatorSendNowPayload,
   renderOperatorHandoffMarkdown,
+  renderOperatorSendNowMarkdown,
   renderOperatorSendNowCsv,
   renderTeamOutreachMessagesMarkdown,
   resolveRevenueLoopSummary,
