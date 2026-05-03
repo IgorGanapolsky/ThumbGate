@@ -11,6 +11,8 @@ const DEFAULT_PUBLIC_APP_ORIGIN = 'https://thumbgate-production.up.railway.app';
 const DEFAULT_CHECKOUT_FALLBACK_URL = PRO_MONTHLY_PAYMENT_LINK;
 const DEFAULT_PRO_PRICE_DOLLARS = PRO_MONTHLY_PRICE_DOLLARS;
 const DEFAULT_PRO_PRICE_LABEL = PRO_PRICE_LABEL;
+const DEFAULT_SPRINT_DIAGNOSTIC_PRICE_DOLLARS = 499;
+const DEFAULT_WORKFLOW_SPRINT_PRICE_DOLLARS = 1500;
 const GA_MEASUREMENT_ID_PATTERN = /^G-[A-Z0-9]+$/i;
 
 function normalizeOrigin(value) {
@@ -125,6 +127,8 @@ function resolveHostedBillingConfig({ requestOrigin } = {}, env = process.env) {
   const gaMeasurementId = normalizeTrackingId(env.THUMBGATE_GA_MEASUREMENT_ID, GA_MEASUREMENT_ID_PATTERN);
   const posthogApiKey = env.POSTHOG_API_KEY || '';
   const googleSiteVerification = normalizeTrackingId(env.THUMBGATE_GOOGLE_SITE_VERIFICATION);
+  const sprintDiagnosticCheckoutUrl = normalizeAbsoluteUrl(env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL);
+  const workflowSprintCheckoutUrl = normalizeAbsoluteUrl(env.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL);
 
   return {
     appOrigin,
@@ -136,6 +140,12 @@ function resolveHostedBillingConfig({ requestOrigin } = {}, env = process.env) {
     ) || DEFAULT_CHECKOUT_FALLBACK_URL,
     proPriceDollars,
     proPriceLabel,
+    sprintDiagnosticCheckoutUrl,
+    workflowSprintCheckoutUrl,
+    sprintDiagnosticPriceDollars: normalizePriceDollars(env.THUMBGATE_SPRINT_DIAGNOSTIC_PRICE_DOLLARS)
+      || DEFAULT_SPRINT_DIAGNOSTIC_PRICE_DOLLARS,
+    workflowSprintPriceDollars: normalizePriceDollars(env.THUMBGATE_WORKFLOW_SPRINT_PRICE_DOLLARS)
+      || DEFAULT_WORKFLOW_SPRINT_PRICE_DOLLARS,
     gaMeasurementId,
     googleSiteVerification,
     posthogApiKey,
@@ -147,6 +157,8 @@ module.exports = {
   DEFAULT_CHECKOUT_FALLBACK_URL,
   DEFAULT_PRO_PRICE_DOLLARS,
   DEFAULT_PRO_PRICE_LABEL,
+  DEFAULT_SPRINT_DIAGNOSTIC_PRICE_DOLLARS,
+  DEFAULT_WORKFLOW_SPRINT_PRICE_DOLLARS,
   GA_MEASUREMENT_ID_PATTERN,
   normalizeAbsoluteUrl,
   normalizeOrigin,
