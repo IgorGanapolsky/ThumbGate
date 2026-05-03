@@ -1,0 +1,190 @@
+{
+  "generatedAt": "2026-05-02T15:48:50.950Z",
+  "state": "cold-start",
+  "objective": "Turn OpenCode setup proof and autopilot risk into tracked guide clicks, Pro checkout starts, and qualified workflow-hardening conversations.",
+  "headline": "Turn OpenCode autopilot demand into proof-backed guardrail installs.",
+  "shortDescription": "ThumbGate gives OpenCode a repo-local profile, a portable MCP adapter, and local-first Pre-Action Checks that block repeated tool-call mistakes before the next run.",
+  "summary": "OpenCode demand in ThumbGate should start with repo-native install proof and unattended-run risk, then split into Pro for solo operators or Workflow Hardening Sprint for rollout-critical workflows.",
+  "canonicalIdentity": {
+    "displayName": "ThumbGate",
+    "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+    "homepageUrl": "https://thumbgate-production.up.railway.app",
+    "githubDescription": "Agent governance for ThumbGate: 👍/👎 become Pre-Action Checks that block repeat mistakes before code, money, or customer systems change.",
+    "commercialTruthUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+    "verificationEvidenceUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+  },
+  "surfaces": [
+    {
+      "key": "multica_autopilot_guide",
+      "name": "Multica + OpenCode autopilot guide",
+      "url": "https://thumbgate-production.up.railway.app/guides/multica-thumbgate-setup?utm_source=opencode&utm_medium=guide&utm_campaign=opencode_multica_guide&utm_content=autopilot&campaign_variant=scheduled_jobs&offer_code=OPENCODE-MULTICA_GUIDE&cta_id=opencode_multica_guide&cta_placement=guide_surface&surface=opencode",
+      "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/multica-thumbgate-setup.html",
+      "operatorUse": "Primary acquisition surface for OpenCode users who already run scheduled jobs, autopilot loops, or unattended agent work.",
+      "buyerSignal": "Autopilot owners who already understand repeated tool-call risk and need a guardrail before the next unattended run.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ],
+      "appOrigin": "https://thumbgate-production.up.railway.app"
+    },
+    {
+      "key": "repo_native_integration_doc",
+      "name": "Repo-native OpenCode integration guide",
+      "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/guides/opencode-integration.md",
+      "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/guides/opencode-integration.md",
+      "operatorUse": "Use when the buyer wants repo-local proof that ThumbGate already ships OpenCode-specific configuration, worktree safety, and review boundaries.",
+      "buyerSignal": "Builders who need to see the actual OpenCode config surface before trusting a generic setup pitch.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ],
+      "appOrigin": "https://thumbgate-production.up.railway.app"
+    },
+    {
+      "key": "portable_profile_install",
+      "name": "Portable OpenCode MCP profile install",
+      "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/opencode-profile/INSTALL.md",
+      "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/opencode-profile/INSTALL.md",
+      "operatorUse": "Use when the buyer wants the portable MCP profile for another OpenCode project or a global config path outside this repo.",
+      "buyerSignal": "Self-serve OpenCode evaluators who care about a version-pinned profile and explicit install instructions before they commit time.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ],
+      "appOrigin": "https://thumbgate-production.up.railway.app"
+    },
+    {
+      "key": "proof_backed_setup_guide",
+      "name": "Proof-backed setup guide",
+      "url": "https://thumbgate-production.up.railway.app/guide?utm_source=opencode&utm_medium=guide&utm_campaign=opencode_setup_guide&utm_content=setup&campaign_variant=proof_backed_setup&offer_code=OPENCODE-SETUP_GUIDE&cta_id=opencode_setup_guide&cta_placement=guide_surface&surface=opencode",
+      "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guide.html",
+      "operatorUse": "General self-serve activation surface once the OpenCode buyer accepts the install path and wants proof plus pricing guardrails in one place.",
+      "buyerSignal": "Operators who want one proof-backed route into install, Pro, or workflow hardening without drifting into unsupported claims.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ],
+      "appOrigin": "https://thumbgate-production.up.railway.app"
+    }
+  ],
+  "followOnOffers": [
+    {
+      "key": "pro",
+      "label": "ThumbGate Pro",
+      "pricing": "$19/mo or $149/yr",
+      "buyer": "Solo OpenCode operators who already proved one blocked repeat and now want the personal dashboard plus proof-ready exports.",
+      "cta": "https://thumbgate-production.up.railway.app/checkout/pro?utm_source=opencode&utm_medium=guide&utm_campaign=opencode_pro_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=OPENCODE-PRO_FOLLOW_ON&cta_id=opencode_pro_follow_on&cta_placement=post_install&plan_id=pro&surface=opencode_post_install"
+    },
+    {
+      "key": "sprint",
+      "label": "Workflow Hardening Sprint",
+      "pricing": "Intake-led sprint, then Team at $49/seat/mo with 3-seat minimum after qualification",
+      "buyer": "Teams running OpenCode or adjacent agent workflows with one repeated failure, one owner, and one approval boundary.",
+      "cta": "https://thumbgate-production.up.railway.app/?utm_source=opencode&utm_medium=guide&utm_campaign=opencode_team_follow_on&utm_content=workflow_sprint&campaign_variant=teams_follow_on&offer_code=OPENCODE-TEAMS_FOLLOW_ON&cta_id=opencode_team_follow_on&cta_placement=post_install&surface=opencode_post_install#workflow-sprint-intake"
+    }
+  ],
+  "operatorQueue": [
+    {
+      "key": "autopilot_workflow_owner",
+      "audience": "OpenCode or Multica operator running scheduled jobs or autopilot workflows",
+      "evidence": "The Multica guide explicitly shows OpenCode as a scheduled-job runtime, and current report workflow-control targets: 0.",
+      "proofTrigger": "They can name one unattended run, destructive tool call, or approval-boundary failure they want blocked before the next schedule fires.",
+      "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/multica-thumbgate-setup.html",
+      "nextAsk": "https://thumbgate-production.up.railway.app/guides/multica-thumbgate-setup?utm_source=opencode&utm_medium=guide&utm_campaign=opencode_queue_autopilot&utm_content=guide&campaign_variant=autopilot_owner&offer_code=OPENCODE-QUEUE_AUTOPILOT&cta_id=opencode_queue_autopilot&cta_placement=operator_queue&surface=opencode",
+      "recommendedMotion": "Autopilot guide -> pain confirmation -> Workflow Hardening Sprint."
+    },
+    {
+      "key": "repo_native_builder",
+      "audience": "OpenCode builder who wants repo-local guardrails and a portable MCP profile",
+      "evidence": "The repo ships both opencode.json and a portable profile. Current explicit OpenCode mentions in the ranked queue: 0.",
+      "proofTrigger": "They want config proof or a version-pinned install path before they decide whether the free setup is enough.",
+      "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/guides/opencode-integration.md",
+      "nextAsk": "https://thumbgate-production.up.railway.app/guide?utm_source=opencode&utm_medium=guide&utm_campaign=opencode_queue_setup&utm_content=setup&campaign_variant=repo_native_builder&offer_code=OPENCODE-QUEUE_SETUP&cta_id=opencode_queue_setup&cta_placement=operator_queue&surface=opencode",
+      "recommendedMotion": "Integration doc -> setup guide -> Pro after one blocked repeat is real."
+    },
+    {
+      "key": "self_serve_or_rollout_split",
+      "audience": "Agent-tooling maintainer evaluating a self-serve install before a services conversation",
+      "evidence": "Current report self-serve target count: 0; production-style targets: 0.",
+      "proofTrigger": "One repeated mistake still survives the install path, or one rollout workflow clearly needs approval boundaries and proof.",
+      "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/opencode-profile/INSTALL.md",
+      "nextAsk": "https://thumbgate-production.up.railway.app/guide?utm_source=opencode&utm_medium=guide&utm_campaign=opencode_queue_split&utm_content=setup&campaign_variant=self_serve_vs_rollout&offer_code=OPENCODE-QUEUE_SPLIT&cta_id=opencode_queue_split&cta_placement=operator_queue&surface=opencode",
+      "recommendedMotion": "Setup guide first; Pro for solo proof, Sprint for rollout risk."
+    }
+  ],
+  "outreachDrafts": [
+    {
+      "key": "repo_native_setup",
+      "channel": "GitHub DM or email",
+      "audience": "Solo OpenCode builder",
+      "draft": "ThumbGate already ships a repo-local OpenCode profile plus a portable MCP install path. If you want the shortest proof-backed route, start with the setup guide here: https://thumbgate-production.up.railway.app/guide?utm_source=opencode&utm_medium=operator_outreach&utm_campaign=opencode_outreach_setup&utm_content=guide&campaign_variant=repo_native_setup&offer_code=OPENCODE-OUTREACH_SETUP&cta_id=opencode_outreach_setup&cta_placement=outreach_draft&surface=opencode_outreach . If one repeated agent mistake still survives after that, Pro is the clean next step instead of a generic services pitch."
+    },
+    {
+      "key": "proof_after_pain",
+      "channel": "Pain-confirmed follow-up",
+      "audience": "Solo operator who already confirmed one repeated OpenCode failure",
+      "draft": "Now that the repeat is concrete, send proof before the paid lane: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md . If the buyer wants the personal dashboard, export-ready evidence, and a clean self-serve path after that proof, move to Pro here: https://thumbgate-production.up.railway.app/checkout/pro?utm_source=opencode&utm_medium=operator_outreach&utm_campaign=opencode_outreach_pro&utm_content=pro&campaign_variant=proof_after_pain&offer_code=OPENCODE-OUTREACH_PRO&cta_id=opencode_outreach_pro&cta_placement=outreach_draft&plan_id=pro&surface=opencode_outreach ."
+    },
+    {
+      "key": "autopilot_founder_note",
+      "channel": "Founder note",
+      "audience": "Autopilot owner running OpenCode unattended",
+      "draft": "If OpenCode is already running scheduled jobs or unattended workflows, the missing piece is not another prompt. It is a gate before the next risky tool call. The Multica/OpenCode guide is here: https://thumbgate-production.up.railway.app/guides/multica-thumbgate-setup?utm_source=opencode&utm_medium=operator_outreach&utm_campaign=opencode_outreach_autopilot&utm_content=guide&campaign_variant=scheduled_jobs&offer_code=OPENCODE-OUTREACH_AUTOPILOT&cta_id=opencode_outreach_autopilot&cta_placement=outreach_draft&surface=opencode_outreach . If one repeated failure or approval boundary is already costing you time, route it into the Workflow Hardening Sprint here: https://thumbgate-production.up.railway.app/?utm_source=opencode&utm_medium=operator_outreach&utm_campaign=opencode_outreach_sprint&utm_content=workflow_sprint&campaign_variant=autopilot_risk&offer_code=OPENCODE-OUTREACH_SPRINT&cta_id=opencode_outreach_sprint&cta_placement=outreach_draft&surface=opencode_outreach#workflow-sprint-intake ."
+    }
+  ],
+  "measurementPlan": {
+    "northStar": "opencode_install_to_paid_intent",
+    "policy": "Treat OpenCode guide visits as acquisition evidence only after a tracked proof click, Pro checkout start, or qualified workflow-hardening conversation exists.",
+    "minimumUsefulSignal": "One tracked Pro checkout start or one qualified workflow-hardening conversation sourced from an OpenCode-tagged surface.",
+    "strongSignal": "Three tracked paid-intent events across Pro checkout starts or sprint conversations.",
+    "metrics": [
+      "opencode_setup_guide_views",
+      "opencode_multica_guide_views",
+      "proof_clicks",
+      "pro_checkout_starts",
+      "sprint_intake_submissions",
+      "qualified_team_conversations",
+      "paid_pro_conversions"
+    ],
+    "guardrails": [
+      "Do not claim installs, marketplace approval, or revenue without direct command evidence.",
+      "Do not lead first-touch outreach with proof links before the buyer confirms pain.",
+      "Keep pricing aligned with COMMERCIAL_TRUTH.md.",
+      "Keep proof claims aligned with VERIFICATION_EVIDENCE.md."
+    ],
+    "milestones": [
+      {
+        "window": "days_0_30",
+        "goal": "Push the repo-native OpenCode setup story and the Multica autopilot guide into one consistent proof-backed lane.",
+        "decisionRule": "Do not widen the pitch unless setup or autopilot clicks start producing pain-confirmed replies."
+      },
+      {
+        "window": "days_31_60",
+        "goal": "Promote whichever OpenCode motion converts first: solo Pro or workflow hardening.",
+        "decisionRule": "If proof clicks exist without paid intent, move proof and follow-on offers higher in the setup and autopilot copy."
+      },
+      {
+        "window": "days_61_90",
+        "goal": "Decide whether OpenCode stays a self-serve lane or earns more direct founder-led outbound.",
+        "decisionRule": "Only increase OpenCode-specific outbound after there is qualified conversation or paid-intent evidence."
+      }
+    ],
+    "doNotCountAsSuccess": [
+      "guide views without proof clicks",
+      "proof clicks without a tracked paid-intent event",
+      "unverified install or revenue claims"
+    ]
+  },
+  "proofLinks": [
+    "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+    "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+  ]
+}
