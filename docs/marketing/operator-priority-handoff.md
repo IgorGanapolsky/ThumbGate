@@ -3,6 +3,7 @@
 Updated: 2026-04-30T04:14:20.304Z
 
 This is the ranked send order for the current zero-to-one revenue loop. Work follow-ups first, then warm discovery, then self-serve closes, then production-rollout buyers, then expand into the remaining cold GitHub targets with the same proof discipline.
+GitHub prospects can land in the self-serve, production-rollout, or seed-next buckets depending on urgency and buying signal, so read the GitHub total first and the sub-buckets second.
 
 This handoff sits on top of `gtm-revenue-loop.md`, `gtm-target-queue.csv`, and `team-outreach-messages.md` so an operator can decide who to contact next without re-ranking the queue manually.
 
@@ -14,9 +15,10 @@ This handoff sits on top of `gtm-revenue-loop.md`, `gtm-target-queue.csv`, and `
 - Checkout starts: 0
 - Active follow-ups: 0
 - Warm targets ready now: 4
+- GitHub prospects ready now: 6
 - Self-serve closes ready now: 3
 - Production-rollout targets ready now: 3
-- Cold GitHub targets ready next: 0
+- Seed-stage cold GitHub targets ready next: 0
 
 ## Operator Rules
 - Import the queue into the sales ledger before sending anything.
