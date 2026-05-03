@@ -45,6 +45,10 @@ __GA_BOOTSTRAP__
   const serverSessionId = '__SERVER_SESSION_ID__';
   const serverAcquisitionId = '__SERVER_ACQUISITION_ID__';
   const serverTelemetryCaptured = '__SERVER_TELEMETRY_CAPTURED__' === 'true';
+  const sprintDiagnosticCheckoutUrl = '__SPRINT_DIAGNOSTIC_CHECKOUT_URL__';
+  const workflowSprintCheckoutUrl = '__WORKFLOW_SPRINT_CHECKOUT_URL__';
+  const sprintDiagnosticPriceDollars = Number('__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__') || 499;
+  const workflowSprintPriceDollars = Number('__WORKFLOW_SPRINT_PRICE_DOLLARS__') || 1500;
 </script>
 
 <script type="application/ld+json">
@@ -540,6 +544,14 @@ __GA_BOOTSTRAP__
   .team-intake-panel h3 { margin: 0 0 6px; font-size: 18px; color: var(--text); }
   .team-intake-panel p { margin: 0; color: var(--text-dim); font-size: 13px; line-height: 1.55; }
   .team-intake-badge { flex-shrink: 0; padding: 6px 10px; border: 1px solid rgba(74,222,128,0.35); border-radius: 999px; color: var(--green); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+  .team-paid-path { display: none; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0 0 16px; }
+  .team-paid-path.visible { display: grid; }
+  .team-paid-card { display: flex; flex-direction: column; justify-content: space-between; gap: 12px; min-height: 150px; padding: 16px; border: 1px solid rgba(74,222,128,0.22); border-radius: 10px; background: rgba(0,0,0,0.24); }
+  .team-paid-card h4 { margin: 0 0 6px; color: var(--text); font-size: 15px; }
+  .team-paid-card p { margin: 0; color: var(--text-dim); font-size: 12px; line-height: 1.5; }
+  .team-paid-price { color: var(--green); font-weight: 800; font-size: 18px; }
+  .team-paid-link { display: block; text-align: center; padding: 10px 12px; background: rgba(74,222,128,0.16); color: var(--green); border: 1px solid rgba(74,222,128,0.45); border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 700; }
+  .team-paid-link:hover { border-color: var(--green); transform: translateY(-1px); }
   .team-form { max-width: 860px; margin: 24px auto 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
   .team-intake-panel .team-form { max-width: none; margin: 0; }
   .team-form .full { grid-column: 1 / -1; }
@@ -605,6 +617,7 @@ __GA_BOOTSTRAP__
     .pricing-grid { grid-template-columns: 1fr; }
     .team-intake-panel-head { display: block; }
     .team-intake-badge { display: inline-block; margin-bottom: 10px; }
+    .team-paid-path { grid-template-columns: 1fr; }
     .team-form { grid-template-columns: 1fr; }
     .hero { padding: 72px 0 56px; }
     .hero-actions { flex-direction: column; }
@@ -1403,9 +1416,31 @@ __GA_BOOTSTRAP__
       <div class="team-intake-panel-head">
         <div>
           <h3>Tell us the workflow. Get a proof plan.</h3>
-          <p>The highest-fit Team buyer is already feeling one repeated failure. Capture it here instead of making them click through a hidden form.</p>
+          <p>The highest-fit Team buyer is already feeling one repeated failure. Start with a paid diagnostic when budget is ready, or use intake when you need qualification first.</p>
         </div>
         <span class="team-intake-badge">30-minute intake</span>
+      </div>
+      <div class="team-paid-path" data-sprint-paid-path aria-label="Paid workflow hardening options">
+        <div class="team-paid-card">
+          <div>
+            <h4>Workflow Hardening Diagnostic</h4>
+            <p>Paid triage for one repeated agent or review failure, with a concrete proof plan and go/no-go recommendation.</p>
+          </div>
+          <div>
+            <div class="team-paid-price">$<span data-sprint-diagnostic-price>499</span></div>
+            <a class="team-paid-link" data-sprint-diagnostic-link href="#workflow-sprint-intake">Pay for diagnostic</a>
+          </div>
+        </div>
+        <div class="team-paid-card">
+          <div>
+            <h4>Workflow Hardening Sprint</h4>
+            <p>48-hour implementation sprint for one workflow owner, one blocker, one proof review, and one hardened rollout path.</p>
+          </div>
+          <div>
+            <div class="team-paid-price">$<span data-workflow-sprint-price>1500</span></div>
+            <a class="team-paid-link" data-workflow-sprint-link href="#workflow-sprint-intake">Pay for sprint</a>
+          </div>
+        </div>
       </div>
       <form id="team-pilot-intake-form" class="team-form" action="/v1/intake/workflow-sprint" method="POST" data-team-intake-form>
         <input type="hidden" name="ctaId" value="workflow_sprint_intake">
@@ -1619,6 +1654,60 @@ function sendFirstPartyTelemetry(eventType, props) {
   }).catch(function() {});
 }
 
+function sendGa4Event(eventName, params) {
+  if (!gaMeasurementId || typeof globalThis.gtag !== 'function') return;
+  globalThis.gtag('event', eventName, params || {});
+}
+
+function initializePaidSprintPath() {
+  var panel = document.querySelector('[data-sprint-paid-path]');
+  if (!panel) return;
+  var diagnosticLink = document.querySelector('[data-sprint-diagnostic-link]');
+  var sprintLink = document.querySelector('[data-workflow-sprint-link]');
+  var diagnosticPrice = document.querySelector('[data-sprint-diagnostic-price]');
+  var sprintPrice = document.querySelector('[data-workflow-sprint-price]');
+  if (diagnosticPrice) diagnosticPrice.textContent = String(sprintDiagnosticPriceDollars);
+  if (sprintPrice) sprintPrice.textContent = String(workflowSprintPriceDollars);
+  var hasDiagnosticUrl = /^https?:\/\//.test(sprintDiagnosticCheckoutUrl);
+  var hasSprintUrl = /^https?:\/\//.test(workflowSprintCheckoutUrl);
+  if (!hasDiagnosticUrl && !hasSprintUrl) return;
+  panel.classList.add('visible');
+  if (hasDiagnosticUrl && diagnosticLink) {
+    diagnosticLink.href = sprintDiagnosticCheckoutUrl;
+    diagnosticLink.addEventListener('click', function() {
+      sendFirstPartyTelemetry('workflow_sprint_diagnostic_checkout_started', {
+        ctaId: 'workflow_sprint_diagnostic_checkout',
+        ctaPlacement: 'team_paid_path',
+        planId: 'team',
+        offer: 'workflow_hardening_diagnostic',
+        price: sprintDiagnosticPriceDollars,
+      });
+      sendGa4Event('begin_checkout', {
+        currency: 'USD',
+        value: sprintDiagnosticPriceDollars,
+        items: [{ item_id: 'workflow_hardening_diagnostic', item_name: 'Workflow Hardening Diagnostic' }],
+      });
+    });
+  }
+  if (hasSprintUrl && sprintLink) {
+    sprintLink.href = workflowSprintCheckoutUrl;
+    sprintLink.addEventListener('click', function() {
+      sendFirstPartyTelemetry('workflow_sprint_checkout_started', {
+        ctaId: 'workflow_sprint_checkout',
+        ctaPlacement: 'team_paid_path',
+        planId: 'team',
+        offer: 'workflow_hardening_sprint',
+        price: workflowSprintPriceDollars,
+      });
+      sendGa4Event('begin_checkout', {
+        currency: 'USD',
+        value: workflowSprintPriceDollars,
+        items: [{ item_id: 'workflow_hardening_sprint', item_name: 'Workflow Hardening Sprint' }],
+      });
+    });
+  }
+}
+
 function initializeTeamIntakeTelemetry() {
   document.querySelectorAll('[data-team-intake-form]').forEach(function(form) {
     var started = false;
@@ -1640,6 +1729,11 @@ function initializeTeamIntakeTelemetry() {
         ctaId: readHidden('ctaId'),
         ctaPlacement: readHidden('ctaPlacement'),
         planId: readHidden('planId') || 'team',
+      });
+      sendGa4Event('generate_lead', {
+        currency: 'USD',
+        value: workflowSprintPriceDollars,
+        method: 'workflow_sprint_intake',
       });
     });
   });
@@ -1787,6 +1881,7 @@ function copyInstall(el) {
 </script>
 <script>
 initializeBuyerIntentForms();
+initializePaidSprintPath();
 initializeTeamIntakeTelemetry();
 
 async function handleProTrial() {

@@ -75,6 +75,9 @@ test('public landing page keeps optional GA4 and Search Console hooks available 
   assert.match(landingPage, /const serverSessionId = '__SERVER_SESSION_ID__';/);
   assert.match(landingPage, /const serverAcquisitionId = '__SERVER_ACQUISITION_ID__';/);
   assert.match(landingPage, /const serverTelemetryCaptured = '__SERVER_TELEMETRY_CAPTURED__' === 'true';/);
+  assert.match(landingPage, /function sendGa4Event/);
+  assert.match(landingPage, /sendGa4Event\('generate_lead'/);
+  assert.match(landingPage, /sendGa4Event\('begin_checkout'/);
 });
 
 test('public landing page includes pricing section with Free, Pro, and Team tiers', () => {
@@ -96,6 +99,19 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /Free Trial|Upgrade to Pro/i);
   assert.match(landingPage, /7-DAY FREE TRIAL/i);
   assert.match(landingPage, /Start Workflow Hardening Sprint/);
+});
+
+test('public landing page exposes env-driven paid sprint checkout path', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /const sprintDiagnosticCheckoutUrl = '__SPRINT_DIAGNOSTIC_CHECKOUT_URL__';/);
+  assert.match(landingPage, /const workflowSprintCheckoutUrl = '__WORKFLOW_SPRINT_CHECKOUT_URL__';/);
+  assert.match(landingPage, /data-sprint-paid-path/);
+  assert.match(landingPage, /Workflow Hardening Diagnostic/);
+  assert.match(landingPage, /Pay for diagnostic/);
+  assert.match(landingPage, /Pay for sprint/);
+  assert.match(landingPage, /workflow_sprint_diagnostic_checkout_started/);
+  assert.match(landingPage, /workflow_sprint_checkout_started/);
 });
 
 test('public landing page includes Plausible analytics and search engine proof bar', () => {

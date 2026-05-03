@@ -2776,6 +2776,16 @@ test('runRevenueLoop writes an evidence-backed target queue with discovery warni
     const { report, written } = await runRevenueLoop({
       maxTargets: 2,
       reportDir,
+      getOperationalBillingSummaryFn: async () => ({
+        source: 'local',
+        fallbackReason: 'hosted operational summary is disabled for this test',
+        summary: {
+          trafficMetrics: { visitors: 3, checkoutStarts: 1 },
+          signups: { uniqueLeads: 1 },
+          revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+          pipeline: { workflowSprintLeads: { total: 0 } },
+        },
+      }),
       fetchImpl: async (url) => {
         if (String(url).includes('Claude+Code+review+automation')) {
           return {
