@@ -1962,6 +1962,12 @@ function isProductionRolloutTarget(target) {
     && normalizeText(target.temperature).toLowerCase() !== 'warm';
 }
 
+function formatBillingSource(report = {}) {
+  const source = normalizeText(report?.source) || 'unknown';
+  const fallbackReason = normalizeText(report?.fallbackReason);
+  return fallbackReason ? `${source} (${fallbackReason})` : source;
+}
+
 function buildOperatorHandoffPayload(report) {
   const rankedTargets = rankOperatorTargets(Array.isArray(report?.targets) ? report.targets.map(enrichRenderableTarget) : []);
   const followUpTargets = rankedTargets.filter((target) => normalizePipelineStage(target.pipelineStage) !== 'targeted');
@@ -2010,6 +2016,8 @@ function buildOperatorHandoffPayload(report) {
     summary: {
       revenueState: normalizeText(report?.directive?.state) || 'cold-start',
       headline: normalizeText(report?.directive?.headline) || 'No verified revenue and no active pipeline.',
+      snapshotWindow: normalizeText(report?.snapshotWindow) || 'today',
+      billingSource: formatBillingSource(report),
       billingVerification: normalizeText(report?.verification?.label) || 'n/a',
       paidOrders: Number(report?.snapshot?.paidOrders || 0),
       checkoutStarts: Number(report?.snapshot?.checkoutStarts || 0),
@@ -2069,6 +2077,8 @@ function renderOperatorHandoffMarkdown(report) {
     '## Current Snapshot',
     `- Revenue state: ${handoff.summary.revenueState}`,
     `- Headline: ${handoff.summary.headline}`,
+    `- Revenue window: ${handoff.summary.snapshotWindow}`,
+    `- Billing source: ${handoff.summary.billingSource}`,
     `- Billing verification: ${handoff.summary.billingVerification}`,
     `- Paid orders: ${handoff.summary.paidOrders}`,
     `- Checkout starts: ${handoff.summary.checkoutStarts}`,
@@ -2160,6 +2170,10 @@ function renderOperatorSendNowCsv(report) {
       'temperature',
       'source',
       'channel',
+      'revenueState',
+      'snapshotWindow',
+      'billingSource',
+      'billingVerification',
       'pipelineStage',
       'pipelineLeadId',
       'username',
@@ -2195,6 +2209,10 @@ function renderOperatorSendNowCsv(report) {
       row.temperature,
       row.source,
       row.channel,
+      payload.summary.revenueState,
+      payload.summary.snapshotWindow,
+      payload.summary.billingSource,
+      payload.summary.billingVerification,
       row.pipelineStage,
       row.pipelineLeadId,
       row.username,
