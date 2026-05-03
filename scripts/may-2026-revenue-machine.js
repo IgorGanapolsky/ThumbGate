@@ -37,51 +37,56 @@ function conversionRate(numerator, denominator) {
 }
 
 function topLeakingCounter({ starts = {}, paid = {}, revenueCents = {}, minimumStarts = 3 } = {}) {
-  const rows = Object.keys(starts || {})
-    .map((key) => {
-      const checkoutStarts = number(starts[key]);
-      const paidOrders = number(paid[key]);
-      const bookedRevenueCents = number(revenueCents[key]);
-      const leakCount = Math.max(0, checkoutStarts - paidOrders);
-      const paidRate = conversionRate(paidOrders, checkoutStarts);
-      return {
-        key,
-        checkoutStarts,
-        paidOrders,
-        bookedRevenueCents,
-        leakCount,
-        paidRate,
-      };
-    })
-    .filter((row) => row.checkoutStarts >= minimumStarts)
-    .sort((left, right) => (
-      right.leakCount - left.leakCount ||
-      left.paidRate - right.paidRate ||
-      right.checkoutStarts - left.checkoutStarts ||
-      left.key.localeCompare(right.key)
-    ));
-  return rows[0] || null;
+  let top = null;
+  for (const key of Object.keys(starts || {})) {
+    const checkoutStarts = number(starts[key]);
+    if (checkoutStarts < minimumStarts) continue;
+
+    const paidOrders = number(paid[key]);
+    const row = {
+      key,
+      checkoutStarts,
+      paidOrders,
+      bookedRevenueCents: number(revenueCents[key]),
+      leakCount: Math.max(0, checkoutStarts - paidOrders),
+      paidRate: conversionRate(paidOrders, checkoutStarts),
+    };
+
+    if (!top || compareLeakRows(row, top) < 0) top = row;
+  }
+  return top;
 }
 
-function humanBlockedAction(status, title, why, exactInputNeeded, autonomousAfterInput) {
+function compareLeakRows(left, right) {
+  return (
+    right.leakCount - left.leakCount ||
+    left.paidRate - right.paidRate ||
+    right.checkoutStarts - left.checkoutStarts ||
+    left.key.localeCompare(right.key)
+  );
+}
+
+function createAction(owner, status, title, why, extra) {
   return {
-    owner: 'human',
+    owner,
     status,
     title,
     why,
-    exactInputNeeded,
-    autonomousAfterInput,
+    ...extra,
   };
 }
 
+function humanBlockedAction(status, title, why, exactInputNeeded, autonomousAfterInput) {
+  return createAction('human', status, title, why, {
+    exactInputNeeded,
+    autonomousAfterInput,
+  });
+}
+
 function agentReadyAction(title, why, autonomousAction) {
-  return {
-    owner: 'agent',
-    status: 'ready',
-    title,
-    why,
+  return createAction('agent', 'ready', title, why, {
     autonomousAction,
-  };
+  });
 }
 
 function buildRevenueMetrics(report) {
