@@ -1,6 +1,6 @@
 # Roo Sunset Demand Pack
 
-Updated: 2026-05-03T16:57:09.880Z
+Updated: 2026-05-03T21:08:24.769Z
 
 This is a sales operator artifact. It is not proof of sent outreach, installs, paid revenue, or partner approval by itself.
 
@@ -8,10 +8,10 @@ This is a sales operator artifact. It is not proof of sent outreach, installs, p
 Turn Roo shutdown urgency into tracked migration clicks, proof-backed setup demand, and paid intent without inventing traction.
 
 ## Positioning
-- State: post-first-dollar
+- State: cold-start
 - Headline: Turn Roo shutdown urgency into memory-portable paid intent.
 - Short description: ThumbGate gives Roo migrants one durable asset to keep: local lesson memory that survives the move to Cline and becomes enforceable Pre-Action Checks.
-- Summary: Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
+- Summary: No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.
 
 ## Canonical Identity
 - Display name: ThumbGate
@@ -59,11 +59,11 @@ Turn Roo shutdown urgency into tracked migration clicks, proof-backed setup dema
 
 ## Operator Queue
 ### Roo user who needs lesson memory to survive the move to Cline
-- Evidence: Roo officially documents the May 15, 2026 shutdown and recommends Cline as the open-source successor. ThumbGate already ships the Cline install guide and keeps lessons in a local SQLite file.
+- Evidence: Roo officially documents the May 15, 2026 shutdown and recommends Cline as the open-source successor. ThumbGate already ships a hosted migration guide, the exact Cline install doc, and keeps lessons in a local SQLite file.
 - Proof trigger: They can name one correction from Roo they do not want to reteach after migrating.
-- Proof asset: https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/cline/INSTALL.md
-- Next ask: https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/cline/INSTALL.md?utm_source=roo_sunset&utm_medium=migration_pack&utm_campaign=roo_queue_install&utm_content=install_doc&campaign_variant=memory_migrant&offer_code=ROO-QUEUE_INSTALL&cta_id=roo_queue_install&cta_placement=operator_queue&surface=roo_migration
-- Recommended motion: Cline install guide -> setup guide -> Pro only after one saved correction is concrete.
+- Proof asset: https://thumbgate-production.up.railway.app/guides/roo-code-alternative-cline
+- Next ask: https://thumbgate-production.up.railway.app/guides/roo-code-alternative-cline?utm_source=roo_sunset&utm_medium=migration_pack&utm_campaign=roo_queue_migration_guide&utm_content=guide&campaign_variant=memory_migrant&offer_code=ROO-QUEUE-MIGRATION-GUIDE&cta_id=roo_queue_migration_guide&cta_placement=operator_queue&surface=roo_migration
+- Recommended motion: Hosted migration guide -> exact Cline install doc -> Pro only after one saved correction is concrete.
 
 ### Team migrating one risky workflow off Roo
 - Evidence: 6 workflow-control target(s), 3 business-system target(s), and 7 sprint-fit target(s) already favor workflow hardening over a generic plugin pitch.
@@ -81,7 +81,7 @@ Turn Roo shutdown urgency into tracked migration clicks, proof-backed setup dema
 
 ## Outreach Drafts
 ### GitHub DM or founder reply — Roo user who wants their corrections to survive the move to Cline
-Roo can sunset. Your lesson memory should not. If you already know Cline is the successor, the fastest path is to keep the corrections local and move them with one install lane: https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/cline/INSTALL.md?utm_source=roo_sunset&utm_medium=operator_outreach&utm_campaign=roo_outreach_install&utm_content=install_doc&campaign_variant=memory_migrant&offer_code=ROO-OUTREACH_INSTALL&cta_id=roo_outreach_install&cta_placement=outreach_draft&surface=roo_outreach .
+Roo can sunset. Your lesson memory should not. The fastest path is to start with the hosted migration guide so the memory story and the install path stay together: https://thumbgate-production.up.railway.app/guides/roo-code-alternative-cline?utm_source=roo_sunset&utm_medium=operator_outreach&utm_campaign=roo_outreach_migration_guide&utm_content=guide&campaign_variant=memory_migrant&offer_code=ROO-OUTREACH-MIGRATION-GUIDE&cta_id=roo_outreach_migration_guide&cta_placement=outreach_draft&surface=roo_outreach . If you want the exact Cline setup doc right away, use https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/cline/INSTALL.md?utm_source=roo_sunset&utm_medium=operator_outreach&utm_campaign=roo_outreach_install&utm_content=install_doc&campaign_variant=memory_migrant&offer_code=ROO-OUTREACH_INSTALL&cta_id=roo_outreach_install&cta_placement=outreach_draft&surface=roo_outreach .
 
 ### Pain-confirmed follow-up — Buyer who already named one repeated workflow failure
 Once the migration risk is concrete, move from urgency to proof. Send Verification Evidence plus Commercial Truth first: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md and https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md . If they want the self-serve lane, use https://thumbgate-production.up.railway.app/guide?utm_source=roo_sunset&utm_medium=operator_outreach&utm_campaign=roo_outreach_guide&utm_content=guide&campaign_variant=proof_backed_setup&offer_code=ROO-OUTREACH_GUIDE&cta_id=roo_outreach_guide&cta_placement=outreach_draft&surface=roo_outreach then https://thumbgate-production.up.railway.app/checkout/pro?utm_source=roo_sunset&utm_medium=operator_outreach&utm_campaign=roo_outreach_pro&utm_content=pro&campaign_variant=self_serve_follow_on&offer_code=ROO-OUTREACH_PRO&cta_id=roo_outreach_pro&cta_placement=outreach_draft&plan_id=pro&surface=roo_outreach . If they want help hardening one workflow before rollout, route them to https://thumbgate-production.up.railway.app/?utm_source=roo_sunset&utm_medium=operator_outreach&utm_campaign=roo_outreach_sprint&utm_content=workflow_sprint&campaign_variant=migration_workflow&offer_code=ROO-OUTREACH_SPRINT&cta_id=roo_outreach_sprint&cta_placement=outreach_draft&surface=roo_outreach#workflow-sprint-intake .
@@ -93,9 +93,9 @@ A Roo-to-Cline move is not the hard part. Keeping one risky workflow from relear
 ### Reddit — Migration post
 - Audience: Roo user evaluating Cline as the successor
 - Evidence: The public Roo shutdown notice creates urgency, but the strongest first-touch angle is still memory portability rather than abstract governance.
-- CTA: https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/cline/INSTALL.md?utm_source=roo_sunset&utm_medium=reddit_post&utm_campaign=roo_channel_reddit&utm_content=install_doc&campaign_variant=memory_portability&offer_code=ROO-CHANNEL-REDDIT&cta_id=roo_channel_reddit&cta_placement=channel_draft&surface=roo_reddit
+- CTA: https://thumbgate-production.up.railway.app/guides/roo-code-alternative-cline?utm_source=roo_sunset&utm_medium=reddit_post&utm_campaign=roo_channel_reddit&utm_content=guide&campaign_variant=memory_portability&offer_code=ROO-CHANNEL-REDDIT&cta_id=roo_channel_reddit&cta_placement=channel_draft&surface=roo_reddit
 - Proof timing: Lead with the migration path first. Hold proof links for replies or DMs after the buyer names the repeated mistake.
-Roo sunsets on May 15, 2026. Cline is the obvious successor, but the real migration question is whether your agent keeps its corrections. ThumbGate keeps those lessons in a local SQLite file so the move is not “reteach everything from scratch.” Migration path: https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/cline/INSTALL.md?utm_source=roo_sunset&utm_medium=reddit_post&utm_campaign=roo_channel_reddit&utm_content=install_doc&campaign_variant=memory_portability&offer_code=ROO-CHANNEL-REDDIT&cta_id=roo_channel_reddit&cta_placement=channel_draft&surface=roo_reddit .
+Roo sunsets on May 15, 2026. Cline is the obvious successor, but the real migration question is whether your agent keeps its corrections. ThumbGate keeps those lessons in a local SQLite file so the move is not “reteach everything from scratch.” Start with the hosted migration guide: https://thumbgate-production.up.railway.app/guides/roo-code-alternative-cline?utm_source=roo_sunset&utm_medium=reddit_post&utm_campaign=roo_channel_reddit&utm_content=guide&campaign_variant=memory_portability&offer_code=ROO-CHANNEL-REDDIT&cta_id=roo_channel_reddit&cta_placement=channel_draft&surface=roo_reddit .
 
 ### LinkedIn — Founder post
 - Audience: Platform or AI-product lead migrating one workflow off Roo
