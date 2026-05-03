@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-30T02:05:36.802Z",
+  "generatedAt": "2026-05-03T12:51:45.260Z",
   "channel": "Codex",
   "objective": "Turn Codex plugin discovery into tracked guide opens, bundle downloads, Pro checkout starts, and qualified workflow-hardening conversations.",
   "canonicalIdentity": {
@@ -29,20 +29,20 @@
       "count": 6,
       "summary": "6 current targets expose review, approval, governance, or workflow control surfaces where a Codex install story can convert into a workflow-hardening offer.",
       "examples": [
+        "montenegronyc/backporcher",
         "dolutech/engine_context",
-        "Adqui9608/ai-code-review-agent",
-        "Abhi268170/Stagix"
+        "Adqui9608/ai-code-review-agent"
       ]
     },
     {
       "key": "production_rollout",
       "label": "Production rollout proof matters",
-      "count": 3,
-      "summary": "3 targets touch production-sensitive workflows where proof and rollback safety should appear before the buyer expands usage.",
+      "count": 4,
+      "summary": "4 targets touch production-sensitive workflows where proof and rollback safety should appear before the buyer expands usage.",
       "examples": [
+        "montenegronyc/backporcher",
         "dolutech/engine_context",
-        "Adqui9608/ai-code-review-agent",
-        "Abhi268170/Stagix"
+        "Adqui9608/ai-code-review-agent"
       ]
     }
   ],
@@ -247,18 +247,32 @@
       "summary": "Use these when the buyer already exposes a plugin, local-hook, or repo-backed tooling surface and should start with the guide path.",
       "targets": [
         {
-          "account": "iliaal/compound-engineering-plugin",
+          "account": "bherald/personal-life-os-core",
           "temperature": "cold",
           "source": "github / github",
-          "evidenceScore": 12,
-          "whyNow": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
-          "evidence": "workflow control surface; agent infrastructure; self-serve agent tooling; 11 GitHub stars; updated in the last 7 days",
-          "contact": "http://ilia.ws/",
+          "evidenceScore": 14,
+          "whyNow": "Target looks like a self-serve tooling surface, so Pro is the cleaner CTA unless a concrete workflow pain is confirmed.",
+          "evidence": "workflow control surface; production or platform workflow; agent infrastructure; self-serve agent tooling; updated in the last 7 days",
+          "contact": "https://wphc.us/",
           "cta": "https://thumbgate-production.up.railway.app/guide",
           "proofTrigger": "Use proof pack only after the buyer confirms pain.",
-          "firstTouchDraft": "Hey @iliaal, saw you're building around `compound-engineering-plugin`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
-          "markContactedCommand": "npm run sales:pipeline -- advance --lead 'github_iliaal_compound_engineering_plugin' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-          "pipelineLeadId": "github_iliaal_compound_engineering_plugin"
+          "firstTouchDraft": "Hey @bherald, saw you're building around `personal-life-os-core`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
+          "markContactedCommand": "npm run sales:pipeline -- advance --lead 'github_bherald_personal_life_os_core' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+          "pipelineLeadId": "github_bherald_personal_life_os_core"
+        },
+        {
+          "account": "berkcangumusisik/repo-seatbelt",
+          "temperature": "cold",
+          "source": "github / github",
+          "evidenceScore": 13,
+          "whyNow": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
+          "evidence": "workflow control surface; business-system integration; agent infrastructure; self-serve agent tooling; updated in the last 7 days",
+          "contact": "https://www.berkcangumusisik.com/",
+          "cta": "https://thumbgate-production.up.railway.app/guide",
+          "proofTrigger": "Use proof pack only after the buyer confirms pain.",
+          "firstTouchDraft": "Hey @berkcangumusisik, saw you're building around `repo-seatbelt`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
+          "markContactedCommand": "npm run sales:pipeline -- advance --lead 'github_berkcangumusisik_repo_seatbelt' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+          "pipelineLeadId": "github_berkcangumusisik_repo_seatbelt"
         },
         {
           "account": "zaxbysauce/opencode-swarm",
@@ -266,7 +280,7 @@
           "source": "github / github",
           "evidenceScore": 12,
           "whyNow": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
-          "evidence": "workflow control surface; self-serve agent tooling; 246 GitHub stars; updated in the last 7 days",
+          "evidence": "workflow control surface; self-serve agent tooling; 291 GitHub stars; updated in the last 7 days",
           "contact": "https://github.com/zaxbysauce",
           "cta": "https://thumbgate-production.up.railway.app/guide",
           "proofTrigger": "Use proof pack only after the buyer confirms pain.",
@@ -303,13 +317,13 @@
       "motion": "Workflow Hardening Sprint"
     },
     {
-      "account": "dolutech/engine_context",
+      "account": "montenegronyc/backporcher",
       "temperature": "cold",
       "why": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
       "motion": "Workflow Hardening Sprint"
     },
     {
-      "account": "Adqui9608/ai-code-review-agent",
+      "account": "dolutech/engine_context",
       "temperature": "cold",
       "why": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
       "motion": "Workflow Hardening Sprint"

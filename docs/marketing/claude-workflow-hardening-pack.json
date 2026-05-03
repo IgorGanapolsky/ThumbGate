@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-30T02:05:36.802Z",
+  "generatedAt": "2026-05-03T12:51:45.260Z",
   "state": "post-first-dollar",
   "objective": "Turn Claude install demand and workflow-hardening pain into tracked sprint intakes, proof clicks, and Pro checkout starts without making approval or revenue claims the repo cannot verify.",
   "headline": "Turn Claude install demand into workflow-hardening paid intent.",
@@ -170,22 +170,22 @@
     },
     {
       "key": "prospect_5",
+      "account": "montenegronyc/backporcher",
+      "temperature": "cold",
+      "motion": "Workflow Hardening Sprint",
+      "reason": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
+      "evidence": "workflow control surface, production or platform workflow, business-system integration, agent infrastructure, 13 GitHub stars, updated in the last 7 days",
+      "sourceUrl": "https://github.com/montenegronyc/backporcher",
+      "nextAsk": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+    },
+    {
+      "key": "prospect_6",
       "account": "dolutech/engine_context",
       "temperature": "cold",
       "motion": "Workflow Hardening Sprint",
       "reason": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
       "evidence": "workflow control surface, production or platform workflow, business-system integration, agent infrastructure, 8 GitHub stars",
       "sourceUrl": "https://github.com/dolutech/engine_context",
-      "nextAsk": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
-    },
-    {
-      "key": "prospect_6",
-      "account": "Adqui9608/ai-code-review-agent",
-      "temperature": "cold",
-      "motion": "Workflow Hardening Sprint",
-      "reason": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
-      "evidence": "workflow control surface, production or platform workflow, business-system integration, agent infrastructure, updated in the last 7 days",
-      "sourceUrl": "https://github.com/Adqui9608/ai-code-review-agent",
       "nextAsk": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
     }
   ],
@@ -225,7 +225,7 @@
       "channel": "LinkedIn",
       "format": "Founder post",
       "audience": "Platform lead, consultancy owner, or AI delivery lead evaluating Claude rollout risk",
-      "evidenceSummary": "3 production/platform targets and 4 business-system targets in the current report point to approval boundaries, rollback safety, and review-ready rollout proof as the strongest B2B angle.",
+      "evidenceSummary": "4 production/platform targets and 4 business-system targets in the current report point to approval boundaries, rollback safety, and review-ready rollout proof as the strongest B2B angle.",
       "cta": "https://thumbgate-production.up.railway.app/?utm_source=claude&utm_medium=linkedin_post&utm_campaign=claude_channel_linkedin&utm_content=landing_section&campaign_variant=review_ready&offer_code=CLAUDE-CHANNEL-LINKEDIN&cta_id=claude_channel_linkedin&cta_placement=channel_draft&surface=claude_linkedin#claude-desktop",
       "proofTiming": "Public post can mention proof-ready rollout, but keep the proof links for the reply or DM after pain is confirmed.",
       "draft": "Teams already shipping with Claude usually do not need another agent platform. They need one workflow that stops repeating the same mistake before it touches a repo, approval step, or customer system. ThumbGate is the lane I use for that: local-first install, repeated-mistake capture, and Pre-Action Checks before the next risky action runs. If you are evaluating Claude rollout risk, start with the review-ready install lane here: https://thumbgate-production.up.railway.app/?utm_source=claude&utm_medium=linkedin_post&utm_campaign=claude_channel_linkedin&utm_content=landing_section&campaign_variant=review_ready&offer_code=CLAUDE-CHANNEL-LINKEDIN&cta_id=claude_channel_linkedin&cta_placement=channel_draft&surface=claude_linkedin#claude-desktop ."
@@ -301,7 +301,7 @@
   ],
   "evidenceBackstop": {
     "warmClaudeTargetCount": 2,
-    "productionTargetCount": 3,
+    "productionTargetCount": 4,
     "businessSystemTargetCount": 4,
     "landingSourceUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/landing-page.html",
     "reviewPacketUrl": "https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-plugin-review.zip"
