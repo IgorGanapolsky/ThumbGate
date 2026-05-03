@@ -10,7 +10,7 @@ const {
   main,
 } = require('../scripts/autonomous-sales-agent');
 
-test('automation emits LinkedIn, Aiventyx, ChatGPT, Codex, and GitHub outreach assets from the revenue loop outputs', async () => {
+test('automation emits LinkedIn, Aiventyx, ChatGPT, Codex, OpenCode, and GitHub outreach assets from the revenue loop outputs', async () => {
   const calls = [];
   const logs = [];
   const originalLog = console.log;
@@ -111,6 +111,14 @@ test('automation emits LinkedIn, Aiventyx, ChatGPT, Codex, and GitHub outreach a
         calls.push(['writeCodexPluginRevenuePack', pack.channel, options.writeDocs]);
         return { docsPath: '/tmp/codex-plugin.md' };
       },
+      buildOpenCodeRevenuePack(report) {
+        calls.push(['buildOpenCodeRevenuePack', report.targets.length]);
+        return { channel: 'opencode' };
+      },
+      writeOpenCodeRevenuePack(pack, options) {
+        calls.push(['writeOpenCodeRevenuePack', pack.channel, options.writeDocs]);
+        return { docsPath: '/tmp/opencode.md' };
+      },
       runGitHubOutreach(options) {
         calls.push(['runGitHubOutreach', options]);
         return { docsPath: options.outPath };
@@ -142,6 +150,8 @@ test('automation emits LinkedIn, Aiventyx, ChatGPT, Codex, and GitHub outreach a
     ['writeCodexMarketplaceRevenuePack', 'codex', true],
     ['buildCodexPluginRevenuePack', 2],
     ['writeCodexPluginRevenuePack', 'codex-plugin', true],
+    ['buildOpenCodeRevenuePack', 2],
+    ['writeOpenCodeRevenuePack', 'opencode', true],
     ['runGitHubOutreach', {
       queuePath: path.resolve('/tmp/reports/gtm', 'gtm-target-queue.jsonl'),
       reportPath: path.resolve('/tmp/reports/gtm', 'gtm-revenue-loop.json'),
@@ -159,6 +169,7 @@ test('automation emits LinkedIn, Aiventyx, ChatGPT, Codex, and GitHub outreach a
   assert.ok(logs.some((line) => line.includes('Reddit DM pack updated: /tmp/reddit.md')));
   assert.ok(logs.some((line) => line.includes('Codex marketplace pack updated: /tmp/codex-marketplace.md')));
   assert.ok(logs.some((line) => line.includes('Codex plugin pack updated: /tmp/codex-plugin.md')));
+  assert.ok(logs.some((line) => line.includes('OpenCode pack updated: /tmp/opencode.md')));
   assert.ok(logs.some((line) => line.includes('GitHub outreach asset updated: /tmp/reports/gtm/OUTREACH_TARGETS.md')));
   assert.ok(logs.some((line) => line.includes(`GitHub outreach asset updated: ${path.resolve(repoRoot, 'docs/OUTREACH_TARGETS.md')}`)));
   assert.ok(logs.some((line) => line.includes('State: cold-start | Targets: 2')));
