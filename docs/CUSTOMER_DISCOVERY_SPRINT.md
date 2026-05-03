@@ -70,6 +70,10 @@ The revenue loop emits these operator artifacts in that folder:
 - `chatgpt-gpt-revenue-pack.md` for the ChatGPT GPT acquisition lane, trust surfaces, and paid-intent handoff copy
 - `chatgpt-gpt-revenue-pack.json` for the same ChatGPT operator pack in machine-readable form
 - `chatgpt-gpt-operator-queue.csv` for the ChatGPT lane's open-GPT, builder-repair, and trust-boundary next asks
+- `amp-workflow-hardening-pack.md` for Amp install-first positioning, repo-backed skill proof, and paid-intent follow-on copy
+- `amp-workflow-hardening-pack.json` for the same Amp operator pack in machine-readable form
+- `amp-operator-queue.csv` for Amp-specific queue rows and next asks
+- `amp-channel-drafts.csv` for Amp-specific install-first channel copy and proof timing
 - `aiventyx-marketplace-plan.md` for Aiventyx Free, Pro, and Teams marketplace submission copy
 - `aiventyx-marketplace-plan.json` for the same Aiventyx plan in machine-readable form
 - `aiventyx-marketplace-listings.csv` for dashboard-ready Aiventyx listing fields and attribution metadata
