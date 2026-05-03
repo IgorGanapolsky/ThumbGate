@@ -118,6 +118,14 @@ function isMissingCurrentBranchPr(result, prNumber) {
   return /no pull requests found for branch/i.test(formatGhError(result));
 }
 
+function isDetachedCurrentBranchLookup(result, prNumber) {
+  if (prNumber) {
+    return false;
+  }
+
+  return /could not determine current branch|not on any branch/i.test(formatGhError(result));
+}
+
 /**
  * Fetch granular PR status using GH CLI
  */
@@ -129,7 +137,10 @@ function getPrStatus(prNumber = '', runner = runGh) {
 
   const result = runner(args);
   if (result.status !== 0) {
-    if (isMissingCurrentBranchPr(result, normalizedPrNumber)) {
+    if (
+      isMissingCurrentBranchPr(result, normalizedPrNumber)
+      || isDetachedCurrentBranchLookup(result, normalizedPrNumber)
+    ) {
       return null;
     }
 

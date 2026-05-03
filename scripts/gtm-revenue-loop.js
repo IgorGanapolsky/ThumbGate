@@ -2108,6 +2108,10 @@ function buildOperatorSendNowPayload(report) {
   const rows = handoff.sections.flatMap((section) => (
     section.targets.map((target) => ({
       rank: Number(target.rank || 0),
+      revenueState: normalizeText(handoff.summary?.revenueState) || 'cold-start',
+      billingVerification: normalizeText(handoff.summary?.billingVerification) || 'n/a',
+      billingSource: normalizeText(report?.source) || 'local',
+      revenueWindow: normalizeText(report?.snapshotWindow) || 'today',
       sectionKey: section.key,
       sectionLabel: section.label,
       temperature: normalizeText(target.temperature) || 'cold',
@@ -2155,6 +2159,10 @@ function renderOperatorSendNowCsv(report) {
   const rows = [
     [
       'rank',
+      'revenueState',
+      'billingVerification',
+      'billingSource',
+      'revenueWindow',
       'sectionKey',
       'sectionLabel',
       'temperature',
@@ -2190,6 +2198,10 @@ function renderOperatorSendNowCsv(report) {
     ],
     ...payload.rows.map((row) => [
       String(row.rank || 0),
+      row.revenueState,
+      row.billingVerification,
+      row.billingSource,
+      row.revenueWindow,
       row.sectionKey,
       row.sectionLabel,
       row.temperature,
