@@ -268,8 +268,19 @@ test('public landing page includes an explicit Team rollout lane with shared wor
   assert.match(landingPage, /Check template library/i);
   assert.match(landingPage, /workflow-sprint-intake/);
   assert.match(landingPage, /Start Team Pilot Intake/i);
+  assert.match(landingPage, /id="team-pilot-intake-form"/);
+  assert.match(landingPage, /data-team-intake-form/);
+  assert.match(landingPage, /name="ctaPlacement" value="team_visible_intake"/);
+  assert.match(landingPage, /name="utmMedium" value="visible_team_intake"/);
   assert.match(landingPage, /name="planId" value="team"/);
   assert.match(landingPage, /name="ctaId" value="workflow_sprint_intake"/);
+  assert.match(landingPage, /workflow_sprint_intake_started/);
+  assert.match(landingPage, /workflow_sprint_intake_submit_attempted/);
+  assert.doesNotMatch(
+    landingPage,
+    /<details[^>]*>[\s\S]*?<form[^>]+action="\/v1\/intake\/workflow-sprint"/,
+    'Team intake must be visible without a disclosure click'
+  );
 });
 
 test('public landing page includes FAQ section with accordion interaction', () => {
@@ -358,6 +369,7 @@ test('public landing page includes Plausible custom event tracking for all CTAs'
   assert.match(landingPage, /trackClick\('.btn-install-hero', 'install_guide_click'/);
   assert.match(landingPage, /trackClick\('.btn-install-link', 'install_guide_click'/);
   assert.match(landingPage, /trackClick\('.btn-team', 'workflow_sprint_intake_click'/);
+  assert.match(landingPage, /selector: '#team-pilot-intake-form'/);
   assert.match(landingPage, /trackClick\('.btn-free', 'install_click'/);
   assert.match(landingPage, /trackClick\('.btn-demo-link', 'demo_click'/);
   assert.match(landingPage, /trackClick\('.nav-cta', 'chatgpt_gpt_click'/);
