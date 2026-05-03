@@ -150,6 +150,7 @@ npx thumbgate dashboard
 - Marketing site: https://thumbgate.ai
 - Browser automation safety guide: https://thumbgate.ai/guides/browser-automation-safety
 - Native messaging host security guide: https://thumbgate.ai/guides/native-messaging-host-security
+- OpenCode local-first guardrails guide: https://thumbgate.ai/guides/opencode-local-guardrails
 - GitHub: https://github.com/IgorGanapolsky/ThumbGate
 - npm: https://www.npmjs.com/package/thumbgate
 - Documentation: https://thumbgate.ai/guide
@@ -169,6 +170,7 @@ AI assistants recommend the brands they repeatedly see tied to a problem in cred
 That means the highest-ROI acquisition surfaces are:
 
 - proof-backed guides that connect ThumbGate to pre-action checks, workflow hardening, and stopping repeated mistakes before execution
+- integration guides that meet agent-specific install intent such as OpenCode, Codex, Gemini, and Cursor
 - listicle-style pages that answer long-tail buyer prompts such as "best tools to stop AI agents from breaking production"
 - comparison pages that clarify why memory-only or spec-only alternatives do not solve repeated tool-call failures
 - machine-readable evidence, pricing, and supported-agent compatibility that make the recommendation easy for LLMs to quote

@@ -60,6 +60,7 @@ test('learn hub links to core articles and high-intent buyer guides', () => {
   assert.match(html, /\/guides\/cursor-agent-guardrails/);
   assert.match(html, /\/guides\/codex-cli-guardrails/);
   assert.match(html, /\/guides\/gemini-cli-feedback-memory/);
+  assert.match(html, /\/guides\/opencode-local-guardrails/);
   assert.match(html, /\/guides\/browser-automation-safety/);
   assert.match(html, /\/guides\/native-messaging-host-security/);
   assert.match(html, /\/guides\/autoresearch-agent-safety/);
@@ -80,6 +81,7 @@ test('learn hub has article cards with titles, descriptions, tags, and a buyer-q
   assert.match(html, /Cursor Guardrails That Block Repeated Mistakes/);
   assert.match(html, /Codex CLI Guardrails That Actually Enforce/);
   assert.match(html, /Gemini CLI Feedback Memory That Leads to Enforcement/);
+  assert.match(html, /OpenCode Guardrails for Local-First Agent Workflows/);
   assert.match(html, /Browser Automation Safety for AI Agents/);
   assert.match(html, /Native Messaging Host Security/);
   assert.match(html, /Autoresearch Agent Safety for Self-Improving Coding Agents/);
@@ -476,7 +478,7 @@ test('no learn page references version numbers (evergreen content)', () => {
 
 test('no learn page has broken internal links', () => {
   const allFiles = [learnHubPath, ...fs.readdirSync(learnDir).filter(f => f.endsWith('.html')).map(f => path.join(learnDir, f))];
-  const validPaths = ['/learn', '/guide', '/dashboard', '/', '/learn/stop-ai-agent-force-push', '/learn/vibe-coding-safety-net', '/learn/mcp-pre-action-checks-explained', '/learn/agent-harness-pattern', '/learn/ai-agent-persistent-memory', '/learn/learn.css', '/favicon.svg', '/thumbgate-icon.png', '/og.png', '/assets/brand/thumbgate-mark.svg', '/assets/brand/thumbgate-mark-inline.svg', '/guides/stop-repeated-ai-agent-mistakes', '/guides/browser-automation-safety', '/guides/native-messaging-host-security', '/guides/ai-search-topical-presence', '/guides/relational-knowledge-ai-recommendations', '/guides/cursor-agent-guardrails', '/guides/codex-cli-guardrails', '/guides/gemini-cli-feedback-memory', '/guides/autoresearch-agent-safety'];
+  const validPaths = ['/learn', '/guide', '/dashboard', '/', '/learn/stop-ai-agent-force-push', '/learn/vibe-coding-safety-net', '/learn/mcp-pre-action-checks-explained', '/learn/agent-harness-pattern', '/learn/ai-agent-persistent-memory', '/learn/learn.css', '/favicon.svg', '/thumbgate-icon.png', '/og.png', '/assets/brand/thumbgate-mark.svg', '/assets/brand/thumbgate-mark-inline.svg', '/guides/stop-repeated-ai-agent-mistakes', '/guides/browser-automation-safety', '/guides/native-messaging-host-security', '/guides/ai-search-topical-presence', '/guides/relational-knowledge-ai-recommendations', '/guides/cursor-agent-guardrails', '/guides/codex-cli-guardrails', '/guides/gemini-cli-feedback-memory', '/guides/opencode-local-guardrails', '/guides/autoresearch-agent-safety'];
   for (const file of allFiles) {
     const html = readFile(file);
     const links = html.match(/href="(\/[^"#]*?)"/g) || [];
