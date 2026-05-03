@@ -1914,6 +1914,14 @@ function renderOperatorPriorityTargetMarkdown(target, index) {
   ];
 }
 
+function renderOperatorPrioritySectionTargetsMarkdown(targets, startIndex, emptyMessage) {
+  if (!targets.length) {
+    return [emptyMessage, ''];
+  }
+
+  return targets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index + startIndex));
+}
+
 function buildOperatorPriorityTargetSummary(target, index) {
   const enrichedTarget = enrichRenderableTarget(target);
   const label = normalizeText(enrichedTarget.repoName)
@@ -2041,21 +2049,31 @@ function renderOperatorHandoffMarkdown(report) {
   const selfServeTargets = handoff.sections.find((section) => section.key === 'close_now_self_serve_pro')?.targets || [];
   const productionTargets = handoff.sections.find((section) => section.key === 'send_next_production_rollout')?.targets || [];
   const coldTargets = handoff.sections.find((section) => section.key === 'seed_next_cold_github')?.targets || [];
-  const followUpLines = followUpTargets.length
-    ? followUpTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index))
-    : ['- No in-flight follow-ups are currently tracked.', ''];
-  const warmLines = warmTargets.length
-    ? warmTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index + followUpTargets.length))
-    : ['- No warm discovery targets are available for this run.', ''];
-  const selfServeLines = selfServeTargets.length
-    ? selfServeTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index + followUpTargets.length + warmTargets.length))
-    : ['- No self-serve close targets are available for this run.', ''];
-  const productionLines = productionTargets.length
-    ? productionTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index + followUpTargets.length + warmTargets.length + selfServeTargets.length))
-    : ['- No production-rollout targets are available for this run.', ''];
-  const coldLines = coldTargets.length
-    ? coldTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index + followUpTargets.length + warmTargets.length + selfServeTargets.length + productionTargets.length))
-    : ['- No cold GitHub targets are available for this run.', ''];
+  const followUpLines = renderOperatorPrioritySectionTargetsMarkdown(
+    followUpTargets,
+    0,
+    '- No in-flight follow-ups are currently tracked.',
+  );
+  const warmLines = renderOperatorPrioritySectionTargetsMarkdown(
+    warmTargets,
+    followUpTargets.length,
+    '- No warm discovery targets are available for this run.',
+  );
+  const selfServeLines = renderOperatorPrioritySectionTargetsMarkdown(
+    selfServeTargets,
+    followUpTargets.length + warmTargets.length,
+    '- No self-serve close targets are available for this run.',
+  );
+  const productionLines = renderOperatorPrioritySectionTargetsMarkdown(
+    productionTargets,
+    followUpTargets.length + warmTargets.length + selfServeTargets.length,
+    '- No production-rollout targets are available for this run.',
+  );
+  const coldLines = renderOperatorPrioritySectionTargetsMarkdown(
+    coldTargets,
+    followUpTargets.length + warmTargets.length + selfServeTargets.length + productionTargets.length,
+    '- No cold GitHub targets are available for this run.',
+  );
 
   return [
     '# Revenue Operator Priority Handoff',
@@ -2100,6 +2118,44 @@ function renderOperatorHandoffMarkdown(report) {
     ...productionLines,
     '## Seed Next: Cold GitHub',
     ...coldLines,
+  ].join('\n');
+}
+
+function renderSelfServeClosePackMarkdown(report) {
+  const handoff = buildOperatorHandoffPayload(report);
+  const selfServeTargets = handoff.sections.find((section) => section.key === 'close_now_self_serve_pro')?.targets || [];
+  const selfServeLines = renderOperatorPrioritySectionTargetsMarkdown(
+    selfServeTargets,
+    0,
+    '- No self-serve close targets are available for this run.',
+  );
+
+  return [
+    '# Self-Serve Close Pack',
+    '',
+    `Updated: ${handoff.generatedAt}`,
+    '',
+    'This pack isolates the evidence-backed self-serve close lane from the broader revenue loop so an operator can work the guide-to-Pro motion without digging through warm discovery or sprint-first rows.',
+    '',
+    'Use `operator-priority-handoff.md` for the full ranked queue and `gtm-marketplace-copy.md` for broader listing language. This pack is the focused conversion layer for current self-serve buyers.',
+    '',
+    '## Current Snapshot',
+    `- Revenue state: ${handoff.summary.revenueState}`,
+    `- Billing verification: ${handoff.summary.billingVerification}`,
+    `- Self-serve closes ready now: ${handoff.summary.selfServeTargetsReadyNow}`,
+    `- Checkout starts: ${handoff.summary.checkoutStarts}`,
+    '',
+    '## Self-Serve Rules',
+    '- Lead with the proof-backed setup guide first.',
+    `- ${OFFER_SPLIT_RULE}`,
+    '- Use [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) and [COMMERCIAL_TRUTH.md](../COMMERCIAL_TRUTH.md) only after the buyer confirms pain.',
+    '',
+    '```bash',
+    handoff.importCommand,
+    '```',
+    '',
+    '## Close Now: Self-Serve Pro',
+    ...selfServeLines,
   ].join('\n');
 }
 
@@ -2449,6 +2505,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
   const operatorHandoffJsonDocsPath = path.join(docsDir, 'operator-priority-handoff.json');
   const operatorSendNowCsvDocsPath = path.join(docsDir, 'operator-send-now.csv');
   const operatorSendNowJsonDocsPath = path.join(docsDir, 'operator-send-now.json');
+  const selfServeClosePackDocsPath = path.join(docsDir, 'self-serve-close-pack.md');
   const markdown = renderRevenueLoopMarkdown(report);
   const marketplaceCopy = report.marketplaceCopy || buildMarketplaceCopy(report);
   const marketplaceMarkdown = renderMarketplaceCopyMarkdown(marketplaceCopy);
@@ -2459,6 +2516,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
   const operatorHandoffMarkdown = renderOperatorHandoffMarkdown(report);
   const operatorSendNow = buildOperatorSendNowPayload(report);
   const operatorSendNowCsv = renderOperatorSendNowCsv(report);
+  const selfServeClosePackMarkdown = renderSelfServeClosePackMarkdown(report);
   const reportDir = normalizeText(options.reportDir)
     ? path.resolve(repoRoot, options.reportDir)
     : '';
@@ -2477,6 +2535,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     fs.writeFileSync(path.join(reportDir, 'operator-priority-handoff.json'), `${JSON.stringify(operatorHandoff, null, 2)}\n`, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'operator-send-now.csv'), operatorSendNowCsv, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'operator-send-now.json'), `${JSON.stringify(operatorSendNow, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(path.join(reportDir, 'self-serve-close-pack.md'), selfServeClosePackMarkdown, 'utf8');
   }
 
   if (shouldWriteDocs) {
@@ -2492,6 +2551,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     fs.writeFileSync(operatorHandoffJsonDocsPath, `${JSON.stringify(operatorHandoff, null, 2)}\n`, 'utf8');
     fs.writeFileSync(operatorSendNowCsvDocsPath, operatorSendNowCsv, 'utf8');
     fs.writeFileSync(operatorSendNowJsonDocsPath, `${JSON.stringify(operatorSendNow, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(selfServeClosePackDocsPath, selfServeClosePackMarkdown, 'utf8');
   }
 
   return {
@@ -2499,6 +2559,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     marketplaceMarkdown,
     teamOutreachMarkdown,
     operatorHandoffMarkdown,
+    selfServeClosePackMarkdown,
     reportDir: reportDir || null,
     docsPath: shouldWriteDocs ? defaultDocsPath : null,
   };
@@ -2609,6 +2670,7 @@ module.exports = {
   buildOperatorSendNowPayload,
   renderOperatorHandoffMarkdown,
   renderOperatorSendNowCsv,
+  renderSelfServeClosePackMarkdown,
   renderTeamOutreachMessagesMarkdown,
   resolveRevenueLoopSummary,
   runRevenueLoop,

@@ -20,6 +20,7 @@ const EXPECTED_ARTIFACTS = [
   'operator-priority-handoff.json',
   'operator-send-now.csv',
   'operator-send-now.json',
+  'self-serve-close-pack.md',
   'claude-workflow-hardening-pack.md',
   'claude-workflow-hardening-pack.json',
   'cursor-marketplace-revenue-pack.md',
