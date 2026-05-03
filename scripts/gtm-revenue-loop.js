@@ -8,6 +8,7 @@ const { resolveHostedBillingConfig } = require('./hosted-config');
 const { getOperationalBillingSummary } = require('./operational-summary');
 const { generateRevenueStatusReport } = require('./revenue-status');
 const { ensureDir } = require('./fs-utils');
+const { buildTrackedPackLink } = require('./revenue-pack-utils');
 const { buildLeadFromRevenueTarget, loadSalesLeads } = require('./sales-pipeline');
 const { getWarmOutboundTargets } = require('./warm-outreach-targets');
 
@@ -261,6 +262,192 @@ function hasEvidenceLabel(target, label) {
   const targetLabels = Array.isArray(target?.evidence) ? target.evidence : [];
   const needle = normalizeText(label).toLowerCase();
   return targetLabels.some((entry) => normalizeText(entry).toLowerCase() === needle);
+}
+
+function slugifyTrackingToken(value, fallback = 'unknown') {
+  const normalized = normalizeText(value).toLowerCase();
+  const slug = normalized
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return slug || fallback;
+}
+
+function buildRevenueLoopTrackedLink(baseUrl, tracking = {}) {
+  return buildTrackedPackLink(baseUrl, tracking, {
+    utmSource: 'revenue_loop',
+    utmMedium: 'operator_asset',
+    utmCampaign: 'revenue_loop_operator_assets',
+    surface: 'revenue_loop_operator_asset',
+  });
+}
+
+function buildRevenueLoopTrackingContext(target = {}) {
+  const repoUrl = normalizeText(target.repoUrl);
+  const contactUrl = normalizeText(target.contactUrl);
+  let source = normalizeText(target.source);
+  if (!source) {
+    if (/reddit\.com/i.test(contactUrl)) {
+      source = 'reddit';
+    } else if (/github\.com/i.test(repoUrl) || /github\.com/i.test(contactUrl)) {
+      source = 'github';
+    } else {
+      source = 'revenue_loop';
+    }
+  }
+  let medium = normalizeText(target.channel || target.source);
+  if (!medium) {
+    if (source === 'reddit' && /reddit\.com/i.test(contactUrl)) {
+      medium = 'reddit_dm';
+    } else if (source !== 'revenue_loop') {
+      medium = source;
+    } else {
+      medium = 'operator_asset';
+    }
+  }
+
+  source = slugifyTrackingToken(source, 'revenue_loop');
+  medium = slugifyTrackingToken(medium, 'operator_asset');
+  const targetToken = slugifyTrackingToken(
+    target.repoName || target.accountName || target.username,
+    'workflow'
+  );
+
+  return {
+    source,
+    medium,
+    targetToken,
+    campaign: `revenue_loop_${source}_${medium}`,
+    surface: `${source}_${medium}`,
+  };
+}
+
+function buildRevenueLoopTargetCtas(target = {}, motionCatalog = buildMotionCatalog()) {
+  const links = buildRevenueLinks();
+  const tracking = buildRevenueLoopTrackingContext(target);
+  const sprintVariant = normalizeText(target.temperature).toLowerCase() === 'warm'
+    ? 'warm_discovery'
+    : 'workflow_hardening';
+
+  return {
+    guideFirstTouch: buildRevenueLoopTrackedLink(links.guideLink, {
+      utmSource: tracking.source,
+      utmMedium: tracking.medium,
+      utmCampaign: tracking.campaign,
+      utmContent: tracking.targetToken,
+      campaignVariant: 'first_touch',
+      offerCode: 'REVLOOP-GUIDE',
+      ctaId: 'revenue_loop_guide_first_touch',
+      ctaPlacement: 'outreach_first_touch',
+      surface: tracking.surface,
+    }),
+    guideFollowUp: buildRevenueLoopTrackedLink(links.guideLink, {
+      utmSource: tracking.source,
+      utmMedium: tracking.medium,
+      utmCampaign: tracking.campaign,
+      utmContent: tracking.targetToken,
+      campaignVariant: 'self_serve_follow_up',
+      offerCode: 'REVLOOP-GUIDE',
+      ctaId: 'revenue_loop_guide_follow_up',
+      ctaPlacement: 'follow_up',
+      surface: tracking.surface,
+    }),
+    proFollowUp: buildRevenueLoopTrackedLink(motionCatalog.pro.cta, {
+      utmSource: tracking.source,
+      utmMedium: tracking.medium,
+      utmCampaign: tracking.campaign,
+      utmContent: tracking.targetToken,
+      campaignVariant: 'pain_confirmed',
+      offerCode: 'REVLOOP-PRO',
+      ctaId: 'revenue_loop_pro_follow_up',
+      ctaPlacement: 'pain_confirmed_follow_up',
+      planId: 'pro',
+      surface: tracking.surface,
+    }),
+    proClose: buildRevenueLoopTrackedLink(motionCatalog.pro.cta, {
+      utmSource: tracking.source,
+      utmMedium: tracking.medium,
+      utmCampaign: tracking.campaign,
+      utmContent: tracking.targetToken,
+      campaignVariant: 'checkout_close',
+      offerCode: 'REVLOOP-PRO',
+      ctaId: 'revenue_loop_pro_close',
+      ctaPlacement: 'checkout_close',
+      planId: 'pro',
+      surface: tracking.surface,
+    }),
+    sprintFirstTouch: buildRevenueLoopTrackedLink(motionCatalog.sprint.cta, {
+      utmSource: tracking.source,
+      utmMedium: tracking.medium,
+      utmCampaign: tracking.campaign,
+      utmContent: tracking.targetToken,
+      campaignVariant: sprintVariant,
+      offerCode: 'REVLOOP-SPRINT',
+      ctaId: 'revenue_loop_sprint_first_touch',
+      ctaPlacement: 'outreach_first_touch',
+      surface: tracking.surface,
+    }),
+    sprintFollowUp: buildRevenueLoopTrackedLink(motionCatalog.sprint.cta, {
+      utmSource: tracking.source,
+      utmMedium: tracking.medium,
+      utmCampaign: tracking.campaign,
+      utmContent: tracking.targetToken,
+      campaignVariant: 'pain_confirmed',
+      offerCode: 'REVLOOP-SPRINT',
+      ctaId: 'revenue_loop_sprint_follow_up',
+      ctaPlacement: 'pain_confirmed_follow_up',
+      surface: tracking.surface,
+    }),
+    sprintClose: buildRevenueLoopTrackedLink(motionCatalog.sprint.cta, {
+      utmSource: tracking.source,
+      utmMedium: tracking.medium,
+      utmCampaign: tracking.campaign,
+      utmContent: tracking.targetToken,
+      campaignVariant: 'checkout_close',
+      offerCode: 'REVLOOP-SPRINT',
+      ctaId: 'revenue_loop_sprint_close',
+      ctaPlacement: 'checkout_close',
+      surface: tracking.surface,
+    }),
+  };
+}
+
+function buildRevenueLoopAssetCtas(links = buildRevenueLinks()) {
+  return {
+    guide: buildRevenueLoopTrackedLink(links.guideLink, {
+      utmSource: 'revenue_loop',
+      utmMedium: 'marketplace_copy',
+      utmCampaign: 'revenue_loop_marketplace_copy',
+      utmContent: 'guide',
+      campaignVariant: 'listing_pack',
+      offerCode: 'REVLOOP-GUIDE',
+      ctaId: 'revenue_loop_marketplace_guide',
+      ctaPlacement: 'marketplace_copy',
+      surface: 'marketplace_copy',
+    }),
+    pro: buildRevenueLoopTrackedLink(links.proCheckoutLink, {
+      utmSource: 'revenue_loop',
+      utmMedium: 'marketplace_copy',
+      utmCampaign: 'revenue_loop_marketplace_copy',
+      utmContent: 'pro',
+      campaignVariant: 'listing_pack',
+      offerCode: 'REVLOOP-PRO',
+      ctaId: 'revenue_loop_marketplace_pro',
+      ctaPlacement: 'marketplace_copy',
+      planId: 'pro',
+      surface: 'marketplace_copy',
+    }),
+    sprint: buildRevenueLoopTrackedLink(links.sprintLink, {
+      utmSource: 'revenue_loop',
+      utmMedium: 'marketplace_copy',
+      utmCampaign: 'revenue_loop_marketplace_copy',
+      utmContent: 'workflow_sprint',
+      campaignVariant: 'listing_pack',
+      offerCode: 'REVLOOP-SPRINT',
+      ctaId: 'revenue_loop_marketplace_sprint',
+      ctaPlacement: 'marketplace_copy',
+      surface: 'marketplace_copy',
+    }),
+  };
 }
 
 function dedupeList(values = []) {
@@ -1271,69 +1458,70 @@ function buildSprintProblemHook(target) {
 function buildFallbackMessage(target, selectedMotion, motionCatalog = buildMotionCatalog()) {
   const motion = motionCatalog[selectedMotion.key];
   const targetRef = buildTargetReference(target);
+  const trackedCtas = buildRevenueLoopTargetCtas(target, motionCatalog);
   if (selectedMotion.key === motionCatalog.sprint.key) {
     return [
       `Hey @${target.username}, saw you're shipping ${targetRef}.`,
-      `${buildSprintProblemHook(target)}, I can harden that workflow for you with a prevention gate and proof run: ${motion.cta}`,
+      `${buildSprintProblemHook(target)}, I can harden that workflow for you with a prevention gate and proof run: ${trackedCtas.sprintFirstTouch}`,
     ].join(' ');
   }
 
-  const guideLink = buildRevenueLinks().guideLink;
   return [
     `Hey @${target.username}, saw you're building around ${targetRef}.`,
-    `If you want the clean self-serve tool path first, start with the proof-backed setup guide: ${guideLink}. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.`,
+    `If you want the clean self-serve tool path first, start with the proof-backed setup guide: ${trackedCtas.guideFirstTouch}. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.`,
   ].join(' ');
 }
 
 function buildPainConfirmedFollowUp(target, selectedMotion, motionCatalog = buildMotionCatalog()) {
-  const motion = motionCatalog[selectedMotion.key];
   const repoName = normalizeText(target.repoName);
   const repoRef = repoName ? `\`${repoName}\`` : 'your workflow';
   const proRef = repoName ? ` for ${repoRef}` : '';
+  const trackedCtas = buildRevenueLoopTargetCtas(target, motionCatalog);
   if (selectedMotion.key === motionCatalog.sprint.key) {
     return [
-      `If ${repoRef} really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: ${motion.cta}`,
-      `Commercial truth: ${motion.truth} Verification evidence: ${motion.proof}`,
+      `If ${repoRef} really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: ${trackedCtas.sprintFollowUp}`,
+      `Commercial truth: ${motionCatalog.sprint.truth} Verification evidence: ${motionCatalog.sprint.proof}`,
     ].join(' ');
   }
 
   return [
-    `If you want the self-serve path${proRef}, here is the live Pro checkout: ${motion.cta}`,
-    `Commercial truth: ${motion.truth} Verification evidence: ${motion.proof}`,
+    `If you want the self-serve path${proRef}, here is the live Pro checkout: ${trackedCtas.proFollowUp}`,
+    `Commercial truth: ${motionCatalog.pro.truth} Verification evidence: ${motionCatalog.pro.proof}`,
   ].join(' ');
 }
 
 function buildSelfServeFollowUp(target, selectedMotion, motionCatalog = buildMotionCatalog()) {
-  const links = buildRevenueLinks();
   const repoName = normalizeText(target.repoName);
   const repoRef = repoName ? `\`${repoName}\`` : 'your workflow';
+  const trackedCtas = buildRevenueLoopTargetCtas(target, motionCatalog);
 
   if (selectedMotion.key === motionCatalog.pro.key) {
     return [
-      `If you want the self-serve path for ${repoRef}, start with the proof-backed setup guide: ${links.guideLink}`,
-      `If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is ${motionCatalog.pro.cta}`,
+      `If you want the self-serve path for ${repoRef}, start with the proof-backed setup guide: ${trackedCtas.guideFollowUp}`,
+      `If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is ${trackedCtas.proFollowUp}`,
     ].join(' ');
   }
 
   return [
-    `If you want to inspect the self-serve path while you evaluate ${repoRef}, start with the proof-backed setup guide: ${links.guideLink}`,
-    `If you decide the tool path is enough, the live Pro checkout is ${motionCatalog.pro.cta}. If the blocker needs hands-on workflow hardening, keep the sprint intake here: ${motionCatalog.sprint.cta}`,
+    `If you want to inspect the self-serve path while you evaluate ${repoRef}, start with the proof-backed setup guide: ${trackedCtas.guideFollowUp}`,
+    `If you decide the tool path is enough, the live Pro checkout is ${trackedCtas.proFollowUp}. If the blocker needs hands-on workflow hardening, keep the sprint intake here: ${trackedCtas.sprintFollowUp}`,
   ].join(' ');
 }
 
 function buildCheckoutCloseDraft(target, selectedMotion, motionCatalog = buildMotionCatalog()) {
   const repoName = normalizeText(target.repoName);
   const repoRef = repoName ? `\`${repoName}\`` : 'your workflow';
+  const trackedCtas = buildRevenueLoopTargetCtas(target, motionCatalog);
   const primaryLabel = selectedMotion.key === motionCatalog.pro.key
     ? motionCatalog.pro.label
     : motionCatalog.sprint.label;
   const primaryCta = selectedMotion.key === motionCatalog.pro.key
-    ? motionCatalog.pro.cta
-    : motionCatalog.sprint.cta;
+    ? trackedCtas.proClose
+    : trackedCtas.sprintClose;
 
   return [
     `If you are already comparing close options for ${repoRef}, the primary path is ${primaryLabel}: ${primaryCta}`,
-    `Self-serve Pro: ${motionCatalog.pro.cta} Commercial truth: ${motionCatalog.pro.truth} Verification evidence: ${motionCatalog.pro.proof}`,
+    `Self-serve Pro: ${trackedCtas.proClose} Commercial truth: ${motionCatalog.pro.truth} Verification evidence: ${motionCatalog.pro.proof}`,
   ].join(' ');
 }
 
@@ -1432,12 +1620,14 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
     fallbackReason,
     snapshot,
   });
+  const assetCtas = buildRevenueLoopAssetCtas();
   const currentTruth = {
     publicSelfServeOffer: motionCatalog.pro.label,
     publicSelfServeCta: motionCatalog.pro.cta,
     teamPilotOffer: motionCatalog.sprint.label,
     teamPilotCta: motionCatalog.sprint.cta,
     guideLink: buildRevenueLinks().guideLink,
+    trackedCtas: assetCtas,
     commercialTruthLink: motionCatalog.pro.truth,
     verificationEvidenceLink: motionCatalog.pro.proof,
   };
@@ -1460,6 +1650,7 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
       const checkoutCloseDraft = target.checkoutCloseDraft
         || buildCheckoutCloseDraft(target, target.selectedMotion, motionCatalog);
       const evidenceSources = buildEvidenceSources(target, motionCatalog);
+      const trackedCtas = buildRevenueLoopTargetCtas(target, motionCatalog);
       const pipelineLeadId = normalizeText(target.pipelineLeadId) || buildLeadFromRevenueTarget(target).leadId;
       const pipelineStage = normalizePipelineStage(target.pipelineStage);
       const salesCommands = target.salesCommands || buildTargetSalesCommands({
@@ -1498,8 +1689,8 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
         nextOperatorAction: normalizeText(target.nextOperatorAction) || buildNextOperatorAction(pipelineStage),
         offer: target.selectedMotion.key === motionCatalog.sprint.key ? 'workflow_hardening_sprint' : 'pro_self_serve',
         cta: target.selectedMotion.key === motionCatalog.sprint.key
-          ? motionCatalog.sprint.cta
-          : currentTruth.guideLink,
+          ? trackedCtas.sprintFirstTouch
+          : trackedCtas.guideFirstTouch,
         proofPackTrigger: target.proofPackTrigger || 'Use proof pack only after the buyer confirms pain.',
         firstTouchDraft: target.message,
         painConfirmedFollowUpDraft: followUpMessage,
@@ -1520,14 +1711,15 @@ function resolveMotionLabel(report, motionKey) {
 
 function resolveMotionCta(report, motionKey) {
   const links = buildRevenueLinks();
+  const trackedCtas = report?.currentTruth?.trackedCtas || {};
   if (motionKey === 'guide') {
-    return normalizeText(report.currentTruth?.guideLink) || links.guideLink;
+    return normalizeText(trackedCtas.guide) || normalizeText(report.currentTruth?.guideLink) || links.guideLink;
   }
   if (motionKey === 'pro') {
-    return normalizeText(report.currentTruth?.publicSelfServeCta) || links.proCheckoutLink;
+    return normalizeText(trackedCtas.pro) || normalizeText(report.currentTruth?.publicSelfServeCta) || links.proCheckoutLink;
   }
   if (motionKey === 'sprint') {
-    return normalizeText(report.currentTruth?.teamPilotCta) || links.sprintLink;
+    return normalizeText(trackedCtas.sprint) || normalizeText(report.currentTruth?.teamPilotCta) || links.sprintLink;
   }
   const matchingTarget = Array.isArray(report.targets)
     ? report.targets.find((target) => normalizeText(target.motion) === normalizeText(motionKey) && normalizeText(target.cta))
@@ -1666,7 +1858,7 @@ function buildMarketplaceCopy(report) {
       {
         motion: 'guide',
         label: 'Proof-backed setup guide',
-        cta: normalizeText(report.currentTruth?.guideLink),
+        cta: resolveMotionCta(report, 'guide'),
       },
       {
         motion: primaryMotion,
