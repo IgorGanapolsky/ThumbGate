@@ -92,7 +92,8 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /\$49/);
   assert.match(landingPage, /\/seat\/mo/);
   assert.match(landingPage, /See how it works/);
-  assert.match(landingPage, /3 captures.*1 rule.*1 agent/i);
+  assert.match(landingPage, /3 captures total.*1 rule/i);
+  assert.doesNotMatch(landingPage, /3 captures.*1 rule.*1 agent/i);
   assert.match(landingPage, /solo side lane/i);
   assert.match(landingPage, /Shared enforcement/i);
   assert.match(landingPage, /Install Free/);

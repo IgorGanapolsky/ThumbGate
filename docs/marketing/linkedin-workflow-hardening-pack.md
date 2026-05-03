@@ -1,6 +1,6 @@
 # LinkedIn Workflow Hardening Pack
 
-Updated: 2026-05-03T16:57:09.880Z
+Updated: 2026-05-03T21:08:24.769Z
 
 This is a sales operator artifact. It is not proof of sent outreach, paid revenue, installs, or marketplace approval by itself.
 
@@ -8,10 +8,10 @@ This is a sales operator artifact. It is not proof of sent outreach, paid revenu
 Turn LinkedIn workflow-risk conversations into tracked guide clicks, qualified workflow-hardening conversations, sprint-intake movement, and self-serve follow-on only after pain is qualified.
 
 ## Positioning
-- State: post-first-dollar
+- State: cold-start
 - Headline: Turn LinkedIn workflow-risk conversations into sprint-qualified paid intent.
 - Short description: ThumbGate gives founder-led LinkedIn outreach one honest offer: harden one AI-agent workflow with approval boundaries, rollback safety, and proof before wider rollout.
-- Summary: LinkedIn should carry one offer: workflow hardening for teams that already feel rollout risk. Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
+- Summary: LinkedIn should carry one offer: workflow hardening for teams that already feel rollout risk. No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.
 
 ## Canonical Identity
 - Display name: ThumbGate

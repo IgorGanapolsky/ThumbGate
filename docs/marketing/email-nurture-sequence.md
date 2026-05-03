@@ -158,25 +158,26 @@ If ThumbGate has saved you from a repeated mistake, we'd genuinely love to hear 
 
 ## Email 5 — Day 14: Pro Upgrade
 
-**Subject:** You've hit the free lesson search limit
+**Subject:** You've hit the free feedback-capture wall
 
-**Preview text:** Unlock unlimited searches, team sync, and advanced analytics.
+**Preview text:** Unlock unlimited captures, recall, and team sync.
 
 **Body:**
 
-You've been using ThumbGate for two weeks. By now you likely have lessons accumulating in your local DB.
+You've been using ThumbGate for two weeks. By now you likely know whether the local loop is catching real mistakes.
 
-Free tier gives you 5 lesson searches per day. If you're hitting that limit, it means the system is working — your agents are learning, your checks are active, and you're catching real mistakes.
+Free tier gives you 3 feedback captures total and keeps recall plus lesson search behind Pro. If you've hit that wall, ThumbGate already proved the enforcement loop matters on your workflow.
 
 ThumbGate Pro removes the limit and adds:
 
+- Unlimited feedback captures
 - Unlimited lesson searches (FTS5 full-text across your entire history)
 - Export DPO training pairs for fine-tuning your own models
 - Advanced dashboard with confidence trend graphs
 - Priority support (direct reply to the core team)
 - Early access to new check adapters
 
-Current price: $9/month. No seat limits on a single machine.
+Current price: $19/mo or $149/yr.
 
 If ThumbGate has saved you from one repeated agent mistake, it's already paid for itself in debugging time.
 

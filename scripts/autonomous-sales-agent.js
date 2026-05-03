@@ -120,30 +120,38 @@ function buildGitHubOutreachJobs(written = {}, repoRoot = path.resolve(__dirname
   return jobs;
 }
 
+function buildPackWriteOptions(options = {}) {
+  return {
+    ...options,
+    writeDocs: Boolean(options.writeDocs || !options.reportDir),
+  };
+}
+
 async function main(argv = process.argv.slice(2), overrides = {}) {
   const deps = buildDependencies(overrides);
   const options = deps.parseArgs(argv);
+  const packWriteOptions = buildPackWriteOptions(options);
   const { report, written } = await deps.runRevenueLoop(options);
   const claudePack = deps.buildClaudeWorkflowHardeningPack(report);
-  const claudeWritten = deps.writeClaudeWorkflowHardeningPack(claudePack, options);
+  const claudeWritten = deps.writeClaudeWorkflowHardeningPack(claudePack, packWriteOptions);
   const cursorPack = deps.buildCursorMarketplaceRevenuePack();
-  const cursorWritten = deps.writeCursorMarketplaceRevenuePack(cursorPack, options);
+  const cursorWritten = deps.writeCursorMarketplaceRevenuePack(cursorPack, packWriteOptions);
   const aiventyxPlan = deps.buildAiventyxMarketplacePlan();
-  const aiventyxWritten = deps.writeAiventyxMarketplaceOutputs(aiventyxPlan, options);
+  const aiventyxWritten = deps.writeAiventyxMarketplaceOutputs(aiventyxPlan, packWriteOptions);
   const geminiPack = deps.buildGeminiCliDemandPack(report);
-  const geminiWritten = deps.writeGeminiCliDemandPack(geminiPack, options);
+  const geminiWritten = deps.writeGeminiCliDemandPack(geminiPack, packWriteOptions);
   const linkedinPack = deps.buildLinkedinWorkflowHardeningPack(report);
-  const linkedinWritten = deps.writeLinkedinWorkflowHardeningPack(linkedinPack, options);
+  const linkedinWritten = deps.writeLinkedinWorkflowHardeningPack(linkedinPack, packWriteOptions);
   const chatgptPack = deps.buildChatgptGptRevenuePack(report);
-  const chatgptWritten = deps.writeChatgptGptRevenuePack(chatgptPack, options);
+  const chatgptWritten = deps.writeChatgptGptRevenuePack(chatgptPack, packWriteOptions);
   const redditPack = deps.buildRedditDmWorkflowHardeningPack(report);
-  const redditWritten = deps.writeRedditDmWorkflowHardeningPack(redditPack, options);
+  const redditWritten = deps.writeRedditDmWorkflowHardeningPack(redditPack, packWriteOptions);
   const codexMarketplacePack = deps.buildCodexMarketplaceRevenuePack();
-  const codexMarketplaceWritten = deps.writeCodexMarketplaceRevenuePack(codexMarketplacePack, options);
+  const codexMarketplaceWritten = deps.writeCodexMarketplaceRevenuePack(codexMarketplacePack, packWriteOptions);
   const codexPluginPack = deps.buildCodexPluginRevenuePack(report);
-  const codexPluginWritten = deps.writeCodexPluginRevenuePack(codexPluginPack, options);
+  const codexPluginWritten = deps.writeCodexPluginRevenuePack(codexPluginPack, packWriteOptions);
   const mcpDirectoryPack = deps.buildMcpDirectoryRevenuePack();
-  const mcpDirectoryWritten = deps.writeMcpDirectoryRevenuePack(mcpDirectoryPack, options);
+  const mcpDirectoryWritten = deps.writeMcpDirectoryRevenuePack(mcpDirectoryPack, packWriteOptions);
   const githubOutreachJobs = buildGitHubOutreachJobs(written);
   const githubOutreachWritten = githubOutreachJobs.map((job) => deps.runGitHubOutreach(job));
 
@@ -201,6 +209,7 @@ if (isCliInvocation(process.argv)) {
 
 module.exports = {
   buildGitHubOutreachJobs,
+  buildPackWriteOptions,
   buildDependencies,
   isCliInvocation,
   main,
