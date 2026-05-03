@@ -363,11 +363,15 @@ async function probePublicRuntime(appOrigin, { fetchImpl = fetch, timeoutMs = DE
   };
 }
 
-function buildRailwayAuditSnippet({ appOrigin, timeZone }) {
+function buildRailwayAuditSnippet({
+  appOrigin,
+  timeZone,
+  fetchTimeoutMs = DEFAULT_FETCH_TIMEOUT_MS,
+}) {
   return `
     (async () => {
       const base = ${JSON.stringify(appOrigin)};
-      const fetchTimeoutMs = ${JSON.stringify(DEFAULT_FETCH_TIMEOUT_MS)};
+      const fetchTimeoutMs = ${JSON.stringify(fetchTimeoutMs)};
       async function fetchWithTimeout(url, options = {}) {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), fetchTimeoutMs);
@@ -425,10 +429,11 @@ function getHostedAuditViaRailway({
   service = DEFAULT_RAILWAY_SERVICE,
   appOrigin = DEFAULT_PUBLIC_APP_ORIGIN,
   timeZone = 'America/New_York',
+  fetchTimeoutMs = DEFAULT_FETCH_TIMEOUT_MS,
   runCommandFn = runCommand,
   commandTimeoutMs = DEFAULT_COMMAND_TIMEOUT_MS,
 } = {}) {
-  const snippet = buildRailwayAuditSnippet({ appOrigin, timeZone });
+  const snippet = buildRailwayAuditSnippet({ appOrigin, timeZone, fetchTimeoutMs });
   const stdout = requireCommandSuccess(
     'railway run',
     runCommandFn('railway', [
@@ -595,6 +600,7 @@ async function generateRevenueStatusReport({
       service: repoVars.RAILWAY_SERVICE || DEFAULT_RAILWAY_SERVICE,
       appOrigin: hostedApiOrigin,
       timeZone,
+      fetchTimeoutMs,
       runCommandFn,
       commandTimeoutMs,
     });
