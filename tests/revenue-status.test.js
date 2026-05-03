@@ -136,6 +136,7 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
   const report = await generateRevenueStatusReport({
     repo: 'IgorGanapolsky/ThumbGate',
     timeZone: 'America/New_York',
+    fetchTimeoutMs: 45000,
     apiKey: '',
     runCommandFn(command, args) {
       runCalls.push([command, ...args]);
@@ -273,6 +274,9 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
   assert.equal(report.diagnosis.primaryIssue, 'operator_blind_spot_local_fallback');
   assert.equal(report.hostedAudit.summaries['30d'].revenue.bookedRevenueCents, 2000);
   assert.ok(runCalls.some((call) => call[0] === 'railway' && call.includes('run')));
+  assert.ok(
+    runCalls.some((call) => call[0] === 'railway' && call.some((arg) => String(arg).includes('const fetchTimeoutMs = 45000;')))
+  );
 
   const formatted = formatReport(report);
   assert.match(formatted, /Source: hosted-via-railway-env/);
