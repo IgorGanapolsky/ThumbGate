@@ -26,7 +26,7 @@ Turn Codex plugin interest into proof-backed installs, Pro checkout starts, and 
 
 ### Standalone bundle download
 - URL: https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip
-- Versioned URL: https://github.com/IgorGanapolsky/ThumbGate/releases/download/v1.16.9/thumbgate-codex-plugin-v1.16.9.zip
+- Versioned URL: https://github.com/IgorGanapolsky/ThumbGate/releases/download/v1.16.10/thumbgate-codex-plugin-v1.16.10.zip
 - Operator use: Portable plugin path for buyers who want a direct asset instead of a repo checkout.
 - Buyer signal: Warm buyers ready to install now if the runtime, update policy, and proof links are explicit.
 - Evidence source: plugins/codex-profile/README.md
