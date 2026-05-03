@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
+const path = require('node:path');
 const {
   DEFAULT_COMMAND_TIMEOUT_MS,
   DEFAULT_FETCH_TIMEOUT_MS,
@@ -74,9 +75,7 @@ function number(value) {
 }
 
 function readWindow(report, name) {
-  return report && report.hostedAudit && report.hostedAudit.summaries
-    ? report.hostedAudit.summaries[name] || {}
-    : {};
+  return report?.hostedAudit?.summaries?.[name] || {};
 }
 
 function conversionRate(numerator, denominator) {
@@ -112,11 +111,32 @@ function topLeakingCounter({ starts = {}, paid = {}, revenueCents = {}, minimumS
   return rows[0] || null;
 }
 
-function buildRevenuePlan(report, options = {}) {
+function humanBlockedAction(status, title, why, exactInputNeeded, autonomousAfterInput) {
+  return {
+    owner: 'human',
+    status,
+    title,
+    why,
+    exactInputNeeded,
+    autonomousAfterInput,
+  };
+}
+
+function agentReadyAction(title, why, autonomousAction) {
+  return {
+    owner: 'agent',
+    status: 'ready',
+    title,
+    why,
+    autonomousAction,
+  };
+}
+
+function buildRevenueMetrics(report) {
   const trailing30 = readWindow(report, '30d');
   const today = readWindow(report, 'today');
-  const runtime = report && report.hostedAudit ? report.hostedAudit.runtimePresence || {} : {};
-  const runtimeKnown = Boolean(report && report.diagnosis && report.diagnosis.runtimePresenceKnown);
+  const runtime = report?.hostedAudit?.runtimePresence || {};
+  const runtimeKnown = Boolean(report?.diagnosis?.runtimePresenceKnown);
   const traffic30 = trailing30.trafficMetrics || {};
   const revenue30 = trailing30.revenue || {};
   const pipeline30 = trailing30.pipeline || {};
@@ -141,121 +161,154 @@ function buildRevenuePlan(report, options = {}) {
     paid: attribution30.paidByCampaign,
     revenueCents: attribution30.bookedRevenueByCampaignCents,
   });
-  const actions = [];
 
-  function add(action) {
-    actions.push({
-      priority: actions.length + 1,
-      ...action,
-    });
-  }
+  return {
+    runtime,
+    runtimeKnown,
+    todayVisitors: number(today.trafficMetrics?.visitors),
+    visitors,
+    checkoutStarts,
+    paidOrders,
+    sprintLeads,
+    bookedRevenueCents,
+    checkoutToPaidRate,
+    visitorToSprintLeadRate,
+    uniqueLeads: number(signups30.uniqueLeads),
+    leakingSource,
+    leakingCampaign,
+  };
+}
 
-  if (runtimeKnown && !runtime.THUMBGATE_GA_MEASUREMENT_ID) {
-    add({
-      owner: 'human',
-      status: 'blocked_on_account_value',
-      title: 'Set GA4 measurement ID in Railway/GitHub variables',
-      why: 'The page has GA4 hooks but no loader in production, so paid-intent attribution is blind outside first-party telemetry.',
-      exactInputNeeded: 'GA4 Measurement ID, for example G-XXXXXXXXXX.',
-      autonomousAfterInput: [
+function buildRuntimeGapActions({ runtime, runtimeKnown }) {
+  if (!runtimeKnown) return [];
+  return [
+    !runtime.THUMBGATE_GA_MEASUREMENT_ID && humanBlockedAction(
+      'blocked_on_account_value',
+      'Set GA4 measurement ID in Railway/GitHub variables',
+      'The page has GA4 hooks but no loader in production, so paid-intent attribution is blind outside first-party telemetry.',
+      'GA4 Measurement ID, for example G-XXXXXXXXXX.',
+      [
         'Set THUMBGATE_GA_MEASUREMENT_ID',
         'Redeploy Railway',
         'Verify gtag loader and generate_lead/begin_checkout events',
-      ],
-    });
-  }
-
-  if (runtimeKnown && !runtime.THUMBGATE_CHECKOUT_FALLBACK_URL) {
-    add({
-      owner: 'human',
-      status: 'blocked_on_payment_link',
-      title: 'Set Stripe checkout fallback URL',
-      why: 'Checkout should have a no-code Stripe fallback when hosted session creation is unavailable.',
-      exactInputNeeded: 'Live Stripe Payment Link URL for Pro or a fallback offer.',
-      autonomousAfterInput: [
+      ]
+    ),
+    !runtime.THUMBGATE_CHECKOUT_FALLBACK_URL && humanBlockedAction(
+      'blocked_on_payment_link',
+      'Set Stripe checkout fallback URL',
+      'Checkout should have a no-code Stripe fallback when hosted session creation is unavailable.',
+      'Live Stripe Payment Link URL for Pro or a fallback offer.',
+      [
         'Set THUMBGATE_CHECKOUT_FALLBACK_URL',
         'Verify /checkout/pro 302 behavior',
         'Record fallback in revenue status',
-      ],
-    });
-  }
+      ]
+    ),
+  ].filter(Boolean);
+}
 
+function buildSprintPathAction({ visitors, checkoutStarts, sprintLeads }) {
   if (sprintLeads === 0 && visitors >= 500) {
-    add({
-      owner: 'human',
-      status: 'blocked_on_payment_links',
-      title: 'Activate paid high-ticket path above the sprint intake',
-      why: `${visitors} visitors and ${checkoutStarts} checkout starts in 30d produced 0 sprint leads; the page needs a direct paid diagnostic/sprint path for buyers with budget now.`,
-      exactInputNeeded: [
+    return humanBlockedAction(
+      'blocked_on_payment_links',
+      'Activate paid high-ticket path above the sprint intake',
+      `${visitors} visitors and ${checkoutStarts} checkout starts in 30d produced 0 sprint leads; the page needs a direct paid diagnostic/sprint path for buyers with budget now.`,
+      [
         `${DEFAULT_OFFER_STACK.diagnostic.envKey}: Stripe Payment Link for ${DEFAULT_OFFER_STACK.diagnostic.name} ($${DEFAULT_OFFER_STACK.diagnostic.priceDollars})`,
         `${DEFAULT_OFFER_STACK.sprint.envKey}: Stripe Payment Link for ${DEFAULT_OFFER_STACK.sprint.name} ($${DEFAULT_OFFER_STACK.sprint.priceDollars})`,
       ],
-      autonomousAfterInput: [
+      [
         'Expose paid diagnostic/sprint buttons',
         'Track begin_checkout for both offers',
         'Keep unpaid intake as qualification fallback',
-      ],
-    });
+      ]
+    );
   }
+  return null;
+}
 
+function leakEvidence(label, leak) {
+  return leak
+    ? ` Top leaking ${label}: ${leak.key} (${leak.checkoutStarts} starts, ${leak.paidOrders} paid).`
+    : '';
+}
+
+function buildCheckoutRecoveryAction({
+  checkoutStarts,
+  checkoutToPaidRate,
+  paidOrders,
+  leakingSource,
+  leakingCampaign,
+}) {
   if (checkoutStarts >= 25 && checkoutToPaidRate < 0.03) {
-    const leakEvidence = leakingSource
-      ? ` Top leaking source: ${leakingSource.key} (${leakingSource.checkoutStarts} starts, ${leakingSource.paidOrders} paid).`
-      : '';
-    const campaignEvidence = leakingCampaign
-      ? ` Top leaking campaign: ${leakingCampaign.key} (${leakingCampaign.checkoutStarts} starts, ${leakingCampaign.paidOrders} paid).`
-      : '';
-    add({
-      owner: 'agent',
-      status: 'ready',
-      title: 'Prioritize checkout-loss recovery before more top-of-funnel traffic',
-      why: `${checkoutStarts} checkout starts converted to ${paidOrders} paid orders (${(checkoutToPaidRate * 100).toFixed(1)}%).${leakEvidence}${campaignEvidence}`,
-      autonomousAction: leakingSource || leakingCampaign
+    return agentReadyAction(
+      'Prioritize checkout-loss recovery before more top-of-funnel traffic',
+      `${checkoutStarts} checkout starts converted to ${paidOrders} paid orders (${(checkoutToPaidRate * 100).toFixed(1)}%).${leakEvidence('source', leakingSource)}${leakEvidence('campaign', leakingCampaign)}`,
+      leakingSource || leakingCampaign
         ? 'Move proof/payment CTA higher for the highest-leak source/campaign and route it to the paid diagnostic path when configured.'
-        : 'Expose checkout-start attribution in the hosted summary, then move proof/payment CTA higher for the highest-leak source/campaign.',
-    });
+        : 'Expose checkout-start attribution in the hosted summary, then move proof/payment CTA higher for the highest-leak source/campaign.'
+    );
   }
+  return null;
+}
 
-  if (number(signups30.uniqueLeads) >= 25 && bookedRevenueCents < 50000) {
-    add({
-      owner: 'human',
-      status: 'blocked_on_outbound_authority',
-      title: 'Authorize compliant follow-up to captured buyer emails',
-      why: `${number(signups30.uniqueLeads)} 30d signups exist, but booked revenue is ${centsToDollars(bookedRevenueCents)}. Follow-up needs explicit permission because it leaves the machine.`,
-      exactInputNeeded: 'Written approval to send ThumbGate sales follow-up, sender identity, postal footer, and daily send limit.',
-      autonomousAfterInput: [
+function buildOutboundAction({ uniqueLeads, bookedRevenueCents }) {
+  if (uniqueLeads >= 25 && bookedRevenueCents < 50000) {
+    return humanBlockedAction(
+      'blocked_on_outbound_authority',
+      'Authorize compliant follow-up to captured buyer emails',
+      `${uniqueLeads} 30d signups exist, but booked revenue is ${centsToDollars(bookedRevenueCents)}. Follow-up needs explicit permission because it leaves the machine.`,
+      'Written approval to send ThumbGate sales follow-up, sender identity, postal footer, and daily send limit.',
+      [
         'Generate segmented follow-up sequence',
         'Send only to captured/qualified contacts',
         'Log stage changes in sales:pipeline',
-      ],
-    });
+      ]
+    );
+  }
+  return null;
+}
+
+function prioritizeActions(actions) {
+  const filtered = actions.filter(Boolean);
+  if (filtered.length === 0) {
+    filtered.push(agentReadyAction(
+      'Keep optimizing the highest-leverage channel',
+      'No critical config gap was detected from the available report.',
+      'Run channel-level attribution, produce the next experiment, and keep payment proof visible.'
+    ));
   }
 
-  if (actions.length === 0) {
-    add({
-      owner: 'agent',
-      status: 'ready',
-      title: 'Keep optimizing the highest-leverage channel',
-      why: 'No critical config gap was detected from the available report.',
-      autonomousAction: 'Run channel-level attribution, produce the next experiment, and keep payment proof visible.',
-    });
-  }
+  return filtered.map((action, index) => ({
+    priority: index + 1,
+    ...action,
+  }));
+}
+
+function buildRevenuePlan(report, options = {}) {
+  const metrics = buildRevenueMetrics(report);
+  const actions = prioritizeActions([
+    ...buildRuntimeGapActions(metrics),
+    buildSprintPathAction(metrics),
+    buildCheckoutRecoveryAction(metrics),
+    buildOutboundAction(metrics),
+  ]);
 
   return {
     generatedAt: new Date().toISOString(),
     source: report.source,
     offerStack: DEFAULT_OFFER_STACK,
     metrics: {
-      todayVisitors: number((today.trafficMetrics || {}).visitors),
-      visitors30d: visitors,
-      checkoutStarts30d: checkoutStarts,
-      paidOrders30d: paidOrders,
-      bookedRevenue30d: centsToDollars(bookedRevenueCents),
-      checkoutToPaidRate,
-      sprintLeads30d: sprintLeads,
-      visitorToSprintLeadRate,
-      leakingSource,
-      leakingCampaign,
+      todayVisitors: metrics.todayVisitors,
+      visitors30d: metrics.visitors,
+      checkoutStarts30d: metrics.checkoutStarts,
+      paidOrders30d: metrics.paidOrders,
+      bookedRevenue30d: centsToDollars(metrics.bookedRevenueCents),
+      checkoutToPaidRate: metrics.checkoutToPaidRate,
+      sprintLeads30d: metrics.sprintLeads,
+      visitorToSprintLeadRate: metrics.visitorToSprintLeadRate,
+      leakingSource: metrics.leakingSource,
+      leakingCampaign: metrics.leakingCampaign,
     },
     constraints: [
       'Do not send public posts, emails, or DMs without explicit operator authorization.',
@@ -266,6 +319,31 @@ function buildRevenuePlan(report, options = {}) {
     actions,
     options,
   };
+}
+
+function formatAction(action) {
+  const lines = [
+    `${action.priority}. [${action.owner}/${action.status}] ${action.title}`,
+    `   Why: ${action.why}`,
+  ];
+  const inputs = action.exactInputNeeded && (
+    Array.isArray(action.exactInputNeeded)
+      ? action.exactInputNeeded
+      : [action.exactInputNeeded]
+  );
+  const afterInput = action.autonomousAfterInput || [];
+
+  if (inputs) {
+    lines.push('   Need:', ...inputs.map((input) => `   - ${input}`));
+  }
+  if (action.autonomousAction) {
+    lines.push(`   I can do next: ${action.autonomousAction}`);
+  }
+  if (afterInput.length > 0) {
+    lines.push('   I will do after input:', ...afterInput.map((step) => `   - ${step}`));
+  }
+
+  return lines;
 }
 
 function formatPlan(plan) {
@@ -284,22 +362,7 @@ function formatPlan(plan) {
   ];
 
   for (const action of plan.actions) {
-    lines.push(`${action.priority}. [${action.owner}/${action.status}] ${action.title}`);
-    lines.push(`   Why: ${action.why}`);
-    if (action.exactInputNeeded) {
-      const inputs = Array.isArray(action.exactInputNeeded)
-        ? action.exactInputNeeded
-        : [action.exactInputNeeded];
-      lines.push('   Need:');
-      for (const input of inputs) lines.push(`   - ${input}`);
-    }
-    if (action.autonomousAction) {
-      lines.push(`   I can do next: ${action.autonomousAction}`);
-    }
-    if (action.autonomousAfterInput) {
-      lines.push('   I will do after input:');
-      for (const step of action.autonomousAfterInput) lines.push(`   - ${step}`);
-    }
+    lines.push(...formatAction(action));
   }
 
   return `${lines.join('\n')}\n`;
@@ -324,9 +387,13 @@ module.exports = {
   formatPlan,
 };
 
-if (require.main === module) {
+function isCliEntrypoint(entrypoint = process.argv[1]) {
+  return Boolean(entrypoint) && path.resolve(entrypoint) === __filename;
+}
+
+if (isCliEntrypoint()) {
   main().catch((error) => {
-    process.stderr.write(`${error && error.message ? error.message : String(error)}\n`);
+    process.stderr.write(`${error?.message || String(error)}\n`);
     process.exit(1);
   });
 }

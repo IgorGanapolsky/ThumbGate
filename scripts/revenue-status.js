@@ -134,22 +134,19 @@ function windowSnapshot(summary = {}) {
 }
 
 function buildDiagnosis({ publicProbe, hostedAudit }) {
-  const today = hostedAudit && hostedAudit.summaries ? hostedAudit.summaries.today : null;
-  const trailing30 = hostedAudit && hostedAudit.summaries ? hostedAudit.summaries['30d'] : null;
-  const runtimePresence = hostedAudit ? hostedAudit.runtimePresence : {};
-  const runtimePresenceKnown = Boolean(hostedAudit && hostedAudit.runtimePresenceKnown !== false);
-  const traffic30 = trailing30 && trailing30.trafficMetrics ? trailing30.trafficMetrics : {};
-  const revenue30 = trailing30 && trailing30.revenue ? trailing30.revenue : {};
+  const today = hostedAudit?.summaries?.today || null;
+  const trailing30 = hostedAudit?.summaries?.['30d'] || null;
+  const runtimePresence = hostedAudit?.runtimePresence || {};
+  const runtimePresenceKnown = Boolean(hostedAudit?.runtimePresenceKnown !== false);
+  const traffic30 = trailing30?.trafficMetrics || {};
+  const revenue30 = trailing30?.revenue || {};
 
   const trackingImplemented = Boolean(
-    publicProbe &&
-    publicProbe.root &&
-    publicProbe.root.signals &&
-    publicProbe.root.signals.telemetryEndpoint &&
+    publicProbe?.root?.signals?.telemetryEndpoint &&
     publicProbe.root.signals.plausibleScript
   );
-  const telemetryIngressWorking = Boolean(publicProbe && publicProbe.telemetryPing && publicProbe.telemetryPing.status === 204);
-  const hostedSummaryWorking = Boolean(today && today.status === 200 && trailing30 && trailing30.status === 200);
+  const telemetryIngressWorking = Boolean(publicProbe?.telemetryPing?.status === 204);
+  const hostedSummaryWorking = Boolean(today?.status === 200 && trailing30?.status === 200);
   const hostedTrafficObserved = Number(traffic30.visitors || 0) > 0 || Number(traffic30.pageViews || 0) > 0;
   const hostedRevenueObserved = Number(revenue30.paidOrders || 0) > 0 || Number(revenue30.bookedRevenueCents || 0) > 0;
 
@@ -165,7 +162,7 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
   }
 
   const gaps = [];
-  if (publicProbe && publicProbe.error) {
+  if (publicProbe?.error) {
     gaps.push(`Public runtime probe failed: ${publicProbe.error}`);
   }
   if (runtimePresenceKnown && !runtimePresence.THUMBGATE_GA_MEASUREMENT_ID) {
@@ -307,8 +304,8 @@ async function fetchWithTimeout(fetchImpl, url, options = {}, timeoutMs = DEFAUL
       signal: options.signal || controller.signal,
     });
   } catch (error) {
-    if (error && error.name === 'AbortError') {
-      const displayUrl = url && url.href ? url.href : String(url);
+    if (error?.name === 'AbortError') {
+      const displayUrl = url?.href || String(url);
       throw new Error(`Timed out fetching ${displayUrl} after ${timeout}ms`);
     }
     throw error;
@@ -538,7 +535,7 @@ async function generateRevenueStatusReport({
     });
   } catch (error) {
     publicProbe = {
-      error: error && error.message ? error.message : String(error),
+      error: error?.message || String(error),
       health: {
         status: 0,
         version: null,
@@ -658,8 +655,8 @@ async function generateRevenueStatusReport({
         error: error.message,
       },
       diagnosis: {
-        trackingImplemented: Boolean(publicProbe.root && publicProbe.root.signals && publicProbe.root.signals.telemetryEndpoint),
-        telemetryIngressWorking: Boolean(publicProbe.telemetryPing && publicProbe.telemetryPing.status === 204),
+        trackingImplemented: Boolean(publicProbe.root?.signals?.telemetryEndpoint),
+        telemetryIngressWorking: Boolean(publicProbe.telemetryPing?.status === 204),
         hostedSummaryWorking: false,
         hostedTrafficObserved: false,
         hostedRevenueObserved: false,
@@ -718,7 +715,7 @@ module.exports = {
 
 if (require.main === module) {
   main().catch((error) => {
-    process.stderr.write(`${error && error.message ? error.message : String(error)}\n`);
+    process.stderr.write(`${error?.message || String(error)}\n`);
     process.exit(1);
   });
 }
