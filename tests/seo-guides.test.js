@@ -22,6 +22,7 @@ const GUIDE_FILES = [
   'guides/codex-cli-guardrails.html',
   'guides/opencode-cli-guardrails.html',
   'guides/autoresearch-agent-safety.html',
+  'guides/roo-code-alternative-cline.html',
 ];
 
 const COMPARE_FILES = [
@@ -129,5 +130,19 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(productionListicle.includes('Environment inspection requirements'), 'production listicle should mention environment inspection');
     assert.ok(relationalKnowledge.includes('Relational knowledge'), 'relational knowledge guide should mention relational knowledge');
     assert.ok(relationalKnowledge.includes('pre-action checks'), 'relational knowledge guide should tie the topic back to ThumbGate');
+  });
+
+  it('Roo migration guide keeps proof-backed conversion routing attached to the install path', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/roo-code-alternative-cline.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('Roo Code announced its sunset on 2026-04-21'), 'roo guide should carry the dated migration context');
+    assert.ok(html.includes('"FAQPage"'), 'roo guide should include FAQPage schema');
+    assert.ok(html.includes('Commercial Truth'), 'roo guide should link commercial truth');
+    assert.ok(html.includes('Verification evidence'), 'roo guide should link verification evidence');
+    assert.ok(html.includes('/checkout/pro?utm_source=roo_guide'), 'roo guide should route individual buyers to Pro');
+    assert.ok(html.includes('#workflow-sprint-intake'), 'roo guide should route team buyers to workflow sprint intake');
   });
 });

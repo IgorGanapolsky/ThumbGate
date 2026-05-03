@@ -62,6 +62,20 @@ Inside Cline, open the MCP Servers panel; `thumbgate` should show a green dot. A
 
 ---
 
+## Proof-backed next step
+
+Keep the migration install-first. The free Cline path proves whether ThumbGate blocks one real repeated mistake in your workflow.
+
+- Use **Pro at $19/mo or $149/yr** only after one blocked repeat is real and the operator wants the personal dashboard, DPO export, and proof-ready evidence:
+  `https://thumbgate-production.up.railway.app/checkout/pro?utm_source=cline_install&utm_medium=adapter_doc&utm_campaign=cline_pro_follow_on`
+- Use the **Workflow Hardening Sprint** when one workflow owner needs approval boundaries, rollback safety, and rollout proof before wider team use:
+  `https://thumbgate-production.up.railway.app/?utm_source=cline_install&utm_medium=adapter_doc&utm_campaign=cline_sprint_follow_on#workflow-sprint-intake`
+- Keep pricing and proof claims aligned with:
+  - [Commercial Truth](../../docs/COMMERCIAL_TRUTH.md)
+  - [Verification Evidence](../../docs/VERIFICATION_EVIDENCE.md)
+
+---
+
 ## What happens on a thumbs-down
 
 1. You flag a Cline action as bad (`npx thumbgate capture --feedback=down --context "..." --what-went-wrong "..."`).
