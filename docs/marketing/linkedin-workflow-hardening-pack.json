@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-30T02:05:36.802Z",
+  "generatedAt": "2026-05-03T12:51:45.260Z",
   "state": "post-first-dollar",
   "objective": "Turn LinkedIn workflow-risk conversations into tracked guide clicks, qualified workflow-hardening conversations, sprint-intake movement, and self-serve follow-on only after pain is qualified.",
   "headline": "Turn LinkedIn workflow-risk conversations into sprint-qualified paid intent.",
@@ -107,7 +107,7 @@
     {
       "key": "business_system_operator",
       "audience": "Platform or ops lead wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM workflows",
-      "evidence": "3 production-style target(s), 4 business-system target(s), and 6 workflow-control target(s) point to approval boundaries and rollback safety as the strongest LinkedIn angle.",
+      "evidence": "4 production-style target(s), 4 business-system target(s), and 6 workflow-control target(s) point to approval boundaries and rollback safety as the strongest LinkedIn angle.",
       "proofTrigger": "They can name one approval boundary, rollback risk, or bad handoff that blocks broader rollout.",
       "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
       "nextAsk": "https://thumbgate-production.up.railway.app/?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_queue_sprint&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=LINKEDIN-QUEUE_SPRINT&cta_id=linkedin_queue_sprint&cta_placement=operator_queue&surface=linkedin_outreach#workflow-sprint-intake",
@@ -116,7 +116,7 @@
     {
       "key": "self_serve_follow_on",
       "audience": "Individual builder who asks for the tool path after the workflow pain is qualified",
-      "evidence": "2 current target(s) skew self-serve after qualification, but the guide should still carry the proof and pricing guardrails first.",
+      "evidence": "3 current target(s) skew self-serve after qualification, but the guide should still carry the proof and pricing guardrails first.",
       "proofTrigger": "The buyer explicitly asks for install, pricing, or self-serve instead of founder-led workflow help.",
       "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guide.html",
       "nextAsk": "https://thumbgate-production.up.railway.app/guide?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_queue_guide&utm_content=guide&campaign_variant=self_serve_interest&offer_code=LINKEDIN-QUEUE_GUIDE&cta_id=linkedin_queue_guide&cta_placement=operator_queue&surface=linkedin_outreach then https://thumbgate-production.up.railway.app/checkout/pro?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_queue_pro&utm_content=pro&campaign_variant=self_serve_follow_on&offer_code=LINKEDIN-QUEUE_PRO&cta_id=linkedin_queue_pro&cta_placement=operator_queue&plan_id=pro&surface=linkedin_outreach",
@@ -149,7 +149,7 @@
       "channel": "LinkedIn",
       "format": "Founder post",
       "audience": "Platform, engineering, and AI-product leaders",
-      "evidenceSummary": "4 warm target(s) plus 3 production-style target(s) show the strongest LinkedIn motion is workflow hardening, not generic AI hype.",
+      "evidenceSummary": "4 warm target(s) plus 4 production-style target(s) show the strongest LinkedIn motion is workflow hardening, not generic AI hype.",
       "cta": "https://thumbgate-production.up.railway.app/guide?utm_source=linkedin&utm_medium=organic_social&utm_campaign=linkedin_channel_guide&utm_content=guide&campaign_variant=proof_backed_setup&offer_code=LINKEDIN-CHANNEL_GUIDE&cta_id=linkedin_channel_guide&cta_placement=channel_draft&surface=linkedin_post",
       "proofTiming": "Keep the public post workflow-first and guide-first. Hold proof links for comments or DMs after the buyer names the workflow risk.",
       "draft": "The strongest AI workflow conversations I am seeing right now are not about replacing engineers. They are about one workflow that still is not safe enough to roll out. The repeated pain shows up as rollback risk, stale context and conflicting facts, review boundaries and context risk, and brittle guardrails. Once agents touch repos, approvals, or customer systems, the real question becomes: what stops the same mistake from running again? My answer is one workflow hardening lane: feedback, prevention rules, approval boundaries, rollback safety, and proof. If that is the problem you are evaluating, start with the proof-backed guide here: https://thumbgate-production.up.railway.app/guide?utm_source=linkedin&utm_medium=organic_social&utm_campaign=linkedin_channel_guide&utm_content=guide&campaign_variant=proof_backed_setup&offer_code=LINKEDIN-CHANNEL_GUIDE&cta_id=linkedin_channel_guide&cta_placement=channel_draft&surface=linkedin_post ."
@@ -220,11 +220,11 @@
   },
   "evidenceBackstop": {
     "warmTargetCount": 4,
-    "productionTargetCount": 3,
+    "productionTargetCount": 4,
     "businessSystemTargetCount": 4,
     "workflowControlSurfaceCount": 6,
-    "sprintMotionCount": 8,
-    "proMotionCount": 2,
+    "sprintMotionCount": 7,
+    "proMotionCount": 3,
     "painSignals": [
       "rollback risk",
       "stale context and conflicting facts",

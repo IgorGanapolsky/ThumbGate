@@ -1,6 +1,6 @@
 # Gemini CLI Demand Pack
 
-Updated: 2026-04-30T02:05:36.802Z
+Updated: 2026-05-03T12:51:45.260Z
 
 This is a sales operator artifact. It is not proof of rankings, sent outreach, installs, paid revenue, or marketplace approval by itself.
 
@@ -66,7 +66,7 @@ Turn Gemini CLI memory demand and Google Cloud MCP guardrail demand into tracked
 - Recommended motion: Guide -> proof -> Pro once one blocked repeat is real.
 
 ### Google Cloud workflow owner running Gemini CLI near data or production systems
-- Evidence: The GCP guardrails guide documents BigQuery, Spanner, AlloyDB, Cloud SQL, and IAM escalation patterns. Current report production-style targets: 3.
+- Evidence: The GCP guardrails guide documents BigQuery, Spanner, AlloyDB, Cloud SQL, and IAM escalation patterns. Current report production-style targets: 4.
 - Proof trigger: They already described one risky BigQuery, Spanner, or MCP-backed workflow that cannot afford another destructive repeat.
 - Proof asset: https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/gcp-mcp-guardrails.html
 - Next ask: https://thumbgate-production.up.railway.app/?utm_source=gemini&utm_medium=operator_outreach&utm_campaign=gemini_queue_gcp_sprint&utm_content=workflow_sprint&campaign_variant=gcp_workflow_owner&offer_code=GEMINI-QUEUE_GCP_SPRINT&cta_id=gemini_queue_gcp_sprint&cta_placement=operator_queue&surface=gemini_workflow_queue#workflow-sprint-intake
@@ -99,7 +99,7 @@ If Gemini CLI keeps repeating the same mistake, the missing piece is not more me
 
 ### LinkedIn — Founder post
 - Audience: Platform, cloud, or data team lead evaluating Gemini CLI near production systems
-- Evidence: 3 current production-style target(s) point to BigQuery, Spanner, AlloyDB, Cloud SQL, and approval-boundary risk as the strongest B2B Gemini angle.
+- Evidence: 4 current production-style target(s) point to BigQuery, Spanner, AlloyDB, Cloud SQL, and approval-boundary risk as the strongest B2B Gemini angle.
 - CTA: https://thumbgate-production.up.railway.app/guides/gcp-mcp-guardrails?utm_source=gemini&utm_medium=linkedin_post&utm_campaign=gemini_channel_linkedin&utm_content=guide&campaign_variant=gcp_guardrails&offer_code=GEMINI-CHANNEL-LINKEDIN&cta_id=gemini_channel_linkedin&cta_placement=channel_draft&surface=gemini_linkedin
 - Proof timing: Public post can mention blast radius and guardrails, but hold proof links for the DM or reply after the workflow risk is named.
 Gemini CLI gets interesting when it moves from drafts into BigQuery, Spanner, AlloyDB, Cloud SQL, or approval-boundary workflows. At that point the question is not “does memory exist,” it is “what stops the same risky MCP call from running again?” ThumbGate is the lane I use for that boundary. If you are evaluating Gemini near production systems, start with the guardrails guide: https://thumbgate-production.up.railway.app/guides/gcp-mcp-guardrails?utm_source=gemini&utm_medium=linkedin_post&utm_campaign=gemini_channel_linkedin&utm_content=guide&campaign_variant=gcp_guardrails&offer_code=GEMINI-CHANNEL-LINKEDIN&cta_id=gemini_channel_linkedin&cta_placement=channel_draft&surface=gemini_linkedin .
