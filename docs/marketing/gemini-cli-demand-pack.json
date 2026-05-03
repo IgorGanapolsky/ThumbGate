@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-05-03T16:57:09.880Z",
-  "state": "post-first-dollar",
+  "generatedAt": "2026-05-03T21:08:24.769Z",
+  "state": "cold-start",
   "objective": "Turn Gemini CLI memory demand and Google Cloud MCP guardrail demand into tracked proof clicks, Pro checkout starts, and qualified workflow-hardening conversations.",
   "headline": "Turn Gemini CLI memory demand into enforced workflow safety.",
   "shortDescription": "ThumbGate gives Gemini CLI local-first memory that can become prevention rules and Pre-Action Checks before the next risky MCP call runs.",
-  "summary": "Gemini CLI demand in ThumbGate is guide-led: memory query first, then enforcement proof, then paid intent. Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.",
+  "summary": "Gemini CLI demand in ThumbGate is guide-led: memory query first, then enforcement proof, then paid intent. No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.",
   "canonicalIdentity": {
     "displayName": "ThumbGate",
     "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
