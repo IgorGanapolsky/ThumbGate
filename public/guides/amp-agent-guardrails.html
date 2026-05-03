@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amp Agent Guardrails | Dual-Write Feedback Memory with ThumbGate</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Amp users need feedback that survives the session. ThumbGate adds a local-first dual-write lane: save useful feedback in Amp memory and ThumbGate, turn repeated failures into reusable prevention rules, and keep the same lessons portable across other agent workflows.">
+<meta name="keywords" content="Amp guardrails, Amp feedback memory, Amp agent safety, ThumbGate, prevention rules, AI coding agent feedback">
+<meta property="og:title" content="Amp Agent Guardrails with Dual-Write Feedback Memory">
+<meta property="og:description" content="Amp users need feedback that survives the session. ThumbGate adds a local-first dual-write lane: save useful feedback in Amp memory and ThumbGate, turn repeated failures into reusable prevention rules, and keep the same lessons portable across other agent workflows.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/guides/amp-agent-guardrails">
+<link rel="canonical" href="https://thumbgate.ai/guides/amp-agent-guardrails">
+<link rel="llm-context" href="/public/llm-context.md" type="text/markdown">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Amp Agent Guardrails with Dual-Write Feedback Memory",
+  "description": "Amp users need feedback that survives the session. ThumbGate adds a local-first dual-write lane: save useful feedback in Amp memory and ThumbGate, turn repeated failures into reusable prevention rules, and keep the same lessons portable across other agent workflows.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-05-03",
+  "dateModified": "2026-05-03",
+  "mainEntityOfPage": "https://thumbgate.ai/guides/amp-agent-guardrails",
+  "about": [
+    { "@type": "Thing", "name": "Amp guardrails" },
+    { "@type": "Thing", "name": "AI coding agent safety" },
+    { "@type": "Thing", "name": "dual-write feedback memory" }
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What does ThumbGate add to Amp today?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ThumbGate gives Amp a local-first feedback skill plus the shared ThumbGate runtime. Typed feedback can be saved in Amp memory for immediate recall and in ThumbGate for reusable lessons, prevention rules, export-ready datasets, and cross-agent portability."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does npx thumbgate init --agent amp install?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It creates the local .thumbgate config, writes the project MCP config, and installs the Amp thumbgate-feedback skill into .amp/skills when that skill is not already present."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need a hosted memory service for Amp feedback?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. ThumbGate is local-first. The Amp skill can dual-write useful feedback into Amp memory and ThumbGate without requiring a hosted memory layer."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can Amp lessons carry into other agent workflows?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. ThumbGate keeps the lesson format portable across Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and other MCP-compatible workflows that share the same ThumbGate runtime."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand">ThumbGate</a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / <a href="/guides/amp-agent-guardrails">Guides</a> / Amp Guardrails</div>
+  <h1>Amp Agent Guardrails with Dual-Write Feedback Memory</h1>
+  <p style="color:var(--muted);">3 min read &middot; Designed for Amp, portable across the rest of the ThumbGate runtime</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> Amp already gives teams a fast local coding lane. ThumbGate gives that lane durable memory: useful feedback can live in Amp for immediate recall and in ThumbGate for reusable lessons, prevention rules, DPO-ready export, and cross-agent portability.</div>
+
+  <h2>The Amp workflow problem</h2>
+  <p>Amp can move quickly through repo work, but raw session memory is still fragile. When a correction matters, operators need it to survive the current thread, stay structured, and remain usable in the next workflow instead of disappearing into chat history.</p>
+
+  <div class="callout callout-red">
+    <strong>What breaks without a shared lane?</strong> A useful Amp correction helps once, then vanishes. The next operator or the next agent run has to rediscover the same lesson from scratch.
+  </div>
+
+  <h2>What ThumbGate adds to Amp</h2>
+  <ul>
+    <li>Install the Amp <code>thumbgate-feedback</code> skill with <code>npx thumbgate init --agent amp</code>.</li>
+    <li>Dual-write useful feedback into Amp memory and ThumbGate so it is both immediately recallable and portable.</li>
+    <li>Keep local-first lessons in <code>.thumbgate/</code> for prevention rules, export-ready evidence, and cross-session reuse.</li>
+    <li>Carry the same lessons into Claude Code, Cursor, Codex, Gemini CLI, OpenCode, and other MCP-compatible lanes that share the ThumbGate runtime.</li>
+  </ul>
+
+  <h2>What the Amp install actually writes</h2>
+  <p>The honest install story matters more than vague “AI memory” language. On this repo, <code>npx thumbgate init --agent amp</code> creates the local <code>.thumbgate/config.json</code>, writes the project <code>.mcp.json</code>, and installs <code>.amp/skills/thumbgate-feedback/SKILL.md</code> when the skill is missing.</p>
+  <pre><code>npx thumbgate init --agent amp</code></pre>
+  <p>That gives Amp operators a concrete, inspectable local path instead of a hosted black box.</p>
+
+  <h2>How the dual-write loop works</h2>
+  <p>Amp can keep the immediate session memory it already uses. ThumbGate adds the durable side of the loop: export-ready feedback capture, prevention-rule generation, and the same reusable lesson format across other agent surfaces.</p>
+  <ol>
+    <li>Capture one useful correction with context, not a bare thumbs-down.</li>
+    <li>Save the same correction in Amp memory for immediate recall.</li>
+    <li>Write it to ThumbGate for reusable lessons, prevention rules, and proof-ready exports.</li>
+    <li>Reuse that lesson across the rest of the coding workflow instead of relearning it in each tool.</li>
+  </ol>
+
+  <h2>Use a concrete feedback command</h2>
+  <pre><code>npx thumbgate capture --feedback=down \
+  --context="Amp skipped the verification step before proposing completion" \
+  --what-went-wrong="The answer claimed success without test evidence" \
+  --what-to-change="Require commands and verification output before completion" \
+  --tags="amp,verification"</code></pre>
+  <p>Typed context is the difference between a dead-end complaint and a lesson you can actually reuse.</p>
+
+  <h2>Frequently Asked Questions</h2>
+  <h3>What does ThumbGate add to Amp today?</h3>
+  <p>ThumbGate gives Amp a local-first feedback skill plus the shared ThumbGate runtime. Typed feedback can be saved in Amp memory for immediate recall and in ThumbGate for reusable lessons, prevention rules, export-ready datasets, and cross-agent portability.</p>
+
+  <h3>What does <code>npx thumbgate init --agent amp</code> install?</h3>
+  <p>It creates the local <code>.thumbgate</code> config, writes the project MCP config, and installs the Amp <code>thumbgate-feedback</code> skill into <code>.amp/skills</code> when that skill is not already present.</p>
+
+  <h3>Do I need a hosted memory service for Amp feedback?</h3>
+  <p>No. ThumbGate is local-first. The Amp skill can dual-write useful feedback into Amp memory and ThumbGate without requiring a hosted memory layer.</p>
+
+  <h3>Can Amp lessons carry into other agent workflows?</h3>
+  <p>Yes. ThumbGate keeps the lesson format portable across Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, and other MCP-compatible workflows that share the same ThumbGate runtime.</p>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Free local install first, paid lanes after proof</h2>
+    <p>Start free with the Amp skill and local ThumbGate runtime. Pro is $19/mo or $149/yr for the personal dashboard and export-ready evidence. Team rollout starts at $49/seat/mo when one workflow owner needs shared governance, proof, and approval boundaries.</p>
+    <div class="cta-install">$ npx thumbgate init --agent amp</div>
+    <p style="margin-top:8px;"><a href="/pro">See Pro and Team pricing &rarr;</a></p>
+  </div>
+
+  <div class="related">
+    <h3>Related</h3>
+    <a href="/guide">Proof-backed setup guide &rarr;</a>
+    <a href="/guides/gemini-cli-feedback-memory">Gemini CLI memory + enforcement &rarr;</a>
+    <a href="/guides/codex-cli-guardrails">Codex CLI guardrails &rarr;</a>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span style="color:var(--muted)">Try it now:</span>
+  <code>npx thumbgate init --agent amp</code>
+  <a href="/guide">Setup guide &rarr;</a>
+</div>
+</body>
+</html>
