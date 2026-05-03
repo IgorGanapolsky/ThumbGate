@@ -29,6 +29,7 @@ const {
   renderMarketplaceCopyMarkdown,
   renderOperatorHandoffMarkdown,
   renderOperatorSendNowCsv,
+  renderOperatorSendNowMarkdown,
   renderRevenueLoopMarkdown,
   renderTeamOutreachMessagesMarkdown,
   resolveRevenueLoopSummary,
@@ -2432,6 +2433,77 @@ test('operator send-now export flattens ranked handoff rows for batch ops', () =
   assert.match(csv, /send_now_warm_discovery/);
   assert.match(csv, /Reddit DM: https:\/\/www\.reddit\.com\/user\/builder\//);
   assert.match(csv, /I can harden one workflow, then prove it\./);
+});
+
+test('operator send-now markdown preserves ranked rows and readable fallbacks', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const markdown = renderOperatorSendNowMarkdown({
+    generatedAt: '2026-04-25T00:00:00.000Z',
+    directive: {
+      state: 'post-first-dollar',
+      headline: 'Verified booked revenue exists.',
+    },
+    snapshot: {
+      paidOrders: 2,
+      checkoutStarts: 5,
+    },
+    targets: [{
+      temperature: 'warm',
+      source: 'github',
+      channel: 'github_issue',
+      username: '',
+      accountName: 'ops-team',
+      company: '',
+      contactSurface: '',
+      contactSurfaces: [
+        {
+          label: 'Operator form',
+          url: 'https://operators.example/hello',
+        },
+      ],
+      repoName: 'autonomy-gates',
+      repoUrl: '',
+      selectedMotion: catalog.sprint,
+      pipelineStage: 'targeted',
+      evidenceScore: 9,
+      evidence: [],
+      motionLabel: catalog.sprint.label,
+      proofPackTrigger: '',
+      cta: catalog.sprint.cta,
+      firstTouchDraft: 'I can harden one workflow, then prove it.',
+      painConfirmedFollowUpDraft: '',
+      selfServeFollowUpDraft: '',
+      checkoutCloseDraft: '',
+    }],
+  });
+
+  assert.match(markdown, /# Operator Send-Now Queue/);
+  assert.match(markdown, /- Ready-now rows: 1/);
+  assert.match(markdown, /## 1\. ops-team/);
+  assert.match(markdown, /- Contact: n\/a/);
+  assert.match(markdown, /- Repo: autonomy-gates/);
+  assert.match(markdown, /- Evidence: n\/a/);
+  assert.match(markdown, /- Why now: n\/a/);
+  assert.match(markdown, /Pain-confirmed follow-up:\n> n\/a/);
+});
+
+test('operator send-now markdown reports an empty ready-now queue', () => {
+  const markdown = renderOperatorSendNowMarkdown({
+    generatedAt: '2026-04-25T00:00:00.000Z',
+    directive: {
+      state: 'cold-start',
+      headline: 'No verified revenue and no active pipeline.',
+    },
+    snapshot: {
+      paidOrders: 0,
+      checkoutStarts: 0,
+    },
+    targets: [],
+  });
+
+  assert.match(markdown, /- Ready-now rows: 0/);
+  assert.match(markdown, /- No ready-now targets were ranked for this run\./);
 });
 
 test('warm-target report output does not emit blank repo placeholders in follow-up drafts', () => {

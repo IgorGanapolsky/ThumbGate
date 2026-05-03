@@ -2681,6 +2681,7 @@ module.exports = {
   buildOperatorHandoffPayload,
   buildOperatorSendNowPayload,
   renderOperatorHandoffMarkdown,
+  renderOperatorSendNowMarkdown,
   renderOperatorSendNowCsv,
   renderTeamOutreachMessagesMarkdown,
   resolveRevenueLoopSummary,
