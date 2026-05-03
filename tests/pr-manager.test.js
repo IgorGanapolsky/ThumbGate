@@ -195,6 +195,18 @@ test('PR Manager - getPrStatus returns null when current branch has no PR', () =
   assert.equal(getPrStatus('', runner), null);
 });
 
+test('PR Manager - getPrStatus returns null when worktree is detached', () => {
+  const runner = createRunner([
+    {
+      status: 1,
+      stdout: '',
+      stderr: 'failed to run git: not on any branch\n'
+    }
+  ]);
+
+  assert.equal(getPrStatus('', runner), null);
+});
+
 test('PR Manager - normalizePrNumber rejects unsafe values', () => {
   assert.equal(normalizePrNumber('123'), '123');
   assert.throws(() => normalizePrNumber('../665', { allowEmpty: false }), /Unsafe PR number/);
@@ -250,6 +262,31 @@ test('PR Manager - loadManagedPrs falls back to open PR list when branch has no 
       status: 1,
       stdout: '',
       stderr: 'no pull requests found for branch "codex/tech-debt-audit-20260320"\n'
+    },
+    {
+      status: 0,
+      stdout: JSON.stringify([mockPr]),
+      stderr: ''
+    }
+  ]);
+
+  assert.deepEqual(loadManagedPrs('', runner), [mockPr]);
+});
+
+test('PR Manager - loadManagedPrs falls back to open PR list when worktree is detached', () => {
+  const mockPr = {
+    number: 282,
+    title: 'Detached lane PR',
+    mergeable: 'MERGEABLE',
+    mergeStateStatus: 'CLEAN',
+    isDraft: false,
+    statusCheckRollup: []
+  };
+  const runner = createRunner([
+    {
+      status: 1,
+      stdout: '',
+      stderr: 'failed to run git: not on any branch\n'
     },
     {
       status: 0,
