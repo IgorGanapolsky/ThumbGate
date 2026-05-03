@@ -420,6 +420,7 @@ test('public landing page internally links to comparison and guide pages without
   assert.match(landingPage, /href="\/guides\/cursor-agent-guardrails"/);
   assert.match(landingPage, /href="\/guides\/codex-cli-guardrails"/);
   assert.match(landingPage, /href="\/guides\/gemini-cli-feedback-memory"/);
+  assert.match(landingPage, /href="\/guides\/roo-code-alternative-cline"/);
   assert.match(landingPage, /href="\/guides\/autoresearch-agent-safety"/);
   assert.match(landingPage, /Autoresearch Safety for Self-Improving Agents/);
   assert.match(landingPage, /AI Agent Harness Optimization/);
