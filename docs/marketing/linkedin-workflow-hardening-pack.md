@@ -1,6 +1,6 @@
 # LinkedIn Workflow Hardening Pack
 
-Updated: 2026-04-30T02:05:36.802Z
+Updated: 2026-05-03T16:57:09.880Z
 
 This is a sales operator artifact. It is not proof of sent outreach, paid revenue, installs, or marketplace approval by itself.
 
@@ -66,14 +66,14 @@ Turn LinkedIn workflow-risk conversations into tracked guide clicks, qualified w
 - Recommended motion: Workflow Hardening Sprint first. Use proof only after pain is confirmed.
 
 ### Platform or ops lead wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM workflows
-- Evidence: 3 production-style target(s), 4 business-system target(s), and 6 workflow-control target(s) point to approval boundaries and rollback safety as the strongest LinkedIn angle.
+- Evidence: 4 production-style target(s), 3 business-system target(s), and 6 workflow-control target(s) point to approval boundaries and rollback safety as the strongest LinkedIn angle.
 - Proof trigger: They can name one approval boundary, rollback risk, or bad handoff that blocks broader rollout.
 - Proof asset: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md
 - Next ask: https://thumbgate-production.up.railway.app/?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_queue_sprint&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=LINKEDIN-QUEUE_SPRINT&cta_id=linkedin_queue_sprint&cta_placement=operator_queue&surface=linkedin_outreach#workflow-sprint-intake
 - Recommended motion: Discovery DM -> sprint intake -> proof pack once the workflow risk is explicit.
 
 ### Individual builder who asks for the tool path after the workflow pain is qualified
-- Evidence: 2 current target(s) skew self-serve after qualification, but the guide should still carry the proof and pricing guardrails first.
+- Evidence: 3 current target(s) skew self-serve after qualification, but the guide should still carry the proof and pricing guardrails first.
 - Proof trigger: The buyer explicitly asks for install, pricing, or self-serve instead of founder-led workflow help.
 - Proof asset: https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guide.html
 - Next ask: https://thumbgate-production.up.railway.app/guide?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_queue_guide&utm_content=guide&campaign_variant=self_serve_interest&offer_code=LINKEDIN-QUEUE_GUIDE&cta_id=linkedin_queue_guide&cta_placement=operator_queue&surface=linkedin_outreach then https://thumbgate-production.up.railway.app/checkout/pro?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_queue_pro&utm_content=pro&campaign_variant=self_serve_follow_on&offer_code=LINKEDIN-QUEUE_PRO&cta_id=linkedin_queue_pro&cta_placement=operator_queue&plan_id=pro&surface=linkedin_outreach
@@ -92,7 +92,7 @@ Now that the workflow failure is concrete, move from pitch to evidence. Send Ver
 ## Active Channel Drafts
 ### LinkedIn — Founder post
 - Audience: Platform, engineering, and AI-product leaders
-- Evidence: 4 warm target(s) plus 3 production-style target(s) show the strongest LinkedIn motion is workflow hardening, not generic AI hype.
+- Evidence: 4 warm target(s) plus 4 production-style target(s) show the strongest LinkedIn motion is workflow hardening, not generic AI hype.
 - CTA: https://thumbgate-production.up.railway.app/guide?utm_source=linkedin&utm_medium=organic_social&utm_campaign=linkedin_channel_guide&utm_content=guide&campaign_variant=proof_backed_setup&offer_code=LINKEDIN-CHANNEL_GUIDE&cta_id=linkedin_channel_guide&cta_placement=channel_draft&surface=linkedin_post
 - Proof timing: Keep the public post workflow-first and guide-first. Hold proof links for comments or DMs after the buyer names the workflow risk.
 The strongest AI workflow conversations I am seeing right now are not about replacing engineers. They are about one workflow that still is not safe enough to roll out. The repeated pain shows up as rollback risk, stale context and conflicting facts, review boundaries and context risk, and brittle guardrails. Once agents touch repos, approvals, or customer systems, the real question becomes: what stops the same mistake from running again? My answer is one workflow hardening lane: feedback, prevention rules, approval boundaries, rollback safety, and proof. If that is the problem you are evaluating, start with the proof-backed guide here: https://thumbgate-production.up.railway.app/guide?utm_source=linkedin&utm_medium=organic_social&utm_campaign=linkedin_channel_guide&utm_content=guide&campaign_variant=proof_backed_setup&offer_code=LINKEDIN-CHANNEL_GUIDE&cta_id=linkedin_channel_guide&cta_placement=channel_draft&surface=linkedin_post .
@@ -106,18 +106,18 @@ If you already have one workflow where approval boundaries, rollback safety, or 
 
 ### LinkedIn — Reply or DM follow-up
 - Audience: Commenter who named repeated workflow risk
-- Evidence: 6 workflow-control target(s) and 4 business-system target(s) make workflow-risk follow-up more credible than a generic product pitch.
+- Evidence: 6 workflow-control target(s) and 3 business-system target(s) make workflow-risk follow-up more credible than a generic product pitch.
 - CTA: https://thumbgate-production.up.railway.app/guides/claude-code-prevent-repeated-mistakes?utm_source=linkedin&utm_medium=linkedin_comment&utm_campaign=linkedin_channel_repeat_guide&utm_content=guide&campaign_variant=workflow_risk&offer_code=LINKEDIN-CHANNEL_REPEAT&cta_id=linkedin_channel_repeat_guide&cta_placement=channel_draft&surface=linkedin_comment
 - Proof timing: Use the repeated-mistakes guide in the reply first. Send proof links only if they ask for evidence after naming the workflow.
 That is exactly the kind of workflow risk I am talking about. The useful next step is not a bigger AI pitch. It is isolating the repeated mistake and deciding what check should fire before the next risky action runs. This guide is the shortest explanation of that loop: https://thumbgate-production.up.railway.app/guides/claude-code-prevent-repeated-mistakes?utm_source=linkedin&utm_medium=linkedin_comment&utm_campaign=linkedin_channel_repeat_guide&utm_content=guide&campaign_variant=workflow_risk&offer_code=LINKEDIN-CHANNEL_REPEAT&cta_id=linkedin_channel_repeat_guide&cta_placement=channel_draft&surface=linkedin_comment .
 
 ## Evidence Backstop
 - Warm targets: 4
-- Production-style targets: 3
-- Business-system targets: 4
+- Production-style targets: 4
+- Business-system targets: 3
 - Workflow-control targets: 6
-- Sprint-motion targets: 8
-- Pro-motion targets: 2
+- Sprint-motion targets: 7
+- Pro-motion targets: 3
 - Named pain signals: rollback risk, stale context and conflicting facts, review boundaries and context risk, brittle guardrails
 
 ## 90-Day Measurement Plan
