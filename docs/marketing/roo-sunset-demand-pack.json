@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-05-03T16:57:09.880Z",
+  "generatedAt": "2026-05-03T23:29:58.043Z",
   "objective": "Turn Roo shutdown urgency into tracked migration clicks, proof-backed setup demand, and paid intent without inventing traction.",
-  "state": "post-first-dollar",
+  "state": "cold-start",
   "headline": "Turn Roo shutdown urgency into memory-portable paid intent.",
   "shortDescription": "ThumbGate gives Roo migrants one durable asset to keep: local lesson memory that survives the move to Cline and becomes enforceable Pre-Action Checks.",
-  "summary": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.",
+  "summary": "No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.",
   "canonicalIdentity": {
     "displayName": "ThumbGate",
     "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
@@ -107,7 +107,7 @@
     {
       "key": "roo_workflow_owner",
       "audience": "Team migrating one risky workflow off Roo",
-      "evidence": "6 workflow-control target(s), 3 business-system target(s), and 7 sprint-fit target(s) already favor workflow hardening over a generic plugin pitch.",
+      "evidence": "5 workflow-control target(s), 4 business-system target(s), and 7 sprint-fit target(s) already favor workflow hardening over a generic plugin pitch.",
       "proofTrigger": "They can point to one approval boundary, rollback risk, or repo workflow that cannot afford repeated mistakes during migration.",
       "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
       "nextAsk": "https://thumbgate-production.up.railway.app/?utm_source=roo_sunset&utm_medium=operator_outreach&utm_campaign=roo_queue_sprint&utm_content=workflow_sprint&campaign_variant=migration_workflow&offer_code=ROO-QUEUE_SPRINT&cta_id=roo_queue_sprint&cta_placement=operator_queue&surface=roo_outreach#workflow-sprint-intake",
@@ -159,7 +159,7 @@
       "channel": "LinkedIn",
       "format": "Founder post",
       "audience": "Platform or AI-product lead migrating one workflow off Roo",
-      "evidenceSummary": "7 sprint-fit target(s) plus 3 business-system target(s) make workflow-risk migration the strongest B2B Roo angle.",
+      "evidenceSummary": "7 sprint-fit target(s) plus 4 business-system target(s) make workflow-risk migration the strongest B2B Roo angle.",
       "cta": "https://thumbgate-production.up.railway.app/?utm_source=roo_sunset&utm_medium=linkedin_post&utm_campaign=roo_channel_linkedin&utm_content=workflow_sprint&campaign_variant=migration_workflow&offer_code=ROO-CHANNEL-LINKEDIN&cta_id=roo_channel_linkedin&cta_placement=channel_draft&surface=roo_linkedin#workflow-sprint-intake",
       "proofTiming": "Public post can reference the shutdown, but hold proof links until the buyer confirms one workflow risk.",
       "draft": "Roo shutting down is a forcing function, not the real problem. The real problem is migrating one live workflow without reteaching approval boundaries, rollback rules, and repo-specific mistakes from zero. If your team already has that workflow in mind, start with the Workflow Hardening Sprint here: https://thumbgate-production.up.railway.app/?utm_source=roo_sunset&utm_medium=linkedin_post&utm_campaign=roo_channel_linkedin&utm_content=workflow_sprint&campaign_variant=migration_workflow&offer_code=ROO-CHANNEL-LINKEDIN&cta_id=roo_channel_linkedin&cta_placement=channel_draft&surface=roo_linkedin#workflow-sprint-intake ."
@@ -231,8 +231,8 @@
     "warmTargetCount": 4,
     "selfServeTargetCount": 3,
     "sprintTargetCount": 7,
-    "workflowControlSurfaceCount": 6,
-    "businessSystemTargetCount": 3
+    "workflowControlSurfaceCount": 5,
+    "businessSystemTargetCount": 4
   },
   "proofLinks": [
     "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
