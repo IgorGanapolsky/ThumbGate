@@ -21,6 +21,7 @@ const {
   isCliInvocation,
   readRevenueLoopReport,
   renderClaudeProspectQueueCsv,
+  renderClaudeSurfacesCsv,
   renderClaudeWorkflowHardeningPackMarkdown,
   writeClaudeWorkflowHardeningPack,
 } = require('../scripts/claude-workflow-hardening-pack');
@@ -216,6 +217,15 @@ test('prospect queue CSV exports operator-ready rows', () => {
   assert.match(csv, /^key,account,temperature,motion,reason,evidence,sourceUrl,nextAsk/m);
   assert.match(csv, /freema\/mcp-jira-stdio/);
   assert.match(csv, /business-system integration/);
+});
+
+test('surface CSV exports install and proof lanes for operator handoff', () => {
+  const csv = renderClaudeSurfacesCsv(buildClaudeWorkflowHardeningPack(makeReportFixture()));
+
+  assert.match(csv, /^key,name,buyerSignal,operatorUse,surfaceUrl,supportUrl,evidenceSource,proofUrl,proofLinks/m);
+  assert.match(csv, /claude_desktop_guide/);
+  assert.match(csv, /Review-ready Claude install lane/);
+  assert.match(csv, /Official directory review is separate|CLAUDE_DESKTOP_EXTENSION\.md/);
 });
 
 test('writer exports markdown, JSON, and CSV artifacts for the report folder', () => {

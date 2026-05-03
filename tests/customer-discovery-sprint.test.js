@@ -22,6 +22,7 @@ const EXPECTED_ARTIFACTS = [
   'operator-send-now.json',
   'claude-workflow-hardening-pack.md',
   'claude-workflow-hardening-pack.json',
+  'claude-install-surfaces.csv',
   'cursor-marketplace-revenue-pack.md',
   'cursor-marketplace-revenue-pack.json',
   'cursor-marketplace-surfaces.csv',

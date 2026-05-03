@@ -537,6 +537,26 @@ function renderClaudeProspectQueueCsv(pack = {}) {
   return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
 }
 
+function renderClaudeSurfacesCsv(pack = {}) {
+  const surfaces = Array.isArray(pack.surfaces) ? pack.surfaces : [];
+  const rows = [
+    ['key', 'name', 'buyerSignal', 'operatorUse', 'surfaceUrl', 'supportUrl', 'evidenceSource', 'proofUrl', 'proofLinks'],
+    ...surfaces.map((surface) => ([
+      surface.key,
+      surface.name,
+      surface.buyerSignal,
+      surface.operatorUse,
+      surface.url,
+      surface.supportUrl,
+      surface.evidenceSource,
+      surface.proofUrl,
+      Array.isArray(surface.proofLinks) ? surface.proofLinks.join('; ') : '',
+    ])),
+  ];
+
+  return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
+}
+
 function renderClaudeSurfaceLines(pack = {}) {
   return Array.isArray(pack.surfaces) && pack.surfaces.length
     ? pack.surfaces.flatMap((surface) => ([
@@ -701,8 +721,16 @@ function writeClaudeWorkflowHardeningPack(pack, options = {}) {
     markdown: renderClaudeWorkflowHardeningPackMarkdown(pack),
     jsonName: 'claude-workflow-hardening-pack.json',
     jsonValue: pack,
-    csvName: 'claude-prospect-queue.csv',
-    csvValue: renderClaudeProspectQueueCsv(pack),
+    csvArtifacts: [
+      {
+        name: 'claude-prospect-queue.csv',
+        value: renderClaudeProspectQueueCsv(pack),
+      },
+      {
+        name: 'claude-install-surfaces.csv',
+        value: renderClaudeSurfacesCsv(pack),
+      },
+    ],
   });
 }
 
@@ -761,6 +789,7 @@ module.exports = {
   parseArgs,
   readRevenueLoopReport,
   renderClaudeProspectQueueCsv,
+  renderClaudeSurfacesCsv,
   renderClaudeWorkflowHardeningPackMarkdown,
   writeClaudeWorkflowHardeningPack,
 };
