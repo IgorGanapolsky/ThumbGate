@@ -29,6 +29,7 @@ const {
   renderMarketplaceCopyMarkdown,
   renderOperatorHandoffMarkdown,
   renderOperatorSendNowCsv,
+  renderSelfServeClosePackMarkdown,
   renderRevenueLoopMarkdown,
   renderTeamOutreachMessagesMarkdown,
   resolveRevenueLoopSummary,
@@ -1442,6 +1443,110 @@ test('operator handoff payload mirrors the ranked queue and sales commands in ma
   assert.equal(coldSection.targets.length, 0);
 });
 
+test('self-serve close pack isolates guide-to-Pro targets and commands', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const markdown = renderSelfServeClosePackMarkdown({
+    generatedAt: '2026-04-26T00:00:00.000Z',
+    directive: {
+      state: 'post-first-dollar',
+      headline: 'Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.',
+    },
+    verification: {
+      label: 'Live hosted billing summary verified for this run.',
+    },
+    snapshot: {
+      paidOrders: 2,
+      checkoutStarts: 1,
+    },
+    targets: [
+      {
+        temperature: 'warm',
+        source: 'reddit',
+        channel: 'reddit_dm',
+        username: 'warm_builder',
+        accountName: 'r/ClaudeCode',
+        contactUrl: 'https://www.reddit.com/user/warm_builder/',
+        evidenceScore: 9,
+        evidence: ['warm inbound engagement', 'workflow pain named'],
+        motion: 'sprint',
+        motionLabel: catalog.sprint.label,
+        motionReason: 'Warm target already named a repeated workflow blocker.',
+        pipelineStage: 'targeted',
+        proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+        cta: catalog.sprint.cta,
+        firstTouchDraft: 'I will harden one AI-agent workflow for you.',
+        painConfirmedFollowUpDraft: 'If the workflow pain is real, I can send the proof pack.',
+      },
+      {
+        temperature: 'cold',
+        source: 'github',
+        channel: 'github',
+        username: 'self_serve_builder',
+        company: 'Solo Builder LLC',
+        contactUrl: 'https://solo.builder.dev/',
+        contactSurfaces: [
+          {
+            label: 'Website',
+            url: 'https://solo.builder.dev/',
+          },
+          {
+            label: 'GitHub profile',
+            url: 'https://github.com/self_serve_builder',
+          },
+        ],
+        repoName: 'claude-code-hooks',
+        repoUrl: 'https://github.com/self_serve_builder/claude-code-hooks',
+        updatedAt: '2026-04-26T01:00:00.000Z',
+        evidenceScore: 9,
+        evidence: ['self-serve agent tooling', 'updated in the last 7 days'],
+        motion: 'pro',
+        motionLabel: catalog.pro.label,
+        motionReason: 'Target looks like a local hook surface, so the guide-to-Pro lane is the faster close.',
+        pipelineStage: 'targeted',
+        proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+        cta: links.guideLink,
+        firstTouchDraft: 'Start with the setup guide, then move to Pro if the tool path fits.',
+        painConfirmedFollowUpDraft: 'If you want the tool path, I can send the live Pro checkout.',
+        selfServeFollowUpDraft: 'Use the setup guide first, then move to Pro.',
+        checkoutCloseDraft: 'If you are ready for the self-serve lane, here is the live Pro checkout.',
+      },
+      {
+        temperature: 'cold',
+        source: 'github',
+        channel: 'github',
+        username: 'builder',
+        company: 'Builder Labs',
+        contactUrl: 'https://builder.dev/',
+        repoName: 'production-mcp-server',
+        repoUrl: 'https://github.com/builder/production-mcp-server',
+        evidenceScore: 11,
+        evidence: ['production or platform workflow', '42 GitHub stars'],
+        motion: 'sprint',
+        motionLabel: catalog.sprint.label,
+        motionReason: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
+        pipelineStage: 'targeted',
+        proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
+        cta: catalog.sprint.cta,
+        firstTouchDraft: 'I will harden one production workflow for you.',
+        painConfirmedFollowUpDraft: 'If the workflow pain is real, I can send the proof pack.',
+      },
+    ],
+  });
+
+  assert.match(markdown, /Self-Serve Close Pack/);
+  assert.match(markdown, /Self-serve closes ready now: 1/);
+  assert.match(markdown, /Close Now: Self-Serve Pro/);
+  assert.match(markdown, /@self_serve_builder — claude-code-hooks/);
+  assert.match(markdown, /Lead with the proof-backed setup guide first/);
+  assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
+  assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
+  assert.match(markdown, /Log after sprint intake: `npm run sales:pipeline -- advance --lead 'github_self_serve_builder_claude_code_hooks'/);
+  assert.match(markdown, /Tool-path follow-up:/);
+  assert.doesNotMatch(markdown, /@warm_builder/);
+  assert.doesNotMatch(markdown, /@builder — production-mcp-server/);
+});
+
 test('first-touch outreach does not push proof before pain is confirmed', () => {
   const catalog = buildMotionCatalog(buildRevenueLinks());
   const selectedMotion = selectOutreachMotion({
@@ -2205,6 +2310,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     const operatorHandoffJson = JSON.parse(fs.readFileSync(path.join(reportDir, 'operator-priority-handoff.json'), 'utf8'));
     const operatorSendNowCsv = fs.readFileSync(path.join(reportDir, 'operator-send-now.csv'), 'utf8');
     const operatorSendNowJson = JSON.parse(fs.readFileSync(path.join(reportDir, 'operator-send-now.json'), 'utf8'));
+    const selfServeClosePack = fs.readFileSync(path.join(reportDir, 'self-serve-close-pack.md'), 'utf8');
 
     assert.equal(written.reportDir, reportDir);
     assert.equal(written.docsPath, null);
@@ -2219,6 +2325,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-priority-handoff.json')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-send-now.csv')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-send-now.json')));
+    assert.ok(fs.existsSync(path.join(reportDir, 'self-serve-close-pack.md')));
     assert.match(csv, /^temperature,source,channel,username,accountName,company,contactUrl,contactSurfaces,repoName,repoUrl,updatedAt,offer,pipelineStage,pipelineLeadId,nextOperatorAction,pipelineUpdatedAt,evidenceScore,evidence,evidenceSource,evidenceLinks,claimGuardrails,outreachAngle,motionLabel,motionReason,proofPackTrigger,cta,firstTouchDraft,painConfirmedFollowUpDraft,selfServeFollowUpDraft,checkoutCloseDraft,markContactedCommand,markRepliedCommand,markCallBookedCommand,markCheckoutStartedCommand,markSprintIntakeCommand,markPaidCommand/m);
     assert.match(csv, /"I can harden one workflow, then prove it\."/);
     assert.match(csv, /"If the workflow pain is real, I can send the proof pack\."/);
@@ -2262,6 +2369,8 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.equal(operatorSendNowJson.rows[0].sectionKey, 'send_now_warm_discovery');
     assert.equal(operatorSendNowJson.rows[0].pipelineLeadId, 'reddit_builder_production_mcp_server');
     assert.equal(operatorSendNowJson.rows[0].markSprintIntakeCommand.includes('sprint_intake'), true);
+    assert.match(selfServeClosePack, /Self-Serve Close Pack/);
+    assert.match(selfServeClosePack, /No self-serve close targets are available for this run\./);
   } finally {
     fs.rmSync(reportDir, { recursive: true, force: true });
   }
@@ -2366,6 +2475,7 @@ test('writeRevenueLoopOutputs mirrors dedicated GTM docs instead of overwriting 
     assert.ok(fs.existsSync(path.join(marketingDir, 'operator-priority-handoff.json')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'operator-send-now.csv')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'operator-send-now.json')));
+    assert.ok(fs.existsSync(path.join(marketingDir, 'self-serve-close-pack.md')));
   } finally {
     fs.rmSync(repoRoot, { recursive: true, force: true });
   }
