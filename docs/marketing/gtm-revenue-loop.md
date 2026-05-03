@@ -1,7 +1,7 @@
 # GSD Revenue Loop
 
 Status: post-first-dollar
-Updated: 2026-05-03T16:57:09.880Z
+Updated: 2026-05-03T17:57:23.317Z
 
 This report is an operator artifact for landing the first 10 paying customers. It is not proof of sent messages or booked revenue by itself.
 Outbound rule: do not treat posts as sales. A lead only moves when it is tracked as contacted, replied, call booked, checkout/sprint, or paid.
@@ -25,8 +25,8 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Revenue window: today
 - Paid orders: 2
 - Booked revenue: $20.00
-- Checkout starts: 13
-- Unique leads: 13
+- Checkout starts: 16
+- Unique leads: 16
 - Workflow sprint leads: 0
 - Qualified sprint leads: 0
 - Billing source: hosted-via-railway-env
@@ -258,7 +258,7 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Contact surfaces: GitHub profile: https://github.com/zaxbysauce; Repository: https://github.com/zaxbysauce/opencode-swarm
 - Company: n/a
 - Repo: https://github.com/zaxbysauce/opencode-swarm
-- Repo last updated: 2026-05-03T16:48:48Z
+- Repo last updated: 2026-05-03T17:28:48Z
 - Evidence score: 12
 - Evidence: workflow control surface, self-serve agent tooling, 293 GitHub stars, updated in the last 7 days
 - Evidence sources: Target signal: https://github.com/zaxbysauce/opencode-swarm; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
