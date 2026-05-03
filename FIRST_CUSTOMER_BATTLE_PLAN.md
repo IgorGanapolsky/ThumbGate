@@ -1,7 +1,10 @@
-# First Customer Battle Plan — ThumbGate
+# First Customer Battle Plan — ThumbGate (Historical)
 
-**Goal:** Get the first paying customer TODAY.
+**Historical goal:** Get the first paying customer.
 **Date:** 2026-04-06
+
+This file is preserved as the original first-dollar push reference.
+Current operator execution lives in [LAUNCH_NOW.md](LAUNCH_NOW.md) and [docs/marketing/operator-priority-handoff.md](docs/marketing/operator-priority-handoff.md), which track the live hosted revenue summary and the current send order.
 
 ---
 
