@@ -1,6 +1,6 @@
 # Claude Workflow Hardening Pack
 
-Updated: 2026-05-03T16:57:09.880Z
+Updated: 2026-05-03T21:08:24.769Z
 
 This is a sales operator artifact. It is not proof of sent outreach, directory approval, paid revenue, or deployment success by itself.
 
@@ -8,10 +8,10 @@ This is a sales operator artifact. It is not proof of sent outreach, directory a
 Turn Claude install demand and workflow-hardening pain into tracked sprint intakes, proof clicks, and Pro checkout starts without making approval or revenue claims the repo cannot verify.
 
 ## Positioning
-- State: post-first-dollar
+- State: cold-start
 - Headline: Turn Claude install demand into workflow-hardening paid intent.
 - Short description: ThumbGate gives Claude Desktop and Claude Code a proof-backed install path, thumbs-up/down feedback capture, and Pre-Action Checks that block repeated workflow mistakes before the next risky action runs.
-- Summary: Claude demand in ThumbGate should stay install-first for evaluators and workflow-hardening-first for teams that already feel the pain. Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
+- Summary: Claude demand in ThumbGate should stay install-first for evaluators and workflow-hardening-first for teams that already feel the pain. No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.
 
 ## Canonical Identity
 - Display name: ThumbGate for Claude

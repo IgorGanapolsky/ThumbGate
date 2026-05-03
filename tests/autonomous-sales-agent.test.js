@@ -6,6 +6,7 @@ const path = require('node:path');
 
 const {
   buildGitHubOutreachJobs,
+  buildPackWriteOptions,
   isCliInvocation,
   main,
 } = require('../scripts/autonomous-sales-agent');
@@ -183,6 +184,21 @@ test('buildGitHubOutreachJobs writes report-dir and repo docs assets from the cu
       outPath: path.resolve(repoRoot, 'docs/OUTREACH_TARGETS.md'),
     },
   ]);
+});
+
+test('buildPackWriteOptions mirrors revenue-loop doc behavior for channel packs', () => {
+  assert.deepEqual(
+    buildPackWriteOptions({}),
+    { writeDocs: true },
+  );
+  assert.deepEqual(
+    buildPackWriteOptions({ reportDir: 'reports/gtm/test' }),
+    { reportDir: 'reports/gtm/test', writeDocs: false },
+  );
+  assert.deepEqual(
+    buildPackWriteOptions({ writeDocs: true, reportDir: 'reports/gtm/test' }),
+    { writeDocs: true, reportDir: 'reports/gtm/test' },
+  );
 });
 
 test('CLI entrypoint detection is path based', () => {

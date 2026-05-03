@@ -1,6 +1,6 @@
 # Reddit DM Workflow Hardening Pack
 
-Updated: 2026-05-03T16:57:09.880Z
+Updated: 2026-05-03T21:08:24.769Z
 
 This pack turns the current warm Reddit workflow-risk queue into an operator-ready send surface. It is evidence-backed acquisition support, not proof of sent outreach or paid revenue.
 
@@ -8,10 +8,10 @@ This pack turns the current warm Reddit workflow-risk queue into an operator-rea
 Convert the current warm Reddit workflow-risk queue into replied conversations, diagnostics, and the first paid Workflow Hardening Sprint.
 
 ## Positioning
-- State: post-first-dollar
+- State: cold-start
 - Headline: Turn warm Reddit workflow-risk conversations into sprint-qualified paid intent.
 - Short description: ThumbGate gives warm Reddit DM outreach one honest offer: harden one AI-agent workflow with rollback safety, approval boundaries, and proof after pain is confirmed.
-- Summary: Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
+- Summary: No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.
 
 ## Canonical Identity
 - Display name: ThumbGate
