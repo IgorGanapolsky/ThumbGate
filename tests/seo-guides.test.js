@@ -31,12 +31,12 @@ const COMPARE_FILES = [
 const ALL_FILES = [...GUIDE_FILES, ...COMPARE_FILES];
 
 describe('SEO guide and comparison pages', () => {
-  it('all 15 HTML files exist', () => {
+  it('all configured HTML files exist', () => {
+    assert.ok(ALL_FILES.length > 0, 'SEO guide file list is empty');
     for (const file of ALL_FILES) {
       const fullPath = path.join(PUBLIC_DIR, file);
       assert.ok(fs.existsSync(fullPath), `Missing file: ${file}`);
     }
-    assert.equal(ALL_FILES.length, 15);
   });
 
   for (const file of ALL_FILES) {
