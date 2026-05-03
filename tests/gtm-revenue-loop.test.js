@@ -28,6 +28,7 @@ const {
   prospectTargets,
   renderMarketplaceCopyMarkdown,
   renderOperatorHandoffMarkdown,
+  renderOperatorSendNowMarkdown,
   renderOperatorSendNowCsv,
   renderRevenueLoopMarkdown,
   renderTeamOutreachMessagesMarkdown,
@@ -2203,6 +2204,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     const teamOutreach = fs.readFileSync(path.join(reportDir, 'team-outreach-messages.md'), 'utf8');
     const operatorHandoff = fs.readFileSync(path.join(reportDir, 'operator-priority-handoff.md'), 'utf8');
     const operatorHandoffJson = JSON.parse(fs.readFileSync(path.join(reportDir, 'operator-priority-handoff.json'), 'utf8'));
+    const operatorSendNowMarkdown = fs.readFileSync(path.join(reportDir, 'operator-send-now.md'), 'utf8');
     const operatorSendNowCsv = fs.readFileSync(path.join(reportDir, 'operator-send-now.csv'), 'utf8');
     const operatorSendNowJson = JSON.parse(fs.readFileSync(path.join(reportDir, 'operator-send-now.json'), 'utf8'));
 
@@ -2217,6 +2219,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.ok(fs.existsSync(path.join(reportDir, 'team-outreach-messages.md')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-priority-handoff.md')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-priority-handoff.json')));
+    assert.ok(fs.existsSync(path.join(reportDir, 'operator-send-now.md')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-send-now.csv')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-send-now.json')));
     assert.match(csv, /^temperature,source,channel,username,accountName,company,contactUrl,contactSurfaces,repoName,repoUrl,updatedAt,offer,pipelineStage,pipelineLeadId,nextOperatorAction,pipelineUpdatedAt,evidenceScore,evidence,evidenceSource,evidenceLinks,claimGuardrails,outreachAngle,motionLabel,motionReason,proofPackTrigger,cta,firstTouchDraft,painConfirmedFollowUpDraft,selfServeFollowUpDraft,checkoutCloseDraft,markContactedCommand,markRepliedCommand,markCallBookedCommand,markCheckoutStartedCommand,markSprintIntakeCommand,markPaidCommand/m);
@@ -2255,6 +2258,9 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.match(operatorHandoff, /Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
     assert.equal(operatorHandoffJson.sections.find((section) => section.key === 'send_now_warm_discovery').label, 'Send Now: Warm Discovery');
     assert.equal(operatorHandoffJson.sections.find((section) => section.key === 'send_now_warm_discovery').targets[0].pipelineLeadId, 'reddit_builder_production_mcp_server');
+    assert.match(operatorSendNowMarkdown, /# Revenue Operator Send-Now/);
+    assert.match(operatorSendNowMarkdown, /## Send Now: Warm Discovery/);
+    assert.match(operatorSendNowMarkdown, /I can harden one workflow, then prove it\./);
     assert.match(operatorSendNowCsv, /^rank,sectionKey,sectionLabel,temperature,source,channel,pipelineStage,pipelineLeadId,username,accountName,company,repoName,repoUrl,contactSurface,contactSurfaces,pipelineUpdatedAt,nextOperatorStep,evidenceScore,evidence,motionLabel,whyNow,proofRule,cta,firstTouchDraft,painConfirmedFollowUpDraft,selfServeFollowUpDraft,checkoutCloseDraft,markContactedCommand,markRepliedCommand,markCallBookedCommand,markCheckoutStartedCommand,markSprintIntakeCommand,markPaidCommand/m);
     assert.match(operatorSendNowCsv, /send_now_warm_discovery/);
     assert.match(operatorSendNowCsv, /reddit_builder_production_mcp_server/);
@@ -2364,6 +2370,7 @@ test('writeRevenueLoopOutputs mirrors dedicated GTM docs instead of overwriting 
     assert.ok(fs.existsSync(path.join(marketingDir, 'team-outreach-messages.md')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'operator-priority-handoff.md')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'operator-priority-handoff.json')));
+    assert.ok(fs.existsSync(path.join(marketingDir, 'operator-send-now.md')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'operator-send-now.csv')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'operator-send-now.json')));
   } finally {
@@ -2417,12 +2424,16 @@ test('operator send-now export flattens ranked handoff rows for batch ops', () =
   };
 
   const payload = buildOperatorSendNowPayload(report);
+  const markdown = renderOperatorSendNowMarkdown(report);
   const csv = renderOperatorSendNowCsv(report);
 
   assert.equal(payload.rows.length, 1);
   assert.equal(payload.rows[0].sectionKey, 'send_now_warm_discovery');
   assert.equal(payload.rows[0].pipelineLeadId, 'reddit_builder_production_mcp_server');
   assert.equal(payload.rows[0].company, 'Builder Labs');
+  assert.match(markdown, /# Revenue Operator Send-Now/);
+  assert.match(markdown, /## Send Now: Warm Discovery/);
+  assert.match(markdown, /I can harden one workflow, then prove it\./);
   assert.match(csv, /send_now_warm_discovery/);
   assert.match(csv, /Reddit DM: https:\/\/www\.reddit\.com\/user\/builder\//);
   assert.match(csv, /I can harden one workflow, then prove it\./);
