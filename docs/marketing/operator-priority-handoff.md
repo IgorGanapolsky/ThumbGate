@@ -1,6 +1,6 @@
 # Revenue Operator Priority Handoff
 
-Updated: 2026-05-03T15:27:41.242Z
+Updated: 2026-05-03T16:57:09.880Z
 
 This is the ranked send order for the current zero-to-one revenue loop. Work follow-ups first, then warm discovery, then self-serve closes, then production-rollout buyers, then expand into the remaining cold GitHub targets with the same proof discipline.
 
@@ -235,7 +235,7 @@ Checkout close draft:
 - Contact surfaces: GitHub profile: https://github.com/zaxbysauce; Repository: https://github.com/zaxbysauce/opencode-swarm
 - Company: n/a
 - Evidence score: 12
-- Evidence: workflow control surface, self-serve agent tooling, 292 GitHub stars, updated in the last 7 days
+- Evidence: workflow control surface, self-serve agent tooling, 293 GitHub stars, updated in the last 7 days
 - Evidence sources: Target signal: https://github.com/zaxbysauce/opencode-swarm; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 - Motion: Pro at $19/mo or $149/yr
 - Why now: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.

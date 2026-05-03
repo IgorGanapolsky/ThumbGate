@@ -1,7 +1,7 @@
 # GSD Revenue Loop
 
 Status: post-first-dollar
-Updated: 2026-05-03T15:27:41.242Z
+Updated: 2026-05-03T16:57:09.880Z
 
 This report is an operator artifact for landing the first 10 paying customers. It is not proof of sent messages or booked revenue by itself.
 Outbound rule: do not treat posts as sales. A lead only moves when it is tracked as contacted, replied, call booked, checkout/sprint, or paid.
@@ -208,7 +208,7 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Contact surfaces: GitHub profile: https://github.com/Adqui9608; Repository: https://github.com/Adqui9608/ai-code-review-agent
 - Company: n/a
 - Repo: https://github.com/Adqui9608/ai-code-review-agent
-- Repo last updated: 2026-05-03T11:32:10Z
+- Repo last updated: 2026-05-03T15:55:09Z
 - Evidence score: 15
 - Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, updated in the last 7 days
 - Evidence sources: Target signal: https://github.com/Adqui9608/ai-code-review-agent; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
@@ -258,9 +258,9 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Contact surfaces: GitHub profile: https://github.com/zaxbysauce; Repository: https://github.com/zaxbysauce/opencode-swarm
 - Company: n/a
 - Repo: https://github.com/zaxbysauce/opencode-swarm
-- Repo last updated: 2026-05-03T14:01:58Z
+- Repo last updated: 2026-05-03T16:48:48Z
 - Evidence score: 12
-- Evidence: workflow control surface, self-serve agent tooling, 292 GitHub stars, updated in the last 7 days
+- Evidence: workflow control surface, self-serve agent tooling, 293 GitHub stars, updated in the last 7 days
 - Evidence sources: Target signal: https://github.com/zaxbysauce/opencode-swarm; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 - Outreach angle: Lead with the proof-backed setup guide and local-first enforcement before any team-motion pitch.
 - Motion: Pro at $19/mo or $149/yr

@@ -1,6 +1,6 @@
 # Revenue Operator Send-Now Sheet
 
-Updated: 2026-05-03T15:27:41.242Z
+Updated: 2026-05-03T16:57:09.880Z
 
 This is the flat batch-send layer for the current revenue loop. Use it when you want the message, CTA, and logging commands in one place without re-reading the full GTM report.
 
