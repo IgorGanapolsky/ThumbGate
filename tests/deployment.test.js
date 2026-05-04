@@ -472,6 +472,8 @@ test('CI workflow supports merge queue and cancels stale non-main runs', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
 
   assert.match(workflow, /permissions:\s+contents:\s+read\s+pull-requests:\s+read/s);
+  assert.match(workflow, /push:\s+#[\s\S]*?branches:\s*\[main\]/);
+  assert.doesNotMatch(workflow, /branches:\s*\[main,\s*feat\/\*\*\]/);
   assert.match(workflow, /merge_group:/);
   assert.match(workflow, /types:\s*\[checks_requested\]/);
   assert.match(workflow, /group:\s*ci-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.ref\s*\}\}/);
