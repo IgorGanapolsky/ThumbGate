@@ -63,7 +63,7 @@ test('renderPlanMarkdown names all five GSD stages and page briefs', () => {
   assert.match(markdown, /Autoresearch Agent Safety \| Gates for Self-Improving Coding Agents/);
 });
 
-test('renderSeoPageHtml includes structured data, thumbs messaging, proof links, and the Pro CTA', () => {
+test('comparison SEO pages lead with sprint CTA and keep Pro as the follow-on lane', () => {
   const page = findSeoPageByPath('/compare/speclock');
   const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
 
@@ -75,9 +75,23 @@ test('renderSeoPageHtml includes structured data, thumbs messaging, proof links,
   assert.match(html, /👎 Thumbs down blocks repeated mistakes/);
   assert.match(html, /Verification evidence/);
   assert.match(html, /Automation proof/);
-  assert.match(html, /Go Pro — \$19\/mo/);
-  assert.match(html, /\/checkout\/pro\?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=compare_speclock&amp;cta_placement=seo_brief&amp;plan_id=pro/);
+  assert.match(html, /Commercial lane:<\/strong> Workflow Hardening Sprint first, Pro second/);
+  assert.match(html, /Start Workflow Hardening Sprint/);
+  assert.match(html, /\/\?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=compare_speclock&amp;cta_placement=seo_brief_primary&amp;offer=sprint#workflow-sprint-intake/);
+  assert.match(html, /See Solo Pro/);
+  assert.match(html, /\/checkout\/pro\?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=compare_speclock&amp;cta_placement=seo_brief_secondary&amp;plan_id=pro/);
   assert.match(html, /ThumbGate vs SpecLock/);
+});
+
+test('integration SEO pages lead with the setup guide before Pro', () => {
+  const page = findSeoPageByPath('/guides/codex-cli-guardrails');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.match(html, /Commercial lane:<\/strong> Proof-backed setup guide first, Pro second/);
+  assert.match(html, /Open proof-backed setup guide/);
+  assert.match(html, /\/guide\?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_codex-cli-guardrails&amp;cta_placement=seo_brief_primary&amp;offer=guide/);
+  assert.match(html, /See Solo Pro/);
 });
 
 test('page lookup and sitemap entries stay aligned', () => {
@@ -250,4 +264,40 @@ test('writePlanOutputs persists machine-readable GSD artifacts', () => {
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
+});
+
+test('writePlanOutputs refreshes public SEO HTML when using the default output directory', () => {
+  const plan = buildThumbGateSeoPlan();
+  const originalMkdirSync = fs.mkdirSync;
+  const originalWriteFileSync = fs.writeFileSync;
+  const writes = [];
+
+  fs.mkdirSync = (targetPath, options) => {
+    writes.push({ type: 'mkdir', targetPath, options });
+  };
+  fs.writeFileSync = (targetPath, content) => {
+    writes.push({ type: 'write', targetPath, content });
+  };
+
+  try {
+    writePlanOutputs(plan);
+  } finally {
+    fs.mkdirSync = originalMkdirSync;
+    fs.writeFileSync = originalWriteFileSync;
+  }
+
+  const publicWrites = writes.filter((entry) => (
+    entry.type === 'write'
+    && entry.targetPath.startsWith(path.join(path.resolve(__dirname, '..'), 'public'))
+  ));
+
+  assert.equal(publicWrites.length, plan.execute.pages.length);
+  assert.ok(
+    publicWrites.some((entry) => entry.targetPath.endsWith(path.join('compare', 'speclock.html'))),
+    'default output writes should refresh compare pages'
+  );
+  assert.ok(
+    publicWrites.some((entry) => entry.targetPath.endsWith(path.join('guides', 'codex-cli-guardrails.html'))),
+    'default output writes should refresh integration guides'
+  );
 });

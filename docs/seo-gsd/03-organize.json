@@ -196,6 +196,83 @@
       ]
     },
     {
+      "pillar": "comparison",
+      "pageType": "comparison",
+      "queries": [
+        {
+          "id": "kw_1_thumbgate-vs-speclock",
+          "query": "thumbgate vs speclock",
+          "source": "seed",
+          "notes": "Bottom-of-funnel comparison against manual spec alternatives.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 100,
+          "intent": "comparison",
+          "pillar": "comparison",
+          "persona": "tool-evaluator",
+          "pageType": "comparison",
+          "opportunityScore": 100
+        },
+        {
+          "id": "kw_2_thumbgate-vs-mem0",
+          "query": "thumbgate vs mem0",
+          "source": "seed",
+          "notes": "Bottom-of-funnel comparison against memory-only tooling.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 98,
+          "intent": "comparison",
+          "pillar": "comparison",
+          "persona": "tool-evaluator",
+          "pageType": "comparison",
+          "opportunityScore": 100
+        },
+        {
+          "id": "kw_19_roo-code-alternative-cline",
+          "query": "roo code alternative cline",
+          "source": "seed",
+          "notes": "Time-sensitive migration query for Roo users who need portable lesson memory before the May 15, 2026 shutdown.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 83,
+          "intent": "comparison",
+          "pillar": "comparison",
+          "persona": "tool-evaluator",
+          "pageType": "comparison",
+          "opportunityScore": 99
+        }
+      ],
+      "totalOpportunityScore": 299,
+      "primaryQuery": {
+        "id": "kw_1_thumbgate-vs-speclock",
+        "query": "thumbgate vs speclock",
+        "source": "seed",
+        "notes": "Bottom-of-funnel comparison against manual spec alternatives.",
+        "impressions": null,
+        "clicks": null,
+        "ctr": null,
+        "position": null,
+        "businessValue": 100,
+        "intent": "comparison",
+        "pillar": "comparison",
+        "persona": "tool-evaluator",
+        "pageType": "comparison",
+        "opportunityScore": 100
+      },
+      "personas": [
+        "tool-evaluator"
+      ],
+      "intents": [
+        "comparison"
+      ]
+    },
+    {
       "pillar": "feedback-loop",
       "pageType": "integration",
       "queries": [
@@ -349,67 +426,6 @@
       ],
       "intents": [
         "informational"
-      ]
-    },
-    {
-      "pillar": "comparison",
-      "pageType": "comparison",
-      "queries": [
-        {
-          "id": "kw_1_thumbgate-vs-speclock",
-          "query": "thumbgate vs speclock",
-          "source": "seed",
-          "notes": "Bottom-of-funnel comparison against manual spec alternatives.",
-          "impressions": null,
-          "clicks": null,
-          "ctr": null,
-          "position": null,
-          "businessValue": 100,
-          "intent": "comparison",
-          "pillar": "comparison",
-          "persona": "tool-evaluator",
-          "pageType": "comparison",
-          "opportunityScore": 100
-        },
-        {
-          "id": "kw_2_thumbgate-vs-mem0",
-          "query": "thumbgate vs mem0",
-          "source": "seed",
-          "notes": "Bottom-of-funnel comparison against memory-only tooling.",
-          "impressions": null,
-          "clicks": null,
-          "ctr": null,
-          "position": null,
-          "businessValue": 98,
-          "intent": "comparison",
-          "pillar": "comparison",
-          "persona": "tool-evaluator",
-          "pageType": "comparison",
-          "opportunityScore": 100
-        }
-      ],
-      "totalOpportunityScore": 200,
-      "primaryQuery": {
-        "id": "kw_1_thumbgate-vs-speclock",
-        "query": "thumbgate vs speclock",
-        "source": "seed",
-        "notes": "Bottom-of-funnel comparison against manual spec alternatives.",
-        "impressions": null,
-        "clicks": null,
-        "ctr": null,
-        "position": null,
-        "businessValue": 100,
-        "intent": "comparison",
-        "pillar": "comparison",
-        "persona": "tool-evaluator",
-        "pageType": "comparison",
-        "opportunityScore": 100
-      },
-      "personas": [
-        "tool-evaluator"
-      ],
-      "intents": [
-        "comparison"
       ]
     }
   ],
@@ -610,6 +626,83 @@
       ]
     },
     {
+      "pillar": "comparison",
+      "pageType": "comparison",
+      "queries": [
+        {
+          "id": "kw_1_thumbgate-vs-speclock",
+          "query": "thumbgate vs speclock",
+          "source": "seed",
+          "notes": "Bottom-of-funnel comparison against manual spec alternatives.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 100,
+          "intent": "comparison",
+          "pillar": "comparison",
+          "persona": "tool-evaluator",
+          "pageType": "comparison",
+          "opportunityScore": 100
+        },
+        {
+          "id": "kw_2_thumbgate-vs-mem0",
+          "query": "thumbgate vs mem0",
+          "source": "seed",
+          "notes": "Bottom-of-funnel comparison against memory-only tooling.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 98,
+          "intent": "comparison",
+          "pillar": "comparison",
+          "persona": "tool-evaluator",
+          "pageType": "comparison",
+          "opportunityScore": 100
+        },
+        {
+          "id": "kw_19_roo-code-alternative-cline",
+          "query": "roo code alternative cline",
+          "source": "seed",
+          "notes": "Time-sensitive migration query for Roo users who need portable lesson memory before the May 15, 2026 shutdown.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 83,
+          "intent": "comparison",
+          "pillar": "comparison",
+          "persona": "tool-evaluator",
+          "pageType": "comparison",
+          "opportunityScore": 99
+        }
+      ],
+      "totalOpportunityScore": 299,
+      "primaryQuery": {
+        "id": "kw_1_thumbgate-vs-speclock",
+        "query": "thumbgate vs speclock",
+        "source": "seed",
+        "notes": "Bottom-of-funnel comparison against manual spec alternatives.",
+        "impressions": null,
+        "clicks": null,
+        "ctr": null,
+        "position": null,
+        "businessValue": 100,
+        "intent": "comparison",
+        "pillar": "comparison",
+        "persona": "tool-evaluator",
+        "pageType": "comparison",
+        "opportunityScore": 100
+      },
+      "personas": [
+        "tool-evaluator"
+      ],
+      "intents": [
+        "comparison"
+      ]
+    },
+    {
       "pillar": "feedback-loop",
       "pageType": "integration",
       "queries": [
@@ -763,67 +856,6 @@
       ],
       "intents": [
         "informational"
-      ]
-    },
-    {
-      "pillar": "comparison",
-      "pageType": "comparison",
-      "queries": [
-        {
-          "id": "kw_1_thumbgate-vs-speclock",
-          "query": "thumbgate vs speclock",
-          "source": "seed",
-          "notes": "Bottom-of-funnel comparison against manual spec alternatives.",
-          "impressions": null,
-          "clicks": null,
-          "ctr": null,
-          "position": null,
-          "businessValue": 100,
-          "intent": "comparison",
-          "pillar": "comparison",
-          "persona": "tool-evaluator",
-          "pageType": "comparison",
-          "opportunityScore": 100
-        },
-        {
-          "id": "kw_2_thumbgate-vs-mem0",
-          "query": "thumbgate vs mem0",
-          "source": "seed",
-          "notes": "Bottom-of-funnel comparison against memory-only tooling.",
-          "impressions": null,
-          "clicks": null,
-          "ctr": null,
-          "position": null,
-          "businessValue": 98,
-          "intent": "comparison",
-          "pillar": "comparison",
-          "persona": "tool-evaluator",
-          "pageType": "comparison",
-          "opportunityScore": 100
-        }
-      ],
-      "totalOpportunityScore": 200,
-      "primaryQuery": {
-        "id": "kw_1_thumbgate-vs-speclock",
-        "query": "thumbgate vs speclock",
-        "source": "seed",
-        "notes": "Bottom-of-funnel comparison against manual spec alternatives.",
-        "impressions": null,
-        "clicks": null,
-        "ctr": null,
-        "position": null,
-        "businessValue": 100,
-        "intent": "comparison",
-        "pillar": "comparison",
-        "persona": "tool-evaluator",
-        "pageType": "comparison",
-        "opportunityScore": 100
-      },
-      "personas": [
-        "tool-evaluator"
-      ],
-      "intents": [
-        "comparison"
       ]
     }
   ]

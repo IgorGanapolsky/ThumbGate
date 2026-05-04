@@ -129,4 +129,32 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(relationalKnowledge.includes('Relational knowledge'), 'relational knowledge guide should mention relational knowledge');
     assert.ok(relationalKnowledge.includes('pre-action checks'), 'relational knowledge guide should tie the topic back to ThumbGate');
   });
+
+  it('risk-heavy SEO pages lead with the sprint lane while integration pages lead with the setup guide', () => {
+    const productionListicle = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/best-tools-stop-ai-agents-breaking-production.html'),
+      'utf-8'
+    );
+    const codexGuide = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/codex-cli-guardrails.html'),
+      'utf-8'
+    );
+
+    assert.ok(
+      productionListicle.includes('Commercial lane:</strong> Workflow Hardening Sprint first, Pro second'),
+      'production listicle should advertise the sprint-first commercial lane'
+    );
+    assert.ok(
+      productionListicle.includes('Start Workflow Hardening Sprint'),
+      'production listicle should lead with the sprint CTA'
+    );
+    assert.ok(
+      codexGuide.includes('Commercial lane:</strong> Proof-backed setup guide first, Pro second'),
+      'Codex guide should advertise the guide-first commercial lane'
+    );
+    assert.ok(
+      codexGuide.includes('Open proof-backed setup guide'),
+      'Codex guide should lead with the setup guide CTA'
+    );
+  });
 });
