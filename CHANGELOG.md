@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.16.19
+
+### Patch Changes
+
+- [#1707](https://github.com/IgorGanapolsky/ThumbGate/pull/1707) [`a855444`](https://github.com/IgorGanapolsky/ThumbGate/commit/a85544471127546a3f43aef970c89778be56b274) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Expose non-secret hosted runtime presence in the billing summary so the revenue machine can recognize configured sprint payment links over the HTTP audit path.
+
 ## 1.16.18
 
 ### Patch Changes
