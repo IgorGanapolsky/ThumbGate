@@ -22,6 +22,7 @@ const {
 const REPO_ROOT = path.resolve(__dirname, '..');
 const REVENUE_LOOP_REPORT_PATH = path.join(REPO_ROOT, 'docs', 'marketing', 'gtm-revenue-loop.json');
 const GUIDE_URL = 'https://thumbgate-production.up.railway.app/guide';
+const ROO_MIGRATION_GUIDE_URL = 'https://thumbgate-production.up.railway.app/guides/roo-code-alternative-cline';
 const CLINE_INSTALL_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/cline/INSTALL.md';
 const ROO_SUNSET_DOC_URL = 'https://docs.roocode.com/';
 const ROO_SUNSET_BLOG_URL = 'https://roocode.com/blog/sunsetting-roo-code-extension-cloud-and-router';
@@ -56,6 +57,16 @@ function buildTrackedRooLink(baseUrl, tracking = {}) {
 
 function buildRooOutreachLinkSet(links = buildRevenueLinks()) {
   return {
+    migrationGuideLink: buildTrackedRooMigrationGuideLink({
+      utmMedium: OUTREACH_MEDIUM,
+      utmCampaign: 'roo_outreach_guide',
+      utmContent: 'guide',
+      campaignVariant: 'memory_migrant',
+      offerCode: 'ROO-OUTREACH_GUIDE',
+      ctaId: 'roo_outreach_guide',
+      ctaPlacement: 'outreach_draft',
+      surface: 'roo_outreach',
+    }),
     installLink: buildTrackedRooLink(CLINE_INSTALL_URL, {
       utmMedium: OUTREACH_MEDIUM,
       utmCampaign: 'roo_outreach_install',
@@ -98,6 +109,10 @@ function buildRooOutreachLinkSet(links = buildRevenueLinks()) {
       surface: 'roo_outreach',
     }),
   };
+}
+
+function buildTrackedRooMigrationGuideLink(tracking = {}) {
+  return buildTrackedRooLink(ROO_MIGRATION_GUIDE_URL, tracking);
 }
 
 function readRevenueLoopReport(reportPath = REVENUE_LOOP_REPORT_PATH) {
@@ -145,6 +160,22 @@ function buildEvidenceSurfaces(links, about) {
       buyerSignal: 'Roo users facing a hard May 15, 2026 shutdown who need a successor and a way to keep lesson memory.',
     },
     {
+      key: 'roo_migration_guide',
+      name: 'ThumbGate Roo migration guide',
+      url: buildTrackedRooMigrationGuideLink({
+        utmCampaign: 'roo_migration_guide',
+        utmContent: 'guide',
+        campaignVariant: 'owned_surface',
+        offerCode: 'ROO-MIGRATION_GUIDE',
+        ctaId: 'roo_migration_guide',
+        ctaPlacement: 'pack_surface',
+      }),
+      supportUrl: CLINE_INSTALL_URL,
+      evidenceSource: 'public/guides/roo-code-alternative-cline.html',
+      operatorUse: 'Primary first-touch surface when the buyer needs the migration story, the successor recommendation, and the next install step in one owned page.',
+      buyerSignal: 'Roo users who have not yet accepted the successor path and need a migration rationale before they ask for the exact install doc.',
+    },
+    {
       key: 'cline_install_guide',
       name: 'Cline install guide',
       url: buildTrackedRooLink(CLINE_INSTALL_URL, {
@@ -157,8 +188,8 @@ function buildEvidenceSurfaces(links, about) {
       }),
       supportUrl: CLINE_INSTALL_URL,
       evidenceSource: 'adapters/cline/INSTALL.md',
-      operatorUse: 'Primary migration surface when the buyer already accepted Cline as the successor and wants the shortest install path.',
-      buyerSignal: 'Roo users who need a concrete replacement path and want one command plus local memory continuity.',
+      operatorUse: 'Use after the owned migration guide lands and the buyer asks for the exact install path.',
+      buyerSignal: 'Roo users who already accepted Cline as the successor and want the shortest install path plus local memory continuity.',
     },
     {
       key: 'proof_backed_setup_guide',
@@ -240,16 +271,16 @@ function buildOperatorQueue(links, report) {
       audience: 'Roo user who needs lesson memory to survive the move to Cline',
       evidence: 'Roo officially documents the May 15, 2026 shutdown and recommends Cline as the open-source successor. ThumbGate already ships the Cline install guide and keeps lessons in a local SQLite file.',
       proofTrigger: 'They can name one correction from Roo they do not want to reteach after migrating.',
-      proofAsset: CLINE_INSTALL_URL,
-      nextAsk: buildTrackedRooLink(CLINE_INSTALL_URL, {
-        utmCampaign: 'roo_queue_install',
-        utmContent: 'install_doc',
+      proofAsset: ROO_MIGRATION_GUIDE_URL,
+      nextAsk: buildTrackedRooMigrationGuideLink({
+        utmCampaign: 'roo_queue_guide',
+        utmContent: 'guide',
         campaignVariant: 'memory_migrant',
-        offerCode: 'ROO-QUEUE_INSTALL',
-        ctaId: 'roo_queue_install',
+        offerCode: 'ROO-QUEUE_GUIDE',
+        ctaId: 'roo_queue_guide',
         ctaPlacement: 'operator_queue',
       }),
-      recommendedMotion: 'Cline install guide -> setup guide -> Pro only after one saved correction is concrete.',
+      recommendedMotion: 'Roo migration guide -> Cline install guide -> setup guide -> Pro only after one saved correction is concrete.',
     },
     {
       key: 'roo_workflow_owner',
@@ -289,14 +320,14 @@ function buildOperatorQueue(links, report) {
 }
 
 function buildOutreachDrafts(links = buildRevenueLinks()) {
-  const { installLink, guideLink, sprintLink, proLink } = buildRooOutreachLinkSet(links);
+  const { migrationGuideLink, guideLink, sprintLink, proLink } = buildRooOutreachLinkSet(links);
 
   return [
     {
       key: 'memory_migrant_dm',
       channel: 'GitHub DM or founder reply',
       audience: 'Roo user who wants their corrections to survive the move to Cline',
-      draft: `Roo can sunset. Your lesson memory should not. If you already know Cline is the successor, the fastest path is to keep the corrections local and move them with one install lane: ${installLink} .`,
+      draft: `Roo can sunset. Your lesson memory should not. The clean first step is the migration guide: ${migrationGuideLink} . It explains the Cline successor path, why portable lesson memory matters, and where the exact install doc lives when they are ready.`,
     },
     {
       key: 'proof_after_pain',
@@ -414,10 +445,10 @@ function buildChannelDrafts(links, report) {
       format: 'Migration post',
       audience: 'Roo user evaluating Cline as the successor',
       evidenceSummary: 'The public Roo shutdown notice creates urgency, but the strongest first-touch angle is still memory portability rather than abstract governance.',
-      cta: buildTrackedRooLink(CLINE_INSTALL_URL, {
+      cta: buildTrackedRooMigrationGuideLink({
         utmMedium: REDDIT_MEDIUM,
         utmCampaign: 'roo_channel_reddit',
-        utmContent: 'install_doc',
+        utmContent: 'guide',
         campaignVariant: 'memory_portability',
         offerCode: 'ROO-CHANNEL-REDDIT',
         ctaId: 'roo_channel_reddit',
@@ -425,10 +456,10 @@ function buildChannelDrafts(links, report) {
         surface: 'roo_reddit',
       }),
       proofTiming: 'Lead with the migration path first. Hold proof links for replies or DMs after the buyer names the repeated mistake.',
-      draft: `Roo sunsets on May 15, 2026. Cline is the obvious successor, but the real migration question is whether your agent keeps its corrections. ThumbGate keeps those lessons in a local SQLite file so the move is not “reteach everything from scratch.” Migration path: ${buildTrackedRooLink(CLINE_INSTALL_URL, {
+      draft: `Roo sunsets on May 15, 2026. Cline is the obvious successor, but the real migration question is whether your agent keeps its corrections. ThumbGate keeps those lessons in a local SQLite file so the move is not “reteach everything from scratch.” Migration guide: ${buildTrackedRooMigrationGuideLink({
         utmMedium: REDDIT_MEDIUM,
         utmCampaign: 'roo_channel_reddit',
-        utmContent: 'install_doc',
+        utmContent: 'guide',
         campaignVariant: 'memory_portability',
         offerCode: 'ROO-CHANNEL-REDDIT',
         ctaId: 'roo_channel_reddit',
@@ -470,7 +501,7 @@ function buildChannelDrafts(links, report) {
       format: 'Short post',
       audience: 'Solo Roo builder who wants the cleanest self-serve move',
       evidenceSummary: `${backstop.selfServeTargetCount} current self-serve target(s) already support a guide-first motion once the buyer accepts the memory-portability story.`,
-      cta: buildTrackedRooLink(GUIDE_URL, {
+      cta: buildTrackedRooMigrationGuideLink({
         utmMedium: THREADS_MEDIUM,
         utmCampaign: 'roo_channel_threads',
         utmContent: 'guide',
@@ -480,8 +511,8 @@ function buildChannelDrafts(links, report) {
         ctaPlacement: 'channel_draft',
         surface: 'roo_threads',
       }),
-      proofTiming: 'Keep first touch guide-first. Send proof links only after the buyer replies with a concrete migration or workflow risk.',
-      draft: `Roo can go away without taking your agent memory with it. ThumbGate keeps the lessons local, then turns them into Pre-Action Checks after you move to Cline. Clean setup path: ${buildTrackedRooLink(GUIDE_URL, {
+      proofTiming: 'Keep first touch on the Roo-specific guide. Send proof links only after the buyer replies with a concrete migration or workflow risk.',
+      draft: `Roo can go away without taking your agent memory with it. ThumbGate keeps the lessons local, then turns them into Pre-Action Checks after you move to Cline. Start with the Roo migration guide: ${buildTrackedRooMigrationGuideLink({
         utmMedium: THREADS_MEDIUM,
         utmCampaign: 'roo_channel_threads',
         utmContent: 'guide',
@@ -498,7 +529,7 @@ function buildChannelDrafts(links, report) {
       format: 'Short post',
       audience: 'Local-first evaluator burned by vendor-scoped memory',
       evidenceSummary: `${backstop.warmTargetCount} warm target(s) and the Roo sunset itself reinforce the local-first point: vendor-scoped memory is operational debt.`,
-      cta: buildTrackedRooLink(GUIDE_URL, {
+      cta: buildTrackedRooMigrationGuideLink({
         utmMedium: BLUESKY_MEDIUM,
         utmCampaign: 'roo_channel_bluesky',
         utmContent: 'guide',
@@ -508,8 +539,8 @@ function buildChannelDrafts(links, report) {
         ctaPlacement: 'channel_draft',
         surface: 'roo_bluesky',
       }),
-      proofTiming: 'Lead with the local-first claim and setup path, not proof links, on the public post.',
-      draft: `Roo shutting down is a reminder that vendor-scoped memory is a bad design. Keep the lessons in your repo, move to Cline, and turn them into enforceable checks instead of another lost context window. Start here: ${buildTrackedRooLink(GUIDE_URL, {
+      proofTiming: 'Lead with the local-first claim and the Roo-specific guide, not proof links, on the public post.',
+      draft: `Roo shutting down is a reminder that vendor-scoped memory is a bad design. Keep the lessons in your repo, move to Cline, and turn them into enforceable checks instead of another lost context window. Start here: ${buildTrackedRooMigrationGuideLink({
         utmMedium: BLUESKY_MEDIUM,
         utmCampaign: 'roo_channel_bluesky',
         utmContent: 'guide',
@@ -909,6 +940,7 @@ module.exports = {
   CANONICAL_SHORT_DESCRIPTION,
   CLINE_INSTALL_URL,
   GUIDE_URL,
+  ROO_MIGRATION_GUIDE_URL,
   ROO_SUNSET_BLOG_URL,
   ROO_SUNSET_DOC_URL,
   buildChannelDrafts,
