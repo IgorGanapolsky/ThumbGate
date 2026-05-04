@@ -2,7 +2,7 @@
 
 Generated: 2026-05-04
 
-This pack turns the "start a free Skool group + course platform expansion" idea into operator-ready copy and launch steps. The operating choice is simple: use Skool as the free community funnel first, use YouTube and Zernio-backed socials for discovery, and keep paid course platforms as republishing surfaces after the free group has proof.
+This pack turns the "start a free Skool group + course platform expansion" idea into operator-ready copy and launch steps. The operating choice is simple: use Skool as the free member community funnel first, use YouTube and Zernio-backed socials for discovery, and keep paid course platforms as republishing surfaces after the free group has proof.
 
 ## Primary Offer
 
@@ -26,17 +26,31 @@ npx thumbgate init
 
 **Secondary CTA:** Book a Workflow Hardening Sprint when one workflow is painful enough to fix.
 
-**Landing URL:** https://thumbgate-production.up.railway.app/?utm_source={{platform}}&utm_medium=community_course&utm_campaign=operator_lab_launch&utm_content={{surface}}
+**Skool URL:** https://www.skool.com/thumbgate-operator-lab-6000
+
+**Fallback landing URL:** https://thumbgate-production.up.railway.app/?utm_source={{platform}}&utm_medium=community_course&utm_campaign=operator_lab_launch&utm_content={{surface}}
+
+## Current Research Snapshot
+
+- Skool member-facing group pricing can be free. It also supports subscription, freemium, tiers, and one-time payment. Source: https://help.skool.com/article/215-how-to-setup-pricing-for-the-group
+- Skool owner plans are recurring subscriptions after the trial. Source: https://help.skool.com/article/227-payment-terms-and-policy
+- Skool categories are configured from Settings > Community > Categories, with up to 10 categories. Source: https://help.skool.com/article/67-how-to-setup-categories
+- Skool logo and cover photo are configured from Settings > General. Source: https://help.skool.com/article/120-how-to-set-up-my-group-logo-and-cover-photo
+- The current Skool setup flow asked for audience size. Recommended conservative answer: `Under 10k`, unless a primary social profile is verified above 10,000 followers.
 
 ## Skool
 
-**Decision:** Launch first.
+**Decision:** Launched first.
 
 Skool is the community home because it supports free groups and can later add paid/freemium/tiered pricing inside the same community. Source: https://help.skool.com/article/215-how-to-setup-pricing-for-the-group
 
 **Group name:** ThumbGate Operator Lab
 
-**Group type:** Free group
+**Group type:** Free for members
+
+**Cover asset:** `docs/marketing/assets/thumbgate-skool-cover.png`
+
+**Icon asset:** `docs/marketing/assets/thumbgate-skool-icon.png`
 
 **About copy:**
 

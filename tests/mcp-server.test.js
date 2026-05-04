@@ -99,6 +99,10 @@ test('tools/list returns all configured tools', async () => {
   assert.ok(result.tools.some((tool) => tool.name === 'plan_multimodal_retrieval'));
   assert.ok(result.tools.some((tool) => tool.name === 'plan_context_footprint'));
   assert.ok(result.tools.some((tool) => tool.name === 'plan_agent_design_governance'));
+  assert.ok(result.tools.some((tool) => tool.name === 'plan_proactive_agent_eval_guardrails'));
+  assert.ok(result.tools.some((tool) => tool.name === 'plan_reward_hacking_guardrails'));
+  assert.ok(result.tools.some((tool) => tool.name === 'plan_oss_pr_opportunity_scout'));
+  assert.ok(result.tools.some((tool) => tool.name === 'plan_chatgpt_ads_readiness'));
   for (const tool of result.tools) {
     const annotations = tool.annotations || {};
     const hasReadOnlyHint = annotations.readOnlyHint === true;
@@ -130,6 +134,87 @@ test('plan_agent_design_governance returns eval and tool-risk safeguards', async
   assert.equal(payload.status, 'blocked');
   assert.ok(payload.blockers.some((blocker) => blocker.id === 'baseline_evals_required'));
   assert.ok(payload.blockers.some((blocker) => blocker.id === 'tool_approval_required'));
+});
+
+test('plan_proactive_agent_eval_guardrails returns stateful eval safeguards', async () => {
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 35,
+    method: 'tools/call',
+    params: {
+      name: 'plan_proactive_agent_eval_guardrails',
+      arguments: {
+        workflow: 'calendar assistant',
+        apps: ['calendar', 'email'],
+        flatToolApiOnly: true,
+        proactiveWrites: true,
+      },
+    },
+  });
+
+  const payload = JSON.parse(result.content[0].text);
+  assert.equal(payload.name, 'thumbgate-proactive-agent-eval-guardrails');
+  assert.equal(payload.status, 'blocked');
+  assert.ok(payload.signals.some((signal) => signal.id === 'multi_app_write_risk'));
+});
+
+test('plan_reward_hacking_guardrails returns proxy optimization safeguards', async () => {
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 36,
+    method: 'tools/call',
+    params: {
+      name: 'plan_reward_hacking_guardrails',
+      arguments: {
+        workflow: 'PR closeout',
+        text: 'All tests pass and this is ready to merge.',
+        metrics: ['reward score'],
+      },
+    },
+  });
+
+  const payload = JSON.parse(result.content[0].text);
+  assert.equal(payload.name, 'thumbgate-reward-hacking-guardrails');
+  assert.equal(payload.status, 'blocked');
+  assert.ok(payload.signals.some((signal) => signal.id === 'hallucinated_verification'));
+});
+
+test('plan_oss_pr_opportunity_scout returns upstream GitHub opportunities', async () => {
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 37,
+    method: 'tools/call',
+    params: {
+      name: 'plan_oss_pr_opportunity_scout',
+      arguments: {
+        dependencies: ['@google/genai', 'stripe'],
+        maxRepos: 2,
+      },
+    },
+  });
+
+  const payload = JSON.parse(result.content[0].text);
+  assert.equal(payload.name, 'thumbgate-oss-pr-opportunity-scout');
+  assert.ok(payload.opportunities.some((item) => item.repo === 'googleapis/js-genai'));
+});
+
+test('plan_chatgpt_ads_readiness returns paid AI campaign plan', async () => {
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 38,
+    method: 'tools/call',
+    params: {
+      name: 'plan_chatgpt_ads_readiness',
+      arguments: {
+        offer: 'Workflow Hardening Sprint',
+        budget: 750,
+      },
+    },
+  });
+
+  const payload = JSON.parse(result.content[0].text);
+  assert.equal(payload.name, 'thumbgate-chatgpt-ads-readiness-pack');
+  assert.equal(payload.measurement.budget, 750);
 });
 
 test('plan_multimodal_retrieval returns a visual proof retrieval rollout plan', async () => {

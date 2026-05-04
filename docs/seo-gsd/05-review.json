@@ -32,6 +32,7 @@
     "/guides/internal-ai-engineering-stack-guardrails",
     "/guides/seo-agent-skills-guardrails",
     "/guides/reasoning-compression-guardrails",
+    "/guides/deepseek-v4-runtime-guardrails",
     "/guides/pre-action-checks",
     "/guides/agent-harness-optimization",
     "/guides/code-knowledge-graph-guardrails",

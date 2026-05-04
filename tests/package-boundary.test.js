@@ -263,9 +263,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 3.31 MB → 3.36 MB (2026-05-04) for the AI engineering stack
   // guardrail planner and gateway/MCP/AGENTS.md/LLM-wiki templates on top of
   // the behavior monitor runtime. Keep the margin narrow after measuring pack.
+  // Bumped 3.36 MB → 3.44 MB (2026-05-04) after finishing the remaining
+  // high-ROI runtime planners: DeepSeek sparse-attention guardrails, upstream
+  // contribution planning, reward-hacking checks, and ChatGPT ads readiness.
   assert.ok(
-    manifest.unpackedSize <= 3_360_000,
-    `npm package should stay <= 3.36 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_440_000,
+    `npm package should stay <= 3.44 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

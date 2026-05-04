@@ -743,6 +743,59 @@ function buildReasoningCompressionGuide() {
   });
 }
 
+const DEEPSEEK_V4_RUNTIME_GUARDRAILS_SPEC = Object.freeze({
+  slug: 'deepseek-v4-runtime-guardrails',
+  meta: {
+    query: 'deepseek v4 runtime guardrails',
+    title: 'DeepSeek V4 Runtime Guardrails | Sparse Attention, Speculation, and Verified RL',
+    heroTitle: 'DeepSeek-V4 Needs Runtime Guardrails Before Production Routing',
+    heroSummary: 'DeepSeek-V4 introduces long-context sparse attention, speculative decoding, KV offload, FP4/FP8 paths, and verified-RL replay concerns. ThumbGate turns those runtime signals into pre-action checks before model-routing or training changes go live.',
+  },
+  takeaways: [
+    'The high-ROI move is not blindly switching models; it is benchmarking DeepSeek-V4 behind cache, speculation, precision, and replay gates.',
+    'Hybrid sparse attention changes prefix-cache assumptions, so cache coherence and rollback evidence must exist before routing long traces.',
+    'ThumbGate now exposes npx thumbgate deepseek-v4-runtime-guardrails for self-hosted long-context model rollouts.',
+  ],
+  sections: [
+    ['paragraphs', 'Why this helps ThumbGate', [
+      'Teams adopting SGLang-style DeepSeek-V4 serving are exactly the buyers who need agent governance: they are optimizing cost and throughput while increasing context length and system complexity.',
+      'ThumbGate can sit above the runtime as the policy layer that blocks unsafe routing changes, requires benchmark proof, and keeps self-hosted model experiments from becoming invisible production risk.',
+    ]],
+    ['bullets', 'High-ROI runtime gates', [
+      'Require hybrid prefix-cache coherence eval before enabling long-context cache reuse.',
+      'Checkpoint speculative decoding acceptance length, rollback behavior, and correctness before treating it as a speedup.',
+      'Require long-context KV capacity and offload plans before 128k+ or 1M-token routing.',
+      'Require rollout routing replay, indexer replay, and train-inference drift checks before RL or fine-tuning updates.',
+      'Checkpoint FP4/FP8 mixed-precision determinism before benchmark results update routing.',
+      'CLI path: npx thumbgate deepseek-v4-runtime-guardrails --context-tokens=900000 --hybrid-attention --speculative-decoding --accept-length=1.4 --precision-mode=fp8 --json.',
+    ]],
+    ['paragraphs', 'Where this creates revenue', [
+      'This gives ThumbGate a serious infrastructure story for teams moving beyond hosted APIs. The offer is a Workflow Hardening Sprint around one model-routing lane: prove the runtime change, gate the risks, and keep the agent from silently routing expensive work through an unverified path.',
+    ]],
+  ],
+  faq: [
+    [
+      'Should ThumbGate switch to DeepSeek-V4 by default?',
+      'No. Treat DeepSeek-V4 as a candidate for self-hosted long-context workloads. Route to it only after ThumbGate benchmarks pass for quality, cache coherence, latency, cost, and rollback behavior.',
+    ],
+    [
+      'What is different about DeepSeek-V4 governance?',
+      'The risk is not only model quality. Hybrid sparse attention, speculative decoding, KV offload, mixed precision, and RL replay can all create silent runtime failures unless each change is gated with evidence.',
+    ],
+  ],
+  relatedPaths: ['/guides/reasoning-compression-guardrails', '/guides/long-running-agent-context-management', '/guides/gpt-5-5-model-evaluation'],
+});
+
+function buildDeepSeekV4RuntimeGuide() {
+  return preActionGuide(DEEPSEEK_V4_RUNTIME_GUARDRAILS_SPEC.slug, {
+    ...DEEPSEEK_V4_RUNTIME_GUARDRAILS_SPEC.meta,
+    takeaways: DEEPSEEK_V4_RUNTIME_GUARDRAILS_SPEC.takeaways,
+    sections: DEEPSEEK_V4_RUNTIME_GUARDRAILS_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+    faq: DEEPSEEK_V4_RUNTIME_GUARDRAILS_SPEC.faq.map(([question, text]) => answer(question, text)),
+    relatedPaths: DEEPSEEK_V4_RUNTIME_GUARDRAILS_SPEC.relatedPaths,
+  });
+}
+
 const CODE_KNOWLEDGE_GRAPH_GUARDRAILS_SPEC = Object.freeze({
   slug: 'code-knowledge-graph-guardrails',
   meta: {
@@ -1348,6 +1401,7 @@ const PAGE_BLUEPRINTS = [
   buildClaudeCodeSkillsGuide(),
   buildLongRunningAgentContextGuide(),
   buildReasoningCompressionGuide(),
+  buildDeepSeekV4RuntimeGuide(),
   {
     query: 'pre-action checks for ai coding agents',
     path: '/guides/pre-action-checks',

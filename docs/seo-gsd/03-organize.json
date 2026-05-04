@@ -1313,10 +1313,10 @@
       "rankPermission": "expand",
       "proofPages": [
         "/guides/reasoning-compression-guardrails",
+        "/guides/deepseek-v4-runtime-guardrails",
         "/guides/pre-action-checks",
         "/guides/agent-harness-optimization",
-        "/guides/code-knowledge-graph-guardrails",
-        "/guides/developer-machine-supply-chain-guardrails"
+        "/guides/code-knowledge-graph-guardrails"
       ],
       "nextAction": "Publish semantic variants with proof-backed internal links."
     },
@@ -1551,6 +1551,18 @@
         "/guides/gpt-5-5-model-evaluation",
         "/guides/agent-harness-optimization",
         "/guides/pre-action-checks"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "needs-links",
+      "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
+    },
+    {
+      "path": "/guides/deepseek-v4-runtime-guardrails",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/reasoning-compression-guardrails",
+        "/guides/long-running-agent-context-management",
+        "/guides/gpt-5-5-model-evaluation"
       ],
       "hasConversionPath": true,
       "meshStatus": "needs-links",

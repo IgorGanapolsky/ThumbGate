@@ -17,6 +17,8 @@
  *   npx thumbgate rag-precision-guardrails # map retrieval tuning regressions to gates
  *   npx thumbgate long-running-agent-context-guardrails # map structured-memory gaps to gates
  *   npx thumbgate reasoning-efficiency-guardrails # map reasoning compression signals to gates
+ *   npx thumbgate deepseek-v4-runtime-guardrails # map sparse-attention runtime signals to gates
+ *   npx thumbgate upstream-contributions # rank upstream repo issues for trust-building PRs
  *   npx thumbgate stats         # feedback analytics + Revenue-at-Risk
  *   npx thumbgate background-governance  # background-agent run report + risk check
  *   npx thumbgate cfo           # local operational billing summary
@@ -1284,6 +1286,54 @@ function proactiveAgentEvalGuardrails() {
   process.stdout.write(formatProactiveAgentEvalGuardrailsPlan(report));
 }
 
+function rewardHackingGuardrails() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildRewardHackingGuardrailsPlan,
+    formatRewardHackingGuardrailsPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'reward-hacking-guardrails'));
+  const report = buildRewardHackingGuardrailsPlan(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatRewardHackingGuardrailsPlan(report));
+}
+
+function ossPrOpportunityScout() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildOssPrOpportunityScoutPlan,
+    formatOssPrOpportunityScoutPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'oss-pr-opportunity-scout'));
+  const report = buildOssPrOpportunityScoutPlan(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatOssPrOpportunityScoutPlan(report));
+}
+
+function chatgptAdsReadinessPack() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildChatgptAdsReadinessPack,
+    formatChatgptAdsReadinessPack,
+  } = require(path.join(PKG_ROOT, 'scripts', 'chatgpt-ads-readiness-pack'));
+  const report = buildChatgptAdsReadinessPack(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatChatgptAdsReadinessPack(report));
+}
+
 function modelCandidatesCmd() {
   const args = parseArgs(process.argv.slice(3));
   const { writeModelCandidatesReport, renderModelCandidatesReport } = require(path.join(PKG_ROOT, 'scripts', 'model-candidates'));
@@ -1303,6 +1353,39 @@ function modelCandidatesCmd() {
 
   process.stdout.write(renderModelCandidatesReport(report));
   process.stdout.write(`\nReport path: ${reportPath}\n`);
+}
+
+function upstreamContributions() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildUpstreamContributionPlan,
+    renderUpstreamContributionPlan,
+    writeUpstreamContributionPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'upstream-contribution-engine'));
+  const plan = buildUpstreamContributionPlan({
+    root: CWD,
+    maxRepos: args['max-repos'] || args.max,
+    maxIssues: args['max-issues'],
+    offline: args.live ? false : true,
+  });
+
+  if (args.write) {
+    const paths = writeUpstreamContributionPlan(plan);
+    if (args.json) {
+      console.log(JSON.stringify({ ...plan, paths }, null, 2));
+      return;
+    }
+    process.stdout.write(renderUpstreamContributionPlan(plan));
+    process.stdout.write(`\nArtifacts: ${paths.mdPath}, ${paths.jsonPath}\n`);
+    return;
+  }
+
+  if (args.json) {
+    console.log(JSON.stringify(plan, null, 2));
+    return;
+  }
+
+  process.stdout.write(renderUpstreamContributionPlan(plan));
 }
 
 function risk() {
@@ -1726,6 +1809,56 @@ function aiEngineeringStackGuardrails() {
   process.stdout.write(formatAiEngineeringStackGuardrailsPlan(report));
 }
 
+function deepseekV4RuntimeGuardrails() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildDeepSeekV4RuntimeGuardrailsPlan,
+    formatDeepSeekV4RuntimeGuardrailsPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'deepseek-v4-runtime-guardrails'));
+  const report = buildDeepSeekV4RuntimeGuardrailsPlan(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatDeepSeekV4RuntimeGuardrailsPlan(report));
+}
+
+function upstreamContributions() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildUpstreamContributionPlan,
+    renderUpstreamContributionPlan,
+    writeUpstreamContributionPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'upstream-contribution-engine'));
+  const report = buildUpstreamContributionPlan({
+    ...args,
+    root: CWD,
+    maxRepos: args['max-repos'] || args.max,
+    maxIssues: args['max-issues'],
+    offline: args.live || args.network ? false : true,
+  });
+
+  if (args.write || args['write-report']) {
+    const paths = writeUpstreamContributionPlan(report, args['out-dir'] || undefined);
+    if (args.json) {
+      console.log(JSON.stringify({ ...report, paths }, null, 2));
+      return;
+    }
+    process.stdout.write(renderUpstreamContributionPlan(report));
+    process.stdout.write(`\nArtifacts: ${paths.mdPath}, ${paths.jsonPath}\n`);
+    return;
+  }
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(renderUpstreamContributionPlan(report));
+}
+
 function longRunningAgentContextGuardrails() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -1756,6 +1889,22 @@ function reasoningEfficiencyGuardrails() {
   }
 
   process.stdout.write(formatReasoningEfficiencyGuardrailsPlan(report));
+}
+
+function deepSeekV4RuntimeGuardrails() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildDeepSeekV4RuntimeGuardrailsPlan,
+    formatDeepSeekV4RuntimeGuardrailsPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'deepseek-v4-runtime-guardrails'));
+  const report = buildDeepSeekV4RuntimeGuardrailsPlan(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatDeepSeekV4RuntimeGuardrailsPlan(report));
 }
 
 function backgroundGovernance() {
@@ -2169,6 +2318,7 @@ function help() {
   console.log('  north-star            Show proof-backed workflow-run progress toward the North Star');
   console.log('  model-fit             Detect local embedding profile and write evidence report');
   console.log('  model-candidates      Rank managed model candidates and benchmark routing plans');
+  console.log('  upstream-contributions Rank upstream dependency issues for trust-building PRs');
   console.log('  risk                  Train or query the boosted local risk scorer');
   console.log('  eval                  Turn feedback into reusable prompt/workflow eval proof');
   console.log('  optimize              [PRO] Prune CLAUDE.md and migrate rules to Pre-Action Checks');
@@ -2182,8 +2332,11 @@ function help() {
   console.log('  proxy-pointer-rag-guardrails Map visual document RAG signals to Document RAG Safety gates');
   console.log('  rag-precision-guardrails Map retrieval tuning regressions to Document RAG Safety gates');
   console.log('  ai-engineering-stack-guardrails Map gateway, MCP, AGENTS.md, LLM wiki, reviewer, and sandbox gaps to stack gates');
+  console.log('  deepseek-v4-runtime-guardrails Map sparse-attention serving signals to runtime safety gates');
+  console.log('  upstream-contributions Find dependency issues worth fixing without promotional PRs');
   console.log('  long-running-agent-context-guardrails Map structured-memory gaps to long-running agent gates');
   console.log('  reasoning-efficiency-guardrails Map reasoning compression signals to efficiency gates');
+  console.log('  deepseek-v4-runtime-guardrails Map sparse-attention runtime signals to safety gates');
   console.log('  background-governance Background-agent run report and dispatch risk check');
   console.log('  analytics             Unified analytics snapshot (npm, GitHub, landing)');
   console.log('  start-api             Start the ThumbGate HTTPS API server');
@@ -2213,8 +2366,12 @@ function help() {
   console.log('  npx thumbgate proxy-pointer-rag-guardrails --tree-path=.rag/tree.json --image-pointers=paper-1/figures/fig2.png --documents=paper-1 --visual-claims --json');
   console.log('  npx thumbgate rag-precision-guardrails --baseline-recall=0.86 --new-recall=0.72 --threshold-change --agentic --structural-near-misses --json');
   console.log('  npx thumbgate ai-engineering-stack-guardrails --mcp-tool-count=182 --direct-provider-keys --llm-wiki-pages=24 --context-freshness-days=30 --background-agents --json');
+  console.log('  npx thumbgate deepseek-v4-runtime-guardrails --context-tokens=900000 --hybrid-attention --speculative-decoding --json');
+  console.log('  npx thumbgate upstream-contributions --max-repos=2 --json');
   console.log('  npx thumbgate long-running-agent-context-guardrails --request-count=80 --output-mb=3 --raw-chat-only --json');
   console.log('  npx thumbgate reasoning-efficiency-guardrails --baseline-tokens=1200 --compressed-tokens=980 --baseline-accuracy=0.84 --compressed-accuracy=0.85 --verifier --json');
+  console.log('  npx thumbgate deepseek-v4-runtime-guardrails --context-tokens=900000 --hybrid-attention --speculative-decoding --accept-length=1.4 --precision-mode=fp8 --json');
+  console.log('  npx thumbgate upstream-contributions --max-repos=10 --write');
   console.log('  npx thumbgate background-governance --json');
   console.log('  npx thumbgate background-governance --check --agent-id=builder --branch=main --files-changed=25 --json');
   console.log('  npx thumbgate eval --from-feedback --json');
@@ -2373,9 +2530,29 @@ switch (COMMAND) {
   case 'proactive-agent-guardrails':
     proactiveAgentEvalGuardrails();
     break;
+  case 'reward-hacking-guardrails':
+  case 'proxy-reward-guardrails':
+  case 'reward-guardrails':
+    rewardHackingGuardrails();
+    break;
+  case 'oss-pr-opportunity-scout':
+  case 'github-pr-scout':
+  case 'upstream-pr-scout':
+    ossPrOpportunityScout();
+    break;
+  case 'chatgpt-ads-readiness-pack':
+  case 'chatgpt-ads-plan':
+  case 'ai-ads-plan':
+    chatgptAdsReadinessPack();
+    break;
   case 'model-candidates':
   case 'managed-models':
     modelCandidatesCmd();
+    break;
+  case 'upstream-contributions':
+  case 'upstream-contribution-engine':
+  case 'upstream-prs':
+    upstreamContributions();
     break;
   case 'risk':
     risk();
@@ -2442,6 +2619,16 @@ switch (COMMAND) {
   case 'llm-wiki-guardrails':
     aiEngineeringStackGuardrails();
     break;
+  case 'deepseek-v4-runtime-guardrails':
+  case 'deepseek-runtime-guardrails':
+  case 'sparse-attention-runtime-guardrails':
+    deepseekV4RuntimeGuardrails();
+    break;
+  case 'upstream-contributions':
+  case 'upstream-contribution-engine':
+  case 'oss-pr-opportunities':
+    upstreamContributions();
+    break;
   case 'long-running-agent-context-guardrails':
   case 'agent-context-guardrails':
   case 'slack-context-guardrails':
@@ -2451,6 +2638,11 @@ switch (COMMAND) {
   case 'sas-guardrails':
   case 'reasoning-compression-guardrails':
     reasoningEfficiencyGuardrails();
+    break;
+  case 'deepseek-v4-runtime-guardrails':
+  case 'sparse-attention-runtime-guardrails':
+  case 'deepseek-runtime-guardrails':
+    deepSeekV4RuntimeGuardrails();
     break;
   case 'background-governance':
   case 'background-agent-governance':

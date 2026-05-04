@@ -547,7 +547,13 @@ describe('bin/cli.js', () => {
     assert.ok(result.stdout.includes('model-fit'), 'Help should mention model-fit');
     assert.ok(result.stdout.includes('gemini-embedding-plan'), 'Help should mention gemini-embedding-plan');
     assert.ok(result.stdout.includes('agent-design-governance'), 'Help should mention agent-design-governance');
+    assert.ok(result.stdout.includes('proactive-agent-eval-guardrails'), 'Help should mention proactive-agent-eval-guardrails');
+    assert.ok(result.stdout.includes('reward-hacking-guardrails'), 'Help should mention reward-hacking-guardrails');
+    assert.ok(result.stdout.includes('oss-pr-opportunity-scout'), 'Help should mention oss-pr-opportunity-scout');
+    assert.ok(result.stdout.includes('chatgpt-ads-readiness-pack'), 'Help should mention chatgpt-ads-readiness-pack');
     assert.ok(result.stdout.includes('model-candidates'), 'Help should mention model-candidates');
+    assert.ok(result.stdout.includes('upstream-contributions'), 'Help should mention upstream-contributions');
+    assert.ok(result.stdout.includes('deepseek-v4-runtime-guardrails'), 'Help should mention deepseek-v4-runtime-guardrails');
     assert.ok(result.stdout.includes('risk'), 'Help should mention risk');
     assert.ok(result.stdout.includes('export-dpo'), 'Help should mention export-dpo');
     assert.ok(result.stdout.includes('export-databricks'), 'Help should mention export-databricks');
@@ -1676,6 +1682,62 @@ describe('bin/cli.js', () => {
     assert.equal(payload.name, 'thumbgate-agent-design-governance');
     assert.equal(payload.toolRisk.risk, 'high');
     assert.ok(payload.blockers.some((blocker) => blocker.id === 'tool_approval_required'));
+  });
+
+  test('proactive-agent-eval-guardrails reports PARE-style write risk', () => {
+    const result = runCliSync([
+      'proactive-agent-eval-guardrails',
+      '--workflow=calendar assistant',
+      '--apps=calendar,email',
+      '--flat-tool-api-only',
+      '--proactive-writes',
+      '--json',
+    ]);
+    assert.equal(result.status, 0, `proactive-agent-eval-guardrails failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.name, 'thumbgate-proactive-agent-eval-guardrails');
+    assert.equal(payload.status, 'blocked');
+  });
+
+  test('reward-hacking-guardrails blocks unsupported completion claims', () => {
+    const result = runCliSync([
+      'reward-hacking-guardrails',
+      '--workflow=PR closeout',
+      '--text=LGTM. All tests pass and this is ready to merge.',
+      '--metrics=reward score',
+      '--json',
+    ]);
+    assert.equal(result.status, 0, `reward-hacking-guardrails failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.name, 'thumbgate-reward-hacking-guardrails');
+    assert.equal(payload.status, 'blocked');
+    assert.ok(payload.signals.some((signal) => signal.id === 'hallucinated_verification'));
+  });
+
+  test('oss-pr-opportunity-scout maps dependencies to upstream repos', () => {
+    const result = runCliSync([
+      'oss-pr-opportunity-scout',
+      '--dependencies=@google/genai,stripe',
+      '--max-repos=2',
+      '--json',
+    ]);
+    assert.equal(result.status, 0, `oss-pr-opportunity-scout failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.name, 'thumbgate-oss-pr-opportunity-scout');
+    assert.ok(payload.opportunities.some((item) => item.repo === 'googleapis/js-genai'));
+  });
+
+  test('chatgpt-ads-readiness-pack prepares paid AI campaign proof gates', () => {
+    const result = runCliSync([
+      'chatgpt-ads-readiness-pack',
+      '--offer=Workflow Hardening Sprint',
+      '--budget=750',
+      '--json',
+    ]);
+    assert.equal(result.status, 0, `chatgpt-ads-readiness-pack failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.name, 'thumbgate-chatgpt-ads-readiness-pack');
+    assert.equal(payload.measurement.budget, 750);
   });
 
   test('model-candidates ranks managed candidates and writes a report', () => {

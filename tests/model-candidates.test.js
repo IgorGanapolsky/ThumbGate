@@ -25,6 +25,8 @@ test('model candidate catalog includes Kimi K2.6 and Qwen3.6 variants', () => {
   assert.ok(ids.has('tinker/kimi-k2.6-128k'));
   assert.ok(ids.has('tinker/qwen3.6-35b-a3b'));
   assert.ok(ids.has('tinker/qwen3.6-27b'));
+  assert.ok(ids.has('self-hosted/deepseek-v4-flash-sglang'));
+  assert.ok(ids.has('self-hosted/deepseek-v4-pro-sglang'));
 });
 
 test('recommendCandidates prefers GPT-5.5 for dashboard analysis', () => {
@@ -64,6 +66,19 @@ test('recommendCandidates prefers Kimi K2.6 128k for long trace review', () => {
   assert.equal(report.recommended[0].id, 'tinker/kimi-k2.6-128k');
   assert.ok(report.recommended[0].matchedStrengths.includes('long-horizon-coding'));
   assert.ok(report.recommended[0].matchedStrengths.includes('multi-agent'));
+});
+
+test('recommendCandidates supports self-hosted DeepSeek-V4 for long-context review', () => {
+  const report = recommendCandidates({
+    workload: 'long-trace-review',
+    provider: 'self-hosted',
+    family: 'deepseek',
+    maxCandidates: 2,
+  });
+
+  assert.equal(report.recommended[0].id, 'self-hosted/deepseek-v4-pro-sglang');
+  assert.ok(report.recommended[0].matchedStrengths.includes('long-context'));
+  assert.ok(report.recommended[0].benchmarkPlan.commands.some((entry) => entry.command.includes('deepseek-v4-runtime-guardrails')));
 });
 
 test('buildBenchmarkPlan anchors candidates to ThumbGate eval commands', () => {

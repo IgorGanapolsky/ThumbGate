@@ -135,6 +135,18 @@ const { buildContextFootprintReport } = require('../../scripts/context-footprint
 const {
   buildAgentDesignGovernancePlan,
 } = require('../../scripts/agent-design-governance');
+const {
+  buildProactiveAgentEvalGuardrailsPlan,
+} = require('../../scripts/proactive-agent-eval-guardrails');
+const {
+  buildRewardHackingGuardrailsPlan,
+} = require('../../scripts/reward-hacking-guardrails');
+const {
+  buildOssPrOpportunityScoutPlan,
+} = require('../../scripts/oss-pr-opportunity-scout');
+const {
+  buildChatgptAdsReadinessPack,
+} = require('../../scripts/chatgpt-ads-readiness-pack');
 const { reflect: reflectOnFeedback } = loadOptionalModule(path.join(__dirname, '../../scripts/reflector-agent'), () => ({
   reflect: () => createUnavailableReport('Feedback reflection'),
 }));
@@ -1020,6 +1032,14 @@ async function callToolInner(name, args) {
       }));
     case 'plan_agent_design_governance':
       return toTextResult(buildAgentDesignGovernancePlan(args));
+    case 'plan_proactive_agent_eval_guardrails':
+      return toTextResult(buildProactiveAgentEvalGuardrailsPlan(args));
+    case 'plan_reward_hacking_guardrails':
+      return toTextResult(buildRewardHackingGuardrailsPlan(args));
+    case 'plan_oss_pr_opportunity_scout':
+      return toTextResult(buildOssPrOpportunityScoutPlan(args));
+    case 'plan_chatgpt_ads_readiness':
+      return toTextResult(buildChatgptAdsReadinessPack(args));
     case 'run_autoresearch': {
       const iterations = Math.max(1, Math.min(5, Number(args.iterations || 1)));
       const timeoutMs = Math.max(1000, Math.min(600000, Number(args.timeoutMs || 120000)));

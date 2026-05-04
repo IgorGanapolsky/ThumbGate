@@ -21,6 +21,7 @@ const GUIDE_FILES = [
   'guides/claude-code-skills-guardrails.html',
   'guides/long-running-agent-context-management.html',
   'guides/reasoning-compression-guardrails.html',
+  'guides/deepseek-v4-runtime-guardrails.html',
   'guides/background-agent-governance.html',
   'guides/gpt-5-5-model-evaluation.html',
   'guides/browser-automation-safety.html',
@@ -258,6 +259,17 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(contextGuide.includes('Director journals'));
     assert.ok(reasoningGuide.includes('npx thumbgate reasoning-efficiency-guardrails'));
     assert.ok(reasoningGuide.includes('Step-Level Verifier Checks'));
+  });
+
+  it('DeepSeek V4 runtime guide exposes sparse-attention guardrails', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/deepseek-v4-runtime-guardrails.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('DeepSeek V4 Runtime Guardrails'));
+    assert.ok(html.includes('npx thumbgate deepseek-v4-runtime-guardrails'));
+    assert.ok(html.includes('Hybrid sparse attention'));
   });
 
   it('Fallow comparison positions static analysis as complementary context', () => {

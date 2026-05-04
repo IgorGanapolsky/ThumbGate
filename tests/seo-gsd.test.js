@@ -306,15 +306,18 @@ test('skills, context, Fallow, and reasoning pages are discoverable', () => {
   const claudeSkills = findSeoPageByPath('/guides/claude-code-skills-guardrails');
   const context = findSeoPageByPath('/guides/long-running-agent-context-management');
   const reasoning = findSeoPageByPath('/guides/reasoning-compression-guardrails');
+  const deepseek = findSeoPageByPath('/guides/deepseek-v4-runtime-guardrails');
 
   assert.equal(seoSkills.pillar, 'seo-governance');
   assert.equal(fallow.pageType, 'comparison');
   assert.equal(claudeSkills.pillar, 'agent-workflows');
   assert.equal(context.pillar, 'pre-action-checks');
   assert.equal(reasoning.pillar, 'pre-action-checks');
+  assert.equal(deepseek.pillar, 'pre-action-checks');
   assert.match(renderSeoPageHtml(fallow, { appOrigin: 'https://app.example.com' }), /Fallow finds JS\/TS code health issues/);
   assert.match(renderSeoPageHtml(context, { appOrigin: 'https://app.example.com' }), /npx thumbgate long-running-agent-context-guardrails/);
   assert.match(renderSeoPageHtml(reasoning, { appOrigin: 'https://app.example.com' }), /npx thumbgate reasoning-efficiency-guardrails/);
+  assert.match(renderSeoPageHtml(deepseek, { appOrigin: 'https://app.example.com' }), /npx thumbgate deepseek-v4-runtime-guardrails/);
 });
 
 test('background agent governance page is discoverable and commercially classified', () => {

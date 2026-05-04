@@ -1,0 +1,492 @@
+{
+  "name": "thumbgate-oss-pr-opportunity-scout",
+  "packagePath": "/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo/package.json",
+  "generatedAt": "2026-05-04T17:30:53.755Z",
+  "status": "ready_to_scout",
+  "summary": {
+    "dependencyCount": 14,
+    "mappedRepos": 12,
+    "includeBounties": true,
+    "topRepos": [
+      "anthropics/anthropic-sdk-typescript",
+      "googleapis/js-genai",
+      "huggingface/transformers.js",
+      "microsoft/playwright",
+      "stripe/stripe-node"
+    ]
+  },
+  "searchProtocol": {
+    "issueLabels": [
+      "good first issue",
+      "help wanted",
+      "bug",
+      "regression",
+      "documentation",
+      "security"
+    ],
+    "bountyKeywords": [
+      "bug bounty",
+      "bounty",
+      "good first issue",
+      "help wanted",
+      "security",
+      "repro",
+      "regression",
+      "docs",
+      "typescript",
+      "test failure"
+    ],
+    "antiSpamRule": "Do not open a PR unless the issue is reproduced, the fix is minimal, and verification output is attached.",
+    "promotionRule": "Mention ThumbGate only as the toolchain context or proof discipline, not as unrelated advertising."
+  },
+  "opportunities": [
+    {
+      "id": "anthropic-ai-sdk-anthropics-anthropic-sdk-typescript",
+      "dependency": "@anthropic-ai/sdk",
+      "repo": "anthropics/anthropic-sdk-typescript",
+      "repoUrl": "https://github.com/anthropics/anthropic-sdk-typescript",
+      "score": 65,
+      "reasons": [
+        "known upstream repository",
+        "high product adjacency for agent tooling",
+        "large ecosystem visibility",
+        "bounty search enabled"
+      ],
+      "issueSearchQueries": [
+        "repo:anthropics/anthropic-sdk-typescript is:issue is:open label:\"good first issue\"",
+        "repo:anthropics/anthropic-sdk-typescript is:issue is:open label:\"help wanted\"",
+        "repo:anthropics/anthropic-sdk-typescript is:issue is:open bounty OR \"bug bounty\"",
+        "repo:anthropics/anthropic-sdk-typescript is:issue is:open regression test failure"
+      ],
+      "bountyQueries": [
+        "repo:anthropics/anthropic-sdk-typescript is:issue is:open \"bug bounty\"",
+        "repo:anthropics/anthropic-sdk-typescript is:issue is:open bounty security"
+      ],
+      "safeFixLanes": [
+        "reproduce issue locally before claiming it is fixed",
+        "prefer docs, tests, typed edge cases, and minimal bug fixes",
+        "open one focused PR per issue after reading contribution guidelines",
+        "include ThumbGate only as a transparent proof note when relevant, never as hidden promotion"
+      ],
+      "prReadinessGates": [
+        "issue linked or maintainer pain clearly documented",
+        "local reproduction or failing test captured",
+        "fix is minimal and scoped to the issue",
+        "tests or verification output attached",
+        "no bounty, security, or maintainer-policy claim without source link"
+      ],
+      "outreachDraft": "I found this while using @anthropic-ai/sdk in ThumbGate. I reproduced the issue, added a minimal fix with tests, and kept the PR scoped to the maintainer's issue."
+    },
+    {
+      "id": "google-genai-googleapis-js-genai",
+      "dependency": "@google/genai",
+      "repo": "googleapis/js-genai",
+      "repoUrl": "https://github.com/googleapis/js-genai",
+      "score": 65,
+      "reasons": [
+        "known upstream repository",
+        "high product adjacency for agent tooling",
+        "large ecosystem visibility",
+        "bounty search enabled"
+      ],
+      "issueSearchQueries": [
+        "repo:googleapis/js-genai is:issue is:open label:\"good first issue\"",
+        "repo:googleapis/js-genai is:issue is:open label:\"help wanted\"",
+        "repo:googleapis/js-genai is:issue is:open bounty OR \"bug bounty\"",
+        "repo:googleapis/js-genai is:issue is:open regression test failure"
+      ],
+      "bountyQueries": [
+        "repo:googleapis/js-genai is:issue is:open \"bug bounty\"",
+        "repo:googleapis/js-genai is:issue is:open bounty security"
+      ],
+      "safeFixLanes": [
+        "reproduce issue locally before claiming it is fixed",
+        "prefer docs, tests, typed edge cases, and minimal bug fixes",
+        "open one focused PR per issue after reading contribution guidelines",
+        "include ThumbGate only as a transparent proof note when relevant, never as hidden promotion"
+      ],
+      "prReadinessGates": [
+        "issue linked or maintainer pain clearly documented",
+        "local reproduction or failing test captured",
+        "fix is minimal and scoped to the issue",
+        "tests or verification output attached",
+        "no bounty, security, or maintainer-policy claim without source link"
+      ],
+      "outreachDraft": "I found this while using @google/genai in ThumbGate. I reproduced the issue, added a minimal fix with tests, and kept the PR scoped to the maintainer's issue."
+    },
+    {
+      "id": "huggingface-transformers-huggingface-transformers-js",
+      "dependency": "@huggingface/transformers",
+      "repo": "huggingface/transformers.js",
+      "repoUrl": "https://github.com/huggingface/transformers.js",
+      "score": 65,
+      "reasons": [
+        "known upstream repository",
+        "high product adjacency for agent tooling",
+        "large ecosystem visibility",
+        "bounty search enabled"
+      ],
+      "issueSearchQueries": [
+        "repo:huggingface/transformers.js is:issue is:open label:\"good first issue\"",
+        "repo:huggingface/transformers.js is:issue is:open label:\"help wanted\"",
+        "repo:huggingface/transformers.js is:issue is:open bounty OR \"bug bounty\"",
+        "repo:huggingface/transformers.js is:issue is:open regression test failure"
+      ],
+      "bountyQueries": [
+        "repo:huggingface/transformers.js is:issue is:open \"bug bounty\"",
+        "repo:huggingface/transformers.js is:issue is:open bounty security"
+      ],
+      "safeFixLanes": [
+        "reproduce issue locally before claiming it is fixed",
+        "prefer docs, tests, typed edge cases, and minimal bug fixes",
+        "open one focused PR per issue after reading contribution guidelines",
+        "include ThumbGate only as a transparent proof note when relevant, never as hidden promotion"
+      ],
+      "prReadinessGates": [
+        "issue linked or maintainer pain clearly documented",
+        "local reproduction or failing test captured",
+        "fix is minimal and scoped to the issue",
+        "tests or verification output attached",
+        "no bounty, security, or maintainer-policy claim without source link"
+      ],
+      "outreachDraft": "I found this while using @huggingface/transformers in ThumbGate. I reproduced the issue, added a minimal fix with tests, and kept the PR scoped to the maintainer's issue."
+    },
+    {
+      "id": "playwright-core-microsoft-playwright",
+      "dependency": "playwright-core",
+      "repo": "microsoft/playwright",
+      "repoUrl": "https://github.com/microsoft/playwright",
+      "score": 65,
+      "reasons": [
+        "known upstream repository",
+        "high product adjacency for agent tooling",
+        "large ecosystem visibility",
+        "bounty search enabled"
+      ],
+      "issueSearchQueries": [
+        "repo:microsoft/playwright is:issue is:open label:\"good first issue\"",
+        "repo:microsoft/playwright is:issue is:open label:\"help wanted\"",
+        "repo:microsoft/playwright is:issue is:open bounty OR \"bug bounty\"",
+        "repo:microsoft/playwright is:issue is:open regression test failure"
+      ],
+      "bountyQueries": [
+        "repo:microsoft/playwright is:issue is:open \"bug bounty\"",
+        "repo:microsoft/playwright is:issue is:open bounty security"
+      ],
+      "safeFixLanes": [
+        "reproduce issue locally before claiming it is fixed",
+        "prefer docs, tests, typed edge cases, and minimal bug fixes",
+        "open one focused PR per issue after reading contribution guidelines",
+        "include ThumbGate only as a transparent proof note when relevant, never as hidden promotion"
+      ],
+      "prReadinessGates": [
+        "issue linked or maintainer pain clearly documented",
+        "local reproduction or failing test captured",
+        "fix is minimal and scoped to the issue",
+        "tests or verification output attached",
+        "no bounty, security, or maintainer-policy claim without source link"
+      ],
+      "outreachDraft": "I found this while using playwright-core in ThumbGate. I reproduced the issue, added a minimal fix with tests, and kept the PR scoped to the maintainer's issue."
+    },
+    {
+      "id": "stripe-stripe-stripe-node",
+      "dependency": "stripe",
+      "repo": "stripe/stripe-node",
+      "repoUrl": "https://github.com/stripe/stripe-node",
+      "score": 65,
+      "reasons": [
+        "known upstream repository",
+        "high product adjacency for agent tooling",
+        "large ecosystem visibility",
+        "bounty search enabled"
+      ],
+      "issueSearchQueries": [
+        "repo:stripe/stripe-node is:issue is:open label:\"good first issue\"",
+        "repo:stripe/stripe-node is:issue is:open label:\"help wanted\"",
+        "repo:stripe/stripe-node is:issue is:open bounty OR \"bug bounty\"",
+        "repo:stripe/stripe-node is:issue is:open regression test failure"
+      ],
+      "bountyQueries": [
+        "repo:stripe/stripe-node is:issue is:open \"bug bounty\"",
+        "repo:stripe/stripe-node is:issue is:open bounty security"
+      ],
+      "safeFixLanes": [
+        "reproduce issue locally before claiming it is fixed",
+        "prefer docs, tests, typed edge cases, and minimal bug fixes",
+        "open one focused PR per issue after reading contribution guidelines",
+        "include ThumbGate only as a transparent proof note when relevant, never as hidden promotion"
+      ],
+      "prReadinessGates": [
+        "issue linked or maintainer pain clearly documented",
+        "local reproduction or failing test captured",
+        "fix is minimal and scoped to the issue",
+        "tests or verification output attached",
+        "no bounty, security, or maintainer-policy claim without source link"
+      ],
+      "outreachDraft": "I found this while using stripe in ThumbGate. I reproduced the issue, added a minimal fix with tests, and kept the PR scoped to the maintainer's issue."
+    },
+    {
+      "id": "undici-nodejs-undici",
+      "dependency": "undici",
+      "repo": "nodejs/undici",
+      "repoUrl": "https://github.com/nodejs/undici",
+      "score": 65,
+      "reasons": [
+        "known upstream repository",
+        "high product adjacency for agent tooling",
+        "large ecosystem visibility",
+        "bounty search enabled"
+      ],
+      "issueSearchQueries": [
+        "repo:nodejs/undici is:issue is:open label:\"good first issue\"",
+        "repo:nodejs/undici is:issue is:open label:\"help wanted\"",
+        "repo:nodejs/undici is:issue is:open bounty OR \"bug bounty\"",
+        "repo:nodejs/undici is:issue is:open regression test failure"
+      ],
+      "bountyQueries": [
+        "repo:nodejs/undici is:issue is:open \"bug bounty\"",
+        "repo:nodejs/undici is:issue is:open bounty security"
+      ],
+      "safeFixLanes": [
+        "reproduce issue locally before claiming it is fixed",
+        "prefer docs, tests, typed edge cases, and minimal bug fixes",
+        "open one focused PR per issue after reading contribution guidelines",
+        "include ThumbGate only as a transparent proof note when relevant, never as hidden promotion"
+      ],
+      "prReadinessGates": [
+        "issue linked or maintainer pain clearly documented",
+        "local reproduction or failing test captured",
+        "fix is minimal and scoped to the issue",
+        "tests or verification output attached",
+        "no bounty, security, or maintainer-policy claim without source link"
+      ],
+      "outreachDraft": "I found this while using undici in ThumbGate. I reproduced the issue, added a minimal fix with tests, and kept the PR scoped to the maintainer's issue."
+    },
+    {
+      "id": "lancedb-lancedb-lancedb-lancedb",
+      "dependency": "@lancedb/lancedb",
+      "repo": "lancedb/lancedb",
+      "repoUrl": "https://github.com/lancedb/lancedb",
+      "score": 50,
+      "reasons": [
+        "known upstream repository",
+        "high product adjacency for agent tooling",
+        "bounty search enabled"
+      ],
+      "issueSearchQueries": [
+        "repo:lancedb/lancedb is:issue is:open label:\"good first issue\"",
+        "repo:lancedb/lancedb is:issue is:open label:\"help wanted\"",
+        "repo:lancedb/lancedb is:issue is:open bounty OR \"bug bounty\"",
+        "repo:lancedb/lancedb is:issue is:open regression test failure"
+      ],
+      "bountyQueries": [
+        "repo:lancedb/lancedb is:issue is:open \"bug bounty\"",
+        "repo:lancedb/lancedb is:issue is:open bounty security"
+      ],
+      "safeFixLanes": [
+        "reproduce issue locally before claiming it is fixed",
+        "prefer docs, tests, typed edge cases, and minimal bug fixes",
+        "open one focused PR per issue after reading contribution guidelines",
+        "include ThumbGate only as a transparent proof note when relevant, never as hidden promotion"
+      ],
+      "prReadinessGates": [
+        "issue linked or maintainer pain clearly documented",
+        "local reproduction or failing test captured",
+        "fix is minimal and scoped to the issue",
+        "tests or verification output attached",
+        "no bounty, security, or maintainer-policy claim without source link"
+      ],
+      "outreachDraft": "I found this while using @lancedb/lancedb in ThumbGate. I reproduced the issue, added a minimal fix with tests, and kept the PR scoped to the maintainer's issue."
+    },
+    {
+      "id": "better-sqlite3-wiselibs-better-sqlite3",
+      "dependency": "better-sqlite3",
+      "repo": "WiseLibs/better-sqlite3",
+      "repoUrl": "https://github.com/WiseLibs/better-sqlite3",
+      "score": 50,
+      "reasons": [
+        "known upstream repository",
+        "high product adjacency for agent tooling",
+        "bounty search enabled"
+      ],
+      "issueSearchQueries": [
+        "repo:WiseLibs/better-sqlite3 is:issue is:open label:\"good first issue\"",
+        "repo:WiseLibs/better-sqlite3 is:issue is:open label:\"help wanted\"",
+        "repo:WiseLibs/better-sqlite3 is:issue is:open bounty OR \"bug bounty\"",
+        "repo:WiseLibs/better-sqlite3 is:issue is:open regression test failure"
+      ],
+      "bountyQueries": [
+        "repo:WiseLibs/better-sqlite3 is:issue is:open \"bug bounty\"",
+        "repo:WiseLibs/better-sqlite3 is:issue is:open bounty security"
+      ],
+      "safeFixLanes": [
+        "reproduce issue locally before claiming it is fixed",
+        "prefer docs, tests, typed edge cases, and minimal bug fixes",
+        "open one focused PR per issue after reading contribution guidelines",
+        "include ThumbGate only as a transparent proof note when relevant, never as hidden promotion"
+      ],
+      "prReadinessGates": [
+        "issue linked or maintainer pain clearly documented",
+        "local reproduction or failing test captured",
+        "fix is minimal and scoped to the issue",
+        "tests or verification output attached",
+        "no bounty, security, or maintainer-policy claim without source link"
+      ],
+      "outreachDraft": "I found this while using better-sqlite3 in ThumbGate. I reproduced the issue, added a minimal fix with tests, and kept the PR scoped to the maintainer's issue."
+    },
+    {
+      "id": "changesets-changelog-github-changesets-changesets",
+      "dependency": "@changesets/changelog-github",
+      "repo": "changesets/changesets",
+      "repoUrl": "https://github.com/changesets/changesets",
+      "score": 38,
+      "reasons": [
+        "known upstream repository",
+        "bounty search enabled",
+        "lower-risk contribution surface"
+      ],
+      "issueSearchQueries": [
+        "repo:changesets/changesets is:issue is:open label:\"good first issue\"",
+        "repo:changesets/changesets is:issue is:open label:\"help wanted\"",
+        "repo:changesets/changesets is:issue is:open bounty OR \"bug bounty\"",
+        "repo:changesets/changesets is:issue is:open regression test failure"
+      ],
+      "bountyQueries": [
+        "repo:changesets/changesets is:issue is:open \"bug bounty\"",
+        "repo:changesets/changesets is:issue is:open bounty security"
+      ],
+      "safeFixLanes": [
+        "reproduce issue locally before claiming it is fixed",
+        "prefer docs, tests, typed edge cases, and minimal bug fixes",
+        "open one focused PR per issue after reading contribution guidelines",
+        "include ThumbGate only as a transparent proof note when relevant, never as hidden promotion"
+      ],
+      "prReadinessGates": [
+        "issue linked or maintainer pain clearly documented",
+        "local reproduction or failing test captured",
+        "fix is minimal and scoped to the issue",
+        "tests or verification output attached",
+        "no bounty, security, or maintainer-policy claim without source link"
+      ],
+      "outreachDraft": "I found this while using @changesets/changelog-github in ThumbGate. I reproduced the issue, added a minimal fix with tests, and kept the PR scoped to the maintainer's issue."
+    },
+    {
+      "id": "c8-bcoe-c8",
+      "dependency": "c8",
+      "repo": "bcoe/c8",
+      "repoUrl": "https://github.com/bcoe/c8",
+      "score": 38,
+      "reasons": [
+        "known upstream repository",
+        "bounty search enabled",
+        "lower-risk contribution surface"
+      ],
+      "issueSearchQueries": [
+        "repo:bcoe/c8 is:issue is:open label:\"good first issue\"",
+        "repo:bcoe/c8 is:issue is:open label:\"help wanted\"",
+        "repo:bcoe/c8 is:issue is:open bounty OR \"bug bounty\"",
+        "repo:bcoe/c8 is:issue is:open regression test failure"
+      ],
+      "bountyQueries": [
+        "repo:bcoe/c8 is:issue is:open \"bug bounty\"",
+        "repo:bcoe/c8 is:issue is:open bounty security"
+      ],
+      "safeFixLanes": [
+        "reproduce issue locally before claiming it is fixed",
+        "prefer docs, tests, typed edge cases, and minimal bug fixes",
+        "open one focused PR per issue after reading contribution guidelines",
+        "include ThumbGate only as a transparent proof note when relevant, never as hidden promotion"
+      ],
+      "prReadinessGates": [
+        "issue linked or maintainer pain clearly documented",
+        "local reproduction or failing test captured",
+        "fix is minimal and scoped to the issue",
+        "tests or verification output attached",
+        "no bounty, security, or maintainer-policy claim without source link"
+      ],
+      "outreachDraft": "I found this while using c8 in ThumbGate. I reproduced the issue, added a minimal fix with tests, and kept the PR scoped to the maintainer's issue."
+    },
+    {
+      "id": "dotenv-motdotla-dotenv",
+      "dependency": "dotenv",
+      "repo": "motdotla/dotenv",
+      "repoUrl": "https://github.com/motdotla/dotenv",
+      "score": 38,
+      "reasons": [
+        "known upstream repository",
+        "bounty search enabled",
+        "lower-risk contribution surface"
+      ],
+      "issueSearchQueries": [
+        "repo:motdotla/dotenv is:issue is:open label:\"good first issue\"",
+        "repo:motdotla/dotenv is:issue is:open label:\"help wanted\"",
+        "repo:motdotla/dotenv is:issue is:open bounty OR \"bug bounty\"",
+        "repo:motdotla/dotenv is:issue is:open regression test failure"
+      ],
+      "bountyQueries": [
+        "repo:motdotla/dotenv is:issue is:open \"bug bounty\"",
+        "repo:motdotla/dotenv is:issue is:open bounty security"
+      ],
+      "safeFixLanes": [
+        "reproduce issue locally before claiming it is fixed",
+        "prefer docs, tests, typed edge cases, and minimal bug fixes",
+        "open one focused PR per issue after reading contribution guidelines",
+        "include ThumbGate only as a transparent proof note when relevant, never as hidden promotion"
+      ],
+      "prReadinessGates": [
+        "issue linked or maintainer pain clearly documented",
+        "local reproduction or failing test captured",
+        "fix is minimal and scoped to the issue",
+        "tests or verification output attached",
+        "no bounty, security, or maintainer-policy claim without source link"
+      ],
+      "outreachDraft": "I found this while using dotenv in ThumbGate. I reproduced the issue, added a minimal fix with tests, and kept the PR scoped to the maintainer's issue."
+    },
+    {
+      "id": "changesets-cli-changesets-changesets",
+      "dependency": "@changesets/cli",
+      "repo": "changesets/changesets",
+      "repoUrl": "https://github.com/changesets/changesets",
+      "score": 30,
+      "reasons": [
+        "known upstream repository",
+        "bounty search enabled"
+      ],
+      "issueSearchQueries": [
+        "repo:changesets/changesets is:issue is:open label:\"good first issue\"",
+        "repo:changesets/changesets is:issue is:open label:\"help wanted\"",
+        "repo:changesets/changesets is:issue is:open bounty OR \"bug bounty\"",
+        "repo:changesets/changesets is:issue is:open regression test failure"
+      ],
+      "bountyQueries": [
+        "repo:changesets/changesets is:issue is:open \"bug bounty\"",
+        "repo:changesets/changesets is:issue is:open bounty security"
+      ],
+      "safeFixLanes": [
+        "reproduce issue locally before claiming it is fixed",
+        "prefer docs, tests, typed edge cases, and minimal bug fixes",
+        "open one focused PR per issue after reading contribution guidelines",
+        "include ThumbGate only as a transparent proof note when relevant, never as hidden promotion"
+      ],
+      "prReadinessGates": [
+        "issue linked or maintainer pain clearly documented",
+        "local reproduction or failing test captured",
+        "fix is minimal and scoped to the issue",
+        "tests or verification output attached",
+        "no bounty, security, or maintainer-policy claim without source link"
+      ],
+      "outreachDraft": "I found this while using @changesets/cli in ThumbGate. I reproduced the issue, added a minimal fix with tests, and kept the PR scoped to the maintainer's issue."
+    }
+  ],
+  "automationCommands": [
+    "gh issue list --repo <owner/repo> --label \"good first issue\" --state open",
+    "gh issue list --repo <owner/repo> --search \"bounty OR bug bounty OR regression\"",
+    "gh repo fork <owner/repo> --clone",
+    "npx thumbgate require-evidence-for-claim --claim \"fix is ready\" before opening the PR"
+  ],
+  "marketingAngle": {
+    "headline": "ThumbGate promotes itself by shipping proof-backed fixes, not drive-by ads.",
+    "subhead": "Find upstream repos we actually use, fix real issues with tests, and let maintainers see the agent-governance workflow in the PR evidence.",
+    "replyDraft": "This is a strong promotion loop as long as it is gated: use repos ThumbGate really depends on, fix issues maintainers already care about, attach reproduction plus tests, and make ThumbGate visible through the quality of the PR rather than a pitch."
+  }
+}

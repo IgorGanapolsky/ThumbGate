@@ -1,0 +1,189 @@
+{
+  "name": "thumbgate-upstream-contribution-engine",
+  "generatedAt": "2026-05-04T17:37:57.225Z",
+  "status": "discovery-ready",
+  "summary": {
+    "packageCount": 14,
+    "repoCount": 12,
+    "issueCount": 0,
+    "autofixReadyCount": 0
+  },
+  "guardrails": [
+    "Only target repos ThumbGate actually depends on or uses in shipped workflows.",
+    "Do not create promotional PRs; fix real upstream issues with tests.",
+    "Prefer small bugs, tests, docs, types, CI flakes, and security hardening over large feature work.",
+    "Open external PRs only after reproduction evidence, a minimal patch, and upstream tests pass.",
+    "Never paste secrets, customer data, or private ThumbGate context into upstream issues or PRs."
+  ],
+  "repos": [
+    {
+      "package": "@anthropic-ai/sdk",
+      "dependencyType": "runtime",
+      "repo": "anthropics/anthropic-sdk-typescript",
+      "searchQueries": [
+        "repo:anthropics/anthropic-sdk-typescript label:bug state:open",
+        "repo:anthropics/anthropic-sdk-typescript label:\"good first issue\" state:open",
+        "repo:anthropics/anthropic-sdk-typescript label:\"help wanted\" state:open",
+        "repo:anthropics/anthropic-sdk-typescript bounty state:open",
+        "repo:anthropics/anthropic-sdk-typescript security state:open"
+      ],
+      "issues": [],
+      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
+    },
+    {
+      "package": "@changesets/changelog-github",
+      "dependencyType": "dev",
+      "repo": "changesets/changesets",
+      "searchQueries": [
+        "repo:changesets/changesets label:bug state:open",
+        "repo:changesets/changesets label:\"good first issue\" state:open",
+        "repo:changesets/changesets label:\"help wanted\" state:open",
+        "repo:changesets/changesets bounty state:open",
+        "repo:changesets/changesets security state:open"
+      ],
+      "issues": [],
+      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
+    },
+    {
+      "package": "@changesets/cli",
+      "dependencyType": "dev",
+      "repo": "changesets/changesets",
+      "searchQueries": [
+        "repo:changesets/changesets label:bug state:open",
+        "repo:changesets/changesets label:\"good first issue\" state:open",
+        "repo:changesets/changesets label:\"help wanted\" state:open",
+        "repo:changesets/changesets bounty state:open",
+        "repo:changesets/changesets security state:open"
+      ],
+      "issues": [],
+      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
+    },
+    {
+      "package": "@google/genai",
+      "dependencyType": "runtime",
+      "repo": "googleapis/js-genai",
+      "searchQueries": [
+        "repo:googleapis/js-genai label:bug state:open",
+        "repo:googleapis/js-genai label:\"good first issue\" state:open",
+        "repo:googleapis/js-genai label:\"help wanted\" state:open",
+        "repo:googleapis/js-genai bounty state:open",
+        "repo:googleapis/js-genai security state:open"
+      ],
+      "issues": [],
+      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
+    },
+    {
+      "package": "@huggingface/transformers",
+      "dependencyType": "runtime",
+      "repo": "huggingface/transformers.js",
+      "searchQueries": [
+        "repo:huggingface/transformers.js label:bug state:open",
+        "repo:huggingface/transformers.js label:\"good first issue\" state:open",
+        "repo:huggingface/transformers.js label:\"help wanted\" state:open",
+        "repo:huggingface/transformers.js bounty state:open",
+        "repo:huggingface/transformers.js security state:open"
+      ],
+      "issues": [],
+      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
+    },
+    {
+      "package": "@lancedb/lancedb",
+      "dependencyType": "runtime",
+      "repo": "lancedb/lancedb",
+      "searchQueries": [
+        "repo:lancedb/lancedb label:bug state:open",
+        "repo:lancedb/lancedb label:\"good first issue\" state:open",
+        "repo:lancedb/lancedb label:\"help wanted\" state:open",
+        "repo:lancedb/lancedb bounty state:open",
+        "repo:lancedb/lancedb security state:open"
+      ],
+      "issues": [],
+      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
+    },
+    {
+      "package": "apache-arrow",
+      "dependencyType": "runtime",
+      "repo": "apache/arrow",
+      "searchQueries": [
+        "repo:apache/arrow label:bug state:open",
+        "repo:apache/arrow label:\"good first issue\" state:open",
+        "repo:apache/arrow label:\"help wanted\" state:open",
+        "repo:apache/arrow bounty state:open",
+        "repo:apache/arrow security state:open"
+      ],
+      "issues": [],
+      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
+    },
+    {
+      "package": "better-sqlite3",
+      "dependencyType": "runtime",
+      "repo": "WiseLibs/better-sqlite3",
+      "searchQueries": [
+        "repo:WiseLibs/better-sqlite3 label:bug state:open",
+        "repo:WiseLibs/better-sqlite3 label:\"good first issue\" state:open",
+        "repo:WiseLibs/better-sqlite3 label:\"help wanted\" state:open",
+        "repo:WiseLibs/better-sqlite3 bounty state:open",
+        "repo:WiseLibs/better-sqlite3 security state:open"
+      ],
+      "issues": [],
+      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
+    },
+    {
+      "package": "c8",
+      "dependencyType": "dev",
+      "repo": "bcoe/c8",
+      "searchQueries": [
+        "repo:bcoe/c8 label:bug state:open",
+        "repo:bcoe/c8 label:\"good first issue\" state:open",
+        "repo:bcoe/c8 label:\"help wanted\" state:open",
+        "repo:bcoe/c8 bounty state:open",
+        "repo:bcoe/c8 security state:open"
+      ],
+      "issues": [],
+      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
+    },
+    {
+      "package": "dotenv",
+      "dependencyType": "runtime",
+      "repo": "motdotla/dotenv",
+      "searchQueries": [
+        "repo:motdotla/dotenv label:bug state:open",
+        "repo:motdotla/dotenv label:\"good first issue\" state:open",
+        "repo:motdotla/dotenv label:\"help wanted\" state:open",
+        "repo:motdotla/dotenv bounty state:open",
+        "repo:motdotla/dotenv security state:open"
+      ],
+      "issues": [],
+      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
+    },
+    {
+      "package": "playwright-core",
+      "dependencyType": "runtime",
+      "repo": "microsoft/playwright",
+      "searchQueries": [
+        "repo:microsoft/playwright label:bug state:open",
+        "repo:microsoft/playwright label:\"good first issue\" state:open",
+        "repo:microsoft/playwright label:\"help wanted\" state:open",
+        "repo:microsoft/playwright bounty state:open",
+        "repo:microsoft/playwright security state:open"
+      ],
+      "issues": [],
+      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
+    },
+    {
+      "package": "protobufjs",
+      "dependencyType": "runtime",
+      "repo": "protobufjs/protobuf.js",
+      "searchQueries": [
+        "repo:protobufjs/protobuf.js label:bug state:open",
+        "repo:protobufjs/protobuf.js label:\"good first issue\" state:open",
+        "repo:protobufjs/protobuf.js label:\"help wanted\" state:open",
+        "repo:protobufjs/protobuf.js bounty state:open",
+        "repo:protobufjs/protobuf.js security state:open"
+      ],
+      "issues": [],
+      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
+    }
+  ],
+  "opportunities": []
+}

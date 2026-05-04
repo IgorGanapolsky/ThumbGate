@@ -213,6 +213,32 @@ test('reasoning-efficiency-guardrails exposes step-level compression flags', () 
   assert.ok(flagNames.includes('high-confidence-failures'));
 });
 
+test('deepseek-v4-runtime-guardrails exposes sparse attention runtime flags', () => {
+  const cmd = findCommand('sparse-attention-runtime-guardrails');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'deepseek-v4-runtime-guardrails');
+  assert.ok(flagNames.includes('json'));
+  assert.ok(flagNames.includes('context-tokens'));
+  assert.ok(flagNames.includes('hybrid-attention'));
+  assert.ok(flagNames.includes('cache-coherence-eval'));
+  assert.ok(flagNames.includes('speculative-decoding'));
+  assert.ok(flagNames.includes('accept-length'));
+  assert.ok(flagNames.includes('rollout-replay'));
+  assert.ok(flagNames.includes('indexer-replay'));
+  assert.ok(flagNames.includes('precision-mode'));
+});
+
+test('upstream-contributions exposes governed contribution planning flags', () => {
+  const cmd = findCommand('upstream-prs');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'upstream-contributions');
+  assert.ok(flagNames.includes('json'));
+  assert.ok(flagNames.includes('write'));
+  assert.ok(flagNames.includes('live'));
+  assert.ok(flagNames.includes('max-repos'));
+  assert.ok(flagNames.includes('max-issues'));
+});
+
 test('lessons command has --json, --local, --remote flags', () => {
   const cmd = findCommand('lessons');
   const flagNames = cmd.flags.map((f) => f.name);

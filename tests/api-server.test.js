@@ -710,10 +710,16 @@ test('public MCP discovery manifest exposes progressive tool, skill, and app loa
   assert.ok(body.primaryFlows.some((flow) => flow.name === 'visual-proof-retrieval' && flow.tools.includes('plan_multimodal_retrieval')));
   assert.ok(body.primaryFlows.some((flow) => flow.name === 'context-footprint-optimizer' && flow.tools.includes('plan_context_footprint')));
   assert.ok(body.primaryFlows.some((flow) => flow.name === 'agent-design-governance' && flow.tools.includes('plan_agent_design_governance')));
+  assert.ok(body.primaryFlows.some((flow) => flow.name === 'proactive-agent-eval-guardrails' && flow.tools.includes('plan_proactive_agent_eval_guardrails')));
+  assert.ok(body.primaryFlows.some((flow) => flow.name === 'reward-hacking-guardrails' && flow.tools.includes('plan_reward_hacking_guardrails')));
+  assert.ok(body.primaryFlows.some((flow) => flow.name === 'oss-pr-opportunity-scout' && flow.tools.includes('plan_oss_pr_opportunity_scout')));
+  assert.ok(body.primaryFlows.some((flow) => flow.name === 'chatgpt-ads-readiness-pack' && flow.tools.includes('plan_chatgpt_ads_readiness')));
   assert.ok(body.skills.some((skill) => skill.name === 'thumbgate'));
   assert.ok(body.skills.some((skill) => skill.name === 'visual-proof-retrieval'));
   assert.ok(body.skills.some((skill) => skill.name === 'context-footprint-optimizer'));
   assert.ok(body.skills.some((skill) => skill.name === 'agent-design-governance'));
+  assert.ok(body.skills.some((skill) => skill.name === 'reward-hacking-guardrails'));
+  assert.ok(body.skills.some((skill) => skill.name === 'oss-pr-opportunity-scout'));
   assert.ok(body.applications.some((app) => app.name === 'dashboard'));
   assert.ok(body.footprint.mcpToolDiscovery.footprint.savings.reductionRatio > 0);
   assert.match(body.proof.verificationEvidenceUrl, /VERIFICATION_EVIDENCE\.md/);
@@ -751,6 +757,10 @@ test('public MCP tool index supports just-in-time per-tool schema loading', asyn
   assert.ok(index.tools.some((tool) => tool.name === 'run_autoresearch'));
   assert.ok(index.tools.some((tool) => tool.name === 'plan_multimodal_retrieval'));
   assert.ok(index.tools.some((tool) => tool.name === 'plan_agent_design_governance'));
+  assert.ok(index.tools.some((tool) => tool.name === 'plan_proactive_agent_eval_guardrails'));
+  assert.ok(index.tools.some((tool) => tool.name === 'plan_reward_hacking_guardrails'));
+  assert.ok(index.tools.some((tool) => tool.name === 'plan_oss_pr_opportunity_scout'));
+  assert.ok(index.tools.some((tool) => tool.name === 'plan_chatgpt_ads_readiness'));
 
   const schemaRes = await fetch(apiUrl('/.well-known/mcp/tools/capture_feedback.json'));
   assert.equal(schemaRes.status, 200);
@@ -776,6 +786,18 @@ test('public MCP tool index supports just-in-time per-tool schema loading', asyn
   const agentDesignSchema = await agentDesignSchemaRes.json();
   assert.equal(agentDesignSchema.name, 'plan_agent_design_governance');
   assert.equal(agentDesignSchema.inputSchema.properties.highRiskTools.type, 'array');
+
+  const rewardSchemaRes = await fetch(apiUrl('/.well-known/mcp/tools/plan_reward_hacking_guardrails.json'));
+  assert.equal(rewardSchemaRes.status, 200);
+  const rewardSchema = await rewardSchemaRes.json();
+  assert.equal(rewardSchema.name, 'plan_reward_hacking_guardrails');
+  assert.equal(rewardSchema.inputSchema.properties.metrics.type, 'array');
+
+  const adsSchemaRes = await fetch(apiUrl('/.well-known/mcp/tools/plan_chatgpt_ads_readiness.json'));
+  assert.equal(adsSchemaRes.status, 200);
+  const adsSchema = await adsSchemaRes.json();
+  assert.equal(adsSchema.name, 'plan_chatgpt_ads_readiness');
+  assert.equal(adsSchema.inputSchema.properties.proofLinks.type, 'array');
 });
 
 test('public MCP skills and applications are machine-readable for agent onboarding', async () => {
@@ -793,6 +815,10 @@ test('public MCP skills and applications are machine-readable for agent onboardi
   assert.ok(skills.skills.some((skill) => skill.name === 'visual-proof-retrieval'));
   assert.ok(skills.skills.some((skill) => skill.name === 'context-footprint-optimizer'));
   assert.ok(skills.skills.some((skill) => skill.name === 'agent-design-governance'));
+  assert.ok(skills.skills.some((skill) => skill.name === 'proactive-agent-eval-guardrails'));
+  assert.ok(skills.skills.some((skill) => skill.name === 'reward-hacking-guardrails'));
+  assert.ok(skills.skills.some((skill) => skill.name === 'oss-pr-opportunity-scout'));
+  assert.ok(skills.skills.some((skill) => skill.name === 'chatgpt-ads-readiness-pack'));
   assert.ok(skills.skills.every((skill) => Array.isArray(skill.recommendedFlow)));
   assert.ok(applications.applications.some((app) => app.name === 'workflow-sprint-intake'));
   assert.ok(applications.applications.every((app) => app.url.startsWith('https://app.example.com/')));
