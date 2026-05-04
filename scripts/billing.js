@@ -6,6 +6,7 @@
 'use strict';
 
 const STRIPE_TIMEOUT_MS = 5000;
+const STRIPE_RECONCILIATION_SUMMARY_TIMEOUT_MS = 3500;
 function withTimeout(promise, ms = STRIPE_TIMEOUT_MS) {
   return Promise.race([
     promise,
@@ -2371,7 +2372,12 @@ function getBillingSummary(options = {}) {
 
 async function getBillingSummaryLive(options = {}) {
   try {
-    const extraRevenueEvents = await listStripeReconciledRevenueEvents().catch(() => []);
+    const reconciliationTimeoutMs = normalizeInteger(options.stripeReconciliationTimeoutMs)
+      || STRIPE_RECONCILIATION_SUMMARY_TIMEOUT_MS;
+    const extraRevenueEvents = await withTimeout(
+      listStripeReconciledRevenueEvents(),
+      reconciliationTimeoutMs
+    ).catch(() => []);
     return getBillingSummary({
       ...options,
       extraRevenueEvents,

@@ -1520,4 +1520,29 @@ describe('billing.js — listStripeReconciledRevenueEvents edge cases', () => {
     const events = await billing.listStripeReconciledRevenueEvents();
     assert.deepEqual(events, []);
   });
+
+  test('live billing summary falls back when Stripe reconciliation exceeds budget', async () => {
+    const restore = installStripeMock(() => ({
+      prices: {
+        retrieve: () => new Promise(() => {}),
+        list: () => new Promise(() => {}),
+      },
+      charges: {
+        list: () => new Promise(() => {}),
+      },
+    }));
+    process.env.STRIPE_PRICE_ID = 'price_timeout_probe';
+    try {
+      const billing = requireFreshBilling('sk_live_timeout_probe');
+      const startedAt = Date.now();
+      const summary = await billing.getBillingSummaryLive({ stripeReconciliationTimeoutMs: 5 });
+
+      assert.ok(Date.now() - startedAt < 500);
+      assert.equal(summary.error, undefined);
+      assert.equal(summary.coverage.source, 'funnel_ledger+revenue_ledger+key_store+workflow_sprint_leads');
+    } finally {
+      restore();
+      process.env.STRIPE_PRICE_ID = '';
+    }
+  });
 });
