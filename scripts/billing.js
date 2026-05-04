@@ -1128,7 +1128,13 @@ function deriveRevenueEventFromPaidProviderEvent(entry = {}) {
 
 function loadResolvedRevenueEvents(options = {}) {
   const analyticsWindow = resolveAnalyticsWindow(options);
-  const extraRevenueEvents = Array.isArray(options.extraRevenueEvents) ? options.extraRevenueEvents : [];
+  const extraRevenueEvents = Array.isArray(options.extraRevenueEvents)
+    ? filterEntriesForWindow(
+      options.extraRevenueEvents,
+      analyticsWindow,
+      (entry) => entry && entry.timestamp
+    )
+    : [];
   const revenueEvents = filterEntriesForWindow(
     loadRevenueLedger(),
     analyticsWindow,

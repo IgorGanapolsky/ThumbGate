@@ -1348,6 +1348,15 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(summary.revenue.processorReconciledOrders, 1);
     assert.equal(summary.revenue.processorReconciledRevenueCents, 1000);
     assert.equal(summary.coverage.providerCoverage.stripe, 'booked_revenue+processor_reconciled');
+
+    const todaySummary = await billing.getBillingSummaryLive({
+      window: 'today',
+      timeZone: 'UTC',
+      now: '2026-05-04T12:00:00.000Z',
+    });
+    assert.equal(todaySummary.revenue.bookedRevenueCents, 0);
+    assert.equal(todaySummary.revenue.paidOrders, 0);
+    assert.equal(todaySummary.revenue.processorReconciledOrders, 0);
   });
 });
 
