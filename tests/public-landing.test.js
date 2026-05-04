@@ -609,6 +609,14 @@ test('public landing page includes 7-day free trial and email capture gate', () 
   assert.doesNotMatch(landingPage, /props:\s*\{\s*email:/);
 });
 
+test('public landing page keeps Team on an intake-led start instead of a trial claim', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /No self-serve trial\./);
+  assert.match(landingPage, /Team is \$49\/seat\/mo with a 3-seat minimum and starts with the Workflow Hardening Sprint intake, not a self-serve trial\./);
+  assert.doesNotMatch(landingPage, /Both start with a 7-day free trial/);
+});
+
 test('public landing page includes dashboard preview in Pro card', () => {
   const landingPage = readLandingPage();
   assert.match(landingPage, /dashboard-preview/);
