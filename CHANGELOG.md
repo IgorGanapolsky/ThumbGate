@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.16.13
+
+### Patch Changes
+
+- [#1653](https://github.com/IgorGanapolsky/ThumbGate/pull/1653) [`a072ef0`](https://github.com/IgorGanapolsky/ThumbGate/commit/a072ef098a131030cb1b28c12356fc1edcf8b609) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Refresh the autonomous revenue loop so it emits the Roo-to-Cline demand pack alongside the other evidence-backed sales assets and operator outreach queues.
+
+- [#1662](https://github.com/IgorGanapolsky/ThumbGate/pull/1662) [`d3d78f2`](https://github.com/IgorGanapolsky/ThumbGate/commit/d3d78f286acca57deb6907c4c40398d4d6b5ac99) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Expand the README buyer-question guide shelf so GitHub visitors can reach the active Google Cloud MCP guardrails and Roo-to-Cline migration conversion pages alongside the existing proof-backed acquisition guides.
+
+- [#1559](https://github.com/IgorGanapolsky/ThumbGate/pull/1559) [`54cf97e`](https://github.com/IgorGanapolsky/ThumbGate/commit/54cf97ee57ff2296e7b74b93d37256fc104d8e2c) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a machine-readable MCP directory surfaces sheet to the GTM revenue-pack outputs so directory repair and submission work can use one evidence-backed CSV alongside the existing pack markdown, JSON, and operator queue artifacts.
+
+- [#1655](https://github.com/IgorGanapolsky/ThumbGate/pull/1655) [`5054f22`](https://github.com/IgorGanapolsky/ThumbGate/commit/5054f227a9f3176d7249b73970111e7cb08bda0f) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Refresh the MCP directory repair pack so Glama and punkpeye operator guidance matches the current live directory state instead of stale legacy repair steps.
+
+- [#1657](https://github.com/IgorGanapolsky/ThumbGate/pull/1657) [`3c02575`](https://github.com/IgorGanapolsky/ThumbGate/commit/3c02575a9f0065f444a67f033055013d086d4455) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Route Roo shutdown first-touch traffic through the owned migration guide before the raw Cline install doc, and add setup-guide follow-on CTAs for better proof-backed conversion.
+
+- [#1661](https://github.com/IgorGanapolsky/ThumbGate/pull/1661) [`4c54b53`](https://github.com/IgorGanapolsky/ThumbGate/commit/4c54b53951d7c6827240af404a00c98072fde54a) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a Roo migration send-now handoff so the demand-pack generator emits one evidence-backed markdown, JSON, and CSV execution layer with CTA sequencing and sales-pipeline logging commands.
+
+- [#1647](https://github.com/IgorGanapolsky/ThumbGate/pull/1647) [`3277d2d`](https://github.com/IgorGanapolsky/ThumbGate/commit/3277d2d216dfda1512fba775ca56d4380d3fdaaa) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Refresh the revenue-loop automation and buyer-facing sales surfaces so generated GTM packs follow current local revenue truth, keep free-tier limits evidence-backed, and rewrite channel-specific outreach assets during default runs.
+
 ## 1.16.12
 
 ### Patch Changes
