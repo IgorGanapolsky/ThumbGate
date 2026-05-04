@@ -218,33 +218,32 @@ function buildRalphSteps(options = {}, env = process.env) {
     ));
   }
 
-  steps.push({
-    id: 'reward-report',
-    stage: 'prove',
-    type: 'internal',
-    description: 'Scores session episodes as RL-style rewards and ranks the next prevention gates.',
-  });
-
-  steps.push({
-    id: 'trace-intelligence',
-    stage: 'prove',
-    type: 'internal',
-    description: 'Analyzes observable agent reasoning traces for shape drift, missing verification, and eval-ready gate tuples.',
-  });
-
-  steps.push({
-    id: 'stack-survival-audit',
-    stage: 'prove',
-    type: 'internal',
-    description: 'Checks that ThumbGate stays context-rich, modular, sandboxed, and thin as AI scaffolding collapses.',
-  });
-
-  steps.push({
-    id: 'engagement-audit',
-    stage: 'prove',
-    type: 'internal',
-    description: 'Builds a machine-readable Ralph Loop audit from reply state, drafts, and launch assets.',
-  });
+  steps.push(...[
+    {
+      id: 'reward-report',
+      stage: 'prove',
+      type: 'internal',
+      description: 'Scores session episodes as RL-style rewards and ranks the next prevention gates.',
+    },
+    {
+      id: 'trace-intelligence',
+      stage: 'prove',
+      type: 'internal',
+      description: 'Analyzes observable agent reasoning traces for shape drift, missing verification, and eval-ready gate tuples.',
+    },
+    {
+      id: 'stack-survival-audit',
+      stage: 'prove',
+      type: 'internal',
+      description: 'Checks that ThumbGate stays context-rich, modular, sandboxed, and thin as AI scaffolding collapses.',
+    },
+    {
+      id: 'engagement-audit',
+      stage: 'prove',
+      type: 'internal',
+      description: 'Builds a machine-readable Ralph Loop audit from reply state, drafts, and launch assets.',
+    },
+  ]);
 
   return steps.map((step) => withSkipReason(step, env));
 }

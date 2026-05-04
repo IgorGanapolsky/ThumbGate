@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-const path = require('path');
+const path = require('node:path');
 const { listGateTemplates } = require('./gate-templates');
 
 const DEFAULT_GRAPH_TOOL = 'code-graph';
@@ -94,8 +94,8 @@ function buildSignalSummary(options) {
   return signals;
 }
 
-function buildCodeGraphGuardrailsPlan(rawOptions = {}, templatesPath) {
-  const options = normalizeOptions(rawOptions);
+function buildCodeGraphGuardrailsPlan(rawOptions, templatesPath) {
+  const options = normalizeOptions(rawOptions || {});
   const templates = listGateTemplates(templatesPath)
     .filter((template) => template.category === KNOWLEDGE_GRAPH_CATEGORY);
   const signals = buildSignalSummary(options);
@@ -120,14 +120,18 @@ function buildCodeGraphGuardrailsPlan(rawOptions = {}, templatesPath) {
     },
     signals,
     templates: recommendedTemplates,
-    nextActions: [
-      'Generate or refresh the code graph before a risky agent edit session.',
-      'Tag central files, architecture layers, and generated graph outputs in your agent context.',
-      'Enable the recommended Knowledge Graph Safety templates as pre-action gates.',
-      'Capture thumbs-down corrections when a graph-informed action still misses impact review.',
-    ],
+    nextActions: buildNextActions(),
     exampleCommand: 'npx thumbgate code-graph-guardrails --central-files=src/api/server.js --layers=api,data --generated-artifacts=.codegraph/index.json --json',
   };
+}
+
+function buildNextActions() {
+  return [
+    'Generate or refresh the code graph before a risky agent edit session.',
+    'Tag central files, architecture layers, and generated graph outputs in your agent context.',
+    'Enable the recommended Knowledge Graph Safety templates as pre-action gates.',
+    'Capture thumbs-down corrections when a graph-informed action still misses impact review.',
+  ];
 }
 
 function formatCodeGraphGuardrailsPlan(report) {

@@ -127,7 +127,7 @@ function readLastNonEmptyLine(filePath) {
       .split(/\r?\n/)
       .map((line) => line.trim())
       .filter(Boolean);
-    return lines.length ? lines[lines.length - 1] : null;
+    return lines.length ? lines.at(-1) : null;
   } catch {
     return null;
   }

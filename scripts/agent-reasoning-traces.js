@@ -19,10 +19,10 @@ const TRACE_FILE = 'agent-reasoning-traces.jsonl';
 const MAX_TEXT = 500;
 
 const SECRET_PATTERNS = [
-  { pattern: /\bgh[pousr]_[A-Za-z0-9_]{20,}\b/g, replacement: '[REDACTED_GITHUB_TOKEN]' },
+  { pattern: /\bgh[pousr]_\w{20,}\b/g, replacement: '[REDACTED_GITHUB_TOKEN]' },
   { pattern: /\bAKIA[0-9A-Z]{16}\b/g, replacement: '[REDACTED_AWS_KEY]' },
   { pattern: /\b(?:sk|rk|pk)_(?:live|test)_[A-Za-z0-9]{16,}\b/g, replacement: '[REDACTED_API_KEY]' },
-  { pattern: /\bBearer\s+[A-Za-z0-9._~+/=-]{20,}\b/gi, replacement: 'Bearer [REDACTED_TOKEN]' },
+  { pattern: /\bBearer\s+[-\w.~+/=]{20,}\b/gi, replacement: 'Bearer [REDACTED_TOKEN]' },
   { pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g, replacement: '[REDACTED_EMAIL]' },
 ];
 
@@ -83,12 +83,12 @@ function getReasoningTracePath({ feedbackDir } = {}) {
 function redactTraceText(value, maxLength = MAX_TEXT) {
   if (value === undefined || value === null) return '';
   let text = String(value);
-  text = text.replace(/<think>[\s\S]*?<\/think>/gi, '[REDACTED_REASONING_TRACE]');
-  text = text.replace(/<analysis>[\s\S]*?<\/analysis>/gi, '[REDACTED_REASONING_TRACE]');
+  text = text.replaceAll(/<think>[\s\S]*?<\/think>/gi, '[REDACTED_REASONING_TRACE]');
+  text = text.replaceAll(/<analysis>[\s\S]*?<\/analysis>/gi, '[REDACTED_REASONING_TRACE]');
   for (const { pattern, replacement } of SECRET_PATTERNS) {
-    text = text.replace(pattern, replacement);
+    text = text.replaceAll(pattern, replacement);
   }
-  text = text.replace(/\s+/g, ' ').trim();
+  text = text.replaceAll(/\s+/g, ' ').trim();
   return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
 }
 
@@ -170,10 +170,7 @@ function normalizeStep(message = {}, index = 0) {
 
 function extractToolCalls(message = {}, content = '') {
   const calls = [];
-  const rawCalls = Array.isArray(message.tool_calls) ? message.tool_calls
-    : Array.isArray(message.toolCalls) ? message.toolCalls
-      : Array.isArray(message.tools) ? message.tools
-        : [];
+  const rawCalls = getRawToolCalls(message);
 
   for (const call of rawCalls) {
     const fn = call.function || call;
@@ -183,11 +180,18 @@ function extractToolCalls(message = {}, content = '') {
     });
   }
 
-  const named = content.match(/\b(?:tool|function|command)\s*[:=]\s*([A-Za-z0-9_.:-]+)/i);
+  const named = /\b(?:tool|function|command)\s*[:=]\s*([\w.:-]+)/i.exec(content);
   if (calls.length === 0 && named) {
     calls.push({ name: named[1], argumentsHash: null });
   }
   return calls;
+}
+
+function getRawToolCalls(message = {}) {
+  if (Array.isArray(message.tool_calls)) return message.tool_calls;
+  if (Array.isArray(message.toolCalls)) return message.toolCalls;
+  if (Array.isArray(message.tools)) return message.tools;
+  return [];
 }
 
 function classifyStep({ role, content, toolCalls, message }) {
@@ -233,9 +237,15 @@ function normalizeOutcome(record = {}) {
   const reward = typeof record.reward === 'number' ? record.reward : record.outcome?.reward ?? null;
   return {
     success: success === null || success === undefined ? null : Boolean(success),
-    reward: reward === null || reward === undefined ? null : Number.isFinite(Number(reward)) ? Number(reward) : null,
+    reward: toFiniteNumberOrNull(reward),
     terminalState: record.terminal_state || record.outcome?.terminalState || record.outcome?.terminal_state || null,
   };
+}
+
+function toFiniteNumberOrNull(value) {
+  if (value === null || value === undefined) return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
 }
 
 function inferTaskType(record = {}, steps = []) {
@@ -346,7 +356,7 @@ function buildTraceGateCandidates(evaluations = []) {
     .map((bucket) => ({
       ...bucket,
       priorityScore: round(bucket.occurrences + (bucket.averageScore < 60 ? 2 : 0)),
-      gateId: bucket.key.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase(),
+      gateId: bucket.key.replaceAll(/[^a-z0-9]+/gi, '-').replaceAll(/^-|-$/g, '').toLowerCase(),
       recommendation: buildTraceGateRecommendation(bucket),
     }))
     .sort((a, b) => b.priorityScore - a.priorityScore || b.occurrences - a.occurrences);

@@ -90,12 +90,14 @@ function evaluatePromptReadiness(plan = {}) {
     score: Math.max(0, 100 - (hardBlocks.length * 35) - (warnings.length * 10) - ((plan.missingContext || []).length * 8)),
     hardBlocks,
     warnings,
-    recommendation: hardBlocks.length
-      ? 'Collect missing high-stakes context before running the agent.'
-      : warnings.length
-        ? 'Proceed with explicit uncertainty and evidence capture.'
-        : 'Prompt is ready for execution.',
+    recommendation: promptReadinessRecommendation(hardBlocks, warnings),
   };
+}
+
+function promptReadinessRecommendation(hardBlocks, warnings) {
+  if (hardBlocks.length) return 'Collect missing high-stakes context before running the agent.';
+  if (warnings.length) return 'Proceed with explicit uncertainty and evidence capture.';
+  return 'Prompt is ready for execution.';
 }
 
 function inferAttachmentContext(attachments = []) {
@@ -129,7 +131,7 @@ function inferProvidedContext(request, attachments = []) {
     provided.add('recency requirement');
   }
   if (/\b(test|verify|acceptance|done when)\b/i.test(request)) provided.add('verification command');
-  if (/\b(file|path|component|script|module)\b|[\w.-]+\/[\w./-]+\.[a-z0-9]+/i.test(request)) {
+  if (/\b(file|path|component|script|module)\b/i.test(request) || hasPathLikeTarget(request)) {
     provided.add('target files');
   }
   if (/\b(metric|kpi|revenue|conversion|score)\b/i.test(request)) provided.add('metric definitions');
@@ -139,6 +141,13 @@ function inferProvidedContext(request, attachments = []) {
     provided.add('data file');
   }
   return Array.from(provided);
+}
+
+function hasPathLikeTarget(request = '') {
+  return String(request)
+    .split(/\s+/)
+    .map((part) => part.replace(/^[('"`]+|[),.'"`]+$/g, ''))
+    .some((part) => part.includes('/') && part.includes('.') && /^[\w./-]+$/i.test(part));
 }
 
 function buildTrustChecks(mode, input = {}) {

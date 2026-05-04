@@ -97,7 +97,7 @@ function buildStackSurvivalAudit(options = {}) {
   return {
     generatedAt: new Date().toISOString(),
     overallScore,
-    verdict: overallScore >= 0.85 ? 'survives' : overallScore >= 0.65 ? 'watch' : 'fragile',
+    verdict: survivalVerdict(overallScore),
     categories,
     highRoiActions: buildHighRoiActions(categories),
   };
@@ -150,7 +150,7 @@ function scoreCategory({ score, evidence, recommendation }) {
   const rounded = round(score);
   return {
     score: rounded,
-    status: rounded >= 0.85 ? 'strong' : rounded >= 0.65 ? 'watch' : 'weak',
+    status: categoryStatus(rounded),
     evidence,
     recommendation,
   };
@@ -173,7 +173,7 @@ function listDirs(dirPath) {
     return fs.readdirSync(dirPath, { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
-      .sort();
+      .sort((a, b) => a.localeCompare(b));
   } catch {
     return [];
   }
@@ -184,7 +184,7 @@ function listFiles(dirPath) {
     return fs.readdirSync(dirPath, { withFileTypes: true })
       .filter((entry) => entry.isFile())
       .map((entry) => entry.name)
-      .sort();
+      .sort((a, b) => a.localeCompare(b));
   } catch {
     return [];
   }
@@ -193,6 +193,18 @@ function listFiles(dirPath) {
 function round(value) {
   if (!Number.isFinite(value)) return 0;
   return Math.round(value * 1000) / 1000;
+}
+
+function survivalVerdict(score) {
+  if (score >= 0.85) return 'survives';
+  if (score >= 0.65) return 'watch';
+  return 'fragile';
+}
+
+function categoryStatus(score) {
+  if (score >= 0.85) return 'strong';
+  if (score >= 0.65) return 'watch';
+  return 'weak';
 }
 
 function isCliInvocation(argv = process.argv) {
