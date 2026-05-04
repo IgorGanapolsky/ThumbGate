@@ -10,6 +10,7 @@ const DEFAULT_LABEL = 'com.thumbgate.reddit-monitor';
 const DEFAULT_INTERVAL_MINUTES = 15;
 const DEFAULT_TRACKED_THREADS = 'https://www.reddit.com/r/ClaudeCode/comments/1szi5qp/';
 const DEFAULT_REPO_DIR = path.resolve(__dirname, '..');
+const LAUNCHCTL = '/bin/launchctl';
 
 function escapePlistString(value) {
   return String(value || '')
@@ -74,21 +75,21 @@ function loadLaunchAgent(plistPath) {
   const uid = typeof process.getuid === 'function' ? process.getuid() : null;
   if (uid !== null) {
     try {
-      cp.execFileSync('launchctl', ['bootout', `gui/${uid}`, plistPath], { stdio: 'ignore' });
+      cp.execFileSync(LAUNCHCTL, ['bootout', `gui/${uid}`, plistPath], { stdio: 'ignore' });
     } catch {
       // Ignore if the agent was not loaded yet.
     }
-    cp.execFileSync('launchctl', ['bootstrap', `gui/${uid}`, plistPath], { stdio: 'pipe' });
-    cp.execFileSync('launchctl', ['enable', `gui/${uid}/${path.basename(plistPath, '.plist')}`], { stdio: 'pipe' });
+    cp.execFileSync(LAUNCHCTL, ['bootstrap', `gui/${uid}`, plistPath], { stdio: 'pipe' });
+    cp.execFileSync(LAUNCHCTL, ['enable', `gui/${uid}/${path.basename(plistPath, '.plist')}`], { stdio: 'pipe' });
     return;
   }
 
   try {
-    cp.execFileSync('launchctl', ['unload', plistPath], { stdio: 'ignore' });
+    cp.execFileSync(LAUNCHCTL, ['unload', plistPath], { stdio: 'ignore' });
   } catch {
     // Ignore if the agent was not loaded yet.
   }
-  cp.execFileSync('launchctl', ['load', '-w', plistPath], { stdio: 'pipe' });
+  cp.execFileSync(LAUNCHCTL, ['load', '-w', plistPath], { stdio: 'pipe' });
 }
 
 function installRedditMonitorLaunchAgent(options = {}) {
@@ -114,14 +115,15 @@ function parseArgs(argv = process.argv.slice(2)) {
       args._.push(token);
       continue;
     }
-    const [key, inlineValue] = token.slice(2).split('=', 2);
-    if (inlineValue !== undefined) {
-      args[key] = inlineValue;
+    const option = token.slice(2);
+    const equalsIndex = option.indexOf('=');
+    if (equalsIndex >= 0) {
+      args[option.slice(0, equalsIndex)] = option.slice(equalsIndex + 1);
     } else if (argv[index + 1] && !argv[index + 1].startsWith('--')) {
-      args[key] = argv[index + 1];
+      args[option] = argv[index + 1];
       index += 1;
     } else {
-      args[key] = true;
+      args[option] = true;
     }
   }
   return args;
@@ -158,7 +160,12 @@ function main(argv = process.argv.slice(2)) {
   throw new Error(`Unknown command: ${command}`);
 }
 
-if (require.main === module) {
+function isCliInvocation(argv = process.argv) {
+  const invokedPath = argv[1];
+  return invokedPath ? path.resolve(invokedPath) === __filename : false;
+}
+
+if (isCliInvocation()) {
   try {
     main();
   } catch (err) {
@@ -174,6 +181,7 @@ module.exports = {
   buildRedditMonitorPlist,
   escapePlistString,
   installRedditMonitorLaunchAgent,
+  isCliInvocation,
   parseArgs,
   plistPathForLabel,
 };

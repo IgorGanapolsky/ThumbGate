@@ -113,7 +113,7 @@ function buildReplyContext(notification) {
 }
 
 function assertPublishableDraft(draft) {
-  if (!draft || draft.platform !== 'bluesky') {
+  if (draft?.platform !== 'bluesky') {
     throw new Error('publishReply requires a Bluesky draft');
   }
   if (!draft.approved) {
@@ -199,8 +199,9 @@ async function publishApprovedDrafts({
   for (const draft of drafts) {
     try {
       const result = await publishReplyFn(session, draft);
+      const previousReplyState = state.repliedTo.bluesky[result.parentUri];
       state.repliedTo.bluesky[result.parentUri] = {
-        ...(state.repliedTo.bluesky[result.parentUri] || {}),
+        ...(previousReplyState || {}),
         postedAt: new Date().toISOString(),
         postedUri: result.uri,
         postedCid: result.cid,

@@ -385,16 +385,16 @@ function parseRedditThreadTarget(value) {
   if (!input) return null;
   try {
     const url = new URL(input.startsWith('www.') ? `https://${input}` : input);
-    const postMatch = url.pathname.match(/\/comments\/([a-z0-9]+)/i);
+    const postMatch = /\/comments\/([a-z0-9]+)/i.exec(url.pathname);
     if (!postMatch) return null;
-    const commentMatch = url.pathname.match(/\/comment\/([a-z0-9]+)/i);
+    const commentMatch = /\/comment\/([a-z0-9]+)/i.exec(url.pathname);
     return {
       url: input,
       postId: postMatch[1],
       commentId: commentMatch ? `t1_${commentMatch[1]}` : null,
     };
   } catch {
-    const postMatch = input.match(/\b(?:t3_)?([a-z0-9]{5,})\b/i);
+    const postMatch = /\b(?:t3_)?([a-z0-9]{5,})\b/i.exec(input);
     return postMatch ? { url: input, postId: postMatch[1], commentId: null } : null;
   }
 }
@@ -440,6 +440,47 @@ function hasOperatorReply(comment, comments, operatorUsernames) {
   ));
 }
 
+async function draftTrackedRedditComment({
+  comment,
+  comments,
+  operatorUsernames,
+  post,
+  state,
+  target,
+}) {
+  const commentId = comment.name;
+  if (!commentId || state.repliedTo[commentId]) return null;
+  if (operatorUsernames.has(String(comment.author || '').toLowerCase())) return null;
+  if (hasOperatorReply(comment, comments, operatorUsernames)) {
+    state.repliedTo[commentId] = {
+      at: new Date().toISOString(),
+      platform: 'reddit',
+      alreadyAnswered: true,
+      source: 'tracked_thread',
+    };
+    return null;
+  }
+
+  const commentBody = comment.body || '';
+  const generatedReply = await generateReply(commentBody, {
+    platform: 'reddit',
+    postTitle: post.title || comment.link_title || '',
+    isQuestion: looksLikeQuestion(commentBody),
+    author: comment.author,
+  });
+  return draftRedditReply({
+    state,
+    commentId,
+    generatedReply,
+    author: comment.author,
+    subreddit: comment.subreddit || post.subreddit,
+    commentBody,
+    postTitle: post.title || comment.link_title || '',
+    permalink: comment.permalink ? `https://www.reddit.com${comment.permalink}` : target.url,
+    source: 'tracked_thread',
+  });
+}
+
 async function checkTrackedRedditThreads({ token, userAgent, state }) {
   const targets = getTrackedRedditThreadTargets();
   if (targets.length === 0) return [];
@@ -461,36 +502,13 @@ async function checkTrackedRedditThreads({ token, userAgent, state }) {
       : comments;
 
     for (const comment of candidateComments) {
-      const commentId = comment.name;
-      if (!commentId || state.repliedTo[commentId]) continue;
-      if (operatorUsernames.has(String(comment.author || '').toLowerCase())) continue;
-      if (hasOperatorReply(comment, comments, operatorUsernames)) {
-        state.repliedTo[commentId] = {
-          at: new Date().toISOString(),
-          platform: 'reddit',
-          alreadyAnswered: true,
-          source: 'tracked_thread',
-        };
-        continue;
-      }
-
-      const commentBody = comment.body || '';
-      const generatedReply = await generateReply(commentBody, {
-        platform: 'reddit',
-        postTitle: post.title || comment.link_title || '',
-        isQuestion: looksLikeQuestion(commentBody),
-        author: comment.author,
-      });
-      const result = draftRedditReply({
+      const result = await draftTrackedRedditComment({
+        comment,
+        comments,
+        operatorUsernames,
+        post,
         state,
-        commentId,
-        generatedReply,
-        author: comment.author,
-        subreddit: comment.subreddit || post.subreddit,
-        commentBody,
-        postTitle: post.title || comment.link_title || '',
-        permalink: comment.permalink ? `https://www.reddit.com${comment.permalink}` : target.url,
-        source: 'tracked_thread',
+        target,
       });
       if (result) results.push(result);
     }

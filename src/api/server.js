@@ -1634,7 +1634,7 @@ function stripTrailingSlashes(value) {
 }
 
 function normalizePublicMarketingHtml(html, runtimeConfig) {
-  const appOrigin = runtimeConfig && runtimeConfig.appOrigin
+  const appOrigin = runtimeConfig?.appOrigin
     ? stripTrailingSlashes(runtimeConfig.appOrigin)
     : '';
   if (!appOrigin) return html;

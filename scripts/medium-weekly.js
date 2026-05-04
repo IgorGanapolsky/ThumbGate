@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 const { createSchedule } = require('./schedule-manager');
 const { ensureDir } = require('./fs-utils');
 
@@ -214,7 +214,7 @@ function renderDraftMarkdown(draft) {
 
 function renderQueueCsv(rows) {
   const headers = ['channel', 'target', 'priority', 'reason', 'prompt', 'draft'];
-  const esc = (value) => `"${String(value || '').replace(/"/g, '""')}"`;
+  const esc = (value) => `"${String(value || '').replaceAll('"', '""')}"`;
   return [
     headers.join(','),
     ...rows.map((row) => headers.map((header) => esc(row[header])).join(',')),
@@ -236,7 +236,7 @@ function createMediumWeeklySchedule({ day = 'monday', time = '09:30' } = {}) {
   const command = [
     `const medium = require(${JSON.stringify(__filename)});`,
     'const result = medium.writeMediumWeeklyDraft();',
-    'process.stdout.write(JSON.stringify({ draftPath: result.draftPath, queuePath: result.queuePath }, null, 2) + "\\n");',
+    String.raw`process.stdout.write(JSON.stringify({ draftPath: result.draftPath, queuePath: result.queuePath }, null, 2) + "\n");`,
   ].join(' ');
 
   return createSchedule({
@@ -249,18 +249,26 @@ function createMediumWeeklySchedule({ day = 'monday', time = '09:30' } = {}) {
   });
 }
 
-function runCli(argv = process.argv.slice(2)) {
+function runCli(argv = process.argv.slice(2), {
+  writeMediumWeeklyDraft: writeDraft = writeMediumWeeklyDraft,
+  createMediumWeeklySchedule: createScheduleFn = createMediumWeeklySchedule,
+} = {}) {
   if (argv.includes('--schedule')) {
-    const result = createMediumWeeklySchedule();
+    const result = createScheduleFn();
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return result;
   }
-  const result = writeMediumWeeklyDraft();
+  const result = writeDraft();
   process.stdout.write(`${JSON.stringify({ draftPath: result.draftPath, queuePath: result.queuePath }, null, 2)}\n`);
   return result;
 }
 
-if (require.main === module) {
+function isCliInvocation(argv = process.argv) {
+  const invokedPath = argv[1];
+  return invokedPath ? path.resolve(invokedPath) === __filename : false;
+}
+
+if (isCliInvocation()) {
   runCli();
 }
 
@@ -271,7 +279,9 @@ module.exports = {
   buildArticleBody,
   buildEngagementQueue,
   buildMediumDraft,
+  buildTrackedUrl,
   createMediumWeeklySchedule,
+  isCliInvocation,
   renderDraftMarkdown,
   renderQueueCsv,
   runCli,
