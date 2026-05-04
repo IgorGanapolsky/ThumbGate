@@ -1,6 +1,6 @@
 # Codex Operator Revenue Pack
 
-Updated: 2026-05-04T15:07:22.595Z
+Updated: 2026-05-04T21:47:27.724Z
 
 This is a sales operator artifact. It is not proof of installs, revenue, or marketplace approval by itself.
 
@@ -26,7 +26,7 @@ Turn Codex plugin interest into proof-backed installs, Pro checkout starts, and 
 
 ### Standalone bundle download
 - URL: https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip
-- Versioned URL: https://github.com/IgorGanapolsky/ThumbGate/releases/download/v1.16.13/thumbgate-codex-plugin-v1.16.13.zip
+- Versioned URL: https://github.com/IgorGanapolsky/ThumbGate/releases/download/v1.16.19/thumbgate-codex-plugin-v1.16.19.zip
 - Operator use: Portable plugin path for buyers who want a direct asset instead of a repo checkout.
 - Buyer signal: Warm buyers ready to install now if the runtime, update policy, and proof links are explicit.
 - Evidence source: plugins/codex-profile/README.md

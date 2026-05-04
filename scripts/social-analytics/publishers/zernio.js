@@ -418,6 +418,7 @@ async function publishPost(content, platforms, options = {}) {
     mediaItems: options.mediaItems,
     publishNow: true,
     platforms: dedupedPlatforms,
+    title: options.title,
   }, { idempotencyKey: publishKey }));
 
   const data = normalizePostResult(json);

@@ -1,6 +1,6 @@
 {
   "name": "codex-bridge",
-  "version": "1.16.13",
+  "version": "1.16.19",
   "description": "Run Codex review, adversarial review, and second-pass handoffs from Claude Code while keeping ThumbGate reliability memory in the loop.",
   "author": {
     "name": "Igor Ganapolsky",

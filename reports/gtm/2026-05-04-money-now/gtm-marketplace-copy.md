@@ -22,14 +22,14 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 - Keep approval boundaries, rollback safety, and proof attached to the workflow before rollout.
 
 ## Recommended CTAs
-- Proof-backed setup guide: https://thumbgate.ai/guide
-- Workflow Hardening Sprint: https://thumbgate.ai/#workflow-sprint-intake
-- Pro at $19/mo or $149/yr: https://thumbgate.ai/checkout/pro
+- Proof-backed setup guide: https://thumbgate-production.up.railway.app/guide
+- Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro
 
 ## Evidence-Backed Buyer Signals
 - Workflow control surfaces (11): The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Examples: montenegronyc/backporcher, dolutech/engine_context, Adqui9608/ai-code-review-agent
-- Business-system workflow approvals (9): Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Examples: montenegronyc/backporcher, dolutech/engine_context, Adqui9608/ai-code-review-agent
-- Production rollout proof (9): Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Examples: montenegronyc/backporcher, dolutech/engine_context, Adqui9608/ai-code-review-agent
+- Business-system workflow approvals (10): Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Examples: montenegronyc/backporcher, dolutech/engine_context, Adqui9608/ai-code-review-agent
+- Production rollout proof (7): Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Examples: montenegronyc/backporcher, dolutech/engine_context, Adqui9608/ai-code-review-agent
 - Self-serve agent tooling (5): Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible. Examples: Abhi268170/Stagix, borghei/Claude-Skills, agynio/gh-pr-review
 
 ## Listing Variants
@@ -39,8 +39,8 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 - Short description: Lead with one repeated approval, review, or handoff failure and show how ThumbGate turns it into an enforceable pre-action gate.
 - Evidence: The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive.
 - Listing angle: Lead with one repeated workflow failure, then show how ThumbGate turns it into an enforceable pre-action gate.
-- Primary CTA: Workflow Hardening Sprint: https://thumbgate.ai/#workflow-sprint-intake
-- Secondary CTA: Proof-backed setup guide: https://thumbgate.ai/guide
+- Primary CTA: Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Secondary CTA: Proof-backed setup guide: https://thumbgate-production.up.railway.app/guide
 - Sample targets: montenegronyc/backporcher, dolutech/engine_context, Adqui9608/ai-code-review-agent
 
 ### Business-system workflow approvals
@@ -49,8 +49,8 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 - Short description: Lead with one workflow in Jira, GitHub, ServiceNow, Slack, or CRM systems that needs proof before wider rollout.
 - Evidence: Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof.
 - Listing angle: Lead with approval boundaries, rollback safety, and proof for one workflow.
-- Primary CTA: Workflow Hardening Sprint: https://thumbgate.ai/#workflow-sprint-intake
-- Secondary CTA: Proof-backed setup guide: https://thumbgate.ai/guide
+- Primary CTA: Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Secondary CTA: Proof-backed setup guide: https://thumbgate-production.up.railway.app/guide
 - Sample targets: montenegronyc/backporcher, dolutech/engine_context, Adqui9608/ai-code-review-agent
 
 ### Production rollout proof
@@ -59,8 +59,8 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 - Short description: Lead with one production workflow where repeated mistakes, rollback risk, or audit pressure already make the pain expensive.
 - Evidence: Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems.
 - Listing angle: Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.
-- Primary CTA: Workflow Hardening Sprint: https://thumbgate.ai/#workflow-sprint-intake
-- Secondary CTA: Proof-backed setup guide: https://thumbgate.ai/guide
+- Primary CTA: Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Secondary CTA: Proof-backed setup guide: https://thumbgate-production.up.railway.app/guide
 - Sample targets: montenegronyc/backporcher, dolutech/engine_context, Adqui9608/ai-code-review-agent
 
 ### Self-serve agent tooling
@@ -69,8 +69,8 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 - Short description: Lead with the proof-backed setup guide first, then route install-intent buyers to Pro after one blocked repeat or explicit self-serve intent.
 - Evidence: Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.
 - Listing angle: Lead with the proof-backed setup guide first, then convert proven local usage into Pro.
-- Primary CTA: Proof-backed setup guide: https://thumbgate.ai/guide
-- Secondary CTA: Pro at $19/mo or $149/yr: https://thumbgate.ai/checkout/pro
+- Primary CTA: Proof-backed setup guide: https://thumbgate-production.up.railway.app/guide
+- Secondary CTA: Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro
 - Sample targets: Abhi268170/Stagix, borghei/Claude-Skills, agynio/gh-pr-review
 
 ## Proof Policy

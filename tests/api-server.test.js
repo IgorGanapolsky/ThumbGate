@@ -305,6 +305,16 @@ test('buyer intent script serves shared checkout helper JavaScript', async () =>
   assert.match(script, /dataset\.baseHref/);
 });
 
+test('/pro serves the Pro landing page instead of redirecting to the homepage', async () => {
+  const res = await fetch(apiUrl('/pro?utm_source=test'), { redirect: 'manual' });
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /text\/html/);
+  const html = await res.text();
+  assert.match(html, /ThumbGate Pro/);
+  assert.match(html, /Buy the operator loop that proves your AI agent stopped repeating the mistake\./);
+  assert.match(html, /\/checkout\/pro\?plan_id=pro&billing_cycle=monthly/);
+});
+
 test('startServer accepts an explicit bind host', async () => {
   const explicit = await startServer({ port: 0, host: '0.0.0.0' });
   try {
@@ -1259,6 +1269,8 @@ test('cancel page serves retry message and records first-party telemetry', async
   assert.match(body, /utm_medium', 'checkout_cancel_recovery'/);
   assert.match(body, /Book \$499 diagnostic/);
   assert.match(body, /Start \$1500 sprint/);
+  assert.match(body, /Restart \$19 Pro trial/);
+  assert.match(body, /data-recovery-offer="pro_trial_retry"/);
   assert.match(body, /data-recovery-offer="sprint_diagnostic"/);
   assert.match(body, /data-recovery-offer="workflow_sprint"/);
   assert.match(body, /checkout_recovery_offer_clicked/);

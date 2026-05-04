@@ -36,6 +36,7 @@ npx thumbgate init
 - Skool owner plans are recurring subscriptions after the trial. Source: https://help.skool.com/article/227-payment-terms-and-policy
 - Skool categories are configured from Settings > Community > Categories, with up to 10 categories. Source: https://help.skool.com/article/67-how-to-setup-categories
 - Skool logo and cover photo are configured from Settings > General. Source: https://help.skool.com/article/120-how-to-set-up-my-group-logo-and-cover-photo
+- Skool Discovery requires the group description, About page description/images, cover image, and enough real posts/activity before the group becomes visible. Sources: https://help.skool.com/article/123-how-to-set-up-my-group-s-about-page and https://help.skool.com/article/153-discovery-faqs
 - The current Skool setup flow asked for audience size. Recommended conservative answer: `Under 10k`, unless a primary social profile is verified above 10,000 followers.
 
 ## Skool
@@ -51,6 +52,20 @@ Skool is the community home because it supports free groups and can later add pa
 **Cover asset:** `docs/marketing/assets/thumbgate-skool-cover.png`
 
 **Icon asset:** `docs/marketing/assets/thumbgate-skool-icon.png`
+
+**Discovery-ready asset variants:**
+
+- Cover: `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`
+- Icon: `docs/marketing/assets/thumbgate-skool-icon-128x128.png`
+
+**Current live setup status:**
+
+- Public group selected.
+- Discovery keywords filled.
+- Sidebar description filled.
+- About page description drafted in the Skool editor and waiting for final public-save confirmation.
+- Cover/icon upload is still blocked by the in-app browser file-picker surface; assets are ready locally.
+- First public post and invites are queued, but require action-time confirmation before posting/sending.
 
 **About copy:**
 
@@ -92,6 +107,8 @@ Post one repeated AI-agent mistake using this format:
 5. Current prevention attempt, if any:
 
 The best first win is narrow: one mistake, one rule, one blocked repeat.
+
+**Public post confirmation note:** Do not publish this post automatically. Ask for final confirmation because it represents the operator publicly in Skool.
 
 **First 7 posts:**
 
@@ -136,7 +153,7 @@ Use this same outline everywhere courses are supported.
 
 ### Kajabi
 
-Use only after proof because Kajabi is a heavier owned-course stack. Current official pricing page says plans start at $89/mo. Source: https://kajabi.com/pricing
+Use only after proof because Kajabi is a heavier owned-course stack. Current official pricing lists Starter at $89/mo monthly or $71/mo annual, with 1 product, 250 contacts, 1 website, and 1 community. Source: https://www.kajabi.com/pricing
 
 **Product name:** ThumbGate Workflow Hardening
 
@@ -148,7 +165,7 @@ Use only after proof because Kajabi is a heavier owned-course stack. Current off
 
 ### Thinkific
 
-Use if you want a cleaner course-first storefront without making community the product. Source: https://www.thinkific.com/thrive/faq/
+Use if you want a cleaner course-first storefront without making community the product. Current official pricing lists Start at $99/mo monthly or $74/mo annual and includes unlimited courses plus 1 community. Source: https://www.thinkific.com/pricing/
 
 **Course name:** Stop AI Coding Agents From Repeating Mistakes
 
@@ -156,7 +173,7 @@ Use if you want a cleaner course-first storefront without making community the p
 
 ### Teachable
 
-Teachable supports free, one-time, payment plan, and subscription pricing plans for products. Source: https://support.teachable.com/hc/en-us/articles/360044297751-Price-Your-Products
+Teachable is useful for a course storefront and student apps. Current official pricing lists Starter at $39/mo monthly or $29/mo annual, with a 7.5% transaction fee and 5 products. Source: https://www.teachable.com/pricing
 
 **Free product positioning:** Use as a lead magnet and redirect students into the Skool group.
 
@@ -164,7 +181,7 @@ Teachable supports free, one-time, payment plan, and subscription pricing plans 
 
 ### Podia
 
-Use if you want the simplest owned digital product storefront. Source: https://help.podia.com/en/collections/12186126-pricing
+Use if you want the simplest owned digital product storefront. Current official pricing lists Mover at $39/mo monthly or $33/mo annual with a 5% transaction fee, and Shaker at $89/mo monthly or $75/mo annual with no Podia transaction fee. Source: https://www.podia.com/pricing
 
 **Product type:** Free course or downloadable checklist.
 
@@ -188,7 +205,7 @@ Circle is strong for polished community, events, courses, analytics, and paid me
 
 ### LearnWorlds
 
-Use only if the course becomes the product and needs interactive learning features. Source: https://www.learnworlds.com/plans/
+Use only if the course becomes the product and needs interactive learning features. Current official pricing lists Starter at $29/mo monthly or $24/mo annual with a $5 per course enrollment fee; Pro Trainer removes transaction fees. Source: https://www.learnworlds.com/pricing/
 
 **School name:** ThumbGate Academy
 

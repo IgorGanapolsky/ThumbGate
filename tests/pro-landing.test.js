@@ -31,9 +31,21 @@ test('pro landing page uses checkout routes for monthly and annual conversions',
 
   assert.match(proPage, /Start 7-Day Free Trial/i);
   assert.match(proPage, /\/checkout\/pro\?/);
+  assert.match(proPage, /pricing_pro/);
   assert.match(proPage, /billing_cycle=annual/);
   assert.match(proPage, /\$19\/mo/);
   assert.match(proPage, /\$149\/yr/);
+});
+
+test('pro landing page keeps the pricing section focused on the $19 Pro checkout', () => {
+  const proPage = readProPage();
+  const pricingSection = proPage.slice(proPage.indexOf('<section class="section" id="pricing">'), proPage.indexOf('<section class="section" id="faq">'));
+
+  assert.match(pricingSection, /<h3>ThumbGate Pro<\/h3>/);
+  assert.match(pricingSection, /Start 7-Day Free Trial/);
+  assert.match(pricingSection, /Restart|Start|Choose annual/);
+  assert.match(pricingSection, /Book a Team Pilot Call/);
+  assert.doesNotMatch(pricingSection, /<h3>ThumbGate Team/);
 });
 
 test('pro landing page links to proof assets and live demo surfaces', () => {

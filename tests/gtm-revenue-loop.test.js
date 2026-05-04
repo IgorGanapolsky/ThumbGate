@@ -514,6 +514,39 @@ test('resolveRevenueLoopSummary falls back to historical commercial truth revenu
   ).state, 'post-first-dollar');
 });
 
+test('resolveRevenueLoopSummary keeps revenue loop moving when local billing throws before fallback', async () => {
+  const result = await resolveRevenueLoopSummary({
+    getOperationalBillingSummaryFn: async () => {
+      throw new Error('Hosted billing summary rejected credentials (HTTP 401).');
+    },
+    generateRevenueStatusReportFn: async () => ({
+      source: 'local-fallback',
+      hostedAudit: {
+        summaries: {
+          today: {
+            status: 401,
+            revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+          },
+        },
+      },
+    }),
+    readHistoricalCommercialTruthRevenueFn: () => ({
+      asOfDate: 'March 19, 2026',
+      paidOrders: 2,
+      bookedRevenueCents: 2000,
+      sourceDocument: 'docs/COMMERCIAL_TRUTH.md',
+    }),
+    hostedStatusRetries: 0,
+  });
+
+  assert.equal(result.source, 'local-unverified');
+  assert.equal(result.summaryWindow, 'historical-commercial-truth');
+  assert.equal(result.summary.revenue.paidOrders, 2);
+  assert.equal(result.summary.revenue.bookedRevenueCents, 2000);
+  assert.match(result.fallbackReason, /HTTP 401/);
+  assert.match(result.fallbackReason, /Historical commercial proof applied/);
+});
+
 test('buildBillingVerification keeps local-unverified mode when no historical proof exists', () => {
   const verification = buildBillingVerification({
     source: 'local-unverified',
