@@ -15,7 +15,7 @@ on:
       platforms:
         description: 'Comma-separated Zernio platforms'
         required: false
-        default: 'linkedin,instagram,reddit,tiktok,youtube,twitter'
+        default: 'linkedin,instagram,twitter'
       schedule:
         description: 'ISO-8601 scheduled time, required for schedule mode'
         required: false

@@ -114,8 +114,7 @@ function buildOperatorLabPost(platform) {
 
   if (normalized === 'twitter' || normalized === 'x') {
     return [
-      'I started a free ThumbGate Operator Lab for Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, and MCP operators.',
-      'Bring one repeated AI-agent mistake. We turn it into a prevention rule or pre-action gate.',
+      'Free ThumbGate Operator Lab: turn one repeated AI-agent mistake into one prevention rule.',
       buildOperatorLabUrl('x', 'operator_lab_twitter'),
     ].join(' ');
   }

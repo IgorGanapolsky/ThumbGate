@@ -38,12 +38,15 @@ test('parseArgs supports dry run, schedule, timezone, and platform filters', () 
 
 test('buildPlatformPost can create Skool operator lab copy', () => {
   const post = buildPlatformPost('linkedin', 'operator-lab');
+  const xPost = buildPlatformPost('twitter', 'operator-lab');
 
   assert.match(post, /ThumbGate Operator Lab/);
   assert.match(post, /skool\.com\/thumbgate-operator-lab-6000/);
   assert.match(post, /utm_medium=community_course/);
   assert.match(post, /utm_campaign=operator_lab_launch/);
   assert.match(post, /utm_content=operator_lab_linkedin/);
+  assert.ok(xPost.length <= 280, `X operator-lab post should fit 280 chars; got ${xPost.length}`);
+  assert.match(xPost, /utm_content=operator_lab_twitter/);
 });
 
 test('publishLaunchCampaign previews default platforms in dry run mode', async () => {
