@@ -1,7 +1,7 @@
 # GSD Revenue Loop
 
 Status: post-first-dollar
-Updated: 2026-05-04T11:54:10.627Z
+Updated: 2026-05-04T15:13:16.404Z
 
 This report is an operator artifact for landing the first 10 paying customers. It is not proof of sent messages or booked revenue by itself.
 Outbound rule: do not treat posts as sales. A lead only moves when it is tracked as contacted, replied, call booked, checkout/sprint, or paid.
@@ -22,20 +22,19 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Proof link: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ## Revenue Snapshot
-- Revenue window: historical-commercial-truth
-- Paid orders: 2
-- Booked revenue: $20.00
-- Checkout starts: 0
-- Unique leads: 0
+- Revenue window: 30d
+- Paid orders: 4
+- Booked revenue: $149.00
+- Checkout starts: 78
+- Unique leads: 425
 - Workflow sprint leads: 0
 - Qualified sprint leads: 0
-- Billing source: local (Hosted operational summary is not configured. Historical commercial proof applied from docs/COMMERCIAL_TRUTH.md.)
-- Billing verification: Historical booked revenue is verified, but the current hosted billing summary was not verified in this run.
-- Historical revenue proof: 2 paid order(s), $20.00 booked through March 19, 2026 from docs/COMMERCIAL_TRUTH.md.
+- Billing source: hosted-via-railway-env
+- Billing verification: Live hosted billing summary verified for this run.
 
 ## GSD Directive
 - Objective: Scale the first-10-customers loop with direct workflow hardening and self-serve follow-up.
-- Headline: Historical booked revenue is verified, but the current hosted billing summary is unavailable in this run. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
+- Headline: Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
 - Primary motion: sprint
 - Secondary motion: pro
 
@@ -44,7 +43,6 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Use the proof pack after the buyer names the repeated workflow pain, not as the opener.
 - Route buyers who only want a tool to the Pro monthly/annual checkout after the pain is qualified.
 - Publish only booked revenue and paid-order proof from the billing summary or named pilot agreements.
-- When asked for current live revenue, cite the historical commercial proof and disclose that hosted billing was not verified in this run.
 
 ## Warm Discovery Queue
 ### @Deep_Ad1959 — r/cursor
@@ -210,7 +208,7 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Contact surfaces: GitHub profile: https://github.com/Adqui9608; Repository: https://github.com/Adqui9608/ai-code-review-agent
 - Company: n/a
 - Repo: https://github.com/Adqui9608/ai-code-review-agent
-- Repo last updated: 2026-05-04T11:25:19Z
+- Repo last updated: 2026-05-04T14:50:57Z
 - Evidence score: 15
 - Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, updated in the last 7 days
 - Evidence sources: Target signal: https://github.com/Adqui9608/ai-code-review-agent; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
@@ -235,7 +233,7 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Contact surfaces: Website: https://wphc.us/; GitHub profile: https://github.com/bherald; Repository: https://github.com/bherald/personal-life-os-core
 - Company: n/a
 - Repo: https://github.com/bherald/personal-life-os-core
-- Repo last updated: 2026-05-03T13:29:02Z
+- Repo last updated: 2026-05-04T14:22:45Z
 - Evidence score: 14
 - Evidence: workflow control surface, production or platform workflow, agent infrastructure, self-serve agent tooling, updated in the last 7 days
 - Evidence sources: Target signal: https://github.com/bherald/personal-life-os-core; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
@@ -260,7 +258,7 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Contact surfaces: GitHub profile: https://github.com/zaxbysauce; Repository: https://github.com/zaxbysauce/opencode-swarm
 - Company: n/a
 - Repo: https://github.com/zaxbysauce/opencode-swarm
-- Repo last updated: 2026-05-04T08:16:52Z
+- Repo last updated: 2026-05-04T12:10:59Z
 - Evidence score: 12
 - Evidence: workflow control surface, self-serve agent tooling, 297 GitHub stars, updated in the last 7 days
 - Evidence sources: Target signal: https://github.com/zaxbysauce/opencode-swarm; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
@@ -274,27 +272,27 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 - Tool-path follow-up: If you want the self-serve path for `opencode-swarm`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro
 - Checkout close draft: If you are already comparing close options for `opencode-swarm`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
-### @jonathanmr22 — pact
+### @iliaal — whetstone
 - Temperature: cold
 - Source: github / github
 - Pipeline stage: targeted
 - Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
 - Pipeline last updated: n/a
 - Offer: pro_self_serve
-- Contact: https://github.com/jonathanmr22
-- Contact surfaces: GitHub profile: https://github.com/jonathanmr22; Repository: https://github.com/jonathanmr22/pact
+- Contact: http://ilia.ws/
+- Contact surfaces: Website: http://ilia.ws/; GitHub profile: https://github.com/iliaal; Repository: https://github.com/iliaal/whetstone
 - Company: n/a
-- Repo: https://github.com/jonathanmr22/pact
-- Repo last updated: 2026-05-04T11:28:57Z
+- Repo: https://github.com/iliaal/whetstone
+- Repo last updated: 2026-05-03T10:39:51Z
 - Evidence score: 12
-- Evidence: workflow control surface, agent infrastructure, self-serve agent tooling, 14 GitHub stars, updated in the last 7 days
-- Evidence sources: Target signal: https://github.com/jonathanmr22/pact; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Evidence: workflow control surface, agent infrastructure, self-serve agent tooling, 13 GitHub stars, updated in the last 7 days
+- Evidence sources: Target signal: https://github.com/iliaal/whetstone; Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md; Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 - Outreach angle: Lead with the proof-backed setup guide and local-first enforcement before any team-motion pitch.
 - Motion: Pro at $19/mo or $149/yr
 - Why: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
 - Proof timing: Use proof pack only after the buyer confirms pain.
 - CTA: https://thumbgate-production.up.railway.app/guide
-- First-touch draft: Hey @jonathanmr22, saw you're building around `pact`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
-- Pain-confirmed follow-up: If you want the self-serve path for `pact`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
-- Tool-path follow-up: If you want the self-serve path for `pact`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro
-- Checkout close draft: If you are already comparing close options for `pact`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- First-touch draft: Hey @iliaal, saw you're building around `whetstone`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
+- Pain-confirmed follow-up: If you want the self-serve path for `whetstone`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Tool-path follow-up: If you want the self-serve path for `whetstone`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro
+- Checkout close draft: If you are already comparing close options for `whetstone`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
