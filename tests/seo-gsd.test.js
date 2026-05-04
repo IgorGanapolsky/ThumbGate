@@ -265,3 +265,39 @@ test('writePlanOutputs persists machine-readable GSD artifacts', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
+
+test('writePlanOutputs refreshes public SEO HTML when using the default output directory', () => {
+  const plan = buildThumbGateSeoPlan();
+  const originalMkdirSync = fs.mkdirSync;
+  const originalWriteFileSync = fs.writeFileSync;
+  const writes = [];
+
+  fs.mkdirSync = (targetPath, options) => {
+    writes.push({ type: 'mkdir', targetPath, options });
+  };
+  fs.writeFileSync = (targetPath, content) => {
+    writes.push({ type: 'write', targetPath, content });
+  };
+
+  try {
+    writePlanOutputs(plan);
+  } finally {
+    fs.mkdirSync = originalMkdirSync;
+    fs.writeFileSync = originalWriteFileSync;
+  }
+
+  const publicWrites = writes.filter((entry) => (
+    entry.type === 'write'
+    && entry.targetPath.startsWith(path.join(path.resolve(__dirname, '..'), 'public'))
+  ));
+
+  assert.equal(publicWrites.length, plan.execute.pages.length);
+  assert.ok(
+    publicWrites.some((entry) => entry.targetPath.endsWith(path.join('compare', 'speclock.html'))),
+    'default output writes should refresh compare pages'
+  );
+  assert.ok(
+    publicWrites.some((entry) => entry.targetPath.endsWith(path.join('guides', 'codex-cli-guardrails.html'))),
+    'default output writes should refresh integration guides'
+  );
+});

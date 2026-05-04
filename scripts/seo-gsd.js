@@ -1844,7 +1844,10 @@ ${page.secondaryCta ? `          <a class="cta-secondary" href="${escapeHtml(pag
 </body>
 </html>`;
 
-  return html.replace(/[ \t]+\n/g, '\n');
+  return html
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .join('\n');
 }
 
 const THUMBGATE_SEO_PLAN = buildThumbGateSeoPlan(HIGH_ROI_QUERY_SEEDS);
