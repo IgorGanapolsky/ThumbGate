@@ -13,6 +13,10 @@ const {
   monitor,
   parseRedditThreadTarget,
 } = require('../scripts/social-reply-monitor');
+const {
+  buildRedditMonitorPlist,
+  parseArgs: parseRedditMonitorLaunchdArgs,
+} = require('../scripts/reddit-monitor-launchd');
 
 test('monitor defaults to Reddit and LinkedIn only (X retired 2026-04-20)', async () => {
   // Run in dry-run with invalid creds so platform checks short-circuit without network.
@@ -111,6 +115,27 @@ test('tracked Reddit thread targets parse post and comment URLs', () => {
     })[0].postId,
     '1szi5qp'
   );
+});
+
+test('reddit monitor launchd plist runs tracked thread monitor every 15 minutes', () => {
+  const plist = buildRedditMonitorPlist({
+    label: 'com.thumbgate.test-reddit-monitor',
+    repoDir: '/tmp/thumbgate repo',
+    intervalMinutes: 15,
+    trackedThreads: 'https://www.reddit.com/r/ClaudeCode/comments/1szi5qp/comment/oj29gdf/?x=1&y=2',
+  });
+
+  assert.match(plist, /<string>com\.thumbgate\.test-reddit-monitor<\/string>/);
+  assert.match(plist, /<integer>900<\/integer>/);
+  assert.match(plist, /reddit-monitor-cron\.sh/);
+  assert.match(plist, /THUMBGATE_REDDIT_TRACKED_THREADS/);
+  assert.match(plist, /x=1&amp;y=2/);
+  assert.match(plist, /\/tmp\/thumbgate repo/);
+
+  const args = parseRedditMonitorLaunchdArgs(['install', '--interval=5', '--dry-run']);
+  assert.equal(args._[0], 'install');
+  assert.equal(args.interval, '5');
+  assert.equal(args['dry-run'], true);
 });
 
 test('monitor drafts tracked Reddit thread replies without posting', async () => {
