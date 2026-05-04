@@ -146,6 +146,17 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('48-hour Workflow Hardening Sprint'));
     assert.ok(html.includes('npx thumbgate background-governance --check --json'));
     assert.ok(html.includes('workflow-sprint-intake'));
+    assert.ok(html.includes('Ready to buy the sprint?'));
+    const paidOfferHrefs = Array.from(
+      html.matchAll(/<a class="paid-offer [^"]+" href="([^"]+)"/g),
+      (match) => match[1]
+    );
+    assert.deepEqual(paidOfferHrefs, [
+      'https://buy.stripe.com/00w14neyUcXA5pL5e33sI0e',
+      'https://buy.stripe.com/fZu9AT76saPsg4pbCr3sI0f',
+    ]);
+    assert.ok(html.includes('$499'));
+    assert.ok(html.includes('$1500'));
   });
 
   it('GPT-5.5 model evaluation guide routes teams into benchmark-first model routing', () => {
