@@ -336,6 +336,8 @@ test('public landing page includes compatibility section for AI agent surfaces',
   assert.match(landingPage, /Claude Desktop plugin/i);
   assert.match(landingPage, /Editor workflows/i);
   assert.match(landingPage, /Claude Code Skill/i);
+  assert.match(landingPage, /Google Data Agent Kit/i);
+  assert.match(landingPage, /\/guides\/gcp-mcp-guardrails/);
   assert.match(landingPage, /\/thumbgate/);
   assert.match(landingPage, /compatibility-grid/);
   // Arrow copy evolved when cards moved off GitHub source links in 1.5.8.
