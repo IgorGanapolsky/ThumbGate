@@ -1,6 +1,6 @@
 # Roo Sunset Demand Pack
 
-Updated: 2026-05-04T05:14:25.441Z
+Updated: 2026-05-04T11:54:10.627Z
 
 This is a sales operator artifact. It is not proof of sent outreach, installs, paid revenue, or partner approval by itself.
 
@@ -8,10 +8,10 @@ This is a sales operator artifact. It is not proof of sent outreach, installs, p
 Turn Roo shutdown urgency into tracked migration clicks, proof-backed setup demand, and paid intent without inventing traction.
 
 ## Positioning
-- State: cold-start
+- State: post-first-dollar
 - Headline: Turn Roo shutdown urgency into memory-portable paid intent.
 - Short description: ThumbGate gives Roo migrants one durable asset to keep: local lesson memory that survives the move to Cline and becomes enforceable Pre-Action Checks.
-- Summary: No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.
+- Summary: Historical booked revenue is verified, but the current hosted billing summary is unavailable in this run. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
 
 ## Canonical Identity
 - Display name: ThumbGate
