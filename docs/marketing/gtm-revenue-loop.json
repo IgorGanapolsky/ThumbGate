@@ -1,32 +1,26 @@
 {
-  "generatedAt": "2026-05-04T11:54:10.627Z",
-  "source": "local",
-  "fallbackReason": "Hosted operational summary is not configured. Historical commercial proof applied from docs/COMMERCIAL_TRUTH.md.",
+  "generatedAt": "2026-05-04T15:13:16.404Z",
+  "source": "hosted-via-railway-env",
+  "fallbackReason": null,
   "verification": {
-    "mode": "historical-local",
-    "label": "Historical booked revenue is verified, but the current hosted billing summary was not verified in this run.",
-    "source": "local",
-    "fallbackReason": "Hosted operational summary is not configured. Historical commercial proof applied from docs/COMMERCIAL_TRUTH.md."
+    "mode": "live-hosted",
+    "label": "Live hosted billing summary verified for this run.",
+    "source": "hosted-via-railway-env",
+    "fallbackReason": null
   },
-  "historicalRevenueProof": {
-    "asOfDate": "March 19, 2026",
-    "paidOrders": 2,
-    "bookedRevenueCents": 2000,
-    "sourceDocument": "docs/COMMERCIAL_TRUTH.md"
-  },
+  "historicalRevenueProof": null,
   "objective": "First 10 paying customers",
   "directive": {
     "state": "post-first-dollar",
     "objective": "Scale the first-10-customers loop with direct workflow hardening and self-serve follow-up.",
     "primaryMotion": "sprint",
     "secondaryMotion": "pro",
-    "headline": "Historical booked revenue is verified, but the current hosted billing summary is unavailable in this run. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.",
+    "headline": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.",
     "actions": [
       "Reply to every qualified lead with one offer: \"I will harden one AI-agent workflow for you.\"",
       "Use the proof pack after the buyer names the repeated workflow pain, not as the opener.",
       "Route buyers who only want a tool to the Pro monthly/annual checkout after the pain is qualified.",
-      "Publish only booked revenue and paid-order proof from the billing summary or named pilot agreements.",
-      "When asked for current live revenue, cite the historical commercial proof and disclose that hosted billing was not verified in this run."
+      "Publish only booked revenue and paid-order proof from the billing summary or named pilot agreements."
     ]
   },
   "currentTruth": {
@@ -52,15 +46,15 @@
     "sourceRule": "Every listing, queue row, and pain-confirmed follow-up must inherit these sources before it is treated as operator-ready."
   },
   "snapshot": {
-    "paidOrders": 2,
-    "bookedRevenueCents": 2000,
-    "checkoutStarts": 0,
-    "ctaClicks": 0,
-    "visitors": 0,
-    "uniqueLeads": 0,
+    "paidOrders": 4,
+    "bookedRevenueCents": 14900,
+    "checkoutStarts": 78,
+    "ctaClicks": 210,
+    "visitors": 6316,
+    "uniqueLeads": 425,
     "sprintLeads": 0,
     "qualifiedSprintLeads": 0,
-    "latestPaidAt": null
+    "latestPaidAt": "2026-04-20T23:07:00.137Z"
   },
   "targets": [
     {
@@ -537,7 +531,7 @@
       "repoUrl": "https://github.com/Adqui9608/ai-code-review-agent",
       "description": "Review GitHub pull requests with AI to catch bugs, security issues, and code quality problems with built-in eval and observability",
       "stars": 0,
-      "updatedAt": "2026-05-04T11:25:19Z",
+      "updatedAt": "2026-05-04T14:50:57Z",
       "evidenceScore": 15,
       "evidence": [
         "workflow control surface",
@@ -622,7 +616,7 @@
       "repoUrl": "https://github.com/bherald/personal-life-os-core",
       "description": "Local-first personal automation platform for workflows, RAG/GraphRAG search, review queues, genealogy/media evidence, and operator-guided agents.",
       "stars": 0,
-      "updatedAt": "2026-05-03T13:29:02Z",
+      "updatedAt": "2026-05-04T14:22:45Z",
       "evidenceScore": 14,
       "evidence": [
         "workflow control surface",
@@ -703,7 +697,7 @@
       "repoUrl": "https://github.com/zaxbysauce/opencode-swarm",
       "description": "Architect-centric agentic swarm plugin for OpenCode. Hub-and-spoke orchestration with SME consultation, code generation, and QA review.",
       "stars": 297,
-      "updatedAt": "2026-05-04T08:16:52Z",
+      "updatedAt": "2026-05-04T12:10:59Z",
       "evidenceScore": 12,
       "evidence": [
         "workflow control surface",
@@ -764,40 +758,44 @@
       "temperature": "cold",
       "source": "github",
       "channel": "github",
-      "username": "jonathanmr22",
-      "accountName": "jonathanmr22",
+      "username": "iliaal",
+      "accountName": "iliaal",
       "company": "",
-      "contactUrl": "https://github.com/jonathanmr22",
+      "contactUrl": "http://ilia.ws/",
       "contactSurfaces": [
         {
+          "label": "Website",
+          "url": "http://ilia.ws/"
+        },
+        {
           "label": "GitHub profile",
-          "url": "https://github.com/jonathanmr22"
+          "url": "https://github.com/iliaal"
         },
         {
           "label": "Repository",
-          "url": "https://github.com/jonathanmr22/pact"
+          "url": "https://github.com/iliaal/whetstone"
         }
       ],
-      "websiteUrl": "",
-      "repoName": "pact",
-      "repoUrl": "https://github.com/jonathanmr22/pact",
-      "description": "Programmatic Agent Constraint Toolkit (PACT): Governance infrastructure for AI coding agents. Claude Code plugin marketplace.",
-      "stars": 14,
-      "updatedAt": "2026-05-04T11:28:57Z",
+      "websiteUrl": "http://ilia.ws/",
+      "repoName": "whetstone",
+      "repoUrl": "https://github.com/iliaal/whetstone",
+      "description": "AI-powered development tools. 19 agents, 22 commands, 30 skills, 1 hook, 1 MCP server for code review, research, design, and workflow automation.",
+      "stars": 13,
+      "updatedAt": "2026-05-03T10:39:51Z",
       "evidenceScore": 12,
       "evidence": [
         "workflow control surface",
         "agent infrastructure",
         "self-serve agent tooling",
-        "14 GitHub stars",
+        "13 GitHub stars",
         "updated in the last 7 days"
       ],
       "outreachAngle": "Lead with the proof-backed setup guide and local-first enforcement before any team-motion pitch.",
-      "evidenceSource": "https://github.com/jonathanmr22/pact",
+      "evidenceSource": "https://github.com/iliaal/whetstone",
       "evidenceSources": [
         {
           "label": "Target signal",
-          "url": "https://github.com/jonathanmr22/pact",
+          "url": "https://github.com/iliaal/whetstone",
           "reason": "Source of the workflow or buyer signal behind this outreach row."
         },
         {
@@ -820,34 +818,34 @@
       "motion": "pro",
       "motionLabel": "Pro at $19/mo or $149/yr",
       "motionReason": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
-      "pipelineLeadId": "github_jonathanmr22_pact",
+      "pipelineLeadId": "github_iliaal_whetstone",
       "pipelineStage": "targeted",
       "pipelineUpdatedAt": "",
       "nextOperatorAction": "Send the first-touch draft and log the outreach in the sales pipeline.",
       "offer": "pro_self_serve",
       "cta": "https://thumbgate-production.up.railway.app/guide",
       "proofPackTrigger": "Use proof pack only after the buyer confirms pain.",
-      "firstTouchDraft": "Hey @jonathanmr22, saw you're building around `pact`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
-      "painConfirmedFollowUpDraft": "If you want the self-serve path for `pact`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
-      "selfServeFollowUpDraft": "If you want the self-serve path for `pact`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro",
-      "checkoutCloseDraft": "If you are already comparing close options for `pact`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "firstTouchDraft": "Hey @iliaal, saw you're building around `whetstone`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
+      "painConfirmedFollowUpDraft": "If you want the self-serve path for `whetstone`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "selfServeFollowUpDraft": "If you want the self-serve path for `whetstone`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro",
+      "checkoutCloseDraft": "If you are already comparing close options for `whetstone`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
       "salesCommands": {
-        "markContacted": "npm run sales:pipeline -- advance --lead 'github_jonathanmr22_pact' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markReplied": "npm run sales:pipeline -- advance --lead 'github_jonathanmr22_pact' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_jonathanmr22_pact' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute diagnostic after the self-serve conversation exposed repeated pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_jonathanmr22_pact' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_jonathanmr22_pact' --channel 'manual' --stage 'sprint_intake' --note 'Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markPaid": "npm run sales:pipeline -- advance --lead 'github_jonathanmr22_pact' --channel 'manual' --stage 'paid' --note 'Closed Pro at $19/mo or $149/yr and booked revenue after resolving the proof-backed setup guide and local-first enforcement before any team-motion pitch.'"
+        "markContacted": "npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+        "markReplied": "npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+        "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute diagnostic after the self-serve conversation exposed repeated pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+        "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+        "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'sprint_intake' --note 'Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+        "markPaid": "npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'paid' --note 'Closed Pro at $19/mo or $149/yr and booked revenue after resolving the proof-backed setup guide and local-first enforcement before any team-motion pitch.'"
       },
-      "message": "Hey @jonathanmr22, saw you're building around `pact`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step."
+      "message": "Hey @iliaal, saw you're building around `whetstone`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step."
     }
   ],
-  "snapshotWindow": "historical-commercial-truth",
+  "snapshotWindow": "30d",
   "marketplaceCopy": {
-    "generatedAt": "2026-05-04T11:54:10.627Z",
+    "generatedAt": "2026-05-04T15:13:16.404Z",
     "state": "post-first-dollar",
     "headline": "Harden one AI-agent workflow before you roll it out.",
-    "shortDescription": "Harden one AI-agent workflow before you roll it out. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.",
+    "shortDescription": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.",
     "longDescription": "ThumbGate is a reliability gateway for AI coding workflows. It captures repeated failures, regenerates pre-action gates, and keeps approval boundaries, rollback safety, and proof attached to the workflow before the next risky tool call. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible. Primary motion: Workflow Hardening Sprint. Secondary motion: Pro at $19/mo or $149/yr after the buyer asks for the self-serve path.",
     "proofPolicy": "Do not lead with proof links. Use Commercial Truth and Verification Evidence only after the buyer confirms pain.",
     "recommendedCtas": [
@@ -923,7 +921,7 @@
         "examples": [
           "bherald/personal-life-os-core",
           "zaxbysauce/opencode-swarm",
-          "jonathanmr22/pact"
+          "iliaal/whetstone"
         ]
       }
     ],
@@ -1021,7 +1019,7 @@
         "sampleTargets": [
           "bherald/personal-life-os-core",
           "zaxbysauce/opencode-swarm",
-          "jonathanmr22/pact"
+          "iliaal/whetstone"
         ]
       }
     ],
@@ -1074,5 +1072,10 @@
       "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
       "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
     ]
-  }
+  },
+  "discoveryWarnings": [
+    "{\n\t\"message\": \"API rate limit exceeded for user ID 201209. If you reach out to GitHub Support for help, please include the request ID 8B24:2AE8B0:193F6AC:67EDE53:69F8B78A and timestamp 2026-05-04 15:13:14 UTC. For more on scraping GitHub and how it may affect your rights, please review our Terms of Service (https:\\/\\/docs.github.com\\/en\\/site-policy\\/github-terms\\/github-terms-of-service)\",\n\t\"documentation_url\": \"https://docs.github.com/en/rest/using-the-rest-api/getting-started-with-the-rest-api#rate-limiting\",\n\t\"status\": \"403\"\n}",
+    "{\n\t\"message\": \"API rate limit exceeded for user ID 201209. If you reach out to GitHub Support for help, please include the request ID 10E2:2C6AC8:164580F:58712C1:69F8B78B and timestamp 2026-05-04 15:13:15 UTC. For more on scraping GitHub and how it may affect your rights, please review our Terms of Service (https:\\/\\/docs.github.com\\/en\\/site-policy\\/github-terms\\/github-terms-of-service)\",\n\t\"documentation_url\": \"https://docs.github.com/en/rest/using-the-rest-api/getting-started-with-the-rest-api#rate-limiting\",\n\t\"status\": \"403\"\n}",
+    "{\n\t\"message\": \"API rate limit exceeded for user ID 201209. If you reach out to GitHub Support for help, please include the request ID 8B24:2AE8B0:193F9EB:67EEB75:69F8B78A and timestamp 2026-05-04 15:13:15 UTC. For more on scraping GitHub and how it may affect your rights, please review our Terms of Service (https:\\/\\/docs.github.com\\/en\\/site-policy\\/github-terms\\/github-terms-of-service)\",\n\t\"documentation_url\": \"https://docs.github.com/en/rest/using-the-rest-api/getting-started-with-the-rest-api#rate-limiting\",\n\t\"status\": \"403\"\n}"
+  ]
 }
