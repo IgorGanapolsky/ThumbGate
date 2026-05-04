@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.16.18
+
+### Patch Changes
+
+- [#1702](https://github.com/IgorGanapolsky/ThumbGate/pull/1702) [`0cf6325`](https://github.com/IgorGanapolsky/ThumbGate/commit/0cf6325dd9ee984d4d40fc4a32028e2df6fc650a) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Teach the May 2026 revenue machine to treat configured sprint payment links as an agent-ready promotion path instead of a blocked setup item.
+
 ## 1.16.17
 
 ### Patch Changes
