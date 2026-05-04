@@ -13,7 +13,7 @@ const {
   DIRECTORY_SOURCE,
   DIRECTORY_SURFACE,
   DOCS_PATH,
-  GLAMA_LEGACY_URL,
+  GLAMA_CANONICAL_URL,
   GLAMA_SEARCH_URL,
   MCP_SO_URL,
   PUNKPEYE_LIST_URL,
@@ -51,7 +51,7 @@ test('directory surfaces preserve the current repair priorities and evidence dat
   ]);
   assert.equal(pack.surfaces[0].surfaceUrl, MCP_SO_URL);
   assert.equal(pack.surfaces[1].surfaceUrl, GLAMA_SEARCH_URL);
-  assert.equal(pack.surfaces[1].submissionPath, GLAMA_LEGACY_URL);
+  assert.equal(pack.surfaces[1].submissionPath, GLAMA_CANONICAL_URL);
   assert.equal(pack.surfaces[2].surfaceUrl, SMITHERY_SEARCH_URL);
   assert.equal(pack.surfaces[2].submissionPath, 'https://smithery.ai/new');
   assert.equal(pack.surfaces[3].surfaceUrl, PUNKPEYE_LIST_URL);
@@ -64,9 +64,9 @@ test('operator queue focuses on repair before expansion', () => {
   const pack = buildMcpDirectoryRevenuePack(LINKS_FIXTURE);
 
   assert.deepEqual(pack.operatorQueue.map((entry) => entry.key), [
-    'repair_glama_slug',
+    'refresh_glama_metadata',
     'repair_smithery_namespace',
-    'update_punkpeye_entry',
+    'remove_punkpeye_legacy_duplicate',
     'add_appcypher_entry',
     'keep_mcp_so_canonical',
   ]);
@@ -124,7 +124,8 @@ test('rendered markdown stays operator-ready and names the legacy leaks explicit
   });
 
   assert.match(markdown, /MCP Directory Repair Pack/);
-  assert.match(markdown, /legacy `mcp-memory-gateway`/);
+  assert.match(markdown, /MCP Memory Gateway/);
+  assert.match(markdown, /mcp-memory-gateway/);
   assert.match(markdown, /`rlhf-loop\/thumbgate`/);
   assert.match(markdown, /punkpeye awesome-mcp-servers/);
   assert.match(markdown, /Proof-backed setup guide/);
@@ -167,7 +168,7 @@ test('CLI options and artifact writing emit markdown, JSON, and queue CSV', () =
   const json = JSON.parse(fs.readFileSync(path.join(tempDir, 'mcp-directory-revenue-pack.json'), 'utf8'));
   assert.equal(json.operatorQueue.length, 5);
   assert.equal(json.measurementPlan.northStar, 'directory_referral_to_paid_intent');
-  assert.match(fs.readFileSync(path.join(tempDir, 'mcp-directory-operator-queue.csv'), 'utf8'), /repair_glama_slug/);
+  assert.match(fs.readFileSync(path.join(tempDir, 'mcp-directory-operator-queue.csv'), 'utf8'), /refresh_glama_metadata/);
 });
 
 test('CLI entrypoint detection is path based', () => {
