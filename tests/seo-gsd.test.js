@@ -339,6 +339,27 @@ test('background agent governance page is discoverable and commercially classifi
   assert.match(html, /risk-tiered review/i);
 });
 
+test('AI agent governance sprint page routes bottom-funnel buyers into Team intake', () => {
+  const page = findSeoPageByPath('/guides/ai-agent-governance-sprint');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/ai-agent-governance-sprint');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'ai agent governance sprint');
+  assert.equal(page.intent, 'commercial');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-checks');
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/ai-agent-governance-sprint',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+  assert.match(html, /AI Agent Governance Sprint/);
+  assert.match(html, /48-hour Workflow Hardening Sprint/);
+  assert.match(html, /npx thumbgate background-governance --check --json/);
+  assert.match(html, /workflow-sprint-intake/);
+});
+
 test('GPT-5.5 model evaluation page is discoverable and commercially classified', () => {
   const page = findSeoPageByPath('/guides/gpt-5-5-model-evaluation');
   const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/gpt-5-5-model-evaluation');
@@ -482,6 +503,7 @@ test('writePlanOutputs persists machine-readable GSD artifacts', () => {
     assert.ok(pages.some((page) => page.path === '/guides/long-running-agent-context-management'));
     assert.ok(pages.some((page) => page.path === '/guides/reasoning-compression-guardrails'));
     assert.ok(pages.some((page) => page.path === '/guides/background-agent-governance'));
+    assert.ok(pages.some((page) => page.path === '/guides/ai-agent-governance-sprint'));
     assert.ok(pages.some((page) => page.path === '/guides/gpt-5-5-model-evaluation'));
     assert.ok(pages.some((page) => page.path === '/guides/ai-search-topical-presence'));
     assert.ok(pages.some((page) => page.path === '/guides/best-tools-stop-ai-agents-breaking-production'));
