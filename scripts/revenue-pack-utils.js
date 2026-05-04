@@ -252,6 +252,7 @@ function writeRevenuePackArtifacts({
   csvName,
   csvValue,
   csvArtifacts,
+  extraFiles,
 } = {}) {
   const resolvedReportDir = normalizeText(reportDir)
     ? path.resolve(repoRoot, reportDir)
@@ -261,6 +262,7 @@ function writeRevenuePackArtifacts({
     : (csvName
       ? [{ name: csvName, value: csvValue }]
       : []);
+  const sidecarFiles = Array.isArray(extraFiles) ? extraFiles : [];
   const docsDir = docsPath ? path.dirname(docsPath) : '';
 
   if (resolvedReportDir) {
@@ -270,6 +272,13 @@ function writeRevenuePackArtifacts({
       fs.writeFileSync(path.join(resolvedReportDir, jsonName), `${JSON.stringify(jsonValue, null, 2)}\n`, 'utf8');
     }
     for (const artifact of artifacts) {
+      const name = normalizeText(artifact?.name);
+      if (!name) {
+        continue;
+      }
+      fs.writeFileSync(path.join(resolvedReportDir, name), normalizeText(artifact?.value) ? artifact.value : '', 'utf8');
+    }
+    for (const artifact of sidecarFiles) {
       const name = normalizeText(artifact?.name);
       if (!name) {
         continue;
@@ -288,6 +297,13 @@ function writeRevenuePackArtifacts({
         fs.writeFileSync(path.join(docsDir, jsonName), `${JSON.stringify(jsonValue, null, 2)}\n`, 'utf8');
       }
       for (const artifact of artifacts) {
+        const name = normalizeText(artifact?.name);
+        if (!name) {
+          continue;
+        }
+        fs.writeFileSync(path.join(docsDir, name), normalizeText(artifact?.value) ? artifact.value : '', 'utf8');
+      }
+      for (const artifact of sidecarFiles) {
         const name = normalizeText(artifact?.name);
         if (!name) {
           continue;
