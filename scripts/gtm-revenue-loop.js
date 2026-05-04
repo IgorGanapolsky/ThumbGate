@@ -1610,11 +1610,14 @@ function buildMarketplaceCopy(report) {
     .filter((theme) => theme.count > 0)
     .sort((left, right) => right.count - left.count);
   const signalThemes = rankedSignalThemes.slice(0, 3);
-  const selfServeSignal = rankedSignalThemes.find((theme) => theme.key === 'self_serve_tooling');
-  if (selfServeSignal && !signalThemes.some((theme) => theme.key === selfServeSignal.key)) {
-    signalThemes.push(selfServeSignal);
+  for (const requiredThemeKey of ['production_rollout', 'self_serve_tooling']) {
+    const requiredTheme = rankedSignalThemes.find((theme) => theme.key === requiredThemeKey);
+    if (requiredTheme && !signalThemes.some((theme) => theme.key === requiredTheme.key)) {
+      signalThemes.push(requiredTheme);
+    }
   }
   const topTheme = signalThemes[0];
+  const selfServeSignal = signalThemes.find((theme) => theme.key === 'self_serve_tooling');
   const primaryMotion = normalizeText(report.directive?.primaryMotion) || 'sprint';
   const secondaryMotion = normalizeText(report.directive?.secondaryMotion) || 'pro';
   const headline = primaryMotion === 'sprint'

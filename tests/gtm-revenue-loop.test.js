@@ -1996,7 +1996,7 @@ test('marketplace copy pack stays tied to current revenue-loop evidence', () => 
         repoUrl: 'https://github.com/freema/mcp-jira-stdio',
         evidence: {
           score: 10,
-          evidence: ['workflow control surface', 'business-system integration'],
+          evidence: ['workflow control surface', 'business-system integration', 'production or platform workflow'],
           outreachAngle: 'Lead with approval boundaries, rollback safety, and proof.',
         },
         outreachAngle: 'Lead with approval boundaries, rollback safety, and proof.',
@@ -2053,9 +2053,11 @@ test('marketplace copy pack stays tied to current revenue-loop evidence', () => 
   assert.match(pack.recommendedCtas[2].cta, /\/checkout\/pro$/);
   assert.ok(pack.topSignals.some((signal) => /Warm discovery workflows/.test(signal.label)));
   assert.ok(pack.topSignals.some((signal) => /Business-system workflow approvals/.test(signal.label)));
+  assert.ok(pack.topSignals.some((signal) => /Production rollout proof/.test(signal.label)));
   assert.ok(pack.topSignals.some((signal) => /Self-serve agent tooling/.test(signal.label)));
   assert.ok(Array.isArray(pack.listingVariants));
   assert.ok(pack.listingVariants.some((variant) => /Warm discovery workflows/.test(variant.label)));
+  assert.ok(pack.listingVariants.some((variant) => /Production rollout proof/.test(variant.label)));
   assert.ok(pack.listingVariants.some((variant) => variant.primaryCta.label === 'Proof-backed setup guide'));
   assert.ok(pack.listingVariants.some((variant) => variant.secondaryCta.label === catalog.pro.label));
   assert.ok(pack.sampleTargets.some((target) => target.account === 'buildertools/codex-hook-pack'));
@@ -2063,6 +2065,8 @@ test('marketplace copy pack stays tied to current revenue-loop evidence', () => 
   assert.match(markdown, /Listing Variants/);
   assert.match(markdown, /Audience: Warm buyers who already named a repeated workflow failure\./);
   assert.match(markdown, /Headline: Turn one repeated AI-agent workflow failure into a proof-backed sprint\./);
+  assert.match(markdown, /Audience: Platform teams protecting production, release, incident, or compliance workflows\./);
+  assert.match(markdown, /Headline: Prove one production agent workflow is safe before the next rollout\./);
   assert.match(markdown, /Primary CTA: Proof-backed setup guide: https:\/\/thumbgate-production\.up\.railway\.app\/guide/);
   assert.match(markdown, /Proof Policy/);
   assert.match(markdown, /Evidence Backstop/);
@@ -2212,7 +2216,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
       selectedMotion: catalog.sprint,
       pipelineStage: 'targeted',
       evidenceScore: 9,
-      evidence: ['workflow control surface', '42 GitHub stars'],
+      evidence: ['workflow control surface', 'production or platform workflow', '42 GitHub stars'],
       evidenceSource: 'https://github.com/example/production-mcp-server',
       evidenceSources: [
         {
@@ -2289,6 +2293,8 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.match(marketplaceCopy.recommendedCtas[2].cta, /\/checkout\/pro$/);
     assert.ok(Array.isArray(marketplaceCopy.topSignals));
     assert.ok(Array.isArray(marketplaceCopy.listingVariants));
+    assert.ok(marketplaceCopy.topSignals.some((signal) => signal.key === 'production_rollout'));
+    assert.ok(marketplaceCopy.listingVariants.some((variant) => variant.key === 'production_rollout'));
     assert.ok(marketplaceCopy.listingVariants.some((variant) => /Warm discovery workflows|Workflow control surfaces/.test(variant.label)));
     assert.equal(JSON.parse(jsonl.trim()).repoName, 'production-mcp-server');
     assert.match(jsonl, /"pipelineLeadId":"reddit_builder_production_mcp_server"/);
