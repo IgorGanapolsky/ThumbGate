@@ -21,6 +21,97 @@ const OPERATOR_LAB_CAMPAIGN = 'operator_lab_launch';
 const SKOOL_OPERATOR_LAB_URL = 'https://www.skool.com/thumbgate-operator-lab-6000';
 const DEFAULT_LAUNCH_PLATFORMS = ['twitter', 'linkedin', 'instagram'];
 
+const OPERATOR_LAB_POSTS = {
+  twitter: {
+    source: 'x',
+    content: 'operator_lab_twitter',
+    separator: ' ',
+    lines: [
+      'Free ThumbGate Operator Lab: turn one repeated AI-agent mistake into one prevention rule.',
+    ],
+  },
+  linkedin: {
+    content: 'operator_lab_linkedin',
+    separator: '\n\n',
+    lines: [
+      'I started a free ThumbGate Operator Lab for people running AI coding agents in real repos.',
+      'The format is deliberately practical: bring one repeated Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, or MCP failure, and we turn it into a prevention rule, pre-action gate, or workflow-hardening teardown.',
+      'The best first win is narrow: one mistake, one rule, one blocked repeat.',
+    ],
+  },
+  instagram: {
+    content: 'operator_lab_instagram',
+    separator: '\n',
+    lines: [
+      'Stop repeated AI-agent mistakes.',
+      '',
+      'ThumbGate Operator Lab is open and free: bring one Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, or MCP failure and turn it into a prevention rule.',
+      '',
+    ],
+  },
+  reddit: {
+    content: 'operator_lab_reddit',
+    separator: '\n\n',
+    lines: [
+      'I started a free Skool group for people using AI coding agents in real repos.',
+      'The premise: post one repeated agent mistake, then turn it into a prevention rule or pre-action gate instead of another prompt tweak.',
+      'Useful for Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, and MCP workflows.',
+    ],
+  },
+  youtube: {
+    content: 'operator_lab_youtube',
+    separator: '\n',
+    lines: [
+      'Free ThumbGate Operator Lab: bring one repeated AI-agent mistake and turn it into a prevention rule.',
+      '',
+      'For Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, and MCP operators.',
+      '',
+    ],
+  },
+  tiktok: {
+    content: 'operator_lab_tiktok',
+    separator: '\n\n',
+    trailing: '#AIAgents #ClaudeCode #Cursor #DeveloperTools #ThumbGate',
+    lines: [
+      'Your AI coding agent keeps repeating the same mistake.',
+      'Bring it to the free ThumbGate Operator Lab. One failure becomes one prevention rule.',
+    ],
+  },
+};
+
+const CAMPAIGN_POSTS = [
+  {
+    slug: 'proof_pack',
+    posts: {
+      twitter: { content: 'campaign_proof_pack', source: 'x', separator: ' ', lines: ['AI coding agents do not need more hype. They need proof-backed workflow hardening.', 'ThumbGate turns thumbs-down feedback into a prevention rule that blocks the same mistake next session.', 'Proof pack:'] },
+      linkedin: { content: 'campaign_proof_pack', separator: ' ', lines: ['Workflow hardening beats generic AI hype.', 'ThumbGate captures failure signals, promotes them into prevention rules, and blocks the same bad pattern before the next tool call executes.', 'This is about one workflow becoming safe enough to ship, not abstract "agent memory."'] },
+      instagram: { raw: `${THUMBGATE_CAPTION}\n\nProof-backed workflow hardening.\n\n${buildLandingUrl('instagram', 'campaign_proof_pack')}` },
+      tiktok: { raw: 'Your AI agent has amnesia. Give it memory that survives restarts.\n\nThumbGate: proof-backed workflow hardening for coding agents.\n\n#AIAgents #DeveloperTools #ClaudeCode #ThumbGate' },
+      youtube: { content: 'campaign_proof_pack', separator: '\n\n', lines: ['Your AI agent has amnesia. Give it memory that survives restarts.', 'ThumbGate turns thumbs-down feedback into prevention rules that block mistakes permanently.'] },
+    },
+  },
+  {
+    slug: 'free_local',
+    posts: {
+      twitter: { content: 'campaign_free_local', source: 'x', separator: ' ', lines: ['The free path is the point.', 'ThumbGate runs local-first, keeps lesson state in .thumbgate, and blocks repeated coding-agent mistakes without a cloud account.'] },
+      linkedin: { content: 'campaign_free_local', separator: ' ', lines: ['Most AI tooling tries to sell a hosted layer first. ThumbGate does not.', 'The free local path gives you feedback capture, prevention rules, and blocking on your machine. Pro adds the personal dashboard and exports when the workflow is already valuable.'] },
+      instagram: { content: 'campaign_free_local', separator: '\n\n', lines: ['Your AI coding agent forgets everything between sessions.', 'ThumbGate keeps the feedback loop local, durable, and enforceable.'] },
+      tiktok: { raw: 'Free and local-first. ThumbGate blocks repeated AI coding mistakes without a cloud account.\n\nnpx thumbgate init\n\n#FreeDeveloperTools #AIAgents #OpenSource' },
+      youtube: { content: 'campaign_free_local', separator: '\n\n', lines: ['ThumbGate runs local-first. No cloud account needed. Feedback capture, prevention rules, and blocking — all on your machine.'] },
+    },
+  },
+  {
+    slug: 'checkout_path',
+    posts: {
+      twitter: { content: 'campaign_checkout_path', source: 'x', separator: ' ', lines: ['If your agent repeats the same repo mistake every week, the fix is not another prompt.', 'ThumbGate blocks known-bad patterns before the next tool call lands.', 'Free local path, Pro trial here:'] },
+      linkedin: { content: 'campaign_checkout_path', separator: ' ', lines: ['Repeated agent mistakes are a systems problem, not a prompt-writing problem.', 'ThumbGate turns explicit feedback into prevention rules and gives individual operators a paid path when they want the dashboard, exports, and check debugger.'] },
+      instagram: { content: 'campaign_checkout_path', separator: '\n\n', lines: ['ThumbGate turns thumbs-down feedback into a prevention rule.', 'Next session, the same mistake gets blocked.'] },
+      tiktok: { raw: 'Stop your AI agent from repeating the same mistake. One thumbs-down = permanent block.\n\nFree to start. Pro when you need the dashboard.\n\n#ThumbGate #AIAgents #DeveloperTools' },
+      youtube: { content: 'campaign_checkout_path', separator: '\n\n', lines: ['Repeated agent mistakes are a systems problem. ThumbGate blocks known-bad patterns before the next tool call executes.', 'Free local path. Pro adds dashboard and exports.'] },
+    },
+  },
+];
+
 function parseArgs(argv = []) {
   const options = {
     dryRun: false,
@@ -109,67 +200,26 @@ function buildOperatorLabUrl(platform, content) {
   });
 }
 
+function renderTrackedPost(spec, platform, urlBuilder) {
+  if (spec.raw) return spec.raw;
+  const lines = Array.isArray(spec.lines) ? spec.lines : [];
+  const trackedUrl = urlBuilder(platform, spec.content);
+  return [...lines, trackedUrl, spec.trailing].filter((line) => line !== undefined).join(spec.separator || ' ');
+}
+
 function buildOperatorLabPost(platform) {
   const normalized = String(platform || '').trim().toLowerCase();
-
-  if (normalized === 'twitter' || normalized === 'x') {
-    return [
-      'Free ThumbGate Operator Lab: turn one repeated AI-agent mistake into one prevention rule.',
-      buildOperatorLabUrl('x', 'operator_lab_twitter'),
-    ].join(' ');
+  const key = normalized === 'x' ? 'twitter' : normalized;
+  const spec = OPERATOR_LAB_POSTS[key];
+  if (spec) {
+    return renderTrackedPost(spec, spec.source || key, buildOperatorLabUrl);
   }
-
-  if (normalized === 'linkedin') {
-    return [
-      'I started a free ThumbGate Operator Lab for people running AI coding agents in real repos.',
-      'The format is deliberately practical: bring one repeated Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, or MCP failure, and we turn it into a prevention rule, pre-action gate, or workflow-hardening teardown.',
-      'The best first win is narrow: one mistake, one rule, one blocked repeat.',
-      buildOperatorLabUrl('linkedin', 'operator_lab_linkedin'),
-    ].join('\n\n');
-  }
-
-  if (normalized === 'instagram') {
-    return [
-      'Stop repeated AI-agent mistakes.',
-      '',
-      'ThumbGate Operator Lab is open and free: bring one Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, or MCP failure and turn it into a prevention rule.',
-      '',
-      buildOperatorLabUrl('instagram', 'operator_lab_instagram'),
-    ].join('\n');
-  }
-
-  if (normalized === 'reddit') {
-    return [
-      'I started a free Skool group for people using AI coding agents in real repos.',
-      'The premise: post one repeated agent mistake, then turn it into a prevention rule or pre-action gate instead of another prompt tweak.',
-      'Useful for Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, and MCP workflows.',
-      buildOperatorLabUrl('reddit', 'operator_lab_reddit'),
-    ].join('\n\n');
-  }
-
-  if (normalized === 'youtube') {
-    return [
-      'Free ThumbGate Operator Lab: bring one repeated AI-agent mistake and turn it into a prevention rule.',
-      '',
-      'For Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, and MCP operators.',
-      '',
-      buildOperatorLabUrl('youtube', 'operator_lab_youtube'),
-    ].join('\n');
-  }
-
-  if (normalized === 'tiktok') {
-    return [
-      'Your AI coding agent keeps repeating the same mistake.',
-      'Bring it to the free ThumbGate Operator Lab. One failure becomes one prevention rule.',
-      buildOperatorLabUrl('tiktok', 'operator_lab_tiktok'),
-      '#AIAgents #ClaudeCode #Cursor #DeveloperTools #ThumbGate',
-    ].join('\n\n');
-  }
-
-  return [
-    'ThumbGate Operator Lab is a free community for turning repeated AI-agent mistakes into prevention rules and pre-action gates.',
-    buildOperatorLabUrl(normalized || 'zernio', `operator_lab_${normalized || 'generic'}`),
-  ].join(' ');
+  const fallbackKey = normalized || 'zernio';
+  return renderTrackedPost({
+    content: `operator_lab_${fallbackKey || 'generic'}`,
+    separator: ' ',
+    lines: ['ThumbGate Operator Lab is a free community for turning repeated AI-agent mistakes into prevention rules and pre-action gates.'],
+  }, fallbackKey, buildOperatorLabUrl);
 }
 
 function buildPlatformPost(platform, offer = 'launch') {
@@ -219,73 +269,13 @@ function buildPlatformPost(platform, offer = 'launch') {
 }
 
 function buildCampaignEntries() {
-  return [
-    {
-      slug: 'proof_pack',
-      posts: {
-        twitter: [
-          'AI coding agents do not need more hype. They need proof-backed workflow hardening.',
-          'ThumbGate turns thumbs-down feedback into a prevention rule that blocks the same mistake next session.',
-          'Proof pack:',
-          buildLandingUrl('x', 'campaign_proof_pack'),
-        ].join(' '),
-        linkedin: [
-          'Workflow hardening beats generic AI hype.',
-          'ThumbGate captures failure signals, promotes them into prevention rules, and blocks the same bad pattern before the next tool call executes.',
-          'This is about one workflow becoming safe enough to ship, not abstract "agent memory."',
-          buildLandingUrl('linkedin', 'campaign_proof_pack'),
-        ].join(' '),
-        instagram: `${THUMBGATE_CAPTION}\n\nProof-backed workflow hardening.\n\n${buildLandingUrl('instagram', 'campaign_proof_pack')}`,
-        tiktok: `Your AI agent has amnesia. Give it memory that survives restarts.\n\nThumbGate: proof-backed workflow hardening for coding agents.\n\n#AIAgents #DeveloperTools #ClaudeCode #ThumbGate`,
-        youtube: `Your AI agent has amnesia. Give it memory that survives restarts.\n\nThumbGate turns thumbs-down feedback into prevention rules that block mistakes permanently.\n\n${buildLandingUrl('youtube', 'campaign_proof_pack')}`,
-      },
-    },
-    {
-      slug: 'free_local',
-      posts: {
-        twitter: [
-          'The free path is the point.',
-          'ThumbGate runs local-first, keeps lesson state in .thumbgate, and blocks repeated coding-agent mistakes without a cloud account.',
-          buildLandingUrl('x', 'campaign_free_local'),
-        ].join(' '),
-        linkedin: [
-          'Most AI tooling tries to sell a hosted layer first. ThumbGate does not.',
-          'The free local path gives you feedback capture, prevention rules, and blocking on your machine. Pro adds the personal dashboard and exports when the workflow is already valuable.',
-          buildLandingUrl('linkedin', 'campaign_free_local'),
-        ].join(' '),
-        instagram: [
-          'Your AI coding agent forgets everything between sessions.',
-          'ThumbGate keeps the feedback loop local, durable, and enforceable.',
-          buildLandingUrl('instagram', 'campaign_free_local'),
-        ].join('\n\n'),
-        tiktok: `Free and local-first. ThumbGate blocks repeated AI coding mistakes without a cloud account.\n\nnpx thumbgate init\n\n#FreeDeveloperTools #AIAgents #OpenSource`,
-        youtube: `ThumbGate runs local-first. No cloud account needed. Feedback capture, prevention rules, and blocking — all on your machine.\n\n${buildLandingUrl('youtube', 'campaign_free_local')}`,
-      },
-    },
-    {
-      slug: 'checkout_path',
-      posts: {
-        twitter: [
-          'If your agent repeats the same repo mistake every week, the fix is not another prompt.',
-          'ThumbGate blocks known-bad patterns before the next tool call lands.',
-          'Free local path, Pro trial here:',
-          buildLandingUrl('x', 'campaign_checkout_path'),
-        ].join(' '),
-        linkedin: [
-          'Repeated agent mistakes are a systems problem, not a prompt-writing problem.',
-          'ThumbGate turns explicit feedback into prevention rules and gives individual operators a paid path when they want the dashboard, exports, and check debugger.',
-          buildLandingUrl('linkedin', 'campaign_checkout_path'),
-        ].join(' '),
-        instagram: [
-          'ThumbGate turns thumbs-down feedback into a prevention rule.',
-          'Next session, the same mistake gets blocked.',
-          buildLandingUrl('instagram', 'campaign_checkout_path'),
-        ].join('\n\n'),
-        tiktok: `Stop your AI agent from repeating the same mistake. One thumbs-down = permanent block.\n\nFree to start. Pro when you need the dashboard.\n\n#ThumbGate #AIAgents #DeveloperTools`,
-        youtube: `Repeated agent mistakes are a systems problem. ThumbGate blocks known-bad patterns before the next tool call executes.\n\nFree local path. Pro adds dashboard and exports.\n\n${buildLandingUrl('youtube', 'campaign_checkout_path')}`,
-      },
-    },
-  ];
+  return CAMPAIGN_POSTS.map(({ slug, posts }) => ({
+    slug,
+    posts: Object.fromEntries(Object.entries(posts).map(([platform, spec]) => [
+      platform,
+      renderTrackedPost(spec, spec.source || platform, buildLandingUrl),
+    ])),
+  }));
 }
 
 function defaultCampaignSchedule(now = new Date()) {
