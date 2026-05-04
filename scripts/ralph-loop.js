@@ -12,6 +12,8 @@ const {
   DEFAULT_TIMEZONE,
 } = require('./social-analytics/engagement-audit');
 const { buildRewardReport } = require('./agent-reward-model');
+const { buildStackSurvivalAudit } = require('./agent-stack-survival-audit');
+const { buildTraceAnalytics, loadReasoningTraces } = require('./agent-reasoning-traces');
 const { loadEpisodes } = require('./session-episode-store');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
@@ -224,6 +226,20 @@ function buildRalphSteps(options = {}, env = process.env) {
   });
 
   steps.push({
+    id: 'trace-intelligence',
+    stage: 'prove',
+    type: 'internal',
+    description: 'Analyzes observable agent reasoning traces for shape drift, missing verification, and eval-ready gate tuples.',
+  });
+
+  steps.push({
+    id: 'stack-survival-audit',
+    stage: 'prove',
+    type: 'internal',
+    description: 'Checks that ThumbGate stays context-rich, modular, sandboxed, and thin as AI scaffolding collapses.',
+  });
+
+  steps.push({
     id: 'engagement-audit',
     stage: 'prove',
     type: 'internal',
@@ -267,6 +283,14 @@ function runRewardStep() {
   });
 }
 
+function runTraceStep() {
+  return buildTraceAnalytics(loadReasoningTraces());
+}
+
+function runStackSurvivalStep() {
+  return buildStackSurvivalAudit();
+}
+
 function runStep(step, options = {}, deps = {}) {
   const startedAt = new Date().toISOString();
 
@@ -289,6 +313,28 @@ function runStep(step, options = {}, deps = {}) {
         stage: step.stage,
         status: 'passed',
         reward,
+        startedAt,
+        finishedAt: new Date().toISOString(),
+      };
+    }
+    if (step.id === 'trace-intelligence') {
+      const trace = runTraceStep();
+      return {
+        id: step.id,
+        stage: step.stage,
+        status: 'passed',
+        trace,
+        startedAt,
+        finishedAt: new Date().toISOString(),
+      };
+    }
+    if (step.id === 'stack-survival-audit') {
+      const stack = runStackSurvivalStep();
+      return {
+        id: step.id,
+        stage: step.stage,
+        status: 'passed',
+        stack,
         startedAt,
         finishedAt: new Date().toISOString(),
       };
@@ -356,6 +402,18 @@ function renderMarkdownReport(report) {
     `- Average reward: ${report.reward?.averageReward ?? 0}`,
     `- Gate candidates: ${report.reward?.gateCandidates?.length ?? 0}`,
     '',
+    '## Trace Intelligence',
+    '',
+    `- Traces analyzed: ${report.trace?.tracesAnalyzed ?? 0}`,
+    `- Average shape score: ${report.trace?.averageShapeScore ?? 0}`,
+    `- Trace gate candidates: ${report.trace?.gateCandidates?.length ?? 0}`,
+    '',
+    '## Stack Survival',
+    '',
+    `- Verdict: ${report.stack?.verdict ?? 'unknown'}`,
+    `- Overall score: ${report.stack?.overallScore ?? 0}`,
+    `- High-ROI actions: ${report.stack?.highRoiActions?.length ?? 0}`,
+    '',
     '## Audit',
     '',
     `- Checked: ${report.audit.totals.checked}`,
@@ -392,6 +450,10 @@ function runRalphLoop(options = {}, deps = {}) {
   const audit = auditStep?.audit ? auditStep.audit : runAuditStep(normalized);
   const rewardStep = results.find((step) => step.id === 'reward-report');
   const reward = rewardStep?.reward ? rewardStep.reward : runRewardStep();
+  const traceStep = results.find((step) => step.id === 'trace-intelligence');
+  const trace = traceStep?.trace ? traceStep.trace : runTraceStep();
+  const stackStep = results.find((step) => step.id === 'stack-survival-audit');
+  const stack = stackStep?.stack ? stackStep.stack : runStackSurvivalStep();
   const report = {
     generatedAt: new Date().toISOString(),
     mode: normalized.mode,
@@ -400,6 +462,8 @@ function runRalphLoop(options = {}, deps = {}) {
     statePaths: RALPH_STATE_PATHS,
     steps: results,
     reward,
+    trace,
+    stack,
     audit,
   };
   report.artifacts = writeReports(report, normalized.artifactDir || DEFAULT_ARTIFACT_DIR);
