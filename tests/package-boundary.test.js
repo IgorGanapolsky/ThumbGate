@@ -258,9 +258,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 3.22 MB → 3.29 MB (2026-05-04) for RLSD-style trace credit export
   // and the final high-ROI runtime docs/assets in this branch. Observed
   // unpacked size is ~3.265 MB; the remaining margin is intentionally narrow.
+  // Bumped 3.29 MB → 3.31 MB (2026-05-04) for the packaged LLM behavior
+  // monitor CLI. Observed unpacked size is ~3.293 MB; the margin stays narrow.
   assert.ok(
-    manifest.unpackedSize <= 3_290_000,
-    `npm package should stay <= 3.29 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_310_000,
+    `npm package should stay <= 3.31 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
