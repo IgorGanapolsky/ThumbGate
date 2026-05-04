@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-05-04T05:14:25.441Z",
+  "generatedAt": "2026-05-04T11:45:22.326Z",
   "summary": {
     "revenueState": "cold-start",
     "headline": "Turn Roo shutdown urgency into memory-portable paid intent.",
     "warmTargets": 4,
     "selfServeTargets": 3,
-    "sprintTargets": 7,
-    "workflowControlTargets": 6,
-    "businessSystemTargets": 3
+    "sprintTargets": 13,
+    "workflowControlTargets": 10,
+    "businessSystemTargets": 8
   },
   "rows": [
     {
@@ -40,7 +40,7 @@
       "channel": "linkedin_or_founder_dm",
       "pipelineStage": "targeted",
       "audience": "Team owner migrating one risky workflow off Roo",
-      "evidence": "6 workflow-control target(s), 3 business-system target(s), and 7 sprint-fit target(s) currently favor a workflow-hardening motion over a generic plugin pitch.",
+      "evidence": "10 workflow-control target(s), 8 business-system target(s), and 13 sprint-fit target(s) currently favor a workflow-hardening motion over a generic plugin pitch.",
       "whyNow": "The shutdown creates urgency, but the strongest monetizable angle is one risky workflow with approval boundaries, rollback risk, or handoff failures.",
       "proofRule": "Lead with one workflow-hardening offer. Send proof only after the buyer names the workflow risk.",
       "cta": "https://thumbgate-production.up.railway.app/?utm_source=roo_sunset&utm_medium=operator_outreach&utm_campaign=roo_outreach_sprint&utm_content=workflow_sprint&campaign_variant=migration_workflow&offer_code=ROO-OUTREACH_SPRINT&cta_id=roo_outreach_sprint&cta_placement=outreach_draft&surface=roo_outreach#workflow-sprint-intake",
