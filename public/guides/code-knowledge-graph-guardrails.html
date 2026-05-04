@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Code Knowledge Graph Guardrails | ThumbGate Guide</title>
+  <meta name="description" content="Use code knowledge graphs as context and ThumbGate as the enforcement layer that blocks risky AI coding agent actions before execution." />
+  <meta property="og:title" content="Code Knowledge Graph Guardrails | ThumbGate Guide" />
+  <meta property="og:description" content="Code graphs tell the agent what the system is. ThumbGate decides what the agent is allowed to do next." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/guides/code-knowledge-graph-guardrails" />
+  <link rel="canonical" href="https://thumbgate.ai/guides/code-knowledge-graph-guardrails" />
+  <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --panel: #151518;
+      --line: #25252a;
+      --text: #ececf1;
+      --muted: #a0a0aa;
+      --cyan: #22d3ee;
+      --green: #4ade80;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar { border-bottom: 1px solid var(--line); background: rgba(10, 10, 11, 0.92); }
+    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; padding-bottom: 14px; }
+    .brand { color: var(--text); font-weight: 750; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow { color: var(--cyan); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    h1 { max-width: 760px; margin: 14px 0; font-size: clamp(34px, 5vw, 56px); line-height: 1.06; }
+    .hero p { max-width: 760px; color: var(--muted); font-size: 18px; }
+    .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 22px; padding-bottom: 72px; }
+    .section, .side { border: 1px solid var(--line); background: var(--panel); border-radius: 14px; padding: 24px; margin-bottom: 18px; }
+    h2 { margin: 0 0 12px; font-size: 24px; }
+    h3 { margin: 18px 0 8px; }
+    p, li { color: var(--muted); }
+    .quote { color: var(--text); border-left: 3px solid var(--green); padding-left: 14px; font-size: 20px; }
+    .cta { display: inline-flex; margin-top: 14px; padding: 12px 16px; border-radius: 10px; background: var(--cyan); color: #071116; font-weight: 800; }
+    code { color: #d8f7ff; }
+    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Code Knowledge Graph Guardrails for AI Coding Agents",
+    "description": "Use code knowledge graphs as context and ThumbGate as the enforcement layer before risky AI coding agent actions execute.",
+    "about": ["code knowledge graph", "AI coding agent guardrails", "pre-action checks", "diff impact analysis"]
+  }
+  </script>
+</head>
+<body>
+  <nav class="topbar">
+    <div class="container">
+      <a class="brand" href="/">ThumbGate</a>
+      <a href="/guide.html">Setup guide</a>
+    </div>
+  </nav>
+  <main>
+    <section class="hero">
+      <div class="container">
+        <div class="eyebrow">Knowledge Graph Safety</div>
+        <h1>Code graphs are context. ThumbGate is execution control.</h1>
+        <p>Tools such as Understand Anything and code-graph MCPs help an agent see files, functions, dependencies, and architecture layers. ThumbGate turns that context into pre-action checks before the agent edits, runs, deploys, or publishes.</p>
+      </div>
+    </section>
+    <div class="container grid">
+      <article>
+        <section class="section">
+          <h2>The Wedge</h2>
+          <p class="quote">Code graphs tell the agent what the system is. ThumbGate decides what the agent is allowed to do next.</p>
+          <p>That makes code graphs and ThumbGate adjacent layers, not substitutes. The graph supplies risk signals. ThumbGate enforces the next-action policy.</p>
+        </section>
+        <section class="section">
+          <h2>High-ROI Gates</h2>
+          <h3>Require diff impact before central edits</h3>
+          <p>If a graph marks a file as central or critical, a write or patch should require impact review first.</p>
+          <h3>Checkpoint cross-layer refactors</h3>
+          <p>If one run crosses API, service, data, and UI layers, require a checkpoint before the blast radius expands.</p>
+          <h3>Protect generated graph artifacts</h3>
+          <p>Knowledge-graph output should be regenerated from source, not hand-edited by the agent.</p>
+        </section>
+        <section class="section">
+          <h2>Rollout</h2>
+          <ol>
+            <li>Generate or refresh the code graph.</li>
+            <li>Label central files, architectural layers, and generated graph outputs.</li>
+            <li>Enable the <code>Knowledge Graph Safety</code> templates in ThumbGate.</li>
+            <li>Run one real AI coding task and capture thumbs-down corrections.</li>
+            <li>Promote repeated corrections into narrower pre-action rules.</li>
+          </ol>
+        </section>
+      </article>
+      <aside>
+        <div class="side">
+          <h2>Best Fit</h2>
+          <p>Teams already using graph-based code understanding, agent onboarding dashboards, or diff-impact analysis.</p>
+          <a class="cta" href="/guide.html?utm_source=seo_guide&utm_medium=code_graph_guardrails&utm_campaign=knowledge_graph_safety">Install ThumbGate</a>
+        </div>
+        <div class="side">
+          <h2>Related</h2>
+          <p><a href="/guides/pre-action-checks">Pre-Action Checks</a></p>
+          <p><a href="/guides/agent-harness-optimization">Agent Harness Optimization</a></p>
+          <p><a href="/guides/best-tools-stop-ai-agents-breaking-production">Best Tools to Stop AI Agents From Breaking Production</a></p>
+        </div>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>

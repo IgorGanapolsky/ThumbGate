@@ -426,6 +426,7 @@ test('public landing page internally links to comparison and guide pages without
   assert.match(landingPage, /href="\/compare\/mem0"/);
   assert.match(landingPage, /href="\/guides\/pre-action-checks"/);
   assert.match(landingPage, /href="\/guides\/agent-harness-optimization"/);
+  assert.match(landingPage, /href="\/guides\/code-knowledge-graph-guardrails"/);
   assert.match(landingPage, /href="\/guides\/background-agent-governance"/);
   assert.match(landingPage, /href="\/guides\/gpt-5-5-model-evaluation"/);
   assert.match(landingPage, /href="\/guides\/ai-search-topical-presence"/);
@@ -439,6 +440,7 @@ test('public landing page internally links to comparison and guide pages without
   assert.match(landingPage, /href="\/guides\/autoresearch-agent-safety"/);
   assert.match(landingPage, /Autoresearch Safety for Self-Improving Agents/);
   assert.match(landingPage, /AI Agent Harness Optimization/);
+  assert.match(landingPage, /Code Knowledge Graph Guardrails/);
   assert.match(landingPage, /Background Agent Governance/);
   assert.match(landingPage, /risk-tiered review/);
   assert.match(landingPage, /AI Search Topical Presence/);
