@@ -11,6 +11,9 @@ const DEFAULT_INTERVAL_MINUTES = 15;
 const DEFAULT_TRACKED_THREADS = 'https://www.reddit.com/r/ClaudeCode/comments/1szi5qp/';
 const DEFAULT_REPO_DIR = path.resolve(__dirname, '..');
 const LAUNCHCTL = '/bin/launchctl';
+const LAUNCHCTL_ENV = Object.freeze({
+  PATH: '/usr/bin:/bin:/usr/sbin:/sbin',
+});
 
 function escapePlistString(value) {
   return String(value || '')
@@ -69,25 +72,29 @@ function plistPathForLabel(label = DEFAULT_LABEL) {
   return path.join(os.homedir(), 'Library', 'LaunchAgents', `${label}.plist`);
 }
 
+function runLaunchctl(args, stdio) {
+  return cp.execFileSync(LAUNCHCTL, args, { env: LAUNCHCTL_ENV, stdio });
+}
+
 function loadLaunchAgent(plistPath) {
   const uid = typeof process.getuid === 'function' ? process.getuid() : null;
   if (uid !== null) {
     try {
-      cp.execFileSync(LAUNCHCTL, ['bootout', `gui/${uid}`, plistPath], { stdio: 'ignore' });
+      runLaunchctl(['bootout', `gui/${uid}`, plistPath], 'ignore');
     } catch {
       // Ignore if the agent was not loaded yet.
     }
-    cp.execFileSync(LAUNCHCTL, ['bootstrap', `gui/${uid}`, plistPath], { stdio: 'pipe' });
-    cp.execFileSync(LAUNCHCTL, ['enable', `gui/${uid}/${path.basename(plistPath, '.plist')}`], { stdio: 'pipe' });
+    runLaunchctl(['bootstrap', `gui/${uid}`, plistPath], 'pipe');
+    runLaunchctl(['enable', `gui/${uid}/${path.basename(plistPath, '.plist')}`], 'pipe');
     return;
   }
 
   try {
-    cp.execFileSync(LAUNCHCTL, ['unload', plistPath], { stdio: 'ignore' });
+    runLaunchctl(['unload', plistPath], 'ignore');
   } catch {
     // Ignore if the agent was not loaded yet.
   }
-  cp.execFileSync(LAUNCHCTL, ['load', '-w', plistPath], { stdio: 'pipe' });
+  runLaunchctl(['load', '-w', plistPath], 'pipe');
 }
 
 function installRedditMonitorLaunchAgent(options = {}) {
@@ -176,10 +183,13 @@ module.exports = {
   DEFAULT_INTERVAL_MINUTES,
   DEFAULT_LABEL,
   DEFAULT_TRACKED_THREADS,
+  LAUNCHCTL_ENV,
   buildRedditMonitorPlist,
   escapePlistString,
   installRedditMonitorLaunchAgent,
   isCliInvocation,
+  loadLaunchAgent,
   parseArgs,
   plistPathForLabel,
+  runLaunchctl,
 };
