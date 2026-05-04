@@ -33,8 +33,8 @@ const {
   formatHistoricalRevenueProofLine,
   renderMarketplaceCopyMarkdown,
   renderOperatorHandoffMarkdown,
-  renderOperatorSendNowCsv,
   renderOperatorSendNowMarkdown,
+  renderOperatorSendNowCsv,
   renderRevenueLoopMarkdown,
   renderTeamOutreachMessagesMarkdown,
   resolveRevenueLoopSummary,
@@ -2672,6 +2672,7 @@ test('operator send-now export flattens ranked handoff rows for batch ops', () =
   };
 
   const payload = buildOperatorSendNowPayload(report);
+  const markdown = renderOperatorSendNowMarkdown(report);
   const csv = renderOperatorSendNowCsv(report);
 
   assert.equal(payload.rows.length, 1);
@@ -2684,6 +2685,12 @@ test('operator send-now export flattens ranked handoff rows for batch ops', () =
   assert.match(csv, /Reddit DM: https:\/\/www\.reddit\.com\/user\/builder\//);
   assert.match(csv, /Target signal: https:\/\/github\.com\/example\/production-mcp-server; Commercial truth:/);
   assert.match(csv, /I can harden one workflow, then prove it\./);
+  assert.match(markdown, /Contact surface: https:\/\/www\.reddit\.com\/user\/builder\//);
+  assert.match(markdown, /Contact surfaces: Reddit DM: https:\/\/www\.reddit\.com\/user\/builder\//);
+  assert.match(markdown, /Company: Builder Labs/);
+  assert.match(markdown, /Log after call booked: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
+  assert.match(markdown, /Log after sprint intake: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
+  assert.match(markdown, /Log after paid: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
 });
 
 test('operator send-now markdown includes historical proof when commercial truth drives the fallback', () => {

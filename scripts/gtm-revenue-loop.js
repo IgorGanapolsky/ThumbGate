@@ -2376,6 +2376,10 @@ function renderOperatorSendNowMarkdown(report) {
             ? `@${row.username} - ${row.repoName}`
             : `@${row.username} - ${row.accountName || row.source || 'discovery lead'}`;
           const whyNow = normalizeText(row.whyNow) || 'n/a';
+          const contactSurface = normalizeText(row.contactSurface)
+            || normalizeText(row.repoUrl)
+            || 'n/a';
+          const contactSurfaces = renderContactSurfaces(row.contactSurfaces);
           return [
             `### ${row.rank}. ${label}`,
             `- Channel: ${row.source || 'github'} / ${row.channel || row.source || 'github'}`,
@@ -2386,10 +2390,16 @@ function renderOperatorSendNowMarkdown(report) {
             `- Motion: ${row.motionLabel || 'n/a'}`,
             `- Why now: ${whyNow}`,
             `- Proof rule: ${row.proofRule || 'Use proof pack only after the buyer confirms pain.'}`,
+            `- Contact surface: ${contactSurface}`,
+            `- Contact surfaces: ${contactSurfaces}`,
+            `- Company: ${row.company || 'n/a'}`,
             `- CTA: ${row.cta || 'n/a'}`,
             `- Log after send: \`${row.markContactedCommand || 'n/a'}\``,
             `- Log after pain-confirmed reply: \`${row.markRepliedCommand || 'n/a'}\``,
+            `- Log after call booked: \`${row.markCallBookedCommand || 'n/a'}\``,
             `- Log after checkout started: \`${row.markCheckoutStartedCommand || 'n/a'}\``,
+            `- Log after sprint intake: \`${row.markSprintIntakeCommand || 'n/a'}\``,
+            `- Log after paid: \`${row.markPaidCommand || 'n/a'}\``,
             '',
             'First-touch draft:',
             ...renderQuotedText(row.firstTouchDraft),
@@ -2832,8 +2842,8 @@ module.exports = {
   buildOperatorHandoffPayload,
   buildOperatorSendNowPayload,
   renderOperatorHandoffMarkdown,
-  renderOperatorSendNowCsv,
   renderOperatorSendNowMarkdown,
+  renderOperatorSendNowCsv,
   renderTeamOutreachMessagesMarkdown,
   resolveRevenueLoopSummary,
   runRevenueLoop,
