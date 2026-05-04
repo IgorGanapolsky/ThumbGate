@@ -1191,6 +1191,106 @@
     "imageAlt": "ThumbGate guide for RAG Precision Tuning Can Break Agentic Pipelines Quietly"
   },
   {
+    "path": "/guides/internal-ai-engineering-stack-guardrails",
+    "slug": "guides-internal-ai-engineering-stack-guardrails",
+    "query": "internal ai engineering stack guardrails",
+    "pillar": "ai-stack-governance",
+    "intent": "commercial",
+    "pageType": "guide",
+    "persona": "engineering-lead",
+    "opportunityScore": 83,
+    "title": "Internal AI Engineering Stack Guardrails | ThumbGate Guide",
+    "description": "AI coding adoption scales when the platform has a model gateway, progressive MCP discovery, fresh AGENTS.md and LLM wiki context, risk-tiered AI review, and...",
+    "heroTitle": "Internal AI Engineering Stacks Need Pre-Action Enforcement",
+    "heroSummary": "AI coding adoption scales when the platform has a model gateway, progressive MCP discovery, fresh AGENTS.md and LLM wiki context, risk-tiered AI review, and sandboxed background agents. ThumbGate turns those layers into checks before unsafe agent work ships.",
+    "takeaways": [
+      "A central AI gateway or proxy keeps model keys, spend, attribution, routing, and retention policy out of individual laptops.",
+      "MCP portals need progressive discovery or code-mode search/execute tools before schema overhead eats the agent context window.",
+      "AGENTS.md and LLM wiki pages become useful only when source-backed freshness gates keep repo instructions current.",
+      "Risk-tiered AI review and sandboxed background agents let teams automate more work without losing standards, logs, or isolation."
+    ],
+    "sections": [
+      {
+        "heading": "Why this helps ThumbGate make money",
+        "paragraphs": [
+          "Cloudflare described the enterprise version of a pattern ThumbGate can sell to smaller teams today: the value is not a clever prompt, it is the wiring between access, model routing, tool portals, repo context, review, standards, and durable agent execution.",
+          "ThumbGate is the enforcement layer for that stack. It can block direct provider keys, warn on MCP schema bloat, require AGENTS.md and LLM wiki freshness, demand rule-cited review, and stop background agents that are not isolated before the next action runs."
+        ]
+      },
+      {
+        "heading": "The high-ROI stack gates",
+        "bullets": [
+          "AI gateway gate: require one model proxy or gateway before adding providers, clients, BYOK paths, or high-volume coding assistants.",
+          "MCP portal gate: collapse large tool surfaces behind progressive discovery or code-mode search/execute so every prompt does not preload every schema.",
+          "AGENTS.md and LLM wiki freshness gate: regenerate short repo context from source metadata, ownership, tests, and dependency maps before agent runs rely on it.",
+          "AI review gate: classify changes by risk tier, cite standards-as-skills, and separate security, code quality, performance, docs, and release-impact findings.",
+          "Background agent sandbox gate: require isolated clone/build/test execution, durable logs, and resumable sessions before unattended agents can publish, deploy, or touch revenue workflows."
+        ]
+      },
+      {
+        "heading": "How to run it this week",
+        "paragraphs": [
+          "Start with the parts that affect money or production: checkout, pricing, publish automation, deploys, customer data, and outbound marketing. Run the stack planner against those workflows, enable the recommended templates, then publish the guide as proof that ThumbGate understands the modern AI engineering stack.",
+          "This also answers the LLM-wiki trend directly. A wiki is useful when it becomes short, source-backed context that agents can trust; it is dangerous when stale pages become invisible policy. ThumbGate makes freshness and grounding enforceable."
+        ]
+      },
+      {
+        "heading": "Operator command",
+        "bullets": [
+          "npx thumbgate ai-engineering-stack-guardrails --mcp-tool-count=182 --direct-provider-keys --llm-wiki-pages=24 --context-freshness-days=30 --background-agents --high-risk-workflows=deploy,billing --json."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "Do we need to rebuild Cloudflare infrastructure to benefit from this?",
+        "answer": "No. ThumbGate starts with the control points that matter most: centralized model access, smaller MCP surfaces, fresh agent context, AI review, and sandbox evidence. Those can be gated before a full platform migration."
+      },
+      {
+        "question": "How does this relate to LLM wikis and AGENTS.md?",
+        "answer": "Both are agent-context surfaces. ThumbGate treats them as source-backed operational artifacts, then blocks or warns when they are missing, stale, unowned, or disconnected from tests and repo conventions."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/code-knowledge-graph-guardrails",
+        "title": "Code Graphs Are Context. ThumbGate Is Execution Control."
+      },
+      {
+        "path": "/guides/long-running-agent-context-management",
+        "title": "Long-Running Agents Need Structured Memory, Not Raw Chat Logs"
+      },
+      {
+        "path": "/guides/rag-precision-tuning-guardrails",
+        "title": "RAG Precision Tuning Can Break Agentic Pipelines Quietly"
+      }
+    ],
+    "cta": {
+      "label": "Go Pro — $19/mo",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_internal-ai-engineering-stack-guardrails&cta_placement=seo_brief&plan_id=pro"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "monthly",
+    "priority": "0.8",
+    "keywordCluster": [
+      "internal ai engineering stack guardrails"
+    ],
+    "imageAlt": "ThumbGate guide for Internal AI Engineering Stacks Need Pre-Action Enforcement"
+  },
+  {
     "path": "/guides/seo-agent-skills-guardrails",
     "slug": "guides-seo-agent-skills-guardrails",
     "query": "seo agent skills guardrails",

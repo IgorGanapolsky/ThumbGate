@@ -79,6 +79,11 @@ const HIGH_ROI_QUERY_SEEDS = [
     'Fresh retrieval-quality demand where ThumbGate can gate embedding fine-tunes, threshold changes, recall regressions, and verifier latency before agentic RAG pipelines act.',
   ),
   querySeed(
+    'internal ai engineering stack guardrails',
+    94,
+    'Fresh Cloudflare-style AI engineering stack demand where ThumbGate can govern AI gateways, MCP portals, AGENTS.md/LLM wiki freshness, AI review, and sandboxed background agents.',
+  ),
+  querySeed(
     'seo agent skills guardrails',
     94,
     'Fresh SEO-agent demand where ThumbGate can govern workspaces, proof context, brand rules, internal-link checks, and publish gates.',
@@ -467,6 +472,65 @@ function buildRagPrecisionTuningGuide() {
     sections: RAG_PRECISION_TUNING_GUARDRAILS_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
     faq: RAG_PRECISION_TUNING_GUARDRAILS_SPEC.faq.map(([question, text]) => answer(question, text)),
     relatedPaths: RAG_PRECISION_TUNING_GUARDRAILS_SPEC.relatedPaths,
+  });
+}
+
+const AI_ENGINEERING_STACK_GUARDRAILS_SPEC = Object.freeze({
+  slug: 'internal-ai-engineering-stack-guardrails',
+  meta: {
+    query: 'internal ai engineering stack guardrails',
+    title: 'Internal AI Engineering Stack Guardrails | ThumbGate Guide',
+    heroTitle: 'Internal AI Engineering Stacks Need Pre-Action Enforcement',
+    heroSummary: 'AI coding adoption scales when the platform has a model gateway, progressive MCP discovery, fresh AGENTS.md and LLM wiki context, risk-tiered AI review, and sandboxed background agents. ThumbGate turns those layers into checks before unsafe agent work ships.',
+  },
+  takeaways: [
+    'A central AI gateway or proxy keeps model keys, spend, attribution, routing, and retention policy out of individual laptops.',
+    'MCP portals need progressive discovery or code-mode search/execute tools before schema overhead eats the agent context window.',
+    'AGENTS.md and LLM wiki pages become useful only when source-backed freshness gates keep repo instructions current.',
+    'Risk-tiered AI review and sandboxed background agents let teams automate more work without losing standards, logs, or isolation.',
+  ],
+  sections: [
+    ['paragraphs', 'Why this helps ThumbGate make money', [
+      'Cloudflare described the enterprise version of a pattern ThumbGate can sell to smaller teams today: the value is not a clever prompt, it is the wiring between access, model routing, tool portals, repo context, review, standards, and durable agent execution.',
+      'ThumbGate is the enforcement layer for that stack. It can block direct provider keys, warn on MCP schema bloat, require AGENTS.md and LLM wiki freshness, demand rule-cited review, and stop background agents that are not isolated before the next action runs.',
+    ]],
+    ['bullets', 'The high-ROI stack gates', [
+      'AI gateway gate: require one model proxy or gateway before adding providers, clients, BYOK paths, or high-volume coding assistants.',
+      'MCP portal gate: collapse large tool surfaces behind progressive discovery or code-mode search/execute so every prompt does not preload every schema.',
+      'AGENTS.md and LLM wiki freshness gate: regenerate short repo context from source metadata, ownership, tests, and dependency maps before agent runs rely on it.',
+      'AI review gate: classify changes by risk tier, cite standards-as-skills, and separate security, code quality, performance, docs, and release-impact findings.',
+      'Background agent sandbox gate: require isolated clone/build/test execution, durable logs, and resumable sessions before unattended agents can publish, deploy, or touch revenue workflows.',
+    ]],
+    ['paragraphs', 'How to run it this week', [
+      'Start with the parts that affect money or production: checkout, pricing, publish automation, deploys, customer data, and outbound marketing. Run the stack planner against those workflows, enable the recommended templates, then publish the guide as proof that ThumbGate understands the modern AI engineering stack.',
+      'This also answers the LLM-wiki trend directly. A wiki is useful when it becomes short, source-backed context that agents can trust; it is dangerous when stale pages become invisible policy. ThumbGate makes freshness and grounding enforceable.',
+    ]],
+    ['bullets', 'Operator command', [
+      'npx thumbgate ai-engineering-stack-guardrails --mcp-tool-count=182 --direct-provider-keys --llm-wiki-pages=24 --context-freshness-days=30 --background-agents --high-risk-workflows=deploy,billing --json.',
+    ]],
+  ],
+  faq: [
+    [
+      'Do we need to rebuild Cloudflare infrastructure to benefit from this?',
+      'No. ThumbGate starts with the control points that matter most: centralized model access, smaller MCP surfaces, fresh agent context, AI review, and sandbox evidence. Those can be gated before a full platform migration.',
+    ],
+    [
+      'How does this relate to LLM wikis and AGENTS.md?',
+      'Both are agent-context surfaces. ThumbGate treats them as source-backed operational artifacts, then blocks or warns when they are missing, stale, unowned, or disconnected from tests and repo conventions.',
+    ],
+  ],
+  relatedPaths: ['/guides/code-knowledge-graph-guardrails', '/guides/long-running-agent-context-management', '/guides/rag-precision-tuning-guardrails'],
+});
+
+function buildAiEngineeringStackGuide() {
+  return guideBlueprint({
+    ...AI_ENGINEERING_STACK_GUARDRAILS_SPEC.meta,
+    path: `/guides/${AI_ENGINEERING_STACK_GUARDRAILS_SPEC.slug}`,
+    pillar: 'ai-stack-governance',
+    takeaways: AI_ENGINEERING_STACK_GUARDRAILS_SPEC.takeaways,
+    sections: AI_ENGINEERING_STACK_GUARDRAILS_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+    faq: AI_ENGINEERING_STACK_GUARDRAILS_SPEC.faq.map(([question, text]) => answer(question, text)),
+    relatedPaths: AI_ENGINEERING_STACK_GUARDRAILS_SPEC.relatedPaths,
   });
 }
 
@@ -1223,6 +1287,7 @@ const PAGE_BLUEPRINTS = [
   buildSemanticPseoGuide(),
   buildProxyPointerRagGuide(),
   buildRagPrecisionTuningGuide(),
+  buildAiEngineeringStackGuide(),
   buildSeoAgentSkillsGuide(),
   {
     query: 'thumbgate vs fallow',

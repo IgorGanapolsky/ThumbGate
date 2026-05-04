@@ -161,7 +161,23 @@
       "opportunityScore": 83
     },
     {
-      "id": "kw_11_seo-agent-skills-guardrails",
+      "id": "kw_11_internal-ai-engineering-stack-guardrails",
+      "query": "internal ai engineering stack guardrails",
+      "source": "seed",
+      "notes": "Fresh Cloudflare-style AI engineering stack demand where ThumbGate can govern AI gateways, MCP portals, AGENTS.md/LLM wiki freshness, AI review, and sandboxed background agents.",
+      "impressions": null,
+      "clicks": null,
+      "ctr": null,
+      "position": null,
+      "businessValue": 94,
+      "intent": "commercial",
+      "pillar": "pre-action-checks",
+      "persona": "engineering-lead",
+      "pageType": "guide",
+      "opportunityScore": 83
+    },
+    {
+      "id": "kw_12_seo-agent-skills-guardrails",
       "query": "seo agent skills guardrails",
       "source": "seed",
       "notes": "Fresh SEO-agent demand where ThumbGate can govern workspaces, proof context, brand rules, internal-link checks, and publish gates.",
@@ -177,7 +193,7 @@
       "opportunityScore": 83
     },
     {
-      "id": "kw_12_thumbgate-vs-fallow",
+      "id": "kw_13_thumbgate-vs-fallow",
       "query": "thumbgate vs fallow",
       "source": "seed",
       "notes": "Bottom-of-funnel positioning against JS/TS static-analysis and agent-review tooling; Fallow finds code health issues while ThumbGate enforces agent action boundaries.",
@@ -193,7 +209,7 @@
       "opportunityScore": 100
     },
     {
-      "id": "kw_13_claude-code-masterclass-guardrails",
+      "id": "kw_14_claude-code-masterclass-guardrails",
       "query": "claude code masterclass guardrails",
       "source": "seed",
       "notes": "Claude Code education demand proves a growing buyer audience that needs a safety kit after learning to automate more workflows.",
@@ -209,7 +225,7 @@
       "opportunityScore": 89
     },
     {
-      "id": "kw_14_long-running-agent-context-management",
+      "id": "kw_15_long-running-agent-context-management",
       "query": "long running agent context management",
       "source": "seed",
       "notes": "Fresh Slack engineering pattern where ThumbGate can gate director journals, critic reviews, credibility scoring, and timelines for long-running agents.",
@@ -225,7 +241,7 @@
       "opportunityScore": 75
     },
     {
-      "id": "kw_15_reasoning-compression-guardrails",
+      "id": "kw_16_reasoning-compression-guardrails",
       "query": "reasoning compression guardrails",
       "source": "seed",
       "notes": "Fresh efficient-reasoning research where ThumbGate can govern step-level confidence, verifier outcomes, and token-saving model routes.",
@@ -241,7 +257,7 @@
       "opportunityScore": 83
     },
     {
-      "id": "kw_16_background-agent-governance",
+      "id": "kw_17_background-agent-governance",
       "query": "background agent governance",
       "source": "seed",
       "notes": "New team-buying query for unattended agent PRs where alignment context, isolated execution, risk-tiered review, and audit evidence create immediate ROI.",
@@ -257,7 +273,7 @@
       "opportunityScore": 72
     },
     {
-      "id": "kw_17_gpt-5-5-model-evaluation",
+      "id": "kw_18_gpt-5-5-model-evaluation",
       "query": "gpt-5.5 model evaluation",
       "source": "seed",
       "notes": "Fresh frontier-model upgrade query that maps to ThumbGate model candidate benchmarking, dashboard-analysis workloads, and routing governance before teams move expensive work.",
@@ -273,7 +289,7 @@
       "opportunityScore": 72
     },
     {
-      "id": "kw_18_browser-automation-safety",
+      "id": "kw_19_browser-automation-safety",
       "query": "browser automation safety",
       "source": "seed",
       "notes": "High-intent browser-agent safety query tied to prompt injection, permissions, and cross-app automation risk.",
@@ -289,7 +305,7 @@
       "opportunityScore": 75
     },
     {
-      "id": "kw_19_native-messaging-host-security",
+      "id": "kw_20_native-messaging-host-security",
       "query": "native messaging host security",
       "source": "seed",
       "notes": "Security-led query that maps directly to browser bridge auditing and explicit connector governance.",
@@ -305,7 +321,7 @@
       "opportunityScore": 75
     },
     {
-      "id": "kw_20_ai-search-topical-presence",
+      "id": "kw_21_ai-search-topical-presence",
       "query": "ai search topical presence",
       "source": "seed",
       "notes": "High-intent GEO query for teams trying to become the obvious recommendation in AI search and agent answers.",
@@ -321,7 +337,7 @@
       "opportunityScore": 72
     },
     {
-      "id": "kw_21_best-tools-to-stop-ai-agents-from-breaking-production",
+      "id": "kw_22_best-tools-to-stop-ai-agents-from-breaking-production",
       "query": "best tools to stop ai agents from breaking production",
       "source": "seed",
       "notes": "Listicle-style answer-engine query that maps directly to buyer prompts about production agent reliability.",
@@ -337,7 +353,7 @@
       "opportunityScore": 72
     },
     {
-      "id": "kw_22_relational-knowledge-ai-recommendations",
+      "id": "kw_23_relational-knowledge-ai-recommendations",
       "query": "relational knowledge ai recommendations",
       "source": "seed",
       "notes": "Captures research-led interest in how AI systems decide which brands and tools to recommend.",
@@ -353,7 +369,7 @@
       "opportunityScore": 72
     },
     {
-      "id": "kw_23_thumbs-up-thumbs-down-feedback-for-ai-coding-agents",
+      "id": "kw_24_thumbs-up-thumbs-down-feedback-for-ai-coding-agents",
       "query": "thumbs up thumbs down feedback for ai coding agents",
       "source": "seed",
       "notes": "Differentiates the explicit feedback loop and aligns with the brand.",
@@ -369,7 +385,7 @@
       "opportunityScore": 83
     },
     {
-      "id": "kw_24_claude-code-feedback-memory",
+      "id": "kw_25_claude-code-feedback-memory",
       "query": "claude code feedback memory",
       "source": "seed",
       "notes": "Agent-specific workflow page with high compatibility intent.",
@@ -385,7 +401,7 @@
       "opportunityScore": 89
     },
     {
-      "id": "kw_25_ai-coding-agent-guardrails",
+      "id": "kw_26_ai-coding-agent-guardrails",
       "query": "ai coding agent guardrails",
       "source": "seed",
       "notes": "Broader category demand that feeds comparison and guide pages.",
@@ -401,7 +417,7 @@
       "opportunityScore": 83
     },
     {
-      "id": "kw_26_autoresearch-agent-safety",
+      "id": "kw_27_autoresearch-agent-safety",
       "query": "autoresearch agent safety",
       "source": "seed",
       "notes": "Emerging self-improving agent query where ThumbGate can own the safety and proof-control wedge.",
@@ -417,7 +433,7 @@
       "opportunityScore": 83
     },
     {
-      "id": "kw_27_stop-ai-coding-agents-from-repeating-mistakes",
+      "id": "kw_28_stop-ai-coding-agents-from-repeating-mistakes",
       "query": "stop ai coding agents from repeating mistakes",
       "source": "seed",
       "notes": "Problem-led copy that maps to landing-page positioning.",
@@ -433,7 +449,7 @@
       "opportunityScore": 83
     },
     {
-      "id": "kw_28_cursor-prevent-repeated-mistakes",
+      "id": "kw_29_cursor-prevent-repeated-mistakes",
       "query": "cursor prevent repeated mistakes",
       "source": "seed",
       "notes": "High-intent Cursor workflow page for developers already feeling repeat-failure pain.",
@@ -449,7 +465,7 @@
       "opportunityScore": 89
     },
     {
-      "id": "kw_29_claude-code-prevent-repeated-mistakes",
+      "id": "kw_30_claude-code-prevent-repeated-mistakes",
       "query": "claude code prevent repeated mistakes",
       "source": "seed",
       "notes": "High-intent pain query for Claude Code buyers.",
@@ -465,7 +481,7 @@
       "opportunityScore": 89
     },
     {
-      "id": "kw_30_codex-cli-guardrails",
+      "id": "kw_31_codex-cli-guardrails",
       "query": "codex cli guardrails",
       "source": "seed",
       "notes": "Guardrail-focused page for Codex CLI buyers who want prevention, not just memory.",
@@ -481,7 +497,7 @@
       "opportunityScore": 89
     },
     {
-      "id": "kw_31_gemini-cli-feedback-memory",
+      "id": "kw_32_gemini-cli-feedback-memory",
       "query": "gemini cli feedback memory",
       "source": "seed",
       "notes": "Integration page for Gemini CLI users who need memory plus enforcement.",
@@ -497,7 +513,7 @@
       "opportunityScore": 89
     },
     {
-      "id": "kw_32_roo-code-alternative-cline",
+      "id": "kw_33_roo-code-alternative-cline",
       "query": "roo code alternative cline",
       "source": "seed",
       "notes": "Time-sensitive migration query for Roo users who need portable lesson memory before the May 15, 2026 shutdown.",
@@ -513,5 +529,5 @@
       "opportunityScore": 99
     }
   ],
-  "totalKeywords": 32
+  "totalKeywords": 33
 }

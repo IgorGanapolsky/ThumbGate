@@ -260,9 +260,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // unpacked size is ~3.265 MB; the remaining margin is intentionally narrow.
   // Bumped 3.29 MB → 3.31 MB (2026-05-04) for the packaged LLM behavior
   // monitor CLI. Observed unpacked size is ~3.293 MB; the margin stays narrow.
+  // Bumped 3.31 MB → 3.36 MB (2026-05-04) for the AI engineering stack
+  // guardrail planner and gateway/MCP/AGENTS.md/LLM-wiki templates on top of
+  // the behavior monitor runtime. Keep the margin narrow after measuring pack.
   assert.ok(
-    manifest.unpackedSize <= 3_310_000,
-    `npm package should stay <= 3.31 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_360_000,
+    `npm package should stay <= 3.36 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

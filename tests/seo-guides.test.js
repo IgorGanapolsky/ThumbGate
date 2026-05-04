@@ -16,6 +16,7 @@ const GUIDE_FILES = [
   'guides/semantic-programmatic-seo-guardrails.html',
   'guides/proxy-pointer-rag-guardrails.html',
   'guides/rag-precision-tuning-guardrails.html',
+  'guides/internal-ai-engineering-stack-guardrails.html',
   'guides/seo-agent-skills-guardrails.html',
   'guides/claude-code-skills-guardrails.html',
   'guides/long-running-agent-context-management.html',
@@ -211,6 +212,20 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(precision.includes('npx thumbgate rag-precision-guardrails'));
     assert.ok(precision.includes('Retrieval baseline before tuning'));
     assert.ok(precision.includes('Two-stage verifier for structural near misses'));
+  });
+
+  it('internal AI engineering stack guide routes platform wiring into enforceable gates', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/internal-ai-engineering-stack-guardrails.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('Internal AI Engineering Stacks Need Pre-Action Enforcement'));
+    assert.ok(html.includes('npx thumbgate ai-engineering-stack-guardrails'));
+    assert.ok(html.includes('AI gateway gate'));
+    assert.ok(html.includes('MCP portal gate'));
+    assert.ok(html.includes('AGENTS.md and LLM wiki freshness gate'));
+    assert.ok(html.includes('Background agent sandbox gate'));
   });
 
   it('SEO and Claude skill guides route advisory skills into enforceable gates', () => {

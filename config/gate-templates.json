@@ -312,6 +312,138 @@
       "problem": "Requires a verifier-error or truncation check before penalizing confident reasoning from failed rollouts.",
       "roi": "Prevents training or routing updates from punishing correct reasoning when the failure came from truncation or verifier noise.",
       "rollout": "Use for reasoning-compression experiments, evaluation harnesses, and DPO/RLHF export review."
+    },
+    {
+      "id": "require-hybrid-prefix-cache-coherence-eval",
+      "name": "Require hybrid prefix cache coherence eval",
+      "category": "Sparse Attention Runtime Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(deepseek|sparse attention|hybrid attention|prefix cache).*(missing|no).*(coherence|rollback|cache eval)",
+      "problem": "Blocks hybrid sparse-attention serving changes when prefix cache lifetime, compressed KV reuse, and rollback behavior have not been verified.",
+      "roi": "Prevents expensive long-context inference rollouts from reusing stale cache state or corrupting speculative decode paths.",
+      "rollout": "Enable before raising context windows, switching cache implementations, or deploying ShadowRadix-style prefix caching."
+    },
+    {
+      "id": "checkpoint-speculative-decoding-acceptance",
+      "name": "Checkpoint speculative decoding acceptance",
+      "category": "Sparse Attention Runtime Safety",
+      "signal": "👎",
+      "defaultAction": "warn",
+      "severity": "high",
+      "pattern": "(speculative|mtp|eagle).*(accept|rollback|draft).*(low|missing|unstable)",
+      "problem": "Requires acceptance-rate, rollback, and correctness evidence before speculative decoding is treated as a production speedup.",
+      "roi": "Avoids routing traffic to a faster-looking path that collapses acceptance length or hides draft-token correctness failures.",
+      "rollout": "Start in warn mode for lab benchmarks; promote to block when speculation is enabled for customer traffic."
+    },
+    {
+      "id": "require-long-context-kv-offload-capacity-plan",
+      "name": "Require long-context KV offload capacity plan",
+      "category": "Sparse Attention Runtime Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(long context|1m token|kv cache|hisparse|cpu offload).*(missing|no).*(capacity|offload|memory budget)",
+      "problem": "Blocks long-context serving rollouts when KV cache capacity, CPU offload, or memory budgets are not documented and benchmarked.",
+      "roi": "Prevents GPU memory cliffs and surprise throughput regressions when agents send very large traces or document contexts.",
+      "rollout": "Require for 128k+ context targets and any hosted inference path where batch size or context length can grow automatically."
+    },
+    {
+      "id": "require-rollout-routing-and-indexer-replay",
+      "name": "Require rollout routing and indexer replay",
+      "category": "Sparse Attention Runtime Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(rl|training|fine[- ]?tune|reward).*(missing|no).*(routing replay|indexer replay|train[- ]?inference drift)",
+      "problem": "Blocks RL or fine-tuning updates when rollout routing, sparse indexer choices, and train-inference drift are not captured and replayed.",
+      "roi": "Stops verified-RL experiments from optimizing against a different execution path than the one served during rollout.",
+      "rollout": "Enable for any self-hosted model training, reward optimization, DPO export review, or policy update based on sparse-attention rollouts."
+    },
+    {
+      "id": "checkpoint-mixed-precision-determinism",
+      "name": "Checkpoint mixed-precision determinism",
+      "category": "Sparse Attention Runtime Safety",
+      "signal": "👎",
+      "defaultAction": "warn",
+      "severity": "high",
+      "pattern": "(fp4|fp8|mixed precision|quant).*(nondeterministic|spike|drift|missing deterministic)",
+      "problem": "Requires deterministic settings and sensitive FP32 path checks before mixed-precision inference or training results become routing evidence.",
+      "roi": "Keeps FP4/FP8 savings from producing silent numerical drift, noisy KL spikes, or false benchmark confidence.",
+      "rollout": "Start in warn mode for benchmarking and promote to block when mixed-precision results update routing, training, or customer-facing model choices."
+    },
+    {
+      "id": "checkpoint-long-context-throughput-regression",
+      "name": "Checkpoint long-context throughput regression",
+      "category": "Sparse Attention Runtime Safety",
+      "signal": "👎",
+      "defaultAction": "warn",
+      "severity": "medium",
+      "pattern": "(long context|decode throughput|tpot|latency).*(regression|drop|slowdown)",
+      "problem": "Requires a measured throughput comparison before long-context runtime changes are treated as performance improvements.",
+      "roi": "Prevents teams from adopting impressive-looking runtime changes that only work on narrow prompts or short contexts.",
+      "rollout": "Use in CI benchmark jobs and model-routing reviews whenever context length, cache policy, or speculation settings change."
+    },
+    {
+      "id": "require-ai-gateway-control-plane",
+      "name": "Require AI gateway control plane",
+      "category": "AI Engineering Stack Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(model|llm|provider).*(direct key|api key|no gateway|bypass gateway)",
+      "problem": "Blocks model-provider rollout when requests bypass a central gateway or proxy with cost, identity, provider, and retention controls.",
+      "roi": "Prevents leaked keys, fragmented spend, and invisible model usage before agent adoption scales across the company.",
+      "rollout": "Enable before adding new AI coding clients, model providers, or bring-your-own-key routes."
+    },
+    {
+      "id": "require-progressive-mcp-tool-discovery",
+      "name": "Require progressive MCP tool discovery",
+      "category": "AI Engineering Stack Safety",
+      "signal": "👎",
+      "defaultAction": "warn",
+      "severity": "high",
+      "pattern": "(mcp|tool schema|tool count).*(too many|context bloat|no code mode|no progressive discovery)",
+      "problem": "Requires large MCP surfaces to expose a small search/execute or progressive-discovery interface instead of loading every tool schema into every prompt.",
+      "roi": "Cuts token burn and context-window clutter while letting teams keep adding useful tools behind the portal.",
+      "rollout": "Start warning above 20 tools; promote to block for high-volume clients or expensive frontier-model workflows."
+    },
+    {
+      "id": "require-agent-context-freshness",
+      "name": "Require AGENTS.md and LLM wiki freshness",
+      "category": "AI Engineering Stack Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(AGENTS\\.md|llm wiki|agent context).*(stale|missing|outdated|no owner|no test command)",
+      "problem": "Blocks agent work when repository instructions, ownership, dependencies, test commands, or LLM wiki pages are missing or stale.",
+      "roi": "Turns knowledge-base enthusiasm into reliable agent context instead of letting stale docs make plausible wrong changes.",
+      "rollout": "Regenerate on repo topology changes and require review from the owning team before the context becomes canonical."
+    },
+    {
+      "id": "require-risk-tiered-ai-review",
+      "name": "Require risk-tiered AI review",
+      "category": "AI Engineering Stack Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(merge|pull request|review).*(no ai reviewer|no severity|no rule id|no standards)",
+      "problem": "Requires automated review to classify risk, cite standards-as-skills, and separate security, code quality, performance, docs, and release-impact findings.",
+      "roi": "Makes AI review actionable and auditable, reducing merge churn while converting standards into reusable agent feedback.",
+      "rollout": "Use lite review for trivial changes and full review for money, production, security, data, or customer-facing work."
+    },
+    {
+      "id": "require-sandboxed-background-agent-runtime",
+      "name": "Require sandboxed background agent runtime",
+      "category": "AI Engineering Stack Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(background agent|long running agent|autonomous agent).*(no sandbox|host machine|no durable session|no build log)",
+      "problem": "Blocks background agents from cloning, building, testing, or publishing unless they run in an isolated durable environment with logs.",
+      "roi": "Lets the team pursue unattended revenue and engineering workflows without turning local developer machines into the execution boundary.",
+      "rollout": "Enable for every agent that can run tests, push branches, deploy, publish content, change billing, or touch customer data."
     }
   ]
 }

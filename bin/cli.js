@@ -1268,6 +1268,22 @@ function agentDesignGovernance() {
   process.stdout.write(formatAgentDesignGovernancePlan(report));
 }
 
+function proactiveAgentEvalGuardrails() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildProactiveAgentEvalGuardrailsPlan,
+    formatProactiveAgentEvalGuardrailsPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'proactive-agent-eval-guardrails'));
+  const report = buildProactiveAgentEvalGuardrailsPlan(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatProactiveAgentEvalGuardrailsPlan(report));
+}
+
 function modelCandidatesCmd() {
   const args = parseArgs(process.argv.slice(3));
   const { writeModelCandidatesReport, renderModelCandidatesReport } = require(path.join(PKG_ROOT, 'scripts', 'model-candidates'));
@@ -1692,6 +1708,22 @@ function ragPrecisionGuardrails() {
   }
 
   process.stdout.write(formatRagPrecisionGuardrailsPlan(report));
+}
+
+function aiEngineeringStackGuardrails() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildAiEngineeringStackGuardrailsPlan,
+    formatAiEngineeringStackGuardrailsPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'ai-engineering-stack-guardrails'));
+  const report = buildAiEngineeringStackGuardrailsPlan(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatAiEngineeringStackGuardrailsPlan(report));
 }
 
 function longRunningAgentContextGuardrails() {
@@ -2149,6 +2181,7 @@ function help() {
   console.log('  code-graph-guardrails Map code-graph risk signals to Knowledge Graph Safety gates');
   console.log('  proxy-pointer-rag-guardrails Map visual document RAG signals to Document RAG Safety gates');
   console.log('  rag-precision-guardrails Map retrieval tuning regressions to Document RAG Safety gates');
+  console.log('  ai-engineering-stack-guardrails Map gateway, MCP, AGENTS.md, LLM wiki, reviewer, and sandbox gaps to stack gates');
   console.log('  long-running-agent-context-guardrails Map structured-memory gaps to long-running agent gates');
   console.log('  reasoning-efficiency-guardrails Map reasoning compression signals to efficiency gates');
   console.log('  background-governance Background-agent run report and dispatch risk check');
@@ -2179,6 +2212,7 @@ function help() {
   console.log('  npx thumbgate code-graph-guardrails --central-files=src/api/server.js --layers=api,data --generated-artifacts=.codegraph/index.json --json');
   console.log('  npx thumbgate proxy-pointer-rag-guardrails --tree-path=.rag/tree.json --image-pointers=paper-1/figures/fig2.png --documents=paper-1 --visual-claims --json');
   console.log('  npx thumbgate rag-precision-guardrails --baseline-recall=0.86 --new-recall=0.72 --threshold-change --agentic --structural-near-misses --json');
+  console.log('  npx thumbgate ai-engineering-stack-guardrails --mcp-tool-count=182 --direct-provider-keys --llm-wiki-pages=24 --context-freshness-days=30 --background-agents --json');
   console.log('  npx thumbgate long-running-agent-context-guardrails --request-count=80 --output-mb=3 --raw-chat-only --json');
   console.log('  npx thumbgate reasoning-efficiency-guardrails --baseline-tokens=1200 --compressed-tokens=980 --baseline-accuracy=0.84 --compressed-accuracy=0.85 --verifier --json');
   console.log('  npx thumbgate background-governance --json');
@@ -2334,6 +2368,11 @@ switch (COMMAND) {
   case 'agent-governance-plan':
     agentDesignGovernance();
     break;
+  case 'proactive-agent-eval-guardrails':
+  case 'pare-guardrails':
+  case 'proactive-agent-guardrails':
+    proactiveAgentEvalGuardrails();
+    break;
   case 'model-candidates':
   case 'managed-models':
     modelCandidatesCmd();
@@ -2396,6 +2435,12 @@ switch (COMMAND) {
   case 'retrieval-precision-guardrails':
   case 'agentic-rag-guardrails':
     ragPrecisionGuardrails();
+    break;
+  case 'ai-engineering-stack-guardrails':
+  case 'ai-stack-guardrails':
+  case 'internal-ai-stack-guardrails':
+  case 'llm-wiki-guardrails':
+    aiEngineeringStackGuardrails();
     break;
   case 'long-running-agent-context-guardrails':
   case 'agent-context-guardrails':

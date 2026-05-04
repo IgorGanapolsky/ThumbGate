@@ -167,6 +167,25 @@ test('rag-precision-guardrails exposes retrieval regression flags', () => {
   assert.ok(flagNames.includes('agentic'));
 });
 
+test('ai-engineering-stack-guardrails exposes stack governance flags', () => {
+  const cmd = findCommand('llm-wiki-guardrails');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'ai-engineering-stack-guardrails');
+  assert.ok(flagNames.includes('json'));
+  assert.ok(flagNames.includes('gateway'));
+  assert.ok(flagNames.includes('direct-provider-keys'));
+  assert.ok(flagNames.includes('mcp-tool-count'));
+  assert.ok(flagNames.includes('code-mode'));
+  assert.ok(flagNames.includes('agents-md'));
+  assert.ok(flagNames.includes('llm-wiki-pages'));
+  assert.ok(flagNames.includes('context-freshness-days'));
+  assert.ok(flagNames.includes('ai-reviewer'));
+  assert.ok(flagNames.includes('codex-rules'));
+  assert.ok(flagNames.includes('background-agents'));
+  assert.ok(flagNames.includes('sandbox'));
+  assert.ok(flagNames.includes('high-risk-workflows'));
+});
+
 test('long-running-agent-context-guardrails exposes structured memory flags', () => {
   const cmd = findCommand('agent-context-guardrails');
   const flagNames = cmd.flags.map((f) => f.name);

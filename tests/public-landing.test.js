@@ -432,6 +432,7 @@ test('public landing page internally links to comparison and guide pages without
   assert.match(landingPage, /href="\/guides\/semantic-programmatic-seo-guardrails"/);
   assert.match(landingPage, /href="\/guides\/proxy-pointer-rag-guardrails"/);
   assert.match(landingPage, /href="\/guides\/rag-precision-tuning-guardrails"/);
+  assert.match(landingPage, /href="\/guides\/internal-ai-engineering-stack-guardrails"/);
   assert.match(landingPage, /href="\/guides\/seo-agent-skills-guardrails"/);
   assert.match(landingPage, /href="\/compare\/fallow"/);
   assert.match(landingPage, /href="\/guides\/claude-code-skills-guardrails"/);

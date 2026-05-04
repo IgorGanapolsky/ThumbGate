@@ -278,6 +278,28 @@ test('document RAG and retrieval precision pages are discoverable and commercial
   assert.match(precisionHtml, /Retrieval baseline before tuning/);
 });
 
+test('internal AI engineering stack page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/internal-ai-engineering-stack-guardrails');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/internal-ai-engineering-stack-guardrails');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'internal ai engineering stack guardrails');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'ai-stack-governance');
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/internal-ai-engineering-stack-guardrails',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+  assert.match(html, /Internal AI Engineering Stacks Need Pre-Action Enforcement/);
+  assert.match(html, /npx thumbgate ai-engineering-stack-guardrails/);
+  assert.match(html, /AI gateway gate/);
+  assert.match(html, /MCP portal gate/);
+  assert.match(html, /LLM wiki/);
+  assert.match(html, /Background agent sandbox gate/);
+});
+
 test('skills, context, Fallow, and reasoning pages are discoverable', () => {
   const seoSkills = findSeoPageByPath('/guides/seo-agent-skills-guardrails');
   const fallow = findSeoPageByPath('/compare/fallow');
