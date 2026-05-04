@@ -463,6 +463,12 @@ const TRACKED_LINK_TARGETS = Object.freeze({
 // Stripe event tracking helpers
 // ---------------------------------------------------------------------------
 const STRIPE_EVENTS_PATH = path.resolve(__dirname, '../../.thumbgate/stripe-events.jsonl');
+const LEGACY_STRIPE_EVENT_TYPES = new Set([
+  'checkout.session.completed',
+  'customer.subscription.created',
+  'customer.subscription.updated',
+  'customer.subscription.deleted',
+]);
 
 function ensureStripeEventsDir() {
   const dir = path.dirname(STRIPE_EVENTS_PATH);
@@ -472,6 +478,81 @@ function ensureStripeEventsDir() {
 function appendStripeEvent(record) {
   ensureStripeEventsDir();
   fs.appendFileSync(STRIPE_EVENTS_PATH, JSON.stringify(record) + '\n', 'utf8');
+}
+
+function buildLegacyStripeEventRecord(event) {
+  const obj = event.data && event.data.object ? event.data.object : {};
+  return {
+    timestamp: new Date().toISOString(),
+    event_type: event.type,
+    event_id: event.id || null,
+    customer_email:
+      obj.customer_email ||
+      obj.email ||
+      (obj.customer_details && obj.customer_details.email) ||
+      null,
+    plan:
+      obj.plan
+        ? (obj.plan.nickname || obj.plan.id || null)
+        : (
+          obj.items &&
+          obj.items.data &&
+          obj.items.data[0] &&
+          obj.items.data[0].plan
+            ? (obj.items.data[0].plan.nickname || obj.items.data[0].plan.id)
+            : null
+        ),
+    amount_cents: obj.amount_total || (obj.plan && obj.plan.amount) || null,
+    currency: obj.currency || null,
+    subscription_id: obj.subscription || obj.id || null,
+  };
+}
+
+async function handleLegacyStripeWebhook(req, res) {
+  try {
+    const rawBody = await new Promise((resolve, reject) => {
+      const chunks = [];
+      req.on('data', (c) => chunks.push(c));
+      req.on('end', () => resolve(Buffer.concat(chunks)));
+      req.on('error', reject);
+    });
+
+    const sig = req.headers['stripe-signature'] || '';
+    if (!verifyWebhookSignature(rawBody, sig)) {
+      sendProblem(res, {
+        type: PROBLEM_TYPES.WEBHOOK_INVALID,
+        title: 'Invalid webhook signature',
+        status: 400,
+        detail: 'The webhook signature could not be verified.',
+      });
+      return;
+    }
+
+    let event;
+    try {
+      event = JSON.parse(rawBody.toString('utf-8'));
+    } catch {
+      sendProblem(res, {
+        type: PROBLEM_TYPES.INVALID_JSON,
+        title: 'Invalid JSON',
+        status: 400,
+        detail: 'Invalid JSON in webhook body.',
+      });
+      return;
+    }
+
+    if (LEGACY_STRIPE_EVENT_TYPES.has(event.type)) {
+      appendStripeEvent(buildLegacyStripeEventRecord(event));
+    }
+    sendJson(res, 200, { received: true, event_type: event.type });
+  } catch (err) {
+    sendProblem(res, {
+      type: PROBLEM_TYPES.INTERNAL,
+      title: 'Internal Server Error',
+      status: 500,
+      detail: err.message,
+    });
+  }
 }
 
 function readStripeEvents() {
@@ -4838,6 +4919,13 @@ async function addContext(){
       return;
     }
 
+    // POST /webhook/stripe — legacy Stripe event log bridge kept for backward compatibility.
+    // This must remain unauthenticated like /v1/billing/webhook; Stripe auth is the HMAC signature.
+    if (req.method === 'POST' && pathname === '/webhook/stripe') {
+      await handleLegacyStripeWebhook(req, res);
+      return;
+    }
+
     // GitHub Marketplace webhook
     if (req.method === 'POST' && pathname === '/v1/billing/github-webhook') {
       try {
@@ -6401,86 +6489,6 @@ async function addContext(){
         }
         const entry = satisfyCondition(body.gateId, body.evidence);
         sendJson(res, 200, { satisfied: true, gateId: body.gateId, ...entry });
-        return;
-      }
-
-      // POST /webhook/stripe — legacy Stripe event log bridge kept for backward compatibility.
-      // When STRIPE_WEBHOOK_SECRET is configured, verify the same Stripe signature used by
-      // the /v1/billing/webhook route before touching any payload.
-      if (req.method === 'POST' && pathname === '/webhook/stripe') {
-        try {
-          const rawBody = await new Promise((resolve, reject) => {
-            const chunks = [];
-            req.on('data', (c) => chunks.push(c));
-            req.on('end', () => resolve(Buffer.concat(chunks)));
-            req.on('error', reject);
-          });
-
-          const sig = req.headers['stripe-signature'] || '';
-          if (!verifyWebhookSignature(rawBody, sig)) {
-            sendProblem(res, {
-              type: PROBLEM_TYPES.WEBHOOK_INVALID,
-              title: 'Invalid webhook signature',
-              status: 400,
-              detail: 'The webhook signature could not be verified.',
-            });
-            return;
-          }
-
-          let event;
-          try {
-            event = JSON.parse(rawBody.toString('utf-8'));
-          } catch {
-            sendProblem(res, {
-              type: PROBLEM_TYPES.INVALID_JSON,
-              title: 'Invalid JSON',
-              status: 400,
-              detail: 'Invalid JSON in webhook body.',
-            });
-            return;
-          }
-          const TRACKED_STRIPE_EVENTS = new Set([
-            'checkout.session.completed',
-            'customer.subscription.created',
-            'customer.subscription.deleted',
-          ]);
-          if (TRACKED_STRIPE_EVENTS.has(event.type)) {
-            const obj = event.data && event.data.object ? event.data.object : {};
-            const record = {
-              timestamp: new Date().toISOString(),
-              event_type: event.type,
-              event_id: event.id || null,
-              customer_email:
-                obj.customer_email ||
-                obj.email ||
-                (obj.customer_details && obj.customer_details.email) ||
-                null,
-              plan:
-                obj.plan
-                  ? (obj.plan.nickname || obj.plan.id || null)
-                  : (
-                    obj.items &&
-                    obj.items.data &&
-                    obj.items.data[0] &&
-                    obj.items.data[0].plan
-                      ? (obj.items.data[0].plan.nickname || obj.items.data[0].plan.id)
-                      : null
-                  ),
-              amount_cents: obj.amount_total || (obj.plan && obj.plan.amount) || null,
-              currency: obj.currency || null,
-              subscription_id: obj.subscription || obj.id || null,
-            };
-            appendStripeEvent(record);
-          }
-          sendJson(res, 200, { received: true, event_type: event.type });
-        } catch (err) {
-          sendProblem(res, {
-            type: PROBLEM_TYPES.INTERNAL,
-            title: 'Internal Server Error',
-            status: 500,
-            detail: err.message,
-          });
-        }
         return;
       }
 

@@ -7,7 +7,12 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const DEFAULT_ENDPOINT_URL = 'https://thumbgate-production.up.railway.app/v1/billing/webhook';
-const REQUIRED_EVENTS = ['checkout.session.completed', 'customer.subscription.deleted'];
+const REQUIRED_EVENTS = [
+  'checkout.session.completed',
+  'customer.subscription.created',
+  'customer.subscription.updated',
+  'customer.subscription.deleted',
+];
 const FIXED_GH_BINARIES = ['/usr/bin/gh', '/usr/local/bin/gh', '/opt/homebrew/bin/gh'];
 const SECRET_PATTERN = /\b(?:sk|rk)_(?:live|test)_\w+|\bwhsec_\w+/g;
 
