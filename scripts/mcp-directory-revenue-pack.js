@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 
+const fs = require('node:fs');
 const path = require('node:path');
+const { ensureDir } = require('./fs-utils');
 const {
   COMMERCIAL_TRUTH_LINK,
   VERIFICATION_EVIDENCE_LINK,
@@ -9,6 +11,7 @@ const {
 } = require('./gtm-revenue-loop');
 const {
   buildTrackedPackLink,
+  csvCell,
   isCliInvocation: isCliCall,
   parseReportArgs,
   renderRevenuePackMarkdown,
@@ -336,8 +339,44 @@ function renderMcpDirectoryRevenuePackMarkdown(pack) {
   });
 }
 
+function renderMcpDirectorySurfacesCsv(pack = {}) {
+  const surfaces = Array.isArray(pack.surfaces) ? pack.surfaces : [];
+  const rows = [
+    [
+      'key',
+      'name',
+      'role',
+      'publicStatus',
+      'operatorUse',
+      'surfaceUrl',
+      'submissionPath',
+      'support',
+      'evidenceCheckedAt',
+      'evidenceSummary',
+      'nextRepair',
+      'proof',
+    ],
+    ...surfaces.map((surface) => ([
+      surface.key,
+      surface.name,
+      surface.role,
+      surface.publicStatus,
+      surface.operatorUse,
+      surface.surfaceUrl,
+      surface.submissionPath,
+      surface.support,
+      surface.evidenceCheckedAt,
+      surface.evidenceSummary,
+      surface.nextRepair,
+      surface.proof,
+    ])),
+  ];
+
+  return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
+}
+
 function writeMcpDirectoryRevenuePack(pack, options = {}) {
-  return writeStandardRevenuePack({
+  const written = writeStandardRevenuePack({
     repoRoot: REPO_ROOT,
     docsPath: DOCS_PATH,
     pack,
@@ -346,6 +385,20 @@ function writeMcpDirectoryRevenuePack(pack, options = {}) {
     jsonName: 'mcp-directory-revenue-pack.json',
     csvName: 'mcp-directory-operator-queue.csv',
   });
+  const surfacesCsv = renderMcpDirectorySurfacesCsv(pack);
+  const docsDir = path.dirname(DOCS_PATH);
+
+  if (written.reportDir) {
+    ensureDir(written.reportDir);
+    fs.writeFileSync(path.join(written.reportDir, 'mcp-directory-surfaces.csv'), surfacesCsv, 'utf8');
+  }
+
+  if (written.docsPath) {
+    ensureDir(docsDir);
+    fs.writeFileSync(path.join(docsDir, 'mcp-directory-surfaces.csv'), surfacesCsv, 'utf8');
+  }
+
+  return written;
 }
 
 function parseArgs(argv = []) {
@@ -395,6 +448,7 @@ module.exports = {
   buildTrackedDirectoryLink,
   isCliInvocation,
   parseArgs,
+  renderMcpDirectorySurfacesCsv,
   renderMcpDirectoryRevenuePackMarkdown,
   writeMcpDirectoryRevenuePack,
 };
