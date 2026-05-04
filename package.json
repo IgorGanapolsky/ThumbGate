@@ -164,6 +164,7 @@
     "scripts/prompt-guard.js",
     "scripts/proxy-pointer-rag-guardrails.js",
     "scripts/published-cli.js",
+    "scripts/pycharm-agentic-coding-pack.js",
     "scripts/rate-limiter.js",
     "scripts/risk-scorer.js",
     "scripts/rlaif-self-audit.js",

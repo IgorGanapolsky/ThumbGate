@@ -2,4 +2,4 @@
 "thumbgate": patch
 ---
 
-Add redaction-first agent reasoning trace analytics, LLM-as-judge reward readiness, a prompting operating planner, a structured prompt-driven development gate, a single-use credential gate, and a stack survival audit for context-moat, modularity, sandbox, and scaffolding lock-in checks.
+Add the high-ROI May 2026 agent-governance batch: redaction-first reasoning trace analytics, RLSD-style step credit assignment, agent-design governance, Gemini Embedding 2 rollout policy, proxy-pointer RAG guardrails, retrieval precision guardrails, long-running agent context guardrails, reasoning efficiency guardrails, weekly Medium/community visibility artifacts, Bluesky reply-monitor wiring, and new proof-backed SEO/GEO acquisition pages.
