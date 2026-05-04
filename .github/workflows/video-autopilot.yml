@@ -19,9 +19,13 @@ on:
   workflow_dispatch:
     inputs:
       template:
-        description: 'Slide template (1-6, or auto)'
+        description: 'Slide template (1-6, operator-lab, or auto)'
         required: false
         default: 'auto'
+      offer:
+        description: 'Offer/caption set (default or operator-lab)'
+        required: false
+        default: 'default'
       platforms:
         description: 'Comma-separated platforms (tiktok,youtube,instagram)'
         required: false
@@ -129,10 +133,12 @@ jobs:
       - name: Generate slides + render + post to all video platforms
         env:
           INPUT_TEMPLATE: ${{ github.event.inputs.template || 'auto' }}
+          INPUT_OFFER: ${{ github.event.inputs.offer || 'default' }}
           INPUT_PLATFORMS: ${{ github.event.inputs.platforms || 'tiktok,youtube,instagram' }}
           INPUT_DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: |
           TEMPLATE="$INPUT_TEMPLATE"
+          OFFER="$INPUT_OFFER"
           PLATFORMS="$INPUT_PLATFORMS"
           DRY_RUN_FLAG=""
           if [ "$INPUT_DRY_RUN" = "true" ]; then
@@ -141,6 +147,7 @@ jobs:
           WEEK=$(date +%Y-W%V)
           node scripts/social-analytics/post-video.js \
             --template="$TEMPLATE" \
+            --offer="$OFFER" \
             --platforms="$PLATFORMS" \
             --campaign="autopilot-$WEEK" \
             $DRY_RUN_FLAG
