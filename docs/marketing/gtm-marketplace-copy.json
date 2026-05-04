@@ -2,8 +2,8 @@
   "generatedAt": "2026-05-03T23:29:58.043Z",
   "state": "cold-start",
   "headline": "Harden one AI-agent workflow before you roll it out.",
-  "shortDescription": "Harden one AI-agent workflow before you roll it out. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.",
-  "longDescription": "ThumbGate is a reliability gateway for AI coding workflows. It captures repeated failures, regenerates pre-action gates, and keeps approval boundaries, rollback safety, and proof attached to the workflow before the next risky tool call. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible. Primary motion: Workflow Hardening Sprint. Secondary motion: Pro at $19/mo or $149/yr after the buyer asks for the self-serve path.",
+  "shortDescription": "Harden one AI-agent workflow before you roll it out. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.",
+  "longDescription": "ThumbGate is a reliability gateway for AI coding workflows. It captures repeated failures, regenerates pre-action gates, and keeps approval boundaries, rollback safety, and proof attached to the workflow before the next risky tool call. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible. Primary motion: Workflow Hardening Sprint. Secondary motion: Pro at $19/mo or $149/yr after the buyer asks for the self-serve path.",
   "proofPolicy": "Do not lead with proof links. Use Commercial Truth and Verification Evidence only after the buyer confirms pain.",
   "recommendedCtas": [
     {
@@ -62,6 +62,18 @@
       "label": "Business-system workflow approvals",
       "summary": "Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof.",
       "listingAngle": "Lead with approval boundaries, rollback safety, and proof for one workflow.",
+      "count": 4,
+      "examples": [
+        "montenegronyc/backporcher",
+        "dolutech/engine_context",
+        "Adqui9608/ai-code-review-agent"
+      ]
+    },
+    {
+      "key": "production_rollout",
+      "label": "Production rollout proof",
+      "summary": "Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems.",
+      "listingAngle": "Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.",
       "count": 4,
       "examples": [
         "montenegronyc/backporcher",
@@ -139,6 +151,30 @@
       "shortDescription": "Lead with one workflow in Jira, GitHub, ServiceNow, Slack, or CRM systems that needs proof before wider rollout.",
       "evidenceSummary": "Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof.",
       "listingAngle": "Lead with approval boundaries, rollback safety, and proof for one workflow.",
+      "primaryCta": {
+        "motion": "sprint",
+        "label": "Workflow Hardening Sprint",
+        "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+      },
+      "secondaryCta": {
+        "motion": "guide",
+        "label": "Proof-backed setup guide",
+        "cta": "https://thumbgate-production.up.railway.app/guide"
+      },
+      "sampleTargets": [
+        "montenegronyc/backporcher",
+        "dolutech/engine_context",
+        "Adqui9608/ai-code-review-agent"
+      ]
+    },
+    {
+      "key": "production_rollout",
+      "label": "Production rollout proof",
+      "audience": "Platform teams protecting production, release, incident, or compliance workflows.",
+      "headline": "Prove one production agent workflow is safe before the next rollout.",
+      "shortDescription": "Lead with one production workflow where repeated mistakes, rollback risk, or audit pressure already make the pain expensive.",
+      "evidenceSummary": "Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems.",
+      "listingAngle": "Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.",
       "primaryCta": {
         "motion": "sprint",
         "label": "Workflow Hardening Sprint",
