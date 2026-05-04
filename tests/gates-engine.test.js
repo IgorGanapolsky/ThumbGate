@@ -1486,6 +1486,10 @@ test('evaluateGates blocks boostedRisk highRiskTags before advisory memory', () 
 
 test('git commit on PR branch registers thread-resolution claim gate and blocks next non-evidence tool', () => {
   cleanupStateFiles();
+  setTaskScope({
+    allowedPaths: ['README.md'],
+    summary: 'Keep the commit-claim registration test isolated from the caller worktree.',
+  });
   const tmpConfig = makeTempPath('pr-commit-empty-gates.json');
   fs.writeFileSync(tmpConfig, JSON.stringify({ version: 1, gates: [] }));
 
@@ -1493,6 +1497,7 @@ test('git commit on PR branch registers thread-resolution claim gate and blocks 
     command: 'git commit -m "fix review feedback"',
     branchName: 'fix/review-feedback',
     prNumber: 123,
+    changedFiles: ['README.md'],
   }, tmpConfig);
   assert.equal(commitResult, null);
   assert.ok(hasAction(PR_THREAD_RESOLUTION_ACTION));

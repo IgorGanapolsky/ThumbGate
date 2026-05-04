@@ -15,6 +15,8 @@ const {
 } = require('../scripts/workflow-sentinel');
 const {
   evaluateGatesAsync,
+  clearSessionActions,
+  setTaskScope,
 } = require('../scripts/gates-engine');
 const {
   callTool,
@@ -625,6 +627,16 @@ test('evaluateGatesAsync returns workflow sentinel warning when no static gate m
   writeJson(configPath, { version: 1, gates: [] });
   const previousFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
   process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
+  clearSessionActions();
+  setTaskScope({
+    allowedPaths: [
+      'src/api/server.js',
+      'adapters/mcp/server-stdio.js',
+      'config/mcp-allowlists.json',
+      'tests/mcp-server.test.js',
+    ],
+    summary: 'Isolate workflow-sentinel warning test from caller worktree state.',
+  });
 
   try {
     const result = await evaluateGatesAsync('Bash', {
@@ -666,6 +678,13 @@ test('evaluateGatesAsync enriches memory guard results with workflow sentinel co
   process.env.THUMBGATE_FEEDBACK_LOG = feedbackLogPath;
   process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = attributedFeedbackPath;
   process.env.THUMBGATE_GUARDS_PATH = path.join(path.dirname(feedbackLogPath), 'missing-guards.json');
+  clearSessionActions();
+  setTaskScope({
+    allowedPaths: [
+      'docs/**',
+    ],
+    summary: 'Isolate memory-guard sentinel enrichment test from caller worktree state.',
+  });
 
   try {
     const result = await evaluateGatesAsync('Bash', {
