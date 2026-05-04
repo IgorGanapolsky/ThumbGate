@@ -52,4 +52,3 @@ Use one link only when the conversation is explicitly about implementation:
 - Do not dunk on graph tools. Treat them as complementary context.
 - Do not lead with pricing.
 - Ask for the repeated failure pattern before pitching a sprint.
-
