@@ -344,9 +344,31 @@ function appendTelemetryEvent(feedbackDir, payload = {}, headers = {}) {
   return entry;
 }
 
-function loadTelemetryEventsFromPath(filePath) {
-  if (!fs.existsSync(filePath)) return [];
-  const raw = fs.readFileSync(filePath, 'utf-8').trim();
+const DEFAULT_BOUNDED_TELEMETRY_TAIL_BYTES = 8 * 1024 * 1024;
+
+function readTelemetryText(filePath, options = {}) {
+  if (!fs.existsSync(filePath)) return '';
+  const maxBytes = Number(options.maxBytes || 0);
+  if (maxBytes > 0) {
+    const stats = fs.statSync(filePath);
+    if (stats.size > maxBytes) {
+      const fd = fs.openSync(filePath, 'r');
+      try {
+        const buffer = Buffer.alloc(maxBytes);
+        fs.readSync(fd, buffer, 0, maxBytes, stats.size - maxBytes);
+        const text = buffer.toString('utf-8');
+        const firstNewline = text.indexOf('\n');
+        return firstNewline >= 0 ? text.slice(firstNewline + 1) : text;
+      } finally {
+        fs.closeSync(fd);
+      }
+    }
+  }
+  return fs.readFileSync(filePath, 'utf-8');
+}
+
+function loadTelemetryEventsFromPath(filePath, options = {}) {
+  const raw = readTelemetryText(filePath, options).trim();
   if (!raw) return [];
   return raw
     .split('\n')
@@ -365,13 +387,13 @@ function loadTelemetryEventsFromPath(filePath) {
     .filter(Boolean);
 }
 
-function loadTelemetryEvents(feedbackDir) {
+function loadTelemetryEvents(feedbackDir, options = {}) {
   const diagnostics = getTelemetrySourceDiagnostics(feedbackDir);
   const merged = [];
   const seen = new Set();
 
   for (const filePath of diagnostics.activePaths) {
-    const rows = loadTelemetryEventsFromPath(filePath);
+    const rows = loadTelemetryEventsFromPath(filePath, options);
     for (const row of rows) {
       const key = JSON.stringify(row);
       if (seen.has(key)) continue;
@@ -406,8 +428,11 @@ function summarizeRecentEvents(events) {
 
 function getTelemetrySummary(feedbackDir, options = {}) {
   const analyticsWindow = resolveAnalyticsWindow(options);
+  const telemetryLoadOptions = analyticsWindow.bounded
+    ? { maxBytes: Number(options.telemetryTailBytes || DEFAULT_BOUNDED_TELEMETRY_TAIL_BYTES) }
+    : {};
   const events = filterEntriesForWindow(
-    loadTelemetryEvents(feedbackDir),
+    loadTelemetryEvents(feedbackDir, telemetryLoadOptions),
     analyticsWindow,
     (entry) => entry && (entry.receivedAt || entry.timestamp)
   );
