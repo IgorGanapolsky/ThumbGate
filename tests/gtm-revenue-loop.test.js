@@ -9,6 +9,7 @@ const {
   analyzeTargetEvidence,
   applyPipelineStateToTargets,
   buildFallbackMessage,
+  buildBillingVerification,
   buildCheckoutCloseDraft,
   buildOperatorHandoffPayload,
   buildOperatorSendNowPayload,
@@ -24,11 +25,16 @@ const {
   hasCredibleRepoDescription,
   hasCredibleRepoIdentity,
   hasLowBuyerIntentSignals,
+  parseHistoricalCommercialTruthRevenue,
   parseArgs,
   prospectTargets,
+  readHistoricalCommercialTruthRevenue,
+  applyHistoricalRevenueProof,
+  formatHistoricalRevenueProofLine,
   renderMarketplaceCopyMarkdown,
   renderOperatorHandoffMarkdown,
   renderOperatorSendNowCsv,
+  renderOperatorSendNowMarkdown,
   renderRevenueLoopMarkdown,
   renderTeamOutreachMessagesMarkdown,
   resolveRevenueLoopSummary,
@@ -125,6 +131,70 @@ test('post-first-dollar directive downgrades to historical proof language when h
   assert.equal(directive.state, 'post-first-dollar');
   assert.match(directive.headline, /Historical booked revenue is verified/);
   assert.ok(directive.actions.some((entry) => /current live revenue/i.test(entry)));
+});
+
+test('historical commercial truth helpers parse, read, apply, and format verified revenue proof', () => {
+  const markdown = [
+    '# Commercial truth',
+    '',
+    'Verified cumulative booked revenue through March 19, 2026 is **$20.00** from `2` reconciled Stripe charges.',
+  ].join('\n');
+
+  const parsed = parseHistoricalCommercialTruthRevenue(markdown);
+  const read = readHistoricalCommercialTruthRevenue({
+    fsImpl: {
+      readFileSync(filePath, encoding) {
+        assert.equal(filePath, '/tmp/commercial-truth.md');
+        assert.equal(encoding, 'utf8');
+        return markdown;
+      },
+    },
+    filePath: '/tmp/commercial-truth.md',
+  });
+  const applied = applyHistoricalRevenueProof({
+    revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+    trafficMetrics: { checkoutStarts: 0 },
+  }, parsed);
+
+  assert.deepEqual(parsed, {
+    asOfDate: 'March 19, 2026',
+    paidOrders: 2,
+    bookedRevenueCents: 2000,
+    sourceDocument: 'docs/COMMERCIAL_TRUTH.md',
+  });
+  assert.deepEqual(read, parsed);
+  assert.equal(applied.revenue.paidOrders, 2);
+  assert.equal(applied.revenue.bookedRevenueCents, 2000);
+  assert.deepEqual(applied.revenue.historicalProof, parsed);
+  assert.equal(
+    formatHistoricalRevenueProofLine(parsed),
+    '2 paid order(s), $20.00 booked through March 19, 2026 from docs/COMMERCIAL_TRUTH.md.'
+  );
+});
+
+test('historical commercial truth helpers stay inert for missing or unusable proof', () => {
+  const emptySummary = {
+    revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+    pipeline: {},
+  };
+
+  assert.equal(parseHistoricalCommercialTruthRevenue('No verified revenue line here.'), null);
+  assert.equal(readHistoricalCommercialTruthRevenue({
+    fsImpl: {
+      readFileSync() {
+        throw new Error('missing');
+      },
+    },
+    filePath: '/tmp/missing.md',
+  }), null);
+  assert.equal(applyHistoricalRevenueProof(emptySummary, null), emptySummary);
+  assert.equal(formatHistoricalRevenueProofLine(null), '');
+  assert.equal(formatHistoricalRevenueProofLine({
+    asOfDate: 'March 19, 2026',
+    paidOrders: 0,
+    bookedRevenueCents: 0,
+    sourceDocument: 'docs/COMMERCIAL_TRUTH.md',
+  }), '');
 });
 
 test('resolveRevenueLoopSummary prefers hosted revenue status when local operator auth is missing', async () => {
@@ -418,6 +488,24 @@ test('resolveRevenueLoopSummary falls back to historical commercial truth revenu
     buildMotionCatalog(buildRevenueLinks()),
     { mode: 'historical-local' }
   ).state, 'post-first-dollar');
+});
+
+test('buildBillingVerification keeps local-unverified mode when no historical proof exists', () => {
+  const verification = buildBillingVerification({
+    source: 'local-unverified',
+    fallbackReason: 'Hosted operational summary is not configured.',
+    snapshot: {
+      paidOrders: 0,
+      bookedRevenueCents: 0,
+    },
+  });
+
+  assert.deepEqual(verification, {
+    mode: 'local-unverified',
+    label: 'Hosted billing could not be verified in this run; local fallback is not safe for fresh traction claims.',
+    source: 'local-unverified',
+    fallbackReason: 'Hosted operational summary is not configured.',
+  });
 });
 
 test('argument and commercial snapshot helpers stay bounded and explicit', () => {
@@ -2596,6 +2684,48 @@ test('operator send-now export flattens ranked handoff rows for batch ops', () =
   assert.match(csv, /Reddit DM: https:\/\/www\.reddit\.com\/user\/builder\//);
   assert.match(csv, /Target signal: https:\/\/github\.com\/example\/production-mcp-server; Commercial truth:/);
   assert.match(csv, /I can harden one workflow, then prove it\./);
+});
+
+test('operator send-now markdown includes historical proof when commercial truth drives the fallback', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const report = buildRevenueLoopReport({
+    source: 'local-unverified',
+    fallbackReason: 'Hosted operational summary is not configured. Historical commercial proof applied from docs/COMMERCIAL_TRUTH.md.',
+    summary: {
+      revenue: {
+        paidOrders: 2,
+        bookedRevenueCents: 2000,
+        historicalProof: {
+          asOfDate: 'March 19, 2026',
+          paidOrders: 2,
+          bookedRevenueCents: 2000,
+          sourceDocument: 'docs/COMMERCIAL_TRUTH.md',
+        },
+      },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    },
+    motionCatalog: catalog,
+    directive: deriveRevenueDirective({
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    }, catalog, {
+      mode: 'historical-local',
+    }),
+    targets: [],
+  });
+
+  const markdown = renderOperatorSendNowMarkdown({
+    ...report,
+    snapshotWindow: 'historical-commercial-truth',
+  });
+
+  assert.match(markdown, /Billing verification: Historical booked revenue is verified/);
+  assert.match(markdown, /Historical revenue proof: 2 paid order\(s\), \$20\.00 booked through March 19, 2026/);
 });
 
 test('warm-target report output does not emit blank repo placeholders in follow-up drafts', () => {

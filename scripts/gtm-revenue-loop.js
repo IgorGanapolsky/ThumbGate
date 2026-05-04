@@ -15,6 +15,7 @@ const GITHUB_API_BASE_URL = 'https://api.github.com/';
 const COMMERCIAL_TRUTH_PATH = path.resolve(__dirname, '..', 'docs', 'COMMERCIAL_TRUTH.md');
 const COMMERCIAL_TRUTH_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md';
 const VERIFICATION_EVIDENCE_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
+const HISTORICAL_COMMERCIAL_TRUTH_REVENUE_PATTERN = /Verified cumulative booked revenue through (?<asOfDate>[a-z]+ \d{1,2}, \d{4}) is \*\*\$(?<amountUsd>\d+(?:\.\d{2})?)\*\* from `(?<paidOrders>\d+)` reconciled Stripe charges/i;
 const TARGET_SEARCH_QUERIES = [
   'search/repositories?q=Model+Context+Protocol+workflow+automation+sort:updated',
   'search/repositories?q=Model+Context+Protocol+approval+workflow+sort:updated',
@@ -672,14 +673,16 @@ function hasRevenueLoopBookedRevenue(summary = {}) {
 }
 
 function parseHistoricalCommercialTruthRevenue(markdown = '') {
-  const match = String(markdown).match(
-    /Verified cumulative booked revenue through ([A-Za-z]+ \d{1,2}, \d{4}) is \*\*\$(\d+(?:\.\d{2})?)\*\* from `(\d+)` reconciled Stripe charges/i
-  );
+  const match = HISTORICAL_COMMERCIAL_TRUTH_REVENUE_PATTERN.exec(String(markdown));
   if (!match) {
     return null;
   }
 
-  const [, asOfDate, amountUsd, paidOrders] = match;
+  const {
+    asOfDate,
+    amountUsd,
+    paidOrders,
+  } = match.groups || {};
   const bookedRevenueCents = Math.round(Number(amountUsd) * 100);
   if (!Number.isFinite(bookedRevenueCents)) {
     return null;
@@ -2830,11 +2833,17 @@ module.exports = {
   buildOperatorSendNowPayload,
   renderOperatorHandoffMarkdown,
   renderOperatorSendNowCsv,
+  renderOperatorSendNowMarkdown,
   renderTeamOutreachMessagesMarkdown,
   resolveRevenueLoopSummary,
   runRevenueLoop,
   selectOutreachMotion,
   summarizeCommercialSnapshot,
+  parseHistoricalCommercialTruthRevenue,
+  readHistoricalCommercialTruthRevenue,
+  applyHistoricalRevenueProof,
+  formatHistoricalRevenueProofLine,
+  buildBillingVerification,
   writeRevenueLoopOutputs,
   buildMarketplaceCopy,
   enrichGitHubTarget,
