@@ -29,7 +29,7 @@ test('pro landing page positions ThumbGate Pro as the paid operator lane', () =>
 test('pro landing page uses checkout routes for monthly and annual conversions', () => {
   const proPage = readProPage();
 
-  assert.match(proPage, /Start 7-Day Free Trial/i);
+  assert.match(proPage, /Start Pro Now/i);
   assert.match(proPage, /\/checkout\/pro\?/);
   assert.match(proPage, /billing_cycle=annual/);
   assert.match(proPage, /\$19\/mo/);
