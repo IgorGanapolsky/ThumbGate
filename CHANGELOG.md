@@ -1,5 +1,43 @@
 # Changelog
 
+## 1.16.14
+
+### Patch Changes
+
+- [#1695](https://github.com/IgorGanapolsky/ThumbGate/pull/1695) [`24b27ef`](https://github.com/IgorGanapolsky/ThumbGate/commit/24b27ef9bddb887ad8fab6e88d22d5e910370a39) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add the high-ROI May 2026 agent-governance batch: redaction-first reasoning trace analytics, RLSD-style step credit assignment, agent-design governance, Gemini Embedding 2 rollout policy, proxy-pointer RAG guardrails, retrieval precision guardrails, long-running agent context guardrails, reasoning efficiency guardrails, weekly Medium/community visibility artifacts, Bluesky reply-monitor wiring, and new proof-backed SEO/GEO acquisition pages.
+
+- [#1688](https://github.com/IgorGanapolsky/ThumbGate/pull/1688) [`aad44cd`](https://github.com/IgorGanapolsky/ThumbGate/commit/aad44cdd42bc4d20989ef265248771e0651825c9) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add an RL-style agent reward model that scores session episodes, exports preference pairs, ranks gate candidates, and allocates verification depth for high-risk actions.
+
+- [#1688](https://github.com/IgorGanapolsky/ThumbGate/pull/1688) [`aad44cd`](https://github.com/IgorGanapolsky/ThumbGate/commit/aad44cdd42bc4d20989ef265248771e0651825c9) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add Agentix Labs competitive positioning, Medium weekly draft orchestration, and Bluesky approved-reply publishing safeguards.
+
+- [#1688](https://github.com/IgorGanapolsky/ThumbGate/pull/1688) [`aad44cd`](https://github.com/IgorGanapolsky/ThumbGate/commit/aad44cdd42bc4d20989ef265248771e0651825c9) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add local LaunchAgent wiring for autonomous Bluesky reply monitoring.
+
+- [#1688](https://github.com/IgorGanapolsky/ThumbGate/pull/1688) [`aad44cd`](https://github.com/IgorGanapolsky/ThumbGate/commit/aad44cdd42bc4d20989ef265248771e0651825c9) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add checkout-cancel recovery offers for the sprint diagnostic and workflow hardening sprint.
+
+- [#1695](https://github.com/IgorGanapolsky/ThumbGate/pull/1695) [`24b27ef`](https://github.com/IgorGanapolsky/ThumbGate/commit/24b27ef9bddb887ad8fab6e88d22d5e910370a39) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add DeepSeek-V4 runtime guardrails and upstream contribution discovery so operators can gate sparse-attention model rollouts and rank real dependency repos for proof-backed PR opportunities.
+
+- [#1688](https://github.com/IgorGanapolsky/ThumbGate/pull/1688) [`aad44cd`](https://github.com/IgorGanapolsky/ThumbGate/commit/aad44cdd42bc4d20989ef265248771e0651825c9) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Normalize public marketing HTML to the configured ThumbGate origin and emit the standard GA4 config snippet so Google tag verification can detect the live site.
+
+- [#1687](https://github.com/IgorGanapolsky/ThumbGate/pull/1687) [`1a584bc`](https://github.com/IgorGanapolsky/ThumbGate/commit/1a584bc439fd48eeb270b9f5f2fb2e905d199c2a) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Preserve verified historical commercial revenue proof in GTM operator assets when hosted billing cannot be verified for the current run.
+
+- [#1673](https://github.com/IgorGanapolsky/ThumbGate/pull/1673) [`69ec242`](https://github.com/IgorGanapolsky/ThumbGate/commit/69ec242087198d6283165e097434104ea88fdb4d) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Clarify on the homepage that the 7-day free trial applies to Pro, while Team starts through the Workflow Hardening Sprint intake instead of a self-serve trial.
+
+- [#1688](https://github.com/IgorGanapolsky/ThumbGate/pull/1688) [`aad44cd`](https://github.com/IgorGanapolsky/ThumbGate/commit/aad44cdd42bc4d20989ef265248771e0651825c9) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add knowledge-graph-informed gate templates, guide content, and engagement copy for code graph safety positioning.
+
+- [#1692](https://github.com/IgorGanapolsky/ThumbGate/pull/1692) [`2525e41`](https://github.com/IgorGanapolsky/ThumbGate/commit/2525e4137cde61680da604f49c5196eb68b8b662) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Complete the GTM operator send-now handoff with contact surfaces, company context, and lifecycle sales commands for call booked, sprint intake, and paid stages.
+
+- [#1688](https://github.com/IgorGanapolsky/ThumbGate/pull/1688) [`aad44cd`](https://github.com/IgorGanapolsky/ThumbGate/commit/aad44cdd42bc4d20989ef265248771e0651825c9) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a macOS LaunchAgent installer for aggressive local Reddit thread monitoring.
+
+- [#1688](https://github.com/IgorGanapolsky/ThumbGate/pull/1688) [`aad44cd`](https://github.com/IgorGanapolsky/ThumbGate/commit/aad44cdd42bc4d20989ef265248771e0651825c9) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add Reddit thread watch orchestration that drafts replies for configured public discussion URLs.
+
+- [#1678](https://github.com/IgorGanapolsky/ThumbGate/pull/1678) [`c9112e4`](https://github.com/IgorGanapolsky/ThumbGate/commit/c9112e43f6dddf8122af40660dc870d0d1476dc1) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Prioritize actionable hosted revenue-status configuration gaps over stale local-fallback labels when hosted signals are visible.
+
+- [#1688](https://github.com/IgorGanapolsky/ThumbGate/pull/1688) [`aad44cd`](https://github.com/IgorGanapolsky/ThumbGate/commit/aad44cdd42bc4d20989ef265248771e0651825c9) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Keep the legacy Stripe webhook route unauthenticated and signature-verified so older Stripe endpoints do not fail behind API-key auth. Add Stripe webhook audit and legacy-cleanup operator commands so dead `rlhf-feedback-loop` endpoints can be detected and disabled without rotating the active ThumbGate webhook secret.
+
+- [#1688](https://github.com/IgorGanapolsky/ThumbGate/pull/1688) [`aad44cd`](https://github.com/IgorGanapolsky/ThumbGate/commit/aad44cdd42bc4d20989ef265248771e0651825c9) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add developer-machine supply-chain guardrails, buyer guide content, and engagement copy for AI coding assistant security positioning.
+
+- [#1675](https://github.com/IgorGanapolsky/ThumbGate/pull/1675) [`0532343`](https://github.com/IgorGanapolsky/ThumbGate/commit/05323432f71d0603acd35c6731c2f86d0d85067c) Thanks [@dependabot](https://github.com/apps/dependabot)! - Update the direct development dependency on undici to 8.2.0.
+
 ## 1.16.13
 
 ### Patch Changes
