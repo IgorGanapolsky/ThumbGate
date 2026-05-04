@@ -23,6 +23,7 @@ const GUIDE_FILES = [
   'guides/reasoning-compression-guardrails.html',
   'guides/deepseek-v4-runtime-guardrails.html',
   'guides/background-agent-governance.html',
+  'guides/ai-agent-governance-sprint.html',
   'guides/gpt-5-5-model-evaluation.html',
   'guides/browser-automation-safety.html',
   'guides/native-messaging-host-security.html',
@@ -133,6 +134,18 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('pre-dispatch governance check'));
     assert.ok(html.includes('risk-tiered review'));
     assert.ok(html.includes('Workflow Hardening Sprint'));
+  });
+
+  it('AI agent governance sprint guide routes buyers into the Team intake', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/ai-agent-governance-sprint.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('AI Agent Governance Sprint'));
+    assert.ok(html.includes('48-hour Workflow Hardening Sprint'));
+    assert.ok(html.includes('npx thumbgate background-governance --check --json'));
+    assert.ok(html.includes('workflow-sprint-intake'));
   });
 
   it('GPT-5.5 model evaluation guide routes teams into benchmark-first model routing', () => {
