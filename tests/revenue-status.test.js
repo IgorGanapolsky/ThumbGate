@@ -8,6 +8,7 @@ const {
   parseArgs,
   parseGhVariableList,
   parseHtmlSignals,
+  resolveHostedAuditApiKey,
   fetchWithTimeout,
   buildDiagnosis,
   formatReport,
@@ -31,6 +32,20 @@ test('parseArgs accepts bounded audit timeout overrides', () => {
 
   assert.equal(options.fetchTimeoutMs, 2500);
   assert.equal(options.commandTimeoutMs, 7000);
+});
+
+test('resolveHostedAuditApiKey prefers operator key over general API key', () => {
+  assert.equal(resolveHostedAuditApiKey({
+    THUMBGATE_OPERATOR_KEY: 'tg_operator',
+    THUMBGATE_API_KEY: 'tg_api',
+  }), 'tg_operator');
+  assert.equal(resolveHostedAuditApiKey({
+    THUMBGATE_API_KEY: 'tg_api',
+  }), 'tg_api');
+  assert.equal(resolveHostedAuditApiKey({
+    THUMBGATE_OPERATOR_KEY: '   ',
+    THUMBGATE_API_KEY: '',
+  }), '');
 });
 
 test('fetchWithTimeout rejects stalled hosted calls with a readable error', async () => {

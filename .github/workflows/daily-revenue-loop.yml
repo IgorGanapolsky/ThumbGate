@@ -30,6 +30,7 @@ jobs:
         id: revenue-status
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          THUMBGATE_OPERATOR_KEY: ${{ secrets.THUMBGATE_OPERATOR_KEY }}
           THUMBGATE_API_KEY: ${{ secrets.THUMBGATE_API_KEY }}
         run: |
           mkdir -p reports/revenue

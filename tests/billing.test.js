@@ -269,7 +269,7 @@ describe('billing.js — funnel ledger', () => {
     });
     assert.equal(withEmail.customer_email, 'buyer@example.com');
     assert.equal(withoutEmail.mode, 'subscription');
-    assert.equal(withoutEmail.payment_method_collection, 'if_required');
+    assert.equal(withoutEmail.payment_method_collection, 'always');
     assert.equal(withoutEmail.metadata.priceId, billing.CONFIG.STRIPE_PRICE_ID_PRO_MONTHLY);
     assert.equal(withoutEmail.line_items[0].price_data.unit_amount, 1900);
     assert.equal(withoutEmail.line_items[0].price_data.recurring.interval, 'month');
@@ -295,7 +295,7 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(annual.line_items[0].price_data.unit_amount, 14900);
     assert.equal(annual.line_items[0].price_data.recurring.interval, 'year');
     assert.equal(annual.line_items[0].quantity, 1);
-    assert.equal(annual.payment_method_collection, 'if_required');
+    assert.equal(annual.payment_method_collection, 'always');
     assert.equal(annual.metadata.billingCycle, 'annual');
 
     const team = billing._buildCheckoutSessionPayload({
@@ -312,7 +312,7 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(team.line_items[0].price_data.unit_amount, 4900);
     assert.equal(team.line_items[0].price_data.recurring.interval, 'month');
     assert.equal(team.line_items[0].quantity, 3);
-    assert.equal(team.payment_method_collection, 'if_required');
+    assert.equal(team.payment_method_collection, 'always');
     assert.equal(team.metadata.planId, 'team');
     assert.equal(team.metadata.seatCount, '3');
 

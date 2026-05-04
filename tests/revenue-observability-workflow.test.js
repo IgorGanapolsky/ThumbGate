@@ -13,6 +13,7 @@ test('daily revenue loop audits hosted revenue truth before reporting', () => {
   const workflow = readWorkflow();
 
   assert.match(workflow, /name: Audit hosted revenue truth/);
+  assert.match(workflow, /THUMBGATE_OPERATOR_KEY: \$\{\{ secrets\.THUMBGATE_OPERATOR_KEY \}\}/);
   assert.match(workflow, /THUMBGATE_API_KEY: \$\{\{ secrets\.THUMBGATE_API_KEY \}\}/);
   assert.match(workflow, /node scripts\/revenue-status\.js --json/);
   assert.match(workflow, /SOURCE=\$\(node -p "require\('\.\/reports\/revenue\/revenue-status\.json'\)\.source"\)/);

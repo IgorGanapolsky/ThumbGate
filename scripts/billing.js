@@ -2539,10 +2539,10 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
       packId: pack ? pack.id : null,
       credits: pack ? pack.credits : null,
     }),
-    // 7-day free trial for subscriptions — don't require card upfront
+    // Keep the trial, but require a payment method so trials can convert without dunning.
     ...(pack ? {} : {
       subscription_data: { trial_period_days: 7 },
-      payment_method_collection: 'if_required',
+      payment_method_collection: 'always',
     }),
   };
 
