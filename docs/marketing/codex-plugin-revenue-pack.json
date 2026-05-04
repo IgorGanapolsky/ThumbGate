@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-04T05:14:25.441Z",
+  "generatedAt": "2026-05-04T11:45:22.326Z",
   "channel": "Codex",
   "objective": "Turn Codex plugin discovery into tracked guide opens, bundle downloads, Pro checkout starts, and qualified workflow-hardening conversations.",
   "canonicalIdentity": {
@@ -26,8 +26,8 @@
     {
       "key": "workflow_control",
       "label": "Workflow control surfaces remain the strongest buyer signal",
-      "count": 6,
-      "summary": "6 current targets expose review, approval, governance, or workflow control surfaces where a Codex install story can convert into a workflow-hardening offer.",
+      "count": 10,
+      "summary": "10 current targets expose review, approval, governance, or workflow control surfaces where a Codex install story can convert into a workflow-hardening offer.",
       "examples": [
         "montenegronyc/backporcher",
         "dolutech/engine_context",
@@ -37,8 +37,8 @@
     {
       "key": "production_rollout",
       "label": "Production rollout proof matters",
-      "count": 4,
-      "summary": "4 targets touch production-sensitive workflows where proof and rollback safety should appear before the buyer expands usage.",
+      "count": 10,
+      "summary": "10 targets touch production-sensitive workflows where proof and rollback safety should appear before the buyer expands usage.",
       "examples": [
         "montenegronyc/backporcher",
         "dolutech/engine_context",
@@ -247,6 +247,34 @@
       "summary": "Use these when the buyer already exposes a plugin, local-hook, or repo-backed tooling surface and should start with the guide path.",
       "targets": [
         {
+          "account": "agynio/gh-pr-review",
+          "temperature": "cold",
+          "source": "github / github",
+          "evidenceScore": 15,
+          "whyNow": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
+          "evidence": "workflow control surface; business-system integration; self-serve agent tooling; 144 GitHub stars; updated in the last 7 days",
+          "contact": "https://agyn.io/",
+          "cta": "https://thumbgate-production.up.railway.app/guide",
+          "proofTrigger": "Use proof pack only after the buyer confirms pain.",
+          "firstTouchDraft": "Hey @agynio, saw you're building around `gh-pr-review`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
+          "markContactedCommand": "npm run sales:pipeline -- advance --lead 'github_agynio_gh_pr_review' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+          "pipelineLeadId": "github_agynio_gh_pr_review"
+        },
+        {
+          "account": "BaseInfinity/claude-sdlc-wizard",
+          "temperature": "cold",
+          "source": "github / github",
+          "evidenceScore": 14,
+          "whyNow": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
+          "evidence": "workflow control surface; production or platform workflow; self-serve agent tooling; 15 GitHub stars; updated in the last 7 days",
+          "contact": "https://www.youtube.com/@Basecase_/featured",
+          "cta": "https://thumbgate-production.up.railway.app/guide",
+          "proofTrigger": "Use proof pack only after the buyer confirms pain.",
+          "firstTouchDraft": "Hey @BaseInfinity, saw you're building around `claude-sdlc-wizard`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
+          "markContactedCommand": "npm run sales:pipeline -- advance --lead 'github_baseinfinity_claude_sdlc_wizard' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+          "pipelineLeadId": "github_baseinfinity_claude_sdlc_wizard"
+        },
+        {
           "account": "bherald/personal-life-os-core",
           "temperature": "cold",
           "source": "github / github",
@@ -259,34 +287,6 @@
           "firstTouchDraft": "Hey @bherald, saw you're building around `personal-life-os-core`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
           "markContactedCommand": "npm run sales:pipeline -- advance --lead 'github_bherald_personal_life_os_core' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
           "pipelineLeadId": "github_bherald_personal_life_os_core"
-        },
-        {
-          "account": "iliaal/whetstone",
-          "temperature": "cold",
-          "source": "github / github",
-          "evidenceScore": 12,
-          "whyNow": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
-          "evidence": "workflow control surface; agent infrastructure; self-serve agent tooling; 13 GitHub stars; updated in the last 7 days",
-          "contact": "http://ilia.ws/",
-          "cta": "https://thumbgate-production.up.railway.app/guide",
-          "proofTrigger": "Use proof pack only after the buyer confirms pain.",
-          "firstTouchDraft": "Hey @iliaal, saw you're building around `whetstone`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
-          "markContactedCommand": "npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-          "pipelineLeadId": "github_iliaal_whetstone"
-        },
-        {
-          "account": "zaxbysauce/opencode-swarm",
-          "temperature": "cold",
-          "source": "github / github",
-          "evidenceScore": 12,
-          "whyNow": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
-          "evidence": "workflow control surface; self-serve agent tooling; 295 GitHub stars; updated in the last 7 days",
-          "contact": "https://github.com/zaxbysauce",
-          "cta": "https://thumbgate-production.up.railway.app/guide",
-          "proofTrigger": "Use proof pack only after the buyer confirms pain.",
-          "firstTouchDraft": "Hey @zaxbysauce, saw you're building around `opencode-swarm`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
-          "markContactedCommand": "npm run sales:pipeline -- advance --lead 'github_zaxbysauce_opencode_swarm' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-          "pipelineLeadId": "github_zaxbysauce_opencode_swarm"
         }
       ]
     }
