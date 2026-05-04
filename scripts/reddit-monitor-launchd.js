@@ -53,8 +53,6 @@ function buildRedditMonitorPlist(options = {}) {
   <string>${escapePlistString(path.join(logDir, 'reddit-monitor-launchd.stderr.log'))}</string>
   <key>EnvironmentVariables</key>
   <dict>
-    <key>PATH</key>
-    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
     <key>HOME</key>
     <string>${escapePlistString(os.homedir())}</string>
     <key>THUMBGATE_REPO_DIR</key>

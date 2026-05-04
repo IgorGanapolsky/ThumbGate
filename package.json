@@ -489,7 +489,7 @@
     "test:publish-thumbgate-launch": "node --test tests/publish-thumbgate-launch.test.js",
     "test:reconcile-thumbgate-campaign": "node --test tests/reconcile-thumbgate-campaign.test.js",
     "test:schedule-thumbgate-campaign": "node --test tests/schedule-thumbgate-campaign.test.js",
-    "test:social-reply-monitor": "node --test tests/social-reply-monitor.test.js",
+    "test:social-reply-monitor": "node --test tests/social-reply-monitor.test.js tests/reddit-monitor-launchd.test.js",
     "test:bluesky-atproto": "node --test tests/bluesky-atproto.test.js",
     "test:social-reply-monitor-bluesky": "node --test tests/social-reply-monitor-bluesky.test.js",
     "test:bluesky-delete-replies": "node --test tests/bluesky-delete-replies.test.js",
