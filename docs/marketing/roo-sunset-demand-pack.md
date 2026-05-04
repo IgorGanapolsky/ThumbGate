@@ -1,6 +1,6 @@
 # Roo Sunset Demand Pack
 
-Updated: 2026-05-03T23:29:58.043Z
+Updated: 2026-05-04T05:14:25.441Z
 
 This is a sales operator artifact. It is not proof of sent outreach, installs, paid revenue, or partner approval by itself.
 
@@ -73,7 +73,7 @@ Turn Roo shutdown urgency into tracked migration clicks, proof-backed setup dema
 - Recommended motion: Roo migration guide -> Cline install guide -> setup guide -> Pro only after one saved correction is concrete.
 
 ### Team migrating one risky workflow off Roo
-- Evidence: 5 workflow-control target(s), 4 business-system target(s), and 7 sprint-fit target(s) already favor workflow hardening over a generic plugin pitch.
+- Evidence: 6 workflow-control target(s), 3 business-system target(s), and 7 sprint-fit target(s) already favor workflow hardening over a generic plugin pitch.
 - Proof trigger: They can point to one approval boundary, rollback risk, or repo workflow that cannot afford repeated mistakes during migration.
 - Proof asset: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 - Next ask: https://thumbgate-production.up.railway.app/?utm_source=roo_sunset&utm_medium=operator_outreach&utm_campaign=roo_queue_sprint&utm_content=workflow_sprint&campaign_variant=migration_workflow&offer_code=ROO-QUEUE_SPRINT&cta_id=roo_queue_sprint&cta_placement=operator_queue&surface=roo_outreach#workflow-sprint-intake
@@ -106,7 +106,7 @@ Roo sunsets on May 15, 2026. Cline is the obvious successor, but the real migrat
 
 ### LinkedIn — Founder post
 - Audience: Platform or AI-product lead migrating one workflow off Roo
-- Evidence: 7 sprint-fit target(s) plus 4 business-system target(s) make workflow-risk migration the strongest B2B Roo angle.
+- Evidence: 7 sprint-fit target(s) plus 3 business-system target(s) make workflow-risk migration the strongest B2B Roo angle.
 - CTA: https://thumbgate-production.up.railway.app/?utm_source=roo_sunset&utm_medium=linkedin_post&utm_campaign=roo_channel_linkedin&utm_content=workflow_sprint&campaign_variant=migration_workflow&offer_code=ROO-CHANNEL-LINKEDIN&cta_id=roo_channel_linkedin&cta_placement=channel_draft&surface=roo_linkedin#workflow-sprint-intake
 - Proof timing: Public post can reference the shutdown, but hold proof links until the buyer confirms one workflow risk.
 Roo shutting down is a forcing function, not the real problem. The real problem is migrating one live workflow without reteaching approval boundaries, rollback rules, and repo-specific mistakes from zero. If your team already has that workflow in mind, start with the Workflow Hardening Sprint here: https://thumbgate-production.up.railway.app/?utm_source=roo_sunset&utm_medium=linkedin_post&utm_campaign=roo_channel_linkedin&utm_content=workflow_sprint&campaign_variant=migration_workflow&offer_code=ROO-CHANNEL-LINKEDIN&cta_id=roo_channel_linkedin&cta_placement=channel_draft&surface=roo_linkedin#workflow-sprint-intake .
@@ -129,8 +129,8 @@ Roo shutting down is a reminder that vendor-scoped memory is a bad design. Keep 
 - Warm targets: 4
 - Self-serve targets: 3
 - Sprint-fit targets: 7
-- Workflow-control targets: 5
-- Business-system targets: 4
+- Workflow-control targets: 6
+- Business-system targets: 3
 
 ## 90-Day Measurement Plan
 - North star: roo_migration_to_paid_intent
