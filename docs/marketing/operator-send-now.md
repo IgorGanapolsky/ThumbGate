@@ -1,6 +1,6 @@
 # Revenue Operator Send-Now Sheet
 
-Updated: 2026-05-04T05:14:25.441Z
+Updated: 2026-05-04T11:45:22.326Z
 
 This is the flat batch-send layer for the current revenue loop. Use it when you want the message, CTA, and logging commands in one place without re-reading the full GTM report.
 
@@ -15,8 +15,8 @@ Pair this file with `operator-priority-handoff.md` when you need deeper account 
 - Active follow-ups: 0
 - Warm targets ready now: 4
 - Self-serve closes ready now: 3
-- Production-rollout targets ready now: 3
-- Cold GitHub targets ready next: 0
+- Production-rollout targets ready now: 8
+- Cold GitHub targets ready next: 1
 
 ## Batch Rules
 - Import the queue into the sales ledger before sending anything.
@@ -136,7 +136,59 @@ Checkout close draft:
 
 ## Close Now: Self-Serve Pro
 
-### 1. @bherald - personal-life-os-core
+### 1. @agynio - gh-pr-review
+- Channel: github / github
+- Pipeline stage: targeted
+- Pipeline lead id: github_agynio_gh_pr_review
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Evidence score: 15
+- Motion: Pro at $19/mo or $149/yr
+- Why now: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/guide
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_agynio_gh_pr_review' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_agynio_gh_pr_review' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after checkout started: `npm run sales:pipeline -- advance --lead 'github_agynio_gh_pr_review' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+
+First-touch draft:
+> Hey @agynio, saw you're building around `gh-pr-review`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
+
+Pain-confirmed follow-up:
+> If you want the self-serve path for `gh-pr-review`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+Tool-path follow-up:
+> If you want the self-serve path for `gh-pr-review`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro
+
+Checkout close draft:
+> If you are already comparing close options for `gh-pr-review`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+### 2. @BaseInfinity - claude-sdlc-wizard
+- Channel: github / github
+- Pipeline stage: targeted
+- Pipeline lead id: github_baseinfinity_claude_sdlc_wizard
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Evidence score: 14
+- Motion: Pro at $19/mo or $149/yr
+- Why now: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/guide
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_baseinfinity_claude_sdlc_wizard' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'`
+- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_baseinfinity_claude_sdlc_wizard' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'`
+- Log after checkout started: `npm run sales:pipeline -- advance --lead 'github_baseinfinity_claude_sdlc_wizard' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing the proof-backed setup guide and local-first enforcement before any team-motion pitch.'`
+
+First-touch draft:
+> Hey @BaseInfinity, saw you're building around `claude-sdlc-wizard`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
+
+Pain-confirmed follow-up:
+> If you want the self-serve path for `claude-sdlc-wizard`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+Tool-path follow-up:
+> If you want the self-serve path for `claude-sdlc-wizard`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro
+
+Checkout close draft:
+> If you are already comparing close options for `claude-sdlc-wizard`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+### 3. @bherald - personal-life-os-core
 - Channel: github / github
 - Pipeline stage: targeted
 - Pipeline lead id: github_bherald_personal_life_os_core
@@ -161,58 +213,6 @@ Tool-path follow-up:
 
 Checkout close draft:
 > If you are already comparing close options for `personal-life-os-core`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
-
-### 2. @zaxbysauce - opencode-swarm
-- Channel: github / github
-- Pipeline stage: targeted
-- Pipeline lead id: github_zaxbysauce_opencode_swarm
-- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
-- Evidence score: 12
-- Motion: Pro at $19/mo or $149/yr
-- Why now: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
-- Proof rule: Use proof pack only after the buyer confirms pain.
-- CTA: https://thumbgate-production.up.railway.app/guide
-- Log after send: `npm run sales:pipeline -- advance --lead 'github_zaxbysauce_opencode_swarm' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'`
-- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_zaxbysauce_opencode_swarm' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'`
-- Log after checkout started: `npm run sales:pipeline -- advance --lead 'github_zaxbysauce_opencode_swarm' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing the proof-backed setup guide and local-first enforcement before any team-motion pitch.'`
-
-First-touch draft:
-> Hey @zaxbysauce, saw you're building around `opencode-swarm`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
-
-Pain-confirmed follow-up:
-> If you want the self-serve path for `opencode-swarm`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
-
-Tool-path follow-up:
-> If you want the self-serve path for `opencode-swarm`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro
-
-Checkout close draft:
-> If you are already comparing close options for `opencode-swarm`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
-
-### 3. @iliaal - whetstone
-- Channel: github / github
-- Pipeline stage: targeted
-- Pipeline lead id: github_iliaal_whetstone
-- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
-- Evidence score: 12
-- Motion: Pro at $19/mo or $149/yr
-- Why now: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
-- Proof rule: Use proof pack only after the buyer confirms pain.
-- CTA: https://thumbgate-production.up.railway.app/guide
-- Log after send: `npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'`
-- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'`
-- Log after checkout started: `npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing the proof-backed setup guide and local-first enforcement before any team-motion pitch.'`
-
-First-touch draft:
-> Hey @iliaal, saw you're building around `whetstone`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
-
-Pain-confirmed follow-up:
-> If you want the self-serve path for `whetstone`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
-
-Tool-path follow-up:
-> If you want the self-serve path for `whetstone`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro
-
-Checkout close draft:
-> If you are already comparing close options for `whetstone`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ## Send Next: Production Rollout
 
@@ -268,7 +268,59 @@ Tool-path follow-up:
 Checkout close draft:
 > If you are already comparing close options for `ai-code-review-agent`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
-### 3. @dolutech - engine_context
+### 3. @kamaldhingra - AI-Agents-QA-Automation
+- Channel: github / github
+- Pipeline stage: targeted
+- Pipeline lead id: github_kamaldhingra_ai_agents_qa_automation
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Evidence score: 15
+- Motion: Workflow Hardening Sprint
+- Why now: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_kamaldhingra_ai_agents_qa_automation' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_kamaldhingra_ai_agents_qa_automation' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after checkout started: `npm run sales:pipeline -- advance --lead 'github_kamaldhingra_ai_agents_qa_automation' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+
+First-touch draft:
+> Hey @kamaldhingra, saw you're shipping `AI-Agents-QA-Automation`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Pain-confirmed follow-up:
+> If `AI-Agents-QA-Automation` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+Tool-path follow-up:
+> If you want to inspect the self-serve path while you evaluate `AI-Agents-QA-Automation`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Checkout close draft:
+> If you are already comparing close options for `AI-Agents-QA-Automation`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+### 4. @Abhi268170 - Stagix
+- Channel: github / github
+- Pipeline stage: targeted
+- Pipeline lead id: github_abhi268170_stagix
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Evidence score: 15
+- Motion: Workflow Hardening Sprint
+- Why now: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_abhi268170_stagix' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_abhi268170_stagix' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after checkout started: `npm run sales:pipeline -- advance --lead 'github_abhi268170_stagix' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+
+First-touch draft:
+> Hey @Abhi268170, saw you're shipping `Stagix`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Pain-confirmed follow-up:
+> If `Stagix` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+Tool-path follow-up:
+> If you want to inspect the self-serve path while you evaluate `Stagix`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Checkout close draft:
+> If you are already comparing close options for `Stagix`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+### 5. @dolutech - engine_context
 - Channel: github / github
 - Pipeline stage: targeted
 - Pipeline lead id: github_dolutech_engine_context
@@ -293,3 +345,109 @@ Tool-path follow-up:
 
 Checkout close draft:
 > If you are already comparing close options for `engine_context`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+### 6. @maxritter - pilot-shell
+- Channel: github / github
+- Pipeline stage: targeted
+- Pipeline lead id: github_maxritter_pilot_shell
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Evidence score: 14
+- Motion: Workflow Hardening Sprint
+- Why now: Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_maxritter_pilot_shell' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on rollout proof for one production workflow that cannot afford repeated agent mistakes.'`
+- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_maxritter_pilot_shell' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around rollout proof for one production workflow that cannot afford repeated agent mistakes.'`
+- Log after checkout started: `npm run sales:pipeline -- advance --lead 'github_maxritter_pilot_shell' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing rollout proof for one production workflow that cannot afford repeated agent mistakes.'`
+
+First-touch draft:
+> Hey @maxritter, saw you're shipping `pilot-shell`. If one deploy, release, or incident workflow keeps needing extra guardrails, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Pain-confirmed follow-up:
+> If `pilot-shell` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+Tool-path follow-up:
+> If you want to inspect the self-serve path while you evaluate `pilot-shell`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Checkout close draft:
+> If you are already comparing close options for `pilot-shell`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+### 7. @getaxonflow - axonflow-claude-plugin
+- Channel: github / github
+- Pipeline stage: targeted
+- Pipeline lead id: github_getaxonflow_axonflow_claude_plugin
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Evidence score: 14
+- Motion: Workflow Hardening Sprint
+- Why now: Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_getaxonflow_axonflow_claude_plugin' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on rollout proof for one production workflow that cannot afford repeated agent mistakes.'`
+- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_getaxonflow_axonflow_claude_plugin' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around rollout proof for one production workflow that cannot afford repeated agent mistakes.'`
+- Log after checkout started: `npm run sales:pipeline -- advance --lead 'github_getaxonflow_axonflow_claude_plugin' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing rollout proof for one production workflow that cannot afford repeated agent mistakes.'`
+
+First-touch draft:
+> Hey @getaxonflow, saw you're shipping `axonflow-claude-plugin`. If one deploy, release, or incident workflow keeps needing extra guardrails, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Pain-confirmed follow-up:
+> If `axonflow-claude-plugin` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+Tool-path follow-up:
+> If you want to inspect the self-serve path while you evaluate `axonflow-claude-plugin`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Checkout close draft:
+> If you are already comparing close options for `axonflow-claude-plugin`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+### 8. @nihannihu - Omni-SRE
+- Channel: github / github
+- Pipeline stage: targeted
+- Pipeline lead id: github_nihannihu_omni_sre
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Evidence score: 14
+- Motion: Workflow Hardening Sprint
+- Why now: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_nihannihu_omni_sre' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_nihannihu_omni_sre' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after checkout started: `npm run sales:pipeline -- advance --lead 'github_nihannihu_omni_sre' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+
+First-touch draft:
+> Hey @nihannihu, saw you're shipping `Omni-SRE`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Pain-confirmed follow-up:
+> If `Omni-SRE` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+Tool-path follow-up:
+> If you want to inspect the self-serve path while you evaluate `Omni-SRE`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Checkout close draft:
+> If you are already comparing close options for `Omni-SRE`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+## Seed Next: Cold GitHub
+
+### 1. @hoangsonww - Claude-Code-Agent-Monitor
+- Channel: github / github
+- Pipeline stage: targeted
+- Pipeline lead id: github_hoangsonww_claude_code_agent_monitor
+- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Evidence score: 13
+- Motion: Workflow Hardening Sprint
+- Why now: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_hoangsonww_claude_code_agent_monitor' --channel 'manual' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'github_hoangsonww_claude_code_agent_monitor' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Log after checkout started: `npm run sales:pipeline -- advance --lead 'github_hoangsonww_claude_code_agent_monitor' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+
+First-touch draft:
+> Hey @hoangsonww, saw you're shipping `Claude-Code-Agent-Monitor`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Pain-confirmed follow-up:
+> If `Claude-Code-Agent-Monitor` really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+Tool-path follow-up:
+> If you want to inspect the self-serve path while you evaluate `Claude-Code-Agent-Monitor`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If you decide the tool path is enough, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro. If the blocker needs hands-on workflow hardening, keep the sprint intake here: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Checkout close draft:
+> If you are already comparing close options for `Claude-Code-Agent-Monitor`, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
