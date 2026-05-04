@@ -23,6 +23,7 @@ const {
   buildTrackedDirectoryLink,
   isCliInvocation,
   parseArgs,
+  renderMcpDirectorySurfacesCsv,
   renderMcpDirectoryRevenuePackMarkdown,
   writeMcpDirectoryRevenuePack,
 } = require('../scripts/mcp-directory-revenue-pack');
@@ -135,6 +136,16 @@ test('rendered markdown stays operator-ready and names the legacy leaks explicit
   assert.doesNotMatch(markdown, /official registry approved|guaranteed installs|guaranteed revenue/i);
 });
 
+test('directory surfaces csv stays operator-ready and machine-readable', () => {
+  const csv = renderMcpDirectorySurfacesCsv(buildMcpDirectoryRevenuePack(LINKS_FIXTURE));
+
+  assert.match(csv, /^key,name,role,publicStatus,operatorUse,surfaceUrl,submissionPath,support,evidenceCheckedAt,evidenceSummary,nextRepair,proof$/m);
+  assert.match(csv, /mcp_so,MCP\.so canonical listing,/);
+  assert.match(csv, /glama,Glama canonical listing,/);
+  assert.match(csv, /smithery,Smithery search result,/);
+  assert.doesNotMatch(csv, /guaranteed installs|guaranteed revenue|official registry approved/i);
+});
+
 test('checked-in MCP directory pack stays in sync with the generator output', () => {
   const committed = fs.readFileSync(DOCS_PATH, 'utf8');
   const updatedMatch = committed.match(/^Updated: (.+)$/m);
@@ -149,7 +160,7 @@ test('checked-in MCP directory pack stays in sync with the generator output', ()
   assert.equal(markdown, committed);
 });
 
-test('CLI options and artifact writing emit markdown, JSON, and queue CSV', () => {
+test('CLI options and artifact writing emit markdown, JSON, queue CSV, and surfaces CSV', () => {
   const tempDir = makeTempDir();
   const options = parseArgs(['--write-docs', '--report-dir', tempDir]);
   const pack = buildMcpDirectoryRevenuePack(LINKS_FIXTURE);
@@ -164,11 +175,13 @@ test('CLI options and artifact writing emit markdown, JSON, and queue CSV', () =
   assert.equal(fs.existsSync(path.join(tempDir, 'mcp-directory-revenue-pack.md')), true);
   assert.equal(fs.existsSync(path.join(tempDir, 'mcp-directory-revenue-pack.json')), true);
   assert.equal(fs.existsSync(path.join(tempDir, 'mcp-directory-operator-queue.csv')), true);
+  assert.equal(fs.existsSync(path.join(tempDir, 'mcp-directory-surfaces.csv')), true);
 
   const json = JSON.parse(fs.readFileSync(path.join(tempDir, 'mcp-directory-revenue-pack.json'), 'utf8'));
   assert.equal(json.operatorQueue.length, 5);
   assert.equal(json.measurementPlan.northStar, 'directory_referral_to_paid_intent');
   assert.match(fs.readFileSync(path.join(tempDir, 'mcp-directory-operator-queue.csv'), 'utf8'), /refresh_glama_metadata/);
+  assert.match(fs.readFileSync(path.join(tempDir, 'mcp-directory-surfaces.csv'), 'utf8'), /mcp_so,MCP\.so canonical listing/);
 });
 
 test('CLI entrypoint detection is path based', () => {
