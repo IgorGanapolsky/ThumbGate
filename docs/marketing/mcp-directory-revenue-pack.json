@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-04T04:35:25.851Z",
+  "generatedAt": "2026-05-04T05:19:27.484Z",
   "objective": "Repair MCP directory drift so ThumbGate discovery points to one canonical identity and one proof-backed install path.",
   "state": "directory-repair",
   "headline": "Fix legacy-name MCP directory drift before scaling discovery.",

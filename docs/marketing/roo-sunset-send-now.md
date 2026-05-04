@@ -1,6 +1,6 @@
 # Roo Sunset Send-Now Sheet
 
-Updated: 2026-05-03T23:29:58.043Z
+Updated: 2026-05-04T05:14:25.441Z
 
 This is the flat execution layer for the Roo migration lane. Use it when you want one message, one CTA, and one logging sequence per Roo archetype without re-reading the full demand pack.
 
@@ -12,8 +12,8 @@ Pair this file with `roo-sunset-demand-pack.md` when you need the broader migrat
 - Warm targets in backstop: 4
 - Self-serve targets in backstop: 3
 - Sprint-fit targets in backstop: 7
-- Workflow-control targets in backstop: 5
-- Business-system targets in backstop: 4
+- Workflow-control targets in backstop: 6
+- Business-system targets in backstop: 3
 
 ## Batch Rules
 - Add the lead to the sales ledger before sending anything.
@@ -57,7 +57,7 @@ Checkout close draft:
 - Channel: linkedin_or_founder_dm
 - Pipeline stage: targeted
 - Why now: The shutdown creates urgency, but the strongest monetizable angle is one risky workflow with approval boundaries, rollback risk, or handoff failures.
-- Evidence: 5 workflow-control target(s), 4 business-system target(s), and 7 sprint-fit target(s) currently favor a workflow-hardening motion over a generic plugin pitch.
+- Evidence: 6 workflow-control target(s), 3 business-system target(s), and 7 sprint-fit target(s) currently favor a workflow-hardening motion over a generic plugin pitch.
 - Proof rule: Lead with one workflow-hardening offer. Send proof only after the buyer names the workflow risk.
 - CTA: https://thumbgate-production.up.railway.app/?utm_source=roo_sunset&utm_medium=operator_outreach&utm_campaign=roo_outreach_sprint&utm_content=workflow_sprint&campaign_variant=migration_workflow&offer_code=ROO-OUTREACH_SPRINT&cta_id=roo_outreach_sprint&cta_placement=outreach_draft&surface=roo_outreach#workflow-sprint-intake
 - Add lead before send: `npm run sales:pipeline -- add --lead 'roo_workflow_owner_<account>' --source 'roo_sunset' --channel 'linkedin' --account '<account>' --pain 'Roo migration workflow with approval boundaries or rollback risk' --offer 'workflow_hardening_sprint' --campaign 'roo_sunset' --cta 'https://thumbgate-production.up.railway.app/?utm_source=roo_sunset&utm_medium=operator_outreach&utm_campaign=roo_outreach_sprint&utm_content=workflow_sprint&campaign_variant=migration_workflow&offer_code=ROO-OUTREACH_SPRINT&cta_id=roo_outreach_sprint&cta_placement=outreach_draft&surface=roo_outreach#workflow-sprint-intake'`

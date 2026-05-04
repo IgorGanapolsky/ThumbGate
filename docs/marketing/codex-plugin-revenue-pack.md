@@ -1,6 +1,6 @@
 # Codex Plugin Revenue Pack
 
-Updated: 2026-05-03T23:29:58.043Z
+Updated: 2026-05-04T05:14:25.441Z
 
 This is a sales operator artifact. It is not proof of bundle downloads, installs, paid revenue, or marketplace publication by itself.
 
@@ -24,8 +24,8 @@ ThumbGate gives Codex a proof-backed install path, pre-action gate enforcement, 
 - Examples: @Deep_Ad1959, @game-of-kton, @leogodin217
 
 ### Workflow control surfaces remain the strongest buyer signal
-- Count: 5
-- Summary: 5 current targets expose review, approval, governance, or workflow control surfaces where a Codex install story can convert into a workflow-hardening offer.
+- Count: 6
+- Summary: 6 current targets expose review, approval, governance, or workflow control surfaces where a Codex install story can convert into a workflow-hardening offer.
 - Examples: montenegronyc/backporcher, dolutech/engine_context, Adqui9608/ai-code-review-agent
 
 ### Production rollout proof matters
@@ -215,27 +215,27 @@ First-touch draft:
 First-touch draft:
 > Hey @bherald, saw you're building around `personal-life-os-core`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
 
-#### 2. mayurpise/draft
+#### 2. iliaal/whetstone
 - Temperature: cold
 - Source: github / github
 - Evidence score: 12
 - Why now: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
-- Evidence: business-system integration; agent infrastructure; self-serve agent tooling; 31 GitHub stars; updated in the last 7 days
-- Contact: https://in.linkedin.com/in/mayurpise
+- Evidence: workflow control surface; agent infrastructure; self-serve agent tooling; 13 GitHub stars; updated in the last 7 days
+- Contact: http://ilia.ws/
 - CTA: https://thumbgate-production.up.railway.app/guide
 - Proof rule: Use proof pack only after the buyer confirms pain.
-- Pipeline lead id: github_mayurpise_draft
-- Log after send: `npm run sales:pipeline -- advance --lead 'github_mayurpise_draft' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'`
+- Pipeline lead id: github_iliaal_whetstone
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'`
 
 First-touch draft:
-> Hey @mayurpise, saw you're building around `draft`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
+> Hey @iliaal, saw you're building around `whetstone`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
 
 #### 3. zaxbysauce/opencode-swarm
 - Temperature: cold
 - Source: github / github
 - Evidence score: 12
 - Why now: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
-- Evidence: workflow control surface; self-serve agent tooling; 294 GitHub stars; updated in the last 7 days
+- Evidence: workflow control surface; self-serve agent tooling; 295 GitHub stars; updated in the last 7 days
 - Contact: https://github.com/zaxbysauce
 - CTA: https://thumbgate-production.up.railway.app/guide
 - Proof rule: Use proof pack only after the buyer confirms pain.
