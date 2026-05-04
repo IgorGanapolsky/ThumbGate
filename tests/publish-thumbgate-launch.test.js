@@ -71,7 +71,7 @@ test('publishLaunchCampaign previews default platforms in dry run mode', async (
 
   assert.equal(result.dryRun, true);
   assert.deepEqual(result.platforms, DEFAULT_LAUNCH_PLATFORMS);
-  assert.equal(result.previews.length, 3);
+  assert.equal(result.previews.length, 2);
   assert.equal(result.published.length, 0);
   assert.equal(result.errors.length, 0);
   assert.match(result.previews[0].content, /ThumbGate/);

@@ -31,6 +31,8 @@ node_modules/
 .omx/
 scripts/social-analytics/db/social-analytics.db
 scripts/social-analytics/db/*.sqlite*
+scripts/social-analytics/db/*.db-wal
+scripts/social-analytics/db/*.db-shm
 :memory:
 __pycache__/
 *.pyc

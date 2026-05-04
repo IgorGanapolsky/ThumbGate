@@ -18,13 +18,19 @@ Completed in Skool:
 - Discovery keywords filled.
 - Sidebar description filled.
 - Audience size answered as `Under 10k`.
-- About page description drafted in the editor.
+- About page description saved publicly.
 
 Current blockers:
 
-- The About page is waiting on final public-save confirmation.
 - Cover/icon uploads are blocked by the in-app browser file-picker surface, but local assets are ready.
 - The first post and invite steps require action-time confirmation before publication/sending.
+
+Approval-ready drafts:
+
+- Skool media upload checklist: `reports/gtm/2026-05-04-community-course-promo/skool-media-upload-steps.md`
+- Skool first post options: `reports/gtm/2026-05-04-community-course-promo/skool-first-post.md`
+- Skool invite/DM templates: `reports/gtm/2026-05-04-community-course-promo/skool-invite-dm-templates.md`
+- Operator approval queue: `reports/gtm/2026-05-04-community-course-promo/operator-approval-queue.md`
 
 ## Recommended Setup
 

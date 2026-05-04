@@ -11,6 +11,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 - The local CLI is the adoption wedge; it is not the primary monetization story.
 - The primary commercial motion is the **Workflow Hardening Sprint** for one workflow, followed by Team expansion when shared enforcement, approval boundaries, and auditability matter across operators.
 - The current public self-serve commercial offer is **Pro at $19/mo or $149/yr** via Stripe checkout.
+- The current paid services motion also includes a **Workflow Hardening Diagnostic ($499)** as a paid triage session for one repeated workflow failure. This is offered on request and should only be described as “available” when `THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL` is configured in the hosted runtime.
 - Legacy one-time Stripe links are retained only for past buyers and are not a current public offer.
 - The current Team pricing anchor is **$49/seat/mo with a 3-seat minimum**, and the public Team path remains an **intake-led pilot for the first workflow** until hosted rollout scope is qualified.
 - The open-source runtime now supports history-aware lesson distillation from up to 8 prior recorded entries in the current Claude auto-capture path, linked 60-second feedback sessions, and reflector rule proposals across CLI, hosted API, Cursor, and Claude Desktop surfaces.

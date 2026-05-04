@@ -19,7 +19,7 @@ const DEFAULT_TIMEZONE = 'America/New_York';
 const LAUNCH_CAMPAIGN = 'first_customer_push';
 const OPERATOR_LAB_CAMPAIGN = 'operator_lab_launch';
 const SKOOL_OPERATOR_LAB_URL = 'https://www.skool.com/thumbgate-operator-lab-6000';
-const DEFAULT_LAUNCH_PLATFORMS = ['twitter', 'linkedin', 'instagram'];
+const DEFAULT_LAUNCH_PLATFORMS = ['linkedin', 'instagram', 'threads', 'bluesky', 'reddit', 'youtube'];
 
 function parseArgs(argv = []) {
   const options = {

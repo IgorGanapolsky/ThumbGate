@@ -1,22 +1,39 @@
 # Money Now Actions
 
-Updated: 2026-05-04T19:53:13.010Z
+Updated: 2026-05-04
 
 Use this as the operator cockpit for the current run. Full copy, follow-ups, CTAs, and logging commands live in `operator-send-now.md`; the pipeline truth table lives in `sales-pipeline.md`.
 
-## Current Revenue State
-- Live billing verification: verified for this run.
-- Paid orders: 4.
-- Checkout starts: 87.
-- Pipeline: 20 active leads, 0 contacted, 0 replied, 0 paid in the local sales ledger.
-- Revenue bottleneck: sending and logging outreach, not more prospect research.
+## Current Revenue State (verification required)
+
+This file must not carry unverified live metrics, PR numbers, or “today/30d/lifetime” aggregates. Refresh before acting:
+
+1. Hosted config + checkout URLs: `npm run hosted:config` (or `node scripts/hosted-config.js`)
+2. Revenue status snapshot: `npm run revenue:status`
+3. Revenue plan output: `npm run revenue:plan`
+
+When you paste metrics into any report, include the exact command + timestamp and keep the raw output in the operator log (not in this file).
 
 ## Do First
-1. Send the 4 warm Reddit Workflow Hardening Sprint DMs.
-2. Send the 3 self-serve Pro guide-first messages.
-3. Send the 5 strongest production-rollout sprint messages.
-4. After each send, run that row's `Log after send` command from `operator-send-now.md`.
-5. Only send proof links after the buyer confirms pain.
+1. Refresh truth via `npm run revenue:status` + `npm run revenue:plan` (operator-run; do not invent numbers).
+2. If there is a ready release that fixes `/pro`, publish it before sending any Pro outreach (avoid sending users to a broken surface).
+3. Send the 4 warm Reddit Workflow Hardening Sprint DMs.
+4. Send the 3 self-serve Pro guide-first messages.
+5. Send the 5 strongest production-rollout sprint messages.
+6. After each verified send, run that row's `Log after send` command from `operator-send-now.md`.
+7. Only send proof links after the buyer confirms pain.
+8. Use `revenue-close-room.md` for follow-up scripts once there is a reply.
+
+## Skool Operator Lab — Approval-Required Checklist
+
+These steps require explicit confirmation before executing (no autopost, no invites, no uploads in this automation run).
+
+1. Upload Skool cover image: `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`.
+2. Upload Skool icon: `docs/marketing/assets/thumbgate-skool-icon-128x128.png`.
+3. Add About media (optional): follow `reports/gtm/2026-05-04-community-course-promo/skool-media-upload-steps.md`.
+4. Publish the first post: pick a draft in `reports/gtm/2026-05-04-community-course-promo/skool-first-post.md`.
+5. Invite the first 10–20 people: populate `docs/OUTREACH_TARGETS.md` first, then invite.
+6. Keep the approval queue current in `reports/gtm/2026-05-04-community-course-promo/operator-approval-queue.md`.
 
 ## Top Send Queue
 

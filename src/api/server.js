@@ -6677,7 +6677,11 @@ async function addContext(){
 
 function startServer({ port, host } = {}) {
   const listenPort = Number(port ?? process.env.PORT ?? 8787);
-  const listenHost = String(host ?? process.env.HOST ?? '0.0.0.0').trim() || '0.0.0.0';
+  const inferredHost = host ?? process.env.HOST;
+  const shouldPreferLoopback = inferredHost === undefined && (listenPort === 0 || process.env.NODE_ENV === 'test');
+  const listenHost = String(
+    inferredHost ?? (shouldPreferLoopback ? '127.0.0.1' : '0.0.0.0')
+  ).trim() || (shouldPreferLoopback ? '127.0.0.1' : '0.0.0.0');
   const server = createApiServer();
   return new Promise((resolve) => {
     server.listen(listenPort, listenHost, () => {

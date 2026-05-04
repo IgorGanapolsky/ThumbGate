@@ -21,6 +21,14 @@ It is the qualification screen and send surface for the current Workflow Hardeni
 2. One buyer or champion who owns the rollout.
 3. One repeated failure pattern or rollout blocker that is expensive to repeat.
 
+## Skool Operator Lab (free community)
+
+- Group: https://www.skool.com/thumbgate-operator-lab-6000
+- Invite policy: only invite people with a real prior interaction (comment, reply, DM, customer, collaborator). No cold invites.
+- Approval-ready assets + copy:
+  - `reports/gtm/2026-05-04-community-course-promo/skool-first-post.md`
+  - `reports/gtm/2026-05-04-community-course-promo/skool-invite-dm-templates.md`
+
 ## Follow Up Now
 - No in-flight follow-ups are currently tracked.
 
