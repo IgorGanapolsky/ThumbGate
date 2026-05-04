@@ -2523,6 +2523,23 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
         quantity: checkoutSelection.quantity,
       }];
 
+  const explicitTrialDays = normalizeInteger(
+    checkoutMetadata?.trialPeriodDays
+    ?? checkoutMetadata?.trial_period_days
+    ?? checkoutMetadata?.trialDays
+    ?? checkoutMetadata?.trial_days
+  );
+  const trialFlag = (normalizeText(checkoutMetadata?.trial) || '').toLowerCase();
+  const shouldStartTrial = !pack && (
+    explicitTrialDays > 0
+    || trialFlag === '1'
+    || trialFlag === 'true'
+    || trialFlag === 'yes'
+  );
+  const trialPeriodDays = explicitTrialDays > 0
+    ? Math.min(explicitTrialDays, 30)
+    : 7;
+
   const sessionPayload = {
     success_url: successUrl,
     cancel_url: cancelUrl,
@@ -2539,10 +2556,9 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
       packId: pack ? pack.id : null,
       credits: pack ? pack.credits : null,
     }),
-    // Keep the trial, but require a payment method so trials can convert without dunning.
     ...(pack ? {} : {
-      subscription_data: { trial_period_days: 7 },
       payment_method_collection: 'always',
+      ...(shouldStartTrial ? { subscription_data: { trial_period_days: trialPeriodDays } } : {}),
     }),
   };
 

@@ -97,8 +97,8 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /solo side lane/i);
   assert.match(landingPage, /Shared enforcement/i);
   assert.match(landingPage, /Install Free/);
-  assert.match(landingPage, /Free Trial|Upgrade to Pro/i);
-  assert.match(landingPage, /7-DAY FREE TRIAL/i);
+  assert.match(landingPage, /Pay-now Pro|Upgrade to Pro/i);
+  assert.match(landingPage, /PAY-NOW PRO/i);
   assert.match(landingPage, /Start Workflow Hardening Sprint/);
 });
 
@@ -648,10 +648,11 @@ test('lessons severity filtering scopes active state to rules filter buttons', (
   assert.match(html, /if \(level === 'critical'\) \{ highlightCard\(1\); \} else \{ highlightCard\(0\); \}/);
 });
 
-test('public landing page includes 7-day free trial and email capture gate', () => {
+test('public landing page includes pay-now Pro path and email capture gate', () => {
   const landingPage = readLandingPage();
   const buyerIntentScript = readBuyerIntentScript();
-  assert.match(landingPage, /7-DAY FREE TRIAL/);
+  assert.match(landingPage, /PAY-NOW PRO/);
+  assert.match(landingPage, /Billed today/);
   assert.match(landingPage, /pro-email/);
   assert.match(landingPage, /handleProTrial/);
   assert.match(landingPage, /\/js\/buyer-intent\.js/);
