@@ -12,7 +12,19 @@ Generated: 2026-05-04
 
 The group exists and the Hobby trial path is active. During setup, Skool showed the first owner charge as May 18, 2026 for `$9`.
 
-Current blocker: Skool is asking for audience size on the main social media profile. Recommended conservative answer: `Under 10k`, unless the operator has a verified primary social profile over 10,000 followers.
+Completed in Skool:
+
+- Public group visibility selected.
+- Discovery keywords filled.
+- Sidebar description filled.
+- Audience size answered as `Under 10k`.
+- About page description drafted in the editor.
+
+Current blockers:
+
+- The About page is waiting on final public-save confirmation.
+- Cover/icon uploads are blocked by the in-app browser file-picker surface, but local assets are ready.
+- The first post and invite steps require action-time confirmation before publication/sending.
 
 ## Recommended Setup
 
@@ -42,9 +54,14 @@ The best first win is narrow: one mistake, one rule, one blocked repeat.
 - Skool official payment terms say owner plans are recurring subscriptions after the trial.
 - Skool official category help says groups can have up to 10 categories, which matches the 10-category setup above.
 - Skool official cover/photo help says group logo and cover photo are configured from Settings > General.
+- Skool official Discovery help says eligibility requires the group description, About page description/images, a cover image, and enough real posts/activity. It also says high-quality artwork, a strong about page, authentic engagement, and active owner/admin behavior are ranking boosts.
 
 ## Zernio Status
 
 GitHub Actions can authenticate to Zernio through repository secrets and found 7 connected accounts: Bluesky, Instagram, LinkedIn, Reddit, Threads, Twitter/X, and YouTube.
 
 Zernio analytics polling is blocked by the Analytics add-on paywall. Treat Zernio as the publishing pipe and use UTM/Plausible/PostHog plus native dashboards for readback.
+
+## Automation Update
+
+The `thumbgate-creator-platform-promo.yml` workflow now passes `--offer=operator-lab`, so previews/schedules/publishes from that workflow promote the free Skool Operator Lab instead of the older first-customer launch copy.

@@ -1,6 +1,6 @@
 # ChatGPT GPT Revenue Pack
 
-Updated: 2026-05-04T15:13:40.924Z
+Updated: 2026-05-04T19:52:57.729Z
 
 This is a sales operator artifact. It is not proof of GPT traffic, sent outreach, saved feedback, paid revenue, or GPT Store ranking by itself.
 
@@ -27,7 +27,7 @@ Turn ChatGPT GPT discovery and trust-boundary demand into tracked proof clicks, 
 ### Published ThumbGate GPT
 - Buyer signal: They already live inside ChatGPT and will only continue if the first action check or typed lesson feels immediate.
 - Operator use: Primary acquisition surface for ChatGPT users who want to preflight one risky action before installing anything locally.
-- Surface URL: https://thumbgate.ai/go/gpt?utm_source=chatgpt&utm_medium=gpt_store&utm_campaign=chatgpt_gpt_open&utm_content=open_gpt&campaign_variant=published_gpt&offer_code=CHATGPT-GPT_OPEN&cta_id=chatgpt_gpt_open&cta_placement=gpt_surface&surface=chatgpt_gpt
+- Surface URL: https://thumbgate-production.up.railway.app/go/gpt?utm_source=chatgpt&utm_medium=gpt_store&utm_campaign=chatgpt_gpt_open&utm_content=open_gpt&campaign_variant=published_gpt&offer_code=CHATGPT-GPT_OPEN&cta_id=chatgpt_gpt_open&cta_placement=gpt_surface&surface=chatgpt_gpt
 - Public URL: https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate
 - Support: https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/chatgpt/INSTALL.md
 - Evidence source: public/index.html
@@ -68,10 +68,10 @@ Turn ChatGPT GPT discovery and trust-boundary demand into tracked proof clicks, 
 ## Follow-On Offers
 - ThumbGate Pro: $19/mo or $149/yr
   Buyer: Solo ChatGPT-first operators who proved one useful action check or saved lesson and want the personal dashboard plus proof-ready exports.
-  CTA: https://thumbgate.ai/checkout/pro?utm_source=chatgpt&utm_medium=gpt_store&utm_campaign=chatgpt_gpt_pro_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=CHATGPT-PRO_FOLLOW_ON&cta_id=chatgpt_pro_follow_on&cta_placement=post_install&plan_id=pro&surface=chatgpt_post_install
+  CTA: https://thumbgate-production.up.railway.app/checkout/pro?utm_source=chatgpt&utm_medium=gpt_store&utm_campaign=chatgpt_gpt_pro_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=CHATGPT-PRO_FOLLOW_ON&cta_id=chatgpt_pro_follow_on&cta_placement=post_install&plan_id=pro&surface=chatgpt_post_install
 - Workflow Hardening Sprint: Intake-led sprint, then Team at $49/seat/mo with 3-seat minimum after qualification
   Buyer: Teams that already use ChatGPT for discovery or checkpointing and need a real execution boundary before risky workflows run.
-  CTA: https://thumbgate.ai/?utm_source=chatgpt&utm_medium=gpt_store&utm_campaign=chatgpt_gpt_team_follow_on&utm_content=workflow_sprint&campaign_variant=teams_follow_on&offer_code=CHATGPT-TEAMS_FOLLOW_ON&cta_id=chatgpt_team_follow_on&cta_placement=post_install&surface=chatgpt_post_install#workflow-sprint-intake
+  CTA: https://thumbgate-production.up.railway.app/?utm_source=chatgpt&utm_medium=gpt_store&utm_campaign=chatgpt_gpt_team_follow_on&utm_content=workflow_sprint&campaign_variant=teams_follow_on&offer_code=CHATGPT-TEAMS_FOLLOW_ON&cta_id=chatgpt_team_follow_on&cta_placement=post_install&surface=chatgpt_post_install#workflow-sprint-intake
 
 ## Operator Queue
 ### ChatGPT-first operator with one risky action to check before it runs
@@ -92,7 +92,7 @@ Turn ChatGPT GPT discovery and trust-boundary demand into tracked proof clicks, 
 - Evidence: The ChatGPT ads trust guide and homepage copy frame ThumbGate as the boundary between conversational discovery and local execution.
 - Proof trigger: They already have one workflow, one owner, and one approval-boundary failure they do not want to repeat.
 - Proof asset: https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/chatgpt-ads-trust.html
-- Next ask: https://thumbgate.ai/?utm_source=chatgpt&utm_medium=operator_outreach&utm_campaign=chatgpt_queue_sprint&utm_content=workflow_sprint&campaign_variant=trust_boundary_team&offer_code=CHATGPT-QUEUE_SPRINT&cta_id=chatgpt_queue_sprint&cta_placement=operator_queue&surface=chatgpt_workflow_queue#workflow-sprint-intake
+- Next ask: https://thumbgate-production.up.railway.app/?utm_source=chatgpt&utm_medium=operator_outreach&utm_campaign=chatgpt_queue_sprint&utm_content=workflow_sprint&campaign_variant=trust_boundary_team&offer_code=CHATGPT-QUEUE_SPRINT&cta_id=chatgpt_queue_sprint&cta_placement=operator_queue&surface=chatgpt_workflow_queue#workflow-sprint-intake
 - Recommended motion: Trust guide -> workflow intake -> Workflow Hardening Sprint.
 
 ## Outreach Drafts
@@ -100,10 +100,10 @@ Turn ChatGPT GPT discovery and trust-boundary demand into tracked proof clicks, 
 If you already use ChatGPT as the first place you ask for help, the fastest useful test is not another landing page. It is one risky action check or one typed thumbs-down inside the live ThumbGate GPT: https://thumbgate-production.up.railway.app/go/gpt?utm_source=chatgpt&utm_medium=operator_outreach&utm_campaign=chatgpt_outreach_open_gpt&utm_content=open_gpt&campaign_variant=gpt_first_touch&offer_code=CHATGPT-OUTREACH_OPEN_GPT&cta_id=chatgpt_outreach_open_gpt&cta_placement=outreach_draft&surface=chatgpt_outreach . If that first interaction feels real, then it is worth talking about the local enforcement layer.
 
 ### Pain-confirmed follow-up — Operator who already confirmed one repeated failure
-Now that the repeated failure is concrete, move from generic GPT usage to proof plus the paid operator lane. Use the verification pack first, then route them to the personal dashboard path only if they want durable exports and reviewable proof: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md then https://thumbgate.ai/checkout/pro?utm_source=chatgpt&utm_medium=operator_outreach&utm_campaign=chatgpt_outreach_pro&utm_content=pro&campaign_variant=proof_after_pain&offer_code=CHATGPT-OUTREACH_PRO&cta_id=chatgpt_outreach_pro&cta_placement=outreach_draft&plan_id=pro&surface=chatgpt_outreach .
+Now that the repeated failure is concrete, move from generic GPT usage to proof plus the paid operator lane. Use the verification pack first, then route them to the personal dashboard path only if they want durable exports and reviewable proof: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md then https://thumbgate-production.up.railway.app/checkout/pro?utm_source=chatgpt&utm_medium=operator_outreach&utm_campaign=chatgpt_outreach_pro&utm_content=pro&campaign_variant=proof_after_pain&offer_code=CHATGPT-OUTREACH_PRO&cta_id=chatgpt_outreach_pro&cta_placement=outreach_draft&plan_id=pro&surface=chatgpt_outreach .
 
 ### Founder note — Platform, ops, or AI product lead
-I am not pitching ChatGPT as the execution surface. I am pitching a cleaner boundary between ChatGPT discovery and the risky workflow that follows. If your team already has one owner and one approval-boundary failure tied to AI-assisted work, the next useful step is the Workflow Hardening Sprint intake: https://thumbgate.ai/?utm_source=chatgpt&utm_medium=operator_outreach&utm_campaign=chatgpt_outreach_sprint&utm_content=workflow_sprint&campaign_variant=trust_boundary_team&offer_code=CHATGPT-OUTREACH_SPRINT&cta_id=chatgpt_outreach_sprint&cta_placement=outreach_draft&surface=chatgpt_outreach#workflow-sprint-intake .
+I am not pitching ChatGPT as the execution surface. I am pitching a cleaner boundary between ChatGPT discovery and the risky workflow that follows. If your team already has one owner and one approval-boundary failure tied to AI-assisted work, the next useful step is the Workflow Hardening Sprint intake: https://thumbgate-production.up.railway.app/?utm_source=chatgpt&utm_medium=operator_outreach&utm_campaign=chatgpt_outreach_sprint&utm_content=workflow_sprint&campaign_variant=trust_boundary_team&offer_code=CHATGPT-OUTREACH_SPRINT&cta_id=chatgpt_outreach_sprint&cta_placement=outreach_draft&surface=chatgpt_outreach#workflow-sprint-intake .
 
 ## 90-Day Measurement Plan
 - North star: chatgpt_gpt_to_paid_intent

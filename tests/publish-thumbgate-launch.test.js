@@ -6,6 +6,7 @@ const assert = require('node:assert/strict');
 const {
   DEFAULT_LAUNCH_PLATFORMS,
   LAUNCH_CAMPAIGN,
+  OPERATOR_LAB_CAMPAIGN,
   buildPlatformPost,
   parseArgs,
   publishLaunchCampaign,
@@ -25,12 +26,24 @@ test('parseArgs supports dry run, schedule, timezone, and platform filters', () 
     '--platforms=twitter,linkedin',
     '--schedule=2026-04-06T16:00:00-04:00',
     '--timezone=America/New_York',
+    '--offer=operator-lab',
   ]);
 
   assert.equal(parsed.dryRun, true);
   assert.deepEqual(parsed.platforms, ['twitter', 'linkedin']);
   assert.equal(parsed.schedule, '2026-04-06T16:00:00-04:00');
   assert.equal(parsed.timezone, 'America/New_York');
+  assert.equal(parsed.offer, 'operator-lab');
+});
+
+test('buildPlatformPost can create Skool operator lab copy', () => {
+  const post = buildPlatformPost('linkedin', 'operator-lab');
+
+  assert.match(post, /ThumbGate Operator Lab/);
+  assert.match(post, /skool\.com\/thumbgate-operator-lab-6000/);
+  assert.match(post, /utm_medium=community_course/);
+  assert.match(post, /utm_campaign=operator_lab_launch/);
+  assert.match(post, /utm_content=operator_lab_linkedin/);
 });
 
 test('publishLaunchCampaign previews default platforms in dry run mode', async () => {
@@ -59,6 +72,33 @@ test('publishLaunchCampaign previews default platforms in dry run mode', async (
   assert.equal(result.published.length, 0);
   assert.equal(result.errors.length, 0);
   assert.match(result.previews[0].content, /ThumbGate/);
+});
+
+test('publishLaunchCampaign uses operator lab UTM settings when requested', async () => {
+  const calls = [];
+  const fakePublisher = {
+    getConnectedAccounts: async () => ([
+      { platform: 'linkedin', accountId: 'acc_l1' },
+    ]),
+    groupAccountsByPlatform(accounts) {
+      return new Map([['linkedin', accounts]]);
+    },
+    publishPost: async (content, platforms, options) => {
+      calls.push({ content, platforms, options });
+      return { id: 'linkedin_post_1' };
+    },
+  };
+
+  const result = await publishLaunchCampaign({
+    platforms: ['linkedin'],
+    offer: 'operator-lab',
+  }, fakePublisher);
+
+  assert.equal(result.published.length, 1);
+  assert.equal(calls[0].options.utm.source, 'linkedin');
+  assert.equal(calls[0].options.utm.medium, 'community_course');
+  assert.equal(calls[0].options.utm.campaign, OPERATOR_LAB_CAMPAIGN);
+  assert.match(calls[0].content, /skool\.com\/thumbgate-operator-lab-6000/);
 });
 
 test('publishLaunchCampaign publishes requested platforms with per-platform UTM settings', async () => {

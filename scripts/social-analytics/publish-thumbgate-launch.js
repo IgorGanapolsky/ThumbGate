@@ -17,6 +17,8 @@ const APP_ORIGIN = resolveHostedBillingConfig({
 }).appOrigin;
 const DEFAULT_TIMEZONE = 'America/New_York';
 const LAUNCH_CAMPAIGN = 'first_customer_push';
+const OPERATOR_LAB_CAMPAIGN = 'operator_lab_launch';
+const SKOOL_OPERATOR_LAB_URL = 'https://www.skool.com/thumbgate-operator-lab-6000';
 const DEFAULT_LAUNCH_PLATFORMS = ['twitter', 'linkedin', 'instagram'];
 
 function parseArgs(argv = []) {
@@ -25,6 +27,7 @@ function parseArgs(argv = []) {
     platforms: [],
     schedule: '',
     timezone: DEFAULT_TIMEZONE,
+    offer: 'launch',
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -71,6 +74,17 @@ function parseArgs(argv = []) {
     if (token === '--timezone' && argv[index + 1]) {
       options.timezone = String(argv[index + 1]).trim() || DEFAULT_TIMEZONE;
       index += 1;
+      continue;
+    }
+
+    if (token.startsWith('--offer=')) {
+      options.offer = token.slice('--offer='.length).trim() || 'launch';
+      continue;
+    }
+
+    if (token === '--offer' && argv[index + 1]) {
+      options.offer = String(argv[index + 1]).trim() || 'launch';
+      index += 1;
     }
   }
 
@@ -86,7 +100,84 @@ function buildLandingUrl(platform, content) {
   });
 }
 
-function buildPlatformPost(platform) {
+function buildOperatorLabUrl(platform, content) {
+  return buildUTMLink(SKOOL_OPERATOR_LAB_URL, {
+    source: platform,
+    medium: 'community_course',
+    campaign: OPERATOR_LAB_CAMPAIGN,
+    content,
+  });
+}
+
+function buildOperatorLabPost(platform) {
+  const normalized = String(platform || '').trim().toLowerCase();
+
+  if (normalized === 'twitter' || normalized === 'x') {
+    return [
+      'I started a free ThumbGate Operator Lab for Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, and MCP operators.',
+      'Bring one repeated AI-agent mistake. We turn it into a prevention rule or pre-action gate.',
+      buildOperatorLabUrl('x', 'operator_lab_twitter'),
+    ].join(' ');
+  }
+
+  if (normalized === 'linkedin') {
+    return [
+      'I started a free ThumbGate Operator Lab for people running AI coding agents in real repos.',
+      'The format is deliberately practical: bring one repeated Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, or MCP failure, and we turn it into a prevention rule, pre-action gate, or workflow-hardening teardown.',
+      'The best first win is narrow: one mistake, one rule, one blocked repeat.',
+      buildOperatorLabUrl('linkedin', 'operator_lab_linkedin'),
+    ].join('\n\n');
+  }
+
+  if (normalized === 'instagram') {
+    return [
+      'Stop repeated AI-agent mistakes.',
+      '',
+      'ThumbGate Operator Lab is open and free: bring one Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, or MCP failure and turn it into a prevention rule.',
+      '',
+      buildOperatorLabUrl('instagram', 'operator_lab_instagram'),
+    ].join('\n');
+  }
+
+  if (normalized === 'reddit') {
+    return [
+      'I started a free Skool group for people using AI coding agents in real repos.',
+      'The premise: post one repeated agent mistake, then turn it into a prevention rule or pre-action gate instead of another prompt tweak.',
+      'Useful for Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, and MCP workflows.',
+      buildOperatorLabUrl('reddit', 'operator_lab_reddit'),
+    ].join('\n\n');
+  }
+
+  if (normalized === 'youtube') {
+    return [
+      'Free ThumbGate Operator Lab: bring one repeated AI-agent mistake and turn it into a prevention rule.',
+      '',
+      'For Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, and MCP operators.',
+      '',
+      buildOperatorLabUrl('youtube', 'operator_lab_youtube'),
+    ].join('\n');
+  }
+
+  if (normalized === 'tiktok') {
+    return [
+      'Your AI coding agent keeps repeating the same mistake.',
+      'Bring it to the free ThumbGate Operator Lab. One failure becomes one prevention rule.',
+      buildOperatorLabUrl('tiktok', 'operator_lab_tiktok'),
+      '#AIAgents #ClaudeCode #Cursor #DeveloperTools #ThumbGate',
+    ].join('\n\n');
+  }
+
+  return [
+    'ThumbGate Operator Lab is a free community for turning repeated AI-agent mistakes into prevention rules and pre-action gates.',
+    buildOperatorLabUrl(normalized || 'zernio', `operator_lab_${normalized || 'generic'}`),
+  ].join(' ');
+}
+
+function buildPlatformPost(platform, offer = 'launch') {
+  if (offer === 'operator-lab') {
+    return buildOperatorLabPost(platform);
+  }
+
   const normalized = String(platform || '').trim().toLowerCase();
 
   if (normalized === 'twitter' || normalized === 'x') {
@@ -225,6 +316,7 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
     : DEFAULT_LAUNCH_PLATFORMS;
   const schedule = String(options.schedule || '').trim();
   const timezone = String(options.timezone || DEFAULT_TIMEZONE).trim() || DEFAULT_TIMEZONE;
+  const offer = String(options.offer || 'launch').trim() || 'launch';
   const accounts = await api.getConnectedAccounts();
   const groupedAccounts = api.groupAccountsByPlatform(accounts);
   const results = {
@@ -245,7 +337,7 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
       continue;
     }
 
-    const content = buildPlatformPost(normalizedPlatform);
+    const content = buildPlatformPost(normalizedPlatform, offer);
     results.previews.push({
       platform: normalizedPlatform,
       content,
@@ -258,8 +350,8 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
 
     const utm = {
       source: normalizedPlatform === 'twitter' ? 'x' : normalizedPlatform,
-      medium: 'organic_social',
-      campaign: LAUNCH_CAMPAIGN,
+      medium: offer === 'operator-lab' ? 'community_course' : 'organic_social',
+      campaign: offer === 'operator-lab' ? OPERATOR_LAB_CAMPAIGN : LAUNCH_CAMPAIGN,
     };
 
     try {
@@ -313,8 +405,12 @@ module.exports = {
   DEFAULT_LAUNCH_PLATFORMS,
   DEFAULT_TIMEZONE,
   LAUNCH_CAMPAIGN,
+  OPERATOR_LAB_CAMPAIGN,
+  SKOOL_OPERATOR_LAB_URL,
   buildCampaignEntries,
   buildLandingUrl,
+  buildOperatorLabPost,
+  buildOperatorLabUrl,
   buildPlatformPost,
   defaultCampaignSchedule,
   parseArgs,

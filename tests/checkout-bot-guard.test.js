@@ -83,6 +83,22 @@ describe('/checkout/pro bot guard', () => {
     assert.doesNotMatch(body, /stripe\.com/);
   });
 
+  it('preserves attribution params through the bot-safe confirmation link', async () => {
+    const res = await fetch(`${origin}/checkout/pro?utm_source=reddit&utm_campaign=first_dollar&cta_id=pricing_pro&billing_cycle=annual&landing_path=%2Fpricing`, {
+      redirect: 'manual',
+      headers: {
+        'user-agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+        accept: 'text/html,*/*',
+      },
+    });
+    assert.equal(res.status, 200);
+    const body = await res.text();
+    assert.match(body, /href="\/checkout\/pro\?confirm=1&amp;utm_source=reddit&amp;utm_campaign=first_dollar/);
+    assert.match(body, /&amp;cta_id=pricing_pro/);
+    assert.match(body, /&amp;billing_cycle=annual/);
+    assert.match(body, /&amp;landing_path=%2Fpricing/);
+  });
+
   it('returns HTML interstitial for curl (missing browser headers)', async () => {
     const res = await fetch(`${origin}/checkout/pro`, {
       redirect: 'manual',

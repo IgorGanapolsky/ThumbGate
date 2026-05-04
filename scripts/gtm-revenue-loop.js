@@ -848,11 +848,23 @@ async function resolveRevenueLoopSummary(options = {}) {
   } = options;
 
   const requestedSummaryWindow = normalizeText(options.summaryWindow || options.window) || '30d';
-  const localResult = await getOperationalBillingSummaryFn({
-    window: requestedSummaryWindow,
-    timeZone: options.timeZone || options.timezone,
-    now: options.now,
-  });
+  let localResult;
+  try {
+    localResult = await getOperationalBillingSummaryFn({
+      window: requestedSummaryWindow,
+      timeZone: options.timeZone || options.timezone,
+      now: options.now,
+    });
+  } catch (error) {
+    localResult = {
+      source: 'local-unverified',
+      summary: normalizeRevenueWindowSummary({}),
+      fallbackReason: normalizeText(error?.message || error)
+        || 'Hosted operational summary is unavailable.',
+      hostedStatus: null,
+      summaryWindow: requestedSummaryWindow,
+    };
+  }
   if (localResult.source === 'hosted') {
     return {
       ...localResult,

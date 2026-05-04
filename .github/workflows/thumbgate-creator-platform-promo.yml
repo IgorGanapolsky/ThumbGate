@@ -61,12 +61,14 @@ jobs:
         run: |
           npm run social:publish:launch -- \
             --dry-run \
+            --offer=operator-lab \
             --platforms="${{ github.event.inputs.platforms }}"
 
       - name: Publish campaign
         if: github.event.inputs.mode == 'publish'
         run: |
           npm run social:publish:launch -- \
+            --offer=operator-lab \
             --platforms="${{ github.event.inputs.platforms }}"
 
       - name: Schedule campaign
@@ -78,6 +80,7 @@ jobs:
           fi
 
           npm run social:publish:launch -- \
+            --offer=operator-lab \
             --platforms="${{ github.event.inputs.platforms }}" \
             --schedule="${{ github.event.inputs.schedule }}" \
             --timezone="${{ github.event.inputs.timezone }}"

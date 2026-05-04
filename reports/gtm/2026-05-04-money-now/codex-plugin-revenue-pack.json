@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-04T15:13:40.924Z",
+  "generatedAt": "2026-05-04T19:52:57.729Z",
   "channel": "Codex",
   "objective": "Turn Codex plugin discovery into tracked guide opens, bundle downloads, Pro checkout starts, and qualified workflow-hardening conversations.",
   "canonicalIdentity": {
@@ -37,8 +37,8 @@
     {
       "key": "production_rollout",
       "label": "Production rollout proof matters",
-      "count": 9,
-      "summary": "9 targets touch production-sensitive workflows where proof and rollback safety should appear before the buyer expands usage.",
+      "count": 7,
+      "summary": "7 targets touch production-sensitive workflows where proof and rollback safety should appear before the buyer expands usage.",
       "examples": [
         "montenegronyc/backporcher",
         "dolutech/engine_context",
@@ -81,11 +81,11 @@
       "operatorStatus": "Use when the buyer wants steps, proof, and Commercial Truth before checkout.",
       "buyer": "Codex users who need setup clarity and proof before they decide between free install, Pro, or workflow hardening.",
       "conversionGoal": "setup_guide_to_paid_intent",
-      "submissionUrl": "https://thumbgate.ai/guide",
+      "submissionUrl": "https://thumbgate-production.up.railway.app/guide",
       "shortDescription": "Proof-backed setup path for Codex buyers who want the install flow, Commercial Truth, and verification evidence in one place.",
       "longDescription": "Send the setup guide after the buyer already wants the tool path. Keep the guide as the self-serve bridge between Codex install intent and either Pro checkout or the Workflow Hardening Sprint.",
       "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
-      "homepageUrl": "https://thumbgate.ai/guide?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_setup_guide&utm_content=guide&campaign_variant=setup_guide&offer_code=CODEX-SETUP_GUIDE&cta_id=codex_setup_guide&cta_placement=codex_surface&surface=codex_setup_guide",
+      "homepageUrl": "https://thumbgate-production.up.railway.app/guide?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_setup_guide&utm_content=guide&campaign_variant=setup_guide&offer_code=CODEX-SETUP_GUIDE&cta_id=codex_setup_guide&cta_placement=codex_surface&surface=codex_setup_guide",
       "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
       "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/CODEX_PLUGIN_OPERATIONS.md",
       "tags": [
@@ -131,14 +131,14 @@
       "label": "ThumbGate Pro",
       "pricingModel": "$19/mo or $149/yr",
       "buyer": "Solo Codex operators who want the self-serve dashboard and proof-ready exports after install.",
-      "cta": "https://thumbgate.ai/checkout/pro?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_pro_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=CODEX-PRO_FOLLOW_ON&cta_id=codex_pro_follow_on&cta_placement=codex_follow_on&plan_id=pro&surface=codex_follow_on"
+      "cta": "https://thumbgate-production.up.railway.app/checkout/pro?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_pro_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=CODEX-PRO_FOLLOW_ON&cta_id=codex_pro_follow_on&cta_placement=codex_follow_on&plan_id=pro&surface=codex_follow_on"
     },
     {
       "key": "teams",
       "label": "Workflow Hardening Sprint",
       "pricingModel": "Workflow Hardening Sprint, then Team at $49/seat/mo with 3-seat minimum after qualification",
       "buyer": "Teams who already named one repeated Codex-adjacent workflow failure and need rollout proof.",
-      "cta": "https://thumbgate.ai/?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_sprint_follow_on&utm_content=workflow_sprint&campaign_variant=sprint_follow_on&offer_code=CODEX-SPRINT_FOLLOW_ON&cta_id=codex_sprint_follow_on&cta_placement=codex_follow_on&surface=codex_follow_on#workflow-sprint-intake"
+      "cta": "https://thumbgate-production.up.railway.app/?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_sprint_follow_on&utm_content=workflow_sprint&campaign_variant=sprint_follow_on&offer_code=CODEX-SPRINT_FOLLOW_ON&cta_id=codex_sprint_follow_on&cta_placement=codex_follow_on&surface=codex_follow_on#workflow-sprint-intake"
     }
   ],
   "operatorSequences": [
@@ -155,24 +155,24 @@
       "trigger": "Buyer already wants the tool path and asks for steps, proof, or setup clarity.",
       "evidence": "The setup guide is the designated self-serve bridge between Codex install intent and paid intent.",
       "goal": "Move install intent into either a qualified sprint conversation or a tracked Pro checkout start.",
-      "cta": "https://thumbgate.ai/guide?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_setup_guide&utm_content=guide&campaign_variant=setup_guide&offer_code=CODEX-SETUP_GUIDE&cta_id=codex_setup_guide&cta_placement=codex_surface&surface=codex_setup_guide",
-      "draft": "Here is the proof-backed Codex setup guide: https://thumbgate.ai/guide?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_setup_guide&utm_content=guide&campaign_variant=setup_guide&offer_code=CODEX-SETUP_GUIDE&cta_id=codex_setup_guide&cta_placement=codex_surface&surface=codex_setup_guide . Use it when the buyer wants the exact install flow plus Commercial Truth and verification evidence before choosing between free install, Pro, or a workflow-hardening conversation."
+      "cta": "https://thumbgate-production.up.railway.app/guide?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_setup_guide&utm_content=guide&campaign_variant=setup_guide&offer_code=CODEX-SETUP_GUIDE&cta_id=codex_setup_guide&cta_placement=codex_surface&surface=codex_setup_guide",
+      "draft": "Here is the proof-backed Codex setup guide: https://thumbgate-production.up.railway.app/guide?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_setup_guide&utm_content=guide&campaign_variant=setup_guide&offer_code=CODEX-SETUP_GUIDE&cta_id=codex_setup_guide&cta_placement=codex_surface&surface=codex_setup_guide . Use it when the buyer wants the exact install flow plus Commercial Truth and verification evidence before choosing between free install, Pro, or a workflow-hardening conversation."
     },
     {
       "key": "post_proof_pro_upgrade",
       "trigger": "Solo operator already proved one blocked repeat and wants the self-serve lane.",
       "evidence": "The pack keeps Pro as the post-proof follow-on after one blocked repeat is real.",
       "goal": "Move proven solo usage into tracked Pro checkout intent.",
-      "cta": "https://thumbgate.ai/checkout/pro?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_pro_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=CODEX-PRO_FOLLOW_ON&cta_id=codex_pro_follow_on&cta_placement=codex_follow_on&plan_id=pro&surface=codex_follow_on",
-      "draft": "If you already proved one blocked repeat in Codex and just want the self-serve lane, Pro is the clean next step: https://thumbgate.ai/checkout/pro?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_pro_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=CODEX-PRO_FOLLOW_ON&cta_id=codex_pro_follow_on&cta_placement=codex_follow_on&plan_id=pro&surface=codex_follow_on . That keeps the dashboard and proof-ready exports attached without forcing a services motion."
+      "cta": "https://thumbgate-production.up.railway.app/checkout/pro?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_pro_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=CODEX-PRO_FOLLOW_ON&cta_id=codex_pro_follow_on&cta_placement=codex_follow_on&plan_id=pro&surface=codex_follow_on",
+      "draft": "If you already proved one blocked repeat in Codex and just want the self-serve lane, Pro is the clean next step: https://thumbgate-production.up.railway.app/checkout/pro?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_pro_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=CODEX-PRO_FOLLOW_ON&cta_id=codex_pro_follow_on&cta_placement=codex_follow_on&plan_id=pro&surface=codex_follow_on . That keeps the dashboard and proof-ready exports attached without forcing a services motion."
     },
     {
       "key": "workflow_hardening_escalation",
       "trigger": "Team already named one repeated approval-boundary, handoff, or rollout failure.",
       "evidence": "The Workflow Hardening Sprint remains the primary paid motion when one owner and one repeated failure are explicit.",
       "goal": "Move team pain into a qualified workflow-hardening conversation.",
-      "cta": "https://thumbgate.ai/?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_sprint_follow_on&utm_content=workflow_sprint&campaign_variant=sprint_follow_on&offer_code=CODEX-SPRINT_FOLLOW_ON&cta_id=codex_sprint_follow_on&cta_placement=codex_follow_on&surface=codex_follow_on#workflow-sprint-intake",
-      "draft": "If one approval, handoff, or rollout failure keeps repeating around Codex or a neighboring review lane, route it to the Workflow Hardening Sprint instead of a generic plugin pitch: https://thumbgate.ai/?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_sprint_follow_on&utm_content=workflow_sprint&campaign_variant=sprint_follow_on&offer_code=CODEX-SPRINT_FOLLOW_ON&cta_id=codex_sprint_follow_on&cta_placement=codex_follow_on&surface=codex_follow_on#workflow-sprint-intake . That keeps the conversation anchored on one workflow, one owner, and one proof review."
+      "cta": "https://thumbgate-production.up.railway.app/?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_sprint_follow_on&utm_content=workflow_sprint&campaign_variant=sprint_follow_on&offer_code=CODEX-SPRINT_FOLLOW_ON&cta_id=codex_sprint_follow_on&cta_placement=codex_follow_on&surface=codex_follow_on#workflow-sprint-intake",
+      "draft": "If one approval, handoff, or rollout failure keeps repeating around Codex or a neighboring review lane, route it to the Workflow Hardening Sprint instead of a generic plugin pitch: https://thumbgate-production.up.railway.app/?utm_source=codex&utm_medium=setup_guide&utm_campaign=codex_sprint_follow_on&utm_content=workflow_sprint&campaign_variant=sprint_follow_on&offer_code=CODEX-SPRINT_FOLLOW_ON&cta_id=codex_sprint_follow_on&cta_placement=codex_follow_on&surface=codex_follow_on#workflow-sprint-intake . That keeps the conversation anchored on one workflow, one owner, and one proof review."
     }
   ],
   "readyTargetLanes": [
@@ -190,7 +190,7 @@
           "whyNow": "Warm Reddit engager already named a repeated workflow risk, so the fastest path is a founder-led diagnostic.",
           "evidence": "warm inbound engagement; workflow pain named: rollback risk; already in DMs",
           "contact": "https://www.reddit.com/user/Deep_Ad1959/",
-          "cta": "https://thumbgate.ai/#workflow-sprint-intake",
+          "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
           "proofTrigger": "Use proof pack only after the buyer confirms pain.",
           "firstTouchDraft": "Your question about rollback rates when context changes is exactly the right one. I am looking for one AI-agent workflow to harden end-to-end this week: repeated failure, prevention rule, and proof run. If you have one workflow where context drift or rollback risk keeps showing up, I can harden that workflow for you. Worth a 15-minute diagnostic?",
           "markContactedCommand": "npm run sales:pipeline -- advance --lead 'reddit_deep_ad1959_r_cursor' --channel 'reddit_dm' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on rollback risk.'",
@@ -204,7 +204,7 @@
           "whyNow": "Warm Reddit engager already works on advanced agent memory, so discovery should center on one repeated failure pattern.",
           "evidence": "warm inbound engagement; built serious memory systems; workflow pain named: stale context and conflicting facts",
           "contact": "https://www.reddit.com/user/game-of-kton/",
-          "cta": "https://thumbgate.ai/#workflow-sprint-intake",
+          "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
           "proofTrigger": "Use proof pack only after the buyer confirms pain.",
           "firstTouchDraft": "Your ACT-R engram work is fascinating, especially the conflict resolution for opposing facts and the decay model. I am looking for one serious AI-agent workflow to harden end-to-end this week. If your memory system has one recurring failure mode such as stale context, opposing facts, bad handoffs, or unsafe tool calls, I can turn that into a prevention rule and proof run. Open to a 15-minute diagnostic?",
           "markContactedCommand": "npm run sales:pipeline -- advance --lead 'reddit_game_of_kton_r_cursor' --channel 'reddit_dm' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on stale context and conflicting facts.'",
@@ -218,7 +218,7 @@
           "whyNow": "Warm Reddit engager already described a mature workflow, so the next step is a targeted diagnostic on one failure mode.",
           "evidence": "warm inbound engagement; mature multi-step workflow described; workflow pain named: review boundaries and context risk",
           "contact": "https://www.reddit.com/user/leogodin217/",
-          "cta": "https://thumbgate.ai/#workflow-sprint-intake",
+          "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
           "proofTrigger": "Use proof pack only after the buyer confirms pain.",
           "firstTouchDraft": "Your arch-create to sprint workflow is one of the most mature agent processes I have seen anyone describe. I am looking for one AI-agent workflow to harden end-to-end this week. Your workflow already has phases, review boundaries, and context risk, so it is a strong fit: pick one repeating failure and I will help turn it into an enforceable Pre-Action Check plus proof run. Worth 15 minutes?",
           "markContactedCommand": "npm run sales:pipeline -- advance --lead 'reddit_leogodin217_r_claudecode' --channel 'reddit_dm' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on review boundaries and context risk.'",
@@ -232,7 +232,7 @@
           "whyNow": "Warm Reddit engager already understands the adaptive-gate thesis, so offer one concrete workflow hardening diagnostic.",
           "evidence": "warm inbound engagement; responded to adaptive-gate positioning; workflow pain named: brittle guardrails",
           "contact": "https://www.reddit.com/user/Enthu-Cutlet-1337/",
-          "cta": "https://thumbgate.ai/#workflow-sprint-intake",
+          "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
           "proofTrigger": "Use proof pack only after the buyer confirms pain.",
           "firstTouchDraft": "Appreciate the kind words on the Thompson Sampling approach. You nailed the core insight: most guardrails are brittle prompt hacks that break when context shifts. I am looking for one AI-agent workflow to harden end-to-end this week: repeated failure, prevention rule, and proof run. If you have a workflow where brittle guardrails keep failing, I can harden that workflow with you. Open to a 15-minute diagnostic?",
           "markContactedCommand": "npm run sales:pipeline -- advance --lead 'reddit_enthu_cutlet_1337_r_claudecode' --channel 'reddit_dm' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on brittle guardrails.'",
@@ -254,39 +254,39 @@
           "whyNow": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
           "evidence": "workflow control surface; business-system integration; self-serve agent tooling; 144 GitHub stars; updated in the last 7 days",
           "contact": "https://agyn.io/",
-          "cta": "https://thumbgate.ai/guide",
+          "cta": "https://thumbgate-production.up.railway.app/guide",
           "proofTrigger": "Use proof pack only after the buyer confirms pain.",
-          "firstTouchDraft": "Hey @agynio, your `gh-pr-review` sounds like a solid foundation for LLM-powered review agents. We built ThumbGate Pro to provide the critical verification and guardrails needed when integrating LLMs into those automated workflows, starting at $19/mo.",
+          "firstTouchDraft": "Hey @agynio, saw you're building around `gh-pr-review`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
           "markContactedCommand": "npm run sales:pipeline -- advance --lead 'github_agynio_gh_pr_review' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
           "pipelineLeadId": "github_agynio_gh_pr_review"
         },
         {
-          "account": "bherald/personal-life-os-core",
-          "temperature": "cold",
-          "source": "github / github",
-          "evidenceScore": 14,
-          "whyNow": "Target looks like a self-serve tooling surface, so Pro is the cleaner CTA unless a concrete workflow pain is confirmed.",
-          "evidence": "workflow control surface; production or platform workflow; agent infrastructure; self-serve agent tooling; updated in the last 7 days",
-          "contact": "https://wphc.us/",
-          "cta": "https://thumbgate.ai/guide",
-          "proofTrigger": "Use proof pack only after the buyer confirms pain.",
-          "firstTouchDraft": "Saw your `personal-life-os-core` project's focus on operator-guided agents and workflows. ThumbGate helps harden AI agent behavior and verify outputs, which you can leverage with our Pro plan at $19/mo.",
-          "markContactedCommand": "npm run sales:pipeline -- advance --lead 'github_bherald_personal_life_os_core' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-          "pipelineLeadId": "github_bherald_personal_life_os_core"
-        },
-        {
-          "account": "easingthemes/dx-aem-flow",
+          "account": "greenpolo/cc-multi-cli-plugin",
           "temperature": "cold",
           "source": "github / github",
           "evidenceScore": 14,
           "whyNow": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
-          "evidence": "workflow control surface; production or platform workflow; self-serve agent tooling; 6 GitHub stars; updated in the last 7 days",
-          "contact": "https://www.linkedin.com/in/draganfilipovic/",
-          "cta": "https://thumbgate.ai/guide",
+          "evidence": "workflow control surface; business-system integration; self-serve agent tooling; 72 GitHub stars; updated in the last 7 days",
+          "contact": "https://github.com/greenpolo",
+          "cta": "https://thumbgate-production.up.railway.app/guide",
           "proofTrigger": "Use proof pack only after the buyer confirms pain.",
-          "firstTouchDraft": "Your `dx-aem-flow` project, particularly autonomous CI agents, sounds like a strong fit for how ThumbGate hardens AI-agent workflows against drift. Our Pro subscription at $19/mo provides the tools to integrate and tune your existing agents.",
-          "markContactedCommand": "npm run sales:pipeline -- advance --lead 'github_easingthemes_dx_aem_flow' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-          "pipelineLeadId": "github_easingthemes_dx_aem_flow"
+          "firstTouchDraft": "Hey @greenpolo, saw you're building around `cc-multi-cli-plugin`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
+          "markContactedCommand": "npm run sales:pipeline -- advance --lead 'github_greenpolo_cc_multi_cli_plugin' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on one business-system workflow that needs approval boundaries, rollback safety, and proof.'",
+          "pipelineLeadId": "github_greenpolo_cc_multi_cli_plugin"
+        },
+        {
+          "account": "levnikolaevich/claude-code-skills",
+          "temperature": "cold",
+          "source": "github / github",
+          "evidenceScore": 14,
+          "whyNow": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
+          "evidence": "workflow control surface; agent infrastructure; self-serve agent tooling; 447 GitHub stars; updated in the last 7 days",
+          "contact": "https://levnikolaevich.com/",
+          "cta": "https://thumbgate-production.up.railway.app/guide",
+          "proofTrigger": "Use proof pack only after the buyer confirms pain.",
+          "firstTouchDraft": "Hey @levnikolaevich, saw you're building around `claude-code-skills`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
+          "markContactedCommand": "npm run sales:pipeline -- advance --lead 'github_levnikolaevich_claude_code_skills' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+          "pipelineLeadId": "github_levnikolaevich_claude_code_skills"
         }
       ]
     }
