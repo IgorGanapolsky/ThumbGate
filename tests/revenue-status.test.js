@@ -347,6 +347,36 @@ test('getHostedAuditViaHttp reads hosted billing summary without Railway CLI', a
   assert.equal(hostedAudit.summaries['30d'].attribution.paidBySource.website, 1);
 });
 
+test('getHostedAuditViaHttp carries hosted runtime presence when exposed', async () => {
+  const hostedAudit = await getHostedAuditViaHttp({
+    appOrigin: 'https://example.com',
+    apiKey: 'tg_test_key',
+    timeZone: 'America/New_York',
+    fetchImpl: async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        runtimePresence: {
+          THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL: true,
+          THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL: true,
+        },
+        trafficMetrics: {
+          visitors: 3,
+          checkoutStarts: 1,
+        },
+        revenue: {
+          paidOrders: 0,
+          bookedRevenueCents: 0,
+        },
+      }),
+    }),
+  });
+
+  assert.equal(hostedAudit.runtimePresenceKnown, true);
+  assert.equal(hostedAudit.runtimePresence.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL, true);
+  assert.equal(hostedAudit.runtimePresence.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL, true);
+});
+
 test('generateRevenueStatusReport prefers hosted HTTP API when THUMBGATE_API_KEY is available', async () => {
   const runCalls = [];
   const report = await generateRevenueStatusReport({

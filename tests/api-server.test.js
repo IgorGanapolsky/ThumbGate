@@ -2668,6 +2668,8 @@ test('billing summary returns admin-only operational proxy', async () => {
   assert.equal(body.pipeline.workflowSprintLeads.total, 1);
   assert.equal(body.pipeline.workflowSprintLeads.bySource.linkedin, 1);
   assert.equal(body.pipeline.qualifiedWorkflowSprintLeads.total, 1);
+  assert.equal(body.runtimePresence.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL, true);
+  assert.equal(body.runtimePresence.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL, true);
   assert.equal(body.attribution.bookedRevenueByCampaignCents.pro_pack, 4900);
   assert.ok(body.trafficMetrics.visitors >= 1);
   assert.equal(body.operatorGeneratedAcquisition.uniqueLeads, 0);
