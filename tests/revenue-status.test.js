@@ -79,7 +79,7 @@ test('parseHtmlSignals detects telemetry and tracking hooks', () => {
   assert.equal(signals.workflowSprintIntake, true);
 });
 
-test('buildDiagnosis identifies local fallback blind spot and runtime gaps', () => {
+test('buildDiagnosis prioritizes GA4 runtime config over stale local fallback labels', () => {
   const diagnosis = buildDiagnosis({
     publicProbe: {
       root: {
@@ -120,7 +120,7 @@ test('buildDiagnosis identifies local fallback blind spot and runtime gaps', () 
     },
   });
 
-  assert.equal(diagnosis.primaryIssue, 'operator_blind_spot_local_fallback');
+  assert.equal(diagnosis.primaryIssue, 'ga4_runtime_config_gap');
   assert.equal(diagnosis.trackingImplemented, true);
   assert.equal(diagnosis.telemetryIngressWorking, true);
   assert.equal(diagnosis.hostedSummaryWorking, true);
@@ -271,7 +271,7 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
   });
 
   assert.equal(report.source, 'hosted-via-railway-env');
-  assert.equal(report.diagnosis.primaryIssue, 'operator_blind_spot_local_fallback');
+  assert.equal(report.diagnosis.primaryIssue, 'ga4_runtime_config_gap');
   assert.equal(report.hostedAudit.summaries['30d'].revenue.bookedRevenueCents, 2000);
   assert.ok(runCalls.some((call) => call[0] === 'railway' && call.includes('run')));
   assert.ok(
