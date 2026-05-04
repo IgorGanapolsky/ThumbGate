@@ -132,6 +132,9 @@ const {
 const { runLoop: runAutoresearchLoop } = require('../../scripts/autoresearch-runner');
 const { TOOLS } = require('../../scripts/tool-registry');
 const { buildContextFootprintReport } = require('../../scripts/context-footprint');
+const {
+  buildAgentDesignGovernancePlan,
+} = require('../../scripts/agent-design-governance');
 const { reflect: reflectOnFeedback } = loadOptionalModule(path.join(__dirname, '../../scripts/reflector-agent'), () => ({
   reflect: () => createUnavailableReport('Feedback reflection'),
 }));
@@ -1015,6 +1018,8 @@ async function callToolInner(name, args) {
         perEntryMaxChars: args.perEntryMaxChars,
         totalMaxChars: args.totalMaxChars,
       }));
+    case 'plan_agent_design_governance':
+      return toTextResult(buildAgentDesignGovernancePlan(args));
     case 'run_autoresearch': {
       const iterations = Math.max(1, Math.min(5, Number(args.iterations || 1)));
       const timeoutMs = Math.max(1000, Math.min(600000, Number(args.timeoutMs || 120000)));

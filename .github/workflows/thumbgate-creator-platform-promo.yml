@@ -1,0 +1,83 @@
+name: ThumbGate Creator Platform Promo
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'preview, publish, or schedule'
+        required: true
+        type: choice
+        default: preview
+        options:
+          - preview
+          - publish
+          - schedule
+      platforms:
+        description: 'Comma-separated Zernio platforms'
+        required: false
+        default: 'linkedin,instagram,reddit,tiktok,youtube,twitter'
+      schedule:
+        description: 'ISO-8601 scheduled time, required for schedule mode'
+        required: false
+        default: ''
+      timezone:
+        description: 'IANA timezone for schedule mode'
+        required: false
+        default: 'America/New_York'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: thumbgate-creator-platform-promo
+  cancel-in-progress: false
+
+jobs:
+  promo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
+      ZERNIO_INSTAGRAM_ACCOUNT_ID: ${{ secrets.ZERNIO_INSTAGRAM_ACCOUNT_ID }}
+      ZERNIO_LINKEDIN_ACCOUNT_ID: ${{ secrets.ZERNIO_LINKEDIN_ACCOUNT_ID }}
+      ZERNIO_PROFILE_ID: ${{ secrets.ZERNIO_PROFILE_ID }}
+      ZERNIO_REDDIT_ACCOUNT_ID: ${{ secrets.ZERNIO_REDDIT_ACCOUNT_ID }}
+      ZERNIO_TIKTOK_ACCOUNT_ID: ${{ secrets.ZERNIO_TIKTOK_ACCOUNT_ID }}
+      ZERNIO_YOUTUBE_ACCOUNT_ID: ${{ secrets.ZERNIO_YOUTUBE_ACCOUNT_ID }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Preview campaign
+        if: github.event.inputs.mode == 'preview'
+        run: |
+          npm run social:publish:launch -- \
+            --dry-run \
+            --platforms="${{ github.event.inputs.platforms }}"
+
+      - name: Publish campaign
+        if: github.event.inputs.mode == 'publish'
+        run: |
+          npm run social:publish:launch -- \
+            --platforms="${{ github.event.inputs.platforms }}"
+
+      - name: Schedule campaign
+        if: github.event.inputs.mode == 'schedule'
+        run: |
+          if [ -z "${{ github.event.inputs.schedule }}" ]; then
+            echo "schedule input is required when mode=schedule" >&2
+            exit 1
+          fi
+
+          npm run social:publish:launch -- \
+            --platforms="${{ github.event.inputs.platforms }}" \
+            --schedule="${{ github.event.inputs.schedule }}" \
+            --timezone="${{ github.event.inputs.timezone }}"

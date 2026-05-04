@@ -53,6 +53,29 @@ const SHAPE_PROFILES = {
   },
 };
 
+const RLSD_EVENT_MAGNITUDES = {
+  verification: 1,
+  evidence: 0.95,
+  tool_response: 0.85,
+  file_edit: 0.8,
+  tool_call: 0.75,
+  approval_gate: 0.7,
+  plan: 0.55,
+  rollback_path: 0.55,
+  source_capture: 0.55,
+  synthesis: 0.5,
+  commit_or_pr: 0.45,
+  audience_context: 0.4,
+  draft: 0.35,
+  intent: 0.3,
+  system_context: 0.2,
+  assistant_message: 0.15,
+  event: 0.1,
+  reasoning: 0.1,
+  auto_post: 0,
+  claim_done_without_evidence: 0,
+};
+
 function getReasoningTracePath({ feedbackDir } = {}) {
   return path.join(feedbackDir || resolveFeedbackDir(), TRACE_FILE);
 }
@@ -210,7 +233,7 @@ function normalizeOutcome(record = {}) {
   const reward = typeof record.reward === 'number' ? record.reward : record.outcome?.reward ?? null;
   return {
     success: success === null || success === undefined ? null : Boolean(success),
-    reward: Number.isFinite(Number(reward)) ? Number(reward) : null,
+    reward: reward === null || reward === undefined ? null : Number.isFinite(Number(reward)) ? Number(reward) : null,
     terminalState: record.terminal_state || record.outcome?.terminalState || record.outcome?.terminal_state || null,
   };
 }
@@ -379,6 +402,138 @@ function buildTraceEvalTuples(traces = [], evaluations = []) {
   });
 }
 
+function buildRlsdCreditAssignments(traces = [], options = {}) {
+  const normalized = traces.map((trace) => trace.steps ? trace : normalizeAgentTraceRecord(trace, options));
+  const evaluations = normalized.map((trace) => evaluateTraceShape(trace));
+  const assignments = normalized.map((trace, index) => buildRlsdCreditAssignment(trace, evaluations[index], options));
+  const eligible = assignments.filter((assignment) => assignment.eligible);
+  return {
+    mode: 'rlsd_credit_assignment',
+    generatedAt: new Date().toISOString(),
+    tracesAnalyzed: assignments.length,
+    eligibleTraces: eligible.length,
+    ineligibleTraces: assignments.length - eligible.length,
+    averageDenseSteps: eligible.length
+      ? round(eligible.reduce((sum, assignment) => sum + assignment.stepCredits.length, 0) / eligible.length)
+      : 0,
+    assignments,
+    recommendations: buildRlsdRecommendations(assignments),
+  };
+}
+
+function buildRlsdCreditAssignment(trace = {}, evaluation = evaluateTraceShape(trace), options = {}) {
+  const direction = resolveVerifiableRewardDirection(trace, evaluation, options);
+  const weights = normalizeStepMagnitudes(trace.steps || [], evaluation);
+  const signedDirection = direction.value;
+
+  return {
+    traceId: trace.traceId,
+    taskType: trace.taskType,
+    eligible: direction.source === 'verifiable_outcome',
+    direction: direction.label,
+    directionValue: signedDirection,
+    directionSource: direction.source,
+    finalReward: direction.finalReward,
+    magnitudeSource: 'observable_step_shape',
+    leakageGuard: 'self-teacher scores magnitude only; final verifiable reward controls direction',
+    privacy: {
+      rawReasoningStored: false,
+      rawPrivilegedContextStored: false,
+    },
+    stepCredits: (trace.steps || []).map((step, index) => ({
+      index: step.index,
+      role: step.role,
+      eventType: step.eventType,
+      toolCalls: (step.toolCalls || []).map((call) => call.name),
+      magnitude: weights[index] || 0,
+      signedReward: direction.source === 'verifiable_outcome' ? round((weights[index] || 0) * signedDirection) : 0,
+      reason: buildStepCreditReason(step, evaluation),
+    })),
+  };
+}
+
+function resolveVerifiableRewardDirection(trace = {}, evaluation = {}, options = {}) {
+  const outcome = trace.outcome || {};
+  if (outcome.reward !== null && outcome.reward !== undefined && Number.isFinite(Number(outcome.reward))) {
+    const reward = clamp(Number(outcome.reward), -1, 1);
+    return {
+      label: reward > 0 ? 'reinforce' : reward < 0 ? 'penalize' : 'neutral',
+      value: reward > 0 ? 1 : reward < 0 ? -1 : 0,
+      finalReward: reward,
+      source: 'verifiable_outcome',
+    };
+  }
+  if (typeof outcome.success === 'boolean') {
+    return {
+      label: outcome.success ? 'reinforce' : 'penalize',
+      value: outcome.success ? 1 : -1,
+      finalReward: outcome.success ? 1 : -1,
+      source: 'verifiable_outcome',
+    };
+  }
+  if (options.allowShapeFallback) {
+    return {
+      label: evaluation.verdict === 'gate' ? 'penalize' : 'reinforce',
+      value: evaluation.verdict === 'gate' ? -1 : 1,
+      finalReward: evaluation.verdict === 'gate' ? -1 : 1,
+      source: 'shape_fallback',
+    };
+  }
+  return {
+    label: 'preference_pipeline_required',
+    value: 0,
+    finalReward: null,
+    source: 'not_verifiable',
+  };
+}
+
+function normalizeStepMagnitudes(steps = [], evaluation = {}) {
+  const raw = steps.map((step) => {
+    let magnitude = RLSD_EVENT_MAGNITUDES[step.eventType] ?? 0.2;
+    if (step.error) magnitude *= 1.25;
+    if ((evaluation.missingRequired || []).includes(step.eventType)) magnitude *= 0.75;
+    if ((evaluation.forbiddenPresent || []).includes(step.eventType)) magnitude = 0;
+    return Math.max(0, magnitude);
+  });
+  const total = raw.reduce((sum, value) => sum + value, 0);
+  if (!total) return steps.map(() => 0);
+  return raw.map((value) => round(value / total));
+}
+
+function buildStepCreditReason(step = {}, evaluation = {}) {
+  if ((evaluation.forbiddenPresent || []).includes(step.eventType)) {
+    return 'Forbidden event receives no magnitude credit.';
+  }
+  if (step.error) {
+    return 'Error-bearing step receives higher credit/blame magnitude for targeted correction.';
+  }
+  if (['verification', 'evidence', 'tool_response'].includes(step.eventType)) {
+    return 'Observable outcome/evidence step receives high magnitude credit.';
+  }
+  if (['auto_post', 'claim_done_without_evidence'].includes(step.eventType)) {
+    return 'Unsafe completion claim receives no positive magnitude credit.';
+  }
+  return 'Magnitude is based on observable trace role, not hidden reasoning text.';
+}
+
+function buildRlsdRecommendations(assignments = []) {
+  const recommendations = [];
+  const ineligible = assignments.filter((assignment) => !assignment.eligible);
+  if (ineligible.length) {
+    recommendations.push('Route traces without compiler/test/schema/billing/verifier outcomes to preference-based evaluation before RLSD export.');
+  }
+  if (assignments.some((assignment) => assignment.stepCredits.some((step) => step.eventType === 'claim_done_without_evidence'))) {
+    recommendations.push('Promote done-without-evidence steps into pre-action gates before using these traces for training.');
+  }
+  if (assignments.some((assignment) => assignment.stepCredits.some((step) => step.reason.includes('Error-bearing')))) {
+    recommendations.push('Use error-bearing step magnitudes for targeted correction instead of penalizing the whole trace uniformly.');
+  }
+  if (!recommendations.length) {
+    recommendations.push('RLSD tuples are ready for small-batch export: verifiable direction is separated from dense step magnitude.');
+  }
+  return recommendations;
+}
+
 function formatTraceAnalyticsReport(report = {}) {
   const lines = [
     '# Agent Reasoning Trace Intelligence',
@@ -436,6 +591,11 @@ function round(value) {
   return Math.round(value * 1000) / 1000;
 }
 
+function clamp(value, min, max) {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, value));
+}
+
 function parseArgs(argv = process.argv.slice(2)) {
   const args = { command: argv[0] || 'report' };
   for (const arg of argv.slice(1)) {
@@ -458,6 +618,8 @@ if (isCliInvocation()) {
     console.log(JSON.stringify(report, null, 2));
   } else if (args.command === 'eval') {
     console.log(JSON.stringify(report.evalTuples, null, 2));
+  } else if (args.command === 'rlsd') {
+    console.log(JSON.stringify(buildRlsdCreditAssignments(traces), null, 2));
   } else if (args.command === 'record') {
     const raw = args.input ? fs.readFileSync(path.resolve(args.input), 'utf8') : '';
     const parsed = raw.trim().split('\n').filter(Boolean).map((line) => JSON.parse(line));
@@ -466,7 +628,7 @@ if (isCliInvocation()) {
   } else if (args.command === 'report') {
     console.log(formatTraceAnalyticsReport(report));
   } else {
-    console.error(`Unknown command: ${args.command}. Use: report, json, eval, record`);
+    console.error(`Unknown command: ${args.command}. Use: report, json, eval, rlsd, record`);
     process.exit(1);
   }
 }
@@ -475,6 +637,8 @@ module.exports = {
   SHAPE_PROFILES,
   buildTraceAnalytics,
   buildTraceEvalTuples,
+  buildRlsdCreditAssignment,
+  buildRlsdCreditAssignments,
   evaluateTraceShape,
   formatTraceAnalyticsReport,
   getReasoningTracePath,

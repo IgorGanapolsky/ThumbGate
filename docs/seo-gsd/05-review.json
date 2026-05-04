@@ -18,18 +18,26 @@
   "recommendedOrder": [
     "/compare/speclock",
     "/compare/mem0",
+    "/compare/fallow",
     "/guides/roo-code-alternative-cline",
+    "/guides/claude-code-skills-guardrails",
     "/guides/claude-code-feedback",
     "/guides/cursor-agent-guardrails",
     "/guides/codex-cli-guardrails",
     "/guides/gemini-cli-feedback-memory",
     "/guides/claude-desktop",
+    "/guides/semantic-programmatic-seo-guardrails",
+    "/guides/proxy-pointer-rag-guardrails",
+    "/guides/rag-precision-tuning-guardrails",
+    "/guides/seo-agent-skills-guardrails",
+    "/guides/reasoning-compression-guardrails",
     "/guides/pre-action-checks",
     "/guides/agent-harness-optimization",
     "/guides/code-knowledge-graph-guardrails",
     "/guides/developer-machine-supply-chain-guardrails",
     "/guides/stop-repeated-ai-agent-mistakes",
     "/guides/autoresearch-agent-safety",
+    "/guides/long-running-agent-context-management",
     "/guides/browser-automation-safety",
     "/guides/native-messaging-host-security",
     "/guides/best-tools-stop-ai-agents-breaking-production",
@@ -46,5 +54,17 @@
     "automation proof",
     "SQLite+FTS5 lesson DB",
     "Thompson Sampling"
-  ]
+  ],
+  "technicalGuardian": {
+    "checks": [
+      "canonical_url",
+      "faq_json_ld",
+      "tech_article_json_ld",
+      "llm_context_link",
+      "proof_links",
+      "conversion_cta",
+      "semantic_related_links"
+    ],
+    "publishBlockers": []
+  }
 }

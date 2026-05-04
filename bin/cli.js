@@ -13,6 +13,10 @@
  *   npx thumbgate export-databricks   # export Databricks-ready analytics bundle
  *   npx thumbgate eval --from-feedback # turn feedback into reusable prompt evals
  *   npx thumbgate code-graph-guardrails # map code-graph signals to pre-action checks
+ *   npx thumbgate proxy-pointer-rag-guardrails # map visual document RAG signals to gates
+ *   npx thumbgate rag-precision-guardrails # map retrieval tuning regressions to gates
+ *   npx thumbgate long-running-agent-context-guardrails # map structured-memory gaps to gates
+ *   npx thumbgate reasoning-efficiency-guardrails # map reasoning compression signals to gates
  *   npx thumbgate stats         # feedback analytics + Revenue-at-Risk
  *   npx thumbgate background-governance  # background-agent run report + risk check
  *   npx thumbgate cfo           # local operational billing summary
@@ -1222,6 +1226,48 @@ function modelFit() {
   console.log(JSON.stringify({ reportPath, report }, null, 2));
 }
 
+function geminiEmbeddingPlan() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildGeminiEmbeddingRolloutPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'gemini-embedding-policy'));
+  const plan = buildGeminiEmbeddingRolloutPlan({
+    corpusItems: args['corpus-items'] || args.corpusItems,
+    outputDimensionality: args.dim || args.outputDimensionality,
+    task: args.task,
+    useBatchApi: !args['no-batch'],
+  });
+
+  if (args.json) {
+    console.log(JSON.stringify(plan, null, 2));
+    return;
+  }
+
+  console.log(`Gemini Embedding 2 plan — ${plan.task}`);
+  console.log(`Model: ${plan.model}`);
+  console.log(`Dimensions: ${plan.outputDimensionality}`);
+  console.log(`Corpus: ${plan.corpusItems} items (~${plan.estimatedFloat32Mb} MB float32)`);
+  console.log(`Query prefix: ${plan.taskPrefixes.query}`);
+  console.log(`Document prefix: ${plan.taskPrefixes.document}`);
+  console.log(`Batch API: ${plan.economics.batchApi}`);
+}
+
+function agentDesignGovernance() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildAgentDesignGovernancePlan,
+    formatAgentDesignGovernancePlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'agent-design-governance'));
+  const report = buildAgentDesignGovernancePlan(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatAgentDesignGovernancePlan(report));
+}
+
 function modelCandidatesCmd() {
   const args = parseArgs(process.argv.slice(3));
   const { writeModelCandidatesReport, renderModelCandidatesReport } = require(path.join(PKG_ROOT, 'scripts', 'model-candidates'));
@@ -1614,6 +1660,70 @@ function codeGraphGuardrails() {
   }
 
   process.stdout.write(formatCodeGraphGuardrailsPlan(report));
+}
+
+function proxyPointerRagGuardrails() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildProxyPointerRagGuardrailsPlan,
+    formatProxyPointerRagGuardrailsPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'proxy-pointer-rag-guardrails'));
+  const report = buildProxyPointerRagGuardrailsPlan(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatProxyPointerRagGuardrailsPlan(report));
+}
+
+function ragPrecisionGuardrails() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildRagPrecisionGuardrailsPlan,
+    formatRagPrecisionGuardrailsPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'rag-precision-guardrails'));
+  const report = buildRagPrecisionGuardrailsPlan(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatRagPrecisionGuardrailsPlan(report));
+}
+
+function longRunningAgentContextGuardrails() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildLongRunningAgentContextGuardrailsPlan,
+    formatLongRunningAgentContextGuardrailsPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'long-running-agent-context-guardrails'));
+  const report = buildLongRunningAgentContextGuardrailsPlan(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatLongRunningAgentContextGuardrailsPlan(report));
+}
+
+function reasoningEfficiencyGuardrails() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildReasoningEfficiencyGuardrailsPlan,
+    formatReasoningEfficiencyGuardrailsPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'reasoning-efficiency-guardrails'));
+  const report = buildReasoningEfficiencyGuardrailsPlan(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatReasoningEfficiencyGuardrailsPlan(report));
 }
 
 function backgroundGovernance() {
@@ -2037,6 +2147,10 @@ function help() {
   console.log('  pulse                 Real-time GTM velocity and Mission Control summary');
   console.log('  dispatch              Dispatch-safe brief for phone-driven review sessions');
   console.log('  code-graph-guardrails Map code-graph risk signals to Knowledge Graph Safety gates');
+  console.log('  proxy-pointer-rag-guardrails Map visual document RAG signals to Document RAG Safety gates');
+  console.log('  rag-precision-guardrails Map retrieval tuning regressions to Document RAG Safety gates');
+  console.log('  long-running-agent-context-guardrails Map structured-memory gaps to long-running agent gates');
+  console.log('  reasoning-efficiency-guardrails Map reasoning compression signals to efficiency gates');
   console.log('  background-governance Background-agent run report and dispatch risk check');
   console.log('  analytics             Unified analytics snapshot (npm, GitHub, landing)');
   console.log('  start-api             Start the ThumbGate HTTPS API server');
@@ -2063,6 +2177,10 @@ function help() {
   console.log('  npx thumbgate demo');
   console.log('  npx thumbgate stats --json');
   console.log('  npx thumbgate code-graph-guardrails --central-files=src/api/server.js --layers=api,data --generated-artifacts=.codegraph/index.json --json');
+  console.log('  npx thumbgate proxy-pointer-rag-guardrails --tree-path=.rag/tree.json --image-pointers=paper-1/figures/fig2.png --documents=paper-1 --visual-claims --json');
+  console.log('  npx thumbgate rag-precision-guardrails --baseline-recall=0.86 --new-recall=0.72 --threshold-change --agentic --structural-near-misses --json');
+  console.log('  npx thumbgate long-running-agent-context-guardrails --request-count=80 --output-mb=3 --raw-chat-only --json');
+  console.log('  npx thumbgate reasoning-efficiency-guardrails --baseline-tokens=1200 --compressed-tokens=980 --baseline-accuracy=0.84 --compressed-accuracy=0.85 --verifier --json');
   console.log('  npx thumbgate background-governance --json');
   console.log('  npx thumbgate background-governance --check --agent-id=builder --branch=main --files-changed=25 --json');
   console.log('  npx thumbgate eval --from-feedback --json');
@@ -2207,6 +2325,15 @@ switch (COMMAND) {
   case 'model-fit':
     modelFit();
     break;
+  case 'gemini-embedding-plan':
+  case 'embedding-plan':
+    geminiEmbeddingPlan();
+    break;
+  case 'agent-design-governance':
+  case 'agent-architecture':
+  case 'agent-governance-plan':
+    agentDesignGovernance();
+    break;
   case 'model-candidates':
   case 'managed-models':
     modelCandidatesCmd();
@@ -2259,6 +2386,26 @@ switch (COMMAND) {
   case 'knowledge-graph-guardrails':
   case 'graph-guardrails':
     codeGraphGuardrails();
+    break;
+  case 'proxy-pointer-rag-guardrails':
+  case 'document-rag-guardrails':
+  case 'multimodal-rag-guardrails':
+    proxyPointerRagGuardrails();
+    break;
+  case 'rag-precision-guardrails':
+  case 'retrieval-precision-guardrails':
+  case 'agentic-rag-guardrails':
+    ragPrecisionGuardrails();
+    break;
+  case 'long-running-agent-context-guardrails':
+  case 'agent-context-guardrails':
+  case 'slack-context-guardrails':
+    longRunningAgentContextGuardrails();
+    break;
+  case 'reasoning-efficiency-guardrails':
+  case 'sas-guardrails':
+  case 'reasoning-compression-guardrails':
+    reasoningEfficiencyGuardrails();
     break;
   case 'background-governance':
   case 'background-agent-governance':

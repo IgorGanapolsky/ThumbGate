@@ -1,7 +1,14 @@
 'use strict';
 
+const {
+  buildGeminiEmbeddingRolloutPlan,
+  GEMINI_EMBEDDING_2_MODEL,
+  MULTIMODAL_LIMITS,
+  RECOMMENDED_OUTPUT_DIMENSIONS,
+} = require('./gemini-embedding-policy');
+
 const DEFAULT_EVIDENCE_TYPES = ['screenshots', 'pdf_pages', 'proof_artifacts'];
-const DEFAULT_DIMS = [1024, 512, 256, 128, 64];
+const DEFAULT_DIMS = [...RECOMMENDED_OUTPUT_DIMENSIONS, 512, 256, 128, 64];
 
 function clampInteger(value, { min, max, fallback }) {
   const parsed = Number(value);
@@ -24,8 +31,8 @@ function dimensionPlan({ corpusItems, maxEmbeddingDim }) {
     dim,
     estimatedFloat32Mb: Number(((corpusItems * dim * 4) / (1024 * 1024)).toFixed(2)),
     useWhen: dim >= 1024
-      ? 'default quality pass for launch-critical retrieval'
-      : 'cost-down pass when storage or latency dominates',
+      ? 'quality pass for launch-critical retrieval and holdout benchmarking'
+      : 'default cost-efficient Matryoshka pass for online agent recall',
   }));
 }
 
@@ -38,8 +45,8 @@ function buildMultimodalRetrievalPlan(args = {}) {
   });
   const maxEmbeddingDim = clampInteger(args.maxEmbeddingDim, {
     min: 64,
-    max: 2048,
-    fallback: 1024,
+    max: 3072,
+    fallback: 768,
   });
   const latencyBudgetMs = clampInteger(args.latencyBudgetMs, {
     min: 50,
@@ -49,19 +56,31 @@ function buildMultimodalRetrievalPlan(args = {}) {
   const useReranker = args.useReranker !== false;
   const goal = String(args.goal || 'retrieve visual proof for agent-governance decisions').trim();
   const dims = dimensionPlan({ corpusItems, maxEmbeddingDim });
-  const defaultDim = dims.some((entry) => entry.dim === 1024) ? 1024 : dims[0].dim;
+  const defaultDim = dims.some((entry) => entry.dim === 768) ? 768 : dims[0].dim;
+  const gemini = buildGeminiEmbeddingRolloutPlan({
+    corpusItems,
+    outputDimensionality: defaultDim,
+    task: args.task || 'search result',
+    useBatchApi: args.useBatchApi,
+  });
 
   return {
-    planVersion: '2026-04-20',
-    sourcePattern: 'multimodal Sentence Transformers visual document retrieval',
+    planVersion: '2026-05-04',
+    sourcePattern: `${GEMINI_EMBEDDING_2_MODEL} agentic multimodal RAG`,
     goal,
     evidenceTypes,
     architecture: {
-      stage1: 'Index screenshots, PDF pages, dashboard captures, and proof artifacts with a multimodal embedding model.',
+      stage1: 'Index screenshots, PDF pages, dashboard captures, and proof artifacts with Gemini Embedding 2 in one shared semantic space.',
       stage2: useReranker
-        ? 'Rerank the top candidates with a multimodal cross-encoder before using evidence in a gate, PR, or sales proof claim.'
+        ? 'Rerank the top candidates with query/document similarity and hard-negative checks before using evidence in a gate, PR, or sales proof claim.'
         : 'Skip reranking for low-latency agent recall; require stronger holdout evaluation before shipping.',
       fallback: 'Keep text-only search as a fallback for code, logs, markdown, and plain policy docs.',
+    },
+    geminiEmbedding2: {
+      model: GEMINI_EMBEDDING_2_MODEL,
+      modalityLimits: MULTIMODAL_LIMITS,
+      taskPrefixes: gemini.taskPrefixes,
+      batchApi: gemini.economics.batchApi,
     },
     trainingData: {
       pilotSchema: ['query', 'image', 'negative_0'],
@@ -82,7 +101,7 @@ function buildMultimodalRetrievalPlan(args = {}) {
       latencyBudgetMs,
       defaultEmbeddingDim: defaultDim,
       matryoshkaDimensions: dims,
-      compressionPath: 'Use Matryoshka truncation first, then quantization only after holdout quality is stable.',
+      compressionPath: 'Use Gemini Embedding 2 Matryoshka truncation first; start at 768 dimensions and benchmark 1536 only when recall misses justify the storage.',
     },
     thumbgateUseCases: [
       'Find the exact screenshot or proof artifact behind a completion claim.',
@@ -93,6 +112,7 @@ function buildMultimodalRetrievalPlan(args = {}) {
     guardrails: [
       'Never promote visual retrieval results into claims without a linked artifact URL or local path.',
       'Keep the multimodal index read-only for agent recall; gate training and index rebuilds behind explicit workflow checks.',
+      'Use task prefixes at both index time and query time so short agent questions retrieve long proof artifacts correctly.',
       'Evaluate retrieval on holdout screenshots/PDF pages before replacing text-only recall.',
     ],
     nextActions: [

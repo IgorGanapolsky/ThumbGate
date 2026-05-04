@@ -13,6 +13,13 @@ const GUIDE_FILES = [
   'guides/code-knowledge-graph-guardrails.html',
   'guides/developer-machine-supply-chain-guardrails.html',
   'guides/prompt-tricks-to-workflow-rules.html',
+  'guides/semantic-programmatic-seo-guardrails.html',
+  'guides/proxy-pointer-rag-guardrails.html',
+  'guides/rag-precision-tuning-guardrails.html',
+  'guides/seo-agent-skills-guardrails.html',
+  'guides/claude-code-skills-guardrails.html',
+  'guides/long-running-agent-context-management.html',
+  'guides/reasoning-compression-guardrails.html',
   'guides/background-agent-governance.html',
   'guides/gpt-5-5-model-evaluation.html',
   'guides/browser-automation-safety.html',
@@ -31,6 +38,7 @@ const GUIDE_FILES = [
 const COMPARE_FILES = [
   'compare/speclock.html',
   'compare/mem0.html',
+  'compare/fallow.html',
   'compare/agentix-labs.html',
 ];
 
@@ -174,6 +182,78 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('clear rules, examples, and pre-action checks'));
     assert.ok(html.includes('Do not rely on politeness, threats, flattery, or roleplay'));
     assert.ok(html.includes('Workflow Rule Safety'));
+  });
+
+  it('semantic pSEO guide routes scaled content into governed publish checks', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/semantic-programmatic-seo-guardrails.html'),
+      'utf-8'
+    );
+    assert.match(html, /Semantic pSEO Needs Governance Before Scale/);
+    assert.match(html, /Authority map before page generation/);
+    assert.match(html, /Brand context governance before drafting/);
+    assert.match(html, /Semantic mesh links before publish/);
+    assert.match(html, /Technical guardian checks before crawl/);
+  });
+
+  it('document RAG guides route retrieval and visual answer risks into gates', () => {
+    const proxyPointer = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/proxy-pointer-rag-guardrails.html'),
+      'utf-8'
+    );
+    const precision = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/rag-precision-tuning-guardrails.html'),
+      'utf-8'
+    );
+
+    assert.ok(proxyPointer.includes('npx thumbgate proxy-pointer-rag-guardrails'));
+    assert.ok(proxyPointer.includes('Section tree and image pointer grounding'));
+    assert.ok(precision.includes('npx thumbgate rag-precision-guardrails'));
+    assert.ok(precision.includes('Retrieval baseline before tuning'));
+    assert.ok(precision.includes('Two-stage verifier for structural near misses'));
+  });
+
+  it('SEO and Claude skill guides route advisory skills into enforceable gates', () => {
+    const seoSkills = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/seo-agent-skills-guardrails.html'),
+      'utf-8'
+    );
+    const claudeSkills = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/claude-code-skills-guardrails.html'),
+      'utf-8'
+    );
+
+    assert.ok(seoSkills.includes('SEO Agents Need Workspaces and Guardrails'));
+    assert.ok(seoSkills.includes('Technical publish gate'));
+    assert.ok(claudeSkills.includes('Claude Code Skills Need Pre-Action Enforcement'));
+    assert.ok(claudeSkills.includes('skillbook'));
+  });
+
+  it('long-running context and reasoning guides expose new research-backed CLI gates', () => {
+    const contextGuide = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/long-running-agent-context-management.html'),
+      'utf-8'
+    );
+    const reasoningGuide = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/reasoning-compression-guardrails.html'),
+      'utf-8'
+    );
+
+    assert.ok(contextGuide.includes('npx thumbgate long-running-agent-context-guardrails'));
+    assert.ok(contextGuide.includes('Director journals'));
+    assert.ok(reasoningGuide.includes('npx thumbgate reasoning-efficiency-guardrails'));
+    assert.ok(reasoningGuide.includes('Step-Level Verifier Checks'));
+  });
+
+  it('Fallow comparison positions static analysis as complementary context', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'compare/fallow.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('ThumbGate vs Fallow'));
+    assert.ok(html.includes('Fallow finds JS/TS code health issues'));
+    assert.ok(html.includes('ThumbGate governs what AI agents are allowed to do next'));
   });
 
   it('AI search visibility guides reinforce the recommendation-discovery story', () => {

@@ -545,6 +545,8 @@ describe('bin/cli.js', () => {
     assert.ok(result.stdout.includes('cfo'), 'Help should mention cfo');
     assert.ok(result.stdout.includes('repair-github-marketplace'), 'Help should mention repair-github-marketplace');
     assert.ok(result.stdout.includes('model-fit'), 'Help should mention model-fit');
+    assert.ok(result.stdout.includes('gemini-embedding-plan'), 'Help should mention gemini-embedding-plan');
+    assert.ok(result.stdout.includes('agent-design-governance'), 'Help should mention agent-design-governance');
     assert.ok(result.stdout.includes('model-candidates'), 'Help should mention model-candidates');
     assert.ok(result.stdout.includes('risk'), 'Help should mention risk');
     assert.ok(result.stdout.includes('export-dpo'), 'Help should mention export-dpo');
@@ -1649,6 +1651,31 @@ describe('bin/cli.js', () => {
     assert.ok(fs.existsSync(payload.reportPath), 'model-fit should write the report file');
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
+  });
+
+  test('gemini-embedding-plan reports task prefixes and dimension plan', () => {
+    const result = runCliSync(['gemini-embedding-plan', '--task=search result', '--corpus-items=1200', '--dim=700', '--json']);
+    assert.equal(result.status, 0, `gemini-embedding-plan failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.model, 'gemini-embedding-2');
+    assert.equal(payload.outputDimensionality, 768);
+    assert.match(payload.taskPrefixes.query, /task: search result/);
+  });
+
+  test('agent-design-governance reports architecture and safeguards', () => {
+    const result = runCliSync([
+      'agent-design-governance',
+      '--workflow=billing recovery agent',
+      '--tools=stripe_refund,send_email',
+      '--write-tools=stripe_refund,send_email',
+      '--baseline-evals',
+      '--json',
+    ]);
+    assert.equal(result.status, 0, `agent-design-governance failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.name, 'thumbgate-agent-design-governance');
+    assert.equal(payload.toolRisk.risk, 'high');
+    assert.ok(payload.blockers.some((blocker) => blocker.id === 'tool_approval_required'));
   });
 
   test('model-candidates ranks managed candidates and writes a report', () => {

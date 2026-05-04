@@ -2,6 +2,8 @@
 platform: medium
 status: draft_ready_manual_publish_required
 publication_url: https://medium.com/conversational-ai-weekly
+publication_name: "Conversational AI Weekly"
+publication_audience: "conversational AI builders, agent operators, and automation teams"
 date: 2026-05-04
 title: "Pre-Action Gates for Tool-Using AI Agents"
 subtitle: "Observability tells you what happened. Enforcement decides what is allowed to happen next."
@@ -75,6 +77,7 @@ For proof-backed numbers and current evidence, use: https://thumbgate-production
 
 - Open Medium Write from the signed-in browser session.
 - Paste the title, subtitle, body, and tags.
+- Add a canonical link back to the matching ThumbGate guide when Medium offers import/canonical settings.
 - Review links and claims against COMMERCIAL_TRUTH.md and VERIFICATION_EVIDENCE.md.
-- Submit to Conversational AI Weekly only if the publication accepts outside submissions; otherwise publish under the founder profile.
+- Submit to Conversational AI Weekly only if Medium shows a submission path; otherwise publish under the founder profile and tag the publication/editor in the weekly visibility note.
 - After publish, record the URL in docs/marketing/medium/published.csv.

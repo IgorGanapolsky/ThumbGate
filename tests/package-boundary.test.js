@@ -204,9 +204,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // (Autogenesis-inspired pre-promotion validator that feedback-loop.js
   // requires at captureFeedback time) on top of main's post-#1092 baseline.
   // Two extra file slots: rule-validator.js + one-file headroom.
+  // Bumped 238 → 242 (2026-05-04) for the high-ROI runtime additions:
+  // judge-reward-function, prompting-operating-system, proxy-pointer RAG
+  // guardrails, and gemini-embedding-policy required by packaged RAG/vector
+  // entrypoints. Keep one-file headroom for release merge churn.
   assert.ok(
-    manifest.fileCount <= 238,
-    `npm package should stay <= 238 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 242,
+    `npm package should stay <= 242 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -244,14 +248,19 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // discovery: code-graph-guardrails CLI, SEO/GSD page specs, and companion
   // LLM context. This keeps runtime packaging honest while preserving enough
   // headroom for the high-ROI buyer guide additions already in this branch.
-  // Bumped 3.13 MB -> 3.17 MB (2026-05-04) for shipped governance CLIs:
-  // redacted reasoning traces, judge rewards, prompting plans, single-use
-  // credential grants, SPDD canvases, and stack-survival audits. These are
-  // runtime operator tools, not dev-only fixtures, so they belong in the
-  // published tarball.
+  // Bumped 3.13 MB → 3.20 MB (2026-05-04) for the same high-ROI runtime
+  // additions: reward readiness, prompt planning, proxy-pointer RAG guardrails,
+  // and the embedding policy dependency they expose in packaged runtimes.
+  // Bumped 3.20 MB → 3.22 MB (2026-05-04) after wiring the Gemini policy test
+  // into the canonical npm test path and adding the final pSEO/Medium runtime
+  // orchestration metadata. The observed package is ~3.210 MB, so this keeps
+  // only the normal small rebase-flap margin.
+  // Bumped 3.22 MB → 3.29 MB (2026-05-04) for RLSD-style trace credit export
+  // and the final high-ROI runtime docs/assets in this branch. Observed
+  // unpacked size is ~3.265 MB; the remaining margin is intentionally narrow.
   assert.ok(
-    manifest.unpackedSize <= 3_170_000,
-    `npm package should stay <= 3.17 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_290_000,
+    `npm package should stay <= 3.29 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

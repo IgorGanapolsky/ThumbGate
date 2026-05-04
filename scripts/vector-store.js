@@ -8,6 +8,12 @@ const {
   writeModelFitReport,
   resolveFeedbackDir,
 } = require('./local-model-profile');
+const {
+  prepareEmbeddingText,
+  resolveGeminiEmbeddingConfig,
+  resolveGeminiModelResource,
+  resolveGeminiTaskType,
+} = require('./gemini-embedding-policy');
 const { runStep } = require('./durability/step');
 
 const DEFAULT_FEEDBACK_DIR = resolveFeedbackDir();
@@ -20,6 +26,7 @@ let _lancedbLoader = null;
 const _pipelineCache = new Map();
 let _lastEmbeddingProfile = null;
 let _pipelineLoader = null;
+let _geminiEmbedderForTests = null;
 const TABLE_NAME = 'thumbgate_memories';
 
 async function getLanceDB() {
@@ -97,12 +104,104 @@ async function getEmbeddingPipeline() {
 // Set THUMBGATE_VECTOR_STUB_EMBED=true to get a deterministic 384-dim unit vector.
 // The real embed() is used in production and integration tests
 // (gated by absence of this env var).
-async function embed(text) {
+async function embedWithGemini(text, options = {}) {
+  const config = resolveGeminiEmbeddingConfig();
+  if (!config.apiKey && !_geminiEmbedderForTests) {
+    throw new Error('Gemini embeddings requested but no GEMINI_API_KEY, GOOGLE_API_KEY, or GOOGLE_GENERATIVE_AI_API_KEY is configured');
+  }
+
+  const preparedText = prepareEmbeddingText({
+    content: text,
+    kind: options.kind,
+    task: options.task || config.defaultTask,
+    title: options.title,
+  });
+
+  if (_geminiEmbedderForTests) {
+    return _geminiEmbedderForTests(preparedText, config, options);
+  }
+
+  if (typeof fetch !== 'function') {
+    throw new Error('Gemini embeddings require global fetch. Use Node 18.18+ or the local embedding provider.');
+  }
+
+  const modelResource = resolveGeminiModelResource(config.model);
+  const requestBody = {
+    model: modelResource,
+    content: {
+      parts: [{ text: preparedText }],
+    },
+    outputDimensionality: config.outputDimensionality,
+  };
+  const taskType = resolveGeminiTaskType({
+    kind: options.kind,
+    task: options.task || config.defaultTask,
+  });
+  if (taskType) {
+    requestBody.taskType = taskType;
+  }
+  if (taskType === 'RETRIEVAL_DOCUMENT' && options.title) {
+    requestBody.title = String(options.title);
+  }
+
+  const endpoint = `${config.apiBaseUrl}/${modelResource}:embedContent`;
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': config.apiKey,
+    },
+    body: JSON.stringify(requestBody),
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => '');
+    throw new Error(`Gemini embedding request failed: ${response.status} ${response.statusText}${body ? ` — ${body.slice(0, 240)}` : ''}`);
+  }
+
+  const payload = await response.json();
+  const values = payload && (
+    (payload.embedding && payload.embedding.values)
+    || (Array.isArray(payload.embeddings) && payload.embeddings[0] && payload.embeddings[0].values)
+  );
+
+  if (!Array.isArray(values) || values.length === 0) {
+    throw new Error('Gemini embedding response did not include vector values');
+  }
+
+  return values.map(Number);
+}
+
+async function embed(text, options = {}) {
   if (process.env.THUMBGATE_VECTOR_STUB_EMBED === 'true') {
     // Deterministic 384-dim unit vector: first element = 1.0, rest = 0.0
     const stub = Array(384).fill(0);
     stub[0] = 1.0;
     return stub;
+  }
+  const geminiConfig = resolveGeminiEmbeddingConfig();
+  if (geminiConfig.enabled) {
+    try {
+      const vector = await embedWithGemini(text, options);
+      _lastEmbeddingProfile = {
+        generatedAt: new Date().toISOString(),
+        source: 'managed',
+        activeProfile: {
+          id: 'gemini',
+          model: geminiConfig.model,
+          outputDimensionality: geminiConfig.outputDimensionality,
+          task: options.task || geminiConfig.defaultTask,
+          rationale: 'Managed Gemini Embedding 2 path with task-specific query/document prefixes.',
+        },
+        fallbackUsed: false,
+      };
+      return vector;
+    } catch (geminiError) {
+      if (!geminiConfig.fallbackToLocal) {
+        throw geminiError;
+      }
+      console.warn(`Gemini embedding fallback: ${geminiError.message}`);
+    }
   }
   const { pipe, profile } = await getEmbeddingPipeline();
   const output = await pipe(truncateForEmbedding(text, profile.activeProfile.maxChars), {
@@ -129,7 +228,11 @@ async function upsertFeedback(feedbackEvent) {
   // Embed is pure CPU/model work (transformers.js or stub) — deterministic
   // for a given input, so no retry is needed here. Retry wraps the table
   // write below, which is the actual I/O failure surface.
-  const vector = await embed(textForEmbedding);
+  const vector = await embed(textForEmbedding, {
+    kind: 'document',
+    task: 'code retrieval',
+    title: feedbackEvent.id || 'thumbgate feedback',
+  });
 
   const record = {
     id: feedbackEvent.id,
@@ -170,14 +273,20 @@ async function searchSimilar(queryText, limit = 5) {
   const tableNames = await db.tableNames();
   if (!tableNames.includes(TABLE_NAME)) return [];
 
-  const vector = await embed(queryText);
+  const vector = await embed(queryText, {
+    kind: 'query',
+    task: 'code retrieval',
+  });
   const table = await db.openTable(TABLE_NAME);
   const results = await table.search(vector).limit(limit).toArray();
   return results;
 }
 
 function getEmbeddingConfig() {
-  return resolveEmbeddingProfile();
+  return {
+    ...resolveEmbeddingProfile(),
+    managed: resolveGeminiEmbeddingConfig(),
+  };
 }
 
 function getLastEmbeddingProfile() {
@@ -195,6 +304,11 @@ function setLanceLoaderForTests(loader) {
   _lancedb = null;
 }
 
+function setGeminiEmbedderForTests(loader) {
+  _geminiEmbedderForTests = loader;
+  _lastEmbeddingProfile = null;
+}
+
 module.exports = {
   upsertFeedback,
   searchSimilar,
@@ -203,5 +317,6 @@ module.exports = {
   getLastEmbeddingProfile,
   setPipelineLoaderForTests,
   setLanceLoaderForTests,
+  setGeminiEmbedderForTests,
   truncateForEmbedding,
 };

@@ -4,28 +4,32 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Prompt Tricks Are Not Enough | Turn AI Instructions Into Workflow Rules</title>
-  <meta name="description" content="Clear AI prompts and examples help, but enforcement is what stops repeated failures. ThumbGate turns prompt lessons into workflow rules and pre-action checks." />
+  <meta name="description" content="Clear prompts and examples help modern AI tools, but they do not stop the same failure from recurring. ThumbGate turns one messy agent workflow into rules, e..." />
   <meta property="og:title" content="Prompt Tricks Are Not Enough | Turn AI Instructions Into Workflow Rules" />
-  <meta property="og:description" content="Turn one messy AI-agent workflow into clear rules, examples, and pre-action checks before the next risky tool call executes." />
+  <meta property="og:description" content="Clear prompts and examples help modern AI tools, but they do not stop the same failure from recurring. ThumbGate turns one messy agent workflow into rules, e..." />
   <meta property="og:type" content="article" />
   <meta property="og:url" content="https://thumbgate.ai/guides/prompt-tricks-to-workflow-rules" />
   <link rel="canonical" href="https://thumbgate.ai/guides/prompt-tricks-to-workflow-rules" />
   <link rel="llm-context" href="/public/llm-context.md" type="text/markdown" />
   <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
   <style>
     :root {
       --bg: #0a0a0b;
-      --panel: #151518;
-      --line: #25252a;
-      --text: #ececf1;
-      --muted: #a0a0aa;
+      --bg-raised: #111113;
+      --bg-card: #161618;
+      --line: #222225;
+      --text: #e8e8ec;
+      --muted: #8b8b96;
       --cyan: #22d3ee;
       --green: #4ade80;
+      --red: #f87171;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: var(--bg);
       color: var(--text);
       line-height: 1.65;
@@ -33,128 +37,329 @@
     a { color: var(--cyan); text-decoration: none; }
     a:hover { text-decoration: underline; }
     .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
-    .topbar { border-bottom: 1px solid var(--line); background: rgba(10, 10, 11, 0.92); }
-    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; padding-bottom: 14px; }
-    .brand { color: var(--text); font-weight: 800; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(12px);
+      background: rgba(10, 10, 11, 0.88);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 14px;
+      padding-bottom: 14px;
+    }
+    .brand {
+      font-weight: 700;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
     .hero { padding: 72px 0 32px; }
-    .eyebrow { color: var(--cyan); font-size: 12px; font-weight: 850; letter-spacing: .09em; text-transform: uppercase; }
-    h1 { max-width: 760px; margin: 14px 0; font-size: clamp(34px, 5vw, 56px); line-height: 1.06; }
-    .hero p { max-width: 760px; color: var(--muted); font-size: 18px; }
-    .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 22px; padding-bottom: 72px; }
-    .section, .side { border: 1px solid var(--line); background: var(--panel); border-radius: 14px; padding: 24px; margin-bottom: 18px; }
-    h2 { margin: 0 0 12px; font-size: 24px; }
-    h3 { margin: 18px 0 8px; }
-    p, li { color: var(--muted); }
-    .quote { color: var(--text); border-left: 3px solid var(--green); padding-left: 14px; font-size: 20px; }
-    .cta { display: inline-flex; margin-top: 14px; padding: 12px 16px; border-radius: 10px; background: var(--cyan); color: #071116; font-weight: 800; }
-    code { color: #d8f7ff; }
-    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 211, 238, 0.22);
+      background: rgba(34, 211, 238, 0.1);
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1.06;
+      letter-spacing: -0.04em;
+      margin: 16px 0;
+      max-width: 760px;
+    }
+    .hero p {
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .signal-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 28px 0 0;
+    }
+    .signal-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .signal-pill.up {
+      border-color: rgba(74, 222, 128, 0.28);
+      color: #b8f7c8;
+      background: rgba(74, 222, 128, 0.1);
+    }
+    .signal-pill.down {
+      border-color: rgba(248, 113, 113, 0.28);
+      color: #ffc0c0;
+      background: rgba(248, 113, 113, 0.1);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+      gap: 24px;
+      padding-bottom: 72px;
+    }
+    .card, .detail-section, .sidebar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .card { padding: 24px; }
+    .detail-section { padding: 24px; margin-bottom: 18px; }
+    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+    .detail-section p { color: var(--muted); }
+    .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
+    .card h2 { margin-top: 0; }
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .sidebar-card {
+      padding: 20px;
+    }
+    /* Only the first sidebar card sticks. Stacking multiple stickies at the
+       same top offset makes them overlap each other on scroll. The related-
+       pages card flows normally below. */
+    .sidebar-card:first-child {
+      position: sticky;
+      top: 84px;
+      max-height: calc(100vh - 104px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .proof-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 18px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: var(--cyan);
+      color: #071116;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .faq-item {
+      border-top: 1px solid var(--line);
+      padding: 14px 0;
+    }
+    .faq-item summary {
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .faq-item p {
+      color: var(--muted);
+    }
+    .related-card {
+      display: block;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      margin-top: 12px;
+      color: var(--text);
+    }
+    .related-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    @media (max-width: 860px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .sidebar-card:first-child {
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
+    }
   </style>
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "TechArticle",
-    "headline": "Prompt Tricks Are Not Enough",
-    "description": "Clear prompts and examples help modern AI tools, but enforcement is what stops repeated failures from recurring.",
-    "about": ["AI prompting", "AI coding agent guardrails", "workflow rules", "pre-action checks", "prompt engineering"],
-    "url": "https://thumbgate.ai/guides/prompt-tricks-to-workflow-rules",
-    "publisher": {
-      "@type": "Organization",
-      "name": "ThumbGate",
-      "url": "https://thumbgate.ai"
-    },
-    "mainEntityOfPage": "https://thumbgate.ai/guides/prompt-tricks-to-workflow-rules"
-  }
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Prompt Tricks Are Table Stakes. Workflow Rules Make Them Pay.",
+  "description": "Clear prompts and examples help modern AI tools, but they do not stop the same failure from recurring. ThumbGate turns one messy agent workflow into rules, e...",
+  "about": [
+    "claude code masterclass guardrails",
+    "cursor prevent repeated mistakes",
+    "claude code prevent repeated mistakes",
+    "codex cli guardrails"
+  ],
+  "url": "https://thumbgate.ai/guides/prompt-tricks-to-workflow-rules",
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "mainEntityOfPage": "https://thumbgate.ai/guides/prompt-tricks-to-workflow-rules"
+}
   </script>
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "Do better prompts still matter?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Yes. Clear prompts and examples reduce ambiguity. ThumbGate starts where prompts stop: enforcing repeated lessons before the next action executes."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "What prompt tactics should teams stop wasting time on?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Do not rely on politeness, threats, flattery, or roleplay as control mechanisms. Use clear instructions, concrete examples, neutral constraints, and verification gates."
-        }
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Do better prompts still matter?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Clear prompts and examples reduce ambiguity. ThumbGate starts where prompts stop: enforcing repeated lessons before the next action executes."
       }
-    ]
-  }
+    },
+    {
+      "@type": "Question",
+      "name": "What prompt tactics should teams stop wasting time on?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Do not rely on politeness, threats, flattery, or roleplay as control mechanisms. Use clear instructions, concrete examples, neutral constraints, and verification gates."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What should a $99 workflow diagnostic produce?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "One repeated failure translated into a rule, one good and bad example, one pre-action check, and a short verification plan for proving the check paid for itself."
+      }
+    }
+  ]
+}
   </script>
 </head>
 <body>
-  <nav class="topbar">
+  <div class="topbar">
     <div class="container">
-      <a class="brand" href="/">ThumbGate</a>
-      <a href="/guide.html">Setup guide</a>
+      <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
     </div>
-  </nav>
-  <main>
+  </div>
+
+  <main class="container">
     <section class="hero">
-      <div class="container">
-        <div class="eyebrow">Workflow Rule Safety</div>
-        <h1>Prompt Tricks Are Not Enough</h1>
-        <p>Clear prompts are table stakes. ThumbGate turns one messy AI-agent workflow into clear rules, examples, and pre-action checks before the next risky file edit, shell command, browser action, or deploy step executes.</p>
+      <div class="eyebrow">guide | prompt tricks to workflow rules</div>
+      <h1>Prompt Tricks Are Table Stakes. Workflow Rules Make Them Pay.</h1>
+      <p>Clear prompts and examples help modern AI tools, but they do not stop the same failure from recurring. ThumbGate turns one messy agent workflow into rules, examples, and pre-action checks before the next tool call executes.</p>
+      <div class="signal-row">
+        <div class="signal-pill up">👍 Thumbs up reinforces good behavior</div>
+        <div class="signal-pill down">👎 Thumbs down blocks repeated mistakes</div>
       </div>
     </section>
-    <div class="container grid">
-      <article>
-        <section class="section">
-          <h2>The Wedge</h2>
-          <p class="quote">Prompts tell the model what you want. Workflow rules decide what the agent is allowed to do next.</p>
-          <p>Modern models already understand many clear instructions. The high-ROI move is not a clever phrase. It is converting the repeated failure into an enforceable rule that survives across sessions, agents, and tool calls.</p>
-        </section>
-        <section class="section">
-          <h2>High-ROI Conversion Steps</h2>
-          <h3>Capture one repeated failure</h3>
-          <p>Pick the failure you can already name: wrong file edits, risky commands, invented imports, skipped verification, or retry loops that burn time and tokens.</p>
-          <h3>Write the smallest clear rule</h3>
-          <p>Describe the allowed action, the blocked action, and one concrete example of each.</p>
-          <h3>Attach a pre-action check</h3>
-          <p>Run the rule before the tool call, not after the agent has already spent tokens or changed files.</p>
-          <h3>Verify the save</h3>
-          <p>Record the next prevented action, remediation time avoided, and the narrower rule created from feedback.</p>
-        </section>
-        <section class="section">
-          <h2>What To Stop Doing</h2>
-          <p>Do not rely on politeness, threats, flattery, or roleplay as control mechanisms. Use clear instructions, concrete examples, neutral constraints, and verification gates.</p>
-        </section>
-        <section class="section">
-          <h2>FAQ</h2>
-          <details>
-            <summary>Do better prompts still matter?</summary>
-            <p>Yes. Clear prompts and examples reduce ambiguity. ThumbGate starts where prompts stop: enforcing repeated lessons before the next action executes.</p>
-          </details>
-          <details>
-            <summary>What does a diagnostic produce?</summary>
-            <p>One repeated failure translated into a rule, one good and bad example, one pre-action check, and a short verification plan for proving the check paid for itself.</p>
-          </details>
-        </section>
-      </article>
-      <aside>
-        <div class="side">
-          <h2>Best Fit</h2>
-          <p>Founders and teams whose AI assistants are good enough to be useful but still repeat one expensive workflow mistake.</p>
-          <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
-          <a class="cta" href="https://buy.stripe.com/7sY4gzgH24r49G17mb3sI0g?utm_source=seo_guide&amp;utm_medium=prompt_rules&amp;utm_campaign=founder_workflow_diagnostic">Buy the $99 workflow diagnostic</a>
+
+    <section class="grid">
+      <div>
+        <div class="card">
+          <h2>Why this page exists</h2>
+          <ul><li>Politeness, threats, flattery, and clever prompt rituals are unreliable leverage; clear task shape, examples, and verification are the durable parts.</li><li>The paid layer is enforcement: convert repeated mistakes into durable rules that run before an agent acts.</li><li>The fastest revenue offer is a $99 workflow diagnostic that turns one messy AI workflow into clear instructions, examples, and pre-action checks.</li></ul>
         </div>
-        <div class="side">
-          <h2>Related</h2>
-          <p><a href="/guides/pre-action-checks">Pre-Action Checks</a></p>
-          <p><a href="/guides/agent-harness-optimization">Agent Harness Optimization</a></p>
-          <p><a href="/guides/best-tools-stop-ai-agents-breaking-production">Best Tools to Stop AI Agents From Breaking Production</a></p>
+
+      <section class="detail-section">
+        <h2>Why this became a buyer question</h2>
+        <p>Teams have learned that better prompts can reduce ambiguity, but a prompt still relies on the model remembering and obeying every constraint at the exact moment it matters.</p><p>That is where ThumbGate fits. Keep prompts clear and neutral, then promote the failure patterns into local checks that can warn or block before shell commands, file edits, browser actions, or deploy steps run.</p>
+
+      </section>
+      <section class="detail-section">
+        <h2>High-ROI conversion steps</h2>
+
+        <ul><li>Capture one repeated failure: the agent edits the wrong file, runs a risky command, invents an import, skips verification, or reopens a resolved loop.</li><li>Write the smallest clear rule: describe the allowed action, the blocked action, and one concrete example of each.</li><li>Attach a pre-action check: run the rule before the tool call, not after the agent has already spent tokens or changed files.</li><li>Verify with proof: record the next prevented action, the saved remediation time, and the narrower rule created from feedback.</li></ul>
+      </section>
+      <section class="detail-section">
+        <h2>Where this creates revenue</h2>
+        <p>This turns generic prompt advice into a buyer-ready diagnostic. The public offer is simple: send one messy AI-agent workflow and ThumbGate turns it into clear rules, examples, and pre-action checks.</p><p>For teams, position the Workflow Hardening Sprint around the repeated failure they can already name. The deliverable is not a better pep talk for the model; it is enforcement that survives across sessions and agents.</p>
+
+      </section>
+        <div class="detail-section">
+          <h2>FAQ</h2>
+
+      <details class="faq-item">
+        <summary>Do better prompts still matter?</summary>
+        <p>Yes. Clear prompts and examples reduce ambiguity. ThumbGate starts where prompts stop: enforcing repeated lessons before the next action executes.</p>
+      </details>
+      <details class="faq-item">
+        <summary>What prompt tactics should teams stop wasting time on?</summary>
+        <p>Do not rely on politeness, threats, flattery, or roleplay as control mechanisms. Use clear instructions, concrete examples, neutral constraints, and verification gates.</p>
+      </details>
+      <details class="faq-item">
+        <summary>What should a $99 workflow diagnostic produce?</summary>
+        <p>One repeated failure translated into a rule, one good and bad example, one pre-action check, and a short verification plan for proving the check paid for itself.</p>
+      </details>
+        </div>
+      </div>
+
+      <aside class="sidebar">
+
+
+
+        <div class="sidebar-card">
+          <h2>Workflow Rule Safety</h2>
+          <ul>
+            <li>Clear rule before risky execution</li>
+            <li>Good and bad examples before reuse</li>
+            <li>Verification evidence before done</li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h2>GSD execution brief</h2>
+          <p>This page was prioritized because it captures high-intent demand around prompt tricks to workflow rules and feeds directly into ThumbGate's proof-led conversion path.</p>
+          <p><strong>Opportunity score:</strong> 72</p>
+          <p><strong>Primary persona:</strong> ai-engineer</p>
+          <p><strong>Keyword cluster:</strong> claude code masterclass guardrails, cursor prevent repeated mistakes, claude code prevent repeated mistakes, codex cli guardrails</p>
+          <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
+          <div class="proof-links"><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json" target="_blank" rel="noopener">Automation proof</a><a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub repository</a></div>
+          <a class="cta-button" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_prompt-tricks-to-workflow-rules&amp;cta_placement=seo_brief&amp;plan_id=pro" target="_blank" rel="noopener">Go Pro — $19/mo</a>
+        </div>
+        <div class="sidebar-card">
+          <h2>Related pages</h2>
+
+        <a class="related-card" href="/guides/pre-action-checks">
+          <span class="related-label">Related page</span>
+          <strong>What Are Pre-Action Checks?</strong>
+        </a>
+        <a class="related-card" href="/guides/agent-harness-optimization">
+          <span class="related-label">Related page</span>
+          <strong>AI Agent Harness Optimization That Blocks Repeat Failures</strong>
+        </a>
+        <a class="related-card" href="/guides/best-tools-stop-ai-agents-breaking-production">
+          <span class="related-label">Related page</span>
+          <strong>Best Tools to Stop AI Agents From Breaking Production</strong>
+        </a>
         </div>
       </aside>
-    </div>
+    </section>
   </main>
 </body>
 </html>

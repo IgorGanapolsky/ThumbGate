@@ -770,6 +770,20 @@ function getMcpSkillManifests(hostedConfig) {
       footprintUrl: buildPublicUrl(hostedConfig, '/.well-known/mcp/footprint.json'),
       proofUrl: VERIFICATION_EVIDENCE_URL,
     },
+    {
+      name: 'agent-design-governance',
+      title: 'Agent Design Governance',
+      description: 'Decide when to stay single-agent, when to split into manager or handoff patterns, and which eval/tool safeguards are required first.',
+      triggers: ['agent architecture', 'multi-agent', 'tool overload', 'agent evals', 'agent instructions'],
+      recommendedFlow: [
+        'Start with a single agent plus clear tools and instructions.',
+        'Split only when instruction complexity or tool overload is measured.',
+        'Require baseline evals before adding autonomy or subagents.',
+        'Classify tool risk before allowing writes, money movement, production changes, or outbound actions.',
+      ],
+      contextUrl: buildPublicUrl(hostedConfig, '/public/llm-context.md'),
+      proofUrl: VERIFICATION_EVIDENCE_URL,
+    },
   ];
 }
 
@@ -869,6 +883,11 @@ function getMcpDiscoveryManifest(hostedConfig) {
         name: 'context-footprint-optimizer',
         description: 'Measure MCP schema and feedback-context footprint before loading large manifests into model context.',
         tools: ['plan_context_footprint', 'construct_context_pack', 'context_provenance'],
+      },
+      {
+        name: 'agent-design-governance',
+        description: 'Evaluate agent architecture, instruction quality, tool risk, and baseline eval readiness before adding subagents or autonomy.',
+        tools: ['plan_agent_design_governance', 'search_lessons', 'diagnose_failure', 'require_evidence_for_claim'],
       },
     ],
     skills: getMcpSkillManifests(hostedConfig),

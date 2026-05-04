@@ -11,6 +11,10 @@ const {
   PAGE_BLUEPRINTS,
   THUMBGATE_SEO_SITEMAP_ENTRIES,
   buildThumbGateSeoPlan,
+  buildAuthorityMap,
+  buildContextGovernance,
+  buildSemanticMesh,
+  buildTechnicalGuardian,
   findSeoPageByPath,
   parseCsv,
   renderPlanMarkdown,
@@ -57,6 +61,16 @@ test('renderPlanMarkdown names all five GSD stages and page briefs', () => {
   assert.match(markdown, /Code Knowledge Graph Guardrails \| ThumbGate Guide/);
   assert.match(markdown, /Developer Machine Supply Chain Guardrails \| ThumbGate Guide/);
   assert.match(markdown, /Prompt Tricks Are Not Enough \| Turn AI Instructions Into Workflow Rules/);
+  assert.match(markdown, /Semantic Programmatic SEO Guardrails \| ThumbGate Guide/);
+  assert.match(markdown, /Proxy-Pointer RAG Guardrails \| Multimodal Answers Without Ungrounded Images/);
+  assert.match(markdown, /RAG Precision Tuning Guardrails \| Stop Retrieval Regressions Before Agents Act/);
+  assert.match(markdown, /SEO Agent Skills Guardrails \| Govern Workspaces, Proof, and Publish Gates/);
+  assert.match(markdown, /ThumbGate vs Fallow \| Static Analysis vs Agent Action Enforcement/);
+  assert.match(markdown, /Claude Code Skills Guardrails \| Turn Skillbooks Into Enforced Workflows/);
+  assert.match(markdown, /Long-Running Agent Context Management \| Director Journals and Critic Reviews/);
+  assert.match(markdown, /Reasoning Compression Guardrails \| Step-Level Verifier Checks Before Token Savings/);
+  assert.match(markdown, /Authority Map/);
+  assert.match(markdown, /Semantic Mesh/);
   assert.match(markdown, /Background Agent Governance \| Risk-Tiered Review for Agent PRs/);
   assert.match(markdown, /GPT-5\.5 Model Evaluation \| Benchmark Before Routing Expensive Agent Work/);
   assert.match(markdown, /AI Search Topical Presence \| Become the Obvious Recommendation/);
@@ -184,6 +198,101 @@ test('prompt tricks to workflow rules page is discoverable and commercially clas
     changefreq: 'monthly',
     priority: '0.8',
   });
+});
+
+test('semantic programmatic SEO guardrails page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/semantic-programmatic-seo-guardrails');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/semantic-programmatic-seo-guardrails');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'semantic programmatic seo guardrails');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'seo-governance');
+  assert.match(html, /Semantic pSEO Needs Governance Before Scale/);
+  assert.match(html, /Authority map before page generation/);
+  assert.match(html, /Brand context governance before drafting/);
+  assert.match(html, /Semantic mesh links before publish/);
+  assert.match(html, /Technical guardian checks before crawl/);
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/semantic-programmatic-seo-guardrails',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
+test('semantic pSEO plan includes authority map, context governance, mesh, and technical guardian', () => {
+  const plan = buildThumbGateSeoPlan();
+  const semanticCluster = plan.organize.authorityMap.find((entry) => entry.pillar === 'seo-governance');
+  const semanticPage = plan.organize.semanticMesh.find((entry) => entry.path === '/guides/semantic-programmatic-seo-guardrails');
+
+  assert.ok(semanticCluster);
+  assert.equal(semanticCluster.rankPermission, 'expand');
+  assert.ok(semanticCluster.proofPages.includes('/guides/semantic-programmatic-seo-guardrails'));
+  assert.match(plan.clarify.contextGovernance.brandPersona, /enforcement layer/);
+  assert.ok(plan.clarify.contextGovernance.negativeConstraints.some((item) => /Do not create find-and-replace pages/.test(item)));
+  assert.ok(semanticPage);
+  assert.equal(semanticPage.meshStatus, 'healthy');
+  assert.equal(plan.review.technicalGuardian.publishBlockers.length, 0);
+});
+
+test('semantic pSEO helpers are usable by revenue automation', () => {
+  const page = findSeoPageByPath('/guides/semantic-programmatic-seo-guardrails');
+  const pages = buildThumbGateSeoPlan().execute.pages;
+  const rows = [
+    { query: 'semantic programmatic seo guardrails', businessValue: 94, source: 'test' },
+  ].map((row, index) => ({
+    ...row,
+    intent: 'commercial',
+    pillar: 'seo-governance',
+    persona: 'growth-engineer',
+    pageType: 'guide',
+    opportunityScore: 82 + index,
+  }));
+  const contextGovernance = buildContextGovernance();
+  const authorityMap = buildAuthorityMap(rows, [page]);
+  const semanticMesh = buildSemanticMesh(pages);
+  const technicalGuardian = buildTechnicalGuardian([page]);
+
+  assert.equal(authorityMap[0].rankPermission, 'expand');
+  assert.match(contextGovernance.requiredContext.join(' '), /verification evidence/);
+  assert.equal(semanticMesh.find((entry) => entry.path === page.path).meshStatus, 'healthy');
+  assert.deepEqual(technicalGuardian.publishBlockers, []);
+});
+
+test('document RAG and retrieval precision pages are discoverable and commercially classified', () => {
+  const proxyPointer = findSeoPageByPath('/guides/proxy-pointer-rag-guardrails');
+  const precision = findSeoPageByPath('/guides/rag-precision-tuning-guardrails');
+  const proxyHtml = renderSeoPageHtml(proxyPointer, { appOrigin: 'https://app.example.com' });
+  const precisionHtml = renderSeoPageHtml(precision, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(proxyPointer);
+  assert.equal(proxyPointer.query, 'proxy pointer rag guardrails');
+  assert.equal(proxyPointer.pillar, 'document-rag-safety');
+  assert.match(proxyHtml, /npx thumbgate proxy-pointer-rag-guardrails/);
+  assert.match(proxyHtml, /Document RAG Safety gates/);
+  assert.ok(precision);
+  assert.equal(precision.query, 'rag precision tuning guardrails');
+  assert.equal(precision.pillar, 'document-rag-safety');
+  assert.match(precisionHtml, /npx thumbgate rag-precision-guardrails/);
+  assert.match(precisionHtml, /Retrieval baseline before tuning/);
+});
+
+test('skills, context, Fallow, and reasoning pages are discoverable', () => {
+  const seoSkills = findSeoPageByPath('/guides/seo-agent-skills-guardrails');
+  const fallow = findSeoPageByPath('/compare/fallow');
+  const claudeSkills = findSeoPageByPath('/guides/claude-code-skills-guardrails');
+  const context = findSeoPageByPath('/guides/long-running-agent-context-management');
+  const reasoning = findSeoPageByPath('/guides/reasoning-compression-guardrails');
+
+  assert.equal(seoSkills.pillar, 'seo-governance');
+  assert.equal(fallow.pageType, 'comparison');
+  assert.equal(claudeSkills.pillar, 'agent-workflows');
+  assert.equal(context.pillar, 'pre-action-checks');
+  assert.equal(reasoning.pillar, 'pre-action-checks');
+  assert.match(renderSeoPageHtml(fallow, { appOrigin: 'https://app.example.com' }), /Fallow finds JS\/TS code health issues/);
+  assert.match(renderSeoPageHtml(context, { appOrigin: 'https://app.example.com' }), /npx thumbgate long-running-agent-context-guardrails/);
+  assert.match(renderSeoPageHtml(reasoning, { appOrigin: 'https://app.example.com' }), /npx thumbgate reasoning-efficiency-guardrails/);
 });
 
 test('background agent governance page is discoverable and commercially classified', () => {
@@ -340,6 +449,13 @@ test('writePlanOutputs persists machine-readable GSD artifacts', () => {
     assert.ok(pages.some((page) => page.path === '/guides/code-knowledge-graph-guardrails'));
     assert.ok(pages.some((page) => page.path === '/guides/developer-machine-supply-chain-guardrails'));
     assert.ok(pages.some((page) => page.path === '/guides/prompt-tricks-to-workflow-rules'));
+    assert.ok(pages.some((page) => page.path === '/guides/proxy-pointer-rag-guardrails'));
+    assert.ok(pages.some((page) => page.path === '/guides/rag-precision-tuning-guardrails'));
+    assert.ok(pages.some((page) => page.path === '/guides/seo-agent-skills-guardrails'));
+    assert.ok(pages.some((page) => page.path === '/compare/fallow'));
+    assert.ok(pages.some((page) => page.path === '/guides/claude-code-skills-guardrails'));
+    assert.ok(pages.some((page) => page.path === '/guides/long-running-agent-context-management'));
+    assert.ok(pages.some((page) => page.path === '/guides/reasoning-compression-guardrails'));
     assert.ok(pages.some((page) => page.path === '/guides/background-agent-governance'));
     assert.ok(pages.some((page) => page.path === '/guides/gpt-5-5-model-evaluation'));
     assert.ok(pages.some((page) => page.path === '/guides/ai-search-topical-presence'));

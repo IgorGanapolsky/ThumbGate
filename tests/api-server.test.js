@@ -45,6 +45,7 @@ fs.writeFileSync(
 const { startServer, __test__ } = require('../src/api/server');
 const billing = require('../scripts/billing');
 const gatesEngine = require('../scripts/gates-engine');
+const { listGateTemplates } = require('../scripts/gate-templates');
 const { buildHostedSuccessUrl } = require('../scripts/hosted-config');
 const { readJsonl } = require('../scripts/fs-utils');
 const {
@@ -55,6 +56,7 @@ const {
 let handle;
 let apiOrigin = '';
 const authHeader = { authorization: 'Bearer test-api-key' };
+const EXPECTED_TEMPLATE_COUNT = listGateTemplates().length;
 const ORIGINAL_GATES_PATHS = {
   governanceState: gatesEngine.GOVERNANCE_STATE_PATH,
   constraints: gatesEngine.CONSTRAINTS_PATH,
@@ -707,9 +709,11 @@ test('public MCP discovery manifest exposes progressive tool, skill, and app loa
   assert.ok(body.primaryFlows.some((flow) => flow.name === 'metric-autoresearch' && flow.tools.includes('run_autoresearch')));
   assert.ok(body.primaryFlows.some((flow) => flow.name === 'visual-proof-retrieval' && flow.tools.includes('plan_multimodal_retrieval')));
   assert.ok(body.primaryFlows.some((flow) => flow.name === 'context-footprint-optimizer' && flow.tools.includes('plan_context_footprint')));
+  assert.ok(body.primaryFlows.some((flow) => flow.name === 'agent-design-governance' && flow.tools.includes('plan_agent_design_governance')));
   assert.ok(body.skills.some((skill) => skill.name === 'thumbgate'));
   assert.ok(body.skills.some((skill) => skill.name === 'visual-proof-retrieval'));
   assert.ok(body.skills.some((skill) => skill.name === 'context-footprint-optimizer'));
+  assert.ok(body.skills.some((skill) => skill.name === 'agent-design-governance'));
   assert.ok(body.applications.some((app) => app.name === 'dashboard'));
   assert.ok(body.footprint.mcpToolDiscovery.footprint.savings.reductionRatio > 0);
   assert.match(body.proof.verificationEvidenceUrl, /VERIFICATION_EVIDENCE\.md/);
@@ -746,6 +750,7 @@ test('public MCP tool index supports just-in-time per-tool schema loading', asyn
   assert.equal(captureFeedback.inputSchema, undefined);
   assert.ok(index.tools.some((tool) => tool.name === 'run_autoresearch'));
   assert.ok(index.tools.some((tool) => tool.name === 'plan_multimodal_retrieval'));
+  assert.ok(index.tools.some((tool) => tool.name === 'plan_agent_design_governance'));
 
   const schemaRes = await fetch(apiUrl('/.well-known/mcp/tools/capture_feedback.json'));
   assert.equal(schemaRes.status, 200);
@@ -765,6 +770,12 @@ test('public MCP tool index supports just-in-time per-tool schema loading', asyn
   const multimodalSchema = await multimodalSchemaRes.json();
   assert.equal(multimodalSchema.name, 'plan_multimodal_retrieval');
   assert.equal(multimodalSchema.inputSchema.properties.evidenceTypes.type, 'array');
+
+  const agentDesignSchemaRes = await fetch(apiUrl('/.well-known/mcp/tools/plan_agent_design_governance.json'));
+  assert.equal(agentDesignSchemaRes.status, 200);
+  const agentDesignSchema = await agentDesignSchemaRes.json();
+  assert.equal(agentDesignSchema.name, 'plan_agent_design_governance');
+  assert.equal(agentDesignSchema.inputSchema.properties.highRiskTools.type, 'array');
 });
 
 test('public MCP skills and applications are machine-readable for agent onboarding', async () => {
@@ -781,6 +792,7 @@ test('public MCP skills and applications are machine-readable for agent onboardi
   assert.ok(skills.skills.some((skill) => skill.name === 'workflow-hardening-sprint'));
   assert.ok(skills.skills.some((skill) => skill.name === 'visual-proof-retrieval'));
   assert.ok(skills.skills.some((skill) => skill.name === 'context-footprint-optimizer'));
+  assert.ok(skills.skills.some((skill) => skill.name === 'agent-design-governance'));
   assert.ok(skills.skills.every((skill) => Array.isArray(skill.recommendedFlow)));
   assert.ok(applications.applications.some((app) => app.name === 'workflow-sprint-intake'));
   assert.ok(applications.applications.every((app) => app.url.startsWith('https://app.example.com/')));
@@ -2967,7 +2979,7 @@ test('dashboard applies analytics window query params with live billing truth', 
     assert.equal(body.analytics.efficiency.estimatedContextTokensReused, 300);
     assert.equal(typeof body.team.activeAgents, 'number');
     assert.equal(body.team.proRequired, false);
-    assert.equal(body.templateLibrary.total, 13);
+    assert.equal(body.templateLibrary.total, EXPECTED_TEMPLATE_COUNT);
     assert.equal(body.templateLibrary.categories['Git Safety'], 1);
     assert.ok(body.predictive);
     assert.equal(typeof body.predictive.upgradePropensity.pro.score, 'number');

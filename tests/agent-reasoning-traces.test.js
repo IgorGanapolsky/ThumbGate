@@ -7,6 +7,8 @@ const os = require('node:os');
 const path = require('node:path');
 
 const {
+  buildRlsdCreditAssignment,
+  buildRlsdCreditAssignments,
   buildTraceAnalytics,
   evaluateTraceShape,
   formatTraceAnalyticsReport,
@@ -112,6 +114,41 @@ test('buildTraceAnalytics produces gate candidates and eval tuples', () => {
   assert.ok(report.gateCandidates.some((candidate) => candidate.key.includes('production-change:verification')));
   assert.equal(report.evalTuples.length, 2);
   assert.ok(report.evalTuples.some((tuple) => tuple.expected === 'block_or_escalate'));
+});
+
+test('buildRlsdCreditAssignment separates verifiable direction from dense step magnitude', () => {
+  const trace = normalizeAgentTraceRecord(makeCodeTrace({ success: false }));
+  const assignment = buildRlsdCreditAssignment(trace);
+
+  assert.equal(assignment.eligible, true);
+  assert.equal(assignment.direction, 'penalize');
+  assert.equal(assignment.directionSource, 'verifiable_outcome');
+  assert.equal(assignment.leakageGuard.includes('magnitude only'), true);
+  assert.equal(assignment.privacy.rawReasoningStored, false);
+  assert.ok(assignment.stepCredits.some((step) => step.eventType === 'verification' && step.magnitude > 0));
+  assert.ok(assignment.stepCredits.every((step) => step.signedReward <= 0));
+  assert.ok(Math.abs(assignment.stepCredits.reduce((sum, step) => sum + step.magnitude, 0) - 1) < 0.01);
+});
+
+test('buildRlsdCreditAssignments keeps non-verifiable traces out of RLSD export', () => {
+  const report = buildRlsdCreditAssignments([
+    makeCodeTrace({ id: 'verified_success', success: true }),
+    {
+      id: 'open_ended_brand_voice',
+      taskType: 'research',
+      messages: [
+        { role: 'user', content: 'Write a brand voice opinion.' },
+        { role: 'assistant', content: 'Summary: this sounds on-brand.' },
+      ],
+    },
+  ]);
+
+  assert.equal(report.mode, 'rlsd_credit_assignment');
+  assert.equal(report.tracesAnalyzed, 2);
+  assert.equal(report.eligibleTraces, 1);
+  assert.equal(report.ineligibleTraces, 1);
+  assert.ok(report.assignments.find((assignment) => assignment.traceId === 'open_ended_brand_voice').stepCredits.every((step) => step.signedReward === 0));
+  assert.ok(report.recommendations.some((item) => /preference-based evaluation/.test(item)));
 });
 
 test('recordReasoningTrace persists normalized traces to local JSONL', () => {
