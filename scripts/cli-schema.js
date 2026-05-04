@@ -162,6 +162,21 @@ const CLI_COMMANDS = [
       { name: 'ai-only', type: 'boolean', description: 'Only report AI/browser bridge manifests' },
     ],
   }),
+  discoveryCommand({
+    name: 'background-governance',
+    aliases: ['background-agent-governance', 'agent-governance'],
+    description: 'Report background-agent runs and pre-check unattended PR dispatch risk',
+    flags: [
+      jsonFlag(),
+      { name: 'window-hours', type: 'number', description: 'Lookback window for the run report (default 24)' },
+      { name: 'feedback-dir', type: 'string', description: 'Explicit ThumbGate feedback directory' },
+      { name: 'check', type: 'boolean', description: 'Run a pre-dispatch governance check instead of the report' },
+      { name: 'agent-id', type: 'string', description: 'Agent identifier for --check' },
+      { name: 'run-type', type: 'string', description: 'Run type for --check, such as pr or ci-repair' },
+      { name: 'branch', type: 'string', description: 'Target branch for --check' },
+      { name: 'files-changed', type: 'number', description: 'Estimated files changed for --check' },
+    ],
+  }),
   {
     name: 'lesson-health',
     aliases: ['stale'],

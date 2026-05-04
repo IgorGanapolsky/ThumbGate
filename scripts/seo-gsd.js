@@ -49,6 +49,11 @@ const HIGH_ROI_QUERY_SEEDS = [
     'Fresh harness-engineering demand that maps directly to ThumbGate progressive disclosure, pre-action checks, and workflow audits.',
   ),
   querySeed(
+    'background agent governance',
+    94,
+    'New team-buying query for unattended agent PRs where alignment context, isolated execution, risk-tiered review, and audit evidence create immediate ROI.',
+  ),
+  querySeed(
     'browser automation safety',
     93,
     'High-intent browser-agent safety query tied to prompt injection, permissions, and cross-app automation risk.',
@@ -239,6 +244,63 @@ function buildHarnessOptimizationGuide() {
     sections: HARNESS_OPTIMIZATION_GUIDE_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
     faq: HARNESS_OPTIMIZATION_GUIDE_SPEC.faq.map(([question, text]) => answer(question, text)),
     relatedPaths: HARNESS_OPTIMIZATION_GUIDE_SPEC.relatedPaths,
+  });
+}
+
+const BACKGROUND_AGENT_GOVERNANCE_GUIDE_SPEC = Object.freeze({
+  slug: 'background-agent-governance',
+  meta: {
+    query: 'background agent governance',
+    title: 'Background Agent Governance | Risk-Tiered Review for Agent PRs',
+    heroTitle: 'Background Agent Governance for Agent PRs',
+    heroSummary: 'Background agents can draft changes while humans work elsewhere, but review becomes the bottleneck. ThumbGate adds pre-dispatch checks, run reports, isolated task lanes, and evidence-backed review routing before unattended agent work piles up.',
+  },
+  takeaways: [
+    'Background agents need a real run ledger, not just a pile of PRs.',
+    'The highest ROI control is risk-tiered review: stricter checks for protected branches, high-failure agents, and large blast-radius changes.',
+    'ThumbGate turns CI failures and human review feedback into Pre-Action Checks so the same failed agent pattern gets blocked before the next run.',
+  ],
+  sections: [
+    ['paragraphs', 'Why this became urgent', [
+      'Teams are moving from local agent sessions to unattended background work. That changes the review problem: humans no longer inspect one assistant transcript at a time; they receive a queue of agent-created branches, PRs, and CI failures.',
+      'If context alignment happens in Slack, Linear, Jira, or a planning thread, the agent run also needs a durable record of what was agreed, where it executed, which gates fired, and what evidence came back.',
+    ]],
+    ['bullets', 'What ThumbGate adds', [
+      'A background-agent run ledger with agent ID, source, branch, PR number, gate counts, CI outcome, and changed-file count.',
+      'A pre-dispatch governance check for high-failure agents, protected branches, and large blast-radius runs.',
+      'Post-run audit that can convert CI failures into structured thumbs-down feedback and future prevention rules.',
+      'A report command for review queues: npx thumbgate background-governance --json.',
+      'A risk check command for dispatch systems: npx thumbgate background-governance --check --agent-id=builder --branch=main --files-changed=25 --json.',
+    ]],
+    ['paragraphs', 'Where this creates revenue', [
+      'This is a clean Workflow Hardening Sprint wedge. The buyer does not need a broad platform migration; they need one background-agent workflow hardened from context intake to isolated execution to risk-tiered review.',
+      'The promise stays honest: ThumbGate does not remove human review. It makes the review queue smaller, better labeled, and backed by evidence before a risky agent PR reaches a reviewer.',
+    ]],
+  ],
+  faq: [
+    [
+      'Does ThumbGate replace human review for background agents?',
+      'No. ThumbGate reduces review load by blocking known bad actions earlier, warning on risky dispatches, and attaching run evidence so humans can focus on high-risk changes.',
+    ],
+    [
+      'What should teams check before dispatching a background agent?',
+      'Check recent agent failure rate, prior gate blocks, target branch, expected blast radius, isolated execution environment, CI expectations, and the human context that authorized the task.',
+    ],
+    [
+      'How does this connect to the Workflow Hardening Sprint?',
+      'The sprint can harden one background-agent workflow end to end: context intake, pre-dispatch governance, sandbox routing, CI audit, prevention rules, and proof review.',
+    ],
+  ],
+  relatedPaths: ['/guides/pre-action-checks', '/guides/agent-harness-optimization', '/guides/best-tools-stop-ai-agents-breaking-production'],
+});
+
+function buildBackgroundAgentGovernanceGuide() {
+  return preActionGuide(BACKGROUND_AGENT_GOVERNANCE_GUIDE_SPEC.slug, {
+    ...BACKGROUND_AGENT_GOVERNANCE_GUIDE_SPEC.meta,
+    takeaways: BACKGROUND_AGENT_GOVERNANCE_GUIDE_SPEC.takeaways,
+    sections: BACKGROUND_AGENT_GOVERNANCE_GUIDE_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+    faq: BACKGROUND_AGENT_GOVERNANCE_GUIDE_SPEC.faq.map(([question, text]) => answer(question, text)),
+    relatedPaths: BACKGROUND_AGENT_GOVERNANCE_GUIDE_SPEC.relatedPaths,
   });
 }
 
@@ -642,6 +704,7 @@ const PAGE_BLUEPRINTS = [
     relatedPaths: ['/guides/pre-action-checks', '/guides/agent-harness-optimization', '/guides/ai-search-topical-presence'],
   },
   buildHarnessOptimizationGuide(),
+  buildBackgroundAgentGovernanceGuide(),
   {
     query: 'stop ai coding agents from repeating mistakes',
     path: '/guides/stop-repeated-ai-agent-mistakes',

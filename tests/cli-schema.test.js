@@ -81,6 +81,19 @@ test('core commands are all registered in schema', () => {
   }
 });
 
+test('background-governance exposes report and pre-dispatch check flags', () => {
+  const cmd = findCommand('agent-governance');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'background-governance');
+  assert.ok(flagNames.includes('json'));
+  assert.ok(flagNames.includes('window-hours'));
+  assert.ok(flagNames.includes('feedback-dir'));
+  assert.ok(flagNames.includes('check'));
+  assert.ok(flagNames.includes('agent-id'));
+  assert.ok(flagNames.includes('branch'));
+  assert.ok(flagNames.includes('files-changed'));
+});
+
 test('harness-audit command exposes JSON and token budget flags', () => {
   const cmd = findCommand('harness');
   const flagNames = cmd.flags.map((f) => f.name);

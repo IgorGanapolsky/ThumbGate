@@ -10,6 +10,7 @@ const PUBLIC_DIR = path.resolve(__dirname, '..', 'public');
 const GUIDE_FILES = [
   'guides/pre-action-checks.html',
   'guides/agent-harness-optimization.html',
+  'guides/background-agent-governance.html',
   'guides/browser-automation-safety.html',
   'guides/native-messaging-host-security.html',
   'guides/ai-search-topical-presence.html',
@@ -106,6 +107,18 @@ describe('SEO guide and comparison pages', () => {
       html.includes('npx thumbgate native-messaging-audit'),
       'browser automation safety guide should include the native messaging audit command'
     );
+  });
+
+  it('background agent governance guide routes teams into review risk checks', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/background-agent-governance.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('npx thumbgate background-governance --json'));
+    assert.ok(html.includes('pre-dispatch governance check'));
+    assert.ok(html.includes('risk-tiered review'));
+    assert.ok(html.includes('Workflow Hardening Sprint'));
   });
 
   it('AI search visibility guides reinforce the recommendation-discovery story', () => {

@@ -13,6 +13,7 @@
  *   npx thumbgate export-databricks   # export Databricks-ready analytics bundle
  *   npx thumbgate eval --from-feedback # turn feedback into reusable prompt evals
  *   npx thumbgate stats         # feedback analytics + Revenue-at-Risk
+ *   npx thumbgate background-governance  # background-agent run report + risk check
  *   npx thumbgate cfo           # local operational billing summary
  *   npx thumbgate pro           # solo dashboard + exports side lane
  */
@@ -1598,6 +1599,70 @@ function nativeMessagingAudit() {
   process.stdout.write(formatNativeMessagingAudit(report));
 }
 
+function backgroundGovernance() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    checkRunGovernance,
+    formatGovernanceReport,
+    generateGovernanceReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'background-agent-governance'));
+  const feedbackDir = args['feedback-dir'];
+
+  if (args.check) {
+    const verdict = checkRunGovernance({
+      agentId: args['agent-id'] || args.agent || 'unknown',
+      runType: args['run-type'] || args.type || 'pr',
+      branch: args.branch,
+      filesChanged: Number(args['files-changed'] || 0),
+    }, feedbackDir);
+
+    if (args.json) {
+      console.log(JSON.stringify({
+        kind: 'background_agent_governance_check',
+        ...verdict,
+      }, null, 2));
+    } else {
+      console.log('\nBackground Agent Governance Check');
+      console.log('-'.repeat(50));
+      console.log(`  Allowed : ${verdict.allowed ? 'yes' : 'no'}`);
+      console.log(`  Score   : ${verdict.governanceScore}/100`);
+      if (verdict.blockers.length > 0) {
+        console.log('\nBlockers:');
+        for (const blocker of verdict.blockers) console.log(`  - ${blocker.rule}: ${blocker.message}`);
+      }
+      if (verdict.warnings.length > 0) {
+        console.log('\nWarnings:');
+        for (const warning of verdict.warnings) console.log(`  - ${warning.rule}: ${warning.message}`);
+      }
+      if (verdict.allowed && verdict.warnings.length === 0) {
+        console.log('\nNo governance blockers or warnings found.');
+      }
+      console.log('');
+    }
+    process.exit(verdict.allowed ? 0 : 2);
+  }
+
+  const report = generateGovernanceReport({
+    periodHours: Number(args['window-hours'] || args.window || 24),
+    feedbackDir,
+  });
+
+  if (args.json) {
+    console.log(JSON.stringify({
+      kind: 'background_agent_governance_report',
+      ...report,
+    }, null, 2));
+    return;
+  }
+
+  console.log('\n' + formatGovernanceReport(report));
+  console.log('\nReview relief actions:');
+  console.log('  - Run --check before dispatching an unattended PR job.');
+  console.log('  - Route protected branches and large blast-radius jobs to human review.');
+  console.log('  - Convert CI failures into thumbs-down lessons so repeats become Pre-Action Checks.');
+  console.log('\nGuide: https://thumbgate-production.up.railway.app/guides/background-agent-governance\n');
+}
+
 function optimize() {
   const { optimize: doOptimize } = require(path.join(PKG_ROOT, 'scripts', 'optimize-context'));
   doOptimize();
@@ -1954,6 +2019,7 @@ function help() {
   console.log('  funnel                Marketing and revenue conversion funnel analytics');
   console.log('  pulse                 Real-time GTM velocity and Mission Control summary');
   console.log('  dispatch              Dispatch-safe brief for phone-driven review sessions');
+  console.log('  background-governance Background-agent run report and dispatch risk check');
   console.log('  analytics             Unified analytics snapshot (npm, GitHub, landing)');
   console.log('  start-api             Start the ThumbGate HTTPS API server');
   console.log('');
@@ -1978,6 +2044,8 @@ function help() {
   console.log('  npx thumbgate explore gates --json');
   console.log('  npx thumbgate demo');
   console.log('  npx thumbgate stats --json');
+  console.log('  npx thumbgate background-governance --json');
+  console.log('  npx thumbgate background-governance --check --agent-id=builder --branch=main --files-changed=25 --json');
   console.log('  npx thumbgate eval --from-feedback --json');
   console.log('  npx thumbgate lessons "force push" --json');
   console.log('  npx thumbgate lessons --query="deploy" --remote');
@@ -2167,6 +2235,11 @@ switch (COMMAND) {
   case 'native-messaging-audit':
   case 'bridge-audit':
     nativeMessagingAudit();
+    break;
+  case 'background-governance':
+  case 'background-agent-governance':
+  case 'agent-governance':
+    backgroundGovernance();
     break;
   case 'optimize':
     optimize();

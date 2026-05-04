@@ -416,6 +416,7 @@ test('public landing page internally links to comparison and guide pages without
   assert.match(landingPage, /href="\/compare\/mem0"/);
   assert.match(landingPage, /href="\/guides\/pre-action-checks"/);
   assert.match(landingPage, /href="\/guides\/agent-harness-optimization"/);
+  assert.match(landingPage, /href="\/guides\/background-agent-governance"/);
   assert.match(landingPage, /href="\/guides\/ai-search-topical-presence"/);
   assert.match(landingPage, /href="\/guides\/relational-knowledge-ai-recommendations"/);
   assert.match(landingPage, /href="\/guides\/claude-code-feedback"/);
@@ -427,6 +428,8 @@ test('public landing page internally links to comparison and guide pages without
   assert.match(landingPage, /href="\/guides\/autoresearch-agent-safety"/);
   assert.match(landingPage, /Autoresearch Safety for Self-Improving Agents/);
   assert.match(landingPage, /AI Agent Harness Optimization/);
+  assert.match(landingPage, /Background Agent Governance/);
+  assert.match(landingPage, /risk-tiered review/);
   assert.match(landingPage, /AI Search Topical Presence/);
   assert.match(landingPage, /Relational Knowledge in AI Recommendations/);
   // No internal marketing jargon visible to customers
@@ -434,6 +437,14 @@ test('public landing page internally links to comparison and guide pages without
   assert.doesNotMatch(landingPage, /Bottom of funnel/i);
   assert.doesNotMatch(landingPage, /Category creation/i);
   assert.doesNotMatch(landingPage, /convert.*search.*demand/i);
+});
+
+test('public landing page labels data processing boundaries for trust review', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /Data Processing Boundaries/);
+  assert.match(landingPage, /Local enforcement data stays/i);
+  assert.match(landingPage, /hosted processing surfaces/i);
 });
 
 test('public landing page promotes the Autoresearch safety pack', () => {

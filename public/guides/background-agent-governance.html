@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Background Agent Governance | Risk-Tiered Review for Agent PRs</title>
+  <meta name="description" content="Background agents can draft PRs while humans work elsewhere. ThumbGate adds run reports, pre-dispatch checks, isolated task lanes, and risk-tiered review." />
+  <meta property="og:title" content="Background Agent Governance | Risk-Tiered Review for Agent PRs" />
+  <meta property="og:description" content="Use ThumbGate to govern unattended background-agent runs with pre-dispatch checks, run ledgers, CI audit, and review-routing evidence." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate-production.up.railway.app/guides/background-agent-governance" />
+  <link rel="canonical" href="https://thumbgate-production.up.railway.app/guides/background-agent-governance" />
+  <link rel="llm-context" href="/public/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --panel: #151518;
+      --raised: #101114;
+      --line: #25262c;
+      --text: #ececf1;
+      --muted: #9a9aa4;
+      --cyan: #22d3ee;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(10, 10, 11, 0.9);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(12px);
+    }
+    .topbar .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 14px;
+      padding-bottom: 14px;
+    }
+    .brand {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      color: var(--text);
+      font-weight: 700;
+    }
+    .brand img { width: 28px; height: 28px; }
+    .hero { padding: 72px 0 36px; }
+    .eyebrow {
+      display: inline-flex;
+      padding: 6px 12px;
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      border-radius: 999px;
+      background: rgba(34, 211, 238, 0.1);
+      color: var(--cyan);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    h1 {
+      max-width: 820px;
+      margin: 16px 0;
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1.06;
+      letter-spacing: 0;
+    }
+    .hero p {
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+      gap: 24px;
+      padding-bottom: 72px;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 18px;
+    }
+    .panel h2 { margin: 0 0 12px; font-size: 24px; }
+    .panel p, .panel li { color: var(--muted); }
+    .panel ul { padding-left: 18px; }
+    code {
+      background: var(--raised);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: #d9fbff;
+      padding: 2px 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.92em;
+    }
+    .sidebar { display: flex; flex-direction: column; gap: 18px; }
+    .sidebar .panel:first-child { position: sticky; top: 84px; }
+    .cta {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 14px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      background: var(--cyan);
+      color: #071116;
+      font-weight: 700;
+    }
+    .signal { display: grid; gap: 10px; margin-top: 18px; }
+    .signal div {
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--raised);
+      color: var(--muted);
+    }
+    .signal strong { color: var(--text); }
+    details { border-top: 1px solid var(--line); padding: 14px 0; }
+    summary { cursor: pointer; font-weight: 700; }
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+      .sidebar .panel:first-child { position: static; }
+    }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Background Agent Governance for Agent PRs",
+  "description": "Background agents need run reports, pre-dispatch checks, isolated task lanes, and risk-tiered review before unattended PR queues scale.",
+  "about": ["background agent governance", "agent PR review", "pre-action checks", "AI coding agent safety"],
+  "author": { "@type": "Organization", "name": "ThumbGate" },
+  "publisher": { "@type": "Organization", "name": "ThumbGate" }
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does ThumbGate replace human review for background agents?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. ThumbGate reduces review load by blocking known bad actions earlier, warning on risky dispatches, and attaching run evidence so humans can focus on high-risk changes."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What should teams check before dispatching a background agent?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Check recent agent failure rate, prior gate blocks, target branch, expected blast radius, isolated execution environment, CI expectations, and the human context that authorized the task."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does this connect to the Workflow Hardening Sprint?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The sprint can harden one background-agent workflow end to end: context intake, pre-dispatch governance, sandbox routing, CI audit, prevention rules, and proof review."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+  <nav class="topbar">
+    <div class="container">
+      <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark.svg" alt="" />ThumbGate</a>
+      <a href="/#workflow-sprint-intake">Workflow Hardening Sprint</a>
+    </div>
+  </nav>
+
+  <main class="container">
+    <section class="hero">
+      <span class="eyebrow">Background Agent Governance</span>
+      <h1>Background agent PRs need risk-tiered review before they scale.</h1>
+      <p>Unattended agents can draft work in parallel, but review queues become the new bottleneck. ThumbGate gives teams a run ledger, a pre-dispatch governance check, and proof-backed review routing before agent-created changes pile up.</p>
+    </section>
+
+    <section class="grid">
+      <div>
+        <section class="panel">
+          <h2>Why this matters</h2>
+          <p>When agent work starts from Slack, Linear, Jira, or a planning thread, the approval context can disappear by the time a PR reaches review. ThumbGate keeps the operational record close to the action: which agent ran, which branch it touched, how many gates fired, whether CI passed, and how large the blast radius looks.</p>
+        </section>
+
+        <section class="panel">
+          <h2>What ThumbGate adds</h2>
+          <ul>
+            <li>Run tracking for agent ID, source, branch, PR number, status, gate counts, files changed, and CI result.</li>
+            <li>Pre-dispatch checks for high-failure agents, protected branches, repeated gate blocks, and large blast-radius changes.</li>
+            <li>Post-run audit that can turn CI failures into thumbs-down feedback and future Pre-Action Checks.</li>
+            <li>Governance reports for review queues, daily standups, and Workflow Hardening Sprint proof reviews.</li>
+          </ul>
+        </section>
+
+        <section class="panel">
+          <h2>Run it locally</h2>
+          <p>Start with a report:</p>
+          <p><code>npx thumbgate background-governance --json</code></p>
+          <p>Then pre-check a risky unattended job before dispatch:</p>
+          <p><code>npx thumbgate background-governance --check --agent-id=builder --branch=main --files-changed=25 --json</code></p>
+        </section>
+
+        <section class="panel">
+          <h2>FAQ</h2>
+          <details open>
+            <summary>Does ThumbGate replace human review for background agents?</summary>
+            <p>No. It reduces review load by blocking known bad actions earlier, warning on risky dispatches, and attaching run evidence so humans can focus on high-risk changes.</p>
+          </details>
+          <details>
+            <summary>What should teams check before dispatching a background agent?</summary>
+            <p>Check recent agent failure rate, prior gate blocks, target branch, expected blast radius, isolated execution environment, CI expectations, and the human context that authorized the task.</p>
+          </details>
+          <details>
+            <summary>How does this connect to the Workflow Hardening Sprint?</summary>
+            <p>The sprint can harden one background-agent workflow end to end: context intake, pre-dispatch governance, sandbox routing, CI audit, prevention rules, and proof review.</p>
+          </details>
+        </section>
+      </div>
+
+      <aside class="sidebar">
+        <section class="panel">
+          <h2>Review relief path</h2>
+          <div class="signal">
+            <div><strong>Pro:</strong> $19/mo or $149/yr for solo proof, dashboard, and exports.</div>
+            <div><strong>Team:</strong> $49/seat/mo after intake, starting with one hardened workflow.</div>
+            <div><strong>Best first paid motion:</strong> Workflow Hardening Sprint for one background-agent lane.</div>
+          </div>
+          <a class="cta" href="/#workflow-sprint-intake">Start sprint intake</a>
+        </section>
+        <section class="panel">
+          <h2>Related guides</h2>
+          <p><a href="/guides/pre-action-checks">Pre-Action Checks</a></p>
+          <p><a href="/guides/agent-harness-optimization">AI Agent Harness Optimization</a></p>
+          <p><a href="/guides/best-tools-stop-ai-agents-breaking-production">Stop Agents Breaking Production</a></p>
+        </section>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>

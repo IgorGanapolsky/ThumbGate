@@ -93,3 +93,14 @@ test('pricing comparison keeps free-tier pro features out of the free column', (
   assert.match(pricing, /\|\s*Recall \+ lesson search\s*\|\s*No\s*\|\s*Yes\s*\|/i);
   assert.match(pricing, /\|\s*DPO\/KTO export\s*\|\s*No\s*\|\s*Yes\s*\|/i);
 });
+
+test('commercial truth labels local enforcement and hosted telemetry boundaries', () => {
+  const truth = fs.readFileSync(path.join(projectRoot, 'docs/COMMERCIAL_TRUTH.md'), 'utf8');
+
+  assert.match(truth, /Data Processing & Telemetry Boundaries/);
+  assert.match(truth, /local-first/i);
+  assert.match(truth, /THUMBGATE_NO_TELEMETRY=1/);
+  assert.match(truth, /DO_NOT_TRACK=1/);
+  assert.match(truth, /Hosted checkout, newsletter, intake, team sync/i);
+  assert.match(truth, /should not claim sub-processor coverage/i);
+});
