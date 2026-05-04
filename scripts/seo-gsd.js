@@ -54,6 +54,11 @@ const HIGH_ROI_QUERY_SEEDS = [
     'New team-buying query for unattended agent PRs where alignment context, isolated execution, risk-tiered review, and audit evidence create immediate ROI.',
   ),
   querySeed(
+    'gpt-5.5 model evaluation',
+    94,
+    'Fresh frontier-model upgrade query that maps to ThumbGate model candidate benchmarking, dashboard-analysis workloads, and routing governance before teams move expensive work.',
+  ),
+  querySeed(
     'browser automation safety',
     93,
     'High-intent browser-agent safety query tied to prompt injection, permissions, and cross-app automation risk.',
@@ -301,6 +306,62 @@ function buildBackgroundAgentGovernanceGuide() {
     sections: BACKGROUND_AGENT_GOVERNANCE_GUIDE_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
     faq: BACKGROUND_AGENT_GOVERNANCE_GUIDE_SPEC.faq.map(([question, text]) => answer(question, text)),
     relatedPaths: BACKGROUND_AGENT_GOVERNANCE_GUIDE_SPEC.relatedPaths,
+  });
+}
+
+const MODEL_UPGRADE_EVALUATION_GUIDE_SPEC = Object.freeze({
+  slug: 'gpt-5-5-model-evaluation',
+  meta: {
+    query: 'gpt-5.5 model evaluation',
+    title: 'GPT-5.5 Model Evaluation | Benchmark Before Routing Expensive Agent Work',
+    heroTitle: 'Evaluate GPT-5.5 Before You Route Production Agent Work',
+    heroSummary: 'Frontier-model upgrades can improve coding, dataset analysis, and dashboards, but the ROI comes from measured routing. ThumbGate adds a model-candidate workload so teams can benchmark GPT-5.5 against real feedback, gate evals, and dashboard-analysis criteria before changing defaults.',
+  },
+  takeaways: [
+    'GPT-5.5 should be treated as a frontier candidate for complex work, not a blanket replacement for every cheap gate.',
+    'The highest ROI path is benchmark-first routing: keep cheap tiers for simple checks and escalate dataset, dashboard, and long-context work when evidence supports it.',
+    'ThumbGate now exposes a dashboard-analysis workload through npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai --json.',
+  ],
+  sections: [
+    ['paragraphs', 'What changed', [
+      'OpenAI positions GPT-5.5 for complex reasoning, coding, data analysis, and tool-using work. Julius framed the same model around dataset analysis, charts, dashboards, insight quality, and code generation.',
+      'For ThumbGate, the useful product move is not to rewrite every default. It is to make model adoption measurable: define the workload, pick candidate models, run existing evals, and route only the work that earns the frontier spend.',
+    ]],
+    ['bullets', 'What ThumbGate adds', [
+      'A GPT-5.5 model candidate in config/model-candidates.json with long-context, data-analysis, dashboard-creation, charting, tool-use, and reliability strengths.',
+      'A dashboard-analysis workload with metrics for insight accuracy, chart-spec validity, dashboard completeness, long-context reliability, latency, and cost per analysis.',
+      'A CLI path: npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai --json.',
+      'A tier-router config that pins the frontier tier to gpt-5.5 while keeping explicit cheaper tiers for fast, low-cost work.',
+    ]],
+    ['paragraphs', 'Where this creates ROI', [
+      'This gives platform teams a defensible answer to "should we move to GPT-5.5?" Run the candidate report, attach gate and benchmark evidence, and only then route high-value analytical or long-context agent tasks to the frontier tier.',
+      'The commercial wedge is a Workflow Hardening Sprint focused on model routing: define which workflows deserve frontier spend, which stay on cheap tiers, and which require pre-action checks before a model can touch live systems.',
+    ]],
+  ],
+  faq: [
+    [
+      'Should every ThumbGate task use GPT-5.5?',
+      'No. Cheap gates, classification, extraction, and simple triage should stay on lower-cost tiers when they pass evals. GPT-5.5 is best evaluated for complex reasoning, long-context, coding, dataset, and dashboard work.',
+    ],
+    [
+      'How do I benchmark GPT-5.5 in ThumbGate?',
+      'Run npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai --json, then use the emitted benchmark commands and metrics to compare insight quality, chart validity, latency, and cost before changing routing defaults.',
+    ],
+    [
+      'Does this automatically call the OpenAI API?',
+      'No. The catalog is an evaluation and routing surface. It records candidate models and benchmark plans without assuming provider credentials or silently changing runtime behavior.',
+    ],
+  ],
+  relatedPaths: ['/guides/agent-harness-optimization', '/guides/background-agent-governance', '/guides/pre-action-checks'],
+});
+
+function buildModelUpgradeEvaluationGuide() {
+  return preActionGuide(MODEL_UPGRADE_EVALUATION_GUIDE_SPEC.slug, {
+    ...MODEL_UPGRADE_EVALUATION_GUIDE_SPEC.meta,
+    takeaways: MODEL_UPGRADE_EVALUATION_GUIDE_SPEC.takeaways,
+    sections: MODEL_UPGRADE_EVALUATION_GUIDE_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+    faq: MODEL_UPGRADE_EVALUATION_GUIDE_SPEC.faq.map(([question, text]) => answer(question, text)),
+    relatedPaths: MODEL_UPGRADE_EVALUATION_GUIDE_SPEC.relatedPaths,
   });
 }
 
@@ -705,6 +766,7 @@ const PAGE_BLUEPRINTS = [
   },
   buildHarnessOptimizationGuide(),
   buildBackgroundAgentGovernanceGuide(),
+  buildModelUpgradeEvaluationGuide(),
   {
     query: 'stop ai coding agents from repeating mistakes',
     path: '/guides/stop-repeated-ai-agent-mistakes',

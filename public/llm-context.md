@@ -43,6 +43,8 @@ ThumbGate is built on Node.js >=18.18.0 and runs locally on each developer's mac
 
 **Background Agent Governance**: `npx thumbgate background-governance` reports unattended agent runs, gate blocks, pass rate, failing agents, and run types. `npx thumbgate background-governance --check --agent-id=builder --branch=main --files-changed=25 --json` pre-checks a background-agent dispatch for high failure rate, protected branches, repeated gate blocks, and large blast radius before the PR queue reaches a human reviewer.
 
+**GPT-5.5 Model Evaluation**: `npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai --json` evaluates GPT-5.5 as a managed model candidate for dashboard and dataset-analysis workloads. The catalog is benchmark-first: it does not silently call OpenAI APIs or replace cheaper tiers, but it gives teams metrics for insight accuracy, chart-spec validity, dashboard completeness, long-context reliability, latency, and cost before routing expensive analytical work.
+
 **Data Processing & Telemetry Boundaries**: the free local CLI writes feedback logs, memory logs, background-agent run ledgers, gate firings, and proof artifacts under the operator's ThumbGate feedback directory by default. CLI telemetry is anonymous best-effort product telemetry with a random local install ID and can be disabled with `THUMBGATE_NO_TELEMETRY=1` or `DO_NOT_TRACK=1`. Hosted checkout, newsletter, intake, team sync, API-key, and website analytics flows are hosted processing surfaces and should be described separately from local enforcement data.
 
 **Three-Tier Approval Routing (OVIS-inspired)**: ThumbGate checks operate on three distinct tiers, inspired by the OVIS decision framework (Owner, Veto, Influence). Each check carries an `action` field that determines the routing outcome:
@@ -158,6 +160,7 @@ npx thumbgate dashboard
 - npm: https://www.npmjs.com/package/thumbgate
 - Documentation: https://thumbgate.ai/guide
 - AI search topical presence guide: https://thumbgate.ai/guides/ai-search-topical-presence
+- GPT-5.5 model evaluation guide: https://thumbgate.ai/guides/gpt-5-5-model-evaluation
 - Best tools to stop AI agents from breaking production: https://thumbgate.ai/guides/best-tools-stop-ai-agents-breaking-production
 - Relational knowledge guide: https://thumbgate.ai/guides/relational-knowledge-ai-recommendations
 - Autoresearch safety guide: https://thumbgate.ai/guides/autoresearch-agent-safety

@@ -102,5 +102,7 @@ test('commercial truth labels local enforcement and hosted telemetry boundaries'
   assert.match(truth, /THUMBGATE_NO_TELEMETRY=1/);
   assert.match(truth, /DO_NOT_TRACK=1/);
   assert.match(truth, /Hosted checkout, newsletter, intake, team sync/i);
+  assert.match(truth, /GPT-5\.5 evaluation/i);
+  assert.match(truth, /do not silently call provider APIs/i);
   assert.match(truth, /should not claim sub-processor coverage/i);
 });

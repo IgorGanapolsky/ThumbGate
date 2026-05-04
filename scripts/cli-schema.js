@@ -177,6 +177,19 @@ const CLI_COMMANDS = [
       { name: 'files-changed', type: 'number', description: 'Estimated files changed for --check' },
     ],
   }),
+  discoveryCommand({
+    name: 'model-candidates',
+    aliases: ['managed-models'],
+    description: 'Rank managed model candidates and emit benchmark plans for routed workloads',
+    flags: [
+      jsonFlag(),
+      { name: 'workload', type: 'string', description: 'Workload id, such as pretool-gating, long-trace-review, cheap-fast-path, or dashboard-analysis' },
+      { name: 'provider', type: 'string', description: 'Provider filter, such as openai, anthropic, or openai-compatible' },
+      { name: 'family', type: 'string', description: 'Model family filter' },
+      { name: 'gateway', type: 'string', description: 'Gateway filter for openai-compatible providers' },
+      { name: 'max', type: 'number', description: 'Maximum recommendations to return (default 3)' },
+    ],
+  }),
   {
     name: 'lesson-health',
     aliases: ['stale'],

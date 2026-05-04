@@ -2009,7 +2009,7 @@ function help() {
   console.log('  repair-github-marketplace  Repair legacy GitHub Marketplace amount mappings');
   console.log('  north-star            Show proof-backed workflow-run progress toward the North Star');
   console.log('  model-fit             Detect local embedding profile and write evidence report');
-  console.log('  model-candidates      Rank managed model candidates and emit a benchmark plan');
+  console.log('  model-candidates      Rank managed model candidates and benchmark routing plans');
   console.log('  risk                  Train or query the boosted local risk scorer');
   console.log('  eval                  Turn feedback into reusable prompt/workflow eval proof');
   console.log('  optimize              [PRO] Prune CLAUDE.md and migrate rules to Pre-Action Checks');

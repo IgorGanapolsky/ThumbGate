@@ -417,6 +417,7 @@ test('public landing page internally links to comparison and guide pages without
   assert.match(landingPage, /href="\/guides\/pre-action-checks"/);
   assert.match(landingPage, /href="\/guides\/agent-harness-optimization"/);
   assert.match(landingPage, /href="\/guides\/background-agent-governance"/);
+  assert.match(landingPage, /href="\/guides\/gpt-5-5-model-evaluation"/);
   assert.match(landingPage, /href="\/guides\/ai-search-topical-presence"/);
   assert.match(landingPage, /href="\/guides\/relational-knowledge-ai-recommendations"/);
   assert.match(landingPage, /href="\/guides\/claude-code-feedback"/);
@@ -443,6 +444,8 @@ test('public landing page labels data processing boundaries for trust review', (
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /Data Processing Boundaries/);
+  assert.match(landingPage, /GPT-5\.5 Model Evaluation/);
+  assert.match(landingPage, /dashboard-analysis workloads/);
   assert.match(landingPage, /Local enforcement data stays/i);
   assert.match(landingPage, /hosted processing surfaces/i);
 });

@@ -55,6 +55,7 @@ test('renderPlanMarkdown names all five GSD stages and page briefs', () => {
   assert.match(markdown, /ThumbGate vs Mem0/);
   assert.match(markdown, /AI Agent Harness Optimization \| Progressive Disclosure \+ Pre-Action Checks/);
   assert.match(markdown, /Background Agent Governance \| Risk-Tiered Review for Agent PRs/);
+  assert.match(markdown, /GPT-5\.5 Model Evaluation \| Benchmark Before Routing Expensive Agent Work/);
   assert.match(markdown, /AI Search Topical Presence \| Become the Obvious Recommendation/);
   assert.match(markdown, /Best Tools to Stop AI Agents From Breaking Production \| ThumbGate Listicle/);
   assert.match(markdown, /Relational Knowledge in AI Recommendations \| Why Brands Get Picked/);
@@ -141,6 +142,25 @@ test('background agent governance page is discoverable and commercially classifi
   assert.match(html, /Background Agent Governance/);
   assert.match(html, /npx thumbgate background-governance --json/);
   assert.match(html, /risk-tiered review/i);
+});
+
+test('GPT-5.5 model evaluation page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/gpt-5-5-model-evaluation');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/gpt-5-5-model-evaluation');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'gpt-5.5 model evaluation');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-checks');
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/gpt-5-5-model-evaluation',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+  assert.match(html, /GPT-5\.5 Model Evaluation/);
+  assert.match(html, /npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai --json/);
+  assert.match(html, /chart-spec validity/i);
 });
 
 test('Roo to Cline migration page is discoverable and commercially classified', () => {
@@ -257,6 +277,7 @@ test('writePlanOutputs persists machine-readable GSD artifacts', () => {
     assert.equal(pages.length, PAGE_BLUEPRINTS.length);
     assert.ok(pages.some((page) => page.path === '/guides/agent-harness-optimization'));
     assert.ok(pages.some((page) => page.path === '/guides/background-agent-governance'));
+    assert.ok(pages.some((page) => page.path === '/guides/gpt-5-5-model-evaluation'));
     assert.ok(pages.some((page) => page.path === '/guides/ai-search-topical-presence'));
     assert.ok(pages.some((page) => page.path === '/guides/best-tools-stop-ai-agents-breaking-production'));
     assert.ok(pages.some((page) => page.path === '/guides/relational-knowledge-ai-recommendations'));

@@ -11,6 +11,7 @@ const GUIDE_FILES = [
   'guides/pre-action-checks.html',
   'guides/agent-harness-optimization.html',
   'guides/background-agent-governance.html',
+  'guides/gpt-5-5-model-evaluation.html',
   'guides/browser-automation-safety.html',
   'guides/native-messaging-host-security.html',
   'guides/ai-search-topical-presence.html',
@@ -119,6 +120,18 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('pre-dispatch governance check'));
     assert.ok(html.includes('risk-tiered review'));
     assert.ok(html.includes('Workflow Hardening Sprint'));
+  });
+
+  it('GPT-5.5 model evaluation guide routes teams into benchmark-first model routing', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/gpt-5-5-model-evaluation.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai --json'));
+    assert.ok(html.includes('dashboard-analysis workload'));
+    assert.ok(html.includes('chart-spec validity'));
+    assert.ok(html.includes('Benchmark Before Routing Expensive Agent Work'));
   });
 
   it('AI search visibility guides reinforce the recommendation-discovery story', () => {

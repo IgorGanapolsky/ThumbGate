@@ -94,6 +94,18 @@ test('background-governance exposes report and pre-dispatch check flags', () => 
   assert.ok(flagNames.includes('files-changed'));
 });
 
+test('model-candidates exposes dashboard-analysis routing flags', () => {
+  const cmd = findCommand('managed-models');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'model-candidates');
+  assert.ok(flagNames.includes('json'));
+  assert.ok(flagNames.includes('workload'));
+  assert.ok(flagNames.includes('provider'));
+  assert.ok(flagNames.includes('family'));
+  assert.ok(flagNames.includes('gateway'));
+  assert.ok(flagNames.includes('max'));
+});
+
 test('harness-audit command exposes JSON and token budget flags', () => {
   const cmd = findCommand('harness');
   const flagNames = cmd.flags.map((f) => f.name);

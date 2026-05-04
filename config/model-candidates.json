@@ -54,9 +54,39 @@
         "costPer1kActionsUsd",
         "escalationRate"
       ]
+    },
+    "dashboard-analysis": {
+      "label": "Dashboard and dataset analysis",
+      "summary": "Evaluate frontier models for dataset analysis, chart generation, dashboard planning, and proof-backed insight quality before routing expensive analytical work.",
+      "desiredStrengths": ["data-analysis", "dashboard-creation", "charting", "long-context", "reliability"],
+      "targetContextWindow": 200000,
+      "benchmarkCommands": [
+        "npx thumbgate eval --from-feedback --json --min-score=0",
+        "node scripts/gate-eval.js run",
+        "npx thumbgate bench --json --min-score=90"
+      ],
+      "metrics": [
+        "insightAccuracy",
+        "chartSpecValidity",
+        "dashboardCompleteness",
+        "longContextReliability",
+        "medianLatencyMs",
+        "costPerAnalysisUsd"
+      ]
     }
   },
   "candidates": [
+    {
+      "id": "openai/gpt-5.5",
+      "vendor": "OpenAI",
+      "family": "gpt",
+      "provider": "openai",
+      "model": "gpt-5.5",
+      "contextWindow": 1000000,
+      "costClass": "high",
+      "strengths": ["agentic-coding", "tool-use", "reliability", "long-context", "data-analysis", "dashboard-creation", "charting"],
+      "notes": "Frontier candidate for complex reasoning, coding, dataset analysis, and dashboard workflows. Benchmark before routing high-volume or cost-sensitive work."
+    },
     {
       "id": "anthropic/claude-haiku-4-5",
       "vendor": "Anthropic",
