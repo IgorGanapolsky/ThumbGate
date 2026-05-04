@@ -112,6 +112,7 @@ const {
   getBillingSummaryLive,
 } = require('../../scripts/billing');
 const {
+  DEFAULT_PUBLIC_APP_ORIGIN,
   resolveHostedBillingConfig,
   createTraceId,
   buildHostedSuccessUrl,
@@ -1625,6 +1626,27 @@ function escapeHtmlAttribute(value) {
     .replaceAll('>', '&gt;');
 }
 
+function normalizePublicMarketingHtml(html, runtimeConfig) {
+  const appOrigin = runtimeConfig && runtimeConfig.appOrigin
+    ? String(runtimeConfig.appOrigin).replace(/\/+$/, '')
+    : '';
+  if (!appOrigin) return html;
+
+  let output = String(html);
+  output = output.replaceAll(DEFAULT_PUBLIC_APP_ORIGIN, appOrigin);
+  try {
+    const host = new URL(appOrigin).host;
+    output = output.replaceAll(
+      'data-domain="thumbgate-production.up.railway.app"',
+      `data-domain="${escapeHtmlAttribute(host)}"`
+    );
+  } catch {
+    // appOrigin is normalized by hosted-config; leave static analytics domains
+    // untouched if a future caller deliberately supplies a non-URL value.
+  }
+  return output;
+}
+
 function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContext = {}) {
   const template = fs.readFileSync(templatePath, 'utf-8');
   const googleSiteVerificationMeta = runtimeConfig.googleSiteVerification
@@ -1637,11 +1659,11 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
       '    window.dataLayer = window.dataLayer || [];',
       '    function gtag(){dataLayer.push(arguments);}',
       "    gtag('js', new Date());",
-      `    gtag('config', '${runtimeConfig.gaMeasurementId}', { send_page_view: false });`,
+      `    gtag('config', '${runtimeConfig.gaMeasurementId}');`,
       '  </script>',
     ].join('\n')
     : '';
-  return fillTemplate(template, {
+  return normalizePublicMarketingHtml(fillTemplate(template, {
     '__PACKAGE_VERSION__': pkg.version,
     '__APP_ORIGIN__': runtimeConfig.appOrigin,
     '__CHECKOUT_ENDPOINT__': runtimeConfig.checkoutEndpoint,
@@ -1665,7 +1687,7 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
     '__GTM_PLAN_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md',
     '__GITHUB_URL__': 'https://github.com/IgorGanapolsky/ThumbGate',
     '__POSTHOG_API_KEY__': runtimeConfig.posthogApiKey || '',
-  });
+  }), runtimeConfig);
 }
 
 function loadLandingPageHtml(runtimeConfig, pageContext = {}) {
