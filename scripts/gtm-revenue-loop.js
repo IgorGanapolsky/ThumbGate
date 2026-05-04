@@ -12,6 +12,7 @@ const { buildLeadFromRevenueTarget, loadSalesLeads } = require('./sales-pipeline
 const { getWarmOutboundTargets } = require('./warm-outreach-targets');
 
 const GITHUB_API_BASE_URL = 'https://api.github.com/';
+const COMMERCIAL_TRUTH_PATH = path.resolve(__dirname, '..', 'docs', 'COMMERCIAL_TRUTH.md');
 const COMMERCIAL_TRUTH_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md';
 const VERIFICATION_EVIDENCE_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
 const TARGET_SEARCH_QUERIES = [
@@ -670,6 +671,73 @@ function hasRevenueLoopBookedRevenue(summary = {}) {
   return snapshot.paidOrders > 0 || snapshot.bookedRevenueCents > 0;
 }
 
+function parseHistoricalCommercialTruthRevenue(markdown = '') {
+  const match = String(markdown).match(
+    /Verified cumulative booked revenue through ([A-Za-z]+ \d{1,2}, \d{4}) is \*\*\$(\d+(?:\.\d{2})?)\*\* from `(\d+)` reconciled Stripe charges/i
+  );
+  if (!match) {
+    return null;
+  }
+
+  const [, asOfDate, amountUsd, paidOrders] = match;
+  const bookedRevenueCents = Math.round(Number(amountUsd) * 100);
+  if (!Number.isFinite(bookedRevenueCents)) {
+    return null;
+  }
+
+  return {
+    asOfDate,
+    paidOrders: Number.parseInt(paidOrders, 10) || 0,
+    bookedRevenueCents,
+    sourceDocument: 'docs/COMMERCIAL_TRUTH.md',
+  };
+}
+
+function readHistoricalCommercialTruthRevenue({
+  fsImpl = fs,
+  filePath = COMMERCIAL_TRUTH_PATH,
+} = {}) {
+  try {
+    const markdown = fsImpl.readFileSync(filePath, 'utf8');
+    return parseHistoricalCommercialTruthRevenue(markdown);
+  } catch {
+    return null;
+  }
+}
+
+function applyHistoricalRevenueProof(summary = {}, historicalProof = null) {
+  if (!historicalProof) {
+    return summary;
+  }
+
+  const revenue = summary.revenue || {};
+  return {
+    ...summary,
+    revenue: {
+      ...revenue,
+      paidOrders: historicalProof.paidOrders,
+      bookedRevenueCents: historicalProof.bookedRevenueCents,
+      historicalProof,
+    },
+  };
+}
+
+function formatHistoricalRevenueProofLine(historicalProof = null) {
+  if (!historicalProof) {
+    return '';
+  }
+
+  const paidOrders = Number(historicalProof.paidOrders || 0);
+  const bookedRevenueCents = Number(historicalProof.bookedRevenueCents || 0);
+  const asOfDate = normalizeText(historicalProof.asOfDate);
+  const sourceDocument = normalizeText(historicalProof.sourceDocument) || 'docs/COMMERCIAL_TRUTH.md';
+  if (paidOrders <= 0 && bookedRevenueCents <= 0) {
+    return '';
+  }
+
+  return `${paidOrders} paid order(s), $${(bookedRevenueCents / 100).toFixed(2)} booked through ${asOfDate || 'the latest verified date'} from ${sourceDocument}.`;
+}
+
 function selectHostedRevenueWindow(summaries = {}) {
   const candidateOrder = ['today', '30d', 'lifetime'];
 
@@ -728,20 +796,22 @@ function buildBillingVerification({ source, fallbackReason, snapshot = {} } = {}
     };
   }
 
+  if (hasHistoricalRevenue) {
+    return {
+      mode: 'historical-local',
+      label: normalizedSource === 'local-unverified'
+        ? 'Historical booked revenue is verified, but this run fell back to unverified local metrics after hosted billing could not be verified.'
+        : 'Historical booked revenue is verified, but the current hosted billing summary was not verified in this run.',
+      source: normalizedSource || 'local',
+      fallbackReason: normalizedFallback || null,
+    };
+  }
+
   if (normalizedSource === 'local-unverified') {
     return {
       mode: 'local-unverified',
       label: 'Hosted billing could not be verified in this run; local fallback is not safe for fresh traction claims.',
       source: normalizedSource,
-      fallbackReason: normalizedFallback || null,
-    };
-  }
-
-  if (hasHistoricalRevenue) {
-    return {
-      mode: 'historical-local',
-      label: 'Historical booked revenue is verified, but the current hosted billing summary was not verified in this run.',
-      source: normalizedSource || 'local',
       fallbackReason: normalizedFallback || null,
     };
   }
@@ -767,6 +837,7 @@ async function resolveRevenueLoopSummary(options = {}) {
   const {
     getOperationalBillingSummaryFn = getOperationalBillingSummary,
     generateRevenueStatusReportFn = generateRevenueStatusReport,
+    readHistoricalCommercialTruthRevenueFn = readHistoricalCommercialTruthRevenue,
     revenueStatusOptions = {},
     hostedStatusRetries = 1,
     hostedRetryDelayMs = 1000,
@@ -814,6 +885,21 @@ async function resolveRevenueLoopSummary(options = {}) {
   }
 
   void hostedFailure;
+  if (!hasRevenueLoopBookedRevenue(localResult.summary)) {
+    const historicalProof = readHistoricalCommercialTruthRevenueFn();
+    if (historicalProof) {
+      return {
+        ...localResult,
+        summary: applyHistoricalRevenueProof(localResult.summary, historicalProof),
+        fallbackReason: [
+          normalizeText(localResult.fallbackReason),
+          `Historical commercial proof applied from ${historicalProof.sourceDocument}.`,
+        ].filter(Boolean).join(' '),
+        summaryWindow: 'historical-commercial-truth',
+      };
+    }
+  }
+
   return localResult;
 }
 
@@ -1462,6 +1548,7 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
     source,
     fallbackReason: fallbackReason || null,
     verification,
+    historicalRevenueProof: summary?.revenue?.historicalProof || null,
     objective: 'First 10 paying customers',
     directive,
     currentTruth,
@@ -1786,6 +1873,9 @@ function renderRevenueLoopMarkdown(report) {
     `- Qualified sprint leads: ${report.snapshot.qualifiedSprintLeads}`,
     `- Billing source: ${report.source}${fallbackReason}`,
     `- Billing verification: ${report.verification?.label || 'n/a'}`,
+    ...(report.historicalRevenueProof
+      ? [`- Historical revenue proof: ${formatHistoricalRevenueProofLine(report.historicalRevenueProof)}`]
+      : []),
     '',
     '## GSD Directive',
     `- Objective: ${report.directive.objective}`,
@@ -2029,6 +2119,7 @@ function buildOperatorHandoffPayload(report) {
       revenueState: normalizeText(report?.directive?.state) || 'cold-start',
       headline: normalizeText(report?.directive?.headline) || 'No verified revenue and no active pipeline.',
       billingVerification: normalizeText(report?.verification?.label) || 'n/a',
+      historicalRevenueProof: formatHistoricalRevenueProofLine(report?.historicalRevenueProof),
       paidOrders: Number(report?.snapshot?.paidOrders || 0),
       checkoutStarts: Number(report?.snapshot?.checkoutStarts || 0),
       activeFollowUps: followUpTargets.length,
@@ -2088,6 +2179,9 @@ function renderOperatorHandoffMarkdown(report) {
     `- Revenue state: ${handoff.summary.revenueState}`,
     `- Headline: ${handoff.summary.headline}`,
     `- Billing verification: ${handoff.summary.billingVerification}`,
+    ...(handoff.summary.historicalRevenueProof
+      ? [`- Historical revenue proof: ${handoff.summary.historicalRevenueProof}`]
+      : []),
     `- Paid orders: ${handoff.summary.paidOrders}`,
     `- Checkout starts: ${handoff.summary.checkoutStarts}`,
     `- Active follow-ups: ${handoff.summary.activeFollowUps}`,
@@ -2325,6 +2419,9 @@ function renderOperatorSendNowMarkdown(report) {
     `- Revenue state: ${payload.summary.revenueState}`,
     `- Headline: ${payload.summary.headline}`,
     `- Billing verification: ${payload.summary.billingVerification}`,
+    ...(payload.summary.historicalRevenueProof
+      ? [`- Historical revenue proof: ${payload.summary.historicalRevenueProof}`]
+      : []),
     `- Paid orders: ${payload.summary.paidOrders}`,
     `- Checkout starts: ${payload.summary.checkoutStarts}`,
     `- Active follow-ups: ${payload.summary.activeFollowUps}`,

@@ -185,6 +185,7 @@ test('resolveRevenueLoopSummary keeps local numbers when hosted revenue status s
         },
       },
     }),
+    readHistoricalCommercialTruthRevenueFn: () => null,
   });
 
   assert.equal(result.source, 'local');
@@ -373,6 +374,50 @@ test('resolveRevenueLoopSummary skips hosted audit when local metrics are explic
 
   assert.equal(result.source, 'local');
   assert.equal(hostedAuditCalls, 0);
+});
+
+test('resolveRevenueLoopSummary falls back to historical commercial truth revenue when hosted billing is unavailable', async () => {
+  const result = await resolveRevenueLoopSummary({
+    getOperationalBillingSummaryFn: async () => ({
+      source: 'local-unverified',
+      summary: {
+        revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+        trafficMetrics: { checkoutStarts: 0 },
+        signups: { uniqueLeads: 0 },
+        pipeline: {},
+      },
+      fallbackReason: 'Hosted operational summary is not configured.',
+    }),
+    generateRevenueStatusReportFn: async () => ({
+      source: 'local-fallback',
+      hostedAudit: {
+        summaries: {
+          today: {
+            status: 503,
+            revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+          },
+        },
+      },
+    }),
+    readHistoricalCommercialTruthRevenueFn: () => ({
+      asOfDate: 'March 19, 2026',
+      paidOrders: 2,
+      bookedRevenueCents: 2000,
+      sourceDocument: 'docs/COMMERCIAL_TRUTH.md',
+    }),
+  });
+
+  assert.equal(result.source, 'local-unverified');
+  assert.equal(result.summaryWindow, 'historical-commercial-truth');
+  assert.equal(result.summary.revenue.paidOrders, 2);
+  assert.equal(result.summary.revenue.bookedRevenueCents, 2000);
+  assert.equal(result.summary.revenue.historicalProof.asOfDate, 'March 19, 2026');
+  assert.match(result.fallbackReason, /Historical commercial proof applied/);
+  assert.equal(deriveRevenueDirective(
+    result.summary,
+    buildMotionCatalog(buildRevenueLinks()),
+    { mode: 'historical-local' }
+  ).state, 'post-first-dollar');
 });
 
 test('argument and commercial snapshot helpers stay bounded and explicit', () => {
@@ -1934,6 +1979,51 @@ test('revenue loop report records billing verification context for historical lo
 
   assert.equal(report.verification.mode, 'historical-local');
   assert.match(report.verification.label, /Historical booked revenue is verified/);
+});
+
+test('operator payload surfaces historical revenue proof when billing falls back to commercial truth', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const report = buildRevenueLoopReport({
+    source: 'local-unverified',
+    fallbackReason: 'Hosted operational summary is not configured. Historical commercial proof applied from docs/COMMERCIAL_TRUTH.md.',
+    summary: {
+      revenue: {
+        paidOrders: 2,
+        bookedRevenueCents: 2000,
+        historicalProof: {
+          asOfDate: 'March 19, 2026',
+          paidOrders: 2,
+          bookedRevenueCents: 2000,
+          sourceDocument: 'docs/COMMERCIAL_TRUTH.md',
+        },
+      },
+      trafficMetrics: { checkoutStarts: 0 },
+      signups: {},
+      pipeline: {},
+    },
+    motionCatalog: catalog,
+    directive: deriveRevenueDirective({
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    }, catalog, {
+      mode: 'historical-local',
+    }),
+    targets: [],
+  });
+  const payload = buildOperatorHandoffPayload(report);
+  const markdown = renderRevenueLoopMarkdown({
+    ...report,
+    snapshotWindow: 'historical-commercial-truth',
+  });
+
+  assert.match(payload.summary.billingVerification, /Historical booked revenue is verified/);
+  assert.match(payload.summary.historicalRevenueProof, /March 19, 2026/);
+  assert.match(payload.summary.historicalRevenueProof, /\$20\.00/);
+  assert.match(markdown, /Revenue window: historical-commercial-truth/);
+  assert.match(markdown, /Historical revenue proof: 2 paid order\(s\), \$20\.00 booked through March 19, 2026/);
 });
 
 test('marketplace copy pack stays tied to current revenue-loop evidence', () => {

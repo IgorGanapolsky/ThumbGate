@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-05-04T05:14:25.441Z",
-  "state": "cold-start",
+  "generatedAt": "2026-05-04T11:54:10.627Z",
+  "state": "post-first-dollar",
   "objective": "Turn Claude install demand and workflow-hardening pain into tracked sprint intakes, proof clicks, and Pro checkout starts without making approval or revenue claims the repo cannot verify.",
   "headline": "Turn Claude install demand into workflow-hardening paid intent.",
   "shortDescription": "ThumbGate gives Claude Desktop and Claude Code a proof-backed install path, thumbs-up/down feedback capture, and Pre-Action Checks that block repeated workflow mistakes before the next risky action runs.",
-  "summary": "Claude demand in ThumbGate should stay install-first for evaluators and workflow-hardening-first for teams that already feel the pain. No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.",
+  "summary": "Claude demand in ThumbGate should stay install-first for evaluators and workflow-hardening-first for teams that already feel the pain. Historical booked revenue is verified, but the current hosted billing summary is unavailable in this run. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.",
   "canonicalIdentity": {
     "displayName": "ThumbGate for Claude",
     "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
