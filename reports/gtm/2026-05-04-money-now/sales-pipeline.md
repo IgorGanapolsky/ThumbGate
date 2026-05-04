@@ -11,7 +11,7 @@ This is the first-dollar truth table. Posts are not sales; only stage movement c
 - Replied: 0
 - Calls booked: 0
 - Paid: 0
-- Booked revenue: $0.00
+- Booked revenue (pipeline only): $0.00 (see `docs/COMMERCIAL_TRUTH.md` for verified cumulative booked revenue)
 
 ## Stage Counts
 - targeted: 20

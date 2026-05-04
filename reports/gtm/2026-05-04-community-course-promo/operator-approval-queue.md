@@ -11,7 +11,9 @@ These are the next “money motion” actions prepared for quick approval.
 - Upload About media (optional): see `skool-media-upload-steps.md`
 - Publish first post: pick Version A/B/C from `skool-first-post.md`
 - Publish + pin “Start Here” post: pick Version A from `skool-start-here-post.md`
+- Refresh listing fields (sidebar/About/keywords) from `skool-listing-copy.md`
 - Invite first 10–20: populate `docs/OUTREACH_TARGETS.md` first, then invite
+- Refresh Skool discovery requirements checklist in `platform-requirements-refresh.md`
 
 ## Revenue injection (approval-required)
 

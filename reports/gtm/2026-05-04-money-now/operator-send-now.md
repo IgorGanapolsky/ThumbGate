@@ -7,16 +7,13 @@ This is the flat batch-send layer for the current revenue loop. Use it when you 
 Pair this file with `operator-priority-handoff.md` when you need deeper account context or the full ranked rationale.
 
 ## Current Snapshot
-- Revenue state: post-first-dollar
-- Headline: Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
-- Billing verification: Live hosted billing summary verified for this run.
-- Paid orders: 4
-- Checkout starts: 87
-- Active follow-ups: 0
-- Warm targets ready now: 4
-- Self-serve closes ready now: 3
-- Production-rollout targets ready now: 7
-- Cold GitHub targets ready next: 2
+- Revenue state: verification required (do not paste live metrics here)
+- Headline: Sell one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
+- Truth sources:
+  - Verified cumulative booked revenue / pricing claims: `docs/COMMERCIAL_TRUTH.md`
+  - Live hosted config + checkout URLs: `npm run hosted:config`
+  - Live revenue snapshot: `npm run revenue:status`
+  - Live revenue plan: `npm run revenue:plan`
 
 ## Batch Rules
 - Import the queue into the sales ledger before sending anything.
