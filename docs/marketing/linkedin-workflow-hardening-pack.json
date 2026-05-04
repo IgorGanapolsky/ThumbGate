@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-03T23:29:58.043Z",
+  "generatedAt": "2026-05-04T05:14:25.441Z",
   "state": "cold-start",
   "objective": "Turn LinkedIn workflow-risk conversations into tracked guide clicks, qualified workflow-hardening conversations, sprint-intake movement, and self-serve follow-on only after pain is qualified.",
   "headline": "Turn LinkedIn workflow-risk conversations into sprint-qualified paid intent.",
@@ -107,7 +107,7 @@
     {
       "key": "business_system_operator",
       "audience": "Platform or ops lead wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM workflows",
-      "evidence": "4 production-style target(s), 4 business-system target(s), and 5 workflow-control target(s) point to approval boundaries and rollback safety as the strongest LinkedIn angle.",
+      "evidence": "4 production-style target(s), 3 business-system target(s), and 6 workflow-control target(s) point to approval boundaries and rollback safety as the strongest LinkedIn angle.",
       "proofTrigger": "They can name one approval boundary, rollback risk, or bad handoff that blocks broader rollout.",
       "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
       "nextAsk": "https://thumbgate-production.up.railway.app/?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_queue_sprint&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=LINKEDIN-QUEUE_SPRINT&cta_id=linkedin_queue_sprint&cta_placement=operator_queue&surface=linkedin_outreach#workflow-sprint-intake",
@@ -169,7 +169,7 @@
       "channel": "LinkedIn",
       "format": "Reply or DM follow-up",
       "audience": "Commenter who named repeated workflow risk",
-      "evidenceSummary": "5 workflow-control target(s) and 4 business-system target(s) make workflow-risk follow-up more credible than a generic product pitch.",
+      "evidenceSummary": "6 workflow-control target(s) and 3 business-system target(s) make workflow-risk follow-up more credible than a generic product pitch.",
       "cta": "https://thumbgate-production.up.railway.app/guides/claude-code-prevent-repeated-mistakes?utm_source=linkedin&utm_medium=linkedin_comment&utm_campaign=linkedin_channel_repeat_guide&utm_content=guide&campaign_variant=workflow_risk&offer_code=LINKEDIN-CHANNEL_REPEAT&cta_id=linkedin_channel_repeat_guide&cta_placement=channel_draft&surface=linkedin_comment",
       "proofTiming": "Use the repeated-mistakes guide in the reply first. Send proof links only if they ask for evidence after naming the workflow.",
       "draft": "That is exactly the kind of workflow risk I am talking about. The useful next step is not a bigger AI pitch. It is isolating the repeated mistake and deciding what check should fire before the next risky action runs. This guide is the shortest explanation of that loop: https://thumbgate-production.up.railway.app/guides/claude-code-prevent-repeated-mistakes?utm_source=linkedin&utm_medium=linkedin_comment&utm_campaign=linkedin_channel_repeat_guide&utm_content=guide&campaign_variant=workflow_risk&offer_code=LINKEDIN-CHANNEL_REPEAT&cta_id=linkedin_channel_repeat_guide&cta_placement=channel_draft&surface=linkedin_comment ."
@@ -221,8 +221,8 @@
   "evidenceBackstop": {
     "warmTargetCount": 4,
     "productionTargetCount": 4,
-    "businessSystemTargetCount": 4,
-    "workflowControlSurfaceCount": 5,
+    "businessSystemTargetCount": 3,
+    "workflowControlSurfaceCount": 6,
     "sprintMotionCount": 7,
     "proMotionCount": 3,
     "painSignals": [
