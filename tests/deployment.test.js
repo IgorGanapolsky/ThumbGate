@@ -232,6 +232,7 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS/);
   assert.match(workflow, /RAILWAY_LOG_LINES/);
   assert.match(workflow, /RAILWAY_HTTP_LOG_LINES/);
+  assert.match(workflow, /DEPLOYABLE_PATTERN=.*\\\.github\/workflows\/deploy-railway\\\.yml/);
   assert.match(workflow, /secrets\.THUMBGATE_API_KEY/);
   assert.match(workflow, /RESEND_API_KEY:\s*\$\{\{\s*secrets\.RESEND_API_KEY\s*\}\}/);
   assert.match(workflow, /THUMBGATE_TRIAL_EMAIL_FROM:\s*\$\{\{\s*secrets\.THUMBGATE_TRIAL_EMAIL_FROM\s*\|\|\s*vars\.THUMBGATE_TRIAL_EMAIL_FROM\s*\}\}/);
@@ -239,11 +240,13 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /vars\.THUMBGATE_BILLING_API_BASE_URL \|\| vars\.THUMBGATE_PUBLIC_APP_ORIGIN \|\| 'https:\/\/thumbgate-production\.up\.railway\.app'/);
   assert.match(workflow, /THUMBGATE_PUBLIC_APP_ORIGIN/);
   assert.match(workflow, /THUMBGATE_BILLING_API_BASE_URL/);
+  assert.match(workflow, /THUMBGATE_CHECKOUT_FALLBACK_URL:\s*\$\{\{\s*vars\.THUMBGATE_CHECKOUT_FALLBACK_URL\s*\}\}/);
   assert.match(workflow, /railway variables set --skip-deploys THUMBGATE_API_KEY=/);
   assert.match(workflow, /railway variables set --skip-deploys THUMBGATE_BUILD_SHA=/);
   assert.match(workflow, /railway variables set --skip-deploys STRIPE_WEBHOOK_SECRET=/);
   assert.match(workflow, /railway variables set --skip-deploys RESEND_API_KEY=/);
   assert.match(workflow, /railway variables set --skip-deploys THUMBGATE_TRIAL_EMAIL_FROM=/);
+  assert.match(workflow, /railway variables set --skip-deploys THUMBGATE_CHECKOUT_FALLBACK_URL=/);
   assert.match(workflow, /railway up/);
   assert.match(workflow, /--ci/);
   assert.match(workflow, /--detach/);
