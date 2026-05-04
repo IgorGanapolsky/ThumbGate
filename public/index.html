@@ -397,6 +397,13 @@ __GA_BOOTSTRAP__
   .btn-pro-page:hover { opacity: 0.9; transform: translateY(-1px); }
   .btn-gpt-page { display: inline-flex; align-items: center; justify-content: center; padding: 14px 32px; background: var(--green); color: #06120a; border-radius: 8px; text-decoration: none; font-size: 16px; font-weight: 800; box-shadow: 0 0 0 1px rgba(74,222,128,0.32), 0 12px 32px rgba(74,222,128,0.18); transition: opacity 0.15s, transform 0.15s; }
   .btn-gpt-page:hover { opacity: 0.92; transform: translateY(-1px); }
+  .hero-paid-path { max-width: 780px; margin: 0 auto 28px; padding: 16px; border: 1px solid rgba(74,222,128,0.28); border-radius: 12px; background: rgba(74,222,128,0.07); display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 14px; align-items: center; text-align: left; }
+  .hero-paid-path strong { display: block; color: var(--text); font-size: 15px; line-height: 1.3; margin-bottom: 3px; }
+  .hero-paid-path span { color: var(--text-muted); font-size: 13px; line-height: 1.45; }
+  .hero-paid-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+  .hero-paid-actions a { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 9px 13px; border-radius: 999px; text-decoration: none; font-size: 13px; font-weight: 800; white-space: nowrap; }
+  .hero-paid-actions .diagnostic { background: var(--green); color: #06120a; border: 1px solid rgba(74,222,128,0.45); }
+  .hero-paid-actions .sprint { color: var(--green); border: 1px solid rgba(74,222,128,0.45); background: rgba(17,17,19,0.72); }
   .hero-paid-note { font-size: 14px; color: var(--text-muted); max-width: 720px; margin: 0 auto 24px; }
   .hero-paid-note strong { color: var(--text); }
   .hero-install { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 14px 24px; display: inline-flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 15px; margin-bottom: 40px; cursor: pointer; transition: border-color 0.2s; position: relative; max-width: 100%; overflow-x: auto; }
@@ -622,6 +629,9 @@ __GA_BOOTSTRAP__
     .hero { padding: 72px 0 56px; }
     .hero-actions { flex-direction: column; }
     .hero-actions a { width: 100%; }
+    .hero-paid-path { grid-template-columns: 1fr; text-align: center; }
+    .hero-paid-actions { justify-content: center; }
+    .hero-paid-actions a { width: 100%; }
     .nav-links a:not(.nav-cta) { display: none; }
     .proof-bar { gap: 8px; justify-content: flex-start; }
     .proof-bar a { width: 100%; min-height: 42px; white-space: normal; }
@@ -700,6 +710,17 @@ __GA_BOOTSTRAP__
         </div>
       </div>
       <p style="margin:14px 0 0;font-size:11px;color:var(--text-muted);text-align:center;">No credit card for 7-day trial · cancel anytime · your rules and captures stay local. <a href="/go/install" style="color:var(--cyan);text-decoration:none;">Prefer free? Install CLI →</a></p>
+    </div>
+
+    <div class="hero-paid-path" aria-label="Paid workflow hardening checkout options">
+      <div>
+        <strong>Need buyer-ready proof today?</strong>
+        <span>Skip the free trial path and buy the workflow diagnostic or sprint directly.</span>
+      </div>
+      <div class="hero-paid-actions">
+        <a class="diagnostic" href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__" onclick="sendFirstPartyTelemetry('workflow_sprint_diagnostic_checkout_started',{ctaId:'hero_workflow_sprint_diagnostic_checkout',ctaPlacement:'hero_paid_path',planId:'team',offer:'workflow_hardening_diagnostic',price:sprintDiagnosticPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:sprintDiagnosticPriceDollars,items:[{item_id:'workflow_hardening_diagnostic',item_name:'Workflow Hardening Diagnostic'}]});">Pay $499 diagnostic &rarr;</a>
+        <a class="sprint" href="__WORKFLOW_SPRINT_CHECKOUT_URL__" onclick="sendFirstPartyTelemetry('workflow_sprint_checkout_started',{ctaId:'hero_workflow_sprint_checkout',ctaPlacement:'hero_paid_path',planId:'team',offer:'workflow_hardening_sprint',price:workflowSprintPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:workflowSprintPriceDollars,items:[{item_id:'workflow_hardening_sprint',item_name:'Workflow Hardening Sprint'}]});">Pay $1500 sprint &rarr;</a>
+      </div>
     </div>
 
     <a href="/dashboard" class="hero-dashboard-preview" style="display:block;max-width:620px;margin:0 auto 28px;background:linear-gradient(135deg,#0d1220 0%,#121a2e 100%);border:1px solid rgba(34,211,238,0.35);border-radius:12px;padding:20px 24px;box-shadow:0 0 48px rgba(34,211,238,0.15);font-family:var(--mono);text-align:left;text-decoration:none;color:inherit;" title="Open your live dashboard">
@@ -1450,7 +1471,7 @@ __GA_BOOTSTRAP__
           </div>
           <div>
             <div class="team-paid-price">$<span data-sprint-diagnostic-price>499</span></div>
-            <a class="team-paid-link" data-sprint-diagnostic-link href="#workflow-sprint-intake">Pay for diagnostic</a>
+            <a class="team-paid-link" data-sprint-diagnostic-link href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__">Pay for diagnostic</a>
           </div>
         </div>
         <div class="team-paid-card">
@@ -1460,7 +1481,7 @@ __GA_BOOTSTRAP__
           </div>
           <div>
             <div class="team-paid-price">$<span data-workflow-sprint-price>1500</span></div>
-            <a class="team-paid-link" data-workflow-sprint-link href="#workflow-sprint-intake">Pay for sprint</a>
+            <a class="team-paid-link" data-workflow-sprint-link href="__WORKFLOW_SPRINT_CHECKOUT_URL__">Pay for sprint</a>
           </div>
         </div>
       </div>

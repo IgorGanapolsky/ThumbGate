@@ -235,6 +235,8 @@
     "cfo:report": "node bin/cli.js cfo",
     "creator:links": "node scripts/creator-campaigns.js",
     "stripe:live": "node scripts/stripe-live-status.js",
+    "stripe:webhook:audit": "node scripts/rotate-stripe-webhook-secret.js --audit",
+    "stripe:webhook:disable-legacy": "node scripts/rotate-stripe-webhook-secret.js --disable-legacy",
     "gtm:revenue-loop": "node scripts/autonomous-sales-agent.js",
     "gtm:aiventyx": "node scripts/aiventyx-marketplace-plan.js",
     "gtm:chatgpt": "node scripts/chatgpt-gpt-revenue-pack.js",

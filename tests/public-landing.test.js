@@ -109,8 +109,15 @@ test('public landing page exposes env-driven paid sprint checkout path', () => {
   assert.match(landingPage, /const workflowSprintCheckoutUrl = '__WORKFLOW_SPRINT_CHECKOUT_URL__';/);
   assert.match(landingPage, /data-sprint-paid-path/);
   assert.match(landingPage, /Workflow Hardening Diagnostic/);
+  assert.match(landingPage, /Need buyer-ready proof today\?/);
+  assert.match(landingPage, /href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__"/);
+  assert.match(landingPage, /href="__WORKFLOW_SPRINT_CHECKOUT_URL__"/);
+  assert.match(landingPage, /Pay \$499 diagnostic/);
+  assert.match(landingPage, /Pay \$1500 sprint/);
   assert.match(landingPage, /Pay for diagnostic/);
   assert.match(landingPage, /Pay for sprint/);
+  assert.match(landingPage, /hero_workflow_sprint_diagnostic_checkout/);
+  assert.match(landingPage, /hero_workflow_sprint_checkout/);
   assert.match(landingPage, /workflow_sprint_diagnostic_checkout_started/);
   assert.match(landingPage, /workflow_sprint_checkout_started/);
 });

@@ -13,6 +13,10 @@ const REQUIRED_EVENTS = [
   'customer.subscription.updated',
   'customer.subscription.deleted',
 ];
+const LEGACY_ENDPOINT_URLS = [
+  'https://rlhf-feedback-loop-production.up.railway.app/v1/billing/webhook',
+  'https://rlhf-feedback-loop-710216278770.us-central1.run.app/v1/billing/webhook',
+];
 const FIXED_GH_BINARIES = ['/usr/bin/gh', '/usr/local/bin/gh', '/opt/homebrew/bin/gh'];
 const SECRET_PATTERN = /\b(?:sk|rk)_(?:live|test)_\w+|\bwhsec_\w+/g;
 
@@ -184,6 +188,106 @@ function findSameUrlEndpoints(endpoints, endpointUrl, excludeId) {
     && endpoint?.status !== 'disabled');
 }
 
+function isEnabledEndpoint(endpoint) {
+  return Boolean(endpoint?.id && endpoint?.url && endpoint?.status !== 'disabled');
+}
+
+function isLegacyEndpointUrl(url, { endpointUrl = DEFAULT_ENDPOINT_URL, legacyEndpointUrls = LEGACY_ENDPOINT_URLS } = {}) {
+  if (!url || url === endpointUrl) return false;
+  if (legacyEndpointUrls.includes(url)) return true;
+  return /\/\/(?:[^/]+\.)?rlhf-feedback-loop[-.]/.test(url);
+}
+
+function findLegacyEnabledEndpoints(endpoints, options = {}) {
+  return endpoints.filter((endpoint) => isEnabledEndpoint(endpoint) && isLegacyEndpointUrl(endpoint.url, options));
+}
+
+function summarizeWebhookEndpoints(endpoints, { endpointUrl = DEFAULT_ENDPOINT_URL, legacyEndpointUrls = LEGACY_ENDPOINT_URLS } = {}) {
+  const currentEnabledEndpoints = endpoints
+    .filter((endpoint) => isEnabledEndpoint(endpoint) && endpoint.url === endpointUrl)
+    .map((endpoint) => ({
+      id: endpoint.id,
+      url: endpoint.url,
+      status: endpoint.status,
+      enabled_events: endpoint.enabled_events || [],
+    }));
+  const legacyEnabledEndpoints = findLegacyEnabledEndpoints(endpoints, { endpointUrl, legacyEndpointUrls })
+    .map((endpoint) => ({
+      id: endpoint.id,
+      url: endpoint.url,
+      status: endpoint.status,
+      enabled_events: endpoint.enabled_events || [],
+    }));
+  const legacyDisabledEndpoints = endpoints
+    .filter((endpoint) => endpoint?.id && endpoint?.status === 'disabled' && isLegacyEndpointUrl(endpoint.url, { endpointUrl, legacyEndpointUrls }))
+    .map((endpoint) => ({ id: endpoint.id, url: endpoint.url, status: endpoint.status }));
+
+  return {
+    endpointUrl,
+    healthy: currentEnabledEndpoints.length === 1 && legacyEnabledEndpoints.length === 0,
+    currentEnabledEndpoints,
+    legacyEnabledEndpoints,
+    legacyDisabledEndpoints,
+    requiredEvents: REQUIRED_EVENTS,
+  };
+}
+
+async function auditStripeWebhookEndpoints(options = {}) {
+  const endpointUrl = options.endpointUrl || process.env.STRIPE_WEBHOOK_ENDPOINT_URL || DEFAULT_ENDPOINT_URL;
+  const stripeKey = options.stripeKey || process.env.STRIPE_SECRET_KEY;
+  const requireLive = resolveRequireLiveStripeKey(options);
+  const listEndpoints = options.listWebhookEndpoints || listWebhookEndpoints;
+
+  assertLiveStripeKey(stripeKey, requireLive);
+  const endpoints = await listEndpoints(stripeKey);
+  return summarizeWebhookEndpoints(endpoints, {
+    endpointUrl,
+    legacyEndpointUrls: options.legacyEndpointUrls || LEGACY_ENDPOINT_URLS,
+  });
+}
+
+async function disableLegacyWebhookEndpoints(options = {}) {
+  const endpointUrl = options.endpointUrl || process.env.STRIPE_WEBHOOK_ENDPOINT_URL || DEFAULT_ENDPOINT_URL;
+  const stripeKey = options.stripeKey || process.env.STRIPE_SECRET_KEY;
+  const requireLive = resolveRequireLiveStripeKey(options);
+  const dryRun = options.dryRun === true || process.env.DRY_RUN === 'true';
+  const listEndpoints = options.listWebhookEndpoints || listWebhookEndpoints;
+  const disableEndpoint = options.disableWebhookEndpoint || disableWebhookEndpoint;
+
+  assertLiveStripeKey(stripeKey, requireLive);
+  const before = await listEndpoints(stripeKey);
+  const legacyEnabledEndpoints = findLegacyEnabledEndpoints(before, {
+    endpointUrl,
+    legacyEndpointUrls: options.legacyEndpointUrls || LEGACY_ENDPOINT_URLS,
+  });
+
+  if (dryRun) {
+    return {
+      dryRun: true,
+      endpointUrl,
+      legacyEnabledEndpoints: legacyEnabledEndpoints.map((endpoint) => ({
+        id: endpoint.id,
+        url: endpoint.url,
+        status: endpoint.status,
+      })),
+      disabledEndpointIds: [],
+    };
+  }
+
+  const disabledEndpointIds = [];
+  for (const endpoint of legacyEnabledEndpoints) {
+    await disableEndpoint({ apiKey: stripeKey, endpointId: endpoint.id });
+    disabledEndpointIds.push(endpoint.id);
+  }
+
+  return {
+    dryRun: false,
+    endpointUrl,
+    disabledEndpointIds,
+    legacyEnabledCountBefore: legacyEnabledEndpoints.length,
+  };
+}
+
 function resolveRequireLiveStripeKey(options) {
   if (Object.hasOwn(options, 'requireLive')) {
     return options.requireLive;
@@ -282,7 +386,15 @@ async function rotateStripeWebhookSecret(options = {}) {
 
 async function main() {
   try {
-    const result = await rotateStripeWebhookSecret();
+    const args = new Set(process.argv.slice(2));
+    let result;
+    if (args.has('--audit')) {
+      result = await auditStripeWebhookEndpoints();
+    } else if (args.has('--disable-legacy')) {
+      result = await disableLegacyWebhookEndpoints({ dryRun: args.has('--dry-run') });
+    } else {
+      result = await rotateStripeWebhookSecret();
+    }
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   } catch (err) {
     process.stderr.write(`${redact(err?.message ? err.message : err)}\n`);
@@ -300,11 +412,15 @@ if (isCliInvocation()) {
 
 module.exports = {
   DEFAULT_ENDPOINT_URL,
+  LEGACY_ENDPOINT_URLS,
   REQUIRED_EVENTS,
   assertLiveStripeKey,
+  auditStripeWebhookEndpoints,
   createWebhookEndpoint,
+  disableLegacyWebhookEndpoints,
   disableWebhookEndpoint,
   encodeForm,
+  findLegacyEnabledEndpoints,
   findSameUrlEndpoints,
   getSecretUpdatedAt,
   listWebhookEndpoints,
