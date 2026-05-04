@@ -149,10 +149,23 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
   const hostedSummaryWorking = Boolean(today?.status === 200 && trailing30?.status === 200);
   const hostedTrafficObserved = Number(traffic30.visitors || 0) > 0 || Number(traffic30.pageViews || 0) > 0;
   const hostedRevenueObserved = Number(revenue30.paidOrders || 0) > 0 || Number(revenue30.bookedRevenueCents || 0) > 0;
+  const gaRuntimeMissing = runtimePresenceKnown && !runtimePresence.THUMBGATE_GA_MEASUREMENT_ID;
+  const sprintCheckoutRuntimeMissing = runtimePresenceKnown && (
+    !runtimePresence.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL ||
+    !runtimePresence.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL
+  );
 
   let primaryIssue = 'inconclusive';
   if (trackingImplemented && telemetryIngressWorking && hostedSummaryWorking && hostedTrafficObserved) {
-    primaryIssue = 'operator_blind_spot_local_fallback';
+    if (gaRuntimeMissing) {
+      primaryIssue = 'ga4_runtime_config_gap';
+    } else if (sprintCheckoutRuntimeMissing) {
+      primaryIssue = 'paid_sprint_checkout_config_gap';
+    } else if (hostedRevenueObserved) {
+      primaryIssue = 'hosted_revenue_observed';
+    } else {
+      primaryIssue = 'conversion_or_pricing_gap';
+    }
   } else if (trackingImplemented && telemetryIngressWorking && hostedSummaryWorking) {
     primaryIssue = 'low_traffic';
   } else if (trackingImplemented && telemetryIngressWorking) {
@@ -165,7 +178,7 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
   if (publicProbe?.error) {
     gaps.push(`Public runtime probe failed: ${publicProbe.error}`);
   }
-  if (runtimePresenceKnown && !runtimePresence.THUMBGATE_GA_MEASUREMENT_ID) {
+  if (gaRuntimeMissing) {
     gaps.push('GA4 runtime env is missing in Railway');
   }
   if (runtimePresenceKnown && !runtimePresence.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL) {

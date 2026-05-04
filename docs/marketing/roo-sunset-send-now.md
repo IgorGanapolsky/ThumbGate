@@ -1,13 +1,13 @@
 # Roo Sunset Send-Now Sheet
 
-Updated: 2026-05-04T05:14:25.441Z
+Updated: 2026-05-04T11:54:10.627Z
 
 This is the flat execution layer for the Roo migration lane. Use it when you want one message, one CTA, and one logging sequence per Roo archetype without re-reading the full demand pack.
 
 Pair this file with `roo-sunset-demand-pack.md` when you need the broader migration rationale, channel drafts, or proof policy.
 
 ## Current Snapshot
-- Revenue state: cold-start
+- Revenue state: post-first-dollar
 - Headline: Turn Roo shutdown urgency into memory-portable paid intent.
 - Warm targets in backstop: 4
 - Self-serve targets in backstop: 3
