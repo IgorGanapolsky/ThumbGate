@@ -1,10 +1,11 @@
 {
-  "generatedAt": "2026-05-04T05:14:25.441Z",
+  "generatedAt": "2026-05-04T11:54:10.627Z",
   "summary": {
-    "revenueState": "cold-start",
-    "headline": "No verified revenue and no active pipeline. Stop treating posts as sales; directly sell one Workflow Hardening Sprint.",
-    "billingVerification": "Current run is using local billing context because the hosted billing summary is unavailable.",
-    "paidOrders": 0,
+    "revenueState": "post-first-dollar",
+    "headline": "Historical booked revenue is verified, but the current hosted billing summary is unavailable in this run. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.",
+    "billingVerification": "Historical booked revenue is verified, but the current hosted billing summary was not verified in this run.",
+    "historicalRevenueProof": "2 paid order(s), $20.00 booked through March 19, 2026 from docs/COMMERCIAL_TRUTH.md.",
+    "paidOrders": 2,
     "checkoutStarts": 0,
     "activeFollowUps": 0,
     "warmTargetsReadyNow": 4,
@@ -346,6 +347,79 @@
       "source": "github",
       "channel": "github",
       "pipelineStage": "targeted",
+      "pipelineLeadId": "github_jonathanmr22_pact",
+      "username": "jonathanmr22",
+      "accountName": "jonathanmr22",
+      "company": "",
+      "repoName": "pact",
+      "repoUrl": "https://github.com/jonathanmr22/pact",
+      "contactSurface": "https://github.com/jonathanmr22",
+      "contactSurfaces": [
+        {
+          "label": "GitHub profile",
+          "url": "https://github.com/jonathanmr22"
+        },
+        {
+          "label": "Repository",
+          "url": "https://github.com/jonathanmr22/pact"
+        }
+      ],
+      "pipelineUpdatedAt": "",
+      "nextOperatorStep": "Send the first-touch draft and log the outreach in the sales pipeline.",
+      "evidenceScore": 12,
+      "evidence": [
+        "workflow control surface",
+        "agent infrastructure",
+        "self-serve agent tooling",
+        "14 GitHub stars",
+        "updated in the last 7 days"
+      ],
+      "evidenceSources": [
+        {
+          "label": "Target signal",
+          "url": "https://github.com/jonathanmr22/pact",
+          "reason": "Source of the workflow or buyer signal behind this outreach row."
+        },
+        {
+          "label": "Commercial truth",
+          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+          "reason": "Current pricing, traction, and offer guardrail."
+        },
+        {
+          "label": "Verification evidence",
+          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+          "reason": "Current engineering proof pack and verification artifact."
+        }
+      ],
+      "claimGuardrails": [
+        "Do not claim revenue, installs, or marketplace approval without direct command evidence.",
+        "Do not lead with proof links before the buyer confirms pain.",
+        "Keep public pricing and traction claims aligned with COMMERCIAL_TRUTH.md.",
+        "Keep proof and quality claims aligned with VERIFICATION_EVIDENCE.md."
+      ],
+      "motionLabel": "Pro at $19/mo or $149/yr",
+      "whyNow": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
+      "proofRule": "Use proof pack only after the buyer confirms pain.",
+      "cta": "https://thumbgate-production.up.railway.app/guide",
+      "firstTouchDraft": "Hey @jonathanmr22, saw you're building around `pact`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
+      "painConfirmedFollowUpDraft": "If you want the self-serve path for `pact`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "selfServeFollowUpDraft": "If you want the self-serve path for `pact`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro",
+      "checkoutCloseDraft": "If you are already comparing close options for `pact`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "markContactedCommand": "npm run sales:pipeline -- advance --lead 'github_jonathanmr22_pact' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+      "markRepliedCommand": "npm run sales:pipeline -- advance --lead 'github_jonathanmr22_pact' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+      "markCallBookedCommand": "npm run sales:pipeline -- advance --lead 'github_jonathanmr22_pact' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute diagnostic after the self-serve conversation exposed repeated pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+      "markCheckoutStartedCommand": "npm run sales:pipeline -- advance --lead 'github_jonathanmr22_pact' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+      "markSprintIntakeCommand": "npm run sales:pipeline -- advance --lead 'github_jonathanmr22_pact' --channel 'manual' --stage 'sprint_intake' --note 'Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+      "markPaidCommand": "npm run sales:pipeline -- advance --lead 'github_jonathanmr22_pact' --channel 'manual' --stage 'paid' --note 'Closed Pro at $19/mo or $149/yr and booked revenue after resolving the proof-backed setup guide and local-first enforcement before any team-motion pitch.'"
+    },
+    {
+      "rank": 3,
+      "sectionKey": "close_now_self_serve_pro",
+      "sectionLabel": "Close Now: Self-Serve Pro",
+      "temperature": "cold",
+      "source": "github",
+      "channel": "github",
+      "pipelineStage": "targeted",
       "pipelineLeadId": "github_zaxbysauce_opencode_swarm",
       "username": "zaxbysauce",
       "accountName": "zaxbysauce",
@@ -369,7 +443,7 @@
       "evidence": [
         "workflow control surface",
         "self-serve agent tooling",
-        "295 GitHub stars",
+        "297 GitHub stars",
         "updated in the last 7 days"
       ],
       "evidenceSources": [
@@ -409,83 +483,6 @@
       "markCheckoutStartedCommand": "npm run sales:pipeline -- advance --lead 'github_zaxbysauce_opencode_swarm' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
       "markSprintIntakeCommand": "npm run sales:pipeline -- advance --lead 'github_zaxbysauce_opencode_swarm' --channel 'manual' --stage 'sprint_intake' --note 'Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
       "markPaidCommand": "npm run sales:pipeline -- advance --lead 'github_zaxbysauce_opencode_swarm' --channel 'manual' --stage 'paid' --note 'Closed Pro at $19/mo or $149/yr and booked revenue after resolving the proof-backed setup guide and local-first enforcement before any team-motion pitch.'"
-    },
-    {
-      "rank": 3,
-      "sectionKey": "close_now_self_serve_pro",
-      "sectionLabel": "Close Now: Self-Serve Pro",
-      "temperature": "cold",
-      "source": "github",
-      "channel": "github",
-      "pipelineStage": "targeted",
-      "pipelineLeadId": "github_iliaal_whetstone",
-      "username": "iliaal",
-      "accountName": "iliaal",
-      "company": "",
-      "repoName": "whetstone",
-      "repoUrl": "https://github.com/iliaal/whetstone",
-      "contactSurface": "http://ilia.ws/",
-      "contactSurfaces": [
-        {
-          "label": "Website",
-          "url": "http://ilia.ws/"
-        },
-        {
-          "label": "GitHub profile",
-          "url": "https://github.com/iliaal"
-        },
-        {
-          "label": "Repository",
-          "url": "https://github.com/iliaal/whetstone"
-        }
-      ],
-      "pipelineUpdatedAt": "",
-      "nextOperatorStep": "Send the first-touch draft and log the outreach in the sales pipeline.",
-      "evidenceScore": 12,
-      "evidence": [
-        "workflow control surface",
-        "agent infrastructure",
-        "self-serve agent tooling",
-        "13 GitHub stars",
-        "updated in the last 7 days"
-      ],
-      "evidenceSources": [
-        {
-          "label": "Target signal",
-          "url": "https://github.com/iliaal/whetstone",
-          "reason": "Source of the workflow or buyer signal behind this outreach row."
-        },
-        {
-          "label": "Commercial truth",
-          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
-          "reason": "Current pricing, traction, and offer guardrail."
-        },
-        {
-          "label": "Verification evidence",
-          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
-          "reason": "Current engineering proof pack and verification artifact."
-        }
-      ],
-      "claimGuardrails": [
-        "Do not claim revenue, installs, or marketplace approval without direct command evidence.",
-        "Do not lead with proof links before the buyer confirms pain.",
-        "Keep public pricing and traction claims aligned with COMMERCIAL_TRUTH.md.",
-        "Keep proof and quality claims aligned with VERIFICATION_EVIDENCE.md."
-      ],
-      "motionLabel": "Pro at $19/mo or $149/yr",
-      "whyNow": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
-      "proofRule": "Use proof pack only after the buyer confirms pain.",
-      "cta": "https://thumbgate-production.up.railway.app/guide",
-      "firstTouchDraft": "Hey @iliaal, saw you're building around `whetstone`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
-      "painConfirmedFollowUpDraft": "If you want the self-serve path for `whetstone`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
-      "selfServeFollowUpDraft": "If you want the self-serve path for `whetstone`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro",
-      "checkoutCloseDraft": "If you are already comparing close options for `whetstone`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
-      "markContactedCommand": "npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-      "markRepliedCommand": "npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-      "markCallBookedCommand": "npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute diagnostic after the self-serve conversation exposed repeated pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-      "markCheckoutStartedCommand": "npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-      "markSprintIntakeCommand": "npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'sprint_intake' --note 'Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-      "markPaidCommand": "npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'paid' --note 'Closed Pro at $19/mo or $149/yr and booked revenue after resolving the proof-backed setup guide and local-first enforcement before any team-motion pitch.'"
     },
     {
       "rank": 1,

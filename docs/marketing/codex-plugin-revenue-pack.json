@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-04T05:14:25.441Z",
+  "generatedAt": "2026-05-04T11:54:10.627Z",
   "channel": "Codex",
   "objective": "Turn Codex plugin discovery into tracked guide opens, bundle downloads, Pro checkout starts, and qualified workflow-hardening conversations.",
   "canonicalIdentity": {
@@ -261,18 +261,18 @@
           "pipelineLeadId": "github_bherald_personal_life_os_core"
         },
         {
-          "account": "iliaal/whetstone",
+          "account": "jonathanmr22/pact",
           "temperature": "cold",
           "source": "github / github",
           "evidenceScore": 12,
           "whyNow": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
-          "evidence": "workflow control surface; agent infrastructure; self-serve agent tooling; 13 GitHub stars; updated in the last 7 days",
-          "contact": "http://ilia.ws/",
+          "evidence": "workflow control surface; agent infrastructure; self-serve agent tooling; 14 GitHub stars; updated in the last 7 days",
+          "contact": "https://github.com/jonathanmr22",
           "cta": "https://thumbgate-production.up.railway.app/guide",
           "proofTrigger": "Use proof pack only after the buyer confirms pain.",
-          "firstTouchDraft": "Hey @iliaal, saw you're building around `whetstone`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
-          "markContactedCommand": "npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-          "pipelineLeadId": "github_iliaal_whetstone"
+          "firstTouchDraft": "Hey @jonathanmr22, saw you're building around `pact`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
+          "markContactedCommand": "npm run sales:pipeline -- advance --lead 'github_jonathanmr22_pact' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+          "pipelineLeadId": "github_jonathanmr22_pact"
         },
         {
           "account": "zaxbysauce/opencode-swarm",
@@ -280,7 +280,7 @@
           "source": "github / github",
           "evidenceScore": 12,
           "whyNow": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
-          "evidence": "workflow control surface; self-serve agent tooling; 295 GitHub stars; updated in the last 7 days",
+          "evidence": "workflow control surface; self-serve agent tooling; 297 GitHub stars; updated in the last 7 days",
           "contact": "https://github.com/zaxbysauce",
           "cta": "https://thumbgate-production.up.railway.app/guide",
           "proofTrigger": "Use proof pack only after the buyer confirms pain.",
