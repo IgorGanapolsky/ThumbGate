@@ -54,6 +54,52 @@ function buildTrackedRooLink(baseUrl, tracking = {}) {
   return buildTrackedPackLink(baseUrl, tracking, TRACKING_DEFAULTS);
 }
 
+function buildRooOutreachLinkSet(links = buildRevenueLinks()) {
+  return {
+    installLink: buildTrackedRooLink(CLINE_INSTALL_URL, {
+      utmMedium: OUTREACH_MEDIUM,
+      utmCampaign: 'roo_outreach_install',
+      utmContent: 'install_doc',
+      campaignVariant: 'memory_migrant',
+      offerCode: 'ROO-OUTREACH_INSTALL',
+      ctaId: 'roo_outreach_install',
+      ctaPlacement: 'outreach_draft',
+      surface: 'roo_outreach',
+    }),
+    guideLink: buildTrackedRooLink(GUIDE_URL, {
+      utmMedium: OUTREACH_MEDIUM,
+      utmCampaign: 'roo_outreach_guide',
+      utmContent: 'guide',
+      campaignVariant: 'proof_backed_setup',
+      offerCode: 'ROO-OUTREACH_GUIDE',
+      ctaId: 'roo_outreach_guide',
+      ctaPlacement: 'outreach_draft',
+      surface: 'roo_outreach',
+    }),
+    sprintLink: buildTrackedRooLink(links.sprintLink, {
+      utmMedium: OUTREACH_MEDIUM,
+      utmCampaign: 'roo_outreach_sprint',
+      utmContent: 'workflow_sprint',
+      campaignVariant: 'migration_workflow',
+      offerCode: 'ROO-OUTREACH_SPRINT',
+      ctaId: 'roo_outreach_sprint',
+      ctaPlacement: 'outreach_draft',
+      surface: 'roo_outreach',
+    }),
+    proLink: buildTrackedRooLink(links.proCheckoutLink, {
+      utmMedium: OUTREACH_MEDIUM,
+      utmCampaign: 'roo_outreach_pro',
+      utmContent: 'pro',
+      campaignVariant: 'self_serve_follow_on',
+      offerCode: 'ROO-OUTREACH_PRO',
+      ctaId: 'roo_outreach_pro',
+      ctaPlacement: 'outreach_draft',
+      planId: 'pro',
+      surface: 'roo_outreach',
+    }),
+  };
+}
+
 function readRevenueLoopReport(reportPath = REVENUE_LOOP_REPORT_PATH) {
   try {
     return JSON.parse(fs.readFileSync(reportPath, 'utf8'));
@@ -243,47 +289,7 @@ function buildOperatorQueue(links, report) {
 }
 
 function buildOutreachDrafts(links = buildRevenueLinks()) {
-  const installLink = buildTrackedRooLink(CLINE_INSTALL_URL, {
-    utmMedium: OUTREACH_MEDIUM,
-    utmCampaign: 'roo_outreach_install',
-    utmContent: 'install_doc',
-    campaignVariant: 'memory_migrant',
-    offerCode: 'ROO-OUTREACH_INSTALL',
-    ctaId: 'roo_outreach_install',
-    ctaPlacement: 'outreach_draft',
-    surface: 'roo_outreach',
-  });
-  const guideLink = buildTrackedRooLink(GUIDE_URL, {
-    utmMedium: OUTREACH_MEDIUM,
-    utmCampaign: 'roo_outreach_guide',
-    utmContent: 'guide',
-    campaignVariant: 'proof_backed_setup',
-    offerCode: 'ROO-OUTREACH_GUIDE',
-    ctaId: 'roo_outreach_guide',
-    ctaPlacement: 'outreach_draft',
-    surface: 'roo_outreach',
-  });
-  const sprintLink = buildTrackedRooLink(links.sprintLink, {
-    utmMedium: OUTREACH_MEDIUM,
-    utmCampaign: 'roo_outreach_sprint',
-    utmContent: 'workflow_sprint',
-    campaignVariant: 'migration_workflow',
-    offerCode: 'ROO-OUTREACH_SPRINT',
-    ctaId: 'roo_outreach_sprint',
-    ctaPlacement: 'outreach_draft',
-    surface: 'roo_outreach',
-  });
-  const proLink = buildTrackedRooLink(links.proCheckoutLink, {
-    utmMedium: OUTREACH_MEDIUM,
-    utmCampaign: 'roo_outreach_pro',
-    utmContent: 'pro',
-    campaignVariant: 'self_serve_follow_on',
-    offerCode: 'ROO-OUTREACH_PRO',
-    ctaId: 'roo_outreach_pro',
-    ctaPlacement: 'outreach_draft',
-    planId: 'pro',
-    surface: 'roo_outreach',
-  });
+  const { installLink, guideLink, sprintLink, proLink } = buildRooOutreachLinkSet(links);
 
   return [
     {
@@ -305,6 +311,96 @@ function buildOutreachDrafts(links = buildRevenueLinks()) {
       draft: `A Roo-to-Cline move is not the hard part. Keeping one risky workflow from relearning the same repo, approval, or rollback mistake is the hard part. If that workflow already exists on your side, use the Workflow Hardening Sprint intake here: ${sprintLink} .`,
     },
   ];
+}
+
+function buildRooSendNowPayload(report = {}, links = buildRevenueLinks()) {
+  const resolvedReport = report || {};
+  const backstop = resolvedReport.evidenceBackstop || buildEvidenceBackstop(resolvedReport);
+  const { installLink, guideLink, sprintLink, proLink } = buildRooOutreachLinkSet(links);
+  const generatedAt = resolvedReport.generatedAt || new Date().toISOString();
+
+  const rows = [
+    {
+      rank: 1,
+      key: 'roo_memory_migrant',
+      sectionKey: 'memory_migrants',
+      sectionLabel: 'Send Now: Memory Migrants',
+      channel: 'github_or_reddit_reply',
+      pipelineStage: 'targeted',
+      audience: 'Roo user who wants their corrections to survive the move to Cline',
+      evidence: 'Roo officially documents the May 15, 2026 shutdown and recommends Cline as the successor. ThumbGate already ships the Cline install guide and keeps lessons in a local SQLite file.',
+      whyNow: 'The migration deadline is explicit, and the fastest credible first touch is memory portability plus one concrete install lane.',
+      proofRule: 'Lead with the install path first. Use Verification Evidence only after the buyer confirms a repeated migration or workflow failure.',
+      cta: installLink,
+      firstTouchDraft: `Roo can sunset. Your lesson memory should not. If you already know Cline is the successor, the fastest path is to keep the corrections local and move them with one install lane: ${installLink} .`,
+      painConfirmedFollowUpDraft: `If one repeated mistake is the part you do not want to reteach after moving off Roo, send the proof path next: ${VERIFICATION_EVIDENCE_LINK} and ${COMMERCIAL_TRUTH_LINK} . Then use the setup guide ${guideLink} before the Pro path ${proLink} .`,
+      toolPathFollowUpDraft: `If you want the clean self-serve route first, start with the setup guide: ${guideLink} . If the install path looks right and you want the dashboard plus proof-ready exports after one saved correction, use Pro here: ${proLink} .`,
+      checkoutCloseDraft: `If the migration path is clear and you already want the self-serve close, use Pro here: ${proLink} . Commercial truth: ${COMMERCIAL_TRUTH_LINK} Verification evidence: ${VERIFICATION_EVIDENCE_LINK}`,
+      addLeadCommand: `npm run sales:pipeline -- add --lead 'roo_memory_migrant_<handle>' --source 'roo_sunset' --channel 'github' --username '<handle>' --pain 'Roo migration memory portability and saved corrections' --offer 'pro_self_serve' --campaign 'roo_sunset' --cta '${installLink}'`,
+      markContactedCommand: `npm run sales:pipeline -- advance --lead 'roo_memory_migrant_<handle>' --channel 'github' --stage 'contacted' --note 'Sent Roo migration install-first first touch.'`,
+      markRepliedCommand: `npm run sales:pipeline -- advance --lead 'roo_memory_migrant_<handle>' --channel 'github' --stage 'replied' --note 'Buyer confirmed migration pain and wants saved corrections to survive the move.'`,
+      markCheckoutStartedCommand: `npm run sales:pipeline -- advance --lead 'roo_memory_migrant_<handle>' --channel 'github' --stage 'checkout_started' --note 'Buyer started the Pro checkout after reviewing the setup path.'`,
+      markPaidCommand: `npm run sales:pipeline -- advance --lead 'roo_memory_migrant_<handle>' --channel 'github' --stage 'paid' --note 'Closed Roo migration self-serve Pro after install-first evaluation.'`,
+    },
+    {
+      rank: 2,
+      key: 'roo_workflow_owner',
+      sectionKey: 'workflow_owners',
+      sectionLabel: 'Send Next: Workflow Owners',
+      channel: 'linkedin_or_founder_dm',
+      pipelineStage: 'targeted',
+      audience: 'Team owner migrating one risky workflow off Roo',
+      evidence: `${backstop.workflowControlSurfaceCount} workflow-control target(s), ${backstop.businessSystemTargetCount} business-system target(s), and ${backstop.sprintTargetCount} sprint-fit target(s) currently favor a workflow-hardening motion over a generic plugin pitch.`,
+      whyNow: 'The shutdown creates urgency, but the strongest monetizable angle is one risky workflow with approval boundaries, rollback risk, or handoff failures.',
+      proofRule: 'Lead with one workflow-hardening offer. Send proof only after the buyer names the workflow risk.',
+      cta: sprintLink,
+      firstTouchDraft: `A Roo-to-Cline move is not the hard part. Keeping one risky workflow from relearning the same repo, approval, or rollback mistake is the hard part. If that workflow already exists on your side, use the Workflow Hardening Sprint intake here: ${sprintLink} .`,
+      painConfirmedFollowUpDraft: `Once the workflow risk is explicit, send Verification Evidence plus Commercial Truth before a wider rollout: ${VERIFICATION_EVIDENCE_LINK} and ${COMMERCIAL_TRUTH_LINK} . If they still want the sprint path, keep the intake here: ${sprintLink} .`,
+      toolPathFollowUpDraft: `If the buyer wants the product path before founder-led help, move them to the setup guide ${guideLink} and keep Pro ${proLink} as the self-serve follow-on. If the workflow is still risky, keep the sprint path primary: ${sprintLink} .`,
+      checkoutCloseDraft: `If the team is already comparing close options, keep the Workflow Hardening Sprint primary: ${sprintLink} . Self-serve Pro is secondary: ${proLink} . Commercial truth: ${COMMERCIAL_TRUTH_LINK} Verification evidence: ${VERIFICATION_EVIDENCE_LINK}`,
+      addLeadCommand: `npm run sales:pipeline -- add --lead 'roo_workflow_owner_<account>' --source 'roo_sunset' --channel 'linkedin' --account '<account>' --pain 'Roo migration workflow with approval boundaries or rollback risk' --offer 'workflow_hardening_sprint' --campaign 'roo_sunset' --cta '${sprintLink}'`,
+      markContactedCommand: `npm run sales:pipeline -- advance --lead 'roo_workflow_owner_<account>' --channel 'linkedin' --stage 'contacted' --note 'Sent Roo workflow-hardening first touch.'`,
+      markRepliedCommand: `npm run sales:pipeline -- advance --lead 'roo_workflow_owner_<account>' --channel 'linkedin' --stage 'replied' --note 'Buyer confirmed one risky workflow during Roo migration.'`,
+      markCheckoutStartedCommand: `npm run sales:pipeline -- advance --lead 'roo_workflow_owner_<account>' --channel 'linkedin' --stage 'sprint_intake' --note 'Buyer started the Workflow Hardening Sprint intake.'`,
+      markPaidCommand: `npm run sales:pipeline -- advance --lead 'roo_workflow_owner_<account>' --channel 'linkedin' --stage 'paid' --note 'Closed Roo migration workflow-hardening engagement.'`,
+    },
+    {
+      rank: 3,
+      key: 'roo_self_serve_evaluator',
+      sectionKey: 'self_serve_evaluators',
+      sectionLabel: 'Close Now: Self-Serve Evaluators',
+      channel: 'github_comment_or_threads_reply',
+      pipelineStage: 'targeted',
+      audience: 'Local-first Roo evaluator who wants the tool path before founder-led help',
+      evidence: `${backstop.selfServeTargetCount} self-serve target(s) in the live queue already support a guide-first motion once the buyer accepts the memory-portability story.`,
+      whyNow: 'This lane is the cleanest close for buyers who ask for install, pricing, or the dashboard path instead of workflow consulting.',
+      proofRule: 'Guide first, then Commercial Truth and Verification Evidence, then Pro once the buyer explicitly asks for the tool path.',
+      cta: guideLink,
+      firstTouchDraft: `Roo can go away without taking your agent memory with it. If you want the clean self-serve move first, start with the setup guide here: ${guideLink} .`,
+      painConfirmedFollowUpDraft: `If they ask for proof, send Commercial Truth plus Verification Evidence after the guide: ${COMMERCIAL_TRUTH_LINK} and ${VERIFICATION_EVIDENCE_LINK} . If they want the direct paid path next, use Pro here: ${proLink} .`,
+      toolPathFollowUpDraft: `If the buyer already wants the product path, keep it simple: setup guide ${guideLink} then Pro ${proLink} . Do not expand into a workflow sprint unless they name one risky workflow.`,
+      checkoutCloseDraft: `If the buyer is ready for the self-serve close, use Pro here: ${proLink} . Commercial truth: ${COMMERCIAL_TRUTH_LINK} Verification evidence: ${VERIFICATION_EVIDENCE_LINK}`,
+      addLeadCommand: `npm run sales:pipeline -- add --lead 'roo_self_serve_evaluator_<handle>' --source 'roo_sunset' --channel 'github' --username '<handle>' --pain 'Needs clean Roo-to-Cline setup path before founder help' --offer 'pro_self_serve' --campaign 'roo_sunset' --cta '${guideLink}'`,
+      markContactedCommand: `npm run sales:pipeline -- advance --lead 'roo_self_serve_evaluator_<handle>' --channel 'github' --stage 'contacted' --note 'Sent Roo guide-first self-serve first touch.'`,
+      markRepliedCommand: `npm run sales:pipeline -- advance --lead 'roo_self_serve_evaluator_<handle>' --channel 'github' --stage 'replied' --note 'Buyer asked for install, pricing, or dashboard path.'`,
+      markCheckoutStartedCommand: `npm run sales:pipeline -- advance --lead 'roo_self_serve_evaluator_<handle>' --channel 'github' --stage 'checkout_started' --note 'Buyer started the Pro checkout after the guide-first path.'`,
+      markPaidCommand: `npm run sales:pipeline -- advance --lead 'roo_self_serve_evaluator_<handle>' --channel 'github' --stage 'paid' --note 'Closed Roo migration self-serve Pro.'`,
+    },
+  ];
+
+  return {
+    generatedAt,
+    summary: {
+      revenueState: normalizeText(resolvedReport.directive?.state) || normalizeText(resolvedReport.state) || 'cold-start',
+      headline: normalizeText(resolvedReport.headline) || CANONICAL_HEADLINE,
+      warmTargets: backstop.warmTargetCount,
+      selfServeTargets: backstop.selfServeTargetCount,
+      sprintTargets: backstop.sprintTargetCount,
+      workflowControlTargets: backstop.workflowControlSurfaceCount,
+      businessSystemTargets: backstop.businessSystemTargetCount,
+    },
+    rows,
+  };
 }
 
 function buildChannelDrafts(links, report) {
@@ -525,6 +621,146 @@ function renderChannelDraftsCsv(pack = {}) {
   return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
 }
 
+function renderRooSendNowCsv(pack = {}) {
+  const payload = buildRooSendNowPayload(pack);
+  const rows = [
+    [
+      'rank',
+      'key',
+      'sectionKey',
+      'sectionLabel',
+      'channel',
+      'pipelineStage',
+      'audience',
+      'evidence',
+      'whyNow',
+      'proofRule',
+      'cta',
+      'firstTouchDraft',
+      'painConfirmedFollowUpDraft',
+      'toolPathFollowUpDraft',
+      'checkoutCloseDraft',
+      'addLeadCommand',
+      'markContactedCommand',
+      'markRepliedCommand',
+      'markCheckoutStartedCommand',
+      'markPaidCommand',
+    ],
+    ...payload.rows.map((row) => ([
+      String(row.rank),
+      row.key,
+      row.sectionKey,
+      row.sectionLabel,
+      row.channel,
+      row.pipelineStage,
+      row.audience,
+      row.evidence,
+      row.whyNow,
+      row.proofRule,
+      row.cta,
+      row.firstTouchDraft,
+      row.painConfirmedFollowUpDraft,
+      row.toolPathFollowUpDraft,
+      row.checkoutCloseDraft,
+      row.addLeadCommand,
+      row.markContactedCommand,
+      row.markRepliedCommand,
+      row.markCheckoutStartedCommand,
+      row.markPaidCommand,
+    ])),
+  ];
+
+  return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
+}
+
+function renderQuotedText(text) {
+  const normalized = normalizeText(text);
+  if (!normalized) return ['> n/a'];
+  return normalized.split('\n').map((line) => `> ${line}`);
+}
+
+function renderRooSendNowMarkdown(pack = {}) {
+  const payload = buildRooSendNowPayload(pack);
+  const sectionOrder = [];
+  const sections = new Map();
+
+  for (const row of payload.rows) {
+    if (!sections.has(row.sectionKey)) {
+      sections.set(row.sectionKey, {
+        label: row.sectionLabel,
+        rows: [],
+      });
+      sectionOrder.push(row.sectionKey);
+    }
+    sections.get(row.sectionKey).rows.push(row);
+  }
+
+  const sectionLines = sectionOrder.flatMap((sectionKey) => {
+    const section = sections.get(sectionKey);
+    return [
+      `## ${section.label}`,
+      '',
+      ...section.rows.flatMap((row) => ([
+        `### ${row.rank}. ${row.audience}`,
+        `- Channel: ${row.channel}`,
+        `- Pipeline stage: ${row.pipelineStage}`,
+        `- Why now: ${row.whyNow}`,
+        `- Evidence: ${row.evidence}`,
+        `- Proof rule: ${row.proofRule}`,
+        `- CTA: ${row.cta}`,
+        `- Add lead before send: \`${row.addLeadCommand}\``,
+        `- Log after send: \`${row.markContactedCommand}\``,
+        `- Log after pain-confirmed reply: \`${row.markRepliedCommand}\``,
+        `- Log after checkout or intake start: \`${row.markCheckoutStartedCommand}\``,
+        `- Log after paid: \`${row.markPaidCommand}\``,
+        '',
+        'First-touch draft:',
+        ...renderQuotedText(row.firstTouchDraft),
+        '',
+        'Pain-confirmed follow-up:',
+        ...renderQuotedText(row.painConfirmedFollowUpDraft),
+        '',
+        'Tool-path follow-up:',
+        ...renderQuotedText(row.toolPathFollowUpDraft),
+        '',
+        'Checkout close draft:',
+        ...renderQuotedText(row.checkoutCloseDraft),
+        '',
+      ])),
+    ];
+  });
+
+  return [
+    '# Roo Sunset Send-Now Sheet',
+    '',
+    `Updated: ${payload.generatedAt}`,
+    '',
+    'This is the flat execution layer for the Roo migration lane. Use it when you want one message, one CTA, and one logging sequence per Roo archetype without re-reading the full demand pack.',
+    '',
+    'Pair this file with `roo-sunset-demand-pack.md` when you need the broader migration rationale, channel drafts, or proof policy.',
+    '',
+    '## Current Snapshot',
+    `- Revenue state: ${payload.summary.revenueState}`,
+    `- Headline: ${payload.summary.headline}`,
+    `- Warm targets in backstop: ${payload.summary.warmTargets}`,
+    `- Self-serve targets in backstop: ${payload.summary.selfServeTargets}`,
+    `- Sprint-fit targets in backstop: ${payload.summary.sprintTargets}`,
+    `- Workflow-control targets in backstop: ${payload.summary.workflowControlTargets}`,
+    `- Business-system targets in backstop: ${payload.summary.businessSystemTargets}`,
+    '',
+    '## Batch Rules',
+    '- Add the lead to the sales ledger before sending anything.',
+    '- Keep the motion honest: memory migrants and self-serve evaluators get the install or guide path first; workflow owners get the sprint path first.',
+    '- Use [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) and [COMMERCIAL_TRUTH.md](../COMMERCIAL_TRUTH.md) only after the buyer confirms pain.',
+    '',
+    '```bash',
+    "npm run sales:pipeline -- add --lead 'roo_memory_migrant_<handle>' --source 'roo_sunset' --channel 'github' --username '<handle>' --pain 'Roo migration memory portability and saved corrections'",
+    '```',
+    '',
+    ...sectionLines,
+  ].join('\n');
+}
+
 function renderRooSunsetDemandPackMarkdown(pack = {}) {
   const channelDrafts = Array.isArray(pack.channelDrafts) ? pack.channelDrafts : [];
   const channelLines = channelDrafts.length
@@ -618,6 +854,7 @@ function renderRooSunsetDemandPackMarkdown(pack = {}) {
 }
 
 function writeRooSunsetDemandPack(pack, options = {}) {
+  const rooSendNow = buildRooSendNowPayload(pack);
   return writeRevenuePackArtifacts({
     repoRoot: REPO_ROOT,
     reportDir: options.reportDir,
@@ -634,6 +871,20 @@ function writeRooSunsetDemandPack(pack, options = {}) {
       {
         name: 'roo-sunset-channel-drafts.csv',
         value: renderChannelDraftsCsv(pack),
+      },
+      {
+        name: 'roo-sunset-send-now.csv',
+        value: renderRooSendNowCsv(pack),
+      },
+    ],
+    extraFiles: [
+      {
+        name: 'roo-sunset-send-now.md',
+        value: renderRooSendNowMarkdown(pack),
+      },
+      {
+        name: 'roo-sunset-send-now.json',
+        value: `${JSON.stringify(rooSendNow, null, 2)}\n`,
       },
     ],
   });
@@ -666,6 +917,8 @@ module.exports = {
   buildFollowOnOffers,
   buildMeasurementPlan,
   buildOperatorQueue,
+  buildRooOutreachLinkSet,
+  buildRooSendNowPayload,
   buildOutreachDrafts,
   buildRooSunsetDemandPack,
   buildTrackedRooLink,
@@ -673,6 +926,8 @@ module.exports = {
   parseArgs,
   readRevenueLoopReport,
   renderChannelDraftsCsv,
+  renderRooSendNowCsv,
+  renderRooSendNowMarkdown,
   renderRooSunsetDemandPackMarkdown,
   writeRooSunsetDemandPack,
 };

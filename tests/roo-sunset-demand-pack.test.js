@@ -19,6 +19,7 @@ const {
   buildFollowOnOffers,
   buildMeasurementPlan,
   buildOperatorQueue,
+  buildRooSendNowPayload,
   buildOutreachDrafts,
   buildRooSunsetDemandPack,
   buildTrackedRooLink,
@@ -26,6 +27,8 @@ const {
   parseArgs,
   readRevenueLoopReport,
   renderChannelDraftsCsv,
+  renderRooSendNowCsv,
+  renderRooSendNowMarkdown,
   renderRooSunsetDemandPackMarkdown,
   writeRooSunsetDemandPack,
 } = require('../scripts/roo-sunset-demand-pack');
@@ -192,6 +195,32 @@ test('channel draft CSV keeps active Roo outbound surfaces in one operator file'
   assert.match(csv, /Bluesky/);
 });
 
+test('Roo send-now payload stays execution-ready without inventing named traction', () => {
+  const payload = buildRooSendNowPayload(buildRooSunsetDemandPack(REPORT_FIXTURE, LINKS_FIXTURE, ABOUT_FIXTURE), LINKS_FIXTURE);
+
+  assert.equal(payload.rows.length, 3);
+  assert.equal(payload.rows[0].key, 'roo_memory_migrant');
+  assert.match(payload.rows[0].addLeadCommand, /sales:pipeline -- add/);
+  assert.match(payload.rows[1].cta, /workflow-sprint-intake/);
+  assert.match(payload.rows[2].cta, /\/guide\?/);
+  assert.equal(payload.summary.warmTargets, 1);
+  assert.equal(payload.summary.selfServeTargets, 1);
+  assert.equal(payload.summary.sprintTargets, 2);
+});
+
+test('Roo send-now exports markdown and csv sidecars for batch execution', () => {
+  const pack = buildRooSunsetDemandPack(REPORT_FIXTURE, LINKS_FIXTURE, ABOUT_FIXTURE);
+  const markdown = renderRooSendNowMarkdown(pack);
+  const csv = renderRooSendNowCsv(pack);
+
+  assert.match(markdown, /Roo Sunset Send-Now Sheet/);
+  assert.match(markdown, /Memory Migrants/);
+  assert.match(markdown, /Workflow Owners/);
+  assert.match(markdown, /Self-Serve Evaluators/);
+  assert.doesNotMatch(markdown, /guaranteed revenue|approved marketplace|guaranteed installs/i);
+  assert.match(csv, /^rank,key,sectionKey,sectionLabel,channel,pipelineStage,audience,evidence,whyNow,proofRule,cta,/);
+});
+
 test('writer exports markdown, JSON, and CSV artifacts for Roo demand pack', () => {
   const reportDir = makeTempDir();
   const options = parseArgs(['--write-docs', '--report-dir', reportDir]);
@@ -208,6 +237,9 @@ test('writer exports markdown, JSON, and CSV artifacts for Roo demand pack', () 
   assert.equal(fs.existsSync(path.join(reportDir, 'roo-sunset-demand-pack.json')), true);
   assert.equal(fs.existsSync(path.join(reportDir, 'roo-sunset-operator-queue.csv')), true);
   assert.equal(fs.existsSync(path.join(reportDir, 'roo-sunset-channel-drafts.csv')), true);
+  assert.equal(fs.existsSync(path.join(reportDir, 'roo-sunset-send-now.md')), true);
+  assert.equal(fs.existsSync(path.join(reportDir, 'roo-sunset-send-now.json')), true);
+  assert.equal(fs.existsSync(path.join(reportDir, 'roo-sunset-send-now.csv')), true);
 });
 
 test('CLI invocation helper matches the script path only', () => {

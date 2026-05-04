@@ -87,6 +87,9 @@ The revenue loop emits these operator artifacts in that folder:
 - `roo-sunset-demand-pack.json` for the same Roo migration operator pack in machine-readable form
 - `roo-sunset-operator-queue.csv` for Roo migration queue rows and next asks
 - `roo-sunset-channel-drafts.csv` for Roo migration post and outreach copy in one operator file
+- `roo-sunset-send-now.md` for the flat Roo migration send order with CTA sequencing and sales logging commands
+- `roo-sunset-send-now.json` for the same Roo send-now handoff in machine-readable form
+- `roo-sunset-send-now.csv` for one flat Roo batch-send sheet with add/advance commands
 - `linkedin-workflow-hardening-pack.md` for LinkedIn founder-post, comment, and DM workflow-hardening copy
 - `linkedin-workflow-hardening-pack.json` for the same LinkedIn operator pack in machine-readable form
 - `linkedin-operator-queue.csv` for LinkedIn-specific queue rows and next asks
