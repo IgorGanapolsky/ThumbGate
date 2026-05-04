@@ -85,6 +85,7 @@
     "keywordCluster": [
       "thumbgate vs speclock",
       "thumbgate vs mem0",
+      "thumbgate vs fallow",
       "roo code alternative cline"
     ],
     "imageAlt": "ThumbGate guide for ThumbGate vs SpecLock"
@@ -175,9 +176,111 @@
     "keywordCluster": [
       "thumbgate vs speclock",
       "thumbgate vs mem0",
+      "thumbgate vs fallow",
       "roo code alternative cline"
     ],
     "imageAlt": "ThumbGate guide for ThumbGate vs Mem0"
+  },
+  {
+    "path": "/compare/fallow",
+    "slug": "compare-fallow",
+    "query": "thumbgate vs fallow",
+    "pillar": "comparison",
+    "intent": "comparison",
+    "pageType": "comparison",
+    "persona": "tool-evaluator",
+    "opportunityScore": 100,
+    "title": "ThumbGate vs Fallow | Static Analysis vs Agent Action Enforcement",
+    "description": "Fallow finds JS/TS code health issues: dead code, duplication, complexity, and architecture drift. ThumbGate is action-boundary enforcement for AI agents, st...",
+    "heroTitle": "ThumbGate vs Fallow",
+    "heroSummary": "Fallow finds JS/TS code health issues: dead code, duplication, complexity, and architecture drift. ThumbGate is action-boundary enforcement for AI agents, stopping agents from acting on those signals unsafely.",
+    "takeaways": [
+      "Fallow is complementary, not a direct replacement: it finds dead code, duplication, complexity, and architecture drift.",
+      "ThumbGate governs the next agent action: refactor scope, risky edits, CI proof, team lessons, and pre-action blocks.",
+      "Together, Fallow output can become ThumbGate gates so agents do not blindly refactor everything a static analyzer flags."
+    ],
+    "sections": [
+      {
+        "heading": "The product difference in one sentence",
+        "paragraphs": [
+          "Fallow tells you where a JavaScript or TypeScript codebase may be unhealthy. ThumbGate governs what AI agents are allowed to do next: make the next edit, command, PR, or publish action.",
+          "That distinction matters because analyzer output can be useful and dangerous at the same time. A duplicated block can be safe to refactor, or it can be intentional domain duplication where an agent should stop and ask for evidence."
+        ]
+      },
+      {
+        "heading": "Choose Fallow when",
+        "bullets": [
+          "You want static reports for unused code, duplicate blocks, complexity hotspots, circular dependencies, or architecture drift.",
+          "You need JSON diagnostics an agent can inspect before proposing cleanup work.",
+          "Your immediate goal is code health visibility in JS/TS repositories."
+        ]
+      },
+      {
+        "heading": "Choose ThumbGate when",
+        "bullets": [
+          "You need pre-action enforcement before an AI agent applies analyzer-driven refactors.",
+          "You want CI and human feedback to become durable prevention rules across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode.",
+          "You need audit evidence that a risky cleanup, dependency update, or cross-layer refactor was checked before execution."
+        ]
+      },
+      {
+        "heading": "Best together",
+        "paragraphs": [
+          "The highest-ROI workflow is Fallow for deterministic codebase signals and ThumbGate for agent governance. Run the analyzer, pass the changed-file and complexity signals into a ThumbGate gate, then require proof before the agent edits central files or opens a PR."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "Is Fallow a competitor to ThumbGate?",
+        "answer": "Partly adjacent, but mostly complementary. Fallow analyzes JS/TS code health. ThumbGate enforces AI-agent actions before execution. They solve different parts of the agent workflow."
+      },
+      {
+        "question": "Should ThumbGate integrate with Fallow output?",
+        "answer": "Yes. Fallow JSON is useful input for ThumbGate gates, especially duplication, complexity, changed-file audit results, and architecture-boundary warnings."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/code-knowledge-graph-guardrails",
+        "title": "Code Graphs Are Context. ThumbGate Is Execution Control."
+      },
+      {
+        "path": "/guides/agent-harness-optimization",
+        "title": "AI Agent Harness Optimization That Blocks Repeat Failures"
+      },
+      {
+        "path": "/guides/pre-action-checks",
+        "title": "What Are Pre-Action Checks?"
+      }
+    ],
+    "cta": {
+      "label": "Go Pro — $19/mo",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=compare_fallow&cta_placement=seo_brief&plan_id=pro"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "weekly",
+    "priority": "0.9",
+    "keywordCluster": [
+      "thumbgate vs speclock",
+      "thumbgate vs mem0",
+      "thumbgate vs fallow",
+      "roo code alternative cline"
+    ],
+    "imageAlt": "ThumbGate guide for ThumbGate vs Fallow"
   },
   {
     "path": "/guides/roo-code-alternative-cline",
@@ -265,6 +368,98 @@
       "roo code alternative cline"
     ],
     "imageAlt": "ThumbGate guide for Roo Code Alternative: Migrate to Cline Without Losing Agent Memory"
+  },
+  {
+    "path": "/guides/claude-code-skills-guardrails",
+    "slug": "guides-claude-code-skills-guardrails",
+    "query": "claude code masterclass guardrails",
+    "pillar": "agent-workflows",
+    "intent": "commercial",
+    "pageType": "guide",
+    "persona": "claude-code-builder",
+    "opportunityScore": 89,
+    "title": "Claude Code Skills Guardrails | Turn Skillbooks Into Enforced Workflows",
+    "description": "Claude Code skillbooks make recurring work more systematic, but markdown skills are still advisory. ThumbGate turns skill feedback into reusable rules, tests...",
+    "heroTitle": "Claude Code Skills Need Pre-Action Enforcement",
+    "heroSummary": "Claude Code skillbooks make recurring work more systematic, but markdown skills are still advisory. ThumbGate turns skill feedback into reusable rules, tests, and pre-action checks before the next risky command or edit runs.",
+    "takeaways": [
+      "A living skillbook is useful acquisition fuel because new Claude Code users need reusable workflows immediately.",
+      "The high-ROI product move is not another prompt file; it is converting named skills into gates, tests, and proof loops.",
+      "This creates a clear post-course offer: install ThumbGate after learning Claude Code so the new automation does not repeat costly mistakes."
+    ],
+    "sections": [
+      {
+        "heading": "Why this helps ThumbGate",
+        "paragraphs": [
+          "Claude Code education expands the market. More people learning to automate code means more people about to hit repeated mistakes, risky shell commands, skipped tests, and vague project rules.",
+          "ThumbGate can be the safety kit for that moment: keep the skillbook, but promote every painful correction into an enforced pre-action check."
+        ]
+      },
+      {
+        "heading": "High-ROI workflow to ship",
+        "bullets": [
+          "Create a repo skillbook with named skills for refactors, tests, migrations, CI hardening, and prompt/tool changes.",
+          "Require each skill to name inputs, forbidden actions, verification steps, and examples of good and bad execution.",
+          "Capture thumbs-down failures from skill use and promote repeat patterns into ThumbGate prevention rules.",
+          "Block risky actions when the current task claims a skill but skips its required verification.",
+          "Route buyers into the Workflow Hardening Sprint when one skill repeatedly fails in a shared repo."
+        ]
+      },
+      {
+        "heading": "Where this creates revenue",
+        "paragraphs": [
+          "This is a concrete sales bridge from Claude Code training content to ThumbGate: if a team is investing in skills, they already believe AI coding workflows can improve. ThumbGate sells the part that makes those workflows reliable across sessions and teammates."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "Does ThumbGate replace Claude skills?",
+        "answer": "No. Skills describe how work should happen. ThumbGate checks whether the agent is allowed to take the next action and whether it has followed the skill evidence requirements."
+      },
+      {
+        "question": "What should a Claude Code skillbook contain?",
+        "answer": "Use named skills with purpose, inputs, do/don’t rules, verification commands, expected evidence, and examples. Then wire repeated failures into ThumbGate gates."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/claude-code-feedback",
+        "title": "Claude Code Feedback Memory That Actually Enforces"
+      },
+      {
+        "path": "/guides/prompt-tricks-to-workflow-rules",
+        "title": "Prompt Tricks Are Table Stakes. Workflow Rules Make Them Pay."
+      },
+      {
+        "path": "/guides/pre-action-checks",
+        "title": "What Are Pre-Action Checks?"
+      }
+    ],
+    "cta": {
+      "label": "Go Pro — $19/mo",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_claude-code-skills-guardrails&cta_placement=seo_brief&plan_id=pro"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "monthly",
+    "priority": "0.8",
+    "keywordCluster": [
+      "claude code masterclass guardrails"
+    ],
+    "imageAlt": "ThumbGate guide for Claude Code Skills Need Pre-Action Enforcement"
   },
   {
     "path": "/guides/claude-code-feedback",
@@ -716,6 +911,668 @@
     "imageAlt": "ThumbGate guide for ThumbGate for Claude Desktop"
   },
   {
+    "path": "/guides/semantic-programmatic-seo-guardrails",
+    "slug": "guides-semantic-programmatic-seo-guardrails",
+    "query": "semantic programmatic seo guardrails",
+    "pillar": "seo-governance",
+    "intent": "commercial",
+    "pageType": "guide",
+    "persona": "growth-engineer",
+    "opportunityScore": 83,
+    "title": "Semantic Programmatic SEO Guardrails | ThumbGate Guide",
+    "description": "Semantic programmatic SEO works when every page has authority, brand context, internal links, and technical monitoring. ThumbGate turns those requirements in...",
+    "heroTitle": "Semantic pSEO Needs Governance Before Scale",
+    "heroSummary": "Semantic programmatic SEO works when every page has authority, brand context, internal links, and technical monitoring. ThumbGate turns those requirements into pre-action checks before AI agents publish at scale.",
+    "takeaways": [
+      "Authority maps stop the team from generating pages in categories where ThumbGate has no right to rank yet.",
+      "Context governance turns brand rules, negative constraints, and proof links into reusable AI-agent instructions.",
+      "Semantic mesh checks prevent orphan pages by requiring every new SEO page to point to the next useful buyer step.",
+      "Technical monitoring catches broken routes, missing schema, and stale proof before scaled content hurts trust."
+    ],
+    "sections": [
+      {
+        "heading": "Why this promotes ThumbGate",
+        "paragraphs": [
+          "The semantic pSEO play is not to publish thousands of thin pages. It is to prove that ThumbGate is the governance layer teams need before they let AI agents generate, edit, and publish buyer-facing surfaces.",
+          "That maps cleanly to the product: ThumbGate already turns feedback, context, and risky workflow patterns into pre-action checks. SEO teams have the same problem when AI content workflows start moving faster than review."
+        ]
+      },
+      {
+        "heading": "The high-ROI pSEO guardrails",
+        "bullets": [
+          "Authority map gate: prioritize queries where ThumbGate already has topical proof, shipped pages, or product evidence.",
+          "Brand context gate: inject persona, negative wording constraints, pricing truth, and proof links before draft generation.",
+          "Semantic mesh gate: require every new page to link to a pillar, a comparison, a conversion path, and at least one adjacent guide.",
+          "Technical guardian gate: block publish when canonical tags, JSON-LD, llm-context links, route coverage, or proof freshness are missing."
+        ]
+      },
+      {
+        "heading": "Where the conversion path belongs",
+        "paragraphs": [
+          "Semantic pSEO only helps us make money when the page routes the searcher into a concrete next step. For ThumbGate, the next step is either the $19/mo Pro lane for self-serve operators or the workflow-hardening sprint for teams with risky agent workflows.",
+          "That is why each page generated from the SEO/GEO engine needs a buyer-intent CTA, related pages that keep the journey alive, and proof assets that reduce trust friction before checkout."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "Is semantic programmatic SEO just AI content at scale?",
+        "answer": "No. The useful version starts with authority data, then uses governed context, semantic linking, and technical monitoring so each page answers a distinct buyer need instead of duplicating a template."
+      },
+      {
+        "question": "How does ThumbGate fit into semantic pSEO?",
+        "answer": "ThumbGate is the enforcement layer around the AI workflow: it can block unsupported claims, missing proof, orphan pages, stale pricing, and risky publish steps before generated content goes live."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/ai-search-topical-presence",
+        "title": "AI search topical presence decides who gets recommended"
+      },
+      {
+        "path": "/guides/prompt-tricks-to-workflow-rules",
+        "title": "Prompt Tricks Are Table Stakes. Workflow Rules Make Them Pay."
+      },
+      {
+        "path": "/compare/mem0",
+        "title": "ThumbGate vs Mem0"
+      }
+    ],
+    "cta": {
+      "label": "Go Pro — $19/mo",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_semantic-programmatic-seo-guardrails&cta_placement=seo_brief&plan_id=pro"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "monthly",
+    "priority": "0.8",
+    "keywordCluster": [
+      "semantic programmatic seo guardrails",
+      "seo agent skills guardrails"
+    ],
+    "imageAlt": "ThumbGate guide for Semantic pSEO Needs Governance Before Scale"
+  },
+  {
+    "path": "/guides/proxy-pointer-rag-guardrails",
+    "slug": "guides-proxy-pointer-rag-guardrails",
+    "query": "proxy pointer rag guardrails",
+    "pillar": "document-rag-safety",
+    "intent": "commercial",
+    "pageType": "guide",
+    "persona": "rag-engineer",
+    "opportunityScore": 83,
+    "title": "Proxy-Pointer RAG Guardrails | Multimodal Answers Without Ungrounded Images",
+    "description": "Proxy-pointer RAG keeps visual document systems cheaper by preserving section trees and image pointers instead of embedding every image. ThumbGate turns that...",
+    "heroTitle": "Proxy-Pointer RAG Needs Guardrails Before Visual Answers",
+    "heroSummary": "Proxy-pointer RAG keeps visual document systems cheaper by preserving section trees and image pointers instead of embedding every image. ThumbGate turns that structure into pre-action checks before agents answer with charts, figures, or screenshots.",
+    "takeaways": [
+      "Document structure is a control surface: section trees, source document IDs, and image paths should travel with every answer.",
+      "Visual answers need pointer grounding so one plausible chart from the wrong PDF cannot slip into a buyer-facing response.",
+      "ThumbGate now maps proxy-pointer RAG signals to Document RAG Safety templates through npx thumbgate proxy-pointer-rag-guardrails."
+    ],
+    "sections": [
+      {
+        "heading": "Why this helps ThumbGate",
+        "paragraphs": [
+          "The commercial wedge is clear: teams want cheaper multimodal answers, but they still need proof that the visual evidence came from the right document and section.",
+          "ThumbGate does not replace multimodal embeddings. It governs the answer boundary: did the agent preserve the section tree, attach image pointers, prevent cross-document leakage, and sanity-check high-impact visual claims?"
+        ]
+      },
+      {
+        "heading": "High-ROI gates to enable",
+        "bullets": [
+          "Require section tree before multimodal answers so visual claims stay attached to document hierarchy.",
+          "Require image pointer grounding for every cited chart, figure, or screenshot path.",
+          "Block cross-document image leakage when the selected visual belongs to a different source document.",
+          "Checkpoint a vision filter only when the answer makes high-impact visual claims.",
+          "CLI path: npx thumbgate proxy-pointer-rag-guardrails --tree-path=.rag/tree.json --image-pointers=paper-1/figures/fig2.png --documents=paper-1 --visual-claims --json."
+        ]
+      },
+      {
+        "heading": "Where this creates revenue",
+        "paragraphs": [
+          "This gives ThumbGate a new RAG/document-AI buyer path without pretending to be a vector database. The offer is workflow hardening for one document-answering pipeline: ingestion metadata, pointer proof, answer gates, and evidence review."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "Does ThumbGate replace multimodal embeddings?",
+        "answer": "No. ThumbGate enforces the structure around the retrieval and answer step. Teams can still use text embeddings, multimodal embeddings, or proxy-pointer RAG; ThumbGate checks whether the answer is grounded before the agent acts."
+      },
+      {
+        "question": "What should teams gate first in visual document RAG?",
+        "answer": "Start with section-tree presence, image pointer grounding, and cross-document leakage. Those checks are specific enough to enforce quickly and risky enough to matter."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/rag-precision-tuning-guardrails",
+        "title": "RAG Precision Tuning Can Break Agentic Pipelines Quietly"
+      },
+      {
+        "path": "/guides/code-knowledge-graph-guardrails",
+        "title": "Code Graphs Are Context. ThumbGate Is Execution Control."
+      },
+      {
+        "path": "/guides/pre-action-checks",
+        "title": "What Are Pre-Action Checks?"
+      }
+    ],
+    "cta": {
+      "label": "Go Pro — $19/mo",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_proxy-pointer-rag-guardrails&cta_placement=seo_brief&plan_id=pro"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "monthly",
+    "priority": "0.8",
+    "keywordCluster": [
+      "proxy pointer rag guardrails",
+      "rag precision tuning guardrails"
+    ],
+    "imageAlt": "ThumbGate guide for Proxy-Pointer RAG Needs Guardrails Before Visual Answers"
+  },
+  {
+    "path": "/guides/rag-precision-tuning-guardrails",
+    "slug": "guides-rag-precision-tuning-guardrails",
+    "query": "rag precision tuning guardrails",
+    "pillar": "document-rag-safety",
+    "intent": "commercial",
+    "pageType": "guide",
+    "persona": "rag-engineer",
+    "opportunityScore": 83,
+    "title": "RAG Precision Tuning Guardrails | Stop Retrieval Regressions Before Agents Act",
+    "description": "Embedding fine-tunes and threshold tweaks can improve one precision metric while degrading broad retrieval recall. ThumbGate gates retrieval changes with bas...",
+    "heroTitle": "RAG Precision Tuning Can Break Agentic Pipelines Quietly",
+    "heroSummary": "Embedding fine-tunes and threshold tweaks can improve one precision metric while degrading broad retrieval recall. ThumbGate gates retrieval changes with baselines, verifier checks, and latency budgets before agentic RAG output triggers downstream actions.",
+    "takeaways": [
+      "A precision win is not safe unless recall@k, precision@k, answer-with-evidence, and latency are compared against a saved baseline.",
+      "Agentic RAG raises the risk because one retrieval miss can cascade into tool calls, decisions, or workflow changes.",
+      "ThumbGate now exposes npx thumbgate rag-precision-guardrails for retrieval-tuning and verifier rollout checks."
+    ],
+    "sections": [
+      {
+        "heading": "Why this became urgent",
+        "paragraphs": [
+          "Recent retrieval research surfaced a failure mode that matches ThumbGate perfectly: a system can look better on one tuning objective while quietly getting worse at the general retrieval job the agent depends on.",
+          "That is not only an answer-quality problem. In an agentic pipeline, retrieved context can determine which files get edited, which customer gets contacted, or which operational action runs next."
+        ]
+      },
+      {
+        "heading": "High-ROI gates to enable",
+        "bullets": [
+          "Require a retrieval baseline before embedding fine-tunes, threshold changes, or top-k changes.",
+          "Block rollout when recall drops without a rollback plan, even if a narrow precision metric improves.",
+          "Require a second-stage verifier or reranker for structural near misses such as negation flips and role reversals.",
+          "Checkpoint latency and precision tradeoffs before verifier stages become production dependencies.",
+          "CLI path: npx thumbgate rag-precision-guardrails --baseline-recall=0.86 --new-recall=0.72 --threshold-change --agentic --structural-near-misses --json."
+        ]
+      },
+      {
+        "heading": "Where this creates revenue",
+        "paragraphs": [
+          "This is a sharp enterprise wedge for teams that already bought a vector database or RAG platform and now need governance. ThumbGate sells the missing safety lane: baseline proof, action gates, and retrieval-change review before autonomous agents depend on the new index."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "Does higher retrieval precision always help RAG?",
+        "answer": "No. Precision tuning can improve a narrow objective while hurting broad recall or generalization. ThumbGate treats retrieval tuning as a gated change, not a harmless config tweak."
+      },
+      {
+        "question": "When do I need a two-stage verifier?",
+        "answer": "Use one when the workflow is sensitive to structural near misses, such as negation, role reversal, legal clauses, financial facts, policy exceptions, or anything that can trigger downstream agent actions."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/proxy-pointer-rag-guardrails",
+        "title": "Proxy-Pointer RAG Needs Guardrails Before Visual Answers"
+      },
+      {
+        "path": "/guides/pre-action-checks",
+        "title": "What Are Pre-Action Checks?"
+      },
+      {
+        "path": "/guides/background-agent-governance",
+        "title": "Background Agent Governance for Agent PRs"
+      }
+    ],
+    "cta": {
+      "label": "Go Pro — $19/mo",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_rag-precision-tuning-guardrails&cta_placement=seo_brief&plan_id=pro"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "monthly",
+    "priority": "0.8",
+    "keywordCluster": [
+      "proxy pointer rag guardrails",
+      "rag precision tuning guardrails"
+    ],
+    "imageAlt": "ThumbGate guide for RAG Precision Tuning Can Break Agentic Pipelines Quietly"
+  },
+  {
+    "path": "/guides/internal-ai-engineering-stack-guardrails",
+    "slug": "guides-internal-ai-engineering-stack-guardrails",
+    "query": "internal ai engineering stack guardrails",
+    "pillar": "ai-stack-governance",
+    "intent": "commercial",
+    "pageType": "guide",
+    "persona": "engineering-lead",
+    "opportunityScore": 83,
+    "title": "Internal AI Engineering Stack Guardrails | ThumbGate Guide",
+    "description": "AI coding adoption scales when the platform has a model gateway, progressive MCP discovery, fresh AGENTS.md and LLM wiki context, risk-tiered AI review, and...",
+    "heroTitle": "Internal AI Engineering Stacks Need Pre-Action Enforcement",
+    "heroSummary": "AI coding adoption scales when the platform has a model gateway, progressive MCP discovery, fresh AGENTS.md and LLM wiki context, risk-tiered AI review, and sandboxed background agents. ThumbGate turns those layers into checks before unsafe agent work ships.",
+    "takeaways": [
+      "A central AI gateway or proxy keeps model keys, spend, attribution, routing, and retention policy out of individual laptops.",
+      "MCP portals need progressive discovery or code-mode search/execute tools before schema overhead eats the agent context window.",
+      "AGENTS.md and LLM wiki pages become useful only when source-backed freshness gates keep repo instructions current.",
+      "Risk-tiered AI review and sandboxed background agents let teams automate more work without losing standards, logs, or isolation."
+    ],
+    "sections": [
+      {
+        "heading": "Why this helps ThumbGate make money",
+        "paragraphs": [
+          "Cloudflare described the enterprise version of a pattern ThumbGate can sell to smaller teams today: the value is not a clever prompt, it is the wiring between access, model routing, tool portals, repo context, review, standards, and durable agent execution.",
+          "ThumbGate is the enforcement layer for that stack. It can block direct provider keys, warn on MCP schema bloat, require AGENTS.md and LLM wiki freshness, demand rule-cited review, and stop background agents that are not isolated before the next action runs."
+        ]
+      },
+      {
+        "heading": "The high-ROI stack gates",
+        "bullets": [
+          "AI gateway gate: require one model proxy or gateway before adding providers, clients, BYOK paths, or high-volume coding assistants.",
+          "MCP portal gate: collapse large tool surfaces behind progressive discovery or code-mode search/execute so every prompt does not preload every schema.",
+          "AGENTS.md and LLM wiki freshness gate: regenerate short repo context from source metadata, ownership, tests, and dependency maps before agent runs rely on it.",
+          "AI review gate: classify changes by risk tier, cite standards-as-skills, and separate security, code quality, performance, docs, and release-impact findings.",
+          "Background agent sandbox gate: require isolated clone/build/test execution, durable logs, and resumable sessions before unattended agents can publish, deploy, or touch revenue workflows."
+        ]
+      },
+      {
+        "heading": "How to run it this week",
+        "paragraphs": [
+          "Start with the parts that affect money or production: checkout, pricing, publish automation, deploys, customer data, and outbound marketing. Run the stack planner against those workflows, enable the recommended templates, then publish the guide as proof that ThumbGate understands the modern AI engineering stack.",
+          "This also answers the LLM-wiki trend directly. A wiki is useful when it becomes short, source-backed context that agents can trust; it is dangerous when stale pages become invisible policy. ThumbGate makes freshness and grounding enforceable."
+        ]
+      },
+      {
+        "heading": "Operator command",
+        "bullets": [
+          "npx thumbgate ai-engineering-stack-guardrails --mcp-tool-count=182 --direct-provider-keys --llm-wiki-pages=24 --context-freshness-days=30 --background-agents --high-risk-workflows=deploy,billing --json."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "Do we need to rebuild Cloudflare infrastructure to benefit from this?",
+        "answer": "No. ThumbGate starts with the control points that matter most: centralized model access, smaller MCP surfaces, fresh agent context, AI review, and sandbox evidence. Those can be gated before a full platform migration."
+      },
+      {
+        "question": "How does this relate to LLM wikis and AGENTS.md?",
+        "answer": "Both are agent-context surfaces. ThumbGate treats them as source-backed operational artifacts, then blocks or warns when they are missing, stale, unowned, or disconnected from tests and repo conventions."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/code-knowledge-graph-guardrails",
+        "title": "Code Graphs Are Context. ThumbGate Is Execution Control."
+      },
+      {
+        "path": "/guides/long-running-agent-context-management",
+        "title": "Long-Running Agents Need Structured Memory, Not Raw Chat Logs"
+      },
+      {
+        "path": "/guides/rag-precision-tuning-guardrails",
+        "title": "RAG Precision Tuning Can Break Agentic Pipelines Quietly"
+      }
+    ],
+    "cta": {
+      "label": "Go Pro — $19/mo",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_internal-ai-engineering-stack-guardrails&cta_placement=seo_brief&plan_id=pro"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "monthly",
+    "priority": "0.8",
+    "keywordCluster": [
+      "internal ai engineering stack guardrails"
+    ],
+    "imageAlt": "ThumbGate guide for Internal AI Engineering Stacks Need Pre-Action Enforcement"
+  },
+  {
+    "path": "/guides/seo-agent-skills-guardrails",
+    "slug": "guides-seo-agent-skills-guardrails",
+    "query": "seo agent skills guardrails",
+    "pillar": "seo-governance",
+    "intent": "commercial",
+    "pageType": "guide",
+    "persona": "growth-engineer",
+    "opportunityScore": 83,
+    "title": "SEO Agent Skills Guardrails | Govern Workspaces, Proof, and Publish Gates",
+    "description": "Useful SEO agents need skills, workspace context, technical checks, brand rules, and a publish review loop. ThumbGate turns that SEO-agent operating system i...",
+    "heroTitle": "SEO Agents Need Workspaces and Guardrails, Not Prompt Sprawl",
+    "heroSummary": "Useful SEO agents need skills, workspace context, technical checks, brand rules, and a publish review loop. ThumbGate turns that SEO-agent operating system into pre-action gates before AI content, links, or page changes go live.",
+    "takeaways": [
+      "The best SEO-agent workflow starts with workspaces: site context, brand context, SERP evidence, technical constraints, and proof assets.",
+      "ThumbGate makes those skills enforceable with gates for unsupported claims, orphan pages, stale pricing, schema gaps, and missing internal links.",
+      "This promotes ThumbGate directly because every SEO-agent buyer also needs a governance layer before automation scales."
+    ],
+    "sections": [
+      {
+        "heading": "Why this promotes ThumbGate",
+        "paragraphs": [
+          "The Search Engine Land pattern is exactly our product thesis in a marketing workflow: stop relying on free-form prompts and build a skill/workspace system that agents can use repeatedly.",
+          "ThumbGate adds the missing enforcement layer. An SEO skill can say \"use proof links\" or \"check the sitemap\"; a ThumbGate pre-action gate can block publish when proof, canonical tags, schema, or buyer-path links are missing."
+        ]
+      },
+      {
+        "heading": "High-ROI SEO-agent gates",
+        "bullets": [
+          "Workspace context gate: require brand rules, pricing truth, proof links, SERP intent, and target persona before drafting.",
+          "Technical publish gate: block missing canonical tags, FAQPage schema, llm-context links, sitemap coverage, and crawl-safe routes.",
+          "Semantic mesh gate: require pillar, comparison, conversion, and adjacent-guide links before publishing a new page.",
+          "Reviewer handoff gate: require the agent to summarize claim risk, source evidence, and next conversion path before a human approves."
+        ]
+      },
+      {
+        "heading": "Where this creates revenue",
+        "paragraphs": [
+          "This turns SEO-agent interest into the same Workflow Hardening Sprint offer: harden one content workflow, prove one publish gate, and connect the page to checkout or team intake instead of shipping more ungoverned AI content."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "Should ThumbGate build SEO agents?",
+        "answer": "ThumbGate should govern SEO agents first. The product value is making skills, workspaces, and publish checks enforceable before generated pages or edits go live."
+      },
+      {
+        "question": "What is the first SEO-agent gate to implement?",
+        "answer": "Start with proof and semantic mesh: block pages that lack verification links, current pricing, related internal links, and a concrete conversion path."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/semantic-programmatic-seo-guardrails",
+        "title": "Semantic pSEO Needs Governance Before Scale"
+      },
+      {
+        "path": "/guides/ai-search-topical-presence",
+        "title": "AI search topical presence decides who gets recommended"
+      },
+      {
+        "path": "/compare/fallow",
+        "title": "ThumbGate vs Fallow"
+      }
+    ],
+    "cta": {
+      "label": "Go Pro — $19/mo",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_seo-agent-skills-guardrails&cta_placement=seo_brief&plan_id=pro"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "monthly",
+    "priority": "0.8",
+    "keywordCluster": [
+      "semantic programmatic seo guardrails",
+      "seo agent skills guardrails"
+    ],
+    "imageAlt": "ThumbGate guide for SEO Agents Need Workspaces and Guardrails, Not Prompt Sprawl"
+  },
+  {
+    "path": "/guides/reasoning-compression-guardrails",
+    "slug": "guides-reasoning-compression-guardrails",
+    "query": "reasoning compression guardrails",
+    "pillar": "pre-action-checks",
+    "intent": "commercial",
+    "pageType": "guide",
+    "persona": "platform-engineer",
+    "opportunityScore": 83,
+    "title": "Reasoning Compression Guardrails | Step-Level Verifier Checks Before Token Savings",
+    "description": "Efficient reasoning can reduce token cost, but short traces can destabilize accuracy. ThumbGate gates reasoning compression with verifier outcomes, pass@1 ba...",
+    "heroTitle": "Reasoning Compression Needs Step-Level Safety Checks",
+    "heroSummary": "Efficient reasoning can reduce token cost, but short traces can destabilize accuracy. ThumbGate gates reasoning compression with verifier outcomes, pass@1 baselines, low-confidence step review, and high-confidence failure inspection.",
+    "takeaways": [
+      "Reasoning compression is only ROI-positive when quality survives the token savings.",
+      "Step-level confidence matters because correct final answers can still contain brittle intermediate steps.",
+      "ThumbGate now exposes npx thumbgate reasoning-efficiency-guardrails for verifier-backed model routing and prompt-eval workflows."
+    ],
+    "sections": [
+      {
+        "heading": "Why this helps ThumbGate",
+        "paragraphs": [
+          "This creates a model-cost governance story: ThumbGate can help teams route cheaper, shorter reasoning only when a verifier proves the compressed trace is still safe.",
+          "The same mechanism also protects DPO/RLHF export and model-evaluation workflows from rewarding or punishing the wrong reasoning steps."
+        ]
+      },
+      {
+        "heading": "High-ROI reasoning gates",
+        "bullets": [
+          "Require verifier and pass@1 evidence before compressing reasoning traces.",
+          "Checkpoint low-confidence steps even in correct rollouts before reinforcing them.",
+          "Checkpoint high-confidence failed rollouts for truncation or verifier noise before penalizing them.",
+          "CLI path: npx thumbgate reasoning-efficiency-guardrails --baseline-tokens=1200 --compressed-tokens=980 --baseline-accuracy=0.84 --compressed-accuracy=0.85 --verifier --json."
+        ]
+      },
+      {
+        "heading": "Where this creates revenue",
+        "paragraphs": [
+          "This improves the Pro and Team model-hardening story. Buyers can save inference cost and evaluation time without turning \"shorter reasoning\" into an unmeasured reliability regression."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "Should every agent use shorter reasoning traces?",
+        "answer": "No. Compress traces only when verifier outcomes and accuracy baselines prove the shorter route still works for the workload."
+      },
+      {
+        "question": "How does ThumbGate use step-level reasoning signals?",
+        "answer": "ThumbGate does not train the model directly. It gates routing, exports, and workflow decisions when low-confidence steps, high-confidence failures, or missing verifier evidence make compression risky."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/gpt-5-5-model-evaluation",
+        "title": "Evaluate GPT-5.5 Before You Route Production Agent Work"
+      },
+      {
+        "path": "/guides/agent-harness-optimization",
+        "title": "AI Agent Harness Optimization That Blocks Repeat Failures"
+      },
+      {
+        "path": "/guides/pre-action-checks",
+        "title": "What Are Pre-Action Checks?"
+      }
+    ],
+    "cta": {
+      "label": "Go Pro — $19/mo",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_reasoning-compression-guardrails&cta_placement=seo_brief&plan_id=pro"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "monthly",
+    "priority": "0.8",
+    "keywordCluster": [
+      "claude code masterclass guardrails",
+      "cursor prevent repeated mistakes",
+      "claude code prevent repeated mistakes",
+      "codex cli guardrails"
+    ],
+    "imageAlt": "ThumbGate guide for Reasoning Compression Needs Step-Level Safety Checks"
+  },
+  {
+    "path": "/guides/deepseek-v4-runtime-guardrails",
+    "slug": "guides-deepseek-v4-runtime-guardrails",
+    "query": "deepseek v4 runtime guardrails",
+    "pillar": "pre-action-checks",
+    "intent": "commercial",
+    "pageType": "guide",
+    "persona": "engineering-lead",
+    "opportunityScore": 83,
+    "title": "DeepSeek V4 Runtime Guardrails | Sparse Attention, Speculation, and Verified RL",
+    "description": "DeepSeek-V4 introduces long-context sparse attention, speculative decoding, KV offload, FP4/FP8 paths, and verified-RL replay concerns. ThumbGate turns those...",
+    "heroTitle": "DeepSeek-V4 Needs Runtime Guardrails Before Production Routing",
+    "heroSummary": "DeepSeek-V4 introduces long-context sparse attention, speculative decoding, KV offload, FP4/FP8 paths, and verified-RL replay concerns. ThumbGate turns those runtime signals into pre-action checks before model-routing or training changes go live.",
+    "takeaways": [
+      "The high-ROI move is not blindly switching models; it is benchmarking DeepSeek-V4 behind cache, speculation, precision, and replay gates.",
+      "Hybrid sparse attention changes prefix-cache assumptions, so cache coherence and rollback evidence must exist before routing long traces.",
+      "ThumbGate now exposes npx thumbgate deepseek-v4-runtime-guardrails for self-hosted long-context model rollouts."
+    ],
+    "sections": [
+      {
+        "heading": "Why this helps ThumbGate",
+        "paragraphs": [
+          "Teams adopting SGLang-style DeepSeek-V4 serving are exactly the buyers who need agent governance: they are optimizing cost and throughput while increasing context length and system complexity.",
+          "ThumbGate can sit above the runtime as the policy layer that blocks unsafe routing changes, requires benchmark proof, and keeps self-hosted model experiments from becoming invisible production risk."
+        ]
+      },
+      {
+        "heading": "High-ROI runtime gates",
+        "bullets": [
+          "Require hybrid prefix-cache coherence eval before enabling long-context cache reuse.",
+          "Checkpoint speculative decoding acceptance length, rollback behavior, and correctness before treating it as a speedup.",
+          "Require long-context KV capacity and offload plans before 128k+ or 1M-token routing.",
+          "Require rollout routing replay, indexer replay, and train-inference drift checks before RL or fine-tuning updates.",
+          "Checkpoint FP4/FP8 mixed-precision determinism before benchmark results update routing.",
+          "CLI path: npx thumbgate deepseek-v4-runtime-guardrails --context-tokens=900000 --hybrid-attention --speculative-decoding --accept-length=1.4 --precision-mode=fp8 --json."
+        ]
+      },
+      {
+        "heading": "Where this creates revenue",
+        "paragraphs": [
+          "This gives ThumbGate a serious infrastructure story for teams moving beyond hosted APIs. The offer is a Workflow Hardening Sprint around one model-routing lane: prove the runtime change, gate the risks, and keep the agent from silently routing expensive work through an unverified path."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "Should ThumbGate switch to DeepSeek-V4 by default?",
+        "answer": "No. Treat DeepSeek-V4 as a candidate for self-hosted long-context workloads. Route to it only after ThumbGate benchmarks pass for quality, cache coherence, latency, cost, and rollback behavior."
+      },
+      {
+        "question": "What is different about DeepSeek-V4 governance?",
+        "answer": "The risk is not only model quality. Hybrid sparse attention, speculative decoding, KV offload, mixed precision, and RL replay can all create silent runtime failures unless each change is gated with evidence."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/reasoning-compression-guardrails",
+        "title": "Reasoning Compression Needs Step-Level Safety Checks"
+      },
+      {
+        "path": "/guides/long-running-agent-context-management",
+        "title": "Long-Running Agents Need Structured Memory, Not Raw Chat Logs"
+      },
+      {
+        "path": "/guides/gpt-5-5-model-evaluation",
+        "title": "Evaluate GPT-5.5 Before You Route Production Agent Work"
+      }
+    ],
+    "cta": {
+      "label": "Go Pro — $19/mo",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_deepseek-v4-runtime-guardrails&cta_placement=seo_brief&plan_id=pro"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "monthly",
+    "priority": "0.8",
+    "keywordCluster": [
+      "claude code masterclass guardrails",
+      "cursor prevent repeated mistakes",
+      "claude code prevent repeated mistakes",
+      "codex cli guardrails"
+    ],
+    "imageAlt": "ThumbGate guide for DeepSeek-V4 Needs Runtime Guardrails Before Production Routing"
+  },
+  {
     "path": "/guides/pre-action-checks",
     "slug": "guides-pre-action-checks",
     "query": "pre-action checks for ai coding agents",
@@ -798,10 +1655,10 @@
     "changefreq": "monthly",
     "priority": "0.8",
     "keywordCluster": [
+      "claude code masterclass guardrails",
       "cursor prevent repeated mistakes",
       "claude code prevent repeated mistakes",
-      "codex cli guardrails",
-      "pre-action checks for ai coding agents"
+      "codex cli guardrails"
     ],
     "imageAlt": "ThumbGate guide for What Are Pre-Action Checks?"
   },
@@ -892,10 +1749,10 @@
     "changefreq": "monthly",
     "priority": "0.8",
     "keywordCluster": [
+      "claude code masterclass guardrails",
       "cursor prevent repeated mistakes",
       "claude code prevent repeated mistakes",
-      "codex cli guardrails",
-      "pre-action checks for ai coding agents"
+      "codex cli guardrails"
     ],
     "imageAlt": "ThumbGate guide for AI Agent Harness Optimization That Blocks Repeat Failures"
   },
@@ -921,7 +1778,7 @@
       {
         "heading": "Why this became a buyer question",
         "paragraphs": [
-          "Claude Code plugins and code-graph MCPs are making architecture maps easier to generate. That helps agents stop reading code blind, but it does not automatically govern the next tool call.",
+          "Understand Anything and code-graph MCPs are making architecture maps easier to generate. That helps agents stop reading code blind, but it does not automatically govern the next tool call.",
           "A graph can say a file is central, a refactor crosses layers, or a generated graph artifact should not be edited. ThumbGate turns those signals into allow, warn, or block decisions before execution."
         ]
       },
@@ -937,7 +1794,7 @@
       {
         "heading": "Where this creates revenue",
         "paragraphs": [
-          "This is a strong engagement wedge for audiences already excited about codebase understanding. The public line is simple: code graphs tell the agent what the system is; ThumbGate decides what the agent is allowed to do next.",
+          "This is a strong engagement wedge for audiences already excited about codebase understanding. The public line is simple: Code graphs tell the agent what the system is; ThumbGate decides what the agent is allowed to do next.",
           "For teams, sell the Workflow Hardening Sprint around one graph-informed repeated failure: one central file, one risky refactor path, or one generated artifact that agents keep touching incorrectly."
         ]
       }
@@ -991,10 +1848,10 @@
     "changefreq": "monthly",
     "priority": "0.8",
     "keywordCluster": [
+      "claude code masterclass guardrails",
       "cursor prevent repeated mistakes",
       "claude code prevent repeated mistakes",
-      "codex cli guardrails",
-      "pre-action checks for ai coding agents"
+      "codex cli guardrails"
     ],
     "imageAlt": "ThumbGate guide for Code Graphs Are Context. ThumbGate Is Execution Control."
   },
@@ -1090,10 +1947,10 @@
     "changefreq": "monthly",
     "priority": "0.8",
     "keywordCluster": [
+      "claude code masterclass guardrails",
       "cursor prevent repeated mistakes",
       "claude code prevent repeated mistakes",
-      "codex cli guardrails",
-      "pre-action checks for ai coding agents"
+      "codex cli guardrails"
     ],
     "imageAlt": "ThumbGate guide for Stop AI Assistants From Amplifying Supply-Chain Attacks."
   },
@@ -1180,10 +2037,10 @@
     "changefreq": "monthly",
     "priority": "0.8",
     "keywordCluster": [
+      "claude code masterclass guardrails",
       "cursor prevent repeated mistakes",
       "claude code prevent repeated mistakes",
-      "codex cli guardrails",
-      "pre-action checks for ai coding agents"
+      "codex cli guardrails"
     ],
     "imageAlt": "ThumbGate guide for How to Stop AI Coding Agents From Repeating Mistakes"
   },
@@ -1270,12 +2127,106 @@
     "changefreq": "monthly",
     "priority": "0.8",
     "keywordCluster": [
+      "claude code masterclass guardrails",
       "cursor prevent repeated mistakes",
       "claude code prevent repeated mistakes",
-      "codex cli guardrails",
-      "pre-action checks for ai coding agents"
+      "codex cli guardrails"
     ],
     "imageAlt": "ThumbGate guide for Autoresearch Agent Safety for Self-Improving Coding Agents"
+  },
+  {
+    "path": "/guides/long-running-agent-context-management",
+    "slug": "guides-long-running-agent-context-management",
+    "query": "long running agent context management",
+    "pillar": "pre-action-checks",
+    "intent": "informational",
+    "pageType": "guide",
+    "persona": "platform-engineer",
+    "opportunityScore": 75,
+    "title": "Long-Running Agent Context Management | Director Journals and Critic Reviews",
+    "description": "Slack's long-running multi-agent pattern points to director journals, critic reviews, and credibility-scored timelines. ThumbGate turns those context channel...",
+    "heroTitle": "Long-Running Agents Need Structured Memory, Not Raw Chat Logs",
+    "heroSummary": "Slack's long-running multi-agent pattern points to director journals, critic reviews, and credibility-scored timelines. ThumbGate turns those context channels into pre-action checks before background agents, revenue loops, or investigations drift.",
+    "takeaways": [
+      "Long-running agents should not rely on accumulated chat logs once requests and output grow across many rounds.",
+      "Director journals keep structured working memory; critic reviews score evidence; timelines deduplicate and resolve conflicts.",
+      "ThumbGate now exposes npx thumbgate long-running-agent-context-guardrails to gate missing structured memory before handoff or action."
+    ],
+    "sections": [
+      {
+        "heading": "Why this helps ThumbGate",
+        "paragraphs": [
+          "This maps directly to Ralph Loop, reply orchestration, background PRs, and revenue automation. The longer the loop runs, the more dangerous raw history becomes as the source of truth.",
+          "ThumbGate can sell the control layer: journal the decisions, review findings with evidence, score credibility, and block external actions when the agent is building on unreviewed memory."
+        ]
+      },
+      {
+        "heading": "High-ROI context gates",
+        "bullets": [
+          "Require a director journal for observations, decisions, questions, hypotheses, and open risks.",
+          "Require critic review with credibility scores before expert findings become shared memory.",
+          "Checkpoint the critic timeline when duplicates, stale claims, or conflicts remain unresolved.",
+          "CLI path: npx thumbgate long-running-agent-context-guardrails --request-count=80 --output-mb=3 --raw-chat-only --json."
+        ]
+      },
+      {
+        "heading": "Where this creates revenue",
+        "paragraphs": [
+          "This is an enterprise-quality story for teams moving from one-off assistants to persistent agents. ThumbGate hardens one long-running workflow and proves that it can maintain truth across sessions before the agent reaches production authority."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "Why not just keep the whole chat history?",
+        "answer": "Because raw history grows until it wastes context, creates stale truth, and degrades reasoning. Structured memory keeps the useful state without passing every token forever."
+      },
+      {
+        "question": "What should a long-running agent persist?",
+        "answer": "Persist a director journal, critic-reviewed findings with credibility scores, and a deduplicated timeline that resolves conflicts by strongest evidence."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/background-agent-governance",
+        "title": "Background Agent Governance for Agent PRs"
+      },
+      {
+        "path": "/guides/agent-harness-optimization",
+        "title": "AI Agent Harness Optimization That Blocks Repeat Failures"
+      },
+      {
+        "path": "/guides/pre-action-checks",
+        "title": "What Are Pre-Action Checks?"
+      }
+    ],
+    "cta": {
+      "label": "Go Pro — $19/mo",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_long-running-agent-context-management&cta_placement=seo_brief&plan_id=pro"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "monthly",
+    "priority": "0.8",
+    "keywordCluster": [
+      "claude code masterclass guardrails",
+      "cursor prevent repeated mistakes",
+      "claude code prevent repeated mistakes",
+      "codex cli guardrails"
+    ],
+    "imageAlt": "ThumbGate guide for Long-Running Agents Need Structured Memory, Not Raw Chat Logs"
   },
   {
     "path": "/guides/browser-automation-safety",
@@ -1360,10 +2311,10 @@
     "changefreq": "monthly",
     "priority": "0.8",
     "keywordCluster": [
+      "claude code masterclass guardrails",
       "cursor prevent repeated mistakes",
       "claude code prevent repeated mistakes",
-      "codex cli guardrails",
-      "pre-action checks for ai coding agents"
+      "codex cli guardrails"
     ],
     "imageAlt": "ThumbGate guide for Browser automation safety needs explicit approval boundaries"
   },
@@ -1450,10 +2401,10 @@
     "changefreq": "monthly",
     "priority": "0.8",
     "keywordCluster": [
+      "claude code masterclass guardrails",
       "cursor prevent repeated mistakes",
       "claude code prevent repeated mistakes",
-      "codex cli guardrails",
-      "pre-action checks for ai coding agents"
+      "codex cli guardrails"
     ],
     "imageAlt": "ThumbGate guide for Native messaging host security for AI browser bridges"
   },
@@ -1558,10 +2509,10 @@
     "changefreq": "monthly",
     "priority": "0.8",
     "keywordCluster": [
+      "claude code masterclass guardrails",
       "cursor prevent repeated mistakes",
       "claude code prevent repeated mistakes",
-      "codex cli guardrails",
-      "pre-action checks for ai coding agents"
+      "codex cli guardrails"
     ],
     "imageAlt": "ThumbGate guide for Best Tools to Stop AI Agents From Breaking Production"
   },
@@ -1657,10 +2608,10 @@
     "changefreq": "monthly",
     "priority": "0.8",
     "keywordCluster": [
+      "claude code masterclass guardrails",
       "cursor prevent repeated mistakes",
       "claude code prevent repeated mistakes",
-      "codex cli guardrails",
-      "pre-action checks for ai coding agents"
+      "codex cli guardrails"
     ],
     "imageAlt": "ThumbGate guide for Prompt Tricks Are Table Stakes. Workflow Rules Make Them Pay."
   },
@@ -1757,10 +2708,10 @@
     "changefreq": "monthly",
     "priority": "0.8",
     "keywordCluster": [
+      "claude code masterclass guardrails",
       "cursor prevent repeated mistakes",
       "claude code prevent repeated mistakes",
-      "codex cli guardrails",
-      "pre-action checks for ai coding agents"
+      "codex cli guardrails"
     ],
     "imageAlt": "ThumbGate guide for Background Agent Governance for Agent PRs"
   },
@@ -1856,10 +2807,10 @@
     "changefreq": "monthly",
     "priority": "0.8",
     "keywordCluster": [
+      "claude code masterclass guardrails",
       "cursor prevent repeated mistakes",
       "claude code prevent repeated mistakes",
-      "codex cli guardrails",
-      "pre-action checks for ai coding agents"
+      "codex cli guardrails"
     ],
     "imageAlt": "ThumbGate guide for Evaluate GPT-5.5 Before You Route Production Agent Work"
   },
@@ -1870,7 +2821,7 @@
     "pillar": "pre-action-checks",
     "intent": "informational",
     "pageType": "guide",
-    "persona": "ai-engineer",
+    "persona": "growth-engineer",
     "opportunityScore": 72,
     "title": "AI Search Topical Presence | Become the Obvious Recommendation",
     "description": "AI assistants recommend the tools they repeatedly see tied to a problem in credible contexts. ThumbGate wins when the web consistently connects it to pre-act...",
@@ -1946,10 +2897,10 @@
     "changefreq": "monthly",
     "priority": "0.8",
     "keywordCluster": [
+      "claude code masterclass guardrails",
       "cursor prevent repeated mistakes",
       "claude code prevent repeated mistakes",
-      "codex cli guardrails",
-      "pre-action checks for ai coding agents"
+      "codex cli guardrails"
     ],
     "imageAlt": "ThumbGate guide for AI search topical presence decides who gets recommended"
   },
@@ -2036,10 +2987,10 @@
     "changefreq": "monthly",
     "priority": "0.8",
     "keywordCluster": [
+      "claude code masterclass guardrails",
       "cursor prevent repeated mistakes",
       "claude code prevent repeated mistakes",
-      "codex cli guardrails",
-      "pre-action checks for ai coding agents"
+      "codex cli guardrails"
     ],
     "imageAlt": "ThumbGate guide for Relational knowledge explains why AI systems recommend some tools and ignore others"
   }

@@ -4,28 +4,32 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Code Knowledge Graph Guardrails | ThumbGate Guide</title>
-  <meta name="description" content="Use code knowledge graphs as context and ThumbGate as the enforcement layer that blocks risky AI coding agent actions before execution." />
+  <meta name="description" content="Code knowledge graphs help AI coding agents understand files, functions, dependencies, and architecture layers. ThumbGate turns those graph signals into pre-..." />
   <meta property="og:title" content="Code Knowledge Graph Guardrails | ThumbGate Guide" />
-  <meta property="og:description" content="Code graphs tell the agent what the system is. ThumbGate decides what the agent is allowed to do next." />
+  <meta property="og:description" content="Code knowledge graphs help AI coding agents understand files, functions, dependencies, and architecture layers. ThumbGate turns those graph signals into pre-..." />
   <meta property="og:type" content="article" />
   <meta property="og:url" content="https://thumbgate.ai/guides/code-knowledge-graph-guardrails" />
   <link rel="canonical" href="https://thumbgate.ai/guides/code-knowledge-graph-guardrails" />
   <link rel="llm-context" href="/public/llm-context.md" type="text/markdown" />
   <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
   <style>
     :root {
       --bg: #0a0a0b;
-      --panel: #151518;
-      --line: #25252a;
-      --text: #ececf1;
-      --muted: #a0a0aa;
+      --bg-raised: #111113;
+      --bg-card: #161618;
+      --line: #222225;
+      --text: #e8e8ec;
+      --muted: #8b8b96;
       --cyan: #22d3ee;
       --green: #4ade80;
+      --red: #f87171;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: var(--bg);
       color: var(--text);
       line-height: 1.65;
@@ -33,133 +37,329 @@
     a { color: var(--cyan); text-decoration: none; }
     a:hover { text-decoration: underline; }
     .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
-    .topbar { border-bottom: 1px solid var(--line); background: rgba(10, 10, 11, 0.92); }
-    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; padding-bottom: 14px; }
-    .brand { color: var(--text); font-weight: 750; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(12px);
+      background: rgba(10, 10, 11, 0.88);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 14px;
+      padding-bottom: 14px;
+    }
+    .brand {
+      font-weight: 700;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
     .hero { padding: 72px 0 32px; }
-    .eyebrow { color: var(--cyan); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-    h1 { max-width: 760px; margin: 14px 0; font-size: clamp(34px, 5vw, 56px); line-height: 1.06; }
-    .hero p { max-width: 760px; color: var(--muted); font-size: 18px; }
-    .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 22px; padding-bottom: 72px; }
-    .section, .side { border: 1px solid var(--line); background: var(--panel); border-radius: 14px; padding: 24px; margin-bottom: 18px; }
-    h2 { margin: 0 0 12px; font-size: 24px; }
-    h3 { margin: 18px 0 8px; }
-    p, li { color: var(--muted); }
-    .quote { color: var(--text); border-left: 3px solid var(--green); padding-left: 14px; font-size: 20px; }
-    .cta { display: inline-flex; margin-top: 14px; padding: 12px 16px; border-radius: 10px; background: var(--cyan); color: #071116; font-weight: 800; }
-    code { color: #d8f7ff; }
-    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 211, 238, 0.22);
+      background: rgba(34, 211, 238, 0.1);
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1.06;
+      letter-spacing: -0.04em;
+      margin: 16px 0;
+      max-width: 760px;
+    }
+    .hero p {
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .signal-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 28px 0 0;
+    }
+    .signal-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .signal-pill.up {
+      border-color: rgba(74, 222, 128, 0.28);
+      color: #b8f7c8;
+      background: rgba(74, 222, 128, 0.1);
+    }
+    .signal-pill.down {
+      border-color: rgba(248, 113, 113, 0.28);
+      color: #ffc0c0;
+      background: rgba(248, 113, 113, 0.1);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+      gap: 24px;
+      padding-bottom: 72px;
+    }
+    .card, .detail-section, .sidebar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .card { padding: 24px; }
+    .detail-section { padding: 24px; margin-bottom: 18px; }
+    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+    .detail-section p { color: var(--muted); }
+    .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
+    .card h2 { margin-top: 0; }
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .sidebar-card {
+      padding: 20px;
+    }
+    /* Only the first sidebar card sticks. Stacking multiple stickies at the
+       same top offset makes them overlap each other on scroll. The related-
+       pages card flows normally below. */
+    .sidebar-card:first-child {
+      position: sticky;
+      top: 84px;
+      max-height: calc(100vh - 104px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .proof-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 18px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: var(--cyan);
+      color: #071116;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .faq-item {
+      border-top: 1px solid var(--line);
+      padding: 14px 0;
+    }
+    .faq-item summary {
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .faq-item p {
+      color: var(--muted);
+    }
+    .related-card {
+      display: block;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      margin-top: 12px;
+      color: var(--text);
+    }
+    .related-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    @media (max-width: 860px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .sidebar-card:first-child {
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
+    }
   </style>
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "TechArticle",
-    "headline": "Code Knowledge Graph Guardrails for AI Coding Agents",
-    "description": "Use code knowledge graphs as context and ThumbGate as the enforcement layer before risky AI coding agent actions execute.",
-    "about": ["code knowledge graph", "AI coding agent guardrails", "pre-action checks", "diff impact analysis"],
-    "url": "https://thumbgate.ai/guides/code-knowledge-graph-guardrails",
-    "publisher": {
-      "@type": "Organization",
-      "name": "ThumbGate",
-      "url": "https://thumbgate.ai"
-    },
-    "mainEntityOfPage": "https://thumbgate.ai/guides/code-knowledge-graph-guardrails"
-  }
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Code Graphs Are Context. ThumbGate Is Execution Control.",
+  "description": "Code knowledge graphs help AI coding agents understand files, functions, dependencies, and architecture layers. ThumbGate turns those graph signals into pre-...",
+  "about": [
+    "claude code masterclass guardrails",
+    "cursor prevent repeated mistakes",
+    "claude code prevent repeated mistakes",
+    "codex cli guardrails"
+  ],
+  "url": "https://thumbgate.ai/guides/code-knowledge-graph-guardrails",
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "mainEntityOfPage": "https://thumbgate.ai/guides/code-knowledge-graph-guardrails"
+}
   </script>
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "Does ThumbGate build the code knowledge graph?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "No. ThumbGate works alongside graph tools by consuming their risk signals as policy context. The graph supplies structure; ThumbGate enforces the next action."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "What should I gate first after generating a code graph?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Start with high-centrality files, cross-layer refactors, and generated graph artifacts. Those are narrow enough to enforce quickly and risky enough to create real ROI."
-        }
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does ThumbGate build the code knowledge graph?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. ThumbGate can work alongside graph tools by consuming their risk signals as policy context. The graph supplies structure; ThumbGate enforces the next action."
       }
-    ]
-  }
+    },
+    {
+      "@type": "Question",
+      "name": "What should I gate first after generating a code graph?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Start with high-centrality files, cross-layer refactors, and generated graph artifacts. Those are narrow enough to enforce quickly and risky enough to create real ROI."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is this a replacement for architecture documentation?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. It turns architecture context into runtime enforcement so the agent cannot ignore the risk signals it just discovered."
+      }
+    }
+  ]
+}
   </script>
 </head>
 <body>
-  <nav class="topbar">
+  <div class="topbar">
     <div class="container">
-      <a class="brand" href="/">ThumbGate</a>
-      <a href="/guide.html">Setup guide</a>
+      <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
     </div>
-  </nav>
-  <main>
+  </div>
+
+  <main class="container">
     <section class="hero">
-      <div class="container">
-        <div class="eyebrow">Knowledge Graph Safety</div>
-        <h1>Code graphs are context. ThumbGate is execution control.</h1>
-        <p>Tools such as Understand Anything and code-graph MCPs help an agent see files, functions, dependencies, and architecture layers. ThumbGate turns that context into pre-action checks before the agent edits, runs, deploys, or publishes.</p>
+      <div class="eyebrow">guide | code knowledge graph guardrails</div>
+      <h1>Code Graphs Are Context. ThumbGate Is Execution Control.</h1>
+      <p>Code knowledge graphs help AI coding agents understand files, functions, dependencies, and architecture layers. ThumbGate turns those graph signals into pre-action checks before risky edits, commands, deploys, or publishes execute.</p>
+      <div class="signal-row">
+        <div class="signal-pill up">👍 Thumbs up reinforces good behavior</div>
+        <div class="signal-pill down">👎 Thumbs down blocks repeated mistakes</div>
       </div>
     </section>
-    <div class="container grid">
-      <article>
-        <section class="section">
-          <h2>The Wedge</h2>
-          <p class="quote">Code graphs tell the agent what the system is. ThumbGate decides what the agent is allowed to do next.</p>
-          <p>That makes code graphs and ThumbGate adjacent layers, not substitutes. The graph supplies risk signals. ThumbGate enforces the next-action policy.</p>
-        </section>
-        <section class="section">
-          <h2>High-ROI Gates</h2>
-          <h3>Require diff impact before central edits</h3>
-          <p>If a graph marks a file as central or critical, a write or patch should require impact review first.</p>
-          <h3>Checkpoint cross-layer refactors</h3>
-          <p>If one run crosses API, service, data, and UI layers, require a checkpoint before the blast radius expands.</p>
-          <h3>Protect generated graph artifacts</h3>
-          <p>Knowledge-graph output should be regenerated from source, not hand-edited by the agent.</p>
-        </section>
-        <section class="section">
-          <h2>Rollout</h2>
-          <p><code>npx thumbgate code-graph-guardrails --central-files=src/api/server.js --layers=api,data --generated-artifacts=.codegraph/index.json --json</code></p>
-          <ol>
-            <li>Generate or refresh the code graph.</li>
-            <li>Label central files, architectural layers, and generated graph outputs.</li>
-            <li>Enable the <code>Knowledge Graph Safety</code> templates in ThumbGate.</li>
-            <li>Run one real AI coding task and capture thumbs-down corrections.</li>
-            <li>Promote repeated corrections into narrower pre-action rules.</li>
-          </ol>
-        </section>
-        <section class="section">
-          <h2>FAQ</h2>
-          <details>
-            <summary>Does ThumbGate build the code knowledge graph?</summary>
-            <p>No. ThumbGate works alongside graph tools by consuming their risk signals as policy context. The graph supplies structure; ThumbGate enforces the next action.</p>
-          </details>
-          <details>
-            <summary>What should I gate first after generating a code graph?</summary>
-            <p>Start with high-centrality files, cross-layer refactors, and generated graph artifacts. Those are narrow enough to enforce quickly and risky enough to create real ROI.</p>
-          </details>
-        </section>
-      </article>
-      <aside>
-        <div class="side">
-          <h2>Best Fit</h2>
-          <p>Teams already using graph-based code understanding, agent onboarding dashboards, or diff-impact analysis.</p>
-          <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
-          <a class="cta" href="/guide.html?utm_source=seo_guide&utm_medium=code_graph_guardrails&utm_campaign=knowledge_graph_safety">Install ThumbGate</a>
+
+    <section class="grid">
+      <div>
+        <div class="card">
+          <h2>Why this page exists</h2>
+          <ul><li>Code graphs explain what the system is; pre-action gates decide what the agent is allowed to do next.</li><li>The fastest rollout is three graph-informed checks: central-file impact review, cross-layer refactor checkpointing, and generated-graph artifact protection.</li><li>This positions graph tools as complementary context while making ThumbGate the enforcement layer buyers still need.</li></ul>
         </div>
-        <div class="side">
-          <h2>Related</h2>
-          <p><a href="/guides/pre-action-checks">Pre-Action Checks</a></p>
-          <p><a href="/guides/agent-harness-optimization">Agent Harness Optimization</a></p>
-          <p><a href="/guides/best-tools-stop-ai-agents-breaking-production">Best Tools to Stop AI Agents From Breaking Production</a></p>
+
+      <section class="detail-section">
+        <h2>Why this became a buyer question</h2>
+        <p>Understand Anything and code-graph MCPs are making architecture maps easier to generate. That helps agents stop reading code blind, but it does not automatically govern the next tool call.</p><p>A graph can say a file is central, a refactor crosses layers, or a generated graph artifact should not be edited. ThumbGate turns those signals into allow, warn, or block decisions before execution.</p>
+
+      </section>
+      <section class="detail-section">
+        <h2>High-ROI gate templates</h2>
+
+        <ul><li>CLI path: npx thumbgate code-graph-guardrails --central-files=src/api/server.js --layers=api,data --generated-artifacts=.codegraph/index.json --json.</li><li>Require diff impact before central edits: block writes to high-centrality files until the agent has reviewed blast radius.</li><li>Checkpoint cross-layer refactors: warn before one run changes API, service, data, and UI layers together.</li><li>Protect generated graph artifacts: block manual edits to graph outputs that should be regenerated from source.</li></ul>
+      </section>
+      <section class="detail-section">
+        <h2>Where this creates revenue</h2>
+        <p>This is a strong engagement wedge for audiences already excited about codebase understanding. The public line is simple: Code graphs tell the agent what the system is; ThumbGate decides what the agent is allowed to do next.</p><p>For teams, sell the Workflow Hardening Sprint around one graph-informed repeated failure: one central file, one risky refactor path, or one generated artifact that agents keep touching incorrectly.</p>
+
+      </section>
+        <div class="detail-section">
+          <h2>FAQ</h2>
+
+      <details class="faq-item">
+        <summary>Does ThumbGate build the code knowledge graph?</summary>
+        <p>No. ThumbGate can work alongside graph tools by consuming their risk signals as policy context. The graph supplies structure; ThumbGate enforces the next action.</p>
+      </details>
+      <details class="faq-item">
+        <summary>What should I gate first after generating a code graph?</summary>
+        <p>Start with high-centrality files, cross-layer refactors, and generated graph artifacts. Those are narrow enough to enforce quickly and risky enough to create real ROI.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Is this a replacement for architecture documentation?</summary>
+        <p>No. It turns architecture context into runtime enforcement so the agent cannot ignore the risk signals it just discovered.</p>
+      </details>
+        </div>
+      </div>
+
+      <aside class="sidebar">
+
+
+        <div class="sidebar-card">
+          <h2>Knowledge Graph Safety</h2>
+          <ul>
+            <li>Require diff impact before central edits</li>
+            <li>Checkpoint cross-layer refactors</li>
+            <li>Protect generated graph artifacts</li>
+          </ul>
+        </div>
+
+        <div class="sidebar-card">
+          <h2>GSD execution brief</h2>
+          <p>This page was prioritized because it captures high-intent demand around code knowledge graph guardrails and feeds directly into ThumbGate's proof-led conversion path.</p>
+          <p><strong>Opportunity score:</strong> 83</p>
+          <p><strong>Primary persona:</strong> engineering-lead</p>
+          <p><strong>Keyword cluster:</strong> claude code masterclass guardrails, cursor prevent repeated mistakes, claude code prevent repeated mistakes, codex cli guardrails</p>
+          <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
+          <div class="proof-links"><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json" target="_blank" rel="noopener">Automation proof</a><a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub repository</a></div>
+          <a class="cta-button" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_code-knowledge-graph-guardrails&amp;cta_placement=seo_brief&amp;plan_id=pro" target="_blank" rel="noopener">Go Pro — $19/mo</a>
+        </div>
+        <div class="sidebar-card">
+          <h2>Related pages</h2>
+
+        <a class="related-card" href="/guides/pre-action-checks">
+          <span class="related-label">Related page</span>
+          <strong>What Are Pre-Action Checks?</strong>
+        </a>
+        <a class="related-card" href="/guides/agent-harness-optimization">
+          <span class="related-label">Related page</span>
+          <strong>AI Agent Harness Optimization That Blocks Repeat Failures</strong>
+        </a>
+        <a class="related-card" href="/guides/best-tools-stop-ai-agents-breaking-production">
+          <span class="related-label">Related page</span>
+          <strong>Best Tools to Stop AI Agents From Breaking Production</strong>
+        </a>
         </div>
       </aside>
-    </div>
+    </section>
   </main>
 </body>
 </html>

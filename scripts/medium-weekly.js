@@ -9,6 +9,14 @@ const { ensureDir } = require('./fs-utils');
 const REPO_ROOT = path.resolve(__dirname, '..');
 const MEDIUM_DIR = path.join(REPO_ROOT, 'docs', 'marketing', 'medium');
 const CONVERSATIONAL_AI_WEEKLY_URL = 'https://medium.com/conversational-ai-weekly';
+const CONVERSATIONAL_AI_WEEKLY_TARGET = Object.freeze({
+  name: 'Conversational AI Weekly',
+  url: CONVERSATIONAL_AI_WEEKLY_URL,
+  visibleAudience: 'conversational AI builders, agent operators, and automation teams',
+  editorSignal: '1 editor listed on Medium',
+  followerSignal: '165 followers observed on Medium',
+  verifiedAt: '2026-05-04',
+});
 
 const ARTICLE_TOPICS = Object.freeze([
   {
@@ -148,6 +156,7 @@ function buildMediumDraft({ date = new Date(), topic = topicForDate(date) } = {}
     platform: 'medium',
     status: 'draft_ready_manual_publish_required',
     publicationUrl: CONVERSATIONAL_AI_WEEKLY_URL,
+    publicationTarget: CONVERSATIONAL_AI_WEEKLY_TARGET,
     date: isoDate(date),
     title: topic.title,
     subtitle: topic.subtitle,
@@ -159,10 +168,74 @@ function buildMediumDraft({ date = new Date(), topic = topicForDate(date) } = {}
     publishChecklist: [
       'Open Medium Write from the signed-in browser session.',
       'Paste the title, subtitle, body, and tags.',
+      'Add a canonical link back to the matching ThumbGate guide when Medium offers import/canonical settings.',
       'Review links and claims against COMMERCIAL_TRUTH.md and VERIFICATION_EVIDENCE.md.',
-      'Submit to Conversational AI Weekly only if the publication accepts outside submissions; otherwise publish under the founder profile.',
+      'Submit to Conversational AI Weekly only if Medium shows a submission path; otherwise publish under the founder profile and tag the publication/editor in the weekly visibility note.',
       'After publish, record the URL in docs/marketing/medium/published.csv.',
     ],
+  };
+}
+
+function buildSubmissionPitch({ date = new Date(), topic = topicForDate(date) } = {}) {
+  const guideUrl = buildTrackedUrl('/guides/pre-action-checks', topic);
+  return {
+    target: CONVERSATIONAL_AI_WEEKLY_TARGET,
+    date: isoDate(date),
+    subject: `Submission idea for Conversational AI Weekly: ${topic.title}`,
+    body: [
+      `Hi ${CONVERSATIONAL_AI_WEEKLY_TARGET.name} team,`,
+      '',
+      `I have a practical piece for production AI-agent builders: "${topic.title}".`,
+      '',
+      'The angle is narrow and operational: orchestration gets more autonomous, but the execution layer still needs deterministic pre-action checks before tool calls run. It is written for teams moving from passive observability into policy-aware agent operations.',
+      '',
+      `ThumbGate context and proof path: ${guideUrl}`,
+      '',
+      'Happy to adapt the draft to the publication format if this fits the weekly editorial lane.',
+    ].join('\n'),
+  };
+}
+
+function buildVisibilityPlan({ date = new Date(), topic = topicForDate(date) } = {}) {
+  const draft = buildMediumDraft({ date, topic });
+  const pitch = buildSubmissionPitch({ date, topic });
+  return {
+    id: `medium-weekly-${draft.date}-${topic.slug}`,
+    cadence: 'weekly',
+    status: 'ready_for_visible_publish_or_submission',
+    generatedAt: new Date(date).toISOString(),
+    targetPublication: CONVERSATIONAL_AI_WEEKLY_TARGET,
+    weeklyGoal: 'One Medium article or response surfaced to the Conversational AI Weekly audience every week.',
+    fallbackPath: 'If publication submission is unavailable, publish under the founder profile and engage with one relevant Conversational AI Weekly article.',
+    artifacts: {
+      draftMarkdown: `${draft.date}-${draft.slug}.md`,
+      engagementQueueCsv: `${draft.date}-engagement-queue.csv`,
+      submissionPitchMarkdown: `${draft.date}-${draft.slug}-pitch.md`,
+      visibilityPlanJson: `${draft.date}-visibility-plan.json`,
+    },
+    publishOrchestration: [
+      {
+        step: 'draft',
+        owner: 'automation',
+        evidence: 'Generated Medium-ready markdown with tracked ThumbGate CTAs.',
+      },
+      {
+        step: 'submit_or_publish',
+        owner: 'human',
+        evidence: 'Medium URL recorded in docs/marketing/medium/published.csv.',
+      },
+      {
+        step: 'engage',
+        owner: 'human-or-approved-agent',
+        evidence: 'One relevant comment or response queued from the engagement CSV.',
+      },
+      {
+        step: 'measure',
+        owner: 'automation',
+        evidence: 'UTM campaign medium_weekly visible in analytics and weekly revenue reports.',
+      },
+    ],
+    pitch,
   };
 }
 
@@ -194,6 +267,8 @@ function renderDraftMarkdown(draft) {
     `platform: ${draft.platform}`,
     `status: ${draft.status}`,
     `publication_url: ${draft.publicationUrl}`,
+    `publication_name: ${JSON.stringify(draft.publicationTarget.name)}`,
+    `publication_audience: ${JSON.stringify(draft.publicationTarget.visibleAudience)}`,
     `date: ${draft.date}`,
     `title: ${JSON.stringify(draft.title)}`,
     `subtitle: ${JSON.stringify(draft.subtitle)}`,
@@ -212,6 +287,22 @@ function renderDraftMarkdown(draft) {
   ].join('\n');
 }
 
+function renderSubmissionPitchMarkdown(pitch) {
+  return [
+    '---',
+    `target: ${JSON.stringify(pitch.target.name)}`,
+    `target_url: ${pitch.target.url}`,
+    `date: ${pitch.date}`,
+    `subject: ${JSON.stringify(pitch.subject)}`,
+    '---',
+    '',
+    `# ${pitch.subject}`,
+    '',
+    pitch.body,
+    '',
+  ].join('\n');
+}
+
 function renderQueueCsv(rows) {
   const headers = ['channel', 'target', 'priority', 'reason', 'prompt', 'draft'];
   const esc = (value) => `"${String(value || '').replaceAll('"', '""')}"`;
@@ -225,18 +316,24 @@ function writeMediumWeeklyDraft({ date = new Date(), outDir = MEDIUM_DIR } = {})
   ensureDir(outDir);
   const topic = topicForDate(date);
   const draft = buildMediumDraft({ date, topic });
+  const pitch = buildSubmissionPitch({ date, topic });
+  const visibilityPlan = buildVisibilityPlan({ date, topic });
   const draftPath = path.join(outDir, `${draft.date}-${draft.slug}.md`);
   const queuePath = path.join(outDir, `${draft.date}-engagement-queue.csv`);
+  const pitchPath = path.join(outDir, `${draft.date}-${draft.slug}-pitch.md`);
+  const visibilityPlanPath = path.join(outDir, `${draft.date}-visibility-plan.json`);
   fs.writeFileSync(draftPath, renderDraftMarkdown(draft), 'utf8');
   fs.writeFileSync(queuePath, `${renderQueueCsv(buildEngagementQueue({ date, topic }))}\n`, 'utf8');
-  return { draftPath, queuePath, draft };
+  fs.writeFileSync(pitchPath, renderSubmissionPitchMarkdown(pitch), 'utf8');
+  fs.writeFileSync(visibilityPlanPath, `${JSON.stringify(visibilityPlan, null, 2)}\n`, 'utf8');
+  return { draftPath, queuePath, pitchPath, visibilityPlanPath, draft, pitch, visibilityPlan };
 }
 
 function createMediumWeeklySchedule({ day = 'monday', time = '09:30' } = {}) {
   const command = [
     `const medium = require(${JSON.stringify(__filename)});`,
     'const result = medium.writeMediumWeeklyDraft();',
-    String.raw`process.stdout.write(JSON.stringify({ draftPath: result.draftPath, queuePath: result.queuePath }, null, 2) + "\n");`,
+    String.raw`process.stdout.write(JSON.stringify({ draftPath: result.draftPath, queuePath: result.queuePath, pitchPath: result.pitchPath, visibilityPlanPath: result.visibilityPlanPath }, null, 2) + "\n");`,
   ].join(' ');
 
   return createSchedule({
@@ -259,7 +356,7 @@ function runCli(argv = process.argv.slice(2), {
     return result;
   }
   const result = writeDraft();
-  process.stdout.write(`${JSON.stringify({ draftPath: result.draftPath, queuePath: result.queuePath }, null, 2)}\n`);
+  process.stdout.write(`${JSON.stringify({ draftPath: result.draftPath, queuePath: result.queuePath, pitchPath: result.pitchPath, visibilityPlanPath: result.visibilityPlanPath }, null, 2)}\n`);
   return result;
 }
 
@@ -274,16 +371,20 @@ if (isCliInvocation()) {
 
 module.exports = {
   ARTICLE_TOPICS,
+  CONVERSATIONAL_AI_WEEKLY_TARGET,
   CONVERSATIONAL_AI_WEEKLY_URL,
   MEDIUM_DIR,
   buildArticleBody,
   buildEngagementQueue,
   buildMediumDraft,
+  buildSubmissionPitch,
   buildTrackedUrl,
+  buildVisibilityPlan,
   createMediumWeeklySchedule,
   isCliInvocation,
   renderDraftMarkdown,
   renderQueueCsv,
+  renderSubmissionPitchMarkdown,
   runCli,
   topicForDate,
   writeMediumWeeklyDraft,

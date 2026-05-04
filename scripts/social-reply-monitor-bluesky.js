@@ -199,13 +199,12 @@ async function publishApprovedDrafts({
   for (const draft of drafts) {
     try {
       const result = await publishReplyFn(session, draft);
-      const previousReplyState = state.repliedTo.bluesky[result.parentUri];
-      state.repliedTo.bluesky[result.parentUri] = {
-        ...(previousReplyState || {}),
+      const previousReplyState = state.repliedTo.bluesky[result.parentUri] || null;
+      state.repliedTo.bluesky[result.parentUri] = Object.assign({}, previousReplyState, {
         postedAt: new Date().toISOString(),
         postedUri: result.uri,
         postedCid: result.cid,
-      };
+      });
       published.push(result);
     } catch (err) {
       failed.push({ parentUri: draft.reply?.parent?.uri || draft.notification?.uri || '', error: err.message });

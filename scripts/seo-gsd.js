@@ -64,6 +64,51 @@ const HIGH_ROI_QUERY_SEEDS = [
     'Fresh prompt-engineering skepticism that maps directly to ThumbGate converting clear instructions, examples, and repeated failures into enforceable local checks.',
   ),
   querySeed(
+    'semantic programmatic seo guardrails',
+    94,
+    'Fresh semantic pSEO demand where ThumbGate can own the governance layer: authority maps, brand context rules, semantic internal linking, and technical monitoring before AI content scales.',
+  ),
+  querySeed(
+    'proxy pointer rag guardrails',
+    94,
+    'Fresh document-RAG demand where ThumbGate can own grounding gates for section trees, image pointers, visual claims, and cross-document leakage.',
+  ),
+  querySeed(
+    'rag precision tuning guardrails',
+    94,
+    'Fresh retrieval-quality demand where ThumbGate can gate embedding fine-tunes, threshold changes, recall regressions, and verifier latency before agentic RAG pipelines act.',
+  ),
+  querySeed(
+    'internal ai engineering stack guardrails',
+    94,
+    'Fresh Cloudflare-style AI engineering stack demand where ThumbGate can govern AI gateways, MCP portals, AGENTS.md/LLM wiki freshness, AI review, and sandboxed background agents.',
+  ),
+  querySeed(
+    'seo agent skills guardrails',
+    94,
+    'Fresh SEO-agent demand where ThumbGate can govern workspaces, proof context, brand rules, internal-link checks, and publish gates.',
+  ),
+  querySeed(
+    'thumbgate vs fallow',
+    93,
+    'Bottom-of-funnel positioning against JS/TS static-analysis and agent-review tooling; Fallow finds code health issues while ThumbGate enforces agent action boundaries.',
+  ),
+  querySeed(
+    'claude code masterclass guardrails',
+    91,
+    'Claude Code education demand proves a growing buyer audience that needs a safety kit after learning to automate more workflows.',
+  ),
+  querySeed(
+    'long running agent context management',
+    93,
+    'Fresh Slack engineering pattern where ThumbGate can gate director journals, critic reviews, credibility scoring, and timelines for long-running agents.',
+  ),
+  querySeed(
+    'reasoning compression guardrails',
+    92,
+    'Fresh efficient-reasoning research where ThumbGate can govern step-level confidence, verifier outcomes, and token-saving model routes.',
+  ),
+  querySeed(
     'background agent governance',
     94,
     'New team-buying query for unattended agent PRs where alignment context, isolated execution, risk-tiered review, and audit evidence create immediate ROI.',
@@ -267,6 +312,490 @@ function buildHarnessOptimizationGuide() {
   });
 }
 
+const SEMANTIC_PSEO_GUARDRAILS_SPEC = Object.freeze({
+  slug: 'semantic-programmatic-seo-guardrails',
+  meta: {
+    query: 'semantic programmatic seo guardrails',
+    title: 'Semantic Programmatic SEO Guardrails | ThumbGate Guide',
+    heroTitle: 'Semantic pSEO Needs Governance Before Scale',
+    heroSummary: 'Semantic programmatic SEO works when every page has authority, brand context, internal links, and technical monitoring. ThumbGate turns those requirements into pre-action checks before AI agents publish at scale.',
+  },
+  takeaways: [
+    'Authority maps stop the team from generating pages in categories where ThumbGate has no right to rank yet.',
+    'Context governance turns brand rules, negative constraints, and proof links into reusable AI-agent instructions.',
+    'Semantic mesh checks prevent orphan pages by requiring every new SEO page to point to the next useful buyer step.',
+    'Technical monitoring catches broken routes, missing schema, and stale proof before scaled content hurts trust.',
+  ],
+  sections: [
+    ['paragraphs', 'Why this promotes ThumbGate', [
+      'The semantic pSEO play is not to publish thousands of thin pages. It is to prove that ThumbGate is the governance layer teams need before they let AI agents generate, edit, and publish buyer-facing surfaces.',
+      'That maps cleanly to the product: ThumbGate already turns feedback, context, and risky workflow patterns into pre-action checks. SEO teams have the same problem when AI content workflows start moving faster than review.',
+    ]],
+    ['bullets', 'The high-ROI pSEO guardrails', [
+      'Authority map gate: prioritize queries where ThumbGate already has topical proof, shipped pages, or product evidence.',
+      'Brand context gate: inject persona, negative wording constraints, pricing truth, and proof links before draft generation.',
+      'Semantic mesh gate: require every new page to link to a pillar, a comparison, a conversion path, and at least one adjacent guide.',
+      'Technical guardian gate: block publish when canonical tags, JSON-LD, llm-context links, route coverage, or proof freshness are missing.',
+    ]],
+    ['paragraphs', 'Where the conversion path belongs', [
+      'Semantic pSEO only helps us make money when the page routes the searcher into a concrete next step. For ThumbGate, the next step is either the $19/mo Pro lane for self-serve operators or the workflow-hardening sprint for teams with risky agent workflows.',
+      'That is why each page generated from the SEO/GEO engine needs a buyer-intent CTA, related pages that keep the journey alive, and proof assets that reduce trust friction before checkout.',
+    ]],
+  ],
+  faq: [
+    [
+      'Is semantic programmatic SEO just AI content at scale?',
+      'No. The useful version starts with authority data, then uses governed context, semantic linking, and technical monitoring so each page answers a distinct buyer need instead of duplicating a template.',
+    ],
+    [
+      'How does ThumbGate fit into semantic pSEO?',
+      'ThumbGate is the enforcement layer around the AI workflow: it can block unsupported claims, missing proof, orphan pages, stale pricing, and risky publish steps before generated content goes live.',
+    ],
+  ],
+  relatedPaths: ['/guides/ai-search-topical-presence', '/guides/prompt-tricks-to-workflow-rules', '/compare/mem0'],
+});
+
+function buildSemanticPseoGuide() {
+  return guideBlueprint({
+    ...SEMANTIC_PSEO_GUARDRAILS_SPEC.meta,
+    path: `/guides/${SEMANTIC_PSEO_GUARDRAILS_SPEC.slug}`,
+    pillar: 'seo-governance',
+    takeaways: SEMANTIC_PSEO_GUARDRAILS_SPEC.takeaways,
+    sections: SEMANTIC_PSEO_GUARDRAILS_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+    faq: SEMANTIC_PSEO_GUARDRAILS_SPEC.faq.map(([question, text]) => answer(question, text)),
+    relatedPaths: SEMANTIC_PSEO_GUARDRAILS_SPEC.relatedPaths,
+  });
+}
+
+const PROXY_POINTER_RAG_GUARDRAILS_SPEC = Object.freeze({
+  slug: 'proxy-pointer-rag-guardrails',
+  meta: {
+    query: 'proxy pointer rag guardrails',
+    title: 'Proxy-Pointer RAG Guardrails | Multimodal Answers Without Ungrounded Images',
+    heroTitle: 'Proxy-Pointer RAG Needs Guardrails Before Visual Answers',
+    heroSummary: 'Proxy-pointer RAG keeps visual document systems cheaper by preserving section trees and image pointers instead of embedding every image. ThumbGate turns that structure into pre-action checks before agents answer with charts, figures, or screenshots.',
+  },
+  takeaways: [
+    'Document structure is a control surface: section trees, source document IDs, and image paths should travel with every answer.',
+    'Visual answers need pointer grounding so one plausible chart from the wrong PDF cannot slip into a buyer-facing response.',
+    'ThumbGate now maps proxy-pointer RAG signals to Document RAG Safety templates through npx thumbgate proxy-pointer-rag-guardrails.',
+  ],
+  sections: [
+    ['paragraphs', 'Why this helps ThumbGate', [
+      'The commercial wedge is clear: teams want cheaper multimodal answers, but they still need proof that the visual evidence came from the right document and section.',
+      'ThumbGate does not replace multimodal embeddings. It governs the answer boundary: did the agent preserve the section tree, attach image pointers, prevent cross-document leakage, and sanity-check high-impact visual claims?',
+    ]],
+    ['bullets', 'High-ROI gates to enable', [
+      'Require section tree before multimodal answers so visual claims stay attached to document hierarchy.',
+      'Require image pointer grounding for every cited chart, figure, or screenshot path.',
+      'Block cross-document image leakage when the selected visual belongs to a different source document.',
+      'Checkpoint a vision filter only when the answer makes high-impact visual claims.',
+      'CLI path: npx thumbgate proxy-pointer-rag-guardrails --tree-path=.rag/tree.json --image-pointers=paper-1/figures/fig2.png --documents=paper-1 --visual-claims --json.',
+    ]],
+    ['paragraphs', 'Where this creates revenue', [
+      'This gives ThumbGate a new RAG/document-AI buyer path without pretending to be a vector database. The offer is workflow hardening for one document-answering pipeline: ingestion metadata, pointer proof, answer gates, and evidence review.',
+    ]],
+  ],
+  faq: [
+    [
+      'Does ThumbGate replace multimodal embeddings?',
+      'No. ThumbGate enforces the structure around the retrieval and answer step. Teams can still use text embeddings, multimodal embeddings, or proxy-pointer RAG; ThumbGate checks whether the answer is grounded before the agent acts.',
+    ],
+    [
+      'What should teams gate first in visual document RAG?',
+      'Start with section-tree presence, image pointer grounding, and cross-document leakage. Those checks are specific enough to enforce quickly and risky enough to matter.',
+    ],
+  ],
+  relatedPaths: ['/guides/rag-precision-tuning-guardrails', '/guides/code-knowledge-graph-guardrails', '/guides/pre-action-checks'],
+});
+
+function buildProxyPointerRagGuide() {
+  return guideBlueprint({
+    ...PROXY_POINTER_RAG_GUARDRAILS_SPEC.meta,
+    path: `/guides/${PROXY_POINTER_RAG_GUARDRAILS_SPEC.slug}`,
+    pillar: 'document-rag-safety',
+    takeaways: PROXY_POINTER_RAG_GUARDRAILS_SPEC.takeaways,
+    sections: PROXY_POINTER_RAG_GUARDRAILS_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+    faq: PROXY_POINTER_RAG_GUARDRAILS_SPEC.faq.map(([question, text]) => answer(question, text)),
+    relatedPaths: PROXY_POINTER_RAG_GUARDRAILS_SPEC.relatedPaths,
+  });
+}
+
+const RAG_PRECISION_TUNING_GUARDRAILS_SPEC = Object.freeze({
+  slug: 'rag-precision-tuning-guardrails',
+  meta: {
+    query: 'rag precision tuning guardrails',
+    title: 'RAG Precision Tuning Guardrails | Stop Retrieval Regressions Before Agents Act',
+    heroTitle: 'RAG Precision Tuning Can Break Agentic Pipelines Quietly',
+    heroSummary: 'Embedding fine-tunes and threshold tweaks can improve one precision metric while degrading broad retrieval recall. ThumbGate gates retrieval changes with baselines, verifier checks, and latency budgets before agentic RAG output triggers downstream actions.',
+  },
+  takeaways: [
+    'A precision win is not safe unless recall@k, precision@k, answer-with-evidence, and latency are compared against a saved baseline.',
+    'Agentic RAG raises the risk because one retrieval miss can cascade into tool calls, decisions, or workflow changes.',
+    'ThumbGate now exposes npx thumbgate rag-precision-guardrails for retrieval-tuning and verifier rollout checks.',
+  ],
+  sections: [
+    ['paragraphs', 'Why this became urgent', [
+      'Recent retrieval research surfaced a failure mode that matches ThumbGate perfectly: a system can look better on one tuning objective while quietly getting worse at the general retrieval job the agent depends on.',
+      'That is not only an answer-quality problem. In an agentic pipeline, retrieved context can determine which files get edited, which customer gets contacted, or which operational action runs next.',
+    ]],
+    ['bullets', 'High-ROI gates to enable', [
+      'Require a retrieval baseline before embedding fine-tunes, threshold changes, or top-k changes.',
+      'Block rollout when recall drops without a rollback plan, even if a narrow precision metric improves.',
+      'Require a second-stage verifier or reranker for structural near misses such as negation flips and role reversals.',
+      'Checkpoint latency and precision tradeoffs before verifier stages become production dependencies.',
+      'CLI path: npx thumbgate rag-precision-guardrails --baseline-recall=0.86 --new-recall=0.72 --threshold-change --agentic --structural-near-misses --json.',
+    ]],
+    ['paragraphs', 'Where this creates revenue', [
+      'This is a sharp enterprise wedge for teams that already bought a vector database or RAG platform and now need governance. ThumbGate sells the missing safety lane: baseline proof, action gates, and retrieval-change review before autonomous agents depend on the new index.',
+    ]],
+  ],
+  faq: [
+    [
+      'Does higher retrieval precision always help RAG?',
+      'No. Precision tuning can improve a narrow objective while hurting broad recall or generalization. ThumbGate treats retrieval tuning as a gated change, not a harmless config tweak.',
+    ],
+    [
+      'When do I need a two-stage verifier?',
+      'Use one when the workflow is sensitive to structural near misses, such as negation, role reversal, legal clauses, financial facts, policy exceptions, or anything that can trigger downstream agent actions.',
+    ],
+  ],
+  relatedPaths: ['/guides/proxy-pointer-rag-guardrails', '/guides/pre-action-checks', '/guides/background-agent-governance'],
+});
+
+function buildRagPrecisionTuningGuide() {
+  return guideBlueprint({
+    ...RAG_PRECISION_TUNING_GUARDRAILS_SPEC.meta,
+    path: `/guides/${RAG_PRECISION_TUNING_GUARDRAILS_SPEC.slug}`,
+    pillar: 'document-rag-safety',
+    takeaways: RAG_PRECISION_TUNING_GUARDRAILS_SPEC.takeaways,
+    sections: RAG_PRECISION_TUNING_GUARDRAILS_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+    faq: RAG_PRECISION_TUNING_GUARDRAILS_SPEC.faq.map(([question, text]) => answer(question, text)),
+    relatedPaths: RAG_PRECISION_TUNING_GUARDRAILS_SPEC.relatedPaths,
+  });
+}
+
+const AI_ENGINEERING_STACK_GUARDRAILS_SPEC = Object.freeze({
+  slug: 'internal-ai-engineering-stack-guardrails',
+  meta: {
+    query: 'internal ai engineering stack guardrails',
+    title: 'Internal AI Engineering Stack Guardrails | ThumbGate Guide',
+    heroTitle: 'Internal AI Engineering Stacks Need Pre-Action Enforcement',
+    heroSummary: 'AI coding adoption scales when the platform has a model gateway, progressive MCP discovery, fresh AGENTS.md and LLM wiki context, risk-tiered AI review, and sandboxed background agents. ThumbGate turns those layers into checks before unsafe agent work ships.',
+  },
+  takeaways: [
+    'A central AI gateway or proxy keeps model keys, spend, attribution, routing, and retention policy out of individual laptops.',
+    'MCP portals need progressive discovery or code-mode search/execute tools before schema overhead eats the agent context window.',
+    'AGENTS.md and LLM wiki pages become useful only when source-backed freshness gates keep repo instructions current.',
+    'Risk-tiered AI review and sandboxed background agents let teams automate more work without losing standards, logs, or isolation.',
+  ],
+  sections: [
+    ['paragraphs', 'Why this helps ThumbGate make money', [
+      'Cloudflare described the enterprise version of a pattern ThumbGate can sell to smaller teams today: the value is not a clever prompt, it is the wiring between access, model routing, tool portals, repo context, review, standards, and durable agent execution.',
+      'ThumbGate is the enforcement layer for that stack. It can block direct provider keys, warn on MCP schema bloat, require AGENTS.md and LLM wiki freshness, demand rule-cited review, and stop background agents that are not isolated before the next action runs.',
+    ]],
+    ['bullets', 'The high-ROI stack gates', [
+      'AI gateway gate: require one model proxy or gateway before adding providers, clients, BYOK paths, or high-volume coding assistants.',
+      'MCP portal gate: collapse large tool surfaces behind progressive discovery or code-mode search/execute so every prompt does not preload every schema.',
+      'AGENTS.md and LLM wiki freshness gate: regenerate short repo context from source metadata, ownership, tests, and dependency maps before agent runs rely on it.',
+      'AI review gate: classify changes by risk tier, cite standards-as-skills, and separate security, code quality, performance, docs, and release-impact findings.',
+      'Background agent sandbox gate: require isolated clone/build/test execution, durable logs, and resumable sessions before unattended agents can publish, deploy, or touch revenue workflows.',
+    ]],
+    ['paragraphs', 'How to run it this week', [
+      'Start with the parts that affect money or production: checkout, pricing, publish automation, deploys, customer data, and outbound marketing. Run the stack planner against those workflows, enable the recommended templates, then publish the guide as proof that ThumbGate understands the modern AI engineering stack.',
+      'This also answers the LLM-wiki trend directly. A wiki is useful when it becomes short, source-backed context that agents can trust; it is dangerous when stale pages become invisible policy. ThumbGate makes freshness and grounding enforceable.',
+    ]],
+    ['bullets', 'Operator command', [
+      'npx thumbgate ai-engineering-stack-guardrails --mcp-tool-count=182 --direct-provider-keys --llm-wiki-pages=24 --context-freshness-days=30 --background-agents --high-risk-workflows=deploy,billing --json.',
+    ]],
+  ],
+  faq: [
+    [
+      'Do we need to rebuild Cloudflare infrastructure to benefit from this?',
+      'No. ThumbGate starts with the control points that matter most: centralized model access, smaller MCP surfaces, fresh agent context, AI review, and sandbox evidence. Those can be gated before a full platform migration.',
+    ],
+    [
+      'How does this relate to LLM wikis and AGENTS.md?',
+      'Both are agent-context surfaces. ThumbGate treats them as source-backed operational artifacts, then blocks or warns when they are missing, stale, unowned, or disconnected from tests and repo conventions.',
+    ],
+  ],
+  relatedPaths: ['/guides/code-knowledge-graph-guardrails', '/guides/long-running-agent-context-management', '/guides/rag-precision-tuning-guardrails'],
+});
+
+function buildAiEngineeringStackGuide() {
+  return guideBlueprint({
+    ...AI_ENGINEERING_STACK_GUARDRAILS_SPEC.meta,
+    path: `/guides/${AI_ENGINEERING_STACK_GUARDRAILS_SPEC.slug}`,
+    pillar: 'ai-stack-governance',
+    takeaways: AI_ENGINEERING_STACK_GUARDRAILS_SPEC.takeaways,
+    sections: AI_ENGINEERING_STACK_GUARDRAILS_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+    faq: AI_ENGINEERING_STACK_GUARDRAILS_SPEC.faq.map(([question, text]) => answer(question, text)),
+    relatedPaths: AI_ENGINEERING_STACK_GUARDRAILS_SPEC.relatedPaths,
+  });
+}
+
+const SEO_AGENT_SKILLS_GUARDRAILS_SPEC = Object.freeze({
+  slug: 'seo-agent-skills-guardrails',
+  meta: {
+    query: 'seo agent skills guardrails',
+    title: 'SEO Agent Skills Guardrails | Govern Workspaces, Proof, and Publish Gates',
+    heroTitle: 'SEO Agents Need Workspaces and Guardrails, Not Prompt Sprawl',
+    heroSummary: 'Useful SEO agents need skills, workspace context, technical checks, brand rules, and a publish review loop. ThumbGate turns that SEO-agent operating system into pre-action gates before AI content, links, or page changes go live.',
+  },
+  takeaways: [
+    'The best SEO-agent workflow starts with workspaces: site context, brand context, SERP evidence, technical constraints, and proof assets.',
+    'ThumbGate makes those skills enforceable with gates for unsupported claims, orphan pages, stale pricing, schema gaps, and missing internal links.',
+    'This promotes ThumbGate directly because every SEO-agent buyer also needs a governance layer before automation scales.',
+  ],
+  sections: [
+    ['paragraphs', 'Why this promotes ThumbGate', [
+      'The Search Engine Land pattern is exactly our product thesis in a marketing workflow: stop relying on free-form prompts and build a skill/workspace system that agents can use repeatedly.',
+      'ThumbGate adds the missing enforcement layer. An SEO skill can say "use proof links" or "check the sitemap"; a ThumbGate pre-action gate can block publish when proof, canonical tags, schema, or buyer-path links are missing.',
+    ]],
+    ['bullets', 'High-ROI SEO-agent gates', [
+      'Workspace context gate: require brand rules, pricing truth, proof links, SERP intent, and target persona before drafting.',
+      'Technical publish gate: block missing canonical tags, FAQPage schema, llm-context links, sitemap coverage, and crawl-safe routes.',
+      'Semantic mesh gate: require pillar, comparison, conversion, and adjacent-guide links before publishing a new page.',
+      'Reviewer handoff gate: require the agent to summarize claim risk, source evidence, and next conversion path before a human approves.',
+    ]],
+    ['paragraphs', 'Where this creates revenue', [
+      'This turns SEO-agent interest into the same Workflow Hardening Sprint offer: harden one content workflow, prove one publish gate, and connect the page to checkout or team intake instead of shipping more ungoverned AI content.',
+    ]],
+  ],
+  faq: [
+    [
+      'Should ThumbGate build SEO agents?',
+      'ThumbGate should govern SEO agents first. The product value is making skills, workspaces, and publish checks enforceable before generated pages or edits go live.',
+    ],
+    [
+      'What is the first SEO-agent gate to implement?',
+      'Start with proof and semantic mesh: block pages that lack verification links, current pricing, related internal links, and a concrete conversion path.',
+    ],
+  ],
+  relatedPaths: ['/guides/semantic-programmatic-seo-guardrails', '/guides/ai-search-topical-presence', '/compare/fallow'],
+});
+
+function buildSeoAgentSkillsGuide() {
+  return guideBlueprint({
+    ...SEO_AGENT_SKILLS_GUARDRAILS_SPEC.meta,
+    path: `/guides/${SEO_AGENT_SKILLS_GUARDRAILS_SPEC.slug}`,
+    pillar: 'seo-governance',
+    takeaways: SEO_AGENT_SKILLS_GUARDRAILS_SPEC.takeaways,
+    sections: SEO_AGENT_SKILLS_GUARDRAILS_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+    faq: SEO_AGENT_SKILLS_GUARDRAILS_SPEC.faq.map(([question, text]) => answer(question, text)),
+    relatedPaths: SEO_AGENT_SKILLS_GUARDRAILS_SPEC.relatedPaths,
+  });
+}
+
+const CLAUDE_CODE_SKILLS_GUARDRAILS_SPEC = Object.freeze({
+  slug: 'claude-code-skills-guardrails',
+  meta: {
+    query: 'claude code masterclass guardrails',
+    title: 'Claude Code Skills Guardrails | Turn Skillbooks Into Enforced Workflows',
+    heroTitle: 'Claude Code Skills Need Pre-Action Enforcement',
+    heroSummary: 'Claude Code skillbooks make recurring work more systematic, but markdown skills are still advisory. ThumbGate turns skill feedback into reusable rules, tests, and pre-action checks before the next risky command or edit runs.',
+  },
+  takeaways: [
+    'A living skillbook is useful acquisition fuel because new Claude Code users need reusable workflows immediately.',
+    'The high-ROI product move is not another prompt file; it is converting named skills into gates, tests, and proof loops.',
+    'This creates a clear post-course offer: install ThumbGate after learning Claude Code so the new automation does not repeat costly mistakes.',
+  ],
+  sections: [
+    ['paragraphs', 'Why this helps ThumbGate', [
+      'Claude Code education expands the market. More people learning to automate code means more people about to hit repeated mistakes, risky shell commands, skipped tests, and vague project rules.',
+      'ThumbGate can be the safety kit for that moment: keep the skillbook, but promote every painful correction into an enforced pre-action check.',
+    ]],
+    ['bullets', 'High-ROI workflow to ship', [
+      'Create a repo skillbook with named skills for refactors, tests, migrations, CI hardening, and prompt/tool changes.',
+      'Require each skill to name inputs, forbidden actions, verification steps, and examples of good and bad execution.',
+      'Capture thumbs-down failures from skill use and promote repeat patterns into ThumbGate prevention rules.',
+      'Block risky actions when the current task claims a skill but skips its required verification.',
+      'Route buyers into the Workflow Hardening Sprint when one skill repeatedly fails in a shared repo.',
+    ]],
+    ['paragraphs', 'Where this creates revenue', [
+      'This is a concrete sales bridge from Claude Code training content to ThumbGate: if a team is investing in skills, they already believe AI coding workflows can improve. ThumbGate sells the part that makes those workflows reliable across sessions and teammates.',
+    ]],
+  ],
+  faq: [
+    [
+      'Does ThumbGate replace Claude skills?',
+      'No. Skills describe how work should happen. ThumbGate checks whether the agent is allowed to take the next action and whether it has followed the skill evidence requirements.',
+    ],
+    [
+      'What should a Claude Code skillbook contain?',
+      'Use named skills with purpose, inputs, do/don’t rules, verification commands, expected evidence, and examples. Then wire repeated failures into ThumbGate gates.',
+    ],
+  ],
+  relatedPaths: ['/guides/claude-code-feedback', '/guides/prompt-tricks-to-workflow-rules', '/guides/pre-action-checks'],
+});
+
+function buildClaudeCodeSkillsGuide() {
+  return guideBlueprint({
+    ...CLAUDE_CODE_SKILLS_GUARDRAILS_SPEC.meta,
+    path: `/guides/${CLAUDE_CODE_SKILLS_GUARDRAILS_SPEC.slug}`,
+    pillar: 'agent-workflows',
+    takeaways: CLAUDE_CODE_SKILLS_GUARDRAILS_SPEC.takeaways,
+    sections: CLAUDE_CODE_SKILLS_GUARDRAILS_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+    faq: CLAUDE_CODE_SKILLS_GUARDRAILS_SPEC.faq.map(([question, text]) => answer(question, text)),
+    relatedPaths: CLAUDE_CODE_SKILLS_GUARDRAILS_SPEC.relatedPaths,
+  });
+}
+
+const LONG_RUNNING_AGENT_CONTEXT_GUIDE_SPEC = Object.freeze({
+  slug: 'long-running-agent-context-management',
+  meta: {
+    query: 'long running agent context management',
+    title: 'Long-Running Agent Context Management | Director Journals and Critic Reviews',
+    heroTitle: 'Long-Running Agents Need Structured Memory, Not Raw Chat Logs',
+    heroSummary: 'Slack\'s long-running multi-agent pattern points to director journals, critic reviews, and credibility-scored timelines. ThumbGate turns those context channels into pre-action checks before background agents, revenue loops, or investigations drift.',
+  },
+  takeaways: [
+    'Long-running agents should not rely on accumulated chat logs once requests and output grow across many rounds.',
+    'Director journals keep structured working memory; critic reviews score evidence; timelines deduplicate and resolve conflicts.',
+    'ThumbGate now exposes npx thumbgate long-running-agent-context-guardrails to gate missing structured memory before handoff or action.',
+  ],
+  sections: [
+    ['paragraphs', 'Why this helps ThumbGate', [
+      'This maps directly to Ralph Loop, reply orchestration, background PRs, and revenue automation. The longer the loop runs, the more dangerous raw history becomes as the source of truth.',
+      'ThumbGate can sell the control layer: journal the decisions, review findings with evidence, score credibility, and block external actions when the agent is building on unreviewed memory.',
+    ]],
+    ['bullets', 'High-ROI context gates', [
+      'Require a director journal for observations, decisions, questions, hypotheses, and open risks.',
+      'Require critic review with credibility scores before expert findings become shared memory.',
+      'Checkpoint the critic timeline when duplicates, stale claims, or conflicts remain unresolved.',
+      'CLI path: npx thumbgate long-running-agent-context-guardrails --request-count=80 --output-mb=3 --raw-chat-only --json.',
+    ]],
+    ['paragraphs', 'Where this creates revenue', [
+      'This is an enterprise-quality story for teams moving from one-off assistants to persistent agents. ThumbGate hardens one long-running workflow and proves that it can maintain truth across sessions before the agent reaches production authority.',
+    ]],
+  ],
+  faq: [
+    [
+      'Why not just keep the whole chat history?',
+      'Because raw history grows until it wastes context, creates stale truth, and degrades reasoning. Structured memory keeps the useful state without passing every token forever.',
+    ],
+    [
+      'What should a long-running agent persist?',
+      'Persist a director journal, critic-reviewed findings with credibility scores, and a deduplicated timeline that resolves conflicts by strongest evidence.',
+    ],
+  ],
+  relatedPaths: ['/guides/background-agent-governance', '/guides/agent-harness-optimization', '/guides/pre-action-checks'],
+});
+
+function buildLongRunningAgentContextGuide() {
+  return preActionGuide(LONG_RUNNING_AGENT_CONTEXT_GUIDE_SPEC.slug, {
+    ...LONG_RUNNING_AGENT_CONTEXT_GUIDE_SPEC.meta,
+    takeaways: LONG_RUNNING_AGENT_CONTEXT_GUIDE_SPEC.takeaways,
+    sections: LONG_RUNNING_AGENT_CONTEXT_GUIDE_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+    faq: LONG_RUNNING_AGENT_CONTEXT_GUIDE_SPEC.faq.map(([question, text]) => answer(question, text)),
+    relatedPaths: LONG_RUNNING_AGENT_CONTEXT_GUIDE_SPEC.relatedPaths,
+  });
+}
+
+const REASONING_COMPRESSION_GUARDRAILS_SPEC = Object.freeze({
+  slug: 'reasoning-compression-guardrails',
+  meta: {
+    query: 'reasoning compression guardrails',
+    title: 'Reasoning Compression Guardrails | Step-Level Verifier Checks Before Token Savings',
+    heroTitle: 'Reasoning Compression Needs Step-Level Safety Checks',
+    heroSummary: 'Efficient reasoning can reduce token cost, but short traces can destabilize accuracy. ThumbGate gates reasoning compression with verifier outcomes, pass@1 baselines, low-confidence step review, and high-confidence failure inspection.',
+  },
+  takeaways: [
+    'Reasoning compression is only ROI-positive when quality survives the token savings.',
+    'Step-level confidence matters because correct final answers can still contain brittle intermediate steps.',
+    'ThumbGate now exposes npx thumbgate reasoning-efficiency-guardrails for verifier-backed model routing and prompt-eval workflows.',
+  ],
+  sections: [
+    ['paragraphs', 'Why this helps ThumbGate', [
+      'This creates a model-cost governance story: ThumbGate can help teams route cheaper, shorter reasoning only when a verifier proves the compressed trace is still safe.',
+      'The same mechanism also protects DPO/RLHF export and model-evaluation workflows from rewarding or punishing the wrong reasoning steps.',
+    ]],
+    ['bullets', 'High-ROI reasoning gates', [
+      'Require verifier and pass@1 evidence before compressing reasoning traces.',
+      'Checkpoint low-confidence steps even in correct rollouts before reinforcing them.',
+      'Checkpoint high-confidence failed rollouts for truncation or verifier noise before penalizing them.',
+      'CLI path: npx thumbgate reasoning-efficiency-guardrails --baseline-tokens=1200 --compressed-tokens=980 --baseline-accuracy=0.84 --compressed-accuracy=0.85 --verifier --json.',
+    ]],
+    ['paragraphs', 'Where this creates revenue', [
+      'This improves the Pro and Team model-hardening story. Buyers can save inference cost and evaluation time without turning "shorter reasoning" into an unmeasured reliability regression.',
+    ]],
+  ],
+  faq: [
+    [
+      'Should every agent use shorter reasoning traces?',
+      'No. Compress traces only when verifier outcomes and accuracy baselines prove the shorter route still works for the workload.',
+    ],
+    [
+      'How does ThumbGate use step-level reasoning signals?',
+      'ThumbGate does not train the model directly. It gates routing, exports, and workflow decisions when low-confidence steps, high-confidence failures, or missing verifier evidence make compression risky.',
+    ],
+  ],
+  relatedPaths: ['/guides/gpt-5-5-model-evaluation', '/guides/agent-harness-optimization', '/guides/pre-action-checks'],
+});
+
+function buildReasoningCompressionGuide() {
+  return preActionGuide(REASONING_COMPRESSION_GUARDRAILS_SPEC.slug, {
+    ...REASONING_COMPRESSION_GUARDRAILS_SPEC.meta,
+    takeaways: REASONING_COMPRESSION_GUARDRAILS_SPEC.takeaways,
+    sections: REASONING_COMPRESSION_GUARDRAILS_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+    faq: REASONING_COMPRESSION_GUARDRAILS_SPEC.faq.map(([question, text]) => answer(question, text)),
+    relatedPaths: REASONING_COMPRESSION_GUARDRAILS_SPEC.relatedPaths,
+  });
+}
+
+const DEEPSEEK_V4_RUNTIME_GUARDRAILS_SPEC = Object.freeze({
+  slug: 'deepseek-v4-runtime-guardrails',
+  meta: {
+    query: 'deepseek v4 runtime guardrails',
+    title: 'DeepSeek V4 Runtime Guardrails | Sparse Attention, Speculation, and Verified RL',
+    heroTitle: 'DeepSeek-V4 Needs Runtime Guardrails Before Production Routing',
+    heroSummary: 'DeepSeek-V4 introduces long-context sparse attention, speculative decoding, KV offload, FP4/FP8 paths, and verified-RL replay concerns. ThumbGate turns those runtime signals into pre-action checks before model-routing or training changes go live.',
+  },
+  takeaways: [
+    'The high-ROI move is not blindly switching models; it is benchmarking DeepSeek-V4 behind cache, speculation, precision, and replay gates.',
+    'Hybrid sparse attention changes prefix-cache assumptions, so cache coherence and rollback evidence must exist before routing long traces.',
+    'ThumbGate now exposes npx thumbgate deepseek-v4-runtime-guardrails for self-hosted long-context model rollouts.',
+  ],
+  sections: [
+    ['paragraphs', 'Why this helps ThumbGate', [
+      'Teams adopting SGLang-style DeepSeek-V4 serving are exactly the buyers who need agent governance: they are optimizing cost and throughput while increasing context length and system complexity.',
+      'ThumbGate can sit above the runtime as the policy layer that blocks unsafe routing changes, requires benchmark proof, and keeps self-hosted model experiments from becoming invisible production risk.',
+    ]],
+    ['bullets', 'High-ROI runtime gates', [
+      'Require hybrid prefix-cache coherence eval before enabling long-context cache reuse.',
+      'Checkpoint speculative decoding acceptance length, rollback behavior, and correctness before treating it as a speedup.',
+      'Require long-context KV capacity and offload plans before 128k+ or 1M-token routing.',
+      'Require rollout routing replay, indexer replay, and train-inference drift checks before RL or fine-tuning updates.',
+      'Checkpoint FP4/FP8 mixed-precision determinism before benchmark results update routing.',
+      'CLI path: npx thumbgate deepseek-v4-runtime-guardrails --context-tokens=900000 --hybrid-attention --speculative-decoding --accept-length=1.4 --precision-mode=fp8 --json.',
+    ]],
+    ['paragraphs', 'Where this creates revenue', [
+      'This gives ThumbGate a serious infrastructure story for teams moving beyond hosted APIs. The offer is a Workflow Hardening Sprint around one model-routing lane: prove the runtime change, gate the risks, and keep the agent from silently routing expensive work through an unverified path.',
+    ]],
+  ],
+  faq: [
+    [
+      'Should ThumbGate switch to DeepSeek-V4 by default?',
+      'No. Treat DeepSeek-V4 as a candidate for self-hosted long-context workloads. Route to it only after ThumbGate benchmarks pass for quality, cache coherence, latency, cost, and rollback behavior.',
+    ],
+    [
+      'What is different about DeepSeek-V4 governance?',
+      'The risk is not only model quality. Hybrid sparse attention, speculative decoding, KV offload, mixed precision, and RL replay can all create silent runtime failures unless each change is gated with evidence.',
+    ],
+  ],
+  relatedPaths: ['/guides/reasoning-compression-guardrails', '/guides/long-running-agent-context-management', '/guides/gpt-5-5-model-evaluation'],
+});
+
+function buildDeepSeekV4RuntimeGuide() {
+  return preActionGuide(DEEPSEEK_V4_RUNTIME_GUARDRAILS_SPEC.slug, {
+    ...DEEPSEEK_V4_RUNTIME_GUARDRAILS_SPEC.meta,
+    takeaways: DEEPSEEK_V4_RUNTIME_GUARDRAILS_SPEC.takeaways,
+    sections: DEEPSEEK_V4_RUNTIME_GUARDRAILS_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+    faq: DEEPSEEK_V4_RUNTIME_GUARDRAILS_SPEC.faq.map(([question, text]) => answer(question, text)),
+    relatedPaths: DEEPSEEK_V4_RUNTIME_GUARDRAILS_SPEC.relatedPaths,
+  });
+}
+
 const CODE_KNOWLEDGE_GRAPH_GUARDRAILS_SPEC = Object.freeze({
   slug: 'code-knowledge-graph-guardrails',
   meta: {
@@ -282,7 +811,7 @@ const CODE_KNOWLEDGE_GRAPH_GUARDRAILS_SPEC = Object.freeze({
   ],
   sections: [
     ['paragraphs', 'Why this became a buyer question', [
-      'Claude Code plugins and code-graph MCPs are making architecture maps easier to generate. That helps agents stop reading code blind, but it does not automatically govern the next tool call.',
+      'Understand Anything and code-graph MCPs are making architecture maps easier to generate. That helps agents stop reading code blind, but it does not automatically govern the next tool call.',
       'A graph can say a file is central, a refactor crosses layers, or a generated graph artifact should not be edited. ThumbGate turns those signals into allow, warn, or block decisions before execution.',
     ]],
     ['bullets', 'High-ROI gate templates', [
@@ -292,7 +821,7 @@ const CODE_KNOWLEDGE_GRAPH_GUARDRAILS_SPEC = Object.freeze({
       'Protect generated graph artifacts: block manual edits to graph outputs that should be regenerated from source.',
     ]],
     ['paragraphs', 'Where this creates revenue', [
-      'This is a strong engagement wedge for audiences already excited about codebase understanding. The public line is simple: code graphs tell the agent what the system is; ThumbGate decides what the agent is allowed to do next.',
+      'This is a strong engagement wedge for audiences already excited about codebase understanding. The public line is simple: Code graphs tell the agent what the system is; ThumbGate decides what the agent is allowed to do next.',
       'For teams, sell the Workflow Hardening Sprint around one graph-informed repeated failure: one central file, one risky refactor path, or one generated artifact that agents keep touching incorrectly.',
     ]],
   ],
@@ -808,6 +1337,71 @@ const PAGE_BLUEPRINTS = [
     ],
     relatedPaths: ['/compare/speclock', '/guides/claude-code-feedback'],
   },
+  buildSemanticPseoGuide(),
+  buildProxyPointerRagGuide(),
+  buildRagPrecisionTuningGuide(),
+  buildAiEngineeringStackGuide(),
+  buildSeoAgentSkillsGuide(),
+  {
+    query: 'thumbgate vs fallow',
+    path: '/compare/fallow',
+    pageType: 'comparison',
+    pillar: 'comparison',
+    title: 'ThumbGate vs Fallow | Static Analysis vs Agent Action Enforcement',
+    heroTitle: 'ThumbGate vs Fallow',
+    heroSummary: 'Fallow finds JS/TS code health issues: dead code, duplication, complexity, and architecture drift. ThumbGate is action-boundary enforcement for AI agents, stopping agents from acting on those signals unsafely.',
+    takeaways: [
+      'Fallow is complementary, not a direct replacement: it finds dead code, duplication, complexity, and architecture drift.',
+      'ThumbGate governs the next agent action: refactor scope, risky edits, CI proof, team lessons, and pre-action blocks.',
+      'Together, Fallow output can become ThumbGate gates so agents do not blindly refactor everything a static analyzer flags.',
+    ],
+    sections: [
+      {
+        heading: 'The product difference in one sentence',
+        paragraphs: [
+          'Fallow tells you where a JavaScript or TypeScript codebase may be unhealthy. ThumbGate governs what AI agents are allowed to do next: make the next edit, command, PR, or publish action.',
+          'That distinction matters because analyzer output can be useful and dangerous at the same time. A duplicated block can be safe to refactor, or it can be intentional domain duplication where an agent should stop and ask for evidence.',
+        ],
+      },
+      {
+        heading: 'Choose Fallow when',
+        bullets: [
+          'You want static reports for unused code, duplicate blocks, complexity hotspots, circular dependencies, or architecture drift.',
+          'You need JSON diagnostics an agent can inspect before proposing cleanup work.',
+          'Your immediate goal is code health visibility in JS/TS repositories.',
+        ],
+      },
+      {
+        heading: 'Choose ThumbGate when',
+        bullets: [
+          'You need pre-action enforcement before an AI agent applies analyzer-driven refactors.',
+          'You want CI and human feedback to become durable prevention rules across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode.',
+          'You need audit evidence that a risky cleanup, dependency update, or cross-layer refactor was checked before execution.',
+        ],
+      },
+      {
+        heading: 'Best together',
+        paragraphs: [
+          'The highest-ROI workflow is Fallow for deterministic codebase signals and ThumbGate for agent governance. Run the analyzer, pass the changed-file and complexity signals into a ThumbGate gate, then require proof before the agent edits central files or opens a PR.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Is Fallow a competitor to ThumbGate?',
+        answer: 'Partly adjacent, but mostly complementary. Fallow analyzes JS/TS code health. ThumbGate enforces AI-agent actions before execution. They solve different parts of the agent workflow.',
+      },
+      {
+        question: 'Should ThumbGate integrate with Fallow output?',
+        answer: 'Yes. Fallow JSON is useful input for ThumbGate gates, especially duplication, complexity, changed-file audit results, and architecture-boundary warnings.',
+      },
+    ],
+    relatedPaths: ['/guides/code-knowledge-graph-guardrails', '/guides/agent-harness-optimization', '/guides/pre-action-checks'],
+  },
+  buildClaudeCodeSkillsGuide(),
+  buildLongRunningAgentContextGuide(),
+  buildReasoningCompressionGuide(),
+  buildDeepSeekV4RuntimeGuide(),
   {
     query: 'pre-action checks for ai coding agents',
     path: '/guides/pre-action-checks',
@@ -1342,8 +1936,12 @@ function normalizeText(value) {
 function slugify(value) {
   return normalizeText(value)
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .split('')
+    .map((char) => (/[a-z0-9]/.test(char) ? char : '-'))
+    .join('')
+    .split('-')
+    .filter(Boolean)
+    .join('-');
 }
 
 function toNumber(value) {
@@ -1448,9 +2046,11 @@ function inferPillar(query) {
   const normalized = normalizeText(query).toLowerCase();
   if (/\b(speclock|mem0|alternative|vs|compare|comparison)\b/.test(normalized)) return 'comparison';
   if (/\b(thumbs up|thumbs down|feedback|reinforce|mistake)\b/.test(normalized)) return 'feedback-loop';
+  if (/\b(programmatic seo|pseo|semantic seo|semantic programmatic|seo agent)\b/.test(normalized)) return 'seo-governance';
+  if (/\b(rag|retrieval|proxy pointer|multimodal answer|document rag)\b/.test(normalized)) return 'document-rag-safety';
   if (/\b(topical presence|relational knowledge|recommend(?:ation|ed)? brands?|ai search visibility)\b/.test(normalized)) return 'ai-agent-reliability';
   if (/\b(browser automation|native messaging|browser bridge|prompt injection)\b/.test(normalized)) return 'pre-action-checks';
-  if (/\b(autoresearch|self-improving|benchmark|reward hacking|harness optimization)\b/.test(normalized)) return 'pre-action-checks';
+  if (/\b(autoresearch|self-improving|benchmark|reward hacking|harness optimization|long running agent|context management|reasoning compression)\b/.test(normalized)) return 'pre-action-checks';
   if (/\b(pre-action checks|guardrails|block|prevent repeated mistakes|repeating mistakes)\b/.test(normalized)) return 'pre-action-checks';
   if (/\b(claude code|cursor|codex|gemini|amp|opencode|integration|plugin)\b/.test(normalized)) return 'agent-workflows';
   return 'ai-agent-reliability';
@@ -1463,6 +2063,9 @@ function inferPersona(query) {
   if (normalized.includes('codex')) return 'codex-builder';
   if (normalized.includes('gemini')) return 'gemini-builder';
   if (normalized.includes('autoresearch') || normalized.includes('self-improving')) return 'ai-research-engineer';
+  if (/\b(long running agent|context management|reasoning compression)\b/.test(normalized)) return 'platform-engineer';
+  if (/\b(programmatic seo|pseo|semantic seo|ai search|topical presence|seo agent)\b/.test(normalized)) return 'growth-engineer';
+  if (/\b(rag|retrieval|proxy pointer|multimodal answer|document rag)\b/.test(normalized)) return 'rag-engineer';
   if (/\b(vs|alternative|compare)\b/.test(normalized)) return 'tool-evaluator';
   if (/\b(guardrails|pre-action checks)\b/.test(normalized)) return 'engineering-lead';
   return 'ai-engineer';
@@ -1500,6 +2103,8 @@ function scoreOpportunity(row) {
     'pre-action-checks': 12,
     'feedback-loop': 12,
     'agent-workflows': 11,
+    'seo-governance': 12,
+    'document-rag-safety': 12,
     'ai-agent-reliability': 9,
   };
 
@@ -1583,12 +2188,109 @@ function clusterKeywordRows(rows) {
   return [...clusters.values()]
     .map((cluster) => ({
       ...cluster,
-      personas: [...cluster.personas].sort(),
-      intents: [...cluster.intents].sort(),
+      personas: [...cluster.personas].sort((a, b) => a.localeCompare(b)),
+      intents: [...cluster.intents].sort((a, b) => a.localeCompare(b)),
       totalOpportunityScore: Number(cluster.totalOpportunityScore.toFixed(2)),
       queries: [...cluster.queries].sort((a, b) => b.opportunityScore - a.opportunityScore),
     }))
     .sort((a, b) => b.totalOpportunityScore - a.totalOpportunityScore);
+}
+
+function buildAuthorityMap(rows, pages) {
+  const pageProofByPillar = pages.reduce((acc, page) => {
+    if (!acc[page.pillar]) acc[page.pillar] = [];
+    acc[page.pillar].push(page.path);
+    return acc;
+  }, {});
+
+  return clusterKeywordRows(rows).map((cluster) => {
+    const proofPages = pageProofByPillar[cluster.pillar] || [];
+    const authorityScore = clamp(
+      Math.round((cluster.totalOpportunityScore / 2) + (proofPages.length * 32)),
+      0,
+      100
+    );
+    const rankPermission = authorityScore >= 70
+      ? 'expand'
+      : authorityScore >= 48
+        ? 'defend-and-fill'
+        : 'hold';
+
+    return {
+      pillar: cluster.pillar,
+      primaryQuery: cluster.primaryQuery.query,
+      authorityScore,
+      rankPermission,
+      proofPages: proofPages.slice(0, 5),
+      nextAction: rankPermission === 'expand'
+        ? 'Publish semantic variants with proof-backed internal links.'
+        : rankPermission === 'defend-and-fill'
+          ? 'Fill semantic gaps before scaling adjacent pages.'
+          : 'Collect more proof or external demand before generating pages.',
+    };
+  });
+}
+
+function buildContextGovernance() {
+  return {
+    brandPersona: 'Technical, direct, proof-backed, and buyer-useful. ThumbGate is the enforcement layer, not generic AI content.',
+    negativeConstraints: [
+      'Do not claim partnerships, approval, revenue, or compliance unless the proof artifact exists.',
+      'Do not publish stale pricing; use $19/mo Pro, $149/yr Pro, and $49/seat/mo Team only when the commercial truth source agrees.',
+      'Do not create find-and-replace pages that only swap one keyword or platform name.',
+    ],
+    requiredContext: [
+      'ThumbGate turns thumbs-up/down feedback into pre-action checks.',
+      'Every buyer-facing page needs a concrete next step: Pro checkout, workflow sprint intake, or a proof-backed guide.',
+      'Every generated page must include verification evidence, automation proof, llm-context, FAQPage, and TechArticle schema.',
+    ],
+  };
+}
+
+function buildSemanticMesh(pages) {
+  return pages.map((page) => {
+    const relatedPaths = page.relatedPages.map((related) => related.path);
+    const hasConversionPath = Boolean(page.cta && page.cta.href);
+    const hasPillarBridge = relatedPaths.some((relatedPath) => {
+      const related = pages.find((candidate) => candidate.path === relatedPath);
+      return related && related.pillar !== page.pillar;
+    });
+
+    return {
+      path: page.path,
+      pillar: page.pillar,
+      relatedPaths,
+      hasConversionPath,
+      meshStatus: relatedPaths.length >= 2 && hasPillarBridge && hasConversionPath ? 'healthy' : 'needs-links',
+      nextStep: relatedPaths.length >= 2 && hasPillarBridge && hasConversionPath
+        ? 'Keep proof and adjacent links fresh.'
+        : 'Add pillar, adjacent-guide, and conversion links before publish.',
+    };
+  });
+}
+
+function buildTechnicalGuardian(pages) {
+  return {
+    checks: [
+      'canonical_url',
+      'faq_json_ld',
+      'tech_article_json_ld',
+      'llm_context_link',
+      'proof_links',
+      'conversion_cta',
+      'semantic_related_links',
+    ],
+    publishBlockers: pages
+      .filter((page) => (
+        !page.cta ||
+        !page.cta.href ||
+        !page.relatedPages ||
+        page.relatedPages.length < 2 ||
+        !page.proofLinks ||
+        page.proofLinks.length < 2
+      ))
+      .map((page) => page.path),
+  };
 }
 
 function trimMetaDescription(value, max = 160) {
@@ -1658,6 +2360,12 @@ function buildThumbGateSeoPlan(rawRows = HIGH_ROI_QUERY_SEEDS) {
     });
     return createPageSpec(blueprint, row);
   }).sort((a, b) => b.opportunityScore - a.opportunityScore);
+  const semanticProgrammaticSeo = {
+    authorityMap: buildAuthorityMap(capture, pages),
+    contextGovernance: buildContextGovernance(),
+    semanticMesh: buildSemanticMesh(pages),
+    technicalGuardian: buildTechnicalGuardian(pages),
+  };
 
   const briefs = pages.map((page, index) => ({
     priority: index + 1,
@@ -1691,10 +2399,13 @@ function buildThumbGateSeoPlan(rawRows = HIGH_ROI_QUERY_SEEDS) {
         acc[row.pageType] = (acc[row.pageType] || 0) + 1;
         return acc;
       }, {}),
+      contextGovernance: semanticProgrammaticSeo.contextGovernance,
     },
     organize: {
       clusters,
       topClusters: clusters.slice(0, 4),
+      authorityMap: semanticProgrammaticSeo.authorityMap,
+      semanticMesh: semanticProgrammaticSeo.semanticMesh,
     },
     execute: {
       briefs,
@@ -1704,7 +2415,9 @@ function buildThumbGateSeoPlan(rawRows = HIGH_ROI_QUERY_SEEDS) {
       topOpportunityQuery: capture.slice().sort((a, b) => b.opportunityScore - a.opportunityScore)[0],
       recommendedOrder: briefs.map((brief) => brief.path),
       proofAssets: PRODUCT.proofPoints,
+      technicalGuardian: semanticProgrammaticSeo.technicalGuardian,
     },
+    semanticProgrammaticSeo,
   };
 }
 
@@ -1724,10 +2437,19 @@ function renderPlanMarkdown(plan) {
     `- Intents: ${Object.entries(plan.clarify.intents).map(([key, value]) => `${key}=${value}`).join(', ')}`,
     `- Personas: ${Object.entries(plan.clarify.personas).map(([key, value]) => `${key}=${value}`).join(', ')}`,
     `- Page types: ${Object.entries(plan.clarify.pageTypes).map(([key, value]) => `${key}=${value}`).join(', ')}`,
+    `- Context governance: ${plan.clarify.contextGovernance.brandPersona}`,
     '',
     '## Organize',
     '',
     ...plan.organize.topClusters.map((cluster) => `- ${cluster.pillar}: ${cluster.primaryQuery.query} (${cluster.totalOpportunityScore})`),
+    '',
+    '### Authority Map',
+    '',
+    ...plan.organize.authorityMap.slice(0, 6).map((entry) => `- ${entry.pillar}: ${entry.rankPermission} | score=${entry.authorityScore} | ${entry.nextAction}`),
+    '',
+    '### Semantic Mesh',
+    '',
+    ...plan.organize.semanticMesh.slice(0, 8).map((entry) => `- ${entry.path}: ${entry.meshStatus} | links=${entry.relatedPaths.join(', ')}`),
     '',
     '## Execute',
     '',
@@ -1740,6 +2462,8 @@ function renderPlanMarkdown(plan) {
     `- Top opportunity query: ${plan.review.topOpportunityQuery.query}`,
     `- Recommended publish order: ${plan.review.recommendedOrder.join(', ')}`,
     `- Proof assets: ${plan.review.proofAssets.join(', ')}`,
+    `- Technical guardian checks: ${plan.review.technicalGuardian.checks.join(', ')}`,
+    `- Publish blockers: ${plan.review.technicalGuardian.publishBlockers.length ? plan.review.technicalGuardian.publishBlockers.join(', ') : 'none'}`,
     '',
   ];
   return lines.join('\n');
@@ -1820,8 +2544,42 @@ function renderSeoPageHtml(page, runtimeConfig = {}) {
       </details>`).join('');
   const proofLinks = page.proofLinks.map((link) => `<a href="${escapeHtml(link.href)}" target="_blank" rel="noopener">${escapeHtml(link.label)}</a>`).join('');
   const faqJsonLd = renderFaqJsonLd(page);
+  const semanticPseoSidebar = page.path === '/guides/semantic-programmatic-seo-guardrails' ? `<div class="sidebar-card">
+          <h2>pSEO governance gates</h2>
+          <ul>
+            <li>Authority map before page generation</li>
+            <li>Brand context governance before drafting</li>
+            <li>Semantic mesh links before publish</li>
+            <li>Technical guardian checks before crawl</li>
+          </ul>
+        </div>` : '';
+  const documentRagSidebar = page.pillar === 'document-rag-safety' ? `<div class="sidebar-card">
+          <h2>Document RAG Safety gates</h2>
+          <ul>
+            <li>Retrieval baseline before tuning</li>
+            <li>Two-stage verifier for structural near misses</li>
+            <li>Section tree and image pointer grounding</li>
+            <li>Latency budget before verifier rollout</li>
+          </ul>
+        </div>` : '';
+  const codeGraphSidebar = page.path === '/guides/code-knowledge-graph-guardrails' ? `<div class="sidebar-card">
+          <h2>Knowledge Graph Safety</h2>
+          <ul>
+            <li>Require diff impact before central edits</li>
+            <li>Checkpoint cross-layer refactors</li>
+            <li>Protect generated graph artifacts</li>
+          </ul>
+        </div>` : '';
+  const workflowRuleSidebar = page.path === '/guides/prompt-tricks-to-workflow-rules' ? `<div class="sidebar-card">
+          <h2>Workflow Rule Safety</h2>
+          <ul>
+            <li>Clear rule before risky execution</li>
+            <li>Good and bad examples before reuse</li>
+            <li>Verification evidence before done</li>
+          </ul>
+        </div>` : '';
 
-  return `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -2068,6 +2826,10 @@ ${renderWebPageJsonLd(page, { appOrigin })}
       </div>
 
       <aside class="sidebar">
+        ${semanticPseoSidebar}
+        ${documentRagSidebar}
+        ${codeGraphSidebar}
+        ${workflowRuleSidebar}
         <div class="sidebar-card">
           <h2>GSD execution brief</h2>
           <p>This page was prioritized because it captures high-intent demand around ${escapeHtml(page.query)} and feeds directly into ThumbGate's proof-led conversion path.</p>
@@ -2087,6 +2849,7 @@ ${renderWebPageJsonLd(page, { appOrigin })}
   </main>
 </body>
 </html>`;
+  return html.split('\n').map((line) => line.trimEnd()).join('\n');
 }
 
 const THUMBGATE_SEO_PLAN = buildThumbGateSeoPlan(HIGH_ROI_QUERY_SEEDS);
@@ -2143,7 +2906,11 @@ async function main() {
   }
 }
 
-if (require.main === module) {
+function isCliInvocation(argv = process.argv) {
+  return Boolean(argv[1] && path.resolve(argv[1]) === __filename);
+}
+
+if (isCliInvocation()) {
   main().catch((error) => {
     console.error(error.message || String(error));
     process.exit(1);
@@ -2159,6 +2926,10 @@ module.exports = {
   THUMBGATE_SEO_PAGE_SPECS,
   THUMBGATE_SEO_SITEMAP_ENTRIES,
   buildThumbGateSeoPlan,
+  buildAuthorityMap,
+  buildContextGovernance,
+  buildSemanticMesh,
+  buildTechnicalGuardian,
   classifyIntent,
   clusterKeywordRows,
   createPageSpec,

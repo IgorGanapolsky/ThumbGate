@@ -71,7 +71,7 @@ function computeEpisodeReward(episode = {}, options = {}) {
 
   const components = {
     health: round((score - 50) / 50),
-    grade: grade === 'healthy' ? 0.35 : grade === 'degraded' ? -0.35 : grade === 'critical' ? -0.8 : 0,
+    grade: gradeReward(grade),
     positiveFeedback: round(positiveCount * 0.15),
     negativeFeedback: round(negativeCount * -0.45),
     recurringErrors: round(errorCount * -0.25),
@@ -159,7 +159,7 @@ function buildPreferencePairFromEpisodes(a, b, options = {}) {
 }
 
 function isRlTuple(value) {
-  return Boolean(value && value.state && value.action && value.outcome && value.reward);
+  return Boolean(value?.state && value.action && value.outcome && value.reward);
 }
 
 function buildPreferencePairs(episodes = [], options = {}) {
@@ -224,11 +224,18 @@ function rankGateCandidatesByReward(episodes = [], options = {}) {
         averageReward,
         failureRate: round(failureRate),
         priorityScore,
-        gateId: bucket.key.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase().slice(0, 80),
+        gateId: bucket.key.replaceAll(/[^a-z0-9]+/gi, '-').replaceAll(/^-|-$/g, '').toLowerCase().slice(0, 80),
         recommendation: buildGateRecommendation(bucket.key, bucket.occurrences, averageReward),
       };
     })
     .sort((a, b) => b.priorityScore - a.priorityScore || b.occurrences - a.occurrences);
+}
+
+function gradeReward(grade) {
+  if (grade === 'healthy') return 0.35;
+  if (grade === 'degraded') return -0.35;
+  if (grade === 'critical') return -0.8;
+  return 0;
 }
 
 function allocateTestTimeCompute(action = {}) {

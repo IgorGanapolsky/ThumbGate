@@ -23,17 +23,20 @@
     "long-trace-review": {
       "label": "Long trace review",
       "summary": "Review long agent traces, multi-step failures, and large-context coding sessions without dropping important detail.",
-      "desiredStrengths": ["long-horizon-coding", "multi-agent", "reliability"],
+      "desiredStrengths": ["long-horizon-coding", "multi-agent", "reliability", "long-context"],
       "targetContextWindow": 128000,
       "benchmarkCommands": [
         "npx thumbgate eval --from-feedback --json --min-score=0",
         "node scripts/gate-eval.js run",
-        "npx thumbgate bench --json --min-score=90"
+        "npx thumbgate bench --json --min-score=90",
+        "npx thumbgate deepseek-v4-runtime-guardrails --context-tokens=900000 --hybrid-attention --speculative-decoding --json"
       ],
       "metrics": [
         "passRate",
         "longContextReliability",
         "traceCompressionLoss",
+        "cacheCoherencePassRate",
+        "speculativeAcceptLength",
         "medianLatencyMs",
         "costPerTraceUsd"
       ]
@@ -76,6 +79,30 @@
     }
   },
   "candidates": [
+    {
+      "id": "self-hosted/deepseek-v4-flash-sglang",
+      "vendor": "DeepSeek",
+      "family": "deepseek",
+      "provider": "self-hosted",
+      "gateway": "sglang",
+      "model": "deepseek-v4-flash",
+      "contextWindow": 1000000,
+      "costClass": "medium",
+      "strengths": ["long-context", "fast-inference", "reliability", "long-horizon-coding"],
+      "notes": "Self-hosted long-context candidate for teams that can operate SGLang-class sparse-attention serving. Requires ThumbGate runtime guardrails before routing production traces."
+    },
+    {
+      "id": "self-hosted/deepseek-v4-pro-sglang",
+      "vendor": "DeepSeek",
+      "family": "deepseek",
+      "provider": "self-hosted",
+      "gateway": "sglang",
+      "model": "deepseek-v4-pro",
+      "contextWindow": 1000000,
+      "costClass": "high",
+      "strengths": ["long-context", "reliability", "long-horizon-coding", "multi-agent"],
+      "notes": "High-capacity self-hosted candidate for long-trace review and verified-RL experiments. Benchmark cache coherence, speculative decoding, KV offload, and train-inference drift before use."
+    },
     {
       "id": "openai/gpt-5.5",
       "vendor": "OpenAI",

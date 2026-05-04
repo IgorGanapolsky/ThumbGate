@@ -1,0 +1,57 @@
+{
+  "id": "medium-weekly-2026-05-04-pre-action-gates-for-tool-using-ai-agents",
+  "cadence": "weekly",
+  "status": "ready_for_visible_publish_or_submission",
+  "generatedAt": "2026-05-04T16:39:58.810Z",
+  "targetPublication": {
+    "name": "Conversational AI Weekly",
+    "url": "https://medium.com/conversational-ai-weekly",
+    "visibleAudience": "conversational AI builders, agent operators, and automation teams",
+    "editorSignal": "1 editor listed on Medium",
+    "followerSignal": "165 followers observed on Medium",
+    "verifiedAt": "2026-05-04"
+  },
+  "weeklyGoal": "One Medium article or response surfaced to the Conversational AI Weekly audience every week.",
+  "fallbackPath": "If publication submission is unavailable, publish under the founder profile and engage with one relevant Conversational AI Weekly article.",
+  "artifacts": {
+    "draftMarkdown": "2026-05-04-pre-action-gates-for-tool-using-ai-agents.md",
+    "engagementQueueCsv": "2026-05-04-engagement-queue.csv",
+    "submissionPitchMarkdown": "2026-05-04-pre-action-gates-for-tool-using-ai-agents-pitch.md",
+    "visibilityPlanJson": "2026-05-04-visibility-plan.json"
+  },
+  "publishOrchestration": [
+    {
+      "step": "draft",
+      "owner": "automation",
+      "evidence": "Generated Medium-ready markdown with tracked ThumbGate CTAs."
+    },
+    {
+      "step": "submit_or_publish",
+      "owner": "human",
+      "evidence": "Medium URL recorded in docs/marketing/medium/published.csv."
+    },
+    {
+      "step": "engage",
+      "owner": "human-or-approved-agent",
+      "evidence": "One relevant comment or response queued from the engagement CSV."
+    },
+    {
+      "step": "measure",
+      "owner": "automation",
+      "evidence": "UTM campaign medium_weekly visible in analytics and weekly revenue reports."
+    }
+  ],
+  "pitch": {
+    "target": {
+      "name": "Conversational AI Weekly",
+      "url": "https://medium.com/conversational-ai-weekly",
+      "visibleAudience": "conversational AI builders, agent operators, and automation teams",
+      "editorSignal": "1 editor listed on Medium",
+      "followerSignal": "165 followers observed on Medium",
+      "verifiedAt": "2026-05-04"
+    },
+    "date": "2026-05-04",
+    "subject": "Submission idea for Conversational AI Weekly: Pre-Action Gates for Tool-Using AI Agents",
+    "body": "Hi Conversational AI Weekly team,\n\nI have a practical piece for production AI-agent builders: \"Pre-Action Gates for Tool-Using AI Agents\".\n\nThe angle is narrow and operational: orchestration gets more autonomous, but the execution layer still needs deterministic pre-action checks before tool calls run. It is written for teams moving from passive observability into policy-aware agent operations.\n\nThumbGate context and proof path: https://thumbgate-production.up.railway.app/guides/pre-action-checks?utm_source=medium&utm_medium=organic_article&utm_campaign=medium_weekly&utm_content=pre-action-gates-for-tool-using-ai-agents&cta_id=medium_weekly_article\n\nHappy to adapt the draft to the publication format if this fits the weekly editorial lane."
+  }
+}

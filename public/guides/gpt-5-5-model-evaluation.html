@@ -214,10 +214,10 @@
   "headline": "Evaluate GPT-5.5 Before You Route Production Agent Work",
   "description": "Frontier-model upgrades can improve coding, dataset analysis, and dashboards, but the ROI comes from measured routing. ThumbGate adds a model-candidate workl...",
   "about": [
+    "claude code masterclass guardrails",
     "cursor prevent repeated mistakes",
     "claude code prevent repeated mistakes",
-    "codex cli guardrails",
-    "pre-action checks for ai coding agents"
+    "codex cli guardrails"
   ],
   "url": "https://thumbgate.ai/guides/gpt-5-5-model-evaluation",
   "publisher": {
@@ -286,25 +286,25 @@
           <h2>Why this page exists</h2>
           <ul><li>GPT-5.5 should be treated as a frontier candidate for complex work, not a blanket replacement for every cheap gate.</li><li>The highest ROI path is benchmark-first routing: keep cheap tiers for simple checks and escalate dataset, dashboard, and long-context work when evidence supports it.</li><li>ThumbGate now exposes a dashboard-analysis workload through npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai --json.</li></ul>
         </div>
-        
+
       <section class="detail-section">
         <h2>What changed</h2>
         <p>OpenAI positions GPT-5.5 for complex reasoning, coding, data analysis, and tool-using work. Julius framed the same model around dataset analysis, charts, dashboards, insight quality, and code generation.</p><p>For ThumbGate, the useful product move is not to rewrite every default. It is to make model adoption measurable: define the workload, pick candidate models, run existing evals, and route only the work that earns the frontier spend.</p>
-        
+
       </section>
       <section class="detail-section">
         <h2>What ThumbGate adds</h2>
-        
+
         <ul><li>A GPT-5.5 model candidate in config/model-candidates.json with long-context, data-analysis, dashboard-creation, charting, tool-use, and reliability strengths.</li><li>A dashboard-analysis workload with metrics for insight accuracy, chart-spec validity, dashboard completeness, long-context reliability, latency, and cost per analysis.</li><li>A CLI path: npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai --json.</li><li>A tier-router config that pins the frontier tier to gpt-5.5 while keeping explicit cheaper tiers for fast, low-cost work.</li></ul>
       </section>
       <section class="detail-section">
         <h2>Where this creates ROI</h2>
         <p>This gives platform teams a defensible answer to &quot;should we move to GPT-5.5?&quot; Run the candidate report, attach gate and benchmark evidence, and only then route high-value analytical or long-context agent tasks to the frontier tier.</p><p>The commercial wedge is a Workflow Hardening Sprint focused on model routing: define which workflows deserve frontier spend, which stay on cheap tiers, and which require pre-action checks before a model can touch live systems.</p>
-        
+
       </section>
         <div class="detail-section">
           <h2>FAQ</h2>
-          
+
       <details class="faq-item">
         <summary>Should every ThumbGate task use GPT-5.5?</summary>
         <p>No. Cheap gates, classification, extraction, and simple triage should stay on lower-cost tiers when they pass evals. GPT-5.5 is best evaluated for complex reasoning, long-context, coding, dataset, and dashboard work.</p>
@@ -321,19 +321,23 @@
       </div>
 
       <aside class="sidebar">
+
+
+
+
         <div class="sidebar-card">
           <h2>GSD execution brief</h2>
           <p>This page was prioritized because it captures high-intent demand around gpt-5.5 model evaluation and feeds directly into ThumbGate's proof-led conversion path.</p>
           <p><strong>Opportunity score:</strong> 72</p>
           <p><strong>Primary persona:</strong> ai-engineer</p>
-          <p><strong>Keyword cluster:</strong> cursor prevent repeated mistakes, claude code prevent repeated mistakes, codex cli guardrails, pre-action checks for ai coding agents</p>
+          <p><strong>Keyword cluster:</strong> claude code masterclass guardrails, cursor prevent repeated mistakes, claude code prevent repeated mistakes, codex cli guardrails</p>
           <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
           <div class="proof-links"><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json" target="_blank" rel="noopener">Automation proof</a><a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub repository</a></div>
           <a class="cta-button" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_gpt-5-5-model-evaluation&amp;cta_placement=seo_brief&amp;plan_id=pro" target="_blank" rel="noopener">Go Pro — $19/mo</a>
         </div>
         <div class="sidebar-card">
           <h2>Related pages</h2>
-          
+
         <a class="related-card" href="/guides/agent-harness-optimization">
           <span class="related-label">Related page</span>
           <strong>AI Agent Harness Optimization That Blocks Repeat Failures</strong>

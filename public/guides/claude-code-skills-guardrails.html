@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claude Code Skills Guardrails | Turn Skillbooks Into Enforced Workflows</title>
+  <meta name="description" content="Claude Code skillbooks make recurring work more systematic, but markdown skills are still advisory. ThumbGate turns skill feedback into reusable rules, tests..." />
+  <meta property="og:title" content="Claude Code Skills Guardrails | Turn Skillbooks Into Enforced Workflows" />
+  <meta property="og:description" content="Claude Code skillbooks make recurring work more systematic, but markdown skills are still advisory. ThumbGate turns skill feedback into reusable rules, tests..." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/guides/claude-code-skills-guardrails" />
+  <link rel="canonical" href="https://thumbgate.ai/guides/claude-code-skills-guardrails" />
+  <link rel="llm-context" href="/public/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --bg-raised: #111113;
+      --bg-card: #161618;
+      --line: #222225;
+      --text: #e8e8ec;
+      --muted: #8b8b96;
+      --cyan: #22d3ee;
+      --green: #4ade80;
+      --red: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(12px);
+      background: rgba(10, 10, 11, 0.88);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 14px;
+      padding-bottom: 14px;
+    }
+    .brand {
+      font-weight: 700;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 211, 238, 0.22);
+      background: rgba(34, 211, 238, 0.1);
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1.06;
+      letter-spacing: -0.04em;
+      margin: 16px 0;
+      max-width: 760px;
+    }
+    .hero p {
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .signal-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 28px 0 0;
+    }
+    .signal-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .signal-pill.up {
+      border-color: rgba(74, 222, 128, 0.28);
+      color: #b8f7c8;
+      background: rgba(74, 222, 128, 0.1);
+    }
+    .signal-pill.down {
+      border-color: rgba(248, 113, 113, 0.28);
+      color: #ffc0c0;
+      background: rgba(248, 113, 113, 0.1);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+      gap: 24px;
+      padding-bottom: 72px;
+    }
+    .card, .detail-section, .sidebar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .card { padding: 24px; }
+    .detail-section { padding: 24px; margin-bottom: 18px; }
+    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+    .detail-section p { color: var(--muted); }
+    .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
+    .card h2 { margin-top: 0; }
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .sidebar-card {
+      padding: 20px;
+    }
+    /* Only the first sidebar card sticks. Stacking multiple stickies at the
+       same top offset makes them overlap each other on scroll. The related-
+       pages card flows normally below. */
+    .sidebar-card:first-child {
+      position: sticky;
+      top: 84px;
+      max-height: calc(100vh - 104px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .proof-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 18px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: var(--cyan);
+      color: #071116;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .faq-item {
+      border-top: 1px solid var(--line);
+      padding: 14px 0;
+    }
+    .faq-item summary {
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .faq-item p {
+      color: var(--muted);
+    }
+    .related-card {
+      display: block;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      margin-top: 12px;
+      color: var(--text);
+    }
+    .related-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    @media (max-width: 860px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .sidebar-card:first-child {
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
+    }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Claude Code Skills Need Pre-Action Enforcement",
+  "description": "Claude Code skillbooks make recurring work more systematic, but markdown skills are still advisory. ThumbGate turns skill feedback into reusable rules, tests...",
+  "about": [
+    "claude code masterclass guardrails"
+  ],
+  "url": "https://thumbgate.ai/guides/claude-code-skills-guardrails",
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "mainEntityOfPage": "https://thumbgate.ai/guides/claude-code-skills-guardrails"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does ThumbGate replace Claude skills?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Skills describe how work should happen. ThumbGate checks whether the agent is allowed to take the next action and whether it has followed the skill evidence requirements."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What should a Claude Code skillbook contain?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Use named skills with purpose, inputs, do/don’t rules, verification commands, expected evidence, and examples. Then wire repeated failures into ThumbGate gates."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="container">
+      <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+    </div>
+  </div>
+
+  <main class="container">
+    <section class="hero">
+      <div class="eyebrow">guide | claude code masterclass guardrails</div>
+      <h1>Claude Code Skills Need Pre-Action Enforcement</h1>
+      <p>Claude Code skillbooks make recurring work more systematic, but markdown skills are still advisory. ThumbGate turns skill feedback into reusable rules, tests, and pre-action checks before the next risky command or edit runs.</p>
+      <div class="signal-row">
+        <div class="signal-pill up">👍 Thumbs up reinforces good behavior</div>
+        <div class="signal-pill down">👎 Thumbs down blocks repeated mistakes</div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div>
+        <div class="card">
+          <h2>Why this page exists</h2>
+          <ul><li>A living skillbook is useful acquisition fuel because new Claude Code users need reusable workflows immediately.</li><li>The high-ROI product move is not another prompt file; it is converting named skills into gates, tests, and proof loops.</li><li>This creates a clear post-course offer: install ThumbGate after learning Claude Code so the new automation does not repeat costly mistakes.</li></ul>
+        </div>
+
+      <section class="detail-section">
+        <h2>Why this helps ThumbGate</h2>
+        <p>Claude Code education expands the market. More people learning to automate code means more people about to hit repeated mistakes, risky shell commands, skipped tests, and vague project rules.</p><p>ThumbGate can be the safety kit for that moment: keep the skillbook, but promote every painful correction into an enforced pre-action check.</p>
+
+      </section>
+      <section class="detail-section">
+        <h2>High-ROI workflow to ship</h2>
+
+        <ul><li>Create a repo skillbook with named skills for refactors, tests, migrations, CI hardening, and prompt/tool changes.</li><li>Require each skill to name inputs, forbidden actions, verification steps, and examples of good and bad execution.</li><li>Capture thumbs-down failures from skill use and promote repeat patterns into ThumbGate prevention rules.</li><li>Block risky actions when the current task claims a skill but skips its required verification.</li><li>Route buyers into the Workflow Hardening Sprint when one skill repeatedly fails in a shared repo.</li></ul>
+      </section>
+      <section class="detail-section">
+        <h2>Where this creates revenue</h2>
+        <p>This is a concrete sales bridge from Claude Code training content to ThumbGate: if a team is investing in skills, they already believe AI coding workflows can improve. ThumbGate sells the part that makes those workflows reliable across sessions and teammates.</p>
+
+      </section>
+        <div class="detail-section">
+          <h2>FAQ</h2>
+
+      <details class="faq-item">
+        <summary>Does ThumbGate replace Claude skills?</summary>
+        <p>No. Skills describe how work should happen. ThumbGate checks whether the agent is allowed to take the next action and whether it has followed the skill evidence requirements.</p>
+      </details>
+      <details class="faq-item">
+        <summary>What should a Claude Code skillbook contain?</summary>
+        <p>Use named skills with purpose, inputs, do/don’t rules, verification commands, expected evidence, and examples. Then wire repeated failures into ThumbGate gates.</p>
+      </details>
+        </div>
+      </div>
+
+      <aside class="sidebar">
+
+
+
+
+        <div class="sidebar-card">
+          <h2>GSD execution brief</h2>
+          <p>This page was prioritized because it captures high-intent demand around claude code masterclass guardrails and feeds directly into ThumbGate's proof-led conversion path.</p>
+          <p><strong>Opportunity score:</strong> 89</p>
+          <p><strong>Primary persona:</strong> claude-code-builder</p>
+          <p><strong>Keyword cluster:</strong> claude code masterclass guardrails</p>
+          <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
+          <div class="proof-links"><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json" target="_blank" rel="noopener">Automation proof</a><a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub repository</a></div>
+          <a class="cta-button" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_claude-code-skills-guardrails&amp;cta_placement=seo_brief&amp;plan_id=pro" target="_blank" rel="noopener">Go Pro — $19/mo</a>
+        </div>
+        <div class="sidebar-card">
+          <h2>Related pages</h2>
+
+        <a class="related-card" href="/guides/claude-code-feedback">
+          <span class="related-label">Related page</span>
+          <strong>Claude Code Feedback Memory That Actually Enforces</strong>
+        </a>
+        <a class="related-card" href="/guides/prompt-tricks-to-workflow-rules">
+          <span class="related-label">Related page</span>
+          <strong>Prompt Tricks Are Table Stakes. Workflow Rules Make Them Pay.</strong>
+        </a>
+        <a class="related-card" href="/guides/pre-action-checks">
+          <span class="related-label">Related page</span>
+          <strong>What Are Pre-Action Checks?</strong>
+        </a>
+        </div>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>

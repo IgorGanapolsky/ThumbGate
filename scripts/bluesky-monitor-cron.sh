@@ -12,7 +12,7 @@ echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] Bluesky monitor run starting" >> "$LOG_
 cd "$REPO_DIR"
 "$NODE_BIN" scripts/social-reply-monitor-bluesky.js >> "$LOG_FILE" 2>&1
 
-if [ "${THUMBGATE_BLUESKY_PUBLISH_APPROVED:-}" = "true" ]; then
+if [[ "${THUMBGATE_BLUESKY_PUBLISH_APPROVED:-}" == "true" ]]; then
   "$NODE_BIN" scripts/social-reply-monitor-bluesky.js --publish-approved --confirm-publish >> "$LOG_FILE" 2>&1
 fi
 

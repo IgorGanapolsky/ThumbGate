@@ -138,6 +138,107 @@ test('code-graph-guardrails exposes graph signal flags', () => {
   assert.ok(flagNames.includes('changed-files'));
 });
 
+test('proxy-pointer-rag-guardrails exposes document RAG signal flags', () => {
+  const cmd = findCommand('document-rag-guardrails');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'proxy-pointer-rag-guardrails');
+  assert.ok(flagNames.includes('json'));
+  assert.ok(flagNames.includes('rag-tool'));
+  assert.ok(flagNames.includes('tree-path'));
+  assert.ok(flagNames.includes('section-ids'));
+  assert.ok(flagNames.includes('image-pointers'));
+  assert.ok(flagNames.includes('documents'));
+  assert.ok(flagNames.includes('cross-doc-policy'));
+  assert.ok(flagNames.includes('visual-claims'));
+});
+
+test('rag-precision-guardrails exposes retrieval regression flags', () => {
+  const cmd = findCommand('retrieval-precision-guardrails');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'rag-precision-guardrails');
+  assert.ok(flagNames.includes('json'));
+  assert.ok(flagNames.includes('baseline-recall'));
+  assert.ok(flagNames.includes('new-recall'));
+  assert.ok(flagNames.includes('threshold-change'));
+  assert.ok(flagNames.includes('embedding-finetune'));
+  assert.ok(flagNames.includes('structural-near-misses'));
+  assert.ok(flagNames.includes('verifier'));
+  assert.ok(flagNames.includes('latency-budget-ms'));
+  assert.ok(flagNames.includes('agentic'));
+});
+
+test('ai-engineering-stack-guardrails exposes stack governance flags', () => {
+  const cmd = findCommand('llm-wiki-guardrails');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'ai-engineering-stack-guardrails');
+  assert.ok(flagNames.includes('json'));
+  assert.ok(flagNames.includes('gateway'));
+  assert.ok(flagNames.includes('direct-provider-keys'));
+  assert.ok(flagNames.includes('mcp-tool-count'));
+  assert.ok(flagNames.includes('code-mode'));
+  assert.ok(flagNames.includes('agents-md'));
+  assert.ok(flagNames.includes('llm-wiki-pages'));
+  assert.ok(flagNames.includes('context-freshness-days'));
+  assert.ok(flagNames.includes('ai-reviewer'));
+  assert.ok(flagNames.includes('codex-rules'));
+  assert.ok(flagNames.includes('background-agents'));
+  assert.ok(flagNames.includes('sandbox'));
+  assert.ok(flagNames.includes('high-risk-workflows'));
+});
+
+test('long-running-agent-context-guardrails exposes structured memory flags', () => {
+  const cmd = findCommand('agent-context-guardrails');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'long-running-agent-context-guardrails');
+  assert.ok(flagNames.includes('json'));
+  assert.ok(flagNames.includes('request-count'));
+  assert.ok(flagNames.includes('director-journal'));
+  assert.ok(flagNames.includes('critic-review'));
+  assert.ok(flagNames.includes('critic-timeline'));
+  assert.ok(flagNames.includes('credibility-scores'));
+  assert.ok(flagNames.includes('raw-chat-only'));
+});
+
+test('reasoning-efficiency-guardrails exposes step-level compression flags', () => {
+  const cmd = findCommand('sas-guardrails');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'reasoning-efficiency-guardrails');
+  assert.ok(flagNames.includes('json'));
+  assert.ok(flagNames.includes('baseline-tokens'));
+  assert.ok(flagNames.includes('compressed-tokens'));
+  assert.ok(flagNames.includes('baseline-accuracy'));
+  assert.ok(flagNames.includes('compressed-accuracy'));
+  assert.ok(flagNames.includes('verifier'));
+  assert.ok(flagNames.includes('low-confidence-steps'));
+  assert.ok(flagNames.includes('high-confidence-failures'));
+});
+
+test('deepseek-v4-runtime-guardrails exposes sparse attention runtime flags', () => {
+  const cmd = findCommand('sparse-attention-runtime-guardrails');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'deepseek-v4-runtime-guardrails');
+  assert.ok(flagNames.includes('json'));
+  assert.ok(flagNames.includes('context-tokens'));
+  assert.ok(flagNames.includes('hybrid-attention'));
+  assert.ok(flagNames.includes('cache-coherence-eval'));
+  assert.ok(flagNames.includes('speculative-decoding'));
+  assert.ok(flagNames.includes('accept-length'));
+  assert.ok(flagNames.includes('rollout-replay'));
+  assert.ok(flagNames.includes('indexer-replay'));
+  assert.ok(flagNames.includes('precision-mode'));
+});
+
+test('upstream-contributions exposes governed contribution planning flags', () => {
+  const cmd = findCommand('upstream-prs');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'upstream-contributions');
+  assert.ok(flagNames.includes('json'));
+  assert.ok(flagNames.includes('write'));
+  assert.ok(flagNames.includes('live'));
+  assert.ok(flagNames.includes('max-repos'));
+  assert.ok(flagNames.includes('max-issues'));
+});
+
 test('lessons command has --json, --local, --remote flags', () => {
   const cmd = findCommand('lessons');
   const flagNames = cmd.flags.map((f) => f.name);

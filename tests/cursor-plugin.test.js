@@ -188,6 +188,23 @@ test('agent .md has valid YAML frontmatter with name and description', () => {
   }
 });
 
+test('cursor plugin covers programmatic SDK and cloud agent runs', () => {
+  const skill = fs.readFileSync(path.join(pluginDir, 'skills/programmatic-agent-runs/SKILL.md'), 'utf-8');
+  const agent = fs.readFileSync(path.join(pluginDir, 'agents/sdk-run-governor.md'), 'utf-8');
+  const hooks = JSON.parse(fs.readFileSync(path.join(pluginDir, 'hooks/hooks.json'), 'utf-8'));
+  const matchers = hooks.hooks.beforeShellExecution.map((hook) => hook.matcher).join('|');
+
+  assert.match(skill, /Cursor SDK/i);
+  assert.match(skill, /cloud/i);
+  assert.match(skill, /self-hosted/i);
+  assert.match(skill, /subagents/i);
+  assert.match(skill, /autoCreatePR/);
+  assert.match(agent, /cloud VM/i);
+  assert.match(agent, /subagent/i);
+  assert.match(matchers, /@cursor\/sdk/);
+  assert.match(matchers, /autoCreatePR/);
+});
+
 test('command .md files have valid YAML frontmatter with name and description', () => {
   const commandsDir = path.join(pluginDir, 'commands');
   const commandFiles = fs.readdirSync(commandsDir).filter((f) => f.endsWith('.md'));

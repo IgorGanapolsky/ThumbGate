@@ -90,8 +90,10 @@ jobs:
       REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
       REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
       THUMBGATE_REDDIT_TRACKED_THREADS: https://www.reddit.com/r/ClaudeCode/comments/1szi5qp/
-      # X/Twitter reply secrets retired 2026-04-20 — reply monitor now
-      # targets Reddit + LinkedIn only (see scripts/social-reply-monitor.js).
+      # X/Twitter reply secrets retired 2026-04-20. Reddit/LinkedIn use
+      # scripts/social-reply-monitor.js; Bluesky uses direct AT Protocol.
+      BLUESKY_HANDLE: ${{ secrets.BLUESKY_HANDLE }}
+      BLUESKY_APP_PASSWORD: ${{ secrets.BLUESKY_APP_PASSWORD }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -108,6 +110,11 @@ jobs:
             DRY_RUN="--dry-run"
           fi
           node scripts/social-reply-monitor.js $DRY_RUN
+          if [ -n "$BLUESKY_HANDLE" ] && [ -n "$BLUESKY_APP_PASSWORD" ]; then
+            node scripts/social-reply-monitor-bluesky.js $DRY_RUN
+          else
+            echo "Skipping Bluesky reply monitor: BLUESKY_HANDLE or BLUESKY_APP_PASSWORD is missing."
+          fi
 
   poll-analytics:
     # Manual fallback only. Scheduled analytics polling is owned by Ralph Loop.

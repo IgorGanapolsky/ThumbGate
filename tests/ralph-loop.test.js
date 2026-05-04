@@ -55,6 +55,8 @@ test('buildRalphSteps keeps hourly all mode focused on sensing, replying, and au
     'reply-monitor-bluesky',
     'prospect-bluesky',
     'reward-report',
+    'trace-intelligence',
+    'stack-survival-audit',
     'engagement-audit',
   ]);
   assert.match(steps.find((step) => step.id === 'sync-launch-assets').skipReason, /ZERNIO_API_KEY/);
@@ -75,7 +77,13 @@ test('buildRalphSteps supports manual post mode with skip evidence', () => {
   const steps = buildRalphSteps({ mode: 'post', dryRun: true }, {});
   const post = steps.find((step) => step.id === 'daily-social-post');
 
-  assert.deepEqual(steps.map((step) => step.id), ['daily-social-post', 'reward-report', 'engagement-audit']);
+  assert.deepEqual(steps.map((step) => step.id), [
+    'daily-social-post',
+    'reward-report',
+    'trace-intelligence',
+    'stack-survival-audit',
+    'engagement-audit',
+  ]);
   assert.deepEqual(post.args.slice(-1), ['--dry-run']);
   assert.match(post.skipReason, /ZERNIO_API_KEY/);
 });
@@ -136,10 +144,22 @@ test('renderMarkdownReport escapes table separators and CLI entrypoint detection
       averageReward: -0.25,
       gateCandidates: [{ key: 'error:repeat' }],
     },
+    trace: {
+      tracesAnalyzed: 3,
+      averageShapeScore: 66,
+      gateCandidates: [{ key: 'missing:code-change:verification' }],
+    },
+    stack: {
+      verdict: 'watch',
+      overallScore: 0.72,
+      highRoiActions: [{ action: 'Add context parsers' }],
+    },
   });
 
   assert.match(markdown, /missing A\/B/);
   assert.match(markdown, /Average reward: -0.25/);
+  assert.match(markdown, /Average shape score: 66/);
+  assert.match(markdown, /Verdict: watch/);
   assert.equal(isCliEntrypoint(['node', path.join(PROJECT_ROOT, 'scripts', 'ralph-loop.js')]), true);
   assert.equal(isCliEntrypoint(['node', path.join(PROJECT_ROOT, 'tests', 'ralph-loop.test.js')]), false);
 });
@@ -170,6 +190,8 @@ test('runRalphLoop writes machine-readable evidence and keeps state paths explic
   assert.equal(report.mode, 'engage');
   assert.equal(report.dryRun, true);
   assert.equal(typeof report.reward.averageReward, 'number');
+  assert.equal(typeof report.trace.averageShapeScore, 'number');
+  assert.match(report.stack.verdict, /survives|watch|fragile/);
   assert.deepEqual(report.statePaths, RALPH_STATE_PATHS);
   assert.equal(fs.existsSync(path.join(tmp, 'ralph-loop-report.json')), true);
   assert.equal(fs.existsSync(path.join(tmp, 'ralph-loop-report.md')), true);

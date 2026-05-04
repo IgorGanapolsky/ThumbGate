@@ -1,0 +1,62 @@
+name: Medium Weekly Visibility
+
+# Generates the weekly Medium draft, Conversational AI Weekly pitch, and
+# engagement queue. CI does not claim publication; a human records the live
+# Medium URL in docs/marketing/medium/published.csv after visible publish.
+
+on:
+  schedule:
+    - cron: '30 13 * * 1' # Mondays 09:30 America/New_York during daylight time
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: medium-weekly-visibility
+  cancel-in-progress: false
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v6
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Generate Medium weekly visibility kit
+        run: npm run medium:weekly:draft
+
+      - name: Verify Medium weekly orchestration
+        run: npm run test:medium-weekly
+
+      - name: Upload Medium visibility kit
+        uses: actions/upload-artifact@v5
+        with:
+          name: medium-weekly-visibility-kit
+          path: docs/marketing/medium/
+          if-no-files-found: error
+
+      - name: Commit generated Medium kit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/marketing/medium/
+          if git diff --cached --quiet; then
+            echo "No Medium visibility artifacts changed."
+          else
+            git commit -m "chore: update medium weekly visibility kit [skip ci]"
+            git push
+          fi

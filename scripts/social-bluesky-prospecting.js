@@ -221,47 +221,21 @@ async function prospectBluesky({
   const state = loadStateFn();
   state.seen = state.seen || {};
 
-  const candidates = [];
-  for (const query of queries) {
-    const posts = await searchPostsFn(session, query, { limit: limitPerQuery });
-    for (const post of posts) {
-      if (!post.uri || state.seen[post.uri] || isOwnPost(post, session)) continue;
-      const scored = scoreProspect(post);
-      if (scored.score < minScore) continue;
-      candidates.push({ post, scored });
-    }
-  }
-
+  const candidates = await collectProspectCandidates({
+    session,
+    searchPostsFn,
+    queries,
+    limitPerQuery,
+    minScore,
+    seen: state.seen,
+  });
   candidates.sort((a, b) => b.scored.score - a.scored.score);
   const selected = candidates.slice(0, maxDrafts);
   const createdAt = now().toISOString();
   const drafts = [];
 
   for (const { post, scored } of selected) {
-    const draftReply = buildProspectReply(post, scored);
-    const draft = {
-      platform: 'bluesky',
-      kind: 'prospect_reply',
-      createdAt,
-      prospect: {
-        uri: post.uri,
-        cid: post.cid,
-        url: postUrl(post),
-        query: post.query,
-        authorHandle: post.author.handle,
-        authorDid: post.author.did,
-        score: scored.score,
-        reasons: scored.reasons,
-      },
-      incomingText: post.text,
-      draftReply,
-      reply: {
-        root: { uri: post.uri, cid: post.cid },
-        parent: { uri: post.uri, cid: post.cid },
-      },
-      approved: false,
-      autoPost: false,
-    };
+    const draft = buildProspectDraft({ post, scored, createdAt });
     drafts.push(draft);
 
     if (!dryRun) {
@@ -294,6 +268,56 @@ async function prospectBluesky({
     queued: dryRun ? 0 : drafts.length,
     drafts,
     dryRun,
+  };
+}
+
+async function collectProspectCandidates({
+  session,
+  searchPostsFn,
+  queries,
+  limitPerQuery,
+  minScore,
+  seen,
+}) {
+  const candidates = [];
+  for (const query of queries) {
+    const posts = await searchPostsFn(session, query, { limit: limitPerQuery });
+    candidates.push(...rankProspectPosts({ posts, session, seen, minScore }));
+  }
+  return candidates;
+}
+
+function rankProspectPosts({ posts = [], session, seen = {}, minScore }) {
+  return posts.flatMap((post) => {
+    if (!post.uri || seen[post.uri] || isOwnPost(post, session)) return [];
+    const scored = scoreProspect(post);
+    return scored.score >= minScore ? [{ post, scored }] : [];
+  });
+}
+
+function buildProspectDraft({ post, scored, createdAt }) {
+  return {
+    platform: 'bluesky',
+    kind: 'prospect_reply',
+    createdAt,
+    prospect: {
+      uri: post.uri,
+      cid: post.cid,
+      url: postUrl(post),
+      query: post.query,
+      authorHandle: post.author.handle,
+      authorDid: post.author.did,
+      score: scored.score,
+      reasons: scored.reasons,
+    },
+    incomingText: post.text,
+    draftReply: buildProspectReply(post, scored),
+    reply: {
+      root: { uri: post.uri, cid: post.cid },
+      parent: { uri: post.uri, cid: post.cid },
+    },
+    approved: false,
+    autoPost: false,
   };
 }
 
