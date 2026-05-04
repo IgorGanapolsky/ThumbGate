@@ -269,7 +269,7 @@ describe('billing.js — funnel ledger', () => {
     });
     assert.equal(withEmail.customer_email, 'buyer@example.com');
     assert.equal(withoutEmail.mode, 'subscription');
-    assert.equal(withoutEmail.payment_method_collection, 'if_required');
+    assert.equal(withoutEmail.payment_method_collection, 'always');
     assert.equal(withoutEmail.metadata.priceId, billing.CONFIG.STRIPE_PRICE_ID_PRO_MONTHLY);
     assert.equal(withoutEmail.line_items[0].price_data.unit_amount, 1900);
     assert.equal(withoutEmail.line_items[0].price_data.recurring.interval, 'month');
@@ -295,7 +295,7 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(annual.line_items[0].price_data.unit_amount, 14900);
     assert.equal(annual.line_items[0].price_data.recurring.interval, 'year');
     assert.equal(annual.line_items[0].quantity, 1);
-    assert.equal(annual.payment_method_collection, 'if_required');
+    assert.equal(annual.payment_method_collection, 'always');
     assert.equal(annual.metadata.billingCycle, 'annual');
 
     const team = billing._buildCheckoutSessionPayload({
@@ -312,7 +312,7 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(team.line_items[0].price_data.unit_amount, 4900);
     assert.equal(team.line_items[0].price_data.recurring.interval, 'month');
     assert.equal(team.line_items[0].quantity, 3);
-    assert.equal(team.payment_method_collection, 'if_required');
+    assert.equal(team.payment_method_collection, 'always');
     assert.equal(team.metadata.planId, 'team');
     assert.equal(team.metadata.seatCount, '3');
 
@@ -1348,6 +1348,15 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(summary.revenue.processorReconciledOrders, 1);
     assert.equal(summary.revenue.processorReconciledRevenueCents, 1000);
     assert.equal(summary.coverage.providerCoverage.stripe, 'booked_revenue+processor_reconciled');
+
+    const todaySummary = await billing.getBillingSummaryLive({
+      window: 'today',
+      timeZone: 'UTC',
+      now: '2026-05-04T12:00:00.000Z',
+    });
+    assert.equal(todaySummary.revenue.bookedRevenueCents, 0);
+    assert.equal(todaySummary.revenue.paidOrders, 0);
+    assert.equal(todaySummary.revenue.processorReconciledOrders, 0);
   });
 });
 
@@ -1519,5 +1528,30 @@ describe('billing.js — listStripeReconciledRevenueEvents edge cases', () => {
     const billing = requireFreshBilling('');
     const events = await billing.listStripeReconciledRevenueEvents();
     assert.deepEqual(events, []);
+  });
+
+  test('live billing summary falls back when Stripe reconciliation exceeds budget', async () => {
+    const restore = installStripeMock(() => ({
+      prices: {
+        retrieve: () => new Promise(() => {}),
+        list: () => new Promise(() => {}),
+      },
+      charges: {
+        list: () => new Promise(() => {}),
+      },
+    }));
+    process.env.STRIPE_PRICE_ID = 'price_timeout_probe';
+    try {
+      const billing = requireFreshBilling('sk_live_timeout_probe');
+      const startedAt = Date.now();
+      const summary = await billing.getBillingSummaryLive({ stripeReconciliationTimeoutMs: 5 });
+
+      assert.ok(Date.now() - startedAt < 500);
+      assert.equal(summary.error, undefined);
+      assert.equal(summary.coverage.source, 'funnel_ledger+revenue_ledger+key_store+workflow_sprint_leads');
+    } finally {
+      restore();
+      process.env.STRIPE_PRICE_ID = '';
+    }
   });
 });

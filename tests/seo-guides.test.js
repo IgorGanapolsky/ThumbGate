@@ -10,6 +10,11 @@ const PUBLIC_DIR = path.resolve(__dirname, '..', 'public');
 const GUIDE_FILES = [
   'guides/pre-action-checks.html',
   'guides/agent-harness-optimization.html',
+  'guides/code-knowledge-graph-guardrails.html',
+  'guides/developer-machine-supply-chain-guardrails.html',
+  'guides/prompt-tricks-to-workflow-rules.html',
+  'guides/background-agent-governance.html',
+  'guides/gpt-5-5-model-evaluation.html',
   'guides/browser-automation-safety.html',
   'guides/native-messaging-host-security.html',
   'guides/ai-search-topical-presence.html',
@@ -26,6 +31,7 @@ const GUIDE_FILES = [
 const COMPARE_FILES = [
   'compare/speclock.html',
   'compare/mem0.html',
+  'compare/agentix-labs.html',
 ];
 
 const ALL_FILES = [...GUIDE_FILES, ...COMPARE_FILES];
@@ -105,6 +111,69 @@ describe('SEO guide and comparison pages', () => {
       html.includes('npx thumbgate native-messaging-audit'),
       'browser automation safety guide should include the native messaging audit command'
     );
+  });
+
+  it('background agent governance guide routes teams into review risk checks', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/background-agent-governance.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('npx thumbgate background-governance --json'));
+    assert.ok(html.includes('pre-dispatch governance check'));
+    assert.ok(html.includes('risk-tiered review'));
+    assert.ok(html.includes('Workflow Hardening Sprint'));
+  });
+
+  it('GPT-5.5 model evaluation guide routes teams into benchmark-first model routing', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/gpt-5-5-model-evaluation.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai --json'));
+    assert.ok(html.includes('dashboard-analysis workload'));
+    assert.ok(html.includes('chart-spec validity'));
+    assert.ok(html.includes('Benchmark Before Routing Expensive Agent Work'));
+  });
+
+  it('code knowledge graph guide routes graph context into enforceable checks', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/code-knowledge-graph-guardrails.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('Code graphs tell the agent what the system is'));
+    assert.ok(html.includes('Require diff impact before central edits'));
+    assert.ok(html.includes('Checkpoint cross-layer refactors'));
+    assert.ok(html.includes('Protect generated graph artifacts'));
+    assert.ok(html.includes('Knowledge Graph Safety'));
+    assert.ok(html.includes('npx thumbgate code-graph-guardrails'));
+  });
+
+  it('developer machine supply chain guide routes local compromise risk into pre-action checks', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/developer-machine-supply-chain-guardrails.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('Stop AI Assistants From Amplifying Supply-Chain Attacks'));
+    assert.ok(html.includes('Block package lifecycle secret harvest'));
+    assert.ok(html.includes('Review untrusted CLI before execution'));
+    assert.ok(html.includes('Require credential exposure assessment'));
+    assert.ok(html.includes('Supply Chain Safety'));
+  });
+
+  it('prompt tricks guide routes prompt advice into enforceable workflow rules', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/prompt-tricks-to-workflow-rules.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('Prompt Tricks Are Not Enough'));
+    assert.ok(html.includes('clear rules, examples, and pre-action checks'));
+    assert.ok(html.includes('Do not rely on politeness, threats, flattery, or roleplay'));
+    assert.ok(html.includes('Workflow Rule Safety'));
   });
 
   it('AI search visibility guides reinforce the recommendation-discovery story', () => {

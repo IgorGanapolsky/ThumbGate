@@ -53,6 +53,8 @@ test('buildRalphSteps keeps hourly all mode focused on sensing, replying, and au
     'sync-launch-assets',
     'reply-monitor',
     'reply-monitor-bluesky',
+    'prospect-bluesky',
+    'reward-report',
     'engagement-audit',
   ]);
   assert.match(steps.find((step) => step.id === 'sync-launch-assets').skipReason, /ZERNIO_API_KEY/);
@@ -62,6 +64,10 @@ test('buildRalphSteps keeps hourly all mode focused on sensing, replying, and au
   const bluesky = steps.find((step) => step.id === 'reply-monitor-bluesky');
   assert.deepEqual(bluesky.args.slice(-1), ['--dry-run']);
   assert.match(bluesky.skipReason, /BLUESKY_HANDLE|BLUESKY_APP_PASSWORD/);
+  const prospecting = steps.find((step) => step.id === 'prospect-bluesky');
+  assert.deepEqual(prospecting.args.slice(-1), ['--dry-run']);
+  assert.match(prospecting.description, /relevant agent-reliability pain/);
+  assert.match(prospecting.skipReason, /BLUESKY_HANDLE|BLUESKY_APP_PASSWORD/);
   assert.equal(ids.includes('daily-social-post'), false);
 });
 
@@ -69,7 +75,7 @@ test('buildRalphSteps supports manual post mode with skip evidence', () => {
   const steps = buildRalphSteps({ mode: 'post', dryRun: true }, {});
   const post = steps.find((step) => step.id === 'daily-social-post');
 
-  assert.deepEqual(steps.map((step) => step.id), ['daily-social-post', 'engagement-audit']);
+  assert.deepEqual(steps.map((step) => step.id), ['daily-social-post', 'reward-report', 'engagement-audit']);
   assert.deepEqual(post.args.slice(-1), ['--dry-run']);
   assert.match(post.skipReason, /ZERNIO_API_KEY/);
 });
@@ -125,9 +131,15 @@ test('renderMarkdownReport escapes table separators and CLI entrypoint detection
         skipped: 0,
       },
     },
+    reward: {
+      episodesAnalyzed: 2,
+      averageReward: -0.25,
+      gateCandidates: [{ key: 'error:repeat' }],
+    },
   });
 
   assert.match(markdown, /missing A\/B/);
+  assert.match(markdown, /Average reward: -0.25/);
   assert.equal(isCliEntrypoint(['node', path.join(PROJECT_ROOT, 'scripts', 'ralph-loop.js')]), true);
   assert.equal(isCliEntrypoint(['node', path.join(PROJECT_ROOT, 'tests', 'ralph-loop.test.js')]), false);
 });
@@ -157,6 +169,7 @@ test('runRalphLoop writes machine-readable evidence and keeps state paths explic
   assert.deepEqual(calls, ['sync-launch-assets', 'reply-monitor']);
   assert.equal(report.mode, 'engage');
   assert.equal(report.dryRun, true);
+  assert.equal(typeof report.reward.averageReward, 'number');
   assert.deepEqual(report.statePaths, RALPH_STATE_PATHS);
   assert.equal(fs.existsSync(path.join(tmp, 'ralph-loop-report.json')), true);
   assert.equal(fs.existsSync(path.join(tmp, 'ralph-loop-report.md')), true);
@@ -183,12 +196,16 @@ test('Ralph workflows are scheduled, stateful, and split outbound from reply eng
   assert.match(ralph, /\.thumbgate\/reply-monitor-state\.json/);
   assert.match(ralph, /\.thumbgate\/reply-drafts\.jsonl/);
   assert.match(ralph, /\.thumbgate\/social-launch-assets\.json/);
+  assert.match(ralph, /BLUESKY_HANDLE/);
+  assert.match(ralph, /scripts\/social-reply-monitor-bluesky\.js/);
   assert.match(ralphMode, /name: Ralph Mode - 24\/7 Engagement Loop/);
   assert.match(ralphMode, /cron: '0 \*\/2 \* \* \*'/);
   assert.match(ralphMode, /actions\/cache\/restore@v[45]/);
   assert.match(ralphMode, /actions\/cache\/save@v[45]/);
   assert.match(ralphMode, /\.thumbgate\/ralph-state\.json/);
   assert.match(ralphMode, /node scripts\/ralph-mode-ci\.js/);
+  assert.match(replyMonitor, /bluesky/);
+  assert.match(replyMonitor, /scripts\/social-reply-monitor-bluesky\.js/);
   assert.doesNotMatch(replyMonitor, /^\s*schedule:/m);
   assert.doesNotMatch(socialEngagement, /0 9,13,17,21 \* \* \*/);
 });

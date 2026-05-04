@@ -4,11 +4,16 @@ Framework: GSD
 
 ## Capture
 
-- Total keyword rows: 18
+- Total keyword rows: 24
 - thumbgate vs speclock | intent=comparison | pillar=comparison | score=100
 - thumbgate vs mem0 | intent=comparison | pillar=comparison | score=100
 - pre-action checks for ai coding agents | intent=commercial | pillar=pre-action-checks | score=83
 - ai agent harness optimization | intent=commercial | pillar=pre-action-checks | score=83
+- code knowledge graph guardrails | intent=commercial | pillar=pre-action-checks | score=83
+- developer machine supply chain guardrails | intent=commercial | pillar=pre-action-checks | score=83
+- prompt tricks to workflow rules | intent=informational | pillar=ai-agent-reliability | score=72
+- background agent governance | intent=informational | pillar=ai-agent-reliability | score=72
+- gpt-5.5 model evaluation | intent=informational | pillar=ai-agent-reliability | score=72
 - browser automation safety | intent=informational | pillar=pre-action-checks | score=75
 - native messaging host security | intent=informational | pillar=pre-action-checks | score=75
 - ai search topical presence | intent=informational | pillar=ai-agent-reliability | score=72
@@ -23,19 +28,20 @@ Framework: GSD
 - claude code prevent repeated mistakes | intent=commercial | pillar=pre-action-checks | score=89
 - codex cli guardrails | intent=commercial | pillar=pre-action-checks | score=89
 - gemini cli feedback memory | intent=commercial | pillar=feedback-loop | score=89
+- roo code alternative cline | intent=comparison | pillar=comparison | score=99
 
 ## Clarify
 
-- Intents: comparison=2, commercial=11, informational=5
-- Personas: tool-evaluator=2, engineering-lead=2, ai-engineer=8, claude-code-builder=2, ai-research-engineer=1, cursor-builder=1, codex-builder=1, gemini-builder=1
-- Page types: comparison=2, guide=11, integration=5
+- Intents: comparison=3, commercial=13, informational=8
+- Personas: tool-evaluator=3, engineering-lead=4, ai-engineer=11, claude-code-builder=2, ai-research-engineer=1, cursor-builder=1, codex-builder=1, gemini-builder=1
+- Page types: comparison=3, guide=16, integration=5
 
 ## Organize
 
-- pre-action-checks: cursor prevent repeated mistakes (832)
+- pre-action-checks: cursor prevent repeated mistakes (998)
+- ai-agent-reliability: prompt tricks to workflow rules (432)
+- comparison: thumbgate vs speclock (299)
 - feedback-loop: claude code feedback memory (261)
-- ai-agent-reliability: ai search topical presence (216)
-- comparison: thumbgate vs speclock (200)
 
 ## Execute
 
@@ -57,7 +63,16 @@ Framework: GSD
 - Opportunity score: 100
 - CTA: Go Pro — $19/mo
 - Summary: Mem0 is memory. ThumbGate is memory plus enforcement. It captures thumbs-up/down feedback, promotes the signal into rules, and blocks repeat failures with pre-action checks.
-### 3. Claude Code Feedback Memory with Thumbs Up and Thumbs Down
+### 3. Roo Code Alternative: Migrating to Cline with Portable Lesson Memory
+
+- Path: /guides/roo-code-alternative-cline
+- Primary query: roo code alternative cline
+- Persona: tool-evaluator
+- Page type: integration
+- Opportunity score: 99
+- CTA: Go Pro — $19/mo
+- Summary: Roo Code is shutting down on May 15, 2026, and its own docs point users to Cline. ThumbGate keeps the migration from resetting every hard-won thumbs-down and workflow correction back to zero.
+### 4. Claude Code Feedback Memory with Thumbs Up and Thumbs Down
 
 - Path: /guides/claude-code-feedback
 - Primary query: claude code feedback memory
@@ -66,7 +81,7 @@ Framework: GSD
 - Opportunity score: 89
 - CTA: Go Pro — $19/mo
 - Summary: Claude Code can remember more when the memory is structured, but reliability improves when thumbs-up/down feedback also becomes enforceable behavior. That is ThumbGate's angle.
-### 4. Cursor Agent Guardrails | Stop Repeated Mistakes with ThumbGate
+### 5. Cursor Agent Guardrails | Stop Repeated Mistakes with ThumbGate
 
 - Path: /guides/cursor-agent-guardrails
 - Primary query: cursor prevent repeated mistakes
@@ -75,7 +90,7 @@ Framework: GSD
 - Opportunity score: 89
 - CTA: Go Pro — $19/mo
 - Summary: Cursor moves fast, which makes repeated mistakes expensive. ThumbGate gives Cursor users a feedback loop that turns thumbs-down corrections into pre-action checks before the next risky step fires.
-### 5. Codex CLI Guardrails | Prevent Repeated Mistakes with ThumbGate
+### 6. Codex CLI Guardrails | Prevent Repeated Mistakes with ThumbGate
 
 - Path: /guides/codex-cli-guardrails
 - Primary query: codex cli guardrails
@@ -84,7 +99,7 @@ Framework: GSD
 - Opportunity score: 89
 - CTA: Go Pro — $19/mo
 - Summary: Codex CLI can move quickly through repo tasks, but buyers need more than good intentions. ThumbGate adds a reliability gateway so repeated mistakes become searchable lessons, linked rules, and pre-action enforcement.
-### 6. Gemini CLI Feedback Memory | Memory Plus Enforcement with ThumbGate
+### 7. Gemini CLI Feedback Memory | Memory Plus Enforcement with ThumbGate
 
 - Path: /guides/gemini-cli-feedback-memory
 - Primary query: gemini cli feedback memory
@@ -93,7 +108,7 @@ Framework: GSD
 - Opportunity score: 89
 - CTA: Go Pro — $19/mo
 - Summary: Gemini CLI users often start by asking for better memory. ThumbGate answers the bigger need: memory that can become prevention rules and pre-action checks when the same mistake shows up twice.
-### 7. ThumbGate for Claude Desktop | Install the Plugin in 60 Seconds
+### 8. ThumbGate for Claude Desktop | Install the Plugin in 60 Seconds
 
 - Path: /guides/claude-desktop
 - Primary query: claude desktop extension plugin thumbgate
@@ -102,7 +117,7 @@ Framework: GSD
 - Opportunity score: 88
 - CTA: Go Pro — $19/mo
 - Summary: Install ThumbGate as a Claude Desktop plugin and get pre-action checks running in under a minute. No build step, no cloud account, no config files.
-### 8. Pre-Action Checks for AI Coding Agents | ThumbGate Guide
+### 9. Pre-Action Checks for AI Coding Agents | ThumbGate Guide
 
 - Path: /guides/pre-action-checks
 - Primary query: pre-action checks for ai coding agents
@@ -111,7 +126,7 @@ Framework: GSD
 - Opportunity score: 83
 - CTA: Go Pro — $19/mo
 - Summary: Pre-action gates stop the risky move before the agent executes it. ThumbGate uses thumbs-up/down feedback to decide what should be reinforced, warned, or blocked.
-### 9. AI Agent Harness Optimization | Progressive Disclosure + Pre-Action Checks
+### 10. AI Agent Harness Optimization | Progressive Disclosure + Pre-Action Checks
 
 - Path: /guides/agent-harness-optimization
 - Primary query: ai agent harness optimization
@@ -120,7 +135,25 @@ Framework: GSD
 - Opportunity score: 83
 - CTA: Go Pro — $19/mo
 - Summary: A better harness keeps global instructions lean, loads MCP schemas only when needed, and turns feedback into pre-action checks. ThumbGate makes that workflow measurable and enforceable.
-### 10. How to Stop AI Coding Agents From Repeating Mistakes | ThumbGate
+### 11. Code Knowledge Graph Guardrails | ThumbGate Guide
+
+- Path: /guides/code-knowledge-graph-guardrails
+- Primary query: code knowledge graph guardrails
+- Persona: engineering-lead
+- Page type: guide
+- Opportunity score: 83
+- CTA: Go Pro — $19/mo
+- Summary: Code knowledge graphs help AI coding agents understand files, functions, dependencies, and architecture layers. ThumbGate turns those graph signals into pre-action checks before risky edits, commands, deploys, or publishes execute.
+### 12. Developer Machine Supply Chain Guardrails | ThumbGate Guide
+
+- Path: /guides/developer-machine-supply-chain-guardrails
+- Primary query: developer machine supply chain guardrails
+- Persona: engineering-lead
+- Page type: guide
+- Opportunity score: 83
+- CTA: Go Pro — $19/mo
+- Summary: Developer laptops and CI runners hold tokens, package-manager trust, and one-shot CLI install paths. ThumbGate turns that local execution risk into pre-action gates before an agent runs npm, PyPI, Docker, or shell commands that can expose credentials.
+### 13. How to Stop AI Coding Agents From Repeating Mistakes | ThumbGate
 
 - Path: /guides/stop-repeated-ai-agent-mistakes
 - Primary query: stop ai coding agents from repeating mistakes
@@ -129,7 +162,7 @@ Framework: GSD
 - Opportunity score: 83
 - CTA: Go Pro — $19/mo
 - Summary: If your agent keeps repeating the same bad move, the fix is not more memory alone. The fix is a feedback loop that turns repeated failures into pre-action checks before the next tool call executes.
-### 11. Autoresearch Agent Safety | Gates for Self-Improving Coding Agents
+### 14. Autoresearch Agent Safety | Gates for Self-Improving Coding Agents
 
 - Path: /guides/autoresearch-agent-safety
 - Primary query: autoresearch agent safety
@@ -138,7 +171,7 @@ Framework: GSD
 - Opportunity score: 83
 - CTA: Go Pro — $19/mo
 - Summary: Autoresearch-style loops can search for better code, but they need gates for holdout tests, proof trails, reward hacking, and unsafe self-improvement.
-### 12. Browser Automation Safety | Prompt Injection, Permissions, and Pre-Action Checks
+### 15. Browser Automation Safety | Prompt Injection, Permissions, and Pre-Action Checks
 
 - Path: /guides/browser-automation-safety
 - Primary query: browser automation safety
@@ -147,7 +180,7 @@ Framework: GSD
 - Opportunity score: 75
 - CTA: Go Pro — $19/mo
 - Summary: Browser agents can click, type, and navigate for you, but they also widen prompt-injection and cross-app integration risk. ThumbGate adds approval boundaries, auditability, and a native messaging audit before those bridges turn into silent blast-radius expansion.
-### 13. Native Messaging Host Security | Audit Browser Bridges Before They Expand
+### 16. Native Messaging Host Security | Audit Browser Bridges Before They Expand
 
 - Path: /guides/native-messaging-host-security
 - Primary query: native messaging host security
@@ -156,7 +189,7 @@ Framework: GSD
 - Opportunity score: 75
 - CTA: Go Pro — $19/mo
 - Summary: Native messaging hosts let browser extensions talk to local executables. That can be useful, but it also creates a persistent bridge outside the browser sandbox. ThumbGate audits those registrations and helps teams require explicit approval before they become part of the workflow.
-### 14. Best Tools to Stop AI Agents From Breaking Production | ThumbGate Listicle
+### 17. Best Tools to Stop AI Agents From Breaking Production | ThumbGate Listicle
 
 - Path: /guides/best-tools-stop-ai-agents-breaking-production
 - Primary query: best tools to stop ai agents from breaking production
@@ -165,7 +198,34 @@ Framework: GSD
 - Opportunity score: 72
 - CTA: Go Pro — $19/mo
 - Summary: A practical listicle for teams adopting Claude Code, Cursor, Codex, Gemini, and other coding agents: the winning reliability stack is workflow-first, inspection-driven, and enforced before tool execution.
-### 15. AI Search Topical Presence | Become the Obvious Recommendation
+### 18. Prompt Tricks Are Not Enough | Turn AI Instructions Into Workflow Rules
+
+- Path: /guides/prompt-tricks-to-workflow-rules
+- Primary query: prompt tricks to workflow rules
+- Persona: ai-engineer
+- Page type: guide
+- Opportunity score: 72
+- CTA: Go Pro — $19/mo
+- Summary: Clear prompts and examples help modern AI tools, but they do not stop the same failure from recurring. ThumbGate turns one messy agent workflow into rules, examples, and pre-action checks before the next tool call executes.
+### 19. Background Agent Governance | Risk-Tiered Review for Agent PRs
+
+- Path: /guides/background-agent-governance
+- Primary query: background agent governance
+- Persona: ai-engineer
+- Page type: guide
+- Opportunity score: 72
+- CTA: Go Pro — $19/mo
+- Summary: Background agents can draft changes while humans work elsewhere, but review becomes the bottleneck. ThumbGate adds pre-dispatch checks, run reports, isolated task lanes, and evidence-backed review routing before unattended agent work piles up.
+### 20. GPT-5.5 Model Evaluation | Benchmark Before Routing Expensive Agent Work
+
+- Path: /guides/gpt-5-5-model-evaluation
+- Primary query: gpt-5.5 model evaluation
+- Persona: ai-engineer
+- Page type: guide
+- Opportunity score: 72
+- CTA: Go Pro — $19/mo
+- Summary: Frontier-model upgrades can improve coding, dataset analysis, and dashboards, but the ROI comes from measured routing. ThumbGate adds a model-candidate workload so teams can benchmark GPT-5.5 against real feedback, gate evals, and dashboard-analysis criteria before changing defaults.
+### 21. AI Search Topical Presence | Become the Obvious Recommendation
 
 - Path: /guides/ai-search-topical-presence
 - Primary query: ai search topical presence
@@ -174,7 +234,7 @@ Framework: GSD
 - Opportunity score: 72
 - CTA: Go Pro — $19/mo
 - Summary: AI assistants recommend the tools they repeatedly see tied to a problem in credible contexts. ThumbGate wins when the web consistently connects it to pre-action checks, AI coding agent safety, and stopping repeated mistakes before execution.
-### 16. Relational Knowledge in AI Recommendations | Why Brands Get Picked
+### 22. Relational Knowledge in AI Recommendations | Why Brands Get Picked
 
 - Path: /guides/relational-knowledge-ai-recommendations
 - Primary query: relational knowledge ai recommendations
@@ -187,6 +247,6 @@ Framework: GSD
 ## Review
 
 - Top opportunity query: thumbgate vs speclock
-- Recommended publish order: /compare/speclock, /compare/mem0, /guides/claude-code-feedback, /guides/cursor-agent-guardrails, /guides/codex-cli-guardrails, /guides/gemini-cli-feedback-memory, /guides/claude-desktop, /guides/pre-action-checks, /guides/agent-harness-optimization, /guides/stop-repeated-ai-agent-mistakes, /guides/autoresearch-agent-safety, /guides/browser-automation-safety, /guides/native-messaging-host-security, /guides/best-tools-stop-ai-agents-breaking-production, /guides/ai-search-topical-presence, /guides/relational-knowledge-ai-recommendations
+- Recommended publish order: /compare/speclock, /compare/mem0, /guides/roo-code-alternative-cline, /guides/claude-code-feedback, /guides/cursor-agent-guardrails, /guides/codex-cli-guardrails, /guides/gemini-cli-feedback-memory, /guides/claude-desktop, /guides/pre-action-checks, /guides/agent-harness-optimization, /guides/code-knowledge-graph-guardrails, /guides/developer-machine-supply-chain-guardrails, /guides/stop-repeated-ai-agent-mistakes, /guides/autoresearch-agent-safety, /guides/browser-automation-safety, /guides/native-messaging-host-security, /guides/best-tools-stop-ai-agents-breaking-production, /guides/prompt-tricks-to-workflow-rules, /guides/background-agent-governance, /guides/gpt-5-5-model-evaluation, /guides/ai-search-topical-presence, /guides/relational-knowledge-ai-recommendations
 - Proof assets: thumbs-up/down feedback loop, pre-action checks, verification evidence, automation proof, SQLite+FTS5 lesson DB, Thompson Sampling
 

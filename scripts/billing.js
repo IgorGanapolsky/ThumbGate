@@ -6,6 +6,7 @@
 'use strict';
 
 const STRIPE_TIMEOUT_MS = 5000;
+const STRIPE_RECONCILIATION_SUMMARY_TIMEOUT_MS = 3500;
 function withTimeout(promise, ms = STRIPE_TIMEOUT_MS) {
   return Promise.race([
     promise,
@@ -1127,7 +1128,13 @@ function deriveRevenueEventFromPaidProviderEvent(entry = {}) {
 
 function loadResolvedRevenueEvents(options = {}) {
   const analyticsWindow = resolveAnalyticsWindow(options);
-  const extraRevenueEvents = Array.isArray(options.extraRevenueEvents) ? options.extraRevenueEvents : [];
+  const extraRevenueEvents = Array.isArray(options.extraRevenueEvents)
+    ? filterEntriesForWindow(
+      options.extraRevenueEvents,
+      analyticsWindow,
+      (entry) => entry && entry.timestamp
+    )
+    : [];
   const revenueEvents = filterEntriesForWindow(
     loadRevenueLedger(),
     analyticsWindow,
@@ -2371,7 +2378,12 @@ function getBillingSummary(options = {}) {
 
 async function getBillingSummaryLive(options = {}) {
   try {
-    const extraRevenueEvents = await listStripeReconciledRevenueEvents().catch(() => []);
+    const reconciliationTimeoutMs = normalizeInteger(options.stripeReconciliationTimeoutMs)
+      || STRIPE_RECONCILIATION_SUMMARY_TIMEOUT_MS;
+    const extraRevenueEvents = await withTimeout(
+      listStripeReconciledRevenueEvents(),
+      reconciliationTimeoutMs
+    ).catch(() => []);
     return getBillingSummary({
       ...options,
       extraRevenueEvents,
@@ -2527,10 +2539,10 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
       packId: pack ? pack.id : null,
       credits: pack ? pack.credits : null,
     }),
-    // 7-day free trial for subscriptions — don't require card upfront
+    // Keep the trial, but require a payment method so trials can convert without dunning.
     ...(pack ? {} : {
       subscription_data: { trial_period_days: 7 },
-      payment_method_collection: 'if_required',
+      payment_method_collection: 'always',
     }),
   };
 

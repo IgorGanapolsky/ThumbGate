@@ -7,6 +7,9 @@ const {
   extractPostText,
   buildReplyContext,
   monitor,
+  assertPublishableDraft,
+  publishApprovedDrafts,
+  publishReply,
 } = require('../scripts/social-reply-monitor-bluesky');
 
 test('extractPostText returns record text when present', () => {
@@ -184,4 +187,99 @@ test('monitor skips notifications already recorded as replied', async () => {
   assert.equal(result.queued, 0);
   assert.equal(result.skipped, 1);
   assert.equal(gen, 0);
+});
+
+test('publishReply refuses unapproved drafts', async () => {
+  await assert.rejects(
+    () => publishReply({ did: 'did:plc:me', accessJwt: 'jwt', pdsHost: 'pds.example' }, {
+      platform: 'bluesky',
+      approved: false,
+      draftReply: 'hello',
+      reply: {
+        root: { uri: 'at://did:plc:a/app.bsky.feed.post/root', cid: 'rootCid' },
+        parent: { uri: 'at://did:plc:a/app.bsky.feed.post/parent', cid: 'parentCid' },
+      },
+    }),
+    /unapproved/,
+  );
+});
+
+test('publishReply creates an AT Protocol reply record for approved drafts', async () => {
+  let call = null;
+  const draft = {
+    platform: 'bluesky',
+    approved: true,
+    draftReply: 'The distinction is observability vs enforcement.',
+    reply: {
+      root: { uri: 'at://did:plc:a/app.bsky.feed.post/root', cid: 'rootCid' },
+      parent: { uri: 'at://did:plc:a/app.bsky.feed.post/parent', cid: 'parentCid' },
+    },
+  };
+  const result = await publishReply(
+    { did: 'did:plc:me', accessJwt: 'jwt', pdsHost: 'pds.example' },
+    draft,
+    {
+      now: () => new Date('2026-05-04T13:00:00Z'),
+      request: async (...args) => {
+        call = args;
+        return { status: 200, json: { uri: 'at://did:plc:me/app.bsky.feed.post/reply', cid: 'replyCid' } };
+      },
+    },
+  );
+
+  assert.equal(result.uri, 'at://did:plc:me/app.bsky.feed.post/reply');
+  assert.equal(call[0], 'POST');
+  assert.equal(call[1], 'pds.example');
+  assert.equal(call[2], '/xrpc/com.atproto.repo.createRecord');
+  assert.equal(call[3].body.collection, 'app.bsky.feed.post');
+  assert.equal(call[3].body.record.text, draft.draftReply);
+  assert.deepEqual(call[3].body.record.reply.parent, draft.reply.parent);
+});
+
+test('publishApprovedDrafts blocks live publishing without explicit confirm flag', async () => {
+  const result = await publishApprovedDrafts({
+    loadDrafts: () => [{
+      platform: 'bluesky',
+      approved: true,
+      draftReply: 'ready',
+      reply: {
+        root: { uri: 'at://did:plc:a/app.bsky.feed.post/root', cid: 'rootCid' },
+        parent: { uri: 'at://did:plc:a/app.bsky.feed.post/parent', cid: 'parentCid' },
+      },
+    }],
+    confirmPublish: false,
+    dryRun: false,
+  });
+
+  assert.equal(result.blocked, true);
+  assert.equal(result.reason, 'missing_confirm_publish');
+  assert.equal(result.published, 0);
+});
+
+test('publishApprovedDrafts records posted URI in reply monitor state after confirmed publish', async () => {
+  let savedState = null;
+  const result = await publishApprovedDrafts({
+    sessionFactory: async () => ({ did: 'did:plc:me', accessJwt: 'jwt', pdsHost: 'pds.example' }),
+    loadDrafts: () => [{
+      platform: 'bluesky',
+      approved: true,
+      draftReply: 'ready',
+      reply: {
+        root: { uri: 'at://did:plc:a/app.bsky.feed.post/root', cid: 'rootCid' },
+        parent: { uri: 'at://did:plc:a/app.bsky.feed.post/parent', cid: 'parentCid' },
+      },
+    }],
+    loadState: () => ({ repliedTo: { bluesky: {} }, lastCheck: {} }),
+    saveState: (state) => { savedState = state; },
+    publishReply: async () => ({
+      uri: 'at://did:plc:me/app.bsky.feed.post/reply',
+      cid: 'replyCid',
+      parentUri: 'at://did:plc:a/app.bsky.feed.post/parent',
+    }),
+    confirmPublish: true,
+    dryRun: false,
+  });
+
+  assert.equal(result.published, 1);
+  assert.equal(savedState.repliedTo.bluesky['at://did:plc:a/app.bsky.feed.post/parent'].postedUri, 'at://did:plc:me/app.bsky.feed.post/reply');
 });

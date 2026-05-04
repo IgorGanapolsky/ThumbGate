@@ -24,10 +24,10 @@ const {
 } = require('../scripts/codex-marketplace-revenue-pack');
 
 const LINKS_FIXTURE = {
-  appOrigin: 'https://thumbgate-production.up.railway.app',
-  guideLink: 'https://thumbgate-production.up.railway.app/guide',
-  proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
-  sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+  appOrigin: 'https://thumbgate.ai',
+  guideLink: 'https://thumbgate.ai/guide',
+  proCheckoutLink: 'https://thumbgate.ai/checkout/pro',
+  sprintLink: 'https://thumbgate.ai/#workflow-sprint-intake',
   proPriceLabel: '$19/mo or $149/yr',
 };
 
@@ -56,7 +56,7 @@ test('Codex evidence surfaces stay tied to real install, release, and proof surf
 });
 
 test('tracked Codex links keep attribution machine-readable', () => {
-  const installUrl = new URL(buildTrackedCodexLink('https://thumbgate-production.up.railway.app/codex-plugin', {
+  const installUrl = new URL(buildTrackedCodexLink('https://thumbgate.ai/codex-plugin', {
     utmCampaign: 'codex_plugin_page',
     utmContent: 'install_page',
     campaignVariant: 'install_page',
@@ -111,7 +111,7 @@ test('rendered markdown and CSV stay operator-ready', () => {
 
   assert.match(markdown, /Codex Operator Revenue Pack/);
   assert.match(markdown, /Stop Codex from repeating the same tool mistake/);
-  assert.match(markdown, /thumbgate-production\.up\.railway\.app\/codex-plugin/);
+  assert.match(markdown, /thumbgate\.ai\/codex-plugin/);
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
   assert.match(markdown, /Workflow Hardening Sprint/);

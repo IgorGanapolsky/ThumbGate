@@ -11,6 +11,8 @@ const {
   DEFAULT_REPLY_STATE_PATH,
   DEFAULT_TIMEZONE,
 } = require('./social-analytics/engagement-audit');
+const { buildRewardReport } = require('./agent-reward-model');
+const { loadEpisodes } = require('./session-episode-store');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const DEFAULT_ARTIFACT_DIR = path.join(REPO_ROOT, '.artifacts', 'ralph-loop');
@@ -171,7 +173,7 @@ function buildRalphSteps(options = {}, env = process.env) {
         replyArgs,
         {
           stage: 'engage',
-          description: 'Checks Reddit, X, and LinkedIn reply surfaces with platform-safe posting and draft rules.',
+          description: 'Checks Reddit and LinkedIn reply surfaces with platform-safe posting and draft rules.',
         }
       ),
       makeNodeStep(
@@ -181,6 +183,16 @@ function buildRalphSteps(options = {}, env = process.env) {
         {
           stage: 'engage',
           description: 'Polls Bluesky notifications via AT Protocol and queues draft replies for human review (never auto-posts).',
+          requiredEnvAll: ['BLUESKY_HANDLE', 'BLUESKY_APP_PASSWORD'],
+        }
+      ),
+      makeNodeStep(
+        'prospect-bluesky',
+        'scripts/social-bluesky-prospecting.js',
+        replyArgs,
+        {
+          stage: 'engage',
+          description: 'Searches Bluesky for relevant agent-reliability pain and queues technical ThumbGate reply drafts (never auto-posts).',
           requiredEnvAll: ['BLUESKY_HANDLE', 'BLUESKY_APP_PASSWORD'],
         }
       ),
@@ -203,6 +215,13 @@ function buildRalphSteps(options = {}, env = process.env) {
       }
     ));
   }
+
+  steps.push({
+    id: 'reward-report',
+    stage: 'prove',
+    type: 'internal',
+    description: 'Scores session episodes as RL-style rewards and ranks the next prevention gates.',
+  });
 
   steps.push({
     id: 'engagement-audit',
@@ -240,6 +259,14 @@ function runAuditStep(options = {}) {
   });
 }
 
+function runRewardStep() {
+  return buildRewardReport(loadEpisodes(), {
+    maxPairs: 5,
+    maxGateCandidates: 5,
+    maxWorst: 5,
+  });
+}
+
 function runStep(step, options = {}, deps = {}) {
   const startedAt = new Date().toISOString();
 
@@ -255,6 +282,17 @@ function runStep(step, options = {}, deps = {}) {
   }
 
   if (step.type === 'internal') {
+    if (step.id === 'reward-report') {
+      const reward = runRewardStep();
+      return {
+        id: step.id,
+        stage: step.stage,
+        status: 'passed',
+        reward,
+        startedAt,
+        finishedAt: new Date().toISOString(),
+      };
+    }
     const audit = runAuditStep(options);
     return {
       id: step.id,
@@ -312,6 +350,12 @@ function renderMarkdownReport(report) {
 
   lines.push(
     '',
+    '## Reward Model',
+    '',
+    `- Episodes analyzed: ${report.reward?.episodesAnalyzed ?? 0}`,
+    `- Average reward: ${report.reward?.averageReward ?? 0}`,
+    `- Gate candidates: ${report.reward?.gateCandidates?.length ?? 0}`,
+    '',
     '## Audit',
     '',
     `- Checked: ${report.audit.totals.checked}`,
@@ -346,6 +390,8 @@ function runRalphLoop(options = {}, deps = {}) {
   const results = steps.map((step) => runStep(step, normalized, { ...deps, env }));
   const auditStep = results.find((step) => step.id === 'engagement-audit');
   const audit = auditStep?.audit ? auditStep.audit : runAuditStep(normalized);
+  const rewardStep = results.find((step) => step.id === 'reward-report');
+  const reward = rewardStep?.reward ? rewardStep.reward : runRewardStep();
   const report = {
     generatedAt: new Date().toISOString(),
     mode: normalized.mode,
@@ -353,6 +399,7 @@ function runRalphLoop(options = {}, deps = {}) {
     cadence: 'hourly_ci',
     statePaths: RALPH_STATE_PATHS,
     steps: results,
+    reward,
     audit,
   };
   report.artifacts = writeReports(report, normalized.artifactDir || DEFAULT_ARTIFACT_DIR);

@@ -81,6 +81,31 @@ test('core commands are all registered in schema', () => {
   }
 });
 
+test('background-governance exposes report and pre-dispatch check flags', () => {
+  const cmd = findCommand('agent-governance');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'background-governance');
+  assert.ok(flagNames.includes('json'));
+  assert.ok(flagNames.includes('window-hours'));
+  assert.ok(flagNames.includes('feedback-dir'));
+  assert.ok(flagNames.includes('check'));
+  assert.ok(flagNames.includes('agent-id'));
+  assert.ok(flagNames.includes('branch'));
+  assert.ok(flagNames.includes('files-changed'));
+});
+
+test('model-candidates exposes dashboard-analysis routing flags', () => {
+  const cmd = findCommand('managed-models');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'model-candidates');
+  assert.ok(flagNames.includes('json'));
+  assert.ok(flagNames.includes('workload'));
+  assert.ok(flagNames.includes('provider'));
+  assert.ok(flagNames.includes('family'));
+  assert.ok(flagNames.includes('gateway'));
+  assert.ok(flagNames.includes('max'));
+});
+
 test('harness-audit command exposes JSON and token budget flags', () => {
   const cmd = findCommand('harness');
   const flagNames = cmd.flags.map((f) => f.name);
@@ -98,6 +123,19 @@ test('native-messaging-audit exposes JSON, platform, home-dir, and ai-only flags
   assert.ok(flagNames.includes('platform'));
   assert.ok(flagNames.includes('home-dir'));
   assert.ok(flagNames.includes('ai-only'));
+});
+
+test('code-graph-guardrails exposes graph signal flags', () => {
+  const cmd = findCommand('knowledge-graph-guardrails');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'code-graph-guardrails');
+  assert.ok(flagNames.includes('json'));
+  assert.ok(flagNames.includes('graph-tool'));
+  assert.ok(flagNames.includes('graph-path'));
+  assert.ok(flagNames.includes('central-files'));
+  assert.ok(flagNames.includes('layers'));
+  assert.ok(flagNames.includes('generated-artifacts'));
+  assert.ok(flagNames.includes('changed-files'));
 });
 
 test('lessons command has --json, --local, --remote flags', () => {

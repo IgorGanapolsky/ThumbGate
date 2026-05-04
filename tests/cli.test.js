@@ -558,6 +558,7 @@ describe('bin/cli.js', () => {
     assert.ok(result.stdout.includes('prove'), 'Help should mention prove');
     assert.ok(result.stdout.includes('doctor'), 'Help should mention doctor');
     assert.ok(result.stdout.includes('dispatch'), 'Help should mention dispatch');
+    assert.ok(result.stdout.includes('background-governance'), 'Help should mention background-governance');
     assert.ok(result.stdout.includes('analytics'), 'Help should mention analytics');
     assert.ok(result.stdout.includes('gate-check'), 'Help should mention gate-check');
     assert.ok(result.stdout.includes('statusline-render'), 'Help should mention statusline-render');
@@ -1051,6 +1052,80 @@ describe('bin/cli.js', () => {
     assert.ok(payload.findings.some((finding) => finding.code === 'dormant_ai_browser_bridge'));
 
     fs.rmSync(homeDir, { recursive: true, force: true });
+  });
+
+  test('background-governance --json reports background-agent run metrics', () => {
+    const feedbackDir = makeTmpDir();
+    fs.writeFileSync(path.join(feedbackDir, 'agent-runs.jsonl'), [
+      JSON.stringify({
+        id: 'run_cli_1',
+        timestamp: new Date().toISOString(),
+        agentId: 'builder',
+        runType: 'pr',
+        source: 'background',
+        status: 'completed',
+        gatesChecked: 3,
+        gatesBlocked: 1,
+        filesChanged: 4,
+        ciPassed: true,
+      }),
+    ].join('\n') + '\n');
+
+    const result = runCliSync(['background-governance', '--json', `--feedback-dir=${feedbackDir}`], {
+      env: { THUMBGATE_NO_NUDGE: '1' },
+    });
+
+    assert.strictEqual(result.status, 0, `background-governance failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.kind, 'background_agent_governance_report');
+    assert.equal(payload.total, 1);
+    assert.equal(payload.gatesBlocked, 1);
+    assert.ok(payload.agents.some((agent) => agent.agentId === 'builder'));
+
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  });
+
+  test('background-governance --check --json emits dispatch risk verdict', () => {
+    const feedbackDir = makeTmpDir();
+    const result = runCliSync([
+      'background-governance',
+      '--check',
+      '--json',
+      '--agent-id=builder',
+      '--branch=main',
+      '--files-changed=25',
+      `--feedback-dir=${feedbackDir}`,
+    ], {
+      env: { THUMBGATE_NO_NUDGE: '1' },
+    });
+
+    assert.strictEqual(result.status, 0, `background-governance check failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.kind, 'background_agent_governance_check');
+    assert.equal(payload.allowed, true);
+    assert.ok(payload.warnings.some((warning) => warning.rule === 'protected_branch'));
+    assert.ok(payload.warnings.some((warning) => warning.rule === 'large_blast_radius'));
+
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  });
+
+  test('code-graph-guardrails --json recommends graph-informed gates', () => {
+    const result = runCliSync([
+      'code-graph-guardrails',
+      '--json',
+      '--central-files=src/api/server.js',
+      '--layers=api,data',
+      '--generated-artifacts=.codegraph/index.json',
+      '--changed-files=24',
+    ], {
+      env: { THUMBGATE_NO_NUDGE: '1' },
+    });
+
+    assert.strictEqual(result.status, 0, `code-graph-guardrails failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.name, 'thumbgate-code-graph-guardrails');
+    assert.equal(payload.summary.recommendedTemplateCount, 3);
+    assert.ok(payload.signals.some((signal) => signal.id === 'large_blast_radius'));
   });
 
   test('dispatch --json emits a phone-safe remote ops brief', () => {

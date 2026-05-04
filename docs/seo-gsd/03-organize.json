@@ -5,7 +5,7 @@
       "pageType": "integration",
       "queries": [
         {
-          "id": "kw_15_cursor-prevent-repeated-mistakes",
+          "id": "kw_20_cursor-prevent-repeated-mistakes",
           "query": "cursor prevent repeated mistakes",
           "source": "seed",
           "notes": "High-intent Cursor workflow page for developers already feeling repeat-failure pain.",
@@ -21,7 +21,7 @@
           "opportunityScore": 89
         },
         {
-          "id": "kw_16_claude-code-prevent-repeated-mistakes",
+          "id": "kw_21_claude-code-prevent-repeated-mistakes",
           "query": "claude code prevent repeated mistakes",
           "source": "seed",
           "notes": "High-intent pain query for Claude Code buyers.",
@@ -37,7 +37,7 @@
           "opportunityScore": 89
         },
         {
-          "id": "kw_17_codex-cli-guardrails",
+          "id": "kw_22_codex-cli-guardrails",
           "query": "codex cli guardrails",
           "source": "seed",
           "notes": "Guardrail-focused page for Codex CLI buyers who want prevention, not just memory.",
@@ -85,7 +85,39 @@
           "opportunityScore": 83
         },
         {
-          "id": "kw_12_ai-coding-agent-guardrails",
+          "id": "kw_5_code-knowledge-graph-guardrails",
+          "query": "code knowledge graph guardrails",
+          "source": "seed",
+          "notes": "Fresh Claude Code plugin and code-graph demand where ThumbGate can own the enforcement layer after graph-based code understanding.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "commercial",
+          "pillar": "pre-action-checks",
+          "persona": "engineering-lead",
+          "pageType": "guide",
+          "opportunityScore": 83
+        },
+        {
+          "id": "kw_6_developer-machine-supply-chain-guardrails",
+          "query": "developer machine supply chain guardrails",
+          "source": "seed",
+          "notes": "Developer-machine compromise and package-manager risk map directly to ThumbGate pre-action gates before agents run risky local commands.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "commercial",
+          "pillar": "pre-action-checks",
+          "persona": "engineering-lead",
+          "pageType": "guide",
+          "opportunityScore": 83
+        },
+        {
+          "id": "kw_17_ai-coding-agent-guardrails",
           "query": "ai coding agent guardrails",
           "source": "seed",
           "notes": "Broader category demand that feeds comparison and guide pages.",
@@ -101,7 +133,7 @@
           "opportunityScore": 83
         },
         {
-          "id": "kw_13_autoresearch-agent-safety",
+          "id": "kw_18_autoresearch-agent-safety",
           "query": "autoresearch agent safety",
           "source": "seed",
           "notes": "Emerging self-improving agent query where ThumbGate can own the safety and proof-control wedge.",
@@ -117,7 +149,7 @@
           "opportunityScore": 83
         },
         {
-          "id": "kw_14_stop-ai-coding-agents-from-repeating-mistakes",
+          "id": "kw_19_stop-ai-coding-agents-from-repeating-mistakes",
           "query": "stop ai coding agents from repeating mistakes",
           "source": "seed",
           "notes": "Problem-led copy that maps to landing-page positioning.",
@@ -133,7 +165,7 @@
           "opportunityScore": 83
         },
         {
-          "id": "kw_5_browser-automation-safety",
+          "id": "kw_10_browser-automation-safety",
           "query": "browser automation safety",
           "source": "seed",
           "notes": "High-intent browser-agent safety query tied to prompt injection, permissions, and cross-app automation risk.",
@@ -149,7 +181,7 @@
           "opportunityScore": 75
         },
         {
-          "id": "kw_6_native-messaging-host-security",
+          "id": "kw_11_native-messaging-host-security",
           "query": "native messaging host security",
           "source": "seed",
           "notes": "Security-led query that maps directly to browser bridge auditing and explicit connector governance.",
@@ -165,9 +197,9 @@
           "opportunityScore": 75
         }
       ],
-      "totalOpportunityScore": 832,
+      "totalOpportunityScore": 998,
       "primaryQuery": {
-        "id": "kw_15_cursor-prevent-repeated-mistakes",
+        "id": "kw_20_cursor-prevent-repeated-mistakes",
         "query": "cursor prevent repeated mistakes",
         "source": "seed",
         "notes": "High-intent Cursor workflow page for developers already feeling repeat-failure pain.",
@@ -196,90 +228,59 @@
       ]
     },
     {
-      "pillar": "feedback-loop",
-      "pageType": "integration",
-      "queries": [
-        {
-          "id": "kw_11_claude-code-feedback-memory",
-          "query": "claude code feedback memory",
-          "source": "seed",
-          "notes": "Agent-specific workflow page with high compatibility intent.",
-          "impressions": null,
-          "clicks": null,
-          "ctr": null,
-          "position": null,
-          "businessValue": 92,
-          "intent": "commercial",
-          "pillar": "feedback-loop",
-          "persona": "claude-code-builder",
-          "pageType": "integration",
-          "opportunityScore": 89
-        },
-        {
-          "id": "kw_18_gemini-cli-feedback-memory",
-          "query": "gemini cli feedback memory",
-          "source": "seed",
-          "notes": "Integration page for Gemini CLI users who need memory plus enforcement.",
-          "impressions": null,
-          "clicks": null,
-          "ctr": null,
-          "position": null,
-          "businessValue": 82,
-          "intent": "commercial",
-          "pillar": "feedback-loop",
-          "persona": "gemini-builder",
-          "pageType": "integration",
-          "opportunityScore": 89
-        },
-        {
-          "id": "kw_10_thumbs-up-thumbs-down-feedback-for-ai-coding-agents",
-          "query": "thumbs up thumbs down feedback for ai coding agents",
-          "source": "seed",
-          "notes": "Differentiates the explicit feedback loop and aligns with the brand.",
-          "impressions": null,
-          "clicks": null,
-          "ctr": null,
-          "position": null,
-          "businessValue": 95,
-          "intent": "commercial",
-          "pillar": "feedback-loop",
-          "persona": "ai-engineer",
-          "pageType": "guide",
-          "opportunityScore": 83
-        }
-      ],
-      "totalOpportunityScore": 261,
-      "primaryQuery": {
-        "id": "kw_11_claude-code-feedback-memory",
-        "query": "claude code feedback memory",
-        "source": "seed",
-        "notes": "Agent-specific workflow page with high compatibility intent.",
-        "impressions": null,
-        "clicks": null,
-        "ctr": null,
-        "position": null,
-        "businessValue": 92,
-        "intent": "commercial",
-        "pillar": "feedback-loop",
-        "persona": "claude-code-builder",
-        "pageType": "integration",
-        "opportunityScore": 89
-      },
-      "personas": [
-        "ai-engineer",
-        "claude-code-builder",
-        "gemini-builder"
-      ],
-      "intents": [
-        "commercial"
-      ]
-    },
-    {
       "pillar": "ai-agent-reliability",
       "pageType": "guide",
       "queries": [
         {
-          "id": "kw_7_ai-search-topical-presence",
+          "id": "kw_7_prompt-tricks-to-workflow-rules",
+          "query": "prompt tricks to workflow rules",
+          "source": "seed",
+          "notes": "Fresh prompt-engineering skepticism that maps directly to ThumbGate converting clear instructions, examples, and repeated failures into enforceable local checks.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "informational",
+          "pillar": "ai-agent-reliability",
+          "persona": "ai-engineer",
+          "pageType": "guide",
+          "opportunityScore": 72
+        },
+        {
+          "id": "kw_8_background-agent-governance",
+          "query": "background agent governance",
+          "source": "seed",
+          "notes": "New team-buying query for unattended agent PRs where alignment context, isolated execution, risk-tiered review, and audit evidence create immediate ROI.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "informational",
+          "pillar": "ai-agent-reliability",
+          "persona": "ai-engineer",
+          "pageType": "guide",
+          "opportunityScore": 72
+        },
+        {
+          "id": "kw_9_gpt-5-5-model-evaluation",
+          "query": "gpt-5.5 model evaluation",
+          "source": "seed",
+          "notes": "Fresh frontier-model upgrade query that maps to ThumbGate model candidate benchmarking, dashboard-analysis workloads, and routing governance before teams move expensive work.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "informational",
+          "pillar": "ai-agent-reliability",
+          "persona": "ai-engineer",
+          "pageType": "guide",
+          "opportunityScore": 72
+        },
+        {
+          "id": "kw_12_ai-search-topical-presence",
           "query": "ai search topical presence",
           "source": "seed",
           "notes": "High-intent GEO query for teams trying to become the obvious recommendation in AI search and agent answers.",
@@ -295,7 +296,7 @@
           "opportunityScore": 72
         },
         {
-          "id": "kw_8_best-tools-to-stop-ai-agents-from-breaking-production",
+          "id": "kw_13_best-tools-to-stop-ai-agents-from-breaking-production",
           "query": "best tools to stop ai agents from breaking production",
           "source": "seed",
           "notes": "Listicle-style answer-engine query that maps directly to buyer prompts about production agent reliability.",
@@ -311,7 +312,7 @@
           "opportunityScore": 72
         },
         {
-          "id": "kw_9_relational-knowledge-ai-recommendations",
+          "id": "kw_14_relational-knowledge-ai-recommendations",
           "query": "relational knowledge ai recommendations",
           "source": "seed",
           "notes": "Captures research-led interest in how AI systems decide which brands and tools to recommend.",
@@ -327,17 +328,17 @@
           "opportunityScore": 72
         }
       ],
-      "totalOpportunityScore": 216,
+      "totalOpportunityScore": 432,
       "primaryQuery": {
-        "id": "kw_7_ai-search-topical-presence",
-        "query": "ai search topical presence",
+        "id": "kw_7_prompt-tricks-to-workflow-rules",
+        "query": "prompt tricks to workflow rules",
         "source": "seed",
-        "notes": "High-intent GEO query for teams trying to become the obvious recommendation in AI search and agent answers.",
+        "notes": "Fresh prompt-engineering skepticism that maps directly to ThumbGate converting clear instructions, examples, and repeated failures into enforceable local checks.",
         "impressions": null,
         "clicks": null,
         "ctr": null,
         "position": null,
-        "businessValue": 93,
+        "businessValue": 94,
         "intent": "informational",
         "pillar": "ai-agent-reliability",
         "persona": "ai-engineer",
@@ -386,9 +387,25 @@
           "persona": "tool-evaluator",
           "pageType": "comparison",
           "opportunityScore": 100
+        },
+        {
+          "id": "kw_24_roo-code-alternative-cline",
+          "query": "roo code alternative cline",
+          "source": "seed",
+          "notes": "Time-sensitive migration query for Roo users who need portable lesson memory before the May 15, 2026 shutdown.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 83,
+          "intent": "comparison",
+          "pillar": "comparison",
+          "persona": "tool-evaluator",
+          "pageType": "comparison",
+          "opportunityScore": 99
         }
       ],
-      "totalOpportunityScore": 200,
+      "totalOpportunityScore": 299,
       "primaryQuery": {
         "id": "kw_1_thumbgate-vs-speclock",
         "query": "thumbgate vs speclock",
@@ -410,6 +427,85 @@
       ],
       "intents": [
         "comparison"
+      ]
+    },
+    {
+      "pillar": "feedback-loop",
+      "pageType": "integration",
+      "queries": [
+        {
+          "id": "kw_16_claude-code-feedback-memory",
+          "query": "claude code feedback memory",
+          "source": "seed",
+          "notes": "Agent-specific workflow page with high compatibility intent.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 92,
+          "intent": "commercial",
+          "pillar": "feedback-loop",
+          "persona": "claude-code-builder",
+          "pageType": "integration",
+          "opportunityScore": 89
+        },
+        {
+          "id": "kw_23_gemini-cli-feedback-memory",
+          "query": "gemini cli feedback memory",
+          "source": "seed",
+          "notes": "Integration page for Gemini CLI users who need memory plus enforcement.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 82,
+          "intent": "commercial",
+          "pillar": "feedback-loop",
+          "persona": "gemini-builder",
+          "pageType": "integration",
+          "opportunityScore": 89
+        },
+        {
+          "id": "kw_15_thumbs-up-thumbs-down-feedback-for-ai-coding-agents",
+          "query": "thumbs up thumbs down feedback for ai coding agents",
+          "source": "seed",
+          "notes": "Differentiates the explicit feedback loop and aligns with the brand.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 95,
+          "intent": "commercial",
+          "pillar": "feedback-loop",
+          "persona": "ai-engineer",
+          "pageType": "guide",
+          "opportunityScore": 83
+        }
+      ],
+      "totalOpportunityScore": 261,
+      "primaryQuery": {
+        "id": "kw_16_claude-code-feedback-memory",
+        "query": "claude code feedback memory",
+        "source": "seed",
+        "notes": "Agent-specific workflow page with high compatibility intent.",
+        "impressions": null,
+        "clicks": null,
+        "ctr": null,
+        "position": null,
+        "businessValue": 92,
+        "intent": "commercial",
+        "pillar": "feedback-loop",
+        "persona": "claude-code-builder",
+        "pageType": "integration",
+        "opportunityScore": 89
+      },
+      "personas": [
+        "ai-engineer",
+        "claude-code-builder",
+        "gemini-builder"
+      ],
+      "intents": [
+        "commercial"
       ]
     }
   ],
@@ -419,7 +515,7 @@
       "pageType": "integration",
       "queries": [
         {
-          "id": "kw_15_cursor-prevent-repeated-mistakes",
+          "id": "kw_20_cursor-prevent-repeated-mistakes",
           "query": "cursor prevent repeated mistakes",
           "source": "seed",
           "notes": "High-intent Cursor workflow page for developers already feeling repeat-failure pain.",
@@ -435,7 +531,7 @@
           "opportunityScore": 89
         },
         {
-          "id": "kw_16_claude-code-prevent-repeated-mistakes",
+          "id": "kw_21_claude-code-prevent-repeated-mistakes",
           "query": "claude code prevent repeated mistakes",
           "source": "seed",
           "notes": "High-intent pain query for Claude Code buyers.",
@@ -451,7 +547,7 @@
           "opportunityScore": 89
         },
         {
-          "id": "kw_17_codex-cli-guardrails",
+          "id": "kw_22_codex-cli-guardrails",
           "query": "codex cli guardrails",
           "source": "seed",
           "notes": "Guardrail-focused page for Codex CLI buyers who want prevention, not just memory.",
@@ -499,7 +595,39 @@
           "opportunityScore": 83
         },
         {
-          "id": "kw_12_ai-coding-agent-guardrails",
+          "id": "kw_5_code-knowledge-graph-guardrails",
+          "query": "code knowledge graph guardrails",
+          "source": "seed",
+          "notes": "Fresh Claude Code plugin and code-graph demand where ThumbGate can own the enforcement layer after graph-based code understanding.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "commercial",
+          "pillar": "pre-action-checks",
+          "persona": "engineering-lead",
+          "pageType": "guide",
+          "opportunityScore": 83
+        },
+        {
+          "id": "kw_6_developer-machine-supply-chain-guardrails",
+          "query": "developer machine supply chain guardrails",
+          "source": "seed",
+          "notes": "Developer-machine compromise and package-manager risk map directly to ThumbGate pre-action gates before agents run risky local commands.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "commercial",
+          "pillar": "pre-action-checks",
+          "persona": "engineering-lead",
+          "pageType": "guide",
+          "opportunityScore": 83
+        },
+        {
+          "id": "kw_17_ai-coding-agent-guardrails",
           "query": "ai coding agent guardrails",
           "source": "seed",
           "notes": "Broader category demand that feeds comparison and guide pages.",
@@ -515,7 +643,7 @@
           "opportunityScore": 83
         },
         {
-          "id": "kw_13_autoresearch-agent-safety",
+          "id": "kw_18_autoresearch-agent-safety",
           "query": "autoresearch agent safety",
           "source": "seed",
           "notes": "Emerging self-improving agent query where ThumbGate can own the safety and proof-control wedge.",
@@ -531,7 +659,7 @@
           "opportunityScore": 83
         },
         {
-          "id": "kw_14_stop-ai-coding-agents-from-repeating-mistakes",
+          "id": "kw_19_stop-ai-coding-agents-from-repeating-mistakes",
           "query": "stop ai coding agents from repeating mistakes",
           "source": "seed",
           "notes": "Problem-led copy that maps to landing-page positioning.",
@@ -547,7 +675,7 @@
           "opportunityScore": 83
         },
         {
-          "id": "kw_5_browser-automation-safety",
+          "id": "kw_10_browser-automation-safety",
           "query": "browser automation safety",
           "source": "seed",
           "notes": "High-intent browser-agent safety query tied to prompt injection, permissions, and cross-app automation risk.",
@@ -563,7 +691,7 @@
           "opportunityScore": 75
         },
         {
-          "id": "kw_6_native-messaging-host-security",
+          "id": "kw_11_native-messaging-host-security",
           "query": "native messaging host security",
           "source": "seed",
           "notes": "Security-led query that maps directly to browser bridge auditing and explicit connector governance.",
@@ -579,9 +707,9 @@
           "opportunityScore": 75
         }
       ],
-      "totalOpportunityScore": 832,
+      "totalOpportunityScore": 998,
       "primaryQuery": {
-        "id": "kw_15_cursor-prevent-repeated-mistakes",
+        "id": "kw_20_cursor-prevent-repeated-mistakes",
         "query": "cursor prevent repeated mistakes",
         "source": "seed",
         "notes": "High-intent Cursor workflow page for developers already feeling repeat-failure pain.",
@@ -610,90 +738,59 @@
       ]
     },
     {
-      "pillar": "feedback-loop",
-      "pageType": "integration",
-      "queries": [
-        {
-          "id": "kw_11_claude-code-feedback-memory",
-          "query": "claude code feedback memory",
-          "source": "seed",
-          "notes": "Agent-specific workflow page with high compatibility intent.",
-          "impressions": null,
-          "clicks": null,
-          "ctr": null,
-          "position": null,
-          "businessValue": 92,
-          "intent": "commercial",
-          "pillar": "feedback-loop",
-          "persona": "claude-code-builder",
-          "pageType": "integration",
-          "opportunityScore": 89
-        },
-        {
-          "id": "kw_18_gemini-cli-feedback-memory",
-          "query": "gemini cli feedback memory",
-          "source": "seed",
-          "notes": "Integration page for Gemini CLI users who need memory plus enforcement.",
-          "impressions": null,
-          "clicks": null,
-          "ctr": null,
-          "position": null,
-          "businessValue": 82,
-          "intent": "commercial",
-          "pillar": "feedback-loop",
-          "persona": "gemini-builder",
-          "pageType": "integration",
-          "opportunityScore": 89
-        },
-        {
-          "id": "kw_10_thumbs-up-thumbs-down-feedback-for-ai-coding-agents",
-          "query": "thumbs up thumbs down feedback for ai coding agents",
-          "source": "seed",
-          "notes": "Differentiates the explicit feedback loop and aligns with the brand.",
-          "impressions": null,
-          "clicks": null,
-          "ctr": null,
-          "position": null,
-          "businessValue": 95,
-          "intent": "commercial",
-          "pillar": "feedback-loop",
-          "persona": "ai-engineer",
-          "pageType": "guide",
-          "opportunityScore": 83
-        }
-      ],
-      "totalOpportunityScore": 261,
-      "primaryQuery": {
-        "id": "kw_11_claude-code-feedback-memory",
-        "query": "claude code feedback memory",
-        "source": "seed",
-        "notes": "Agent-specific workflow page with high compatibility intent.",
-        "impressions": null,
-        "clicks": null,
-        "ctr": null,
-        "position": null,
-        "businessValue": 92,
-        "intent": "commercial",
-        "pillar": "feedback-loop",
-        "persona": "claude-code-builder",
-        "pageType": "integration",
-        "opportunityScore": 89
-      },
-      "personas": [
-        "ai-engineer",
-        "claude-code-builder",
-        "gemini-builder"
-      ],
-      "intents": [
-        "commercial"
-      ]
-    },
-    {
       "pillar": "ai-agent-reliability",
       "pageType": "guide",
       "queries": [
         {
-          "id": "kw_7_ai-search-topical-presence",
+          "id": "kw_7_prompt-tricks-to-workflow-rules",
+          "query": "prompt tricks to workflow rules",
+          "source": "seed",
+          "notes": "Fresh prompt-engineering skepticism that maps directly to ThumbGate converting clear instructions, examples, and repeated failures into enforceable local checks.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "informational",
+          "pillar": "ai-agent-reliability",
+          "persona": "ai-engineer",
+          "pageType": "guide",
+          "opportunityScore": 72
+        },
+        {
+          "id": "kw_8_background-agent-governance",
+          "query": "background agent governance",
+          "source": "seed",
+          "notes": "New team-buying query for unattended agent PRs where alignment context, isolated execution, risk-tiered review, and audit evidence create immediate ROI.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "informational",
+          "pillar": "ai-agent-reliability",
+          "persona": "ai-engineer",
+          "pageType": "guide",
+          "opportunityScore": 72
+        },
+        {
+          "id": "kw_9_gpt-5-5-model-evaluation",
+          "query": "gpt-5.5 model evaluation",
+          "source": "seed",
+          "notes": "Fresh frontier-model upgrade query that maps to ThumbGate model candidate benchmarking, dashboard-analysis workloads, and routing governance before teams move expensive work.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "informational",
+          "pillar": "ai-agent-reliability",
+          "persona": "ai-engineer",
+          "pageType": "guide",
+          "opportunityScore": 72
+        },
+        {
+          "id": "kw_12_ai-search-topical-presence",
           "query": "ai search topical presence",
           "source": "seed",
           "notes": "High-intent GEO query for teams trying to become the obvious recommendation in AI search and agent answers.",
@@ -709,7 +806,7 @@
           "opportunityScore": 72
         },
         {
-          "id": "kw_8_best-tools-to-stop-ai-agents-from-breaking-production",
+          "id": "kw_13_best-tools-to-stop-ai-agents-from-breaking-production",
           "query": "best tools to stop ai agents from breaking production",
           "source": "seed",
           "notes": "Listicle-style answer-engine query that maps directly to buyer prompts about production agent reliability.",
@@ -725,7 +822,7 @@
           "opportunityScore": 72
         },
         {
-          "id": "kw_9_relational-knowledge-ai-recommendations",
+          "id": "kw_14_relational-knowledge-ai-recommendations",
           "query": "relational knowledge ai recommendations",
           "source": "seed",
           "notes": "Captures research-led interest in how AI systems decide which brands and tools to recommend.",
@@ -741,17 +838,17 @@
           "opportunityScore": 72
         }
       ],
-      "totalOpportunityScore": 216,
+      "totalOpportunityScore": 432,
       "primaryQuery": {
-        "id": "kw_7_ai-search-topical-presence",
-        "query": "ai search topical presence",
+        "id": "kw_7_prompt-tricks-to-workflow-rules",
+        "query": "prompt tricks to workflow rules",
         "source": "seed",
-        "notes": "High-intent GEO query for teams trying to become the obvious recommendation in AI search and agent answers.",
+        "notes": "Fresh prompt-engineering skepticism that maps directly to ThumbGate converting clear instructions, examples, and repeated failures into enforceable local checks.",
         "impressions": null,
         "clicks": null,
         "ctr": null,
         "position": null,
-        "businessValue": 93,
+        "businessValue": 94,
         "intent": "informational",
         "pillar": "ai-agent-reliability",
         "persona": "ai-engineer",
@@ -800,9 +897,25 @@
           "persona": "tool-evaluator",
           "pageType": "comparison",
           "opportunityScore": 100
+        },
+        {
+          "id": "kw_24_roo-code-alternative-cline",
+          "query": "roo code alternative cline",
+          "source": "seed",
+          "notes": "Time-sensitive migration query for Roo users who need portable lesson memory before the May 15, 2026 shutdown.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 83,
+          "intent": "comparison",
+          "pillar": "comparison",
+          "persona": "tool-evaluator",
+          "pageType": "comparison",
+          "opportunityScore": 99
         }
       ],
-      "totalOpportunityScore": 200,
+      "totalOpportunityScore": 299,
       "primaryQuery": {
         "id": "kw_1_thumbgate-vs-speclock",
         "query": "thumbgate vs speclock",
@@ -824,6 +937,85 @@
       ],
       "intents": [
         "comparison"
+      ]
+    },
+    {
+      "pillar": "feedback-loop",
+      "pageType": "integration",
+      "queries": [
+        {
+          "id": "kw_16_claude-code-feedback-memory",
+          "query": "claude code feedback memory",
+          "source": "seed",
+          "notes": "Agent-specific workflow page with high compatibility intent.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 92,
+          "intent": "commercial",
+          "pillar": "feedback-loop",
+          "persona": "claude-code-builder",
+          "pageType": "integration",
+          "opportunityScore": 89
+        },
+        {
+          "id": "kw_23_gemini-cli-feedback-memory",
+          "query": "gemini cli feedback memory",
+          "source": "seed",
+          "notes": "Integration page for Gemini CLI users who need memory plus enforcement.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 82,
+          "intent": "commercial",
+          "pillar": "feedback-loop",
+          "persona": "gemini-builder",
+          "pageType": "integration",
+          "opportunityScore": 89
+        },
+        {
+          "id": "kw_15_thumbs-up-thumbs-down-feedback-for-ai-coding-agents",
+          "query": "thumbs up thumbs down feedback for ai coding agents",
+          "source": "seed",
+          "notes": "Differentiates the explicit feedback loop and aligns with the brand.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 95,
+          "intent": "commercial",
+          "pillar": "feedback-loop",
+          "persona": "ai-engineer",
+          "pageType": "guide",
+          "opportunityScore": 83
+        }
+      ],
+      "totalOpportunityScore": 261,
+      "primaryQuery": {
+        "id": "kw_16_claude-code-feedback-memory",
+        "query": "claude code feedback memory",
+        "source": "seed",
+        "notes": "Agent-specific workflow page with high compatibility intent.",
+        "impressions": null,
+        "clicks": null,
+        "ctr": null,
+        "position": null,
+        "businessValue": 92,
+        "intent": "commercial",
+        "pillar": "feedback-loop",
+        "persona": "claude-code-builder",
+        "pageType": "integration",
+        "opportunityScore": 89
+      },
+      "personas": [
+        "ai-engineer",
+        "claude-code-builder",
+        "gemini-builder"
+      ],
+      "intents": [
+        "commercial"
       ]
     }
   ]

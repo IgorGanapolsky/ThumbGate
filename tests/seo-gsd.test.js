@@ -54,6 +54,11 @@ test('renderPlanMarkdown names all five GSD stages and page briefs', () => {
   assert.match(markdown, /ThumbGate vs SpecLock/);
   assert.match(markdown, /ThumbGate vs Mem0/);
   assert.match(markdown, /AI Agent Harness Optimization \| Progressive Disclosure \+ Pre-Action Checks/);
+  assert.match(markdown, /Code Knowledge Graph Guardrails \| ThumbGate Guide/);
+  assert.match(markdown, /Developer Machine Supply Chain Guardrails \| ThumbGate Guide/);
+  assert.match(markdown, /Prompt Tricks Are Not Enough \| Turn AI Instructions Into Workflow Rules/);
+  assert.match(markdown, /Background Agent Governance \| Risk-Tiered Review for Agent PRs/);
+  assert.match(markdown, /GPT-5\.5 Model Evaluation \| Benchmark Before Routing Expensive Agent Work/);
   assert.match(markdown, /AI Search Topical Presence \| Become the Obvious Recommendation/);
   assert.match(markdown, /Best Tools to Stop AI Agents From Breaking Production \| ThumbGate Listicle/);
   assert.match(markdown, /Relational Knowledge in AI Recommendations \| Why Brands Get Picked/);
@@ -121,6 +126,102 @@ test('agent harness optimization page is discoverable and commercially classifie
     changefreq: 'monthly',
     priority: '0.8',
   });
+});
+
+test('code knowledge graph guardrails page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/code-knowledge-graph-guardrails');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/code-knowledge-graph-guardrails');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'code knowledge graph guardrails');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-checks');
+  assert.match(html, /Code Graphs Are Context/);
+  assert.match(html, /npx thumbgate code-graph-guardrails/);
+  assert.match(html, /Require diff impact before central edits/);
+  assert.match(html, /ThumbGate decides what the agent is allowed to do next/);
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/code-knowledge-graph-guardrails',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
+test('developer machine supply chain guardrails page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/developer-machine-supply-chain-guardrails');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/developer-machine-supply-chain-guardrails');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'developer machine supply chain guardrails');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-checks');
+  assert.match(html, /Stop AI Assistants From Amplifying Supply-Chain Attacks/);
+  assert.match(html, /Block package lifecycle secret harvest/);
+  assert.match(html, /Secrets scanners tell you what leaked/);
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/developer-machine-supply-chain-guardrails',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
+test('prompt tricks to workflow rules page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/prompt-tricks-to-workflow-rules');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/prompt-tricks-to-workflow-rules');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'prompt tricks to workflow rules');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-checks');
+  assert.match(html, /Prompt Tricks Are Table Stakes/);
+  assert.match(html, /clear rules, examples, and pre-action checks/);
+  assert.match(html, /Do not rely on politeness, threats, flattery, or roleplay/);
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/prompt-tricks-to-workflow-rules',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
+test('background agent governance page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/background-agent-governance');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/background-agent-governance');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'background agent governance');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-checks');
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/background-agent-governance',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+  assert.match(html, /Background Agent Governance/);
+  assert.match(html, /npx thumbgate background-governance --json/);
+  assert.match(html, /risk-tiered review/i);
+});
+
+test('GPT-5.5 model evaluation page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/gpt-5-5-model-evaluation');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/gpt-5-5-model-evaluation');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'gpt-5.5 model evaluation');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-checks');
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/gpt-5-5-model-evaluation',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+  assert.match(html, /GPT-5\.5 Model Evaluation/);
+  assert.match(html, /npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai --json/);
+  assert.match(html, /chart-spec validity/i);
 });
 
 test('Roo to Cline migration page is discoverable and commercially classified', () => {
@@ -236,6 +337,11 @@ test('writePlanOutputs persists machine-readable GSD artifacts', () => {
     assert.equal(capture.totalKeywords, HIGH_ROI_QUERY_SEEDS.length);
     assert.equal(pages.length, PAGE_BLUEPRINTS.length);
     assert.ok(pages.some((page) => page.path === '/guides/agent-harness-optimization'));
+    assert.ok(pages.some((page) => page.path === '/guides/code-knowledge-graph-guardrails'));
+    assert.ok(pages.some((page) => page.path === '/guides/developer-machine-supply-chain-guardrails'));
+    assert.ok(pages.some((page) => page.path === '/guides/prompt-tricks-to-workflow-rules'));
+    assert.ok(pages.some((page) => page.path === '/guides/background-agent-governance'));
+    assert.ok(pages.some((page) => page.path === '/guides/gpt-5-5-model-evaluation'));
     assert.ok(pages.some((page) => page.path === '/guides/ai-search-topical-presence'));
     assert.ok(pages.some((page) => page.path === '/guides/best-tools-stop-ai-agents-breaking-production'));
     assert.ok(pages.some((page) => page.path === '/guides/relational-knowledge-ai-recommendations'));

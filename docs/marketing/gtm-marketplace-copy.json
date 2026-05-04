@@ -9,17 +9,17 @@
     {
       "motion": "guide",
       "label": "Proof-backed setup guide",
-      "cta": "https://thumbgate-production.up.railway.app/guide"
+      "cta": "https://thumbgate.ai/guide"
     },
     {
       "motion": "sprint",
       "label": "Workflow Hardening Sprint",
-      "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+      "cta": "https://thumbgate.ai/#workflow-sprint-intake"
     },
     {
       "motion": "pro",
       "label": "Pro at $19/mo or $149/yr",
-      "cta": "https://thumbgate-production.up.railway.app/checkout/pro"
+      "cta": "https://thumbgate.ai/checkout/pro"
     }
   ],
   "listingBullets": [
@@ -94,12 +94,12 @@
       "primaryCta": {
         "motion": "sprint",
         "label": "Workflow Hardening Sprint",
-        "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+        "cta": "https://thumbgate.ai/#workflow-sprint-intake"
       },
       "secondaryCta": {
         "motion": "guide",
         "label": "Proof-backed setup guide",
-        "cta": "https://thumbgate-production.up.railway.app/guide"
+        "cta": "https://thumbgate.ai/guide"
       },
       "sampleTargets": [
         "montenegronyc/backporcher",
@@ -118,12 +118,12 @@
       "primaryCta": {
         "motion": "sprint",
         "label": "Workflow Hardening Sprint",
-        "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+        "cta": "https://thumbgate.ai/#workflow-sprint-intake"
       },
       "secondaryCta": {
         "motion": "guide",
         "label": "Proof-backed setup guide",
-        "cta": "https://thumbgate-production.up.railway.app/guide"
+        "cta": "https://thumbgate.ai/guide"
       },
       "sampleTargets": [
         "@Deep_Ad1959",
@@ -142,12 +142,12 @@
       "primaryCta": {
         "motion": "sprint",
         "label": "Workflow Hardening Sprint",
-        "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+        "cta": "https://thumbgate.ai/#workflow-sprint-intake"
       },
       "secondaryCta": {
         "motion": "guide",
         "label": "Proof-backed setup guide",
-        "cta": "https://thumbgate-production.up.railway.app/guide"
+        "cta": "https://thumbgate.ai/guide"
       },
       "sampleTargets": [
         "montenegronyc/backporcher",
@@ -166,12 +166,12 @@
       "primaryCta": {
         "motion": "guide",
         "label": "Proof-backed setup guide",
-        "cta": "https://thumbgate-production.up.railway.app/guide"
+        "cta": "https://thumbgate.ai/guide"
       },
       "secondaryCta": {
         "motion": "pro",
         "label": "Pro at $19/mo or $149/yr",
-        "cta": "https://thumbgate-production.up.railway.app/checkout/pro"
+        "cta": "https://thumbgate.ai/checkout/pro"
       },
       "sampleTargets": [
         "bherald/personal-life-os-core",

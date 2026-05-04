@@ -14,6 +14,7 @@ const DEFAULT_COMMAND_TIMEOUT_MS = 30000;
 const HOSTED_WINDOWS = ['today', '30d', 'lifetime'];
 const RUNTIME_KEYS = [
   'THUMBGATE_FEEDBACK_DIR',
+  'THUMBGATE_OPERATOR_KEY',
   'THUMBGATE_API_KEY',
   'THUMBGATE_PUBLIC_APP_ORIGIN',
   'THUMBGATE_BILLING_API_BASE_URL',
@@ -73,6 +74,15 @@ function parseArgs(argv = []) {
 function parsePositiveInteger(value, fallback) {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function normalizeRuntimeSecret(value) {
+  return String(value || '').trim();
+}
+
+function resolveHostedAuditApiKey(env = process.env) {
+  return normalizeRuntimeSecret(env.THUMBGATE_OPERATOR_KEY)
+    || normalizeRuntimeSecret(env.THUMBGATE_API_KEY);
 }
 
 function parseGhVariableList(stdout = '') {
@@ -406,7 +416,7 @@ function buildRailwayAuditSnippet({
         url.searchParams.set('timezone', ${JSON.stringify(timeZone)});
         const response = await fetchWithTimeout(url, {
           headers: {
-            authorization: 'Bearer ' + process.env.THUMBGATE_API_KEY,
+            authorization: 'Bearer ' + (process.env.THUMBGATE_OPERATOR_KEY || process.env.THUMBGATE_API_KEY),
             accept: 'application/json',
           },
         });
@@ -473,13 +483,13 @@ function getHostedAuditViaRailway({
 
 async function getHostedAuditViaHttp({
   appOrigin = DEFAULT_PUBLIC_APP_ORIGIN,
-  apiKey = process.env.THUMBGATE_API_KEY,
+  apiKey = resolveHostedAuditApiKey(),
   timeZone = 'America/New_York',
   fetchImpl = fetch,
   timeoutMs = DEFAULT_FETCH_TIMEOUT_MS,
 } = {}) {
   if (!apiKey) {
-    throw new Error('THUMBGATE_API_KEY is not set for hosted billing summary audit.');
+    throw new Error('THUMBGATE_OPERATOR_KEY or THUMBGATE_API_KEY is not set for hosted billing summary audit.');
   }
 
   const summaries = {};
@@ -504,6 +514,7 @@ async function getHostedAuditViaHttp({
     auditMethod: 'hosted-http-api',
     runtimePresenceKnown: false,
     runtimePresence: {
+      THUMBGATE_OPERATOR_KEY: Boolean(process.env.THUMBGATE_OPERATOR_KEY),
       THUMBGATE_API_KEY: true,
     },
     summaries,
@@ -531,7 +542,7 @@ async function generateRevenueStatusReport({
   runCommandFn = runCommand,
   fetchPublicProbe = probePublicRuntime,
   fetchImpl = fetch,
-  apiKey = process.env.THUMBGATE_API_KEY,
+  apiKey = resolveHostedAuditApiKey(),
   fetchTimeoutMs = DEFAULT_FETCH_TIMEOUT_MS,
   commandTimeoutMs = DEFAULT_COMMAND_TIMEOUT_MS,
   localFallbackFn = getLocalFallback,
@@ -721,6 +732,7 @@ module.exports = {
   RUNTIME_KEYS,
   parseArgs,
   parsePositiveInteger,
+  resolveHostedAuditApiKey,
   parseGhVariableList,
   parseHtmlSignals,
   centsToDollars,

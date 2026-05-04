@@ -48,6 +48,36 @@ test.beforeEach(() => {
   fs.rmSync(compatDir, { recursive: true, force: true });
 });
 
+test('loadTelemetryEvents can read a bounded tail without parsing a partial first row', () => {
+  const feedbackDir = path.join(tmpDir, 'tail-feedback');
+  const telemetryPath = path.join(feedbackDir, 'telemetry-pings.jsonl');
+  fs.mkdirSync(feedbackDir, { recursive: true });
+  fs.writeFileSync(telemetryPath, [
+    JSON.stringify({
+      eventType: 'landing_page_view',
+      clientType: 'web',
+      visitorId: 'old',
+      receivedAt: '2026-05-01T00:00:00.000Z',
+      page: '/',
+      filler: 'x'.repeat(512),
+    }),
+    JSON.stringify({
+      eventType: 'checkout_start',
+      clientType: 'web',
+      visitorId: 'recent',
+      receivedAt: '2026-05-04T14:00:00.000Z',
+      page: '/checkout/pro',
+    }),
+    '',
+  ].join('\n'), 'utf-8');
+
+  const rows = loadTelemetryEvents(feedbackDir, { maxBytes: 220 });
+
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].eventType, 'checkout_start');
+  assert.equal(rows[0].visitorId, 'recent');
+});
+
 test('sanitizeTelemetryPayload normalizes modern web payloads', () => {
   const entry = sanitizeTelemetryPayload({
     eventType: 'checkout_start',

@@ -397,6 +397,14 @@ __GA_BOOTSTRAP__
   .btn-pro-page:hover { opacity: 0.9; transform: translateY(-1px); }
   .btn-gpt-page { display: inline-flex; align-items: center; justify-content: center; padding: 14px 32px; background: var(--green); color: #06120a; border-radius: 8px; text-decoration: none; font-size: 16px; font-weight: 800; box-shadow: 0 0 0 1px rgba(74,222,128,0.32), 0 12px 32px rgba(74,222,128,0.18); transition: opacity 0.15s, transform 0.15s; }
   .btn-gpt-page:hover { opacity: 0.92; transform: translateY(-1px); }
+  .hero-paid-path { max-width: 780px; margin: 0 auto 28px; padding: 16px; border: 1px solid rgba(74,222,128,0.28); border-radius: 12px; background: rgba(74,222,128,0.07); display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 14px; align-items: center; text-align: left; }
+  .hero-paid-path strong { display: block; color: var(--text); font-size: 15px; line-height: 1.3; margin-bottom: 3px; }
+  .hero-paid-path span { color: var(--text-muted); font-size: 13px; line-height: 1.45; }
+  .hero-paid-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+  .hero-paid-actions a { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 9px 13px; border-radius: 999px; text-decoration: none; font-size: 13px; font-weight: 800; white-space: nowrap; }
+  .hero-paid-actions .starter { background: #facc15; color: #17110a; border: 1px solid rgba(250,204,21,0.55); }
+  .hero-paid-actions .diagnostic { background: var(--green); color: #06120a; border: 1px solid rgba(74,222,128,0.45); }
+  .hero-paid-actions .sprint { color: var(--green); border: 1px solid rgba(74,222,128,0.45); background: rgba(17,17,19,0.72); }
   .hero-paid-note { font-size: 14px; color: var(--text-muted); max-width: 720px; margin: 0 auto 24px; }
   .hero-paid-note strong { color: var(--text); }
   .hero-install { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 14px 24px; display: inline-flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 15px; margin-bottom: 40px; cursor: pointer; transition: border-color 0.2s; position: relative; max-width: 100%; overflow-x: auto; }
@@ -622,6 +630,9 @@ __GA_BOOTSTRAP__
     .hero { padding: 72px 0 56px; }
     .hero-actions { flex-direction: column; }
     .hero-actions a { width: 100%; }
+    .hero-paid-path { grid-template-columns: 1fr; text-align: center; }
+    .hero-paid-actions { justify-content: center; }
+    .hero-paid-actions a { width: 100%; }
     .nav-links a:not(.nav-cta) { display: none; }
     .proof-bar { gap: 8px; justify-content: flex-start; }
     .proof-bar a { width: 100%; min-height: 42px; white-space: normal; }
@@ -700,6 +711,18 @@ __GA_BOOTSTRAP__
         </div>
       </div>
       <p style="margin:14px 0 0;font-size:11px;color:var(--text-muted);text-align:center;">No credit card for 7-day trial · cancel anytime · your rules and captures stay local. <a href="/go/install" style="color:var(--cyan);text-decoration:none;">Prefer free? Install CLI →</a></p>
+    </div>
+
+    <div class="hero-paid-path" aria-label="Paid workflow hardening checkout options">
+      <div>
+        <strong>Need buyer-ready proof today?</strong>
+        <span>Send one messy AI-agent workflow. We turn it into clear rules, examples, and pre-action checks before it touches developer-machine risk surfaces.</span>
+      </div>
+      <div class="hero-paid-actions">
+        <a class="starter" href="https://buy.stripe.com/7sY4gzgH24r49G17mb3sI0g" onclick="sendFirstPartyTelemetry('founder_workflow_diagnostic_checkout_started',{ctaId:'hero_founder_workflow_diagnostic_checkout',ctaPlacement:'hero_paid_path',planId:'team',offer:'founder_workflow_diagnostic',price:99});sendGa4Event('begin_checkout',{currency:'USD',value:99,items:[{item_id:'founder_workflow_diagnostic',item_name:'Founder Workflow Diagnostic'}]});">Pay $99 diagnostic &rarr;</a>
+        <a class="diagnostic" href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__" onclick="sendFirstPartyTelemetry('workflow_sprint_diagnostic_checkout_started',{ctaId:'hero_workflow_sprint_diagnostic_checkout',ctaPlacement:'hero_paid_path',planId:'team',offer:'workflow_hardening_diagnostic',price:sprintDiagnosticPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:sprintDiagnosticPriceDollars,items:[{item_id:'workflow_hardening_diagnostic',item_name:'Workflow Hardening Diagnostic'}]});">Pay $499 diagnostic &rarr;</a>
+        <a class="sprint" href="__WORKFLOW_SPRINT_CHECKOUT_URL__" onclick="sendFirstPartyTelemetry('workflow_sprint_checkout_started',{ctaId:'hero_workflow_sprint_checkout',ctaPlacement:'hero_paid_path',planId:'team',offer:'workflow_hardening_sprint',price:workflowSprintPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:workflowSprintPriceDollars,items:[{item_id:'workflow_hardening_sprint',item_name:'Workflow Hardening Sprint'}]});">Pay $1500 sprint &rarr;</a>
+      </div>
     </div>
 
     <a href="/dashboard" class="hero-dashboard-preview" style="display:block;max-width:620px;margin:0 auto 28px;background:linear-gradient(135deg,#0d1220 0%,#121a2e 100%);border:1px solid rgba(34,211,238,0.35);border-radius:12px;padding:20px 24px;box-shadow:0 0 48px rgba(34,211,238,0.15);font-family:var(--mono);text-align:left;text-decoration:none;color:inherit;" title="Open your live dashboard">
@@ -985,6 +1008,10 @@ __GA_BOOTSTRAP__
         <p>High-risk local autonomy can route into Docker Sandboxes, while hosted team automations use a signed sandbox dispatch lane instead of running loose on a shared host.</p>
       </div>
       <div class="agent-card">
+        <h3>Data Processing Boundaries</h3>
+        <p>Local enforcement data stays in the operator's ThumbGate feedback directory by default. Hosted checkout, intake, newsletter, team sync, and product analytics are labeled as hosted processing surfaces instead of being blurred into the local runtime.</p>
+      </div>
+      <div class="agent-card">
         <h3>🧪 Thompson Sampling</h3>
         <p>Confidence tiers (none/low/medium/high) tell you when to trust the model vs fall back to rules. No guessing.</p>
       </div>
@@ -1069,6 +1096,36 @@ __GA_BOOTSTRAP__
         <h3>AI Agent Harness Optimization</h3>
         <p>Keep global prompts lean, load MCP schemas on demand, and turn harness lessons into Pre-Action Checks that block repeat failures.</p>
         <div class="card-arrow">Audit your harness →</div>
+      </a>
+      <a class="seo-card" href="/guides/code-knowledge-graph-guardrails">
+        <div class="seo-kicker">Knowledge Graphs</div>
+        <h3>Code Knowledge Graph Guardrails</h3>
+        <p>Use code graphs for context, then enforce diff-impact review, cross-layer checkpoints, and generated-artifact protection before agents act.</p>
+        <div class="card-arrow">Turn graph context into gates →</div>
+      </a>
+      <a class="seo-card" href="/guides/developer-machine-supply-chain-guardrails">
+        <div class="seo-kicker">Supply Chain</div>
+        <h3>Developer Machine Supply Chain Guardrails</h3>
+        <p>Stop AI assistants from amplifying npm, PyPI, Docker, and CLI compromise paths that harvest local developer credentials.</p>
+        <div class="card-arrow">Gate risky local execution →</div>
+      </a>
+      <a class="seo-card" href="/guides/prompt-tricks-to-workflow-rules">
+        <div class="seo-kicker">Prompt ROI</div>
+        <h3>Prompt Tricks Are Not Enough</h3>
+        <p>Turn clear instructions, examples, and repeated AI failures into workflow rules that run before the next risky tool call.</p>
+        <div class="card-arrow">Convert prompts into gates →</div>
+      </a>
+      <a class="seo-card" href="/guides/background-agent-governance">
+        <div class="seo-kicker">Background Agents</div>
+        <h3>Background Agent Governance</h3>
+        <p>Turn unattended agent PRs into a governed queue with run ledgers, pre-dispatch checks, isolated task lanes, and risk-tiered review.</p>
+        <div class="card-arrow">Govern agent PRs →</div>
+      </a>
+      <a class="seo-card" href="/guides/gpt-5-5-model-evaluation">
+        <div class="seo-kicker">Model Routing</div>
+        <h3>GPT-5.5 Model Evaluation</h3>
+        <p>Benchmark GPT-5.5 for dashboard-analysis workloads before routing expensive agent work away from cheaper tiers.</p>
+        <div class="card-arrow">Evaluate frontier routing →</div>
       </a>
       <a class="seo-card" href="/guides/ai-search-topical-presence">
         <div class="seo-kicker">AI Search</div>
@@ -1434,7 +1491,7 @@ __GA_BOOTSTRAP__
           </div>
           <div>
             <div class="team-paid-price">$<span data-sprint-diagnostic-price>499</span></div>
-            <a class="team-paid-link" data-sprint-diagnostic-link href="#workflow-sprint-intake">Pay for diagnostic</a>
+            <a class="team-paid-link" data-sprint-diagnostic-link href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__">Pay for diagnostic</a>
           </div>
         </div>
         <div class="team-paid-card">
@@ -1444,7 +1501,7 @@ __GA_BOOTSTRAP__
           </div>
           <div>
             <div class="team-paid-price">$<span data-workflow-sprint-price>1500</span></div>
-            <a class="team-paid-link" data-workflow-sprint-link href="#workflow-sprint-intake">Pay for sprint</a>
+            <a class="team-paid-link" data-workflow-sprint-link href="__WORKFLOW_SPRINT_CHECKOUT_URL__">Pay for sprint</a>
           </div>
         </div>
       </div>

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Developer Machine Supply Chain Guardrails | ThumbGate Guide</title>
+  <meta name="description" content="Developer laptops and CI runners hold tokens, package-manager trust, and one-shot CLI install paths. ThumbGate turns that local execution risk into pre-actio..." />
+  <meta property="og:title" content="Developer Machine Supply Chain Guardrails | ThumbGate Guide" />
+  <meta property="og:description" content="Developer laptops and CI runners hold tokens, package-manager trust, and one-shot CLI install paths. ThumbGate turns that local execution risk into pre-actio..." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/guides/developer-machine-supply-chain-guardrails" />
+  <link rel="canonical" href="https://thumbgate.ai/guides/developer-machine-supply-chain-guardrails" />
+  <link rel="llm-context" href="/public/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --bg-raised: #111113;
+      --bg-card: #161618;
+      --line: #222225;
+      --text: #e8e8ec;
+      --muted: #8b8b96;
+      --cyan: #22d3ee;
+      --green: #4ade80;
+      --red: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(12px);
+      background: rgba(10, 10, 11, 0.88);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 14px;
+      padding-bottom: 14px;
+    }
+    .brand {
+      font-weight: 700;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 211, 238, 0.22);
+      background: rgba(34, 211, 238, 0.1);
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1.06;
+      letter-spacing: -0.04em;
+      margin: 16px 0;
+      max-width: 760px;
+    }
+    .hero p {
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .signal-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 28px 0 0;
+    }
+    .signal-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .signal-pill.up {
+      border-color: rgba(74, 222, 128, 0.28);
+      color: #b8f7c8;
+      background: rgba(74, 222, 128, 0.1);
+    }
+    .signal-pill.down {
+      border-color: rgba(248, 113, 113, 0.28);
+      color: #ffc0c0;
+      background: rgba(248, 113, 113, 0.1);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+      gap: 24px;
+      padding-bottom: 72px;
+    }
+    .card, .detail-section, .sidebar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .card { padding: 24px; }
+    .detail-section { padding: 24px; margin-bottom: 18px; }
+    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+    .detail-section p { color: var(--muted); }
+    .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
+    .card h2 { margin-top: 0; }
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .sidebar-card {
+      padding: 20px;
+    }
+    /* Only the first sidebar card sticks. Stacking multiple stickies at the
+       same top offset makes them overlap each other on scroll. The related-
+       pages card flows normally below. */
+    .sidebar-card:first-child {
+      position: sticky;
+      top: 84px;
+      max-height: calc(100vh - 104px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .proof-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 18px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: var(--cyan);
+      color: #071116;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .faq-item {
+      border-top: 1px solid var(--line);
+      padding: 14px 0;
+    }
+    .faq-item summary {
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .faq-item p {
+      color: var(--muted);
+    }
+    .related-card {
+      display: block;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      margin-top: 12px;
+      color: var(--text);
+    }
+    .related-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    @media (max-width: 860px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .sidebar-card:first-child {
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
+    }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Stop AI Assistants From Amplifying Supply-Chain Attacks.",
+  "description": "Developer laptops and CI runners hold tokens, package-manager trust, and one-shot CLI install paths. ThumbGate turns that local execution risk into pre-actio...",
+  "about": [
+    "cursor prevent repeated mistakes",
+    "claude code prevent repeated mistakes",
+    "codex cli guardrails",
+    "pre-action checks for ai coding agents"
+  ],
+  "url": "https://thumbgate.ai/guides/developer-machine-supply-chain-guardrails",
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "mainEntityOfPage": "https://thumbgate.ai/guides/developer-machine-supply-chain-guardrails"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does ThumbGate replace secrets scanning?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Secrets scanners tell you what leaked. ThumbGate blocks or checkpoints the agent behavior that can create or amplify the leak before execution."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which supply-chain gate should teams enable first?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Start with one-shot CLI installers and package lifecycle scripts because those paths can execute before a human sees the diff."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can this work with existing incident-response tools?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Use scanner, EDR, and incident-response findings as evidence, then turn the repeated local action pattern into a ThumbGate pre-action rule."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="container">
+      <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+    </div>
+  </div>
+
+  <main class="container">
+    <section class="hero">
+      <div class="eyebrow">guide | developer machine supply chain guardrails</div>
+      <h1>Stop AI Assistants From Amplifying Supply-Chain Attacks.</h1>
+      <p>Developer laptops and CI runners hold tokens, package-manager trust, and one-shot CLI install paths. ThumbGate turns that local execution risk into pre-action gates before an agent runs npm, PyPI, Docker, or shell commands that can expose credentials.</p>
+      <div class="signal-row">
+        <div class="signal-pill up">👍 Thumbs up reinforces good behavior</div>
+        <div class="signal-pill down">👎 Thumbs down blocks repeated mistakes</div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div>
+        <div class="card">
+          <h2>Why this page exists</h2>
+          <ul><li>Secrets scanners find leaks; ThumbGate blocks the agent behavior that creates or amplifies them.</li><li>Supply Chain Safety templates should start with package lifecycle scripts, untrusted one-shot CLI installers, dependency autofixes, and credential exposure assessment.</li><li>This is complementary to GitGuardian, endpoint security, and incident response because it governs the next local action.</li></ul>
+        </div>
+
+      <section class="detail-section">
+        <h2>Why developer machines are now the blast radius</h2>
+        <p>A compromised package does not need to break production directly. It can read .env, .npmrc, .pypirc, Docker config, SSH keys, and cloud tokens while an AI coding assistant repeats the trusted-looking command across more repos.</p><p>The high-ROI control is local and specific: detect risky execution before it runs, require review where exposure is plausible, and promote every missed incident into a durable ThumbGate rule.</p>
+
+      </section>
+      <section class="detail-section">
+        <h2>High-ROI gate templates</h2>
+
+        <ul><li>Block package lifecycle secret harvest: stop install, postinstall, prepare, and similar scripts from reading local credential surfaces.</li><li>Review untrusted CLI before execution: block curl-to-shell flows, unknown npx commands, uvx, and pipx run until the source and permissions are reviewed.</li><li>Checkpoint dependency bot autofix: warn before Dependabot, Renovate, audit-fix, Docker pull, or broad package updates expand the trusted code surface.</li><li>Require credential exposure assessment: force an answer about what credential lived where, what executed, and whether rotation is required.</li></ul>
+      </section>
+      <section class="detail-section">
+        <h2>Where this creates revenue</h2>
+        <p>This is a strong security wedge for teams that already run scanners but still let agents execute local install/update commands. The offer is not &quot;replace your scanner&quot;; it is &quot;connect scanner and incident lessons to pre-action enforcement.&quot;</p><p>For the Workflow Hardening Sprint, pick one concrete local-risk pattern: package lifecycle scripts, one-shot installers, dependency bot autofixes, or unresolved credential exposure after a suspected compromise.</p>
+
+      </section>
+        <div class="detail-section">
+          <h2>FAQ</h2>
+
+      <details class="faq-item">
+        <summary>Does ThumbGate replace secrets scanning?</summary>
+        <p>No. Secrets scanners tell you what leaked. ThumbGate blocks or checkpoints the agent behavior that can create or amplify the leak before execution.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Which supply-chain gate should teams enable first?</summary>
+        <p>Start with one-shot CLI installers and package lifecycle scripts because those paths can execute before a human sees the diff.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Can this work with existing incident-response tools?</summary>
+        <p>Yes. Use scanner, EDR, and incident-response findings as evidence, then turn the repeated local action pattern into a ThumbGate pre-action rule.</p>
+      </details>
+        </div>
+      </div>
+
+      <aside class="sidebar">
+        <div class="sidebar-card">
+          <h2>GSD execution brief</h2>
+          <p>This page was prioritized because it captures high-intent demand around developer machine supply chain guardrails and feeds directly into ThumbGate's proof-led conversion path.</p>
+          <p><strong>Opportunity score:</strong> 83</p>
+          <p><strong>Primary persona:</strong> engineering-lead</p>
+          <p><strong>Keyword cluster:</strong> cursor prevent repeated mistakes, claude code prevent repeated mistakes, codex cli guardrails, pre-action checks for ai coding agents</p>
+          <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
+          <div class="proof-links"><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json" target="_blank" rel="noopener">Automation proof</a><a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub repository</a></div>
+          <a class="cta-button" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_developer-machine-supply-chain-guardrails&amp;cta_placement=seo_brief&amp;plan_id=pro" target="_blank" rel="noopener">Go Pro — $19/mo</a>
+        </div>
+        <div class="sidebar-card">
+          <h2>Related pages</h2>
+
+        <a class="related-card" href="/guides/pre-action-checks">
+          <span class="related-label">Related page</span>
+          <strong>What Are Pre-Action Checks?</strong>
+        </a>
+        <a class="related-card" href="/guides/code-knowledge-graph-guardrails">
+          <span class="related-label">Related page</span>
+          <strong>Code Graphs Are Context. ThumbGate Is Execution Control.</strong>
+        </a>
+        <a class="related-card" href="/guides/best-tools-stop-ai-agents-breaking-production">
+          <span class="related-label">Related page</span>
+          <strong>Best Tools to Stop AI Agents From Breaking Production</strong>
+        </a>
+        </div>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>

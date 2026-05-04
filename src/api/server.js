@@ -112,6 +112,7 @@ const {
   getBillingSummaryLive,
 } = require('../../scripts/billing');
 const {
+  DEFAULT_PUBLIC_APP_ORIGIN,
   resolveHostedBillingConfig,
   createTraceId,
   buildHostedSuccessUrl,
@@ -462,6 +463,12 @@ const TRACKED_LINK_TARGETS = Object.freeze({
 // Stripe event tracking helpers
 // ---------------------------------------------------------------------------
 const STRIPE_EVENTS_PATH = path.resolve(__dirname, '../../.thumbgate/stripe-events.jsonl');
+const LEGACY_STRIPE_EVENT_TYPES = new Set([
+  'checkout.session.completed',
+  'customer.subscription.created',
+  'customer.subscription.updated',
+  'customer.subscription.deleted',
+]);
 
 function ensureStripeEventsDir() {
   const dir = path.dirname(STRIPE_EVENTS_PATH);
@@ -471,6 +478,81 @@ function ensureStripeEventsDir() {
 function appendStripeEvent(record) {
   ensureStripeEventsDir();
   fs.appendFileSync(STRIPE_EVENTS_PATH, JSON.stringify(record) + '\n', 'utf8');
+}
+
+function buildLegacyStripeEventRecord(event) {
+  const obj = event.data && event.data.object ? event.data.object : {};
+  return {
+    timestamp: new Date().toISOString(),
+    event_type: event.type,
+    event_id: event.id || null,
+    customer_email:
+      obj.customer_email ||
+      obj.email ||
+      (obj.customer_details && obj.customer_details.email) ||
+      null,
+    plan:
+      obj.plan
+        ? (obj.plan.nickname || obj.plan.id || null)
+        : (
+          obj.items &&
+          obj.items.data &&
+          obj.items.data[0] &&
+          obj.items.data[0].plan
+            ? (obj.items.data[0].plan.nickname || obj.items.data[0].plan.id)
+            : null
+        ),
+    amount_cents: obj.amount_total || (obj.plan && obj.plan.amount) || null,
+    currency: obj.currency || null,
+    subscription_id: obj.subscription || obj.id || null,
+  };
+}
+
+async function handleLegacyStripeWebhook(req, res) {
+  try {
+    const rawBody = await new Promise((resolve, reject) => {
+      const chunks = [];
+      req.on('data', (c) => chunks.push(c));
+      req.on('end', () => resolve(Buffer.concat(chunks)));
+      req.on('error', reject);
+    });
+
+    const sig = req.headers['stripe-signature'] || '';
+    if (!verifyWebhookSignature(rawBody, sig)) {
+      sendProblem(res, {
+        type: PROBLEM_TYPES.WEBHOOK_INVALID,
+        title: 'Invalid webhook signature',
+        status: 400,
+        detail: 'The webhook signature could not be verified.',
+      });
+      return;
+    }
+
+    let event;
+    try {
+      event = JSON.parse(rawBody.toString('utf-8'));
+    } catch {
+      sendProblem(res, {
+        type: PROBLEM_TYPES.INVALID_JSON,
+        title: 'Invalid JSON',
+        status: 400,
+        detail: 'Invalid JSON in webhook body.',
+      });
+      return;
+    }
+
+    if (LEGACY_STRIPE_EVENT_TYPES.has(event.type)) {
+      appendStripeEvent(buildLegacyStripeEventRecord(event));
+    }
+    sendJson(res, 200, { received: true, event_type: event.type });
+  } catch (err) {
+    sendProblem(res, {
+      type: PROBLEM_TYPES.INTERNAL,
+      title: 'Internal Server Error',
+      status: 500,
+      detail: err.message,
+    });
+  }
 }
 
 function readStripeEvents() {
@@ -1625,6 +1707,34 @@ function escapeHtmlAttribute(value) {
     .replaceAll('>', '&gt;');
 }
 
+function stripTrailingSlashes(value) {
+  const input = String(value || '');
+  let end = input.length;
+  while (end > 0 && input[end - 1] === '/') end -= 1;
+  return input.slice(0, end);
+}
+
+function normalizePublicMarketingHtml(html, runtimeConfig) {
+  const appOrigin = runtimeConfig?.appOrigin
+    ? stripTrailingSlashes(runtimeConfig.appOrigin)
+    : '';
+  if (!appOrigin) return html;
+
+  let output = String(html);
+  output = output.replaceAll(DEFAULT_PUBLIC_APP_ORIGIN, appOrigin);
+  try {
+    const host = new URL(appOrigin).host;
+    output = output.replaceAll(
+      'data-domain="thumbgate-production.up.railway.app"',
+      `data-domain="${escapeHtmlAttribute(host)}"`
+    );
+  } catch {
+    // appOrigin is normalized by hosted-config; leave static analytics domains
+    // untouched if a future caller deliberately supplies a non-URL value.
+  }
+  return output;
+}
+
 function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContext = {}) {
   const template = fs.readFileSync(templatePath, 'utf-8');
   const googleSiteVerificationMeta = runtimeConfig.googleSiteVerification
@@ -1637,11 +1747,11 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
       '    window.dataLayer = window.dataLayer || [];',
       '    function gtag(){dataLayer.push(arguments);}',
       "    gtag('js', new Date());",
-      `    gtag('config', '${runtimeConfig.gaMeasurementId}', { send_page_view: false });`,
+      `    gtag('config', '${runtimeConfig.gaMeasurementId}');`,
       '  </script>',
     ].join('\n')
     : '';
-  return fillTemplate(template, {
+  return normalizePublicMarketingHtml(fillTemplate(template, {
     '__PACKAGE_VERSION__': pkg.version,
     '__APP_ORIGIN__': runtimeConfig.appOrigin,
     '__CHECKOUT_ENDPOINT__': runtimeConfig.checkoutEndpoint,
@@ -1665,7 +1775,7 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
     '__GTM_PLAN_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md',
     '__GITHUB_URL__': 'https://github.com/IgorGanapolsky/ThumbGate',
     '__POSTHOG_API_KEY__': runtimeConfig.posthogApiKey || '',
-  });
+  }), runtimeConfig);
 }
 
 function loadLandingPageHtml(runtimeConfig, pageContext = {}) {
@@ -2699,6 +2809,31 @@ function renderCheckoutSuccessPage(runtimeConfig) {
 }
 
 function renderCheckoutCancelledPage(runtimeConfig) {
+  const diagnosticCheckoutUrl = runtimeConfig.sprintDiagnosticCheckoutUrl
+    ? escapeHtmlAttribute(runtimeConfig.sprintDiagnosticCheckoutUrl)
+    : '';
+  const workflowSprintCheckoutUrl = runtimeConfig.workflowSprintCheckoutUrl
+    ? escapeHtmlAttribute(runtimeConfig.workflowSprintCheckoutUrl)
+    : '';
+  const sprintDiagnosticPriceDollars = runtimeConfig.sprintDiagnosticPriceDollars || 499;
+  const workflowSprintPriceDollars = runtimeConfig.workflowSprintPriceDollars || 1500;
+  const recoveryOfferLinks = [
+    diagnosticCheckoutUrl
+      ? `<a href="${diagnosticCheckoutUrl}" data-recovery-offer="sprint_diagnostic" data-offer-price="${sprintDiagnosticPriceDollars}">Book $${sprintDiagnosticPriceDollars} diagnostic</a>`
+      : '',
+    workflowSprintCheckoutUrl
+      ? `<a href="${workflowSprintCheckoutUrl}" data-recovery-offer="workflow_sprint" data-offer-price="${workflowSprintPriceDollars}">Start $${workflowSprintPriceDollars} sprint</a>`
+      : '',
+  ].filter(Boolean).join('\n        ');
+  const recoveryOfferCard = recoveryOfferLinks
+    ? `<div class="card recovery-card">
+      <h2>Need help deciding?</h2>
+      <p>If Pro is not the right next step, buy the diagnostic or sprint instead. These are built for teams with one repeated agent-workflow failure that needs proof, rollback safety, and rollout help.</p>
+      <div class="actions">
+        ${recoveryOfferLinks}
+      </div>
+    </div>`
+    : '';
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2784,6 +2919,9 @@ function renderCheckoutCancelledPage(runtimeConfig) {
       gap: 12px;
       margin-top: 18px;
     }
+    .recovery-card {
+      border-color: rgba(184, 92, 45, 0.38);
+    }
     .note {
       font-size: 14px;
       margin-top: 12px;
@@ -2817,6 +2955,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
       </div>
       <p class="note" id="status">No feedback sent yet.</p>
     </div>
+    ${recoveryOfferCard}
     <script>
       (function () {
         const params = new URLSearchParams(window.location.search);
@@ -2892,6 +3031,17 @@ function renderCheckoutCancelledPage(runtimeConfig) {
           statusEl.textContent = selectedReason
             ? 'Feedback saved: ' + selectedReason.replaceAll('_', ' ') + '.'
             : 'Feedback saved.';
+        });
+
+        document.querySelectorAll('[data-recovery-offer]').forEach(function (link) {
+          link.addEventListener('click', function () {
+            sendTelemetry('checkout_recovery_offer_clicked', {
+              ctaId: link.getAttribute('data-recovery-offer'),
+              ctaPlacement: 'checkout_cancel_recovery',
+              offerCode: link.getAttribute('data-recovery-offer'),
+              offerPriceDollars: link.getAttribute('data-offer-price')
+            });
+          });
         });
       }());
     </script>
@@ -4112,7 +4262,7 @@ async function addContext(){
           planId: analyticsMetadata.planId,
           reason: botClassification.reason,
         }, req.headers, 'checkout_bot_deflected');
-        const html = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>ThumbGate Pro \u2014 Confirm checkout</title><style>*{box-sizing:border-box}body{background:#0a0a0a;color:#e5e5e5;font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px}.card{background:#141414;border:1px solid #222;border-radius:16px;padding:48px 40px;max-width:460px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.5)}h1{margin:0 0 12px;font-size:22px;color:#22d3ee}p{color:#9ca3af;font-size:14px;line-height:1.55;margin:0 0 24px}.btn{display:inline-block;background:#22d3ee;color:#000;text-decoration:none;font-weight:700;padding:14px 32px;border-radius:999px;font-size:16px;cursor:pointer;border:none}.btn:hover{opacity:.9}.sub{margin-top:16px;font-size:12px;color:#6b7280}a.back{color:#6b7280;font-size:13px;text-decoration:underline}</style></head><body><div class="card"><h1>Continue to secure checkout</h1><p>You\'re one click from ThumbGate Pro at $19/mo. We create the payment session only after you confirm \u2014 keeps your path clean and our funnel honest.</p><a class="btn" href="/checkout/pro?confirm=1" rel="noopener">Continue to Stripe \u2192</a><div class="sub">Payments handled by Stripe. 7-day free trial. Cancel anytime.</div><div class="sub"><a class="back" href="/">\u2190 Back to homepage</a></div></div></body></html>';
+        const html = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>ThumbGate Pro \u2014 Confirm checkout</title><style>*{box-sizing:border-box}body{background:#0a0a0a;color:#e5e5e5;font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px}.card{background:#141414;border:1px solid #222;border-radius:16px;padding:48px 40px;max-width:460px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.5)}h1{margin:0 0 12px;font-size:22px;color:#22d3ee}p{color:#9ca3af;font-size:14px;line-height:1.55;margin:0 0 24px}.btn{display:inline-block;background:#22d3ee;color:#000;text-decoration:none;font-weight:700;padding:14px 32px;border-radius:999px;font-size:16px;cursor:pointer;border:none}.btn:hover{opacity:.9}.sub{margin-top:16px;font-size:12px;color:#6b7280}a.back{color:#6b7280;font-size:13px;text-decoration:underline}</style></head><body><div class="card"><h1>Continue to secure checkout</h1><p>You\'re one click from ThumbGate Pro at $19/mo. We create the payment session only after you confirm \u2014 keeps your path clean and our funnel honest.</p><a class="btn" href="/checkout/pro?confirm=1" rel="noopener">Continue to Stripe \u2192</a><div class="sub">Payments handled by Stripe. 7-day trial. Card required; no charge today. Cancel anytime.</div><div class="sub"><a class="back" href="/">\u2190 Back to homepage</a></div></div></body></html>';
         sendHtml(res, 200, html, responseHeaders);
         return;
       }
@@ -4806,6 +4956,13 @@ async function addContext(){
           detail: err.message,
         });
       }
+      return;
+    }
+
+    // POST /webhook/stripe — legacy Stripe event log bridge kept for backward compatibility.
+    // This must remain unauthenticated like /v1/billing/webhook; Stripe auth is the HMAC signature.
+    if (req.method === 'POST' && pathname === '/webhook/stripe') {
+      await handleLegacyStripeWebhook(req, res);
       return;
     }
 
@@ -6372,86 +6529,6 @@ async function addContext(){
         }
         const entry = satisfyCondition(body.gateId, body.evidence);
         sendJson(res, 200, { satisfied: true, gateId: body.gateId, ...entry });
-        return;
-      }
-
-      // POST /webhook/stripe — legacy Stripe event log bridge kept for backward compatibility.
-      // When STRIPE_WEBHOOK_SECRET is configured, verify the same Stripe signature used by
-      // the /v1/billing/webhook route before touching any payload.
-      if (req.method === 'POST' && pathname === '/webhook/stripe') {
-        try {
-          const rawBody = await new Promise((resolve, reject) => {
-            const chunks = [];
-            req.on('data', (c) => chunks.push(c));
-            req.on('end', () => resolve(Buffer.concat(chunks)));
-            req.on('error', reject);
-          });
-
-          const sig = req.headers['stripe-signature'] || '';
-          if (!verifyWebhookSignature(rawBody, sig)) {
-            sendProblem(res, {
-              type: PROBLEM_TYPES.WEBHOOK_INVALID,
-              title: 'Invalid webhook signature',
-              status: 400,
-              detail: 'The webhook signature could not be verified.',
-            });
-            return;
-          }
-
-          let event;
-          try {
-            event = JSON.parse(rawBody.toString('utf-8'));
-          } catch {
-            sendProblem(res, {
-              type: PROBLEM_TYPES.INVALID_JSON,
-              title: 'Invalid JSON',
-              status: 400,
-              detail: 'Invalid JSON in webhook body.',
-            });
-            return;
-          }
-          const TRACKED_STRIPE_EVENTS = new Set([
-            'checkout.session.completed',
-            'customer.subscription.created',
-            'customer.subscription.deleted',
-          ]);
-          if (TRACKED_STRIPE_EVENTS.has(event.type)) {
-            const obj = event.data && event.data.object ? event.data.object : {};
-            const record = {
-              timestamp: new Date().toISOString(),
-              event_type: event.type,
-              event_id: event.id || null,
-              customer_email:
-                obj.customer_email ||
-                obj.email ||
-                (obj.customer_details && obj.customer_details.email) ||
-                null,
-              plan:
-                obj.plan
-                  ? (obj.plan.nickname || obj.plan.id || null)
-                  : (
-                    obj.items &&
-                    obj.items.data &&
-                    obj.items.data[0] &&
-                    obj.items.data[0].plan
-                      ? (obj.items.data[0].plan.nickname || obj.items.data[0].plan.id)
-                      : null
-                  ),
-              amount_cents: obj.amount_total || (obj.plan && obj.plan.amount) || null,
-              currency: obj.currency || null,
-              subscription_id: obj.subscription || obj.id || null,
-            };
-            appendStripeEvent(record);
-          }
-          sendJson(res, 200, { received: true, event_type: event.type });
-        } catch (err) {
-          sendProblem(res, {
-            type: PROBLEM_TYPES.INTERNAL,
-            title: 'Internal Server Error',
-            status: 500,
-            detail: err.message,
-          });
-        }
         return;
       }
 
