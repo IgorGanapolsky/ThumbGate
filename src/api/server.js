@@ -2423,9 +2423,7 @@ function renderRobotsTxt(runtimeConfig) {
 function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
-    // /pro consolidated into /#pro-pitch (2026-04-16) — removed from sitemap
-    // so search engines don't chase the 301 instead of indexing the canonical
-    // homepage directly.
+    { path: '/pro', changefreq: 'weekly', priority: '0.9' },
     { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
     { path: '/codex-plugin', changefreq: 'weekly', priority: '0.75' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
@@ -4135,17 +4133,22 @@ async function addContext(){
     }
 
     if (isGetLikeRequest && pathname === '/pro') {
-      // Consolidated: /pro content now lives inline on `/` as the #pro-pitch
-      // strip (hero-adjacent pricing card). 301 so external links (README,
-      // plugin manifests, guides, compare pages) pass link equity onto the
-      // single canonical landing page. Query string is preserved so UTM
-      // tracking from inbound campaigns still reaches GA/PostHog on `/`.
-      const redirectTarget = `/#pro-pitch${parsed.search || ''}`;
-      res.writeHead(301, {
-        Location: redirectTarget,
-        'Cache-Control': 'public, max-age=3600',
-      });
-      res.end();
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadProPageHtml,
+          extraTelemetry: {
+            pageType: 'pro',
+            planId: 'pro',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'Pro page unavailable');
+      }
       return;
     }
 
