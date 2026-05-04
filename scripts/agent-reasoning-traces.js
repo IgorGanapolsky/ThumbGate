@@ -76,6 +76,21 @@ const RLSD_EVENT_MAGNITUDES = {
   claim_done_without_evidence: 0,
 };
 
+const STEP_TEXT_CLASSIFIERS = [
+  ['plan', /\b(plan|steps|approach|first.*then|strategy)\b/i],
+  ['file_edit', /\b(apply_patch|patch|diff|edited|write_file|file changed|created file)\b/i],
+  ['verification', /\b(npm test|node --test|pytest|lint|ci passed|tests? passed|verified|verification)\b/i],
+  ['commit_or_pr', /\b(commit|pull request|PR #|trunk merge|merge queue|pushed)\b/i],
+  ['source_capture', /\b(source|citation|href|http|according to|dataset)\b/i],
+  ['synthesis', /\b(summary|synthesis|therefore|recommendation)\b/i],
+  ['draft', /\b(draft|reply copy|post text)\b/i],
+  ['approval_gate', /\b(approval|human review|approved|do not auto-post|never auto-post)\b/i],
+  ['audience_context', /\b(audience|prospect|comment|thread|bluesky|reddit|linkedin)\b/i],
+  ['evidence', /\b(evidence|screenshot|log|run link|sha|health endpoint)\b/i],
+  ['rollback_path', /\b(rollback|revert plan|fallback)\b/i],
+  ['auto_post', /\b(auto-posted|posted automatically|sent without approval)\b/i],
+];
+
 function getReasoningTracePath({ feedbackDir } = {}) {
   return path.join(feedbackDir || resolveFeedbackDir(), TRACE_FILE);
 }
@@ -201,22 +216,17 @@ function classifyStep({ role, content, toolCalls, message }) {
   if (role === 'system') return 'system_context';
   if (role === 'tool' || role === 'function') return 'tool_response';
   if (toolCalls.length > 0) return 'tool_call';
-  if (/\b(plan|steps|approach|first.*then|strategy)\b/i.test(text)) return 'plan';
-  if (/\b(apply_patch|patch|diff|edited|write_file|file changed|created file)\b/i.test(text)) return 'file_edit';
-  if (/\b(npm test|node --test|pytest|lint|ci passed|tests? passed|verified|verification)\b/i.test(text)) return 'verification';
-  if (/\b(commit|pull request|PR #|trunk merge|merge queue|pushed)\b/i.test(text)) return 'commit_or_pr';
-  if (/\b(source|citation|href|http|according to|dataset)\b/i.test(text)) return 'source_capture';
-  if (/\b(summary|synthesis|therefore|recommendation)\b/i.test(text)) return 'synthesis';
-  if (/\b(draft|reply copy|post text)\b/i.test(text)) return 'draft';
-  if (/\b(approval|human review|approved|do not auto-post|never auto-post)\b/i.test(text)) return 'approval_gate';
-  if (/\b(audience|prospect|comment|thread|bluesky|reddit|linkedin)\b/i.test(text)) return 'audience_context';
-  if (/\b(evidence|screenshot|log|run link|sha|health endpoint)\b/i.test(text)) return 'evidence';
-  if (/\b(rollback|revert plan|fallback)\b/i.test(text)) return 'rollback_path';
-  if (/\b(auto-posted|posted automatically|sent without approval)\b/i.test(text)) return 'auto_post';
+  const classified = classifyTextStep(text);
+  if (classified) return classified;
   if (/\b(done|deployed|live|shipped)\b/i.test(text) && !/\b(evidence|verified|health|sha)\b/i.test(text)) {
     return 'claim_done_without_evidence';
   }
   return role === 'assistant' ? 'assistant_message' : 'event';
+}
+
+function classifyTextStep(text) {
+  const match = STEP_TEXT_CLASSIFIERS.find(([, pattern]) => pattern.test(text));
+  return match ? match[0] : null;
 }
 
 function detectError(content, message = {}) {
@@ -620,8 +630,12 @@ function parseArgs(argv = process.argv.slice(2)) {
   const args = { command: argv[0] || 'report' };
   for (const arg of argv.slice(1)) {
     if (!arg.startsWith('--')) continue;
-    const [key, rawValue] = arg.slice(2).split('=');
-    args[key] = rawValue === undefined ? true : rawValue;
+    const valueStart = arg.indexOf('=');
+    if (valueStart === -1) {
+      args[arg.slice(2)] = true;
+      continue;
+    }
+    args[arg.slice(2, valueStart)] = arg.slice(valueStart + 1);
   }
   return args;
 }
