@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-04T05:14:25.441Z",
+  "generatedAt": "2026-05-04T13:51:53.099Z",
   "state": "cold-start",
   "headline": "Harden one AI-agent workflow before you roll it out.",
   "shortDescription": "Harden one AI-agent workflow before you roll it out. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.",
@@ -77,8 +77,8 @@
       "count": 3,
       "examples": [
         "bherald/personal-life-os-core",
-        "zaxbysauce/opencode-swarm",
-        "iliaal/whetstone"
+        "WaterplanAI/agentic-config",
+        "zaxbysauce/opencode-swarm"
       ]
     }
   ],
@@ -175,8 +175,8 @@
       },
       "sampleTargets": [
         "bherald/personal-life-os-core",
-        "zaxbysauce/opencode-swarm",
-        "iliaal/whetstone"
+        "WaterplanAI/agentic-config",
+        "zaxbysauce/opencode-swarm"
       ]
     }
   ],

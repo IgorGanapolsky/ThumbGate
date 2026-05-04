@@ -1,6 +1,6 @@
 # Codex Plugin Revenue Pack
 
-Updated: 2026-05-04T05:14:25.441Z
+Updated: 2026-05-04T13:51:53.099Z
 
 This is a sales operator artifact. It is not proof of bundle downloads, installs, paid revenue, or marketplace publication by itself.
 
@@ -215,27 +215,27 @@ First-touch draft:
 First-touch draft:
 > Hey @bherald, saw you're building around `personal-life-os-core`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
 
-#### 2. iliaal/whetstone
+#### 2. WaterplanAI/agentic-config
 - Temperature: cold
 - Source: github / github
-- Evidence score: 12
+- Evidence score: 13
 - Why now: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
-- Evidence: workflow control surface; agent infrastructure; self-serve agent tooling; 13 GitHub stars; updated in the last 7 days
-- Contact: http://ilia.ws/
+- Evidence: workflow control surface; agent infrastructure; self-serve agent tooling; 29 GitHub stars; updated in the last 7 days
+- Contact: https://github.com/WaterplanAI
 - CTA: https://thumbgate-production.up.railway.app/guide
 - Proof rule: Use proof pack only after the buyer confirms pain.
-- Pipeline lead id: github_iliaal_whetstone
-- Log after send: `npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'`
+- Pipeline lead id: github_waterplanai_agentic_config
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_waterplanai_agentic_config' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'`
 
 First-touch draft:
-> Hey @iliaal, saw you're building around `whetstone`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
+> Hey @WaterplanAI, saw you're building around `agentic-config`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
 
 #### 3. zaxbysauce/opencode-swarm
 - Temperature: cold
 - Source: github / github
 - Evidence score: 12
 - Why now: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
-- Evidence: workflow control surface; self-serve agent tooling; 295 GitHub stars; updated in the last 7 days
+- Evidence: workflow control surface; self-serve agent tooling; 297 GitHub stars; updated in the last 7 days
 - Contact: https://github.com/zaxbysauce
 - CTA: https://thumbgate-production.up.railway.app/guide
 - Proof rule: Use proof pack only after the buyer confirms pain.

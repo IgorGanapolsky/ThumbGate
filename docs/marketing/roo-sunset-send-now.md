@@ -1,6 +1,6 @@
 # Roo Sunset Send-Now Sheet
 
-Updated: 2026-05-04T05:14:25.441Z
+Updated: 2026-05-04T13:51:53.099Z
 
 This is the flat execution layer for the Roo migration lane. Use it when you want one message, one CTA, and one logging sequence per Roo archetype without re-reading the full demand pack.
 

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-04T05:14:25.441Z",
+  "generatedAt": "2026-05-04T13:51:53.099Z",
   "source": "local",
   "fallbackReason": "Hosted operational summary is not configured.",
   "verification": {
@@ -530,7 +530,7 @@
       "repoUrl": "https://github.com/Adqui9608/ai-code-review-agent",
       "description": "Review GitHub pull requests with AI to catch bugs, security issues, and code quality problems with built-in eval and observability",
       "stars": 0,
-      "updatedAt": "2026-05-04T04:50:36Z",
+      "updatedAt": "2026-05-04T11:25:19Z",
       "evidenceScore": 15,
       "evidence": [
         "workflow control surface",
@@ -677,6 +677,87 @@
       "temperature": "cold",
       "source": "github",
       "channel": "github",
+      "username": "WaterplanAI",
+      "accountName": "WaterplanAI",
+      "company": "",
+      "contactUrl": "https://github.com/WaterplanAI",
+      "contactSurfaces": [
+        {
+          "label": "GitHub profile",
+          "url": "https://github.com/WaterplanAI"
+        },
+        {
+          "label": "Repository",
+          "url": "https://github.com/WaterplanAI/agentic-config"
+        }
+      ],
+      "websiteUrl": "",
+      "repoName": "agentic-config",
+      "repoUrl": "https://github.com/WaterplanAI/agentic-config",
+      "description": "Project-agnostic, composable AI workflow automation via pi packages and Claude Code plugins.",
+      "stars": 29,
+      "updatedAt": "2026-05-04T13:43:39Z",
+      "evidenceScore": 13,
+      "evidence": [
+        "workflow control surface",
+        "agent infrastructure",
+        "self-serve agent tooling",
+        "29 GitHub stars",
+        "updated in the last 7 days"
+      ],
+      "outreachAngle": "Lead with the proof-backed setup guide and local-first enforcement before any team-motion pitch.",
+      "evidenceSource": "https://github.com/WaterplanAI/agentic-config",
+      "evidenceSources": [
+        {
+          "label": "Target signal",
+          "url": "https://github.com/WaterplanAI/agentic-config",
+          "reason": "Source of the workflow or buyer signal behind this outreach row."
+        },
+        {
+          "label": "Commercial truth",
+          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+          "reason": "Current pricing, traction, and offer guardrail."
+        },
+        {
+          "label": "Verification evidence",
+          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+          "reason": "Current engineering proof pack and verification artifact."
+        }
+      ],
+      "claimGuardrails": [
+        "Do not claim revenue, installs, or marketplace approval without direct command evidence.",
+        "Do not lead with proof links before the buyer confirms pain.",
+        "Keep public pricing and traction claims aligned with COMMERCIAL_TRUTH.md.",
+        "Keep proof and quality claims aligned with VERIFICATION_EVIDENCE.md."
+      ],
+      "motion": "pro",
+      "motionLabel": "Pro at $19/mo or $149/yr",
+      "motionReason": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
+      "pipelineLeadId": "github_waterplanai_agentic_config",
+      "pipelineStage": "targeted",
+      "pipelineUpdatedAt": "",
+      "nextOperatorAction": "Send the first-touch draft and log the outreach in the sales pipeline.",
+      "offer": "pro_self_serve",
+      "cta": "https://thumbgate-production.up.railway.app/guide",
+      "proofPackTrigger": "Use proof pack only after the buyer confirms pain.",
+      "firstTouchDraft": "Hey @WaterplanAI, saw you're building around `agentic-config`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
+      "painConfirmedFollowUpDraft": "If you want the self-serve path for `agentic-config`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "selfServeFollowUpDraft": "If you want the self-serve path for `agentic-config`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro",
+      "checkoutCloseDraft": "If you are already comparing close options for `agentic-config`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "salesCommands": {
+        "markContacted": "npm run sales:pipeline -- advance --lead 'github_waterplanai_agentic_config' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+        "markReplied": "npm run sales:pipeline -- advance --lead 'github_waterplanai_agentic_config' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+        "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_waterplanai_agentic_config' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute diagnostic after the self-serve conversation exposed repeated pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+        "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_waterplanai_agentic_config' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+        "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_waterplanai_agentic_config' --channel 'manual' --stage 'sprint_intake' --note 'Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
+        "markPaid": "npm run sales:pipeline -- advance --lead 'github_waterplanai_agentic_config' --channel 'manual' --stage 'paid' --note 'Closed Pro at $19/mo or $149/yr and booked revenue after resolving the proof-backed setup guide and local-first enforcement before any team-motion pitch.'"
+      },
+      "message": "Hey @WaterplanAI, saw you're building around `agentic-config`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step."
+    },
+    {
+      "temperature": "cold",
+      "source": "github",
+      "channel": "github",
       "username": "zaxbysauce",
       "accountName": "zaxbysauce",
       "company": "",
@@ -695,13 +776,13 @@
       "repoName": "opencode-swarm",
       "repoUrl": "https://github.com/zaxbysauce/opencode-swarm",
       "description": "Architect-centric agentic swarm plugin for OpenCode. Hub-and-spoke orchestration with SME consultation, code generation, and QA review.",
-      "stars": 295,
-      "updatedAt": "2026-05-04T03:53:41Z",
+      "stars": 297,
+      "updatedAt": "2026-05-04T12:10:59Z",
       "evidenceScore": 12,
       "evidence": [
         "workflow control surface",
         "self-serve agent tooling",
-        "295 GitHub stars",
+        "297 GitHub stars",
         "updated in the last 7 days"
       ],
       "outreachAngle": "Lead with the proof-backed setup guide and local-first enforcement before any team-motion pitch.",
@@ -752,96 +833,11 @@
         "markPaid": "npm run sales:pipeline -- advance --lead 'github_zaxbysauce_opencode_swarm' --channel 'manual' --stage 'paid' --note 'Closed Pro at $19/mo or $149/yr and booked revenue after resolving the proof-backed setup guide and local-first enforcement before any team-motion pitch.'"
       },
       "message": "Hey @zaxbysauce, saw you're building around `opencode-swarm`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step."
-    },
-    {
-      "temperature": "cold",
-      "source": "github",
-      "channel": "github",
-      "username": "iliaal",
-      "accountName": "iliaal",
-      "company": "",
-      "contactUrl": "http://ilia.ws/",
-      "contactSurfaces": [
-        {
-          "label": "Website",
-          "url": "http://ilia.ws/"
-        },
-        {
-          "label": "GitHub profile",
-          "url": "https://github.com/iliaal"
-        },
-        {
-          "label": "Repository",
-          "url": "https://github.com/iliaal/whetstone"
-        }
-      ],
-      "websiteUrl": "http://ilia.ws/",
-      "repoName": "whetstone",
-      "repoUrl": "https://github.com/iliaal/whetstone",
-      "description": "AI-powered development tools. 19 agents, 22 commands, 30 skills, 1 hook, 1 MCP server for code review, research, design, and workflow automation.",
-      "stars": 13,
-      "updatedAt": "2026-05-03T10:39:51Z",
-      "evidenceScore": 12,
-      "evidence": [
-        "workflow control surface",
-        "agent infrastructure",
-        "self-serve agent tooling",
-        "13 GitHub stars",
-        "updated in the last 7 days"
-      ],
-      "outreachAngle": "Lead with the proof-backed setup guide and local-first enforcement before any team-motion pitch.",
-      "evidenceSource": "https://github.com/iliaal/whetstone",
-      "evidenceSources": [
-        {
-          "label": "Target signal",
-          "url": "https://github.com/iliaal/whetstone",
-          "reason": "Source of the workflow or buyer signal behind this outreach row."
-        },
-        {
-          "label": "Commercial truth",
-          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
-          "reason": "Current pricing, traction, and offer guardrail."
-        },
-        {
-          "label": "Verification evidence",
-          "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
-          "reason": "Current engineering proof pack and verification artifact."
-        }
-      ],
-      "claimGuardrails": [
-        "Do not claim revenue, installs, or marketplace approval without direct command evidence.",
-        "Do not lead with proof links before the buyer confirms pain.",
-        "Keep public pricing and traction claims aligned with COMMERCIAL_TRUTH.md.",
-        "Keep proof and quality claims aligned with VERIFICATION_EVIDENCE.md."
-      ],
-      "motion": "pro",
-      "motionLabel": "Pro at $19/mo or $149/yr",
-      "motionReason": "Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.",
-      "pipelineLeadId": "github_iliaal_whetstone",
-      "pipelineStage": "targeted",
-      "pipelineUpdatedAt": "",
-      "nextOperatorAction": "Send the first-touch draft and log the outreach in the sales pipeline.",
-      "offer": "pro_self_serve",
-      "cta": "https://thumbgate-production.up.railway.app/guide",
-      "proofPackTrigger": "Use proof pack only after the buyer confirms pain.",
-      "firstTouchDraft": "Hey @iliaal, saw you're building around `whetstone`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.",
-      "painConfirmedFollowUpDraft": "If you want the self-serve path for `whetstone`, here is the live Pro checkout: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
-      "selfServeFollowUpDraft": "If you want the self-serve path for `whetstone`, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide If the install path looks right and you want the dashboard plus export-ready evidence, the live Pro checkout is https://thumbgate-production.up.railway.app/checkout/pro",
-      "checkoutCloseDraft": "If you are already comparing close options for `whetstone`, the primary path is Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
-      "salesCommands": {
-        "markContacted": "npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'contacted' --note 'Sent Pro at $19/mo or $149/yr self-serve first touch focused on the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markReplied": "npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'replied' --note 'Buyer confirmed pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markCallBooked": "npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'call_booked' --note 'Booked a 15-minute diagnostic after the self-serve conversation exposed repeated pain around the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markCheckoutStarted": "npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'checkout_started' --note 'Buyer started the self-serve checkout after discussing the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markSprintIntake": "npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'sprint_intake' --note 'Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for the proof-backed setup guide and local-first enforcement before any team-motion pitch.'",
-        "markPaid": "npm run sales:pipeline -- advance --lead 'github_iliaal_whetstone' --channel 'manual' --stage 'paid' --note 'Closed Pro at $19/mo or $149/yr and booked revenue after resolving the proof-backed setup guide and local-first enforcement before any team-motion pitch.'"
-      },
-      "message": "Hey @iliaal, saw you're building around `whetstone`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step."
     }
   ],
   "snapshotWindow": "today",
   "marketplaceCopy": {
-    "generatedAt": "2026-05-04T05:14:25.441Z",
+    "generatedAt": "2026-05-04T13:51:53.099Z",
     "state": "cold-start",
     "headline": "Harden one AI-agent workflow before you roll it out.",
     "shortDescription": "Harden one AI-agent workflow before you roll it out. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.",
@@ -919,8 +915,8 @@
         "count": 3,
         "examples": [
           "bherald/personal-life-os-core",
-          "zaxbysauce/opencode-swarm",
-          "iliaal/whetstone"
+          "WaterplanAI/agentic-config",
+          "zaxbysauce/opencode-swarm"
         ]
       }
     ],
@@ -1017,8 +1013,8 @@
         },
         "sampleTargets": [
           "bherald/personal-life-os-core",
-          "zaxbysauce/opencode-swarm",
-          "iliaal/whetstone"
+          "WaterplanAI/agentic-config",
+          "zaxbysauce/opencode-swarm"
         ]
       }
     ],
