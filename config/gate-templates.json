@@ -108,6 +108,54 @@
       "problem": "Stops agents from editing generated knowledge-graph artifacts as if they were source of truth.",
       "roi": "Keeps graph context reproducible and avoids corrupting the evidence layer agents rely on for impact analysis.",
       "rollout": "Enable for repos that commit or cache graph outputs locally."
+    },
+    {
+      "id": "block-package-lifecycle-secret-harvest",
+      "name": "Block package lifecycle secret harvest",
+      "category": "Supply Chain Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(preinstall|install|postinstall|prepare).*(env|token|secret|credential|npmrc|pypirc|docker\\/config|ssh)",
+      "problem": "Stops package lifecycle scripts from reading local credentials during npm, PyPI, Docker, or CLI compromise scenarios.",
+      "roi": "Turns developer-machine supply-chain awareness into a runtime stop before secrets are harvested at scale.",
+      "rollout": "Enable on every repo where agents can install packages, run package scripts, or edit dependency automation."
+    },
+    {
+      "id": "review-untrusted-cli-before-execution",
+      "name": "Review untrusted CLI before execution",
+      "category": "Supply Chain Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(curl|wget).*(bash|sh)|npx\\s+[^@\\s]+|uvx\\s+|pipx\\s+run",
+      "problem": "Blocks one-shot CLI execution paths that can turn a copied command into developer-machine compromise.",
+      "roi": "Prevents AI assistants from amplifying malicious copy-paste install flows across repos and machines.",
+      "rollout": "Allowlist trusted internal CLIs and require source review for every new external executable."
+    },
+    {
+      "id": "checkpoint-dependency-bot-autofix",
+      "name": "Checkpoint dependency bot autofix",
+      "category": "Supply Chain Safety",
+      "signal": "👎",
+      "defaultAction": "warn",
+      "severity": "high",
+      "pattern": "(dependabot|renovate|npm audit fix|pnpm audit|pip install -U|docker pull|cargo update)",
+      "problem": "Requires a human-readable checkpoint before automated dependency updates expand the trusted code surface.",
+      "roi": "Keeps dependency bots and package managers from silently widening blast radius during a supply-chain incident.",
+      "rollout": "Start as warn mode for dependency PRs; promote to block for production services or privileged developer machines."
+    },
+    {
+      "id": "require-credential-exposure-assessment",
+      "name": "Require credential exposure assessment",
+      "category": "Supply Chain Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(secret|token|credential|api[_-]?key|ssh|npmrc|pypirc|docker\\/config).*(rotate|exposed|leak|incident|compromise)",
+      "problem": "Forces an exposure assessment before an agent claims a supply-chain incident is resolved.",
+      "roi": "Connects prevention with remediation: what credential lived where, who touched it, and whether rotation is required.",
+      "rollout": "Use with incident-response runbooks and secrets scanner output from GitGuardian or internal tooling."
     }
   ]
 }

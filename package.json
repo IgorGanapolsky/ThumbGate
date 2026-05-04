@@ -554,7 +554,7 @@
     "workflow:autonomous": "node scripts/autonomous-workflow.js",
     "test:lesson-export-import": "node --test tests/lesson-export-import.test.js",
     "test:landing-page-claims": "node --test tests/landing-page-claims.test.js",
-    "test:competitive-positioning-marketing": "node --test tests/competitive-positioning-marketing.test.js tests/knowledge-graph-guardrails.test.js",
+    "test:competitive-positioning-marketing": "node --test tests/competitive-positioning-marketing.test.js tests/knowledge-graph-guardrails.test.js tests/supply-chain-guardrails.test.js",
     "test:medium-weekly": "node --test tests/medium-weekly.test.js",
     "test:dashboard-deeplink-e2e": "node --test tests/dashboard-deeplink-e2e.test.js",
     "test:public-package-parity": "node --test tests/public-package-parity.test.js",
