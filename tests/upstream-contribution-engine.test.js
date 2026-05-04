@@ -8,7 +8,9 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const {
+  buildPatchReadiness,
   buildUpstreamContributionPlan,
+  detectCommentSignals,
   issueScore,
   listDirectPackages,
   normalizeRepo,
@@ -53,6 +55,59 @@ test('issueScore prioritizes bug bounty and small-patch signals', () => {
   assert.ok(high > low + 40);
 });
 
+test('buildPatchReadiness does not treat vague help-wanted crashes as autonomous PRs', () => {
+  const readiness = buildPatchReadiness({
+    title: 'Getting an Electron crash, not sure how to further debug - help needed!',
+    labels: ['help wanted'],
+  }, { name: 'better-sqlite3' });
+
+  assert.equal(readiness.canAutofix, false);
+  assert.equal(readiness.evidenceGate, 'triage-before-pr');
+});
+
+test('detectCommentSignals blocks issues that are claimed or already have PRs', () => {
+  const signals = detectCommentSignals([
+    "I'd like to work on this.",
+    'I opened a PR that addresses the docs gap.',
+  ]);
+
+  assert.equal(signals.claimed, true);
+  assert.equal(signals.existingPr, true);
+  assert.equal(signals.blocked, true);
+});
+
+test('buildPatchReadiness blocks public PRs for already claimed issues', () => {
+  const readiness = buildPatchReadiness({
+    title: 'docs: add missing configuration example',
+    labels: ['docs', 'good first issue'],
+    commentSignals: { claimed: true, existingPr: false, blocked: true },
+  }, { name: '@changesets/cli' });
+
+  assert.equal(readiness.canAutofix, false);
+  assert.equal(readiness.evidenceGate, 'claimed-or-existing-pr');
+  assert.deepEqual(readiness.blockers, ['issue appears claimed in comments']);
+});
+
+test('buildPatchReadiness keeps security-sensitive issues out of autonomous PR mode', () => {
+  const readiness = buildPatchReadiness({
+    title: 'security: add Sigstore attestations for release artifacts',
+    labels: ['help wanted'],
+  }, { name: '@lancedb/lancedb' });
+
+  assert.equal(readiness.canAutofix, false);
+  assert.equal(readiness.evidenceGate, 'triage-before-pr');
+});
+
+test('buildPatchReadiness allows small test and type fixes after evidence gates', () => {
+  const readiness = buildPatchReadiness({
+    title: 'Fix flaky TypeScript test failure on Node 22',
+    labels: ['bug', 'good first issue'],
+  }, { name: '@anthropic-ai/sdk' });
+
+  assert.equal(readiness.canAutofix, true);
+  assert.equal(readiness.evidenceGate, 'autonomous-patch-ready');
+});
+
 test('buildUpstreamContributionPlan ranks dependency issues and keeps PR guardrails explicit', () => {
   const plan = buildUpstreamContributionPlan({
     root: path.resolve(__dirname, '..'),
@@ -72,6 +127,7 @@ test('buildUpstreamContributionPlan ranks dependency issues and keeps PR guardra
   assert.equal(plan.name, 'thumbgate-upstream-contribution-engine');
   assert.equal(plan.status, 'actionable');
   assert.ok(plan.guardrails.some((line) => /Do not create promotional PRs/.test(line)));
+  assert.ok(plan.autonomousWorkflow.some((line) => /Open a public PR only/.test(line)));
   assert.equal(plan.opportunities[0].repo, 'stripe/stripe-node');
   assert.equal(plan.opportunities[0].canAutofix, true);
   assert.match(plan.opportunities[0].suggestedBranch, /^codex\/upstream-stripe-123/);

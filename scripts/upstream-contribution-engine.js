@@ -73,13 +73,33 @@ function resolvePackageRepo(name, options = {}) {
 
 function packageIssueQueries(pkg) {
   const terms = [
-    'label:bug state:open',
-    'label:"good first issue" state:open',
-    'label:"help wanted" state:open',
-    'bounty state:open',
-    'security state:open',
+    'is:issue is:open label:bug',
+    'is:issue is:open label:"good first issue"',
+    'is:issue is:open label:"help wanted"',
+    'is:issue is:open bounty',
+    'is:issue is:open "bug bounty"',
+    'is:issue is:open security',
+    'is:issue is:open regression',
+    'is:issue is:open docs OR documentation',
+    'is:issue is:open typescript OR types',
+    'is:issue is:open test OR ci OR flake',
   ];
   return terms.map((term) => `repo:${pkg.repo} ${term}`);
+}
+
+function packageIssueSearchTerms() {
+  return [
+    'label:bug',
+    'label:"good first issue"',
+    'label:"help wanted"',
+    'bounty',
+    '"bug bounty"',
+    'security',
+    'regression',
+    'docs OR documentation',
+    'typescript OR types',
+    'test OR ci OR flake',
+  ];
 }
 
 function parseGhIssueList(stdout, repo) {
@@ -91,6 +111,7 @@ function parseGhIssueList(stdout, repo) {
     url: issue.url || `https://github.com/${repo}/issues/${issue.number}`,
     labels: (issue.labels || []).map((label) => typeof label === 'string' ? label : label.name).filter(Boolean),
     updatedAt: issue.updatedAt || issue.updated_at || '',
+    commentSignals: detectCommentSignals((issue.comments || []).map((comment) => comment.body || '')),
   }));
 }
 
@@ -102,26 +123,55 @@ function readJsonFromString(source, fallback) {
   }
 }
 
+function detectCommentSignals(commentBodies = []) {
+  const combined = commentBodies.join('\n').toLowerCase();
+  const claimed = /\b(take|taking this|take this up|would like to work|like to work on this|i'?d like to work|i'?d like to take|i'?ll work|working on this)\b/.test(combined);
+  const existingPr = /\b(opened|made|created|proposal)\s+(a\s+)?pr\b|\/pull\/\d+|pull\/new|resolved in #\d+|will be resolved in #\d+/.test(combined);
+  return {
+    claimed,
+    existingPr,
+    blocked: claimed || existingPr,
+  };
+}
+
 function fetchRepoIssues(repo, options = {}) {
   if (options.offline) return [];
   const gh = options.ghBinary || 'gh';
-  const result = spawnSync(gh, [
-    'issue',
-    'list',
-    '--repo',
-    repo,
-    '--state',
-    'open',
-    '--limit',
-    String(options.limit || 30),
-    '--json',
-    'number,title,url,labels,updatedAt',
-  ], {
-    encoding: 'utf8',
-    timeout: options.timeoutMs || 10000,
-  });
-  if (result.status !== 0) return [];
-  return parseGhIssueList(result.stdout, repo);
+  const limit = Math.max(1, Number(options.limit || 30));
+  const perQueryLimit = Math.max(5, Math.ceil(limit / 2));
+  const seen = new Set();
+  const issues = [];
+
+  for (const search of packageIssueSearchTerms()) {
+    if (issues.length >= limit) break;
+    const result = spawnSync(gh, [
+      'issue',
+      'list',
+      '--repo',
+      repo,
+      '--state',
+      'open',
+      '--search',
+      search,
+      '--limit',
+      String(perQueryLimit),
+      '--json',
+      'number,title,url,labels,updatedAt,comments',
+    ], {
+      encoding: 'utf8',
+      timeout: options.timeoutMs || 10000,
+    });
+    if (result.status !== 0) continue;
+    for (const issue of parseGhIssueList(result.stdout, repo)) {
+      const key = `${repo}#${issue.number}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      issues.push(issue);
+      if (issues.length >= limit) break;
+    }
+  }
+
+  return issues;
 }
 
 function issueScore(issue, pkg) {
@@ -132,22 +182,39 @@ function issueScore(issue, pkg) {
   if (labels.some((label) => /good first issue|help wanted|up for grabs/.test(label))) score += 18;
   if (labels.some((label) => /security|vulnerability/.test(label)) || /\bsecurity|vulnerability|cve\b/.test(title)) score += 16;
   if (labels.some((label) => /bounty|reward|paid/.test(label)) || /\bbounty|reward|paid\b/.test(title)) score += 22;
-  if (/\bdocs?|test|typescript|types|ci|flake\b/.test(title)) score += 10;
+  if (/\b(?:docs?|test|typescript|types|ci|flake)\b/.test(title)) score += 10;
   return score;
 }
 
 function buildPatchReadiness(issue, pkg) {
   const labels = (issue.labels || []).map((label) => String(label).toLowerCase());
   const title = String(issue.title || '').toLowerCase();
-  const smallPatch = labels.some((label) => /good first issue|help wanted|docs|test/.test(label))
-    || /\bdocs?|test|typescript|types|ci|flake\b/.test(title);
+  const commentSignals = issue.commentSignals || {};
+  const explicitSmallLabel = labels.some((label) => /good first issue|documentation|docs|test|typescript|types|ci/.test(label));
+  const smallPatchTitle = /\b(?:docs?|documentation|readme|example|test|typescript|types|ci|flake|lint|typo)\b/.test(title);
+  const helpWantedOnly = labels.some((label) => /help wanted|up for grabs/.test(label))
+    && !explicitSmallLabel
+    && !smallPatchTitle;
+  const highRiskTitle = /\bcrash|segfault|sigill|security|vulnerability|cve|attestation|supply chain|silent data|corruption\b/.test(title);
+  const smallPatch = (explicitSmallLabel || smallPatchTitle) && (!highRiskTitle || smallPatchTitle);
+  const canAutofix = smallPatch && !helpWantedOnly && !commentSignals.blocked;
+  const evidenceGate = commentSignals.blocked
+    ? 'claimed-or-existing-pr'
+    : canAutofix ? 'autonomous-patch-ready' : 'triage-before-pr';
   return {
-    canAutofix: smallPatch,
-    prAllowed: smallPatch,
+    canAutofix,
+    prAllowed: canAutofix,
+    effort: canAutofix ? 'small' : 'needs-triage',
+    evidenceGate,
+    blockers: [
+      commentSignals.claimed ? 'issue appears claimed in comments' : '',
+      commentSignals.existingPr ? 'issue appears to have an existing PR or proposal' : '',
+    ].filter(Boolean),
     requiredProof: [
       'Fork or branch only; never push to upstream default branch.',
       'Reproduce or cite the issue before changing code.',
       'Run the upstream repo test command for the touched package path.',
+      'Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.',
       'Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy.',
     ],
     promotionRule: 'Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.',
@@ -208,6 +275,8 @@ function buildUpstreamContributionPlan(options = {}) {
       title: issue.title,
       score: issue.score,
       canAutofix: issue.readiness.canAutofix,
+      evidenceGate: issue.readiness.evidenceGate,
+      blockers: issue.readiness.blockers,
       suggestedBranch: issue.readiness.suggestedBranch,
     })))
     .sort((left, right) => right.score - left.score);
@@ -229,6 +298,13 @@ function buildUpstreamContributionPlan(options = {}) {
       'Open external PRs only after reproduction evidence, a minimal patch, and upstream tests pass.',
       'Never paste secrets, customer data, or private ThumbGate context into upstream issues or PRs.',
     ],
+    autonomousWorkflow: [
+      'Run live discovery on schedule and rank only dependency-backed upstream repos.',
+      'Clone/fork the highest autonomous-patch-ready issue into the suggested branch.',
+      'Capture reproduction, apply the smallest patch, and run upstream tests.',
+      'Open a public PR only when the evidence gate is autonomous-patch-ready and proof artifacts exist.',
+      'Stop at a local worktree and operator report when the issue is high-risk, security-sensitive, or unreproduced.',
+    ],
     repos: repoRows,
     opportunities,
   };
@@ -249,6 +325,10 @@ function renderUpstreamContributionPlan(plan) {
     '',
     ...plan.guardrails.map((item) => `- ${item}`),
     '',
+    '## Autonomous Workflow',
+    '',
+    ...plan.autonomousWorkflow.map((item) => `- ${item}`),
+    '',
     '## Top Opportunities',
     '',
   ];
@@ -257,9 +337,10 @@ function renderUpstreamContributionPlan(plan) {
     lines.push('No live issues were provided or discovered. Run with GitHub access enabled or review the search queries below.');
   } else {
     for (const item of plan.opportunities.slice(0, 20)) {
-      lines.push(`- ${item.repo}#${item.issueNumber || 'n/a'} (${item.score}) ${item.title}`);
+      lines.push(`- ${item.repo}#${item.issueNumber || 'n/a'} (${item.score}, ${item.evidenceGate}) ${item.title}`);
       lines.push(`  ${item.issueUrl || `https://github.com/${item.repo}/issues`}`);
       lines.push(`  Branch: ${item.suggestedBranch}`);
+      if (item.blockers.length > 0) lines.push(`  Blockers: ${item.blockers.join('; ')}`);
     }
   }
 
@@ -286,6 +367,7 @@ module.exports = {
   DEFAULT_REPO_OVERRIDES,
   buildPatchReadiness,
   buildUpstreamContributionPlan,
+  detectCommentSignals,
   fetchRepoIssues,
   issueScore,
   listDirectPackages,
