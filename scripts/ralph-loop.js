@@ -171,7 +171,7 @@ function buildRalphSteps(options = {}, env = process.env) {
         replyArgs,
         {
           stage: 'engage',
-          description: 'Checks Reddit, X, and LinkedIn reply surfaces with platform-safe posting and draft rules.',
+          description: 'Checks Reddit and LinkedIn reply surfaces with platform-safe posting and draft rules.',
         }
       ),
       makeNodeStep(

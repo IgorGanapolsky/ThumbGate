@@ -52,6 +52,9 @@ jobs:
       REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
       REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
       REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
+      # Optional comma/newline-separated Reddit post/comment URLs to monitor
+      # beyond inbox replies. Replies remain draft-only.
+      THUMBGATE_REDDIT_TRACKED_THREADS: https://www.reddit.com/r/ClaudeCode/comments/1szi5qp/
       # LinkedIn — gated on Community Management API approval (see
       # docs/marketing/linkedin-api-application.md). The stub logs a warning
       # until the approved token is available; envs are wired so the moment
