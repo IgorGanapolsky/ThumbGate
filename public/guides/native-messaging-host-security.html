@@ -8,8 +8,8 @@
   <meta property="og:title" content="Native Messaging Host Security | Audit Browser Bridges Before They Expand" />
   <meta property="og:description" content="Native messaging hosts let browser extensions talk to local executables. That can be useful, but it also creates a persistent bridge outside the browser sand..." />
   <meta property="og:type" content="article" />
-  <meta property="og:url" content="https://thumbgate-production.up.railway.app/guides/native-messaging-host-security" />
-  <link rel="canonical" href="https://thumbgate-production.up.railway.app/guides/native-messaging-host-security" />
+  <meta property="og:url" content="https://thumbgate.ai/guides/native-messaging-host-security" />
+  <link rel="canonical" href="https://thumbgate.ai/guides/native-messaging-host-security" />
   <link rel="llm-context" href="/public/llm-context.md" type="text/markdown" />
   <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
   <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
@@ -168,6 +168,14 @@
       font-weight: 700;
       text-decoration: none;
     }
+    .cta-secondary {
+      display: inline-flex;
+      margin-top: 12px;
+      color: var(--text);
+      font-weight: 600;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
     .faq-item {
       border-top: 1px solid var(--line);
       padding: 14px 0;
@@ -219,13 +227,13 @@
     "codex cli guardrails",
     "pre-action checks for ai coding agents"
   ],
-  "url": "https://thumbgate-production.up.railway.app/guides/native-messaging-host-security",
+  "url": "https://thumbgate.ai/guides/native-messaging-host-security",
   "publisher": {
     "@type": "Organization",
     "name": "ThumbGate",
-    "url": "https://thumbgate-production.up.railway.app"
+    "url": "https://thumbgate.ai"
   },
-  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/guides/native-messaging-host-security"
+  "mainEntityOfPage": "https://thumbgate.ai/guides/native-messaging-host-security"
 }
   </script>
   <script type="application/ld+json">
@@ -278,25 +286,25 @@
           <h2>Why this page exists</h2>
           <ul><li>Native messaging is a real local capability boundary, not a harmless implementation detail.</li><li>A manifest can pre-authorize extension origins long before a human operator understands the blast radius.</li><li>ThumbGate turns native messaging review into an auditable operator workflow instead of an invisible local side effect.</li></ul>
         </div>
-        
+
       <section class="detail-section">
         <h2>What native messaging hosts actually do</h2>
         <p>A native messaging host is a local manifest that tells a browser extension which executable it may launch on the operator machine. That bridge sits outside the browser sandbox, so it deserves the same review discipline teams use for deploy credentials or production write access.</p><p>The risk is not only the host binary itself. It is the combination of extension permissions, allowed origins, and whether the host remains registered for browsers the operator did not intentionally connect.</p>
-        
+
       </section>
       <section class="detail-section">
         <h2>Signals ThumbGate audits</h2>
-        
+
         <ul><li>Manifest files under browser-specific NativeMessagingHosts directories on macOS and Linux.</li><li>Allowed extension origins and extension-id fan-out per host registration.</li><li>Host binaries that are missing on disk, which leaves stale or broken registrations behind.</li><li>AI/browser bridge manifests registered for browsers not detected in the usual local install paths.</li></ul>
       </section>
       <section class="detail-section">
         <h2>The fastest operator action</h2>
         <p>Run npx thumbgate native-messaging-audit --json in the repo or workstation you govern. Review every AI browser bridge, remove anything you did not intentionally integrate, and keep browser-use in ask-before-acting mode until connector scope is explicit and revocable.</p>
-        
+
       </section>
         <div class="detail-section">
           <h2>FAQ</h2>
-          
+
       <details class="faq-item">
         <summary>Why does native messaging deserve a separate security review?</summary>
         <p>Because it lets a browser extension hand work to a local executable outside the browser sandbox. That is a different trust boundary than ordinary page automation or side-panel UI access.</p>
@@ -316,12 +324,14 @@
           <p><strong>Primary persona:</strong> ai-engineer</p>
           <p><strong>Keyword cluster:</strong> cursor prevent repeated mistakes, claude code prevent repeated mistakes, codex cli guardrails, pre-action checks for ai coding agents</p>
           <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
+          <p><strong>Commercial lane:</strong> Workflow Hardening Sprint first, Pro second</p>
           <div class="proof-links"><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json" target="_blank" rel="noopener">Automation proof</a><a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub repository</a></div>
-          <a class="cta-button" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_native-messaging-host-security&amp;cta_placement=seo_brief&amp;plan_id=pro" target="_blank" rel="noopener">Go Pro — $19/mo</a>
+          <a class="cta-button" href="/?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_native-messaging-host-security&amp;cta_placement=seo_brief_primary&amp;offer=sprint#workflow-sprint-intake" target="_blank" rel="noopener">Start Workflow Hardening Sprint</a>
+          <a class="cta-secondary" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_native-messaging-host-security&amp;cta_placement=seo_brief_secondary&amp;plan_id=pro" target="_blank" rel="noopener">See Solo Pro</a>
         </div>
         <div class="sidebar-card">
           <h2>Related pages</h2>
-          
+
         <a class="related-card" href="/guides/browser-automation-safety">
           <span class="related-label">Related page</span>
           <strong>Browser automation safety needs explicit approval boundaries</strong>

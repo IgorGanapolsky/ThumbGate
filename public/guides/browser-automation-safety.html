@@ -8,8 +8,8 @@
   <meta property="og:title" content="Browser Automation Safety | Prompt Injection, Permissions, and Pre-Action Checks" />
   <meta property="og:description" content="Browser agents can click, type, and navigate for you, but they also widen prompt-injection and cross-app integration risk. ThumbGate adds approval boundaries..." />
   <meta property="og:type" content="article" />
-  <meta property="og:url" content="https://thumbgate-production.up.railway.app/guides/browser-automation-safety" />
-  <link rel="canonical" href="https://thumbgate-production.up.railway.app/guides/browser-automation-safety" />
+  <meta property="og:url" content="https://thumbgate.ai/guides/browser-automation-safety" />
+  <link rel="canonical" href="https://thumbgate.ai/guides/browser-automation-safety" />
   <link rel="llm-context" href="/public/llm-context.md" type="text/markdown" />
   <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
   <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
@@ -168,6 +168,14 @@
       font-weight: 700;
       text-decoration: none;
     }
+    .cta-secondary {
+      display: inline-flex;
+      margin-top: 12px;
+      color: var(--text);
+      font-weight: 600;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
     .faq-item {
       border-top: 1px solid var(--line);
       padding: 14px 0;
@@ -219,13 +227,13 @@
     "codex cli guardrails",
     "pre-action checks for ai coding agents"
   ],
-  "url": "https://thumbgate-production.up.railway.app/guides/browser-automation-safety",
+  "url": "https://thumbgate.ai/guides/browser-automation-safety",
   "publisher": {
     "@type": "Organization",
     "name": "ThumbGate",
-    "url": "https://thumbgate-production.up.railway.app"
+    "url": "https://thumbgate.ai"
   },
-  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/guides/browser-automation-safety"
+  "mainEntityOfPage": "https://thumbgate.ai/guides/browser-automation-safety"
 }
   </script>
   <script type="application/ld+json">
@@ -278,25 +286,25 @@
           <h2>Why this page exists</h2>
           <ul><li>Browser automation is useful because it has real permissions, which is exactly why it needs governance.</li><li>Prompt injection becomes more dangerous when an extension can reach a local executable through a browser bridge.</li><li>ThumbGate gives teams a first action now: audit native messaging hosts, then require explicit approval before browser-use connectors expand.</li></ul>
         </div>
-        
+
       <section class="detail-section">
         <h2>Why browser-use changes the threat model</h2>
         <p>Browser agents do not just read text. They can click buttons, fill forms, switch tabs, and sometimes bridge into local binaries. That means the blast radius is no longer only &quot;bad output&quot; but &quot;real actions on live websites and local systems.&quot;</p><p>Once browser automation enters the stack, prompt injection stops being an abstract model weakness and becomes a workflow-governance problem. The right control is not more prompt advice. It is a hard boundary around what the agent is allowed to connect, install, and execute.</p>
-        
+
       </section>
       <section class="detail-section">
         <h2>What to audit first</h2>
-        
+
         <ul><li>Which browser extensions hold automation permissions such as debugger, tabs, downloads, and nativeMessaging.</li><li>Whether the desktop app or CLI has registered native messaging hosts for browsers you did not explicitly connect.</li><li>Whether host manifests point to live local binaries and whether those binaries sit outside the browser sandbox.</li><li>Whether browser-use runs default to ask-before-acting or silently expand capability before a human approves them.</li></ul>
       </section>
       <section class="detail-section">
         <h2>How ThumbGate fits</h2>
         <p>ThumbGate is the approval and enforcement layer around browser-use. Start by running npx thumbgate native-messaging-audit. Then gate future connector installs, record who approved them, and turn browser-bridge mistakes into Pre-Action Checks before the same pattern repeats.</p>
-        
+
       </section>
         <div class="detail-section">
           <h2>FAQ</h2>
-          
+
       <details class="faq-item">
         <summary>Why is browser automation riskier than ordinary chat?</summary>
         <p>Because the agent can take real actions in a browser and may also reach local executables through native messaging bridges. That turns prompt injection and permission drift into operational risk, not just output-quality risk.</p>
@@ -316,12 +324,14 @@
           <p><strong>Primary persona:</strong> ai-engineer</p>
           <p><strong>Keyword cluster:</strong> cursor prevent repeated mistakes, claude code prevent repeated mistakes, codex cli guardrails, pre-action checks for ai coding agents</p>
           <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
+          <p><strong>Commercial lane:</strong> Workflow Hardening Sprint first, Pro second</p>
           <div class="proof-links"><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json" target="_blank" rel="noopener">Automation proof</a><a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub repository</a></div>
-          <a class="cta-button" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_browser-automation-safety&amp;cta_placement=seo_brief&amp;plan_id=pro" target="_blank" rel="noopener">Go Pro — $19/mo</a>
+          <a class="cta-button" href="/?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_browser-automation-safety&amp;cta_placement=seo_brief_primary&amp;offer=sprint#workflow-sprint-intake" target="_blank" rel="noopener">Start Workflow Hardening Sprint</a>
+          <a class="cta-secondary" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_browser-automation-safety&amp;cta_placement=seo_brief_secondary&amp;plan_id=pro" target="_blank" rel="noopener">See Solo Pro</a>
         </div>
         <div class="sidebar-card">
           <h2>Related pages</h2>
-          
+
         <a class="related-card" href="/guides/native-messaging-host-security">
           <span class="related-label">Related page</span>
           <strong>Native messaging host security for AI browser bridges</strong>
