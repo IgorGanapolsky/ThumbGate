@@ -1355,39 +1355,6 @@ function modelCandidatesCmd() {
   process.stdout.write(`\nReport path: ${reportPath}\n`);
 }
 
-function upstreamContributions() {
-  const args = parseArgs(process.argv.slice(3));
-  const {
-    buildUpstreamContributionPlan,
-    renderUpstreamContributionPlan,
-    writeUpstreamContributionPlan,
-  } = require(path.join(PKG_ROOT, 'scripts', 'upstream-contribution-engine'));
-  const plan = buildUpstreamContributionPlan({
-    root: CWD,
-    maxRepos: args['max-repos'] || args.max,
-    maxIssues: args['max-issues'],
-    offline: args.live ? false : true,
-  });
-
-  if (args.write) {
-    const paths = writeUpstreamContributionPlan(plan);
-    if (args.json) {
-      console.log(JSON.stringify({ ...plan, paths }, null, 2));
-      return;
-    }
-    process.stdout.write(renderUpstreamContributionPlan(plan));
-    process.stdout.write(`\nArtifacts: ${paths.mdPath}, ${paths.jsonPath}\n`);
-    return;
-  }
-
-  if (args.json) {
-    console.log(JSON.stringify(plan, null, 2));
-    return;
-  }
-
-  process.stdout.write(renderUpstreamContributionPlan(plan));
-}
-
 function risk() {
   const args = parseArgs(process.argv.slice(3));
   const riskScorer = require(path.join(PKG_ROOT, 'scripts', 'risk-scorer'));
@@ -1891,22 +1858,6 @@ function reasoningEfficiencyGuardrails() {
   process.stdout.write(formatReasoningEfficiencyGuardrailsPlan(report));
 }
 
-function deepSeekV4RuntimeGuardrails() {
-  const args = parseArgs(process.argv.slice(3));
-  const {
-    buildDeepSeekV4RuntimeGuardrailsPlan,
-    formatDeepSeekV4RuntimeGuardrailsPlan,
-  } = require(path.join(PKG_ROOT, 'scripts', 'deepseek-v4-runtime-guardrails'));
-  const report = buildDeepSeekV4RuntimeGuardrailsPlan(args);
-
-  if (args.json) {
-    console.log(JSON.stringify(report, null, 2));
-    return;
-  }
-
-  process.stdout.write(formatDeepSeekV4RuntimeGuardrailsPlan(report));
-}
-
 function backgroundGovernance() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -2318,7 +2269,6 @@ function help() {
   console.log('  north-star            Show proof-backed workflow-run progress toward the North Star');
   console.log('  model-fit             Detect local embedding profile and write evidence report');
   console.log('  model-candidates      Rank managed model candidates and benchmark routing plans');
-  console.log('  upstream-contributions Rank upstream dependency issues for trust-building PRs');
   console.log('  risk                  Train or query the boosted local risk scorer');
   console.log('  eval                  Turn feedback into reusable prompt/workflow eval proof');
   console.log('  optimize              [PRO] Prune CLAUDE.md and migrate rules to Pre-Action Checks');
@@ -2332,7 +2282,6 @@ function help() {
   console.log('  proxy-pointer-rag-guardrails Map visual document RAG signals to Document RAG Safety gates');
   console.log('  rag-precision-guardrails Map retrieval tuning regressions to Document RAG Safety gates');
   console.log('  ai-engineering-stack-guardrails Map gateway, MCP, AGENTS.md, LLM wiki, reviewer, and sandbox gaps to stack gates');
-  console.log('  deepseek-v4-runtime-guardrails Map sparse-attention serving signals to runtime safety gates');
   console.log('  upstream-contributions Find dependency issues worth fixing without promotional PRs');
   console.log('  long-running-agent-context-guardrails Map structured-memory gaps to long-running agent gates');
   console.log('  reasoning-efficiency-guardrails Map reasoning compression signals to efficiency gates');
@@ -2366,8 +2315,6 @@ function help() {
   console.log('  npx thumbgate proxy-pointer-rag-guardrails --tree-path=.rag/tree.json --image-pointers=paper-1/figures/fig2.png --documents=paper-1 --visual-claims --json');
   console.log('  npx thumbgate rag-precision-guardrails --baseline-recall=0.86 --new-recall=0.72 --threshold-change --agentic --structural-near-misses --json');
   console.log('  npx thumbgate ai-engineering-stack-guardrails --mcp-tool-count=182 --direct-provider-keys --llm-wiki-pages=24 --context-freshness-days=30 --background-agents --json');
-  console.log('  npx thumbgate deepseek-v4-runtime-guardrails --context-tokens=900000 --hybrid-attention --speculative-decoding --json');
-  console.log('  npx thumbgate upstream-contributions --max-repos=2 --json');
   console.log('  npx thumbgate long-running-agent-context-guardrails --request-count=80 --output-mb=3 --raw-chat-only --json');
   console.log('  npx thumbgate reasoning-efficiency-guardrails --baseline-tokens=1200 --compressed-tokens=980 --baseline-accuracy=0.84 --compressed-accuracy=0.85 --verifier --json');
   console.log('  npx thumbgate deepseek-v4-runtime-guardrails --context-tokens=900000 --hybrid-attention --speculative-decoding --accept-length=1.4 --precision-mode=fp8 --json');
@@ -2638,11 +2585,6 @@ switch (COMMAND) {
   case 'sas-guardrails':
   case 'reasoning-compression-guardrails':
     reasoningEfficiencyGuardrails();
-    break;
-  case 'deepseek-v4-runtime-guardrails':
-  case 'sparse-attention-runtime-guardrails':
-  case 'deepseek-runtime-guardrails':
-    deepSeekV4RuntimeGuardrails();
     break;
   case 'background-governance':
   case 'background-agent-governance':

@@ -1,12 +1,12 @@
 {
   "name": "thumbgate-upstream-contribution-engine",
-  "generatedAt": "2026-05-04T17:37:57.225Z",
-  "status": "discovery-ready",
+  "generatedAt": "2026-05-04T17:41:42.495Z",
+  "status": "actionable",
   "summary": {
     "packageCount": 14,
-    "repoCount": 12,
-    "issueCount": 0,
-    "autofixReadyCount": 0
+    "repoCount": 5,
+    "issueCount": 25,
+    "autofixReadyCount": 11
   },
   "guardrails": [
     "Only target repos ThumbGate actually depends on or uses in shipped workflows.",
@@ -27,8 +27,125 @@
         "repo:anthropics/anthropic-sdk-typescript bounty state:open",
         "repo:anthropics/anthropic-sdk-typescript security state:open"
       ],
-      "issues": [],
-      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
+      "issues": [
+        {
+          "repo": "anthropics/anthropic-sdk-typescript",
+          "number": 893,
+          "title": "Agent Skills: docx and pptx skills fail silently with streaming",
+          "url": "https://github.com/anthropics/anthropic-sdk-typescript/issues/893",
+          "labels": [
+            "code-change"
+          ],
+          "updatedAt": "2026-04-28T00:03:53Z",
+          "score": 55,
+          "readiness": {
+            "canAutofix": true,
+            "prAllowed": true,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-anthropic-ai-sdk-893"
+          }
+        },
+        {
+          "repo": "anthropics/anthropic-sdk-typescript",
+          "number": 1016,
+          "title": "[Vertex] anthropic-beta header forwarded to countTokens fallback fails on lagging model backends",
+          "url": "https://github.com/anthropics/anthropic-sdk-typescript/issues/1016",
+          "labels": [
+            "code-change"
+          ],
+          "updatedAt": "2026-04-28T00:04:06Z",
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-anthropic-ai-sdk-1016"
+          }
+        },
+        {
+          "repo": "anthropics/anthropic-sdk-typescript",
+          "number": 986,
+          "title": "partialParse in _vendor/partial-json-parser crashes on invalid JSON escape sequences from model output",
+          "url": "https://github.com/anthropics/anthropic-sdk-typescript/issues/986",
+          "labels": [
+            "code-change"
+          ],
+          "updatedAt": "2026-04-28T00:04:02Z",
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-anthropic-ai-sdk-986"
+          }
+        },
+        {
+          "repo": "anthropics/anthropic-sdk-typescript",
+          "number": 964,
+          "title": "Bug: `toolRunner` does not propagate `container.id` across iterations, and `setMessagesParams` causes duplicate tool call loops",
+          "url": "https://github.com/anthropics/anthropic-sdk-typescript/issues/964",
+          "labels": [
+            "bug",
+            "code-change"
+          ],
+          "updatedAt": "2026-04-28T00:04:00Z",
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-anthropic-ai-sdk-964"
+          }
+        },
+        {
+          "repo": "anthropics/anthropic-sdk-typescript",
+          "number": 956,
+          "title": "Claude Opus 4.6 and Sonnet 4.6 fail to make parallel tool calls in Batch API",
+          "url": "https://github.com/anthropics/anthropic-sdk-typescript/issues/956",
+          "labels": [
+            "api"
+          ],
+          "updatedAt": "2026-04-28T00:09:36Z",
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-anthropic-ai-sdk-956"
+          }
+        }
+      ],
+      "nextAction": "Clone/fork the top autofix-ready issue, produce a minimal patch, run upstream tests, then open PR with proof."
     },
     {
       "package": "@changesets/changelog-github",
@@ -41,8 +158,114 @@
         "repo:changesets/changesets bounty state:open",
         "repo:changesets/changesets security state:open"
       ],
-      "issues": [],
-      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
+      "issues": [
+        {
+          "repo": "changesets/changesets",
+          "number": 1937,
+          "title": "changeset 2.30.0 bug",
+          "url": "https://github.com/changesets/changesets/issues/1937",
+          "labels": [],
+          "updatedAt": "2026-04-22T07:46:34Z",
+          "score": 37,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-changesets-changelog-github-1937"
+          }
+        },
+        {
+          "repo": "changesets/changesets",
+          "number": 1794,
+          "title": "Changeset fails on ignore pattern when there's no matches",
+          "url": "https://github.com/changesets/changesets/issues/1794",
+          "labels": [],
+          "updatedAt": "2025-12-02T20:50:27Z",
+          "score": 37,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-changesets-changelog-github-1794"
+          }
+        },
+        {
+          "repo": "changesets/changesets",
+          "number": 1887,
+          "title": "Adding peer dependencies bumps 0.X.Y packages to 1.0.0",
+          "url": "https://github.com/changesets/changesets/issues/1887",
+          "labels": [],
+          "updatedAt": "2026-04-04T00:58:21Z",
+          "score": 22,
+          "readiness": {
+            "canAutofix": true,
+            "prAllowed": true,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-changesets-changelog-github-1887"
+          }
+        },
+        {
+          "repo": "changesets/changesets",
+          "number": 1728,
+          "title": "Dependent package not patch-bumped when using `*` version specifier",
+          "url": "https://github.com/changesets/changesets/issues/1728",
+          "labels": [],
+          "updatedAt": "2026-01-12T13:25:50Z",
+          "score": 22,
+          "readiness": {
+            "canAutofix": true,
+            "prAllowed": true,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-changesets-changelog-github-1728"
+          }
+        },
+        {
+          "repo": "changesets/changesets",
+          "number": 1708,
+          "title": "Support for file protocol dependencies in a monorepo, rather than npm link - why is this seen as an \"error\"?",
+          "url": "https://github.com/changesets/changesets/issues/1708",
+          "labels": [],
+          "updatedAt": "2025-08-02T13:46:39Z",
+          "score": 22,
+          "readiness": {
+            "canAutofix": true,
+            "prAllowed": true,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-changesets-changelog-github-1708"
+          }
+        }
+      ],
+      "nextAction": "Clone/fork the top autofix-ready issue, produce a minimal patch, run upstream tests, then open PR with proof."
     },
     {
       "package": "@changesets/cli",
@@ -55,8 +278,114 @@
         "repo:changesets/changesets bounty state:open",
         "repo:changesets/changesets security state:open"
       ],
-      "issues": [],
-      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
+      "issues": [
+        {
+          "repo": "changesets/changesets",
+          "number": 1937,
+          "title": "changeset 2.30.0 bug",
+          "url": "https://github.com/changesets/changesets/issues/1937",
+          "labels": [],
+          "updatedAt": "2026-04-22T07:46:34Z",
+          "score": 37,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-changesets-cli-1937"
+          }
+        },
+        {
+          "repo": "changesets/changesets",
+          "number": 1794,
+          "title": "Changeset fails on ignore pattern when there's no matches",
+          "url": "https://github.com/changesets/changesets/issues/1794",
+          "labels": [],
+          "updatedAt": "2025-12-02T20:50:27Z",
+          "score": 37,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-changesets-cli-1794"
+          }
+        },
+        {
+          "repo": "changesets/changesets",
+          "number": 1887,
+          "title": "Adding peer dependencies bumps 0.X.Y packages to 1.0.0",
+          "url": "https://github.com/changesets/changesets/issues/1887",
+          "labels": [],
+          "updatedAt": "2026-04-04T00:58:21Z",
+          "score": 22,
+          "readiness": {
+            "canAutofix": true,
+            "prAllowed": true,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-changesets-cli-1887"
+          }
+        },
+        {
+          "repo": "changesets/changesets",
+          "number": 1728,
+          "title": "Dependent package not patch-bumped when using `*` version specifier",
+          "url": "https://github.com/changesets/changesets/issues/1728",
+          "labels": [],
+          "updatedAt": "2026-01-12T13:25:50Z",
+          "score": 22,
+          "readiness": {
+            "canAutofix": true,
+            "prAllowed": true,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-changesets-cli-1728"
+          }
+        },
+        {
+          "repo": "changesets/changesets",
+          "number": 1708,
+          "title": "Support for file protocol dependencies in a monorepo, rather than npm link - why is this seen as an \"error\"?",
+          "url": "https://github.com/changesets/changesets/issues/1708",
+          "labels": [],
+          "updatedAt": "2025-08-02T13:46:39Z",
+          "score": 22,
+          "readiness": {
+            "canAutofix": true,
+            "prAllowed": true,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-changesets-cli-1708"
+          }
+        }
+      ],
+      "nextAction": "Clone/fork the top autofix-ready issue, produce a minimal patch, run upstream tests, then open PR with proof."
     },
     {
       "package": "@google/genai",
@@ -69,8 +398,135 @@
         "repo:googleapis/js-genai bounty state:open",
         "repo:googleapis/js-genai security state:open"
       ],
-      "issues": [],
-      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
+      "issues": [
+        {
+          "repo": "googleapis/js-genai",
+          "number": 1321,
+          "title": "`sendMessage`/ `sendMessageStream` returns empty response when specific `systemInstruction` is used with `googleSearch` tool",
+          "url": "https://github.com/googleapis/js-genai/issues/1321",
+          "labels": [
+            "type: bug",
+            "priority: p2",
+            "api:gemini-api"
+          ],
+          "updatedAt": "2026-04-06T16:44:08Z",
+          "score": 55,
+          "readiness": {
+            "canAutofix": true,
+            "prAllowed": true,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-google-genai-1321"
+          }
+        },
+        {
+          "repo": "googleapis/js-genai",
+          "number": 1278,
+          "title": "error: Leaks detected:   - A fetch response body was created during the test, but not consumed during the test. Consume or close the response body `ReadableStream`, e.g `await resp.text()` or `await resp.body.cancel()`.",
+          "url": "https://github.com/googleapis/js-genai/issues/1278",
+          "labels": [
+            "type: bug",
+            "priority: p2",
+            "api: file",
+            "api:gemini-api"
+          ],
+          "updatedAt": "2026-03-03T09:50:42Z",
+          "score": 55,
+          "readiness": {
+            "canAutofix": true,
+            "prAllowed": true,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-google-genai-1278"
+          }
+        },
+        {
+          "repo": "googleapis/js-genai",
+          "number": 1259,
+          "title": "\"Document has no pages\" error with large pdf files via AWS signed urls Gemini 3 Flash/Pro Preview",
+          "url": "https://github.com/googleapis/js-genai/issues/1259",
+          "labels": [
+            "type: bug",
+            "priority: p2",
+            "generated: genai"
+          ],
+          "updatedAt": "2026-03-10T02:15:22Z",
+          "score": 55,
+          "readiness": {
+            "canAutofix": true,
+            "prAllowed": true,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-google-genai-1259"
+          }
+        },
+        {
+          "repo": "googleapis/js-genai",
+          "number": 1544,
+          "title": "gemini-3.1-flash-image-preview generation times are significantly slower than gemini-3-pro-image-preview",
+          "url": "https://github.com/googleapis/js-genai/issues/1544",
+          "labels": [
+            "type: bug",
+            "priority: p2",
+            "api:gemini-api"
+          ],
+          "updatedAt": "2026-05-04T03:51:39Z",
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-google-genai-1544"
+          }
+        },
+        {
+          "repo": "googleapis/js-genai",
+          "number": 1492,
+          "title": "Bug: getFieldMasks() generates invalid protobuf FieldMask paths for ephemeral token lockAdditionalFields",
+          "url": "https://github.com/googleapis/js-genai/issues/1492",
+          "labels": [
+            "type: bug",
+            "priority: p2",
+            "api:gemini-api"
+          ],
+          "updatedAt": "2026-04-14T09:49:10Z",
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-google-genai-1492"
+          }
+        }
+      ],
+      "nextAction": "Clone/fork the top autofix-ready issue, produce a minimal patch, run upstream tests, then open PR with proof."
     },
     {
       "package": "@huggingface/transformers",
@@ -83,107 +539,376 @@
         "repo:huggingface/transformers.js bounty state:open",
         "repo:huggingface/transformers.js security state:open"
       ],
-      "issues": [],
-      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
-    },
-    {
-      "package": "@lancedb/lancedb",
-      "dependencyType": "runtime",
-      "repo": "lancedb/lancedb",
-      "searchQueries": [
-        "repo:lancedb/lancedb label:bug state:open",
-        "repo:lancedb/lancedb label:\"good first issue\" state:open",
-        "repo:lancedb/lancedb label:\"help wanted\" state:open",
-        "repo:lancedb/lancedb bounty state:open",
-        "repo:lancedb/lancedb security state:open"
+      "issues": [
+        {
+          "repo": "huggingface/transformers.js",
+          "number": 1590,
+          "title": "[webgpu] Whisper encoder fp16 precision issues",
+          "url": "https://github.com/huggingface/transformers.js/issues/1590",
+          "labels": [
+            "bug"
+          ],
+          "updatedAt": "2026-03-30T14:17:00Z",
+          "score": 55,
+          "readiness": {
+            "canAutofix": true,
+            "prAllowed": true,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-huggingface-transformers-1590"
+          }
+        },
+        {
+          "repo": "huggingface/transformers.js",
+          "number": 1667,
+          "title": "Error on translation",
+          "url": "https://github.com/huggingface/transformers.js/issues/1667",
+          "labels": [
+            "bug"
+          ],
+          "updatedAt": "2026-05-01T05:04:14Z",
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-huggingface-transformers-1667"
+          }
+        },
+        {
+          "repo": "huggingface/transformers.js",
+          "number": 1653,
+          "title": "Bonsai 4B: Uncaught Error: Can't create a session. ERROR_CODE: 6, ERROR_MESSAGE: std::bad_alloc",
+          "url": "https://github.com/huggingface/transformers.js/issues/1653",
+          "labels": [
+            "bug"
+          ],
+          "updatedAt": "2026-04-16T16:14:58Z",
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-huggingface-transformers-1653"
+          }
+        },
+        {
+          "repo": "huggingface/transformers.js",
+          "number": 1642,
+          "title": "Auto device on Linux x64 fails hard when CUDA shared library is unavailable instead of falling back",
+          "url": "https://github.com/huggingface/transformers.js/issues/1642",
+          "labels": [
+            "bug"
+          ],
+          "updatedAt": "2026-04-14T10:45:56Z",
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-huggingface-transformers-1642"
+          }
+        },
+        {
+          "repo": "huggingface/transformers.js",
+          "number": 1640,
+          "title": "Illegal Instruction when running `pipeline` on Raspberry Pi 3 Model B (64-bit)",
+          "url": "https://github.com/huggingface/transformers.js/issues/1640",
+          "labels": [
+            "bug"
+          ],
+          "updatedAt": "2026-04-13T15:29:52Z",
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-huggingface-transformers-1640"
+          }
+        }
       ],
-      "issues": [],
-      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
-    },
-    {
-      "package": "apache-arrow",
-      "dependencyType": "runtime",
-      "repo": "apache/arrow",
-      "searchQueries": [
-        "repo:apache/arrow label:bug state:open",
-        "repo:apache/arrow label:\"good first issue\" state:open",
-        "repo:apache/arrow label:\"help wanted\" state:open",
-        "repo:apache/arrow bounty state:open",
-        "repo:apache/arrow security state:open"
-      ],
-      "issues": [],
-      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
-    },
-    {
-      "package": "better-sqlite3",
-      "dependencyType": "runtime",
-      "repo": "WiseLibs/better-sqlite3",
-      "searchQueries": [
-        "repo:WiseLibs/better-sqlite3 label:bug state:open",
-        "repo:WiseLibs/better-sqlite3 label:\"good first issue\" state:open",
-        "repo:WiseLibs/better-sqlite3 label:\"help wanted\" state:open",
-        "repo:WiseLibs/better-sqlite3 bounty state:open",
-        "repo:WiseLibs/better-sqlite3 security state:open"
-      ],
-      "issues": [],
-      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
-    },
-    {
-      "package": "c8",
-      "dependencyType": "dev",
-      "repo": "bcoe/c8",
-      "searchQueries": [
-        "repo:bcoe/c8 label:bug state:open",
-        "repo:bcoe/c8 label:\"good first issue\" state:open",
-        "repo:bcoe/c8 label:\"help wanted\" state:open",
-        "repo:bcoe/c8 bounty state:open",
-        "repo:bcoe/c8 security state:open"
-      ],
-      "issues": [],
-      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
-    },
-    {
-      "package": "dotenv",
-      "dependencyType": "runtime",
-      "repo": "motdotla/dotenv",
-      "searchQueries": [
-        "repo:motdotla/dotenv label:bug state:open",
-        "repo:motdotla/dotenv label:\"good first issue\" state:open",
-        "repo:motdotla/dotenv label:\"help wanted\" state:open",
-        "repo:motdotla/dotenv bounty state:open",
-        "repo:motdotla/dotenv security state:open"
-      ],
-      "issues": [],
-      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
-    },
-    {
-      "package": "playwright-core",
-      "dependencyType": "runtime",
-      "repo": "microsoft/playwright",
-      "searchQueries": [
-        "repo:microsoft/playwright label:bug state:open",
-        "repo:microsoft/playwright label:\"good first issue\" state:open",
-        "repo:microsoft/playwright label:\"help wanted\" state:open",
-        "repo:microsoft/playwright bounty state:open",
-        "repo:microsoft/playwright security state:open"
-      ],
-      "issues": [],
-      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
-    },
-    {
-      "package": "protobufjs",
-      "dependencyType": "runtime",
-      "repo": "protobufjs/protobuf.js",
-      "searchQueries": [
-        "repo:protobufjs/protobuf.js label:bug state:open",
-        "repo:protobufjs/protobuf.js label:\"good first issue\" state:open",
-        "repo:protobufjs/protobuf.js label:\"help wanted\" state:open",
-        "repo:protobufjs/protobuf.js bounty state:open",
-        "repo:protobufjs/protobuf.js security state:open"
-      ],
-      "issues": [],
-      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
+      "nextAction": "Clone/fork the top autofix-ready issue, produce a minimal patch, run upstream tests, then open PR with proof."
     }
   ],
-  "opportunities": []
+  "opportunities": [
+    {
+      "package": "@anthropic-ai/sdk",
+      "repo": "anthropics/anthropic-sdk-typescript",
+      "issueNumber": 893,
+      "issueUrl": "https://github.com/anthropics/anthropic-sdk-typescript/issues/893",
+      "title": "Agent Skills: docx and pptx skills fail silently with streaming",
+      "score": 55,
+      "canAutofix": true,
+      "suggestedBranch": "codex/upstream-anthropic-ai-sdk-893"
+    },
+    {
+      "package": "@google/genai",
+      "repo": "googleapis/js-genai",
+      "issueNumber": 1321,
+      "issueUrl": "https://github.com/googleapis/js-genai/issues/1321",
+      "title": "`sendMessage`/ `sendMessageStream` returns empty response when specific `systemInstruction` is used with `googleSearch` tool",
+      "score": 55,
+      "canAutofix": true,
+      "suggestedBranch": "codex/upstream-google-genai-1321"
+    },
+    {
+      "package": "@google/genai",
+      "repo": "googleapis/js-genai",
+      "issueNumber": 1278,
+      "issueUrl": "https://github.com/googleapis/js-genai/issues/1278",
+      "title": "error: Leaks detected:   - A fetch response body was created during the test, but not consumed during the test. Consume or close the response body `ReadableStream`, e.g `await resp.text()` or `await resp.body.cancel()`.",
+      "score": 55,
+      "canAutofix": true,
+      "suggestedBranch": "codex/upstream-google-genai-1278"
+    },
+    {
+      "package": "@google/genai",
+      "repo": "googleapis/js-genai",
+      "issueNumber": 1259,
+      "issueUrl": "https://github.com/googleapis/js-genai/issues/1259",
+      "title": "\"Document has no pages\" error with large pdf files via AWS signed urls Gemini 3 Flash/Pro Preview",
+      "score": 55,
+      "canAutofix": true,
+      "suggestedBranch": "codex/upstream-google-genai-1259"
+    },
+    {
+      "package": "@huggingface/transformers",
+      "repo": "huggingface/transformers.js",
+      "issueNumber": 1590,
+      "issueUrl": "https://github.com/huggingface/transformers.js/issues/1590",
+      "title": "[webgpu] Whisper encoder fp16 precision issues",
+      "score": 55,
+      "canAutofix": true,
+      "suggestedBranch": "codex/upstream-huggingface-transformers-1590"
+    },
+    {
+      "package": "@anthropic-ai/sdk",
+      "repo": "anthropics/anthropic-sdk-typescript",
+      "issueNumber": 1016,
+      "issueUrl": "https://github.com/anthropics/anthropic-sdk-typescript/issues/1016",
+      "title": "[Vertex] anthropic-beta header forwarded to countTokens fallback fails on lagging model backends",
+      "score": 45,
+      "canAutofix": false,
+      "suggestedBranch": "codex/upstream-anthropic-ai-sdk-1016"
+    },
+    {
+      "package": "@anthropic-ai/sdk",
+      "repo": "anthropics/anthropic-sdk-typescript",
+      "issueNumber": 986,
+      "issueUrl": "https://github.com/anthropics/anthropic-sdk-typescript/issues/986",
+      "title": "partialParse in _vendor/partial-json-parser crashes on invalid JSON escape sequences from model output",
+      "score": 45,
+      "canAutofix": false,
+      "suggestedBranch": "codex/upstream-anthropic-ai-sdk-986"
+    },
+    {
+      "package": "@anthropic-ai/sdk",
+      "repo": "anthropics/anthropic-sdk-typescript",
+      "issueNumber": 964,
+      "issueUrl": "https://github.com/anthropics/anthropic-sdk-typescript/issues/964",
+      "title": "Bug: `toolRunner` does not propagate `container.id` across iterations, and `setMessagesParams` causes duplicate tool call loops",
+      "score": 45,
+      "canAutofix": false,
+      "suggestedBranch": "codex/upstream-anthropic-ai-sdk-964"
+    },
+    {
+      "package": "@anthropic-ai/sdk",
+      "repo": "anthropics/anthropic-sdk-typescript",
+      "issueNumber": 956,
+      "issueUrl": "https://github.com/anthropics/anthropic-sdk-typescript/issues/956",
+      "title": "Claude Opus 4.6 and Sonnet 4.6 fail to make parallel tool calls in Batch API",
+      "score": 45,
+      "canAutofix": false,
+      "suggestedBranch": "codex/upstream-anthropic-ai-sdk-956"
+    },
+    {
+      "package": "@google/genai",
+      "repo": "googleapis/js-genai",
+      "issueNumber": 1544,
+      "issueUrl": "https://github.com/googleapis/js-genai/issues/1544",
+      "title": "gemini-3.1-flash-image-preview generation times are significantly slower than gemini-3-pro-image-preview",
+      "score": 45,
+      "canAutofix": false,
+      "suggestedBranch": "codex/upstream-google-genai-1544"
+    },
+    {
+      "package": "@google/genai",
+      "repo": "googleapis/js-genai",
+      "issueNumber": 1492,
+      "issueUrl": "https://github.com/googleapis/js-genai/issues/1492",
+      "title": "Bug: getFieldMasks() generates invalid protobuf FieldMask paths for ephemeral token lockAdditionalFields",
+      "score": 45,
+      "canAutofix": false,
+      "suggestedBranch": "codex/upstream-google-genai-1492"
+    },
+    {
+      "package": "@huggingface/transformers",
+      "repo": "huggingface/transformers.js",
+      "issueNumber": 1667,
+      "issueUrl": "https://github.com/huggingface/transformers.js/issues/1667",
+      "title": "Error on translation",
+      "score": 45,
+      "canAutofix": false,
+      "suggestedBranch": "codex/upstream-huggingface-transformers-1667"
+    },
+    {
+      "package": "@huggingface/transformers",
+      "repo": "huggingface/transformers.js",
+      "issueNumber": 1653,
+      "issueUrl": "https://github.com/huggingface/transformers.js/issues/1653",
+      "title": "Bonsai 4B: Uncaught Error: Can't create a session. ERROR_CODE: 6, ERROR_MESSAGE: std::bad_alloc",
+      "score": 45,
+      "canAutofix": false,
+      "suggestedBranch": "codex/upstream-huggingface-transformers-1653"
+    },
+    {
+      "package": "@huggingface/transformers",
+      "repo": "huggingface/transformers.js",
+      "issueNumber": 1642,
+      "issueUrl": "https://github.com/huggingface/transformers.js/issues/1642",
+      "title": "Auto device on Linux x64 fails hard when CUDA shared library is unavailable instead of falling back",
+      "score": 45,
+      "canAutofix": false,
+      "suggestedBranch": "codex/upstream-huggingface-transformers-1642"
+    },
+    {
+      "package": "@huggingface/transformers",
+      "repo": "huggingface/transformers.js",
+      "issueNumber": 1640,
+      "issueUrl": "https://github.com/huggingface/transformers.js/issues/1640",
+      "title": "Illegal Instruction when running `pipeline` on Raspberry Pi 3 Model B (64-bit)",
+      "score": 45,
+      "canAutofix": false,
+      "suggestedBranch": "codex/upstream-huggingface-transformers-1640"
+    },
+    {
+      "package": "@changesets/changelog-github",
+      "repo": "changesets/changesets",
+      "issueNumber": 1937,
+      "issueUrl": "https://github.com/changesets/changesets/issues/1937",
+      "title": "changeset 2.30.0 bug",
+      "score": 37,
+      "canAutofix": false,
+      "suggestedBranch": "codex/upstream-changesets-changelog-github-1937"
+    },
+    {
+      "package": "@changesets/changelog-github",
+      "repo": "changesets/changesets",
+      "issueNumber": 1794,
+      "issueUrl": "https://github.com/changesets/changesets/issues/1794",
+      "title": "Changeset fails on ignore pattern when there's no matches",
+      "score": 37,
+      "canAutofix": false,
+      "suggestedBranch": "codex/upstream-changesets-changelog-github-1794"
+    },
+    {
+      "package": "@changesets/cli",
+      "repo": "changesets/changesets",
+      "issueNumber": 1937,
+      "issueUrl": "https://github.com/changesets/changesets/issues/1937",
+      "title": "changeset 2.30.0 bug",
+      "score": 37,
+      "canAutofix": false,
+      "suggestedBranch": "codex/upstream-changesets-cli-1937"
+    },
+    {
+      "package": "@changesets/cli",
+      "repo": "changesets/changesets",
+      "issueNumber": 1794,
+      "issueUrl": "https://github.com/changesets/changesets/issues/1794",
+      "title": "Changeset fails on ignore pattern when there's no matches",
+      "score": 37,
+      "canAutofix": false,
+      "suggestedBranch": "codex/upstream-changesets-cli-1794"
+    },
+    {
+      "package": "@changesets/changelog-github",
+      "repo": "changesets/changesets",
+      "issueNumber": 1887,
+      "issueUrl": "https://github.com/changesets/changesets/issues/1887",
+      "title": "Adding peer dependencies bumps 0.X.Y packages to 1.0.0",
+      "score": 22,
+      "canAutofix": true,
+      "suggestedBranch": "codex/upstream-changesets-changelog-github-1887"
+    },
+    {
+      "package": "@changesets/changelog-github",
+      "repo": "changesets/changesets",
+      "issueNumber": 1728,
+      "issueUrl": "https://github.com/changesets/changesets/issues/1728",
+      "title": "Dependent package not patch-bumped when using `*` version specifier",
+      "score": 22,
+      "canAutofix": true,
+      "suggestedBranch": "codex/upstream-changesets-changelog-github-1728"
+    },
+    {
+      "package": "@changesets/changelog-github",
+      "repo": "changesets/changesets",
+      "issueNumber": 1708,
+      "issueUrl": "https://github.com/changesets/changesets/issues/1708",
+      "title": "Support for file protocol dependencies in a monorepo, rather than npm link - why is this seen as an \"error\"?",
+      "score": 22,
+      "canAutofix": true,
+      "suggestedBranch": "codex/upstream-changesets-changelog-github-1708"
+    },
+    {
+      "package": "@changesets/cli",
+      "repo": "changesets/changesets",
+      "issueNumber": 1887,
+      "issueUrl": "https://github.com/changesets/changesets/issues/1887",
+      "title": "Adding peer dependencies bumps 0.X.Y packages to 1.0.0",
+      "score": 22,
+      "canAutofix": true,
+      "suggestedBranch": "codex/upstream-changesets-cli-1887"
+    },
+    {
+      "package": "@changesets/cli",
+      "repo": "changesets/changesets",
+      "issueNumber": 1728,
+      "issueUrl": "https://github.com/changesets/changesets/issues/1728",
+      "title": "Dependent package not patch-bumped when using `*` version specifier",
+      "score": 22,
+      "canAutofix": true,
+      "suggestedBranch": "codex/upstream-changesets-cli-1728"
+    },
+    {
+      "package": "@changesets/cli",
+      "repo": "changesets/changesets",
+      "issueNumber": 1708,
+      "issueUrl": "https://github.com/changesets/changesets/issues/1708",
+      "title": "Support for file protocol dependencies in a monorepo, rather than npm link - why is this seen as an \"error\"?",
+      "score": 22,
+      "canAutofix": true,
+      "suggestedBranch": "codex/upstream-changesets-cli-1708"
+    }
+  ]
 }
