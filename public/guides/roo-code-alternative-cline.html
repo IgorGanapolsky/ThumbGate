@@ -23,7 +23,7 @@
     "author": { "@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky" },
     "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
     "datePublished": "2026-04-22",
-    "dateModified": "2026-04-22",
+    "dateModified": "2026-05-03",
     "mainEntityOfPage": "https://thumbgate.ai/guides/roo-code-alternative-cline"
   }
   </script>
@@ -45,7 +45,9 @@
     pre { background: var(--bg-card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow-x: auto; }
     code.inline { background: var(--bg-card); padding: 2px 6px; border-radius: 4px; color: var(--cyan); }
     .eyebrow { display: inline-block; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(34,211,238,0.22); background: rgba(34,211,238,0.1); color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 700; }
-    .cta { display: inline-block; background: var(--cyan); color: #000; padding: 14px 22px; border-radius: 10px; font-weight: 700; margin: 24px 0; }
+    .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin: 24px 0; }
+    .cta { display: inline-block; background: var(--cyan); color: #000; padding: 14px 22px; border-radius: 10px; font-weight: 700; }
+    .cta-secondary { display: inline-block; border: 1px solid rgba(34,211,238,0.35); color: var(--text); padding: 14px 22px; border-radius: 10px; font-weight: 700; background: rgba(34,211,238,0.08); }
     article { padding: 24px 0 80px; }
     footer { border-top: 1px solid var(--line); padding: 32px 0; color: var(--muted); font-size: 14px; }
   </style>
@@ -102,7 +104,10 @@
       <p>Roo Code's sunset is a lesson about lock-in. Every time an agent vendor controls your lesson memory, a sunset announcement is also an announcement that your corrections evaporate. The only durable fix is to store lessons outside the agent — locally, in a format you own.</p>
       <p>ThumbGate's lesson DB works with Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, and any MCP-compatible agent. One correction, every agent, every future agent.</p>
 
-      <a class="cta" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/cline/INSTALL.md">Read the full Cline setup doc →</a>
+      <div class="cta-row">
+        <a class="cta" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/cline/INSTALL.md?utm_source=roo_sunset&utm_medium=owned_guide&utm_campaign=roo_cline_install&utm_content=install_doc&campaign_variant=guide_to_install&offer_code=ROO-OWNED-INSTALL&cta_id=roo_owned_install&cta_placement=guide_cta&surface=roo_owned_guide">Read the full Cline setup doc →</a>
+        <a class="cta-secondary" href="https://thumbgate-production.up.railway.app/guide?utm_source=roo_sunset&utm_medium=owned_guide&utm_campaign=roo_setup_guide&utm_content=guide&campaign_variant=guide_to_setup&offer_code=ROO-OWNED-SETUP&cta_id=roo_owned_setup&cta_placement=guide_cta&surface=roo_owned_guide">Need proof and pricing first? Open the setup guide</a>
+      </div>
 
       <h2>FAQ</h2>
       <h3>When does Roo Code actually stop working?</h3>
