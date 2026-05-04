@@ -3055,7 +3055,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
       </div>
       <div class="actions">
         <button type="button" id="submit-reason">Send feedback</button>
-        <a id="retry-checkout" href="/checkout/pro" class="secondary">Try checkout again</a>
+        <a id="retry-checkout" href="/checkout/pro" class="secondary" data-recovery-offer="pro_trial_retry" data-offer-price="19">Restart $19 Pro trial</a>
         <a href="${runtimeConfig.appOrigin}" class="secondary">Return to Context Gateway</a>
       </div>
       <p class="note" id="status">No feedback sent yet.</p>

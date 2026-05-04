@@ -1253,6 +1253,8 @@ test('cancel page serves retry message and records first-party telemetry', async
   assert.match(body, /sendTelemetry\('reason_not_buying'/);
   assert.match(body, /Book \$499 diagnostic/);
   assert.match(body, /Start \$1500 sprint/);
+  assert.match(body, /Restart \$19 Pro trial/);
+  assert.match(body, /data-recovery-offer="pro_trial_retry"/);
   assert.match(body, /data-recovery-offer="sprint_diagnostic"/);
   assert.match(body, /data-recovery-offer="workflow_sprint"/);
   assert.match(body, /checkout_recovery_offer_clicked/);
