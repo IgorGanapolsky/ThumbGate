@@ -2920,7 +2920,9 @@ function renderCheckoutCancelledPage(runtimeConfig) {
     : '';
   const sprintDiagnosticPriceDollars = runtimeConfig.sprintDiagnosticPriceDollars || 499;
   const workflowSprintPriceDollars = runtimeConfig.workflowSprintPriceDollars || 1500;
+  const workflowSprintIntakeUrl = `${escapeHtmlAttribute(runtimeConfig.appOrigin)}/#workflow-sprint-intake`;
   const recoveryOfferLinks = [
+    `<a id="send-workflow-first" href="${workflowSprintIntakeUrl}" data-recovery-offer="workflow_sprint_intake" data-offer-price="0">Send workflow first</a>`,
     diagnosticCheckoutUrl
       ? `<a href="${diagnosticCheckoutUrl}" data-recovery-offer="sprint_diagnostic" data-offer-price="${sprintDiagnosticPriceDollars}">Book $${sprintDiagnosticPriceDollars} diagnostic</a>`
       : '',
@@ -2931,7 +2933,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
   const recoveryOfferCard = recoveryOfferLinks
     ? `<div class="card recovery-card">
       <h2>Need help deciding?</h2>
-      <p>If Pro is not the right next step, buy the diagnostic or sprint instead. These are built for teams with one repeated agent-workflow failure that needs proof, rollback safety, and rollout help.</p>
+      <p>If Pro is not the right next step, send the workflow first. We can qualify the blocker, confirm the proof plan, and route you to the diagnostic or sprint only when the scope is real.</p>
       <div class="actions">
         ${recoveryOfferLinks}
       </div>
@@ -3065,6 +3067,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
         const statusEl = document.getElementById('status');
         const noteEl = document.getElementById('buyer-note');
         const retryLink = document.getElementById('retry-checkout');
+        const workflowIntakeLink = document.getElementById('send-workflow-first');
         let selectedReason = null;
 
         function sendTelemetry(eventType, extra) {
@@ -3117,6 +3120,19 @@ function renderCheckoutCancelledPage(runtimeConfig) {
         });
         retryLink.href = retryUrl.toString();
 
+        if (workflowIntakeLink) {
+          const intakeUrl = new URL(workflowIntakeLink.href, window.location.origin);
+          ['trace_id', 'acquisition_id', 'visitor_id', 'session_id', 'visitor_session_id', 'install_id', 'utm_source', 'utm_campaign', 'utm_content', 'utm_term', 'creator', 'community', 'post_id', 'comment_id', 'campaign_variant', 'offer_code', 'landing_path', 'referrer_host'].forEach(function (key) {
+            const value = params.get(key);
+            if (value) intakeUrl.searchParams.set(key, value);
+          });
+          intakeUrl.searchParams.set('utm_medium', 'checkout_cancel_recovery');
+          intakeUrl.searchParams.set('cta_id', 'checkout_cancel_workflow_sprint_intake');
+          intakeUrl.searchParams.set('cta_placement', 'checkout_cancel_recovery');
+          intakeUrl.searchParams.set('plan_id', 'team');
+          workflowIntakeLink.href = intakeUrl.toString();
+        }
+
         sendTelemetry('checkout_cancelled');
 
         document.querySelectorAll('[data-reason]').forEach(function (button) {
@@ -3138,6 +3154,16 @@ function renderCheckoutCancelledPage(runtimeConfig) {
 
         document.querySelectorAll('[data-recovery-offer]').forEach(function (link) {
           link.addEventListener('click', function () {
+            if (link.getAttribute('data-recovery-offer') === 'workflow_sprint_intake') {
+              sendTelemetry('checkout_cancel_workflow_intake_clicked', {
+                ctaId: 'checkout_cancel_workflow_sprint_intake',
+                ctaPlacement: 'checkout_cancel_recovery',
+                offerCode: 'workflow_sprint_intake',
+                planId: 'team',
+                reasonCode: selectedReason || null
+              });
+              return;
+            }
             sendTelemetry('checkout_recovery_offer_clicked', {
               ctaId: link.getAttribute('data-recovery-offer'),
               ctaPlacement: 'checkout_cancel_recovery',

@@ -1261,6 +1261,12 @@ test('cancel page serves retry message and records first-party telemetry', async
   assert.match(body, /data-reason="too_expensive"/);
   assert.match(body, /sendTelemetry\('checkout_cancelled'\)/);
   assert.match(body, /sendTelemetry\('reason_not_buying'/);
+  assert.match(body, /Send workflow first/);
+  assert.match(body, /id="send-workflow-first"/);
+  assert.match(body, /data-recovery-offer="workflow_sprint_intake"/);
+  assert.match(body, /checkout_cancel_workflow_intake_clicked/);
+  assert.match(body, /checkout_cancel_workflow_sprint_intake/);
+  assert.match(body, /utm_medium', 'checkout_cancel_recovery'/);
   assert.match(body, /Book \$499 diagnostic/);
   assert.match(body, /Start \$1500 sprint/);
   assert.match(body, /Restart \$19 Pro trial/);
