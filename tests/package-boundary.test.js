@@ -240,13 +240,18 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // category, and trend-declining push() branches. Net observed: unpackedSize
   // crossed 3,041,534 bytes. 60 KB headroom covers the remediation block +
   // rebase-flap on the next main merge.
-  // Bumped 3.10 MB → 3.13 MB (2026-05-04) for graph-informed guardrail
+  // Bumped 3.10 MB -> 3.13 MB (2026-05-04) for graph-informed guardrail
   // discovery: code-graph-guardrails CLI, SEO/GSD page specs, and companion
   // LLM context. This keeps runtime packaging honest while preserving enough
   // headroom for the high-ROI buyer guide additions already in this branch.
+  // Bumped 3.13 MB -> 3.17 MB (2026-05-04) for shipped governance CLIs:
+  // redacted reasoning traces, judge rewards, prompting plans, single-use
+  // credential grants, SPDD canvases, and stack-survival audits. These are
+  // runtime operator tools, not dev-only fixtures, so they belong in the
+  // published tarball.
   assert.ok(
-    manifest.unpackedSize <= 3_130_000,
-    `npm package should stay <= 3.13 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_170_000,
+    `npm package should stay <= 3.17 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
