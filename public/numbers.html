@@ -25,7 +25,7 @@
   "alternateName": "thumbgate",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Cross-platform, Node.js >=18.18.0",
-  "softwareVersion": "1.16.16",
+  "softwareVersion": "1.16.17",
   "url": "https://thumbgate-production.up.railway.app/numbers",
   "dateModified": "2026-05-04",
   "creator": {
@@ -70,7 +70,7 @@
     {
       "@type": "PropertyValue",
       "name": "active_gates",
-      "value": 37
+      "value": 36
     },
     {
       "@type": "PropertyValue",
@@ -101,7 +101,7 @@
     {
       "@type": "PropertyValue",
       "name": "bayes_error_rate",
-      "value": 0
+      "value": null
     }
   ]
 }
@@ -190,14 +190,14 @@
 <main class="container">
   <h1>The Numbers</h1>
   <p class="subtitle">Generated first-party operational data from the ThumbGate runtime. No surveys or projections — this page is a release-time snapshot produced by the same local scripts that power the CLI and dashboard.</p>
-  <div class="freshness">Updated: 2026-05-04 · Version 1.16.16</div>
+  <div class="freshness">Updated: 2026-05-04 · Version 1.16.17</div>
 
   <h2>Gate enforcement</h2>
   <div class="stats-grid">
     <div class="stat-card">
       <div class="stat-label">Active gates</div>
-      <div class="stat-value">37</div>
-      <div class="stat-sub">36 manual · 1 auto-promoted</div>
+      <div class="stat-value">36</div>
+      <div class="stat-sub">36 manual · 0 auto-promoted</div>
       <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/gate-stats.js">source: gate-stats.js</a>
     </div>
     <div class="stat-card">
@@ -242,7 +242,7 @@
     </div>
     <div class="stat-card">
       <div class="stat-label">Scorer Bayes error</div>
-      <div class="stat-value">0.0%</div>
+      <div class="stat-value">n/a (no feedback sequences recorded yet)</div>
       <div class="stat-sub">irreducible error given current feature set</div>
       <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/bayes-optimal-gate.js">source: bayes-optimal-gate.js</a>
     </div>
@@ -264,7 +264,7 @@
   <div class="cta">
     <a href="https://www.npmjs.com/package/thumbgate">Install ThumbGate — npx thumbgate init</a>
     <div class="footer-note">Prefer the raw feed? See <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> or run <code>npm run gate:stats</code> locally.</div>
-    <div class="footer-note">Generated at 2026-05-04T20:39:34.760Z UTC.</div>
+    <div class="footer-note">Generated at 2026-05-04T21:02:05.516Z UTC.</div>
   </div>
 </main>
 </body>

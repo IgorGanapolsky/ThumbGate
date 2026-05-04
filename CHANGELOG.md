@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.16.17
+
+### Patch Changes
+
+- [#1701](https://github.com/IgorGanapolsky/ThumbGate/pull/1701) [`f3e5259`](https://github.com/IgorGanapolsky/ThumbGate/commit/f3e52593623cbfbbe6f77f5b2cab14f168a693f5) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a no-card workflow intake recovery action to the checkout cancel page so cancelled Pro buyers can send the workflow before retrying payment.
+
 ## 1.16.16
 
 ### Patch Changes
