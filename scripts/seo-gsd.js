@@ -114,6 +114,11 @@ const HIGH_ROI_QUERY_SEEDS = [
     'New team-buying query for unattended agent PRs where alignment context, isolated execution, risk-tiered review, and audit evidence create immediate ROI.',
   ),
   querySeed(
+    'ai agent governance sprint',
+    95,
+    'Bottom-of-funnel service query that turns background-agent governance demand into a paid 48-hour Team intake and implementation wedge.',
+  ),
+  querySeed(
     'gpt-5.5 model evaluation',
     94,
     'Fresh frontier-model upgrade query that maps to ThumbGate model candidate benchmarking, dashboard-analysis workloads, and routing governance before teams move expensive work.',
@@ -994,6 +999,69 @@ function buildBackgroundAgentGovernanceGuide() {
   });
 }
 
+const AI_AGENT_GOVERNANCE_SPRINT_GUIDE_SPEC = Object.freeze({
+  slug: 'ai-agent-governance-sprint',
+  meta: {
+    query: 'ai agent governance sprint',
+    title: 'AI Agent Governance Sprint | 48-Hour Workflow Hardening',
+    heroTitle: 'AI Agent Governance Sprint for One Risky Workflow',
+    heroSummary: 'ThumbGate turns one repeated AI-agent failure into approval boundaries, pre-action checks, rollback safety, and rollout proof in a focused 48-hour Workflow Hardening Sprint.',
+  },
+  takeaways: [
+    'The fastest paid wedge is not a broad platform migration; it is one repo, one workflow owner, and one repeated failure that already has budget pressure.',
+    'A governance sprint should ship evidence: rule inventory, pre-action checks, review routing, rollback notes, and a buyer-ready proof pack.',
+    'ThumbGate keeps the promise narrow enough to sell quickly while creating the path to Team seats and recurring governance.',
+  ],
+  sections: [
+    ['paragraphs', 'Who this is for', [
+      'The right buyer is already running Claude Code, Codex, Cursor, Gemini, or another agent against real code and has one failure they no longer want to review manually. Examples include unsafe migrations, noisy background-agent PRs, deploy approval bypasses, credential-adjacent commands, and repeated generated-artifact edits.',
+      'The sprint works because it avoids generic AI consulting. The scope is one workflow that can be observed, hardened, and reviewed in front of the buyer before a wider team rollout.',
+    ]],
+    ['bullets', 'What the sprint ships', [
+      'Intake: one repo, one owner, one repeated failure, one target rollout date, and the current agent/runtime surface.',
+      'Governance map: approval boundaries, risky commands, protected files, branch rules, review tiers, and rollback expectations.',
+      'Pre-action checks: concrete blocks or warnings for the repeated failure and adjacent high-risk actions.',
+      'Background-agent review routing: npx thumbgate background-governance --check --json to label risk before dispatch or PR review.',
+      'Proof pack: verification evidence, run reports, blocked-repeat examples, and rollout notes the buyer can share internally.',
+    ]],
+    ['paragraphs', 'Where this creates ROI', [
+      'This page is the service conversion layer for the governance guides. Readers who already understand background-agent risk need a next step that is smaller than procurement and more concrete than a demo.',
+      'The offer stays defensible: ThumbGate does not claim to make agents autonomous without review. It makes one expensive review failure measurable, enforceable, and easier to roll out across Team seats.',
+    ]],
+  ],
+  faq: [
+    [
+      'What is included in the AI Agent Governance Sprint?',
+      'A focused 48-hour implementation around one workflow: intake, governance mapping, pre-action checks, background-agent risk routing, rollback notes, and a proof pack for the buyer review.',
+    ],
+    [
+      'How is this different from the Workflow Hardening Sprint?',
+      'It is the same Team conversion path positioned for buyers searching for AI agent governance. The deliverable remains narrow: one repeated failure hardened with approval boundaries, rollback safety, and rollout proof.',
+    ],
+    [
+      'Do we need to migrate every agent workflow first?',
+      'No. Start with one repeated failure that already costs review time or rollout confidence. After it proves value, reuse the checks, lesson database, and proof workflow across Team seats.',
+    ],
+  ],
+  relatedPaths: ['/guides/background-agent-governance', '/guides/pre-action-checks', '/guides/best-tools-stop-ai-agents-breaking-production'],
+});
+
+function buildAiAgentGovernanceSprintGuide() {
+  return {
+    ...preActionGuide(AI_AGENT_GOVERNANCE_SPRINT_GUIDE_SPEC.slug, {
+      ...AI_AGENT_GOVERNANCE_SPRINT_GUIDE_SPEC.meta,
+      takeaways: AI_AGENT_GOVERNANCE_SPRINT_GUIDE_SPEC.takeaways,
+      sections: AI_AGENT_GOVERNANCE_SPRINT_GUIDE_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+      faq: AI_AGENT_GOVERNANCE_SPRINT_GUIDE_SPEC.faq.map(([question, text]) => answer(question, text)),
+      relatedPaths: AI_AGENT_GOVERNANCE_SPRINT_GUIDE_SPEC.relatedPaths,
+    }),
+    cta: {
+      label: 'Start the governance sprint',
+      href: '/?utm_source=website&utm_medium=seo_page&utm_campaign=ai_agent_governance_sprint&cta_placement=seo_brief&plan_id=team#workflow-sprint-intake',
+    },
+  };
+}
+
 const MODEL_UPGRADE_EVALUATION_GUIDE_SPEC = Object.freeze({
   slug: 'gpt-5-5-model-evaluation',
   meta: {
@@ -1519,6 +1587,7 @@ const PAGE_BLUEPRINTS = [
   buildDeveloperMachineSupplyChainGuardrailsGuide(),
   buildPromptTricksToWorkflowRulesGuide(),
   buildBackgroundAgentGovernanceGuide(),
+  buildAiAgentGovernanceSprintGuide(),
   buildModelUpgradeEvaluationGuide(),
   {
     query: 'stop ai coding agents from repeating mistakes',
@@ -2031,7 +2100,7 @@ function classifyIntent(query) {
   if (!normalized) return 'informational';
   if (/\b(vs|versus|alternative|compare|comparison|better than)\b/.test(normalized)) return 'comparison';
   if (/\b(price|pricing|buy|checkout|purchase|cost)\b/.test(normalized)) return 'transactional';
-  if (/\b(autoresearch|self-improving|benchmark|reward hacking|agent safety)\b/.test(normalized)) return 'commercial';
+  if (/\b(autoresearch|self-improving|benchmark|reward hacking|agent safety|governance|sprint)\b/.test(normalized)) return 'commercial';
   if (/\b(claude code|cursor|codex|gemini|amp|opencode|integration|plugin|setup|install)\b/.test(normalized)) {
     return 'commercial';
   }
@@ -2050,7 +2119,7 @@ function inferPillar(query) {
   if (/\b(rag|retrieval|proxy pointer|multimodal answer|document rag)\b/.test(normalized)) return 'document-rag-safety';
   if (/\b(topical presence|relational knowledge|recommend(?:ation|ed)? brands?|ai search visibility)\b/.test(normalized)) return 'ai-agent-reliability';
   if (/\b(browser automation|native messaging|browser bridge|prompt injection)\b/.test(normalized)) return 'pre-action-checks';
-  if (/\b(autoresearch|self-improving|benchmark|reward hacking|harness optimization|long running agent|context management|reasoning compression)\b/.test(normalized)) return 'pre-action-checks';
+  if (/\b(autoresearch|self-improving|benchmark|reward hacking|harness optimization|long running agent|context management|reasoning compression|governance|sprint)\b/.test(normalized)) return 'pre-action-checks';
   if (/\b(pre-action checks|guardrails|block|prevent repeated mistakes|repeating mistakes)\b/.test(normalized)) return 'pre-action-checks';
   if (/\b(claude code|cursor|codex|gemini|amp|opencode|integration|plugin)\b/.test(normalized)) return 'agent-workflows';
   return 'ai-agent-reliability';
@@ -2067,7 +2136,7 @@ function inferPersona(query) {
   if (/\b(programmatic seo|pseo|semantic seo|ai search|topical presence|seo agent)\b/.test(normalized)) return 'growth-engineer';
   if (/\b(rag|retrieval|proxy pointer|multimodal answer|document rag)\b/.test(normalized)) return 'rag-engineer';
   if (/\b(vs|alternative|compare)\b/.test(normalized)) return 'tool-evaluator';
-  if (/\b(guardrails|pre-action checks)\b/.test(normalized)) return 'engineering-lead';
+  if (/\b(guardrails|pre-action checks|governance|sprint)\b/.test(normalized)) return 'engineering-lead';
   return 'ai-engineer';
 }
 
@@ -2329,7 +2398,7 @@ function createPageSpec(blueprint, row) {
     sections: blueprint.sections,
     faq: blueprint.faq,
     relatedPages,
-    cta: {
+    cta: blueprint.cta || {
       label: 'Go Pro — $19/mo',
       href: `/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=${blueprint.path.split('/').filter(Boolean).join('_')}&cta_placement=seo_brief&plan_id=pro`,
     },

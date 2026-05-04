@@ -439,6 +439,7 @@ test('public landing page internally links to comparison and guide pages without
   assert.match(landingPage, /href="\/guides\/long-running-agent-context-management"/);
   assert.match(landingPage, /href="\/guides\/reasoning-compression-guardrails"/);
   assert.match(landingPage, /href="\/guides\/background-agent-governance"/);
+  assert.match(landingPage, /href="\/guides\/ai-agent-governance-sprint"/);
   assert.match(landingPage, /href="\/guides\/gpt-5-5-model-evaluation"/);
   assert.match(landingPage, /href="\/guides\/ai-search-topical-presence"/);
   assert.match(landingPage, /href="\/guides\/relational-knowledge-ai-recommendations"/);
@@ -464,6 +465,8 @@ test('public landing page internally links to comparison and guide pages without
   assert.match(landingPage, /Reasoning Compression Guardrails/);
   assert.match(landingPage, /Background Agent Governance/);
   assert.match(landingPage, /risk-tiered review/);
+  assert.match(landingPage, /AI Agent Governance Sprint/);
+  assert.match(landingPage, /approval boundaries, rollback safety/);
   assert.match(landingPage, /AI Search Topical Presence/);
   assert.match(landingPage, /Relational Knowledge in AI Recommendations/);
   // No internal marketing jargon visible to customers

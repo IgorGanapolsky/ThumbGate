@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Agent Governance Sprint | 48-Hour Workflow Hardening</title>
+  <meta name="description" content="ThumbGate turns one repeated AI-agent failure into approval boundaries, pre-action checks, rollback safety, and rollout proof in a focused 48-hour Workflow H..." />
+  <meta property="og:title" content="AI Agent Governance Sprint | 48-Hour Workflow Hardening" />
+  <meta property="og:description" content="ThumbGate turns one repeated AI-agent failure into approval boundaries, pre-action checks, rollback safety, and rollout proof in a focused 48-hour Workflow H..." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/guides/ai-agent-governance-sprint" />
+  <link rel="canonical" href="https://thumbgate.ai/guides/ai-agent-governance-sprint" />
+  <link rel="llm-context" href="/public/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --bg-raised: #111113;
+      --bg-card: #161618;
+      --line: #222225;
+      --text: #e8e8ec;
+      --muted: #8b8b96;
+      --cyan: #22d3ee;
+      --green: #4ade80;
+      --red: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(12px);
+      background: rgba(10, 10, 11, 0.88);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 14px;
+      padding-bottom: 14px;
+    }
+    .brand {
+      font-weight: 700;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 211, 238, 0.22);
+      background: rgba(34, 211, 238, 0.1);
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1.06;
+      letter-spacing: -0.04em;
+      margin: 16px 0;
+      max-width: 760px;
+    }
+    .hero p {
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .signal-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 28px 0 0;
+    }
+    .signal-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .signal-pill.up {
+      border-color: rgba(74, 222, 128, 0.28);
+      color: #b8f7c8;
+      background: rgba(74, 222, 128, 0.1);
+    }
+    .signal-pill.down {
+      border-color: rgba(248, 113, 113, 0.28);
+      color: #ffc0c0;
+      background: rgba(248, 113, 113, 0.1);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+      gap: 24px;
+      padding-bottom: 72px;
+    }
+    .card, .detail-section, .sidebar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .card { padding: 24px; }
+    .detail-section { padding: 24px; margin-bottom: 18px; }
+    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+    .detail-section p { color: var(--muted); }
+    .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
+    .card h2 { margin-top: 0; }
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .sidebar-card {
+      padding: 20px;
+    }
+    /* Only the first sidebar card sticks. Stacking multiple stickies at the
+       same top offset makes them overlap each other on scroll. The related-
+       pages card flows normally below. */
+    .sidebar-card:first-child {
+      position: sticky;
+      top: 84px;
+      max-height: calc(100vh - 104px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .proof-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 18px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: var(--cyan);
+      color: #071116;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .faq-item {
+      border-top: 1px solid var(--line);
+      padding: 14px 0;
+    }
+    .faq-item summary {
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .faq-item p {
+      color: var(--muted);
+    }
+    .related-card {
+      display: block;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      margin-top: 12px;
+      color: var(--text);
+    }
+    .related-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    @media (max-width: 860px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .sidebar-card:first-child {
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
+    }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "AI Agent Governance Sprint for One Risky Workflow",
+  "description": "ThumbGate turns one repeated AI-agent failure into approval boundaries, pre-action checks, rollback safety, and rollout proof in a focused 48-hour Workflow H...",
+  "about": [
+    "claude code masterclass guardrails",
+    "cursor prevent repeated mistakes",
+    "claude code prevent repeated mistakes",
+    "codex cli guardrails"
+  ],
+  "url": "https://thumbgate.ai/guides/ai-agent-governance-sprint",
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "mainEntityOfPage": "https://thumbgate.ai/guides/ai-agent-governance-sprint"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is included in the AI Agent Governance Sprint?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A focused 48-hour implementation around one workflow: intake, governance mapping, pre-action checks, background-agent risk routing, rollback notes, and a proof pack for the buyer review."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How is this different from the Workflow Hardening Sprint?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It is the same Team conversion path positioned for buyers searching for AI agent governance. The deliverable remains narrow: one repeated failure hardened with approval boundaries, rollback safety, and rollout proof."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do we need to migrate every agent workflow first?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Start with one repeated failure that already costs review time or rollout confidence. After it proves value, reuse the checks, lesson database, and proof workflow across Team seats."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="container">
+      <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+    </div>
+  </div>
+
+  <main class="container">
+    <section class="hero">
+      <div class="eyebrow">guide | ai agent governance sprint</div>
+      <h1>AI Agent Governance Sprint for One Risky Workflow</h1>
+      <p>ThumbGate turns one repeated AI-agent failure into approval boundaries, pre-action checks, rollback safety, and rollout proof in a focused 48-hour Workflow Hardening Sprint.</p>
+      <div class="signal-row">
+        <div class="signal-pill up">👍 Thumbs up reinforces good behavior</div>
+        <div class="signal-pill down">👎 Thumbs down blocks repeated mistakes</div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div>
+        <div class="card">
+          <h2>Why this page exists</h2>
+          <ul><li>The fastest paid wedge is not a broad platform migration; it is one repo, one workflow owner, and one repeated failure that already has budget pressure.</li><li>A governance sprint should ship evidence: rule inventory, pre-action checks, review routing, rollback notes, and a buyer-ready proof pack.</li><li>ThumbGate keeps the promise narrow enough to sell quickly while creating the path to Team seats and recurring governance.</li></ul>
+        </div>
+
+      <section class="detail-section">
+        <h2>Who this is for</h2>
+        <p>The right buyer is already running Claude Code, Codex, Cursor, Gemini, or another agent against real code and has one failure they no longer want to review manually. Examples include unsafe migrations, noisy background-agent PRs, deploy approval bypasses, credential-adjacent commands, and repeated generated-artifact edits.</p><p>The sprint works because it avoids generic AI consulting. The scope is one workflow that can be observed, hardened, and reviewed in front of the buyer before a wider team rollout.</p>
+
+      </section>
+      <section class="detail-section">
+        <h2>What the sprint ships</h2>
+
+        <ul><li>Intake: one repo, one owner, one repeated failure, one target rollout date, and the current agent/runtime surface.</li><li>Governance map: approval boundaries, risky commands, protected files, branch rules, review tiers, and rollback expectations.</li><li>Pre-action checks: concrete blocks or warnings for the repeated failure and adjacent high-risk actions.</li><li>Background-agent review routing: npx thumbgate background-governance --check --json to label risk before dispatch or PR review.</li><li>Proof pack: verification evidence, run reports, blocked-repeat examples, and rollout notes the buyer can share internally.</li></ul>
+      </section>
+      <section class="detail-section">
+        <h2>Where this creates ROI</h2>
+        <p>This page is the service conversion layer for the governance guides. Readers who already understand background-agent risk need a next step that is smaller than procurement and more concrete than a demo.</p><p>The offer stays defensible: ThumbGate does not claim to make agents autonomous without review. It makes one expensive review failure measurable, enforceable, and easier to roll out across Team seats.</p>
+
+      </section>
+        <div class="detail-section">
+          <h2>FAQ</h2>
+
+      <details class="faq-item">
+        <summary>What is included in the AI Agent Governance Sprint?</summary>
+        <p>A focused 48-hour implementation around one workflow: intake, governance mapping, pre-action checks, background-agent risk routing, rollback notes, and a proof pack for the buyer review.</p>
+      </details>
+      <details class="faq-item">
+        <summary>How is this different from the Workflow Hardening Sprint?</summary>
+        <p>It is the same Team conversion path positioned for buyers searching for AI agent governance. The deliverable remains narrow: one repeated failure hardened with approval boundaries, rollback safety, and rollout proof.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Do we need to migrate every agent workflow first?</summary>
+        <p>No. Start with one repeated failure that already costs review time or rollout confidence. After it proves value, reuse the checks, lesson database, and proof workflow across Team seats.</p>
+      </details>
+        </div>
+      </div>
+
+      <aside class="sidebar">
+
+
+
+
+        <div class="sidebar-card">
+          <h2>GSD execution brief</h2>
+          <p>This page was prioritized because it captures high-intent demand around ai agent governance sprint and feeds directly into ThumbGate's proof-led conversion path.</p>
+          <p><strong>Opportunity score:</strong> 83</p>
+          <p><strong>Primary persona:</strong> engineering-lead</p>
+          <p><strong>Keyword cluster:</strong> claude code masterclass guardrails, cursor prevent repeated mistakes, claude code prevent repeated mistakes, codex cli guardrails</p>
+          <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
+          <div class="proof-links"><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json" target="_blank" rel="noopener">Automation proof</a><a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub repository</a></div>
+          <a class="cta-button" href="/?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=ai_agent_governance_sprint&amp;cta_placement=seo_brief&amp;plan_id=team#workflow-sprint-intake" target="_blank" rel="noopener">Start the governance sprint</a>
+        </div>
+        <div class="sidebar-card">
+          <h2>Related pages</h2>
+
+        <a class="related-card" href="/guides/background-agent-governance">
+          <span class="related-label">Related page</span>
+          <strong>Background Agent Governance for Agent PRs</strong>
+        </a>
+        <a class="related-card" href="/guides/pre-action-checks">
+          <span class="related-label">Related page</span>
+          <strong>What Are Pre-Action Checks?</strong>
+        </a>
+        <a class="related-card" href="/guides/best-tools-stop-ai-agents-breaking-production">
+          <span class="related-label">Related page</span>
+          <strong>Best Tools to Stop AI Agents From Breaking Production</strong>
+        </a>
+        </div>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>
