@@ -2439,6 +2439,21 @@ function renderSitemapXml(runtimeConfig) {
   ].join('\n');
 }
 
+function buildHostedRuntimePresence(hostedConfig, { expectedApiKey, expectedOperatorKey } = {}) {
+  return {
+    THUMBGATE_FEEDBACK_DIR: Boolean(process.env.THUMBGATE_FEEDBACK_DIR),
+    THUMBGATE_OPERATOR_KEY: Boolean(expectedOperatorKey),
+    THUMBGATE_API_KEY: Boolean(expectedApiKey),
+    THUMBGATE_PUBLIC_APP_ORIGIN: Boolean(hostedConfig.appOrigin),
+    THUMBGATE_BILLING_API_BASE_URL: Boolean(hostedConfig.billingApiBaseUrl),
+    THUMBGATE_GA_MEASUREMENT_ID: Boolean(hostedConfig.gaMeasurementId),
+    THUMBGATE_CHECKOUT_FALLBACK_URL: Boolean(hostedConfig.checkoutFallbackUrl),
+    THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL: Boolean(hostedConfig.sprintDiagnosticCheckoutUrl),
+    THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL: Boolean(hostedConfig.workflowSprintCheckoutUrl),
+    STRIPE_SECRET_KEY: Boolean(process.env.STRIPE_SECRET_KEY),
+  };
+}
+
 function isSeoAttributionSource(source) {
   return source === 'organic_search' || source === 'ai_search';
 }
@@ -6288,7 +6303,13 @@ async function addContext(){
         }
 
         const summary = await getBillingSummaryLive(summaryOptions);
-        sendJson(res, 200, summary);
+        sendJson(res, 200, {
+          ...summary,
+          runtimePresence: buildHostedRuntimePresence(hostedConfig, {
+            expectedApiKey,
+            expectedOperatorKey,
+          }),
+        });
         return;
       }
 

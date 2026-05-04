@@ -493,6 +493,7 @@ async function getHostedAuditViaHttp({
   }
 
   const summaries = {};
+  let runtimePresence = null;
   for (const window of HOSTED_WINDOWS) {
     const url = new URL('/v1/billing/summary', appOrigin);
     url.searchParams.set('window', window);
@@ -507,13 +508,16 @@ async function getHostedAuditViaHttp({
     if (!response.ok) {
       throw new Error(`Hosted billing summary ${window} returned ${response.status}`);
     }
+    if (!runtimePresence && payload.runtimePresence && typeof payload.runtimePresence === 'object') {
+      runtimePresence = payload.runtimePresence;
+    }
     summaries[window] = normalizeWindowSummary(response.status, payload);
   }
 
   return {
     auditMethod: 'hosted-http-api',
-    runtimePresenceKnown: false,
-    runtimePresence: {
+    runtimePresenceKnown: Boolean(runtimePresence),
+    runtimePresence: runtimePresence || {
       THUMBGATE_OPERATOR_KEY: Boolean(process.env.THUMBGATE_OPERATOR_KEY),
       THUMBGATE_API_KEY: true,
     },
