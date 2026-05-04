@@ -1,6 +1,6 @@
 {
   "name": "codex-profile",
-  "version": "1.16.15",
+  "version": "1.16.16",
   "description": "ThumbGate for Codex: pre-action gates, skill packs, hallucination detection, PII scanning, progressive disclosure (82% token savings), and MCP-backed reliability memory.",
   "author": {
     "name": "Igor Ganapolsky",

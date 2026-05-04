@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.16.16
+
+### Patch Changes
+
+- [#1700](https://github.com/IgorGanapolsky/ThumbGate/pull/1700) [`0aa053b`](https://github.com/IgorGanapolsky/ThumbGate/commit/0aa053b566e95449afefff986e4bb90e200581ba) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add direct paid diagnostic and AI Agent Governance Sprint CTAs to the governance sprint SEO guide.
+
 ## 1.16.15
 
 ### Patch Changes

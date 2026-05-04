@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "1.16.15",
+  "version": "1.16.16",
   "description": "ThumbGate — 👍👎 feedback that teaches your AI agent. Thumbs down a mistake, it never happens again.",
   "homepage": "https://thumbgate-production.up.railway.app",
   "transport": "stdio",
