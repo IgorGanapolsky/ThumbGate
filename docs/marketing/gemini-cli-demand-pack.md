@@ -1,6 +1,6 @@
 # Gemini CLI Demand Pack
 
-Updated: 2026-05-04T11:54:10.627Z
+Updated: 2026-05-04T15:07:22.568Z
 
 This is a sales operator artifact. It is not proof of rankings, sent outreach, installs, paid revenue, or marketplace approval by itself.
 
@@ -11,7 +11,7 @@ Turn Gemini CLI memory demand and Google Cloud MCP guardrail demand into tracked
 - State: post-first-dollar
 - Headline: Turn Gemini CLI memory demand into enforced workflow safety.
 - Short description: ThumbGate gives Gemini CLI local-first memory that can become prevention rules and Pre-Action Checks before the next risky MCP call runs.
-- Summary: Gemini CLI demand in ThumbGate is guide-led: memory query first, then enforcement proof, then paid intent. Historical booked revenue is verified, but the current hosted billing summary is unavailable in this run. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
+- Summary: Gemini CLI demand in ThumbGate is guide-led: memory query first, then enforcement proof, then paid intent. Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
 
 ## Canonical Identity
 - Display name: ThumbGate
@@ -52,10 +52,10 @@ Turn Gemini CLI memory demand and Google Cloud MCP guardrail demand into tracked
 ## Follow-On Offers
 - ThumbGate Pro: $19/mo or $149/yr
   Buyer: Solo Gemini CLI operators who proved one blocked repeat and now want the personal dashboard plus proof-ready exports.
-  CTA: https://thumbgate-production.up.railway.app/checkout/pro?utm_source=gemini&utm_medium=seo_guide&utm_campaign=gemini_cli_pro_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=GEMINI-PRO_FOLLOW_ON&cta_id=gemini_pro_follow_on&cta_placement=post_install&plan_id=pro&surface=gemini_post_install
+  CTA: https://thumbgate.ai/checkout/pro?utm_source=gemini&utm_medium=seo_guide&utm_campaign=gemini_cli_pro_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=GEMINI-PRO_FOLLOW_ON&cta_id=gemini_pro_follow_on&cta_placement=post_install&plan_id=pro&surface=gemini_post_install
 - Workflow Hardening Sprint: Intake-led sprint, then Team at $49/seat/mo with 3-seat minimum after qualification
   Buyer: Teams that already named one repeated workflow failure, one owner, and one approval boundary.
-  CTA: https://thumbgate-production.up.railway.app/?utm_source=gemini&utm_medium=seo_guide&utm_campaign=gemini_cli_team_follow_on&utm_content=workflow_sprint&campaign_variant=teams_follow_on&offer_code=GEMINI-TEAMS_FOLLOW_ON&cta_id=gemini_team_follow_on&cta_placement=post_install&surface=gemini_post_install#workflow-sprint-intake
+  CTA: https://thumbgate.ai/?utm_source=gemini&utm_medium=seo_guide&utm_campaign=gemini_cli_team_follow_on&utm_content=workflow_sprint&campaign_variant=teams_follow_on&offer_code=GEMINI-TEAMS_FOLLOW_ON&cta_id=gemini_team_follow_on&cta_placement=post_install&surface=gemini_post_install#workflow-sprint-intake
 
 ## Operator Queue
 ### Gemini CLI builder searching for better memory
@@ -69,7 +69,7 @@ Turn Gemini CLI memory demand and Google Cloud MCP guardrail demand into tracked
 - Evidence: The GCP guardrails guide documents BigQuery, Spanner, AlloyDB, Cloud SQL, and IAM escalation patterns. Current report production-style targets: 4.
 - Proof trigger: They already described one risky BigQuery, Spanner, or MCP-backed workflow that cannot afford another destructive repeat.
 - Proof asset: https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/gcp-mcp-guardrails.html
-- Next ask: https://thumbgate-production.up.railway.app/?utm_source=gemini&utm_medium=operator_outreach&utm_campaign=gemini_queue_gcp_sprint&utm_content=workflow_sprint&campaign_variant=gcp_workflow_owner&offer_code=GEMINI-QUEUE_GCP_SPRINT&cta_id=gemini_queue_gcp_sprint&cta_placement=operator_queue&surface=gemini_workflow_queue#workflow-sprint-intake
+- Next ask: https://thumbgate.ai/?utm_source=gemini&utm_medium=operator_outreach&utm_campaign=gemini_queue_gcp_sprint&utm_content=workflow_sprint&campaign_variant=gcp_workflow_owner&offer_code=GEMINI-QUEUE_GCP_SPRINT&cta_id=gemini_queue_gcp_sprint&cta_placement=operator_queue&surface=gemini_workflow_queue#workflow-sprint-intake
 - Recommended motion: Qualify one high-risk workflow for the Workflow Hardening Sprint.
 
 ### Security-sensitive evaluator comparing hosted memory versus local-first enforcement
@@ -84,10 +84,10 @@ Turn Gemini CLI memory demand and Google Cloud MCP guardrail demand into tracked
 You already know memory matters. The missing piece is turning one repeated Gemini CLI mistake into an enforced gate before the next tool call runs. The shortest proof-backed path is here: https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=gemini&utm_medium=operator_outreach&utm_campaign=gemini_outreach_memory&utm_content=guide&campaign_variant=memory_follow_up&offer_code=GEMINI-OUTREACH_MEMORY&cta_id=gemini_outreach_memory&cta_placement=outreach_draft&surface=gemini_outreach . If you can name one repeat you want blocked, that guide is the fastest way to test the loop without drifting into generic AI governance.
 
 ### Pain-confirmed follow-up — Solo operator who already confirmed one repeated failure
-Now that the failure pattern is concrete, the next useful step is proof plus the paid operator path, not more abstract memory talk. Use Verification Evidence first, then route the buyer to the personal dashboard lane only if they want their own exports and proof-ready review surface: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md then https://thumbgate-production.up.railway.app/checkout/pro?utm_source=gemini&utm_medium=operator_outreach&utm_campaign=gemini_outreach_pro&utm_content=pro&campaign_variant=proof_after_pain&offer_code=GEMINI-OUTREACH_PRO&cta_id=gemini_outreach_pro&cta_placement=outreach_draft&plan_id=pro&surface=gemini_outreach .
+Now that the failure pattern is concrete, the next useful step is proof plus the paid operator path, not more abstract memory talk. Use Verification Evidence first, then route the buyer to the personal dashboard lane only if they want their own exports and proof-ready review surface: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md then https://thumbgate.ai/checkout/pro?utm_source=gemini&utm_medium=operator_outreach&utm_campaign=gemini_outreach_pro&utm_content=pro&campaign_variant=proof_after_pain&offer_code=GEMINI-OUTREACH_PRO&cta_id=gemini_outreach_pro&cta_placement=outreach_draft&plan_id=pro&surface=gemini_outreach .
 
 ### Founder note — Data or platform team owner
-Google turned BigQuery, Spanner, AlloyDB, and Cloud SQL into MCP-call surfaces for Gemini CLI. If one of those workflows already has a repeated failure or approval-boundary risk, I am not pitching a generic plugin. I am pitching one workflow hardening sprint with proof: https://thumbgate-production.up.railway.app/?utm_source=gemini&utm_medium=operator_outreach&utm_campaign=gemini_outreach_sprint&utm_content=workflow_sprint&campaign_variant=cloud_workflow&offer_code=GEMINI-OUTREACH_SPRINT&cta_id=gemini_outreach_sprint&cta_placement=outreach_draft&surface=gemini_outreach#workflow-sprint-intake .
+Google turned BigQuery, Spanner, AlloyDB, and Cloud SQL into MCP-call surfaces for Gemini CLI. If one of those workflows already has a repeated failure or approval-boundary risk, I am not pitching a generic plugin. I am pitching one workflow hardening sprint with proof: https://thumbgate.ai/?utm_source=gemini&utm_medium=operator_outreach&utm_campaign=gemini_outreach_sprint&utm_content=workflow_sprint&campaign_variant=cloud_workflow&offer_code=GEMINI-OUTREACH_SPRINT&cta_id=gemini_outreach_sprint&cta_placement=outreach_draft&surface=gemini_outreach#workflow-sprint-intake .
 
 ## Active Channel Drafts
 ### Reddit — DM or reply follow-up

@@ -22,9 +22,9 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 - Keep approval boundaries, rollback safety, and proof attached to the workflow before rollout.
 
 ## Recommended CTAs
-- Proof-backed setup guide: https://thumbgate-production.up.railway.app/guide
-- Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-- Pro at $19/mo or $149/yr: https://thumbgate-production.up.railway.app/checkout/pro
+- Proof-backed setup guide: https://thumbgate.ai/guide
+- Workflow Hardening Sprint: https://thumbgate.ai/#workflow-sprint-intake
+- Pro at $19/mo or $149/yr: https://thumbgate.ai/checkout/pro
 
 ## Evidence-Backed Buyer Signals
 - Workflow control surfaces (6): The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Examples: montenegronyc/backporcher, dolutech/engine_context, Adqui9608/ai-code-review-agent
@@ -39,8 +39,8 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 - Short description: Lead with one repeated approval, review, or handoff failure and show how ThumbGate turns it into an enforceable pre-action gate.
 - Evidence: The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive.
 - Listing angle: Lead with one repeated workflow failure, then show how ThumbGate turns it into an enforceable pre-action gate.
-- Primary CTA: Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-- Secondary CTA: Proof-backed setup guide: https://thumbgate-production.up.railway.app/guide
+- Primary CTA: Workflow Hardening Sprint: https://thumbgate.ai/#workflow-sprint-intake
+- Secondary CTA: Proof-backed setup guide: https://thumbgate.ai/guide
 - Sample targets: montenegronyc/backporcher, dolutech/engine_context, Adqui9608/ai-code-review-agent
 
 ### Warm discovery workflows
@@ -49,8 +49,8 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 - Short description: Lead with one concrete workflow failure, then offer a founder-led hardening diagnostic before any generic tool pitch.
 - Evidence: Warm inbound engagers already named rollback risk, brittle guardrails, or review-boundary pain.
 - Listing angle: Lead with one repeated workflow failure and a founder-led diagnostic before any generic tool pitch.
-- Primary CTA: Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-- Secondary CTA: Proof-backed setup guide: https://thumbgate-production.up.railway.app/guide
+- Primary CTA: Workflow Hardening Sprint: https://thumbgate.ai/#workflow-sprint-intake
+- Secondary CTA: Proof-backed setup guide: https://thumbgate.ai/guide
 - Sample targets: @Deep_Ad1959, @game-of-kton, @leogodin217
 
 ### Production rollout proof
@@ -59,8 +59,8 @@ ThumbGate is a reliability gateway for AI coding workflows. It captures repeated
 - Short description: Lead with one production workflow where repeated mistakes, rollback risk, or audit pressure already make the pain expensive.
 - Evidence: Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems.
 - Listing angle: Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.
-- Primary CTA: Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-- Secondary CTA: Proof-backed setup guide: https://thumbgate-production.up.railway.app/guide
+- Primary CTA: Workflow Hardening Sprint: https://thumbgate.ai/#workflow-sprint-intake
+- Secondary CTA: Proof-backed setup guide: https://thumbgate.ai/guide
 - Sample targets: montenegronyc/backporcher, dolutech/engine_context, Adqui9608/ai-code-review-agent
 
 ### Self-serve agent tooling

@@ -1,6 +1,6 @@
 # Cursor Marketplace Revenue Pack
 
-Updated: 2026-05-04T11:54:10.646Z
+Updated: 2026-05-04T15:07:22.582Z
 
 This is a sales operator artifact. It is not proof of installs, paid revenue, directory approval, or marketplace publication by itself.
 
@@ -25,7 +25,7 @@ Turn Cursor plugin discovery into tracked installs, Pro checkout starts, and qua
 - Buyer: Cursor users who want the fastest install path for repeated-mistake prevention.
 - Submission path: https://cursor.com/marketplace/publish
 - Repository: https://github.com/IgorGanapolsky/ThumbGate
-- Homepage: https://thumbgate-production.up.railway.app/guide?utm_source=cursor&utm_medium=marketplace&utm_campaign=cursor_plugin_guide&utm_content=guide&campaign_variant=plugin_homepage&offer_code=CURSOR-PLUGIN_HOMEPAGE&cta_id=cursor_plugin_homepage&cta_placement=cursor_listing&surface=cursor_marketplace
+- Homepage: https://thumbgate.ai/guide?utm_source=cursor&utm_medium=marketplace&utm_campaign=cursor_plugin_guide&utm_content=guide&campaign_variant=plugin_homepage&offer_code=CURSOR-PLUGIN_HOMEPAGE&cta_id=cursor_plugin_homepage&cta_placement=cursor_listing&surface=cursor_marketplace
 - Proof: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 - Support: https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/cursor-marketplace/README.md
 - Tags: thumbgate, pre-action-checks, agent-reliability, guardrails, developer-tools, cursor
@@ -43,7 +43,7 @@ Proof links: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCI
 - Buyer: Researchers and buyers comparing Cursor plugins before install.
 - Submission path: https://cursor.directory/plugins/thumbgate
 - Repository: https://github.com/IgorGanapolsky/ThumbGate
-- Homepage: https://thumbgate-production.up.railway.app/guide?utm_source=cursor&utm_medium=directory&utm_campaign=cursor_directory_guide&utm_content=guide&campaign_variant=directory_homepage&offer_code=CURSOR-DIRECTORY_HOMEPAGE&cta_id=cursor_directory_homepage&cta_placement=cursor_listing&surface=cursor_directory
+- Homepage: https://thumbgate.ai/guide?utm_source=cursor&utm_medium=directory&utm_campaign=cursor_directory_guide&utm_content=guide&campaign_variant=directory_homepage&offer_code=CURSOR-DIRECTORY_HOMEPAGE&cta_id=cursor_directory_homepage&cta_placement=cursor_listing&surface=cursor_directory
 - Proof: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 - Support: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/CURSOR_PLUGIN_OPERATIONS.md
 - Tags: cursor, pre-action-checks, agent-reliability, guardrails
@@ -61,7 +61,7 @@ Proof links: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCI
 - Buyer: Teams standardizing one valuable Cursor workflow before broader rollout.
 - Submission path: Dashboard -> Settings -> Plugins -> Team Marketplaces
 - Repository: https://github.com/IgorGanapolsky/ThumbGate
-- Homepage: https://thumbgate-production.up.railway.app/?utm_source=cursor&utm_medium=team_marketplace&utm_campaign=cursor_team_marketplace&utm_content=homepage&campaign_variant=team_marketplace_homepage&offer_code=CURSOR-TEAM_MARKETPLACE_HOMEPAGE&cta_id=cursor_team_marketplace_homepage&cta_placement=cursor_listing&surface=team_marketplace#workflow-sprint-intake
+- Homepage: https://thumbgate.ai/?utm_source=cursor&utm_medium=team_marketplace&utm_campaign=cursor_team_marketplace&utm_content=homepage&campaign_variant=team_marketplace_homepage&offer_code=CURSOR-TEAM_MARKETPLACE_HOMEPAGE&cta_id=cursor_team_marketplace_homepage&cta_placement=cursor_listing&surface=team_marketplace#workflow-sprint-intake
 - Proof: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 - Support: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/CUSTOMER_DISCOVERY_SPRINT.md
 - Tags: cursor, workflow-hardening, team-marketplace, proof
@@ -75,10 +75,10 @@ Proof links: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCI
 ## Follow-On Offers
 - ThumbGate Pro: $19/mo or $149/yr
   Buyer: Solo operators who want the self-serve dashboard and proof-ready exports after install.
-  CTA: https://thumbgate-production.up.railway.app/checkout/pro?utm_source=cursor&utm_medium=marketplace&utm_campaign=cursor_plugin_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=CURSOR-PRO_FOLLOW_ON&cta_id=cursor_pro_follow_on&cta_placement=post_install&plan_id=pro&surface=cursor_post_install
+  CTA: https://thumbgate.ai/checkout/pro?utm_source=cursor&utm_medium=marketplace&utm_campaign=cursor_plugin_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=CURSOR-PRO_FOLLOW_ON&cta_id=cursor_pro_follow_on&cta_placement=post_install&plan_id=pro&surface=cursor_post_install
 - Workflow Hardening Sprint: Workflow Hardening Sprint, then Team at $49/seat/mo with 3-seat minimum after qualification
   Buyer: Teams who already named one repeated workflow failure and need rollout proof.
-  CTA: https://thumbgate-production.up.railway.app/?utm_source=cursor&utm_medium=marketplace&utm_campaign=cursor_team_follow_on&utm_content=workflow_sprint&campaign_variant=teams_follow_on&offer_code=CURSOR-TEAMS_FOLLOW_ON&cta_id=cursor_team_follow_on&cta_placement=post_install&surface=cursor_post_install#workflow-sprint-intake
+  CTA: https://thumbgate.ai/?utm_source=cursor&utm_medium=marketplace&utm_campaign=cursor_team_follow_on&utm_content=workflow_sprint&campaign_variant=teams_follow_on&offer_code=CURSOR-TEAMS_FOLLOW_ON&cta_id=cursor_team_follow_on&cta_placement=post_install&surface=cursor_post_install#workflow-sprint-intake
 
 ## Screenshot Set
 - docs/marketing/gallery/05-hero.png (hero): Lead screenshot for the install surface.
