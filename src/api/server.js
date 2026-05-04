@@ -1626,9 +1626,16 @@ function escapeHtmlAttribute(value) {
     .replaceAll('>', '&gt;');
 }
 
+function stripTrailingSlashes(value) {
+  const input = String(value || '');
+  let end = input.length;
+  while (end > 0 && input[end - 1] === '/') end -= 1;
+  return input.slice(0, end);
+}
+
 function normalizePublicMarketingHtml(html, runtimeConfig) {
   const appOrigin = runtimeConfig && runtimeConfig.appOrigin
-    ? String(runtimeConfig.appOrigin).replace(/\/+$/, '')
+    ? stripTrailingSlashes(runtimeConfig.appOrigin)
     : '';
   if (!appOrigin) return html;
 
