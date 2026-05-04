@@ -2499,6 +2499,7 @@ switch (COMMAND) {
   case 'upstream-contributions':
   case 'upstream-contribution-engine':
   case 'upstream-prs':
+  case 'oss-pr-opportunities':
     upstreamContributions();
     break;
   case 'risk':
@@ -2570,11 +2571,6 @@ switch (COMMAND) {
   case 'deepseek-runtime-guardrails':
   case 'sparse-attention-runtime-guardrails':
     deepseekV4RuntimeGuardrails();
-    break;
-  case 'upstream-contributions':
-  case 'upstream-contribution-engine':
-  case 'oss-pr-opportunities':
-    upstreamContributions();
     break;
   case 'long-running-agent-context-guardrails':
   case 'agent-context-guardrails':
