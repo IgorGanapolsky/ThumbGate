@@ -26,6 +26,7 @@ const GUIDE_FILES = [
 const COMPARE_FILES = [
   'compare/speclock.html',
   'compare/mem0.html',
+  'compare/agentix-labs.html',
 ];
 
 const ALL_FILES = [...GUIDE_FILES, ...COMPARE_FILES];

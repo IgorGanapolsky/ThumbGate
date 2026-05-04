@@ -6,18 +6,20 @@
  * Polls Bluesky notifications (replies, mentions, quotes) for our account and
  * queues draft responses into .thumbgate/reply-drafts.jsonl for human review.
  *
- * Never auto-posts. Drafts are reviewed, then sent manually (or by a separate
- * queue-consumer with explicit sign-off).
+ * Default mode never posts. Drafts are reviewed first; publishing requires an
+ * approved draft plus the explicit --confirm-publish CLI guard.
  *
  * Env:
  *   BLUESKY_HANDLE          — e.g. iganapolsky.bsky.social
  *   BLUESKY_APP_PASSWORD    — app password (https://bsky.app/settings/app-passwords)
  *
  * Usage:
- *   node scripts/social-reply-monitor-bluesky.js            # poll + queue drafts
- *   node scripts/social-reply-monitor-bluesky.js --dry-run  # poll, log what would be queued
+ *   node scripts/social-reply-monitor-bluesky.js                                # poll + queue drafts
+ *   node scripts/social-reply-monitor-bluesky.js --dry-run                      # poll, log what would be queued
+ *   node scripts/social-reply-monitor-bluesky.js --publish-approved --dry-run   # count approved publish candidates
+ *   node scripts/social-reply-monitor-bluesky.js --publish-approved --confirm-publish
  *
- * State: .thumbgate/reply-monitor-state.json — tracks replied-to notification URIs.
+ * State: .thumbgate/reply-monitor-state.json tracks replied-to notification URIs.
  */
 
 const fs = require('node:fs');
@@ -28,6 +30,7 @@ const {
   atprotoRequest,
   createSession,
   isTransientAtprotoError,
+  parseAtUri,
   sanitizeForLog,
   DEFAULT_PDS_HOST,
 } = require('./lib/bluesky-atproto');
@@ -57,6 +60,19 @@ function saveDraft(draft) {
   const dir = path.dirname(DRAFT_FILE);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.appendFileSync(DRAFT_FILE, JSON.stringify(draft) + '\n');
+}
+
+function loadDrafts(draftFile = DRAFT_FILE) {
+  try {
+    if (!fs.existsSync(draftFile)) return [];
+    return fs.readFileSync(draftFile, 'utf8')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+  } catch {
+    return [];
+  }
 }
 
 async function listNotifications(session, limit = 40) {
@@ -94,6 +110,109 @@ function buildReplyContext(notification) {
     parentUri: notification.uri,
     parentCid: notification.cid,
   };
+}
+
+function assertPublishableDraft(draft) {
+  if (!draft || draft.platform !== 'bluesky') {
+    throw new Error('publishReply requires a Bluesky draft');
+  }
+  if (!draft.approved) {
+    throw new Error('refuse to publish unapproved Bluesky draft');
+  }
+  if (!draft.draftReply || typeof draft.draftReply !== 'string') {
+    throw new Error('approved Bluesky draft is missing draftReply');
+  }
+  if (!draft.reply?.root?.uri || !draft.reply?.root?.cid || !draft.reply?.parent?.uri || !draft.reply?.parent?.cid) {
+    throw new Error('approved Bluesky draft is missing reply root/parent refs');
+  }
+}
+
+async function publishReply(session, draft, { request = atprotoRequest, now = () => new Date() } = {}) {
+  assertPublishableDraft(draft);
+  const parent = parseAtUri(draft.reply.parent.uri);
+  if (!parent) throw new Error(`bad parent uri: ${draft.reply.parent.uri}`);
+
+  const record = {
+    $type: 'app.bsky.feed.post',
+    text: draft.draftReply,
+    createdAt: now().toISOString(),
+    reply: {
+      root: draft.reply.root,
+      parent: draft.reply.parent,
+    },
+  };
+
+  const { status, json } = await request(
+    'POST',
+    session.pdsHost || DEFAULT_PDS_HOST,
+    '/xrpc/com.atproto.repo.createRecord',
+    {
+      headers: { Authorization: `Bearer ${session.accessJwt}` },
+      body: {
+        repo: session.did,
+        collection: 'app.bsky.feed.post',
+        record,
+      },
+    },
+  );
+
+  if (status !== 200 || !json.uri) {
+    throw new Error(`createRecord failed: ${status} ${json.error || ''}`);
+  }
+  return { uri: json.uri, cid: json.cid || null, parentUri: draft.reply.parent.uri };
+}
+
+async function publishApprovedDrafts({
+  sessionFactory = createSession,
+  loadDrafts: loadDraftsFn = loadDrafts,
+  loadState: loadStateFn = loadState,
+  saveState: saveStateFn = saveState,
+  publishReply: publishReplyFn = publishReply,
+  confirmPublish = false,
+  dryRun = false,
+} = {}) {
+  const drafts = loadDraftsFn()
+    .filter((draft) => draft.platform === 'bluesky')
+    .filter((draft) => draft.approved === true)
+    .filter((draft) => !draft.postedUri);
+
+  if (dryRun) {
+    return { eligible: drafts.length, published: 0, dryRun: true };
+  }
+
+  if (!confirmPublish) {
+    return {
+      eligible: drafts.length,
+      published: 0,
+      blocked: true,
+      reason: 'missing_confirm_publish',
+    };
+  }
+
+  const session = await sessionFactory();
+  const state = loadStateFn();
+  state.repliedTo = state.repliedTo || {};
+  state.repliedTo.bluesky = state.repliedTo.bluesky || {};
+
+  const published = [];
+  const failed = [];
+  for (const draft of drafts) {
+    try {
+      const result = await publishReplyFn(session, draft);
+      state.repliedTo.bluesky[result.parentUri] = {
+        ...(state.repliedTo.bluesky[result.parentUri] || {}),
+        postedAt: new Date().toISOString(),
+        postedUri: result.uri,
+        postedCid: result.cid,
+      };
+      published.push(result);
+    } catch (err) {
+      failed.push({ parentUri: draft.reply?.parent?.uri || draft.notification?.uri || '', error: err.message });
+    }
+  }
+
+  saveStateFn(state);
+  return { eligible: drafts.length, published: published.length, failed: failed.length, results: published, failures: failed };
 }
 
 async function monitor({
@@ -175,7 +294,12 @@ const isMainModule =
   path.resolve(process.argv[1]) === path.resolve(__filename);
 
 if (isMainModule) {
-  monitor().catch((err) => {
+  const publishMode = args.has('--publish-approved');
+  const confirmPublish = args.has('--confirm-publish');
+  const task = publishMode
+    ? publishApprovedDrafts({ dryRun: DRY_RUN, confirmPublish })
+    : monitor();
+  task.catch((err) => {
     if (isTransientAtprotoError(err)) {
       console.warn(
         `[bluesky-monitor] transient upstream error — will retry next tick: ${sanitizeForLog(err.message)}`,
@@ -191,6 +315,10 @@ module.exports = {
   monitor,
   createSession,
   listNotifications,
+  loadDrafts,
   extractPostText,
   buildReplyContext,
+  assertPublishableDraft,
+  publishApprovedDrafts,
+  publishReply,
 };

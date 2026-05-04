@@ -183,12 +183,16 @@ test('Ralph workflows are scheduled, stateful, and split outbound from reply eng
   assert.match(ralph, /\.thumbgate\/reply-monitor-state\.json/);
   assert.match(ralph, /\.thumbgate\/reply-drafts\.jsonl/);
   assert.match(ralph, /\.thumbgate\/social-launch-assets\.json/);
+  assert.match(ralph, /BLUESKY_HANDLE/);
+  assert.match(ralph, /scripts\/social-reply-monitor-bluesky\.js/);
   assert.match(ralphMode, /name: Ralph Mode - 24\/7 Engagement Loop/);
   assert.match(ralphMode, /cron: '0 \*\/2 \* \* \*'/);
   assert.match(ralphMode, /actions\/cache\/restore@v[45]/);
   assert.match(ralphMode, /actions\/cache\/save@v[45]/);
   assert.match(ralphMode, /\.thumbgate\/ralph-state\.json/);
   assert.match(ralphMode, /node scripts\/ralph-mode-ci\.js/);
+  assert.match(replyMonitor, /bluesky/);
+  assert.match(replyMonitor, /scripts\/social-reply-monitor-bluesky\.js/);
   assert.doesNotMatch(replyMonitor, /^\s*schedule:/m);
   assert.doesNotMatch(socialEngagement, /0 9,13,17,21 \* \* \*/);
 });
