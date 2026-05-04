@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.16.15
+
+### Patch Changes
+
+- [#1696](https://github.com/IgorGanapolsky/ThumbGate/pull/1696) [`0a0af22`](https://github.com/IgorGanapolsky/ThumbGate/commit/0a0af22fddef13f80d5c731391bab2d9053d72bb) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add the AI Agent Governance Sprint conversion path with a generated guide, homepage routing, Team intake CTA coverage, and SEO tests for the bottom-funnel governance sprint offer.
+
+- [#1699](https://github.com/IgorGanapolsky/ThumbGate/pull/1699) [`164b206`](https://github.com/IgorGanapolsky/ThumbGate/commit/164b206424f0b1e27fdd6da96a766f194014697b) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a no-card checkout recovery path from paid sprint CTAs into workflow sprint intake so interested buyers can send the workflow before paying.
+
 ## 1.16.14
 
 ### Patch Changes
