@@ -847,9 +847,17 @@ async function resolveRevenueLoopSummary(options = {}) {
     waitForRetryFn = (delayMs) => new Promise((resolve) => setTimeout(resolve, delayMs)),
   } = options;
 
-  const localResult = await getOperationalBillingSummaryFn();
+  const requestedSummaryWindow = normalizeText(options.summaryWindow || options.window) || '30d';
+  const localResult = await getOperationalBillingSummaryFn({
+    window: requestedSummaryWindow,
+    timeZone: options.timeZone || options.timezone,
+    now: options.now,
+  });
   if (localResult.source === 'hosted') {
-    return localResult;
+    return {
+      ...localResult,
+      summaryWindow: localResult.summaryWindow || requestedSummaryWindow,
+    };
   }
 
   if (
@@ -2770,7 +2778,7 @@ async function runRevenueLoop(options = {}) {
     directive,
     targets: pipelineAwareTargets,
   });
-  report.snapshotWindow = summaryWindow || 'today';
+  report.snapshotWindow = summaryWindow || '30d';
   report.marketplaceCopy = buildMarketplaceCopy(report);
 
   if (errors.length) {

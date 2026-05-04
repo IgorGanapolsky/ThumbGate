@@ -232,6 +232,30 @@ test('resolveRevenueLoopSummary prefers hosted revenue status when local operato
   assert.equal(result.summary.trafficMetrics.checkoutStarts, 1);
 });
 
+test('resolveRevenueLoopSummary requests and labels a 30d hosted summary by default', async () => {
+  let requestedOptions = null;
+  const result = await resolveRevenueLoopSummary({
+    getOperationalBillingSummaryFn: async (options) => {
+      requestedOptions = options;
+      return {
+        source: 'hosted',
+        summaryWindow: options.window,
+        summary: {
+          revenue: { paidOrders: 4, bookedRevenueCents: 14900 },
+          trafficMetrics: { checkoutStarts: 77 },
+          signups: { uniqueLeads: 424 },
+          pipeline: {},
+        },
+        fallbackReason: null,
+      };
+    },
+  });
+
+  assert.equal(requestedOptions.window, '30d');
+  assert.equal(result.summaryWindow, '30d');
+  assert.equal(result.summary.revenue.bookedRevenueCents, 14900);
+});
+
 test('resolveRevenueLoopSummary keeps local numbers when hosted revenue status still falls back', async () => {
   const result = await resolveRevenueLoopSummary({
     getOperationalBillingSummaryFn: async () => ({

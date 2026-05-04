@@ -109,6 +109,7 @@ async function getOperationalBillingSummary(options = {}) {
       summary,
       fallbackReason: null,
       hostedStatus: 200,
+      summaryWindow: analyticsWindow.window,
     };
   } catch (err) {
     const reason = err && err.message ? err.message : 'hosted_summary_unavailable';
@@ -123,6 +124,7 @@ async function getOperationalBillingSummary(options = {}) {
         summary: await getBillingSummaryLive(analyticsWindow),
         fallbackReason: reason,
         hostedStatus: null,
+        summaryWindow: analyticsWindow.window,
       };
     }
 
@@ -162,6 +164,7 @@ async function getOperationalBillingSummary(options = {}) {
       summary: await getBillingSummaryLive(analyticsWindow),
       fallbackReason: reason,
       hostedStatus: status,
+      summaryWindow: analyticsWindow.window,
     };
   }
 }
