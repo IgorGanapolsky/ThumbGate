@@ -62,9 +62,14 @@
         "title": "What Are Pre-Action Checks?"
       }
     ],
+    "commercialLane": "Workflow Hardening Sprint first, Pro second",
     "cta": {
-      "label": "Go Pro — $19/mo",
-      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=compare_speclock&cta_placement=seo_brief&plan_id=pro"
+      "label": "Start Workflow Hardening Sprint",
+      "href": "/?utm_source=website&utm_medium=seo_page&utm_campaign=compare_speclock&cta_placement=seo_brief_primary&offer=sprint#workflow-sprint-intake"
+    },
+    "secondaryCta": {
+      "label": "See Solo Pro",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=compare_speclock&cta_placement=seo_brief_secondary&plan_id=pro"
     },
     "proofLinks": [
       {
@@ -84,7 +89,8 @@
     "priority": "0.9",
     "keywordCluster": [
       "thumbgate vs speclock",
-      "thumbgate vs mem0"
+      "thumbgate vs mem0",
+      "roo code alternative cline"
     ],
     "imageAlt": "ThumbGate guide for ThumbGate vs SpecLock"
   },
@@ -151,9 +157,14 @@
         "title": "Claude Code Feedback Memory That Actually Enforces"
       }
     ],
+    "commercialLane": "Workflow Hardening Sprint first, Pro second",
     "cta": {
-      "label": "Go Pro — $19/mo",
-      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=compare_mem0&cta_placement=seo_brief&plan_id=pro"
+      "label": "Start Workflow Hardening Sprint",
+      "href": "/?utm_source=website&utm_medium=seo_page&utm_campaign=compare_mem0&cta_placement=seo_brief_primary&offer=sprint#workflow-sprint-intake"
+    },
+    "secondaryCta": {
+      "label": "See Solo Pro",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=compare_mem0&cta_placement=seo_brief_secondary&plan_id=pro"
     },
     "proofLinks": [
       {
@@ -173,9 +184,102 @@
     "priority": "0.9",
     "keywordCluster": [
       "thumbgate vs speclock",
-      "thumbgate vs mem0"
+      "thumbgate vs mem0",
+      "roo code alternative cline"
     ],
     "imageAlt": "ThumbGate guide for ThumbGate vs Mem0"
+  },
+  {
+    "path": "/guides/roo-code-alternative-cline",
+    "slug": "guides-roo-code-alternative-cline",
+    "query": "roo code alternative cline",
+    "pillar": "agent-workflows",
+    "intent": "comparison",
+    "pageType": "integration",
+    "persona": "tool-evaluator",
+    "opportunityScore": 99,
+    "title": "Roo Code Alternative: Migrating to Cline with Portable Lesson Memory",
+    "description": "Roo Code is shutting down on May 15, 2026, and its own docs point users to Cline. ThumbGate keeps the migration from resetting every hard-won thumbs-down and...",
+    "heroTitle": "Roo Code Alternative: Migrate to Cline Without Losing Agent Memory",
+    "heroSummary": "Roo Code is shutting down on May 15, 2026, and its own docs point users to Cline. ThumbGate keeps the migration from resetting every hard-won thumbs-down and workflow correction back to zero.",
+    "takeaways": [
+      "Roo users have a time-bound migration problem with clear buyer urgency.",
+      "The real wedge is portable lesson memory, not just swapping one VS Code extension for another.",
+      "The page should answer the migration question and route serious operators into a local-first enforcement path."
+    ],
+    "sections": [
+      {
+        "heading": "Why the migration risk is bigger than the extension swap",
+        "paragraphs": [
+          "Roo users can usually move to Cline without much trouble at the MCP layer. The hidden risk is losing every correction that only lived in the old agent context.",
+          "If the same git, deploy, or migration mistake has to be re-taught from scratch after the swap, the migration cost is higher than it looks."
+        ]
+      },
+      {
+        "heading": "What ThumbGate adds to the move",
+        "bullets": [
+          "Keep lessons in a local SQLite plus FTS5 store instead of vendor-scoped memory.",
+          "Turn repeated failures into prevention rules and pre-action checks before the next tool call runs.",
+          "Reuse the same local memory across Cline, Claude Code, Cursor, Codex, Gemini CLI, Amp, and other MCP-compatible agents.",
+          "Give migration buyers a proof-backed install path instead of another generic memory promise."
+        ]
+      },
+      {
+        "heading": "Why this converts",
+        "paragraphs": [
+          "A migration deadline creates urgency, but the stronger buying reason is avoiding repeated rework after the switch. Portable lesson memory plus enforced checks is the part buyers can immediately understand and verify."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "Why not just switch from Roo to Cline and keep going?",
+        "answer": "Because the workflow memory can still reset if past corrections only lived inside the old agent context. ThumbGate keeps those lessons in a local store that survives the vendor swap."
+      },
+      {
+        "question": "Does ThumbGate only help with Cline?",
+        "answer": "No. Cline is the immediate migration path, but the same local lesson memory and pre-action checks work across other MCP-compatible coding agents too."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/codex-cli-guardrails",
+        "title": "Codex CLI Guardrails That Actually Enforce"
+      },
+      {
+        "path": "/guides/stop-repeated-ai-agent-mistakes",
+        "title": "How to Stop AI Coding Agents From Repeating Mistakes"
+      }
+    ],
+    "commercialLane": "Proof-backed setup guide first, Pro second",
+    "cta": {
+      "label": "Open proof-backed setup guide",
+      "href": "/guide?utm_source=website&utm_medium=seo_page&utm_campaign=guides_roo-code-alternative-cline&cta_placement=seo_brief_primary&offer=guide"
+    },
+    "secondaryCta": {
+      "label": "See Solo Pro",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_roo-code-alternative-cline&cta_placement=seo_brief_secondary&plan_id=pro"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "monthly",
+    "priority": "0.8",
+    "keywordCluster": [
+      "roo code alternative cline"
+    ],
+    "imageAlt": "ThumbGate guide for Roo Code Alternative: Migrate to Cline Without Losing Agent Memory"
   },
   {
     "path": "/guides/claude-code-feedback",
@@ -238,9 +342,14 @@
         "title": "ThumbGate vs Mem0"
       }
     ],
+    "commercialLane": "Proof-backed setup guide first, Pro second",
     "cta": {
-      "label": "Go Pro — $19/mo",
-      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_claude-code-feedback&cta_placement=seo_brief&plan_id=pro"
+      "label": "Open proof-backed setup guide",
+      "href": "/guide?utm_source=website&utm_medium=seo_page&utm_campaign=guides_claude-code-feedback&cta_placement=seo_brief_primary&offer=guide"
+    },
+    "secondaryCta": {
+      "label": "See Solo Pro",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_claude-code-feedback&cta_placement=seo_brief_secondary&plan_id=pro"
     },
     "proofLinks": [
       {
@@ -324,9 +433,14 @@
         "title": "What Are Pre-Action Checks?"
       }
     ],
+    "commercialLane": "Proof-backed setup guide first, Pro second",
     "cta": {
-      "label": "Go Pro — $19/mo",
-      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_cursor-agent-guardrails&cta_placement=seo_brief&plan_id=pro"
+      "label": "Open proof-backed setup guide",
+      "href": "/guide?utm_source=website&utm_medium=seo_page&utm_campaign=guides_cursor-agent-guardrails&cta_placement=seo_brief_primary&offer=guide"
+    },
+    "secondaryCta": {
+      "label": "See Solo Pro",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_cursor-agent-guardrails&cta_placement=seo_brief_secondary&plan_id=pro"
     },
     "proofLinks": [
       {
@@ -410,9 +524,14 @@
         "title": "ThumbGate vs Mem0"
       }
     ],
+    "commercialLane": "Proof-backed setup guide first, Pro second",
     "cta": {
-      "label": "Go Pro — $19/mo",
-      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_codex-cli-guardrails&cta_placement=seo_brief&plan_id=pro"
+      "label": "Open proof-backed setup guide",
+      "href": "/guide?utm_source=website&utm_medium=seo_page&utm_campaign=guides_codex-cli-guardrails&cta_placement=seo_brief_primary&offer=guide"
+    },
+    "secondaryCta": {
+      "label": "See Solo Pro",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_codex-cli-guardrails&cta_placement=seo_brief_secondary&plan_id=pro"
     },
     "proofLinks": [
       {
@@ -496,9 +615,14 @@
         "title": "How to Stop AI Coding Agents From Repeating Mistakes"
       }
     ],
+    "commercialLane": "Proof-backed setup guide first, Pro second",
     "cta": {
-      "label": "Go Pro — $19/mo",
-      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_gemini-cli-feedback-memory&cta_placement=seo_brief&plan_id=pro"
+      "label": "Open proof-backed setup guide",
+      "href": "/guide?utm_source=website&utm_medium=seo_page&utm_campaign=guides_gemini-cli-feedback-memory&cta_placement=seo_brief_primary&offer=guide"
+    },
+    "secondaryCta": {
+      "label": "See Solo Pro",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_gemini-cli-feedback-memory&cta_placement=seo_brief_secondary&plan_id=pro"
     },
     "proofLinks": [
       {
@@ -601,9 +725,14 @@
         "title": "What Are Pre-Action Checks?"
       }
     ],
+    "commercialLane": "Proof-backed setup guide first, Pro second",
     "cta": {
-      "label": "Go Pro — $19/mo",
-      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_claude-desktop&cta_placement=seo_brief&plan_id=pro"
+      "label": "Open proof-backed setup guide",
+      "href": "/guide?utm_source=website&utm_medium=seo_page&utm_campaign=guides_claude-desktop&cta_placement=seo_brief_primary&offer=guide"
+    },
+    "secondaryCta": {
+      "label": "See Solo Pro",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_claude-desktop&cta_placement=seo_brief_secondary&plan_id=pro"
     },
     "proofLinks": [
       {
@@ -688,9 +817,14 @@
         "title": "Claude Code Feedback Memory That Actually Enforces"
       }
     ],
+    "commercialLane": "Workflow Hardening Sprint first, Pro second",
     "cta": {
-      "label": "Go Pro — $19/mo",
-      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_pre-action-checks&cta_placement=seo_brief&plan_id=pro"
+      "label": "Start Workflow Hardening Sprint",
+      "href": "/?utm_source=website&utm_medium=seo_page&utm_campaign=guides_pre-action-checks&cta_placement=seo_brief_primary&offer=sprint#workflow-sprint-intake"
+    },
+    "secondaryCta": {
+      "label": "See Solo Pro",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_pre-action-checks&cta_placement=seo_brief_secondary&plan_id=pro"
     },
     "proofLinks": [
       {
@@ -778,9 +912,14 @@
         "title": "Codex CLI Guardrails That Actually Enforce"
       }
     ],
+    "commercialLane": "Workflow Hardening Sprint first, Pro second",
     "cta": {
-      "label": "Go Pro — $19/mo",
-      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_agent-harness-optimization&cta_placement=seo_brief&plan_id=pro"
+      "label": "Start Workflow Hardening Sprint",
+      "href": "/?utm_source=website&utm_medium=seo_page&utm_campaign=guides_agent-harness-optimization&cta_placement=seo_brief_primary&offer=sprint#workflow-sprint-intake"
+    },
+    "secondaryCta": {
+      "label": "See Solo Pro",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_agent-harness-optimization&cta_placement=seo_brief_secondary&plan_id=pro"
     },
     "proofLinks": [
       {
@@ -872,9 +1011,14 @@
         "title": "Claude Code Feedback Memory That Actually Enforces"
       }
     ],
+    "commercialLane": "Workflow Hardening Sprint first, Pro second",
     "cta": {
-      "label": "Go Pro — $19/mo",
-      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_stop-repeated-ai-agent-mistakes&cta_placement=seo_brief&plan_id=pro"
+      "label": "Start Workflow Hardening Sprint",
+      "href": "/?utm_source=website&utm_medium=seo_page&utm_campaign=guides_stop-repeated-ai-agent-mistakes&cta_placement=seo_brief_primary&offer=sprint#workflow-sprint-intake"
+    },
+    "secondaryCta": {
+      "label": "See Solo Pro",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_stop-repeated-ai-agent-mistakes&cta_placement=seo_brief_secondary&plan_id=pro"
     },
     "proofLinks": [
       {
@@ -962,9 +1106,14 @@
         "title": "Codex CLI Guardrails That Actually Enforce"
       }
     ],
+    "commercialLane": "Workflow Hardening Sprint first, Pro second",
     "cta": {
-      "label": "Go Pro — $19/mo",
-      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_autoresearch-agent-safety&cta_placement=seo_brief&plan_id=pro"
+      "label": "Start Workflow Hardening Sprint",
+      "href": "/?utm_source=website&utm_medium=seo_page&utm_campaign=guides_autoresearch-agent-safety&cta_placement=seo_brief_primary&offer=sprint#workflow-sprint-intake"
+    },
+    "secondaryCta": {
+      "label": "See Solo Pro",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_autoresearch-agent-safety&cta_placement=seo_brief_secondary&plan_id=pro"
     },
     "proofLinks": [
       {
@@ -1052,9 +1201,14 @@
         "title": "What Are Pre-Action Checks?"
       }
     ],
+    "commercialLane": "Workflow Hardening Sprint first, Pro second",
     "cta": {
-      "label": "Go Pro — $19/mo",
-      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_browser-automation-safety&cta_placement=seo_brief&plan_id=pro"
+      "label": "Start Workflow Hardening Sprint",
+      "href": "/?utm_source=website&utm_medium=seo_page&utm_campaign=guides_browser-automation-safety&cta_placement=seo_brief_primary&offer=sprint#workflow-sprint-intake"
+    },
+    "secondaryCta": {
+      "label": "See Solo Pro",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_browser-automation-safety&cta_placement=seo_brief_secondary&plan_id=pro"
     },
     "proofLinks": [
       {
@@ -1142,9 +1296,14 @@
         "title": "What Are Pre-Action Checks?"
       }
     ],
+    "commercialLane": "Workflow Hardening Sprint first, Pro second",
     "cta": {
-      "label": "Go Pro — $19/mo",
-      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_native-messaging-host-security&cta_placement=seo_brief&plan_id=pro"
+      "label": "Start Workflow Hardening Sprint",
+      "href": "/?utm_source=website&utm_medium=seo_page&utm_campaign=guides_native-messaging-host-security&cta_placement=seo_brief_primary&offer=sprint#workflow-sprint-intake"
+    },
+    "secondaryCta": {
+      "label": "See Solo Pro",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_native-messaging-host-security&cta_placement=seo_brief_secondary&plan_id=pro"
     },
     "proofLinks": [
       {
@@ -1250,9 +1409,14 @@
         "title": "AI search topical presence decides who gets recommended"
       }
     ],
+    "commercialLane": "Workflow Hardening Sprint first, Pro second",
     "cta": {
-      "label": "Go Pro — $19/mo",
-      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_best-tools-stop-ai-agents-breaking-production&cta_placement=seo_brief&plan_id=pro"
+      "label": "Start Workflow Hardening Sprint",
+      "href": "/?utm_source=website&utm_medium=seo_page&utm_campaign=guides_best-tools-stop-ai-agents-breaking-production&cta_placement=seo_brief_primary&offer=sprint#workflow-sprint-intake"
+    },
+    "secondaryCta": {
+      "label": "See Solo Pro",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_best-tools-stop-ai-agents-breaking-production&cta_placement=seo_brief_secondary&plan_id=pro"
     },
     "proofLinks": [
       {
@@ -1340,9 +1504,14 @@
         "title": "What Are Pre-Action Checks?"
       }
     ],
+    "commercialLane": "Workflow Hardening Sprint first, Pro second",
     "cta": {
-      "label": "Go Pro — $19/mo",
-      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_ai-search-topical-presence&cta_placement=seo_brief&plan_id=pro"
+      "label": "Start Workflow Hardening Sprint",
+      "href": "/?utm_source=website&utm_medium=seo_page&utm_campaign=guides_ai-search-topical-presence&cta_placement=seo_brief_primary&offer=sprint#workflow-sprint-intake"
+    },
+    "secondaryCta": {
+      "label": "See Solo Pro",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_ai-search-topical-presence&cta_placement=seo_brief_secondary&plan_id=pro"
     },
     "proofLinks": [
       {
@@ -1430,9 +1599,14 @@
         "title": "ThumbGate vs Mem0"
       }
     ],
+    "commercialLane": "Workflow Hardening Sprint first, Pro second",
     "cta": {
-      "label": "Go Pro — $19/mo",
-      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_relational-knowledge-ai-recommendations&cta_placement=seo_brief&plan_id=pro"
+      "label": "Start Workflow Hardening Sprint",
+      "href": "/?utm_source=website&utm_medium=seo_page&utm_campaign=guides_relational-knowledge-ai-recommendations&cta_placement=seo_brief_primary&offer=sprint#workflow-sprint-intake"
+    },
+    "secondaryCta": {
+      "label": "See Solo Pro",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_relational-knowledge-ai-recommendations&cta_placement=seo_brief_secondary&plan_id=pro"
     },
     "proofLinks": [
       {

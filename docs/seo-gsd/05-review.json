@@ -18,6 +18,7 @@
   "recommendedOrder": [
     "/compare/speclock",
     "/compare/mem0",
+    "/guides/roo-code-alternative-cline",
     "/guides/claude-code-feedback",
     "/guides/cursor-agent-guardrails",
     "/guides/codex-cli-guardrails",

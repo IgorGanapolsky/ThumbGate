@@ -168,6 +168,14 @@
       font-weight: 700;
       text-decoration: none;
     }
+    .cta-secondary {
+      display: inline-flex;
+      margin-top: 12px;
+      color: var(--text);
+      font-weight: 600;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
     .faq-item {
       border-top: 1px solid var(--line);
       padding: 14px 0;
@@ -283,11 +291,11 @@
           <h2>Why this page exists</h2>
           <ul><li>One command installs ThumbGate into Claude Desktop with zero config.</li><li>The packaged .mcpb bundle is available on GitHub Releases for drag-and-drop install.</li><li>All feedback, rules, and gates stay local on your machine.</li></ul>
         </div>
-        
+
       <section class="detail-section">
         <h2>Install with one command</h2>
         <p>Run this in your terminal and Claude Desktop picks up ThumbGate automatically:</p><p>npx thumbgate init --claude-desktop</p><p>Or add the MCP server directly:</p><p>claude mcp add thumbgate -- npx -y thumbgate serve</p>
-        
+
       </section>
       <section class="detail-section">
         <h2>Or download the packaged bundle</h2>
@@ -296,17 +304,17 @@
       </section>
       <section class="detail-section">
         <h2>What you get</h2>
-        
+
         <ul><li>Thumbs-up/down feedback capture inside Claude Desktop.</li><li>Prevention rules auto-generated from repeated failures.</li><li>Pre-action checks that block known-bad patterns before execution.</li><li>Full-text search across your lesson history.</li><li>Health checks and system diagnostics.</li></ul>
       </section>
       <section class="detail-section">
         <h2>Verify it works</h2>
         <p>After install, run npx thumbgate doctor to confirm all subsystems are healthy. You should see 4/4 HEALTHY.</p>
-        
+
       </section>
         <div class="detail-section">
           <h2>FAQ</h2>
-          
+
       <details class="faq-item">
         <summary>Do I need a cloud account?</summary>
         <p>No. ThumbGate runs entirely locally. Your feedback, rules, and gates never leave your machine.</p>
@@ -330,12 +338,14 @@
           <p><strong>Primary persona:</strong> ai-engineer</p>
           <p><strong>Keyword cluster:</strong> claude desktop extension plugin thumbgate</p>
           <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
+          <p><strong>Commercial lane:</strong> Proof-backed setup guide first, Pro second</p>
           <div class="proof-links"><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json" target="_blank" rel="noopener">Automation proof</a><a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub repository</a></div>
-          <a class="cta-button" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_claude-desktop&amp;cta_placement=seo_brief&amp;plan_id=pro" target="_blank" rel="noopener">Go Pro — $19/mo</a>
+          <a class="cta-button" href="/guide?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_claude-desktop&amp;cta_placement=seo_brief_primary&amp;offer=guide" target="_blank" rel="noopener">Open proof-backed setup guide</a>
+          <a class="cta-secondary" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_claude-desktop&amp;cta_placement=seo_brief_secondary&amp;plan_id=pro" target="_blank" rel="noopener">See Solo Pro</a>
         </div>
         <div class="sidebar-card">
           <h2>Related pages</h2>
-          
+
         <a class="related-card" href="/guides/claude-code-feedback">
           <span class="related-label">Related page</span>
           <strong>Claude Code Feedback Memory That Actually Enforces</strong>

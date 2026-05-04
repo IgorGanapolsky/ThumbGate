@@ -287,7 +287,23 @@
       "persona": "gemini-builder",
       "pageType": "integration",
       "opportunityScore": 89
+    },
+    {
+      "id": "kw_19_roo-code-alternative-cline",
+      "query": "roo code alternative cline",
+      "source": "seed",
+      "notes": "Time-sensitive migration query for Roo users who need portable lesson memory before the May 15, 2026 shutdown.",
+      "impressions": null,
+      "clicks": null,
+      "ctr": null,
+      "position": null,
+      "businessValue": 83,
+      "intent": "comparison",
+      "pillar": "comparison",
+      "persona": "tool-evaluator",
+      "pageType": "comparison",
+      "opportunityScore": 99
     }
   ],
-  "totalKeywords": 18
+  "totalKeywords": 19
 }

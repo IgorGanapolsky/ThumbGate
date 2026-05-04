@@ -1313,6 +1313,37 @@ function trimMetaDescription(value, max = 160) {
   return `${text.slice(0, max - 3).trim()}...`;
 }
 
+function buildSeoCommercialMotion(blueprint) {
+  const campaign = blueprint.path.split('/').filter(Boolean).join('_');
+  const proHref = `/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=${campaign}&cta_placement=seo_brief_secondary&plan_id=pro`;
+
+  if (blueprint.pageType === 'integration') {
+    return {
+      commercialLane: 'Proof-backed setup guide first, Pro second',
+      cta: {
+        label: 'Open proof-backed setup guide',
+        href: `/guide?utm_source=website&utm_medium=seo_page&utm_campaign=${campaign}&cta_placement=seo_brief_primary&offer=guide`,
+      },
+      secondaryCta: {
+        label: 'See Solo Pro',
+        href: proHref,
+      },
+    };
+  }
+
+  return {
+    commercialLane: 'Workflow Hardening Sprint first, Pro second',
+    cta: {
+      label: 'Start Workflow Hardening Sprint',
+      href: `/?utm_source=website&utm_medium=seo_page&utm_campaign=${campaign}&cta_placement=seo_brief_primary&offer=sprint#workflow-sprint-intake`,
+    },
+    secondaryCta: {
+      label: 'See Solo Pro',
+      href: proHref,
+    },
+  };
+}
+
 function createPageSpec(blueprint, row) {
   const keywordCluster = clusterKeywordRows(
     HIGH_ROI_QUERY_SEEDS.map((seed, index) => normalizeKeywordRow(seed, index))
@@ -1343,10 +1374,7 @@ function createPageSpec(blueprint, row) {
     sections: blueprint.sections,
     faq: blueprint.faq,
     relatedPages,
-    cta: {
-      label: 'Go Pro — $19/mo',
-      href: `/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=${blueprint.path.split('/').filter(Boolean).join('_')}&cta_placement=seo_brief&plan_id=pro`,
-    },
+    ...buildSeoCommercialMotion(blueprint),
     proofLinks: [
       { label: 'Verification evidence', href: PRODUCT.verificationUrl },
       { label: 'Automation proof', href: PRODUCT.automationUrl },
@@ -1537,7 +1565,7 @@ function renderSeoPageHtml(page, runtimeConfig = {}) {
   const proofLinks = page.proofLinks.map((link) => `<a href="${escapeHtml(link.href)}" target="_blank" rel="noopener">${escapeHtml(link.label)}</a>`).join('');
   const faqJsonLd = renderFaqJsonLd(page);
 
-  return `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -1707,6 +1735,14 @@ function renderSeoPageHtml(page, runtimeConfig = {}) {
       font-weight: 700;
       text-decoration: none;
     }
+    .cta-secondary {
+      display: inline-flex;
+      margin-top: 12px;
+      color: var(--text);
+      font-weight: 600;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
     .faq-item {
       border-top: 1px solid var(--line);
       padding: 14px 0;
@@ -1791,9 +1827,11 @@ ${renderWebPageJsonLd(page, { appOrigin })}
           <p><strong>Primary persona:</strong> ${escapeHtml(page.persona)}</p>
           <p><strong>Keyword cluster:</strong> ${escapeHtml(page.keywordCluster.join(', '))}</p>
           <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
+          <p><strong>Commercial lane:</strong> ${escapeHtml(page.commercialLane)}</p>
           <div class="proof-links">${proofLinks}</div>
           <a class="cta-button" href="${escapeHtml(page.cta.href)}" target="_blank" rel="noopener">${escapeHtml(page.cta.label)}</a>
-        </div>
+${page.secondaryCta ? `          <a class="cta-secondary" href="${escapeHtml(page.secondaryCta.href)}" target="_blank" rel="noopener">${escapeHtml(page.secondaryCta.label)}</a>
+` : ''}        </div>
         <div class="sidebar-card">
           <h2>Related pages</h2>
           ${relatedCards}
@@ -1803,6 +1841,8 @@ ${renderWebPageJsonLd(page, { appOrigin })}
   </main>
 </body>
 </html>`;
+
+  return html.replace(/[ \t]+\n/g, '\n');
 }
 
 const THUMBGATE_SEO_PLAN = buildThumbGateSeoPlan(HIGH_ROI_QUERY_SEEDS);
@@ -1889,4 +1929,5 @@ module.exports = {
   renderSeoPageHtml,
   scoreOpportunity,
   writePlanOutputs,
+  buildSeoCommercialMotion,
 };
