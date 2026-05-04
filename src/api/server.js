@@ -1495,6 +1495,16 @@ function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneySt
   };
 }
 
+function buildCheckoutConfirmHref(parsed) {
+  const confirmUrl = new URL('/checkout/pro', 'https://thumbgate.invalid');
+  confirmUrl.searchParams.set('confirm', '1');
+  for (const [key, value] of parsed.searchParams.entries()) {
+    if (key === 'confirm') continue;
+    confirmUrl.searchParams.append(key, value);
+  }
+  return `${confirmUrl.pathname}${confirmUrl.search}`;
+}
+
 function normalizeTrackedLinkSlug(value) {
   return String(value || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
 }
@@ -4383,7 +4393,8 @@ async function addContext(){
           planId: analyticsMetadata.planId,
           reason: botClassification.reason,
         }, req.headers, 'checkout_bot_deflected');
-        const html = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>ThumbGate Pro \u2014 Confirm checkout</title><style>*{box-sizing:border-box}body{background:#0a0a0a;color:#e5e5e5;font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px}.card{background:#141414;border:1px solid #222;border-radius:16px;padding:48px 40px;max-width:460px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.5)}h1{margin:0 0 12px;font-size:22px;color:#22d3ee}p{color:#9ca3af;font-size:14px;line-height:1.55;margin:0 0 24px}.btn{display:inline-block;background:#22d3ee;color:#000;text-decoration:none;font-weight:700;padding:14px 32px;border-radius:999px;font-size:16px;cursor:pointer;border:none}.btn:hover{opacity:.9}.sub{margin-top:16px;font-size:12px;color:#6b7280}a.back{color:#6b7280;font-size:13px;text-decoration:underline}</style></head><body><div class="card"><h1>Continue to secure checkout</h1><p>You\'re one click from ThumbGate Pro at $19/mo. We create the payment session only after you confirm \u2014 keeps your path clean and our funnel honest.</p><a class="btn" href="/checkout/pro?confirm=1" rel="noopener">Continue to Stripe \u2192</a><div class="sub">Payments handled by Stripe. 7-day trial. Card required; no charge today. Cancel anytime.</div><div class="sub"><a class="back" href="/">\u2190 Back to homepage</a></div></div></body></html>';
+        const confirmHref = escapeHtmlAttribute(buildCheckoutConfirmHref(parsed));
+        const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>ThumbGate Pro \u2014 Confirm checkout</title><style>*{box-sizing:border-box}body{background:#0a0a0a;color:#e5e5e5;font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px}.card{background:#141414;border:1px solid #222;border-radius:16px;padding:48px 40px;max-width:460px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.5)}h1{margin:0 0 12px;font-size:22px;color:#22d3ee}p{color:#9ca3af;font-size:14px;line-height:1.55;margin:0 0 24px}.btn{display:inline-block;background:#22d3ee;color:#000;text-decoration:none;font-weight:700;padding:14px 32px;border-radius:999px;font-size:16px;cursor:pointer;border:none}.btn:hover{opacity:.9}.sub{margin-top:16px;font-size:12px;color:#6b7280}a.back{color:#6b7280;font-size:13px;text-decoration:underline}</style></head><body><div class="card"><h1>Continue to secure checkout</h1><p>You\'re one click from ThumbGate Pro at $19/mo. We create the payment session only after you confirm \u2014 keeps your path clean and our funnel honest.</p><a class="btn" href="${confirmHref}" rel="noopener">Continue to Stripe \u2192</a><div class="sub">Payments handled by Stripe. Card required; billed today. Cancel anytime.</div><div class="sub"><a class="back" href="/">\u2190 Back to homepage</a></div></div></body></html>`;
         sendHtml(res, 200, html, responseHeaders);
         return;
       }
