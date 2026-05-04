@@ -11,6 +11,7 @@ const {
   CANONICAL_SHORT_DESCRIPTION,
   CLINE_INSTALL_URL,
   GUIDE_URL,
+  ROO_MIGRATION_GUIDE_URL,
   ROO_SUNSET_BLOG_URL,
   ROO_SUNSET_DOC_URL,
   buildChannelDrafts,
@@ -102,15 +103,18 @@ test('Roo demand surfaces stay tied to real shutdown, install, guide, and proof 
 
   assert.deepEqual(surfaces.map((surface) => surface.key), [
     'roo_shutdown_notice',
+    'roo_migration_guide',
     'cline_install_guide',
     'proof_backed_setup_guide',
     'verification_evidence',
   ]);
   assert.equal(surfaces[0].url, ROO_SUNSET_DOC_URL);
   assert.equal(surfaces[0].supportUrl, ROO_SUNSET_BLOG_URL);
-  assert.match(surfaces[1].url, /adapters\/cline\/INSTALL\.md/);
-  assert.match(surfaces[2].url, /\/guide\?/);
-  assert.match(surfaces[3].url, /VERIFICATION_EVIDENCE\.md/);
+  assert.equal(surfaces[1].supportUrl, CLINE_INSTALL_URL);
+  assert.match(surfaces[1].url, /\/guides\/roo-code-alternative-cline/);
+  assert.match(surfaces[2].url, /adapters\/cline\/INSTALL\.md/);
+  assert.match(surfaces[3].url, /\/guide\?/);
+  assert.match(surfaces[4].url, /VERIFICATION_EVIDENCE\.md/);
 });
 
 test('follow-on offers and operator queue keep Pro and sprint motions explicit', () => {
@@ -119,7 +123,8 @@ test('follow-on offers and operator queue keep Pro and sprint motions explicit',
 
   assert.deepEqual(offers.map((offer) => offer.key), ['pro', 'sprint']);
   assert.equal(queue.length, 3);
-  assert.match(queue[0].recommendedMotion, /Cline install guide -> setup guide -> Pro/);
+  assert.equal(queue[0].proofAsset, ROO_MIGRATION_GUIDE_URL);
+  assert.match(queue[0].recommendedMotion, /Roo migration guide -> Cline install guide -> setup guide -> Pro/);
   assert.match(queue[1].recommendedMotion, /Workflow Hardening Sprint first/);
   assert.match(queue[2].recommendedMotion, /Setup guide -> commercial truth -> Pro/);
 });
@@ -128,7 +133,7 @@ test('outreach drafts keep first touch migration-first and reserve proof for pai
   const drafts = buildOutreachDrafts(LINKS_FIXTURE);
 
   assert.equal(drafts.length, 3);
-  assert.match(drafts[0].draft, /adapters\/cline\/INSTALL\.md/);
+  assert.match(drafts[0].draft, /\/guides\/roo-code-alternative-cline/);
   assert.doesNotMatch(drafts[0].draft, /VERIFICATION_EVIDENCE\.md/);
   assert.match(drafts[1].draft, /VERIFICATION_EVIDENCE\.md/);
   assert.match(drafts[2].draft, /Workflow Hardening Sprint/i);
@@ -144,10 +149,10 @@ test('channel drafts stay tied to migration urgency and guide-first guardrails',
     'Threads',
     'Bluesky',
   ]);
-  assert.match(drafts[0].cta, /adapters\/cline\/INSTALL\.md/);
+  assert.match(drafts[0].cta, /\/guides\/roo-code-alternative-cline/);
   assert.match(drafts[1].cta, /workflow-sprint-intake/);
-  assert.match(drafts[2].cta, /\/guide\?/);
-  assert.match(drafts[3].cta, /\/guide\?/);
+  assert.match(drafts[2].cta, /\/guides\/roo-code-alternative-cline/);
+  assert.match(drafts[3].cta, /\/guides\/roo-code-alternative-cline/);
   assert.ok(drafts.every((draft) => !draft.draft.includes('VERIFICATION_EVIDENCE.md')));
 });
 
@@ -177,6 +182,7 @@ test('rendered pack is operator-ready and anchored to real migration and proof s
   assert.match(markdown, new RegExp(CANONICAL_HEADLINE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(markdown, new RegExp(CANONICAL_SHORT_DESCRIPTION.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(markdown, /docs\.roocode\.com/);
+  assert.match(markdown, /\/guides\/roo-code-alternative-cline/);
   assert.match(markdown, /sunsetting-roo-code-extension-cloud-and-router/);
   assert.match(markdown, /Active Channel Drafts/);
   assert.match(markdown, /Evidence Backstop/);
