@@ -184,6 +184,16 @@ function buildRalphSteps(options = {}, env = process.env) {
           requiredEnvAll: ['BLUESKY_HANDLE', 'BLUESKY_APP_PASSWORD'],
         }
       ),
+      makeNodeStep(
+        'prospect-bluesky',
+        'scripts/social-bluesky-prospecting.js',
+        replyArgs,
+        {
+          stage: 'engage',
+          description: 'Searches Bluesky for relevant agent-reliability pain and queues technical ThumbGate reply drafts (never auto-posts).',
+          requiredEnvAll: ['BLUESKY_HANDLE', 'BLUESKY_APP_PASSWORD'],
+        }
+      ),
     );
   }
 

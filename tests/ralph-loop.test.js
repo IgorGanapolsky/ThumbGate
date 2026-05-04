@@ -53,6 +53,7 @@ test('buildRalphSteps keeps hourly all mode focused on sensing, replying, and au
     'sync-launch-assets',
     'reply-monitor',
     'reply-monitor-bluesky',
+    'prospect-bluesky',
     'engagement-audit',
   ]);
   assert.match(steps.find((step) => step.id === 'sync-launch-assets').skipReason, /ZERNIO_API_KEY/);
@@ -62,6 +63,10 @@ test('buildRalphSteps keeps hourly all mode focused on sensing, replying, and au
   const bluesky = steps.find((step) => step.id === 'reply-monitor-bluesky');
   assert.deepEqual(bluesky.args.slice(-1), ['--dry-run']);
   assert.match(bluesky.skipReason, /BLUESKY_HANDLE|BLUESKY_APP_PASSWORD/);
+  const prospecting = steps.find((step) => step.id === 'prospect-bluesky');
+  assert.deepEqual(prospecting.args.slice(-1), ['--dry-run']);
+  assert.match(prospecting.description, /relevant agent-reliability pain/);
+  assert.match(prospecting.skipReason, /BLUESKY_HANDLE|BLUESKY_APP_PASSWORD/);
   assert.equal(ids.includes('daily-social-post'), false);
 });
 
