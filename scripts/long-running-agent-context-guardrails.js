@@ -48,43 +48,55 @@ function templateApplicability(template, options) {
 }
 
 function buildSignals(options) {
-  const signals = [];
-  if (options.rawChatOnly || (options.requestCount !== null && options.requestCount >= 25) || (options.outputMb !== null && options.outputMb >= 1)) {
-    signals.push({
-      id: 'context_window_bloat',
-      label: 'Context-window bloat risk',
-      values: [
-        options.rawChatOnly ? 'raw chat history only' : null,
-        options.requestCount !== null ? `${options.requestCount} requests` : null,
-        options.outputMb !== null ? `${options.outputMb}MB output` : null,
-      ].filter(Boolean),
-      risk: 'raw message accumulation degrades coherence and wastes context budget',
-    });
-  }
-  if (!options.directorJournal || !options.criticReview || !options.credibilityScores) {
-    signals.push({
-      id: 'missing_truth_filter',
-      label: 'Missing structured truth filter',
-      values: [
-        options.directorJournal ? null : 'no director journal',
-        options.criticReview ? null : 'no critic review',
-        options.credibilityScores ? null : 'no credibility scores',
-      ].filter(Boolean),
-      risk: 'agent summaries can become shared truth without evidence inspection',
-    });
-  }
-  if (options.conflicts || !options.criticTimeline) {
-    signals.push({
-      id: 'timeline_conflict',
-      label: 'Timeline conflict risk',
-      values: [
-        options.conflicts ? 'known conflicts' : null,
-        options.criticTimeline ? null : 'no critic timeline',
-      ].filter(Boolean),
-      risk: 'long-lived memory can retain duplicates, stale claims, or contradictory findings',
-    });
-  }
-  return signals;
+  return [
+    contextWindowSignal(options),
+    truthFilterSignal(options),
+    timelineConflictSignal(options),
+  ].filter(Boolean);
+}
+
+function contextWindowSignal(options) {
+  const bloated = options.rawChatOnly ||
+    (options.requestCount !== null && options.requestCount >= 25) ||
+    (options.outputMb !== null && options.outputMb >= 1);
+  if (!bloated) return null;
+  return {
+    id: 'context_window_bloat',
+    label: 'Context-window bloat risk',
+    values: [
+      options.rawChatOnly ? 'raw chat history only' : null,
+      options.requestCount !== null ? `${options.requestCount} requests` : null,
+      options.outputMb !== null ? `${options.outputMb}MB output` : null,
+    ].filter(Boolean),
+    risk: 'raw message accumulation degrades coherence and wastes context budget',
+  };
+}
+
+function truthFilterSignal(options) {
+  if (options.directorJournal && options.criticReview && options.credibilityScores) return null;
+  return {
+    id: 'missing_truth_filter',
+    label: 'Missing structured truth filter',
+    values: [
+      options.directorJournal ? null : 'no director journal',
+      options.criticReview ? null : 'no critic review',
+      options.credibilityScores ? null : 'no credibility scores',
+    ].filter(Boolean),
+    risk: 'agent summaries can become shared truth without evidence inspection',
+  };
+}
+
+function timelineConflictSignal(options) {
+  if (!options.conflicts && options.criticTimeline) return null;
+  return {
+    id: 'timeline_conflict',
+    label: 'Timeline conflict risk',
+    values: [
+      options.conflicts ? 'known conflicts' : null,
+      options.criticTimeline ? null : 'no critic timeline',
+    ].filter(Boolean),
+    risk: 'long-lived memory can retain duplicates, stale claims, or contradictory findings',
+  };
 }
 
 function buildLongRunningAgentContextGuardrailsPlan(rawOptions = {}, templatesPath) {

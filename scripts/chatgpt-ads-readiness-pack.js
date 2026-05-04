@@ -185,7 +185,11 @@ module.exports = {
   writeChatgptAdsReadinessPack,
 };
 
-if (require.main === module) {
+function isCliInvocation(argv = process.argv) {
+  return Boolean(argv[1] && path.resolve(argv[1]) === __filename);
+}
+
+if (isCliInvocation()) {
   const { jsonPath, markdownPath } = writeChatgptAdsReadinessPack();
   console.log(JSON.stringify({ jsonPath, markdownPath }, null, 2));
 }

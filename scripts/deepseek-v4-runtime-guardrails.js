@@ -82,69 +82,84 @@ function templateApplicability(template, options) {
 }
 
 function buildSignals(options) {
-  const signals = [];
   const drop = throughputDropPercent(options);
-  if (options.hybridAttention || isLongContext(options) || options.prefixCache) {
-    signals.push({
-      id: 'hybrid_attention_cache',
-      label: 'Hybrid attention prefix cache',
-      values: [
-        options.hybridAttention ? 'hybrid attention' : null,
-        options.prefixCache ? 'prefix cache enabled' : 'prefix cache missing',
-        options.cacheCoherenceEval ? 'coherence eval present' : 'missing coherence eval',
-        options.contextTokens !== null ? `${options.contextTokens} context tokens` : null,
-      ].filter(Boolean),
-      risk: 'SWA, compressed KV, and compression-state pools can drift unless cache lifetime and reuse are verified.',
-    });
-  }
-  if (options.speculativeDecoding || options.acceptLength !== null) {
-    signals.push({
-      id: 'speculative_decoding',
-      label: 'Speculative decoding rollout',
-      values: [
-        options.speculativeDecoding ? 'speculative decoding enabled' : 'speculative decoding not declared',
-        options.acceptLength !== null ? `${options.acceptLength} accept length` : 'accept length missing',
-      ],
-      risk: 'Draft-token metadata and rollback paths can make throughput claims look good while correctness or acceptance collapses.',
-    });
-  }
-  if (isLongContext(options)) {
-    signals.push({
-      id: 'long_context_capacity',
-      label: 'Long-context capacity plan',
-      values: [
-        `${options.contextTokens || options.targetContextTokens} token context target`,
-        options.kvOffload ? 'KV offload present' : 'KV offload missing',
-        drop !== null ? `${drop}% throughput drop` : null,
-      ].filter(Boolean),
-      risk: 'Long-context serving can hit memory ceilings or hidden throughput regressions without capacity and benchmark gates.',
-    });
-  }
-  if (options.training) {
-    signals.push({
-      id: 'verified_rl_replay',
-      label: 'Verified RL replay safety',
-      values: [
-        options.rolloutReplay ? 'rollout replay present' : 'rollout replay missing',
-        options.indexerReplay ? 'indexer replay present' : 'indexer replay missing',
-        options.trainInferenceDrift !== null ? `${options.trainInferenceDrift} train-inference drift` : null,
-      ].filter(Boolean),
-      risk: 'Sparse routing and indexer decisions must be replayed or training can optimize against a different path than rollout served.',
-    });
-  }
-  if (usesMixedPrecision(options) || options.numericalSpikes) {
-    signals.push({
-      id: 'mixed_precision_determinism',
-      label: 'Mixed precision determinism',
-      values: [
-        options.precisionMode || 'precision mode unspecified',
-        options.deterministic ? 'determinism enabled' : 'determinism missing',
-        options.numericalSpikes ? 'numerical spikes observed' : null,
-      ].filter(Boolean),
-      risk: 'FP4/FP8 rollout and training can introduce silent numerical drift without deterministic and FP32-sensitive-path checks.',
-    });
-  }
-  return signals;
+  return [
+    hybridAttentionSignal(options),
+    speculativeDecodingSignal(options),
+    longContextSignal(options, drop),
+    verifiedReplaySignal(options),
+    mixedPrecisionSignal(options),
+  ].filter(Boolean);
+}
+
+function hybridAttentionSignal(options) {
+  if (!(options.hybridAttention || isLongContext(options) || options.prefixCache)) return null;
+  return {
+    id: 'hybrid_attention_cache',
+    label: 'Hybrid attention prefix cache',
+    values: [
+      options.hybridAttention ? 'hybrid attention' : null,
+      options.prefixCache ? 'prefix cache enabled' : 'prefix cache missing',
+      options.cacheCoherenceEval ? 'coherence eval present' : 'missing coherence eval',
+      options.contextTokens !== null ? `${options.contextTokens} context tokens` : null,
+    ].filter(Boolean),
+    risk: 'SWA, compressed KV, and compression-state pools can drift unless cache lifetime and reuse are verified.',
+  };
+}
+
+function speculativeDecodingSignal(options) {
+  if (!(options.speculativeDecoding || options.acceptLength !== null)) return null;
+  return {
+    id: 'speculative_decoding',
+    label: 'Speculative decoding rollout',
+    values: [
+      options.speculativeDecoding ? 'speculative decoding enabled' : 'speculative decoding not declared',
+      options.acceptLength !== null ? `${options.acceptLength} accept length` : 'accept length missing',
+    ],
+    risk: 'Draft-token metadata and rollback paths can make throughput claims look good while correctness or acceptance collapses.',
+  };
+}
+
+function longContextSignal(options, drop) {
+  if (!isLongContext(options)) return null;
+  return {
+    id: 'long_context_capacity',
+    label: 'Long-context capacity plan',
+    values: [
+      `${options.contextTokens || options.targetContextTokens} token context target`,
+      options.kvOffload ? 'KV offload present' : 'KV offload missing',
+      drop !== null ? `${drop}% throughput drop` : null,
+    ].filter(Boolean),
+    risk: 'Long-context serving can hit memory ceilings or hidden throughput regressions without capacity and benchmark gates.',
+  };
+}
+
+function verifiedReplaySignal(options) {
+  if (!options.training) return null;
+  return {
+    id: 'verified_rl_replay',
+    label: 'Verified RL replay safety',
+    values: [
+      options.rolloutReplay ? 'rollout replay present' : 'rollout replay missing',
+      options.indexerReplay ? 'indexer replay present' : 'indexer replay missing',
+      options.trainInferenceDrift !== null ? `${options.trainInferenceDrift} train-inference drift` : null,
+    ].filter(Boolean),
+    risk: 'Sparse routing and indexer decisions must be replayed or training can optimize against a different path than rollout served.',
+  };
+}
+
+function mixedPrecisionSignal(options) {
+  if (!(usesMixedPrecision(options) || options.numericalSpikes)) return null;
+  return {
+    id: 'mixed_precision_determinism',
+    label: 'Mixed precision determinism',
+    values: [
+      options.precisionMode || 'precision mode unspecified',
+      options.deterministic ? 'determinism enabled' : 'determinism missing',
+      options.numericalSpikes ? 'numerical spikes observed' : null,
+    ].filter(Boolean),
+    risk: 'FP4/FP8 rollout and training can introduce silent numerical drift without deterministic and FP32-sensitive-path checks.',
+  };
 }
 
 function buildDeepSeekV4RuntimeGuardrailsPlan(rawOptions = {}, templatesPath) {

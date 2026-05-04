@@ -64,44 +64,53 @@ function templateApplicability(template, options) {
 }
 
 function buildSignals(options) {
-  const signals = [];
   const drop = recallDropPercent(options);
-  if (options.thresholdChanged || options.embeddingFineTune || drop !== null) {
-    signals.push({
-      id: 'precision_tuning',
-      label: 'Precision tuning change',
-      values: [
-        options.thresholdChanged ? 'threshold changed' : null,
-        options.embeddingFineTune ? 'embedding fine-tune' : null,
-        drop !== null ? `recall drop ${drop}%` : null,
-      ].filter(Boolean),
-      risk: 'precision wins can hide broad retrieval recall regressions',
-    });
-  }
-  if (options.structuralNearMisses || options.agenticPipeline) {
-    signals.push({
-      id: 'agentic_rag_cascade',
-      label: 'Agentic RAG cascade risk',
-      values: [
-        options.agenticPipeline ? 'agentic pipeline' : null,
-        options.structuralNearMisses ? 'structural near misses' : null,
-      ].filter(Boolean),
-      risk: 'wrong retrieval can trigger downstream tool calls, not just wrong answers',
-    });
-  }
-  if (options.verifier || options.latencyMs !== null || options.latencyBudgetMs !== null) {
-    signals.push({
-      id: 'verifier_latency',
-      label: 'Verifier latency tradeoff',
-      values: [
-        options.verifier ? 'verifier enabled' : null,
-        options.latencyMs !== null ? `${options.latencyMs}ms observed` : null,
-        options.latencyBudgetMs !== null ? `${options.latencyBudgetMs}ms budget` : null,
-      ].filter(Boolean),
-      risk: 'second-stage verification needs a known latency budget',
-    });
-  }
-  return signals;
+  return [
+    precisionTuningSignal(options, drop),
+    ragCascadeSignal(options),
+    verifierLatencySignal(options),
+  ].filter(Boolean);
+}
+
+function precisionTuningSignal(options, drop) {
+  if (!(options.thresholdChanged || options.embeddingFineTune || drop !== null)) return null;
+  return {
+    id: 'precision_tuning',
+    label: 'Precision tuning change',
+    values: [
+      options.thresholdChanged ? 'threshold changed' : null,
+      options.embeddingFineTune ? 'embedding fine-tune' : null,
+      drop !== null ? `recall drop ${drop}%` : null,
+    ].filter(Boolean),
+    risk: 'precision wins can hide broad retrieval recall regressions',
+  };
+}
+
+function ragCascadeSignal(options) {
+  if (!(options.structuralNearMisses || options.agenticPipeline)) return null;
+  return {
+    id: 'agentic_rag_cascade',
+    label: 'Agentic RAG cascade risk',
+    values: [
+      options.agenticPipeline ? 'agentic pipeline' : null,
+      options.structuralNearMisses ? 'structural near misses' : null,
+    ].filter(Boolean),
+    risk: 'wrong retrieval can trigger downstream tool calls, not just wrong answers',
+  };
+}
+
+function verifierLatencySignal(options) {
+  if (!(options.verifier || options.latencyMs !== null || options.latencyBudgetMs !== null)) return null;
+  return {
+    id: 'verifier_latency',
+    label: 'Verifier latency tradeoff',
+    values: [
+      options.verifier ? 'verifier enabled' : null,
+      options.latencyMs !== null ? `${options.latencyMs}ms observed` : null,
+      options.latencyBudgetMs !== null ? `${options.latencyBudgetMs}ms budget` : null,
+    ].filter(Boolean),
+    risk: 'second-stage verification needs a known latency budget',
+  };
 }
 
 function buildRagPrecisionGuardrailsPlan(rawOptions = {}, templatesPath) {

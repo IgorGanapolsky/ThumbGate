@@ -1936,8 +1936,12 @@ function normalizeText(value) {
 function slugify(value) {
   return normalizeText(value)
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .split('')
+    .map((char) => (/[a-z0-9]/.test(char) ? char : '-'))
+    .join('')
+    .split('-')
+    .filter(Boolean)
+    .join('-');
 }
 
 function toNumber(value) {
@@ -2184,8 +2188,8 @@ function clusterKeywordRows(rows) {
   return [...clusters.values()]
     .map((cluster) => ({
       ...cluster,
-      personas: [...cluster.personas].sort(),
-      intents: [...cluster.intents].sort(),
+      personas: [...cluster.personas].sort((a, b) => a.localeCompare(b)),
+      intents: [...cluster.intents].sort((a, b) => a.localeCompare(b)),
       totalOpportunityScore: Number(cluster.totalOpportunityScore.toFixed(2)),
       queries: [...cluster.queries].sort((a, b) => b.opportunityScore - a.opportunityScore),
     }))
@@ -2845,7 +2849,7 @@ ${renderWebPageJsonLd(page, { appOrigin })}
   </main>
 </body>
 </html>`;
-  return html.replace(/[ \t]+$/gm, '');
+  return html.split('\n').map((line) => line.trimEnd()).join('\n');
 }
 
 const THUMBGATE_SEO_PLAN = buildThumbGateSeoPlan(HIGH_ROI_QUERY_SEEDS);
@@ -2902,7 +2906,11 @@ async function main() {
   }
 }
 
-if (require.main === module) {
+function isCliInvocation(argv = process.argv) {
+  return Boolean(argv[1] && path.resolve(argv[1]) === __filename);
+}
+
+if (isCliInvocation()) {
   main().catch((error) => {
     console.error(error.message || String(error));
     process.exit(1);

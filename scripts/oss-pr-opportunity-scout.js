@@ -49,8 +49,12 @@ function splitList(value) {
 function slugify(value) {
   return normalizeText(value)
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .split('')
+    .map((char) => (/[a-z0-9]/.test(char) ? char : '-'))
+    .join('')
+    .split('-')
+    .filter(Boolean)
+    .join('-');
 }
 
 function loadPackage(packagePath = DEFAULT_PACKAGE_PATH) {
@@ -62,7 +66,7 @@ function dependencyNames(pkg = {}) {
     ...Object.keys(pkg.dependencies || {}),
     ...Object.keys(pkg.devDependencies || {}),
     ...Object.keys(pkg.optionalDependencies || {}),
-  ].sort();
+  ].sort((a, b) => a.localeCompare(b));
 }
 
 function repoFromDependency(name) {
@@ -226,7 +230,11 @@ module.exports = {
   writeOssPrOpportunityScoutPack,
 };
 
-if (require.main === module) {
+function isCliInvocation(argv = process.argv) {
+  return Boolean(argv[1] && path.resolve(argv[1]) === __filename);
+}
+
+if (isCliInvocation()) {
   const { jsonPath, markdownPath } = writeOssPrOpportunityScoutPack();
   console.log(JSON.stringify({ jsonPath, markdownPath }, null, 2));
 }

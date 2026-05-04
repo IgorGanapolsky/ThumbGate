@@ -465,29 +465,13 @@ function buildRlsdCreditAssignment(trace = {}, evaluation = evaluateTraceShape(t
 function resolveVerifiableRewardDirection(trace = {}, evaluation = {}, options = {}) {
   const outcome = trace.outcome || {};
   if (outcome.reward !== null && outcome.reward !== undefined && Number.isFinite(Number(outcome.reward))) {
-    const reward = clamp(Number(outcome.reward), -1, 1);
-    return {
-      label: reward > 0 ? 'reinforce' : reward < 0 ? 'penalize' : 'neutral',
-      value: reward > 0 ? 1 : reward < 0 ? -1 : 0,
-      finalReward: reward,
-      source: 'verifiable_outcome',
-    };
+    return verifiableRewardDirection(clamp(Number(outcome.reward), -1, 1));
   }
   if (typeof outcome.success === 'boolean') {
-    return {
-      label: outcome.success ? 'reinforce' : 'penalize',
-      value: outcome.success ? 1 : -1,
-      finalReward: outcome.success ? 1 : -1,
-      source: 'verifiable_outcome',
-    };
+    return verifiableRewardDirection(outcome.success ? 1 : -1);
   }
   if (options.allowShapeFallback) {
-    return {
-      label: evaluation.verdict === 'gate' ? 'penalize' : 'reinforce',
-      value: evaluation.verdict === 'gate' ? -1 : 1,
-      finalReward: evaluation.verdict === 'gate' ? -1 : 1,
-      source: 'shape_fallback',
-    };
+    return shapeFallbackDirection(evaluation);
   }
   return {
     label: 'preference_pipeline_required',
@@ -495,6 +479,32 @@ function resolveVerifiableRewardDirection(trace = {}, evaluation = {}, options =
     finalReward: null,
     source: 'not_verifiable',
   };
+}
+
+function verifiableRewardDirection(reward) {
+  const value = Math.sign(reward);
+  return {
+    label: rewardDirectionLabel(value),
+    value,
+    finalReward: reward,
+    source: 'verifiable_outcome',
+  };
+}
+
+function shapeFallbackDirection(evaluation = {}) {
+  const value = evaluation.verdict === 'gate' ? -1 : 1;
+  return {
+    label: rewardDirectionLabel(value),
+    value,
+    finalReward: value,
+    source: 'shape_fallback',
+  };
+}
+
+function rewardDirectionLabel(value) {
+  if (value > 0) return 'reinforce';
+  if (value < 0) return 'penalize';
+  return 'neutral';
 }
 
 function normalizeStepMagnitudes(steps = [], evaluation = {}) {

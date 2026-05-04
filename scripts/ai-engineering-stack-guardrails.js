@@ -88,71 +88,80 @@ function templateApplicability(template, options) {
 }
 
 function buildSignals(options) {
-  const signals = [];
+  return [
+    gatewaySignal(options),
+    mcpContextSignal(options),
+    contextFreshnessSignal(options),
+    reviewEnforcementSignal(options),
+    backgroundRuntimeSignal(options),
+  ].filter(Boolean);
+}
 
-  if (!options.gateway || options.directProviderKeys) {
-    signals.push({
-      id: 'gateway_control_plane',
-      label: 'Model gateway control plane',
-      values: [
-        options.gateway ? 'gateway present' : 'gateway missing',
-        options.directProviderKeys ? 'direct provider keys detected' : null,
-      ].filter(Boolean),
-      risk: 'AI usage, keys, cost attribution, and data-retention controls fragment across clients',
-    });
-  }
+function gatewaySignal(options) {
+  if (options.gateway && !options.directProviderKeys) return null;
+  return {
+    id: 'gateway_control_plane',
+    label: 'Model gateway control plane',
+    values: [
+      options.gateway ? 'gateway present' : 'gateway missing',
+      options.directProviderKeys ? 'direct provider keys detected' : null,
+    ].filter(Boolean),
+    risk: 'AI usage, keys, cost attribution, and data-retention controls fragment across clients',
+  };
+}
 
-  if ((options.mcpToolCount !== null && options.mcpToolCount >= 20) || !options.codeMode) {
-    signals.push({
-      id: 'mcp_context_bloat',
-      label: 'MCP tool schema overhead',
-      values: [
-        options.mcpToolCount !== null ? `${options.mcpToolCount} MCP tools` : null,
-        options.codeMode ? 'progressive discovery enabled' : 'code mode missing',
-      ].filter(Boolean),
-      risk: 'large tool schemas consume prompt budget before the agent starts work',
-    });
-  }
+function mcpContextSignal(options) {
+  if (!((options.mcpToolCount !== null && options.mcpToolCount >= 20) || !options.codeMode)) return null;
+  return {
+    id: 'mcp_context_bloat',
+    label: 'MCP tool schema overhead',
+    values: [
+      options.mcpToolCount !== null ? `${options.mcpToolCount} MCP tools` : null,
+      options.codeMode ? 'progressive discovery enabled' : 'code mode missing',
+    ].filter(Boolean),
+    risk: 'large tool schemas consume prompt budget before the agent starts work',
+  };
+}
 
-  if (!options.agentsMd || options.llmWikiPages !== null || options.contextFreshnessDays !== null) {
-    signals.push({
-      id: 'agent_context_freshness',
-      label: 'AGENTS.md and LLM wiki freshness',
-      values: [
-        options.agentsMd ? 'AGENTS.md present' : 'AGENTS.md missing',
-        options.llmWikiPages !== null ? `${options.llmWikiPages} LLM wiki pages` : null,
-        options.contextFreshnessDays !== null ? `${options.contextFreshnessDays} days since refresh` : null,
-      ].filter(Boolean),
-      risk: 'agents act on stale repo conventions, ownership, tests, or system dependencies',
-    });
-  }
+function contextFreshnessSignal(options) {
+  if (options.agentsMd && options.llmWikiPages === null && options.contextFreshnessDays === null) return null;
+  return {
+    id: 'agent_context_freshness',
+    label: 'AGENTS.md and LLM wiki freshness',
+    values: [
+      options.agentsMd ? 'AGENTS.md present' : 'AGENTS.md missing',
+      options.llmWikiPages !== null ? `${options.llmWikiPages} LLM wiki pages` : null,
+      options.contextFreshnessDays !== null ? `${options.contextFreshnessDays} days since refresh` : null,
+    ].filter(Boolean),
+    risk: 'agents act on stale repo conventions, ownership, tests, or system dependencies',
+  };
+}
 
-  if (!options.aiReviewer || !options.codexRules || options.highRiskWorkflows.length > 0) {
-    signals.push({
-      id: 'review_enforcement_gap',
-      label: 'Risk-tiered AI review and standards',
-      values: [
-        options.aiReviewer ? 'AI reviewer present' : 'AI reviewer missing',
-        options.codexRules ? 'standards-as-skills present' : 'codex rules missing',
-        ...options.highRiskWorkflows,
-      ].filter(Boolean),
-      risk: 'agent changes ship without repeatable severity, category, and rule-id feedback',
-    });
-  }
+function reviewEnforcementSignal(options) {
+  if (options.aiReviewer && options.codexRules && options.highRiskWorkflows.length === 0) return null;
+  return {
+    id: 'review_enforcement_gap',
+    label: 'Risk-tiered AI review and standards',
+    values: [
+      options.aiReviewer ? 'AI reviewer present' : 'AI reviewer missing',
+      options.codexRules ? 'standards-as-skills present' : 'codex rules missing',
+      ...options.highRiskWorkflows,
+    ].filter(Boolean),
+    risk: 'agent changes ship without repeatable severity, category, and rule-id feedback',
+  };
+}
 
-  if (options.backgroundAgents || !options.sandbox) {
-    signals.push({
-      id: 'background_agent_runtime',
-      label: 'Background agent runtime isolation',
-      values: [
-        options.backgroundAgents ? 'background agents enabled' : 'background agents not declared',
-        options.sandbox ? 'sandbox present' : 'sandbox missing',
-      ].filter(Boolean),
-      risk: 'long-running agents can clone, build, test, or publish without durable audit and isolation',
-    });
-  }
-
-  return signals;
+function backgroundRuntimeSignal(options) {
+  if (!options.backgroundAgents && options.sandbox) return null;
+  return {
+    id: 'background_agent_runtime',
+    label: 'Background agent runtime isolation',
+    values: [
+      options.backgroundAgents ? 'background agents enabled' : 'background agents not declared',
+      options.sandbox ? 'sandbox present' : 'sandbox missing',
+    ].filter(Boolean),
+    risk: 'long-running agents can clone, build, test, or publish without durable audit and isolation',
+  };
 }
 
 function buildAiEngineeringStackGuardrailsPlan(rawOptions = {}, templatesPath) {

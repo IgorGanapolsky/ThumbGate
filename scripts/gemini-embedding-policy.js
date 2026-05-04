@@ -125,13 +125,19 @@ function resolveGeminiEmbeddingConfig(env = process.env) {
     provider: enabled ? 'gemini' : 'local',
     model: String(env.THUMBGATE_GEMINI_EMBED_MODEL || GEMINI_EMBEDDING_2_MODEL).trim() || GEMINI_EMBEDDING_2_MODEL,
     apiKey,
-    apiBaseUrl: String(env.THUMBGATE_GEMINI_API_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta').replace(/\/+$/, ''),
+    apiBaseUrl: trimTrailingSlashes(env.THUMBGATE_GEMINI_API_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta'),
     outputDimensionality: normalizeOutputDimensionality(env.THUMBGATE_GEMINI_EMBED_DIM || env.THUMBGATE_EMBED_DIM),
     fallbackToLocal: parseBoolean(env.THUMBGATE_GEMINI_EMBED_FALLBACK_LOCAL, true),
     defaultTask: normalizeTask(env.THUMBGATE_GEMINI_EMBED_TASK || 'code retrieval'),
     multimodalLimits: MULTIMODAL_LIMITS,
     recommendedOutputDimensions: RECOMMENDED_OUTPUT_DIMENSIONS,
   };
+}
+
+function trimTrailingSlashes(value) {
+  let text = String(value);
+  while (text.endsWith('/')) text = text.slice(0, -1);
+  return text;
 }
 
 function buildGeminiEmbeddingRolloutPlan(args = {}) {

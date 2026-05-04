@@ -146,8 +146,25 @@ function inferProvidedContext(request, attachments = []) {
 function hasPathLikeTarget(request = '') {
   return String(request)
     .split(/\s+/)
-    .map((part) => part.replace(/^[('"`]+|[),.'"`]+$/g, ''))
-    .some((part) => part.includes('/') && part.includes('.') && /^[\w./-]+$/i.test(part));
+    .map(stripPathPunctuation)
+    .some((part) => part.includes('/') && part.includes('.') && isSafePathToken(part));
+}
+
+function stripPathPunctuation(part) {
+  let text = String(part);
+  while (text && '("\''.includes(text[0])) text = text.slice(1);
+  while (text && '),.\'"'.includes(text.at(-1))) text = text.slice(0, -1);
+  return text;
+}
+
+function isSafePathToken(part) {
+  return String(part).split('').every((char) => {
+    const code = char.charCodeAt(0);
+    return char === '/' || char === '.' || char === '-' || char === '_' ||
+      (code >= 48 && code <= 57) ||
+      (code >= 65 && code <= 90) ||
+      (code >= 97 && code <= 122);
+  });
 }
 
 function buildTrustChecks(mode, input = {}) {
