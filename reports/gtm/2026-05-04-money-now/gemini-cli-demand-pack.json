@@ -1,0 +1,235 @@
+{
+  "generatedAt": "2026-05-04T15:13:40.924Z",
+  "state": "post-first-dollar",
+  "objective": "Turn Gemini CLI memory demand and Google Cloud MCP guardrail demand into tracked proof clicks, Pro checkout starts, and qualified workflow-hardening conversations.",
+  "headline": "Turn Gemini CLI memory demand into enforced workflow safety.",
+  "shortDescription": "ThumbGate gives Gemini CLI local-first memory that can become prevention rules and Pre-Action Checks before the next risky MCP call runs.",
+  "summary": "Gemini CLI demand in ThumbGate is guide-led: memory query first, then enforcement proof, then paid intent. Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.",
+  "canonicalIdentity": {
+    "displayName": "ThumbGate",
+    "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+    "homepageUrl": "https://thumbgate-production.up.railway.app",
+    "commercialTruthUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+    "verificationEvidenceUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+  },
+  "surfaces": [
+    {
+      "key": "memory_enforcement_guide",
+      "name": "Gemini CLI memory guide",
+      "url": "https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=gemini&utm_medium=seo_guide&utm_campaign=gemini_cli_memory_guide&utm_content=seo_page&campaign_variant=memory_enforcement&offer_code=GEMINI-MEMORY_GUIDE&cta_id=gemini_memory_guide&cta_placement=guide_surface&surface=gemini_cli",
+      "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/gemini-cli-feedback-memory.html",
+      "evidenceSource": "public/guides/gemini-cli-feedback-memory.html",
+      "operatorUse": "Primary SEO and buyer-education surface for Gemini CLI users who search for memory first.",
+      "buyerSignal": "Searchers already asking for better memory who become viable buyers only when enforcement and proof stay close to the path.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ],
+      "appOrigin": "https://thumbgate.ai"
+    },
+    {
+      "key": "gcp_guardrails_guide",
+      "name": "Google Cloud MCP guardrails guide",
+      "url": "https://thumbgate-production.up.railway.app/guides/gcp-mcp-guardrails?utm_source=gemini&utm_medium=seo_guide&utm_campaign=gemini_gcp_guardrails&utm_content=cloud_next&campaign_variant=gcp_guardrails&offer_code=GEMINI-GCP_GUARDRAILS&cta_id=gemini_gcp_guardrails&cta_placement=guide_surface&surface=gemini_cli",
+      "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/gcp-mcp-guardrails.html",
+      "evidenceSource": "public/guides/gcp-mcp-guardrails.html",
+      "operatorUse": "Proof-backed demand surface for Gemini CLI teams touching BigQuery, Spanner, AlloyDB, or Cloud SQL through MCP.",
+      "buyerSignal": "Cloud and data workflow owners who already understand blast radius and need approval boundaries before rollout.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ],
+      "appOrigin": "https://thumbgate.ai"
+    },
+    {
+      "key": "local_first_comparison",
+      "name": "Local-first memory comparison",
+      "url": "https://thumbgate-production.up.railway.app/compare/mem0?utm_source=gemini&utm_medium=seo_guide&utm_campaign=gemini_local_first_compare&utm_content=comparison&campaign_variant=local_first&offer_code=GEMINI-LOCAL_FIRST&cta_id=gemini_local_first_compare&cta_placement=comparison_surface&surface=gemini_cli",
+      "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/compare/mem0.html",
+      "evidenceSource": "public/compare/mem0.html",
+      "operatorUse": "Use when a Gemini buyer wants local-first memory and needs a proof-backed distinction versus hosted memory tools.",
+      "buyerSignal": "Security-sensitive or privacy-sensitive evaluators who reject hosted memory before they will consider a paid operator workflow.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ],
+      "appOrigin": "https://thumbgate.ai"
+    },
+    {
+      "key": "proof_backed_setup_guide",
+      "name": "Proof-backed setup guide",
+      "url": "https://thumbgate-production.up.railway.app/guide?utm_source=gemini&utm_medium=seo_guide&utm_campaign=gemini_setup_guide&utm_content=setup&campaign_variant=proof_backed_setup&offer_code=GEMINI-SETUP_GUIDE&cta_id=gemini_setup_guide&cta_placement=guide_surface&surface=gemini_cli",
+      "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guide.html",
+      "evidenceSource": "public/guide.html",
+      "operatorUse": "General setup path once the buyer accepts the memory-to-enforcement story and wants the shortest install route.",
+      "buyerSignal": "Operators who want one install path plus explicit proof and pricing guardrails before they keep evaluating.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ],
+      "appOrigin": "https://thumbgate.ai"
+    }
+  ],
+  "followOnOffers": [
+    {
+      "key": "pro",
+      "label": "ThumbGate Pro",
+      "pricing": "$19/mo or $149/yr",
+      "buyer": "Solo Gemini CLI operators who proved one blocked repeat and now want the personal dashboard plus proof-ready exports.",
+      "cta": "https://thumbgate.ai/checkout/pro?utm_source=gemini&utm_medium=seo_guide&utm_campaign=gemini_cli_pro_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=GEMINI-PRO_FOLLOW_ON&cta_id=gemini_pro_follow_on&cta_placement=post_install&plan_id=pro&surface=gemini_post_install"
+    },
+    {
+      "key": "sprint",
+      "label": "Workflow Hardening Sprint",
+      "pricing": "Intake-led sprint, then Team at $49/seat/mo with 3-seat minimum after qualification",
+      "buyer": "Teams that already named one repeated workflow failure, one owner, and one approval boundary.",
+      "cta": "https://thumbgate.ai/?utm_source=gemini&utm_medium=seo_guide&utm_campaign=gemini_cli_team_follow_on&utm_content=workflow_sprint&campaign_variant=teams_follow_on&offer_code=GEMINI-TEAMS_FOLLOW_ON&cta_id=gemini_team_follow_on&cta_placement=post_install&surface=gemini_post_install#workflow-sprint-intake"
+    }
+  ],
+  "operatorQueue": [
+    {
+      "key": "memory_first_builder",
+      "audience": "Gemini CLI builder searching for better memory",
+      "evidence": "The Gemini CLI guide explicitly says searchers often begin with memory but buy because of enforcement, with a proof-led path from guide to Pro.",
+      "proofTrigger": "They can name one repeated tool or workflow mistake they want blocked before the next session.",
+      "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/gemini-cli-feedback-memory.html",
+      "nextAsk": "https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=gemini&utm_medium=seo_guide&utm_campaign=gemini_queue_memory&utm_content=seo_page&campaign_variant=memory_first_builder&offer_code=GEMINI-QUEUE_MEMORY&cta_id=gemini_queue_memory&cta_placement=operator_queue&surface=gemini_cli",
+      "recommendedMotion": "Guide -> proof -> Pro once one blocked repeat is real."
+    },
+    {
+      "key": "gcp_workflow_owner",
+      "audience": "Google Cloud workflow owner running Gemini CLI near data or production systems",
+      "evidence": "The GCP guardrails guide documents BigQuery, Spanner, AlloyDB, Cloud SQL, and IAM escalation patterns. Current report production-style targets: 9.",
+      "proofTrigger": "They already described one risky BigQuery, Spanner, or MCP-backed workflow that cannot afford another destructive repeat.",
+      "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/gcp-mcp-guardrails.html",
+      "nextAsk": "https://thumbgate.ai/?utm_source=gemini&utm_medium=operator_outreach&utm_campaign=gemini_queue_gcp_sprint&utm_content=workflow_sprint&campaign_variant=gcp_workflow_owner&offer_code=GEMINI-QUEUE_GCP_SPRINT&cta_id=gemini_queue_gcp_sprint&cta_placement=operator_queue&surface=gemini_workflow_queue#workflow-sprint-intake",
+      "recommendedMotion": "Qualify one high-risk workflow for the Workflow Hardening Sprint."
+    },
+    {
+      "key": "local_first_evaluator",
+      "audience": "Security-sensitive evaluator comparing hosted memory versus local-first enforcement",
+      "evidence": "The Gemini guide keeps local-first posture explicit, and the compare surface supports buyers who object to hosted memory first. Current business-system targets: 9.",
+      "proofTrigger": "They care about keeping workflow history local and need proof that enforcement happens without a hosted memory dependency.",
+      "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/compare/mem0.html",
+      "nextAsk": "https://thumbgate-production.up.railway.app/guide?utm_source=gemini&utm_medium=seo_guide&utm_campaign=gemini_queue_local_first&utm_content=setup&campaign_variant=local_first_evaluator&offer_code=GEMINI-QUEUE_LOCAL_FIRST&cta_id=gemini_queue_local_first&cta_placement=operator_queue&surface=gemini_cli",
+      "recommendedMotion": "Local-first comparison -> setup guide -> Pro only after one blocked repeat is provable."
+    }
+  ],
+  "outreachDrafts": [
+    {
+      "key": "memory_follow_up",
+      "channel": "GitHub DM or email",
+      "audience": "Solo Gemini CLI builder",
+      "draft": "You already know memory matters. The missing piece is turning one repeated Gemini CLI mistake into an enforced gate before the next tool call runs. The shortest proof-backed path is here: https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=gemini&utm_medium=operator_outreach&utm_campaign=gemini_outreach_memory&utm_content=guide&campaign_variant=memory_follow_up&offer_code=GEMINI-OUTREACH_MEMORY&cta_id=gemini_outreach_memory&cta_placement=outreach_draft&surface=gemini_outreach . If you can name one repeat you want blocked, that guide is the fastest way to test the loop without drifting into generic AI governance."
+    },
+    {
+      "key": "proof_after_pain",
+      "channel": "Pain-confirmed follow-up",
+      "audience": "Solo operator who already confirmed one repeated failure",
+      "draft": "Now that the failure pattern is concrete, the next useful step is proof plus the paid operator path, not more abstract memory talk. Use Verification Evidence first, then route the buyer to the personal dashboard lane only if they want their own exports and proof-ready review surface: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md then https://thumbgate.ai/checkout/pro?utm_source=gemini&utm_medium=operator_outreach&utm_campaign=gemini_outreach_pro&utm_content=pro&campaign_variant=proof_after_pain&offer_code=GEMINI-OUTREACH_PRO&cta_id=gemini_outreach_pro&cta_placement=outreach_draft&plan_id=pro&surface=gemini_outreach ."
+    },
+    {
+      "key": "cloud_workflow",
+      "channel": "Founder note",
+      "audience": "Data or platform team owner",
+      "draft": "Google turned BigQuery, Spanner, AlloyDB, and Cloud SQL into MCP-call surfaces for Gemini CLI. If one of those workflows already has a repeated failure or approval-boundary risk, I am not pitching a generic plugin. I am pitching one workflow hardening sprint with proof: https://thumbgate.ai/?utm_source=gemini&utm_medium=operator_outreach&utm_campaign=gemini_outreach_sprint&utm_content=workflow_sprint&campaign_variant=cloud_workflow&offer_code=GEMINI-OUTREACH_SPRINT&cta_id=gemini_outreach_sprint&cta_placement=outreach_draft&surface=gemini_outreach#workflow-sprint-intake ."
+    }
+  ],
+  "channelDrafts": [
+    {
+      "key": "gemini_reddit_memory",
+      "channel": "Reddit",
+      "format": "DM or reply follow-up",
+      "audience": "Warm Gemini CLI or agent-memory builder who already named one repeated workflow mistake",
+      "evidenceSummary": "4 current warm target(s) already named repeated workflow pain, so Reddit should stay memory-first and pain-specific instead of broad governance-first.",
+      "cta": "https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=gemini&utm_medium=reddit_dm&utm_campaign=gemini_channel_reddit&utm_content=guide&campaign_variant=memory_first&offer_code=GEMINI-CHANNEL-REDDIT&cta_id=gemini_channel_reddit&cta_placement=channel_draft&surface=gemini_reddit",
+      "proofTiming": "Keep first touch guide-first. Send Commercial Truth and Verification Evidence only after the buyer confirms the repeated failure.",
+      "draft": "If Gemini CLI keeps repeating the same mistake, the missing piece is not more memory in chat. It is turning that repeated failure into a Pre-Action Check before the next risky MCP call runs. If you already know the repeat you want blocked, start here: https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=gemini&utm_medium=reddit_dm&utm_campaign=gemini_channel_reddit&utm_content=guide&campaign_variant=memory_first&offer_code=GEMINI-CHANNEL-REDDIT&cta_id=gemini_channel_reddit&cta_placement=channel_draft&surface=gemini_reddit ."
+    },
+    {
+      "key": "gemini_linkedin_gcp",
+      "channel": "LinkedIn",
+      "format": "Founder post",
+      "audience": "Platform, cloud, or data team lead evaluating Gemini CLI near production systems",
+      "evidenceSummary": "9 current production-style target(s) point to BigQuery, Spanner, AlloyDB, Cloud SQL, and approval-boundary risk as the strongest B2B Gemini angle.",
+      "cta": "https://thumbgate-production.up.railway.app/guides/gcp-mcp-guardrails?utm_source=gemini&utm_medium=linkedin_post&utm_campaign=gemini_channel_linkedin&utm_content=guide&campaign_variant=gcp_guardrails&offer_code=GEMINI-CHANNEL-LINKEDIN&cta_id=gemini_channel_linkedin&cta_placement=channel_draft&surface=gemini_linkedin",
+      "proofTiming": "Public post can mention blast radius and guardrails, but hold proof links for the DM or reply after the workflow risk is named.",
+      "draft": "Gemini CLI gets interesting when it moves from drafts into BigQuery, Spanner, AlloyDB, Cloud SQL, or approval-boundary workflows. At that point the question is not “does memory exist,” it is “what stops the same risky MCP call from running again?” ThumbGate is the lane I use for that boundary. If you are evaluating Gemini near production systems, start with the guardrails guide: https://thumbgate-production.up.railway.app/guides/gcp-mcp-guardrails?utm_source=gemini&utm_medium=linkedin_post&utm_campaign=gemini_channel_linkedin&utm_content=guide&campaign_variant=gcp_guardrails&offer_code=GEMINI-CHANNEL-LINKEDIN&cta_id=gemini_channel_linkedin&cta_placement=channel_draft&surface=gemini_linkedin ."
+    },
+    {
+      "key": "gemini_threads_repeat",
+      "channel": "Threads",
+      "format": "Short post",
+      "audience": "Solo Gemini CLI builder who wants a fast guide-led path from memory to enforcement",
+      "evidenceSummary": "The strongest solo Gemini motion is still memory-first: guide click first, proof second, paid path only after one blocked repeat is concrete.",
+      "cta": "https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=gemini&utm_medium=threads_post&utm_campaign=gemini_channel_threads&utm_content=guide&campaign_variant=memory_repeat&offer_code=GEMINI-CHANNEL-THREADS&cta_id=gemini_channel_threads&cta_placement=channel_draft&surface=gemini_threads",
+      "proofTiming": "Do not attach proof links in the first touch. Keep the post guide-first and move proof into follow-up only after pain is confirmed.",
+      "draft": "Gemini CLI memory is not enough if the same mistake still runs again tomorrow. ThumbGate turns one repeated failure into a Pre-Action Check instead of another note in history. Start with the memory guide here: https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=gemini&utm_medium=threads_post&utm_campaign=gemini_channel_threads&utm_content=guide&campaign_variant=memory_repeat&offer_code=GEMINI-CHANNEL-THREADS&cta_id=gemini_channel_threads&cta_placement=channel_draft&surface=gemini_threads ."
+    },
+    {
+      "key": "gemini_bluesky_local_first",
+      "channel": "Bluesky",
+      "format": "Short post",
+      "audience": "Security-sensitive evaluator comparing hosted memory to local-first enforcement",
+      "evidenceSummary": "9 current business-system target(s) reinforce the local-first posture: keep workflow memory local, then prove enforcement before the next risky call.",
+      "cta": "https://thumbgate-production.up.railway.app/compare/mem0?utm_source=gemini&utm_medium=bluesky_post&utm_campaign=gemini_channel_bluesky&utm_content=comparison&campaign_variant=local_first&offer_code=GEMINI-CHANNEL-BLUESKY&cta_id=gemini_channel_bluesky&cta_placement=channel_draft&surface=gemini_bluesky",
+      "proofTiming": "Lead with the comparison surface first. Send Commercial Truth and Verification Evidence only after the buyer replies with a concrete privacy or workflow objection.",
+      "draft": "Hosted memory is not the only option for Gemini CLI. If you want the workflow history to stay local and still become enforceable checks before the next MCP call runs, start with the local-first comparison: https://thumbgate-production.up.railway.app/compare/mem0?utm_source=gemini&utm_medium=bluesky_post&utm_campaign=gemini_channel_bluesky&utm_content=comparison&campaign_variant=local_first&offer_code=GEMINI-CHANNEL-BLUESKY&cta_id=gemini_channel_bluesky&cta_placement=channel_draft&surface=gemini_bluesky ."
+    }
+  ],
+  "measurementPlan": {
+    "northStar": "gemini_guide_to_paid_intent",
+    "policy": "Treat Gemini guide visits as acquisition evidence only after a tracked proof click, Pro checkout start, or qualified sprint conversation exists.",
+    "minimumUsefulSignal": "One tracked Pro checkout start or one qualified team conversation sourced from a Gemini-tagged surface.",
+    "strongSignal": "Three tracked paid-intent events across Pro checkout starts or workflow sprint conversations.",
+    "metrics": [
+      "gemini_memory_guide_views",
+      "gcp_guardrails_guide_views",
+      "proof_clicks",
+      "pro_checkout_starts",
+      "sprint_intake_submissions",
+      "qualified_team_conversations",
+      "paid_pro_conversions"
+    ],
+    "guardrails": [
+      "Do not claim rankings, installs, revenue, or partner approval without direct command evidence.",
+      "Do not lead first-touch outreach with proof links before the buyer confirms pain.",
+      "Keep pricing aligned with COMMERCIAL_TRUTH.md.",
+      "Keep proof claims aligned with VERIFICATION_EVIDENCE.md."
+    ],
+    "milestones": [
+      {
+        "window": "days_0_30",
+        "goal": "Refresh Gemini guide, local-first comparison, and GCP guardrails copy with tracked CTAs and consistent install language.",
+        "decisionRule": "Do not rewrite the value proposition unless guide clicks or proof clicks clearly fail to convert into paid intent."
+      },
+      {
+        "window": "days_31_60",
+        "goal": "Promote whichever Gemini lane converts best: solo Pro or workflow sprint.",
+        "decisionRule": "If guide traffic exists without paid intent, move proof and follow-on offers higher in the guide and follow-up copy."
+      },
+      {
+        "window": "days_61_90",
+        "goal": "Decide whether Gemini remains a guide-led acquisition lane or earns more direct outbound focus.",
+        "decisionRule": "Only increase direct Gemini-specific outbound once there is qualified conversation or paid-intent evidence."
+      }
+    ],
+    "doNotCountAsSuccess": [
+      "guide views without proof clicks",
+      "proof clicks without a tracked paid-intent event",
+      "unverified revenue or approval claims"
+    ]
+  },
+  "proofLinks": [
+    "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+    "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+  ]
+}

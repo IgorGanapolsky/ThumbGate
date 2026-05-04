@@ -394,7 +394,7 @@ test('active GTM scripts and reports point to the canonical offer without foundi
   for (const artifact of [outreachTargets, xAutomationReport, githubOutreach, xAutomation, autonomousSales]) {
     assert.doesNotMatch(artifact, /buy\.stripe\.com/);
     assert.doesNotMatch(artifact, /founding users today/i);
-    assert.match(artifact, /thumbgate-production\.up\.railway\.app/);
+    assert.match(artifact, /thumbgate\.ai|thumbgate-production\.up\.railway\.app/);
     assert.doesNotMatch(artifact, /Always-On/i);
     assert.doesNotMatch(artifact, /Mistake-Free/i);
   }

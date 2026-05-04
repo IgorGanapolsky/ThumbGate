@@ -112,6 +112,9 @@ test('public landing page exposes env-driven paid sprint checkout path', () => {
   assert.match(landingPage, /Need buyer-ready proof today\?/);
   assert.match(landingPage, /href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__"/);
   assert.match(landingPage, /href="__WORKFLOW_SPRINT_CHECKOUT_URL__"/);
+  assert.match(landingPage, /founder_workflow_diagnostic_checkout_started/);
+  assert.match(landingPage, /Pay \$99 diagnostic/);
+  assert.match(landingPage, /https:\/\/buy\.stripe\.com\/7sY4gzgH24r49G17mb3sI0g/);
   assert.match(landingPage, /Pay \$499 diagnostic/);
   assert.match(landingPage, /Pay \$1500 sprint/);
   assert.match(landingPage, /Pay for diagnostic/);

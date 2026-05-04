@@ -2809,6 +2809,31 @@ function renderCheckoutSuccessPage(runtimeConfig) {
 }
 
 function renderCheckoutCancelledPage(runtimeConfig) {
+  const diagnosticCheckoutUrl = runtimeConfig.sprintDiagnosticCheckoutUrl
+    ? escapeHtmlAttribute(runtimeConfig.sprintDiagnosticCheckoutUrl)
+    : '';
+  const workflowSprintCheckoutUrl = runtimeConfig.workflowSprintCheckoutUrl
+    ? escapeHtmlAttribute(runtimeConfig.workflowSprintCheckoutUrl)
+    : '';
+  const sprintDiagnosticPriceDollars = runtimeConfig.sprintDiagnosticPriceDollars || 499;
+  const workflowSprintPriceDollars = runtimeConfig.workflowSprintPriceDollars || 1500;
+  const recoveryOfferLinks = [
+    diagnosticCheckoutUrl
+      ? `<a href="${diagnosticCheckoutUrl}" data-recovery-offer="sprint_diagnostic" data-offer-price="${sprintDiagnosticPriceDollars}">Book $${sprintDiagnosticPriceDollars} diagnostic</a>`
+      : '',
+    workflowSprintCheckoutUrl
+      ? `<a href="${workflowSprintCheckoutUrl}" data-recovery-offer="workflow_sprint" data-offer-price="${workflowSprintPriceDollars}">Start $${workflowSprintPriceDollars} sprint</a>`
+      : '',
+  ].filter(Boolean).join('\n        ');
+  const recoveryOfferCard = recoveryOfferLinks
+    ? `<div class="card recovery-card">
+      <h2>Need help deciding?</h2>
+      <p>If Pro is not the right next step, buy the diagnostic or sprint instead. These are built for teams with one repeated agent-workflow failure that needs proof, rollback safety, and rollout help.</p>
+      <div class="actions">
+        ${recoveryOfferLinks}
+      </div>
+    </div>`
+    : '';
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2894,6 +2919,9 @@ function renderCheckoutCancelledPage(runtimeConfig) {
       gap: 12px;
       margin-top: 18px;
     }
+    .recovery-card {
+      border-color: rgba(184, 92, 45, 0.38);
+    }
     .note {
       font-size: 14px;
       margin-top: 12px;
@@ -2927,6 +2955,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
       </div>
       <p class="note" id="status">No feedback sent yet.</p>
     </div>
+    ${recoveryOfferCard}
     <script>
       (function () {
         const params = new URLSearchParams(window.location.search);
@@ -3002,6 +3031,17 @@ function renderCheckoutCancelledPage(runtimeConfig) {
           statusEl.textContent = selectedReason
             ? 'Feedback saved: ' + selectedReason.replaceAll('_', ' ') + '.'
             : 'Feedback saved.';
+        });
+
+        document.querySelectorAll('[data-recovery-offer]').forEach(function (link) {
+          link.addEventListener('click', function () {
+            sendTelemetry('checkout_recovery_offer_clicked', {
+              ctaId: link.getAttribute('data-recovery-offer'),
+              ctaPlacement: 'checkout_cancel_recovery',
+              offerCode: link.getAttribute('data-recovery-offer'),
+              offerPriceDollars: link.getAttribute('data-offer-price')
+            });
+          });
         });
       }());
     </script>

@@ -32,6 +32,8 @@ process.env.STRIPE_SECRET_KEY = '';
 process.env.STRIPE_PRICE_ID = '';
 process.env.THUMBGATE_PUBLIC_APP_ORIGIN = 'https://app.example.com';
 process.env.THUMBGATE_BILLING_API_BASE_URL = 'https://billing.example.com';
+process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL = 'https://buy.stripe.com/diagnostic-test';
+process.env.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL = 'https://buy.stripe.com/sprint-test';
 process.env.THUMBGATE_GA_MEASUREMENT_ID = 'G-TEST1234';
 process.env.THUMBGATE_GOOGLE_SITE_VERIFICATION = 'test-verification-token';
 process.env.THUMBGATE_BUILD_METADATA_PATH = path.join(tmpFeedbackDir, 'build-metadata.json');
@@ -88,6 +90,8 @@ test.after(async () => {
   gatesEngine.CONSTRAINTS_PATH = ORIGINAL_GATES_PATHS.constraints;
   delete process.env.THUMBGATE_PUBLIC_APP_ORIGIN;
   delete process.env.THUMBGATE_BILLING_API_BASE_URL;
+  delete process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL;
+  delete process.env.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL;
   delete process.env.THUMBGATE_BUILD_METADATA_PATH;
   if (savedProjectEnv.THUMBGATE_PROJECT_DIR === undefined) delete process.env.THUMBGATE_PROJECT_DIR;
   else process.env.THUMBGATE_PROJECT_DIR = savedProjectEnv.THUMBGATE_PROJECT_DIR;
@@ -1209,6 +1213,11 @@ test('cancel page serves retry message and records first-party telemetry', async
   assert.match(body, /data-reason="too_expensive"/);
   assert.match(body, /sendTelemetry\('checkout_cancelled'\)/);
   assert.match(body, /sendTelemetry\('reason_not_buying'/);
+  assert.match(body, /Book \$499 diagnostic/);
+  assert.match(body, /Start \$1500 sprint/);
+  assert.match(body, /data-recovery-offer="sprint_diagnostic"/);
+  assert.match(body, /data-recovery-offer="workflow_sprint"/);
+  assert.match(body, /checkout_recovery_offer_clicked/);
   assert.match(body, /retryUrl\.searchParams\.set\(key, value\)/);
   assert.match(body, /Return to Context Gateway/);
 

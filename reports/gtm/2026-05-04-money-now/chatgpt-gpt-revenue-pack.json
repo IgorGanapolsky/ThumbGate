@@ -1,0 +1,215 @@
+{
+  "generatedAt": "2026-05-04T15:13:40.924Z",
+  "state": "post-first-dollar",
+  "objective": "Turn ChatGPT GPT discovery and trust-boundary demand into tracked proof clicks, Pro checkout starts, and qualified workflow-hardening conversations.",
+  "headline": "Use ChatGPT for discovery, then force risky actions through real checks.",
+  "shortDescription": "ThumbGate turns the published ChatGPT GPT into a proof-backed front door for action checks, typed feedback capture, and local enforcement handoff.",
+  "summary": "ChatGPT demand in ThumbGate should start with one useful action check or typed lesson, then hand the buyer into proof and local enforcement. Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.",
+  "canonicalIdentity": {
+    "displayName": "ThumbGate GPT",
+    "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+    "homepageUrl": "https://thumbgate-production.up.railway.app",
+    "publishedGptUrl": "https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate",
+    "submissionPacketUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/gpt-store-submission.md",
+    "actionsInstallUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/chatgpt/INSTALL.md",
+    "commercialTruthUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+    "verificationEvidenceUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+  },
+  "surfaces": [
+    {
+      "key": "published_gpt",
+      "name": "Published ThumbGate GPT",
+      "url": "https://thumbgate.ai/go/gpt?utm_source=chatgpt&utm_medium=gpt_store&utm_campaign=chatgpt_gpt_open&utm_content=open_gpt&campaign_variant=published_gpt&offer_code=CHATGPT-GPT_OPEN&cta_id=chatgpt_gpt_open&cta_placement=gpt_surface&surface=chatgpt_gpt",
+      "publicUrl": "https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate",
+      "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/chatgpt/INSTALL.md",
+      "evidenceSource": "public/index.html",
+      "operatorUse": "Primary acquisition surface for ChatGPT users who want to preflight one risky action before installing anything locally.",
+      "buyerSignal": "They already live inside ChatGPT and will only continue if the first action check or typed lesson feels immediate.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "homepageUrl": "https://thumbgate-production.up.railway.app",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ]
+    },
+    {
+      "key": "gpt_store_submission_packet",
+      "name": "GPT Store submission packet",
+      "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/gpt-store-submission.md",
+      "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/chatgpt-gpt-instructions.md",
+      "evidenceSource": "docs/gpt-store-submission.md",
+      "operatorUse": "Operator repair surface for refreshing GPT Builder copy, conversation starters, Actions auth, and avatar state without inventing new claims.",
+      "buyerSignal": "A stale GPT listing is a conversion leak, so the builder owner needs exact copy and repair instructions, not another brainstorm.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "homepageUrl": "https://thumbgate-production.up.railway.app",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ]
+    },
+    {
+      "key": "live_gpt_audit",
+      "name": "Live GPT drift audit",
+      "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/chatgpt-live-audit-2026-04-24.md",
+      "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/gpt-store-submission.md",
+      "evidenceSource": "docs/chatgpt-live-audit-2026-04-24.md",
+      "operatorUse": "Proof surface for why the ChatGPT lane needs repair before more traffic is sent into it.",
+      "buyerSignal": "The public GPT can attract interest, but stale auth or copy will kill conversion before the local install handoff.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "homepageUrl": "https://thumbgate-production.up.railway.app",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ]
+    },
+    {
+      "key": "chatgpt_actions_install",
+      "name": "ChatGPT Actions install guide",
+      "url": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/chatgpt/INSTALL.md",
+      "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/chatgpt-gpt-instructions.md",
+      "evidenceSource": "adapters/chatgpt/INSTALL.md",
+      "operatorUse": "Technical handoff surface for buyers or operators who want the GPT to save typed feedback reliably.",
+      "buyerSignal": "They need the direct setup path for Bearer auth and action testing before they will trust the memory loop.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "homepageUrl": "https://thumbgate-production.up.railway.app",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ]
+    },
+    {
+      "key": "ads_trust_guide",
+      "name": "ChatGPT ads trust guide",
+      "url": "https://thumbgate-production.up.railway.app/guides/chatgpt-ads-trust?utm_source=chatgpt&utm_medium=gpt_store&utm_campaign=chatgpt_ads_trust&utm_content=guide&campaign_variant=trust_boundary&offer_code=CHATGPT-ADS_TRUST&cta_id=chatgpt_ads_trust&cta_placement=guide_surface&surface=chatgpt_gpt",
+      "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/chatgpt-ads-trust.html",
+      "evidenceSource": "public/guides/chatgpt-ads-trust.html",
+      "operatorUse": "SEO and demand-capture surface for buyers who already frame the problem as AI trust, discovery, and execution boundaries.",
+      "buyerSignal": "Teams reacting to ChatGPT discovery or ads need a clear boundary story before they will book a workflow-hardening conversation.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "homepageUrl": "https://thumbgate-production.up.railway.app",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ]
+    }
+  ],
+  "followOnOffers": [
+    {
+      "key": "pro",
+      "label": "ThumbGate Pro",
+      "pricing": "$19/mo or $149/yr",
+      "buyer": "Solo ChatGPT-first operators who proved one useful action check or saved lesson and want the personal dashboard plus proof-ready exports.",
+      "cta": "https://thumbgate.ai/checkout/pro?utm_source=chatgpt&utm_medium=gpt_store&utm_campaign=chatgpt_gpt_pro_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=CHATGPT-PRO_FOLLOW_ON&cta_id=chatgpt_pro_follow_on&cta_placement=post_install&plan_id=pro&surface=chatgpt_post_install"
+    },
+    {
+      "key": "sprint",
+      "label": "Workflow Hardening Sprint",
+      "pricing": "Intake-led sprint, then Team at $49/seat/mo with 3-seat minimum after qualification",
+      "buyer": "Teams that already use ChatGPT for discovery or checkpointing and need a real execution boundary before risky workflows run.",
+      "cta": "https://thumbgate.ai/?utm_source=chatgpt&utm_medium=gpt_store&utm_campaign=chatgpt_gpt_team_follow_on&utm_content=workflow_sprint&campaign_variant=teams_follow_on&offer_code=CHATGPT-TEAMS_FOLLOW_ON&cta_id=chatgpt_team_follow_on&cta_placement=post_install&surface=chatgpt_post_install#workflow-sprint-intake"
+    }
+  ],
+  "operatorQueue": [
+    {
+      "key": "gpt_first_operator",
+      "audience": "ChatGPT-first operator with one risky action to check before it runs",
+      "evidence": "public/index.html, docs/landing-page.html, and the published GPT URL all position the GPT as the fastest front door for action checks and typed feedback capture.",
+      "proofTrigger": "They can paste one risky command, deploy, refund, PR action, or file edit they want checked before execution.",
+      "proofAsset": "https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate",
+      "nextAsk": "https://thumbgate-production.up.railway.app/go/gpt?utm_source=chatgpt&utm_medium=gpt_store&utm_campaign=chatgpt_queue_open_gpt&utm_content=open_gpt&campaign_variant=gpt_first_operator&offer_code=CHATGPT-QUEUE_OPEN_GPT&cta_id=chatgpt_queue_open_gpt&cta_placement=operator_queue&surface=chatgpt_gpt",
+      "recommendedMotion": "Open the GPT, prove one useful decision or lesson, then route the serious operator to Pro."
+    },
+    {
+      "key": "builder_repair_owner",
+      "audience": "GPT Builder owner whose public listing or Actions auth is stale",
+      "evidence": "The 2026-04-24 live audit records empty Action instructions, missing usable avatar metadata, and auth-sensitive capture behavior that can block trust.",
+      "proofTrigger": "They care about whether typed feedback actually saves and whether the public GPT points users into a trustworthy next step.",
+      "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/chatgpt-live-audit-2026-04-24.md",
+      "nextAsk": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/gpt-store-submission.md",
+      "recommendedMotion": "Repair GPT Builder copy and auth first, then use the GPT lane to generate proof-backed paid intent."
+    },
+    {
+      "key": "trust_boundary_team",
+      "audience": "Team using ChatGPT for discovery but needing a boundary before risky execution",
+      "evidence": "The ChatGPT ads trust guide and homepage copy frame ThumbGate as the boundary between conversational discovery and local execution.",
+      "proofTrigger": "They already have one workflow, one owner, and one approval-boundary failure they do not want to repeat.",
+      "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/chatgpt-ads-trust.html",
+      "nextAsk": "https://thumbgate.ai/?utm_source=chatgpt&utm_medium=operator_outreach&utm_campaign=chatgpt_queue_sprint&utm_content=workflow_sprint&campaign_variant=trust_boundary_team&offer_code=CHATGPT-QUEUE_SPRINT&cta_id=chatgpt_queue_sprint&cta_placement=operator_queue&surface=chatgpt_workflow_queue#workflow-sprint-intake",
+      "recommendedMotion": "Trust guide -> workflow intake -> Workflow Hardening Sprint."
+    }
+  ],
+  "outreachDrafts": [
+    {
+      "key": "gpt_first_touch",
+      "channel": "DM or email",
+      "audience": "ChatGPT-first solo operator",
+      "draft": "If you already use ChatGPT as the first place you ask for help, the fastest useful test is not another landing page. It is one risky action check or one typed thumbs-down inside the live ThumbGate GPT: https://thumbgate-production.up.railway.app/go/gpt?utm_source=chatgpt&utm_medium=operator_outreach&utm_campaign=chatgpt_outreach_open_gpt&utm_content=open_gpt&campaign_variant=gpt_first_touch&offer_code=CHATGPT-OUTREACH_OPEN_GPT&cta_id=chatgpt_outreach_open_gpt&cta_placement=outreach_draft&surface=chatgpt_outreach . If that first interaction feels real, then it is worth talking about the local enforcement layer."
+    },
+    {
+      "key": "proof_after_pain",
+      "channel": "Pain-confirmed follow-up",
+      "audience": "Operator who already confirmed one repeated failure",
+      "draft": "Now that the repeated failure is concrete, move from generic GPT usage to proof plus the paid operator lane. Use the verification pack first, then route them to the personal dashboard path only if they want durable exports and reviewable proof: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md then https://thumbgate.ai/checkout/pro?utm_source=chatgpt&utm_medium=operator_outreach&utm_campaign=chatgpt_outreach_pro&utm_content=pro&campaign_variant=proof_after_pain&offer_code=CHATGPT-OUTREACH_PRO&cta_id=chatgpt_outreach_pro&cta_placement=outreach_draft&plan_id=pro&surface=chatgpt_outreach ."
+    },
+    {
+      "key": "trust_boundary_team",
+      "channel": "Founder note",
+      "audience": "Platform, ops, or AI product lead",
+      "draft": "I am not pitching ChatGPT as the execution surface. I am pitching a cleaner boundary between ChatGPT discovery and the risky workflow that follows. If your team already has one owner and one approval-boundary failure tied to AI-assisted work, the next useful step is the Workflow Hardening Sprint intake: https://thumbgate.ai/?utm_source=chatgpt&utm_medium=operator_outreach&utm_campaign=chatgpt_outreach_sprint&utm_content=workflow_sprint&campaign_variant=trust_boundary_team&offer_code=CHATGPT-OUTREACH_SPRINT&cta_id=chatgpt_outreach_sprint&cta_placement=outreach_draft&surface=chatgpt_outreach#workflow-sprint-intake ."
+    }
+  ],
+  "measurementPlan": {
+    "northStar": "chatgpt_gpt_to_paid_intent",
+    "policy": "Treat ChatGPT GPT opens as acquisition evidence only after a tracked proof click, Pro checkout start, or qualified workflow conversation exists.",
+    "minimumUsefulSignal": "One tracked Pro checkout start or one qualified team conversation sourced from the ChatGPT GPT lane.",
+    "strongSignal": "Three tracked paid-intent events across Pro checkout starts or workflow sprint conversations.",
+    "metrics": [
+      "chatgpt_gpt_opens",
+      "chatgpt_actions_setup_doc_clicks",
+      "chatgpt_submission_packet_clicks",
+      "chatgpt_proof_clicks",
+      "chatgpt_pro_checkout_starts",
+      "chatgpt_sprint_intake_submissions",
+      "chatgpt_qualified_team_conversations"
+    ],
+    "guardrails": [
+      "Do not claim GPT installs, traffic, saved lessons, or paid revenue without direct command evidence.",
+      "Do not imply ChatGPT native rating buttons save ThumbGate lessons.",
+      "Do not send more paid traffic into the GPT lane until Actions auth and listing copy match the repair docs.",
+      "Keep pricing aligned with COMMERCIAL_TRUTH.md.",
+      "Keep proof claims aligned with VERIFICATION_EVIDENCE.md."
+    ],
+    "milestones": [
+      {
+        "window": "days_0_30",
+        "goal": "Repair GPT Builder drift, align the public GPT copy with the canonical packet, and keep tracked GPT/open-guide links consistent.",
+        "decisionRule": "Do not broaden ChatGPT promotion until the GPT lane has a clean first-touch path and the repair audit is addressed."
+      },
+      {
+        "window": "days_31_60",
+        "goal": "Promote whichever ChatGPT follow-on motion converts better: solo Pro or workflow sprint.",
+        "decisionRule": "If GPT opens rise without proof clicks or checkout starts, move proof and local-enforcement handoff higher in the GPT and guide surfaces."
+      },
+      {
+        "window": "days_61_90",
+        "goal": "Decide whether ChatGPT remains a discovery lane or becomes a stronger team qualification lane.",
+        "decisionRule": "Only intensify ChatGPT-specific outbound once qualified conversations or paid-intent events are visible."
+      }
+    ],
+    "doNotCountAsSuccess": [
+      "GPT opens without proof clicks",
+      "proof clicks without a tracked paid-intent event",
+      "unverified traffic, revenue, or GPT-store claims"
+    ]
+  },
+  "proofLinks": [
+    "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+    "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+  ],
+  "landingEvidence": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/index.html"
+}

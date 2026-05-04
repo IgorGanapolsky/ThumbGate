@@ -402,6 +402,7 @@ __GA_BOOTSTRAP__
   .hero-paid-path span { color: var(--text-muted); font-size: 13px; line-height: 1.45; }
   .hero-paid-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
   .hero-paid-actions a { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 9px 13px; border-radius: 999px; text-decoration: none; font-size: 13px; font-weight: 800; white-space: nowrap; }
+  .hero-paid-actions .starter { background: #facc15; color: #17110a; border: 1px solid rgba(250,204,21,0.55); }
   .hero-paid-actions .diagnostic { background: var(--green); color: #06120a; border: 1px solid rgba(74,222,128,0.45); }
   .hero-paid-actions .sprint { color: var(--green); border: 1px solid rgba(74,222,128,0.45); background: rgba(17,17,19,0.72); }
   .hero-paid-note { font-size: 14px; color: var(--text-muted); max-width: 720px; margin: 0 auto 24px; }
@@ -718,6 +719,7 @@ __GA_BOOTSTRAP__
         <span>Skip the free trial path and buy the workflow diagnostic or sprint directly.</span>
       </div>
       <div class="hero-paid-actions">
+        <a class="starter" href="https://buy.stripe.com/7sY4gzgH24r49G17mb3sI0g" onclick="sendFirstPartyTelemetry('founder_workflow_diagnostic_checkout_started',{ctaId:'hero_founder_workflow_diagnostic_checkout',ctaPlacement:'hero_paid_path',planId:'team',offer:'founder_workflow_diagnostic',price:99});sendGa4Event('begin_checkout',{currency:'USD',value:99,items:[{item_id:'founder_workflow_diagnostic',item_name:'Founder Workflow Diagnostic'}]});">Pay $99 diagnostic &rarr;</a>
         <a class="diagnostic" href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__" onclick="sendFirstPartyTelemetry('workflow_sprint_diagnostic_checkout_started',{ctaId:'hero_workflow_sprint_diagnostic_checkout',ctaPlacement:'hero_paid_path',planId:'team',offer:'workflow_hardening_diagnostic',price:sprintDiagnosticPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:sprintDiagnosticPriceDollars,items:[{item_id:'workflow_hardening_diagnostic',item_name:'Workflow Hardening Diagnostic'}]});">Pay $499 diagnostic &rarr;</a>
         <a class="sprint" href="__WORKFLOW_SPRINT_CHECKOUT_URL__" onclick="sendFirstPartyTelemetry('workflow_sprint_checkout_started',{ctaId:'hero_workflow_sprint_checkout',ctaPlacement:'hero_paid_path',planId:'team',offer:'workflow_hardening_sprint',price:workflowSprintPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:workflowSprintPriceDollars,items:[{item_id:'workflow_hardening_sprint',item_name:'Workflow Hardening Sprint'}]});">Pay $1500 sprint &rarr;</a>
       </div>
