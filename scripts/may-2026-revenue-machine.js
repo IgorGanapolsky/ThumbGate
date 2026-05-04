@@ -122,6 +122,8 @@ function buildRevenueMetrics(report) {
   return {
     runtime,
     runtimeKnown,
+    hasSprintDiagnosticPaymentLink: Boolean(runtime.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL),
+    hasWorkflowSprintPaymentLink: Boolean(runtime.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL),
     todayVisitors: number(today.trafficMetrics?.visitors),
     visitors,
     checkoutStarts,
@@ -164,8 +166,22 @@ function buildRuntimeGapActions({ runtime, runtimeKnown }) {
   ].filter(Boolean);
 }
 
-function buildSprintPathAction({ visitors, checkoutStarts, sprintLeads }) {
+function buildSprintPathAction({
+  visitors,
+  checkoutStarts,
+  sprintLeads,
+  hasSprintDiagnosticPaymentLink,
+  hasWorkflowSprintPaymentLink,
+}) {
   if (sprintLeads === 0 && visitors >= 500) {
+    if (hasSprintDiagnosticPaymentLink && hasWorkflowSprintPaymentLink) {
+      return agentReadyAction(
+        'Promote the live paid diagnostic/sprint path',
+        `${visitors} visitors and ${checkoutStarts} checkout starts in 30d produced 0 sprint leads, and both high-ticket Stripe links are configured; the remaining agent work is to keep paid CTAs above intake and route high-intent traffic to them.`,
+        'Keep the paid diagnostic/sprint card above the unpaid intake, track begin_checkout for both offers, and prioritize traffic sources already producing checkout starts.'
+      );
+    }
+
     return humanBlockedAction(
       'blocked_on_payment_links',
       'Activate paid high-ticket path above the sprint intake',
