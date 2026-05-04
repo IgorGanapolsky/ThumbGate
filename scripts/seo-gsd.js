@@ -13,6 +13,8 @@ const PRODUCT = {
   homepageUrl: 'https://thumbgate.ai',
   verificationUrl: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
   automationUrl: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json',
+  sprintDiagnosticPaymentUrl: 'https://buy.stripe.com/00w14neyUcXA5pL5e33sI0e',
+  workflowSprintPaymentUrl: 'https://buy.stripe.com/fZu9AT76saPsg4pbCr3sI0f',
   compatibility: ['Claude Code', 'Cursor', 'Codex', 'Gemini', 'Amp', 'OpenCode'],
   proofPoints: [
     'thumbs-up/down feedback loop',
@@ -2591,6 +2593,26 @@ function renderWebPageJsonLd(page, runtimeConfig) {
   }, null, 2);
 }
 
+function renderPaidSprintCheckoutCard(page) {
+  if (page.path !== '/guides/ai-agent-governance-sprint') return '';
+
+  return `<div class="sidebar-card paid-sprint-card">
+          <h2>Ready to buy the sprint?</h2>
+          <p>Skip the unpaid intake when budget is ready. Pick the smaller diagnostic to validate one repeated failure, or buy the 48-hour sprint for implementation and proof.</p>
+          <div class="paid-offers">
+            <a class="paid-offer diagnostic" href="${escapeHtml(PRODUCT.sprintDiagnosticPaymentUrl)}" target="_blank" rel="noopener">
+              <span>Workflow Hardening Diagnostic</span>
+              <strong>$499</strong>
+            </a>
+            <a class="paid-offer sprint" href="${escapeHtml(PRODUCT.workflowSprintPaymentUrl)}" target="_blank" rel="noopener">
+              <span>AI Agent Governance Sprint</span>
+              <strong>$1500</strong>
+            </a>
+          </div>
+          <a class="secondary-cta" href="${escapeHtml(page.cta.href)}" target="_blank" rel="noopener">Use intake instead</a>
+        </div>`;
+}
+
 function renderSeoPageHtml(page, runtimeConfig = {}) {
   const appOrigin = normalizeText(runtimeConfig.appOrigin) || PRODUCT.homepageUrl;
   const canonicalUrl = `${appOrigin}${page.path}`;
@@ -2612,6 +2634,7 @@ function renderSeoPageHtml(page, runtimeConfig = {}) {
         <p>${escapeHtml(item.answer)}</p>
       </details>`).join('');
   const proofLinks = page.proofLinks.map((link) => `<a href="${escapeHtml(link.href)}" target="_blank" rel="noopener">${escapeHtml(link.label)}</a>`).join('');
+  const paidSprintCheckoutCard = renderPaidSprintCheckoutCard(page);
   const faqJsonLd = renderFaqJsonLd(page);
   const semanticPseoSidebar = page.path === '/guides/semantic-programmatic-seo-guardrails' ? `<div class="sidebar-card">
           <h2>pSEO governance gates</h2>
@@ -2818,6 +2841,48 @@ function renderSeoPageHtml(page, runtimeConfig = {}) {
       font-weight: 700;
       text-decoration: none;
     }
+    .paid-sprint-card {
+      border-color: rgba(74, 222, 128, 0.32);
+      background: linear-gradient(180deg, rgba(17, 17, 19, 0.98), rgba(10, 20, 14, 0.96));
+    }
+    .paid-sprint-card p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    .paid-offers {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .paid-offer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid rgba(74, 222, 128, 0.28);
+      border-radius: 10px;
+      color: var(--fg);
+      text-decoration: none;
+      background: rgba(0, 0, 0, 0.22);
+    }
+    .paid-offer strong {
+      color: #9af5b0;
+      white-space: nowrap;
+    }
+    .paid-offer:hover, .paid-offer:focus-visible {
+      border-color: rgba(74, 222, 128, 0.62);
+      outline: none;
+    }
+    .secondary-cta {
+      display: inline-flex;
+      margin-top: 12px;
+      color: var(--cyan);
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+    }
     .faq-item {
       border-top: 1px solid var(--line);
       padding: 14px 0;
@@ -2899,6 +2964,7 @@ ${renderWebPageJsonLd(page, { appOrigin })}
         ${documentRagSidebar}
         ${codeGraphSidebar}
         ${workflowRuleSidebar}
+        ${paidSprintCheckoutCard}
         <div class="sidebar-card">
           <h2>GSD execution brief</h2>
           <p>This page was prioritized because it captures high-intent demand around ${escapeHtml(page.query)} and feeds directly into ThumbGate's proof-led conversion path.</p>

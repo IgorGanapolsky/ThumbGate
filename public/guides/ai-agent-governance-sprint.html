@@ -168,6 +168,48 @@
       font-weight: 700;
       text-decoration: none;
     }
+    .paid-sprint-card {
+      border-color: rgba(74, 222, 128, 0.32);
+      background: linear-gradient(180deg, rgba(17, 17, 19, 0.98), rgba(10, 20, 14, 0.96));
+    }
+    .paid-sprint-card p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    .paid-offers {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .paid-offer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid rgba(74, 222, 128, 0.28);
+      border-radius: 10px;
+      color: var(--fg);
+      text-decoration: none;
+      background: rgba(0, 0, 0, 0.22);
+    }
+    .paid-offer strong {
+      color: #9af5b0;
+      white-space: nowrap;
+    }
+    .paid-offer:hover, .paid-offer:focus-visible {
+      border-color: rgba(74, 222, 128, 0.62);
+      outline: none;
+    }
+    .secondary-cta {
+      display: inline-flex;
+      margin-top: 12px;
+      color: var(--cyan);
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+    }
     .faq-item {
       border-top: 1px solid var(--line);
       padding: 14px 0;
@@ -325,6 +367,21 @@
 
 
 
+        <div class="sidebar-card paid-sprint-card">
+          <h2>Ready to buy the sprint?</h2>
+          <p>Skip the unpaid intake when budget is ready. Pick the smaller diagnostic to validate one repeated failure, or buy the 48-hour sprint for implementation and proof.</p>
+          <div class="paid-offers">
+            <a class="paid-offer diagnostic" href="https://buy.stripe.com/00w14neyUcXA5pL5e33sI0e" target="_blank" rel="noopener">
+              <span>Workflow Hardening Diagnostic</span>
+              <strong>$499</strong>
+            </a>
+            <a class="paid-offer sprint" href="https://buy.stripe.com/fZu9AT76saPsg4pbCr3sI0f" target="_blank" rel="noopener">
+              <span>AI Agent Governance Sprint</span>
+              <strong>$1500</strong>
+            </a>
+          </div>
+          <a class="secondary-cta" href="/?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=ai_agent_governance_sprint&amp;cta_placement=seo_brief&amp;plan_id=team#workflow-sprint-intake" target="_blank" rel="noopener">Use intake instead</a>
+        </div>
         <div class="sidebar-card">
           <h2>GSD execution brief</h2>
           <p>This page was prioritized because it captures high-intent demand around ai agent governance sprint and feeds directly into ThumbGate's proof-led conversion path.</p>
