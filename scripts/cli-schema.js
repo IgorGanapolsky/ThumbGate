@@ -163,6 +163,20 @@ const CLI_COMMANDS = [
     ],
   }),
   discoveryCommand({
+    name: 'code-graph-guardrails',
+    aliases: ['knowledge-graph-guardrails', 'graph-guardrails'],
+    description: 'Map code-graph risk signals to Knowledge Graph Safety pre-action gates',
+    flags: [
+      jsonFlag(),
+      { name: 'graph-tool', type: 'string', description: 'Graph tool name, such as understand-anything or code-graph-mcp' },
+      { name: 'graph-path', type: 'string', description: 'Path to generated graph output or cache directory' },
+      { name: 'central-files', type: 'string', description: 'Comma-separated high-centrality files' },
+      { name: 'layers', type: 'string', description: 'Comma-separated architecture layers touched, such as api,data,ui' },
+      { name: 'generated-artifacts', type: 'string', description: 'Comma-separated generated graph artifacts to protect' },
+      { name: 'changed-files', type: 'number', description: 'Estimated changed file count for blast-radius context' },
+    ],
+  }),
+  discoveryCommand({
     name: 'background-governance',
     aliases: ['background-agent-governance', 'agent-governance'],
     description: 'Report background-agent runs and pre-check unattended PR dispatch risk',

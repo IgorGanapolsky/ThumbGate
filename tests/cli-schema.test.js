@@ -125,6 +125,19 @@ test('native-messaging-audit exposes JSON, platform, home-dir, and ai-only flags
   assert.ok(flagNames.includes('ai-only'));
 });
 
+test('code-graph-guardrails exposes graph signal flags', () => {
+  const cmd = findCommand('knowledge-graph-guardrails');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'code-graph-guardrails');
+  assert.ok(flagNames.includes('json'));
+  assert.ok(flagNames.includes('graph-tool'));
+  assert.ok(flagNames.includes('graph-path'));
+  assert.ok(flagNames.includes('central-files'));
+  assert.ok(flagNames.includes('layers'));
+  assert.ok(flagNames.includes('generated-artifacts'));
+  assert.ok(flagNames.includes('changed-files'));
+});
+
 test('lessons command has --json, --local, --remote flags', () => {
   const cmd = findCommand('lessons');
   const flagNames = cmd.flags.map((f) => f.name);

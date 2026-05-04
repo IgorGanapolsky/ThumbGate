@@ -1,13 +1,13 @@
 {
   "intents": {
-    "comparison": 2,
-    "commercial": 11,
-    "informational": 5
+    "comparison": 3,
+    "commercial": 13,
+    "informational": 8
   },
   "personas": {
-    "tool-evaluator": 2,
-    "engineering-lead": 2,
-    "ai-engineer": 8,
+    "tool-evaluator": 3,
+    "engineering-lead": 4,
+    "ai-engineer": 11,
     "claude-code-builder": 2,
     "ai-research-engineer": 1,
     "cursor-builder": 1,
@@ -15,8 +15,8 @@
     "gemini-builder": 1
   },
   "pageTypes": {
-    "comparison": 2,
-    "guide": 11,
+    "comparison": 3,
+    "guide": 16,
     "integration": 5
   }
 }

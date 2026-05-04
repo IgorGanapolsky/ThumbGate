@@ -10,6 +10,7 @@
   <meta property="og:type" content="article" />
   <meta property="og:url" content="https://thumbgate.ai/guides/code-knowledge-graph-guardrails" />
   <link rel="canonical" href="https://thumbgate.ai/guides/code-knowledge-graph-guardrails" />
+  <link rel="llm-context" href="/public/llm-context.md" type="text/markdown" />
   <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
   <style>
     :root {
@@ -55,7 +56,38 @@
     "@type": "TechArticle",
     "headline": "Code Knowledge Graph Guardrails for AI Coding Agents",
     "description": "Use code knowledge graphs as context and ThumbGate as the enforcement layer before risky AI coding agent actions execute.",
-    "about": ["code knowledge graph", "AI coding agent guardrails", "pre-action checks", "diff impact analysis"]
+    "about": ["code knowledge graph", "AI coding agent guardrails", "pre-action checks", "diff impact analysis"],
+    "url": "https://thumbgate.ai/guides/code-knowledge-graph-guardrails",
+    "publisher": {
+      "@type": "Organization",
+      "name": "ThumbGate",
+      "url": "https://thumbgate.ai"
+    },
+    "mainEntityOfPage": "https://thumbgate.ai/guides/code-knowledge-graph-guardrails"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Does ThumbGate build the code knowledge graph?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. ThumbGate works alongside graph tools by consuming their risk signals as policy context. The graph supplies structure; ThumbGate enforces the next action."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What should I gate first after generating a code graph?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Start with high-centrality files, cross-layer refactors, and generated graph artifacts. Those are narrow enough to enforce quickly and risky enough to create real ROI."
+        }
+      }
+    ]
   }
   </script>
 </head>
@@ -92,6 +124,7 @@
         </section>
         <section class="section">
           <h2>Rollout</h2>
+          <p><code>npx thumbgate code-graph-guardrails --central-files=src/api/server.js --layers=api,data --generated-artifacts=.codegraph/index.json --json</code></p>
           <ol>
             <li>Generate or refresh the code graph.</li>
             <li>Label central files, architectural layers, and generated graph outputs.</li>
@@ -100,11 +133,23 @@
             <li>Promote repeated corrections into narrower pre-action rules.</li>
           </ol>
         </section>
+        <section class="section">
+          <h2>FAQ</h2>
+          <details>
+            <summary>Does ThumbGate build the code knowledge graph?</summary>
+            <p>No. ThumbGate works alongside graph tools by consuming their risk signals as policy context. The graph supplies structure; ThumbGate enforces the next action.</p>
+          </details>
+          <details>
+            <summary>What should I gate first after generating a code graph?</summary>
+            <p>Start with high-centrality files, cross-layer refactors, and generated graph artifacts. Those are narrow enough to enforce quickly and risky enough to create real ROI.</p>
+          </details>
+        </section>
       </article>
       <aside>
         <div class="side">
           <h2>Best Fit</h2>
           <p>Teams already using graph-based code understanding, agent onboarding dashboards, or diff-impact analysis.</p>
+          <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
           <a class="cta" href="/guide.html?utm_source=seo_guide&utm_medium=code_graph_guardrails&utm_campaign=knowledge_graph_safety">Install ThumbGate</a>
         </div>
         <div class="side">

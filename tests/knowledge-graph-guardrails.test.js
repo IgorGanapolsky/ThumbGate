@@ -18,6 +18,8 @@ test('knowledge graph guide positions graph context as complementary enforcement
   assert.match(html, /"@type": "TechArticle"/);
   assert.match(html, /Understand Anything and code-graph MCPs/i);
   assert.match(html, /Knowledge Graph Safety/);
+  assert.match(guide, /npx thumbgate code-graph-guardrails/);
+  assert.match(html, /npx thumbgate code-graph-guardrails/);
   assert.doesNotMatch(guide, /replaces knowledge graphs/i);
 });
 

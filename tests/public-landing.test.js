@@ -428,6 +428,7 @@ test('public landing page internally links to comparison and guide pages without
   assert.match(landingPage, /href="\/guides\/agent-harness-optimization"/);
   assert.match(landingPage, /href="\/guides\/code-knowledge-graph-guardrails"/);
   assert.match(landingPage, /href="\/guides\/developer-machine-supply-chain-guardrails"/);
+  assert.match(landingPage, /href="\/guides\/prompt-tricks-to-workflow-rules"/);
   assert.match(landingPage, /href="\/guides\/background-agent-governance"/);
   assert.match(landingPage, /href="\/guides\/gpt-5-5-model-evaluation"/);
   assert.match(landingPage, /href="\/guides\/ai-search-topical-presence"/);
@@ -443,6 +444,8 @@ test('public landing page internally links to comparison and guide pages without
   assert.match(landingPage, /AI Agent Harness Optimization/);
   assert.match(landingPage, /Code Knowledge Graph Guardrails/);
   assert.match(landingPage, /Developer Machine Supply Chain Guardrails/);
+  assert.match(landingPage, /Prompt Tricks Are Not Enough/);
+  assert.match(landingPage, /clear rules, examples, and pre-action checks/);
   assert.match(landingPage, /Background Agent Governance/);
   assert.match(landingPage, /risk-tiered review/);
   assert.match(landingPage, /AI Search Topical Presence/);

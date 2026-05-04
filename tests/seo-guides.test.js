@@ -10,6 +10,9 @@ const PUBLIC_DIR = path.resolve(__dirname, '..', 'public');
 const GUIDE_FILES = [
   'guides/pre-action-checks.html',
   'guides/agent-harness-optimization.html',
+  'guides/code-knowledge-graph-guardrails.html',
+  'guides/developer-machine-supply-chain-guardrails.html',
+  'guides/prompt-tricks-to-workflow-rules.html',
   'guides/background-agent-governance.html',
   'guides/gpt-5-5-model-evaluation.html',
   'guides/browser-automation-safety.html',
@@ -132,6 +135,45 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('dashboard-analysis workload'));
     assert.ok(html.includes('chart-spec validity'));
     assert.ok(html.includes('Benchmark Before Routing Expensive Agent Work'));
+  });
+
+  it('code knowledge graph guide routes graph context into enforceable checks', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/code-knowledge-graph-guardrails.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('Code graphs tell the agent what the system is'));
+    assert.ok(html.includes('Require diff impact before central edits'));
+    assert.ok(html.includes('Checkpoint cross-layer refactors'));
+    assert.ok(html.includes('Protect generated graph artifacts'));
+    assert.ok(html.includes('Knowledge Graph Safety'));
+    assert.ok(html.includes('npx thumbgate code-graph-guardrails'));
+  });
+
+  it('developer machine supply chain guide routes local compromise risk into pre-action checks', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/developer-machine-supply-chain-guardrails.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('Stop AI Assistants From Amplifying Supply-Chain Attacks'));
+    assert.ok(html.includes('Block package lifecycle secret harvest'));
+    assert.ok(html.includes('Review untrusted CLI before execution'));
+    assert.ok(html.includes('Require credential exposure assessment'));
+    assert.ok(html.includes('Supply Chain Safety'));
+  });
+
+  it('prompt tricks guide routes prompt advice into enforceable workflow rules', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/prompt-tricks-to-workflow-rules.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('Prompt Tricks Are Not Enough'));
+    assert.ok(html.includes('clear rules, examples, and pre-action checks'));
+    assert.ok(html.includes('Do not rely on politeness, threats, flattery, or roleplay'));
+    assert.ok(html.includes('Workflow Rule Safety'));
   });
 
   it('AI search visibility guides reinforce the recommendation-discovery story', () => {

@@ -36,6 +36,12 @@ The first rollout should stay narrow. Do not try to govern every node in the gra
 
 These templates are shipped in `config/gate-templates.json` under the `Knowledge Graph Safety` category.
 
+Run this after a graph refresh to get the concrete rollout plan:
+
+```bash
+npx thumbgate code-graph-guardrails --central-files=src/api/server.js --layers=api,data --generated-artifacts=.codegraph/index.json --json
+```
+
 ## How To Position This Publicly
 
 Do not pitch ThumbGate as a substitute for graph-based code understanding. That is false and weak.

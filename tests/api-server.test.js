@@ -2967,7 +2967,7 @@ test('dashboard applies analytics window query params with live billing truth', 
     assert.equal(body.analytics.efficiency.estimatedContextTokensReused, 300);
     assert.equal(typeof body.team.activeAgents, 'number');
     assert.equal(body.team.proRequired, false);
-    assert.equal(body.templateLibrary.total, 6);
+    assert.equal(body.templateLibrary.total, 13);
     assert.equal(body.templateLibrary.categories['Git Safety'], 1);
     assert.ok(body.predictive);
     assert.equal(typeof body.predictive.upgradePropensity.pro.score, 'number');

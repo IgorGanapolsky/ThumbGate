@@ -1109,6 +1109,25 @@ describe('bin/cli.js', () => {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
 
+  test('code-graph-guardrails --json recommends graph-informed gates', () => {
+    const result = runCliSync([
+      'code-graph-guardrails',
+      '--json',
+      '--central-files=src/api/server.js',
+      '--layers=api,data',
+      '--generated-artifacts=.codegraph/index.json',
+      '--changed-files=24',
+    ], {
+      env: { THUMBGATE_NO_NUDGE: '1' },
+    });
+
+    assert.strictEqual(result.status, 0, `code-graph-guardrails failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.name, 'thumbgate-code-graph-guardrails');
+    assert.equal(payload.summary.recommendedTemplateCount, 3);
+    assert.ok(payload.signals.some((signal) => signal.id === 'large_blast_radius'));
+  });
+
   test('dispatch --json emits a phone-safe remote ops brief', () => {
     const isolatedDir = makeTmpDir();
     const feedbackDir = path.join(isolatedDir, 'feedback');

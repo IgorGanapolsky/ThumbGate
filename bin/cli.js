@@ -12,6 +12,7 @@
  *   npx thumbgate export-dpo    # export DPO training pairs
  *   npx thumbgate export-databricks   # export Databricks-ready analytics bundle
  *   npx thumbgate eval --from-feedback # turn feedback into reusable prompt evals
+ *   npx thumbgate code-graph-guardrails # map code-graph signals to pre-action checks
  *   npx thumbgate stats         # feedback analytics + Revenue-at-Risk
  *   npx thumbgate background-governance  # background-agent run report + risk check
  *   npx thumbgate cfo           # local operational billing summary
@@ -1599,6 +1600,22 @@ function nativeMessagingAudit() {
   process.stdout.write(formatNativeMessagingAudit(report));
 }
 
+function codeGraphGuardrails() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildCodeGraphGuardrailsPlan,
+    formatCodeGraphGuardrailsPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'code-graph-guardrails'));
+  const report = buildCodeGraphGuardrailsPlan(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatCodeGraphGuardrailsPlan(report));
+}
+
 function backgroundGovernance() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -2019,6 +2036,7 @@ function help() {
   console.log('  funnel                Marketing and revenue conversion funnel analytics');
   console.log('  pulse                 Real-time GTM velocity and Mission Control summary');
   console.log('  dispatch              Dispatch-safe brief for phone-driven review sessions');
+  console.log('  code-graph-guardrails Map code-graph risk signals to Knowledge Graph Safety gates');
   console.log('  background-governance Background-agent run report and dispatch risk check');
   console.log('  analytics             Unified analytics snapshot (npm, GitHub, landing)');
   console.log('  start-api             Start the ThumbGate HTTPS API server');
@@ -2044,6 +2062,7 @@ function help() {
   console.log('  npx thumbgate explore gates --json');
   console.log('  npx thumbgate demo');
   console.log('  npx thumbgate stats --json');
+  console.log('  npx thumbgate code-graph-guardrails --central-files=src/api/server.js --layers=api,data --generated-artifacts=.codegraph/index.json --json');
   console.log('  npx thumbgate background-governance --json');
   console.log('  npx thumbgate background-governance --check --agent-id=builder --branch=main --files-changed=25 --json');
   console.log('  npx thumbgate eval --from-feedback --json');
@@ -2235,6 +2254,11 @@ switch (COMMAND) {
   case 'native-messaging-audit':
   case 'bridge-audit':
     nativeMessagingAudit();
+    break;
+  case 'code-graph-guardrails':
+  case 'knowledge-graph-guardrails':
+  case 'graph-guardrails':
+    codeGraphGuardrails();
     break;
   case 'background-governance':
   case 'background-agent-governance':

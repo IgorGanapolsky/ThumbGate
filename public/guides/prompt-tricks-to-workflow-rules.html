@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prompt Tricks Are Not Enough | Turn AI Instructions Into Workflow Rules</title>
+  <meta name="description" content="Clear AI prompts and examples help, but enforcement is what stops repeated failures. ThumbGate turns prompt lessons into workflow rules and pre-action checks." />
+  <meta property="og:title" content="Prompt Tricks Are Not Enough | Turn AI Instructions Into Workflow Rules" />
+  <meta property="og:description" content="Turn one messy AI-agent workflow into clear rules, examples, and pre-action checks before the next risky tool call executes." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/guides/prompt-tricks-to-workflow-rules" />
+  <link rel="canonical" href="https://thumbgate.ai/guides/prompt-tricks-to-workflow-rules" />
+  <link rel="llm-context" href="/public/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --panel: #151518;
+      --line: #25252a;
+      --text: #ececf1;
+      --muted: #a0a0aa;
+      --cyan: #22d3ee;
+      --green: #4ade80;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar { border-bottom: 1px solid var(--line); background: rgba(10, 10, 11, 0.92); }
+    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; padding-bottom: 14px; }
+    .brand { color: var(--text); font-weight: 800; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow { color: var(--cyan); font-size: 12px; font-weight: 850; letter-spacing: .09em; text-transform: uppercase; }
+    h1 { max-width: 760px; margin: 14px 0; font-size: clamp(34px, 5vw, 56px); line-height: 1.06; }
+    .hero p { max-width: 760px; color: var(--muted); font-size: 18px; }
+    .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 22px; padding-bottom: 72px; }
+    .section, .side { border: 1px solid var(--line); background: var(--panel); border-radius: 14px; padding: 24px; margin-bottom: 18px; }
+    h2 { margin: 0 0 12px; font-size: 24px; }
+    h3 { margin: 18px 0 8px; }
+    p, li { color: var(--muted); }
+    .quote { color: var(--text); border-left: 3px solid var(--green); padding-left: 14px; font-size: 20px; }
+    .cta { display: inline-flex; margin-top: 14px; padding: 12px 16px; border-radius: 10px; background: var(--cyan); color: #071116; font-weight: 800; }
+    code { color: #d8f7ff; }
+    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Prompt Tricks Are Not Enough",
+    "description": "Clear prompts and examples help modern AI tools, but enforcement is what stops repeated failures from recurring.",
+    "about": ["AI prompting", "AI coding agent guardrails", "workflow rules", "pre-action checks", "prompt engineering"],
+    "url": "https://thumbgate.ai/guides/prompt-tricks-to-workflow-rules",
+    "publisher": {
+      "@type": "Organization",
+      "name": "ThumbGate",
+      "url": "https://thumbgate.ai"
+    },
+    "mainEntityOfPage": "https://thumbgate.ai/guides/prompt-tricks-to-workflow-rules"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Do better prompts still matter?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Clear prompts and examples reduce ambiguity. ThumbGate starts where prompts stop: enforcing repeated lessons before the next action executes."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What prompt tactics should teams stop wasting time on?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Do not rely on politeness, threats, flattery, or roleplay as control mechanisms. Use clear instructions, concrete examples, neutral constraints, and verification gates."
+        }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <nav class="topbar">
+    <div class="container">
+      <a class="brand" href="/">ThumbGate</a>
+      <a href="/guide.html">Setup guide</a>
+    </div>
+  </nav>
+  <main>
+    <section class="hero">
+      <div class="container">
+        <div class="eyebrow">Workflow Rule Safety</div>
+        <h1>Prompt Tricks Are Not Enough</h1>
+        <p>Clear prompts are table stakes. ThumbGate turns one messy AI-agent workflow into clear rules, examples, and pre-action checks before the next risky file edit, shell command, browser action, or deploy step executes.</p>
+      </div>
+    </section>
+    <div class="container grid">
+      <article>
+        <section class="section">
+          <h2>The Wedge</h2>
+          <p class="quote">Prompts tell the model what you want. Workflow rules decide what the agent is allowed to do next.</p>
+          <p>Modern models already understand many clear instructions. The high-ROI move is not a clever phrase. It is converting the repeated failure into an enforceable rule that survives across sessions, agents, and tool calls.</p>
+        </section>
+        <section class="section">
+          <h2>High-ROI Conversion Steps</h2>
+          <h3>Capture one repeated failure</h3>
+          <p>Pick the failure you can already name: wrong file edits, risky commands, invented imports, skipped verification, or retry loops that burn time and tokens.</p>
+          <h3>Write the smallest clear rule</h3>
+          <p>Describe the allowed action, the blocked action, and one concrete example of each.</p>
+          <h3>Attach a pre-action check</h3>
+          <p>Run the rule before the tool call, not after the agent has already spent tokens or changed files.</p>
+          <h3>Verify the save</h3>
+          <p>Record the next prevented action, remediation time avoided, and the narrower rule created from feedback.</p>
+        </section>
+        <section class="section">
+          <h2>What To Stop Doing</h2>
+          <p>Do not rely on politeness, threats, flattery, or roleplay as control mechanisms. Use clear instructions, concrete examples, neutral constraints, and verification gates.</p>
+        </section>
+        <section class="section">
+          <h2>FAQ</h2>
+          <details>
+            <summary>Do better prompts still matter?</summary>
+            <p>Yes. Clear prompts and examples reduce ambiguity. ThumbGate starts where prompts stop: enforcing repeated lessons before the next action executes.</p>
+          </details>
+          <details>
+            <summary>What does a diagnostic produce?</summary>
+            <p>One repeated failure translated into a rule, one good and bad example, one pre-action check, and a short verification plan for proving the check paid for itself.</p>
+          </details>
+        </section>
+      </article>
+      <aside>
+        <div class="side">
+          <h2>Best Fit</h2>
+          <p>Founders and teams whose AI assistants are good enough to be useful but still repeat one expensive workflow mistake.</p>
+          <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
+          <a class="cta" href="https://buy.stripe.com/7sY4gzgH24r49G17mb3sI0g?utm_source=seo_guide&amp;utm_medium=prompt_rules&amp;utm_campaign=founder_workflow_diagnostic">Buy the $99 workflow diagnostic</a>
+        </div>
+        <div class="side">
+          <h2>Related</h2>
+          <p><a href="/guides/pre-action-checks">Pre-Action Checks</a></p>
+          <p><a href="/guides/agent-harness-optimization">Agent Harness Optimization</a></p>
+          <p><a href="/guides/best-tools-stop-ai-agents-breaking-production">Best Tools to Stop AI Agents From Breaking Production</a></p>
+        </div>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>

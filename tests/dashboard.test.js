@@ -158,7 +158,7 @@ test('generateDashboard handles empty state (no files)', () => {
   assert.equal(typeof data.regulatedProof.policyOriginCount, 'number');
   assert.equal(data.predictive.anomalySummary.count, 0);
   assert.equal(data.predictive.upgradePropensity.pro.band, 'very_low');
-  assert.equal(data.templateLibrary.total, 6);
+  assert.equal(data.templateLibrary.total, 13);
   assert.equal(data.templateLibrary.categories['Git Safety'], 1);
   assert.equal(typeof data.settingsStatus.resolvedSettings.mcp.defaultProfile, 'string');
   assert.ok(Array.isArray(data.settingsStatus.origins));
@@ -426,7 +426,7 @@ test('generateDashboard returns complete structure with data', () => {
   assert.equal(data.gateAudit.dayCount, 14);
   assert.equal(data.analytics.funnel.visitors, 0);
   assert.ok(data.predictive.upgradePropensity.pro.score >= 0);
-  assert.equal(data.templateLibrary.total, 6);
+  assert.equal(data.templateLibrary.total, 13);
 });
 
 test('generateDashboard reports only activity since the saved review checkpoint', () => {

@@ -49,6 +49,21 @@ const HIGH_ROI_QUERY_SEEDS = [
     'Fresh harness-engineering demand that maps directly to ThumbGate progressive disclosure, pre-action checks, and workflow audits.',
   ),
   querySeed(
+    'code knowledge graph guardrails',
+    94,
+    'Fresh Claude Code plugin and code-graph demand where ThumbGate can own the enforcement layer after graph-based code understanding.',
+  ),
+  querySeed(
+    'developer machine supply chain guardrails',
+    94,
+    'Developer-machine compromise and package-manager risk map directly to ThumbGate pre-action gates before agents run risky local commands.',
+  ),
+  querySeed(
+    'prompt tricks to workflow rules',
+    94,
+    'Fresh prompt-engineering skepticism that maps directly to ThumbGate converting clear instructions, examples, and repeated failures into enforceable local checks.',
+  ),
+  querySeed(
     'background agent governance',
     94,
     'New team-buying query for unattended agent PRs where alignment context, isolated execution, risk-tiered review, and audit evidence create immediate ROI.',
@@ -249,6 +264,147 @@ function buildHarnessOptimizationGuide() {
     sections: HARNESS_OPTIMIZATION_GUIDE_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
     faq: HARNESS_OPTIMIZATION_GUIDE_SPEC.faq.map(([question, text]) => answer(question, text)),
     relatedPaths: HARNESS_OPTIMIZATION_GUIDE_SPEC.relatedPaths,
+  });
+}
+
+const CODE_KNOWLEDGE_GRAPH_GUARDRAILS_SPEC = Object.freeze({
+  slug: 'code-knowledge-graph-guardrails',
+  meta: {
+    query: 'code knowledge graph guardrails',
+    title: 'Code Knowledge Graph Guardrails | ThumbGate Guide',
+    heroTitle: 'Code Graphs Are Context. ThumbGate Is Execution Control.',
+    heroSummary: 'Code knowledge graphs help AI coding agents understand files, functions, dependencies, and architecture layers. ThumbGate turns those graph signals into pre-action checks before risky edits, commands, deploys, or publishes execute.',
+  },
+  takeaways: [
+    'Code graphs explain what the system is; pre-action gates decide what the agent is allowed to do next.',
+    'The fastest rollout is three graph-informed checks: central-file impact review, cross-layer refactor checkpointing, and generated-graph artifact protection.',
+    'This positions graph tools as complementary context while making ThumbGate the enforcement layer buyers still need.',
+  ],
+  sections: [
+    ['paragraphs', 'Why this became a buyer question', [
+      'Claude Code plugins and code-graph MCPs are making architecture maps easier to generate. That helps agents stop reading code blind, but it does not automatically govern the next tool call.',
+      'A graph can say a file is central, a refactor crosses layers, or a generated graph artifact should not be edited. ThumbGate turns those signals into allow, warn, or block decisions before execution.',
+    ]],
+    ['bullets', 'High-ROI gate templates', [
+      'CLI path: npx thumbgate code-graph-guardrails --central-files=src/api/server.js --layers=api,data --generated-artifacts=.codegraph/index.json --json.',
+      'Require diff impact before central edits: block writes to high-centrality files until the agent has reviewed blast radius.',
+      'Checkpoint cross-layer refactors: warn before one run changes API, service, data, and UI layers together.',
+      'Protect generated graph artifacts: block manual edits to graph outputs that should be regenerated from source.',
+    ]],
+    ['paragraphs', 'Where this creates revenue', [
+      'This is a strong engagement wedge for audiences already excited about codebase understanding. The public line is simple: code graphs tell the agent what the system is; ThumbGate decides what the agent is allowed to do next.',
+      'For teams, sell the Workflow Hardening Sprint around one graph-informed repeated failure: one central file, one risky refactor path, or one generated artifact that agents keep touching incorrectly.',
+    ]],
+  ],
+  faq: [
+    ['Does ThumbGate build the code knowledge graph?', 'No. ThumbGate can work alongside graph tools by consuming their risk signals as policy context. The graph supplies structure; ThumbGate enforces the next action.'],
+    ['What should I gate first after generating a code graph?', 'Start with high-centrality files, cross-layer refactors, and generated graph artifacts. Those are narrow enough to enforce quickly and risky enough to create real ROI.'],
+    ['Is this a replacement for architecture documentation?', 'No. It turns architecture context into runtime enforcement so the agent cannot ignore the risk signals it just discovered.'],
+  ],
+  relatedPaths: ['/guides/pre-action-checks', '/guides/agent-harness-optimization', '/guides/best-tools-stop-ai-agents-breaking-production'],
+});
+
+function buildCodeKnowledgeGraphGuardrailsGuide() {
+  return preActionGuide(CODE_KNOWLEDGE_GRAPH_GUARDRAILS_SPEC.slug, {
+    ...CODE_KNOWLEDGE_GRAPH_GUARDRAILS_SPEC.meta,
+    takeaways: CODE_KNOWLEDGE_GRAPH_GUARDRAILS_SPEC.takeaways,
+    sections: CODE_KNOWLEDGE_GRAPH_GUARDRAILS_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+    faq: CODE_KNOWLEDGE_GRAPH_GUARDRAILS_SPEC.faq.map(([question, text]) => answer(question, text)),
+    relatedPaths: CODE_KNOWLEDGE_GRAPH_GUARDRAILS_SPEC.relatedPaths,
+  });
+}
+
+const DEVELOPER_MACHINE_SUPPLY_CHAIN_GUARDRAILS_SPEC = Object.freeze({
+  slug: 'developer-machine-supply-chain-guardrails',
+  meta: {
+    query: 'developer machine supply chain guardrails',
+    title: 'Developer Machine Supply Chain Guardrails | ThumbGate Guide',
+    heroTitle: 'Stop AI Assistants From Amplifying Supply-Chain Attacks.',
+    heroSummary: 'Developer laptops and CI runners hold tokens, package-manager trust, and one-shot CLI install paths. ThumbGate turns that local execution risk into pre-action gates before an agent runs npm, PyPI, Docker, or shell commands that can expose credentials.',
+  },
+  takeaways: [
+    'Secrets scanners find leaks; ThumbGate blocks the agent behavior that creates or amplifies them.',
+    'Supply Chain Safety templates should start with package lifecycle scripts, untrusted one-shot CLI installers, dependency autofixes, and credential exposure assessment.',
+    'This is complementary to GitGuardian, endpoint security, and incident response because it governs the next local action.',
+  ],
+  sections: [
+    ['paragraphs', 'Why developer machines are now the blast radius', [
+      'A compromised package does not need to break production directly. It can read .env, .npmrc, .pypirc, Docker config, SSH keys, and cloud tokens while an AI coding assistant repeats the trusted-looking command across more repos.',
+      'The high-ROI control is local and specific: detect risky execution before it runs, require review where exposure is plausible, and promote every missed incident into a durable ThumbGate rule.',
+    ]],
+    ['bullets', 'High-ROI gate templates', [
+      'Block package lifecycle secret harvest: stop install, postinstall, prepare, and similar scripts from reading local credential surfaces.',
+      'Review untrusted CLI before execution: block curl-to-shell flows, unknown npx commands, uvx, and pipx run until the source and permissions are reviewed.',
+      'Checkpoint dependency bot autofix: warn before Dependabot, Renovate, audit-fix, Docker pull, or broad package updates expand the trusted code surface.',
+      'Require credential exposure assessment: force an answer about what credential lived where, what executed, and whether rotation is required.',
+    ]],
+    ['paragraphs', 'Where this creates revenue', [
+      'This is a strong security wedge for teams that already run scanners but still let agents execute local install/update commands. The offer is not "replace your scanner"; it is "connect scanner and incident lessons to pre-action enforcement."',
+      'For the Workflow Hardening Sprint, pick one concrete local-risk pattern: package lifecycle scripts, one-shot installers, dependency bot autofixes, or unresolved credential exposure after a suspected compromise.',
+    ]],
+  ],
+  faq: [
+    ['Does ThumbGate replace secrets scanning?', 'No. Secrets scanners tell you what leaked. ThumbGate blocks or checkpoints the agent behavior that can create or amplify the leak before execution.'],
+    ['Which supply-chain gate should teams enable first?', 'Start with one-shot CLI installers and package lifecycle scripts because those paths can execute before a human sees the diff.'],
+    ['Can this work with existing incident-response tools?', 'Yes. Use scanner, EDR, and incident-response findings as evidence, then turn the repeated local action pattern into a ThumbGate pre-action rule.'],
+  ],
+  relatedPaths: ['/guides/pre-action-checks', '/guides/code-knowledge-graph-guardrails', '/guides/best-tools-stop-ai-agents-breaking-production'],
+});
+
+function buildDeveloperMachineSupplyChainGuardrailsGuide() {
+  return preActionGuide(DEVELOPER_MACHINE_SUPPLY_CHAIN_GUARDRAILS_SPEC.slug, {
+    ...DEVELOPER_MACHINE_SUPPLY_CHAIN_GUARDRAILS_SPEC.meta,
+    takeaways: DEVELOPER_MACHINE_SUPPLY_CHAIN_GUARDRAILS_SPEC.takeaways,
+    sections: DEVELOPER_MACHINE_SUPPLY_CHAIN_GUARDRAILS_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+    faq: DEVELOPER_MACHINE_SUPPLY_CHAIN_GUARDRAILS_SPEC.faq.map(([question, text]) => answer(question, text)),
+    relatedPaths: DEVELOPER_MACHINE_SUPPLY_CHAIN_GUARDRAILS_SPEC.relatedPaths,
+  });
+}
+
+const PROMPT_TRICKS_TO_WORKFLOW_RULES_SPEC = Object.freeze({
+  slug: 'prompt-tricks-to-workflow-rules',
+  meta: {
+    query: 'prompt tricks to workflow rules',
+    title: 'Prompt Tricks Are Not Enough | Turn AI Instructions Into Workflow Rules',
+    heroTitle: 'Prompt Tricks Are Table Stakes. Workflow Rules Make Them Pay.',
+    heroSummary: 'Clear prompts and examples help modern AI tools, but they do not stop the same failure from recurring. ThumbGate turns one messy agent workflow into rules, examples, and pre-action checks before the next tool call executes.',
+  },
+  takeaways: [
+    'Politeness, threats, flattery, and clever prompt rituals are unreliable leverage; clear task shape, examples, and verification are the durable parts.',
+    'The paid layer is enforcement: convert repeated mistakes into durable rules that run before an agent acts.',
+    'The fastest revenue offer is a $99 workflow diagnostic that turns one messy AI workflow into clear instructions, examples, and pre-action checks.',
+  ],
+  sections: [
+    ['paragraphs', 'Why this became a buyer question', [
+      'Teams have learned that better prompts can reduce ambiguity, but a prompt still relies on the model remembering and obeying every constraint at the exact moment it matters.',
+      'That is where ThumbGate fits. Keep prompts clear and neutral, then promote the failure patterns into local checks that can warn or block before shell commands, file edits, browser actions, or deploy steps run.',
+    ]],
+    ['bullets', 'High-ROI conversion steps', [
+      'Capture one repeated failure: the agent edits the wrong file, runs a risky command, invents an import, skips verification, or reopens a resolved loop.',
+      'Write the smallest clear rule: describe the allowed action, the blocked action, and one concrete example of each.',
+      'Attach a pre-action check: run the rule before the tool call, not after the agent has already spent tokens or changed files.',
+      'Verify with proof: record the next prevented action, the saved remediation time, and the narrower rule created from feedback.',
+    ]],
+    ['paragraphs', 'Where this creates revenue', [
+      'This turns generic prompt advice into a buyer-ready diagnostic. The public offer is simple: send one messy AI-agent workflow and ThumbGate turns it into clear rules, examples, and pre-action checks.',
+      'For teams, position the Workflow Hardening Sprint around the repeated failure they can already name. The deliverable is not a better pep talk for the model; it is enforcement that survives across sessions and agents.',
+    ]],
+  ],
+  faq: [
+    ['Do better prompts still matter?', 'Yes. Clear prompts and examples reduce ambiguity. ThumbGate starts where prompts stop: enforcing repeated lessons before the next action executes.'],
+    ['What prompt tactics should teams stop wasting time on?', 'Do not rely on politeness, threats, flattery, or roleplay as control mechanisms. Use clear instructions, concrete examples, neutral constraints, and verification gates.'],
+    ['What should a $99 workflow diagnostic produce?', 'One repeated failure translated into a rule, one good and bad example, one pre-action check, and a short verification plan for proving the check paid for itself.'],
+  ],
+  relatedPaths: ['/guides/pre-action-checks', '/guides/agent-harness-optimization', '/guides/best-tools-stop-ai-agents-breaking-production'],
+});
+
+function buildPromptTricksToWorkflowRulesGuide() {
+  return preActionGuide(PROMPT_TRICKS_TO_WORKFLOW_RULES_SPEC.slug, {
+    ...PROMPT_TRICKS_TO_WORKFLOW_RULES_SPEC.meta,
+    takeaways: PROMPT_TRICKS_TO_WORKFLOW_RULES_SPEC.takeaways,
+    sections: PROMPT_TRICKS_TO_WORKFLOW_RULES_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+    faq: PROMPT_TRICKS_TO_WORKFLOW_RULES_SPEC.faq.map(([question, text]) => answer(question, text)),
+    relatedPaths: PROMPT_TRICKS_TO_WORKFLOW_RULES_SPEC.relatedPaths,
   });
 }
 
@@ -765,6 +921,9 @@ const PAGE_BLUEPRINTS = [
     relatedPaths: ['/guides/pre-action-checks', '/guides/agent-harness-optimization', '/guides/ai-search-topical-presence'],
   },
   buildHarnessOptimizationGuide(),
+  buildCodeKnowledgeGraphGuardrailsGuide(),
+  buildDeveloperMachineSupplyChainGuardrailsGuide(),
+  buildPromptTricksToWorkflowRulesGuide(),
   buildBackgroundAgentGovernanceGuide(),
   buildModelUpgradeEvaluationGuide(),
   {
