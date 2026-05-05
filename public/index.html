@@ -723,11 +723,11 @@ __GA_BOOTSTRAP__
     <div class="hero-paid-path" aria-label="Paid AI agent governance sprint checkout options">
       <div>
         <strong>Need buyer-ready proof today?</strong>
-        <span>Send one messy AI-agent workflow. We turn it into clear rules, examples, and pre-action checks, plus AI Agent Governance Sprint approval boundaries and rollback safety before it touches developer-machine risk surfaces.</span>
+        <span>Same-day Workflow Teardown: pay $99 for failure map. Choose $499 diagnostic for clear rules, examples, and pre-action checks, or $1500 sprint for implementation</span>
       </div>
       <div class="hero-paid-actions">
         <a class="starter" href="https://buy.stripe.com/aFa8wPgH29Lo4lH35V3sI0w" onclick="sendFirstPartyTelemetry('quick_read_checkout_started',{ctaId:'hero_quick_read_checkout',ctaPlacement:'hero_paid_path',planId:'quick_read',offer:'agent_failure_quick_read',price:19});sendGa4Event('begin_checkout',{currency:'USD',value:19,items:[{item_id:'agent_failure_quick_read',item_name:'AI Agent Failure Quick Read'}]});">Pay $19 quick read &rarr;</a>
-        <a class="starter" href="https://buy.stripe.com/7sY4gzgH24r49G17mb3sI0g" onclick="sendFirstPartyTelemetry('founder_workflow_diagnostic_checkout_started',{ctaId:'hero_founder_workflow_diagnostic_checkout',ctaPlacement:'hero_paid_path',planId:'team',offer:'founder_workflow_diagnostic',price:99});sendGa4Event('begin_checkout',{currency:'USD',value:99,items:[{item_id:'founder_workflow_diagnostic',item_name:'Founder Workflow Diagnostic'}]});">Pay $99 diagnostic &rarr;</a>
+        <a class="starter" href="https://buy.stripe.com/7sYfZhgH29LodWhdKz3sI0v" onclick="sendFirstPartyTelemetry('workflow_teardown_checkout_started',{ctaId:'hero_workflow_teardown_checkout'})">Pay $99 teardown</a>
         <a class="diagnostic" href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__" onclick="sendFirstPartyTelemetry('workflow_sprint_diagnostic_checkout_started',{ctaId:'hero_workflow_sprint_diagnostic_checkout',ctaPlacement:'hero_paid_path',planId:'team',offer:'workflow_hardening_diagnostic',price:sprintDiagnosticPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:sprintDiagnosticPriceDollars,items:[{item_id:'workflow_hardening_diagnostic',item_name:'Workflow Hardening Diagnostic'}]});">Pay $499 diagnostic &rarr;</a>
         <a class="sprint" href="__WORKFLOW_SPRINT_CHECKOUT_URL__" onclick="sendFirstPartyTelemetry('workflow_sprint_checkout_started',{ctaId:'hero_workflow_sprint_checkout',ctaPlacement:'hero_paid_path',planId:'team',offer:'workflow_hardening_sprint',price:workflowSprintPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:workflowSprintPriceDollars,items:[{item_id:'workflow_hardening_sprint',item_name:'Workflow Hardening Sprint'}]});">Pay $1500 sprint &rarr;</a>
         <a class="intake" href="#workflow-sprint-intake" onclick="sendFirstPartyTelemetry('workflow_sprint_recovery_intake_clicked',{ctaId:'hero_workflow_sprint_recovery_intake',ctaPlacement:'hero_paid_path',planId:'team',offer:'workflow_hardening_sprint',reason:'not_ready_to_pay'});sendGa4Event('generate_lead',{currency:'USD',value:0,method:'workflow_sprint_recovery_intake'});">Send workflow first &rarr;</a>
@@ -2022,6 +2022,9 @@ function copyInstall(el) {
       { selector: '#pro-checkout-link', ctaId: 'pricing_pro_trial', ctaPlacement: 'pricing', planId: 'pro' },
       { selector: '.price-card.pro .btn-pro', ctaId: 'pricing_pro_monthly', ctaPlacement: 'pricing', planId: 'pro' },
       { selector: '.hero-actions .btn-pro-page', ctaId: 'hero_go_pro', ctaPlacement: 'hero', planId: 'pro' },
+      { selector: '.hero-paid-actions .diagnostic', ctaId: 'hero_workflow_sprint_diagnostic_checkout', ctaPlacement: 'hero_paid_path', planId: 'team' },
+      { selector: '.hero-paid-actions .sprint', ctaId: 'hero_workflow_sprint_checkout', ctaPlacement: 'hero_paid_path', planId: 'team' },
+      { selector: '.hero-paid-actions .intake', ctaId: 'hero_workflow_sprint_recovery_intake', ctaPlacement: 'hero_paid_path', planId: 'team' },
       { selector: '.sticky-cta .btn-pro', ctaId: 'sticky_go_pro', ctaPlacement: 'sticky_cta', planId: 'pro' },
       { selector: '.price-card.team .btn-team', ctaId: 'team_workflow_sprint', ctaPlacement: 'pricing', planId: 'team' },
       { selector: '#team-pilot-intake-form', ctaId: 'workflow_sprint_intake', ctaPlacement: 'team_visible_intake', planId: 'team' }

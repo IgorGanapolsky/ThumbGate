@@ -49,6 +49,13 @@ test('pro landing page keeps the pricing section focused on the $19 Pro checkout
   assert.doesNotMatch(pricingSection, /<h3>ThumbGate Team/);
 });
 
+test('pro landing page does not leak trial copy into the buyer path', () => {
+  const proPage = readProPage();
+
+  assert.match(proPage, /Start Pro Now/);
+  assert.doesNotMatch(proPage, /Free Trial|free trial|7-day trial|7-Day Free Trial|no charge today/i);
+});
+
 test('pro landing page links to proof assets and live demo surfaces', () => {
   const proPage = readProPage();
 
@@ -110,6 +117,7 @@ test('pro landing page captures buyer email and reuses it for checkout', () => {
   assert.match(proPage, /data-buyer-email/);
   assert.match(proPage, /\/js\/buyer-intent\.js/);
   assert.match(buyerIntentScript, /customer_email/);
+  assert.match(buyerIntentScript, /searchParams\.set\('confirm', '1'\)/);
   assert.match(buyerIntentScript, /initializeEmailCheckoutButtons/);
   assert.match(buyerIntentScript, /initializeBehaviorAnalytics/);
   assert.match(proPage, /sendFirstPartyTelemetry/);
