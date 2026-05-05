@@ -39,6 +39,40 @@ npx thumbgate init
 - Skool Discovery requires the group description, About page description/images, cover image, and enough real posts/activity before the group becomes visible. Sources: https://help.skool.com/article/123-how-to-set-up-my-group-s-about-page and https://help.skool.com/article/153-discovery-faqs
 - The current Skool setup flow asked for audience size. Recommended conservative answer: `Under 10k`, unless a primary social profile is verified above 10,000 followers.
 
+## 2026-05-05 Deep Research Update
+
+Validated against official pricing/help pages on 2026-05-05. Pricing and eligibility are volatile, so re-check the linked source before entering a card, buying ads, or publishing a paid listing.
+
+**Best autonomous revenue sequence:**
+
+1. Keep Skool as the free community funnel and use it to collect repeated-failure posts.
+2. Use public YouTube Shorts, LinkedIn, Instagram, Reddit, and Zernio preview/schedule workflows for discovery.
+3. Send serious operators to the owned ThumbGate Pro checkout or Workflow Hardening Sprint intake.
+4. Republish the same mini-course outline to one paid course platform only after proof: 10 useful Skool failure posts or 3 qualified sprint conversations.
+5. Treat Udemy, Skillshare, and YouTube memberships as discovery/authority channels, not owned-audience revenue infrastructure.
+
+| Platform | Role now | Monetization posture | Current source-backed note |
+| --- | --- | --- | --- |
+| Skool | Primary free community | Free group first; paid/freemium later only after proof | Skool supports free, subscription, freemium, tiered, and one-time payment groups. Source: https://help.skool.com/article/215-how-to-setup-pricing-for-the-group |
+| Kajabi | Later all-in-one course stack | Do not start paid until the free funnel proves demand | Official pricing page shows Starter at $89/mo monthly or $71/mo annually, 1 product, 250 contacts, 1 website, 1 community; Kajabi Payments rates and third-party provider fees vary by plan. Source: https://www.kajabi.com/pricing |
+| Thinkific | Course-first storefront | Candidate for a free mini-course when owned course UX matters | Official pricing page positions Thinkific around Basic, Start, Grow, and Plus plans; verify the current Start price and payment-processing economics immediately before purchase. Source: https://www.thinkific.com/pricing/ |
+| Teachable | Course storefront and student apps | Lead magnet only until conversion proof exists | Official pricing page lists Starter at $39/mo monthly with a 7.5% transaction fee and 5 products. Source: https://www.teachable.com/pricing |
+| Podia | Simple digital product storefront | Good for checklist/download if we need a lightweight owned offer | Official pricing lists Mover at $39/mo monthly or $33/mo annually with a 5% transaction fee; Shaker at $89/mo monthly or $75/mo annually with no Podia transaction fee. Source: https://www.podia.com/pricing |
+| Mighty Networks | Skool alternative | Keep as backup for cohort/community format | Treat as a migration candidate, not a second community to operate in parallel. Source: https://www.mightynetworks.com/pricing |
+| Circle | Polished community/events/courses | Upgrade path after Skool proof | Official pricing page lists Professional at $89/mo with a 14-day trial and 2% transaction fee on Professional. Source: https://circle.so/pricing |
+| LearnWorlds | Interactive LMS | Use only if the course becomes the product | Official plan comparison notes a $5 per-course-enrollment fee on Starter and no transaction fee on Pro/Learning Center/Corporate. Source: https://www.learnworlds.com/plans/ |
+| Udemy | Marketplace discovery | Useful without owning the customer relationship | Official instructor revenue share is 97% for instructor-promotion sales and 37% for non-instructor-promotion marketplace sales, after applicable deductions. Source: https://support.udemy.com/hc/en-us/articles/229605008-Instructor-Revenue-Share |
+| Skillshare | Watch-time/referral discovery | Authority channel, not a predictable sales channel | Skillshare allocates approximately 20% of monthly subscription revenue to teacher payments, primarily by minutes watched; 2026 rules also add a 50-follower royalty eligibility requirement. Sources: https://help.skillshare.com/hc/en-us/articles/4415798406285-Earn-From-Your-Teaching and https://help.skillshare.com/hc/en-us/articles/41694886825229-Skillshare-Teacher-Earnings-Update-Effective-January-1-2026 |
+| YouTube paid/subscribe | Public content first, memberships later | Memberships only after eligibility and policy review | Channel memberships require eligibility, location availability, and policy compliance. Source: https://support.google.com/youtube/answer/7636690 |
+
+**What to build before buying another platform:**
+
+- Skool: final About save, cover/icon upload, pinned welcome post, 7 seed prompts, and first 10 invited operators.
+- Content: 5 public Shorts scripts from the course outline, each pointing to Skool first and Pro/Sprint second.
+- Funnel: UTM-coded links for every platform with `utm_medium=community_course` and `utm_campaign=operator_lab_launch`.
+- Proof: a weekly export of member questions, repeated-failure categories, and sprint-qualified conversations.
+- Paid expansion gate: one paid course platform at a time, selected by actual funnel evidence, not by feature comparison.
+
 ## Skool
 
 **Decision:** Launched first.
@@ -153,7 +187,7 @@ Use this same outline everywhere courses are supported.
 
 ### Kajabi
 
-Use only after proof because Kajabi is a heavier owned-course stack. Current official pricing lists Starter at $89/mo monthly or $71/mo annual, with 1 product, 250 contacts, 1 website, and 1 community. Source: https://www.kajabi.com/pricing
+Use only after proof because Kajabi is a heavier owned-course stack. Current official pricing lists Starter at $89/mo monthly or $71/mo annual, with 1 product, 250 contacts, 1 website, and 1 community. Kajabi Payments and third-party payment provider fees vary by plan, so verify checkout economics before selling there. Source: https://www.kajabi.com/pricing
 
 **Product name:** ThumbGate Workflow Hardening
 
@@ -165,7 +199,7 @@ Use only after proof because Kajabi is a heavier owned-course stack. Current off
 
 ### Thinkific
 
-Use if you want a cleaner course-first storefront without making community the product. Current official pricing lists Start at $99/mo monthly or $74/mo annual and includes unlimited courses plus 1 community. Source: https://www.thinkific.com/pricing/
+Use if you want a cleaner course-first storefront without making community the product. Current official pricing is plan-based across Basic, Start, Grow, and Plus; verify the exact Start price and payment-processing economics immediately before purchase. Source: https://www.thinkific.com/pricing/
 
 **Course name:** Stop AI Coding Agents From Repeating Mistakes
 
@@ -205,7 +239,7 @@ Circle is strong for polished community, events, courses, analytics, and paid me
 
 ### LearnWorlds
 
-Use only if the course becomes the product and needs interactive learning features. Current official pricing lists Starter at $29/mo monthly or $24/mo annual with a $5 per course enrollment fee; Pro Trainer removes transaction fees. Source: https://www.learnworlds.com/pricing/
+Use only if the course becomes the product and needs interactive learning features. Current official plan comparison says Starter has a $5 per-course-enrollment fee and Pro, Learning Center, and Corporate do not. Verify current plan subscription pricing immediately before purchase. Source: https://www.learnworlds.com/plans/
 
 **School name:** ThumbGate Academy
 
