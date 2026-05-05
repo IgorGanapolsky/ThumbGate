@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-05T15:42:41.609Z",
+  "generatedAt": "2026-05-05T16:28:29.670Z",
   "channels": [
     "Lindy.ai",
     "Gumroad",
@@ -40,17 +40,17 @@
       },
       "assetManifest": [
         {
-          "key": "og_image",
-          "file": "public/og.png",
-          "dimensions": "1200x630",
-          "role": "Open Graph, social preview, Lindy/GHL listing hero",
-          "status": "ready"
-        },
-        {
           "key": "hero_screenshot",
           "file": "docs/marketing/gallery/05-hero.png",
           "dimensions": "1344x800",
           "role": "Marketplace hero screenshot",
+          "status": "ready"
+        },
+        {
+          "key": "workflow_screenshot",
+          "file": "docs/marketing/gallery/02-how-it-works.png",
+          "dimensions": "1344x800",
+          "role": "Workflow explainer screenshot",
           "status": "ready"
         },
         {
@@ -176,24 +176,24 @@
           "status": "ready"
         },
         {
-          "key": "og_image",
-          "file": "public/og.png",
-          "dimensions": "1200x630",
-          "role": "Open Graph, social preview, Lindy/GHL listing hero",
-          "status": "ready"
-        },
-        {
           "key": "workflow_screenshot",
           "file": "docs/marketing/gallery/02-how-it-works.png",
           "dimensions": "1344x800",
           "role": "Workflow explainer screenshot",
+          "status": "ready"
+        },
+        {
+          "key": "dashboard_screenshot",
+          "file": "docs/marketing/gallery/01-dashboard.png",
+          "dimensions": "1344x800",
+          "role": "Dashboard proof screenshot",
           "status": "ready"
         }
       ],
       "submissionChecklist": [
         "Create or update a GoHighLevel private marketplace app or agency snapshot first.",
         "Scope OAuth/webhook behavior to workflow-hardening intake and proof review; do not request broad client data scopes before a buyer need is confirmed.",
-        "Use the icon, OG graphic, and workflow explainer screenshot as the first visual set.",
+        "Use the icon, workflow explainer screenshot, and dashboard proof screenshot as the first visual set; keep logo-only OG art as a supporting brand asset.",
         "Submit a public marketplace app only after private testing proves stable attribution and at least one qualified agency workflow conversation."
       ],
       "proofLinks": [
@@ -221,15 +221,15 @@
       "key": "og_image",
       "file": "public/og.png",
       "dimensions": "1200x630",
-      "role": "Open Graph, social preview, Lindy/GHL listing hero",
-      "status": "ready"
+      "role": "Open Graph and social preview brand anchor; supporting asset for partner listings, not the primary proof image",
+      "status": "ready_supporting_asset"
     },
     {
       "key": "github_social_preview",
       "file": "public/assets/brand/github-social-preview.png",
       "dimensions": "1280x640",
-      "role": "GitHub social preview and wide directory image",
-      "status": "ready"
+      "role": "GitHub social preview and wide directory image; brand-safe but lower-conversion than proof screenshots",
+      "status": "ready_supporting_asset"
     },
     {
       "key": "wordmark",
@@ -273,6 +273,11 @@
       "role": "Digital product cover and comparison image",
       "status": "ready"
     }
+  ],
+  "visualAssetReview": [
+    "Square TG icon assets are marketplace-ready for avatars, thumbnails, GPT profiles, and plugin listing icons.",
+    "Logo-only OG and GitHub preview images are brand-safe supporting assets, but they should not be the primary conversion graphic on partner marketplace pages.",
+    "Use proof-forward gallery assets as primary visuals: comparison for Gumroad covers, workflow screenshots for Lindy.ai and GoHighLevel, and dashboard/terminal screenshots as credibility proof."
   ],
   "measurementPlan": {
     "northStar": "paid_conversion_or_qualified_team_conversation",

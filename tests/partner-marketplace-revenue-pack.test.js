@@ -99,6 +99,16 @@ test('visual asset audit covers square icons, OG graphics, and listing screensho
   assert.ok(pack.visualAssets.some((asset) => asset.dimensions === '1200x630'));
   assert.ok(pack.visualAssets.some((asset) => asset.dimensions === '512x512'));
   assert.ok(pack.listings.every((listing) => listing.assetManifest.length >= 3));
+  assert.ok(pack.visualAssetReview.some((item) => /marketplace-ready/i.test(item)));
+  assert.ok(pack.visualAssetReview.some((item) => /not be the primary conversion graphic/i.test(item)));
+  assert.ok(pack.visualAssetReview.some((item) => /proof-forward gallery assets/i.test(item)));
+  assert.ok(pack.visualAssets.some((asset) => asset.key === 'og_image' && asset.status === 'ready_supporting_asset'));
+  assert.ok(pack.visualAssets.some((asset) => asset.key === 'github_social_preview' && asset.status === 'ready_supporting_asset'));
+  assert.ok(
+    pack.listings
+      .filter((listing) => listing.key === 'lindy' || listing.key === 'gohighlevel')
+      .every((listing) => !listing.assetManifest.some((asset) => asset.key === 'og_image')),
+  );
 });
 
 test('measurement plan treats marketplace activity as acquisition until paid intent exists', () => {
@@ -124,6 +134,7 @@ test('rendered partner marketplace artifacts are operator-ready and source-backe
   assert.match(markdown, /Gumroad/);
   assert.match(markdown, /GoHighLevel/);
   assert.match(markdown, /Visual Asset Audit/);
+  assert.match(markdown, /Logo-only OG and GitHub preview images are brand-safe supporting assets/);
   assert.match(markdown, /Submission checklist/);
   assert.match(markdown, /Create a Gumroad digital product for the AI Agent Mistake Prevention Kit/);
   assert.match(markdown, /Create or update a GoHighLevel private marketplace app or agency snapshot first/);
