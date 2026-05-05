@@ -710,10 +710,10 @@ __GA_BOOTSTRAP__
     <div class="hero-paid-path" aria-label="Paid AI agent governance sprint checkout options">
       <div>
         <strong>Need buyer-ready proof today?</strong>
-        <span>Same-day Workflow Teardown: $19 quick read, $99 failure map, $499 diagnostic with clear rules, examples, and pre-action checks, or $1500 implementation sprint.</span>
+        <span>Same-day Workflow Teardown: start with the $19 AI Agent Failure Quick Read, use $99 for teardown, or choose $499 for clear rules, examples, and pre-action checks.</span>
       </div>
       <div class="hero-paid-actions">
-        <a class="starter" href="https://buy.stripe.com/aFa8wPgH29Lo4lH35V3sI0w" title="AI Agent Failure Quick Read" onclick="sendFirstPartyTelemetry('quick_read_checkout_started',{ctaId:'hero_quick_read_checkout',planId:'quick_read',price:19});sendGa4Event('begin_checkout',{currency:'USD',value:19});">Pay $19 quick read &rarr;</a>
+        <a class="starter" title="AI Agent Failure Quick Read" href="https://buy.stripe.com/aFa8wPgH29Lo4lH35V3sI0w" onclick="sendFirstPartyTelemetry('quick_read_checkout_started',{ctaId:'hero_quick_read_checkout',price:19});">Pay $19 quick read &rarr;</a>
         <a class="starter" href="https://buy.stripe.com/7sYfZhgH29LodWhdKz3sI0v" onclick="sendFirstPartyTelemetry('workflow_teardown_checkout_started',{ctaId:'hero_workflow_teardown_checkout'})">Pay $99 teardown</a>
         <a class="diagnostic" href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__" onclick="sendFirstPartyTelemetry('workflow_sprint_diagnostic_checkout_started',{ctaId:'hero_workflow_sprint_diagnostic_checkout',price:sprintDiagnosticPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:sprintDiagnosticPriceDollars});">Pay $499 diagnostic &rarr;</a>
         <a class="sprint" href="__WORKFLOW_SPRINT_CHECKOUT_URL__" onclick="sendFirstPartyTelemetry('workflow_sprint_checkout_started',{ctaId:'hero_workflow_sprint_checkout',price:workflowSprintPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:workflowSprintPriceDollars});">Pay $1500 sprint &rarr;</a>

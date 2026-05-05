@@ -101,6 +101,7 @@ test('pro landing page routes high-intent team buyers to paid diagnostic and spr
   assert.match(proPage, /Pay \$__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint/);
   assert.match(proPage, /pro_page_sprint_diagnostic_checkout/);
   assert.match(proPage, /pro_page_workflow_sprint_checkout/);
+  assert.match(proPage, /quick_read_checkout_started/);
   assert.match(proPage, /workflow_sprint_diagnostic_checkout_started/);
   assert.match(proPage, /workflow_sprint_checkout_started/);
   assert.match(proPage, /initializeProPaidRecovery/);
