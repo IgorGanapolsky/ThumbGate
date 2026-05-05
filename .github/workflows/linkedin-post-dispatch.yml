@@ -62,23 +62,13 @@ jobs:
           COMMENTARY: ${{ github.event.inputs.commentary }}
         run: |
           node - <<'NODE'
-          const { publishToAllPlatforms } = require('./scripts/social-analytics/publishers/zernio');
+          const { listPosts } = require('./scripts/social-analytics/publishers/zernio');
 
-          const text = process.env.COMMENTARY || '';
-          if (!text.trim()) {
-            throw new Error('commentary is required');
-          }
-
-          publishToAllPlatforms(text, {
-            campaign: 'voice_agent_reliability_diagnostic',
-            medium: 'social',
-            platforms: ['bluesky'],
-          })
-            .then((result) => {
-              console.log(JSON.stringify(result, null, 2));
-              if (result.errors && result.errors.length > 0) {
-                process.exit(1);
-              }
+          listPosts({ limit: 10 })
+            .then((posts) => {
+              const target = posts.find((post) => post._id === '69fa3e828913e98cbfaf1988' || post.id === '69fa3e828913e98cbfaf1988')
+                || posts.find((post) => Array.isArray(post.platforms) && post.platforms.some((entry) => entry.platform === 'instagram'));
+              console.log(JSON.stringify(target || posts.slice(0, 3), null, 2));
             })
             .catch((error) => {
               console.error(error.message);
