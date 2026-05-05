@@ -171,7 +171,9 @@ describe('/checkout/pro bot guard', () => {
     assert.equal(res.status, 200);
     const body = await res.text();
     assert.match(body, /Choose the right paid path/);
-    assert.match(body, /Continue to Stripe/);
+    assert.match(body, /Pay for Pro in Stripe/);
+    assert.match(body, /Pro requires a card and bills today/);
+    assert.match(body, /This path is paid checkout only/);
     assert.match(body, /Book \$499 diagnostic/);
     assert.match(body, /Start \$1500 sprint/);
     assert.match(body, /Send workflow first/);
