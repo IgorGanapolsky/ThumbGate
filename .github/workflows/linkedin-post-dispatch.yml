@@ -43,6 +43,7 @@ jobs:
     env:
       LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
       LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
+      LINKEDIN_AUTH_FAILURE_MODE: warn
 
     steps:
       - name: Checkout
