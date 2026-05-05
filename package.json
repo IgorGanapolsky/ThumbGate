@@ -1,7 +1,7 @@
 {
   "name": "thumbgate",
   "version": "1.16.20",
-  "description": "Self-improving agent governance: thumbs-up/down turns every mistake into a prevention rule and blocks repeat patterns. 33 pre-action checks, budget enforcement, and self-protection for Claude Code, Cursor, Codex, Gemini CLI, and Amp.",
+  "description": "ThumbGate self-improving agent governance: thumbs-up/down turns every mistake into a prevention rule and blocks repeat patterns. 33 pre-action checks, budget enforcement, and self-protection for Claude Code, Cursor, Codex, Gemini CLI, and Amp.",
   "homepage": "https://thumbgate-production.up.railway.app",
   "repository": {
     "type": "git",
