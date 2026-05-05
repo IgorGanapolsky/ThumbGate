@@ -15,6 +15,10 @@ const {
 } = require('../scripts/workflow-sentinel');
 const {
   evaluateGatesAsync,
+  clearSessionActions,
+  setTaskScope,
+  GOVERNANCE_STATE_PATH,
+  CUSTOM_CLAIM_GATES_PATH,
 } = require('../scripts/gates-engine');
 const {
   callTool,
@@ -35,6 +39,12 @@ function writeJsonl(filePath, rows) {
 
 function makeTempPath(name) {
   return path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sentinel-')), name);
+}
+
+function cleanupGateState() {
+  clearSessionActions();
+  fs.rmSync(GOVERNANCE_STATE_PATH, { force: true });
+  fs.rmSync(CUSTOM_CLAIM_GATES_PATH, { force: true });
 }
 
 test('workflow sentinel warns on multi-surface release-sensitive blast radius', () => {
@@ -625,6 +635,16 @@ test('evaluateGatesAsync returns workflow sentinel warning when no static gate m
   writeJson(configPath, { version: 1, gates: [] });
   const previousFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
   process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
+  cleanupGateState();
+  setTaskScope({
+    allowedPaths: [
+      'src/api/server.js',
+      'adapters/mcp/server-stdio.js',
+      'config/mcp-allowlists.json',
+      'tests/mcp-server.test.js',
+    ],
+    summary: 'Isolate workflow-sentinel warning test from caller worktree state.',
+  });
 
   try {
     const result = await evaluateGatesAsync('Bash', {
@@ -645,6 +665,7 @@ test('evaluateGatesAsync returns workflow sentinel warning when no static gate m
   } finally {
     if (previousFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
     else process.env.THUMBGATE_FEEDBACK_DIR = previousFeedbackDir;
+    cleanupGateState();
   }
 });
 
@@ -666,6 +687,13 @@ test('evaluateGatesAsync enriches memory guard results with workflow sentinel co
   process.env.THUMBGATE_FEEDBACK_LOG = feedbackLogPath;
   process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = attributedFeedbackPath;
   process.env.THUMBGATE_GUARDS_PATH = path.join(path.dirname(feedbackLogPath), 'missing-guards.json');
+  cleanupGateState();
+  setTaskScope({
+    allowedPaths: [
+      'docs/**',
+    ],
+    summary: 'Isolate memory-guard sentinel enrichment test from caller worktree state.',
+  });
 
   try {
     const result = await evaluateGatesAsync('Bash', {
@@ -690,6 +718,7 @@ test('evaluateGatesAsync enriches memory guard results with workflow sentinel co
     else process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = previousAttributed;
     if (previousGuards === undefined) delete process.env.THUMBGATE_GUARDS_PATH;
     else process.env.THUMBGATE_GUARDS_PATH = previousGuards;
+    cleanupGateState();
   }
 });
 

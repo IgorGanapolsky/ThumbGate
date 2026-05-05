@@ -1,6 +1,6 @@
 # Aiventyx Marketplace Revenue Pack
 
-Updated: 2026-05-04T11:54:10.649Z
+Updated: 2026-05-04T15:07:22.584Z
 Dashboard: https://aiventyx.com/dashboard
 
 This is a sales operator artifact. It is not proof of revenue, sent messages, or marketplace approval.
@@ -15,8 +15,8 @@ Turn existing marketplace visibility into tracked Pro conversions and qualified 
 - Dashboard status: keep existing free listing live
 - Category: AI Coding
 - Pricing model: Free
-- API endpoint: https://thumbgate-production.up.railway.app
-- Primary CTA: https://thumbgate-production.up.railway.app/go/install?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_free_listing&utm_content=dashboard&campaign_variant=free&offer_code=AIVENTYX-FREE&cta_id=aiventyx_free_listing&cta_placement=marketplace_listing&landing_path=%2F
+- API endpoint: https://thumbgate.ai
+- Primary CTA: https://thumbgate.ai/go/install?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_free_listing&utm_content=dashboard&campaign_variant=free&offer_code=AIVENTYX-FREE&cta_id=aiventyx_free_listing&cta_placement=marketplace_listing&landing_path=%2F
 - Conversion goal: install_or_free_usage
 - Buyer: Solo builders evaluating local AI coding reliability.
 - Headline: Turn AI-agent feedback into reusable pre-action gates.
@@ -30,8 +30,8 @@ Proof: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRU
 - Dashboard status: submit as paid listing
 - Category: AI Coding
 - Pricing model: $19/mo or $149/yr
-- API endpoint: https://thumbgate-production.up.railway.app
-- Primary CTA: https://thumbgate-production.up.railway.app/go/pro?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_pro_listing&utm_content=dashboard&campaign_variant=pro&offer_code=AIVENTYX-PRO&cta_id=aiventyx_pro_listing&cta_placement=marketplace_listing&plan_id=pro&landing_path=%2F
+- API endpoint: https://thumbgate.ai
+- Primary CTA: https://thumbgate.ai/go/pro?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_pro_listing&utm_content=dashboard&campaign_variant=pro&offer_code=AIVENTYX-PRO&cta_id=aiventyx_pro_listing&cta_placement=marketplace_listing&plan_id=pro&landing_path=%2F
 - Conversion goal: paid_pro_conversion
 - Buyer: Solo operators and small teams with repeated AI coding mistakes but no team rollout yet.
 - Headline: Personal AI reliability memory with proof-ready exports.
@@ -45,8 +45,8 @@ Proof: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRU
 - Dashboard status: submit as team/service listing
 - Category: AI Coding
 - Pricing model: Workflow Hardening Sprint, then Team at $49/seat/mo with 3-seat minimum after qualification
-- API endpoint: https://thumbgate-production.up.railway.app
-- Primary CTA: https://thumbgate-production.up.railway.app/?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_teams_listing&utm_content=dashboard&campaign_variant=teams&offer_code=AIVENTYX-TEAMS&cta_id=aiventyx_teams_listing&cta_placement=marketplace_listing&landing_path=%2F#workflow-sprint-intake
+- API endpoint: https://thumbgate.ai
+- Primary CTA: https://thumbgate.ai/?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_teams_listing&utm_content=dashboard&campaign_variant=teams&offer_code=AIVENTYX-TEAMS&cta_id=aiventyx_teams_listing&cta_placement=marketplace_listing&landing_path=%2F#workflow-sprint-intake
 - Conversion goal: qualified_team_conversation
 - Buyer: Teams with one valuable AI-agent workflow that keeps repeating the same mistake or losing operational context.
 - Headline: Harden one AI-agent workflow before scaling it team-wide.

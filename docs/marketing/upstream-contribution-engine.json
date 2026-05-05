@@ -1,0 +1,2047 @@
+{
+  "name": "thumbgate-upstream-contribution-engine",
+  "generatedAt": "2026-05-04T18:58:38.835Z",
+  "status": "actionable",
+  "summary": {
+    "packageCount": 14,
+    "repoCount": 8,
+    "issueCount": 40,
+    "autofixReadyCount": 4
+  },
+  "guardrails": [
+    "Only target repos ThumbGate actually depends on or uses in shipped workflows.",
+    "Do not create promotional PRs; fix real upstream issues with tests.",
+    "Prefer small bugs, tests, docs, types, CI flakes, and security hardening over large feature work.",
+    "Open external PRs only after reproduction evidence, a minimal patch, and upstream tests pass.",
+    "Never paste secrets, customer data, or private ThumbGate context into upstream issues or PRs."
+  ],
+  "autonomousWorkflow": [
+    "Run live discovery on schedule and rank only dependency-backed upstream repos.",
+    "Clone/fork the highest autonomous-patch-ready issue into the suggested branch.",
+    "Capture reproduction, apply the smallest patch, and run upstream tests.",
+    "Open a public PR only when the evidence gate is autonomous-patch-ready and proof artifacts exist.",
+    "Stop at a local worktree and operator report when the issue is high-risk, security-sensitive, or unreproduced."
+  ],
+  "repos": [
+    {
+      "package": "@anthropic-ai/sdk",
+      "dependencyType": "runtime",
+      "repo": "anthropics/anthropic-sdk-typescript",
+      "searchQueries": [
+        "repo:anthropics/anthropic-sdk-typescript is:issue is:open label:bug",
+        "repo:anthropics/anthropic-sdk-typescript is:issue is:open label:\"good first issue\"",
+        "repo:anthropics/anthropic-sdk-typescript is:issue is:open label:\"help wanted\"",
+        "repo:anthropics/anthropic-sdk-typescript is:issue is:open bounty",
+        "repo:anthropics/anthropic-sdk-typescript is:issue is:open \"bug bounty\"",
+        "repo:anthropics/anthropic-sdk-typescript is:issue is:open security",
+        "repo:anthropics/anthropic-sdk-typescript is:issue is:open regression",
+        "repo:anthropics/anthropic-sdk-typescript is:issue is:open docs OR documentation",
+        "repo:anthropics/anthropic-sdk-typescript is:issue is:open typescript OR types",
+        "repo:anthropics/anthropic-sdk-typescript is:issue is:open test OR ci OR flake"
+      ],
+      "issues": [
+        {
+          "repo": "anthropics/anthropic-sdk-typescript",
+          "number": 964,
+          "title": "Bug: `toolRunner` does not propagate `container.id` across iterations, and `setMessagesParams` causes duplicate tool call loops",
+          "url": "https://github.com/anthropics/anthropic-sdk-typescript/issues/964",
+          "labels": [
+            "bug",
+            "code-change"
+          ],
+          "updatedAt": "2026-04-28T00:04:00Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": true,
+            "blocked": true
+          },
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "claimed-or-existing-pr",
+            "blockers": [
+              "issue appears to have an existing PR or proposal"
+            ],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-anthropic-ai-sdk-964"
+          }
+        },
+        {
+          "repo": "anthropics/anthropic-sdk-typescript",
+          "number": 381,
+          "title": "[Tools SDK BUG in Response] Using tools sdk, and Sonnet model, the model rather than returning a text block with \"thinking\" followed by a \"tool_use\" block, it returns all as text inside the first \"text\" block",
+          "url": "https://github.com/anthropics/anthropic-sdk-typescript/issues/381",
+          "labels": [
+            "api"
+          ],
+          "updatedAt": "2026-04-28T00:09:21Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "triage-before-pr",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-anthropic-ai-sdk-381"
+          }
+        },
+        {
+          "repo": "anthropics/anthropic-sdk-typescript",
+          "number": 883,
+          "title": "TextDecoder.decode() fails on Node.js 22",
+          "url": "https://github.com/anthropics/anthropic-sdk-typescript/issues/883",
+          "labels": [
+            "code-change"
+          ],
+          "updatedAt": "2026-04-28T00:03:50Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "triage-before-pr",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-anthropic-ai-sdk-883"
+          }
+        },
+        {
+          "repo": "anthropics/anthropic-sdk-typescript",
+          "number": 956,
+          "title": "Claude Opus 4.6 and Sonnet 4.6 fail to make parallel tool calls in Batch API",
+          "url": "https://github.com/anthropics/anthropic-sdk-typescript/issues/956",
+          "labels": [
+            "api"
+          ],
+          "updatedAt": "2026-04-28T00:09:36Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "triage-before-pr",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-anthropic-ai-sdk-956"
+          }
+        },
+        {
+          "repo": "anthropics/anthropic-sdk-typescript",
+          "number": 846,
+          "title": "web_fetch fails for some links",
+          "url": "https://github.com/anthropics/anthropic-sdk-typescript/issues/846",
+          "labels": [
+            "api"
+          ],
+          "updatedAt": "2026-04-28T00:09:25Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "triage-before-pr",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-anthropic-ai-sdk-846"
+          }
+        }
+      ],
+      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
+    },
+    {
+      "package": "@changesets/changelog-github",
+      "dependencyType": "dev",
+      "repo": "changesets/changesets",
+      "searchQueries": [
+        "repo:changesets/changesets is:issue is:open label:bug",
+        "repo:changesets/changesets is:issue is:open label:\"good first issue\"",
+        "repo:changesets/changesets is:issue is:open label:\"help wanted\"",
+        "repo:changesets/changesets is:issue is:open bounty",
+        "repo:changesets/changesets is:issue is:open \"bug bounty\"",
+        "repo:changesets/changesets is:issue is:open security",
+        "repo:changesets/changesets is:issue is:open regression",
+        "repo:changesets/changesets is:issue is:open docs OR documentation",
+        "repo:changesets/changesets is:issue is:open typescript OR types",
+        "repo:changesets/changesets is:issue is:open test OR ci OR flake"
+      ],
+      "issues": [
+        {
+          "repo": "changesets/changesets",
+          "number": 517,
+          "title": "CI builds fail with \"does master exist?\"",
+          "url": "https://github.com/changesets/changesets/issues/517",
+          "labels": [],
+          "updatedAt": "2025-01-13T16:16:55Z",
+          "commentSignals": {
+            "claimed": true,
+            "existingPr": true,
+            "blocked": true
+          },
+          "score": 47,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "claimed-or-existing-pr",
+            "blockers": [
+              "issue appears claimed in comments",
+              "issue appears to have an existing PR or proposal"
+            ],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-changesets-changelog-github-517"
+          }
+        },
+        {
+          "repo": "changesets/changesets",
+          "number": 377,
+          "title": "Provide documentation for packages/changelog-github",
+          "url": "https://github.com/changesets/changesets/issues/377",
+          "labels": [
+            "good first issue",
+            "docs"
+          ],
+          "updatedAt": "2026-03-20T15:47:29Z",
+          "commentSignals": {
+            "claimed": true,
+            "existingPr": false,
+            "blocked": true
+          },
+          "score": 30,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "claimed-or-existing-pr",
+            "blockers": [
+              "issue appears claimed in comments"
+            ],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-changesets-changelog-github-377"
+          }
+        },
+        {
+          "repo": "changesets/changesets",
+          "number": 160,
+          "title": "Improve init command",
+          "url": "https://github.com/changesets/changesets/issues/160",
+          "labels": [
+            "help wanted",
+            "good first issue"
+          ],
+          "updatedAt": "2026-03-20T15:46:40Z",
+          "commentSignals": {
+            "claimed": true,
+            "existingPr": false,
+            "blocked": true
+          },
+          "score": 30,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "claimed-or-existing-pr",
+            "blockers": [
+              "issue appears claimed in comments"
+            ],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-changesets-changelog-github-160"
+          }
+        },
+        {
+          "repo": "changesets/changesets",
+          "number": 511,
+          "title": "[feature] Comment on issues when packages are released",
+          "url": "https://github.com/changesets/changesets/issues/511",
+          "labels": [
+            "help wanted"
+          ],
+          "updatedAt": "2025-12-12T01:36:49Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": true,
+            "blocked": true
+          },
+          "score": 30,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "claimed-or-existing-pr",
+            "blockers": [
+              "issue appears to have an existing PR or proposal"
+            ],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-changesets-changelog-github-511"
+          }
+        },
+        {
+          "repo": "changesets/changesets",
+          "number": 208,
+          "title": "Improve peerDependency bumping messaging",
+          "url": "https://github.com/changesets/changesets/issues/208",
+          "labels": [
+            "help wanted",
+            "pkg:@changesets/cli"
+          ],
+          "updatedAt": "2025-12-12T01:36:42Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 30,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "triage-before-pr",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-changesets-changelog-github-208"
+          }
+        }
+      ],
+      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
+    },
+    {
+      "package": "@changesets/cli",
+      "dependencyType": "dev",
+      "repo": "changesets/changesets",
+      "searchQueries": [
+        "repo:changesets/changesets is:issue is:open label:bug",
+        "repo:changesets/changesets is:issue is:open label:\"good first issue\"",
+        "repo:changesets/changesets is:issue is:open label:\"help wanted\"",
+        "repo:changesets/changesets is:issue is:open bounty",
+        "repo:changesets/changesets is:issue is:open \"bug bounty\"",
+        "repo:changesets/changesets is:issue is:open security",
+        "repo:changesets/changesets is:issue is:open regression",
+        "repo:changesets/changesets is:issue is:open docs OR documentation",
+        "repo:changesets/changesets is:issue is:open typescript OR types",
+        "repo:changesets/changesets is:issue is:open test OR ci OR flake"
+      ],
+      "issues": [
+        {
+          "repo": "changesets/changesets",
+          "number": 517,
+          "title": "CI builds fail with \"does master exist?\"",
+          "url": "https://github.com/changesets/changesets/issues/517",
+          "labels": [],
+          "updatedAt": "2025-01-13T16:16:55Z",
+          "commentSignals": {
+            "claimed": true,
+            "existingPr": true,
+            "blocked": true
+          },
+          "score": 47,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "claimed-or-existing-pr",
+            "blockers": [
+              "issue appears claimed in comments",
+              "issue appears to have an existing PR or proposal"
+            ],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-changesets-cli-517"
+          }
+        },
+        {
+          "repo": "changesets/changesets",
+          "number": 377,
+          "title": "Provide documentation for packages/changelog-github",
+          "url": "https://github.com/changesets/changesets/issues/377",
+          "labels": [
+            "good first issue",
+            "docs"
+          ],
+          "updatedAt": "2026-03-20T15:47:29Z",
+          "commentSignals": {
+            "claimed": true,
+            "existingPr": false,
+            "blocked": true
+          },
+          "score": 30,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "claimed-or-existing-pr",
+            "blockers": [
+              "issue appears claimed in comments"
+            ],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-changesets-cli-377"
+          }
+        },
+        {
+          "repo": "changesets/changesets",
+          "number": 160,
+          "title": "Improve init command",
+          "url": "https://github.com/changesets/changesets/issues/160",
+          "labels": [
+            "help wanted",
+            "good first issue"
+          ],
+          "updatedAt": "2026-03-20T15:46:40Z",
+          "commentSignals": {
+            "claimed": true,
+            "existingPr": false,
+            "blocked": true
+          },
+          "score": 30,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "claimed-or-existing-pr",
+            "blockers": [
+              "issue appears claimed in comments"
+            ],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-changesets-cli-160"
+          }
+        },
+        {
+          "repo": "changesets/changesets",
+          "number": 511,
+          "title": "[feature] Comment on issues when packages are released",
+          "url": "https://github.com/changesets/changesets/issues/511",
+          "labels": [
+            "help wanted"
+          ],
+          "updatedAt": "2025-12-12T01:36:49Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": true,
+            "blocked": true
+          },
+          "score": 30,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "claimed-or-existing-pr",
+            "blockers": [
+              "issue appears to have an existing PR or proposal"
+            ],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-changesets-cli-511"
+          }
+        },
+        {
+          "repo": "changesets/changesets",
+          "number": 208,
+          "title": "Improve peerDependency bumping messaging",
+          "url": "https://github.com/changesets/changesets/issues/208",
+          "labels": [
+            "help wanted",
+            "pkg:@changesets/cli"
+          ],
+          "updatedAt": "2025-12-12T01:36:42Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 30,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "triage-before-pr",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-changesets-cli-208"
+          }
+        }
+      ],
+      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
+    },
+    {
+      "package": "@google/genai",
+      "dependencyType": "runtime",
+      "repo": "googleapis/js-genai",
+      "searchQueries": [
+        "repo:googleapis/js-genai is:issue is:open label:bug",
+        "repo:googleapis/js-genai is:issue is:open label:\"good first issue\"",
+        "repo:googleapis/js-genai is:issue is:open label:\"help wanted\"",
+        "repo:googleapis/js-genai is:issue is:open bounty",
+        "repo:googleapis/js-genai is:issue is:open \"bug bounty\"",
+        "repo:googleapis/js-genai is:issue is:open security",
+        "repo:googleapis/js-genai is:issue is:open regression",
+        "repo:googleapis/js-genai is:issue is:open docs OR documentation",
+        "repo:googleapis/js-genai is:issue is:open typescript OR types",
+        "repo:googleapis/js-genai is:issue is:open test OR ci OR flake"
+      ],
+      "issues": [
+        {
+          "repo": "googleapis/js-genai",
+          "number": 1278,
+          "title": "error: Leaks detected:   - A fetch response body was created during the test, but not consumed during the test. Consume or close the response body `ReadableStream`, e.g `await resp.text()` or `await resp.body.cancel()`.",
+          "url": "https://github.com/googleapis/js-genai/issues/1278",
+          "labels": [
+            "type: bug",
+            "priority: p2",
+            "api: file",
+            "api:gemini-api"
+          ],
+          "updatedAt": "2026-03-03T09:50:42Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 55,
+          "readiness": {
+            "canAutofix": true,
+            "prAllowed": true,
+            "effort": "small",
+            "evidenceGate": "autonomous-patch-ready",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-google-genai-1278"
+          }
+        },
+        {
+          "repo": "googleapis/js-genai",
+          "number": 1468,
+          "title": "serviceTier in GenerateContentConfig is silently ignored when using Vertex AI (vertexai: true)",
+          "url": "https://github.com/googleapis/js-genai/issues/1468",
+          "labels": [
+            "type: bug",
+            "priority: p2",
+            "api: vertex-ai"
+          ],
+          "updatedAt": "2026-04-30T15:41:34Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "triage-before-pr",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-google-genai-1468"
+          }
+        },
+        {
+          "repo": "googleapis/js-genai",
+          "number": 1216,
+          "title": "AWS Workload Identity Federation fails with google-auth-library v10.x",
+          "url": "https://github.com/googleapis/js-genai/issues/1216",
+          "labels": [
+            "type: bug",
+            "api:gemini-api"
+          ],
+          "updatedAt": "2026-03-11T04:14:11Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "triage-before-pr",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-google-genai-1216"
+          }
+        },
+        {
+          "repo": "googleapis/js-genai",
+          "number": 1211,
+          "title": "Bug Report: `operations.get()` Not Returning Status for File Search Operations",
+          "url": "https://github.com/googleapis/js-genai/issues/1211",
+          "labels": [
+            "type: bug",
+            "api: file"
+          ],
+          "updatedAt": "2026-03-11T04:32:17Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "triage-before-pr",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-google-genai-1211"
+          }
+        },
+        {
+          "repo": "googleapis/js-genai",
+          "number": 1364,
+          "title": "Random Errors 429 RESOURCE_EXHAUSTED or Too Many Request",
+          "url": "https://github.com/googleapis/js-genai/issues/1364",
+          "labels": [
+            "type: bug",
+            "priority: p2",
+            "api: vertex-ai"
+          ],
+          "updatedAt": "2026-03-11T14:44:34Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "triage-before-pr",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-google-genai-1364"
+          }
+        }
+      ],
+      "nextAction": "Clone/fork the top autofix-ready issue, produce a minimal patch, run upstream tests, then open PR with proof."
+    },
+    {
+      "package": "@huggingface/transformers",
+      "dependencyType": "runtime",
+      "repo": "huggingface/transformers.js",
+      "searchQueries": [
+        "repo:huggingface/transformers.js is:issue is:open label:bug",
+        "repo:huggingface/transformers.js is:issue is:open label:\"good first issue\"",
+        "repo:huggingface/transformers.js is:issue is:open label:\"help wanted\"",
+        "repo:huggingface/transformers.js is:issue is:open bounty",
+        "repo:huggingface/transformers.js is:issue is:open \"bug bounty\"",
+        "repo:huggingface/transformers.js is:issue is:open security",
+        "repo:huggingface/transformers.js is:issue is:open regression",
+        "repo:huggingface/transformers.js is:issue is:open docs OR documentation",
+        "repo:huggingface/transformers.js is:issue is:open typescript OR types",
+        "repo:huggingface/transformers.js is:issue is:open test OR ci OR flake"
+      ],
+      "issues": [
+        {
+          "repo": "huggingface/transformers.js",
+          "number": 171,
+          "title": "[Doc request] Add an example guide of how to use it in Svelte (and deploy to HF Spaces)",
+          "url": "https://github.com/huggingface/transformers.js/issues/171",
+          "labels": [
+            "enhancement",
+            "help wanted",
+            "good first issue"
+          ],
+          "updatedAt": "2023-08-21T20:36:59Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": true,
+            "blocked": true
+          },
+          "score": 48,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "claimed-or-existing-pr",
+            "blockers": [
+              "issue appears to have an existing PR or proposal"
+            ],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-huggingface-transformers-171"
+          }
+        },
+        {
+          "repo": "huggingface/transformers.js",
+          "number": 1667,
+          "title": "Error on translation",
+          "url": "https://github.com/huggingface/transformers.js/issues/1667",
+          "labels": [
+            "bug"
+          ],
+          "updatedAt": "2026-05-01T05:04:14Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "triage-before-pr",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-huggingface-transformers-1667"
+          }
+        },
+        {
+          "repo": "huggingface/transformers.js",
+          "number": 1653,
+          "title": "Bonsai 4B: Uncaught Error: Can't create a session. ERROR_CODE: 6, ERROR_MESSAGE: std::bad_alloc",
+          "url": "https://github.com/huggingface/transformers.js/issues/1653",
+          "labels": [
+            "bug"
+          ],
+          "updatedAt": "2026-04-16T16:14:58Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "triage-before-pr",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-huggingface-transformers-1653"
+          }
+        },
+        {
+          "repo": "huggingface/transformers.js",
+          "number": 1642,
+          "title": "Auto device on Linux x64 fails hard when CUDA shared library is unavailable instead of falling back",
+          "url": "https://github.com/huggingface/transformers.js/issues/1642",
+          "labels": [
+            "bug"
+          ],
+          "updatedAt": "2026-04-14T10:45:56Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "triage-before-pr",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-huggingface-transformers-1642"
+          }
+        },
+        {
+          "repo": "huggingface/transformers.js",
+          "number": 1640,
+          "title": "Illegal Instruction when running `pipeline` on Raspberry Pi 3 Model B (64-bit)",
+          "url": "https://github.com/huggingface/transformers.js/issues/1640",
+          "labels": [
+            "bug"
+          ],
+          "updatedAt": "2026-04-13T15:29:52Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "triage-before-pr",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-huggingface-transformers-1640"
+          }
+        }
+      ],
+      "nextAction": "Monitor issue search queries; wait for a small bug, docs, CI, type, or test issue before patching."
+    },
+    {
+      "package": "@lancedb/lancedb",
+      "dependencyType": "runtime",
+      "repo": "lancedb/lancedb",
+      "searchQueries": [
+        "repo:lancedb/lancedb is:issue is:open label:bug",
+        "repo:lancedb/lancedb is:issue is:open label:\"good first issue\"",
+        "repo:lancedb/lancedb is:issue is:open label:\"help wanted\"",
+        "repo:lancedb/lancedb is:issue is:open bounty",
+        "repo:lancedb/lancedb is:issue is:open \"bug bounty\"",
+        "repo:lancedb/lancedb is:issue is:open security",
+        "repo:lancedb/lancedb is:issue is:open regression",
+        "repo:lancedb/lancedb is:issue is:open docs OR documentation",
+        "repo:lancedb/lancedb is:issue is:open typescript OR types",
+        "repo:lancedb/lancedb is:issue is:open test OR ci OR flake"
+      ],
+      "issues": [
+        {
+          "repo": "lancedb/lancedb",
+          "number": 1672,
+          "title": "bug(python): can not handle bad embedding function output",
+          "url": "https://github.com/lancedb/lancedb/issues/1672",
+          "labels": [
+            "bug",
+            "good first issue"
+          ],
+          "updatedAt": "2024-09-19T21:05:00Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 63,
+          "readiness": {
+            "canAutofix": true,
+            "prAllowed": true,
+            "effort": "small",
+            "evidenceGate": "autonomous-patch-ready",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-lancedb-lancedb-1672"
+          }
+        },
+        {
+          "repo": "lancedb/lancedb",
+          "number": 1653,
+          "title": "bug(python): failed to infer column name from the schema",
+          "url": "https://github.com/lancedb/lancedb/issues/1653",
+          "labels": [
+            "bug",
+            "good first issue"
+          ],
+          "updatedAt": "2024-09-19T00:48:48Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": true,
+            "blocked": true
+          },
+          "score": 63,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "claimed-or-existing-pr",
+            "blockers": [
+              "issue appears to have an existing PR or proposal"
+            ],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-lancedb-lancedb-1653"
+          }
+        },
+        {
+          "repo": "lancedb/lancedb",
+          "number": 3262,
+          "title": "test(python): add integration tests for datetime timezone handling in `lit()`",
+          "url": "https://github.com/lancedb/lancedb/issues/3262",
+          "labels": [
+            "good first issue",
+            "Python"
+          ],
+          "updatedAt": "2026-04-12T17:19:01Z",
+          "commentSignals": {
+            "claimed": true,
+            "existingPr": false,
+            "blocked": true
+          },
+          "score": 48,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "claimed-or-existing-pr",
+            "blockers": [
+              "issue appears claimed in comments"
+            ],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-lancedb-lancedb-3262"
+          }
+        },
+        {
+          "repo": "lancedb/lancedb",
+          "number": 3212,
+          "title": "feat(python): support more types in `lit()`",
+          "url": "https://github.com/lancedb/lancedb/issues/3212",
+          "labels": [
+            "good first issue",
+            "Python"
+          ],
+          "updatedAt": "2026-04-01T16:35:32Z",
+          "commentSignals": {
+            "claimed": true,
+            "existingPr": false,
+            "blocked": true
+          },
+          "score": 48,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "claimed-or-existing-pr",
+            "blockers": [
+              "issue appears claimed in comments"
+            ],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-lancedb-lancedb-3212"
+          }
+        },
+        {
+          "repo": "lancedb/lancedb",
+          "number": 3330,
+          "title": "bug(rust): Crash when optimizing indexes",
+          "url": "https://github.com/lancedb/lancedb/issues/3330",
+          "labels": [
+            "bug"
+          ],
+          "updatedAt": "2026-04-29T14:47:18Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "triage-before-pr",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-lancedb-lancedb-3330"
+          }
+        }
+      ],
+      "nextAction": "Clone/fork the top autofix-ready issue, produce a minimal patch, run upstream tests, then open PR with proof."
+    },
+    {
+      "package": "apache-arrow",
+      "dependencyType": "runtime",
+      "repo": "apache/arrow",
+      "searchQueries": [
+        "repo:apache/arrow is:issue is:open label:bug",
+        "repo:apache/arrow is:issue is:open label:\"good first issue\"",
+        "repo:apache/arrow is:issue is:open label:\"help wanted\"",
+        "repo:apache/arrow is:issue is:open bounty",
+        "repo:apache/arrow is:issue is:open \"bug bounty\"",
+        "repo:apache/arrow is:issue is:open security",
+        "repo:apache/arrow is:issue is:open regression",
+        "repo:apache/arrow is:issue is:open docs OR documentation",
+        "repo:apache/arrow is:issue is:open typescript OR types",
+        "repo:apache/arrow is:issue is:open test OR ci OR flake"
+      ],
+      "issues": [
+        {
+          "repo": "apache/arrow",
+          "number": 49760,
+          "title": "[Doc] Document bugs vs security vulnerabilities",
+          "url": "https://github.com/apache/arrow/issues/49760",
+          "labels": [
+            "Type: enhancement",
+            "Component: Documentation"
+          ],
+          "updatedAt": "2026-04-15T11:34:21Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": true,
+            "blocked": true
+          },
+          "score": 71,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "claimed-or-existing-pr",
+            "blockers": [
+              "issue appears to have an existing PR or proposal"
+            ],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-apache-arrow-49760"
+          }
+        },
+        {
+          "repo": "apache/arrow",
+          "number": 49241,
+          "title": "[Docs] Improve Security Considerations Documentation - include pointer to validation functions for validating IPC streams.",
+          "url": "https://github.com/apache/arrow/issues/49241",
+          "labels": [
+            "Type: bug",
+            "Component: Documentation"
+          ],
+          "updatedAt": "2026-02-13T13:41:09Z",
+          "commentSignals": {
+            "claimed": true,
+            "existingPr": true,
+            "blocked": true
+          },
+          "score": 71,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "claimed-or-existing-pr",
+            "blockers": [
+              "issue appears claimed in comments",
+              "issue appears to have an existing PR or proposal"
+            ],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-apache-arrow-49241"
+          }
+        },
+        {
+          "repo": "apache/arrow",
+          "number": 40816,
+          "title": "[C++] Security checks and relaxing hashjoin batch rows size",
+          "url": "https://github.com/apache/arrow/issues/40816",
+          "labels": [
+            "Type: bug",
+            "Component: C++"
+          ],
+          "updatedAt": "2024-03-27T11:05:35Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 61,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "triage-before-pr",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-apache-arrow-40816"
+          }
+        },
+        {
+          "repo": "apache/arrow",
+          "number": 35846,
+          "title": "Minimum required numpy version (1.16.6) has security vulnerability",
+          "url": "https://github.com/apache/arrow/issues/35846",
+          "labels": [
+            "Type: bug",
+            "Component: Python"
+          ],
+          "updatedAt": "2023-06-01T06:53:34Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 61,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "triage-before-pr",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-apache-arrow-35846"
+          }
+        },
+        {
+          "repo": "apache/arrow",
+          "number": 49465,
+          "title": "[C++][FlightRPC] Arrow Flight timeout test failure on MSVC Windows",
+          "url": "https://github.com/apache/arrow/issues/49465",
+          "labels": [
+            "Type: bug",
+            "Component: FlightRPC"
+          ],
+          "updatedAt": "2026-03-06T20:35:19Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 55,
+          "readiness": {
+            "canAutofix": true,
+            "prAllowed": true,
+            "effort": "small",
+            "evidenceGate": "autonomous-patch-ready",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-apache-arrow-49465"
+          }
+        }
+      ],
+      "nextAction": "Clone/fork the top autofix-ready issue, produce a minimal patch, run upstream tests, then open PR with proof."
+    },
+    {
+      "package": "better-sqlite3",
+      "dependencyType": "runtime",
+      "repo": "WiseLibs/better-sqlite3",
+      "searchQueries": [
+        "repo:WiseLibs/better-sqlite3 is:issue is:open label:bug",
+        "repo:WiseLibs/better-sqlite3 is:issue is:open label:\"good first issue\"",
+        "repo:WiseLibs/better-sqlite3 is:issue is:open label:\"help wanted\"",
+        "repo:WiseLibs/better-sqlite3 is:issue is:open bounty",
+        "repo:WiseLibs/better-sqlite3 is:issue is:open \"bug bounty\"",
+        "repo:WiseLibs/better-sqlite3 is:issue is:open security",
+        "repo:WiseLibs/better-sqlite3 is:issue is:open regression",
+        "repo:WiseLibs/better-sqlite3 is:issue is:open docs OR documentation",
+        "repo:WiseLibs/better-sqlite3 is:issue is:open typescript OR types",
+        "repo:WiseLibs/better-sqlite3 is:issue is:open test OR ci OR flake"
+      ],
+      "issues": [
+        {
+          "repo": "WiseLibs/better-sqlite3",
+          "number": 988,
+          "title": "Getting an Electron crash, not sure how to further debug - help needed!",
+          "url": "https://github.com/WiseLibs/better-sqlite3/issues/988",
+          "labels": [
+            "help wanted"
+          ],
+          "updatedAt": "2024-02-12T16:26:31Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 63,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "triage-before-pr",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-better-sqlite3-988"
+          }
+        },
+        {
+          "repo": "WiseLibs/better-sqlite3",
+          "number": 1224,
+          "title": "CI: Run test in Electron as well",
+          "url": "https://github.com/WiseLibs/better-sqlite3/issues/1224",
+          "labels": [
+            "enhancement",
+            "help wanted",
+            "discussion"
+          ],
+          "updatedAt": "2025-07-19T18:33:50Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 48,
+          "readiness": {
+            "canAutofix": true,
+            "prAllowed": true,
+            "effort": "small",
+            "evidenceGate": "autonomous-patch-ready",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-better-sqlite3-1224"
+          }
+        },
+        {
+          "repo": "WiseLibs/better-sqlite3",
+          "number": 990,
+          "title": "BUG: 8.3.0+ builds break compatibility with Debian Buster and Ubuntu <= 18.04",
+          "url": "https://github.com/WiseLibs/better-sqlite3/issues/990",
+          "labels": [],
+          "updatedAt": "2024-07-02T10:33:57Z",
+          "commentSignals": {
+            "claimed": true,
+            "existingPr": true,
+            "blocked": true
+          },
+          "score": 45,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "claimed-or-existing-pr",
+            "blockers": [
+              "issue appears claimed in comments",
+              "issue appears to have an existing PR or proposal"
+            ],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-better-sqlite3-990"
+          }
+        },
+        {
+          "repo": "WiseLibs/better-sqlite3",
+          "number": 1380,
+          "title": "build from source with npm 11.4.1 causes warnings \"Unknown cli config \"--build-from-source\".  This will stop working in the next major version of npm\"",
+          "url": "https://github.com/WiseLibs/better-sqlite3/issues/1380",
+          "labels": [
+            "help wanted",
+            "question",
+            "installation"
+          ],
+          "updatedAt": "2025-07-19T18:53:36Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 38,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "triage-before-pr",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-better-sqlite3-1380"
+          }
+        },
+        {
+          "repo": "WiseLibs/better-sqlite3",
+          "number": 1361,
+          "title": "Recommended build from source for pnpm",
+          "url": "https://github.com/WiseLibs/better-sqlite3/issues/1361",
+          "labels": [
+            "help wanted",
+            "installation"
+          ],
+          "updatedAt": "2025-07-19T18:50:41Z",
+          "commentSignals": {
+            "claimed": false,
+            "existingPr": false,
+            "blocked": false
+          },
+          "score": 38,
+          "readiness": {
+            "canAutofix": false,
+            "prAllowed": false,
+            "effort": "needs-triage",
+            "evidenceGate": "triage-before-pr",
+            "blockers": [],
+            "requiredProof": [
+              "Fork or branch only; never push to upstream default branch.",
+              "Reproduce or cite the issue before changing code.",
+              "Run the upstream repo test command for the touched package path.",
+              "Do not open a public PR if reproduction, test proof, or maintainer relevance is missing.",
+              "Open a PR only with a minimal patch, issue link, test proof, and no ThumbGate sales copy."
+            ],
+            "promotionRule": "Earn trust by fixing the dependency; mention ThumbGate only in profile/context, not in the PR body unless directly relevant.",
+            "suggestedBranch": "codex/upstream-better-sqlite3-1361"
+          }
+        }
+      ],
+      "nextAction": "Clone/fork the top autofix-ready issue, produce a minimal patch, run upstream tests, then open PR with proof."
+    }
+  ],
+  "opportunities": [
+    {
+      "package": "apache-arrow",
+      "repo": "apache/arrow",
+      "issueNumber": 49760,
+      "issueUrl": "https://github.com/apache/arrow/issues/49760",
+      "title": "[Doc] Document bugs vs security vulnerabilities",
+      "score": 71,
+      "canAutofix": false,
+      "evidenceGate": "claimed-or-existing-pr",
+      "blockers": [
+        "issue appears to have an existing PR or proposal"
+      ],
+      "suggestedBranch": "codex/upstream-apache-arrow-49760"
+    },
+    {
+      "package": "apache-arrow",
+      "repo": "apache/arrow",
+      "issueNumber": 49241,
+      "issueUrl": "https://github.com/apache/arrow/issues/49241",
+      "title": "[Docs] Improve Security Considerations Documentation - include pointer to validation functions for validating IPC streams.",
+      "score": 71,
+      "canAutofix": false,
+      "evidenceGate": "claimed-or-existing-pr",
+      "blockers": [
+        "issue appears claimed in comments",
+        "issue appears to have an existing PR or proposal"
+      ],
+      "suggestedBranch": "codex/upstream-apache-arrow-49241"
+    },
+    {
+      "package": "@lancedb/lancedb",
+      "repo": "lancedb/lancedb",
+      "issueNumber": 1672,
+      "issueUrl": "https://github.com/lancedb/lancedb/issues/1672",
+      "title": "bug(python): can not handle bad embedding function output",
+      "score": 63,
+      "canAutofix": true,
+      "evidenceGate": "autonomous-patch-ready",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-lancedb-lancedb-1672"
+    },
+    {
+      "package": "@lancedb/lancedb",
+      "repo": "lancedb/lancedb",
+      "issueNumber": 1653,
+      "issueUrl": "https://github.com/lancedb/lancedb/issues/1653",
+      "title": "bug(python): failed to infer column name from the schema",
+      "score": 63,
+      "canAutofix": false,
+      "evidenceGate": "claimed-or-existing-pr",
+      "blockers": [
+        "issue appears to have an existing PR or proposal"
+      ],
+      "suggestedBranch": "codex/upstream-lancedb-lancedb-1653"
+    },
+    {
+      "package": "better-sqlite3",
+      "repo": "WiseLibs/better-sqlite3",
+      "issueNumber": 988,
+      "issueUrl": "https://github.com/WiseLibs/better-sqlite3/issues/988",
+      "title": "Getting an Electron crash, not sure how to further debug - help needed!",
+      "score": 63,
+      "canAutofix": false,
+      "evidenceGate": "triage-before-pr",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-better-sqlite3-988"
+    },
+    {
+      "package": "apache-arrow",
+      "repo": "apache/arrow",
+      "issueNumber": 40816,
+      "issueUrl": "https://github.com/apache/arrow/issues/40816",
+      "title": "[C++] Security checks and relaxing hashjoin batch rows size",
+      "score": 61,
+      "canAutofix": false,
+      "evidenceGate": "triage-before-pr",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-apache-arrow-40816"
+    },
+    {
+      "package": "apache-arrow",
+      "repo": "apache/arrow",
+      "issueNumber": 35846,
+      "issueUrl": "https://github.com/apache/arrow/issues/35846",
+      "title": "Minimum required numpy version (1.16.6) has security vulnerability",
+      "score": 61,
+      "canAutofix": false,
+      "evidenceGate": "triage-before-pr",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-apache-arrow-35846"
+    },
+    {
+      "package": "@google/genai",
+      "repo": "googleapis/js-genai",
+      "issueNumber": 1278,
+      "issueUrl": "https://github.com/googleapis/js-genai/issues/1278",
+      "title": "error: Leaks detected:   - A fetch response body was created during the test, but not consumed during the test. Consume or close the response body `ReadableStream`, e.g `await resp.text()` or `await resp.body.cancel()`.",
+      "score": 55,
+      "canAutofix": true,
+      "evidenceGate": "autonomous-patch-ready",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-google-genai-1278"
+    },
+    {
+      "package": "apache-arrow",
+      "repo": "apache/arrow",
+      "issueNumber": 49465,
+      "issueUrl": "https://github.com/apache/arrow/issues/49465",
+      "title": "[C++][FlightRPC] Arrow Flight timeout test failure on MSVC Windows",
+      "score": 55,
+      "canAutofix": true,
+      "evidenceGate": "autonomous-patch-ready",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-apache-arrow-49465"
+    },
+    {
+      "package": "@huggingface/transformers",
+      "repo": "huggingface/transformers.js",
+      "issueNumber": 171,
+      "issueUrl": "https://github.com/huggingface/transformers.js/issues/171",
+      "title": "[Doc request] Add an example guide of how to use it in Svelte (and deploy to HF Spaces)",
+      "score": 48,
+      "canAutofix": false,
+      "evidenceGate": "claimed-or-existing-pr",
+      "blockers": [
+        "issue appears to have an existing PR or proposal"
+      ],
+      "suggestedBranch": "codex/upstream-huggingface-transformers-171"
+    },
+    {
+      "package": "@lancedb/lancedb",
+      "repo": "lancedb/lancedb",
+      "issueNumber": 3262,
+      "issueUrl": "https://github.com/lancedb/lancedb/issues/3262",
+      "title": "test(python): add integration tests for datetime timezone handling in `lit()`",
+      "score": 48,
+      "canAutofix": false,
+      "evidenceGate": "claimed-or-existing-pr",
+      "blockers": [
+        "issue appears claimed in comments"
+      ],
+      "suggestedBranch": "codex/upstream-lancedb-lancedb-3262"
+    },
+    {
+      "package": "@lancedb/lancedb",
+      "repo": "lancedb/lancedb",
+      "issueNumber": 3212,
+      "issueUrl": "https://github.com/lancedb/lancedb/issues/3212",
+      "title": "feat(python): support more types in `lit()`",
+      "score": 48,
+      "canAutofix": false,
+      "evidenceGate": "claimed-or-existing-pr",
+      "blockers": [
+        "issue appears claimed in comments"
+      ],
+      "suggestedBranch": "codex/upstream-lancedb-lancedb-3212"
+    },
+    {
+      "package": "better-sqlite3",
+      "repo": "WiseLibs/better-sqlite3",
+      "issueNumber": 1224,
+      "issueUrl": "https://github.com/WiseLibs/better-sqlite3/issues/1224",
+      "title": "CI: Run test in Electron as well",
+      "score": 48,
+      "canAutofix": true,
+      "evidenceGate": "autonomous-patch-ready",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-better-sqlite3-1224"
+    },
+    {
+      "package": "@changesets/changelog-github",
+      "repo": "changesets/changesets",
+      "issueNumber": 517,
+      "issueUrl": "https://github.com/changesets/changesets/issues/517",
+      "title": "CI builds fail with \"does master exist?\"",
+      "score": 47,
+      "canAutofix": false,
+      "evidenceGate": "claimed-or-existing-pr",
+      "blockers": [
+        "issue appears claimed in comments",
+        "issue appears to have an existing PR or proposal"
+      ],
+      "suggestedBranch": "codex/upstream-changesets-changelog-github-517"
+    },
+    {
+      "package": "@changesets/cli",
+      "repo": "changesets/changesets",
+      "issueNumber": 517,
+      "issueUrl": "https://github.com/changesets/changesets/issues/517",
+      "title": "CI builds fail with \"does master exist?\"",
+      "score": 47,
+      "canAutofix": false,
+      "evidenceGate": "claimed-or-existing-pr",
+      "blockers": [
+        "issue appears claimed in comments",
+        "issue appears to have an existing PR or proposal"
+      ],
+      "suggestedBranch": "codex/upstream-changesets-cli-517"
+    },
+    {
+      "package": "@anthropic-ai/sdk",
+      "repo": "anthropics/anthropic-sdk-typescript",
+      "issueNumber": 964,
+      "issueUrl": "https://github.com/anthropics/anthropic-sdk-typescript/issues/964",
+      "title": "Bug: `toolRunner` does not propagate `container.id` across iterations, and `setMessagesParams` causes duplicate tool call loops",
+      "score": 45,
+      "canAutofix": false,
+      "evidenceGate": "claimed-or-existing-pr",
+      "blockers": [
+        "issue appears to have an existing PR or proposal"
+      ],
+      "suggestedBranch": "codex/upstream-anthropic-ai-sdk-964"
+    },
+    {
+      "package": "@anthropic-ai/sdk",
+      "repo": "anthropics/anthropic-sdk-typescript",
+      "issueNumber": 381,
+      "issueUrl": "https://github.com/anthropics/anthropic-sdk-typescript/issues/381",
+      "title": "[Tools SDK BUG in Response] Using tools sdk, and Sonnet model, the model rather than returning a text block with \"thinking\" followed by a \"tool_use\" block, it returns all as text inside the first \"text\" block",
+      "score": 45,
+      "canAutofix": false,
+      "evidenceGate": "triage-before-pr",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-anthropic-ai-sdk-381"
+    },
+    {
+      "package": "@anthropic-ai/sdk",
+      "repo": "anthropics/anthropic-sdk-typescript",
+      "issueNumber": 883,
+      "issueUrl": "https://github.com/anthropics/anthropic-sdk-typescript/issues/883",
+      "title": "TextDecoder.decode() fails on Node.js 22",
+      "score": 45,
+      "canAutofix": false,
+      "evidenceGate": "triage-before-pr",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-anthropic-ai-sdk-883"
+    },
+    {
+      "package": "@anthropic-ai/sdk",
+      "repo": "anthropics/anthropic-sdk-typescript",
+      "issueNumber": 956,
+      "issueUrl": "https://github.com/anthropics/anthropic-sdk-typescript/issues/956",
+      "title": "Claude Opus 4.6 and Sonnet 4.6 fail to make parallel tool calls in Batch API",
+      "score": 45,
+      "canAutofix": false,
+      "evidenceGate": "triage-before-pr",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-anthropic-ai-sdk-956"
+    },
+    {
+      "package": "@anthropic-ai/sdk",
+      "repo": "anthropics/anthropic-sdk-typescript",
+      "issueNumber": 846,
+      "issueUrl": "https://github.com/anthropics/anthropic-sdk-typescript/issues/846",
+      "title": "web_fetch fails for some links",
+      "score": 45,
+      "canAutofix": false,
+      "evidenceGate": "triage-before-pr",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-anthropic-ai-sdk-846"
+    },
+    {
+      "package": "@google/genai",
+      "repo": "googleapis/js-genai",
+      "issueNumber": 1468,
+      "issueUrl": "https://github.com/googleapis/js-genai/issues/1468",
+      "title": "serviceTier in GenerateContentConfig is silently ignored when using Vertex AI (vertexai: true)",
+      "score": 45,
+      "canAutofix": false,
+      "evidenceGate": "triage-before-pr",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-google-genai-1468"
+    },
+    {
+      "package": "@google/genai",
+      "repo": "googleapis/js-genai",
+      "issueNumber": 1216,
+      "issueUrl": "https://github.com/googleapis/js-genai/issues/1216",
+      "title": "AWS Workload Identity Federation fails with google-auth-library v10.x",
+      "score": 45,
+      "canAutofix": false,
+      "evidenceGate": "triage-before-pr",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-google-genai-1216"
+    },
+    {
+      "package": "@google/genai",
+      "repo": "googleapis/js-genai",
+      "issueNumber": 1211,
+      "issueUrl": "https://github.com/googleapis/js-genai/issues/1211",
+      "title": "Bug Report: `operations.get()` Not Returning Status for File Search Operations",
+      "score": 45,
+      "canAutofix": false,
+      "evidenceGate": "triage-before-pr",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-google-genai-1211"
+    },
+    {
+      "package": "@google/genai",
+      "repo": "googleapis/js-genai",
+      "issueNumber": 1364,
+      "issueUrl": "https://github.com/googleapis/js-genai/issues/1364",
+      "title": "Random Errors 429 RESOURCE_EXHAUSTED or Too Many Request",
+      "score": 45,
+      "canAutofix": false,
+      "evidenceGate": "triage-before-pr",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-google-genai-1364"
+    },
+    {
+      "package": "@huggingface/transformers",
+      "repo": "huggingface/transformers.js",
+      "issueNumber": 1667,
+      "issueUrl": "https://github.com/huggingface/transformers.js/issues/1667",
+      "title": "Error on translation",
+      "score": 45,
+      "canAutofix": false,
+      "evidenceGate": "triage-before-pr",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-huggingface-transformers-1667"
+    },
+    {
+      "package": "@huggingface/transformers",
+      "repo": "huggingface/transformers.js",
+      "issueNumber": 1653,
+      "issueUrl": "https://github.com/huggingface/transformers.js/issues/1653",
+      "title": "Bonsai 4B: Uncaught Error: Can't create a session. ERROR_CODE: 6, ERROR_MESSAGE: std::bad_alloc",
+      "score": 45,
+      "canAutofix": false,
+      "evidenceGate": "triage-before-pr",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-huggingface-transformers-1653"
+    },
+    {
+      "package": "@huggingface/transformers",
+      "repo": "huggingface/transformers.js",
+      "issueNumber": 1642,
+      "issueUrl": "https://github.com/huggingface/transformers.js/issues/1642",
+      "title": "Auto device on Linux x64 fails hard when CUDA shared library is unavailable instead of falling back",
+      "score": 45,
+      "canAutofix": false,
+      "evidenceGate": "triage-before-pr",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-huggingface-transformers-1642"
+    },
+    {
+      "package": "@huggingface/transformers",
+      "repo": "huggingface/transformers.js",
+      "issueNumber": 1640,
+      "issueUrl": "https://github.com/huggingface/transformers.js/issues/1640",
+      "title": "Illegal Instruction when running `pipeline` on Raspberry Pi 3 Model B (64-bit)",
+      "score": 45,
+      "canAutofix": false,
+      "evidenceGate": "triage-before-pr",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-huggingface-transformers-1640"
+    },
+    {
+      "package": "@lancedb/lancedb",
+      "repo": "lancedb/lancedb",
+      "issueNumber": 3330,
+      "issueUrl": "https://github.com/lancedb/lancedb/issues/3330",
+      "title": "bug(rust): Crash when optimizing indexes",
+      "score": 45,
+      "canAutofix": false,
+      "evidenceGate": "triage-before-pr",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-lancedb-lancedb-3330"
+    },
+    {
+      "package": "better-sqlite3",
+      "repo": "WiseLibs/better-sqlite3",
+      "issueNumber": 990,
+      "issueUrl": "https://github.com/WiseLibs/better-sqlite3/issues/990",
+      "title": "BUG: 8.3.0+ builds break compatibility with Debian Buster and Ubuntu <= 18.04",
+      "score": 45,
+      "canAutofix": false,
+      "evidenceGate": "claimed-or-existing-pr",
+      "blockers": [
+        "issue appears claimed in comments",
+        "issue appears to have an existing PR or proposal"
+      ],
+      "suggestedBranch": "codex/upstream-better-sqlite3-990"
+    },
+    {
+      "package": "better-sqlite3",
+      "repo": "WiseLibs/better-sqlite3",
+      "issueNumber": 1380,
+      "issueUrl": "https://github.com/WiseLibs/better-sqlite3/issues/1380",
+      "title": "build from source with npm 11.4.1 causes warnings \"Unknown cli config \"--build-from-source\".  This will stop working in the next major version of npm\"",
+      "score": 38,
+      "canAutofix": false,
+      "evidenceGate": "triage-before-pr",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-better-sqlite3-1380"
+    },
+    {
+      "package": "better-sqlite3",
+      "repo": "WiseLibs/better-sqlite3",
+      "issueNumber": 1361,
+      "issueUrl": "https://github.com/WiseLibs/better-sqlite3/issues/1361",
+      "title": "Recommended build from source for pnpm",
+      "score": 38,
+      "canAutofix": false,
+      "evidenceGate": "triage-before-pr",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-better-sqlite3-1361"
+    },
+    {
+      "package": "@changesets/changelog-github",
+      "repo": "changesets/changesets",
+      "issueNumber": 377,
+      "issueUrl": "https://github.com/changesets/changesets/issues/377",
+      "title": "Provide documentation for packages/changelog-github",
+      "score": 30,
+      "canAutofix": false,
+      "evidenceGate": "claimed-or-existing-pr",
+      "blockers": [
+        "issue appears claimed in comments"
+      ],
+      "suggestedBranch": "codex/upstream-changesets-changelog-github-377"
+    },
+    {
+      "package": "@changesets/changelog-github",
+      "repo": "changesets/changesets",
+      "issueNumber": 160,
+      "issueUrl": "https://github.com/changesets/changesets/issues/160",
+      "title": "Improve init command",
+      "score": 30,
+      "canAutofix": false,
+      "evidenceGate": "claimed-or-existing-pr",
+      "blockers": [
+        "issue appears claimed in comments"
+      ],
+      "suggestedBranch": "codex/upstream-changesets-changelog-github-160"
+    },
+    {
+      "package": "@changesets/changelog-github",
+      "repo": "changesets/changesets",
+      "issueNumber": 511,
+      "issueUrl": "https://github.com/changesets/changesets/issues/511",
+      "title": "[feature] Comment on issues when packages are released",
+      "score": 30,
+      "canAutofix": false,
+      "evidenceGate": "claimed-or-existing-pr",
+      "blockers": [
+        "issue appears to have an existing PR or proposal"
+      ],
+      "suggestedBranch": "codex/upstream-changesets-changelog-github-511"
+    },
+    {
+      "package": "@changesets/changelog-github",
+      "repo": "changesets/changesets",
+      "issueNumber": 208,
+      "issueUrl": "https://github.com/changesets/changesets/issues/208",
+      "title": "Improve peerDependency bumping messaging",
+      "score": 30,
+      "canAutofix": false,
+      "evidenceGate": "triage-before-pr",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-changesets-changelog-github-208"
+    },
+    {
+      "package": "@changesets/cli",
+      "repo": "changesets/changesets",
+      "issueNumber": 377,
+      "issueUrl": "https://github.com/changesets/changesets/issues/377",
+      "title": "Provide documentation for packages/changelog-github",
+      "score": 30,
+      "canAutofix": false,
+      "evidenceGate": "claimed-or-existing-pr",
+      "blockers": [
+        "issue appears claimed in comments"
+      ],
+      "suggestedBranch": "codex/upstream-changesets-cli-377"
+    },
+    {
+      "package": "@changesets/cli",
+      "repo": "changesets/changesets",
+      "issueNumber": 160,
+      "issueUrl": "https://github.com/changesets/changesets/issues/160",
+      "title": "Improve init command",
+      "score": 30,
+      "canAutofix": false,
+      "evidenceGate": "claimed-or-existing-pr",
+      "blockers": [
+        "issue appears claimed in comments"
+      ],
+      "suggestedBranch": "codex/upstream-changesets-cli-160"
+    },
+    {
+      "package": "@changesets/cli",
+      "repo": "changesets/changesets",
+      "issueNumber": 511,
+      "issueUrl": "https://github.com/changesets/changesets/issues/511",
+      "title": "[feature] Comment on issues when packages are released",
+      "score": 30,
+      "canAutofix": false,
+      "evidenceGate": "claimed-or-existing-pr",
+      "blockers": [
+        "issue appears to have an existing PR or proposal"
+      ],
+      "suggestedBranch": "codex/upstream-changesets-cli-511"
+    },
+    {
+      "package": "@changesets/cli",
+      "repo": "changesets/changesets",
+      "issueNumber": 208,
+      "issueUrl": "https://github.com/changesets/changesets/issues/208",
+      "title": "Improve peerDependency bumping messaging",
+      "score": 30,
+      "canAutofix": false,
+      "evidenceGate": "triage-before-pr",
+      "blockers": [],
+      "suggestedBranch": "codex/upstream-changesets-cli-208"
+    }
+  ]
+}

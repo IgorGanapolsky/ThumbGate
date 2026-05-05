@@ -33,8 +33,8 @@ const {
   formatHistoricalRevenueProofLine,
   renderMarketplaceCopyMarkdown,
   renderOperatorHandoffMarkdown,
-  renderOperatorSendNowCsv,
   renderOperatorSendNowMarkdown,
+  renderOperatorSendNowCsv,
   renderRevenueLoopMarkdown,
   renderTeamOutreachMessagesMarkdown,
   resolveRevenueLoopSummary,
@@ -230,6 +230,30 @@ test('resolveRevenueLoopSummary prefers hosted revenue status when local operato
   assert.equal(result.summary.revenue.paidOrders, 2);
   assert.equal(result.summary.revenue.bookedRevenueCents, 2000);
   assert.equal(result.summary.trafficMetrics.checkoutStarts, 1);
+});
+
+test('resolveRevenueLoopSummary requests and labels a 30d hosted summary by default', async () => {
+  let requestedOptions = null;
+  const result = await resolveRevenueLoopSummary({
+    getOperationalBillingSummaryFn: async (options) => {
+      requestedOptions = options;
+      return {
+        source: 'hosted',
+        summaryWindow: options.window,
+        summary: {
+          revenue: { paidOrders: 4, bookedRevenueCents: 14900 },
+          trafficMetrics: { checkoutStarts: 77 },
+          signups: { uniqueLeads: 424 },
+          pipeline: {},
+        },
+        fallbackReason: null,
+      };
+    },
+  });
+
+  assert.equal(requestedOptions.window, '30d');
+  assert.equal(result.summaryWindow, '30d');
+  assert.equal(result.summary.revenue.bookedRevenueCents, 14900);
 });
 
 test('resolveRevenueLoopSummary keeps local numbers when hosted revenue status still falls back', async () => {
@@ -488,6 +512,39 @@ test('resolveRevenueLoopSummary falls back to historical commercial truth revenu
     buildMotionCatalog(buildRevenueLinks()),
     { mode: 'historical-local' }
   ).state, 'post-first-dollar');
+});
+
+test('resolveRevenueLoopSummary keeps revenue loop moving when local billing throws before fallback', async () => {
+  const result = await resolveRevenueLoopSummary({
+    getOperationalBillingSummaryFn: async () => {
+      throw new Error('Hosted billing summary rejected credentials (HTTP 401).');
+    },
+    generateRevenueStatusReportFn: async () => ({
+      source: 'local-fallback',
+      hostedAudit: {
+        summaries: {
+          today: {
+            status: 401,
+            revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+          },
+        },
+      },
+    }),
+    readHistoricalCommercialTruthRevenueFn: () => ({
+      asOfDate: 'March 19, 2026',
+      paidOrders: 2,
+      bookedRevenueCents: 2000,
+      sourceDocument: 'docs/COMMERCIAL_TRUTH.md',
+    }),
+    hostedStatusRetries: 0,
+  });
+
+  assert.equal(result.source, 'local-unverified');
+  assert.equal(result.summaryWindow, 'historical-commercial-truth');
+  assert.equal(result.summary.revenue.paidOrders, 2);
+  assert.equal(result.summary.revenue.bookedRevenueCents, 2000);
+  assert.match(result.fallbackReason, /HTTP 401/);
+  assert.match(result.fallbackReason, /Historical commercial proof applied/);
 });
 
 test('buildBillingVerification keeps local-unverified mode when no historical proof exists', () => {
@@ -2672,6 +2729,7 @@ test('operator send-now export flattens ranked handoff rows for batch ops', () =
   };
 
   const payload = buildOperatorSendNowPayload(report);
+  const markdown = renderOperatorSendNowMarkdown(report);
   const csv = renderOperatorSendNowCsv(report);
 
   assert.equal(payload.rows.length, 1);
@@ -2684,6 +2742,12 @@ test('operator send-now export flattens ranked handoff rows for batch ops', () =
   assert.match(csv, /Reddit DM: https:\/\/www\.reddit\.com\/user\/builder\//);
   assert.match(csv, /Target signal: https:\/\/github\.com\/example\/production-mcp-server; Commercial truth:/);
   assert.match(csv, /I can harden one workflow, then prove it\./);
+  assert.match(markdown, /Contact surface: https:\/\/www\.reddit\.com\/user\/builder\//);
+  assert.match(markdown, /Contact surfaces: Reddit DM: https:\/\/www\.reddit\.com\/user\/builder\//);
+  assert.match(markdown, /Company: Builder Labs/);
+  assert.match(markdown, /Log after call booked: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
+  assert.match(markdown, /Log after sprint intake: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
+  assert.match(markdown, /Log after paid: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
 });
 
 test('operator send-now markdown includes historical proof when commercial truth drives the fallback', () => {

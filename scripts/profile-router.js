@@ -125,14 +125,15 @@ function findMostRestrictiveProfile(toolName) {
   if (!policy || !policy.profiles) return null;
   const profileRank = new Map(PROFILE_RESTRICTIVENESS_ORDER.map((name, index) => [name, index]));
 
-  // Sort profiles by number of tools (most restrictive first)
+  // Sort by named least-privilege order first. Some specialized profiles
+  // expose fewer tools than locked but carry stronger side-effect authority.
   const candidates = Object.entries(policy.profiles)
     .filter(([, tools]) => tools.includes(toolName))
     .sort((a, b) => {
-      const sizeDelta = a[1].length - b[1].length;
-      if (sizeDelta !== 0) return sizeDelta;
-      return (profileRank.get(a[0]) ?? Number.MAX_SAFE_INTEGER)
+      const rankDelta = (profileRank.get(a[0]) ?? Number.MAX_SAFE_INTEGER)
         - (profileRank.get(b[0]) ?? Number.MAX_SAFE_INTEGER);
+      if (rankDelta !== 0) return rankDelta;
+      return a[1].length - b[1].length;
     });
 
   if (candidates.length === 0) return null;

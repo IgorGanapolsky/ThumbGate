@@ -1,0 +1,55 @@
+name: Upstream Contribution Discovery
+
+on:
+  schedule:
+    - cron: '17 14 * * 1,4'
+  workflow_dispatch:
+    inputs:
+      live:
+        description: 'Use gh issue list for live discovery'
+        required: false
+        default: 'true'
+      max_repos:
+        description: 'Maximum direct dependency repos to scan'
+        required: false
+        default: '12'
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build governed upstream contribution queue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          LIVE_FLAG=""
+          if [ "${{ github.event.inputs.live || 'true' }}" = "true" ]; then
+            LIVE_FLAG="--live"
+          fi
+          node bin/cli.js upstream-contributions \
+            --max-repos="${{ github.event.inputs.max_repos || '12' }}" \
+            --max-issues=5 \
+            --write \
+            --json \
+            $LIVE_FLAG > upstream-contribution-engine.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: upstream-contribution-engine
+          path: |
+            upstream-contribution-engine.json
+            docs/marketing/upstream-contribution-engine.json
+            docs/marketing/upstream-contribution-engine.md

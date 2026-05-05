@@ -22,6 +22,7 @@ const {
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const CANONICAL_APP_ORIGIN = 'https://thumbgate-production.up.railway.app';
+const CANONICAL_PUBLIC_ORIGIN = 'https://thumbgate.ai';
 const CURRENT_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/ThumbGate';
 const PRIVATE_CORE_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/ThumbGate-Core';
 
@@ -394,7 +395,10 @@ test('active GTM scripts and reports point to the canonical offer without foundi
   for (const artifact of [outreachTargets, xAutomationReport, githubOutreach, xAutomation, autonomousSales]) {
     assert.doesNotMatch(artifact, /buy\.stripe\.com/);
     assert.doesNotMatch(artifact, /founding users today/i);
-    assert.match(artifact, /thumbgate-production\.up\.railway\.app/);
+    assert.ok(
+      artifact.includes(CANONICAL_PUBLIC_ORIGIN) || artifact.includes(CANONICAL_APP_ORIGIN),
+      'GTM artifact should point to the public site or canonical app origin',
+    );
     assert.doesNotMatch(artifact, /Always-On/i);
     assert.doesNotMatch(artifact, /Mistake-Free/i);
   }

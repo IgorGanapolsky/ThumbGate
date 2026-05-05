@@ -21,6 +21,8 @@ const ENV = {
   _TEST_LOCAL_CHECKOUT_SESSIONS_PATH: path.join(tmpRoot, 'local-checkout-sessions.json'),
   THUMBGATE_FEEDBACK_DIR: path.join(tmpRoot, 'feedback'),
   THUMBGATE_API_KEY: 'test-api-key-for-bot-guard',
+  THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL: 'https://buy.stripe.com/test-diagnostic',
+  THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL: 'https://buy.stripe.com/test-sprint',
   STRIPE_SECRET_KEY: '',
   STRIPE_PRICE_ID: '',
 };
@@ -78,9 +80,38 @@ describe('/checkout/pro bot guard', () => {
     });
     assert.equal(res.status, 200);
     const body = await res.text();
-    assert.match(body, /Continue to secure checkout/);
+    assert.match(body, /Choose the right paid path/);
+    assert.match(body, /Send workflow first/);
+    assert.match(body, /checkout_interstitial_workflow_sprint_intake/);
+    assert.match(body, /checkout_interstitial_cta_clicked/);
     assert.match(body, /\/checkout\/pro\?confirm=1/);
-    assert.doesNotMatch(body, /stripe\.com/);
+    assert.match(body, /Book \$499 diagnostic/);
+    assert.match(body, /Start \$1500 sprint/);
+    assert.match(body, /checkout_interstitial_sprint_diagnostic_checkout/);
+    assert.match(body, /checkout_interstitial_workflow_sprint_checkout/);
+    assert.match(body, /https:\/\/buy\.stripe\.com\/test-diagnostic/);
+    assert.match(body, /https:\/\/buy\.stripe\.com\/test-sprint/);
+    assert.doesNotMatch(body, /checkout\.stripe\.com/);
+  });
+
+  it('preserves attribution params through the bot-safe confirmation link', async () => {
+    const res = await fetch(`${origin}/checkout/pro?utm_source=reddit&utm_campaign=first_dollar&cta_id=pricing_pro&billing_cycle=annual&landing_path=%2Fpricing`, {
+      redirect: 'manual',
+      headers: {
+        'user-agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+        accept: 'text/html,*/*',
+      },
+    });
+    assert.equal(res.status, 200);
+    const body = await res.text();
+    assert.match(body, /href="\/checkout\/pro\?confirm=1&amp;utm_source=reddit&amp;utm_campaign=first_dollar/);
+    assert.match(body, /&amp;cta_id=pricing_pro/);
+    assert.match(body, /&amp;billing_cycle=annual/);
+    assert.match(body, /&amp;landing_path=%2Fpricing/);
+    assert.match(body, /utm_medium=checkout_interstitial_recovery/);
+    assert.match(body, /cta_id=checkout_interstitial_workflow_sprint_intake/);
+    assert.match(body, /cta_id=checkout_interstitial_sprint_diagnostic_checkout/);
+    assert.match(body, /cta_id=checkout_interstitial_workflow_sprint_checkout/);
   });
 
   it('returns HTML interstitial for curl (missing browser headers)', async () => {
@@ -93,7 +124,7 @@ describe('/checkout/pro bot guard', () => {
     });
     assert.equal(res.status, 200);
     const body = await res.text();
-    assert.match(body, /Continue to secure checkout/);
+    assert.match(body, /Choose the right paid path/);
   });
 
   it('returns HTML interstitial for LLM crawlers (ClaudeBot, GPTBot)', async () => {
@@ -108,7 +139,7 @@ describe('/checkout/pro bot guard', () => {
       });
       assert.equal(res.status, 200, `expected 200 interstitial for ${ua}`);
       const body = await res.text();
-      assert.match(body, /Continue to secure checkout/);
+      assert.match(body, /Choose the right paid path/);
     }
   });
 
@@ -125,12 +156,68 @@ describe('/checkout/pro bot guard', () => {
       });
       assert.equal(res.status, 200);
       const body = await res.text();
-      assert.match(body, /Continue to secure checkout/);
+      assert.match(body, /Choose the right paid path/);
     }
   });
 
-  it('proceeds with checkout flow for a real browser user-agent', async () => {
+  it('asks real browsers for email without the extra intent interstitial', async () => {
+    try { fs.unlinkSync(path.join(ENV.THUMBGATE_FEEDBACK_DIR, 'telemetry-pings.jsonl')); } catch {}
     const res = await fetch(`${origin}/checkout/pro`, {
+      redirect: 'manual',
+      headers: {
+        'user-agent': BROWSER_UA,
+        accept: BROWSER_ACCEPT,
+      },
+    });
+    assert.equal(res.status, 200);
+    const body = await res.text();
+    assert.match(body, /Email for Stripe receipt/);
+    assert.match(body, /name="?customer_email"?/);
+    assert.match(body, /name="?confirm"? value="?1"?/);
+    assert.doesNotMatch(body, /Choose the right paid path/);
+    assert.doesNotMatch(body, /checkout\.stripe\.com/);
+
+    const events = readFunnelEvents();
+    assert.equal(
+      events.filter((e) => e.eventType === 'checkout_interstitial_view').length,
+      0,
+      'real browsers should not be slowed by the intent interstitial',
+    );
+    assert.ok(
+      events.some((e) => e.eventType === 'checkout_email_gate_shown'),
+      'email gate should be tracked before checkout session creation',
+    );
+  });
+
+  it('asks confirmed real browsers for an email before creating Stripe sessions', async () => {
+    try { fs.unlinkSync(path.join(ENV.THUMBGATE_FEEDBACK_DIR, 'telemetry-pings.jsonl')); } catch {}
+    const res = await fetch(`${origin}/checkout/pro?confirm=1`, {
+      redirect: 'manual',
+      headers: {
+        'user-agent': BROWSER_UA,
+        accept: BROWSER_ACCEPT,
+      },
+    });
+    assert.equal(res.status, 200);
+    const body = await res.text();
+    assert.match(body, /Email for Stripe receipt/);
+    assert.match(body, /name="?customer_email"?/);
+    assert.match(body, /name="?confirm"? value="?1"?/);
+
+    const events = readFunnelEvents();
+    assert.equal(
+      events.filter((e) => e.eventType === 'checkout_bootstrap').length,
+      0,
+      'email gate should not create a checkout session',
+    );
+    assert.ok(
+      events.some((e) => e.eventType === 'checkout_email_gate_shown'),
+      'email gate should be tracked separately from checkout starts',
+    );
+  });
+
+  it('proceeds with checkout flow for a real browser user-agent after confirmation and email capture', async () => {
+    const res = await fetch(`${origin}/checkout/pro?confirm=1&customer_email=buyer@example.com`, {
       redirect: 'manual',
       headers: {
         'user-agent': BROWSER_UA,
@@ -150,8 +237,8 @@ describe('/checkout/pro bot guard', () => {
     }
   });
 
-  it('proceeds with checkout when ?confirm=1 is passed even from a bot UA', async () => {
-    const res = await fetch(`${origin}/checkout/pro?confirm=1`, {
+  it('proceeds with checkout when ?confirm=1 and an email are passed even from a bot UA', async () => {
+    const res = await fetch(`${origin}/checkout/pro?confirm=1&customer_email=buyer@example.com`, {
       redirect: 'manual',
       headers: {
         'user-agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)',

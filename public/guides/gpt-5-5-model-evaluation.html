@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GPT-5.5 Model Evaluation | Benchmark Before Routing Expensive Agent Work</title>
+  <meta name="description" content="Frontier-model upgrades can improve coding, dataset analysis, and dashboards, but the ROI comes from measured routing. ThumbGate adds a model-candidate workl..." />
+  <meta property="og:title" content="GPT-5.5 Model Evaluation | Benchmark Before Routing Expensive Agent Work" />
+  <meta property="og:description" content="Frontier-model upgrades can improve coding, dataset analysis, and dashboards, but the ROI comes from measured routing. ThumbGate adds a model-candidate workl..." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/guides/gpt-5-5-model-evaluation" />
+  <link rel="canonical" href="https://thumbgate.ai/guides/gpt-5-5-model-evaluation" />
+  <link rel="llm-context" href="/public/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --bg-raised: #111113;
+      --bg-card: #161618;
+      --line: #222225;
+      --text: #e8e8ec;
+      --muted: #8b8b96;
+      --cyan: #22d3ee;
+      --green: #4ade80;
+      --red: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(12px);
+      background: rgba(10, 10, 11, 0.88);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 14px;
+      padding-bottom: 14px;
+    }
+    .brand {
+      font-weight: 700;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 211, 238, 0.22);
+      background: rgba(34, 211, 238, 0.1);
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1.06;
+      letter-spacing: -0.04em;
+      margin: 16px 0;
+      max-width: 760px;
+    }
+    .hero p {
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .signal-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 28px 0 0;
+    }
+    .signal-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .signal-pill.up {
+      border-color: rgba(74, 222, 128, 0.28);
+      color: #b8f7c8;
+      background: rgba(74, 222, 128, 0.1);
+    }
+    .signal-pill.down {
+      border-color: rgba(248, 113, 113, 0.28);
+      color: #ffc0c0;
+      background: rgba(248, 113, 113, 0.1);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+      gap: 24px;
+      padding-bottom: 72px;
+    }
+    .card, .detail-section, .sidebar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .card { padding: 24px; }
+    .detail-section { padding: 24px; margin-bottom: 18px; }
+    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+    .detail-section p { color: var(--muted); }
+    .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
+    .card h2 { margin-top: 0; }
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .sidebar-card {
+      padding: 20px;
+    }
+    /* Only the first sidebar card sticks. Stacking multiple stickies at the
+       same top offset makes them overlap each other on scroll. The related-
+       pages card flows normally below. */
+    .sidebar-card:first-child {
+      position: sticky;
+      top: 84px;
+      max-height: calc(100vh - 104px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .proof-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 18px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: var(--cyan);
+      color: #071116;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .faq-item {
+      border-top: 1px solid var(--line);
+      padding: 14px 0;
+    }
+    .faq-item summary {
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .faq-item p {
+      color: var(--muted);
+    }
+    .related-card {
+      display: block;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      margin-top: 12px;
+      color: var(--text);
+    }
+    .related-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    @media (max-width: 860px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .sidebar-card:first-child {
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
+    }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Evaluate GPT-5.5 Before You Route Production Agent Work",
+  "description": "Frontier-model upgrades can improve coding, dataset analysis, and dashboards, but the ROI comes from measured routing. ThumbGate adds a model-candidate workl...",
+  "about": [
+    "claude code masterclass guardrails",
+    "cursor prevent repeated mistakes",
+    "claude code prevent repeated mistakes",
+    "codex cli guardrails"
+  ],
+  "url": "https://thumbgate.ai/guides/gpt-5-5-model-evaluation",
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "mainEntityOfPage": "https://thumbgate.ai/guides/gpt-5-5-model-evaluation"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Should every ThumbGate task use GPT-5.5?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Cheap gates, classification, extraction, and simple triage should stay on lower-cost tiers when they pass evals. GPT-5.5 is best evaluated for complex reasoning, long-context, coding, dataset, and dashboard work."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I benchmark GPT-5.5 in ThumbGate?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Run npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai --json, then use the emitted benchmark commands and metrics to compare insight quality, chart validity, latency, and cost before changing routing defaults."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does this automatically call the OpenAI API?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. The catalog is an evaluation and routing surface. It records candidate models and benchmark plans without assuming provider credentials or silently changing runtime behavior."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="container">
+      <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+    </div>
+  </div>
+
+  <main class="container">
+    <section class="hero">
+      <div class="eyebrow">guide | gpt-5.5 model evaluation</div>
+      <h1>Evaluate GPT-5.5 Before You Route Production Agent Work</h1>
+      <p>Frontier-model upgrades can improve coding, dataset analysis, and dashboards, but the ROI comes from measured routing. ThumbGate adds a model-candidate workload so teams can benchmark GPT-5.5 against real feedback, gate evals, and dashboard-analysis criteria before changing defaults.</p>
+      <div class="signal-row">
+        <div class="signal-pill up">👍 Thumbs up reinforces good behavior</div>
+        <div class="signal-pill down">👎 Thumbs down blocks repeated mistakes</div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div>
+        <div class="card">
+          <h2>Why this page exists</h2>
+          <ul><li>GPT-5.5 should be treated as a frontier candidate for complex work, not a blanket replacement for every cheap gate.</li><li>The highest ROI path is benchmark-first routing: keep cheap tiers for simple checks and escalate dataset, dashboard, and long-context work when evidence supports it.</li><li>ThumbGate now exposes a dashboard-analysis workload through npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai --json.</li></ul>
+        </div>
+
+      <section class="detail-section">
+        <h2>What changed</h2>
+        <p>OpenAI positions GPT-5.5 for complex reasoning, coding, data analysis, and tool-using work. Julius framed the same model around dataset analysis, charts, dashboards, insight quality, and code generation.</p><p>For ThumbGate, the useful product move is not to rewrite every default. It is to make model adoption measurable: define the workload, pick candidate models, run existing evals, and route only the work that earns the frontier spend.</p>
+
+      </section>
+      <section class="detail-section">
+        <h2>What ThumbGate adds</h2>
+
+        <ul><li>A GPT-5.5 model candidate in config/model-candidates.json with long-context, data-analysis, dashboard-creation, charting, tool-use, and reliability strengths.</li><li>A dashboard-analysis workload with metrics for insight accuracy, chart-spec validity, dashboard completeness, long-context reliability, latency, and cost per analysis.</li><li>A CLI path: npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai --json.</li><li>A tier-router config that pins the frontier tier to gpt-5.5 while keeping explicit cheaper tiers for fast, low-cost work.</li></ul>
+      </section>
+      <section class="detail-section">
+        <h2>Where this creates ROI</h2>
+        <p>This gives platform teams a defensible answer to &quot;should we move to GPT-5.5?&quot; Run the candidate report, attach gate and benchmark evidence, and only then route high-value analytical or long-context agent tasks to the frontier tier.</p><p>The commercial wedge is a Workflow Hardening Sprint focused on model routing: define which workflows deserve frontier spend, which stay on cheap tiers, and which require pre-action checks before a model can touch live systems.</p>
+
+      </section>
+        <div class="detail-section">
+          <h2>FAQ</h2>
+
+      <details class="faq-item">
+        <summary>Should every ThumbGate task use GPT-5.5?</summary>
+        <p>No. Cheap gates, classification, extraction, and simple triage should stay on lower-cost tiers when they pass evals. GPT-5.5 is best evaluated for complex reasoning, long-context, coding, dataset, and dashboard work.</p>
+      </details>
+      <details class="faq-item">
+        <summary>How do I benchmark GPT-5.5 in ThumbGate?</summary>
+        <p>Run npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai --json, then use the emitted benchmark commands and metrics to compare insight quality, chart validity, latency, and cost before changing routing defaults.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Does this automatically call the OpenAI API?</summary>
+        <p>No. The catalog is an evaluation and routing surface. It records candidate models and benchmark plans without assuming provider credentials or silently changing runtime behavior.</p>
+      </details>
+        </div>
+      </div>
+
+      <aside class="sidebar">
+
+
+
+
+        <div class="sidebar-card">
+          <h2>GSD execution brief</h2>
+          <p>This page was prioritized because it captures high-intent demand around gpt-5.5 model evaluation and feeds directly into ThumbGate's proof-led conversion path.</p>
+          <p><strong>Opportunity score:</strong> 72</p>
+          <p><strong>Primary persona:</strong> ai-engineer</p>
+          <p><strong>Keyword cluster:</strong> claude code masterclass guardrails, cursor prevent repeated mistakes, claude code prevent repeated mistakes, codex cli guardrails</p>
+          <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
+          <div class="proof-links"><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json" target="_blank" rel="noopener">Automation proof</a><a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub repository</a></div>
+          <a class="cta-button" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_gpt-5-5-model-evaluation&amp;cta_placement=seo_brief&amp;plan_id=pro" target="_blank" rel="noopener">Go Pro — $19/mo</a>
+        </div>
+        <div class="sidebar-card">
+          <h2>Related pages</h2>
+
+        <a class="related-card" href="/guides/agent-harness-optimization">
+          <span class="related-label">Related page</span>
+          <strong>AI Agent Harness Optimization That Blocks Repeat Failures</strong>
+        </a>
+        <a class="related-card" href="/guides/background-agent-governance">
+          <span class="related-label">Related page</span>
+          <strong>Background Agent Governance for Agent PRs</strong>
+        </a>
+        <a class="related-card" href="/guides/pre-action-checks">
+          <span class="related-label">Related page</span>
+          <strong>What Are Pre-Action Checks?</strong>
+        </a>
+        </div>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>

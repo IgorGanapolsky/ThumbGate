@@ -1,0 +1,146 @@
+{
+  "name": "thumbgate-proactive-agent-eval-guardrails",
+  "source": {
+    "postUrl": "https://x.com/dair_ai/status/2048083882327916688",
+    "paperUrl": "https://arxiv.org/abs/2604.00842",
+    "title": "Proactive Agent Research Environment: Simulating Active Users to Evaluate Proactive Assistants",
+    "arxivId": "2604.00842",
+    "submitted": "2026-04-01",
+    "postCreatedAt": "2026-04-25T16:57:03.000Z"
+  },
+  "workflow": "proactive assistant shipping checklist",
+  "status": "blocked",
+  "summary": {
+    "signalCount": 6,
+    "critical": 1,
+    "high": 4,
+    "apps": [
+      "calendar",
+      "email",
+      "tasks"
+    ],
+    "stateCount": 12,
+    "actionCount": 24,
+    "taskCount": 143
+  },
+  "pareMapping": {
+    "appModel": "finite_state_machine_required",
+    "userSimulation": "active_user_simulation_required",
+    "actionSpace": "state-dependent action spaces should be explicit per app state",
+    "evaluationAxes": [
+      "context observation",
+      "goal inference",
+      "intervention timing",
+      "multi-app orchestration"
+    ]
+  },
+  "signals": [
+    {
+      "id": "flat_tool_api_gap",
+      "severity": "high",
+      "message": "Flat tool APIs miss stateful navigation and state-dependent action spaces.",
+      "gate": "Require finite-state app model before proactive execution."
+    },
+    {
+      "id": "missing_active_user_simulation",
+      "severity": "high",
+      "message": "Proactive agents need simulated user progress before timing can be evaluated.",
+      "gate": "Run active user simulation before enabling anticipatory actions."
+    },
+    {
+      "id": "missing_goal_inference_eval",
+      "severity": "medium",
+      "message": "The agent may intervene without evidence that it inferred the user goal correctly.",
+      "gate": "Grade goal inference before intervention approval."
+    },
+    {
+      "id": "missing_intervention_timing_eval",
+      "severity": "high",
+      "message": "A helpful action at the wrong time becomes interruption or damage.",
+      "gate": "Require too-early, on-time, and too-late timing eval cases."
+    },
+    {
+      "id": "multi_app_write_risk",
+      "severity": "critical",
+      "message": "Multi-app proactive writes can compound state mistakes across tools.",
+      "gate": "Block multi-app proactive writes until orchestration evals and rollback evidence exist."
+    },
+    {
+      "id": "user_visible_interruption_risk",
+      "severity": "high",
+      "message": "User-visible interventions need timing proof before notification, scheduling, or communication actions.",
+      "gate": "Require intervention timing proof before user-visible actions."
+    }
+  ],
+  "metrics": [
+    {
+      "id": "goal_inference_accuracy",
+      "target": ">= 0.85",
+      "required": true
+    },
+    {
+      "id": "intervention_timing_f1",
+      "target": ">= 0.80",
+      "required": true
+    },
+    {
+      "id": "false_intervention_rate",
+      "target": "<= 0.05",
+      "required": true
+    },
+    {
+      "id": "state_transition_validity",
+      "target": ">= 0.98",
+      "required": true
+    },
+    {
+      "id": "multi_app_orchestration_success",
+      "target": ">= 0.85",
+      "required": true
+    }
+  ],
+  "gates": [
+    {
+      "id": "flat_tool_api_gap",
+      "action": "warn",
+      "message": "Require finite-state app model before proactive execution."
+    },
+    {
+      "id": "missing_active_user_simulation",
+      "action": "warn",
+      "message": "Run active user simulation before enabling anticipatory actions."
+    },
+    {
+      "id": "missing_goal_inference_eval",
+      "action": "warn",
+      "message": "Grade goal inference before intervention approval."
+    },
+    {
+      "id": "missing_intervention_timing_eval",
+      "action": "warn",
+      "message": "Require too-early, on-time, and too-late timing eval cases."
+    },
+    {
+      "id": "multi_app_write_risk",
+      "action": "block",
+      "message": "Block multi-app proactive writes until orchestration evals and rollback evidence exist."
+    },
+    {
+      "id": "user_visible_interruption_risk",
+      "action": "warn",
+      "message": "Require intervention timing proof before user-visible actions."
+    }
+  ],
+  "nextActions": [
+    "Model each app as states, allowed actions, and valid transitions before judging proactive behavior.",
+    "Add active user simulation cases where the user keeps navigating while the agent observes.",
+    "Evaluate goal inference separately from intervention timing so a correct goal at the wrong time is still caught.",
+    "Block proactive writes across multiple apps until orchestration success and rollback evidence are measured.",
+    "Attach the eval report to any claim that a proactive agent is production-ready."
+  ],
+  "marketingAngle": {
+    "headline": "Proactive agents need stateful eval gates.",
+    "subhead": "PARE shows why flat tool-call benchmarks miss real app behavior. ThumbGate turns those stateful eval failures into pre-action gates before a proactive assistant interrupts users or writes across apps.",
+    "replyDraft": "This is the missing eval shape for proactive agents. Flat tool calls cannot tell whether the agent acted at the right state or the right time. ThumbGate can use this pattern as the enforcement layer: stateful eval failure -> pre-action gate before the next proactive write."
+  }
+}

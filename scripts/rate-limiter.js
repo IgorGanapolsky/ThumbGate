@@ -36,7 +36,7 @@ const PAYWALL_MESSAGES = {
   prevention_rules: 'Free tier includes 1 prevention rule. Your agents need more protection — upgrade to Pro for unlimited rules.',
   recall: 'Recall is a Pro feature. Your past feedback is stored locally — upgrade to search and reuse it.',
   search_lessons: 'Lesson search is a Pro feature. Upgrade to find patterns in your agent\'s mistakes.',
-  default: 'This feature requires Pro. Start a 7-day free trial — no credit card required.',
+  default: 'This feature requires Pro. Start a 7-day trial — card required; no charge today.',
 };
 
 function isProTier(authContext) {

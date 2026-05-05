@@ -77,6 +77,8 @@ test('README exposes prompt-shaped buyer questions with tracked guide links', ()
   assert.match(readme, /Popular buyer questions/i);
   assert.match(readme, /guides\/ai-search-topical-presence\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/relational-knowledge-ai-recommendations\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
+  assert.match(readme, /guides\/background-agent-governance\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
+  assert.match(readme, /guides\/gpt-5-5-model-evaluation\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/stop-repeated-ai-agent-mistakes\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/browser-automation-safety\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/native-messaging-host-security\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
@@ -120,6 +122,11 @@ test('LLM context keeps team pricing and CLI-first positioning aligned with comm
   assert.match(context, /\$49\/seat\/mo/i);
   assert.match(context, /Autoresearch Safety Pack/i);
   assert.match(context, /native-messaging-audit/i);
+  assert.match(context, /background-governance/i);
+  assert.match(context, /GPT-5\.5 Model Evaluation/i);
+  assert.match(context, /model-candidates --workload=dashboard-analysis --provider=openai --json/i);
+  assert.match(context, /Data Processing & Telemetry Boundaries/i);
+  assert.match(context, /THUMBGATE_NO_TELEMETRY=1/i);
   assert.match(context, /reward-hacking failures/i);
   assert.match(context, /CLI-first/i);
   assert.match(context, /solo side lane/i);

@@ -21,6 +21,7 @@ Use this kit instead of older memory-first launch copy when posting about the pr
 - X thread: [x-launch-thread.md](./x-launch-thread.md)
 - Reddit posts: [reddit-posts.md](./reddit-posts.md)
 - Cursor plugin launch kit: [cursor-plugin-launch.md](./cursor-plugin-launch.md)
+- Guarded `n8n` + `Make.com` offer pack: [guarded-automation-template-pack.md](./guarded-automation-template-pack.md)
 - Zero-filming IG + TikTok ops: [social-automation.md](./social-automation.md)
 
 ## Asset Inventory
