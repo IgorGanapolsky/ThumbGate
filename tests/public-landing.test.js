@@ -110,6 +110,7 @@ test('public landing page exposes env-driven paid sprint checkout path', () => {
   assert.match(landingPage, /data-sprint-paid-path/);
   assert.match(landingPage, /Workflow Hardening Diagnostic/);
   assert.match(landingPage, /AI Agent Failure Quick Read/);
+  assert.match(landingPage, /Same-day Workflow Teardown/);
   assert.match(landingPage, /Need buyer-ready proof today\?/);
   assert.match(landingPage, /Pay \$19 quick read/);
   assert.match(landingPage, /https:\/\/buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
@@ -119,11 +120,14 @@ test('public landing page exposes env-driven paid sprint checkout path', () => {
   assert.doesNotMatch(landingPage, /founder_workflow_diagnostic_checkout_started/);
   assert.doesNotMatch(landingPage, /Pay \$99 diagnostic/);
   assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/7sY4gzgH24r49G17mb3sI0g/);
+  assert.match(landingPage, /https:\/\/buy\.stripe\.com\/7sYfZhgH29LodWhdKz3sI0v/);
+  assert.match(landingPage, /Pay \$99 teardown/);
   assert.match(landingPage, /Pay \$499 diagnostic/);
   assert.match(landingPage, /Pay \$1500 sprint/);
   assert.match(landingPage, /Send workflow first/);
   assert.match(landingPage, /Pay for diagnostic/);
   assert.match(landingPage, /Pay for sprint/);
+  assert.match(landingPage, /workflow_teardown_checkout_started/);
   assert.match(landingPage, /hero_workflow_sprint_diagnostic_checkout/);
   assert.match(landingPage, /hero_workflow_sprint_checkout/);
   assert.match(landingPage, /hero_workflow_sprint_recovery_intake/);
@@ -131,6 +135,7 @@ test('public landing page exposes env-driven paid sprint checkout path', () => {
   assert.match(landingPage, /workflow_sprint_checkout_started/);
   assert.match(landingPage, /workflow_sprint_recovery_intake_clicked/);
   assert.match(landingPage, /workflow_sprint_recovery_intake/);
+  assert.match(landingPage, /ctaId:'hero_workflow_teardown_checkout'/);
   assert.match(landingPage, /ctaId: 'hero_workflow_sprint_diagnostic_checkout'/);
   assert.match(landingPage, /ctaId: 'hero_workflow_sprint_checkout'/);
   assert.match(landingPage, /ctaId: 'hero_workflow_sprint_recovery_intake'/);
