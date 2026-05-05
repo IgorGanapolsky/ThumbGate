@@ -18,7 +18,10 @@ const APP_ORIGIN = resolveHostedBillingConfig({
 const DEFAULT_TIMEZONE = 'America/New_York';
 const LAUNCH_CAMPAIGN = 'first_customer_push';
 const OPERATOR_LAB_CAMPAIGN = 'operator_lab_launch';
+const PAID_SPRINT_CAMPAIGN = 'paid_workflow_sprint';
 const SKOOL_OPERATOR_LAB_URL = 'https://www.skool.com/thumbgate-operator-lab-6000';
+const PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL = 'https://buy.stripe.com/3cI7sLgH25v8dWh5e33sI0o';
+const PAID_SPRINT_IMPLEMENTATION_PAYMENT_URL = 'https://buy.stripe.com/8x25kDcqMaPs9G15e33sI0p';
 const DEFAULT_LAUNCH_PLATFORMS = ['twitter', 'linkedin', 'instagram'];
 
 const OPERATOR_LAB_POSTS = {
@@ -201,12 +204,41 @@ function buildOperatorLabUrl(platform, content) {
 }
 
 function buildPaidSprintUrl(platform, content) {
-  return buildUTMLink(`${APP_ORIGIN}/pro`, {
+  return buildUTMLink(PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL, {
     source: platform,
     medium: 'organic_social',
-    campaign: 'paid_workflow_sprint',
+    campaign: PAID_SPRINT_CAMPAIGN,
     content,
   });
+}
+
+function buildPaidSprintCheckoutUrls(platform, content) {
+  const source = platform || 'zernio';
+  const baseContent = content || `paid_sprint_${source}`;
+  return {
+    diagnostic: buildUTMLink(PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL, {
+      source,
+      medium: 'organic_social',
+      campaign: PAID_SPRINT_CAMPAIGN,
+      content: `${baseContent}_diagnostic`,
+    }),
+    sprint: buildUTMLink(PAID_SPRINT_IMPLEMENTATION_PAYMENT_URL, {
+      source,
+      medium: 'organic_social',
+      campaign: PAID_SPRINT_CAMPAIGN,
+      content: `${baseContent}_sprint`,
+    }),
+  };
+}
+
+function mediumForOffer(offer) {
+  return offer === 'operator-lab' ? 'community_course' : 'organic_social';
+}
+
+function campaignForOffer(offer) {
+  if (offer === 'operator-lab') return OPERATOR_LAB_CAMPAIGN;
+  if (offer === 'paid-sprint') return PAID_SPRINT_CAMPAIGN;
+  return LAUNCH_CAMPAIGN;
 }
 
 function renderTrackedPost(spec, platform, urlBuilder) {
@@ -234,12 +266,13 @@ function buildOperatorLabPost(platform) {
 function buildPaidSprintPost(platform) {
   const normalized = String(platform || '').trim().toLowerCase();
   const key = normalized === 'x' ? 'twitter' : normalized;
-  const url = buildPaidSprintUrl(key || 'zernio', `paid_sprint_${key || 'generic'}`);
+  const links = buildPaidSprintCheckoutUrls(key || 'zernio', `paid_sprint_${key || 'generic'}`);
   const compact = [
     'I opened a paid ThumbGate workflow-hardening lane for teams running AI coding agents in real repos.',
-    '$499 diagnostic: map one repeated Claude Code/Codex/Cursor failure into prevention rules and a hardening plan.',
+    '$499 diagnostic: map one repeated Claude Code/Codex/Cursor failure into prevention rules.',
+    links.diagnostic,
     '$1500 sprint: implement the first guardrails and verify the same failure gets blocked.',
-    url,
+    links.sprint,
   ];
 
   if (key === 'linkedin') {
@@ -253,8 +286,17 @@ function buildPaidSprintPost(platform) {
       '',
       'This is for teams seeing repeated agent mistakes: unsafe file edits, bad deploy steps, ignored repo rules, or risky tool calls that keep coming back across sessions.',
       '',
-      url,
+      `Book the $499 diagnostic: ${links.diagnostic}`,
+      `Start the $1500 sprint: ${links.sprint}`,
     ].join('\n');
+  }
+
+  if (key === 'twitter') {
+    return [
+      'Paid ThumbGate workflow hardening is open:',
+      '$499 diagnostic for repeated Claude/Codex/Cursor failures.',
+      links.diagnostic,
+    ].join(' ');
   }
 
   if (key === 'instagram') {
@@ -266,7 +308,8 @@ function buildPaidSprintPost(platform) {
       '',
       'For Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, and MCP teams.',
       '',
-      url,
+      `Diagnostic: ${links.diagnostic}`,
+      `Sprint: ${links.sprint}`,
     ].join('\n');
   }
 
@@ -275,7 +318,7 @@ function buildPaidSprintPost(platform) {
       'Paid ThumbGate workflow hardening is open.',
       '$499 diagnostic. $1500 implementation sprint.',
       'For repeated Claude/Codex/Cursor failures.',
-      'https://thumbgate.ai/pro',
+      links.diagnostic,
     ].join(' ');
   }
 
@@ -402,8 +445,8 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
 
     const utm = {
       source: normalizedPlatform === 'twitter' ? 'x' : normalizedPlatform,
-      medium: offer === 'operator-lab' ? 'community_course' : 'organic_social',
-      campaign: offer === 'operator-lab' ? OPERATOR_LAB_CAMPAIGN : LAUNCH_CAMPAIGN,
+      medium: mediumForOffer(offer),
+      campaign: campaignForOffer(offer),
     };
 
     try {
@@ -458,12 +501,16 @@ module.exports = {
   DEFAULT_TIMEZONE,
   LAUNCH_CAMPAIGN,
   OPERATOR_LAB_CAMPAIGN,
+  PAID_SPRINT_CAMPAIGN,
+  PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL,
+  PAID_SPRINT_IMPLEMENTATION_PAYMENT_URL,
   SKOOL_OPERATOR_LAB_URL,
   buildCampaignEntries,
   buildLandingUrl,
   buildOperatorLabPost,
   buildOperatorLabUrl,
   buildPlatformPost,
+  buildPaidSprintCheckoutUrls,
   buildPaidSprintPost,
   buildPaidSprintUrl,
   defaultCampaignSchedule,

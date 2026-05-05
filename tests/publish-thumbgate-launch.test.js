@@ -7,6 +7,10 @@ const {
   DEFAULT_LAUNCH_PLATFORMS,
   LAUNCH_CAMPAIGN,
   OPERATOR_LAB_CAMPAIGN,
+  PAID_SPRINT_CAMPAIGN,
+  PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL,
+  PAID_SPRINT_IMPLEMENTATION_PAYMENT_URL,
+  buildPaidSprintCheckoutUrls,
   buildPlatformPost,
   parseArgs,
   publishLaunchCampaign,
@@ -47,6 +51,23 @@ test('buildPlatformPost can create Skool operator lab copy', () => {
   assert.match(post, /utm_content=operator_lab_linkedin/);
   assert.ok(xPost.length <= 280, `X operator-lab post should fit 280 chars; got ${xPost.length}`);
   assert.match(xPost, /utm_content=operator_lab_twitter/);
+});
+
+test('buildPlatformPost creates paid sprint copy with direct checkout links', () => {
+  const linkedInPost = buildPlatformPost('linkedin', 'paid-sprint');
+  const xPost = buildPlatformPost('twitter', 'paid-sprint');
+  const links = buildPaidSprintCheckoutUrls('linkedin', 'paid_sprint_linkedin');
+
+  assert.match(linkedInPost, /\$499 diagnostic/);
+  assert.match(linkedInPost, /\$1500 sprint/);
+  assert.ok(linkedInPost.includes(PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL));
+  assert.ok(linkedInPost.includes(PAID_SPRINT_IMPLEMENTATION_PAYMENT_URL));
+  assert.ok(linkedInPost.includes(links.diagnostic));
+  assert.ok(linkedInPost.includes(links.sprint));
+  assert.match(linkedInPost, /utm_campaign=paid_workflow_sprint/);
+  assert.match(linkedInPost, /utm_content=paid_sprint_linkedin_diagnostic/);
+  assert.match(xPost, /buy\.stripe\.com/);
+  assert.ok(xPost.length <= 280, `X paid-sprint post should fit 280 chars; got ${xPost.length}`);
 });
 
 test('publishLaunchCampaign previews default platforms in dry run mode', async () => {
@@ -102,6 +123,34 @@ test('publishLaunchCampaign uses operator lab UTM settings when requested', asyn
   assert.equal(calls[0].options.utm.medium, 'community_course');
   assert.equal(calls[0].options.utm.campaign, OPERATOR_LAB_CAMPAIGN);
   assert.match(calls[0].content, /skool\.com\/thumbgate-operator-lab-6000/);
+});
+
+test('publishLaunchCampaign uses paid sprint UTM settings when requested', async () => {
+  const calls = [];
+  const fakePublisher = {
+    getConnectedAccounts: async () => ([
+      { platform: 'linkedin', accountId: 'acc_l1' },
+    ]),
+    groupAccountsByPlatform(accounts) {
+      return new Map([['linkedin', accounts]]);
+    },
+    publishPost: async (content, platforms, options) => {
+      calls.push({ content, platforms, options });
+      return { id: 'linkedin_post_1' };
+    },
+  };
+
+  const result = await publishLaunchCampaign({
+    platforms: ['linkedin'],
+    offer: 'paid-sprint',
+  }, fakePublisher);
+
+  assert.equal(result.published.length, 1);
+  assert.equal(calls[0].options.utm.source, 'linkedin');
+  assert.equal(calls[0].options.utm.medium, 'organic_social');
+  assert.equal(calls[0].options.utm.campaign, PAID_SPRINT_CAMPAIGN);
+  assert.match(calls[0].content, /buy\.stripe\.com/);
+  assert.match(calls[0].content, /utm_campaign=paid_workflow_sprint/);
 });
 
 test('publishLaunchCampaign publishes requested platforms with per-platform UTM settings', async () => {
