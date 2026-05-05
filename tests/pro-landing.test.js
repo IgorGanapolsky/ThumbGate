@@ -113,6 +113,7 @@ test('pro landing page captures buyer email and reuses it for checkout', () => {
   assert.match(proPage, /data-buyer-email/);
   assert.match(proPage, /\/js\/buyer-intent\.js/);
   assert.match(buyerIntentScript, /customer_email/);
+  assert.match(buyerIntentScript, /searchParams\.set\('confirm', '1'\)/);
   assert.match(buyerIntentScript, /initializeEmailCheckoutButtons/);
   assert.match(buyerIntentScript, /initializeBehaviorAnalytics/);
   assert.match(proPage, /sendFirstPartyTelemetry/);

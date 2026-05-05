@@ -657,6 +657,8 @@ test('public landing page includes pay-now Pro path and email capture gate', () 
   assert.match(landingPage, /handleProTrial/);
   assert.match(landingPage, /\/js\/buyer-intent\.js/);
   assert.match(buyerIntentScript, /customer_email/);
+  assert.match(buyerIntentScript, /\/go\/pro/);
+  assert.match(buyerIntentScript, /searchParams\.set\('confirm', '1'\)/);
   assert.match(buyerIntentScript, /submitNewsletterSignup/);
   assert.match(buyerIntentScript, /initializeBehaviorAnalytics/);
   assert.match(buyerIntentScript, /buyer_email_abandon/);
