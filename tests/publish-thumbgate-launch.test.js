@@ -5,8 +5,10 @@ const assert = require('node:assert/strict');
 
 const {
   DEFAULT_LAUNCH_PLATFORMS,
+  DIAGNOSTIC_CHECKOUT_URL,
   LAUNCH_CAMPAIGN,
   OPERATOR_LAB_CAMPAIGN,
+  VOICE_AGENT_DIAGNOSTIC_CAMPAIGN,
   buildPlatformPost,
   parseArgs,
   publishLaunchCampaign,
@@ -47,6 +49,20 @@ test('buildPlatformPost can create Skool operator lab copy', () => {
   assert.match(post, /utm_content=operator_lab_linkedin/);
   assert.ok(xPost.length <= 280, `X operator-lab post should fit 280 chars; got ${xPost.length}`);
   assert.match(xPost, /utm_content=operator_lab_twitter/);
+});
+
+test('buildPlatformPost can create paid voice-agent diagnostic copy', () => {
+  const linkedinPost = buildPlatformPost('linkedin', 'voice-agent-diagnostic');
+  const threadsPost = buildPlatformPost('threads', 'voice-agent-diagnostic');
+
+  assert.match(linkedinPost, /voice-agent reliability diagnostics/);
+  assert.match(linkedinPost, /\$499 diagnostic/);
+  assert.match(linkedinPost, new RegExp(DIAGNOSTIC_CHECKOUT_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(linkedinPost, /utm_medium=paid_service/);
+  assert.match(linkedinPost, /utm_campaign=voice_agent_reliability_diagnostic/);
+  assert.match(linkedinPost, /utm_content=voice_agent_diagnostic_linkedin/);
+  assert.match(threadsPost, /Opening 3 paid voice-agent reliability diagnostics/);
+  assert.match(threadsPost, /utm_content=voice_agent_diagnostic_threads/);
 });
 
 test('publishLaunchCampaign previews default platforms in dry run mode', async () => {
@@ -102,6 +118,34 @@ test('publishLaunchCampaign uses operator lab UTM settings when requested', asyn
   assert.equal(calls[0].options.utm.medium, 'community_course');
   assert.equal(calls[0].options.utm.campaign, OPERATOR_LAB_CAMPAIGN);
   assert.match(calls[0].content, /skool\.com\/thumbgate-operator-lab-6000/);
+});
+
+test('publishLaunchCampaign uses paid voice-agent diagnostic UTM settings when requested', async () => {
+  const calls = [];
+  const fakePublisher = {
+    getConnectedAccounts: async () => ([
+      { platform: 'linkedin', accountId: 'acc_l1' },
+    ]),
+    groupAccountsByPlatform(accounts) {
+      return new Map([['linkedin', accounts]]);
+    },
+    publishPost: async (content, platforms, options) => {
+      calls.push({ content, platforms, options });
+      return { id: 'linkedin_post_1' };
+    },
+  };
+
+  const result = await publishLaunchCampaign({
+    platforms: ['linkedin'],
+    offer: 'voice-agent-diagnostic',
+  }, fakePublisher);
+
+  assert.equal(result.published.length, 1);
+  assert.equal(calls[0].options.utm.source, 'linkedin');
+  assert.equal(calls[0].options.utm.medium, 'paid_service');
+  assert.equal(calls[0].options.utm.campaign, VOICE_AGENT_DIAGNOSTIC_CAMPAIGN);
+  assert.match(calls[0].content, /Checkout:/);
+  assert.match(calls[0].content, /\$499 diagnostic/);
 });
 
 test('publishLaunchCampaign publishes requested platforms with per-platform UTM settings', async () => {
