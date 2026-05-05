@@ -1,6 +1,6 @@
 # Money Now Actions
 
-Updated: 2026-05-04
+Updated: 2026-05-05
 
 Use this as the operator cockpit for the current run. Full copy, follow-ups, CTAs, and logging commands live in `operator-send-now.md`; the pipeline truth table lives in `sales-pipeline.md`.
 
@@ -27,6 +27,8 @@ When you paste metrics into any report, include the exact command + timestamp an
 ## Skool Operator Lab — Approval-Required Checklist
 
 These steps require explicit confirmation before executing (no autopost, no invites, no uploads in this automation run).
+
+Note: Use `https://thumbgate-production.up.railway.app` as the canonical CTA base unless `thumbgate.ai` redirect behavior has been verified.
 
 1. Upload Skool cover image: `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`.
 2. Upload Skool icon: `docs/marketing/assets/thumbgate-skool-icon-128x128.png`.

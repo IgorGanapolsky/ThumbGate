@@ -1,10 +1,18 @@
 # Operator Approval Queue — Community/Course Growth
 
-Updated: 2026-05-04
+Updated: 2026-05-05
 
 These are the next “money motion” actions prepared for quick approval.
 
+Note: Use `https://thumbgate-production.up.railway.app` as the canonical CTA base unless `thumbgate.ai` redirect behavior has been verified.
+
 ## Skool setup (approval-required)
+
+- Today’s minimum viable launch:
+  - Upload cover + icon
+  - Publish + pin “Start Here”
+  - Publish the first post
+  - Invite first 10–20
 
 - Upload cover: `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`
 - Upload icon: `docs/marketing/assets/thumbgate-skool-icon-128x128.png`

@@ -39,7 +39,6 @@ Turn one repeated Claude Code / Codex / Cursor / Gemini CLI failure into an enfo
 
 - Want a paid, time-boxed decision? Workflow Hardening Diagnostic ($499) (only when checkout is configured)
 - Want implementation for one workflow? Workflow Hardening Sprint ($1500)
-- Want self-serve setup? Pro ($19/mo or $149/yr): `https://thumbgate.ai/checkout/pro`
+- Want self-serve setup? Pro ($19/mo or $149/yr): `https://thumbgate-production.up.railway.app/checkout/pro`
 
 Intake: `https://thumbgate-production.up.railway.app/#workflow-sprint-intake`
-

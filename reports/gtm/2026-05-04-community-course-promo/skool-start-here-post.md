@@ -35,7 +35,6 @@ If you want a paid, time-boxed decision:
 Intake: `https://thumbgate-production.up.railway.app/#workflow-sprint-intake`
 
 If you just want the self-serve setup first:
-- **Pro ($19/mo or $149/yr)**: `https://thumbgate.ai/checkout/pro`
+- **Pro ($19/mo or $149/yr)**: `https://thumbgate-production.up.railway.app/checkout/pro`
 
 One mistake. One gate. One proof run.
-
