@@ -131,6 +131,8 @@ jobs:
               content: String(post.content || post.text || post.caption || '').slice(0, 280),
               createdAt: post.createdAt || post.created_at,
               publishedAt: post.publishedAt || post.published_at,
+              platforms: post.platforms,
+              publishAttempts: post.publishAttempts,
               rawKeys: Object.keys(post).sort(),
             })), null, 2));
           })().catch((err) => {
