@@ -132,9 +132,10 @@ test('sendTrialWelcomeEmail POSTs to Resend with correct headers, reply_to, and 
   assert.ok(body.html.includes('Hi Igor,'), 'html greeting must use first name');
   assert.ok(body.text.includes('Hi Igor,'), 'text greeting must use first name');
 
-  // Trial end date is rendered.
-  assert.ok(body.html.includes('Apr 24, 2026'), 'html must show formatted trial end date');
-  assert.ok(body.text.includes('Apr 24, 2026'), 'text must show formatted trial end date');
+  assert.ok(body.html.includes('Your paid Pro access is active'), 'html must confirm paid access');
+  assert.ok(body.text.includes('Your paid Pro access is active'), 'text must confirm paid access');
+  assert.equal(body.html.includes('Apr 24, 2026'), false, 'html must not imply a trial end date');
+  assert.equal(body.text.includes('Apr 24, 2026'), false, 'text must not imply a trial end date');
 
   // P.S. line present — highest-read section of any email.
   assert.ok(body.html.includes('first 10 minutes'), 'html must include the P.S. / first-10-min framing');
@@ -189,8 +190,8 @@ test('sendTrialWelcomeEmail falls back to "Hi there" greeting and generic subjec
   assert.equal(body.subject, 'Your ThumbGate Pro key is inside');
   assert.ok(body.html.includes('Hi there,'));
   assert.ok(body.text.includes('Hi there,'));
-  // Trial end is rendered from default (now + 7 days) — just assert the shape is a valid month label.
-  assert.match(body.html, /Trial ends [A-Z][a-z]{2} \d{1,2}, \d{4}/);
+  assert.ok(body.html.includes('Your paid Pro access is active'));
+  assert.doesNotMatch(body.html, /Trial ends [A-Z][a-z]{2} \d{1,2}, \d{4}/);
   restore();
 });
 
@@ -348,16 +349,15 @@ test('sendEmail catches network exceptions and returns structured failure', asyn
   restore();
 });
 
-test('renderTrialWelcomeBodies embeds license key, activation command, dashboard URL, trial-end, and CAN-SPAM footer', () => {
+test('renderTrialWelcomeBodies embeds license key, activation command, dashboard URL, paid access, and CAN-SPAM footer', () => {
   const { renderTrialWelcomeBodies } = freshMailer();
-  const { html, text, activationCommand, trialEndLabel, greeting, unsubscribeEmail, businessName, businessAddress } = renderTrialWelcomeBodies({
+  const { html, text, activationCommand, greeting, unsubscribeEmail, businessName, businessAddress } = renderTrialWelcomeBodies({
     licenseKey: 'tg_abc',
     customerId: 'cus_42',
     customerName: 'Ada Lovelace',
     trialEndAt: new Date(Date.UTC(2026, 3, 24)),
   });
   assert.equal(activationCommand, 'npx thumbgate pro --activate --key=tg_abc');
-  assert.equal(trialEndLabel, 'Apr 24, 2026');
   assert.equal(greeting, 'Hi Ada,');
   assert.equal(unsubscribeEmail, 'igor.ganapolsky@gmail.com');
   assert.equal(businessName, 'Max Smith KDP LLC');
@@ -367,7 +367,7 @@ test('renderTrialWelcomeBodies embeds license key, activation command, dashboard
     'npx thumbgate pro --activate --key=tg_abc',
     'https://thumbgate-production.up.railway.app/dashboard',
     'ThumbGate Pro',
-    'Apr 24, 2026',
+    'Your paid Pro access is active',
     'Hi Ada,',
     'Max Smith KDP LLC',
   ]) {
@@ -376,6 +376,8 @@ test('renderTrialWelcomeBodies embeds license key, activation command, dashboard
   }
   assert.ok(html.includes('igor.ganapolsky@gmail.com'));
   assert.ok(text.includes('igor.ganapolsky@gmail.com'));
+  assert.equal(html.includes('Apr 24, 2026'), false);
+  assert.equal(text.includes('Apr 24, 2026'), false);
   // Customer ID shows in the html footer only — not in the customer-visible body prose.
   assert.ok(html.includes('cus_42'));
   // Customer ID must NOT appear in the text body — we want to stop leaking debug IDs in
