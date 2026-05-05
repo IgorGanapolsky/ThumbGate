@@ -292,6 +292,60 @@ describe('zernio publisher', () => {
     assert.match(publishedBodies[1].content, /utm_source=instagram/);
   });
 
+  it('publishToAllPlatforms honors requested platforms and campaign attribution', async () => {
+    const publishedBodies = [];
+
+    global.fetch = async (url, options) => {
+      if (url.includes('/accounts')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [
+              { platform: 'linkedin', accountId: 'acc_l1', name: 'LinkedIn' },
+              { platform: 'threads', accountId: 'acc_t1', name: 'Threads' },
+            ],
+          }),
+        };
+      }
+      if (url.includes('/posts')) {
+        publishedBodies.push(JSON.parse(options.body));
+        return {
+          ok: true,
+          json: async () => ({ data: { id: 'offer_post_123', status: 'published' } }),
+        };
+      }
+      throw new Error(`Unexpected URL: ${url}`);
+    };
+
+    const result = await publishToAllPlatforms(
+      'Voice agent reliability diagnostic is open now at https://thumbgate.ai/#workflow-sprint-intake',
+      {
+        campaign: 'voice_agent_reliability_diagnostic',
+        medium: 'social',
+        platforms: ['linkedin'],
+      }
+    );
+
+    assert.equal(result.published.length, 1);
+    assert.equal(result.published[0].platform, 'linkedin');
+    assert.equal(publishedBodies.length, 1);
+    assert.deepEqual(publishedBodies[0].platforms, [{ platform: 'linkedin', accountId: 'acc_l1' }]);
+    assert.match(publishedBodies[0].content, /utm_source=linkedin/);
+    assert.match(publishedBodies[0].content, /utm_campaign=voice_agent_reliability_diagnostic/);
+  });
+
+  it('Zernio offer dispatch workflow validates CTA and passes campaign inputs to CLI', () => {
+    const workflowPath = path.join(__dirname, '..', '.github', 'workflows', 'zernio-offer-dispatch.yml');
+    const workflow = fs.readFileSync(workflowPath, 'utf8');
+
+    assert.match(workflow, /workflow_dispatch:/);
+    assert.match(workflow, /ZERNIO_API_KEY: \$\{\{ secrets\.ZERNIO_API_KEY \}\}/);
+    assert.match(workflow, /thumbgate\\\.ai\|buy\\\.stripe\\\.com/);
+    assert.match(workflow, /--platforms="\$OFFER_PLATFORMS"/);
+    assert.match(workflow, /--campaign="\$OFFER_CAMPAIGN"/);
+    assert.match(workflow, /--medium="\$OFFER_MEDIUM"/);
+  });
+
   it('schedulePost includes scheduledFor and timezone in body', async () => {
     let capturedBody;
 

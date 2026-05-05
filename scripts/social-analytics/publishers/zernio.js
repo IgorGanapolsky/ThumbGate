@@ -613,9 +613,15 @@ if (require.main === module) {
   const text = getArg('--text');
   const schedule = getArg('--schedule');
   const timezone = getArg('--timezone') || 'UTC';
+  const platformsArg = getArg('--platforms');
+  const campaign = getArg('--campaign') || ZERNIO_UTM.campaign;
+  const medium = getArg('--medium') || ZERNIO_UTM.medium;
+  const requestedPlatforms = platformsArg
+    ? platformsArg.split(',').map((platform) => platform.trim()).filter(Boolean)
+    : [];
 
   if (!text) {
-    console.error('Usage: node zernio.js --text="..." [--schedule="2026-04-01T10:00:00Z" --timezone="America/New_York"]');
+    console.error('Usage: node zernio.js --text="..." [--platforms="linkedin,threads"] [--campaign="spring_offer"] [--medium="social"] [--schedule="2026-04-01T10:00:00Z" --timezone="America/New_York"]');
     process.exit(1);
   }
 
@@ -623,12 +629,24 @@ if (require.main === module) {
     try {
       if (schedule) {
         const accounts = await getConnectedAccounts();
-        const platforms = accounts.map((a) => ({ platform: a.platform, accountId: a.accountId }));
-        const result = await schedulePost(text, platforms, schedule, timezone);
+        const platformFilter = requestedPlatforms.length > 0 ? new Set(requestedPlatforms) : null;
+        const platforms = accounts
+          .filter((account) => !platformFilter || platformFilter.has(account.platform))
+          .map((a) => ({ platform: a.platform, accountId: a.accountId }));
+        const result = await schedulePost(text, platforms, schedule, timezone, {
+          utm: { source: 'zernio', medium, campaign },
+        });
         console.log(`[zernio:publisher] Scheduled. id=${result.id ?? 'unknown'}`);
       } else {
-        const result = await publishToAllPlatforms(text);
+        const result = await publishToAllPlatforms(text, {
+          campaign,
+          medium,
+          platforms: requestedPlatforms,
+        });
         console.log(`[zernio:publisher] Done. published=${result.published.length} errors=${result.errors.length}`);
+        if (result.errors.length > 0) {
+          process.exit(1);
+        }
       }
     } catch (err) {
       console.error('[zernio:publisher] Failed:', err.message);
