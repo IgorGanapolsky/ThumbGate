@@ -56,7 +56,6 @@
     "scripts/ai-engineering-stack-guardrails.js",
     "scripts/ai-search-distribution.js",
     "scripts/analytics-window.js",
-    "scripts/chatgpt-ads-readiness-pack.js",
     "scripts/autoresearch-runner.js",
     "scripts/async-job-runner.js",
     "scripts/audit-trail.js",
