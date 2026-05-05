@@ -28,6 +28,13 @@
 ### DEV.TO Blog Post
 **Title:** I built pre-action checks that physically block Claude Code from repeating mistakes
 
+### Partner Marketplace Pack
+**Canonical source:** `docs/marketing/partner-marketplace-revenue-pack.md`
+
+Lindy.ai, Gumroad, and GoHighLevel are acquisition channels, not proof of marketplace approval. Treat Lindy.ai as a webhook/API workflow-template lane, Gumroad as a digital product/checklist storefront lane, and GoHighLevel as an agency marketplace app/snapshot lane. Every listing must route through tracked ThumbGate CTAs until an external live listing URL is verified.
+
+**Visual asset source:** `public/assets/brand/thumbgate-icon-512.png`, `public/og.png`, `plugins/cursor-marketplace/assets/logo-400x400.png`, and `docs/marketing/gallery/*.png`
+
 ## Terminology Enforcement (Kill List)
 
 | Old Term | New Term (Lead with this) |
@@ -92,5 +99,6 @@
 ## Surface Rules
 - Root landing page stays vendor-neutral. Claude-first positioning belongs only on Claude-specific distribution pages, extension docs, and Anthropic-facing partner assets.
 - Promote shipped surfaces explicitly: Claude Code, Cursor plugin, Codex, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent.
+- For Lindy.ai, Gumroad, GoHighLevel, and other partner marketplaces, say "operator-ready listing pack" or "prepared channel asset." Do not say "approved", "published", "live", or "partnered" without direct platform evidence.
 - Mention history-aware lesson distillation when the surface is describing vague thumbs feedback, linked follow-up notes, or rule proposals from conversation history.
 - Do not claim a standalone VS Code extension. Say VS Code works through the MCP-compatible agent running inside the editor.

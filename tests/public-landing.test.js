@@ -268,6 +268,7 @@ test('public landing page proof bar uses individually clickable link chips', () 
   assert.match(landingPage, /Claude Extension →/);
   assert.match(landingPage, /Codex plugin setup →/);
   assert.match(landingPage, /Verification evidence →/);
+  assert.match(landingPage, /Lindy · Gumroad · GoHighLevel pack →/);
 });
 
 test('public landing page Pro tier uses outcome-framed bullets that justify upgrade', () => {
@@ -380,6 +381,11 @@ test('public landing page includes compatibility section for AI agent surfaces',
   assert.match(landingPage, /capture thumbs-up\/down lessons/i);
   assert.match(landingPage, /Real blocking for coding agents still runs locally/);
   assert.match(landingPage, /adapters\/chatgpt\/INSTALL\.md/);
+  assert.match(landingPage, /Revenue channel packs/);
+  assert.match(landingPage, /Lindy\.ai webhook\/API templates/);
+  assert.match(landingPage, /Gumroad digital product copy/);
+  assert.match(landingPage, /GoHighLevel marketplace app or agency snapshot planning/);
+  assert.match(landingPage, /core Pro and Sprint funnel still routes through ThumbGate-owned checkout and intake/);
   // Editor workflows + Claude Code Skill arrows evolved from "Browse plugins" /
   // "View skill on GitHub" to guide-page language in 1.5.8. Now assert on the
   // underlying *destinations* (a plugins list + a Claude Code guide), not the

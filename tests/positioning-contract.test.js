@@ -93,6 +93,8 @@ test('README exposes prompt-shaped buyer questions with tracked guide links', ()
   assert.match(readme, /\/\?utm_source=github&utm_medium=readme&utm_campaign=top_cta#workflow-sprint-intake/);
   assert.match(readme, /\/\?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake/);
   assert.match(readme, /First Dollar Playbook/i);
+  assert.match(readme, /Partner Marketplace Revenue Pack/i);
+  assert.match(readme, /Lindy\.ai, Gumroad, and GoHighLevel/i);
 });
 
 test('README exposes the actual shipped tech stack', () => {

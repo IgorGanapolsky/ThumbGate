@@ -1,0 +1,310 @@
+{
+  "generatedAt": "2026-05-05T16:28:29.670Z",
+  "channels": [
+    "Lindy.ai",
+    "Gumroad",
+    "GoHighLevel"
+  ],
+  "objective": "Turn new partner marketplaces into tracked Pro conversions and qualified Workflow Hardening Sprint conversations without inventing platform approval.",
+  "listings": [
+    {
+      "key": "lindy",
+      "name": "Lindy.ai",
+      "productMotion": "Webhook and HTTP Request workflow template",
+      "buyer": "Operations teams building AI workflow automations that call custom APIs or receive webhooks.",
+      "listingStatus": "prepare workflow template and integration request; do not claim native integration listing until approved",
+      "submissionUrl": "https://www.lindy.ai/integrations",
+      "officialSources": [
+        "https://www.lindy.ai/integrations",
+        "https://docs.lindy.ai/skills/by-lindy/webhooks",
+        "https://docs.lindy.ai/skills/by-lindy/http-request"
+      ],
+      "headline": "Gate risky AI workflow actions before Lindy calls your APIs.",
+      "shortDescription": "ThumbGate gives Lindy builders a webhook/API checkpoint for expensive AI-agent actions before they touch code, payments, deploys, or customer systems.",
+      "longDescription": "Lindy is strongest for ThumbGate as a workflow-template channel: a Webhook trigger receives a proposed agent action, the HTTP Request step calls ThumbGate, and the workflow routes allow, block, or checkpoint outcomes. Sell this as a proof-backed operations template first. Ask for a native Lindy integration listing only after the webhook template produces tracked qualified leads or Pro conversions.",
+      "primaryMotion": "sprint",
+      "primaryCTA": "https://thumbgate-production.up.railway.app/?utm_source=lindy&utm_medium=workflow_template&utm_campaign=lindy_sprint_listing&utm_content=partner_marketplace_pack&campaign_variant=lindy_sprint&offer_code=LINDY-SPRINT&cta_id=lindy_sprint_listing&cta_placement=partner_marketplace_listing&landing_path=%2F&surface=lindy_workflow_template#workflow-sprint-intake",
+      "conversionGoal": "qualified_team_conversation",
+      "attribution": {
+        "utmSource": "lindy",
+        "utmMedium": "workflow_template",
+        "utmCampaign": "lindy_sprint_listing",
+        "utmContent": "partner_marketplace_pack",
+        "campaignVariant": "lindy_sprint",
+        "offerCode": "LINDY-SPRINT",
+        "ctaId": "lindy_sprint_listing",
+        "ctaPlacement": "partner_marketplace_listing",
+        "planId": "",
+        "landingPath": "/",
+        "surface": "lindy_workflow_template"
+      },
+      "assetManifest": [
+        {
+          "key": "hero_screenshot",
+          "file": "docs/marketing/gallery/05-hero.png",
+          "dimensions": "1344x800",
+          "role": "Marketplace hero screenshot",
+          "status": "ready"
+        },
+        {
+          "key": "workflow_screenshot",
+          "file": "docs/marketing/gallery/02-how-it-works.png",
+          "dimensions": "1344x800",
+          "role": "Workflow explainer screenshot",
+          "status": "ready"
+        },
+        {
+          "key": "dashboard_screenshot",
+          "file": "docs/marketing/gallery/01-dashboard.png",
+          "dimensions": "1344x800",
+          "role": "Dashboard proof screenshot",
+          "status": "ready"
+        }
+      ],
+      "submissionChecklist": [
+        "Build a Lindy webhook workflow that receives a proposed AI-agent action payload.",
+        "Add an HTTP Request step that calls the ThumbGate preflight endpoint or sprint intake URL with Lindy attribution.",
+        "Test allow, block, and checkpoint branches with one risky command and one safe command.",
+        "Submit the workflow as an integration/template request only after the test run records a tracked CTA click or qualified sprint conversation."
+      ],
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ]
+    },
+    {
+      "key": "gumroad",
+      "name": "Gumroad",
+      "productMotion": "Digital product, checklist, template bundle, or paid diagnostic download",
+      "buyer": "Solo operators who buy templates, checklists, and compact implementation kits before committing to a SaaS subscription.",
+      "listingStatus": "create a digital product listing; keep public homepage checkout on ThumbGate until a live Gumroad product URL exists",
+      "submissionUrl": "https://gumroad.com/features",
+      "officialSources": [
+        "https://gumroad.com/features",
+        "https://gumroad.com/help"
+      ],
+      "headline": "AI Agent Mistake Prevention Kit for solo operators.",
+      "shortDescription": "A compact ThumbGate setup kit: repeated-mistake checklist, pre-action gate templates, dashboard proof path, and Pro activation link.",
+      "longDescription": "Gumroad is the low-friction storefront for the self-serve buyer who wants a downloadable workflow-hardening kit before buying Pro. Package the guide, checklist, screenshots, and activation path. Do not position Gumroad as the canonical SaaS checkout unless a live product exists and attribution is verified.",
+      "primaryMotion": "pro",
+      "primaryCTA": "https://thumbgate-production.up.railway.app/go/pro?utm_source=gumroad&utm_medium=digital_product&utm_campaign=gumroad_pro_listing&utm_content=partner_marketplace_pack&campaign_variant=gumroad_pro&offer_code=GUMROAD-PRO&cta_id=gumroad_pro_listing&cta_placement=partner_marketplace_listing&plan_id=pro&landing_path=%2Fgo%2Fpro&surface=gumroad_digital_product",
+      "conversionGoal": "paid_pro_conversion",
+      "attribution": {
+        "utmSource": "gumroad",
+        "utmMedium": "digital_product",
+        "utmCampaign": "gumroad_pro_listing",
+        "utmContent": "partner_marketplace_pack",
+        "campaignVariant": "gumroad_pro",
+        "offerCode": "GUMROAD-PRO",
+        "ctaId": "gumroad_pro_listing",
+        "ctaPlacement": "partner_marketplace_listing",
+        "planId": "pro",
+        "landingPath": "/go/pro",
+        "surface": "gumroad_digital_product"
+      },
+      "assetManifest": [
+        {
+          "key": "icon",
+          "file": "public/assets/brand/thumbgate-icon-512.png",
+          "dimensions": "512x512",
+          "role": "App icon, marketplace icon, GPT avatar, square listing thumbnail",
+          "status": "ready"
+        },
+        {
+          "key": "gumroad_cover",
+          "file": "docs/marketing/gallery/04-comparison.png",
+          "dimensions": "1344x800",
+          "role": "Digital product cover and comparison image",
+          "status": "ready"
+        },
+        {
+          "key": "terminal_screenshot",
+          "file": "docs/marketing/gallery/03-terminal-demo.png",
+          "dimensions": "1344x800",
+          "role": "CLI and blocked-action demo screenshot",
+          "status": "ready"
+        }
+      ],
+      "submissionChecklist": [
+        "Create a Gumroad digital product for the AI Agent Mistake Prevention Kit.",
+        "Use the square icon as the thumbnail, the comparison graphic as the cover, and the terminal demo as the proof screenshot.",
+        "Package the setup checklist, first repeated-mistake worksheet, and Pro activation link as the downloadable product content.",
+        "Publish only after the listing uses the tracked Gumroad Pro CTA and avoids claiming marketplace sales or approval."
+      ],
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ]
+    },
+    {
+      "key": "gohighlevel",
+      "name": "GoHighLevel",
+      "productMotion": "Marketplace app, private beta app, agency snapshot, or workflow-hardening service listing",
+      "buyer": "Agencies using GoHighLevel workflows, automations, webhooks, forms, and client operations where repeated AI mistakes create delivery risk.",
+      "listingStatus": "start private while testing OAuth/webhook flow, then submit public app only after stability and review evidence",
+      "submissionUrl": "https://marketplace.gohighlevel.com/docs/oauth/CreateMarketplaceApp/",
+      "officialSources": [
+        "https://www.gohighlevel.com/landing-marketplace",
+        "https://marketplace.gohighlevel.com/docs/oauth/CreateMarketplaceApp/",
+        "https://help.gohighlevel.com/support/solutions/articles/155000000136-how-to-get-started-with-the-developer-s-marketplace"
+      ],
+      "headline": "AI workflow guardrails for GoHighLevel agencies.",
+      "shortDescription": "ThumbGate helps agencies gate risky AI automations, webhook actions, and client-operation workflows before they run.",
+      "longDescription": "GoHighLevel is the strongest team-service channel: agencies already sell workflows, snapshots, and automations to clients. Use a private marketplace app or snapshot first, wire OAuth/webhooks only after scope is proven, and route public demand to the Workflow Hardening Sprint.",
+      "primaryMotion": "sprint",
+      "primaryCTA": "https://thumbgate-production.up.railway.app/?utm_source=gohighlevel&utm_medium=marketplace_app&utm_campaign=gohighlevel_sprint_listing&utm_content=partner_marketplace_pack&campaign_variant=gohighlevel_sprint&offer_code=GOHIGHLEVEL-SPRINT&cta_id=gohighlevel_sprint_listing&cta_placement=partner_marketplace_listing&landing_path=%2F&surface=gohighlevel_marketplace_app#workflow-sprint-intake",
+      "conversionGoal": "qualified_team_conversation",
+      "attribution": {
+        "utmSource": "gohighlevel",
+        "utmMedium": "marketplace_app",
+        "utmCampaign": "gohighlevel_sprint_listing",
+        "utmContent": "partner_marketplace_pack",
+        "campaignVariant": "gohighlevel_sprint",
+        "offerCode": "GOHIGHLEVEL-SPRINT",
+        "ctaId": "gohighlevel_sprint_listing",
+        "ctaPlacement": "partner_marketplace_listing",
+        "planId": "",
+        "landingPath": "/",
+        "surface": "gohighlevel_marketplace_app"
+      },
+      "assetManifest": [
+        {
+          "key": "icon",
+          "file": "public/assets/brand/thumbgate-icon-512.png",
+          "dimensions": "512x512",
+          "role": "App icon, marketplace icon, GPT avatar, square listing thumbnail",
+          "status": "ready"
+        },
+        {
+          "key": "workflow_screenshot",
+          "file": "docs/marketing/gallery/02-how-it-works.png",
+          "dimensions": "1344x800",
+          "role": "Workflow explainer screenshot",
+          "status": "ready"
+        },
+        {
+          "key": "dashboard_screenshot",
+          "file": "docs/marketing/gallery/01-dashboard.png",
+          "dimensions": "1344x800",
+          "role": "Dashboard proof screenshot",
+          "status": "ready"
+        }
+      ],
+      "submissionChecklist": [
+        "Create or update a GoHighLevel private marketplace app or agency snapshot first.",
+        "Scope OAuth/webhook behavior to workflow-hardening intake and proof review; do not request broad client data scopes before a buyer need is confirmed.",
+        "Use the icon, workflow explainer screenshot, and dashboard proof screenshot as the first visual set; keep logo-only OG art as a supporting brand asset.",
+        "Submit a public marketplace app only after private testing proves stable attribution and at least one qualified agency workflow conversation."
+      ],
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ]
+    }
+  ],
+  "visualAssets": [
+    {
+      "key": "icon",
+      "file": "public/assets/brand/thumbgate-icon-512.png",
+      "dimensions": "512x512",
+      "role": "App icon, marketplace icon, GPT avatar, square listing thumbnail",
+      "status": "ready"
+    },
+    {
+      "key": "marketplace_icon",
+      "file": "plugins/cursor-marketplace/assets/logo-400x400.png",
+      "dimensions": "400x400",
+      "role": "Marketplace-safe square plugin logo",
+      "status": "ready"
+    },
+    {
+      "key": "og_image",
+      "file": "public/og.png",
+      "dimensions": "1200x630",
+      "role": "Open Graph and social preview brand anchor; supporting asset for partner listings, not the primary proof image",
+      "status": "ready_supporting_asset"
+    },
+    {
+      "key": "github_social_preview",
+      "file": "public/assets/brand/github-social-preview.png",
+      "dimensions": "1280x640",
+      "role": "GitHub social preview and wide directory image; brand-safe but lower-conversion than proof screenshots",
+      "status": "ready_supporting_asset"
+    },
+    {
+      "key": "wordmark",
+      "file": "public/assets/brand/thumbgate-logo-1200x360.png",
+      "dimensions": "1200x360",
+      "role": "Checkout logo and wide header graphic",
+      "status": "ready"
+    },
+    {
+      "key": "hero_screenshot",
+      "file": "docs/marketing/gallery/05-hero.png",
+      "dimensions": "1344x800",
+      "role": "Marketplace hero screenshot",
+      "status": "ready"
+    },
+    {
+      "key": "dashboard_screenshot",
+      "file": "docs/marketing/gallery/01-dashboard.png",
+      "dimensions": "1344x800",
+      "role": "Dashboard proof screenshot",
+      "status": "ready"
+    },
+    {
+      "key": "terminal_screenshot",
+      "file": "docs/marketing/gallery/03-terminal-demo.png",
+      "dimensions": "1344x800",
+      "role": "CLI and blocked-action demo screenshot",
+      "status": "ready"
+    },
+    {
+      "key": "workflow_screenshot",
+      "file": "docs/marketing/gallery/02-how-it-works.png",
+      "dimensions": "1344x800",
+      "role": "Workflow explainer screenshot",
+      "status": "ready"
+    },
+    {
+      "key": "gumroad_cover",
+      "file": "docs/marketing/gallery/04-comparison.png",
+      "dimensions": "1344x800",
+      "role": "Digital product cover and comparison image",
+      "status": "ready"
+    }
+  ],
+  "visualAssetReview": [
+    "Square TG icon assets are marketplace-ready for avatars, thumbnails, GPT profiles, and plugin listing icons.",
+    "Logo-only OG and GitHub preview images are brand-safe supporting assets, but they should not be the primary conversion graphic on partner marketplace pages.",
+    "Use proof-forward gallery assets as primary visuals: comparison for Gumroad covers, workflow screenshots for Lindy.ai and GoHighLevel, and dashboard/terminal screenshots as credibility proof."
+  ],
+  "measurementPlan": {
+    "northStar": "paid_conversion_or_qualified_team_conversation",
+    "policy": "Treat partner listings as acquisition only until a tracked Pro checkout start, paid Pro conversion, or qualified Workflow Hardening Sprint conversation exists.",
+    "metrics": [
+      "partner_listing_views",
+      "partner_cta_clicks",
+      "guide_clicks",
+      "pro_checkout_starts",
+      "paid_pro_conversions",
+      "workflow_sprint_intake_submissions",
+      "qualified_team_conversations"
+    ],
+    "successThresholds": {
+      "minimumUsefulSignal": "one tracked Pro checkout start or one qualified Workflow Hardening Sprint conversation from a partner source",
+      "strongSignal": "three tracked paid-intent events across Lindy.ai, Gumroad, or GoHighLevel",
+      "doNotCountAsSuccess": [
+        "listing creation without tracked clicks",
+        "views without CTA clicks",
+        "unverified revenue, install, or marketplace approval claims"
+      ]
+    },
+    "channelSequence": [
+      "Gumroad first for fastest self-serve digital product validation.",
+      "Lindy.ai second as a webhook/API template for workflow builders.",
+      "GoHighLevel third for agency/team distribution after private app or snapshot testing."
+    ]
+  },
+  "sourceRule": "Use official platform docs for channel fit, but use ThumbGate-owned tracked CTAs for attribution until the external listing URL is live and verified."
+}
