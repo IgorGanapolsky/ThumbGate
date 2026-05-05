@@ -3,9 +3,17 @@ name: Zernio Offer Dispatch
 on:
   workflow_dispatch:
     inputs:
+      mode:
+        description: 'publish or list latest Zernio posts.'
+        required: false
+        type: choice
+        default: publish
+        options:
+          - publish
+          - list
       text:
         description: 'Offer post body. Include the paid CTA and intake link.'
-        required: true
+        required: false
         type: string
       platforms:
         description: 'Comma-separated Zernio platforms to publish to.'
@@ -58,6 +66,7 @@ jobs:
         run: npm ci --onnxruntime-node-install-cuda=skip
 
       - name: Validate offer copy
+        if: github.event.inputs.mode != 'list'
         env:
           OFFER_TEXT: ${{ github.event.inputs.text }}
           OFFER_PLATFORMS: ${{ github.event.inputs.platforms }}
@@ -93,7 +102,7 @@ jobs:
           NODE
 
       - name: Publish offer via Zernio
-        if: github.event.inputs.dry_run != 'true'
+        if: github.event.inputs.mode != 'list' && github.event.inputs.dry_run != 'true'
         env:
           OFFER_TEXT: ${{ github.event.inputs.text }}
           OFFER_PLATFORMS: ${{ github.event.inputs.platforms }}
@@ -105,3 +114,27 @@ jobs:
             --platforms="$OFFER_PLATFORMS" \
             --campaign="$OFFER_CAMPAIGN" \
             --medium="$OFFER_MEDIUM"
+
+      - name: List latest Zernio posts
+        if: github.event.inputs.mode == 'list'
+        run: |
+          node - <<'NODE'
+          const { listPosts } = require('./scripts/social-analytics/publishers/zernio');
+
+          (async () => {
+            const posts = await listPosts({ limit: 12 });
+            console.log(JSON.stringify(posts.map((post) => ({
+              id: post.id || post._id,
+              platform: post.platform || post.post?.platform || post.socialPlatform,
+              status: post.status,
+              url: post.url || post.postUrl || post.publicUrl || post.permalink,
+              content: String(post.content || post.text || post.caption || '').slice(0, 280),
+              createdAt: post.createdAt || post.created_at,
+              publishedAt: post.publishedAt || post.published_at,
+              rawKeys: Object.keys(post).sort(),
+            })), null, 2));
+          })().catch((err) => {
+            console.error(err.message);
+            process.exit(1);
+          });
+          NODE
