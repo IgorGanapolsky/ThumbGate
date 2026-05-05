@@ -723,9 +723,10 @@ __GA_BOOTSTRAP__
     <div class="hero-paid-path" aria-label="Paid AI agent governance sprint checkout options">
       <div>
         <strong>Need buyer-ready proof today?</strong>
-        <span>One clear paid path: send a messy AI-agent workflow and get a $499 hardening diagnostic with failure map, clear rules, examples, and pre-action checks. Use the $1500 sprint only when you want implementation help.</span>
+        <span>Same-day Workflow Teardown: pay $99 for failure map. Choose $499 diagnostic for clear rules, examples, and pre-action checks, or $1500 sprint for implementation</span>
       </div>
       <div class="hero-paid-actions">
+        <a class="starter" href="https://buy.stripe.com/7sYfZhgH29LodWhdKz3sI0v" onclick="sendFirstPartyTelemetry('workflow_teardown_checkout_started',{ctaId:'hero_workflow_teardown_checkout'})">Pay $99 teardown</a>
         <a class="diagnostic" href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__" onclick="sendFirstPartyTelemetry('workflow_sprint_diagnostic_checkout_started',{ctaId:'hero_workflow_sprint_diagnostic_checkout',ctaPlacement:'hero_paid_path',planId:'team',offer:'workflow_hardening_diagnostic',price:sprintDiagnosticPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:sprintDiagnosticPriceDollars,items:[{item_id:'workflow_hardening_diagnostic',item_name:'Workflow Hardening Diagnostic'}]});">Pay $499 diagnostic &rarr;</a>
         <a class="sprint" href="__WORKFLOW_SPRINT_CHECKOUT_URL__" onclick="sendFirstPartyTelemetry('workflow_sprint_checkout_started',{ctaId:'hero_workflow_sprint_checkout',ctaPlacement:'hero_paid_path',planId:'team',offer:'workflow_hardening_sprint',price:workflowSprintPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:workflowSprintPriceDollars,items:[{item_id:'workflow_hardening_sprint',item_name:'Workflow Hardening Sprint'}]});">Pay $1500 sprint &rarr;</a>
         <a class="intake" href="#workflow-sprint-intake" onclick="sendFirstPartyTelemetry('workflow_sprint_recovery_intake_clicked',{ctaId:'hero_workflow_sprint_recovery_intake',ctaPlacement:'hero_paid_path',planId:'team',offer:'workflow_hardening_sprint',reason:'not_ready_to_pay'});sendGa4Event('generate_lead',{currency:'USD',value:0,method:'workflow_sprint_recovery_intake'});">Send workflow first &rarr;</a>
