@@ -19,6 +19,7 @@ const MARKETING_CLICK_EVENT_TYPES = new Set([
   'cta_click',
   'checkout_start',
   'checkout_bootstrap',
+  'checkout_interstitial_cta_clicked',
   'chatgpt_gpt_open',
   'chatgpt_gpt_click',
   'install_guide_click',
@@ -324,6 +325,7 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     maxScrollPercent: normalizeInteger(raw.maxScrollPercent ?? raw.scrollPercent),
     buyerEmailFocused: Boolean(raw.buyerEmailFocused),
     buyerEmailCaptured: Boolean(raw.buyerEmailCaptured),
+    checkoutIntentClassification: pickFirstText(raw.checkoutIntentClassification),
     trafficChannel: inferTrafficChannel(raw, referrerHost),
     failureCode: pickFirstText(raw.failureCode),
     httpStatus: normalizeInteger(raw.httpStatus),
@@ -490,6 +492,14 @@ function getTelemetrySummary(feedbackDir, options = {}) {
   let ctaClicks = 0;
   let ctaImpressions = 0;
   let checkoutStarts = 0;
+  let checkoutInterstitialViews = 0;
+  let checkoutBotDeflections = 0;
+  let checkoutInterstitialClicks = 0;
+  let checkoutInterstitialProConfirms = 0;
+  let checkoutInterstitialWorkflowIntakeClicks = 0;
+  let checkoutInterstitialTeamPathClicks = 0;
+  let checkoutInterstitialDiagnosticCheckoutClicks = 0;
+  let checkoutInterstitialWorkflowSprintCheckoutClicks = 0;
   let checkoutFailures = 0;
   let checkoutCancelled = 0;
   let checkoutAbandoned = 0;
@@ -558,6 +568,29 @@ function getTelemetrySummary(feedbackDir, options = {}) {
         incrementCounter(byCtaId, entry.ctaId);
         if (entry.linkSlug && (entry.eventType || entry.event) === 'cta_click') {
           incrementCounter(trackedLinkHitsBySlug, entry.linkSlug);
+        }
+      }
+
+      if ((entry.eventType || entry.event) === 'checkout_interstitial_view') {
+        checkoutInterstitialViews += 1;
+      }
+
+      if ((entry.eventType || entry.event) === 'checkout_bot_deflected') {
+        checkoutBotDeflections += 1;
+      }
+
+      if ((entry.eventType || entry.event) === 'checkout_interstitial_cta_clicked') {
+        checkoutInterstitialClicks += 1;
+        if (entry.ctaId === 'pro_checkout_confirmed') {
+          checkoutInterstitialProConfirms += 1;
+        } else if (entry.ctaId === 'workflow_sprint_intake') {
+          checkoutInterstitialWorkflowIntakeClicks += 1;
+        } else if (entry.ctaId === 'team_paid_path') {
+          checkoutInterstitialTeamPathClicks += 1;
+        } else if (entry.ctaId === 'sprint_diagnostic_checkout') {
+          checkoutInterstitialDiagnosticCheckoutClicks += 1;
+        } else if (entry.ctaId === 'workflow_sprint_checkout') {
+          checkoutInterstitialWorkflowSprintCheckoutClicks += 1;
         }
       }
 
@@ -737,11 +770,15 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       installCopies,
       gptOpens,
       checkoutStarts,
+      checkoutInterstitialViews,
+      checkoutInterstitialClicks,
       trialEmails,
       proConversions,
       landingToInstallCopyRate: safeRate(installCopies, pageViews),
       landingToGptOpenRate: safeRate(gptOpens, pageViews),
       landingToCheckoutRate: safeRate(checkoutStarts, pageViews),
+      checkoutInterstitialClickRate: safeRate(checkoutInterstitialClicks, checkoutInterstitialViews),
+      checkoutInterstitialProConfirmRate: safeRate(checkoutInterstitialProConfirms, checkoutInterstitialViews),
       checkoutToTrialEmailRate: safeRate(trialEmails, checkoutStarts),
       checkoutToProConversionRate: safeRate(proConversions, checkoutStarts),
     },
@@ -753,6 +790,14 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       pageViews,
       ctaClicks,
       checkoutStarts,
+      checkoutInterstitialViews,
+      checkoutBotDeflections,
+      checkoutInterstitialClicks,
+      checkoutInterstitialProConfirms,
+      checkoutInterstitialWorkflowIntakeClicks,
+      checkoutInterstitialTeamPathClicks,
+      checkoutInterstitialDiagnosticCheckoutClicks,
+      checkoutInterstitialWorkflowSprintCheckoutClicks,
       checkoutFailures,
       checkoutCancelled,
       checkoutAbandoned,
@@ -915,6 +960,14 @@ function getTelemetryAnalytics(feedbackDir, options = {}) {
     ctas: {
       totalClicks: summary.web.ctaClicks,
       checkoutStarts: summary.web.checkoutStarts,
+      checkoutInterstitialViews: summary.web.checkoutInterstitialViews,
+      checkoutBotDeflections: summary.web.checkoutBotDeflections,
+      checkoutInterstitialClicks: summary.web.checkoutInterstitialClicks,
+      checkoutInterstitialProConfirms: summary.web.checkoutInterstitialProConfirms,
+      checkoutInterstitialWorkflowIntakeClicks: summary.web.checkoutInterstitialWorkflowIntakeClicks,
+      checkoutInterstitialTeamPathClicks: summary.web.checkoutInterstitialTeamPathClicks,
+      checkoutInterstitialDiagnosticCheckoutClicks: summary.web.checkoutInterstitialDiagnosticCheckoutClicks,
+      checkoutInterstitialWorkflowSprintCheckoutClicks: summary.web.checkoutInterstitialWorkflowSprintCheckoutClicks,
       uniqueCheckoutStarters: summary.web.uniqueCheckoutStarters,
       checkoutFailures: summary.web.checkoutFailures,
       checkoutCancelled: summary.web.checkoutCancelled,
@@ -950,6 +1003,30 @@ function getTelemetryAnalytics(feedbackDir, options = {}) {
       pageViewToCheckoutRate: summary.web.pageViewToCheckoutRate,
       visitorToCheckoutRate: summary.web.visitorToCheckoutRate,
       clickToCheckoutRate: safeRate(summary.web.checkoutStarts, summary.web.ctaClicks),
+      checkoutInterstitialClickRate: safeRate(
+        summary.web.checkoutInterstitialClicks,
+        summary.web.checkoutInterstitialViews
+      ),
+      checkoutInterstitialProConfirmRate: safeRate(
+        summary.web.checkoutInterstitialProConfirms,
+        summary.web.checkoutInterstitialViews
+      ),
+      checkoutInterstitialWorkflowIntakeRate: safeRate(
+        summary.web.checkoutInterstitialWorkflowIntakeClicks,
+        summary.web.checkoutInterstitialViews
+      ),
+      checkoutInterstitialTeamPathRate: safeRate(
+        summary.web.checkoutInterstitialTeamPathClicks,
+        summary.web.checkoutInterstitialViews
+      ),
+      checkoutInterstitialDiagnosticCheckoutRate: safeRate(
+        summary.web.checkoutInterstitialDiagnosticCheckoutClicks,
+        summary.web.checkoutInterstitialViews
+      ),
+      checkoutInterstitialWorkflowSprintCheckoutRate: safeRate(
+        summary.web.checkoutInterstitialWorkflowSprintCheckoutClicks,
+        summary.web.checkoutInterstitialViews
+      ),
       cancellationRate: safeRate(summary.web.checkoutCancelled, summary.web.checkoutStarts),
       abandonmentRate: safeRate(summary.web.checkoutAbandoned, summary.web.checkoutStarts),
       paidConfirmationRate: safeRate(summary.web.checkoutPaidConfirmations, summary.web.checkoutStarts),
