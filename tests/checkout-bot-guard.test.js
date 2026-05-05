@@ -179,7 +179,7 @@ describe('/checkout/pro bot guard', () => {
       'real browsers should not be slowed by the intent interstitial',
     );
     assert.ok(
-      events.some((e) => e.eventType === 'checkout_email_deferred_to_stripe'),
+      events.some((e) => e.eventType === 'checkout_email_to_stripe'),
       'missing email should be tracked as delegated to Stripe collection',
     );
     assert.ok(
@@ -202,7 +202,7 @@ describe('/checkout/pro bot guard', () => {
 
     const events = readFunnelEvents();
     assert.ok(
-      events.some((e) => e.eventType === 'checkout_email_deferred_to_stripe'),
+      events.some((e) => e.eventType === 'checkout_email_to_stripe'),
       'missing email should be tracked as delegated to Stripe collection',
     );
     assert.ok(
