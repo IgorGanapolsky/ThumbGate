@@ -109,8 +109,12 @@ test('public landing page exposes env-driven paid sprint checkout path', () => {
   assert.match(landingPage, /const workflowSprintCheckoutUrl = '__WORKFLOW_SPRINT_CHECKOUT_URL__';/);
   assert.match(landingPage, /data-sprint-paid-path/);
   assert.match(landingPage, /Workflow Hardening Diagnostic/);
+  assert.match(landingPage, /AI Agent Failure Quick Read/);
   assert.match(landingPage, /Same-day Workflow Teardown/);
   assert.match(landingPage, /Need buyer-ready proof today\?/);
+  assert.match(landingPage, /Pay \$19 quick read/);
+  assert.match(landingPage, /https:\/\/buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
+  assert.match(landingPage, /quick_read_checkout_started/);
   assert.match(landingPage, /href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__"/);
   assert.match(landingPage, /href="__WORKFLOW_SPRINT_CHECKOUT_URL__"/);
   assert.doesNotMatch(landingPage, /founder_workflow_diagnostic_checkout_started/);

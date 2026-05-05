@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
-const { sendEmail } = require('./mailer');
 const path = require('node:path');
+const { sendEmail } = require('./mailer');
 
 const DEFAULT_FROM = 'ThumbGate <onboarding@resend.dev>';
 const DEFAULT_REPLY_TO = 'igor.ganapolsky@gmail.com';
@@ -83,28 +83,28 @@ async function main(argv = process.argv.slice(2), deps = {}) {
   console.log(JSON.stringify({
     campaign: options.campaign,
     leadId: message.pipelineLeadId,
-    sent: result.sent === true,
-    providerId: result.id || result.providerId || null,
-    reason: result.reason || null,
+    sent: Boolean(result.sent),
+    providerId: result?.id || result?.providerId || null,
+    reason: result?.reason || null,
   }, null, 2));
   return result;
 }
 
-function isCliInvocation(argv = process.argv) {
-  return argv[1] ? path.resolve(argv[1]) === __filename : false;
+function isCliEntrypoint(entry = process.argv[1]) {
+  return typeof entry === 'string' && path.resolve(entry) === __filename;
 }
 
-if (isCliInvocation()) {
+if (isCliEntrypoint()) {
   main().catch((err) => {
-    console.error(err && err.message ? err.message : err);
+    console.error(err?.message ? err.message : err);
     process.exit(1);
   });
 }
 
 module.exports = {
   CAMPAIGNS,
-  isCliInvocation,
   parseArgs,
   renderMessage,
   main,
+  isCliEntrypoint,
 };

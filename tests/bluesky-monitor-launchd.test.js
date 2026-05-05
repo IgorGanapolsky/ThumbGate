@@ -5,6 +5,7 @@ const test = require('node:test');
 const {
   buildBlueskyMonitorPlist,
   buildBlueskyMonitorStatus,
+  envSearchPaths,
   loadLaunchAgent,
 } = require('../scripts/bluesky-monitor-launchd');
 const fs = require('node:fs');
@@ -92,4 +93,42 @@ test('bluesky monitor status reports readiness without leaking credentials', () 
   assert.doesNotMatch(serialized, /iganapolsky\.bsky\.social/);
 
   fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('bluesky monitor checks durable env fallback locations and reports install metadata', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-bluesky-install-'));
+  const homeDir = path.join(tmp, 'home');
+  const repoDir = path.join(tmp, 'repo');
+  const plistPath = path.join(tmp, 'com.thumbgate.bluesky-monitor.plist');
+  fs.mkdirSync(path.join(homeDir, '.thumbgate'), { recursive: true });
+  fs.mkdirSync(path.join(repoDir, '.thumbgate'), { recursive: true });
+  fs.writeFileSync(path.join(homeDir, '.thumbgate', 'bluesky-monitor.env'), [
+    'BLUESKY_HANDLE=iganapolsky.bsky.social',
+    'BLUESKY_APP_PASSWORD=super-secret-app-password',
+  ].join('\n'));
+  fs.writeFileSync(plistPath, buildBlueskyMonitorPlist({
+    repoDir: '/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo',
+    plistPath,
+  }));
+
+  const originalHomedir = os.homedir;
+  os.homedir = () => homeDir;
+  try {
+    const status = buildBlueskyMonitorStatus({
+      repoDir,
+      plistPath,
+      env: {},
+    });
+    const expectedSearchPath = path.join(homeDir, '.thumbgate', 'bluesky-monitor.env');
+
+    assert.equal(status.canMonitor, true);
+    assert.equal(status.installation.installedRepoDir, '/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo');
+    assert.equal(status.installation.repoMismatch, true);
+    assert.equal(status.installation.scriptPath, '/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo/scripts/bluesky-monitor-cron.sh');
+    assert.equal(status.envFilesChecked.includes(expectedSearchPath), true);
+    assert.equal(envSearchPaths(repoDir).includes(expectedSearchPath), true);
+  } finally {
+    os.homedir = originalHomedir;
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
 });

@@ -422,7 +422,7 @@
     "test:workers": "npm --prefix workers ci && npm --prefix workers test",
     "test:evoskill": "node --test tests/evoskill.test.js",
     "test:gates-hardening": "node --test tests/gates-hardening.test.js",
-    "test:social-analytics": "node --test tests/social-analytics.test.js",
+    "test:social-analytics": "node --test tests/social-analytics.test.js tests/load-env.test.js",
     "test:memalign": "node --test tests/memalign.test.js",
     "test:xmemory-lite": "node --test tests/xmemory-lite.test.js",
     "test:filesystem-search": "node --test tests/filesystem-search.test.js",
