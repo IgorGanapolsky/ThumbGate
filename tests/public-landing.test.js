@@ -97,8 +97,8 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /solo side lane/i);
   assert.match(landingPage, /Shared enforcement/i);
   assert.match(landingPage, /Install Free/);
-  assert.match(landingPage, /Free Trial|Upgrade to Pro/i);
-  assert.match(landingPage, /7-DAY FREE TRIAL/i);
+  assert.match(landingPage, /Pay-now Pro|Upgrade to Pro/i);
+  assert.match(landingPage, /PAY-NOW PRO/i);
   assert.match(landingPage, /Start Workflow Hardening Sprint/);
 });
 
@@ -117,12 +117,16 @@ test('public landing page exposes env-driven paid sprint checkout path', () => {
   assert.match(landingPage, /https:\/\/buy\.stripe\.com\/7sY4gzgH24r49G17mb3sI0g/);
   assert.match(landingPage, /Pay \$499 diagnostic/);
   assert.match(landingPage, /Pay \$1500 sprint/);
+  assert.match(landingPage, /Send workflow first/);
   assert.match(landingPage, /Pay for diagnostic/);
   assert.match(landingPage, /Pay for sprint/);
   assert.match(landingPage, /hero_workflow_sprint_diagnostic_checkout/);
   assert.match(landingPage, /hero_workflow_sprint_checkout/);
+  assert.match(landingPage, /hero_workflow_sprint_recovery_intake/);
   assert.match(landingPage, /workflow_sprint_diagnostic_checkout_started/);
   assert.match(landingPage, /workflow_sprint_checkout_started/);
+  assert.match(landingPage, /workflow_sprint_recovery_intake_clicked/);
+  assert.match(landingPage, /workflow_sprint_recovery_intake/);
 });
 
 test('public landing page includes Plausible analytics and search engine proof bar', () => {
@@ -301,6 +305,9 @@ test('public landing page includes an explicit Team rollout lane with shared wor
   assert.match(landingPage, /name="utmMedium" value="visible_team_intake"/);
   assert.match(landingPage, /name="planId" value="team"/);
   assert.match(landingPage, /name="ctaId" value="workflow_sprint_intake"/);
+  assert.match(landingPage, /Not ready to pay from a checkout page\?/);
+  assert.match(landingPage, /team_workflow_sprint_recovery_intake/);
+  assert.match(landingPage, /checkout_abandon/);
   assert.match(landingPage, /workflow_sprint_intake_started/);
   assert.match(landingPage, /workflow_sprint_intake_submit_attempted/);
   assert.doesNotMatch(
@@ -439,6 +446,7 @@ test('public landing page internally links to comparison and guide pages without
   assert.match(landingPage, /href="\/guides\/long-running-agent-context-management"/);
   assert.match(landingPage, /href="\/guides\/reasoning-compression-guardrails"/);
   assert.match(landingPage, /href="\/guides\/background-agent-governance"/);
+  assert.match(landingPage, /href="\/guides\/ai-agent-governance-sprint"/);
   assert.match(landingPage, /href="\/guides\/gpt-5-5-model-evaluation"/);
   assert.match(landingPage, /href="\/guides\/ai-search-topical-presence"/);
   assert.match(landingPage, /href="\/guides\/relational-knowledge-ai-recommendations"/);
@@ -464,6 +472,8 @@ test('public landing page internally links to comparison and guide pages without
   assert.match(landingPage, /Reasoning Compression Guardrails/);
   assert.match(landingPage, /Background Agent Governance/);
   assert.match(landingPage, /risk-tiered review/);
+  assert.match(landingPage, /AI Agent Governance Sprint/);
+  assert.match(landingPage, /approval boundaries, rollback safety/);
   assert.match(landingPage, /AI Search Topical Presence/);
   assert.match(landingPage, /Relational Knowledge in AI Recommendations/);
   // No internal marketing jargon visible to customers
@@ -638,10 +648,11 @@ test('lessons severity filtering scopes active state to rules filter buttons', (
   assert.match(html, /if \(level === 'critical'\) \{ highlightCard\(1\); \} else \{ highlightCard\(0\); \}/);
 });
 
-test('public landing page includes 7-day free trial and email capture gate', () => {
+test('public landing page includes pay-now Pro path and email capture gate', () => {
   const landingPage = readLandingPage();
   const buyerIntentScript = readBuyerIntentScript();
-  assert.match(landingPage, /7-DAY FREE TRIAL/);
+  assert.match(landingPage, /PAY-NOW PRO/);
+  assert.match(landingPage, /Billed today/);
   assert.match(landingPage, /pro-email/);
   assert.match(landingPage, /handleProTrial/);
   assert.match(landingPage, /\/js\/buyer-intent\.js/);

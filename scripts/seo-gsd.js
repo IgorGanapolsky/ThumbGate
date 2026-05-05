@@ -13,6 +13,8 @@ const PRODUCT = {
   homepageUrl: 'https://thumbgate.ai',
   verificationUrl: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
   automationUrl: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json',
+  sprintDiagnosticPaymentUrl: 'https://buy.stripe.com/00w14neyUcXA5pL5e33sI0e',
+  workflowSprintPaymentUrl: 'https://buy.stripe.com/fZu9AT76saPsg4pbCr3sI0f',
   compatibility: ['Claude Code', 'Cursor', 'Codex', 'Gemini', 'Amp', 'OpenCode'],
   proofPoints: [
     'thumbs-up/down feedback loop',
@@ -112,6 +114,11 @@ const HIGH_ROI_QUERY_SEEDS = [
     'background agent governance',
     94,
     'New team-buying query for unattended agent PRs where alignment context, isolated execution, risk-tiered review, and audit evidence create immediate ROI.',
+  ),
+  querySeed(
+    'ai agent governance sprint',
+    95,
+    'Bottom-of-funnel service query that turns background-agent governance demand into a paid 48-hour Team intake and implementation wedge.',
   ),
   querySeed(
     'gpt-5.5 model evaluation',
@@ -994,6 +1001,69 @@ function buildBackgroundAgentGovernanceGuide() {
   });
 }
 
+const AI_AGENT_GOVERNANCE_SPRINT_GUIDE_SPEC = Object.freeze({
+  slug: 'ai-agent-governance-sprint',
+  meta: {
+    query: 'ai agent governance sprint',
+    title: 'AI Agent Governance Sprint | 48-Hour Workflow Hardening',
+    heroTitle: 'AI Agent Governance Sprint for One Risky Workflow',
+    heroSummary: 'ThumbGate turns one repeated AI-agent failure into approval boundaries, pre-action checks, rollback safety, and rollout proof in a focused 48-hour Workflow Hardening Sprint.',
+  },
+  takeaways: [
+    'The fastest paid wedge is not a broad platform migration; it is one repo, one workflow owner, and one repeated failure that already has budget pressure.',
+    'A governance sprint should ship evidence: rule inventory, pre-action checks, review routing, rollback notes, and a buyer-ready proof pack.',
+    'ThumbGate keeps the promise narrow enough to sell quickly while creating the path to Team seats and recurring governance.',
+  ],
+  sections: [
+    ['paragraphs', 'Who this is for', [
+      'The right buyer is already running Claude Code, Codex, Cursor, Gemini, or another agent against real code and has one failure they no longer want to review manually. Examples include unsafe migrations, noisy background-agent PRs, deploy approval bypasses, credential-adjacent commands, and repeated generated-artifact edits.',
+      'The sprint works because it avoids generic AI consulting. The scope is one workflow that can be observed, hardened, and reviewed in front of the buyer before a wider team rollout.',
+    ]],
+    ['bullets', 'What the sprint ships', [
+      'Intake: one repo, one owner, one repeated failure, one target rollout date, and the current agent/runtime surface.',
+      'Governance map: approval boundaries, risky commands, protected files, branch rules, review tiers, and rollback expectations.',
+      'Pre-action checks: concrete blocks or warnings for the repeated failure and adjacent high-risk actions.',
+      'Background-agent review routing: npx thumbgate background-governance --check --json to label risk before dispatch or PR review.',
+      'Proof pack: verification evidence, run reports, blocked-repeat examples, and rollout notes the buyer can share internally.',
+    ]],
+    ['paragraphs', 'Where this creates ROI', [
+      'This page is the service conversion layer for the governance guides. Readers who already understand background-agent risk need a next step that is smaller than procurement and more concrete than a demo.',
+      'The offer stays defensible: ThumbGate does not claim to make agents autonomous without review. It makes one expensive review failure measurable, enforceable, and easier to roll out across Team seats.',
+    ]],
+  ],
+  faq: [
+    [
+      'What is included in the AI Agent Governance Sprint?',
+      'A focused 48-hour implementation around one workflow: intake, governance mapping, pre-action checks, background-agent risk routing, rollback notes, and a proof pack for the buyer review.',
+    ],
+    [
+      'How is this different from the Workflow Hardening Sprint?',
+      'It is the same Team conversion path positioned for buyers searching for AI agent governance. The deliverable remains narrow: one repeated failure hardened with approval boundaries, rollback safety, and rollout proof.',
+    ],
+    [
+      'Do we need to migrate every agent workflow first?',
+      'No. Start with one repeated failure that already costs review time or rollout confidence. After it proves value, reuse the checks, lesson database, and proof workflow across Team seats.',
+    ],
+  ],
+  relatedPaths: ['/guides/background-agent-governance', '/guides/pre-action-checks', '/guides/best-tools-stop-ai-agents-breaking-production'],
+});
+
+function buildAiAgentGovernanceSprintGuide() {
+  return {
+    ...preActionGuide(AI_AGENT_GOVERNANCE_SPRINT_GUIDE_SPEC.slug, {
+      ...AI_AGENT_GOVERNANCE_SPRINT_GUIDE_SPEC.meta,
+      takeaways: AI_AGENT_GOVERNANCE_SPRINT_GUIDE_SPEC.takeaways,
+      sections: AI_AGENT_GOVERNANCE_SPRINT_GUIDE_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+      faq: AI_AGENT_GOVERNANCE_SPRINT_GUIDE_SPEC.faq.map(([question, text]) => answer(question, text)),
+      relatedPaths: AI_AGENT_GOVERNANCE_SPRINT_GUIDE_SPEC.relatedPaths,
+    }),
+    cta: {
+      label: 'Start the governance sprint',
+      href: '/?utm_source=website&utm_medium=seo_page&utm_campaign=ai_agent_governance_sprint&cta_placement=seo_brief&plan_id=team#workflow-sprint-intake',
+    },
+  };
+}
+
 const MODEL_UPGRADE_EVALUATION_GUIDE_SPEC = Object.freeze({
   slug: 'gpt-5-5-model-evaluation',
   meta: {
@@ -1519,6 +1589,7 @@ const PAGE_BLUEPRINTS = [
   buildDeveloperMachineSupplyChainGuardrailsGuide(),
   buildPromptTricksToWorkflowRulesGuide(),
   buildBackgroundAgentGovernanceGuide(),
+  buildAiAgentGovernanceSprintGuide(),
   buildModelUpgradeEvaluationGuide(),
   {
     query: 'stop ai coding agents from repeating mistakes',
@@ -2031,7 +2102,7 @@ function classifyIntent(query) {
   if (!normalized) return 'informational';
   if (/\b(vs|versus|alternative|compare|comparison|better than)\b/.test(normalized)) return 'comparison';
   if (/\b(price|pricing|buy|checkout|purchase|cost)\b/.test(normalized)) return 'transactional';
-  if (/\b(autoresearch|self-improving|benchmark|reward hacking|agent safety)\b/.test(normalized)) return 'commercial';
+  if (/\b(autoresearch|self-improving|benchmark|reward hacking|agent safety|governance|sprint)\b/.test(normalized)) return 'commercial';
   if (/\b(claude code|cursor|codex|gemini|amp|opencode|integration|plugin|setup|install)\b/.test(normalized)) {
     return 'commercial';
   }
@@ -2050,7 +2121,7 @@ function inferPillar(query) {
   if (/\b(rag|retrieval|proxy pointer|multimodal answer|document rag)\b/.test(normalized)) return 'document-rag-safety';
   if (/\b(topical presence|relational knowledge|recommend(?:ation|ed)? brands?|ai search visibility)\b/.test(normalized)) return 'ai-agent-reliability';
   if (/\b(browser automation|native messaging|browser bridge|prompt injection)\b/.test(normalized)) return 'pre-action-checks';
-  if (/\b(autoresearch|self-improving|benchmark|reward hacking|harness optimization|long running agent|context management|reasoning compression)\b/.test(normalized)) return 'pre-action-checks';
+  if (/\b(autoresearch|self-improving|benchmark|reward hacking|harness optimization|long running agent|context management|reasoning compression|governance|sprint)\b/.test(normalized)) return 'pre-action-checks';
   if (/\b(pre-action checks|guardrails|block|prevent repeated mistakes|repeating mistakes)\b/.test(normalized)) return 'pre-action-checks';
   if (/\b(claude code|cursor|codex|gemini|amp|opencode|integration|plugin)\b/.test(normalized)) return 'agent-workflows';
   return 'ai-agent-reliability';
@@ -2067,7 +2138,7 @@ function inferPersona(query) {
   if (/\b(programmatic seo|pseo|semantic seo|ai search|topical presence|seo agent)\b/.test(normalized)) return 'growth-engineer';
   if (/\b(rag|retrieval|proxy pointer|multimodal answer|document rag)\b/.test(normalized)) return 'rag-engineer';
   if (/\b(vs|alternative|compare)\b/.test(normalized)) return 'tool-evaluator';
-  if (/\b(guardrails|pre-action checks)\b/.test(normalized)) return 'engineering-lead';
+  if (/\b(guardrails|pre-action checks|governance|sprint)\b/.test(normalized)) return 'engineering-lead';
   return 'ai-engineer';
 }
 
@@ -2329,7 +2400,7 @@ function createPageSpec(blueprint, row) {
     sections: blueprint.sections,
     faq: blueprint.faq,
     relatedPages,
-    cta: {
+    cta: blueprint.cta || {
       label: 'Go Pro — $19/mo',
       href: `/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=${blueprint.path.split('/').filter(Boolean).join('_')}&cta_placement=seo_brief&plan_id=pro`,
     },
@@ -2522,6 +2593,26 @@ function renderWebPageJsonLd(page, runtimeConfig) {
   }, null, 2);
 }
 
+function renderPaidSprintCheckoutCard(page) {
+  if (page.path !== '/guides/ai-agent-governance-sprint') return '';
+
+  return `<div class="sidebar-card paid-sprint-card">
+          <h2>Ready to buy the sprint?</h2>
+          <p>Skip the unpaid intake when budget is ready. Pick the smaller diagnostic to validate one repeated failure, or buy the 48-hour sprint for implementation and proof.</p>
+          <div class="paid-offers">
+            <a class="paid-offer diagnostic" href="${escapeHtml(PRODUCT.sprintDiagnosticPaymentUrl)}" target="_blank" rel="noopener">
+              <span>Workflow Hardening Diagnostic</span>
+              <strong>$499</strong>
+            </a>
+            <a class="paid-offer sprint" href="${escapeHtml(PRODUCT.workflowSprintPaymentUrl)}" target="_blank" rel="noopener">
+              <span>AI Agent Governance Sprint</span>
+              <strong>$1500</strong>
+            </a>
+          </div>
+          <a class="secondary-cta" href="${escapeHtml(page.cta.href)}" target="_blank" rel="noopener">Use intake instead</a>
+        </div>`;
+}
+
 function renderSeoPageHtml(page, runtimeConfig = {}) {
   const appOrigin = normalizeText(runtimeConfig.appOrigin) || PRODUCT.homepageUrl;
   const canonicalUrl = `${appOrigin}${page.path}`;
@@ -2543,6 +2634,7 @@ function renderSeoPageHtml(page, runtimeConfig = {}) {
         <p>${escapeHtml(item.answer)}</p>
       </details>`).join('');
   const proofLinks = page.proofLinks.map((link) => `<a href="${escapeHtml(link.href)}" target="_blank" rel="noopener">${escapeHtml(link.label)}</a>`).join('');
+  const paidSprintCheckoutCard = renderPaidSprintCheckoutCard(page);
   const faqJsonLd = renderFaqJsonLd(page);
   const semanticPseoSidebar = page.path === '/guides/semantic-programmatic-seo-guardrails' ? `<div class="sidebar-card">
           <h2>pSEO governance gates</h2>
@@ -2749,6 +2841,48 @@ function renderSeoPageHtml(page, runtimeConfig = {}) {
       font-weight: 700;
       text-decoration: none;
     }
+    .paid-sprint-card {
+      border-color: rgba(74, 222, 128, 0.32);
+      background: linear-gradient(180deg, rgba(17, 17, 19, 0.98), rgba(10, 20, 14, 0.96));
+    }
+    .paid-sprint-card p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    .paid-offers {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .paid-offer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid rgba(74, 222, 128, 0.28);
+      border-radius: 10px;
+      color: var(--fg);
+      text-decoration: none;
+      background: rgba(0, 0, 0, 0.22);
+    }
+    .paid-offer strong {
+      color: #9af5b0;
+      white-space: nowrap;
+    }
+    .paid-offer:hover, .paid-offer:focus-visible {
+      border-color: rgba(74, 222, 128, 0.62);
+      outline: none;
+    }
+    .secondary-cta {
+      display: inline-flex;
+      margin-top: 12px;
+      color: var(--cyan);
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+    }
     .faq-item {
       border-top: 1px solid var(--line);
       padding: 14px 0;
@@ -2830,6 +2964,7 @@ ${renderWebPageJsonLd(page, { appOrigin })}
         ${documentRagSidebar}
         ${codeGraphSidebar}
         ${workflowRuleSidebar}
+        ${paidSprintCheckoutCard}
         <div class="sidebar-card">
           <h2>GSD execution brief</h2>
           <p>This page was prioritized because it captures high-intent demand around ${escapeHtml(page.query)} and feeds directly into ThumbGate's proof-led conversion path.</p>

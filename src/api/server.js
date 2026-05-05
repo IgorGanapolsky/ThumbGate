@@ -1453,6 +1453,40 @@ function buildCheckoutFallbackUrl(baseUrl, metadata = {}) {
   return restoreStripeCheckoutPlaceholder(url.toString());
 }
 
+function buildCheckoutIntentHref(baseUrl, metadata = {}, overrides = {}) {
+  return buildCheckoutFallbackUrl(baseUrl, {
+    ...metadata,
+    ...overrides,
+  });
+}
+
+function renderCheckoutIntentPage({
+  confirmHref,
+  workflowIntakeHref,
+  teamOptionsHref,
+  diagnosticCheckoutHref,
+  sprintCheckoutHref,
+  sprintDiagnosticPriceDollars = 499,
+  workflowSprintPriceDollars = 1500,
+}) {
+  const safeConfirmHref = escapeHtmlAttribute(confirmHref);
+  const safeWorkflowIntakeHref = escapeHtmlAttribute(workflowIntakeHref);
+  const safeTeamOptionsHref = escapeHtmlAttribute(teamOptionsHref);
+  const safeDiagnosticCheckoutHref = diagnosticCheckoutHref
+    ? escapeHtmlAttribute(diagnosticCheckoutHref)
+    : '';
+  const safeSprintCheckoutHref = sprintCheckoutHref
+    ? escapeHtmlAttribute(sprintCheckoutHref)
+    : '';
+  const diagnosticAction = safeDiagnosticCheckoutHref
+    ? `<a data-i="sprint_diagnostic_checkout" href="${safeDiagnosticCheckoutHref}">Book $${sprintDiagnosticPriceDollars} diagnostic</a>`
+    : '';
+  const sprintAction = safeSprintCheckoutHref
+    ? `<a data-i="workflow_sprint_checkout" href="${safeSprintCheckoutHref}">Start $${workflowSprintPriceDollars} sprint</a>`
+    : '';
+  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{background:#0a0a0a;color:#eee;font-family:system-ui,sans-serif}div{max-width:560px;margin:12vh auto}a{display:block;margin:10px 0;padding:12px;border:1px solid #374151;color:inherit;text-align:center}.primary{background:#22d3ee;color:#000}</style><div><h1>Choose the right paid path.</h1><p>Pick Pro, diagnostic, sprint, or intake.</p><a class="primary" data-i="pro_checkout_confirmed" href="${safeConfirmHref}">Continue to Stripe</a>${diagnosticAction}${sprintAction}<a data-i="workflow_sprint_intake" href="${safeWorkflowIntakeHref}">Send workflow first</a><a data-i="team_paid_path" href="${safeTeamOptionsHref}">See diagnostic and sprint options</a><p>Stripe checkout.</p><a href="/">Back</a></div><script>addEventListener('click',e=>{let a=e.target.closest('[data-i]');if(a&&navigator.sendBeacon)navigator.sendBeacon('/v1/telemetry/ping',new Blob([JSON.stringify({eventType:'checkout_interstitial_cta_clicked',clientType:'web',page:'/checkout/pro',ctaId:a.dataset.i,ctaPlacement:'checkout_interstitial'})],{type:'application/json'}))})</script>`;
+}
+
 function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneyState(req, parsed)) {
   const params = parsed.searchParams;
   const traceId = pickFirstText(params.get('trace_id')) || createJourneyId('checkout');
@@ -1492,6 +1526,36 @@ function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneySt
       landingPath: pickFirstText(params.get('landing_path'), '/'),
       referrerHost: pickFirstText(params.get('referrer_host')),
     },
+  };
+}
+
+function buildCheckoutConfirmHref(parsed) {
+  const confirmUrl = new URL('/checkout/pro', 'https://thumbgate.invalid');
+  confirmUrl.searchParams.set('confirm', '1');
+  for (const [key, value] of parsed.searchParams.entries()) {
+    if (key === 'confirm') continue;
+    confirmUrl.searchParams.append(key, value);
+  }
+  return `${confirmUrl.pathname}${confirmUrl.search}`;
+}
+
+function normalizeCheckoutCustomerEmail(value) {
+  const email = (normalizeNullableText(value) || '').toLowerCase();
+  const atIndex = email.indexOf('@');
+  const domain = email.slice(atIndex + 1);
+  if (!email || email.length > 254 || atIndex <= 0 || atIndex !== email.lastIndexOf('@') || !domain || !domain.includes('.') || domain.startsWith('.') || domain.endsWith('.') || domain.includes('..')) return null;
+  for (const ch of email) if (ch <= ' ' || ch === '<' || ch === '>' || ch === '"') return null;
+  return email;
+}
+
+function renderCheckoutIntentGate(parsed, responseHeaders = {}) {
+  let hiddenInputs = '';
+  for (const [key, value] of parsed.searchParams.entries()) {
+    if (key !== 'confirm' && key !== 'customer_email') hiddenInputs += `<input type=hidden name=${escapeHtmlAttribute(key)} value=${escapeHtmlAttribute(value)}>`;
+  }
+  return {
+    html: `<!doctype html><h1>Email for Stripe receipt</h1><form action=/checkout/pro>${hiddenInputs}<input type=hidden name=confirm value=1><input name=customer_email type=email required><button>Continue</button></form>`,
+    headers: responseHeaders,
   };
 }
 
@@ -1736,9 +1800,7 @@ function appendBestEffortTelemetry(feedbackDir, payload, headers, context) {
           evidence: [err && err.message ? err.message : 'unknown_error'],
         },
       });
-    } catch (_) {
-      // Public telemetry remains best-effort even when diagnostics fail.
-    }
+    } catch (_) {}
     return false;
   }
 }
@@ -2045,7 +2107,6 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
   const timestamp = merged.timestamp ? new Date(merged.timestamp).toLocaleString() : '';
   const isoTimestamp = merged.timestamp || '';
 
-  // Technical metadata
   const failureType = merged.failureType || null;
   const skill = merged.skill || null;
   const source = merged.source || fb.source || null;
@@ -2056,19 +2117,12 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
   const guardrails = merged.guardrails || null;
   const rubricScores = merged.rubricScores || null;
 
-  // Structured rule
   const rule = merged.structuredRule || merged.rule || null;
-  // Conversation window
   const convoWindow = merged.conversationWindow || merged.chatHistory || [];
-  // Reflector analysis
   const reflector = merged.reflectorAnalysis || merged.reflector || null;
-  // Diagnosis
   const diagnosis = merged.diagnosis || null;
-  // Rubric
   const rubric = merged.rubricEvaluation || merged.rubric || null;
-  // Synthesis
   const synthesis = merged.synthesis || null;
-  // Bayesian
   const bayesian = merged.bayesianBelief || merged.bayesian || null;
 
   function sectionCard(titleText, content, id) {
@@ -2413,9 +2467,7 @@ function renderRobotsTxt(runtimeConfig) {
 function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
-    // /pro consolidated into /#pro-pitch (2026-04-16) — removed from sitemap
-    // so search engines don't chase the 301 instead of indexing the canonical
-    // homepage directly.
+    { path: '/pro', changefreq: 'weekly', priority: '0.9' },
     { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
     { path: '/codex-plugin', changefreq: 'weekly', priority: '0.75' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
@@ -2437,6 +2489,21 @@ function renderSitemapXml(runtimeConfig) {
     }),
     '</urlset>',
   ].join('\n');
+}
+
+function buildHostedRuntimePresence(hostedConfig, { expectedApiKey, expectedOperatorKey } = {}) {
+  return {
+    THUMBGATE_FEEDBACK_DIR: Boolean(process.env.THUMBGATE_FEEDBACK_DIR),
+    THUMBGATE_OPERATOR_KEY: Boolean(expectedOperatorKey),
+    THUMBGATE_API_KEY: Boolean(expectedApiKey),
+    THUMBGATE_PUBLIC_APP_ORIGIN: Boolean(hostedConfig.appOrigin),
+    THUMBGATE_BILLING_API_BASE_URL: Boolean(hostedConfig.billingApiBaseUrl),
+    THUMBGATE_GA_MEASUREMENT_ID: Boolean(hostedConfig.gaMeasurementId),
+    THUMBGATE_CHECKOUT_FALLBACK_URL: Boolean(hostedConfig.checkoutFallbackUrl),
+    THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL: Boolean(hostedConfig.sprintDiagnosticCheckoutUrl),
+    THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL: Boolean(hostedConfig.workflowSprintCheckoutUrl),
+    STRIPE_SECRET_KEY: Boolean(process.env.STRIPE_SECRET_KEY),
+  };
 }
 
 function isSeoAttributionSource(source) {
@@ -2478,14 +2545,6 @@ function servePublicMarketingPage({
     'landing_page_view'
   );
 
-  // Funnel-ledger write (2026-04-21): populate funnel-events.jsonl with a
-  // discovery-stage event on every landing-page view so UTM-tagged social
-  // traffic becomes visible in `npm run feedback:summary` and
-  // `bin/cli.js cfo --today`. Prior to this wire, landing views wrote only
-  // to telemetry-pings.jsonl (invisible to the CEO-facing revenue surface),
-  // leaving funnel-events.jsonl empty despite 404 published Zernio posts.
-  // Best-effort: wrapped in try/catch so a billing-ledger hiccup never
-  // breaks a page render.
   try {
     appendFunnelEvent({
       stage: 'discovery',
@@ -2912,7 +2971,9 @@ function renderCheckoutCancelledPage(runtimeConfig) {
     : '';
   const sprintDiagnosticPriceDollars = runtimeConfig.sprintDiagnosticPriceDollars || 499;
   const workflowSprintPriceDollars = runtimeConfig.workflowSprintPriceDollars || 1500;
+  const workflowSprintIntakeUrl = `${escapeHtmlAttribute(runtimeConfig.appOrigin)}/#workflow-sprint-intake`;
   const recoveryOfferLinks = [
+    `<a id="send-workflow-first" href="${workflowSprintIntakeUrl}" data-recovery-offer="workflow_sprint_intake" data-offer-price="0">Send workflow first</a>`,
     diagnosticCheckoutUrl
       ? `<a href="${diagnosticCheckoutUrl}" data-recovery-offer="sprint_diagnostic" data-offer-price="${sprintDiagnosticPriceDollars}">Book $${sprintDiagnosticPriceDollars} diagnostic</a>`
       : '',
@@ -2923,7 +2984,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
   const recoveryOfferCard = recoveryOfferLinks
     ? `<div class="card recovery-card">
       <h2>Need help deciding?</h2>
-      <p>If Pro is not the right next step, buy the diagnostic or sprint instead. These are built for teams with one repeated agent-workflow failure that needs proof, rollback safety, and rollout help.</p>
+      <p>If Pro is not the right next step, send the workflow first. We can qualify the blocker, confirm the proof plan, and route you to the diagnostic or sprint only when the scope is real.</p>
       <div class="actions">
         ${recoveryOfferLinks}
       </div>
@@ -3045,7 +3106,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
       </div>
       <div class="actions">
         <button type="button" id="submit-reason">Send feedback</button>
-        <a id="retry-checkout" href="/checkout/pro" class="secondary">Try checkout again</a>
+        <a id="retry-checkout" href="/checkout/pro" class="secondary" data-recovery-offer="pro_trial_retry" data-offer-price="19">Restart $19 Pro trial</a>
         <a href="${runtimeConfig.appOrigin}" class="secondary">Return to Context Gateway</a>
       </div>
       <p class="note" id="status">No feedback sent yet.</p>
@@ -3057,6 +3118,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
         const statusEl = document.getElementById('status');
         const noteEl = document.getElementById('buyer-note');
         const retryLink = document.getElementById('retry-checkout');
+        const workflowIntakeLink = document.getElementById('send-workflow-first');
         let selectedReason = null;
 
         function sendTelemetry(eventType, extra) {
@@ -3109,6 +3171,19 @@ function renderCheckoutCancelledPage(runtimeConfig) {
         });
         retryLink.href = retryUrl.toString();
 
+        if (workflowIntakeLink) {
+          const intakeUrl = new URL(workflowIntakeLink.href, window.location.origin);
+          ['trace_id', 'acquisition_id', 'visitor_id', 'session_id', 'visitor_session_id', 'install_id', 'utm_source', 'utm_campaign', 'utm_content', 'utm_term', 'creator', 'community', 'post_id', 'comment_id', 'campaign_variant', 'offer_code', 'landing_path', 'referrer_host'].forEach(function (key) {
+            const value = params.get(key);
+            if (value) intakeUrl.searchParams.set(key, value);
+          });
+          intakeUrl.searchParams.set('utm_medium', 'checkout_cancel_recovery');
+          intakeUrl.searchParams.set('cta_id', 'checkout_cancel_workflow_sprint_intake');
+          intakeUrl.searchParams.set('cta_placement', 'checkout_cancel_recovery');
+          intakeUrl.searchParams.set('plan_id', 'team');
+          workflowIntakeLink.href = intakeUrl.toString();
+        }
+
         sendTelemetry('checkout_cancelled');
 
         document.querySelectorAll('[data-reason]').forEach(function (button) {
@@ -3130,6 +3205,16 @@ function renderCheckoutCancelledPage(runtimeConfig) {
 
         document.querySelectorAll('[data-recovery-offer]').forEach(function (link) {
           link.addEventListener('click', function () {
+            if (link.getAttribute('data-recovery-offer') === 'workflow_sprint_intake') {
+              sendTelemetry('checkout_cancel_workflow_intake_clicked', {
+                ctaId: 'checkout_cancel_workflow_sprint_intake',
+                ctaPlacement: 'checkout_cancel_recovery',
+                offerCode: 'workflow_sprint_intake',
+                planId: 'team',
+                reasonCode: selectedReason || null
+              });
+              return;
+            }
             sendTelemetry('checkout_recovery_offer_clicked', {
               ctaId: link.getAttribute('data-recovery-offer'),
               ctaPlacement: 'checkout_cancel_recovery',
@@ -3312,10 +3397,8 @@ function isAuthorized(req, expected) {
   if (!expected) return true;
   const token = extractApiKey(req);
 
-  // Check static THUMBGATE_API_KEY first
   if (token === expected) return true;
 
-  // Also accept any valid provisioned billing key
   if (token) {
     const result = validateApiKey(token);
     return result.valid === true;
@@ -3324,9 +3407,6 @@ function isAuthorized(req, expected) {
   return false;
 }
 
-/**
- * Extract the Bearer token from a request (returns '' if absent).
- */
 function extractBearerToken(req) {
   const auth = req.headers.authorization || '';
   return auth.startsWith('Bearer ') ? auth.slice(7) : '';
@@ -3488,15 +3568,6 @@ function createApiServer() {
   const expectedApiKey = getExpectedApiKey();
   const expectedOperatorKey = getExpectedOperatorKey();
 
-  // Live-event bus. Feedback captures, prevention-rule regenerations, and
-  // gate decisions push to this emitter; the /v1/events SSE endpoint streams
-  // those events to connected dashboard clients so they render in real time
-  // instead of waiting for the next manual refresh.
-  //
-  // See .changeset/dashboard-sse-live.md for the ROI rationale — this is a
-  // direct application of the "persistent channel beats per-turn HTTP" pattern
-  // to ThumbGate's dashboard surface (the primary UI for watching team
-  // feedback flow).
   const eventBus = new EventEmitter();
   eventBus.setMaxListeners(200);
 
@@ -4125,17 +4196,22 @@ async function addContext(){
     }
 
     if (isGetLikeRequest && pathname === '/pro') {
-      // Consolidated: /pro content now lives inline on `/` as the #pro-pitch
-      // strip (hero-adjacent pricing card). 301 so external links (README,
-      // plugin manifests, guides, compare pages) pass link equity onto the
-      // single canonical landing page. Query string is preserved so UTM
-      // tracking from inbound campaigns still reaches GA/PostHog on `/`.
-      const redirectTarget = `/#pro-pitch${parsed.search || ''}`;
-      res.writeHead(301, {
-        Location: redirectTarget,
-        'Cache-Control': 'public, max-age=3600',
-      });
-      res.end();
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadProPageHtml,
+          extraTelemetry: {
+            pageType: 'pro',
+            planId: 'pro',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'Pro page unavailable');
+      }
       return;
     }
 
@@ -4332,35 +4408,93 @@ async function addContext(){
         ? { 'Set-Cookie': journeyState.setCookieHeaders }
         : {};
 
-      // ── Bot guard ────────────────────────────────────────────────────
-      // Creating a Stripe Checkout session on every GET means crawlers,
-      // link-preview fetchers, and LLM scrapers inflate "sessions opened"
-      // while completions stay at zero. Serve bots an interstitial HTML
-      // page instead — no Stripe session created, no funnel pollution.
-      // The `?confirm=1` query param or POST below is the real-user path.
       const botClassification = classifyRequester(req.headers);
       const confirmParam = parsed?.searchParams?.get('confirm') ?? null;
       const isConfirmedCheckout = confirmParam === '1'
         || confirmParam === 'true'
         || req.method === 'POST';
-      if (botClassification.isBot && !isConfirmedCheckout) {
+      if (!isConfirmedCheckout && botClassification.isBot) {
+        const eventType = 'checkout_bot_deflected';
         appendBestEffortTelemetry(FEEDBACK_DIR, {
-          eventType: 'checkout_bot_deflected',
+          eventType,
           clientType: 'web',
           traceId,
+          acquisitionId: analyticsMetadata.acquisitionId,
+          visitorId: analyticsMetadata.visitorId,
+          sessionId: analyticsMetadata.sessionId,
           utmSource: analyticsMetadata.utmSource,
           utmMedium: analyticsMetadata.utmMedium,
           utmCampaign: analyticsMetadata.utmCampaign,
+          utmContent: analyticsMetadata.utmContent,
+          utmTerm: analyticsMetadata.utmTerm,
           referrer: analyticsMetadata.referrer,
           referrerHost: analyticsMetadata.referrerHost,
           page: '/checkout/pro',
+          ctaId: analyticsMetadata.ctaId,
+          ctaPlacement: analyticsMetadata.ctaPlacement,
           planId: analyticsMetadata.planId,
           reason: botClassification.reason,
-        }, req.headers, 'checkout_bot_deflected');
-        const html = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>ThumbGate Pro \u2014 Confirm checkout</title><style>*{box-sizing:border-box}body{background:#0a0a0a;color:#e5e5e5;font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px}.card{background:#141414;border:1px solid #222;border-radius:16px;padding:48px 40px;max-width:460px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.5)}h1{margin:0 0 12px;font-size:22px;color:#22d3ee}p{color:#9ca3af;font-size:14px;line-height:1.55;margin:0 0 24px}.btn{display:inline-block;background:#22d3ee;color:#000;text-decoration:none;font-weight:700;padding:14px 32px;border-radius:999px;font-size:16px;cursor:pointer;border:none}.btn:hover{opacity:.9}.sub{margin-top:16px;font-size:12px;color:#6b7280}a.back{color:#6b7280;font-size:13px;text-decoration:underline}</style></head><body><div class="card"><h1>Continue to secure checkout</h1><p>You\'re one click from ThumbGate Pro at $19/mo. We create the payment session only after you confirm \u2014 keeps your path clean and our funnel honest.</p><a class="btn" href="/checkout/pro?confirm=1" rel="noopener">Continue to Stripe \u2192</a><div class="sub">Payments handled by Stripe. 7-day trial. Card required; no charge today. Cancel anytime.</div><div class="sub"><a class="back" href="/">\u2190 Back to homepage</a></div></div></body></html>';
+        }, req.headers, eventType);
+        const workflowIntakeHref = buildCheckoutIntentHref(`${hostedConfig.appOrigin}/#workflow-sprint-intake`, analyticsMetadata, {
+          utmMedium: 'checkout_interstitial_recovery',
+          utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_workflow_sprint',
+          ctaId: 'checkout_interstitial_workflow_sprint_intake',
+          ctaPlacement: 'checkout_interstitial',
+          planId: 'team',
+        });
+        const teamOptionsHref = buildCheckoutIntentHref(`${hostedConfig.appOrigin}/guides/ai-agent-governance-sprint`, analyticsMetadata, {
+          utmMedium: 'checkout_interstitial_paid_path',
+          utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_team_paid_path',
+          ctaId: 'checkout_interstitial_team_paid_path',
+          ctaPlacement: 'checkout_interstitial',
+          planId: 'team',
+        });
+        const diagnosticCheckoutHref = hostedConfig.sprintDiagnosticCheckoutUrl
+          ? buildCheckoutIntentHref(hostedConfig.sprintDiagnosticCheckoutUrl, analyticsMetadata, {
+            utmMedium: 'checkout_interstitial_paid_path',
+            utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_diagnostic',
+            ctaId: 'checkout_interstitial_sprint_diagnostic_checkout',
+            ctaPlacement: 'checkout_interstitial',
+            planId: 'sprint_diagnostic',
+          })
+          : '';
+        const sprintCheckoutHref = hostedConfig.workflowSprintCheckoutUrl
+          ? buildCheckoutIntentHref(hostedConfig.workflowSprintCheckoutUrl, analyticsMetadata, {
+            utmMedium: 'checkout_interstitial_paid_path',
+            utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_workflow_sprint',
+            ctaId: 'checkout_interstitial_workflow_sprint_checkout',
+            ctaPlacement: 'checkout_interstitial',
+            planId: 'workflow_sprint',
+          })
+          : '';
+        const html = renderCheckoutIntentPage({
+          confirmHref: buildCheckoutConfirmHref(parsed),
+          workflowIntakeHref,
+          teamOptionsHref,
+          diagnosticCheckoutHref,
+          sprintCheckoutHref,
+          sprintDiagnosticPriceDollars: hostedConfig.sprintDiagnosticPriceDollars || 499,
+          workflowSprintPriceDollars: hostedConfig.workflowSprintPriceDollars || 1500,
+          botClassification,
+        });
         sendHtml(res, 200, html, responseHeaders);
         return;
       }
+
+      const normalizedCheckoutEmail = normalizeCheckoutCustomerEmail(bootstrapBody.customerEmail);
+      if (!normalizedCheckoutEmail) {
+        appendBestEffortTelemetry(FEEDBACK_DIR, {
+          eventType: 'checkout_email_gate_shown',
+          clientType: 'web',
+          traceId,
+          page: '/checkout/pro',
+          planId: analyticsMetadata.planId,
+        }, req.headers, 'checkout_email_gate_shown');
+        const { html, headers } = renderCheckoutIntentGate(parsed, responseHeaders);
+        sendHtml(res, 200, html, headers);
+        return;
+      }
+      bootstrapBody.customerEmail = normalizedCheckoutEmail;
 
       appendBestEffortTelemetry(FEEDBACK_DIR, {
         eventType: 'checkout_bootstrap',
@@ -4737,7 +4871,7 @@ async function addContext(){
             .map(l => { try { return JSON.parse(l); } catch(_e) { return null; } })
             .filter(Boolean);
         }
-      } catch (_) {}
+      } catch { entries = []; }
 
       const now = Date.now();
       const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
@@ -6262,7 +6396,13 @@ async function addContext(){
         }
 
         const summary = await getBillingSummaryLive(summaryOptions);
-        sendJson(res, 200, summary);
+        sendJson(res, 200, {
+          ...summary,
+          runtimePresence: buildHostedRuntimePresence(hostedConfig, {
+            expectedApiKey,
+            expectedOperatorKey,
+          }),
+        });
         return;
       }
 

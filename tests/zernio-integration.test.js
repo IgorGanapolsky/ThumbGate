@@ -163,7 +163,11 @@ describe('zernio publisher', () => {
     };
 
     const platforms = [{ platform: 'twitter', accountId: 'acc_xyz' }];
-    const result = await publishPost('This is test content long enough to pass the social quality gate check', platforms);
+    const result = await publishPost(
+      'This is test content long enough to pass the social quality gate check',
+      platforms,
+      { title: 'ThumbGate Operator Lab #shorts' }
+    );
 
     assert.ok(capturedUrl.includes('/posts'), 'should hit /posts endpoint');
     assert.equal(capturedOptions.method, 'POST');
@@ -172,6 +176,7 @@ describe('zernio publisher', () => {
     const body = JSON.parse(capturedOptions.body);
     assert.equal(body.content, 'This is test content long enough to pass the social quality gate check');
     assert.equal(body.publishNow, true);
+    assert.equal(body.title, 'ThumbGate Operator Lab #shorts');
     assert.deepEqual(body.platforms, platforms);
 
     assert.equal(result.id, 'post_123');

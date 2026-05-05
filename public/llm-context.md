@@ -173,6 +173,7 @@ npx thumbgate dashboard
 - Marketing site: https://thumbgate.ai
 - Browser automation safety guide: https://thumbgate.ai/guides/browser-automation-safety
 - Native messaging host security guide: https://thumbgate.ai/guides/native-messaging-host-security
+- AI Agent Governance Sprint guide: https://thumbgate.ai/guides/ai-agent-governance-sprint
 - GitHub: https://github.com/IgorGanapolsky/ThumbGate
 - npm: https://www.npmjs.com/package/thumbgate
 - Documentation: https://thumbgate.ai/guide

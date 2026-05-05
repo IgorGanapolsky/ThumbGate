@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-04T15:13:40.924Z",
+  "generatedAt": "2026-05-04T19:52:57.729Z",
   "state": "post-first-dollar",
   "headline": "Harden one AI-agent workflow before you roll it out.",
   "shortDescription": "Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro. The strongest cold targets expose workflow control surfaces where repeated failures and bad handoffs are visible and expensive. Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof. Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems. Some buyers are closer to local hook, plugin, and config adoption than a services sprint, so the guide-to-Pro lane should stay visible.",
@@ -9,17 +9,17 @@
     {
       "motion": "guide",
       "label": "Proof-backed setup guide",
-      "cta": "https://thumbgate.ai/guide"
+      "cta": "https://thumbgate-production.up.railway.app/guide"
     },
     {
       "motion": "sprint",
       "label": "Workflow Hardening Sprint",
-      "cta": "https://thumbgate.ai/#workflow-sprint-intake"
+      "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
     },
     {
       "motion": "pro",
       "label": "Pro at $19/mo or $149/yr",
-      "cta": "https://thumbgate.ai/checkout/pro"
+      "cta": "https://thumbgate-production.up.railway.app/checkout/pro"
     }
   ],
   "listingBullets": [
@@ -50,7 +50,7 @@
       "label": "Business-system workflow approvals",
       "summary": "Targets wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM systems need approval boundaries, rollback safety, and proof.",
       "listingAngle": "Lead with approval boundaries, rollback safety, and proof for one workflow.",
-      "count": 9,
+      "count": 10,
       "examples": [
         "montenegronyc/backporcher",
         "dolutech/engine_context",
@@ -62,7 +62,7 @@
       "label": "Production rollout proof",
       "summary": "Platform and production workflows need proof before agents touch releases, incidents, or compliance-sensitive systems.",
       "listingAngle": "Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.",
-      "count": 9,
+      "count": 7,
       "examples": [
         "montenegronyc/backporcher",
         "dolutech/engine_context",
@@ -94,12 +94,12 @@
       "primaryCta": {
         "motion": "sprint",
         "label": "Workflow Hardening Sprint",
-        "cta": "https://thumbgate.ai/#workflow-sprint-intake"
+        "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
       },
       "secondaryCta": {
         "motion": "guide",
         "label": "Proof-backed setup guide",
-        "cta": "https://thumbgate.ai/guide"
+        "cta": "https://thumbgate-production.up.railway.app/guide"
       },
       "sampleTargets": [
         "montenegronyc/backporcher",
@@ -118,12 +118,12 @@
       "primaryCta": {
         "motion": "sprint",
         "label": "Workflow Hardening Sprint",
-        "cta": "https://thumbgate.ai/#workflow-sprint-intake"
+        "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
       },
       "secondaryCta": {
         "motion": "guide",
         "label": "Proof-backed setup guide",
-        "cta": "https://thumbgate.ai/guide"
+        "cta": "https://thumbgate-production.up.railway.app/guide"
       },
       "sampleTargets": [
         "montenegronyc/backporcher",
@@ -142,12 +142,12 @@
       "primaryCta": {
         "motion": "sprint",
         "label": "Workflow Hardening Sprint",
-        "cta": "https://thumbgate.ai/#workflow-sprint-intake"
+        "cta": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
       },
       "secondaryCta": {
         "motion": "guide",
         "label": "Proof-backed setup guide",
-        "cta": "https://thumbgate.ai/guide"
+        "cta": "https://thumbgate-production.up.railway.app/guide"
       },
       "sampleTargets": [
         "montenegronyc/backporcher",
@@ -166,12 +166,12 @@
       "primaryCta": {
         "motion": "guide",
         "label": "Proof-backed setup guide",
-        "cta": "https://thumbgate.ai/guide"
+        "cta": "https://thumbgate-production.up.railway.app/guide"
       },
       "secondaryCta": {
         "motion": "pro",
         "label": "Pro at $19/mo or $149/yr",
-        "cta": "https://thumbgate.ai/checkout/pro"
+        "cta": "https://thumbgate-production.up.railway.app/checkout/pro"
       },
       "sampleTargets": [
         "Abhi268170/Stagix",

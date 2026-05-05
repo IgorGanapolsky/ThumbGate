@@ -120,6 +120,14 @@ test('automation emits LinkedIn, Roo, Aiventyx, ChatGPT, Codex, and GitHub outre
         calls.push(['writeCodexPluginRevenuePack', pack.channel, options.writeDocs]);
         return { docsPath: '/tmp/codex-plugin.md' };
       },
+      buildMcpDirectoryRevenuePack() {
+        calls.push(['buildMcpDirectoryRevenuePack']);
+        return { channel: 'mcp-directory' };
+      },
+      writeMcpDirectoryRevenuePack(pack, options) {
+        calls.push(['writeMcpDirectoryRevenuePack', pack.channel, options.writeDocs]);
+        return { docsPath: '/tmp/mcp-directory.md' };
+      },
       runGitHubOutreach(options) {
         calls.push(['runGitHubOutreach', options]);
         return { docsPath: options.outPath };
@@ -153,6 +161,8 @@ test('automation emits LinkedIn, Roo, Aiventyx, ChatGPT, Codex, and GitHub outre
     ['writeCodexMarketplaceRevenuePack', 'codex', true],
     ['buildCodexPluginRevenuePack', 2],
     ['writeCodexPluginRevenuePack', 'codex-plugin', true],
+    ['buildMcpDirectoryRevenuePack'],
+    ['writeMcpDirectoryRevenuePack', 'mcp-directory', true],
     ['runGitHubOutreach', {
       queuePath: path.resolve('/tmp/reports/gtm', 'gtm-target-queue.jsonl'),
       reportPath: path.resolve('/tmp/reports/gtm', 'gtm-revenue-loop.json'),
@@ -171,6 +181,7 @@ test('automation emits LinkedIn, Roo, Aiventyx, ChatGPT, Codex, and GitHub outre
   assert.ok(logs.some((line) => line.includes('Roo sunset pack updated: /tmp/roo.md')));
   assert.ok(logs.some((line) => line.includes('Codex marketplace pack updated: /tmp/codex-marketplace.md')));
   assert.ok(logs.some((line) => line.includes('Codex plugin pack updated: /tmp/codex-plugin.md')));
+  assert.ok(logs.some((line) => line.includes('MCP directory pack updated: /tmp/mcp-directory.md')));
   assert.ok(logs.some((line) => line.includes('GitHub outreach asset updated: /tmp/reports/gtm/OUTREACH_TARGETS.md')));
   assert.ok(logs.some((line) => line.includes(`GitHub outreach asset updated: ${path.resolve(repoRoot, 'docs/OUTREACH_TARGETS.md')}`)));
   assert.ok(logs.some((line) => line.includes('State: cold-start | Targets: 2')));

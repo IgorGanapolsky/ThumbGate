@@ -1,6 +1,6 @@
 # Claude Workflow Hardening Pack
 
-Updated: 2026-05-04T15:13:40.924Z
+Updated: 2026-05-04T19:52:57.729Z
 
 This is a sales operator artifact. It is not proof of sent outreach, directory approval, paid revenue, or deployment success by itself.
 
@@ -62,46 +62,46 @@ Proof bullets:
 - Proof CTA: Verification evidence -> https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 - Marketplace note: Official directory review is separate. Use the repo marketplace path and review packet honestly while approval is pending.
 Follow-on listing offers:
-- Workflow Hardening Sprint -> https://thumbgate.ai/?utm_source=claude&utm_medium=guide_surface&utm_campaign=claude_listing_sprint&utm_content=workflow_sprint&campaign_variant=team_follow_on&offer_code=CLAUDE-LISTING_SPRINT&cta_id=claude_listing_sprint&cta_placement=listing_copy&surface=claude_post_install#workflow-sprint-intake
-- ThumbGate Pro -> https://thumbgate.ai/checkout/pro?utm_source=claude&utm_medium=guide_surface&utm_campaign=claude_listing_pro&utm_content=pro&campaign_variant=solo_follow_on&offer_code=CLAUDE-LISTING_PRO&cta_id=claude_listing_pro&cta_placement=listing_copy&plan_id=pro&surface=claude_post_install
+- Workflow Hardening Sprint -> https://thumbgate-production.up.railway.app/?utm_source=claude&utm_medium=guide_surface&utm_campaign=claude_listing_sprint&utm_content=workflow_sprint&campaign_variant=team_follow_on&offer_code=CLAUDE-LISTING_SPRINT&cta_id=claude_listing_sprint&cta_placement=listing_copy&surface=claude_post_install#workflow-sprint-intake
+- ThumbGate Pro -> https://thumbgate-production.up.railway.app/checkout/pro?utm_source=claude&utm_medium=guide_surface&utm_campaign=claude_listing_pro&utm_content=pro&campaign_variant=solo_follow_on&offer_code=CLAUDE-LISTING_PRO&cta_id=claude_listing_pro&cta_placement=listing_copy&plan_id=pro&surface=claude_post_install
 
 ## Follow-On Offers
 - Workflow Hardening Sprint: Intake-led sprint, then Team at $49/seat/mo with a 3-seat minimum after qualification
   Buyer: Teams that already named one repeated Claude workflow failure, one owner, and one approval boundary.
-  CTA: https://thumbgate.ai/?utm_source=claude&utm_medium=guide_surface&utm_campaign=claude_workflow_team_follow_on&utm_content=workflow_sprint&campaign_variant=team_follow_on&offer_code=CLAUDE-TEAMS_FOLLOW_ON&cta_id=claude_team_follow_on&cta_placement=post_install&surface=claude_post_install#workflow-sprint-intake
+  CTA: https://thumbgate-production.up.railway.app/?utm_source=claude&utm_medium=guide_surface&utm_campaign=claude_workflow_team_follow_on&utm_content=workflow_sprint&campaign_variant=team_follow_on&offer_code=CLAUDE-TEAMS_FOLLOW_ON&cta_id=claude_team_follow_on&cta_placement=post_install&surface=claude_post_install#workflow-sprint-intake
 - ThumbGate Pro: $19/mo or $149/yr
   Buyer: Solo Claude Desktop or Claude Code operators who proved one blocked repeat and want the personal dashboard plus proof-ready exports.
-  CTA: https://thumbgate.ai/checkout/pro?utm_source=claude&utm_medium=guide_surface&utm_campaign=claude_workflow_pro_follow_on&utm_content=pro&campaign_variant=solo_follow_on&offer_code=CLAUDE-PRO_FOLLOW_ON&cta_id=claude_pro_follow_on&cta_placement=post_install&plan_id=pro&surface=claude_post_install
+  CTA: https://thumbgate-production.up.railway.app/checkout/pro?utm_source=claude&utm_medium=guide_surface&utm_campaign=claude_workflow_pro_follow_on&utm_content=pro&campaign_variant=solo_follow_on&offer_code=CLAUDE-PRO_FOLLOW_ON&cta_id=claude_pro_follow_on&cta_placement=post_install&plan_id=pro&surface=claude_post_install
 
 ## Prospect Queue
-- @Deep_Ad1959 (warm) -> Workflow Hardening Sprint. Reason: Warm Reddit engager already named a repeated workflow risk, so the fastest path is a founder-led diagnostic. Evidence: warm inbound engagement, workflow pain named: rollback risk, already in DMs Next ask: https://thumbgate.ai/#workflow-sprint-intake
-- @game-of-kton (warm) -> Workflow Hardening Sprint. Reason: Warm Reddit engager already works on advanced agent memory, so discovery should center on one repeated failure pattern. Evidence: warm inbound engagement, built serious memory systems, workflow pain named: stale context and conflicting facts Next ask: https://thumbgate.ai/#workflow-sprint-intake
-- @leogodin217 (warm) -> Workflow Hardening Sprint. Reason: Warm Reddit engager already described a mature workflow, so the next step is a targeted diagnostic on one failure mode. Evidence: warm inbound engagement, mature multi-step workflow described, workflow pain named: review boundaries and context risk Next ask: https://thumbgate.ai/#workflow-sprint-intake
-- @Enthu-Cutlet-1337 (warm) -> Workflow Hardening Sprint. Reason: Warm Reddit engager already understands the adaptive-gate thesis, so offer one concrete workflow hardening diagnostic. Evidence: warm inbound engagement, responded to adaptive-gate positioning, workflow pain named: brittle guardrails Next ask: https://thumbgate.ai/#workflow-sprint-intake
-- montenegronyc/backporcher (cold) -> Workflow Hardening Sprint. Reason: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof. Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, 13 GitHub stars, updated in the last 7 days Next ask: https://thumbgate.ai/#workflow-sprint-intake
-- dolutech/engine_context (cold) -> Workflow Hardening Sprint. Reason: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof. Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, 8 GitHub stars Next ask: https://thumbgate.ai/#workflow-sprint-intake
+- @Deep_Ad1959 (warm) -> Workflow Hardening Sprint. Reason: Warm Reddit engager already named a repeated workflow risk, so the fastest path is a founder-led diagnostic. Evidence: warm inbound engagement, workflow pain named: rollback risk, already in DMs Next ask: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- @game-of-kton (warm) -> Workflow Hardening Sprint. Reason: Warm Reddit engager already works on advanced agent memory, so discovery should center on one repeated failure pattern. Evidence: warm inbound engagement, built serious memory systems, workflow pain named: stale context and conflicting facts Next ask: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- @leogodin217 (warm) -> Workflow Hardening Sprint. Reason: Warm Reddit engager already described a mature workflow, so the next step is a targeted diagnostic on one failure mode. Evidence: warm inbound engagement, mature multi-step workflow described, workflow pain named: review boundaries and context risk Next ask: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- @Enthu-Cutlet-1337 (warm) -> Workflow Hardening Sprint. Reason: Warm Reddit engager already understands the adaptive-gate thesis, so offer one concrete workflow hardening diagnostic. Evidence: warm inbound engagement, responded to adaptive-gate positioning, workflow pain named: brittle guardrails Next ask: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- montenegronyc/backporcher (cold) -> Workflow Hardening Sprint. Reason: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof. Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, 13 GitHub stars, updated in the last 7 days Next ask: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- dolutech/engine_context (cold) -> Workflow Hardening Sprint. Reason: Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof. Evidence: workflow control surface, production or platform workflow, business-system integration, agent infrastructure, 8 GitHub stars Next ask: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 
 ## Outreach Drafts
 ### GitHub DM or email — Claude Desktop or Claude Code operator
 Claude already has a real ThumbGate install lane: local-first setup guide, direct bundle download, and repo-backed docs without pretending directory approval already happened. If one repeated branch, review-boundary, or file-edit mistake keeps showing up, start here: https://thumbgate-production.up.railway.app/guides/claude-desktop?utm_source=claude&utm_medium=operator_outreach&utm_campaign=claude_outreach_install&utm_content=guide&campaign_variant=desktop_install&offer_code=CLAUDE-OUTREACH_INSTALL&cta_id=claude_outreach_install&cta_placement=outreach_draft&surface=claude_outreach .
 
 ### Pain-confirmed follow-up — Team owner who confirmed one repeated Claude workflow failure
-Once the failure pattern is real, the next useful step is one workflow hardening sprint with proof, not another generic governance conversation. Use the sprint intake first, then attach Commercial Truth and Verification Evidence so the rollout stays inspectable: https://thumbgate.ai/?utm_source=claude&utm_medium=operator_outreach&utm_campaign=claude_outreach_sprint&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=CLAUDE-OUTREACH_SPRINT&cta_id=claude_outreach_sprint&cta_placement=outreach_draft&surface=claude_outreach#workflow-sprint-intake then https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md and https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md .
+Once the failure pattern is real, the next useful step is one workflow hardening sprint with proof, not another generic governance conversation. Use the sprint intake first, then attach Commercial Truth and Verification Evidence so the rollout stays inspectable: https://thumbgate-production.up.railway.app/?utm_source=claude&utm_medium=operator_outreach&utm_campaign=claude_outreach_sprint&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=CLAUDE-OUTREACH_SPRINT&cta_id=claude_outreach_sprint&cta_placement=outreach_draft&surface=claude_outreach#workflow-sprint-intake then https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md and https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md .
 
 ### Follow-up note — Solo operator who already proved one blocked repeat
-If the local install already blocked one repeated Claude mistake, the paid next step is the personal dashboard plus proof-ready exports, not a bigger team rollout. Route that buyer to the Pro path only after the blocked repeat is concrete: https://thumbgate.ai/checkout/pro?utm_source=claude&utm_medium=operator_outreach&utm_campaign=claude_outreach_pro&utm_content=pro&campaign_variant=solo_follow_up&offer_code=CLAUDE-OUTREACH_PRO&cta_id=claude_outreach_pro&cta_placement=outreach_draft&plan_id=pro&surface=claude_outreach .
+If the local install already blocked one repeated Claude mistake, the paid next step is the personal dashboard plus proof-ready exports, not a bigger team rollout. Route that buyer to the Pro path only after the blocked repeat is concrete: https://thumbgate-production.up.railway.app/checkout/pro?utm_source=claude&utm_medium=operator_outreach&utm_campaign=claude_outreach_pro&utm_content=pro&campaign_variant=solo_follow_up&offer_code=CLAUDE-OUTREACH_PRO&cta_id=claude_outreach_pro&cta_placement=outreach_draft&plan_id=pro&surface=claude_outreach .
 
 ## Active Channel Drafts
 ### Reddit — DM or reply follow-up
 - Audience: Warm Claude or Cursor engager who already named a repeated workflow risk
 - Evidence: 2 warm Claude-flavored target(s) in the current report already named context risk, rollback risk, or brittle review boundaries.
-- CTA: https://thumbgate.ai/?utm_source=claude&utm_medium=reddit_dm&utm_campaign=claude_channel_reddit&utm_content=workflow_sprint&campaign_variant=warm_discovery&offer_code=CLAUDE-CHANNEL-REDDIT&cta_id=claude_channel_reddit&cta_placement=channel_draft&surface=claude_reddit#workflow-sprint-intake
+- CTA: https://thumbgate-production.up.railway.app/?utm_source=claude&utm_medium=reddit_dm&utm_campaign=claude_channel_reddit&utm_content=workflow_sprint&campaign_variant=warm_discovery&offer_code=CLAUDE-CHANNEL-REDDIT&cta_id=claude_channel_reddit&cta_placement=channel_draft&surface=claude_reddit#workflow-sprint-intake
 - Proof timing: Do not attach Commercial Truth or Verification Evidence until the buyer confirms the failure pattern.
-You already called out the risky part of Claude workflows: the same failure keeps coming back when context shifts or review boundaries get blurry. I am not trying to sell you another agent platform. I am offering to harden one workflow end-to-end so the repeated failure becomes a Pre-Action Check with proof behind it. If you want to pick one workflow, start here: https://thumbgate.ai/?utm_source=claude&utm_medium=reddit_dm&utm_campaign=claude_channel_reddit&utm_content=workflow_sprint&campaign_variant=warm_discovery&offer_code=CLAUDE-CHANNEL-REDDIT&cta_id=claude_channel_reddit&cta_placement=channel_draft&surface=claude_reddit#workflow-sprint-intake .
+You already called out the risky part of Claude workflows: the same failure keeps coming back when context shifts or review boundaries get blurry. I am not trying to sell you another agent platform. I am offering to harden one workflow end-to-end so the repeated failure becomes a Pre-Action Check with proof behind it. If you want to pick one workflow, start here: https://thumbgate-production.up.railway.app/?utm_source=claude&utm_medium=reddit_dm&utm_campaign=claude_channel_reddit&utm_content=workflow_sprint&campaign_variant=warm_discovery&offer_code=CLAUDE-CHANNEL-REDDIT&cta_id=claude_channel_reddit&cta_placement=channel_draft&surface=claude_reddit#workflow-sprint-intake .
 
 ### LinkedIn — Founder post
 - Audience: Platform lead, consultancy owner, or AI delivery lead evaluating Claude rollout risk
-- Evidence: 9 production/platform targets and 9 business-system targets in the current report point to approval boundaries, rollback safety, and review-ready rollout proof as the strongest B2B angle.
+- Evidence: 7 production/platform targets and 10 business-system targets in the current report point to approval boundaries, rollback safety, and review-ready rollout proof as the strongest B2B angle.
 - CTA: https://thumbgate-production.up.railway.app/?utm_source=claude&utm_medium=linkedin_post&utm_campaign=claude_channel_linkedin&utm_content=landing_section&campaign_variant=review_ready&offer_code=CLAUDE-CHANNEL-LINKEDIN&cta_id=claude_channel_linkedin&cta_placement=channel_draft&surface=claude_linkedin#claude-desktop
 - Proof timing: Public post can mention proof-ready rollout, but keep the proof links for the reply or DM after pain is confirmed.
 Teams already shipping with Claude usually do not need another agent platform. They need one workflow that stops repeating the same mistake before it touches a repo, approval step, or customer system. ThumbGate is the lane I use for that: local-first install, repeated-mistake capture, and Pre-Action Checks before the next risky action runs. If you are evaluating Claude rollout risk, start with the review-ready install lane here: https://thumbgate-production.up.railway.app/?utm_source=claude&utm_medium=linkedin_post&utm_campaign=claude_channel_linkedin&utm_content=landing_section&campaign_variant=review_ready&offer_code=CLAUDE-CHANNEL-LINKEDIN&cta_id=claude_channel_linkedin&cta_placement=channel_draft&surface=claude_linkedin#claude-desktop .
@@ -150,8 +150,8 @@ Do not count as success:
 
 ## Evidence Backstop
 - Warm Claude targets in current report: 2
-- Production or platform targets in current report: 9
-- Business-system targets in current report: 9
+- Production or platform targets in current report: 7
+- Business-system targets in current report: 10
 - Landing source: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/landing-page.html
 - Review packet: https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-plugin-review.zip
 

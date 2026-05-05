@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-04T15:13:40.924Z",
+  "generatedAt": "2026-05-04T19:52:57.729Z",
   "state": "post-first-dollar",
   "objective": "Turn LinkedIn workflow-risk conversations into tracked guide clicks, qualified workflow-hardening conversations, sprint-intake movement, and self-serve follow-on only after pain is qualified.",
   "headline": "Turn LinkedIn workflow-risk conversations into sprint-qualified paid intent.",
@@ -16,7 +16,7 @@
     {
       "key": "workflow_sprint_intake",
       "name": "Workflow Hardening Sprint intake",
-      "url": "https://thumbgate.ai/?utm_source=linkedin&utm_medium=organic_social&utm_campaign=linkedin_sprint_intake&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=LINKEDIN-SPRINT_INTAKE&cta_id=linkedin_sprint_intake&cta_placement=pack_surface&surface=linkedin_sprint#workflow-sprint-intake",
+      "url": "https://thumbgate-production.up.railway.app/?utm_source=linkedin&utm_medium=organic_social&utm_campaign=linkedin_sprint_intake&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=LINKEDIN-SPRINT_INTAKE&cta_id=linkedin_sprint_intake&cta_placement=pack_surface&surface=linkedin_sprint#workflow-sprint-intake",
       "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/landing-page.html",
       "evidenceSource": "docs/landing-page.html",
       "operatorUse": "Primary CTA once a buyer names one repeated workflow failure, one owner, and one approval boundary.",
@@ -27,7 +27,7 @@
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
       ],
-      "appOrigin": "https://thumbgate.ai"
+      "appOrigin": "https://thumbgate-production.up.railway.app"
     },
     {
       "key": "proof_backed_setup_guide",
@@ -43,7 +43,7 @@
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
       ],
-      "appOrigin": "https://thumbgate.ai"
+      "appOrigin": "https://thumbgate-production.up.railway.app"
     },
     {
       "key": "repeat_mistakes_guide",
@@ -59,7 +59,7 @@
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
       ],
-      "appOrigin": "https://thumbgate.ai"
+      "appOrigin": "https://thumbgate-production.up.railway.app"
     },
     {
       "key": "verification_evidence",
@@ -75,7 +75,7 @@
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
       ],
-      "appOrigin": "https://thumbgate.ai"
+      "appOrigin": "https://thumbgate-production.up.railway.app"
     }
   ],
   "followOnOffers": [
@@ -84,14 +84,14 @@
       "label": "Workflow Hardening Sprint",
       "pricing": "Intake-led sprint, then Team at $49/seat/mo with a 3-seat minimum after qualification",
       "buyer": "Teams that already named one repeated workflow failure, one owner, and one approval boundary.",
-      "cta": "https://thumbgate.ai/?utm_source=linkedin&utm_medium=organic_social&utm_campaign=linkedin_follow_on_sprint&utm_content=workflow_sprint&campaign_variant=team_follow_on&offer_code=LINKEDIN-FOLLOW_ON_SPRINT&cta_id=linkedin_follow_on_sprint&cta_placement=post_install&surface=linkedin_follow_on#workflow-sprint-intake"
+      "cta": "https://thumbgate-production.up.railway.app/?utm_source=linkedin&utm_medium=organic_social&utm_campaign=linkedin_follow_on_sprint&utm_content=workflow_sprint&campaign_variant=team_follow_on&offer_code=LINKEDIN-FOLLOW_ON_SPRINT&cta_id=linkedin_follow_on_sprint&cta_placement=post_install&surface=linkedin_follow_on#workflow-sprint-intake"
     },
     {
       "key": "pro",
       "label": "ThumbGate Pro",
       "pricing": "$19/mo or $149/yr",
       "buyer": "Solo operators who confirmed the failure pattern and now want the self-serve path, dashboard, and proof-ready exports.",
-      "cta": "https://thumbgate.ai/checkout/pro?utm_source=linkedin&utm_medium=organic_social&utm_campaign=linkedin_follow_on_pro&utm_content=pro&campaign_variant=solo_follow_on&offer_code=LINKEDIN-FOLLOW_ON_PRO&cta_id=linkedin_follow_on_pro&cta_placement=post_install&plan_id=pro&surface=linkedin_follow_on"
+      "cta": "https://thumbgate-production.up.railway.app/checkout/pro?utm_source=linkedin&utm_medium=organic_social&utm_campaign=linkedin_follow_on_pro&utm_content=pro&campaign_variant=solo_follow_on&offer_code=LINKEDIN-FOLLOW_ON_PRO&cta_id=linkedin_follow_on_pro&cta_placement=post_install&plan_id=pro&surface=linkedin_follow_on"
     }
   ],
   "operatorQueue": [
@@ -101,16 +101,16 @@
       "evidence": "4 warm target(s) already named rollback risk, stale context and conflicting facts, review boundaries and context risk, and brittle guardrails.",
       "proofTrigger": "The buyer confirms the workflow is active now and wants one founder-led diagnostic instead of more generic AI tooling.",
       "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
-      "nextAsk": "https://thumbgate.ai/?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_queue_sprint&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=LINKEDIN-QUEUE_SPRINT&cta_id=linkedin_queue_sprint&cta_placement=operator_queue&surface=linkedin_outreach#workflow-sprint-intake",
+      "nextAsk": "https://thumbgate-production.up.railway.app/?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_queue_sprint&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=LINKEDIN-QUEUE_SPRINT&cta_id=linkedin_queue_sprint&cta_placement=operator_queue&surface=linkedin_outreach#workflow-sprint-intake",
       "recommendedMotion": "Workflow Hardening Sprint first. Use proof only after pain is confirmed."
     },
     {
       "key": "business_system_operator",
       "audience": "Platform or ops lead wiring agents into Jira, GitHub, ServiceNow, Slack, or CRM workflows",
-      "evidence": "9 production-style target(s), 9 business-system target(s), and 11 workflow-control target(s) point to approval boundaries and rollback safety as the strongest LinkedIn angle.",
+      "evidence": "7 production-style target(s), 10 business-system target(s), and 11 workflow-control target(s) point to approval boundaries and rollback safety as the strongest LinkedIn angle.",
       "proofTrigger": "They can name one approval boundary, rollback risk, or bad handoff that blocks broader rollout.",
       "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
-      "nextAsk": "https://thumbgate.ai/?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_queue_sprint&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=LINKEDIN-QUEUE_SPRINT&cta_id=linkedin_queue_sprint&cta_placement=operator_queue&surface=linkedin_outreach#workflow-sprint-intake",
+      "nextAsk": "https://thumbgate-production.up.railway.app/?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_queue_sprint&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=LINKEDIN-QUEUE_SPRINT&cta_id=linkedin_queue_sprint&cta_placement=operator_queue&surface=linkedin_outreach#workflow-sprint-intake",
       "recommendedMotion": "Discovery DM -> sprint intake -> proof pack once the workflow risk is explicit."
     },
     {
@@ -119,7 +119,7 @@
       "evidence": "3 current target(s) skew self-serve after qualification, but the guide should still carry the proof and pricing guardrails first.",
       "proofTrigger": "The buyer explicitly asks for install, pricing, or self-serve instead of founder-led workflow help.",
       "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guide.html",
-      "nextAsk": "https://thumbgate-production.up.railway.app/guide?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_queue_guide&utm_content=guide&campaign_variant=self_serve_interest&offer_code=LINKEDIN-QUEUE_GUIDE&cta_id=linkedin_queue_guide&cta_placement=operator_queue&surface=linkedin_outreach then https://thumbgate.ai/checkout/pro?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_queue_pro&utm_content=pro&campaign_variant=self_serve_follow_on&offer_code=LINKEDIN-QUEUE_PRO&cta_id=linkedin_queue_pro&cta_placement=operator_queue&plan_id=pro&surface=linkedin_outreach",
+      "nextAsk": "https://thumbgate-production.up.railway.app/guide?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_queue_guide&utm_content=guide&campaign_variant=self_serve_interest&offer_code=LINKEDIN-QUEUE_GUIDE&cta_id=linkedin_queue_guide&cta_placement=operator_queue&surface=linkedin_outreach then https://thumbgate-production.up.railway.app/checkout/pro?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_queue_pro&utm_content=pro&campaign_variant=self_serve_follow_on&offer_code=LINKEDIN-QUEUE_PRO&cta_id=linkedin_queue_pro&cta_placement=operator_queue&plan_id=pro&surface=linkedin_outreach",
       "recommendedMotion": "Guide -> proof -> Pro after the buyer asks for the tool path."
     }
   ],
@@ -134,13 +134,13 @@
       "key": "warm_dm",
       "channel": "LinkedIn DM",
       "audience": "Pain-aware buyer who already named one workflow risk",
-      "draft": "The strongest signals in this week’s queue are not generic AI interest. They are repeated workflow failures like rollback risk, stale context and conflicting facts, review boundaries and context risk, and brittle guardrails. I am not selling a generic agent platform into that. I am offering to harden one workflow end-to-end with prevention rules, approval boundaries, and a proof run. If that maps to one workflow on your side, start here: https://thumbgate.ai/?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_outreach_sprint&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=LINKEDIN-OUTREACH_SPRINT&cta_id=linkedin_outreach_sprint&cta_placement=outreach_draft&surface=linkedin_outreach#workflow-sprint-intake ."
+      "draft": "The strongest signals in this week’s queue are not generic AI interest. They are repeated workflow failures like rollback risk, stale context and conflicting facts, review boundaries and context risk, and brittle guardrails. I am not selling a generic agent platform into that. I am offering to harden one workflow end-to-end with prevention rules, approval boundaries, and a proof run. If that maps to one workflow on your side, start here: https://thumbgate-production.up.railway.app/?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_outreach_sprint&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=LINKEDIN-OUTREACH_SPRINT&cta_id=linkedin_outreach_sprint&cta_placement=outreach_draft&surface=linkedin_outreach#workflow-sprint-intake ."
     },
     {
       "key": "proof_after_pain",
       "channel": "Pain-confirmed follow-up",
       "audience": "Buyer who asked for proof or the self-serve path",
-      "draft": "Now that the workflow failure is concrete, move from pitch to evidence. Send Verification Evidence plus Commercial Truth first: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md and https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md . If they want founder-led help, route them to https://thumbgate.ai/?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_outreach_sprint&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=LINKEDIN-OUTREACH_SPRINT&cta_id=linkedin_outreach_sprint&cta_placement=outreach_draft&surface=linkedin_outreach#workflow-sprint-intake . If they only want the install path, use https://thumbgate-production.up.railway.app/guide?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_outreach_guide&utm_content=guide&campaign_variant=self_serve_interest&offer_code=LINKEDIN-OUTREACH_GUIDE&cta_id=linkedin_outreach_guide&cta_placement=outreach_draft&surface=linkedin_outreach and then https://thumbgate.ai/checkout/pro?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_outreach_pro&utm_content=pro&campaign_variant=self_serve_follow_on&offer_code=LINKEDIN-OUTREACH_PRO&cta_id=linkedin_outreach_pro&cta_placement=outreach_draft&plan_id=pro&surface=linkedin_outreach ."
+      "draft": "Now that the workflow failure is concrete, move from pitch to evidence. Send Verification Evidence plus Commercial Truth first: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md and https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md . If they want founder-led help, route them to https://thumbgate-production.up.railway.app/?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_outreach_sprint&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=LINKEDIN-OUTREACH_SPRINT&cta_id=linkedin_outreach_sprint&cta_placement=outreach_draft&surface=linkedin_outreach#workflow-sprint-intake . If they only want the install path, use https://thumbgate-production.up.railway.app/guide?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_outreach_guide&utm_content=guide&campaign_variant=self_serve_interest&offer_code=LINKEDIN-OUTREACH_GUIDE&cta_id=linkedin_outreach_guide&cta_placement=outreach_draft&surface=linkedin_outreach and then https://thumbgate-production.up.railway.app/checkout/pro?utm_source=linkedin&utm_medium=linkedin_dm&utm_campaign=linkedin_outreach_pro&utm_content=pro&campaign_variant=self_serve_follow_on&offer_code=LINKEDIN-OUTREACH_PRO&cta_id=linkedin_outreach_pro&cta_placement=outreach_draft&plan_id=pro&surface=linkedin_outreach ."
     }
   ],
   "channelDrafts": [
@@ -149,7 +149,7 @@
       "channel": "LinkedIn",
       "format": "Founder post",
       "audience": "Platform, engineering, and AI-product leaders",
-      "evidenceSummary": "4 warm target(s) plus 9 production-style target(s) show the strongest LinkedIn motion is workflow hardening, not generic AI hype.",
+      "evidenceSummary": "4 warm target(s) plus 7 production-style target(s) show the strongest LinkedIn motion is workflow hardening, not generic AI hype.",
       "cta": "https://thumbgate-production.up.railway.app/guide?utm_source=linkedin&utm_medium=organic_social&utm_campaign=linkedin_channel_guide&utm_content=guide&campaign_variant=proof_backed_setup&offer_code=LINKEDIN-CHANNEL_GUIDE&cta_id=linkedin_channel_guide&cta_placement=channel_draft&surface=linkedin_post",
       "proofTiming": "Keep the public post workflow-first and guide-first. Hold proof links for comments or DMs after the buyer names the workflow risk.",
       "draft": "The strongest AI workflow conversations I am seeing right now are not about replacing engineers. They are about one workflow that still is not safe enough to roll out. The repeated pain shows up as rollback risk, stale context and conflicting facts, review boundaries and context risk, and brittle guardrails. Once agents touch repos, approvals, or customer systems, the real question becomes: what stops the same mistake from running again? My answer is one workflow hardening lane: feedback, prevention rules, approval boundaries, rollback safety, and proof. If that is the problem you are evaluating, start with the proof-backed guide here: https://thumbgate-production.up.railway.app/guide?utm_source=linkedin&utm_medium=organic_social&utm_campaign=linkedin_channel_guide&utm_content=guide&campaign_variant=proof_backed_setup&offer_code=LINKEDIN-CHANNEL_GUIDE&cta_id=linkedin_channel_guide&cta_placement=channel_draft&surface=linkedin_post ."
@@ -160,16 +160,16 @@
       "format": "First comment",
       "audience": "Buyer who engages with the public post",
       "evidenceSummary": "The first comment should keep one CTA live without turning the post into a proof dump.",
-      "cta": "https://thumbgate.ai/?utm_source=linkedin&utm_medium=linkedin_comment&utm_campaign=linkedin_channel_sprint&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=LINKEDIN-CHANNEL_SPRINT&cta_id=linkedin_channel_sprint&cta_placement=channel_draft&surface=linkedin_comment#workflow-sprint-intake",
+      "cta": "https://thumbgate-production.up.railway.app/?utm_source=linkedin&utm_medium=linkedin_comment&utm_campaign=linkedin_channel_sprint&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=LINKEDIN-CHANNEL_SPRINT&cta_id=linkedin_channel_sprint&cta_placement=channel_draft&surface=linkedin_comment#workflow-sprint-intake",
       "proofTiming": "Comment can carry the sprint CTA, but keep Commercial Truth and Verification Evidence in reserve until pain is confirmed.",
-      "draft": "If you already have one workflow where approval boundaries, rollback safety, or repeated tool-call mistakes are blocking rollout, use the Workflow Hardening Sprint intake here: https://thumbgate.ai/?utm_source=linkedin&utm_medium=linkedin_comment&utm_campaign=linkedin_channel_sprint&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=LINKEDIN-CHANNEL_SPRINT&cta_id=linkedin_channel_sprint&cta_placement=channel_draft&surface=linkedin_comment#workflow-sprint-intake ."
+      "draft": "If you already have one workflow where approval boundaries, rollback safety, or repeated tool-call mistakes are blocking rollout, use the Workflow Hardening Sprint intake here: https://thumbgate-production.up.railway.app/?utm_source=linkedin&utm_medium=linkedin_comment&utm_campaign=linkedin_channel_sprint&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=LINKEDIN-CHANNEL_SPRINT&cta_id=linkedin_channel_sprint&cta_placement=channel_draft&surface=linkedin_comment#workflow-sprint-intake ."
     },
     {
       "key": "linkedin_reply_follow_up",
       "channel": "LinkedIn",
       "format": "Reply or DM follow-up",
       "audience": "Commenter who named repeated workflow risk",
-      "evidenceSummary": "11 workflow-control target(s) and 9 business-system target(s) make workflow-risk follow-up more credible than a generic product pitch.",
+      "evidenceSummary": "11 workflow-control target(s) and 10 business-system target(s) make workflow-risk follow-up more credible than a generic product pitch.",
       "cta": "https://thumbgate-production.up.railway.app/guides/claude-code-prevent-repeated-mistakes?utm_source=linkedin&utm_medium=linkedin_comment&utm_campaign=linkedin_channel_repeat_guide&utm_content=guide&campaign_variant=workflow_risk&offer_code=LINKEDIN-CHANNEL_REPEAT&cta_id=linkedin_channel_repeat_guide&cta_placement=channel_draft&surface=linkedin_comment",
       "proofTiming": "Use the repeated-mistakes guide in the reply first. Send proof links only if they ask for evidence after naming the workflow.",
       "draft": "That is exactly the kind of workflow risk I am talking about. The useful next step is not a bigger AI pitch. It is isolating the repeated mistake and deciding what check should fire before the next risky action runs. This guide is the shortest explanation of that loop: https://thumbgate-production.up.railway.app/guides/claude-code-prevent-repeated-mistakes?utm_source=linkedin&utm_medium=linkedin_comment&utm_campaign=linkedin_channel_repeat_guide&utm_content=guide&campaign_variant=workflow_risk&offer_code=LINKEDIN-CHANNEL_REPEAT&cta_id=linkedin_channel_repeat_guide&cta_placement=channel_draft&surface=linkedin_comment ."
@@ -220,8 +220,8 @@
   },
   "evidenceBackstop": {
     "warmTargetCount": 4,
-    "productionTargetCount": 9,
-    "businessSystemTargetCount": 9,
+    "productionTargetCount": 7,
+    "businessSystemTargetCount": 10,
     "workflowControlSurfaceCount": 11,
     "sprintMotionCount": 13,
     "proMotionCount": 3,

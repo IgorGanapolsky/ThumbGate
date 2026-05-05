@@ -102,6 +102,16 @@ describe('post-video (Instagram presign fix)', () => {
     assert.equal(opts.campaign, 'v1');
   });
 
+  it('parseArgs maps operator-lab offer to the operator-lab template and campaign', () => {
+    const { parseArgs } = require('../scripts/social-analytics/post-video');
+    const opts = parseArgs(['--offer=operator-lab', '--platforms=youtube']);
+
+    assert.equal(opts.offer, 'operator-lab');
+    assert.equal(opts.template, 'operator-lab');
+    assert.equal(opts.campaign, 'operator_lab_launch');
+    assert.deepEqual(opts.platforms, ['youtube']);
+  });
+
   it('buildPlatformPlan returns null for unknown platforms', () => {
     const { buildPlatformPlan } = require('../scripts/social-analytics/post-video');
     assert.equal(buildPlatformPlan('unknown', 'base'), null);
@@ -112,6 +122,17 @@ describe('post-video (Instagram presign fix)', () => {
     const plan = buildPlatformPlan('instagram', 'base');
     assert.equal(plan.platform, 'instagram');
     assert.ok(Math.abs(plan.cooldownDays - (8 / 24)) < 1e-9);
+  });
+
+  it('buildPlatformPlan uses operator-lab captions with tracked Skool links', () => {
+    const { buildPlatformPlan } = require('../scripts/social-analytics/post-video');
+    const plan = buildPlatformPlan('youtube', 'base', 'operator-lab');
+
+    assert.equal(plan.offer, 'operator-lab');
+    assert.match(plan.caption, /skool\.com\/thumbgate-operator-lab-6000/);
+    assert.match(plan.caption, /utm_source=youtube/);
+    assert.match(plan.caption, /utm_medium=short_video/);
+    assert.match(plan.caption, /utm_campaign=operator_lab_launch/);
   });
 
   it('processPlatform uploads via presign flow and publishes via shared publishPost', async () => {
@@ -132,10 +153,28 @@ describe('post-video (Instagram presign fix)', () => {
     assert.equal(mediaItem.contentType, 'video/mp4');
     assert.equal(mediaItem.type, 'video', 'type coerced to video for Reels');
     assert.ok(mediaItem.size > 0);
+    assert.equal(
+      tr.publishes[0].options.title,
+      'ThumbGate v1.4.1: Stop AI Agents From Repeating Mistakes #shorts'
+    );
 
     assert.equal(result.platform, 'instagram');
     assert.equal(result.status, 'published');
     assert.ok(result.postUrl.includes('instagram.test'));
+  });
+
+  it('processPlatform sends the operator-lab YouTube Shorts title', async () => {
+    const { processPlatform, buildPlatformPlan } = require('../scripts/social-analytics/post-video');
+    const tr = buildTrackers();
+    const plan = buildPlatformPlan('youtube', 'test-hash', 'operator-lab');
+    const context = baseContext({ ...tr });
+
+    await processPlatform(plan, context);
+
+    assert.equal(
+      tr.publishes[0].options.title,
+      'ThumbGate Operator Lab: Stop Repeated AI Agent Mistakes #shorts'
+    );
   });
 
   it('processPlatform reuses the same uploaded media for a second platform', async () => {
@@ -210,5 +249,16 @@ describe('post-video (Instagram presign fix)', () => {
       !/^https?:\/\/github\.com\/IgorGanapolsky\/ThumbGate/m.test(CAPTIONS.instagram),
       `instagram caption must not use github.com as the sole bare-URL CTA:\n${CAPTIONS.instagram}`
     );
+  });
+});
+
+describe('generate-slides operator-lab template', () => {
+  it('exports a non-numeric operator-lab template for revenue video campaigns', () => {
+    const { TEMPLATES, pickTemplate } = require('../scripts/social-analytics/generate-slides');
+
+    assert.equal(pickTemplate('operator-lab'), 'operator-lab');
+    assert.ok(TEMPLATES['operator-lab']);
+    assert.match(TEMPLATES['operator-lab'].name, /operator-lab/);
+    assert.ok(TEMPLATES['operator-lab'].slides.length >= 5);
   });
 });

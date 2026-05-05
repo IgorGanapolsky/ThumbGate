@@ -305,6 +305,16 @@ test('buyer intent script serves shared checkout helper JavaScript', async () =>
   assert.match(script, /dataset\.baseHref/);
 });
 
+test('/pro serves the Pro landing page instead of redirecting to the homepage', async () => {
+  const res = await fetch(apiUrl('/pro?utm_source=test'), { redirect: 'manual' });
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /text\/html/);
+  const html = await res.text();
+  assert.match(html, /ThumbGate Pro/);
+  assert.match(html, /Buy the operator loop that proves your AI agent stopped repeating the mistake\./);
+  assert.match(html, /\/checkout\/pro\?plan_id=pro&billing_cycle=monthly/);
+});
+
 test('startServer accepts an explicit bind host', async () => {
   const explicit = await startServer({ port: 0, host: '0.0.0.0' });
   try {
@@ -1251,8 +1261,16 @@ test('cancel page serves retry message and records first-party telemetry', async
   assert.match(body, /data-reason="too_expensive"/);
   assert.match(body, /sendTelemetry\('checkout_cancelled'\)/);
   assert.match(body, /sendTelemetry\('reason_not_buying'/);
+  assert.match(body, /Send workflow first/);
+  assert.match(body, /id="send-workflow-first"/);
+  assert.match(body, /data-recovery-offer="workflow_sprint_intake"/);
+  assert.match(body, /checkout_cancel_workflow_intake_clicked/);
+  assert.match(body, /checkout_cancel_workflow_sprint_intake/);
+  assert.match(body, /utm_medium', 'checkout_cancel_recovery'/);
   assert.match(body, /Book \$499 diagnostic/);
   assert.match(body, /Start \$1500 sprint/);
+  assert.match(body, /Restart \$19 Pro trial/);
+  assert.match(body, /data-recovery-offer="pro_trial_retry"/);
   assert.match(body, /data-recovery-offer="sprint_diagnostic"/);
   assert.match(body, /data-recovery-offer="workflow_sprint"/);
   assert.match(body, /checkout_recovery_offer_clicked/);
@@ -1291,7 +1309,7 @@ test('checkout fallback URLs preserve Stripe session placeholders while carrying
 
 test('checkout bootstrap route preserves attribution and records first-party telemetry in local mode', async () => {
   const res = await fetch(
-    apiUrl('/checkout/pro?acquisition_id=acq_bootstrap&visitor_id=visitor_bootstrap&session_id=session_bootstrap&install_id=inst_bootstrap&utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&utm_term=agentic+feedback&creator=reach_vb&community=ClaudeCode&post_id=1rsudq0&comment_id=oa9mqjf&campaign_variant=comment_problem_solution&offer_code=REDDIT-EARLY&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2Fpricing'),
+    apiUrl('/checkout/pro?confirm=1&acquisition_id=acq_bootstrap&visitor_id=visitor_bootstrap&session_id=session_bootstrap&install_id=inst_bootstrap&customer_email=buyer%40example.com&utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&utm_term=agentic+feedback&creator=reach_vb&community=ClaudeCode&post_id=1rsudq0&comment_id=oa9mqjf&campaign_variant=comment_problem_solution&offer_code=REDDIT-EARLY&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2Fpricing'),
     {
       redirect: 'manual',
       headers: {
@@ -1359,7 +1377,7 @@ test('checkout bootstrap falls back to seeded journey cookies when query IDs are
     'thumbgate_acquisition_id=acq_cookie_checkout',
   ].join('; ');
   const res = await fetch(
-    apiUrl('/checkout/pro?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro'),
+    apiUrl('/checkout/pro?confirm=1&customer_email=buyer%40example.com&utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro'),
     {
       redirect: 'manual',
       headers: {
@@ -2650,6 +2668,8 @@ test('billing summary returns admin-only operational proxy', async () => {
   assert.equal(body.pipeline.workflowSprintLeads.total, 1);
   assert.equal(body.pipeline.workflowSprintLeads.bySource.linkedin, 1);
   assert.equal(body.pipeline.qualifiedWorkflowSprintLeads.total, 1);
+  assert.equal(body.runtimePresence.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL, true);
+  assert.equal(body.runtimePresence.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL, true);
   assert.equal(body.attribution.bookedRevenueByCampaignCents.pro_pack, 4900);
   assert.ok(body.trafficMetrics.visitors >= 1);
   assert.equal(body.operatorGeneratedAcquisition.uniqueLeads, 0);

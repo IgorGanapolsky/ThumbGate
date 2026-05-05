@@ -1,6 +1,6 @@
 # Roo Sunset Demand Pack
 
-Updated: 2026-05-04T15:13:40.924Z
+Updated: 2026-05-04T19:52:57.729Z
 
 This is a sales operator artifact. It is not proof of sent outreach, installs, paid revenue, or partner approval by itself.
 
@@ -59,10 +59,10 @@ Turn Roo shutdown urgency into tracked migration clicks, proof-backed setup dema
 ## Follow-On Offers
 - ThumbGate Pro: $19/mo or $149/yr
   Buyer: Solo Roo migrants who want the self-serve dashboard, proof-ready exports, and local-first lesson continuity after the Cline move.
-  CTA: https://thumbgate.ai/checkout/pro?utm_source=roo_sunset&utm_medium=migration_pack&utm_campaign=roo_follow_on_pro&utm_content=pro&campaign_variant=self_serve_follow_on&offer_code=ROO-FOLLOW_ON_PRO&cta_id=roo_follow_on_pro&cta_placement=post_install&plan_id=pro&surface=roo_follow_on
+  CTA: https://thumbgate-production.up.railway.app/checkout/pro?utm_source=roo_sunset&utm_medium=migration_pack&utm_campaign=roo_follow_on_pro&utm_content=pro&campaign_variant=self_serve_follow_on&offer_code=ROO-FOLLOW_ON_PRO&cta_id=roo_follow_on_pro&cta_placement=post_install&plan_id=pro&surface=roo_follow_on
 - Workflow Hardening Sprint: Intake-led sprint, then Team at $49/seat/mo with 3-seat minimum after qualification
   Buyer: Teams that already know their Roo migration touches one production workflow with approval boundaries, rollback risk, or bad handoffs.
-  CTA: https://thumbgate.ai/?utm_source=roo_sunset&utm_medium=migration_pack&utm_campaign=roo_follow_on_sprint&utm_content=workflow_sprint&campaign_variant=team_follow_on&offer_code=ROO-FOLLOW_ON_SPRINT&cta_id=roo_follow_on_sprint&cta_placement=post_install&surface=roo_follow_on#workflow-sprint-intake
+  CTA: https://thumbgate-production.up.railway.app/?utm_source=roo_sunset&utm_medium=migration_pack&utm_campaign=roo_follow_on_sprint&utm_content=workflow_sprint&campaign_variant=team_follow_on&offer_code=ROO-FOLLOW_ON_SPRINT&cta_id=roo_follow_on_sprint&cta_placement=post_install&surface=roo_follow_on#workflow-sprint-intake
 
 ## Operator Queue
 ### Roo user who needs lesson memory to survive the move to Cline
@@ -73,10 +73,10 @@ Turn Roo shutdown urgency into tracked migration clicks, proof-backed setup dema
 - Recommended motion: Roo migration guide -> Cline install guide -> setup guide -> Pro only after one saved correction is concrete.
 
 ### Team migrating one risky workflow off Roo
-- Evidence: 11 workflow-control target(s), 9 business-system target(s), and 13 sprint-fit target(s) already favor workflow hardening over a generic plugin pitch.
+- Evidence: 11 workflow-control target(s), 10 business-system target(s), and 13 sprint-fit target(s) already favor workflow hardening over a generic plugin pitch.
 - Proof trigger: They can point to one approval boundary, rollback risk, or repo workflow that cannot afford repeated mistakes during migration.
 - Proof asset: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
-- Next ask: https://thumbgate.ai/?utm_source=roo_sunset&utm_medium=operator_outreach&utm_campaign=roo_queue_sprint&utm_content=workflow_sprint&campaign_variant=migration_workflow&offer_code=ROO-QUEUE_SPRINT&cta_id=roo_queue_sprint&cta_placement=operator_queue&surface=roo_outreach#workflow-sprint-intake
+- Next ask: https://thumbgate-production.up.railway.app/?utm_source=roo_sunset&utm_medium=operator_outreach&utm_campaign=roo_queue_sprint&utm_content=workflow_sprint&campaign_variant=migration_workflow&offer_code=ROO-QUEUE_SPRINT&cta_id=roo_queue_sprint&cta_placement=operator_queue&surface=roo_outreach#workflow-sprint-intake
 - Recommended motion: Workflow Hardening Sprint first. Use proof only after the workflow risk is explicit.
 
 ### Local-first buyer who wants the tool path before founder-led help
@@ -91,10 +91,10 @@ Turn Roo shutdown urgency into tracked migration clicks, proof-backed setup dema
 Roo can sunset. Your lesson memory should not. The clean first step is the migration guide: https://thumbgate-production.up.railway.app/guides/roo-code-alternative-cline?utm_source=roo_sunset&utm_medium=operator_outreach&utm_campaign=roo_outreach_guide&utm_content=guide&campaign_variant=memory_migrant&offer_code=ROO-OUTREACH_GUIDE&cta_id=roo_outreach_guide&cta_placement=outreach_draft&surface=roo_outreach . It explains the Cline successor path, why portable lesson memory matters, and where the exact install doc lives when they are ready.
 
 ### Pain-confirmed follow-up — Buyer who already named one repeated workflow failure
-Once the migration risk is concrete, move from urgency to proof. Send Verification Evidence plus Commercial Truth first: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md and https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md . If they want the self-serve lane, use https://thumbgate-production.up.railway.app/guide?utm_source=roo_sunset&utm_medium=operator_outreach&utm_campaign=roo_outreach_guide&utm_content=guide&campaign_variant=proof_backed_setup&offer_code=ROO-OUTREACH_GUIDE&cta_id=roo_outreach_guide&cta_placement=outreach_draft&surface=roo_outreach then https://thumbgate.ai/checkout/pro?utm_source=roo_sunset&utm_medium=operator_outreach&utm_campaign=roo_outreach_pro&utm_content=pro&campaign_variant=self_serve_follow_on&offer_code=ROO-OUTREACH_PRO&cta_id=roo_outreach_pro&cta_placement=outreach_draft&plan_id=pro&surface=roo_outreach . If they want help hardening one workflow before rollout, route them to https://thumbgate.ai/?utm_source=roo_sunset&utm_medium=operator_outreach&utm_campaign=roo_outreach_sprint&utm_content=workflow_sprint&campaign_variant=migration_workflow&offer_code=ROO-OUTREACH_SPRINT&cta_id=roo_outreach_sprint&cta_placement=outreach_draft&surface=roo_outreach#workflow-sprint-intake .
+Once the migration risk is concrete, move from urgency to proof. Send Verification Evidence plus Commercial Truth first: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md and https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md . If they want the self-serve lane, use https://thumbgate-production.up.railway.app/guide?utm_source=roo_sunset&utm_medium=operator_outreach&utm_campaign=roo_outreach_guide&utm_content=guide&campaign_variant=proof_backed_setup&offer_code=ROO-OUTREACH_GUIDE&cta_id=roo_outreach_guide&cta_placement=outreach_draft&surface=roo_outreach then https://thumbgate-production.up.railway.app/checkout/pro?utm_source=roo_sunset&utm_medium=operator_outreach&utm_campaign=roo_outreach_pro&utm_content=pro&campaign_variant=self_serve_follow_on&offer_code=ROO-OUTREACH_PRO&cta_id=roo_outreach_pro&cta_placement=outreach_draft&plan_id=pro&surface=roo_outreach . If they want help hardening one workflow before rollout, route them to https://thumbgate-production.up.railway.app/?utm_source=roo_sunset&utm_medium=operator_outreach&utm_campaign=roo_outreach_sprint&utm_content=workflow_sprint&campaign_variant=migration_workflow&offer_code=ROO-OUTREACH_SPRINT&cta_id=roo_outreach_sprint&cta_placement=outreach_draft&surface=roo_outreach#workflow-sprint-intake .
 
 ### Founder note — Team owner migrating one production workflow off Roo
-A Roo-to-Cline move is not the hard part. Keeping one risky workflow from relearning the same repo, approval, or rollback mistake is the hard part. If that workflow already exists on your side, use the Workflow Hardening Sprint intake here: https://thumbgate.ai/?utm_source=roo_sunset&utm_medium=operator_outreach&utm_campaign=roo_outreach_sprint&utm_content=workflow_sprint&campaign_variant=migration_workflow&offer_code=ROO-OUTREACH_SPRINT&cta_id=roo_outreach_sprint&cta_placement=outreach_draft&surface=roo_outreach#workflow-sprint-intake .
+A Roo-to-Cline move is not the hard part. Keeping one risky workflow from relearning the same repo, approval, or rollback mistake is the hard part. If that workflow already exists on your side, use the Workflow Hardening Sprint intake here: https://thumbgate-production.up.railway.app/?utm_source=roo_sunset&utm_medium=operator_outreach&utm_campaign=roo_outreach_sprint&utm_content=workflow_sprint&campaign_variant=migration_workflow&offer_code=ROO-OUTREACH_SPRINT&cta_id=roo_outreach_sprint&cta_placement=outreach_draft&surface=roo_outreach#workflow-sprint-intake .
 
 ## Active Channel Drafts
 ### Reddit — Migration post
@@ -106,10 +106,10 @@ Roo sunsets on May 15, 2026. Cline is the obvious successor, but the real migrat
 
 ### LinkedIn — Founder post
 - Audience: Platform or AI-product lead migrating one workflow off Roo
-- Evidence: 13 sprint-fit target(s) plus 9 business-system target(s) make workflow-risk migration the strongest B2B Roo angle.
-- CTA: https://thumbgate.ai/?utm_source=roo_sunset&utm_medium=linkedin_post&utm_campaign=roo_channel_linkedin&utm_content=workflow_sprint&campaign_variant=migration_workflow&offer_code=ROO-CHANNEL-LINKEDIN&cta_id=roo_channel_linkedin&cta_placement=channel_draft&surface=roo_linkedin#workflow-sprint-intake
+- Evidence: 13 sprint-fit target(s) plus 10 business-system target(s) make workflow-risk migration the strongest B2B Roo angle.
+- CTA: https://thumbgate-production.up.railway.app/?utm_source=roo_sunset&utm_medium=linkedin_post&utm_campaign=roo_channel_linkedin&utm_content=workflow_sprint&campaign_variant=migration_workflow&offer_code=ROO-CHANNEL-LINKEDIN&cta_id=roo_channel_linkedin&cta_placement=channel_draft&surface=roo_linkedin#workflow-sprint-intake
 - Proof timing: Public post can reference the shutdown, but hold proof links until the buyer confirms one workflow risk.
-Roo shutting down is a forcing function, not the real problem. The real problem is migrating one live workflow without reteaching approval boundaries, rollback rules, and repo-specific mistakes from zero. If your team already has that workflow in mind, start with the Workflow Hardening Sprint here: https://thumbgate.ai/?utm_source=roo_sunset&utm_medium=linkedin_post&utm_campaign=roo_channel_linkedin&utm_content=workflow_sprint&campaign_variant=migration_workflow&offer_code=ROO-CHANNEL-LINKEDIN&cta_id=roo_channel_linkedin&cta_placement=channel_draft&surface=roo_linkedin#workflow-sprint-intake .
+Roo shutting down is a forcing function, not the real problem. The real problem is migrating one live workflow without reteaching approval boundaries, rollback rules, and repo-specific mistakes from zero. If your team already has that workflow in mind, start with the Workflow Hardening Sprint here: https://thumbgate-production.up.railway.app/?utm_source=roo_sunset&utm_medium=linkedin_post&utm_campaign=roo_channel_linkedin&utm_content=workflow_sprint&campaign_variant=migration_workflow&offer_code=ROO-CHANNEL-LINKEDIN&cta_id=roo_channel_linkedin&cta_placement=channel_draft&surface=roo_linkedin#workflow-sprint-intake .
 
 ### Threads — Short post
 - Audience: Solo Roo builder who wants the cleanest self-serve move
@@ -130,7 +130,7 @@ Roo shutting down is a reminder that vendor-scoped memory is a bad design. Keep 
 - Self-serve targets: 3
 - Sprint-fit targets: 13
 - Workflow-control targets: 11
-- Business-system targets: 9
+- Business-system targets: 10
 
 ## 90-Day Measurement Plan
 - North star: roo_migration_to_paid_intent

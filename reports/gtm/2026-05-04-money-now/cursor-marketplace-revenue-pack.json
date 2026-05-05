@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-04T15:13:40.937Z",
+  "generatedAt": "2026-05-04T19:52:57.741Z",
   "channel": "Cursor",
   "objective": "Turn Cursor plugin discovery into tracked installs, Pro checkout starts, and qualified team conversations.",
   "canonicalIdentity": {
@@ -23,7 +23,7 @@
       "shortDescription": "👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.",
       "longDescription": "👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern. ThumbGate adds pre-action checks, prevention rules, history-aware lesson distillation, and proof-ready workflow evidence for Cursor agents. When the feedback starts as a vague thumbs-down, ThumbGate can ground it in up to 8 prior recorded entries plus the failed tool call, then keep a linked 60-second follow-up open so the lesson becomes reusable instead of getting lost in chat history.",
       "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
-      "homepageUrl": "https://thumbgate.ai/guide?utm_source=cursor&utm_medium=marketplace&utm_campaign=cursor_plugin_guide&utm_content=guide&campaign_variant=plugin_homepage&offer_code=CURSOR-PLUGIN_HOMEPAGE&cta_id=cursor_plugin_homepage&cta_placement=cursor_listing&surface=cursor_marketplace",
+      "homepageUrl": "https://thumbgate-production.up.railway.app/guide?utm_source=cursor&utm_medium=marketplace&utm_campaign=cursor_plugin_guide&utm_content=guide&campaign_variant=plugin_homepage&offer_code=CURSOR-PLUGIN_HOMEPAGE&cta_id=cursor_plugin_homepage&cta_placement=cursor_listing&surface=cursor_marketplace",
       "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
       "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/cursor-marketplace/README.md",
       "tags": [
@@ -50,7 +50,7 @@
       "shortDescription": "Pre-action checks that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.",
       "longDescription": "Use the directory profile to explain the repeated-mistake problem, then route serious readers to the Marketplace or homepage with tracked links. Lead with the outcome before architecture: stop costly AI agent mistakes, then mention pre-action checks, prevention rules, and proof.",
       "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
-      "homepageUrl": "https://thumbgate.ai/guide?utm_source=cursor&utm_medium=directory&utm_campaign=cursor_directory_guide&utm_content=guide&campaign_variant=directory_homepage&offer_code=CURSOR-DIRECTORY_HOMEPAGE&cta_id=cursor_directory_homepage&cta_placement=cursor_listing&surface=cursor_directory",
+      "homepageUrl": "https://thumbgate-production.up.railway.app/guide?utm_source=cursor&utm_medium=directory&utm_campaign=cursor_directory_guide&utm_content=guide&campaign_variant=directory_homepage&offer_code=CURSOR-DIRECTORY_HOMEPAGE&cta_id=cursor_directory_homepage&cta_placement=cursor_listing&surface=cursor_directory",
       "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
       "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/CURSOR_PLUGIN_OPERATIONS.md",
       "tags": [
@@ -75,7 +75,7 @@
       "shortDescription": "Repo-backed ThumbGate install path for teams that need shared pre-action checks, workflow proof, and controlled plugin refresh.",
       "longDescription": "Pitch the Team Marketplace only after a buyer already named one repeated workflow failure, one owner, and one approval boundary. ThumbGate Teams starts with the Workflow Hardening Sprint, then expands to shared prevention gates, proof review, and repo-backed refresh.",
       "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
-      "homepageUrl": "https://thumbgate.ai/?utm_source=cursor&utm_medium=team_marketplace&utm_campaign=cursor_team_marketplace&utm_content=homepage&campaign_variant=team_marketplace_homepage&offer_code=CURSOR-TEAM_MARKETPLACE_HOMEPAGE&cta_id=cursor_team_marketplace_homepage&cta_placement=cursor_listing&surface=team_marketplace#workflow-sprint-intake",
+      "homepageUrl": "https://thumbgate-production.up.railway.app/?utm_source=cursor&utm_medium=team_marketplace&utm_campaign=cursor_team_marketplace&utm_content=homepage&campaign_variant=team_marketplace_homepage&offer_code=CURSOR-TEAM_MARKETPLACE_HOMEPAGE&cta_id=cursor_team_marketplace_homepage&cta_placement=cursor_listing&surface=team_marketplace#workflow-sprint-intake",
       "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
       "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/CUSTOMER_DISCOVERY_SPRINT.md",
       "tags": [
@@ -96,14 +96,14 @@
       "label": "ThumbGate Pro",
       "pricingModel": "$19/mo or $149/yr",
       "buyer": "Solo operators who want the self-serve dashboard and proof-ready exports after install.",
-      "cta": "https://thumbgate.ai/checkout/pro?utm_source=cursor&utm_medium=marketplace&utm_campaign=cursor_plugin_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=CURSOR-PRO_FOLLOW_ON&cta_id=cursor_pro_follow_on&cta_placement=post_install&plan_id=pro&surface=cursor_post_install"
+      "cta": "https://thumbgate-production.up.railway.app/checkout/pro?utm_source=cursor&utm_medium=marketplace&utm_campaign=cursor_plugin_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=CURSOR-PRO_FOLLOW_ON&cta_id=cursor_pro_follow_on&cta_placement=post_install&plan_id=pro&surface=cursor_post_install"
     },
     {
       "key": "teams",
       "label": "Workflow Hardening Sprint",
       "pricingModel": "Workflow Hardening Sprint, then Team at $49/seat/mo with 3-seat minimum after qualification",
       "buyer": "Teams who already named one repeated workflow failure and need rollout proof.",
-      "cta": "https://thumbgate.ai/?utm_source=cursor&utm_medium=marketplace&utm_campaign=cursor_team_follow_on&utm_content=workflow_sprint&campaign_variant=teams_follow_on&offer_code=CURSOR-TEAMS_FOLLOW_ON&cta_id=cursor_team_follow_on&cta_placement=post_install&surface=cursor_post_install#workflow-sprint-intake"
+      "cta": "https://thumbgate-production.up.railway.app/?utm_source=cursor&utm_medium=marketplace&utm_campaign=cursor_team_follow_on&utm_content=workflow_sprint&campaign_variant=teams_follow_on&offer_code=CURSOR-TEAMS_FOLLOW_ON&cta_id=cursor_team_follow_on&cta_placement=post_install&surface=cursor_post_install#workflow-sprint-intake"
     }
   ],
   "screenshots": [

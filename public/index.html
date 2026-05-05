@@ -405,6 +405,7 @@ __GA_BOOTSTRAP__
   .hero-paid-actions .starter { background: #facc15; color: #17110a; border: 1px solid rgba(250,204,21,0.55); }
   .hero-paid-actions .diagnostic { background: var(--green); color: #06120a; border: 1px solid rgba(74,222,128,0.45); }
   .hero-paid-actions .sprint { color: var(--green); border: 1px solid rgba(74,222,128,0.45); background: rgba(17,17,19,0.72); }
+  .hero-paid-actions .intake { color: var(--cyan); border: 1px solid rgba(34,211,238,0.45); background: rgba(34,211,238,0.1); }
   .hero-paid-note { font-size: 14px; color: var(--text-muted); max-width: 720px; margin: 0 auto 24px; }
   .hero-paid-note strong { color: var(--text); }
   .hero-install { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 14px 24px; display: inline-flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 15px; margin-bottom: 40px; cursor: pointer; transition: border-color 0.2s; position: relative; max-width: 100%; overflow-x: auto; }
@@ -560,6 +561,10 @@ __GA_BOOTSTRAP__
   .team-paid-price { color: var(--green); font-weight: 800; font-size: 18px; }
   .team-paid-link { display: block; text-align: center; padding: 10px 12px; background: rgba(74,222,128,0.16); color: var(--green); border: 1px solid rgba(74,222,128,0.45); border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 700; }
   .team-paid-link:hover { border-color: var(--green); transform: translateY(-1px); }
+  .team-intake-recovery { margin: 0 0 16px; padding: 13px 14px; border: 1px solid rgba(34,211,238,0.28); border-radius: 12px; background: rgba(34,211,238,0.08); display: flex; align-items: center; justify-content: space-between; gap: 14px; text-align: left; }
+  .team-intake-recovery strong { display: block; color: var(--text); font-size: 13px; margin-bottom: 2px; }
+  .team-intake-recovery span { display: block; color: var(--text-dim); font-size: 12px; line-height: 1.45; }
+  .team-intake-recovery a { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; min-height: 34px; padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(34,211,238,0.45); color: var(--cyan); background: rgba(17,17,19,0.68); text-decoration: none; font-size: 12px; font-weight: 800; white-space: nowrap; }
   .team-form { max-width: 860px; margin: 24px auto 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
   .team-intake-panel .team-form { max-width: none; margin: 0; }
   .team-form .full { grid-column: 1 / -1; }
@@ -626,6 +631,8 @@ __GA_BOOTSTRAP__
     .team-intake-panel-head { display: block; }
     .team-intake-badge { display: inline-block; margin-bottom: 10px; }
     .team-paid-path { grid-template-columns: 1fr; }
+    .team-intake-recovery { align-items: stretch; flex-direction: column; text-align: center; }
+    .team-intake-recovery a { width: 100%; }
     .team-form { grid-template-columns: 1fr; }
     .hero { padding: 72px 0 56px; }
     .hero-actions { flex-direction: column; }
@@ -689,7 +696,7 @@ __GA_BOOTSTRAP__
     <div id="pro-pitch" style="max-width:820px;margin:0 auto 32px;padding:24px 28px;background:linear-gradient(180deg,rgba(17,17,19,0.94) 0%,rgba(22,22,24,0.94) 100%);border:1px solid rgba(34,211,238,0.32);border-radius:20px;box-shadow:0 0 0 1px rgba(34,211,238,0.18),0 24px 64px rgba(0,0,0,0.35);text-align:left;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
         <div>
-          <div style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid rgba(34,211,238,0.25);background:var(--cyan-dim);color:var(--cyan);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">Start 7-day free trial</div>
+          <div style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid rgba(34,211,238,0.25);background:var(--cyan-dim);color:var(--cyan);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">Pay-now Pro</div>
           <h2 style="margin:10px 0 4px;font-size:22px;letter-spacing:-0.025em;line-height:1.2;">Go Pro — one correction, every agent, every session.</h2>
           <p style="margin:0;font-size:13px;color:var(--text-muted);">Personal local dashboard · DPO export from real corrections · founder support on risky flows.</p>
         </div>
@@ -710,18 +717,20 @@ __GA_BOOTSTRAP__
           <a href="/checkout/pro?utm_source=website&utm_medium=hero_pricing_card&utm_campaign=pro_pack&cta_id=hero_pro_annual&cta_placement=hero_pricing&plan_id=pro&billing_cycle=annual&landing_path=%2F" onclick="posthog.capture('hero_pricing_annual_click',{cta:'choose_annual'})" style="display:inline-flex;align-items:center;gap:6px;padding:11px 20px;background:rgba(17,17,19,0.75);color:var(--text);border:1px solid var(--border);border-radius:999px;text-decoration:none;font-weight:700;font-size:14px;white-space:nowrap;">Choose annual →</a>
         </div>
       </div>
-      <p style="margin:14px 0 0;font-size:11px;color:var(--text-muted);text-align:center;">No credit card for 7-day trial · cancel anytime · your rules and captures stay local. <a href="/go/install" style="color:var(--cyan);text-decoration:none;">Prefer free? Install CLI →</a></p>
+      <p style="margin:14px 0 0;font-size:11px;color:var(--text-muted);text-align:center;">Card required · billed today · cancel anytime · your rules and captures stay local. <a href="/go/install" style="color:var(--cyan);text-decoration:none;">Prefer free? Install CLI →</a></p>
     </div>
 
-    <div class="hero-paid-path" aria-label="Paid workflow hardening checkout options">
+    <div class="hero-paid-path" aria-label="Paid AI agent governance sprint checkout options">
       <div>
         <strong>Need buyer-ready proof today?</strong>
-        <span>Send one messy AI-agent workflow. We turn it into clear rules, examples, and pre-action checks before it touches developer-machine risk surfaces.</span>
+        <span>Send one messy AI-agent workflow. We turn it into clear rules, examples, and pre-action checks, plus AI Agent Governance Sprint approval boundaries and rollback safety before it touches developer-machine risk surfaces.</span>
       </div>
       <div class="hero-paid-actions">
         <a class="starter" href="https://buy.stripe.com/7sY4gzgH24r49G17mb3sI0g" onclick="sendFirstPartyTelemetry('founder_workflow_diagnostic_checkout_started',{ctaId:'hero_founder_workflow_diagnostic_checkout',ctaPlacement:'hero_paid_path',planId:'team',offer:'founder_workflow_diagnostic',price:99});sendGa4Event('begin_checkout',{currency:'USD',value:99,items:[{item_id:'founder_workflow_diagnostic',item_name:'Founder Workflow Diagnostic'}]});">Pay $99 diagnostic &rarr;</a>
         <a class="diagnostic" href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__" onclick="sendFirstPartyTelemetry('workflow_sprint_diagnostic_checkout_started',{ctaId:'hero_workflow_sprint_diagnostic_checkout',ctaPlacement:'hero_paid_path',planId:'team',offer:'workflow_hardening_diagnostic',price:sprintDiagnosticPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:sprintDiagnosticPriceDollars,items:[{item_id:'workflow_hardening_diagnostic',item_name:'Workflow Hardening Diagnostic'}]});">Pay $499 diagnostic &rarr;</a>
         <a class="sprint" href="__WORKFLOW_SPRINT_CHECKOUT_URL__" onclick="sendFirstPartyTelemetry('workflow_sprint_checkout_started',{ctaId:'hero_workflow_sprint_checkout',ctaPlacement:'hero_paid_path',planId:'team',offer:'workflow_hardening_sprint',price:workflowSprintPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:workflowSprintPriceDollars,items:[{item_id:'workflow_hardening_sprint',item_name:'Workflow Hardening Sprint'}]});">Pay $1500 sprint &rarr;</a>
+        <a class="intake" href="#workflow-sprint-intake" onclick="sendFirstPartyTelemetry('workflow_sprint_recovery_intake_clicked',{ctaId:'hero_workflow_sprint_recovery_intake',ctaPlacement:'hero_paid_path',planId:'team',offer:'workflow_hardening_sprint',reason:'not_ready_to_pay'});sendGa4Event('generate_lead',{currency:'USD',value:0,method:'workflow_sprint_recovery_intake'});">Send workflow first &rarr;</a>
+        <a class="starter" href="/guides/ai-agent-governance-sprint">See sprint scope &rarr;</a>
       </div>
     </div>
 
@@ -764,7 +773,7 @@ __GA_BOOTSTRAP__
         <span class="copy-hint">click to copy</span>
       </div>
       <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="posthog.capture('hero_install_click',{cta:'install_cli'})" class="btn-gpt-page btn-install-hero" style="font-size:18px;padding:16px 36px;">Install Free CLI</a>
-      <a href="/go/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_upgrade&cta_id=hero_go_pro&cta_placement=hero&plan_id=pro&landing_path=%2F" onclick="posthog.capture('hero_pro_click',{cta:'go_pro'})" class="btn-pro-page" style="font-size:18px;padding:16px 32px;background:linear-gradient(135deg,#f59e0b 0%,#ef4444 100%);color:#fff;font-weight:700;border-radius:10px;box-shadow:0 0 32px rgba(239,68,68,0.35);display:inline-flex;align-items:center;gap:8px;">Start 7-day Pro trial — $19/mo <span style="font-size:12px;opacity:0.85;font-weight:500;">→</span></a>
+      <a href="/go/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_upgrade&cta_id=hero_go_pro&cta_placement=hero&plan_id=pro&landing_path=%2F" onclick="posthog.capture('hero_pro_click',{cta:'go_pro'})" class="btn-pro-page" style="font-size:18px;padding:16px 32px;background:linear-gradient(135deg,#f59e0b 0%,#ef4444 100%);color:#fff;font-weight:700;border-radius:10px;box-shadow:0 0 32px rgba(239,68,68,0.35);display:inline-flex;align-items:center;gap:8px;">Start Pro — $19/mo <span style="font-size:12px;opacity:0.85;font-weight:500;">→</span></a>
       <div class="hero-secondary-ctas" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:8px;opacity:0.7;">
         <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('hero_claude_extension_click',{cta:'install_claude_extension'})" style="font-size:12px;padding:8px 16px;background:#d97706;color:#fff;box-shadow:none;">Install Claude Extension</a>
         <a href="/go/github?utm_source=website&utm_medium=hero_cta&utm_campaign=github_repo&cta_id=hero_star_github&cta_placement=hero" target="_blank" rel="noopener" class="btn-free" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;font-size:12px;">⭐ Star on GitHub</a>
@@ -783,7 +792,7 @@ __GA_BOOTSTRAP__
     <div id="demo" style="margin:28px auto 0;max-width:560px;text-align:center;" onclick="posthog.capture('hero_demo_view')">
       <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;letter-spacing:0.04em;text-transform:uppercase;">▶ 90-second demo · force-push → 👎 → blocked</div>
       <video src="/assets/tiktok-agent-memory.mp4" controls playsinline preload="metadata" poster="/assets/instagram-card.png" style="width:100%;max-width:560px;border-radius:12px;border:1px solid var(--border);background:#000;box-shadow:0 10px 40px rgba(0,0,0,0.4);"></video>
-      <a href="/checkout/pro?utm_source=website&utm_medium=hero_demo&utm_campaign=pro_trial&cta_id=hero_post_demo" onclick="posthog.capture('hero_cta_click',{cta:'start_trial_post_demo'})" style="display:inline-block;margin-top:14px;color:var(--cyan);font-size:14px;font-weight:700;text-decoration:none;">→ Start 7-day Pro trial</a>
+      <a href="/checkout/pro?utm_source=website&utm_medium=hero_demo&utm_campaign=pro_trial&cta_id=hero_post_demo" onclick="posthog.capture('hero_cta_click',{cta:'start_trial_post_demo'})" style="display:inline-block;margin-top:14px;color:var(--cyan);font-size:14px;font-weight:700;text-decoration:none;">→ Start Pro</a>
     </div>
     <p style="font-size:13px;color:var(--text-muted);margin:8px auto 28px;max-width:560px;">Your agent has no memory. Every session, the same wrong pattern runs. ThumbGate turns a single correction into a permanent block — before the next tool call fires. <a href="#pricing" style="color:var(--cyan);text-decoration:none;">See all plans →</a></p>
     <div class="first-check-card" id="first-check">
@@ -1175,6 +1184,12 @@ __GA_BOOTSTRAP__
         <p>Turn unattended agent PRs into a governed queue with run ledgers, pre-dispatch checks, isolated task lanes, and risk-tiered review.</p>
         <div class="card-arrow">Govern agent PRs →</div>
       </a>
+      <a class="seo-card" href="/guides/ai-agent-governance-sprint">
+        <div class="seo-kicker">Team Sprint</div>
+        <h3>AI Agent Governance Sprint</h3>
+        <p>Package one repo, one workflow owner, and one repeated failure into approval boundaries, rollback safety, and buyer-ready rollout proof.</p>
+        <div class="card-arrow">Start with one workflow →</div>
+      </a>
       <a class="seo-card" href="/guides/gpt-5-5-model-evaluation">
         <div class="seo-kicker">Model Routing</div>
         <h3>GPT-5.5 Model Evaluation</h3>
@@ -1285,7 +1300,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="autoresearch-cta">
         <a class="primary" href="/guides/autoresearch-agent-safety?utm_source=website&utm_medium=autoresearch_pack&utm_campaign=autoresearch_safety&cta_id=autoresearch_guide&cta_placement=autoresearch_pack">Read the Autoresearch guide</a>
-        <a class="secondary" href="/checkout/pro?utm_source=website&utm_medium=autoresearch_pack&utm_campaign=autoresearch_safety&cta_id=autoresearch_pro_trial&cta_placement=autoresearch_pack&plan_id=pro&landing_path=%2F">Start Pro trial</a>
+        <a class="secondary" href="/checkout/pro?utm_source=website&utm_medium=autoresearch_pack&utm_campaign=autoresearch_safety&cta_id=autoresearch_pro_trial&cta_placement=autoresearch_pack&plan_id=pro&landing_path=%2F">Start Pro</a>
       </div>
     </div>
   </div>
@@ -1294,7 +1309,7 @@ __GA_BOOTSTRAP__
 <!-- HOW IT WORKS -->
 <section class="how-it-works" id="how-it-works">
   <div class="container">
-    <div class="section-label">New in v1.16.13</div>
+    <div class="section-label">New in v1.16.20</div>
     <h2 class="section-title">Three steps to stop repeated AI failures</h2>
     <div class="steps">
       <div class="step">
@@ -1466,7 +1481,7 @@ __GA_BOOTSTRAP__
         <div class="price-sub">or $149/yr (save 35%) · Personal dashboard + enforcement proof</div>
         <p style="font-size:13px;color:var(--cyan);margin-bottom:16px;font-weight:500;">Unlimited captures, unlimited rules, full recall. $19/mo costs less than 20 minutes of re-fixing a mistake your agent already learned to avoid.</p>
         <div class="pro-upgrade-triggers" style="font-size:12px;color:#aaa;margin-bottom:12px;">
-          <strong style="color:#fff;">No credit card required.</strong> 7-day free trial. Cancel anytime. Your rules and captures stay local.
+          <strong style="color:#fff;">Card required.</strong> Billed today. Cancel anytime. Your rules and captures stay local.
         </div>
         <div class="dashboard-preview" style="margin-bottom:16px;border:1px solid #333;border-radius:8px;overflow:hidden;">
           <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);padding:16px;text-align:center;">
@@ -1489,13 +1504,13 @@ __GA_BOOTSTRAP__
           <li>Personal local dashboard — every Pro user gets a localhost dashboard without extra cloud setup</li>
           <li>Review-ready workflow support — we help you wire the riskiest flows first: migrations, force-pushes, deploys, and CI</li>
         </ul>
-        <div class="trial-badge" style="background:var(--cyan);color:#000;display:inline-block;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;margin-bottom:12px;">7-DAY FREE TRIAL</div>
+        <div class="trial-badge" style="background:var(--cyan);color:#000;display:inline-block;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;margin-bottom:12px;">PAY-NOW PRO</div>
         <div style="display:flex;gap:8px;margin-bottom:12px;">
           <input type="email" id="pro-email" data-buyer-email placeholder="you@company.com" style="flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-raised);color:var(--text);font-size:14px;">
-          <a href="/go/pro?utm_source=website&utm_medium=pricing_card&utm_campaign=pro_upgrade&cta_id=pricing_pro_upgrade&cta_placement=pricing&plan_id=pro&landing_path=%2F" id="pro-checkout-link" class="btn-pro" onclick="handleProTrial();return false;" style="display:flex;align-items:center;padding:10px 20px;font-size:14px;white-space:nowrap;">Start Free Trial</a>
+          <a href="/go/pro?utm_source=website&utm_medium=pricing_card&utm_campaign=pro_upgrade&cta_id=pricing_pro_upgrade&cta_placement=pricing&plan_id=pro&landing_path=%2F" id="pro-checkout-link" class="btn-pro" onclick="handleProTrial();return false;" style="display:flex;align-items:center;padding:10px 20px;font-size:14px;white-space:nowrap;">Upgrade now</a>
         </div>
         <a href="/go/pro?utm_source=website&utm_medium=pricing_card&utm_campaign=pro_upgrade&cta_id=pricing_pro_upgrade&cta_placement=pricing&plan_id=pro&landing_path=%2F" class="btn-pro" onclick="posthog.capture('pricing_cta_click',{cta:'pro_upgrade',plan:'pro'})" style="display:block;width:100%;text-align:center;padding:12px;font-size:15px;">Upgrade to Pro — $19/mo</a>
-        <p style="font-size:11px;color:#666;margin-top:8px;">No credit card required. Cancel anytime. Your rules and captures stay local.</p>
+        <p style="font-size:11px;color:#666;margin-top:8px;">Card required. Billed today. Cancel anytime. Your rules and captures stay local.</p>
       </div>
       <div class="price-card team">
         <div class="tier">Team</div>
@@ -1506,7 +1521,7 @@ __GA_BOOTSTRAP__
           No self-serve trial. Start with one repo, one workflow, and one repeated failure through the sprint intake.
         </div>
         <ul>
-          <li>Workflow hardening sprint — map one painful workflow, one repeated failure, and one buyer proof review before wider rollout</li>
+          <li>AI Agent Governance Sprint — map one painful workflow, one repeated failure, approval boundaries, rollback safety, and one buyer proof review before wider rollout</li>
           <li>Shared enforcement memory — a shared lesson database where one developer's 👎 on a bad migration protects every agent on the team</li>
           <li>Team lesson export/import — export lessons from one project, import into another. Deduplication, provenance tracking, and <code>team-import</code> tagging built in. One team's hard-won lessons become every team's prevention rules</li>
           <li>Org dashboard — active agents, check hit rates, risk agents, and proof-backed team metrics in one place</li>
@@ -1527,8 +1542,8 @@ __GA_BOOTSTRAP__
 <section class="compatibility" id="workflow-sprint-intake">
   <div class="container">
     <div class="section-label">Team Pilot</div>
-    <h2 class="section-title">Start with one repo, one workflow, one repeat failure</h2>
-    <p style="color:var(--text-dim);max-width:720px;margin:0 auto 16px;">This is the fastest path to first paid value for teams. Start with one workflow, one owner, and one blocker. The intake is designed to prove that ThumbGate reduces review churn, rollout risk, or repeated agent mistakes before a wider rollout.</p>
+    <h2 class="section-title">Start the AI Agent Governance Sprint with one repeat failure</h2>
+    <p style="color:var(--text-dim);max-width:720px;margin:0 auto 16px;">This is the fastest path to first paid value for teams. Start with one repo, one workflow owner, and one blocker. The intake is designed to prove that ThumbGate reduces review churn, rollout risk, or repeated agent mistakes before a wider rollout.</p>
     <div class="team-intake-panel">
       <div class="team-intake-panel-head">
         <div>
@@ -1550,14 +1565,21 @@ __GA_BOOTSTRAP__
         </div>
         <div class="team-paid-card">
           <div>
-            <h4>Workflow Hardening Sprint</h4>
-            <p>48-hour implementation sprint for one workflow owner, one blocker, one proof review, and one hardened rollout path.</p>
+            <h4>AI Agent Governance Sprint</h4>
+            <p>48-hour Workflow Hardening Sprint for one workflow owner, one blocker, approval boundaries, rollback safety, one proof review, and one hardened rollout path.</p>
           </div>
           <div>
             <div class="team-paid-price">$<span data-workflow-sprint-price>1500</span></div>
             <a class="team-paid-link" data-workflow-sprint-link href="__WORKFLOW_SPRINT_CHECKOUT_URL__">Pay for sprint</a>
           </div>
         </div>
+      </div>
+      <div class="team-intake-recovery" aria-label="Checkout recovery path for workflow sprint buyers">
+        <div>
+          <strong>Not ready to pay from a checkout page?</strong>
+          <span>Send the workflow first. We can qualify the blocker, confirm the proof plan, and route you to the $499 diagnostic or $1500 sprint only when the scope is real.</span>
+        </div>
+        <a href="#team-pilot-intake-form" onclick="sendFirstPartyTelemetry('workflow_sprint_recovery_intake_clicked',{ctaId:'team_workflow_sprint_recovery_intake',ctaPlacement:'team_paid_path_recovery',planId:'team',offer:'workflow_hardening_sprint',reason:'checkout_abandon'});sendGa4Event('generate_lead',{currency:'USD',value:0,method:'workflow_sprint_recovery_intake'});">Send workflow first</a>
       </div>
       <form id="team-pilot-intake-form" class="team-form" action="/v1/intake/workflow-sprint" method="POST" data-team-intake-form>
         <input type="hidden" name="ctaId" value="workflow_sprint_intake">
@@ -1634,7 +1656,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What does Pro cost?</div>
-        <div class="faq-a">Pro is $19/mo or $149/yr for individual operators and starts with a 7-day free trial, no credit card required. Team is $49/seat/mo with a 3-seat minimum and starts with the Workflow Hardening Sprint intake, not a self-serve trial.</div>
+        <div class="faq-a">Pro is $19/mo or $149/yr for individual operators and bills immediately through Stripe so the self-serve path can create revenue today. Team is $49/seat/mo with a 3-seat minimum and starts with the Workflow Hardening Sprint intake, not a self-serve trial.</div>
       </div>
     </div>
   </div>
@@ -1686,7 +1708,7 @@ __GA_BOOTSTRAP__
       <a href="https://www.linkedin.com/in/igorganapolsky" target="_blank" rel="noopener">LinkedIn</a>
       <a href="/blog">Blog</a>
     </div>
-    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License · v1.16.13</span>
+    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License · v1.16.20</span>
   </div>
 </footer>
 

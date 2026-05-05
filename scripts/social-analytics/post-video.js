@@ -10,6 +10,7 @@
  * Usage:
  *   node scripts/social-analytics/post-video.js
  *   node scripts/social-analytics/post-video.js --campaign=v1.4.1 --dry-run
+ *   node scripts/social-analytics/post-video.js --offer=operator-lab --platforms=youtube
  *   node scripts/social-analytics/post-video.js --video=/path/to/custom.mp4
  *
  * Required env:
@@ -94,19 +95,67 @@ Free + open source. Link in bio 👆
 
 const YT_TITLE = 'ThumbGate v1.4.1: Stop AI Agents From Repeating Mistakes #shorts';
 
+const OPERATOR_LAB_URL = 'https://www.skool.com/thumbgate-operator-lab-6000';
+const OPERATOR_LAB_CAMPAIGN = 'operator_lab_launch';
+
+function buildOperatorLabUrl(platform) {
+  const source = platform === 'twitter' ? 'x' : platform;
+  return `${OPERATOR_LAB_URL}?utm_source=${encodeURIComponent(source)}&utm_medium=short_video&utm_campaign=${OPERATOR_LAB_CAMPAIGN}&utm_content=operator_lab_${encodeURIComponent(platform)}`;
+}
+
+const OPERATOR_LAB_CAPTIONS = {
+  tiktok: `Stop fixing the same AI-agent mistake twice.
+
+ThumbGate Operator Lab is the free Skool path for turning one repeated failure into a prevention rule, wiring it into a PreToolUse gate, and proving it blocks before the action runs.
+
+Join free: ${buildOperatorLabUrl('tiktok')}
+
+#AIAgents #ClaudeCode #DevTools #Coding #AgentOps #BuildInPublic`,
+
+  youtube: `ThumbGate Operator Lab: stop fixing the same AI-agent mistake twice.
+
+Pick one repeated failure, turn it into a prevention rule, wire the PreToolUse gate, and prove the next bad action is blocked before it runs.
+
+Free Skool lab: ${buildOperatorLabUrl('youtube')}
+Source: https://github.com/IgorGanapolsky/ThumbGate
+
+#AIAgents #ClaudeCode #DevTools #Shorts`,
+
+  instagram: `Stop fixing the same AI-agent mistake twice.
+
+ThumbGate Operator Lab is the free Skool path for turning one repeated failure into a prevention rule, wiring it into a PreToolUse gate, and proving it blocks before action.
+
+Free Skool lab in bio.
+
+#AIAgents #ClaudeCode #DevTools #Coding #AgentOps #BuildInPublic`,
+};
+
+const CAPTION_SETS = {
+  default: CAPTIONS,
+  'operator-lab': OPERATOR_LAB_CAPTIONS,
+};
+
+const YT_TITLES = {
+  default: YT_TITLE,
+  'operator-lab': 'ThumbGate Operator Lab: Stop Repeated AI Agent Mistakes #shorts',
+};
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 function parseArgs(argv) {
-  const opts = { dryRun: false, campaign: 'default', videoPath: null, platforms: null, template: 'auto' };
+  const opts = { dryRun: false, campaign: 'default', videoPath: null, platforms: null, template: 'auto', offer: 'default' };
   for (const arg of argv) {
     if (arg === '--dry-run') opts.dryRun = true;
     else if (arg.startsWith('--campaign=')) opts.campaign = arg.slice(11);
     else if (arg.startsWith('--video=')) opts.videoPath = arg.slice(8);
     else if (arg.startsWith('--platforms=')) opts.platforms = arg.slice(12).split(',');
     else if (arg.startsWith('--template=')) opts.template = arg.slice(11);
+    else if (arg.startsWith('--offer=')) opts.offer = arg.slice(8);
   }
+  if (opts.offer === 'operator-lab' && opts.template === 'auto') opts.template = 'operator-lab';
+  if (opts.offer === 'operator-lab' && opts.campaign === 'default') opts.campaign = OPERATOR_LAB_CAMPAIGN;
   return opts;
 }
 
@@ -185,8 +234,9 @@ function prepareVideo(opts) {
   return { videoPath, templateId };
 }
 
-function buildPlatformPlan(platform, baseHash) {
-  const caption = CAPTIONS[platform];
+function buildPlatformPlan(platform, baseHash, offer = 'default') {
+  const captions = CAPTION_SETS[offer] || CAPTION_SETS.default;
+  const caption = captions[platform];
   if (!caption) {
     console.warn(`[post-video] No caption for platform: ${platform} — skipping`);
     return null;
@@ -194,7 +244,7 @@ function buildPlatformPlan(platform, baseHash) {
 
   const contentHash = hashContent(`${baseHash}::${platform}`);
   const cooldownHours = PLATFORM_COOLDOWN_HOURS[platform] || 4;
-  return { platform, caption, contentHash, cooldownDays: cooldownHours / 24 };
+  return { platform, caption, contentHash, cooldownDays: cooldownHours / 24, offer };
 }
 
 function duplicateResult(plan, isDuplicateFn = isDuplicate) {
@@ -205,10 +255,11 @@ function duplicateResult(plan, isDuplicateFn = isDuplicate) {
 }
 
 function recordPostOutcome({ plan, status, postUrl, error, campaign, mediaUrl, templateId, response, recordFn = record }) {
+  const tags = [plan.offer || 'default', 'short', campaign].filter(Boolean);
   if (status === 'published') {
     console.log(`[post-video] ✓ ${plan.platform}: ${postUrl}`);
     recordFn({ type: 'video', platform: plan.platform, contentHash: plan.contentHash, postUrl, campaign,
-      tags: ['v1.4.1', 'short', campaign],
+      tags,
       extra: { mediaUrl, templateId, zernioPostId: response.post?._id } });
     return;
   }
@@ -246,6 +297,7 @@ async function processPlatform(plan, context) {
       { platform: plan.platform, accountId: ACCOUNTS[plan.platform] },
     ], {
       mediaItems,
+      title: YT_TITLES[plan.offer] || YT_TITLES.default,
       // YouTube Shorts use `title`; other platforms ignore it.
       firstComment: undefined,
     });
@@ -294,12 +346,12 @@ async function main() {
   const opts = parseArgs(process.argv.slice(2));
   const apiKey = opts.dryRun ? null : requireKey();
   const platforms = opts.platforms || ['tiktok', 'youtube', 'instagram'];
-  console.log(`[post-video] campaign=${opts.campaign} platforms=${platforms.join(',')} dryRun=${opts.dryRun}`);
+  console.log(`[post-video] campaign=${opts.campaign} offer=${opts.offer} platforms=${platforms.join(',')} dryRun=${opts.dryRun}`);
 
   const { videoPath, templateId } = prepareVideo(opts);
-  const baseHash = hashContent(`video::template-${templateId}::${opts.campaign}`);
+  const baseHash = hashContent(`video::template-${templateId}::${opts.campaign}::offer-${opts.offer}`);
   const context = { apiKey, campaign: opts.campaign, dryRun: opts.dryRun, mediaItem: null, templateId, videoPath };
-  const plans = platforms.map(platform => buildPlatformPlan(platform, baseHash)).filter(Boolean);
+  const plans = platforms.map(platform => buildPlatformPlan(platform, baseHash, opts.offer)).filter(Boolean);
   const results = [];
 
   for (const plan of plans) {
@@ -314,8 +366,11 @@ async function main() {
 module.exports = {
   ACCOUNTS,
   CAPTIONS,
+  CAPTION_SETS,
+  OPERATOR_LAB_CAPTIONS,
   PLATFORM_COOLDOWN_HOURS,
   buildPlatformPlan,
+  buildOperatorLabUrl,
   duplicateResult,
   parseArgs,
   processPlatform,

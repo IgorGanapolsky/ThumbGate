@@ -222,13 +222,25 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
 
 function formatWindowBlock(label, summary = {}) {
   const traffic = summary.trafficMetrics || {};
+  const ctas = summary.ctas || {};
   const revenue = summary.revenue || {};
   const signups = summary.signups || {};
   const pipeline = summary.pipeline || {};
   const sprintLeads = pipeline.workflowSprintLeads || {};
+  const interstitialViews = Number(ctas.checkoutInterstitialViews || 0);
+  const interstitialClicks = Number(ctas.checkoutInterstitialClicks || 0);
+  const proConfirms = Number(ctas.checkoutInterstitialProConfirms || 0);
+  const workflowClicks = Number(ctas.checkoutInterstitialWorkflowIntakeClicks || 0);
+  const teamPathClicks = Number(ctas.checkoutInterstitialTeamPathClicks || 0);
+  const diagnosticClicks = Number(ctas.checkoutInterstitialDiagnosticCheckoutClicks || 0);
+  const sprintCheckoutClicks = Number(ctas.checkoutInterstitialWorkflowSprintCheckoutClicks || 0);
+  const botDeflections = Number(ctas.checkoutBotDeflections || 0);
+  const intentSuffix = interstitialViews || interstitialClicks || proConfirms || workflowClicks || teamPathClicks || diagnosticClicks || sprintCheckoutClicks || botDeflections
+    ? `, checkoutIntent views ${interstitialViews}, clicks ${interstitialClicks}, stripeConfirms ${proConfirms}, intakeClicks ${workflowClicks}, teamPathClicks ${teamPathClicks}, diagnosticClicks ${diagnosticClicks}, sprintCheckoutClicks ${sprintCheckoutClicks}, botDeflections ${botDeflections}`
+    : '';
 
   return [
-    `${label}: visitors ${traffic.visitors || 0}, pageViews ${traffic.pageViews || 0}, checkoutStarts ${traffic.checkoutStarts || 0}, paidOrders ${revenue.paidOrders || 0}, bookedRevenue ${centsToDollars(revenue.bookedRevenueCents || 0)}, sprintLeads ${sprintLeads.total || 0}, signups ${signups.uniqueLeads || 0}`,
+    `${label}: visitors ${traffic.visitors || 0}, pageViews ${traffic.pageViews || 0}, checkoutStarts ${traffic.checkoutStarts || 0}, paidOrders ${revenue.paidOrders || 0}, bookedRevenue ${centsToDollars(revenue.bookedRevenueCents || 0)}, sprintLeads ${sprintLeads.total || 0}, signups ${signups.uniqueLeads || 0}${intentSuffix}`,
   ];
 }
 
@@ -493,6 +505,7 @@ async function getHostedAuditViaHttp({
   }
 
   const summaries = {};
+  let runtimePresence = null;
   for (const window of HOSTED_WINDOWS) {
     const url = new URL('/v1/billing/summary', appOrigin);
     url.searchParams.set('window', window);
@@ -507,13 +520,16 @@ async function getHostedAuditViaHttp({
     if (!response.ok) {
       throw new Error(`Hosted billing summary ${window} returned ${response.status}`);
     }
+    if (!runtimePresence && payload.runtimePresence && typeof payload.runtimePresence === 'object') {
+      runtimePresence = payload.runtimePresence;
+    }
     summaries[window] = normalizeWindowSummary(response.status, payload);
   }
 
   return {
     auditMethod: 'hosted-http-api',
-    runtimePresenceKnown: false,
-    runtimePresence: {
+    runtimePresenceKnown: Boolean(runtimePresence),
+    runtimePresence: runtimePresence || {
       THUMBGATE_OPERATOR_KEY: Boolean(process.env.THUMBGATE_OPERATOR_KEY),
       THUMBGATE_API_KEY: true,
     },

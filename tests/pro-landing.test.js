@@ -29,11 +29,24 @@ test('pro landing page positions ThumbGate Pro as the paid operator lane', () =>
 test('pro landing page uses checkout routes for monthly and annual conversions', () => {
   const proPage = readProPage();
 
-  assert.match(proPage, /Start 7-Day Free Trial/i);
+  assert.match(proPage, /Start Pro Now/i);
   assert.match(proPage, /\/checkout\/pro\?/);
+  assert.match(proPage, /pricing_pro/);
   assert.match(proPage, /billing_cycle=annual/);
   assert.match(proPage, /\$19\/mo/);
   assert.match(proPage, /\$149\/yr/);
+});
+
+test('pro landing page keeps the pricing section focused on the $19 Pro checkout', () => {
+  const proPage = readProPage();
+  const pricingSection = proPage.slice(proPage.indexOf('<section class="section" id="pricing">'), proPage.indexOf('<section class="section" id="faq">'));
+
+  assert.match(pricingSection, /<h3>ThumbGate Pro<\/h3>/);
+  assert.match(pricingSection, /Start Pro Now/);
+  assert.match(pricingSection, /billed today/i);
+  assert.match(pricingSection, /Restart|Start|Choose annual/);
+  assert.match(pricingSection, /Book a Team Pilot Call/);
+  assert.doesNotMatch(pricingSection, /<h3>ThumbGate Team/);
 });
 
 test('pro landing page links to proof assets and live demo surfaces', () => {
@@ -65,6 +78,22 @@ test('pro landing page tracks paid CTAs without unsupported claims', () => {
   assert.match(proPage, /trackClick\('.proof-links a', 'pro_proof_click'/);
   assert.doesNotMatch(proPage, /official Anthropic partner/i);
   assert.doesNotMatch(proPage, /no credit card/i);
+});
+
+test('pro landing page routes high-intent team buyers to paid diagnostic and sprint checkout', () => {
+  const proPage = readProPage();
+
+  assert.match(proPage, /data-pro-paid-recovery/);
+  assert.match(proPage, /href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__"/);
+  assert.match(proPage, /href="__WORKFLOW_SPRINT_CHECKOUT_URL__"/);
+  assert.match(proPage, /Pay \$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic/);
+  assert.match(proPage, /Pay \$__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint/);
+  assert.match(proPage, /pro_page_sprint_diagnostic_checkout/);
+  assert.match(proPage, /pro_page_workflow_sprint_checkout/);
+  assert.match(proPage, /workflow_sprint_diagnostic_checkout_started/);
+  assert.match(proPage, /workflow_sprint_checkout_started/);
+  assert.match(proPage, /initializeProPaidRecovery/);
+  assert.match(proPage, /sendGa4Event\('begin_checkout'/);
 });
 
 test('pro landing page captures buyer email and reuses it for checkout', () => {
