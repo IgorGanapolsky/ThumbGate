@@ -76,6 +76,7 @@ test('README exposes prompt-shaped buyer questions with tracked guide links', ()
   assert.match(readme, /Workflow Hardening Sprint/i);
   assert.match(readme, /Popular buyer questions/i);
   assert.match(readme, /guides\/ai-search-topical-presence\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
+  assert.match(readme, /guides\/best-pre-action-check-tools-ai-coding-agents\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/relational-knowledge-ai-recommendations\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/background-agent-governance\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/gpt-5-5-model-evaluation\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
