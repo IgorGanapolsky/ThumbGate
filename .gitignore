@@ -49,3 +49,9 @@ scripts/render-demo-video/narration.mp3
 
 # Marketing artifacts (local-only, contain large PNGs and local creds)
 .marketing/
+
+# Local-only revenue ops artifacts (may contain PII or third-party exports)
+reports/gtm/2026-05-05-money-today/*.xlsx
+reports/gtm/2026-05-05-money-today/direct-email-outreach-*.json
+reports/gtm/2026-05-05-money-today/operator-close-packet.md
+reports/gtm/2026-05-05-money-today/sales-pipeline-latest.md

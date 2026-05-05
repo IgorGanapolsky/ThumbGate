@@ -32,3 +32,12 @@ GitHub Actions workflow: `.github/workflows/thumbgate-creator-platform-promo.yml
 
 - `mode=preview` generates a dry-run media-backed campaign for `--offer=operator-lab`
 - `mode=schedule` / `mode=publish` are external actions and require explicit confirmation
+
+Local proof (no Zernio secret required for dry-run; output includes `mediaPlan.path` and `exists=true` when assets are present):
+
+```bash
+npm run social:publish:launch -- \
+  --dry-run \
+  --offer=operator-lab \
+  --platforms=linkedin,instagram,threads,bluesky,reddit,youtube
+```
