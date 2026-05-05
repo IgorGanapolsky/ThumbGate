@@ -43,3 +43,17 @@ Note: Use `https://thumbgate-production.up.railway.app` as the canonical CTA bas
 - Send the top 4 warm Reddit sprint DMs from `reports/gtm/2026-05-04-money-now/MONEY_NOW_ACTIONS.md`
 - Send 3 self-serve Pro guide-first messages from `reports/gtm/2026-05-04-money-now/MONEY_NOW_ACTIONS.md`
 - After replies: use `reports/gtm/2026-05-04-money-now/revenue-close-room.md` scripts
+
+## Promo drafts (no publishing, approval-required)
+
+Goal: generate operator-lab promo post drafts for off-platform shares without publishing anything.
+
+- Local dry-run (generates drafts only; requires no posting credentials):
+
+```bash
+npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms='linkedin,instagram,threads,bluesky,reddit,youtube'
+```
+
+- GitHub Actions dry-run (same output intent; safe preview mode):
+  - Workflow: `.github/workflows/thumbgate-creator-platform-promo.yml`
+  - Inputs: `mode=preview`, `platforms=linkedin,instagram,threads,bluesky,reddit,youtube`
