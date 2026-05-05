@@ -187,7 +187,11 @@ async function postToLinkedIn(parsed, dryRun) {
   }
 
   const zernio = require('./social-analytics/publishers/zernio');
-  return zernio.publishToAllPlatforms(text, { platforms: ['linkedin'] });
+  return zernio.publishToAllPlatforms(text, {
+    platforms: ['linkedin'],
+    campaign: parsed.utmCampaign || 'organic',
+    medium: parsed.utmMedium || 'social',
+  });
 }
 
 async function postToDevTo(parsed, dryRun) {
@@ -262,7 +266,15 @@ async function postToInstagram(parsed, dryRun, deps = {}) {
 
   const postThumbGateToInstagram = deps.postThumbGateToInstagram
     || require('./social-analytics/instagram-thumbgate-post').postThumbGateToInstagram;
-  return postThumbGateToInstagram({ caption, imagePath });
+  return postThumbGateToInstagram({
+    caption,
+    imagePath,
+    utm: {
+      source: 'instagram',
+      medium: parsed.utmMedium || 'social',
+      campaign: parsed.utmCampaign || 'organic',
+    },
+  });
 }
 
 async function postToThreads(parsed, dryRun) {
@@ -275,7 +287,11 @@ async function postToThreads(parsed, dryRun) {
   }
 
   const zernio = require('./social-analytics/publishers/zernio');
-  return zernio.publishToAllPlatforms(text, { platforms: ['threads'] });
+  return zernio.publishToAllPlatforms(text, {
+    platforms: ['threads'],
+    campaign: parsed.utmCampaign || 'organic',
+    medium: parsed.utmMedium || 'social',
+  });
 }
 
 async function postToBluesky(parsed, dryRun) {
@@ -288,7 +304,11 @@ async function postToBluesky(parsed, dryRun) {
   }
 
   const zernio = getPublisher('bluesky');
-  return zernio.publishToAllPlatforms(text, { platforms: ['bluesky'] });
+  return zernio.publishToAllPlatforms(text, {
+    platforms: ['bluesky'],
+    campaign: parsed.utmCampaign || 'organic',
+    medium: parsed.utmMedium || 'social',
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -306,7 +326,7 @@ const DISPATCHERS = {
   bluesky: postToBluesky,
 };
 
-async function postEverywhere(filePath, { platforms, dryRun, deps = {} } = {}) {
+async function postEverywhere(filePath, { platforms, dryRun, campaign = 'organic', deps = {} } = {}) {
   const parsed = parsePostFile(filePath);
   console.log(`[post-everywhere] Parsed: platform=${parsed.platform}, subreddit=${parsed.subreddit}, title="${parsed.title}"`);
 
@@ -334,7 +354,9 @@ async function postEverywhere(filePath, { platforms, dryRun, deps = {} } = {}) {
   // Tag trackable URLs with per-platform UTM parameters before dispatching
   const results = {};
   for (const platform of targetPlatforms) {
-    const utmOpts = { source: platform, medium: 'social', campaign: 'organic' };
+    const utmOpts = { source: platform, medium: 'social', campaign };
+    parsed.utmCampaign = campaign;
+    parsed.utmMedium = 'social';
     parsed.body = originalBody ? tagUrlsInText(originalBody, utmOpts) : originalBody;
     parsed.comment = originalComment ? tagUrlsInText(originalComment, utmOpts) : originalComment;
 
@@ -402,6 +424,7 @@ if (require.main === module) {
 
   const platformsArg = getArg('--platforms');
   const platforms = platformsArg ? platformsArg.split(',').map((p) => p.trim()) : null;
+  const campaign = getArg('--campaign') || 'organic';
 
   if (!filePath) {
     console.error('Usage: node scripts/post-everywhere.js <post-file.md> [--dry-run] [--platforms=reddit,linkedin,threads,bluesky,instagram,youtube]');
@@ -430,7 +453,7 @@ if (require.main === module) {
     }
   }
 
-  postEverywhere(resolved, { platforms, dryRun })
+  postEverywhere(resolved, { platforms, dryRun, campaign })
     .then((results) => {
       console.log('\n[post-everywhere] Results:', JSON.stringify(results, null, 2));
       const failed = Object.values(results).filter((r) => r.error);
