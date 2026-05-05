@@ -120,6 +120,10 @@ test('public landing page exposes env-driven paid sprint checkout path', () => {
   assert.doesNotMatch(landingPage, /founder_workflow_diagnostic_checkout_started/);
   assert.doesNotMatch(landingPage, /Pay \$99 diagnostic/);
   assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/7sY4gzgH24r49G17mb3sI0g/);
+  assert.match(landingPage, /First AI Agent Failure Rule/);
+  assert.match(landingPage, /https:\/\/buy\.stripe\.com\/4gM6oHgH2bTw4lH6i73sI0z/);
+  assert.match(landingPage, /Pay \$1 first rule/);
+  assert.match(landingPage, /first_failure_rule_checkout_started/);
   assert.match(landingPage, /https:\/\/buy\.stripe\.com\/7sYfZhgH29LodWhdKz3sI0v/);
   assert.match(landingPage, /Pay \$99 teardown/);
   assert.match(landingPage, /AI Agent Failure Quick Read/);
@@ -139,6 +143,7 @@ test('public landing page exposes env-driven paid sprint checkout path', () => {
   assert.match(landingPage, /workflow_sprint_checkout_started/);
   assert.match(landingPage, /workflow_sprint_recovery_intake_clicked/);
   assert.match(landingPage, /workflow_sprint_recovery_intake/);
+  assert.match(landingPage, /ctaId:'hero_first_failure_rule_checkout'/);
   assert.match(landingPage, /ctaId:'hero_workflow_teardown_checkout'/);
   assert.match(landingPage, /ctaId: 'hero_workflow_sprint_diagnostic_checkout'/);
   assert.match(landingPage, /ctaId: 'hero_workflow_sprint_checkout'/);
