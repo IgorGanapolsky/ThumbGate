@@ -5,6 +5,22 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { spawnSync } = require('node:child_process');
+
+function supportsListen() {
+  const script = `
+    const net = require('node:net');
+    const server = net.createServer();
+    server.once('error', (err) => {
+      console.log(err && err.code === 'EPERM' ? 'EPERM' : 'ERR');
+    });
+    server.listen(0, '127.0.0.1', () => {
+      server.close(() => console.log('OK'));
+    });
+  `;
+  const result = spawnSync(process.execPath, ['-e', script], { encoding: 'utf8' });
+  return String(result.stdout || '').trim() === 'OK';
+}
 
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-cf-sandbox-feedback-'));
 const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-cf-sandbox-proof-'));
@@ -27,24 +43,31 @@ const { startServer } = require('../src/api/server');
 
 let handle;
 let origin = '';
+const listenSupported = supportsListen();
 
 function apiUrl(pathname = '/') {
   return new URL(pathname, origin).toString();
 }
 
 test.before(async () => {
-  handle = await startServer({ port: 0 });
-  origin = `http://localhost:${handle.port}`;
+  if (!listenSupported) {
+    return;
+  }
+
+  handle = await startServer({ port: 0, host: '127.0.0.1' });
+  origin = `http://127.0.0.1:${handle.port}`;
 });
 
 test.after(async () => {
-  await new Promise((resolve) => handle.server.close(resolve));
+  if (handle && handle.server) {
+    await new Promise((resolve) => handle.server.close(resolve));
+  }
   fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
   fs.rmSync(tmpProofDir, { recursive: true, force: true });
   delete process.env.CLOUDFLARE_SANDBOX_SHARED_SECRET;
 });
 
-test('sandbox dispatch route requires auth', async () => {
+test('sandbox dispatch route requires auth', { skip: !listenSupported }, async () => {
   const res = await fetch(apiUrl('/v1/hosted/sandbox/dispatch'), {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -54,7 +77,7 @@ test('sandbox dispatch route requires auth', async () => {
   assert.equal(res.status, 401);
 });
 
-test('sandbox dispatch route emits a signed Cloudflare plan for team workloads', async () => {
+test('sandbox dispatch route emits a signed Cloudflare plan for team workloads', { skip: !listenSupported }, async () => {
   const res = await fetch(apiUrl('/v1/hosted/sandbox/dispatch'), {
     method: 'POST',
     headers: {
@@ -83,7 +106,7 @@ test('sandbox dispatch route emits a signed Cloudflare plan for team workloads',
   assert.equal(payload.envelope.tenantId, 'team_thumbgate');
 });
 
-test('sandbox dispatch route keeps repo-bound tasks on Railway', async () => {
+test('sandbox dispatch route keeps repo-bound tasks on Railway', { skip: !listenSupported }, async () => {
   const res = await fetch(apiUrl('/v1/hosted/sandbox/dispatch'), {
     method: 'POST',
     headers: {

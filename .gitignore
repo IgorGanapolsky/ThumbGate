@@ -55,3 +55,7 @@ reports/gtm/2026-05-05-money-today/*.xlsx
 reports/gtm/2026-05-05-money-today/direct-email-outreach-*.json
 reports/gtm/2026-05-05-money-today/operator-close-packet.md
 reports/gtm/2026-05-05-money-today/sales-pipeline-latest.md
+
+# Local proof artifacts (generated during development runs)
+proof/cloudflare-sandbox-report.json
+proof/cloudflare-sandbox-report.md
