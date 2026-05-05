@@ -1,8 +1,5 @@
 'use strict';
 
-const fs = require('node:fs');
-const path = require('node:path');
-
 const SKOOL_ORIGIN = 'https://www.skool.com';
 const DEFAULT_LIMIT = 20;
 const DEFAULT_TIMEOUT_MS = 15000;
@@ -59,17 +56,52 @@ function asPositiveInt(value, defaultValue, maxValue = 100) {
   if (value == null || value === '') return defaultValue;
   const number = Number(value);
   if (!Number.isFinite(number) || number <= 0) {
-    throw new Error(`Expected a positive number, got: ${value}`);
+    throw new TypeError(`Expected a positive number, got: ${value}`);
   }
   return Math.min(Math.floor(number), maxValue);
 }
 
 function normalizeText(value) {
-  return String(value || '').replace(/\s+/g, ' ').trim();
+  return String(value || '').replaceAll(/\s+/g, ' ').trim();
+}
+
+function isEmailTokenChar(char) {
+  if (!char) return false;
+  const code = char.charCodeAt(0);
+  return (
+    (code >= 48 && code <= 57)
+    || (code >= 65 && code <= 90)
+    || (code >= 97 && code <= 122)
+    || char === '.'
+    || char === '_'
+    || char === '%'
+    || char === '+'
+    || char === '-'
+    || char === '@'
+  );
+}
+
+function looksLikeEmailToken(token) {
+  const at = token.indexOf('@');
+  if (at <= 0 || at !== token.lastIndexOf('@')) return false;
+  const dot = token.indexOf('.', at + 2);
+  if (dot === -1 || dot >= token.length - 2) return false;
+  return token.split('').every(isEmailTokenChar);
+}
+
+function redactEmailToken(token) {
+  let start = 0;
+  let end = token.length;
+  while (start < end && !isEmailTokenChar(token[start])) start += 1;
+  while (end > start && !isEmailTokenChar(token[end - 1])) end -= 1;
+
+  const candidate = token.slice(start, end);
+  if (!looksLikeEmailToken(candidate)) return token;
+  return `${token.slice(0, start)}[redacted-email]${token.slice(end)}`;
 }
 
 function redactSensitive(value) {
-  return normalizeText(value).replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[redacted-email]');
+  return normalizeText(value).split(' ').map(redactEmailToken).join(' ');
 }
 
 function truncateText(value, maxLength = 320) {
@@ -82,8 +114,8 @@ function truncateText(value, maxLength = 320) {
 function normalizeCategoryName(value) {
   return normalizeText(value)
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replaceAll(/[^a-z0-9]+/g, ' ')
+    .replaceAll(/\s+/g, ' ')
     .trim();
 }
 
@@ -92,25 +124,52 @@ function parseMaybeJson(value, fallback) {
   if (typeof value !== 'string') return value;
   try {
     return JSON.parse(value);
-  } catch (_) {
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error;
     return fallback;
   }
 }
 
 function normalizeCommunitySlug(value) {
-  const raw = normalizeText(value)
-    .replace(/^https?:\/\/[^/]+\//, '')
-    .replace(/^\/+/, '')
-    .replace(/\/+$/, '');
-  const [slug] = raw.split(/[/?#]/);
+  const raw = normalizeText(value);
+  const pathname = raw.startsWith('http://') || raw.startsWith('https://')
+    ? new URL(raw).pathname
+    : raw;
+  const stripped = stripOuterSlashes(pathname);
+  const slugEnd = firstIndexOfAny(stripped, ['/', '?', '#']);
+  const slug = slugEnd === -1 ? stripped : stripped.slice(0, slugEnd);
   if (!slug) {
     throw new Error('Missing Skool community slug.');
   }
   return slug;
 }
 
+function stripOuterSlashes(value) {
+  let start = 0;
+  let end = value.length;
+  while (start < end && value[start] === '/') start += 1;
+  while (end > start && value[end - 1] === '/') end -= 1;
+  return value.slice(start, end);
+}
+
+function firstIndexOfAny(value, needles) {
+  const indexes = needles
+    .map((needle) => value.indexOf(needle))
+    .filter((index) => index >= 0);
+  return indexes.length > 0 ? Math.min(...indexes) : -1;
+}
+
 function isLikelySkoolCategoryId(value) {
   return /^[a-f0-9]{16,}$/i.test(String(value || ''));
+}
+
+function isAllowedSkoolHost(hostname) {
+  const host = String(hostname || '').toLowerCase();
+  return host === 'skool.com' || host === 'www.skool.com' || host.endsWith('.skool.com');
+}
+
+function firstPathSegment(pathname) {
+  return String(pathname || '').split('/').find(Boolean) || '';
 }
 
 function buildSkoolUrl(options = {}) {
@@ -119,7 +178,7 @@ function buildSkoolUrl(options = {}) {
     ? new URL(options.url)
     : new URL(`/${normalizeCommunitySlug(options.community)}`, SKOOL_ORIGIN);
 
-  if (!baseUrl.hostname.endsWith('skool.com')) {
+  if (!isAllowedSkoolHost(baseUrl.hostname)) {
     throw new Error(`Expected a skool.com URL, got: ${baseUrl.hostname}`);
   }
 
@@ -139,32 +198,36 @@ function buildSkoolUrl(options = {}) {
 function loadCookieHeader(options = {}) {
   if (options.cookie) return String(options.cookie).trim();
   if (process.env.SKOOL_COOKIE) return process.env.SKOOL_COOKIE.trim();
-
-  const cookieFile = options.cookieFile || process.env.SKOOL_COOKIE_FILE;
-  if (!cookieFile) return '';
-
-  const resolved = path.resolve(cookieFile);
-  return fs.readFileSync(resolved, 'utf8').trim();
+  return '';
 }
 
 function extractNextData(html) {
-  const match = String(html || '').match(
-    /<script[^>]+id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/,
-  );
-  if (!match) {
+  const text = String(html || '');
+  const markerIndex = findNextDataMarker(text);
+  if (markerIndex === -1) {
     throw new Error('Skool page did not include __NEXT_DATA__. The page may require auth or changed shape.');
   }
+  const openEnd = text.indexOf('>', markerIndex);
+  const closeStart = openEnd === -1 ? -1 : text.indexOf('</script>', openEnd + 1);
+  if (openEnd === -1 || closeStart === -1) {
+    throw new Error('Skool page included malformed __NEXT_DATA__. The page shape may have changed.');
+  }
+  const payload = text.slice(openEnd + 1, closeStart);
   try {
-    return JSON.parse(match[1]);
+    return JSON.parse(payload);
   } catch (error) {
     throw new Error(`Could not parse Skool __NEXT_DATA__: ${error.message}`);
   }
 }
 
+function findNextDataMarker(html) {
+  const doubleQuoted = html.indexOf('id="__NEXT_DATA__"');
+  if (doubleQuoted !== -1) return doubleQuoted;
+  return html.indexOf("id='__NEXT_DATA__'");
+}
+
 function resolvePageProps(nextData) {
-  return nextData && nextData.props && nextData.props.pageProps
-    ? nextData.props.pageProps
-    : {};
+  return nextData?.props?.pageProps || {};
 }
 
 function normalizeLabel(label) {
@@ -180,24 +243,25 @@ function normalizeLabel(label) {
 function buildLabelsById(currentGroup = {}) {
   const labels = Array.isArray(currentGroup.labels) ? currentGroup.labels : [];
   return labels.reduce((acc, label) => {
-    if (label && label.id) {
+    if (label?.id) {
       acc[label.id] = normalizeLabel(label);
     }
     return acc;
   }, {});
 }
 
-function normalizeCommunity(currentGroup = {}, sourceUrl) {
-  const metadata = currentGroup.metadata || {};
+function normalizeCommunity(currentGroup, sourceUrl) {
+  const group = currentGroup || {};
+  const metadata = group.metadata || {};
   const url = new URL(sourceUrl || SKOOL_ORIGIN);
-  const slug = currentGroup.name || url.pathname.split('/').filter(Boolean)[0] || '';
+  const slug = group.name || firstPathSegment(url.pathname);
   return {
-    id: currentGroup.id || '',
+    id: group.id || '',
     slug,
     url: `${url.origin}/${slug}`,
-    name: redactSensitive(metadata.displayName || currentGroup.displayName || slug),
+    name: redactSensitive(metadata.displayName || group.displayName || slug),
     description: redactSensitive(metadata.description || ''),
-    totalMembers: Number(metadata.totalMembers || currentGroup.totalMembers || 0),
+    totalMembers: Number(metadata.totalMembers || group.totalMembers || 0),
     totalOnlineMembers: Number(metadata.totalOnlineMembers || 0),
     totalAdmins: Number(metadata.totalAdmins || 0),
     totalPosts: Number(metadata.totalPosts || 0),
@@ -221,14 +285,14 @@ function normalizeUser(user = {}) {
 }
 
 function buildPostUrl(post, sourceUrl, communitySlug) {
-  if (!post || !post.name) return sourceUrl || '';
+  if (!post?.name) return sourceUrl || '';
   const url = new URL(sourceUrl || `${SKOOL_ORIGIN}/${communitySlug || ''}`);
-  const slug = communitySlug || url.pathname.split('/').filter(Boolean)[0] || '';
+  const slug = communitySlug || firstPathSegment(url.pathname);
   return `${url.origin}/${slug}/${post.name}`;
 }
 
 function normalizePostTree(postTree, labelsById, sourceUrl, communitySlug) {
-  const post = postTree && postTree.post ? postTree.post : postTree;
+  const post = postTree?.post || postTree;
   if (!post) return null;
 
   const metadata = post.metadata || {};
@@ -313,8 +377,8 @@ function parseSkoolHtml(html, options = {}) {
     upcomingEvents: Array.isArray(pageProps.upcomingEvents)
       ? pageProps.upcomingEvents.map((event) => ({
         id: event.id || '',
-        title: redactSensitive(event.title || (event.metadata && event.metadata.title) || ''),
-        startsAt: event.startsAt || (event.metadata && event.metadata.startsAt) || '',
+        title: redactSensitive(event.title || event.metadata?.title || ''),
+        startsAt: event.startsAt || event.metadata?.startsAt || '',
       }))
       : [],
   };
@@ -338,7 +402,7 @@ function resolveCategoryId(parsed, category) {
 async function fetchSkoolHtml(url, options = {}, deps = {}) {
   const fetchImpl = deps.fetch || globalThis.fetch;
   if (typeof fetchImpl !== 'function') {
-    throw new Error('This Node runtime does not provide fetch(). Use Node 18+.');
+    throw new TypeError('This Node runtime does not provide fetch(). Use Node 18+.');
   }
 
   const cookie = loadCookieHeader(options);
@@ -359,8 +423,8 @@ async function fetchSkoolHtml(url, options = {}, deps = {}) {
       redirect: 'follow',
       signal: controller.signal,
     });
-    if (!response || !response.ok) {
-      const status = response ? response.status : 'unknown';
+    if (!response?.ok) {
+      const status = response?.status || 'unknown';
       throw new Error(`Skool request failed with status ${status}`);
     }
     return {
@@ -518,20 +582,22 @@ function formatMarkdownDigest(digest) {
     '',
   ];
 
-  if (!digest.signals.length) {
-    lines.push('No ranked revenue signals found on this page.', '');
-  } else {
+  if (digest.signals.length > 0) {
     digest.signals.forEach((signal, index) => {
-      lines.push(`${index + 1}. ${signal.title}`);
-      lines.push(`   - Score: ${signal.score}`);
-      lines.push(`   - Category: ${signal.category || 'uncategorized'}`);
-      lines.push(`   - Engagement: ${signal.upvotes} upvotes, ${signal.comments} comments`);
-      lines.push(`   - URL: ${signal.url}`);
-      lines.push(`   - Fit: ${signal.whyThumbGate}`);
-      lines.push(`   - Action: ${signal.suggestedAction}`);
+      lines.push(
+        `${index + 1}. ${signal.title}`,
+        `   - Score: ${signal.score}`,
+        `   - Category: ${signal.category || 'uncategorized'}`,
+        `   - Engagement: ${signal.upvotes} upvotes, ${signal.comments} comments`,
+        `   - URL: ${signal.url}`,
+        `   - Fit: ${signal.whyThumbGate}`,
+        `   - Action: ${signal.suggestedAction}`,
+      );
       if (signal.excerpt) lines.push(`   - Excerpt: ${signal.excerpt}`);
       lines.push('');
     });
+  } else {
+    lines.push('No ranked revenue signals found on this page.', '');
   }
 
   lines.push('## Categories', '');
@@ -548,7 +614,7 @@ function parseArgs(argv) {
     const arg = argv[index];
     if (!arg.startsWith('--')) continue;
     const [rawKey, inlineValue] = arg.slice(2).split(/=(.*)/s, 2);
-    const key = rawKey.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+    const key = rawKey.replaceAll(/-([a-z])/g, (_, letter) => letter.toUpperCase());
     if (inlineValue !== undefined) {
       args[key] = inlineValue;
     } else if (argv[index + 1] && !argv[index + 1].startsWith('--')) {
@@ -575,8 +641,7 @@ function usage() {
     '  --post-limit <number>    Max posts to read before signal ranking.',
     '  --format <json|markdown> Output format. Default: json.',
     '  --signals                Return revenue-signal digest instead of raw parsed posts.',
-    '  --cookie-file <path>     Optional cookie header file for private groups.',
-    '  --out <path>             Optional output file path.',
+    '  SKOOL_COOKIE             Optional cookie header environment variable for private groups.',
   ].join('\n');
 }
 
@@ -597,15 +662,19 @@ async function main(argv = process.argv.slice(2)) {
   const parsed = await readSkoolCommunity(readOptions);
   const format = args.format || 'json';
   const payload = args.signals ? buildSkoolDigest(parsed, args) : parsed;
-  const output = format === 'markdown'
-    ? formatMarkdownDigest(args.signals ? payload : buildSkoolDigest(parsed, args))
-    : `${JSON.stringify(payload, null, 2)}\n`;
-
-  if (args.out) {
-    fs.writeFileSync(path.resolve(args.out), output);
+  let output;
+  if (format === 'markdown') {
+    const digest = args.signals ? payload : buildSkoolDigest(parsed, args);
+    output = formatMarkdownDigest(digest);
   } else {
-    process.stdout.write(output);
+    output = `${JSON.stringify(payload, null, 2)}\n`;
   }
+
+  process.stdout.write(output);
+}
+
+function isCliEntrypoint(entryModule = require.main) {
+  return Boolean(entryModule && entryModule.filename === __filename);
 }
 
 module.exports = {
@@ -619,9 +688,10 @@ module.exports = {
   rankSkoolRevenueSignals,
   readSkoolCommunity,
   resolveCategoryId,
+  isCliEntrypoint,
 };
 
-if (require.main === module) {
+if (isCliEntrypoint()) {
   main().catch((error) => {
     process.stderr.write(`[skool-reader] ${error.message}\n`);
     process.exit(1);

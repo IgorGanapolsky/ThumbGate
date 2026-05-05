@@ -13,7 +13,7 @@ Use this skill when a task asks to inspect Skool communities, find revenue oppor
 
 - Do not use the user's Comet, Chrome, or Computer Use session first. Start with the headless reader.
 - Do not post, comment, DM, scrape private data, or take write actions. Draft replies or outreach only unless the user explicitly authorizes posting.
-- Use cookies only through `SKOOL_COOKIE` or `SKOOL_COOKIE_FILE` when a private group requires auth. Never print, commit, or persist cookies.
+- Use cookies only through the `SKOOL_COOKIE` environment variable when a private group requires auth. Never print, commit, or persist cookies.
 - Keep outputs focused on revenue: pain, buyer intent, possible ThumbGate angle, and a concrete next action.
 
 ## Quick Start
@@ -54,10 +54,10 @@ Useful MCP tools:
 
 ## Private Groups
 
-If a group is not publicly SSR-readable, supply an operator-provided cookie header without storing it:
+If a group is not publicly SSR-readable, supply an operator-provided cookie header through the environment without storing it:
 
 ```bash
-SKOOL_COOKIE_FILE=/path/to/cookie-header.txt node scripts/skool-reader.js --community private-community --signals
+SKOOL_COOKIE='skool_session=...' node scripts/skool-reader.js --community private-community --signals
 ```
 
 Never save that cookie in repo files, memories, PR text, logs, or test fixtures.

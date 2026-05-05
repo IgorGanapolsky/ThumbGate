@@ -471,6 +471,9 @@ describe('Skool headless reader', () => {
     buildSkoolUrl,
     extractNextData,
     formatMarkdownDigest,
+    isCliEntrypoint,
+    loadCookieHeader,
+    parseArgs,
     parseSkoolHtml,
     rankSkoolRevenueSignals,
     readSkoolCommunity,
@@ -485,6 +488,54 @@ describe('Skool headless reader', () => {
     });
 
     assert.equal(url, 'https://www.skool.com/ai-automation-society?c=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&p=2');
+  });
+
+  it('rejects Skool lookalike hosts before fetching', () => {
+    assert.throws(
+      () => buildSkoolUrl({ url: 'https://attackerskool.com/ai-automation-society' }),
+      /Expected a skool\.com URL/,
+    );
+
+    assert.equal(
+      buildSkoolUrl({ url: 'https://www.skool.com/ai-automation-society' }),
+      'https://www.skool.com/ai-automation-society',
+    );
+  });
+
+  it('parses CLI arguments without enabling filesystem cookie reads', () => {
+    const args = parseArgs([
+      '--community=ai-automation-society',
+      '--post-limit',
+      '25',
+      '--signals',
+    ]);
+
+    assert.deepEqual(args, {
+      community: 'ai-automation-society',
+      postLimit: '25',
+      signals: true,
+    });
+
+    const oldCookie = process.env.SKOOL_COOKIE;
+    const oldCookieFile = process.env.SKOOL_COOKIE_FILE;
+    try {
+      process.env.SKOOL_COOKIE = 'skool_session=secret';
+      process.env.SKOOL_COOKIE_FILE = '/tmp/ignored-cookie-file';
+
+      assert.equal(loadCookieHeader({}), 'skool_session=secret');
+      assert.equal(loadCookieHeader({ cookie: 'override=yes' }), 'override=yes');
+    } finally {
+      if (oldCookie === undefined) {
+        delete process.env.SKOOL_COOKIE;
+      } else {
+        process.env.SKOOL_COOKIE = oldCookie;
+      }
+      if (oldCookieFile === undefined) {
+        delete process.env.SKOOL_COOKIE_FILE;
+      } else {
+        process.env.SKOOL_COOKIE_FILE = oldCookieFile;
+      }
+    }
   });
 
   it('extracts community, labels, and normalized posts from SSR data', () => {
@@ -504,6 +555,10 @@ describe('Skool headless reader', () => {
 
   it('reports missing Skool SSR data clearly', () => {
     assert.throws(() => extractNextData('<html></html>'), /did not include __NEXT_DATA__/);
+    assert.throws(
+      () => extractNextData('<script id="__NEXT_DATA__" type="application/json">{bad</script>'),
+      /Could not parse Skool __NEXT_DATA__/,
+    );
   });
 
   it('resolves category names and ids', () => {
@@ -514,6 +569,7 @@ describe('Skool headless reader', () => {
     assert.equal(resolveCategoryId(parsed, 'support needed'), 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
     assert.equal(resolveCategoryId(parsed, 'youtube'), 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb');
     assert.equal(resolveCategoryId(parsed, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'), 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+    assert.throws(() => resolveCategoryId(parsed, 'not here'), /Available categories/);
   });
 
   it('prioritizes Support Needed posts and filters administrative posts from revenue ranking', () => {
@@ -553,6 +609,68 @@ describe('Skool headless reader', () => {
     assert.equal(parsed.posts.length, 1);
   });
 
+  it('surfaces missing inputs and HTTP failures without browser automation', async () => {
+    await assert.rejects(
+      () => readSkoolCommunity({}, { fetch: async () => ({ ok: true, text: async () => buildSkoolFixtureHtml() }) }),
+      /Provide --url or --community/,
+    );
+
+    await assert.rejects(
+      () => readSkoolCommunity({
+        community: 'ai-automation-society',
+      }, {
+        fetch: async () => ({
+          ok: false,
+          status: 403,
+          text: async () => '',
+        }),
+      }),
+      /status 403/,
+    );
+  });
+
+  it('normalizes event metadata and post detail pages', () => {
+    const parsed = parseSkoolHtml(buildSkoolFixtureHtml({
+      currentGroup: {
+        id: 'group_1',
+        metadata: {
+          displayName: 'AI Automation Society',
+        },
+        labels: [],
+      },
+      postTrees: [],
+      postTree: {
+        post: {
+          id: 'post_detail',
+          name: 'detail-page',
+          user: { id: 'user_5', firstName: 'Detail', lastName: 'Author' },
+          metadata: {
+            title: 'Need client help with n8n automation',
+            content: 'Looking to hire an automation consultant.',
+          },
+        },
+        children: [{ id: 'comment_1' }],
+      },
+      upcomingEvents: [
+        {
+          id: 'event_1',
+          metadata: {
+            title: 'Q&A with Nate',
+            startsAt: '2026-05-11T15:00:00.000Z',
+          },
+        },
+      ],
+    }), {
+      sourceUrl: 'https://www.skool.com/ai-automation-society/detail-page',
+    });
+
+    assert.equal(parsed.community.slug, 'ai-automation-society');
+    assert.equal(parsed.posts.length, 1);
+    assert.equal(parsed.posts[0].comments, 1);
+    assert.equal(parsed.posts[0].author.name, 'Detail Author');
+    assert.equal(parsed.upcomingEvents[0].title, 'Q&A with Nate');
+  });
+
   it('formats Markdown digests without leaking email addresses', () => {
     const parsed = parseSkoolHtml(buildSkoolFixtureHtml(), {
       sourceUrl: 'https://www.skool.com/ai-automation-society',
@@ -562,6 +680,19 @@ describe('Skool headless reader', () => {
     assert.match(markdown, /Revenue Signals/);
     assert.match(markdown, /ThumbGate/);
     assert.equal(markdown.includes('builder@example.com'), false);
+  });
+
+  it('formats empty signal digests and exposes a testable CLI entrypoint guard', () => {
+    const markdown = formatMarkdownDigest({
+      community: { name: 'Quiet Community', totalMembers: 3 },
+      sourceUrl: 'https://www.skool.com/quiet-community',
+      posts: [],
+      signals: [],
+      labels: [],
+    });
+
+    assert.match(markdown, /No ranked revenue signals/);
+    assert.equal(isCliEntrypoint({ filename: __filename }), false);
   });
 });
 
