@@ -1,0 +1,83 @@
+{
+  "generatedAt": "2026-05-05T15:40:27.748Z",
+  "objective": "Turn platform-specific discovery surfaces into tracked Pro and Workflow Hardening Sprint conversations without claiming publication before it happens.",
+  "channels": [
+    {
+      "key": "lindy",
+      "name": "Lindy.ai",
+      "motion": "Workflow template and webhook integration",
+      "currentPath": "Create a Lindy workflow with a webhook trigger that sends repeated-agent-failure events into ThumbGate and routes qualified workflow owners to the sprint intake.",
+      "buyer": "No-code automation teams already building agents for sales, support, inbox, and CRM workflows.",
+      "primaryCta": "https://thumbgate.ai/?utm_source=lindy&utm_medium=marketplace&utm_campaign=lindy_workflow_listing&utm_content=distribution_pack&campaign_variant=workflow&offer_code=LINDY-WORKFLOW&cta_id=lindy_workflow_cta&cta_placement=listing_copy#workflow-sprint-intake",
+      "offer": "Workflow Hardening Sprint",
+      "priceAnchor": "Intake-led sprint, then Team at $49/seat/mo with 3-seat minimum after qualification",
+      "sourceEvidence": [
+        "https://docs.lindy.ai/fundamentals/lindy-101/create-agent",
+        "https://docs.lindy.ai/skills/by-lindy/webhooks"
+      ],
+      "operatorSteps": [
+        "Create a Lindy workflow template: Webhook Received -> AI Agent classifies repeated failure -> HTTP step posts into ThumbGate -> Human approval before any customer-facing action.",
+        "Use the template as a consultative asset before asking for checkout.",
+        "Log each sent workflow owner in sales:pipeline before follow-up."
+      ],
+      "listingCopy": "A Lindy workflow can move fast, but fast agents need memory-backed approval boundaries. ThumbGate turns repeated workflow mistakes into pre-action gates and proof runs before the next automation acts.",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ]
+    },
+    {
+      "key": "gumroad",
+      "name": "Gumroad",
+      "motion": "Digital product checkout",
+      "currentPath": "Sell a downloadable Workflow Hardening Kit and route serious buyers to Pro checkout or sprint intake from the product receipt and update emails.",
+      "buyer": "Indie builders who want a low-friction digital product before committing to a subscription or sprint.",
+      "primaryCta": "https://thumbgate.ai/guide?utm_source=gumroad&utm_medium=marketplace&utm_campaign=gumroad_pro_listing&utm_content=distribution_pack&campaign_variant=pro&offer_code=GUMROAD-PRO&cta_id=gumroad_pro_cta&cta_placement=listing_copy",
+      "offer": "ThumbGate Pro self-serve kit",
+      "priceAnchor": "$19/mo or $149/yr Pro follow-on; Gumroad product can be a paid kit or free lead magnet.",
+      "sourceEvidence": [
+        "https://gumroad.com/features",
+        "https://gumroad.com/pricing"
+      ],
+      "operatorSteps": [
+        "Create a Gumroad product named ThumbGate Workflow Hardening Kit.",
+        "Upload the setup guide, checklist, and proof links as the digital deliverable.",
+        "Add receipt CTA links to /guide, /checkout/pro, and #workflow-sprint-intake with Gumroad UTMs."
+      ],
+      "listingCopy": "A practical kit for developers who want one repeated AI-agent mistake to become an enforceable pre-action gate, with a proof checklist and upgrade path to ThumbGate Pro.",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ]
+    },
+    {
+      "key": "gohighlevel",
+      "name": "GoHighLevel",
+      "motion": "Marketplace app or agency snapshot",
+      "currentPath": "Start as a private Marketplace app or snapshot for agency operators, then submit publicly after OAuth, listing, security, and support materials are stable.",
+      "buyer": "Agencies managing client automations that need audit trails, approval gates, and safer agent-driven follow-up workflows.",
+      "primaryCta": "https://thumbgate.ai/?utm_source=gohighlevel&utm_medium=marketplace&utm_campaign=gohighlevel_sprint_listing&utm_content=distribution_pack&campaign_variant=sprint&offer_code=GOHIGHLEVEL-SPRINT&cta_id=gohighlevel_sprint_cta&cta_placement=listing_copy#workflow-sprint-intake",
+      "offer": "Workflow Hardening Sprint for agency automation",
+      "priceAnchor": "Sprint-led service motion; Team at $49/seat/mo after qualification.",
+      "sourceEvidence": [
+        "https://marketplace.gohighlevel.com/docs/oauth/CreateMarketplaceApp/",
+        "https://help.gohighlevel.com/support/solutions/articles/155000000136-how-to-get-started-with-the-developer-s-marketplace"
+      ],
+      "operatorSteps": [
+        "Create a private Marketplace app first and test OAuth scopes with a sub-account workflow.",
+        "Package the initial value as an agency-safe workflow hardening snapshot before broad public submission.",
+        "Submit publicly only after support docs, install video, and tracking evidence are ready."
+      ],
+      "listingCopy": "ThumbGate gives agency automations a Reliability Gateway: repeated failures become shared pre-action gates, every risky automation gets evidence, and client-facing workflows keep an audit trail.",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ]
+    }
+  ],
+  "guardrails": [
+    "Do not claim Lindy, Gumroad, or GoHighLevel publication without direct dashboard or marketplace evidence.",
+    "Do not claim revenue from these channels without reconciled payment or sales pipeline evidence.",
+    "Use public buyer URLs on thumbgate.ai for every prospect-facing CTA."
+  ]
+}
