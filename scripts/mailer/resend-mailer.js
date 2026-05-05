@@ -331,13 +331,12 @@ function formatTrialEndDate(trialEndAt) {
   return `${month} ${day}, ${year}`;
 }
 
-function renderTrialWelcomeBodies({ licenseKey, customerId, customerName, trialEndAt } = {}) {
+function renderTrialWelcomeBodies({ licenseKey, customerId, customerName } = {}) {
   const activationCommand = `npx thumbgate pro --activate --key=${licenseKey}`;
   const name = firstName(customerName);
   const greeting = name ? `Hi ${name},` : 'Hi there,';
-  const trialEndLabel = formatTrialEndDate(trialEndAt);
-  const headline = 'Your ThumbGate Pro trial is live.';
-  const subhead = `You have 7 days of Pro access. Trial ends ${trialEndLabel}.`;
+  const headline = 'Your ThumbGate Pro subscription is live.';
+  const subhead = 'Your paid Pro access is active. Activate the local dashboard whenever you are ready.';
   const description =
     'ThumbGate turns thumbs up/down feedback into Pre-Action Checks that stop repeated AI coding mistakes ' +
     'before the next tool call. Lessons stay on your machine. Repeated failures become Reliability Gateway blocks.';
@@ -370,7 +369,7 @@ function renderTrialWelcomeBodies({ licenseKey, customerId, customerName, trialE
     '3. Give one concrete thumbs up or thumbs down:',
     `   ${exampleFeedback}`,
     '',
-    'Your trial key (save this):',
+    'Your Pro key (save this):',
     `   ${licenseKey}`,
     '',
     `Verification evidence: ${proofUrl}`,
@@ -382,7 +381,7 @@ function renderTrialWelcomeBodies({ licenseKey, customerId, customerName, trialE
     '— Igor, founder of ThumbGate',
     '',
     '---',
-    `You're getting this because you started a ${PRODUCT_NAME} trial. Don't want these emails? Unsubscribe: ${unsubscribeEmail}`,
+    `You're getting this because you started a paid ${PRODUCT_NAME} subscription. Don't want these emails? Unsubscribe: ${unsubscribeEmail}`,
     `${businessName} · ${businessAddress}`,
   ].join('\n');
 
@@ -440,7 +439,7 @@ function renderTrialWelcomeBodies({ licenseKey, customerId, customerName, trialE
                 <p style="margin:0 0 8px;font-size:14px;line-height:1.55;color:#344451;"><strong>1. Activate Pro locally</strong></p>
                 <pre style="margin:0 0 20px;background:#081016;color:#d8f7e4;border:1px solid #23343d;border-radius:6px;padding:14px;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;"><code>${safeCmd}</code></pre>
 
-                <p style="margin:0 0 8px;font-size:14px;line-height:1.55;color:#344451;"><strong>2. Save your trial key</strong></p>
+                <p style="margin:0 0 8px;font-size:14px;line-height:1.55;color:#344451;"><strong>2. Save your Pro key</strong></p>
                 <pre style="margin:0 0 20px;background:#eef6f7;color:#0b343c;border:1px solid #c7e2e7;border-radius:6px;padding:14px;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;"><code>${safeKey}</code></pre>
 
                 <p style="margin:0 0 8px;font-size:14px;line-height:1.55;color:#344451;"><strong>3. Give one concrete thumbs up or thumbs down</strong></p>
@@ -461,7 +460,7 @@ function renderTrialWelcomeBodies({ licenseKey, customerId, customerName, trialE
             <tr>
               <td style="padding:16px 28px 22px;border-top:1px solid #e2e8ec;background:#fafbfc;">
                 <p style="margin:0 0 6px;font-size:12px;line-height:1.5;color:#7a8790;">
-                  You're getting this one-time email because you started a ${escapeHtml(PRODUCT_NAME)} trial.
+                  You're getting this one-time email because you started a paid ${escapeHtml(PRODUCT_NAME)} subscription.
                   <a href="${safeUnsubscribeMailto}" style="color:#7a8790;text-decoration:underline;">Unsubscribe</a>
                   (${safeUnsubscribeEmail}).
                 </p>
@@ -478,7 +477,7 @@ function renderTrialWelcomeBodies({ licenseKey, customerId, customerName, trialE
   </body>
 </html>`;
 
-  return { html, text, activationCommand, trialEndLabel, greeting, unsubscribeEmail, businessName, businessAddress };
+  return { html, text, activationCommand, greeting, unsubscribeEmail, businessName, businessAddress };
 }
 
 /**

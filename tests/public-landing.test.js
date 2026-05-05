@@ -97,8 +97,8 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /solo side lane/i);
   assert.match(landingPage, /Shared enforcement/i);
   assert.match(landingPage, /Install Free/);
-  assert.match(landingPage, /Free Trial|Upgrade to Pro/i);
-  assert.match(landingPage, /7-DAY FREE TRIAL/i);
+  assert.match(landingPage, /Buy Pro|Upgrade to Pro/i);
+  assert.match(landingPage, /PAID PRO ACCESS/i);
   assert.match(landingPage, /Start Workflow Hardening Sprint/);
 });
 
@@ -502,7 +502,7 @@ test('public landing page promotes the Autoresearch safety pack', () => {
   assert.match(landingPage, /holdout tests/i);
   assert.match(landingPage, /reward hacking/i);
   assert.match(landingPage, /verification evidence/i);
-  assert.match(landingPage, /cta_id=autoresearch_pro_trial/);
+  assert.match(landingPage, /cta_id=autoresearch_pro_checkout/);
 });
 
 test('public landing page advertises the Codex standalone plugin install path', () => {
@@ -648,22 +648,24 @@ test('lessons severity filtering scopes active state to rules filter buttons', (
   assert.match(html, /if \(level === 'critical'\) \{ highlightCard\(1\); \} else \{ highlightCard\(0\); \}/);
 });
 
-test('public landing page includes 7-day free trial and email capture gate', () => {
+test('public landing page includes paid Pro checkout and email capture gate', () => {
   const landingPage = readLandingPage();
   const buyerIntentScript = readBuyerIntentScript();
-  assert.match(landingPage, /7-DAY FREE TRIAL/);
+  assert.match(landingPage, /PAID PRO ACCESS/);
+  assert.match(landingPage, /Billed today/);
   assert.match(landingPage, /pro-email/);
-  assert.match(landingPage, /handleProTrial/);
+  assert.match(landingPage, /handleProCheckout/);
   assert.match(landingPage, /\/js\/buyer-intent\.js/);
   assert.match(buyerIntentScript, /customer_email/);
   assert.match(buyerIntentScript, /submitNewsletterSignup/);
   assert.match(buyerIntentScript, /initializeBehaviorAnalytics/);
   assert.match(buyerIntentScript, /buyer_email_abandon/);
   assert.match(landingPage, /initializeBehaviorAnalytics/);
-  assert.match(landingPage, /pricing_pro_trial/);
+  assert.match(landingPage, /pricing_pro_checkout/);
   assert.match(buyerIntentScript, /dataset\.baseHref/);
   assert.doesNotMatch(buyerIntentScript, /setAttribute\('href'/);
   assert.doesNotMatch(landingPage, /props:\s*\{\s*email:/);
+  assert.doesNotMatch(landingPage, /no charge today/i);
 });
 
 test('public landing page keeps Team on an intake-led start instead of a trial claim', () => {

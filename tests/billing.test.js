@@ -270,6 +270,7 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(withEmail.customer_email, 'buyer@example.com');
     assert.equal(withoutEmail.mode, 'subscription');
     assert.equal(withoutEmail.payment_method_collection, 'always');
+    assert.equal(Object.prototype.hasOwnProperty.call(withoutEmail, 'subscription_data'), false);
     assert.equal(withoutEmail.metadata.priceId, billing.CONFIG.STRIPE_PRICE_ID_PRO_MONTHLY);
     assert.equal(withoutEmail.line_items[0].price_data.unit_amount, 1900);
     assert.equal(withoutEmail.line_items[0].price_data.recurring.interval, 'month');
@@ -296,6 +297,7 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(annual.line_items[0].price_data.recurring.interval, 'year');
     assert.equal(annual.line_items[0].quantity, 1);
     assert.equal(annual.payment_method_collection, 'always');
+    assert.equal(Object.prototype.hasOwnProperty.call(annual, 'subscription_data'), false);
     assert.equal(annual.metadata.billingCycle, 'annual');
 
     const team = billing._buildCheckoutSessionPayload({
@@ -313,6 +315,7 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(team.line_items[0].price_data.recurring.interval, 'month');
     assert.equal(team.line_items[0].quantity, 3);
     assert.equal(team.payment_method_collection, 'always');
+    assert.equal(Object.prototype.hasOwnProperty.call(team, 'subscription_data'), false);
     assert.equal(team.metadata.planId, 'team');
     assert.equal(team.metadata.seatCount, '3');
 
@@ -360,7 +363,7 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(result.status, 'sent');
     assert.equal(result.customerEmail, 'buyer@example.com');
     assert.equal(delivered.length, 1);
-    assert.equal(delivered[0].subject, 'Your 7-day ThumbGate Pro trial is live');
+    assert.equal(delivered[0].subject, 'Your ThumbGate Pro subscription is live');
     assert.match(delivered[0].text, /npx thumbgate pro --activate --key=tg_test_activation_key/);
     assert.match(delivered[0].text, /Pre-Action Checks/);
     assert.match(delivered[0].text, /Give one concrete thumbs up or thumbs down/);
@@ -503,7 +506,7 @@ describe('billing.js — funnel ledger', () => {
       assert.equal(sent.providerId, 'resend_email_001');
       assert.equal(acceptedBodies.length, 1);
       assert.deepEqual(acceptedBodies[0].to, ['buyer@example.com']);
-      assert.equal(acceptedBodies[0].subject, 'Your 7-day ThumbGate Pro trial is live');
+      assert.equal(acceptedBodies[0].subject, 'Your ThumbGate Pro subscription is live');
       assert.match(acceptedBodies[0].text, /npx thumbgate pro --activate --key=tg_resend_success/);
       assert.match(acceptedBodies[0].html, /Pre-Action Checks/);
     } finally {

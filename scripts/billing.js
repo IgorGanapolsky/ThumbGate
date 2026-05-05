@@ -532,9 +532,9 @@ function buildTrialActivationEmail({ customerEmail, apiKey, sessionId, planId, a
   const docsUrl = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
   const supportEmail = process.env.THUMBGATE_SUPPORT_EMAIL || CONFIG.TRIAL_EMAIL_REPLY_TO || 'igor.ganapolsky@gmail.com';
   const command = `npx thumbgate pro --activate --key=${apiKey || ''}`;
-  const subject = 'Your 7-day ThumbGate Pro trial is live';
+  const subject = 'Your ThumbGate Pro subscription is live';
   const preheader = 'Activate Pro in one command, open the dashboard, and start blocking repeated AI coding mistakes.';
-  const headline = 'Your 7-day ThumbGate Pro trial is live.';
+  const headline = 'Your ThumbGate Pro subscription is live.';
   const intro = 'ThumbGate turns thumbs up/down feedback into Pre-Action Checks that stop repeated AI coding mistakes before the next tool call. It keeps lessons local and turns repeated mistakes into Reliability Gateway blocks.';
   const exampleFeedback = 'thumbs down: the answer skipped exact files and tests; next time include paths, commands, and verification evidence.';
   const safeDashboardUrl = escapeHtml(dashboardUrl);
@@ -561,7 +561,7 @@ function buildTrialActivationEmail({ customerEmail, apiKey, sessionId, planId, a
       '3. Give one concrete thumbs up or thumbs down:',
       exampleFeedback,
       '',
-      'Your trial key:',
+      'Your Pro key:',
       apiKey,
       '',
       `Verification evidence: ${docsUrl}`,
@@ -594,7 +594,7 @@ function buildTrialActivationEmail({ customerEmail, apiKey, sessionId, planId, a
                 <h2 style="margin:0 0 8px;font-size:17px;line-height:1.3;color:#17212b;">1. Activate Pro locally</h2>
                 <pre style="margin:0 0 22px;background:#081016;color:#d8f7e4;border:1px solid #23343d;border-radius:6px;padding:14px;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;"><code>${safeCommand}</code></pre>
 
-                <h2 style="margin:0 0 8px;font-size:17px;line-height:1.3;color:#17212b;">2. Save your trial key</h2>
+                <h2 style="margin:0 0 8px;font-size:17px;line-height:1.3;color:#17212b;">2. Save your Pro key</h2>
                 <pre style="margin:0 0 22px;background:#eef6f7;color:#0b343c;border:1px solid #c7e2e7;border-radius:6px;padding:14px;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;"><code>${safeApiKey}</code></pre>
 
                 <h2 style="margin:0 0 8px;font-size:17px;line-height:1.3;color:#17212b;">3. Give one concrete thumbs up or thumbs down</h2>
@@ -2539,11 +2539,7 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
       packId: pack ? pack.id : null,
       credits: pack ? pack.credits : null,
     }),
-    // Keep the trial, but require a payment method so trials can convert without dunning.
-    ...(pack ? {} : {
-      subscription_data: { trial_period_days: 7 },
-      payment_method_collection: 'always',
-    }),
+    ...(pack ? {} : { payment_method_collection: 'always' }),
   };
 
   const normalizedCustomerEmail = normalizeText(customerEmail);
