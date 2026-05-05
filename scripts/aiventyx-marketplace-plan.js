@@ -17,7 +17,7 @@ const STANDARD_MARKETPLACE_FEE = 'Accept the standard Aiventyx marketplace fee f
 const AIVENTYX_SOURCE = 'aiventyx';
 const AIVENTYX_MEDIUM = 'marketplace';
 const AIVENTYX_CONTENT = 'dashboard';
-const PUBLIC_BUYER_ORIGIN = 'https://thumbgate.ai';
+const BUYER_ORIGIN = 'https://thumbgate.ai';
 
 function normalizeText(value) {
   return value === undefined || value === null ? '' : String(value).trim();
@@ -96,10 +96,10 @@ function parseArgs(argv = []) {
 
 function buildPublicAiventyxRevenueLinks() {
   return buildRevenueLinks({
-    appOrigin: PUBLIC_BUYER_ORIGIN,
-    guideLink: `${PUBLIC_BUYER_ORIGIN}/guide`,
-    proCheckoutLink: `${PUBLIC_BUYER_ORIGIN}/checkout/pro`,
-    sprintLink: `${PUBLIC_BUYER_ORIGIN}/#workflow-sprint-intake`,
+    appOrigin: BUYER_ORIGIN,
+    guideLink: `${BUYER_ORIGIN}/guide`,
+    proCheckoutLink: `${BUYER_ORIGIN}/checkout/pro`,
+    sprintLink: `${BUYER_ORIGIN}/#workflow-sprint-intake`,
   });
 }
 

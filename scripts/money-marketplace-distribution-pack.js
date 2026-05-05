@@ -87,13 +87,13 @@ function buildMarketplaceDistributionPack(links = publicRevenueLinks()) {
 
   return {
     generatedAt: new Date().toISOString(),
-    objective: 'Turn platform-specific discovery surfaces into tracked Pro and Workflow Hardening Sprint conversations without claiming publication before it happens.',
+    objective: 'Turn platform discovery into tracked Pro and Sprint conversations without claiming publication before it happens.',
     channels: [
       {
         key: 'lindy',
         name: 'Lindy.ai',
         motion: 'Workflow template and webhook integration',
-        currentPath: 'Create a Lindy workflow with a webhook trigger that sends repeated-agent-failure events into ThumbGate and routes qualified workflow owners to the sprint intake.',
+        currentPath: 'Create a Lindy workflow with a webhook trigger that sends repeated-agent-failure events into ThumbGate and routes qualified owners to sprint intake.',
         buyer: 'No-code automation teams already building agents for sales, support, inbox, and CRM workflows.',
         primaryCta: lindyCta,
         offer: 'Workflow Hardening Sprint',
@@ -107,7 +107,7 @@ function buildMarketplaceDistributionPack(links = publicRevenueLinks()) {
           'Use the template as a consultative asset before asking for checkout.',
           'Log each sent workflow owner in sales:pipeline before follow-up.',
         ],
-        listingCopy: 'A Lindy workflow can move fast, but fast agents need memory-backed approval boundaries. ThumbGate turns repeated workflow mistakes into pre-action gates and proof runs before the next automation acts.',
+        listingCopy: 'A Lindy workflow can move fast, but agents need memory-backed approval boundaries. ThumbGate turns repeated mistakes into pre-action gates and proof runs before the next automation acts.',
         proofLinks,
       },
       {
