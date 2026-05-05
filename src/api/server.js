@@ -1453,87 +1453,6 @@ function buildCheckoutFallbackUrl(baseUrl, metadata = {}) {
   return restoreStripeCheckoutPlaceholder(url.toString());
 }
 
-function buildCheckoutIntentHref(baseUrl, metadata = {}, overrides = {}) {
-  return buildCheckoutFallbackUrl(baseUrl, {
-    ...metadata,
-    ...overrides,
-  });
-}
-
-function renderCheckoutIntentPage({ confirmHref, workflowIntakeHref, teamOptionsHref, botClassification }) {
-  const safeConfirmHref = escapeHtmlAttribute(confirmHref);
-  const safeWorkflowIntakeHref = escapeHtmlAttribute(workflowIntakeHref);
-  const safeTeamOptionsHref = escapeHtmlAttribute(teamOptionsHref);
-  const classification = botClassification?.isBot ? 'bot_deflected' : 'human_confirm_required';
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="robots" content="noindex,nofollow">
-  <title>ThumbGate Pro - Confirm checkout</title>
-  <style>
-    *{box-sizing:border-box}
-    body{background:#0a0a0a;color:#e5e5e5;font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px}
-    .card{background:#141414;border:1px solid #222;border-radius:8px;padding:40px;max-width:560px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.5)}
-    h1{margin:0 0 12px;font-size:24px;color:#22d3ee}
-    p{color:#9ca3af;font-size:14px;line-height:1.55;margin:0 0 18px}
-    .actions{display:grid;gap:12px;margin-top:22px}
-    .btn{display:block;text-align:center;text-decoration:none;font-weight:800;padding:14px 18px;border-radius:8px;font-size:15px;border:1px solid transparent}
-    .primary{background:#22d3ee;color:#000}
-    .secondary{background:#1f2937;color:#f9fafb;border-color:#374151}
-    .ghost{background:transparent;color:#e5e5e5;border-color:#374151}
-    .sub{margin-top:16px;font-size:12px;color:#6b7280;text-align:center}
-    .back{color:#6b7280;font-size:13px;text-decoration:underline}
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>Choose the right paid path.</h1>
-    <p>ThumbGate Pro is $19/mo for a solo operator. If the real problem is a team workflow, send that workflow first so we can route you to the $499 diagnostic or $1500 sprint only when the scope is real.</p>
-    <div class="actions">
-      <a class="btn primary" data-checkout-intent="pro_checkout_confirmed" href="${safeConfirmHref}" rel="noopener">Continue to Stripe</a>
-      <a class="btn secondary" data-checkout-intent="workflow_sprint_intake" href="${safeWorkflowIntakeHref}">Send workflow first</a>
-      <a class="btn ghost" data-checkout-intent="team_paid_path" href="${safeTeamOptionsHref}">See diagnostic and sprint options</a>
-    </div>
-    <div class="sub">Payments handled by Stripe. Pro includes a 7-day trial. Card required; no charge today.</div>
-    <div class="sub"><a class="back" href="/">Back to homepage</a></div>
-  </div>
-  <script>
-    (function () {
-      function sendTelemetry(eventType, extra) {
-        var payload = Object.assign({
-          eventType: eventType,
-          clientType: 'web',
-          page: '/checkout/pro',
-          checkoutIntentClassification: '${classification}'
-        }, extra || {});
-        var body = JSON.stringify(payload);
-        if (navigator.sendBeacon) {
-          navigator.sendBeacon('/v1/telemetry/ping', new Blob([body], { type: 'application/json' }));
-          return;
-        }
-        fetch('/v1/telemetry/ping', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: body,
-          keepalive: true
-        }).catch(function () {});
-      }
-      document.querySelectorAll('[data-checkout-intent]').forEach(function (link) {
-        link.addEventListener('click', function () {
-          sendTelemetry('checkout_interstitial_cta_clicked', {
-            ctaId: link.getAttribute('data-checkout-intent'),
-            ctaPlacement: 'checkout_interstitial'
-          });
-        });
-      });
-    }());
-  </script>
-</body>
-</html>`;
-}
-
 function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneyState(req, parsed)) {
   const params = parsed.searchParams;
   const traceId = pickFirstText(params.get('trace_id')) || createJourneyId('checkout');
@@ -4467,59 +4386,33 @@ async function addContext(){
         ? { 'Set-Cookie': journeyState.setCookieHeaders }
         : {};
 
-      // ── Intent confirmation ──────────────────────────────────────────
+      // ── Bot guard ────────────────────────────────────────────────────
       // Creating a Stripe Checkout session on every GET means crawlers,
-      // link-preview fetchers, LLM scrapers, and low-intent humans inflate
-      // "sessions opened" while completions stay at zero. Serve an
-      // interstitial first, then create the payment session only after the
-      // buyer confirms the Pro path.
+      // link-preview fetchers, and LLM scrapers inflate "sessions opened"
+      // while completions stay at zero. Serve bots an interstitial HTML
+      // page instead — no Stripe session created, no funnel pollution.
+      // The `?confirm=1` query param or POST below is the real-user path.
       const botClassification = classifyRequester(req.headers);
       const confirmParam = parsed?.searchParams?.get('confirm') ?? null;
       const isConfirmedCheckout = confirmParam === '1'
         || confirmParam === 'true'
         || req.method === 'POST';
-      if (!isConfirmedCheckout) {
-        const eventType = botClassification.isBot ? 'checkout_bot_deflected' : 'checkout_interstitial_view';
+      if (botClassification.isBot && !isConfirmedCheckout) {
         appendBestEffortTelemetry(FEEDBACK_DIR, {
-          eventType,
+          eventType: 'checkout_bot_deflected',
           clientType: 'web',
           traceId,
-          acquisitionId: analyticsMetadata.acquisitionId,
-          visitorId: analyticsMetadata.visitorId,
-          sessionId: analyticsMetadata.sessionId,
           utmSource: analyticsMetadata.utmSource,
           utmMedium: analyticsMetadata.utmMedium,
           utmCampaign: analyticsMetadata.utmCampaign,
-          utmContent: analyticsMetadata.utmContent,
-          utmTerm: analyticsMetadata.utmTerm,
           referrer: analyticsMetadata.referrer,
           referrerHost: analyticsMetadata.referrerHost,
           page: '/checkout/pro',
-          ctaId: analyticsMetadata.ctaId,
-          ctaPlacement: analyticsMetadata.ctaPlacement,
           planId: analyticsMetadata.planId,
           reason: botClassification.reason,
-        }, req.headers, eventType);
-        const workflowIntakeHref = buildCheckoutIntentHref(`${hostedConfig.appOrigin}/#workflow-sprint-intake`, analyticsMetadata, {
-          utmMedium: 'checkout_interstitial_recovery',
-          utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_workflow_sprint',
-          ctaId: 'checkout_interstitial_workflow_sprint_intake',
-          ctaPlacement: 'checkout_interstitial',
-          planId: 'team',
-        });
-        const teamOptionsHref = buildCheckoutIntentHref(`${hostedConfig.appOrigin}/#workflow-sprint-intake`, analyticsMetadata, {
-          utmMedium: 'checkout_interstitial_paid_path',
-          utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_team_paid_path',
-          ctaId: 'checkout_interstitial_team_paid_path',
-          ctaPlacement: 'checkout_interstitial',
-          planId: 'team',
-        });
-        const html = renderCheckoutIntentPage({
-          confirmHref: buildCheckoutConfirmHref(parsed),
-          workflowIntakeHref,
-          teamOptionsHref,
-          botClassification,
-        });
+        }, req.headers, 'checkout_bot_deflected');
+        const confirmHref = escapeHtmlAttribute(buildCheckoutConfirmHref(parsed));
+        const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>ThumbGate Pro \u2014 Confirm checkout</title><style>*{box-sizing:border-box}body{background:#0a0a0a;color:#e5e5e5;font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px}.card{background:#141414;border:1px solid #222;border-radius:16px;padding:48px 40px;max-width:460px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.5)}h1{margin:0 0 12px;font-size:22px;color:#22d3ee}p{color:#9ca3af;font-size:14px;line-height:1.55;margin:0 0 24px}.btn{display:inline-block;background:#22d3ee;color:#000;text-decoration:none;font-weight:700;padding:14px 32px;border-radius:999px;font-size:16px;cursor:pointer;border:none}.btn:hover{opacity:.9}.sub{margin-top:16px;font-size:12px;color:#6b7280}a.back{color:#6b7280;font-size:13px;text-decoration:underline}</style></head><body><div class="card"><h1>Continue to secure checkout</h1><p>You&apos;re one click from ThumbGate Pro at $19/mo. We create the payment session only after you confirm \u2014 keeps your path clean and our funnel honest.</p><a class="btn" href="${confirmHref}" rel="noopener">Continue to Stripe \u2192</a><div class="sub">Payments handled by Stripe. Card required; billed today. Cancel anytime.</div><div class="sub"><a class="back" href="/">\u2190 Back to homepage</a></div></div></body></html>`;
         sendHtml(res, 200, html, responseHeaders);
         return;
       }

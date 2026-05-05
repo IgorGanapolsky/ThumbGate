@@ -2,8 +2,8 @@
 
 /**
  * Integration tests: GET /checkout/pro must not create Stripe sessions for
- * bots or humans. Everyone gets an HTML interstitial first; only explicit
- * checkout confirmation creates a payment session.
+ * bots. Browsers hit the session-create path as before; bots get an HTML
+ * interstitial that only creates the session on explicit confirm.
  */
 
 const { describe, it, before, after } = require('node:test');
@@ -78,10 +78,7 @@ describe('/checkout/pro bot guard', () => {
     });
     assert.equal(res.status, 200);
     const body = await res.text();
-    assert.match(body, /Choose the right paid path/);
-    assert.match(body, /Send workflow first/);
-    assert.match(body, /checkout_interstitial_workflow_sprint_intake/);
-    assert.match(body, /checkout_interstitial_cta_clicked/);
+    assert.match(body, /Continue to secure checkout/);
     assert.match(body, /\/checkout\/pro\?confirm=1/);
     assert.doesNotMatch(body, /stripe\.com/);
   });
@@ -100,8 +97,6 @@ describe('/checkout/pro bot guard', () => {
     assert.match(body, /&amp;cta_id=pricing_pro/);
     assert.match(body, /&amp;billing_cycle=annual/);
     assert.match(body, /&amp;landing_path=%2Fpricing/);
-    assert.match(body, /utm_medium=checkout_interstitial_recovery/);
-    assert.match(body, /cta_id=checkout_interstitial_workflow_sprint_intake/);
   });
 
   it('returns HTML interstitial for curl (missing browser headers)', async () => {
@@ -114,7 +109,7 @@ describe('/checkout/pro bot guard', () => {
     });
     assert.equal(res.status, 200);
     const body = await res.text();
-    assert.match(body, /Choose the right paid path/);
+    assert.match(body, /Continue to secure checkout/);
   });
 
   it('returns HTML interstitial for LLM crawlers (ClaudeBot, GPTBot)', async () => {
@@ -129,7 +124,7 @@ describe('/checkout/pro bot guard', () => {
       });
       assert.equal(res.status, 200, `expected 200 interstitial for ${ua}`);
       const body = await res.text();
-      assert.match(body, /Choose the right paid path/);
+      assert.match(body, /Continue to secure checkout/);
     }
   });
 
@@ -146,11 +141,11 @@ describe('/checkout/pro bot guard', () => {
       });
       assert.equal(res.status, 200);
       const body = await res.text();
-      assert.match(body, /Choose the right paid path/);
+      assert.match(body, /Continue to secure checkout/);
     }
   });
 
-  it('requires checkout confirmation for a real browser user-agent', async () => {
+  it('proceeds with checkout flow for a real browser user-agent', async () => {
     const res = await fetch(`${origin}/checkout/pro`, {
       redirect: 'manual',
       headers: {
@@ -158,15 +153,17 @@ describe('/checkout/pro bot guard', () => {
         accept: BROWSER_ACCEPT,
       },
     });
-    assert.equal(res.status, 200);
-    const body = await res.text();
-    assert.match(body, /Choose the right paid path/);
-    assert.match(body, /Continue to Stripe/);
-    assert.match(body, /Send workflow first/);
-    assert.match(body, /See diagnostic and sprint options/);
-    assert.match(body, /checkout_interstitial_workflow_sprint_intake/);
-    assert.match(body, /checkout_interstitial_team_paid_path/);
-    assert.doesNotMatch(body, /stripe\.com/);
+    // Expect either 302 to a Stripe URL / local fallback OR 200 with stripe URL content.
+    // With STRIPE_SECRET_KEY='' the local-mode fallback is used, which 302s to a /success URL.
+    assert.ok(
+      res.status === 302 || res.status === 200,
+      `expected redirect or success page, got ${res.status}`,
+    );
+    if (res.status === 200) {
+      const body = await res.text();
+      assert.doesNotMatch(body, /Continue to secure checkout/,
+        'browser should skip the interstitial');
+    }
   });
 
   it('proceeds with checkout when ?confirm=1 is passed even from a bot UA', async () => {
@@ -201,23 +198,5 @@ describe('/checkout/pro bot guard', () => {
       deflected[0].reasonCode || deflected[0].reason,
       'deflection reason should be populated',
     );
-  });
-
-  it('logs checkout_interstitial_view telemetry events for browsers before confirmed checkout', async () => {
-    try { fs.unlinkSync(path.join(ENV.THUMBGATE_FEEDBACK_DIR, 'telemetry-pings.jsonl')); } catch {}
-    await fetch(`${origin}/checkout/pro?utm_source=pricing_page&cta_id=pricing_pro`, {
-      redirect: 'manual',
-      headers: {
-        'user-agent': BROWSER_UA,
-        accept: BROWSER_ACCEPT,
-      },
-    });
-    const events = readFunnelEvents();
-    const interstitial = events.filter((e) => e.eventType === 'checkout_interstitial_view');
-    const bootstrapped = events.filter((e) => e.eventType === 'checkout_bootstrap');
-    assert.ok(interstitial.length >= 1, `expected at least 1 interstitial event, got ${interstitial.length}`);
-    assert.equal(bootstrapped.length, 0, 'unconfirmed browser should not reach checkout_bootstrap');
-    assert.equal(interstitial[0].ctaId, 'pricing_pro');
-    assert.equal(interstitial[0].utmSource, 'pricing_page');
   });
 });
