@@ -29,6 +29,8 @@ GitHub Actions workflow:
 
 - `.github/workflows/thumbgate-creator-platform-promo.yml`
 
+Workflow integrity note: this repo previously referenced non-existent `actions/checkout@v6` / `actions/setup-node@v6`. Those have now been pinned to `@v4` across all workflows in the local branch `codex/revenue-conversion-orchestration-20260505`, but the branch still needs to be pushed/merged before GitHub Actions runs will pick it up.
+
 Approval-ready workflow inputs:
 
 - `mode=preview`
@@ -43,4 +45,3 @@ npm run social:publish:launch -- \
   --offer=operator-lab \
   --platforms=linkedin,instagram,threads,bluesky,reddit,youtube
 ```
-
