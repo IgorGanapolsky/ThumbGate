@@ -2963,6 +2963,8 @@ function renderCheckoutSuccessPage(runtimeConfig) {
 }
 
 function renderCheckoutCancelledPage(runtimeConfig) {
+  const firstFailureRuleCheckoutUrl = 'https://buy.stripe.com/4gM6oHgH2bTw4lH6i73sI0z';
+  const quickReadCheckoutUrl = 'https://buy.stripe.com/aFa8wPgH29Lo4lH35V3sI0w';
   const diagnosticCheckoutUrl = runtimeConfig.sprintDiagnosticCheckoutUrl
     ? escapeHtmlAttribute(runtimeConfig.sprintDiagnosticCheckoutUrl)
     : '';
@@ -2973,6 +2975,8 @@ function renderCheckoutCancelledPage(runtimeConfig) {
   const workflowSprintPriceDollars = runtimeConfig.workflowSprintPriceDollars || 1500;
   const workflowSprintIntakeUrl = `${escapeHtmlAttribute(runtimeConfig.appOrigin)}/#workflow-sprint-intake`;
   const recoveryOfferLinks = [
+    `<a href="${firstFailureRuleCheckoutUrl}" data-recovery-offer="first_failure_rule" data-offer-price="1">Pay $1 first rule</a>`,
+    `<a href="${quickReadCheckoutUrl}" data-recovery-offer="quick_read" data-offer-price="19">Pay $19 quick read</a>`,
     `<a id="send-workflow-first" href="${workflowSprintIntakeUrl}" data-recovery-offer="workflow_sprint_intake" data-offer-price="0">Send workflow first</a>`,
     diagnosticCheckoutUrl
       ? `<a href="${diagnosticCheckoutUrl}" data-recovery-offer="sprint_diagnostic" data-offer-price="${sprintDiagnosticPriceDollars}">Book $${sprintDiagnosticPriceDollars} diagnostic</a>`
@@ -2984,7 +2988,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
   const recoveryOfferCard = recoveryOfferLinks
     ? `<div class="card recovery-card">
       <h2>Need help deciding?</h2>
-      <p>If Pro is not the right next step, send the workflow first. We can qualify the blocker, confirm the proof plan, and route you to the diagnostic or sprint only when the scope is real.</p>
+      <p>If Pro is not the right next step, start smaller or send the workflow first. We can qualify the blocker, confirm the proof plan, and route you to the diagnostic or sprint only when the scope is real.</p>
       <div class="actions">
         ${recoveryOfferLinks}
       </div>
