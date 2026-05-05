@@ -4484,12 +4484,11 @@ async function addContext(){
       const normalizedCheckoutEmail = normalizeCheckoutCustomerEmail(bootstrapBody.customerEmail);
       if (!normalizedCheckoutEmail) {
         appendBestEffortTelemetry(FEEDBACK_DIR, {
-          eventType: 'checkout_email_deferred_to_stripe',
-          clientType: 'web',
+          eventType: 'checkout_email_to_stripe',
           traceId,
           page: '/checkout/pro',
           planId: analyticsMetadata.planId,
-        }, req.headers, 'checkout_email_deferred_to_stripe');
+        }, req.headers, 'checkout_email_to_stripe');
       }
       bootstrapBody.customerEmail = normalizedCheckoutEmail || undefined;
 
