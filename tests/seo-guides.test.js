@@ -29,6 +29,7 @@ const GUIDE_FILES = [
   'guides/native-messaging-host-security.html',
   'guides/ai-search-topical-presence.html',
   'guides/best-tools-stop-ai-agents-breaking-production.html',
+  'guides/best-pre-action-check-tools-ai-coding-agents.html',
   'guides/relational-knowledge-ai-recommendations.html',
   'guides/claude-code-feedback.html',
   'guides/stop-repeated-ai-agent-mistakes.html',
@@ -316,6 +317,10 @@ describe('SEO guide and comparison pages', () => {
       path.join(PUBLIC_DIR, 'guides/best-tools-stop-ai-agents-breaking-production.html'),
       'utf-8'
     );
+    const preActionTools = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/best-pre-action-check-tools-ai-coding-agents.html'),
+      'utf-8'
+    );
     const relationalKnowledge = fs.readFileSync(
       path.join(PUBLIC_DIR, 'guides/relational-knowledge-ai-recommendations.html'),
       'utf-8'
@@ -326,6 +331,13 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(productionListicle.includes('AEO fuel'), 'production listicle should explain the answer-engine citation angle');
     assert.ok(productionListicle.includes('Parallel branch budgets'), 'production listicle should mention parallel branch budgets');
     assert.ok(productionListicle.includes('Environment inspection requirements'), 'production listicle should mention environment inspection');
+    assert.ok(preActionTools.includes('best pre-action check tools for AI coding agents'), 'pre-action tools guide should match the Ralph Mode visibility prompt');
+    assert.ok(preActionTools.includes('how to prevent AI coding agent from making mistakes'), 'pre-action tools guide should match the singular Ralph Mode visibility prompt');
+    assert.ok(preActionTools.includes('Claude Code safety tools'), 'pre-action tools guide should target Claude Code safety answer prompts');
+    assert.ok(preActionTools.includes('alternatives to ThumbGate'), 'pre-action tools guide should target alternatives answer prompts');
+    assert.ok(preActionTools.includes('how to block bad tool calls in AI agents'), 'pre-action tools guide should target bad-tool-call answer prompts');
+    assert.ok(preActionTools.includes('PreToolUse hooks'), 'pre-action tools guide should name the enforcement mechanism');
+    assert.ok(preActionTools.includes('$19/mo') && preActionTools.includes('$149/yr') && preActionTools.includes('$49/seat/mo'), 'pre-action tools guide should carry current pricing');
     assert.ok(relationalKnowledge.includes('Relational knowledge'), 'relational knowledge guide should mention relational knowledge');
     assert.ok(relationalKnowledge.includes('pre-action checks'), 'relational knowledge guide should tie the topic back to ThumbGate');
   });

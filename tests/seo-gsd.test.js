@@ -444,6 +444,30 @@ test('AI agent production listicle is discoverable and commercially classified',
   });
 });
 
+test('pre-action check tools guide is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/best-pre-action-check-tools-ai-coding-agents');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/best-pre-action-check-tools-ai-coding-agents');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'best pre-action check tools for ai coding agents');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-checks');
+  assert.match(html, /block bad tool calls/i);
+  assert.match(html, /PreToolUse hooks/);
+  assert.match(html, /how to prevent AI coding agent from making mistakes/);
+  assert.match(html, /Claude Code safety tools/);
+  assert.match(html, /alternatives to ThumbGate/);
+  assert.match(html, /\$19\/mo/);
+  assert.match(html, /\$149\/yr/);
+  assert.match(html, /\$49\/seat\/mo/);
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/best-pre-action-check-tools-ai-coding-agents',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
 test('native messaging host security page is discoverable and commercially classified', () => {
   const page = findSeoPageByPath('/guides/native-messaging-host-security');
   const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/native-messaging-host-security');
@@ -507,6 +531,7 @@ test('writePlanOutputs persists machine-readable GSD artifacts', () => {
     assert.ok(pages.some((page) => page.path === '/guides/gpt-5-5-model-evaluation'));
     assert.ok(pages.some((page) => page.path === '/guides/ai-search-topical-presence'));
     assert.ok(pages.some((page) => page.path === '/guides/best-tools-stop-ai-agents-breaking-production'));
+    assert.ok(pages.some((page) => page.path === '/guides/best-pre-action-check-tools-ai-coding-agents'));
     assert.ok(pages.some((page) => page.path === '/guides/relational-knowledge-ai-recommendations'));
     assert.ok(pages.some((page) => page.path === '/guides/codex-cli-guardrails'));
     assert.ok(pages.some((page) => page.path === '/guides/gemini-cli-feedback-memory'));

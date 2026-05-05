@@ -76,6 +76,7 @@ test('README exposes prompt-shaped buyer questions with tracked guide links', ()
   assert.match(readme, /Workflow Hardening Sprint/i);
   assert.match(readme, /Popular buyer questions/i);
   assert.match(readme, /guides\/ai-search-topical-presence\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
+  assert.match(readme, /guides\/best-pre-action-check-tools-ai-coding-agents\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/relational-knowledge-ai-recommendations\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/background-agent-governance\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /guides\/gpt-5-5-model-evaluation\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
@@ -131,6 +132,11 @@ test('LLM context keeps team pricing and CLI-first positioning aligned with comm
   assert.match(context, /CLI-first/i);
   assert.match(context, /solo side lane/i);
   assert.match(context, /AI Recommendation Visibility/);
+  assert.match(context, /Target Answer Prompts/);
+  assert.match(context, /best pre-action check tools for AI coding agents/);
+  assert.match(context, /how to prevent AI coding agent from making mistakes/);
+  assert.match(context, /Claude Code safety tools/);
+  assert.match(context, /alternatives to ThumbGate/);
   assert.match(context, /repeated AI coding mistakes/);
   assert.match(context, /pre-action checks/);
   assert.doesNotMatch(context, /\$12\/seat\/mo/i);
