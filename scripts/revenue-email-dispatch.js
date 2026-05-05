@@ -2,6 +2,7 @@
 'use strict';
 
 const { sendEmail } = require('./mailer');
+const path = require('node:path');
 
 const DEFAULT_FROM = 'ThumbGate <onboarding@resend.dev>';
 const DEFAULT_REPLY_TO = 'igor.ganapolsky@gmail.com';
@@ -89,7 +90,11 @@ async function main(argv = process.argv.slice(2), deps = {}) {
   return result;
 }
 
-if (require.main === module) {
+function isCliInvocation(argv = process.argv) {
+  return argv[1] ? path.resolve(argv[1]) === __filename : false;
+}
+
+if (isCliInvocation()) {
   main().catch((err) => {
     console.error(err && err.message ? err.message : err);
     process.exit(1);
@@ -98,6 +103,7 @@ if (require.main === module) {
 
 module.exports = {
   CAMPAIGNS,
+  isCliInvocation,
   parseArgs,
   renderMessage,
   main,

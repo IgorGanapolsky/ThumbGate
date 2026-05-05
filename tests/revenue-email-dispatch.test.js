@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 
 const {
   CAMPAIGNS,
+  isCliInvocation,
   parseArgs,
   renderMessage,
   main,
@@ -47,4 +48,9 @@ test('parseArgs captures campaign and guards', () => {
     dryRun: true,
     confirmSend: true,
   });
+});
+
+test('CLI entrypoint detection is path based', () => {
+  assert.equal(isCliInvocation(['node', require.resolve('../scripts/revenue-email-dispatch')]), true);
+  assert.equal(isCliInvocation(['node', require.resolve('./revenue-email-dispatch.test')]), false);
 });
