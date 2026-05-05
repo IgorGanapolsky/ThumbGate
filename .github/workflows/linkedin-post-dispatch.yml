@@ -72,7 +72,7 @@ jobs:
           publishToAllPlatforms(text, {
             campaign: 'voice_agent_reliability_diagnostic',
             medium: 'social',
-            platforms: ['linkedin', 'threads', 'instagram'],
+            platforms: ['bluesky'],
           })
             .then((result) => {
               console.log(JSON.stringify(result, null, 2));
