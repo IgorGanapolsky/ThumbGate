@@ -7,6 +7,7 @@ const {
   DEFAULT_LAUNCH_PLATFORMS,
   LAUNCH_CAMPAIGN,
   OPERATOR_LAB_CAMPAIGN,
+  PAID_SPRINT_CAMPAIGN,
   buildPlatformPost,
   parseArgs,
   publishLaunchCampaign,
@@ -47,6 +48,16 @@ test('buildPlatformPost can create Skool operator lab copy', () => {
   assert.match(post, /utm_content=operator_lab_linkedin/);
   assert.ok(xPost.length <= 280, `X operator-lab post should fit 280 chars; got ${xPost.length}`);
   assert.match(xPost, /utm_content=operator_lab_twitter/);
+});
+
+test('buildPlatformPost can create paid sprint copy with paid sprint attribution', () => {
+  const post = buildPlatformPost('linkedin', 'paid-sprint');
+
+  assert.match(post, /\$499 diagnostic/);
+  assert.match(post, /\$1500 sprint/);
+  assert.match(post, /https:\/\/thumbgate\.ai\/pro/);
+  assert.match(post, /utm_campaign=paid_workflow_sprint/);
+  assert.match(post, /utm_content=paid_sprint_linkedin/);
 });
 
 test('publishLaunchCampaign previews default platforms in dry run mode', async () => {
@@ -102,6 +113,34 @@ test('publishLaunchCampaign uses operator lab UTM settings when requested', asyn
   assert.equal(calls[0].options.utm.medium, 'community_course');
   assert.equal(calls[0].options.utm.campaign, OPERATOR_LAB_CAMPAIGN);
   assert.match(calls[0].content, /skool\.com\/thumbgate-operator-lab-6000/);
+});
+
+test('publishLaunchCampaign uses paid sprint UTM settings when requested', async () => {
+  const calls = [];
+  const fakePublisher = {
+    getConnectedAccounts: async () => ([
+      { platform: 'linkedin', accountId: 'acc_l1' },
+    ]),
+    groupAccountsByPlatform(accounts) {
+      return new Map([['linkedin', accounts]]);
+    },
+    publishPost: async (content, platforms, options) => {
+      calls.push({ content, platforms, options });
+      return { id: 'linkedin_post_1' };
+    },
+  };
+
+  const result = await publishLaunchCampaign({
+    platforms: ['linkedin'],
+    offer: 'paid-sprint',
+  }, fakePublisher);
+
+  assert.equal(result.published.length, 1);
+  assert.equal(calls[0].options.utm.source, 'linkedin');
+  assert.equal(calls[0].options.utm.medium, 'organic_social');
+  assert.equal(calls[0].options.utm.campaign, PAID_SPRINT_CAMPAIGN);
+  assert.match(calls[0].content, /https:\/\/thumbgate\.ai\/pro/);
+  assert.match(calls[0].content, /utm_campaign=paid_workflow_sprint/);
 });
 
 test('publishLaunchCampaign publishes requested platforms with per-platform UTM settings', async () => {

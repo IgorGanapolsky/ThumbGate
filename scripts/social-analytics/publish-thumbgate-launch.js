@@ -18,6 +18,8 @@ const APP_ORIGIN = resolveHostedBillingConfig({
 const DEFAULT_TIMEZONE = 'America/New_York';
 const LAUNCH_CAMPAIGN = 'first_customer_push';
 const OPERATOR_LAB_CAMPAIGN = 'operator_lab_launch';
+const PAID_SPRINT_CAMPAIGN = 'paid_workflow_sprint';
+const PAID_SPRINT_ORIGIN = 'https://thumbgate.ai';
 const SKOOL_OPERATOR_LAB_URL = 'https://www.skool.com/thumbgate-operator-lab-6000';
 const DEFAULT_LAUNCH_PLATFORMS = ['twitter', 'linkedin', 'instagram'];
 
@@ -201,12 +203,22 @@ function buildOperatorLabUrl(platform, content) {
 }
 
 function buildPaidSprintUrl(platform, content) {
-  return buildUTMLink(`${APP_ORIGIN}/pro`, {
+  return buildUTMLink(`${PAID_SPRINT_ORIGIN}/pro`, {
     source: platform,
     medium: 'organic_social',
-    campaign: 'paid_workflow_sprint',
+    campaign: PAID_SPRINT_CAMPAIGN,
     content,
   });
+}
+
+function mediumForOffer(offer) {
+  return offer === 'operator-lab' ? 'community_course' : 'organic_social';
+}
+
+function campaignForOffer(offer) {
+  if (offer === 'operator-lab') return OPERATOR_LAB_CAMPAIGN;
+  if (offer === 'paid-sprint') return PAID_SPRINT_CAMPAIGN;
+  return LAUNCH_CAMPAIGN;
 }
 
 function renderTrackedPost(spec, platform, urlBuilder) {
@@ -402,8 +414,8 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
 
     const utm = {
       source: normalizedPlatform === 'twitter' ? 'x' : normalizedPlatform,
-      medium: offer === 'operator-lab' ? 'community_course' : 'organic_social',
-      campaign: offer === 'operator-lab' ? OPERATOR_LAB_CAMPAIGN : LAUNCH_CAMPAIGN,
+      medium: mediumForOffer(offer),
+      campaign: campaignForOffer(offer),
     };
 
     try {
@@ -458,6 +470,8 @@ module.exports = {
   DEFAULT_TIMEZONE,
   LAUNCH_CAMPAIGN,
   OPERATOR_LAB_CAMPAIGN,
+  PAID_SPRINT_CAMPAIGN,
+  PAID_SPRINT_ORIGIN,
   SKOOL_OPERATOR_LAB_URL,
   buildCampaignEntries,
   buildLandingUrl,
