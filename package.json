@@ -605,7 +605,7 @@
     "test:cursor-wiring": "node --test tests/cursor-wiring.test.js",
     "test:pretooluse-injection": "node --test tests/pretooluse-lesson-injection.test.js",
     "test:recent-corrective-context": "node --test tests/recent-corrective-actions-context.test.js",
-    "test:mailer": "node --test tests/mailer.test.js tests/mailer-dns.test.js tests/billing-webhook-email.test.js",
+    "test:mailer": "node --test tests/mailer.test.js tests/mailer-dns.test.js tests/billing-webhook-email.test.js tests/revenue-email-dispatch.test.js",
     "test:brand-assets": "node --test tests/brand-assets.test.js",
     "test:enforcement-teeth": "node --test tests/enforcement-teeth.test.js",
     "test:bayes-optimal-gate": "node --test tests/bayes-optimal-gate.test.js",
