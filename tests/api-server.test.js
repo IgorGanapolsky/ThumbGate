@@ -1309,7 +1309,7 @@ test('checkout fallback URLs preserve Stripe session placeholders while carrying
 
 test('checkout bootstrap route preserves attribution and records first-party telemetry in local mode', async () => {
   const res = await fetch(
-    apiUrl('/checkout/pro?acquisition_id=acq_bootstrap&visitor_id=visitor_bootstrap&session_id=session_bootstrap&install_id=inst_bootstrap&utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&utm_term=agentic+feedback&creator=reach_vb&community=ClaudeCode&post_id=1rsudq0&comment_id=oa9mqjf&campaign_variant=comment_problem_solution&offer_code=REDDIT-EARLY&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2Fpricing'),
+    apiUrl('/checkout/pro?confirm=1&acquisition_id=acq_bootstrap&visitor_id=visitor_bootstrap&session_id=session_bootstrap&install_id=inst_bootstrap&utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&utm_term=agentic+feedback&creator=reach_vb&community=ClaudeCode&post_id=1rsudq0&comment_id=oa9mqjf&campaign_variant=comment_problem_solution&offer_code=REDDIT-EARLY&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2Fpricing'),
     {
       redirect: 'manual',
       headers: {
@@ -1377,7 +1377,7 @@ test('checkout bootstrap falls back to seeded journey cookies when query IDs are
     'thumbgate_acquisition_id=acq_cookie_checkout',
   ].join('; ');
   const res = await fetch(
-    apiUrl('/checkout/pro?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro'),
+    apiUrl('/checkout/pro?confirm=1&utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro'),
     {
       redirect: 'manual',
       headers: {
