@@ -265,6 +265,29 @@ test('linkedin publisher module does not export a {text}-options-bag publishPost
     'publishTextPost(token, personUrn, text) is the canonical direct-API entry');
 });
 
+test('linkedin publisher can soft-fail revoked or missing credentials only when configured', () => {
+  const linkedin = require('../scripts/social-analytics/publishers/linkedin');
+  const revoked = new Error('publishArticlePost HTTP 401: {"code":"REVOKED_ACCESS_TOKEN"}');
+  const badPayload = new Error('publishArticlePost HTTP 422: invalid article URL');
+
+  assert.equal(linkedin.isRecoverableLinkedInCredentialError(revoked), true);
+  assert.equal(linkedin.isRecoverableLinkedInCredentialError(new Error('LINKEDIN_ACCESS_TOKEN is not set')), true);
+  assert.equal(linkedin.isRecoverableLinkedInCredentialError(badPayload), false);
+  assert.equal(linkedin.shouldWarnOnCredentialError(revoked, { LINKEDIN_AUTH_FAILURE_MODE: 'warn' }), true);
+  assert.equal(linkedin.shouldWarnOnCredentialError(revoked, {}), false);
+  assert.equal(linkedin.shouldWarnOnCredentialError(badPayload, { LINKEDIN_AUTH_FAILURE_MODE: 'warn' }), false);
+});
+
+test('linkedin dispatch workflow warns on auth failure without hiding content bugs', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '..', '.github', 'workflows', 'linkedin-post-dispatch.yml'),
+    'utf8'
+  );
+
+  assert.match(workflow, /LINKEDIN_AUTH_FAILURE_MODE:\s*warn/);
+  assert.doesNotMatch(workflow, /continue-on-error:\s*true/);
+});
+
 test('threads publisher module exposes postTextThread, not publishPost', () => {
   // Regression guard for the 2026-04-22 discovery: threads.publishPost({text})
   // was called but does not exist. The real entry is postTextThread({text, token, userId}).
