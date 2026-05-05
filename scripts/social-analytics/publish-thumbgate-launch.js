@@ -607,10 +607,23 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
         recordPublishResult(results, normalizedPlatform, publishResult, 'published');
       }
     } catch (error) {
-      results.errors.push({
+      const errorMessage = error && error.message ? error.message : String(error);
+      const classification = classifyPublishFailure({
         platform: normalizedPlatform,
-        error: error && error.message ? error.message : String(error),
+        error: errorMessage,
       });
+      if (classification.fatal) {
+        results.errors.push({
+          platform: normalizedPlatform,
+          error: errorMessage,
+        });
+      } else {
+        results.skipped.push({
+          platform: normalizedPlatform,
+          error: errorMessage,
+          reason: classification.reason,
+        });
+      }
     }
   }
 

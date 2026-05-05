@@ -361,3 +361,25 @@ test('publishLaunchCampaign skips recent duplicate Zernio posts', async () => {
   assert.equal(result.skipped[0].platform, 'linkedin');
   assert.equal(result.skipped[0].reason, 'duplicate_recent_post');
 });
+
+test('publishLaunchCampaign skips recent duplicate Zernio exceptions', async () => {
+  const fakePublisher = {
+    getConnectedAccounts: async () => ([
+      { platform: 'bluesky', accountId: 'acc_b1' },
+    ]),
+    groupAccountsByPlatform(accounts) {
+      return new Map([['bluesky', accounts]]);
+    },
+    publishPost: async () => {
+      throw new Error('Zernio API 409 for POST /posts: {"error":"This exact content is already scheduled, publishing, or was posted to this account within the last 24 hours.","details":{"platform":"bluesky"}}');
+    },
+  };
+
+  const result = await publishLaunchCampaign({ platforms: ['bluesky'], offer: 'paid-sprint' }, fakePublisher);
+
+  assert.equal(result.published.length, 0);
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.skipped.length, 1);
+  assert.equal(result.skipped[0].platform, 'bluesky');
+  assert.equal(result.skipped[0].reason, 'duplicate_recent_post');
+});
