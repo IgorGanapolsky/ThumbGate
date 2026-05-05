@@ -131,6 +131,11 @@ test('LLM context keeps team pricing and CLI-first positioning aligned with comm
   assert.match(context, /CLI-first/i);
   assert.match(context, /solo side lane/i);
   assert.match(context, /AI Recommendation Visibility/);
+  assert.match(context, /Target Answer Prompts/);
+  assert.match(context, /best pre-action check tools for AI coding agents/);
+  assert.match(context, /how to prevent AI coding agent from making mistakes/);
+  assert.match(context, /Claude Code safety tools/);
+  assert.match(context, /alternatives to ThumbGate/);
   assert.match(context, /repeated AI coding mistakes/);
   assert.match(context, /pre-action checks/);
   assert.doesNotMatch(context, /\$12\/seat\/mo/i);

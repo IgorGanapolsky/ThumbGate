@@ -332,6 +332,9 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(productionListicle.includes('Parallel branch budgets'), 'production listicle should mention parallel branch budgets');
     assert.ok(productionListicle.includes('Environment inspection requirements'), 'production listicle should mention environment inspection');
     assert.ok(preActionTools.includes('best pre-action check tools for AI coding agents'), 'pre-action tools guide should match the Ralph Mode visibility prompt');
+    assert.ok(preActionTools.includes('how to prevent AI coding agent from making mistakes'), 'pre-action tools guide should match the singular Ralph Mode visibility prompt');
+    assert.ok(preActionTools.includes('Claude Code safety tools'), 'pre-action tools guide should target Claude Code safety answer prompts');
+    assert.ok(preActionTools.includes('alternatives to ThumbGate'), 'pre-action tools guide should target alternatives answer prompts');
     assert.ok(preActionTools.includes('how to block bad tool calls in AI agents'), 'pre-action tools guide should target bad-tool-call answer prompts');
     assert.ok(preActionTools.includes('PreToolUse hooks'), 'pre-action tools guide should name the enforcement mechanism');
     assert.ok(preActionTools.includes('$19/mo') && preActionTools.includes('$149/yr') && preActionTools.includes('$49/seat/mo'), 'pre-action tools guide should carry current pricing');

@@ -455,6 +455,9 @@ test('pre-action check tools guide is discoverable and commercially classified',
   assert.equal(page.pillar, 'pre-action-checks');
   assert.match(html, /block bad tool calls/i);
   assert.match(html, /PreToolUse hooks/);
+  assert.match(html, /how to prevent AI coding agent from making mistakes/);
+  assert.match(html, /Claude Code safety tools/);
+  assert.match(html, /alternatives to ThumbGate/);
   assert.match(html, /\$19\/mo/);
   assert.match(html, /\$149\/yr/);
   assert.match(html, /\$49\/seat\/mo/);
