@@ -1,6 +1,6 @@
 # Skool — Start Here Post (ThumbGate Operator Lab)
 
-Generated: 2026-05-04
+Generated: 2026-05-05
 
 Purpose: a pinned “Start Here” post that turns Skool discovery traffic into high-signal workflow submissions, then routes qualified members to the Diagnostic, Sprint, or Pro.
 
@@ -30,11 +30,11 @@ Reply with:
 
 ### If you want the fastest paid path
 If you want a paid, time-boxed decision:
-- **Workflow Hardening Diagnostic ($499)** — map the workflow + choose the fix (Sprint vs Pro vs nothing)  
-- **Workflow Hardening Sprint ($1500)** — harden one workflow end-to-end with a proof review  
-Intake: `https://thumbgate-production.up.railway.app/#workflow-sprint-intake`
+- **Workflow Hardening Diagnostic ($499)** — map the workflow + choose the fix (Sprint vs Pro vs nothing). Available on request when the hosted checkout URL is configured.  
+- **Workflow Hardening Sprint ($1500)** — harden one workflow end-to-end with a proof review.  
+Sprint intake: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 
 If you just want the self-serve setup first:
-- **Pro ($19/mo or $149/yr)**: `https://thumbgate-production.up.railway.app/checkout/pro`
+- **Pro ($19/mo or $149/yr)**: https://thumbgate-production.up.railway.app/checkout/pro
 
 One mistake. One gate. One proof run.

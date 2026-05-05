@@ -30,6 +30,8 @@ These steps require explicit confirmation before executing (no autopost, no invi
 
 Note: Use `https://thumbgate-production.up.railway.app` as the canonical CTA base unless `thumbgate.ai` redirect behavior has been verified.
 
+Skool discovery minimum threshold typically requires: cover image, group description, completed About page, at least 1 post, and inviting members. Verify details in `reports/gtm/2026-05-04-community-course-promo/platform-requirements-refresh.md` before executing.
+
 1. Upload Skool cover image: `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`.
 2. Upload Skool icon: `docs/marketing/assets/thumbgate-skool-icon-128x128.png`.
 3. Add About media (optional): follow `reports/gtm/2026-05-04-community-course-promo/skool-media-upload-steps.md`.

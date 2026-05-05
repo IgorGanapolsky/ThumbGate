@@ -1,21 +1,37 @@
 # Platform Requirements Refresh — Skool + Course Surfaces
 
-Updated: 2026-05-04
+Updated: 2026-05-05
 
 Goal: keep ThumbGate Operator Lab compliant with current Skool discovery requirements and keep the “Workflow Hardening” offer copy aligned with `docs/COMMERCIAL_TRUTH.md`.
 
 This file is a refresh checklist. It is intentionally written so it can be completed in 10–15 minutes once you have browser access.
+
+## Source of truth (Skool Help Center)
+
+- Discovery FAQs (Last updated: 2026-04-08): https://help.skool.com/article/153-discovery-faqs
+- Why isn’t my group visible on Discovery? (Published: ~2026-04): https://help.skool.com/article/151-why-isnt-my-group-visible-in-discovery
+- How to pin a post? (Last updated: 2025-03-03): https://help.skool.com/article/38-how-do-to-pin-a-post
+- What is Classroom? (Published: ~2026-01): https://help.skool.com/article/166-what-is-classroom
+- How to add videos (Last updated: 2026-02-12): https://help.skool.com/article/58-video
 
 ## Skool discovery / setup (verify in Skool UI)
 
 - [ ] Cover image uploaded
 - [ ] Icon uploaded
 - [ ] About media uploaded (optional, but discovery-boosting)
-- [ ] At least 1 public post published
+- [ ] Group description is filled (sidebar)
+- [ ] About page description is filled (and at least 1 image if possible)
+- [ ] At least 1 public post published (discovery threshold requirement)
 - [ ] “Start Here” post published + pinned
 - [ ] Categories created (<= 10) and consistent with Operator Lab
 - [ ] Classroom has at least 1 course (draft is fine, but must be truthful)
 - [ ] Invite policy followed (manual invites only; no spam blasts)
+- [ ] Discovery eligibility check: Settings → Discovery shows Listed/Unlisted, category, and language
+
+### Discovery rank levers (from Skool Help Center)
+
+- [ ] Boosts: high-quality artwork/about page, interesting niche, authentic human engagement, active owner/admins
+- [ ] Penalties: bots/fake accounts, spam/low-quality engagement, low-quality artwork/about page, off-platform payments, bad support, inactive owner
 
 ## Skool policy / pricing (verify in Skool help + settings)
 
@@ -40,6 +56,6 @@ This file is a refresh checklist. It is intentionally written so it can be compl
 
 - Date verified (local time):
 - Skool discovery notes:
+- Skool discovery status (Listed/Unlisted) + rank:
 - Skool limits/policies discovered:
 - Any copy updates needed:
-

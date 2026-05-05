@@ -1,6 +1,6 @@
 # Skool — First Post Draft (ThumbGate Operator Lab)
 
-Generated: 2026-05-04
+Generated: 2026-05-05
 
 Goal: get 1–3 high-signal “repeated mistake” posts quickly so Skool discovery has authentic activity.
 
@@ -22,6 +22,11 @@ Post using this format:
 5) What you tried already (prompt, checklist, PR policy, etc.):
 
 If you want the fastest win: choose one failure that’s costing you time (broken merges, unsafe deploys, bad PR edits, credential mistakes, context drift), and keep it narrow.
+
+Optional CTA (if you want a link in the post):
+- Self-serve setup guide: https://thumbgate-production.up.railway.app/guide
+- Pro checkout ($19/mo or $149/yr): https://thumbgate-production.up.railway.app/checkout/pro
+- Workflow Hardening Sprint intake: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 
 ## Version B (more technical)
 
@@ -48,4 +53,3 @@ Post one repeated AI-agent mistake using:
 - Repo/workflow:
 - Repeated mistake:
 - What should happen instead:
-

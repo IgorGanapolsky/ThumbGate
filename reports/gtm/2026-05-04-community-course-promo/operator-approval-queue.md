@@ -13,6 +13,7 @@ Note: Use `https://thumbgate-production.up.railway.app` as the canonical CTA bas
   - Publish + pin “Start Here”
   - Publish the first post
   - Invite first 10–20
+  - Optional: follow the 7-day launch plan (`skool-7-day-launch-plan.md`)
 
 - Upload cover: `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`
 - Upload icon: `docs/marketing/assets/thumbgate-skool-icon-128x128.png`
@@ -22,6 +23,8 @@ Note: Use `https://thumbgate-production.up.railway.app` as the canonical CTA bas
 - Refresh listing fields (sidebar/About/keywords) from `skool-listing-copy.md`
 - Invite first 10–20: populate `docs/OUTREACH_TARGETS.md` first, then invite
 - Refresh Skool discovery requirements checklist in `platform-requirements-refresh.md`
+- Optional: prepare a Skool promo-group post (Classifieds-style) from `skool-classifieds-post-drafts.md`
+- Optional: run the week plan: `skool-7-day-launch-plan.md`
 
 ## Revenue injection (approval-required)
 
