@@ -21,6 +21,8 @@ const ENV = {
   _TEST_LOCAL_CHECKOUT_SESSIONS_PATH: path.join(tmpRoot, 'local-checkout-sessions.json'),
   THUMBGATE_FEEDBACK_DIR: path.join(tmpRoot, 'feedback'),
   THUMBGATE_API_KEY: 'test-api-key-for-bot-guard',
+  THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL: 'https://buy.stripe.com/test-diagnostic',
+  THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL: 'https://buy.stripe.com/test-sprint',
   STRIPE_SECRET_KEY: '',
   STRIPE_PRICE_ID: '',
 };
@@ -78,9 +80,18 @@ describe('/checkout/pro bot guard', () => {
     });
     assert.equal(res.status, 200);
     const body = await res.text();
-    assert.match(body, /Continue to secure checkout/);
+    assert.match(body, /Choose the right paid path/);
+    assert.match(body, /Send workflow first/);
+    assert.match(body, /checkout_interstitial_workflow_sprint_intake/);
+    assert.match(body, /checkout_interstitial_cta_clicked/);
     assert.match(body, /\/checkout\/pro\?confirm=1/);
-    assert.doesNotMatch(body, /stripe\.com/);
+    assert.match(body, /Book \$499 diagnostic/);
+    assert.match(body, /Start \$1500 sprint/);
+    assert.match(body, /checkout_interstitial_sprint_diagnostic_checkout/);
+    assert.match(body, /checkout_interstitial_workflow_sprint_checkout/);
+    assert.match(body, /https:\/\/buy\.stripe\.com\/test-diagnostic/);
+    assert.match(body, /https:\/\/buy\.stripe\.com\/test-sprint/);
+    assert.doesNotMatch(body, /checkout\.stripe\.com/);
   });
 
   it('preserves attribution params through the bot-safe confirmation link', async () => {
@@ -97,6 +108,10 @@ describe('/checkout/pro bot guard', () => {
     assert.match(body, /&amp;cta_id=pricing_pro/);
     assert.match(body, /&amp;billing_cycle=annual/);
     assert.match(body, /&amp;landing_path=%2Fpricing/);
+    assert.match(body, /utm_medium=checkout_interstitial_recovery/);
+    assert.match(body, /cta_id=checkout_interstitial_workflow_sprint_intake/);
+    assert.match(body, /cta_id=checkout_interstitial_sprint_diagnostic_checkout/);
+    assert.match(body, /cta_id=checkout_interstitial_workflow_sprint_checkout/);
   });
 
   it('returns HTML interstitial for curl (missing browser headers)', async () => {
@@ -109,7 +124,7 @@ describe('/checkout/pro bot guard', () => {
     });
     assert.equal(res.status, 200);
     const body = await res.text();
-    assert.match(body, /Continue to secure checkout/);
+    assert.match(body, /Choose the right paid path/);
   });
 
   it('returns HTML interstitial for LLM crawlers (ClaudeBot, GPTBot)', async () => {
@@ -124,7 +139,7 @@ describe('/checkout/pro bot guard', () => {
       });
       assert.equal(res.status, 200, `expected 200 interstitial for ${ua}`);
       const body = await res.text();
-      assert.match(body, /Continue to secure checkout/);
+      assert.match(body, /Choose the right paid path/);
     }
   });
 
@@ -141,11 +156,11 @@ describe('/checkout/pro bot guard', () => {
       });
       assert.equal(res.status, 200);
       const body = await res.text();
-      assert.match(body, /Continue to secure checkout/);
+      assert.match(body, /Choose the right paid path/);
     }
   });
 
-  it('proceeds with checkout flow for a real browser user-agent', async () => {
+  it('requires checkout confirmation for a real browser user-agent', async () => {
     const res = await fetch(`${origin}/checkout/pro`, {
       redirect: 'manual',
       headers: {
@@ -153,17 +168,19 @@ describe('/checkout/pro bot guard', () => {
         accept: BROWSER_ACCEPT,
       },
     });
-    // Expect either 302 to a Stripe URL / local fallback OR 200 with stripe URL content.
-    // With STRIPE_SECRET_KEY='' the local-mode fallback is used, which 302s to a /success URL.
-    assert.ok(
-      res.status === 302 || res.status === 200,
-      `expected redirect or success page, got ${res.status}`,
-    );
-    if (res.status === 200) {
-      const body = await res.text();
-      assert.doesNotMatch(body, /Continue to secure checkout/,
-        'browser should skip the interstitial');
-    }
+    assert.equal(res.status, 200);
+    const body = await res.text();
+    assert.match(body, /Choose the right paid path/);
+    assert.match(body, /Continue to Stripe/);
+    assert.match(body, /Book \$499 diagnostic/);
+    assert.match(body, /Start \$1500 sprint/);
+    assert.match(body, /Send workflow first/);
+    assert.match(body, /See diagnostic and sprint options/);
+    assert.match(body, /checkout_interstitial_workflow_sprint_intake/);
+    assert.match(body, /checkout_interstitial_team_paid_path/);
+    assert.match(body, /checkout_interstitial_sprint_diagnostic_checkout/);
+    assert.match(body, /checkout_interstitial_workflow_sprint_checkout/);
+    assert.doesNotMatch(body, /checkout\.stripe\.com/);
   });
 
   it('proceeds with checkout when ?confirm=1 is passed even from a bot UA', async () => {
