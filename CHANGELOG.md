@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.16.20
+
+### Patch Changes
+
+- [#1709](https://github.com/IgorGanapolsky/ThumbGate/pull/1709) [`4efe783`](https://github.com/IgorGanapolsky/ThumbGate/commit/4efe7835fe21ef07d2307e47719a4c4898b18b63) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Gate Pro checkout creation on a real buyer email so low-intent clicks and preview traffic stop creating unrecoverable Stripe sessions.
+
+- [#1708](https://github.com/IgorGanapolsky/ThumbGate/pull/1708) [`45b691d`](https://github.com/IgorGanapolsky/ThumbGate/commit/45b691db50400f860132770f9f29a0d459c191b9) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Route unconfirmed Pro checkout traffic through an intent page with Pro, workflow intake, and diagnostic/sprint options before creating Stripe sessions.
+
+- [#1712](https://github.com/IgorGanapolsky/ThumbGate/pull/1712) [`675cb76`](https://github.com/IgorGanapolsky/ThumbGate/commit/675cb76589c963badcfaa0163cc465c57148cf73) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Track checkout intent-page buyer choices and preserve attribution on interstitial CTA telemetry.
+
+- [#1713](https://github.com/IgorGanapolsky/ThumbGate/pull/1713) [`8adc576`](https://github.com/IgorGanapolsky/ThumbGate/commit/8adc576199eb4d52d12e4ede401a0209d9fb6553) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add direct diagnostic and workflow sprint payment options to the checkout intent router.
+
+- [#1698](https://github.com/IgorGanapolsky/ThumbGate/pull/1698) [`3c06364`](https://github.com/IgorGanapolsky/ThumbGate/commit/3c0636415cd967162af673f560066f56713a499f) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Preserve checkout attribution through bot-safe confirmation links, route npm Pro upgrade CTAs through the canonical thumbgate.ai domain, and make normal Pro checkout pay-now instead of trial-first.
+
 ## 1.16.19
 
 ### Patch Changes
