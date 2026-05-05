@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-05-05T15:40:27.748Z",
-  "objective": "Turn platform-specific discovery surfaces into tracked Pro and Workflow Hardening Sprint conversations without claiming publication before it happens.",
+  "generatedAt": "2026-05-05T18:23:06.123Z",
+  "objective": "Turn platform discovery into tracked Pro and Sprint conversations without claiming publication before it happens.",
   "channels": [
     {
       "key": "lindy",
       "name": "Lindy.ai",
       "motion": "Workflow template and webhook integration",
-      "currentPath": "Create a Lindy workflow with a webhook trigger that sends repeated-agent-failure events into ThumbGate and routes qualified workflow owners to the sprint intake.",
+      "currentPath": "Create a Lindy workflow with a webhook trigger that sends repeated-agent-failure events into ThumbGate and routes qualified owners to sprint intake.",
       "buyer": "No-code automation teams already building agents for sales, support, inbox, and CRM workflows.",
       "primaryCta": "https://thumbgate.ai/?utm_source=lindy&utm_medium=marketplace&utm_campaign=lindy_workflow_listing&utm_content=distribution_pack&campaign_variant=workflow&offer_code=LINDY-WORKFLOW&cta_id=lindy_workflow_cta&cta_placement=listing_copy#workflow-sprint-intake",
       "offer": "Workflow Hardening Sprint",
@@ -20,7 +20,7 @@
         "Use the template as a consultative asset before asking for checkout.",
         "Log each sent workflow owner in sales:pipeline before follow-up."
       ],
-      "listingCopy": "A Lindy workflow can move fast, but fast agents need memory-backed approval boundaries. ThumbGate turns repeated workflow mistakes into pre-action gates and proof runs before the next automation acts.",
+      "listingCopy": "A Lindy workflow can move fast, but agents need memory-backed approval boundaries. ThumbGate turns repeated mistakes into pre-action gates and proof runs before the next automation acts.",
       "proofLinks": [
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
@@ -73,11 +73,60 @@
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
       ]
+    },
+    {
+      "key": "agentmart",
+      "name": "AgentMart",
+      "motion": "Agent-buyable reliability pack",
+      "currentPath": "Create an AgentMart seller account, list a low-price ThumbGate Agent Reliability Pack, and route agents from the instant download into the proof-backed setup guide and Pro checkout.",
+      "buyer": "AI agents and builders buying prompt packs, workflow templates, knowledge bases, MCP configs, and agent resources for Claude Code, Codex, Cursor, n8n, and AI side-hustle workflows.",
+      "primaryCta": "https://thumbgate.ai/guide?utm_source=agentmart&utm_medium=marketplace&utm_campaign=agentmart_agent_pack_listing&utm_content=distribution_pack&campaign_variant=agent_pack&offer_code=AGENTMART-AGENT_PACK&cta_id=agentmart_agent_pack_cta&cta_placement=listing_copy&plan_id=pro",
+      "offer": "ThumbGate Agent Reliability Pack",
+      "priceAnchor": "$2.99 to $4.99 download, with Pro at $19/mo or $149/yr as the follow-on.",
+      "sourceEvidence": [
+        "https://agentmart.store/",
+        "https://agentmart.store/skill.md",
+        "https://www.reddit.com/r/nocode/comments/1s13yw0/built_a_marketplace_where_nocode_builders_can/",
+        "https://offers.hubspot.com/thank-you/ai-side-hustle-accelerator",
+        "https://www.skool.com/brendan"
+      ],
+      "operatorSteps": [
+        "Register AgentMart only after an operator supplies the email and stores the API key outside git.",
+        "List a downloadable ThumbGate Agent Reliability Pack with scrubbed examples, MCP config snippets, pre-action gate templates, and proof links.",
+        "Price the first product at $3.99 so agents can impulse-buy, then point serious operators to the setup guide and Pro checkout.",
+        "Use Brendan and AI Automation Society Skool posts as audience language: Claude Code, n8n, AI voice agents, no-code templates, and side-hustle automation systems."
+      ],
+      "productIdeas": [
+        {
+          "name": "ThumbGate Agent Reliability Pack",
+          "price": "$3.99",
+          "format": "download",
+          "description": "MCP setup snippets, pre-action gate examples, and a proof checklist for agents that touch files, GitHub, Vercel, Railway, or client automations."
+        },
+        {
+          "name": "Claude Code No-Code Safety Checklist",
+          "price": "$1.99",
+          "format": "download",
+          "description": "A short checklist agents can apply before editing generated websites, n8n workflows, and AI voice-agent delivery repos."
+        },
+        {
+          "name": "Workflow Hardening Intake Template",
+          "price": "$0",
+          "format": "download",
+          "description": "A free lead magnet that captures one repeated failure and points qualified buyers to the $499 diagnostic or $1500 sprint."
+        }
+      ],
+      "listingCopy": "Agents can buy prompts and workflows, but production workflows still need pre-action gates. ThumbGate packages repeated AI-agent mistakes into local prevention rules, MCP-safe setup steps, and proof-backed reliability checks other agents can apply immediately.",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ]
     }
   ],
   "guardrails": [
-    "Do not claim Lindy, Gumroad, or GoHighLevel publication without direct dashboard or marketplace evidence.",
+    "Do not claim Lindy, Gumroad, GoHighLevel, or AgentMart publication without direct dashboard or marketplace evidence.",
     "Do not claim revenue from these channels without reconciled payment or sales pipeline evidence.",
+    "Never store AgentMart API keys, wallet details, Stripe secrets, or private buyer data in repo files.",
     "Use public buyer URLs on thumbgate.ai for every prospect-facing CTA."
   ]
 }

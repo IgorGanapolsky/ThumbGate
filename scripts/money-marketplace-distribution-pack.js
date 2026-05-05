@@ -12,7 +12,7 @@ const {
 } = require('./gtm-revenue-loop');
 
 const PUBLIC_BUYER_ORIGIN = 'https://thumbgate.ai';
-const CHANNELS = ['lindy', 'gumroad', 'gohighlevel'];
+const CHANNELS = ['lindy', 'gumroad', 'gohighlevel', 'agentmart'];
 
 function normalizeText(value) {
   return value === undefined || value === null ? '' : String(value).trim();
@@ -84,6 +84,10 @@ function buildMarketplaceDistributionPack(links = publicRevenueLinks()) {
   const selfServeCta = buildTrackedMarketplaceLink(links.guideLink, channelTracking('gumroad', 'pro'));
   const sprintCta = buildTrackedMarketplaceLink(links.sprintLink, channelTracking('gohighlevel', 'sprint'));
   const lindyCta = buildTrackedMarketplaceLink(links.sprintLink, channelTracking('lindy', 'workflow'));
+  const agentMartCta = buildTrackedMarketplaceLink(links.guideLink, {
+    ...channelTracking('agentmart', 'agent_pack'),
+    planId: 'pro',
+  });
 
   return {
     generatedAt: new Date().toISOString(),
@@ -152,10 +156,56 @@ function buildMarketplaceDistributionPack(links = publicRevenueLinks()) {
         listingCopy: 'ThumbGate gives agency automations a Reliability Gateway: repeated failures become shared pre-action gates, every risky automation gets evidence, and client-facing workflows keep an audit trail.',
         proofLinks,
       },
+      {
+        key: 'agentmart',
+        name: 'AgentMart',
+        motion: 'Agent-buyable reliability pack',
+        currentPath: 'Create an AgentMart seller account, list a low-price ThumbGate Agent Reliability Pack, and route agents from the instant download into the proof-backed setup guide and Pro checkout.',
+        buyer: 'AI agents and builders buying prompt packs, workflow templates, knowledge bases, MCP configs, and agent resources for Claude Code, Codex, Cursor, n8n, and AI side-hustle workflows.',
+        primaryCta: agentMartCta,
+        offer: 'ThumbGate Agent Reliability Pack',
+        priceAnchor: '$2.99 to $4.99 download, with Pro at $19/mo or $149/yr as the follow-on.',
+        sourceEvidence: [
+          'https://agentmart.store/',
+          'https://agentmart.store/skill.md',
+          'https://www.reddit.com/r/nocode/comments/1s13yw0/built_a_marketplace_where_nocode_builders_can/',
+          'https://offers.hubspot.com/thank-you/ai-side-hustle-accelerator',
+          'https://www.skool.com/brendan',
+        ],
+        operatorSteps: [
+          'Register AgentMart only after an operator supplies the email and stores the API key outside git.',
+          'List a downloadable ThumbGate Agent Reliability Pack with scrubbed examples, MCP config snippets, pre-action gate templates, and proof links.',
+          'Price the first product at $3.99 so agents can impulse-buy, then point serious operators to the setup guide and Pro checkout.',
+          'Use Brendan and AI Automation Society Skool posts as audience language: Claude Code, n8n, AI voice agents, no-code templates, and side-hustle automation systems.',
+        ],
+        productIdeas: [
+          {
+            name: 'ThumbGate Agent Reliability Pack',
+            price: '$3.99',
+            format: 'download',
+            description: 'MCP setup snippets, pre-action gate examples, and a proof checklist for agents that touch files, GitHub, Vercel, Railway, or client automations.',
+          },
+          {
+            name: 'Claude Code No-Code Safety Checklist',
+            price: '$1.99',
+            format: 'download',
+            description: 'A short checklist agents can apply before editing generated websites, n8n workflows, and AI voice-agent delivery repos.',
+          },
+          {
+            name: 'Workflow Hardening Intake Template',
+            price: '$0',
+            format: 'download',
+            description: 'A free lead magnet that captures one repeated failure and points qualified buyers to the $499 diagnostic or $1500 sprint.',
+          },
+        ],
+        listingCopy: 'Agents can buy prompts and workflows, but production workflows still need pre-action gates. ThumbGate packages repeated AI-agent mistakes into local prevention rules, MCP-safe setup steps, and proof-backed reliability checks other agents can apply immediately.',
+        proofLinks,
+      },
     ],
     guardrails: [
-      'Do not claim Lindy, Gumroad, or GoHighLevel publication without direct dashboard or marketplace evidence.',
+      'Do not claim Lindy, Gumroad, GoHighLevel, or AgentMart publication without direct dashboard or marketplace evidence.',
       'Do not claim revenue from these channels without reconciled payment or sales pipeline evidence.',
+      'Never store AgentMart API keys, wallet details, Stripe secrets, or private buyer data in repo files.',
       'Use public buyer URLs on thumbgate.ai for every prospect-facing CTA.',
     ],
   };
@@ -194,6 +244,14 @@ function renderMarketplaceDistributionMarkdown(pack) {
       ...channel.operatorSteps.map((step) => `- ${step}`),
       '',
     );
+
+    if (Array.isArray(channel.productIdeas) && channel.productIdeas.length > 0) {
+      lines.push(
+        'Product ideas:',
+        ...channel.productIdeas.map((idea) => `- ${idea.name} (${idea.price}, ${idea.format}): ${idea.description}`),
+        '',
+      );
+    }
   }
 
   lines.push(

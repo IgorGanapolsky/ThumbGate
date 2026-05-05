@@ -1,8 +1,8 @@
 # Money Marketplace Distribution Pack
 
-Updated: 2026-05-05T15:40:27.748Z
+Updated: 2026-05-05T18:23:06.123Z
 
-Turn platform-specific discovery surfaces into tracked Pro and Workflow Hardening Sprint conversations without claiming publication before it happens.
+Turn platform discovery into tracked Pro and Sprint conversations without claiming publication before it happens.
 
 This is an operator asset. It is not proof of sent outreach, marketplace publication, dashboard setup, or revenue.
 
@@ -14,12 +14,12 @@ This is an operator asset. It is not proof of sent outreach, marketplace publica
 - Offer: Workflow Hardening Sprint
 - Price anchor: Intake-led sprint, then Team at $49/seat/mo with 3-seat minimum after qualification
 - Primary CTA: https://thumbgate.ai/?utm_source=lindy&utm_medium=marketplace&utm_campaign=lindy_workflow_listing&utm_content=distribution_pack&campaign_variant=workflow&offer_code=LINDY-WORKFLOW&cta_id=lindy_workflow_cta&cta_placement=listing_copy#workflow-sprint-intake
-- Current path: Create a Lindy workflow with a webhook trigger that sends repeated-agent-failure events into ThumbGate and routes qualified workflow owners to the sprint intake.
+- Current path: Create a Lindy workflow with a webhook trigger that sends repeated-agent-failure events into ThumbGate and routes qualified owners to sprint intake.
 - Source evidence: https://docs.lindy.ai/fundamentals/lindy-101/create-agent | https://docs.lindy.ai/skills/by-lindy/webhooks
 - Proof links: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md | https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 Listing copy:
-> A Lindy workflow can move fast, but fast agents need memory-backed approval boundaries. ThumbGate turns repeated workflow mistakes into pre-action gates and proof runs before the next automation acts.
+> A Lindy workflow can move fast, but agents need memory-backed approval boundaries. ThumbGate turns repeated mistakes into pre-action gates and proof runs before the next automation acts.
 
 Operator steps:
 - Create a Lindy workflow template: Webhook Received -> AI Agent classifies repeated failure -> HTTP step posts into ThumbGate -> Human approval before any customer-facing action.
@@ -62,9 +62,34 @@ Operator steps:
 - Package the initial value as an agency-safe workflow hardening snapshot before broad public submission.
 - Submit publicly only after support docs, install video, and tracking evidence are ready.
 
+### AgentMart
+- Motion: Agent-buyable reliability pack
+- Buyer: AI agents and builders buying prompt packs, workflow templates, knowledge bases, MCP configs, and agent resources for Claude Code, Codex, Cursor, n8n, and AI side-hustle workflows.
+- Offer: ThumbGate Agent Reliability Pack
+- Price anchor: $2.99 to $4.99 download, with Pro at $19/mo or $149/yr as the follow-on.
+- Primary CTA: https://thumbgate.ai/guide?utm_source=agentmart&utm_medium=marketplace&utm_campaign=agentmart_agent_pack_listing&utm_content=distribution_pack&campaign_variant=agent_pack&offer_code=AGENTMART-AGENT_PACK&cta_id=agentmart_agent_pack_cta&cta_placement=listing_copy&plan_id=pro
+- Current path: Create an AgentMart seller account, list a low-price ThumbGate Agent Reliability Pack, and route agents from the instant download into the proof-backed setup guide and Pro checkout.
+- Source evidence: https://agentmart.store/ | https://agentmart.store/skill.md | https://www.reddit.com/r/nocode/comments/1s13yw0/built_a_marketplace_where_nocode_builders_can/ | https://offers.hubspot.com/thank-you/ai-side-hustle-accelerator | https://www.skool.com/brendan
+- Proof links: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md | https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+Listing copy:
+> Agents can buy prompts and workflows, but production workflows still need pre-action gates. ThumbGate packages repeated AI-agent mistakes into local prevention rules, MCP-safe setup steps, and proof-backed reliability checks other agents can apply immediately.
+
+Operator steps:
+- Register AgentMart only after an operator supplies the email and stores the API key outside git.
+- List a downloadable ThumbGate Agent Reliability Pack with scrubbed examples, MCP config snippets, pre-action gate templates, and proof links.
+- Price the first product at $3.99 so agents can impulse-buy, then point serious operators to the setup guide and Pro checkout.
+- Use Brendan and AI Automation Society Skool posts as audience language: Claude Code, n8n, AI voice agents, no-code templates, and side-hustle automation systems.
+
+Product ideas:
+- ThumbGate Agent Reliability Pack ($3.99, download): MCP setup snippets, pre-action gate examples, and a proof checklist for agents that touch files, GitHub, Vercel, Railway, or client automations.
+- Claude Code No-Code Safety Checklist ($1.99, download): A short checklist agents can apply before editing generated websites, n8n workflows, and AI voice-agent delivery repos.
+- Workflow Hardening Intake Template ($0, download): A free lead magnet that captures one repeated failure and points qualified buyers to the $499 diagnostic or $1500 sprint.
+
 ## Guardrails
 
-- Do not claim Lindy, Gumroad, or GoHighLevel publication without direct dashboard or marketplace evidence.
+- Do not claim Lindy, Gumroad, GoHighLevel, or AgentMart publication without direct dashboard or marketplace evidence.
 - Do not claim revenue from these channels without reconciled payment or sales pipeline evidence.
+- Never store AgentMart API keys, wallet details, Stripe secrets, or private buyer data in repo files.
 - Use public buyer URLs on thumbgate.ai for every prospect-facing CTA.
 
