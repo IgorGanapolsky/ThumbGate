@@ -118,6 +118,10 @@ test('public landing page exposes env-driven paid sprint checkout path', () => {
   assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/7sY4gzgH24r49G17mb3sI0g/);
   assert.match(landingPage, /https:\/\/buy\.stripe\.com\/7sYfZhgH29LodWhdKz3sI0v/);
   assert.match(landingPage, /Pay \$99 teardown/);
+  assert.match(landingPage, /AI Agent Failure Quick Read/);
+  assert.match(landingPage, /Pay \$19 quick read/);
+  assert.match(landingPage, /https:\/\/buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
+  assert.match(landingPage, /quick_read_checkout_started/);
   assert.match(landingPage, /Pay \$499 diagnostic/);
   assert.match(landingPage, /Pay \$1500 sprint/);
   assert.match(landingPage, /Send workflow first/);
