@@ -153,3 +153,36 @@ test('guarded template channel listings stay operator-ready and commercially hon
   assert.ok(pack.operatorRules.some((entry) => /do not publish paid copy/i.test(entry)));
   assert.ok(pack.metrics.includes('ghl_snapshot_inquiries'));
 });
+
+test('guarded automation template pack stays trust-layer-first and claim-safe', () => {
+  const socialKit = read('docs/marketing/social-posts.md');
+  const markdown = read('docs/marketing/guarded-automation-template-pack.md');
+  const pack = JSON.parse(read('docs/marketing/guarded-automation-template-pack.json'));
+
+  assert.match(socialKit, /\[guarded-automation-template-pack\.md\]/);
+  assert.match(markdown, /n8n/i);
+  assert.match(markdown, /Make\.com/i);
+  assert.match(markdown, /Lindy\.ai/i);
+  assert.match(markdown, /Gumroad/i);
+  assert.match(markdown, /GoHighLevel/i);
+  assert.match(markdown, /Do not sell commodity templates/i);
+  assert.match(markdown, /ThumbGate as the trust layer/i);
+  assert.match(markdown, /Workflow Hardening Sprint/i);
+  assert.match(markdown, /Pro at \$19\/mo or \$149\/yr/i);
+  assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
+  assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
+  assert.doesNotMatch(markdown, /published marketplace listing is live|guaranteed installs|guaranteed revenue/i);
+
+  assert.equal(pack.measurementPlan.northStar, 'guarded_template_to_paid_intent');
+  assert.equal(pack.followOnOffers.length, 2);
+  assert.equal(pack.distributionSurfaces.length, 3);
+  assert.equal(pack.platformPackaging.length, 3);
+  assert.equal(pack.operatorQueue.length, 4);
+  assert.ok(pack.templateCategories.includes('AI lead qualification before CRM write'));
+  assert.ok(pack.channelMatches.some((entry) => /Gumroad/i.test(entry)));
+  assert.ok(pack.measurementPlan.metrics.includes('lindy_template_clicks'));
+  assert.ok(pack.measurementPlan.metrics.includes('ghl_snapshot_inquiries'));
+  assert.ok(pack.measurementPlan.guardrails.some((entry) => /Lindy templates, Gumroad sales, or published GoHighLevel snapshots/i.test(entry)));
+  assert.ok(pack.measurementPlan.guardrails.some((entry) => /Do not claim published n8n marketplace listings/i.test(entry)));
+  assert.ok(pack.outreachDrafts.every((entry) => !/guaranteed installs|guaranteed revenue|approved marketplace/i.test(entry.draft)));
+});
