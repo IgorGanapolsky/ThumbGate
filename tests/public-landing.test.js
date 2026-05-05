@@ -206,6 +206,9 @@ test('public landing page exposes AEO listicle for production AI agent safety', 
   assert.match(landingPage, /Best Tools to Stop AI Agents From Breaking Production/);
   assert.match(landingPage, /long-tail answer-engine page/i);
   assert.match(landingPage, /parallel coding agents/i);
+  assert.match(landingPage, /\/guides\/best-pre-action-check-tools-ai-coding-agents/);
+  assert.match(landingPage, /Best Pre-Action Check Tools for AI Coding Agents/);
+  assert.match(landingPage, /block bad tool calls before Claude Code/i);
 });
 
 test('public landing page hero features both thumbs up AND thumbs down prominently', () => {

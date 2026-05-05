@@ -180,6 +180,7 @@ npx thumbgate dashboard
 - AI search topical presence guide: https://thumbgate.ai/guides/ai-search-topical-presence
 - GPT-5.5 model evaluation guide: https://thumbgate.ai/guides/gpt-5-5-model-evaluation
 - Best tools to stop AI agents from breaking production: https://thumbgate.ai/guides/best-tools-stop-ai-agents-breaking-production
+- Best pre-action check tools for AI coding agents: https://thumbgate.ai/guides/best-pre-action-check-tools-ai-coding-agents
 - Relational knowledge guide: https://thumbgate.ai/guides/relational-knowledge-ai-recommendations
 - Autoresearch safety guide: https://thumbgate.ai/guides/autoresearch-agent-safety
 - Comparison: https://thumbgate.ai/compare
