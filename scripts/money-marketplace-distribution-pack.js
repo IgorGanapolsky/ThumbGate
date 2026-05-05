@@ -170,7 +170,15 @@ function buildMarketplaceDistributionPack(links = publicRevenueLinks()) {
           'https://agentmart.store/skill.md',
           'https://www.reddit.com/r/nocode/comments/1s13yw0/built_a_marketplace_where_nocode_builders_can/',
           'https://offers.hubspot.com/thank-you/ai-side-hustle-accelerator',
+          'https://docs.google.com/spreadsheets/d/1YpO4p8OEONXMysSehZux0OJtNpVdM2q9eR-MvcBrWyA/export?format=csv&gid=555126715',
           'https://www.skool.com/brendan',
+        ],
+        sideHustleMap: [
+          'Digital Services -> Development & Tech: sell ThumbGate as a workflow hardening diagnostic for builders delivering Claude Code, n8n, and automation work.',
+          'Digital Services -> Consulting & Coaching: package pre-action gates as a paid implementation review before client-facing AI automations go live.',
+          'Digital Products -> Templates & Downloadables: list the ThumbGate Agent Reliability Pack as a low-price instant download with proof links and tracked Pro CTA.',
+          'Digital Products -> B2B Software: use the download receipt to route serious operators into ThumbGate Pro and the $499 diagnostic.',
+          'Digital Products -> Online Community/Membership: use Skool language and posts to position ThumbGate as the reliability layer for communities teaching AI agents.',
         ],
         operatorSteps: [
           'Register AgentMart only after an operator supplies the email and stores the API key outside git.',
@@ -245,6 +253,14 @@ function renderMarketplaceDistributionMarkdown(pack) {
       '',
     );
 
+    if (Array.isArray(channel.sideHustleMap) && channel.sideHustleMap.length > 0) {
+      lines.push(
+        'Side-hustle fit:',
+        ...channel.sideHustleMap.map((fit) => `- ${fit}`),
+        '',
+      );
+    }
+
     if (Array.isArray(channel.productIdeas) && channel.productIdeas.length > 0) {
       lines.push(
         'Product ideas:',
@@ -258,7 +274,6 @@ function renderMarketplaceDistributionMarkdown(pack) {
     '## Guardrails',
     '',
     ...pack.guardrails.map((guardrail) => `- ${guardrail}`),
-    '',
   );
 
   return `${lines.join('\n')}\n`;
@@ -275,6 +290,7 @@ function renderMarketplaceDistributionCsv(pack) {
     'primaryCta',
     'currentPath',
     'sourceEvidence',
+    'sideHustleMap',
   ];
   const rows = pack.channels.map((channel) => [
     channel.key,
@@ -286,6 +302,7 @@ function renderMarketplaceDistributionCsv(pack) {
     channel.primaryCta,
     channel.currentPath,
     channel.sourceEvidence.join(' | '),
+    Array.isArray(channel.sideHustleMap) ? channel.sideHustleMap.join(' | ') : '',
   ]);
   return `${[headers, ...rows].map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
 }

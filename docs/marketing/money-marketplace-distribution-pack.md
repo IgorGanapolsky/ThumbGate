@@ -1,6 +1,6 @@
 # Money Marketplace Distribution Pack
 
-Updated: 2026-05-05T18:23:06.123Z
+Updated: 2026-05-05T18:29:39.368Z
 
 Turn platform discovery into tracked Pro and Sprint conversations without claiming publication before it happens.
 
@@ -69,7 +69,7 @@ Operator steps:
 - Price anchor: $2.99 to $4.99 download, with Pro at $19/mo or $149/yr as the follow-on.
 - Primary CTA: https://thumbgate.ai/guide?utm_source=agentmart&utm_medium=marketplace&utm_campaign=agentmart_agent_pack_listing&utm_content=distribution_pack&campaign_variant=agent_pack&offer_code=AGENTMART-AGENT_PACK&cta_id=agentmart_agent_pack_cta&cta_placement=listing_copy&plan_id=pro
 - Current path: Create an AgentMart seller account, list a low-price ThumbGate Agent Reliability Pack, and route agents from the instant download into the proof-backed setup guide and Pro checkout.
-- Source evidence: https://agentmart.store/ | https://agentmart.store/skill.md | https://www.reddit.com/r/nocode/comments/1s13yw0/built_a_marketplace_where_nocode_builders_can/ | https://offers.hubspot.com/thank-you/ai-side-hustle-accelerator | https://www.skool.com/brendan
+- Source evidence: https://agentmart.store/ | https://agentmart.store/skill.md | https://www.reddit.com/r/nocode/comments/1s13yw0/built_a_marketplace_where_nocode_builders_can/ | https://offers.hubspot.com/thank-you/ai-side-hustle-accelerator | https://docs.google.com/spreadsheets/d/1YpO4p8OEONXMysSehZux0OJtNpVdM2q9eR-MvcBrWyA/export?format=csv&gid=555126715 | https://www.skool.com/brendan
 - Proof links: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md | https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 Listing copy:
@@ -80,6 +80,13 @@ Operator steps:
 - List a downloadable ThumbGate Agent Reliability Pack with scrubbed examples, MCP config snippets, pre-action gate templates, and proof links.
 - Price the first product at $3.99 so agents can impulse-buy, then point serious operators to the setup guide and Pro checkout.
 - Use Brendan and AI Automation Society Skool posts as audience language: Claude Code, n8n, AI voice agents, no-code templates, and side-hustle automation systems.
+
+Side-hustle fit:
+- Digital Services -> Development & Tech: sell ThumbGate as a workflow hardening diagnostic for builders delivering Claude Code, n8n, and automation work.
+- Digital Services -> Consulting & Coaching: package pre-action gates as a paid implementation review before client-facing AI automations go live.
+- Digital Products -> Templates & Downloadables: list the ThumbGate Agent Reliability Pack as a low-price instant download with proof links and tracked Pro CTA.
+- Digital Products -> B2B Software: use the download receipt to route serious operators into ThumbGate Pro and the $499 diagnostic.
+- Digital Products -> Online Community/Membership: use Skool language and posts to position ThumbGate as the reliability layer for communities teaching AI agents.
 
 Product ideas:
 - ThumbGate Agent Reliability Pack ($3.99, download): MCP setup snippets, pre-action gate examples, and a proof checklist for agents that touch files, GitHub, Vercel, Railway, or client automations.
@@ -92,4 +99,3 @@ Product ideas:
 - Do not claim revenue from these channels without reconciled payment or sales pipeline evidence.
 - Never store AgentMart API keys, wallet details, Stripe secrets, or private buyer data in repo files.
 - Use public buyer URLs on thumbgate.ai for every prospect-facing CTA.
-

@@ -43,6 +43,8 @@ test('distribution pack maps each platform to the right motion', () => {
   assert.match(byKey.agentmart.motion, /Agent-buyable reliability pack/);
   assert.match(byKey.agentmart.priceAnchor, /\$2\.99 to \$4\.99/);
   assert.ok(byKey.agentmart.productIdeas.some((idea) => idea.name === 'ThumbGate Agent Reliability Pack'));
+  assert.ok(byKey.agentmart.sideHustleMap.some((fit) => /Templates & Downloadables/i.test(fit)));
+  assert.ok(byKey.agentmart.sideHustleMap.some((fit) => /Development & Tech/i.test(fit)));
 });
 
 test('platform source evidence is current and source-backed', () => {
@@ -57,6 +59,7 @@ test('platform source evidence is current and source-backed', () => {
   assert.ok(allSources.some((source) => source.includes('agentmart.store/skill.md')));
   assert.ok(allSources.some((source) => source.includes('reddit.com/r/nocode')));
   assert.ok(allSources.some((source) => source.includes('offers.hubspot.com/thank-you/ai-side-hustle-accelerator')));
+  assert.ok(allSources.some((source) => source.includes('docs.google.com/spreadsheets/d/1YpO4p8OEONXMysSehZux0OJtNpVdM2q9eR-MvcBrWyA')));
   assert.ok(allSources.some((source) => source.includes('skool.com/brendan')));
 });
 
@@ -110,10 +113,12 @@ test('rendered markdown and CSV are operator-ready without fake traction claims'
   assert.match(markdown, /Gumroad/);
   assert.match(markdown, /GoHighLevel/);
   assert.match(markdown, /AgentMart/);
+  assert.match(markdown, /Side-hustle fit:/);
   assert.match(markdown, /Product ideas:/);
   assert.match(markdown, /not proof of sent outreach/);
   assert.doesNotMatch(markdown, /published on|approved by|guaranteed revenue/i);
   assert.match(csv, /^key,name,motion,buyer,offer,/);
+  assert.match(csv, /sideHustleMap/);
   assert.match(csv, /gohighlevel/);
   assert.match(csv, /agentmart/);
 });
