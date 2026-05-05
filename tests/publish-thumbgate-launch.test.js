@@ -56,6 +56,7 @@ test('buildPlatformPost can create Skool operator lab copy', () => {
 test('buildPlatformPost creates paid sprint copy with direct checkout links', () => {
   const linkedInPost = buildPlatformPost('linkedin', 'paid-sprint');
   const xPost = buildPlatformPost('twitter', 'paid-sprint');
+  const threadsPost = buildPlatformPost('threads', 'paid-sprint');
   const links = buildPaidSprintCheckoutUrls('linkedin', 'paid_sprint_linkedin');
 
   assert.match(linkedInPost, /\$499 diagnostic/);
@@ -68,6 +69,8 @@ test('buildPlatformPost creates paid sprint copy with direct checkout links', ()
   assert.match(linkedInPost, /utm_content=paid_sprint_linkedin_diagnostic/);
   assert.match(xPost, /buy\.stripe\.com/);
   assert.ok(xPost.length <= 280, `X paid-sprint post should fit 280 chars; got ${xPost.length}`);
+  assert.match(threadsPost, /buy\.stripe\.com/);
+  assert.ok(threadsPost.length <= 500, `Threads paid-sprint post should fit 500 chars; got ${threadsPost.length}`);
 });
 
 test('publishLaunchCampaign previews default platforms in dry run mode', async () => {

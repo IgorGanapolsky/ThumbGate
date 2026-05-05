@@ -268,10 +268,10 @@ function buildPaidSprintPost(platform) {
   const key = normalized === 'x' ? 'twitter' : normalized;
   const links = buildPaidSprintCheckoutUrls(key || 'zernio', `paid_sprint_${key || 'generic'}`);
   const compact = [
-    'I opened a paid ThumbGate workflow-hardening lane for teams running AI coding agents in real repos.',
-    '$499 diagnostic: map one repeated Claude Code/Codex/Cursor failure into prevention rules.',
+    'Paid ThumbGate hardening is open.',
+    '$499 diagnostic maps one repeated Claude/Codex/Cursor failure into prevention rules.',
     links.diagnostic,
-    '$1500 sprint: implement the first guardrails and verify the same failure gets blocked.',
+    '$1500 sprint implements the first guardrails.',
     links.sprint,
   ];
 
