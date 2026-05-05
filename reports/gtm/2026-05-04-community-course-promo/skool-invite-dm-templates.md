@@ -16,7 +16,7 @@ Group: https://www.skool.com/thumbgate-operator-lab-6000
 
 Hey — quick invite to a free Skool group I’m building: **ThumbGate Operator Lab** (AI-agent reliability + pre-action gates).
 
-If you want a fast “map the workflow + pick the fix” session first, I also do a 45‑minute **Workflow Hardening Diagnostic ($499)** that decides Sprint vs Pro vs nothing.
+If you want a fast “map the workflow + pick the fix” session first, I offer a 45‑minute **Workflow Hardening Diagnostic ($499)** that decides Sprint vs Pro vs nothing. It is “available on request” and I only send the hosted checkout link when the diagnostic checkout URL is configured (per `docs/COMMERCIAL_TRUTH.md`).
 
 Skool group: https://www.skool.com/thumbgate-operator-lab-6000
 
@@ -25,4 +25,3 @@ Skool group: https://www.skool.com/thumbgate-operator-lab-6000
 This is exactly the kind of repeated failure I built ThumbGate for (capture the mistake → synthesize a prevention rule → enforce as a pre-action check).
 
 If you want, I’m collecting high-signal examples in a free Skool group: https://www.skool.com/thumbgate-operator-lab-6000
-
