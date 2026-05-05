@@ -4413,8 +4413,8 @@ async function addContext(){
       const isConfirmedCheckout = confirmParam === '1'
         || confirmParam === 'true'
         || req.method === 'POST';
-      if (!isConfirmedCheckout) {
-        const eventType = botClassification.isBot ? 'checkout_bot_deflected' : 'checkout_interstitial_view';
+      if (!isConfirmedCheckout && botClassification.isBot) {
+        const eventType = 'checkout_bot_deflected';
         appendBestEffortTelemetry(FEEDBACK_DIR, {
           eventType,
           clientType: 'web',
