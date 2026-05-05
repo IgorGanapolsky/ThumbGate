@@ -183,8 +183,56 @@ describe('/checkout/pro bot guard', () => {
     assert.doesNotMatch(body, /checkout\.stripe\.com/);
   });
 
-  it('proceeds with checkout when ?confirm=1 is passed even from a bot UA', async () => {
+  it('asks confirmed real browsers for an email before creating Stripe sessions', async () => {
+    try { fs.unlinkSync(path.join(ENV.THUMBGATE_FEEDBACK_DIR, 'telemetry-pings.jsonl')); } catch {}
     const res = await fetch(`${origin}/checkout/pro?confirm=1`, {
+      redirect: 'manual',
+      headers: {
+        'user-agent': BROWSER_UA,
+        accept: BROWSER_ACCEPT,
+      },
+    });
+    assert.equal(res.status, 200);
+    const body = await res.text();
+    assert.match(body, /Email for Stripe receipt/);
+    assert.match(body, /name="?customer_email"?/);
+    assert.match(body, /name="?confirm"? value="?1"?/);
+
+    const events = readFunnelEvents();
+    assert.equal(
+      events.filter((e) => e.eventType === 'checkout_bootstrap').length,
+      0,
+      'email gate should not create a checkout session',
+    );
+    assert.ok(
+      events.some((e) => e.eventType === 'checkout_email_gate_shown'),
+      'email gate should be tracked separately from checkout starts',
+    );
+  });
+
+  it('proceeds with checkout flow for a real browser user-agent after confirmation and email capture', async () => {
+    const res = await fetch(`${origin}/checkout/pro?confirm=1&customer_email=buyer@example.com`, {
+      redirect: 'manual',
+      headers: {
+        'user-agent': BROWSER_UA,
+        accept: BROWSER_ACCEPT,
+      },
+    });
+    // Expect either 302 to a Stripe URL / local fallback OR 200 with stripe URL content.
+    // With STRIPE_SECRET_KEY='' the local-mode fallback is used, which 302s to a /success URL.
+    assert.ok(
+      res.status === 302 || res.status === 200,
+      `expected redirect or success page, got ${res.status}`,
+    );
+    if (res.status === 200) {
+      const body = await res.text();
+      assert.doesNotMatch(body, /Continue to secure checkout/,
+        'browser should skip the interstitial');
+    }
+  });
+
+  it('proceeds with checkout when ?confirm=1 and an email are passed even from a bot UA', async () => {
+    const res = await fetch(`${origin}/checkout/pro?confirm=1&customer_email=buyer@example.com`, {
       redirect: 'manual',
       headers: {
         'user-agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)',
