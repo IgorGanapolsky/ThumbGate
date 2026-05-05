@@ -177,6 +177,7 @@ npx thumbgate dashboard
 - GitHub: https://github.com/IgorGanapolsky/ThumbGate
 - npm: https://www.npmjs.com/package/thumbgate
 - Documentation: https://thumbgate.ai/guide
+- Partner marketplace revenue pack: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/marketing/partner-marketplace-revenue-pack.md
 - AI search topical presence guide: https://thumbgate.ai/guides/ai-search-topical-presence
 - GPT-5.5 model evaluation guide: https://thumbgate.ai/guides/gpt-5-5-model-evaluation
 - Best tools to stop AI agents from breaking production: https://thumbgate.ai/guides/best-tools-stop-ai-agents-breaking-production

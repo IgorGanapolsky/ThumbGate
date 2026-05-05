@@ -373,6 +373,7 @@ Every Changeset is tied to the exact `main` merge commit and generates Verificat
 - **[Open ThumbGate GPT](https://thumbgate-production.up.railway.app/go/gpt?utm_source=github&utm_medium=readme&utm_campaign=readme_gpt)** — ThumbGate GPT: start here. Paste agent actions, get advice + checkpointing. No, users do not have to keep chatting inside the ThumbGate GPT to use ThumbGate — the hard enforcement layer still runs where the work happens.
 - **[Claude Desktop Extension](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb)** — One-click install for Claude Desktop
 - **[Codex Plugin](https://thumbgate-production.up.railway.app/codex-plugin)** — Auto-updating standalone bundle and install page for Codex CLI
+- **[Partner Marketplace Pack](docs/marketing/partner-marketplace-revenue-pack.md)** — Lindy.ai webhook/API template, Gumroad digital product listing, and GoHighLevel marketplace app/snapshot plan with tracked CTAs and visual assets
 - **[Perplexity Command Center](docs/PERPLEXITY_MAX_COMMAND_CENTER.md)** — AI-search visibility + lead discovery
 - **[ThumbGate Bench](docs/THUMBGATE_BENCH.md)** — Reliability benchmark for check evaluation
 - **[Manus AI Skill](skills/thumbgate/SKILL.md)** — ThumbGate integration for Manus AI agents
@@ -417,6 +418,7 @@ Pro ($19/mo or $149/yr) lifts those caps and adds history-aware lesson recall, l
 ## Docs
 
 - [First Dollar Playbook](docs/FIRST_DOLLAR_PLAYBOOK.md) — turning one painful workflow into the next booked pilot
+- [Partner Marketplace Revenue Pack](docs/marketing/partner-marketplace-revenue-pack.md) — sellable Lindy.ai, Gumroad, and GoHighLevel listing copy, asset map, and measurement plan
 - [Commercial Truth](docs/COMMERCIAL_TRUTH.md) — pricing, claims, what we don't say
 - [Changeset Strategy](docs/CHANGESET_STRATEGY.md) — release notes and version bump enforcement
 - [Release Confidence](docs/RELEASE_CONFIDENCE.md) — changesets, version checks, proof lanes
