@@ -33,7 +33,7 @@ const CHANNELS = [
       'Sell this as a proof-backed operations template first. Ask for a native Lindy integration listing only after the webhook template produces tracked qualified leads or Pro conversions.',
     ].join(' '),
     primaryMotion: 'sprint',
-    assetRoles: ['og_image', 'hero_screenshot', 'dashboard_screenshot'],
+    assetRoles: ['hero_screenshot', 'workflow_screenshot', 'dashboard_screenshot'],
     submissionChecklist: [
       'Build a Lindy webhook workflow that receives a proposed AI-agent action payload.',
       'Add an HTTP Request step that calls the ThumbGate preflight endpoint or sprint intake URL with Lindy attribution.',
@@ -90,11 +90,11 @@ const CHANNELS = [
       'Use a private marketplace app or snapshot first, wire OAuth/webhooks only after scope is proven, and route public demand to the Workflow Hardening Sprint.',
     ].join(' '),
     primaryMotion: 'sprint',
-    assetRoles: ['icon', 'og_image', 'workflow_screenshot'],
+    assetRoles: ['icon', 'workflow_screenshot', 'dashboard_screenshot'],
     submissionChecklist: [
       'Create or update a GoHighLevel private marketplace app or agency snapshot first.',
       'Scope OAuth/webhook behavior to workflow-hardening intake and proof review; do not request broad client data scopes before a buyer need is confirmed.',
-      'Use the icon, OG graphic, and workflow explainer screenshot as the first visual set.',
+      'Use the icon, workflow explainer screenshot, and dashboard proof screenshot as the first visual set; keep logo-only OG art as a supporting brand asset.',
       'Submit a public marketplace app only after private testing proves stable attribution and at least one qualified agency workflow conversation.',
     ],
   },
@@ -119,15 +119,15 @@ const VISUAL_ASSETS = [
     key: 'og_image',
     file: 'public/og.png',
     dimensions: '1200x630',
-    role: 'Open Graph, social preview, Lindy/GHL listing hero',
-    status: 'ready',
+    role: 'Open Graph and social preview brand anchor; supporting asset for partner listings, not the primary proof image',
+    status: 'ready_supporting_asset',
   },
   {
     key: 'github_social_preview',
     file: 'public/assets/brand/github-social-preview.png',
     dimensions: '1280x640',
-    role: 'GitHub social preview and wide directory image',
-    status: 'ready',
+    role: 'GitHub social preview and wide directory image; brand-safe but lower-conversion than proof screenshots',
+    status: 'ready_supporting_asset',
   },
   {
     key: 'wordmark',
@@ -172,6 +172,14 @@ const VISUAL_ASSETS = [
     status: 'ready',
   },
 ];
+
+function buildVisualAssetReview() {
+  return [
+    'Square TG icon assets are marketplace-ready for avatars, thumbnails, GPT profiles, and plugin listing icons.',
+    'Logo-only OG and GitHub preview images are brand-safe supporting assets, but they should not be the primary conversion graphic on partner marketplace pages.',
+    'Use proof-forward gallery assets as primary visuals: comparison for Gumroad covers, workflow screenshots for Lindy.ai and GoHighLevel, and dashboard/terminal screenshots as credibility proof.',
+  ];
+}
 
 function normalizeText(value) {
   return String(value ?? '').trim();
@@ -333,6 +341,7 @@ function buildPartnerMarketplaceRevenuePack(links = buildRevenueLinks()) {
     objective: 'Turn new partner marketplaces into tracked Pro conversions and qualified Workflow Hardening Sprint conversations without inventing platform approval.',
     listings: buildPartnerListings(links),
     visualAssets: VISUAL_ASSETS,
+    visualAssetReview: buildVisualAssetReview(),
     measurementPlan: buildChannelMeasurementPlan(),
     sourceRule: 'Use official platform docs for channel fit, but use ThumbGate-owned tracked CTAs for attribution until the external listing URL is live and verified.',
   };
@@ -397,6 +406,8 @@ function renderPartnerMarketplaceMarkdown(pack) {
     '',
     ...pack.listings.flatMap(renderListingMarkdown),
     '## Visual Asset Audit',
+    '',
+    ...pack.visualAssetReview.map((item) => `- ${item}`),
     '',
     ...renderVisualAssetsMarkdown(pack.visualAssets),
     '',

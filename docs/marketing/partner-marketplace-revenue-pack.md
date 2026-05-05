@@ -1,6 +1,6 @@
 # Partner Marketplace Revenue Pack
 
-Updated: 2026-05-05T15:42:41.609Z
+Updated: 2026-05-05T16:28:29.670Z
 
 This is a sales operator artifact. It is not proof of revenue, submitted listings, sent messages, installs, or marketplace approval.
 
@@ -35,8 +35,8 @@ Official source references:
 - https://docs.lindy.ai/skills/by-lindy/http-request
 
 Recommended visual assets:
-- public/og.png (1200x630) - Open Graph, social preview, Lindy/GHL listing hero
 - docs/marketing/gallery/05-hero.png (1344x800) - Marketplace hero screenshot
+- docs/marketing/gallery/02-how-it-works.png (1344x800) - Workflow explainer screenshot
 - docs/marketing/gallery/01-dashboard.png (1344x800) - Dashboard proof screenshot
 
 Submission checklist:
@@ -101,25 +101,29 @@ Official source references:
 
 Recommended visual assets:
 - public/assets/brand/thumbgate-icon-512.png (512x512) - App icon, marketplace icon, GPT avatar, square listing thumbnail
-- public/og.png (1200x630) - Open Graph, social preview, Lindy/GHL listing hero
 - docs/marketing/gallery/02-how-it-works.png (1344x800) - Workflow explainer screenshot
+- docs/marketing/gallery/01-dashboard.png (1344x800) - Dashboard proof screenshot
 
 Submission checklist:
 - [ ] Create or update a GoHighLevel private marketplace app or agency snapshot first.
 - [ ] Scope OAuth/webhook behavior to workflow-hardening intake and proof review; do not request broad client data scopes before a buyer need is confirmed.
-- [ ] Use the icon, OG graphic, and workflow explainer screenshot as the first visual set.
+- [ ] Use the icon, workflow explainer screenshot, and dashboard proof screenshot as the first visual set; keep logo-only OG art as a supporting brand asset.
 - [ ] Submit a public marketplace app only after private testing proves stable attribution and at least one qualified agency workflow conversation.
 
 Proof links: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md | https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ## Visual Asset Audit
 
+- Square TG icon assets are marketplace-ready for avatars, thumbnails, GPT profiles, and plugin listing icons.
+- Logo-only OG and GitHub preview images are brand-safe supporting assets, but they should not be the primary conversion graphic on partner marketplace pages.
+- Use proof-forward gallery assets as primary visuals: comparison for Gumroad covers, workflow screenshots for Lindy.ai and GoHighLevel, and dashboard/terminal screenshots as credibility proof.
+
 | Asset | Dimensions | Role | Status |
 |---|---:|---|---|
 | public/assets/brand/thumbgate-icon-512.png | 512x512 | App icon, marketplace icon, GPT avatar, square listing thumbnail | ready |
 | plugins/cursor-marketplace/assets/logo-400x400.png | 400x400 | Marketplace-safe square plugin logo | ready |
-| public/og.png | 1200x630 | Open Graph, social preview, Lindy/GHL listing hero | ready |
-| public/assets/brand/github-social-preview.png | 1280x640 | GitHub social preview and wide directory image | ready |
+| public/og.png | 1200x630 | Open Graph and social preview brand anchor; supporting asset for partner listings, not the primary proof image | ready_supporting_asset |
+| public/assets/brand/github-social-preview.png | 1280x640 | GitHub social preview and wide directory image; brand-safe but lower-conversion than proof screenshots | ready_supporting_asset |
 | public/assets/brand/thumbgate-logo-1200x360.png | 1200x360 | Checkout logo and wide header graphic | ready |
 | docs/marketing/gallery/05-hero.png | 1344x800 | Marketplace hero screenshot | ready |
 | docs/marketing/gallery/01-dashboard.png | 1344x800 | Dashboard proof screenshot | ready |
