@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
+const path = require('node:path');
 const { sendEmail } = require('./mailer');
 
 const DEFAULT_FROM = 'ThumbGate <onboarding@resend.dev>';
@@ -89,9 +90,13 @@ async function main(argv = process.argv.slice(2), deps = {}) {
   return result;
 }
 
-if (require.main === module) {
+function isCliEntrypoint(entry = process.argv[1]) {
+  return typeof entry === 'string' && path.resolve(entry) === __filename;
+}
+
+if (isCliEntrypoint()) {
   main().catch((err) => {
-    console.error(err && err.message ? err.message : err);
+    console.error(err?.message ? err.message : err);
     process.exit(1);
   });
 }
@@ -101,4 +106,5 @@ module.exports = {
   parseArgs,
   renderMessage,
   main,
+  isCliEntrypoint,
 };

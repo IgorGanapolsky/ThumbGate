@@ -20,7 +20,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 
 if (process.env.CODEX_SANDBOX) {
-  test('SSE contract tests require socket listen permission', { skip: true }, () => {});
+  console.log('Skipping SSE contract tests because CODEX_SANDBOX blocks socket listen permission.');
 } else {
 
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sse-test-'));

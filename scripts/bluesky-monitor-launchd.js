@@ -109,12 +109,10 @@ function parseInstalledPlist(plistPath) {
     if (!fs.existsSync(plistPath)) return null;
     const source = fs.readFileSync(plistPath, 'utf8');
     const readKey = (key) => {
-      const match = source.match(
-        new RegExp(`<key>${key}<\\/key>\\s*<string>([^<]+)<\\/string>`)
-      );
+      const match = new RegExp(String.raw`<key>${key}</key>\s*<string>([^<]+)</string>`).exec(source);
       return match ? match[1] : null;
     };
-    const scriptMatch = source.match(/<string>([^<]*bluesky-monitor-cron\.sh)<\/string>/);
+    const scriptMatch = new RegExp(String.raw`<string>([^<]*bluesky-monitor-cron\.sh)</string>`).exec(source);
     return {
       repoDir: readKey('THUMBGATE_REPO_DIR'),
       scriptPath: scriptMatch ? scriptMatch[1] : null,

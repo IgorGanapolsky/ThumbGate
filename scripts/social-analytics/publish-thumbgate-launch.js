@@ -479,9 +479,10 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
   };
 
   const offer = String(options.offer || 'launch').trim() || 'launch';
+  const defaultPlatforms = offer === 'operator-lab' ? DEFAULT_OPERATOR_LAB_PLATFORMS : DEFAULT_LAUNCH_PLATFORMS;
   const platforms = Array.isArray(options.platforms) && options.platforms.length > 0
     ? options.platforms
-    : (offer === 'operator-lab' ? DEFAULT_OPERATOR_LAB_PLATFORMS : DEFAULT_LAUNCH_PLATFORMS);
+    : defaultPlatforms;
   const schedule = String(options.schedule || '').trim();
   const timezone = String(options.timezone || DEFAULT_TIMEZONE).trim() || DEFAULT_TIMEZONE;
 

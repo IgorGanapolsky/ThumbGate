@@ -309,6 +309,40 @@ async function collectProspectCandidates({
   return candidates;
 }
 
+function buildListRecordsParams(session, limit, cursor) {
+  const params = new URLSearchParams({
+    repo: session.did,
+    collection: 'app.bsky.feed.post',
+    limit: String(limit),
+  });
+  if (cursor) params.set('cursor', cursor);
+  return params;
+}
+
+async function requestOwnPostRecords(session, cursor, limit, request) {
+  const params = buildListRecordsParams(session, limit, cursor);
+  const { status, json } = await request(
+    'GET',
+    session.pdsHost || DEFAULT_PDS_HOST,
+    `/xrpc/com.atproto.repo.listRecords?${params.toString()}`,
+    { headers: { Authorization: `Bearer ${session.accessJwt}` } },
+  );
+  if (status !== 200) {
+    throw new Error(`listRecords failed: ${status} ${json.error || ''}`);
+  }
+  return {
+    records: Array.isArray(json.records) ? json.records : [],
+    cursor: typeof json.cursor === 'string' ? json.cursor : '',
+  };
+}
+
+function addReplyParentUris(parents, records) {
+  for (const item of records) {
+    const parentUri = item?.value?.reply?.parent?.uri;
+    if (parentUri) parents.add(parentUri);
+  }
+}
+
 async function listOwnReplyParents(session, {
   request = atprotoRequest,
   limit = 100,
@@ -319,31 +353,10 @@ async function listOwnReplyParents(session, {
   let cursor = '';
 
   for (let page = 0; page < maxPages; page += 1) {
-    const params = new URLSearchParams({
-      repo: session.did,
-      collection: 'app.bsky.feed.post',
-      limit: String(limit),
-    });
-    if (cursor) params.set('cursor', cursor);
-
-    const { status, json } = await request(
-      'GET',
-      session.pdsHost || DEFAULT_PDS_HOST,
-      `/xrpc/com.atproto.repo.listRecords?${params.toString()}`,
-      { headers: { Authorization: `Bearer ${session.accessJwt}` } },
-    );
-    if (status !== 200) {
-      throw new Error(`listRecords failed: ${status} ${json.error || ''}`);
-    }
-
-    const records = Array.isArray(json.records) ? json.records : [];
-    for (const item of records) {
-      const parentUri = item?.value?.reply?.parent?.uri;
-      if (parentUri) parents.add(parentUri);
-    }
-
-    cursor = typeof json.cursor === 'string' ? json.cursor : '';
-    if (!cursor || records.length === 0) break;
+    const pageResult = await requestOwnPostRecords(session, cursor, limit, request);
+    addReplyParentUris(parents, pageResult.records);
+    cursor = pageResult.cursor;
+    if (!cursor || pageResult.records.length === 0) break;
   }
 
   return parents;

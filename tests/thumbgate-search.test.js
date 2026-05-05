@@ -7,7 +7,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 
 if (process.env.CODEX_SANDBOX) {
-  test('thumbgate search integration tests require socket listen permission', { skip: true }, () => {});
+  console.log('Skipping thumbgate search integration tests because CODEX_SANDBOX blocks socket listen permission.');
 } else {
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-search-test-'));

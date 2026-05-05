@@ -87,7 +87,7 @@ function saveDrafts(drafts, draftFile = DRAFT_FILE) {
 function reconcileDraftsWithState(drafts, state) {
   const postedByParentUri = new Map(
     Object.entries(state?.repliedTo?.bluesky || {})
-      .filter(([, value]) => value && value.postedUri),
+      .filter(([, value]) => value?.postedUri),
   );
   let changed = false;
 

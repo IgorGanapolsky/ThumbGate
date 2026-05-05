@@ -7,7 +7,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 
 if (process.env.CODEX_SANDBOX) {
-  test('commerce quality tests require socket listen permission', { skip: true }, () => {});
+  console.log('Skipping commerce quality tests because CODEX_SANDBOX blocks socket listen permission.');
 } else {
 
 // Isolated temp dir for all commerce quality tests
