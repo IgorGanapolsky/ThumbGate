@@ -92,6 +92,18 @@ Skool is the community home because it supports free groups and can later add pa
 - Cover: `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`
 - Icon: `docs/marketing/assets/thumbgate-skool-icon-128x128.png`
 
+**About media assets (optional but discovery-boosting):**
+
+- Hero image: `docs/marketing/assets/thumbgate-operator-lab-about-hero.png`
+- Explainer video (landscape): `docs/marketing/assets/thumbgate-operator-lab-explainer.mp4`
+- Explainer video (vertical): `docs/marketing/assets/thumbgate-operator-lab-explainer-vertical.mp4`
+
+**Social share assets (optional):**
+
+- Landscape: `docs/marketing/assets/thumbgate-operator-lab-social-landscape.png`
+- Square: `docs/marketing/assets/thumbgate-operator-lab-social-square.png`
+- Story: `docs/marketing/assets/thumbgate-operator-lab-social-story.png`
+
 **Current live setup status:**
 
 - Public group selected.

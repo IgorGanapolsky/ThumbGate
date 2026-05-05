@@ -2,6 +2,21 @@
 
 These assets are the local source of truth for the March 2026 AI reliability system launch and the zero-filming IG/TikTok pipeline.
 
+## ThumbGate Operator Lab (Skool)
+
+These assets are intended for public use (Skool About media + posts) and are safe to upload.
+
+### Files
+
+- `thumbgate-skool-cover-1084x576.png` (Skool cover)
+- `thumbgate-skool-icon-128x128.png` (Skool icon)
+- `thumbgate-operator-lab-about-hero.png` (`1600x900`, About hero image)
+- `thumbgate-operator-lab-explainer.mp4` (`1600x900`, 10s looping explainer video)
+- `thumbgate-operator-lab-explainer-vertical.mp4` (`1080x1920`, 10s looping explainer video)
+- `thumbgate-operator-lab-social-landscape.png` (`1600x900`)
+- `thumbgate-operator-lab-social-square.png` (`1080x1080`)
+- `thumbgate-operator-lab-social-story.png` (`1080x1920`)
+
 ## Dimensions
 
 - LinkedIn carousel slides: `1080x1350`
