@@ -105,6 +105,21 @@ jobs:
       - name: Publish Instagram card
         env:
           INPUT_IMAGE_ONLY: ${{ github.event.inputs.image_only || github.event.inputs.dry_run }}
+          THUMBGATE_INSTAGRAM_HEADLINE: Voice agent|losing leads?
+          THUMBGATE_INSTAGRAM_SUB: $499 diagnostic|slot open today.
+          THUMBGATE_INSTAGRAM_CAPTION: |
+            AI voice-agent agencies: I have one $499 reliability diagnostic slot today.
+
+            I review one bot workflow for missed calls, after-hours intake gaps, qualification branches, booking handoff failures, CRM sync misses, and proof gaps.
+
+            Best fit: home services or local lead-gen voice agents already near revenue.
+
+            Checkout: https://buy.stripe.com/00w14neyUcXA5pL5e33sI0e
+            Intake: https://thumbgate.ai/#workflow-sprint-intake
+
+            Reply diagnostic.
+
+            #AIAutomation #VoiceAgents #HomeServices #LeadGen #ThumbGate
         run: |
           FLAGS=""
           if [ "$INPUT_IMAGE_ONLY" = "true" ]; then

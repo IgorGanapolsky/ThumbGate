@@ -20,6 +20,7 @@ const REPO_ROOT = path.resolve(__dirname, '../..');
 const DEFAULT_OUTPUT = path.join(REPO_ROOT, '.thumbgate', 'instagram-card.png');
 
 const CARD_VARIANTS = [
+  { headline: ['Voice agent', 'losing leads?'], sub: ['$499 diagnostic', 'slot open today.'] },
   { headline: ['Your AI agent', 'has amnesia.'], sub: ['Give it memory that', 'survives restarts.'] },
   { headline: ['CLAUDE.md is', 'a wish list.'], sub: ['ThumbGate is', 'enforcement.'] },
   { headline: ['One thumbs-down.', 'Never again.'], sub: ['Mistakes become', 'prevention rules.'] },
@@ -46,8 +47,14 @@ async function generateInstagramCard(outputPath = DEFAULT_OUTPUT, options = {}) 
     variant = CARD_VARIANTS[(dayOfYear * 3 + hourSlot) % CARD_VARIANTS.length];
   }
 
-  const h1 = options.headline || variant.headline;
-  const sub = options.sub || variant.sub;
+  const envHeadline = process.env.THUMBGATE_INSTAGRAM_HEADLINE
+    ? process.env.THUMBGATE_INSTAGRAM_HEADLINE.split('|').map((line) => line.trim()).filter(Boolean)
+    : null;
+  const envSub = process.env.THUMBGATE_INSTAGRAM_SUB
+    ? process.env.THUMBGATE_INSTAGRAM_SUB.split('|').map((line) => line.trim()).filter(Boolean)
+    : null;
+  const h1 = options.headline || (envHeadline && envHeadline.length >= 2 ? envHeadline : null) || variant.headline;
+  const sub = options.sub || (envSub && envSub.length >= 2 ? envSub : null) || variant.sub;
 
   // Create SVG markup for the card
   const svg = `

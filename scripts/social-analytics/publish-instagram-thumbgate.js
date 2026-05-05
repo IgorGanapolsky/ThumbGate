@@ -23,7 +23,7 @@ const IMAGE_PATH = path.join(REPO_ROOT, '.thumbgate', 'instagram-card.png');
 
 async function publishInstagramThumbGate(options = {}) {
   const {
-    caption = THUMBGATE_CAPTION,
+    caption = process.env.THUMBGATE_INSTAGRAM_CAPTION || THUMBGATE_CAPTION,
     imageOnly = false,
     postOnly = false,
     imagePath = IMAGE_PATH,
