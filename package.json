@@ -1,7 +1,7 @@
 {
   "name": "thumbgate",
   "version": "1.16.20",
-  "description": "Self-improving agent governance: type thumbs-up or thumbs-down on any AI agent action. ThumbGate turns every mistake into a prevention rule and blocks the pattern from repeating. One thumbs-down, never again. 33 pre-action checks, budget enforcement, and self-protection for Claude Code, Cursor, Codex, Gemini CLI, and Amp.",
+  "description": "Self-improving agent governance: type thumbs-up or thumbs-down on any AI agent action. ThumbGate turns every mistake into a prevention rule and blocks the pattern from repeating. One thumbs-down, never again. 33 pre-action checks, budget enforcement and self-protection for Claude Code, Cursor, Codex, Gemini CLI and Amp.",
   "homepage": "https://thumbgate-production.up.railway.app",
   "repository": {
     "type": "git",
@@ -56,7 +56,6 @@
     "scripts/ai-engineering-stack-guardrails.js",
     "scripts/ai-search-distribution.js",
     "scripts/analytics-window.js",
-    "scripts/chatgpt-ads-readiness-pack.js",
     "scripts/autoresearch-runner.js",
     "scripts/async-job-runner.js",
     "scripts/audit-trail.js",
