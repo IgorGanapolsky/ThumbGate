@@ -1539,6 +1539,26 @@ function buildCheckoutConfirmHref(parsed) {
   return `${confirmUrl.pathname}${confirmUrl.search}`;
 }
 
+function normalizeCheckoutCustomerEmail(value) {
+  const email = (normalizeNullableText(value) || '').toLowerCase();
+  const atIndex = email.indexOf('@');
+  const domain = email.slice(atIndex + 1);
+  if (!email || email.length > 254 || atIndex <= 0 || atIndex !== email.lastIndexOf('@') || !domain || !domain.includes('.') || domain.startsWith('.') || domain.endsWith('.') || domain.includes('..')) return null;
+  for (const ch of email) if (ch <= ' ' || ch === '<' || ch === '>' || ch === '"') return null;
+  return email;
+}
+
+function renderCheckoutIntentGate(parsed, responseHeaders = {}) {
+  let hiddenInputs = '';
+  for (const [key, value] of parsed.searchParams.entries()) {
+    if (key !== 'confirm' && key !== 'customer_email') hiddenInputs += `<input type=hidden name=${escapeHtmlAttribute(key)} value=${escapeHtmlAttribute(value)}>`;
+  }
+  return {
+    html: `<!doctype html><h1>Email for Stripe receipt</h1><form action=/checkout/pro>${hiddenInputs}<input type=hidden name=confirm value=1><input name=customer_email type=email required><button>Continue</button></form>`,
+    headers: responseHeaders,
+  };
+}
+
 function normalizeTrackedLinkSlug(value) {
   return String(value || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
 }
@@ -1780,9 +1800,7 @@ function appendBestEffortTelemetry(feedbackDir, payload, headers, context) {
           evidence: [err && err.message ? err.message : 'unknown_error'],
         },
       });
-    } catch (_) {
-      // Public telemetry remains best-effort even when diagnostics fail.
-    }
+    } catch (_) {}
     return false;
   }
 }
@@ -2089,7 +2107,6 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
   const timestamp = merged.timestamp ? new Date(merged.timestamp).toLocaleString() : '';
   const isoTimestamp = merged.timestamp || '';
 
-  // Technical metadata
   const failureType = merged.failureType || null;
   const skill = merged.skill || null;
   const source = merged.source || fb.source || null;
@@ -2100,19 +2117,12 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
   const guardrails = merged.guardrails || null;
   const rubricScores = merged.rubricScores || null;
 
-  // Structured rule
   const rule = merged.structuredRule || merged.rule || null;
-  // Conversation window
   const convoWindow = merged.conversationWindow || merged.chatHistory || [];
-  // Reflector analysis
   const reflector = merged.reflectorAnalysis || merged.reflector || null;
-  // Diagnosis
   const diagnosis = merged.diagnosis || null;
-  // Rubric
   const rubric = merged.rubricEvaluation || merged.rubric || null;
-  // Synthesis
   const synthesis = merged.synthesis || null;
-  // Bayesian
   const bayesian = merged.bayesianBelief || merged.bayesian || null;
 
   function sectionCard(titleText, content, id) {
@@ -2535,14 +2545,6 @@ function servePublicMarketingPage({
     'landing_page_view'
   );
 
-  // Funnel-ledger write (2026-04-21): populate funnel-events.jsonl with a
-  // discovery-stage event on every landing-page view so UTM-tagged social
-  // traffic becomes visible in `npm run feedback:summary` and
-  // `bin/cli.js cfo --today`. Prior to this wire, landing views wrote only
-  // to telemetry-pings.jsonl (invisible to the CEO-facing revenue surface),
-  // leaving funnel-events.jsonl empty despite 404 published Zernio posts.
-  // Best-effort: wrapped in try/catch so a billing-ledger hiccup never
-  // breaks a page render.
   try {
     appendFunnelEvent({
       stage: 'discovery',
@@ -3395,10 +3397,8 @@ function isAuthorized(req, expected) {
   if (!expected) return true;
   const token = extractApiKey(req);
 
-  // Check static THUMBGATE_API_KEY first
   if (token === expected) return true;
 
-  // Also accept any valid provisioned billing key
   if (token) {
     const result = validateApiKey(token);
     return result.valid === true;
@@ -3407,9 +3407,6 @@ function isAuthorized(req, expected) {
   return false;
 }
 
-/**
- * Extract the Bearer token from a request (returns '' if absent).
- */
 function extractBearerToken(req) {
   const auth = req.headers.authorization || '';
   return auth.startsWith('Bearer ') ? auth.slice(7) : '';
@@ -3571,15 +3568,6 @@ function createApiServer() {
   const expectedApiKey = getExpectedApiKey();
   const expectedOperatorKey = getExpectedOperatorKey();
 
-  // Live-event bus. Feedback captures, prevention-rule regenerations, and
-  // gate decisions push to this emitter; the /v1/events SSE endpoint streams
-  // those events to connected dashboard clients so they render in real time
-  // instead of waiting for the next manual refresh.
-  //
-  // See .changeset/dashboard-sse-live.md for the ROI rationale — this is a
-  // direct application of the "persistent channel beats per-turn HTTP" pattern
-  // to ThumbGate's dashboard surface (the primary UI for watching team
-  // feedback flow).
   const eventBus = new EventEmitter();
   eventBus.setMaxListeners(200);
 
@@ -4420,12 +4408,6 @@ async function addContext(){
         ? { 'Set-Cookie': journeyState.setCookieHeaders }
         : {};
 
-      // ── Intent confirmation ──────────────────────────────────────────
-      // Creating a Stripe Checkout session on every GET means crawlers,
-      // link-preview fetchers, LLM scrapers, and low-intent humans inflate
-      // "sessions opened" while completions stay at zero. Serve an
-      // interstitial first, then create the payment session only after the
-      // buyer confirms the Pro path.
       const botClassification = classifyRequester(req.headers);
       const confirmParam = parsed?.searchParams?.get('confirm') ?? null;
       const isConfirmedCheckout = confirmParam === '1'
@@ -4498,6 +4480,21 @@ async function addContext(){
         sendHtml(res, 200, html, responseHeaders);
         return;
       }
+
+      const normalizedCheckoutEmail = normalizeCheckoutCustomerEmail(bootstrapBody.customerEmail);
+      if (!normalizedCheckoutEmail) {
+        appendBestEffortTelemetry(FEEDBACK_DIR, {
+          eventType: 'checkout_email_gate_shown',
+          clientType: 'web',
+          traceId,
+          page: '/checkout/pro',
+          planId: analyticsMetadata.planId,
+        }, req.headers, 'checkout_email_gate_shown');
+        const { html, headers } = renderCheckoutIntentGate(parsed, responseHeaders);
+        sendHtml(res, 200, html, headers);
+        return;
+      }
+      bootstrapBody.customerEmail = normalizedCheckoutEmail;
 
       appendBestEffortTelemetry(FEEDBACK_DIR, {
         eventType: 'checkout_bootstrap',
@@ -4874,7 +4871,7 @@ async function addContext(){
             .map(l => { try { return JSON.parse(l); } catch(_e) { return null; } })
             .filter(Boolean);
         }
-      } catch (_) {}
+      } catch { entries = []; }
 
       const now = Date.now();
       const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
