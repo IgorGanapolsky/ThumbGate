@@ -8,6 +8,7 @@ const {
   parseArgs,
   parseGhVariableList,
   parseHtmlSignals,
+  resolveHostedAuditApiKey,
   fetchWithTimeout,
   buildDiagnosis,
   formatReport,
@@ -31,6 +32,20 @@ test('parseArgs accepts bounded audit timeout overrides', () => {
 
   assert.equal(options.fetchTimeoutMs, 2500);
   assert.equal(options.commandTimeoutMs, 7000);
+});
+
+test('resolveHostedAuditApiKey prefers operator key over general API key', () => {
+  assert.equal(resolveHostedAuditApiKey({
+    THUMBGATE_OPERATOR_KEY: 'tg_operator',
+    THUMBGATE_API_KEY: 'tg_api',
+  }), 'tg_operator');
+  assert.equal(resolveHostedAuditApiKey({
+    THUMBGATE_API_KEY: 'tg_api',
+  }), 'tg_api');
+  assert.equal(resolveHostedAuditApiKey({
+    THUMBGATE_OPERATOR_KEY: '   ',
+    THUMBGATE_API_KEY: '',
+  }), '');
 });
 
 test('fetchWithTimeout rejects stalled hosted calls with a readable error', async () => {
@@ -176,6 +191,16 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
                   pageViews: 4,
                   checkoutStarts: 2,
                 },
+                ctas: {
+                  checkoutInterstitialViews: 3,
+                  checkoutInterstitialClicks: 2,
+                  checkoutInterstitialProConfirms: 1,
+                  checkoutInterstitialWorkflowIntakeClicks: 1,
+                  checkoutInterstitialTeamPathClicks: 0,
+                  checkoutInterstitialDiagnosticCheckoutClicks: 1,
+                  checkoutInterstitialWorkflowSprintCheckoutClicks: 0,
+                  checkoutBotDeflections: 4,
+                },
                 signups: {
                   uniqueLeads: 2,
                 },
@@ -199,6 +224,16 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
                   visitors: 21,
                   pageViews: 15,
                   checkoutStarts: 9,
+                },
+                ctas: {
+                  checkoutInterstitialViews: 12,
+                  checkoutInterstitialClicks: 5,
+                  checkoutInterstitialProConfirms: 3,
+                  checkoutInterstitialWorkflowIntakeClicks: 1,
+                  checkoutInterstitialTeamPathClicks: 1,
+                  checkoutInterstitialDiagnosticCheckoutClicks: 2,
+                  checkoutInterstitialWorkflowSprintCheckoutClicks: 1,
+                  checkoutBotDeflections: 7,
                 },
                 signups: {
                   uniqueLeads: 6,
@@ -280,8 +315,9 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
 
   const formatted = formatReport(report);
   assert.match(formatted, /Source: hosted-via-railway-env/);
-  assert.match(formatted, /Today: visitors 6, pageViews 4, checkoutStarts 2/);
+  assert.match(formatted, /Today: visitors 6, pageViews 4, checkoutStarts 2.*checkoutIntent views 3, clicks 2, stripeConfirms 1, intakeClicks 1, teamPathClicks 0, diagnosticClicks 1, sprintCheckoutClicks 0, botDeflections 4/);
   assert.match(formatted, /30d: visitors 21, pageViews 15, checkoutStarts 9, paidOrders 2, bookedRevenue \$20.00/);
+  assert.match(formatted, /30d: .*checkoutIntent views 12, clicks 5, stripeConfirms 3, intakeClicks 1, teamPathClicks 1, diagnosticClicks 2, sprintCheckoutClicks 1, botDeflections 7/);
 });
 
 test('getHostedAuditViaHttp reads hosted billing summary without Railway CLI', async () => {
@@ -330,6 +366,36 @@ test('getHostedAuditViaHttp reads hosted billing summary without Railway CLI', a
   assert.equal(hostedAudit.summaries['30d'].revenue.bookedRevenueCents, 4900);
   assert.equal(hostedAudit.summaries['30d'].ctas.checkoutStartsBySource.website, 1);
   assert.equal(hostedAudit.summaries['30d'].attribution.paidBySource.website, 1);
+});
+
+test('getHostedAuditViaHttp carries hosted runtime presence when exposed', async () => {
+  const hostedAudit = await getHostedAuditViaHttp({
+    appOrigin: 'https://example.com',
+    apiKey: 'tg_test_key',
+    timeZone: 'America/New_York',
+    fetchImpl: async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        runtimePresence: {
+          THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL: true,
+          THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL: true,
+        },
+        trafficMetrics: {
+          visitors: 3,
+          checkoutStarts: 1,
+        },
+        revenue: {
+          paidOrders: 0,
+          bookedRevenueCents: 0,
+        },
+      }),
+    }),
+  });
+
+  assert.equal(hostedAudit.runtimePresenceKnown, true);
+  assert.equal(hostedAudit.runtimePresence.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL, true);
+  assert.equal(hostedAudit.runtimePresence.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL, true);
 });
 
 test('generateRevenueStatusReport prefers hosted HTTP API when THUMBGATE_API_KEY is available', async () => {

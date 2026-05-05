@@ -41,6 +41,28 @@ ThumbGate is built on Node.js >=18.18.0 and runs locally on each developer's mac
 
 **Browser Bridge Audit**: `npx thumbgate native-messaging-audit` inspects local browser native messaging manifests, allowed extension origins, missing host binaries, and dormant AI browser bridges so teams can review connector scope before an agent turns a one-off install into a durable local integration.
 
+**Background Agent Governance**: `npx thumbgate background-governance` reports unattended agent runs, gate blocks, pass rate, failing agents, and run types. `npx thumbgate background-governance --check --agent-id=builder --branch=main --files-changed=25 --json` pre-checks a background-agent dispatch for high failure rate, protected branches, repeated gate blocks, and large blast radius before the PR queue reaches a human reviewer.
+
+**GPT-5.5 Model Evaluation**: `npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai --json` evaluates GPT-5.5 as a managed model candidate for dashboard and dataset-analysis workloads. The catalog is benchmark-first: it does not silently call OpenAI APIs or replace cheaper tiers, but it gives teams metrics for insight accuracy, chart-spec validity, dashboard completeness, long-context reliability, latency, and cost before routing expensive analytical work.
+
+**Code Graph Guardrails**: `npx thumbgate code-graph-guardrails --central-files=src/api/server.js --layers=api,data --generated-artifacts=.codegraph/index.json --json` maps code-graph risk signals to ThumbGate's Knowledge Graph Safety templates. Code graphs provide context about central files, architecture layers, and generated graph outputs; ThumbGate turns those signals into pre-action gates before risky edits execute.
+
+**Proxy-Pointer RAG Guardrails**: `npx thumbgate proxy-pointer-rag-guardrails --tree-path=.rag/tree.json --image-pointers=paper-1/figures/fig2.png --documents=paper-1 --visual-claims --json` maps section trees, image pointers, document IDs, and visual claims to Document RAG Safety templates. Proxy-pointer RAG can reduce multimodal retrieval cost, but ThumbGate enforces grounding before agents answer with charts, figures, tables, screenshots, or PDF images.
+
+**RAG Precision Tuning Guardrails**: `npx thumbgate rag-precision-guardrails --baseline-recall=0.86 --new-recall=0.72 --threshold-change --agentic --structural-near-misses --json` blocks retrieval changes when embedding fine-tunes, vector thresholds, or verifier rollouts lack baseline recall, precision, evidence, and latency proof. This protects agentic RAG pipelines from a precision improvement that silently degrades broad retrieval quality.
+
+**AI Engineering Stack Guardrails**: `npx thumbgate ai-engineering-stack-guardrails --mcp-tool-count=182 --direct-provider-keys --llm-wiki-pages=24 --context-freshness-days=30 --background-agents --high-risk-workflows=deploy,billing --json` maps internal AI stack gaps to gates for model gateways, MCP portal code-mode/progressive discovery, AGENTS.md and LLM wiki freshness, risk-tiered AI review, standards-as-skills, and sandboxed background agents.
+
+**SEO Agent Skills Guardrails**: ThumbGate governs SEO-agent workspaces by requiring brand context, current pricing, proof links, semantic mesh links, schema, canonical tags, and reviewer handoff before AI-generated pages or edits publish. SEO skills are useful; ThumbGate turns them into publish gates.
+
+**Claude Code Skills Guardrails**: Claude Code skillbooks describe recurring workflows, but they are advisory. ThumbGate turns thumbs-down feedback from named skills into prevention rules and pre-action checks so refactor, testing, migration, CI, and prompt/tool skills can be enforced across sessions.
+
+**Long-Running Agent Context Guardrails**: `npx thumbgate long-running-agent-context-guardrails --request-count=80 --output-mb=3 --raw-chat-only --json` maps Slack-style structured context management into gates. Long-running agents should keep a director journal, critic-reviewed findings with credibility scores, and a deduplicated timeline instead of relying only on accumulated chat logs.
+
+**Reasoning Efficiency Guardrails**: `npx thumbgate reasoning-efficiency-guardrails --baseline-tokens=1200 --compressed-tokens=980 --baseline-accuracy=0.84 --compressed-accuracy=0.85 --verifier --json` gates reasoning compression and token-saving model routes. ThumbGate requires verifier outcomes, accuracy baselines, low-confidence step inspection, and high-confidence failed-rollout review before shorter traces are treated as safe.
+
+**Data Processing & Telemetry Boundaries**: the free local CLI writes feedback logs, memory logs, background-agent run ledgers, gate firings, and proof artifacts under the operator's ThumbGate feedback directory by default. CLI telemetry is anonymous best-effort product telemetry with a random local install ID and can be disabled with `THUMBGATE_NO_TELEMETRY=1` or `DO_NOT_TRACK=1`. Hosted checkout, newsletter, intake, team sync, API-key, and website analytics flows are hosted processing surfaces and should be described separately from local enforcement data.
+
 **Three-Tier Approval Routing (OVIS-inspired)**: ThumbGate checks operate on three distinct tiers, inspired by the OVIS decision framework (Owner, Veto, Influence). Each check carries an `action` field that determines the routing outcome:
 
 - **`block`** — Hard stop. The agent cannot proceed. The tool call is denied immediately. Used for force-pushes, secret commits, destructive SQL, and any irreversible action. The agent receives an error message explaining why the action was blocked.
@@ -127,6 +149,7 @@ npx thumbgate dashboard
 | Approach | Blocks actions before execution | Learns from feedback | Shared team enforcement | Audit trail |
 |---|---|---|---|---|
 | **ThumbGate** | Yes — PreToolUse hooks | Yes — auto-generates rules | Yes — shared lesson DB | Yes — full log |
+| Fallow | No — analyzes JS/TS code health | No — reports dead code, duplication, complexity, and architecture drift | Partial — shared reports/config | Partial — analyzer output |
 | CLAUDE.md / .cursorrules | No — suggestions only | No — hand-written | No — per-developer files | No |
 | ESLint / linters | Partial — static analysis | No — hand-written rules | Partial — shared config | No |
 | Manual code review | Partial — after PR, not before | No — reviewer memory | Partial — PR comments | Partial — PR history |
@@ -150,10 +173,12 @@ npx thumbgate dashboard
 - Marketing site: https://thumbgate.ai
 - Browser automation safety guide: https://thumbgate.ai/guides/browser-automation-safety
 - Native messaging host security guide: https://thumbgate.ai/guides/native-messaging-host-security
+- AI Agent Governance Sprint guide: https://thumbgate.ai/guides/ai-agent-governance-sprint
 - GitHub: https://github.com/IgorGanapolsky/ThumbGate
 - npm: https://www.npmjs.com/package/thumbgate
 - Documentation: https://thumbgate.ai/guide
 - AI search topical presence guide: https://thumbgate.ai/guides/ai-search-topical-presence
+- GPT-5.5 model evaluation guide: https://thumbgate.ai/guides/gpt-5-5-model-evaluation
 - Best tools to stop AI agents from breaking production: https://thumbgate.ai/guides/best-tools-stop-ai-agents-breaking-production
 - Relational knowledge guide: https://thumbgate.ai/guides/relational-knowledge-ai-recommendations
 - Autoresearch safety guide: https://thumbgate.ai/guides/autoresearch-agent-safety

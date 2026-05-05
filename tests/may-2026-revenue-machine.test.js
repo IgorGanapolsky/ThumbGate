@@ -82,6 +82,23 @@ test('formatPlan gives the operator exact next steps', () => {
   assert.match(output, /Top leaking source: website/);
 });
 
+test('buildRevenuePlan treats configured sprint payment links as agent-ready', () => {
+  const plan = buildRevenuePlan(report({
+    hostedAudit: {
+      runtimePresence: {
+        THUMBGATE_GA_MEASUREMENT_ID: true,
+        THUMBGATE_CHECKOUT_FALLBACK_URL: true,
+        THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL: true,
+        THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL: true,
+      },
+      summaries: report().hostedAudit.summaries,
+    },
+  }));
+
+  assert.ok(!plan.actions.some((action) => action.status === 'blocked_on_payment_links'));
+  assert.ok(plan.actions.some((action) => action.title === 'Promote the live paid diagnostic/sprint path'));
+});
+
 test('buildRevenuePlan avoids blocked account actions when runtime presence is unknown', () => {
   const plan = buildRevenuePlan(report({
     diagnosis: {

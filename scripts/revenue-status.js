@@ -14,6 +14,7 @@ const DEFAULT_COMMAND_TIMEOUT_MS = 30000;
 const HOSTED_WINDOWS = ['today', '30d', 'lifetime'];
 const RUNTIME_KEYS = [
   'THUMBGATE_FEEDBACK_DIR',
+  'THUMBGATE_OPERATOR_KEY',
   'THUMBGATE_API_KEY',
   'THUMBGATE_PUBLIC_APP_ORIGIN',
   'THUMBGATE_BILLING_API_BASE_URL',
@@ -73,6 +74,15 @@ function parseArgs(argv = []) {
 function parsePositiveInteger(value, fallback) {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function normalizeRuntimeSecret(value) {
+  return String(value || '').trim();
+}
+
+function resolveHostedAuditApiKey(env = process.env) {
+  return normalizeRuntimeSecret(env.THUMBGATE_OPERATOR_KEY)
+    || normalizeRuntimeSecret(env.THUMBGATE_API_KEY);
 }
 
 function parseGhVariableList(stdout = '') {
@@ -212,13 +222,25 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
 
 function formatWindowBlock(label, summary = {}) {
   const traffic = summary.trafficMetrics || {};
+  const ctas = summary.ctas || {};
   const revenue = summary.revenue || {};
   const signups = summary.signups || {};
   const pipeline = summary.pipeline || {};
   const sprintLeads = pipeline.workflowSprintLeads || {};
+  const interstitialViews = Number(ctas.checkoutInterstitialViews || 0);
+  const interstitialClicks = Number(ctas.checkoutInterstitialClicks || 0);
+  const proConfirms = Number(ctas.checkoutInterstitialProConfirms || 0);
+  const workflowClicks = Number(ctas.checkoutInterstitialWorkflowIntakeClicks || 0);
+  const teamPathClicks = Number(ctas.checkoutInterstitialTeamPathClicks || 0);
+  const diagnosticClicks = Number(ctas.checkoutInterstitialDiagnosticCheckoutClicks || 0);
+  const sprintCheckoutClicks = Number(ctas.checkoutInterstitialWorkflowSprintCheckoutClicks || 0);
+  const botDeflections = Number(ctas.checkoutBotDeflections || 0);
+  const intentSuffix = interstitialViews || interstitialClicks || proConfirms || workflowClicks || teamPathClicks || diagnosticClicks || sprintCheckoutClicks || botDeflections
+    ? `, checkoutIntent views ${interstitialViews}, clicks ${interstitialClicks}, stripeConfirms ${proConfirms}, intakeClicks ${workflowClicks}, teamPathClicks ${teamPathClicks}, diagnosticClicks ${diagnosticClicks}, sprintCheckoutClicks ${sprintCheckoutClicks}, botDeflections ${botDeflections}`
+    : '';
 
   return [
-    `${label}: visitors ${traffic.visitors || 0}, pageViews ${traffic.pageViews || 0}, checkoutStarts ${traffic.checkoutStarts || 0}, paidOrders ${revenue.paidOrders || 0}, bookedRevenue ${centsToDollars(revenue.bookedRevenueCents || 0)}, sprintLeads ${sprintLeads.total || 0}, signups ${signups.uniqueLeads || 0}`,
+    `${label}: visitors ${traffic.visitors || 0}, pageViews ${traffic.pageViews || 0}, checkoutStarts ${traffic.checkoutStarts || 0}, paidOrders ${revenue.paidOrders || 0}, bookedRevenue ${centsToDollars(revenue.bookedRevenueCents || 0)}, sprintLeads ${sprintLeads.total || 0}, signups ${signups.uniqueLeads || 0}${intentSuffix}`,
   ];
 }
 
@@ -406,7 +428,7 @@ function buildRailwayAuditSnippet({
         url.searchParams.set('timezone', ${JSON.stringify(timeZone)});
         const response = await fetchWithTimeout(url, {
           headers: {
-            authorization: 'Bearer ' + process.env.THUMBGATE_API_KEY,
+            authorization: 'Bearer ' + (process.env.THUMBGATE_OPERATOR_KEY || process.env.THUMBGATE_API_KEY),
             accept: 'application/json',
           },
         });
@@ -473,16 +495,17 @@ function getHostedAuditViaRailway({
 
 async function getHostedAuditViaHttp({
   appOrigin = DEFAULT_PUBLIC_APP_ORIGIN,
-  apiKey = process.env.THUMBGATE_API_KEY,
+  apiKey = resolveHostedAuditApiKey(),
   timeZone = 'America/New_York',
   fetchImpl = fetch,
   timeoutMs = DEFAULT_FETCH_TIMEOUT_MS,
 } = {}) {
   if (!apiKey) {
-    throw new Error('THUMBGATE_API_KEY is not set for hosted billing summary audit.');
+    throw new Error('THUMBGATE_OPERATOR_KEY or THUMBGATE_API_KEY is not set for hosted billing summary audit.');
   }
 
   const summaries = {};
+  let runtimePresence = null;
   for (const window of HOSTED_WINDOWS) {
     const url = new URL('/v1/billing/summary', appOrigin);
     url.searchParams.set('window', window);
@@ -497,13 +520,17 @@ async function getHostedAuditViaHttp({
     if (!response.ok) {
       throw new Error(`Hosted billing summary ${window} returned ${response.status}`);
     }
+    if (!runtimePresence && payload.runtimePresence && typeof payload.runtimePresence === 'object') {
+      runtimePresence = payload.runtimePresence;
+    }
     summaries[window] = normalizeWindowSummary(response.status, payload);
   }
 
   return {
     auditMethod: 'hosted-http-api',
-    runtimePresenceKnown: false,
-    runtimePresence: {
+    runtimePresenceKnown: Boolean(runtimePresence),
+    runtimePresence: runtimePresence || {
+      THUMBGATE_OPERATOR_KEY: Boolean(process.env.THUMBGATE_OPERATOR_KEY),
       THUMBGATE_API_KEY: true,
     },
     summaries,
@@ -531,7 +558,7 @@ async function generateRevenueStatusReport({
   runCommandFn = runCommand,
   fetchPublicProbe = probePublicRuntime,
   fetchImpl = fetch,
-  apiKey = process.env.THUMBGATE_API_KEY,
+  apiKey = resolveHostedAuditApiKey(),
   fetchTimeoutMs = DEFAULT_FETCH_TIMEOUT_MS,
   commandTimeoutMs = DEFAULT_COMMAND_TIMEOUT_MS,
   localFallbackFn = getLocalFallback,
@@ -721,6 +748,7 @@ module.exports = {
   RUNTIME_KEYS,
   parseArgs,
   parsePositiveInteger,
+  resolveHostedAuditApiKey,
   parseGhVariableList,
   parseHtmlSignals,
   centsToDollars,

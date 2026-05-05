@@ -29,10 +29,10 @@ const {
 } = require('../scripts/mcp-directory-revenue-pack');
 
 const LINKS_FIXTURE = {
-  appOrigin: 'https://thumbgate-production.up.railway.app',
-  guideLink: 'https://thumbgate-production.up.railway.app/guide',
-  proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
-  sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+  appOrigin: 'https://thumbgate.ai',
+  guideLink: 'https://thumbgate.ai/guide',
+  proCheckoutLink: 'https://thumbgate.ai/checkout/pro',
+  sprintLink: 'https://thumbgate.ai/#workflow-sprint-intake',
   proPriceLabel: '$19/mo or $149/yr',
 };
 
@@ -104,7 +104,7 @@ test('follow-on offers use tracked directory CTAs for guide, Pro, and sprint lan
 });
 
 test('tracked directory link helper keeps attribution machine-readable', () => {
-  const url = new URL(buildTrackedDirectoryLink('https://thumbgate-production.up.railway.app/guide', {
+  const url = new URL(buildTrackedDirectoryLink('https://thumbgate.ai/guide', {
     utmCampaign: 'mcp_directory_guide',
     utmContent: 'guide',
     campaignVariant: 'directory_repair',

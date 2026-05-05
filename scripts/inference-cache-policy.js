@@ -66,7 +66,46 @@ function evaluateCacheCandidate(candidate = {}) {
   };
 }
 
+function planDepthWiseKvSharing(options = {}) {
+  const layerCount = Number(options.layerCount || 0);
+  const cacheBudgetRatio = Number(options.cacheBudgetRatio || 1);
+  const trainingAdapted = Boolean(options.trainingAdapted || options.randomCrossLayerAttention);
+  const latencySensitive = Boolean(options.latencySensitive);
+  const unknownHardware = Boolean(options.unknownHardware);
+  const dataConstrained = Boolean(options.dataConstrained);
+  const issues = [];
+
+  if (layerCount < 12) issues.push('model_too_shallow_for_depth_sharing_roi');
+  if (!trainingAdapted) issues.push('requires_training_or_finetune_adaptation');
+  if (cacheBudgetRatio >= 0.9) issues.push('kv_memory_budget_not_constrained');
+  if (latencySensitive && !trainingAdapted) issues.push('avoid_runtime_only_cross_layer_sharing_for_ttfb');
+
+  const targetSharedLayerRatio = cacheBudgetRatio <= 0.5 ? 0.5 : cacheBudgetRatio <= 0.75 ? 0.25 : 0;
+  const estimatedKvMemoryReduction = Number((targetSharedLayerRatio * 0.9).toFixed(2));
+  const deploymentModes = [
+    'full-kv-cache',
+    targetSharedLayerRatio >= 0.25 ? 'share-every-fourth-layer' : null,
+    targetSharedLayerRatio >= 0.5 ? 'share-every-other-layer' : null,
+  ].filter(Boolean);
+
+  return {
+    decision: issues.some((issue) => issue !== 'kv_memory_budget_not_constrained') ? 'research' : 'pilot',
+    issues,
+    technique: 'stochastic-kv-routing-depth-wise-cache-sharing',
+    targetSharedLayerRatio,
+    estimatedKvMemoryReduction,
+    deploymentModes,
+    recommendedWorkload: unknownHardware || dataConstrained ? 'adaptive-serving-pilot' : 'benchmark-before-rollout',
+    gates: [
+      'compare quality against full-cache baseline',
+      'measure time-to-first-token and tokens/sec',
+      'block rollout if golden eval pass rate regresses',
+    ],
+  };
+}
+
 module.exports = {
   buildInferenceCachePolicy,
   evaluateCacheCandidate,
+  planDepthWiseKvSharing,
 };

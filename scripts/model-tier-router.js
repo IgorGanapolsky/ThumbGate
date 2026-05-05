@@ -2,7 +2,7 @@
 'use strict';
 
 /**
- * GPT-5.4 Tier Router — routes tasks to nano/mini/frontier based on
+ * GPT tier router — routes tasks to nano/mini/frontier based on
  * task complexity, context size, risk level, and retry count.
  * Includes frontier budget control.
  */

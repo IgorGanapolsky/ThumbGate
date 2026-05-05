@@ -30,6 +30,7 @@ jobs:
         id: revenue-status
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          THUMBGATE_OPERATOR_KEY: ${{ secrets.THUMBGATE_OPERATOR_KEY }}
           THUMBGATE_API_KEY: ${{ secrets.THUMBGATE_API_KEY }}
         run: |
           mkdir -p reports/revenue
@@ -118,7 +119,7 @@ jobs:
           fi
           node scripts/social-analytics/poll-all.js 2>&1 || echo "Poll failed (non-fatal)"
 
-      - name: Check social reply monitor (Reddit + LinkedIn)
+      - name: Check social reply monitor (Reddit + LinkedIn + Bluesky)
         if: github.event.inputs.dry_run != 'true'
         env:
           ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
@@ -126,16 +127,32 @@ jobs:
           REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
           REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
           REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
+          # Optional comma/newline-separated Reddit post/comment URLs to monitor
+          # beyond inbox replies. Replies remain draft-only.
+          THUMBGATE_REDDIT_TRACKED_THREADS: https://www.reddit.com/r/ClaudeCode/comments/1szi5qp/
           LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
           LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
+          BLUESKY_HANDLE: ${{ secrets.BLUESKY_HANDLE }}
+          BLUESKY_APP_PASSWORD: ${{ secrets.BLUESKY_APP_PASSWORD }}
         run: |
-          # X/Twitter reply monitoring retired 2026-04-20. Guard on Reddit creds
-          # so the job no-ops cleanly when the repo lacks reply-loop secrets.
-          if [ -z "$REDDIT_CLIENT_ID" ] && [ -z "$LINKEDIN_ACCESS_TOKEN" ]; then
-            echo "Skipping reply monitor: no Reddit or LinkedIn credentials configured"
+          mkdir -p reports/revenue
+          node scripts/bluesky-monitor-launchd.js status | tee reports/revenue/bluesky-monitor-status.json
+
+          # X/Twitter reply monitoring retired 2026-04-20. Guard on platform
+          # credentials so the job no-ops cleanly when reply-loop secrets are
+          # not configured yet.
+          if [ -z "$REDDIT_CLIENT_ID" ] && [ -z "$LINKEDIN_ACCESS_TOKEN" ] && { [ -z "$BLUESKY_HANDLE" ] || [ -z "$BLUESKY_APP_PASSWORD" ]; }; then
+            echo "Skipping reply monitor: no Reddit, LinkedIn, or Bluesky credentials configured"
             exit 0
           fi
-          timeout 60 node scripts/social-reply-monitor.js --once 2>&1 || echo "Reply monitor done"
+          if [ -n "$REDDIT_CLIENT_ID" ] || [ -n "$LINKEDIN_ACCESS_TOKEN" ]; then
+            timeout 60 node scripts/social-reply-monitor.js --once 2>&1 || echo "Reddit/LinkedIn reply monitor done"
+          fi
+          if [ -n "$BLUESKY_HANDLE" ] && [ -n "$BLUESKY_APP_PASSWORD" ]; then
+            timeout 60 node scripts/social-reply-monitor-bluesky.js 2>&1 || echo "Bluesky reply monitor done"
+          else
+            echo "Skipping Bluesky reply monitor: BLUESKY_HANDLE or BLUESKY_APP_PASSWORD is missing"
+          fi
 
       - name: Generate daily report
         env:

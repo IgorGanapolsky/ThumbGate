@@ -11,6 +11,7 @@ const read = (...parts) => fs.readFileSync(path.join(root, ...parts), 'utf8');
 const indexHtml = read('public', 'index.html');
 const compareHtml = read('public', 'compare.html');
 const orchestrationHtml = read('public', 'compare', 'ai-experience-orchestration.html');
+const agentixHtml = read('public', 'compare', 'agentix-labs.html');
 const platformTeamsHtml = read('public', 'use-cases', 'platform-teams.html');
 const regulatedHtml = read('public', 'use-cases', 'regulated-workflows.html');
 
@@ -33,12 +34,27 @@ test('compare hub links to orchestration comparison page', () => {
   assert.match(compareHtml, /\/compare\/ai-experience-orchestration/);
 });
 
+test('compare hub links to custom agent agency comparison page', () => {
+  assert.match(compareHtml, /Comparing custom AI agent agencies/i);
+  assert.match(compareHtml, /\/compare\/agentix-labs/);
+});
+
 test('orchestration comparison page exists with schema and stack framing', () => {
   assert.match(orchestrationHtml, /"@type": "TechArticle"/);
   assert.match(orchestrationHtml, /AI experience orchestration still needs an enforcement layer/i);
   assert.match(orchestrationHtml, /Use orchestration to decide what should happen next/i);
   assert.match(orchestrationHtml, /Use ThumbGate to decide what is allowed to execute/i);
   assert.match(orchestrationHtml, /Claude Code, Cursor, Codex, Gemini, Amp, OpenCode/i);
+});
+
+test('Agentix comparison page frames agency services as adjacent competition', () => {
+  assert.match(agentixHtml, /"@type": "TechArticle"/);
+  assert.match(agentixHtml, /ThumbGate vs Agentix Labs/i);
+  assert.match(agentixHtml, /adjacent competition/i);
+  assert.match(agentixHtml, /custom AI agent and automation services/i);
+  assert.match(agentixHtml, /productized enforcement layer/i);
+  assert.match(agentixHtml, /Pro \$19\/mo or \$149\/yr/);
+  assert.match(agentixHtml, /Team \$49\/seat\/mo/);
 });
 
 test('platform-team use case page exists with rollout language', () => {

@@ -33,6 +33,11 @@ const CHECKED_AT = '2026-05-03';
 const DIRECTORY_SOURCE = 'mcp_directories';
 const DIRECTORY_MEDIUM = 'directory';
 const DIRECTORY_SURFACE = 'mcp_directory';
+const MCP_DIRECTORY_APP_ORIGIN = 'https://thumbgate.ai';
+
+function buildMcpDirectoryRevenueLinks() {
+  return buildRevenueLinks({ appOrigin: MCP_DIRECTORY_APP_ORIGIN });
+}
 
 function buildTrackedDirectoryLink(baseUrl, tracking = {}) {
   return buildTrackedPackLink(baseUrl, tracking, {
@@ -117,7 +122,7 @@ function buildSurfaces() {
   ];
 }
 
-function buildFollowOnOffers(links = buildRevenueLinks()) {
+function buildFollowOnOffers(links = buildMcpDirectoryRevenueLinks()) {
   return [
     {
       label: 'Proof-backed setup guide',
@@ -284,7 +289,7 @@ function buildMeasurementPlan() {
   };
 }
 
-function buildMcpDirectoryRevenuePack(links = buildRevenueLinks()) {
+function buildMcpDirectoryRevenuePack(links = buildMcpDirectoryRevenueLinks()) {
   return {
     generatedAt: new Date().toISOString(),
     objective: 'Repair MCP directory drift so ThumbGate discovery points to one canonical identity and one proof-backed install path.',
@@ -438,6 +443,7 @@ module.exports = {
   DIRECTORY_SOURCE,
   DIRECTORY_SURFACE,
   DOCS_PATH,
+  MCP_DIRECTORY_APP_ORIGIN,
   GLAMA_CANONICAL_URL,
   GLAMA_SEARCH_URL,
   MCP_SO_URL,

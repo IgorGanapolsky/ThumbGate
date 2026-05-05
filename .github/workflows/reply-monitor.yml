@@ -1,13 +1,13 @@
 name: Social Reply Monitor
 
-# Monitors Reddit and LinkedIn for replies to ThumbGate posts and generates
+# Monitors Reddit, LinkedIn, and Bluesky for replies to ThumbGate posts and generates
 # contextual responses. X/Twitter monitoring was deprecated 2026-04-20 — the
 # platform is no longer part of our distribution strategy. Scheduled audience
 # engagement now lives in Ralph Loop Audience Engagement, which restores
 # cache-backed state between CI runs. Keep this workflow as an explicit manual
 # fallback only.
 #
-# Reddit replies are NEVER auto-posted — they are saved to
+# Reddit and Bluesky replies are NEVER auto-posted by this workflow — they are saved to
 # .thumbgate/reply-drafts.jsonl for human review (per script policy).
 
 on:
@@ -26,6 +26,7 @@ on:
           - ''
           - reddit
           - linkedin
+          - bluesky
       dry_run:
         description: 'Dry run — detect replies but do not post responses'
         required: false
@@ -52,12 +53,19 @@ jobs:
       REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
       REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
       REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
+      # Optional comma/newline-separated Reddit post/comment URLs to monitor
+      # beyond inbox replies. Replies remain draft-only.
+      THUMBGATE_REDDIT_TRACKED_THREADS: https://www.reddit.com/r/ClaudeCode/comments/1szi5qp/
       # LinkedIn — gated on Community Management API approval (see
       # docs/marketing/linkedin-api-application.md). The stub logs a warning
       # until the approved token is available; envs are wired so the moment
       # approval lands, no workflow edit is needed.
       LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
       LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
+      # Bluesky — AT Protocol direct monitor. Drafts only unless an approved
+      # draft is later published through an explicit confirmed operator action.
+      BLUESKY_HANDLE: ${{ secrets.BLUESKY_HANDLE }}
+      BLUESKY_APP_PASSWORD: ${{ secrets.BLUESKY_APP_PASSWORD }}
 
     steps:
       - name: Checkout
@@ -81,7 +89,18 @@ jobs:
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
             ARGS="$ARGS --dry-run"
           fi
-          node scripts/social-reply-monitor.js $ARGS
+          if [ "${{ github.event.inputs.platform }}" = "bluesky" ]; then
+            node scripts/social-reply-monitor-bluesky.js $ARGS
+          else
+            node scripts/social-reply-monitor.js $ARGS
+            if [ -z "${{ github.event.inputs.platform }}" ]; then
+              if [ -n "$BLUESKY_HANDLE" ] && [ -n "$BLUESKY_APP_PASSWORD" ]; then
+                node scripts/social-reply-monitor-bluesky.js $ARGS
+              else
+                echo "Skipping Bluesky monitor: BLUESKY_HANDLE or BLUESKY_APP_PASSWORD is missing."
+              fi
+            fi
+          fi
 
       - name: Upload reply drafts artifact
         if: always()

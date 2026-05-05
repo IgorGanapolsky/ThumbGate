@@ -115,9 +115,9 @@ test('checked-in Aiventyx pack stays in sync with the generator output', () => {
 
   const markdown = renderAiventyxMarketplaceMarkdown({
     ...buildAiventyxMarketplacePlan({
-      appOrigin: 'https://thumbgate-production.up.railway.app',
-      proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
-      sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+      appOrigin: 'https://thumbgate.ai',
+      proCheckoutLink: 'https://thumbgate.ai/checkout/pro',
+      sprintLink: 'https://thumbgate.ai/#workflow-sprint-intake',
     }),
     generatedAt: updatedMatch[1],
   });

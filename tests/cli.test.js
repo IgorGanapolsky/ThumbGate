@@ -545,7 +545,15 @@ describe('bin/cli.js', () => {
     assert.ok(result.stdout.includes('cfo'), 'Help should mention cfo');
     assert.ok(result.stdout.includes('repair-github-marketplace'), 'Help should mention repair-github-marketplace');
     assert.ok(result.stdout.includes('model-fit'), 'Help should mention model-fit');
+    assert.ok(result.stdout.includes('gemini-embedding-plan'), 'Help should mention gemini-embedding-plan');
+    assert.ok(result.stdout.includes('agent-design-governance'), 'Help should mention agent-design-governance');
+    assert.ok(result.stdout.includes('proactive-agent-eval-guardrails'), 'Help should mention proactive-agent-eval-guardrails');
+    assert.ok(result.stdout.includes('reward-hacking-guardrails'), 'Help should mention reward-hacking-guardrails');
+    assert.ok(result.stdout.includes('oss-pr-opportunity-scout'), 'Help should mention oss-pr-opportunity-scout');
+    assert.ok(result.stdout.includes('chatgpt-ads-readiness-pack'), 'Help should mention chatgpt-ads-readiness-pack');
     assert.ok(result.stdout.includes('model-candidates'), 'Help should mention model-candidates');
+    assert.ok(result.stdout.includes('upstream-contributions'), 'Help should mention upstream-contributions');
+    assert.ok(result.stdout.includes('deepseek-v4-runtime-guardrails'), 'Help should mention deepseek-v4-runtime-guardrails');
     assert.ok(result.stdout.includes('risk'), 'Help should mention risk');
     assert.ok(result.stdout.includes('export-dpo'), 'Help should mention export-dpo');
     assert.ok(result.stdout.includes('export-databricks'), 'Help should mention export-databricks');
@@ -558,6 +566,7 @@ describe('bin/cli.js', () => {
     assert.ok(result.stdout.includes('prove'), 'Help should mention prove');
     assert.ok(result.stdout.includes('doctor'), 'Help should mention doctor');
     assert.ok(result.stdout.includes('dispatch'), 'Help should mention dispatch');
+    assert.ok(result.stdout.includes('background-governance'), 'Help should mention background-governance');
     assert.ok(result.stdout.includes('analytics'), 'Help should mention analytics');
     assert.ok(result.stdout.includes('gate-check'), 'Help should mention gate-check');
     assert.ok(result.stdout.includes('statusline-render'), 'Help should mention statusline-render');
@@ -1051,6 +1060,80 @@ describe('bin/cli.js', () => {
     assert.ok(payload.findings.some((finding) => finding.code === 'dormant_ai_browser_bridge'));
 
     fs.rmSync(homeDir, { recursive: true, force: true });
+  });
+
+  test('background-governance --json reports background-agent run metrics', () => {
+    const feedbackDir = makeTmpDir();
+    fs.writeFileSync(path.join(feedbackDir, 'agent-runs.jsonl'), [
+      JSON.stringify({
+        id: 'run_cli_1',
+        timestamp: new Date().toISOString(),
+        agentId: 'builder',
+        runType: 'pr',
+        source: 'background',
+        status: 'completed',
+        gatesChecked: 3,
+        gatesBlocked: 1,
+        filesChanged: 4,
+        ciPassed: true,
+      }),
+    ].join('\n') + '\n');
+
+    const result = runCliSync(['background-governance', '--json', `--feedback-dir=${feedbackDir}`], {
+      env: { THUMBGATE_NO_NUDGE: '1' },
+    });
+
+    assert.strictEqual(result.status, 0, `background-governance failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.kind, 'background_agent_governance_report');
+    assert.equal(payload.total, 1);
+    assert.equal(payload.gatesBlocked, 1);
+    assert.ok(payload.agents.some((agent) => agent.agentId === 'builder'));
+
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  });
+
+  test('background-governance --check --json emits dispatch risk verdict', () => {
+    const feedbackDir = makeTmpDir();
+    const result = runCliSync([
+      'background-governance',
+      '--check',
+      '--json',
+      '--agent-id=builder',
+      '--branch=main',
+      '--files-changed=25',
+      `--feedback-dir=${feedbackDir}`,
+    ], {
+      env: { THUMBGATE_NO_NUDGE: '1' },
+    });
+
+    assert.strictEqual(result.status, 0, `background-governance check failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.kind, 'background_agent_governance_check');
+    assert.equal(payload.allowed, true);
+    assert.ok(payload.warnings.some((warning) => warning.rule === 'protected_branch'));
+    assert.ok(payload.warnings.some((warning) => warning.rule === 'large_blast_radius'));
+
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  });
+
+  test('code-graph-guardrails --json recommends graph-informed gates', () => {
+    const result = runCliSync([
+      'code-graph-guardrails',
+      '--json',
+      '--central-files=src/api/server.js',
+      '--layers=api,data',
+      '--generated-artifacts=.codegraph/index.json',
+      '--changed-files=24',
+    ], {
+      env: { THUMBGATE_NO_NUDGE: '1' },
+    });
+
+    assert.strictEqual(result.status, 0, `code-graph-guardrails failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.name, 'thumbgate-code-graph-guardrails');
+    assert.equal(payload.summary.recommendedTemplateCount, 3);
+    assert.ok(payload.signals.some((signal) => signal.id === 'large_blast_radius'));
   });
 
   test('dispatch --json emits a phone-safe remote ops brief', () => {
@@ -1574,6 +1657,87 @@ describe('bin/cli.js', () => {
     assert.ok(fs.existsSync(payload.reportPath), 'model-fit should write the report file');
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
+  });
+
+  test('gemini-embedding-plan reports task prefixes and dimension plan', () => {
+    const result = runCliSync(['gemini-embedding-plan', '--task=search result', '--corpus-items=1200', '--dim=700', '--json']);
+    assert.equal(result.status, 0, `gemini-embedding-plan failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.model, 'gemini-embedding-2');
+    assert.equal(payload.outputDimensionality, 768);
+    assert.match(payload.taskPrefixes.query, /task: search result/);
+  });
+
+  test('agent-design-governance reports architecture and safeguards', () => {
+    const result = runCliSync([
+      'agent-design-governance',
+      '--workflow=billing recovery agent',
+      '--tools=stripe_refund,send_email',
+      '--write-tools=stripe_refund,send_email',
+      '--baseline-evals',
+      '--json',
+    ]);
+    assert.equal(result.status, 0, `agent-design-governance failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.name, 'thumbgate-agent-design-governance');
+    assert.equal(payload.toolRisk.risk, 'high');
+    assert.ok(payload.blockers.some((blocker) => blocker.id === 'tool_approval_required'));
+  });
+
+  test('proactive-agent-eval-guardrails reports PARE-style write risk', () => {
+    const result = runCliSync([
+      'proactive-agent-eval-guardrails',
+      '--workflow=calendar assistant',
+      '--apps=calendar,email',
+      '--flat-tool-api-only',
+      '--proactive-writes',
+      '--json',
+    ]);
+    assert.equal(result.status, 0, `proactive-agent-eval-guardrails failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.name, 'thumbgate-proactive-agent-eval-guardrails');
+    assert.equal(payload.status, 'blocked');
+  });
+
+  test('reward-hacking-guardrails blocks unsupported completion claims', () => {
+    const result = runCliSync([
+      'reward-hacking-guardrails',
+      '--workflow=PR closeout',
+      '--text=LGTM. All tests pass and this is ready to merge.',
+      '--metrics=reward score',
+      '--json',
+    ]);
+    assert.equal(result.status, 0, `reward-hacking-guardrails failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.name, 'thumbgate-reward-hacking-guardrails');
+    assert.equal(payload.status, 'blocked');
+    assert.ok(payload.signals.some((signal) => signal.id === 'hallucinated_verification'));
+  });
+
+  test('oss-pr-opportunity-scout maps dependencies to upstream repos', () => {
+    const result = runCliSync([
+      'oss-pr-opportunity-scout',
+      '--dependencies=@google/genai,stripe',
+      '--max-repos=2',
+      '--json',
+    ]);
+    assert.equal(result.status, 0, `oss-pr-opportunity-scout failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.name, 'thumbgate-oss-pr-opportunity-scout');
+    assert.ok(payload.opportunities.some((item) => item.repo === 'googleapis/js-genai'));
+  });
+
+  test('chatgpt-ads-readiness-pack prepares paid AI campaign proof gates', () => {
+    const result = runCliSync([
+      'chatgpt-ads-readiness-pack',
+      '--offer=Workflow Hardening Sprint',
+      '--budget=750',
+      '--json',
+    ]);
+    assert.equal(result.status, 0, `chatgpt-ads-readiness-pack failed:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.name, 'thumbgate-chatgpt-ads-readiness-pack');
+    assert.equal(payload.measurement.budget, 750);
   });
 
   test('model-candidates ranks managed candidates and writes a report', () => {

@@ -12,7 +12,15 @@
  *   npx thumbgate export-dpo    # export DPO training pairs
  *   npx thumbgate export-databricks   # export Databricks-ready analytics bundle
  *   npx thumbgate eval --from-feedback # turn feedback into reusable prompt evals
+ *   npx thumbgate code-graph-guardrails # map code-graph signals to pre-action checks
+ *   npx thumbgate proxy-pointer-rag-guardrails # map visual document RAG signals to gates
+ *   npx thumbgate rag-precision-guardrails # map retrieval tuning regressions to gates
+ *   npx thumbgate long-running-agent-context-guardrails # map structured-memory gaps to gates
+ *   npx thumbgate reasoning-efficiency-guardrails # map reasoning compression signals to gates
+ *   npx thumbgate deepseek-v4-runtime-guardrails # map sparse-attention runtime signals to gates
+ *   npx thumbgate upstream-contributions # rank upstream repo issues for trust-building PRs
  *   npx thumbgate stats         # feedback analytics + Revenue-at-Risk
+ *   npx thumbgate background-governance  # background-agent run report + risk check
  *   npx thumbgate cfo           # local operational billing summary
  *   npx thumbgate pro           # solo dashboard + exports side lane
  */
@@ -1220,6 +1228,112 @@ function modelFit() {
   console.log(JSON.stringify({ reportPath, report }, null, 2));
 }
 
+function geminiEmbeddingPlan() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildGeminiEmbeddingRolloutPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'gemini-embedding-policy'));
+  const plan = buildGeminiEmbeddingRolloutPlan({
+    corpusItems: args['corpus-items'] || args.corpusItems,
+    outputDimensionality: args.dim || args.outputDimensionality,
+    task: args.task,
+    useBatchApi: !args['no-batch'],
+  });
+
+  if (args.json) {
+    console.log(JSON.stringify(plan, null, 2));
+    return;
+  }
+
+  console.log(`Gemini Embedding 2 plan — ${plan.task}`);
+  console.log(`Model: ${plan.model}`);
+  console.log(`Dimensions: ${plan.outputDimensionality}`);
+  console.log(`Corpus: ${plan.corpusItems} items (~${plan.estimatedFloat32Mb} MB float32)`);
+  console.log(`Query prefix: ${plan.taskPrefixes.query}`);
+  console.log(`Document prefix: ${plan.taskPrefixes.document}`);
+  console.log(`Batch API: ${plan.economics.batchApi}`);
+}
+
+function agentDesignGovernance() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildAgentDesignGovernancePlan,
+    formatAgentDesignGovernancePlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'agent-design-governance'));
+  const report = buildAgentDesignGovernancePlan(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatAgentDesignGovernancePlan(report));
+}
+
+function proactiveAgentEvalGuardrails() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildProactiveAgentEvalGuardrailsPlan,
+    formatProactiveAgentEvalGuardrailsPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'proactive-agent-eval-guardrails'));
+  const report = buildProactiveAgentEvalGuardrailsPlan(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatProactiveAgentEvalGuardrailsPlan(report));
+}
+
+function rewardHackingGuardrails() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildRewardHackingGuardrailsPlan,
+    formatRewardHackingGuardrailsPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'reward-hacking-guardrails'));
+  const report = buildRewardHackingGuardrailsPlan(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatRewardHackingGuardrailsPlan(report));
+}
+
+function ossPrOpportunityScout() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildOssPrOpportunityScoutPlan,
+    formatOssPrOpportunityScoutPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'oss-pr-opportunity-scout'));
+  const report = buildOssPrOpportunityScoutPlan(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatOssPrOpportunityScoutPlan(report));
+}
+
+function chatgptAdsReadinessPack() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildChatgptAdsReadinessPack,
+    formatChatgptAdsReadinessPack,
+  } = require(path.join(PKG_ROOT, 'scripts', 'chatgpt-ads-readiness-pack'));
+  const report = buildChatgptAdsReadinessPack(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatChatgptAdsReadinessPack(report));
+}
+
 function modelCandidatesCmd() {
   const args = parseArgs(process.argv.slice(3));
   const { writeModelCandidatesReport, renderModelCandidatesReport } = require(path.join(PKG_ROOT, 'scripts', 'model-candidates'));
@@ -1598,6 +1712,216 @@ function nativeMessagingAudit() {
   process.stdout.write(formatNativeMessagingAudit(report));
 }
 
+function codeGraphGuardrails() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildCodeGraphGuardrailsPlan,
+    formatCodeGraphGuardrailsPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'code-graph-guardrails'));
+  const report = buildCodeGraphGuardrailsPlan(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatCodeGraphGuardrailsPlan(report));
+}
+
+function proxyPointerRagGuardrails() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildProxyPointerRagGuardrailsPlan,
+    formatProxyPointerRagGuardrailsPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'proxy-pointer-rag-guardrails'));
+  const report = buildProxyPointerRagGuardrailsPlan(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatProxyPointerRagGuardrailsPlan(report));
+}
+
+function ragPrecisionGuardrails() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildRagPrecisionGuardrailsPlan,
+    formatRagPrecisionGuardrailsPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'rag-precision-guardrails'));
+  const report = buildRagPrecisionGuardrailsPlan(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatRagPrecisionGuardrailsPlan(report));
+}
+
+function aiEngineeringStackGuardrails() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildAiEngineeringStackGuardrailsPlan,
+    formatAiEngineeringStackGuardrailsPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'ai-engineering-stack-guardrails'));
+  const report = buildAiEngineeringStackGuardrailsPlan(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatAiEngineeringStackGuardrailsPlan(report));
+}
+
+function deepseekV4RuntimeGuardrails() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildDeepSeekV4RuntimeGuardrailsPlan,
+    formatDeepSeekV4RuntimeGuardrailsPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'deepseek-v4-runtime-guardrails'));
+  const report = buildDeepSeekV4RuntimeGuardrailsPlan(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatDeepSeekV4RuntimeGuardrailsPlan(report));
+}
+
+function upstreamContributions() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildUpstreamContributionPlan,
+    renderUpstreamContributionPlan,
+    writeUpstreamContributionPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'upstream-contribution-engine'));
+  const report = buildUpstreamContributionPlan({
+    ...args,
+    root: CWD,
+    maxRepos: args['max-repos'] || args.max,
+    maxIssues: args['max-issues'],
+    offline: args.live || args.network ? false : true,
+  });
+
+  if (args.write || args['write-report']) {
+    const paths = writeUpstreamContributionPlan(report, args['out-dir'] || undefined);
+    if (args.json) {
+      console.log(JSON.stringify({ ...report, paths }, null, 2));
+      return;
+    }
+    process.stdout.write(renderUpstreamContributionPlan(report));
+    process.stdout.write(`\nArtifacts: ${paths.mdPath}, ${paths.jsonPath}\n`);
+    return;
+  }
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(renderUpstreamContributionPlan(report));
+}
+
+function longRunningAgentContextGuardrails() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildLongRunningAgentContextGuardrailsPlan,
+    formatLongRunningAgentContextGuardrailsPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'long-running-agent-context-guardrails'));
+  const report = buildLongRunningAgentContextGuardrailsPlan(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatLongRunningAgentContextGuardrailsPlan(report));
+}
+
+function reasoningEfficiencyGuardrails() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildReasoningEfficiencyGuardrailsPlan,
+    formatReasoningEfficiencyGuardrailsPlan,
+  } = require(path.join(PKG_ROOT, 'scripts', 'reasoning-efficiency-guardrails'));
+  const report = buildReasoningEfficiencyGuardrailsPlan(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  process.stdout.write(formatReasoningEfficiencyGuardrailsPlan(report));
+}
+
+function backgroundGovernance() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    checkRunGovernance,
+    formatGovernanceReport,
+    generateGovernanceReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'background-agent-governance'));
+  const feedbackDir = args['feedback-dir'];
+
+  if (args.check) {
+    const verdict = checkRunGovernance({
+      agentId: args['agent-id'] || args.agent || 'unknown',
+      runType: args['run-type'] || args.type || 'pr',
+      branch: args.branch,
+      filesChanged: Number(args['files-changed'] || 0),
+    }, feedbackDir);
+
+    if (args.json) {
+      console.log(JSON.stringify({
+        kind: 'background_agent_governance_check',
+        ...verdict,
+      }, null, 2));
+    } else {
+      console.log('\nBackground Agent Governance Check');
+      console.log('-'.repeat(50));
+      console.log(`  Allowed : ${verdict.allowed ? 'yes' : 'no'}`);
+      console.log(`  Score   : ${verdict.governanceScore}/100`);
+      if (verdict.blockers.length > 0) {
+        console.log('\nBlockers:');
+        for (const blocker of verdict.blockers) console.log(`  - ${blocker.rule}: ${blocker.message}`);
+      }
+      if (verdict.warnings.length > 0) {
+        console.log('\nWarnings:');
+        for (const warning of verdict.warnings) console.log(`  - ${warning.rule}: ${warning.message}`);
+      }
+      if (verdict.allowed && verdict.warnings.length === 0) {
+        console.log('\nNo governance blockers or warnings found.');
+      }
+      console.log('');
+    }
+    process.exit(verdict.allowed ? 0 : 2);
+  }
+
+  const report = generateGovernanceReport({
+    periodHours: Number(args['window-hours'] || args.window || 24),
+    feedbackDir,
+  });
+
+  if (args.json) {
+    console.log(JSON.stringify({
+      kind: 'background_agent_governance_report',
+      ...report,
+    }, null, 2));
+    return;
+  }
+
+  console.log('\n' + formatGovernanceReport(report));
+  console.log('\nReview relief actions:');
+  console.log('  - Run --check before dispatching an unattended PR job.');
+  console.log('  - Route protected branches and large blast-radius jobs to human review.');
+  console.log('  - Convert CI failures into thumbs-down lessons so repeats become Pre-Action Checks.');
+  console.log('\nGuide: https://thumbgate-production.up.railway.app/guides/background-agent-governance\n');
+}
+
 function optimize() {
   const { optimize: doOptimize } = require(path.join(PKG_ROOT, 'scripts', 'optimize-context'));
   doOptimize();
@@ -1944,7 +2268,7 @@ function help() {
   console.log('  repair-github-marketplace  Repair legacy GitHub Marketplace amount mappings');
   console.log('  north-star            Show proof-backed workflow-run progress toward the North Star');
   console.log('  model-fit             Detect local embedding profile and write evidence report');
-  console.log('  model-candidates      Rank managed model candidates and emit a benchmark plan');
+  console.log('  model-candidates      Rank managed model candidates and benchmark routing plans');
   console.log('  risk                  Train or query the boosted local risk scorer');
   console.log('  eval                  Turn feedback into reusable prompt/workflow eval proof');
   console.log('  optimize              [PRO] Prune CLAUDE.md and migrate rules to Pre-Action Checks');
@@ -1954,6 +2278,15 @@ function help() {
   console.log('  funnel                Marketing and revenue conversion funnel analytics');
   console.log('  pulse                 Real-time GTM velocity and Mission Control summary');
   console.log('  dispatch              Dispatch-safe brief for phone-driven review sessions');
+  console.log('  code-graph-guardrails Map code-graph risk signals to Knowledge Graph Safety gates');
+  console.log('  proxy-pointer-rag-guardrails Map visual document RAG signals to Document RAG Safety gates');
+  console.log('  rag-precision-guardrails Map retrieval tuning regressions to Document RAG Safety gates');
+  console.log('  ai-engineering-stack-guardrails Map gateway, MCP, AGENTS.md, LLM wiki, reviewer, and sandbox gaps to stack gates');
+  console.log('  upstream-contributions Find dependency issues worth fixing without promotional PRs');
+  console.log('  long-running-agent-context-guardrails Map structured-memory gaps to long-running agent gates');
+  console.log('  reasoning-efficiency-guardrails Map reasoning compression signals to efficiency gates');
+  console.log('  deepseek-v4-runtime-guardrails Map sparse-attention runtime signals to safety gates');
+  console.log('  background-governance Background-agent run report and dispatch risk check');
   console.log('  analytics             Unified analytics snapshot (npm, GitHub, landing)');
   console.log('  start-api             Start the ThumbGate HTTPS API server');
   console.log('');
@@ -1978,6 +2311,16 @@ function help() {
   console.log('  npx thumbgate explore gates --json');
   console.log('  npx thumbgate demo');
   console.log('  npx thumbgate stats --json');
+  console.log('  npx thumbgate code-graph-guardrails --central-files=src/api/server.js --layers=api,data --generated-artifacts=.codegraph/index.json --json');
+  console.log('  npx thumbgate proxy-pointer-rag-guardrails --tree-path=.rag/tree.json --image-pointers=paper-1/figures/fig2.png --documents=paper-1 --visual-claims --json');
+  console.log('  npx thumbgate rag-precision-guardrails --baseline-recall=0.86 --new-recall=0.72 --threshold-change --agentic --structural-near-misses --json');
+  console.log('  npx thumbgate ai-engineering-stack-guardrails --mcp-tool-count=182 --direct-provider-keys --llm-wiki-pages=24 --context-freshness-days=30 --background-agents --json');
+  console.log('  npx thumbgate long-running-agent-context-guardrails --request-count=80 --output-mb=3 --raw-chat-only --json');
+  console.log('  npx thumbgate reasoning-efficiency-guardrails --baseline-tokens=1200 --compressed-tokens=980 --baseline-accuracy=0.84 --compressed-accuracy=0.85 --verifier --json');
+  console.log('  npx thumbgate deepseek-v4-runtime-guardrails --context-tokens=900000 --hybrid-attention --speculative-decoding --accept-length=1.4 --precision-mode=fp8 --json');
+  console.log('  npx thumbgate upstream-contributions --max-repos=10 --write');
+  console.log('  npx thumbgate background-governance --json');
+  console.log('  npx thumbgate background-governance --check --agent-id=builder --branch=main --files-changed=25 --json');
   console.log('  npx thumbgate eval --from-feedback --json');
   console.log('  npx thumbgate lessons "force push" --json');
   console.log('  npx thumbgate lessons --query="deploy" --remote');
@@ -2120,9 +2463,44 @@ switch (COMMAND) {
   case 'model-fit':
     modelFit();
     break;
+  case 'gemini-embedding-plan':
+  case 'embedding-plan':
+    geminiEmbeddingPlan();
+    break;
+  case 'agent-design-governance':
+  case 'agent-architecture':
+  case 'agent-governance-plan':
+    agentDesignGovernance();
+    break;
+  case 'proactive-agent-eval-guardrails':
+  case 'pare-guardrails':
+  case 'proactive-agent-guardrails':
+    proactiveAgentEvalGuardrails();
+    break;
+  case 'reward-hacking-guardrails':
+  case 'proxy-reward-guardrails':
+  case 'reward-guardrails':
+    rewardHackingGuardrails();
+    break;
+  case 'oss-pr-opportunity-scout':
+  case 'github-pr-scout':
+  case 'upstream-pr-scout':
+    ossPrOpportunityScout();
+    break;
+  case 'chatgpt-ads-readiness-pack':
+  case 'chatgpt-ads-plan':
+  case 'ai-ads-plan':
+    chatgptAdsReadinessPack();
+    break;
   case 'model-candidates':
   case 'managed-models':
     modelCandidatesCmd();
+    break;
+  case 'upstream-contributions':
+  case 'upstream-contribution-engine':
+  case 'upstream-prs':
+  case 'oss-pr-opportunities':
+    upstreamContributions();
     break;
   case 'risk':
     risk();
@@ -2167,6 +2545,47 @@ switch (COMMAND) {
   case 'native-messaging-audit':
   case 'bridge-audit':
     nativeMessagingAudit();
+    break;
+  case 'code-graph-guardrails':
+  case 'knowledge-graph-guardrails':
+  case 'graph-guardrails':
+    codeGraphGuardrails();
+    break;
+  case 'proxy-pointer-rag-guardrails':
+  case 'document-rag-guardrails':
+  case 'multimodal-rag-guardrails':
+    proxyPointerRagGuardrails();
+    break;
+  case 'rag-precision-guardrails':
+  case 'retrieval-precision-guardrails':
+  case 'agentic-rag-guardrails':
+    ragPrecisionGuardrails();
+    break;
+  case 'ai-engineering-stack-guardrails':
+  case 'ai-stack-guardrails':
+  case 'internal-ai-stack-guardrails':
+  case 'llm-wiki-guardrails':
+    aiEngineeringStackGuardrails();
+    break;
+  case 'deepseek-v4-runtime-guardrails':
+  case 'deepseek-runtime-guardrails':
+  case 'sparse-attention-runtime-guardrails':
+    deepseekV4RuntimeGuardrails();
+    break;
+  case 'long-running-agent-context-guardrails':
+  case 'agent-context-guardrails':
+  case 'slack-context-guardrails':
+    longRunningAgentContextGuardrails();
+    break;
+  case 'reasoning-efficiency-guardrails':
+  case 'sas-guardrails':
+  case 'reasoning-compression-guardrails':
+    reasoningEfficiencyGuardrails();
+    break;
+  case 'background-governance':
+  case 'background-agent-governance':
+  case 'agent-governance':
+    backgroundGovernance();
     break;
   case 'optimize':
     optimize();

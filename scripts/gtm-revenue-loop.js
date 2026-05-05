@@ -847,9 +847,29 @@ async function resolveRevenueLoopSummary(options = {}) {
     waitForRetryFn = (delayMs) => new Promise((resolve) => setTimeout(resolve, delayMs)),
   } = options;
 
-  const localResult = await getOperationalBillingSummaryFn();
+  const requestedSummaryWindow = normalizeText(options.summaryWindow || options.window) || '30d';
+  let localResult;
+  try {
+    localResult = await getOperationalBillingSummaryFn({
+      window: requestedSummaryWindow,
+      timeZone: options.timeZone || options.timezone,
+      now: options.now,
+    });
+  } catch (error) {
+    localResult = {
+      source: 'local-unverified',
+      summary: normalizeRevenueWindowSummary({}),
+      fallbackReason: normalizeText(error?.message || error)
+        || 'Hosted operational summary is unavailable.',
+      hostedStatus: null,
+      summaryWindow: requestedSummaryWindow,
+    };
+  }
   if (localResult.source === 'hosted') {
-    return localResult;
+    return {
+      ...localResult,
+      summaryWindow: localResult.summaryWindow || requestedSummaryWindow,
+    };
   }
 
   if (
@@ -2376,6 +2396,10 @@ function renderOperatorSendNowMarkdown(report) {
             ? `@${row.username} - ${row.repoName}`
             : `@${row.username} - ${row.accountName || row.source || 'discovery lead'}`;
           const whyNow = normalizeText(row.whyNow) || 'n/a';
+          const contactSurface = normalizeText(row.contactSurface)
+            || normalizeText(row.repoUrl)
+            || 'n/a';
+          const contactSurfaces = renderContactSurfaces(row.contactSurfaces);
           return [
             `### ${row.rank}. ${label}`,
             `- Channel: ${row.source || 'github'} / ${row.channel || row.source || 'github'}`,
@@ -2386,10 +2410,16 @@ function renderOperatorSendNowMarkdown(report) {
             `- Motion: ${row.motionLabel || 'n/a'}`,
             `- Why now: ${whyNow}`,
             `- Proof rule: ${row.proofRule || 'Use proof pack only after the buyer confirms pain.'}`,
+            `- Contact surface: ${contactSurface}`,
+            `- Contact surfaces: ${contactSurfaces}`,
+            `- Company: ${row.company || 'n/a'}`,
             `- CTA: ${row.cta || 'n/a'}`,
             `- Log after send: \`${row.markContactedCommand || 'n/a'}\``,
             `- Log after pain-confirmed reply: \`${row.markRepliedCommand || 'n/a'}\``,
+            `- Log after call booked: \`${row.markCallBookedCommand || 'n/a'}\``,
             `- Log after checkout started: \`${row.markCheckoutStartedCommand || 'n/a'}\``,
+            `- Log after sprint intake: \`${row.markSprintIntakeCommand || 'n/a'}\``,
+            `- Log after paid: \`${row.markPaidCommand || 'n/a'}\``,
             '',
             'First-touch draft:',
             ...renderQuotedText(row.firstTouchDraft),
@@ -2760,7 +2790,7 @@ async function runRevenueLoop(options = {}) {
     directive,
     targets: pipelineAwareTargets,
   });
-  report.snapshotWindow = summaryWindow || 'today';
+  report.snapshotWindow = summaryWindow || '30d';
   report.marketplaceCopy = buildMarketplaceCopy(report);
 
   if (errors.length) {
@@ -2832,8 +2862,8 @@ module.exports = {
   buildOperatorHandoffPayload,
   buildOperatorSendNowPayload,
   renderOperatorHandoffMarkdown,
-  renderOperatorSendNowCsv,
   renderOperatorSendNowMarkdown,
+  renderOperatorSendNowCsv,
   renderTeamOutreachMessagesMarkdown,
   resolveRevenueLoopSummary,
   runRevenueLoop,

@@ -32,6 +32,8 @@ process.env.STRIPE_SECRET_KEY = '';
 process.env.STRIPE_PRICE_ID = '';
 process.env.THUMBGATE_PUBLIC_APP_ORIGIN = 'https://app.example.com';
 process.env.THUMBGATE_BILLING_API_BASE_URL = 'https://billing.example.com';
+process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL = 'https://buy.stripe.com/diagnostic-test';
+process.env.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL = 'https://buy.stripe.com/sprint-test';
 process.env.THUMBGATE_GA_MEASUREMENT_ID = 'G-TEST1234';
 process.env.THUMBGATE_GOOGLE_SITE_VERIFICATION = 'test-verification-token';
 process.env.THUMBGATE_BUILD_METADATA_PATH = path.join(tmpFeedbackDir, 'build-metadata.json');
@@ -43,6 +45,7 @@ fs.writeFileSync(
 const { startServer, __test__ } = require('../src/api/server');
 const billing = require('../scripts/billing');
 const gatesEngine = require('../scripts/gates-engine');
+const { listGateTemplates } = require('../scripts/gate-templates');
 const { buildHostedSuccessUrl } = require('../scripts/hosted-config');
 const { readJsonl } = require('../scripts/fs-utils');
 const {
@@ -53,6 +56,7 @@ const {
 let handle;
 let apiOrigin = '';
 const authHeader = { authorization: 'Bearer test-api-key' };
+const EXPECTED_TEMPLATE_COUNT = listGateTemplates().length;
 const ORIGINAL_GATES_PATHS = {
   governanceState: gatesEngine.GOVERNANCE_STATE_PATH,
   constraints: gatesEngine.CONSTRAINTS_PATH,
@@ -88,6 +92,8 @@ test.after(async () => {
   gatesEngine.CONSTRAINTS_PATH = ORIGINAL_GATES_PATHS.constraints;
   delete process.env.THUMBGATE_PUBLIC_APP_ORIGIN;
   delete process.env.THUMBGATE_BILLING_API_BASE_URL;
+  delete process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL;
+  delete process.env.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL;
   delete process.env.THUMBGATE_BUILD_METADATA_PATH;
   if (savedProjectEnv.THUMBGATE_PROJECT_DIR === undefined) delete process.env.THUMBGATE_PROJECT_DIR;
   else process.env.THUMBGATE_PROJECT_DIR = savedProjectEnv.THUMBGATE_PROJECT_DIR;
@@ -299,6 +305,16 @@ test('buyer intent script serves shared checkout helper JavaScript', async () =>
   assert.match(script, /dataset\.baseHref/);
 });
 
+test('/pro serves the Pro landing page instead of redirecting to the homepage', async () => {
+  const res = await fetch(apiUrl('/pro?utm_source=test'), { redirect: 'manual' });
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /text\/html/);
+  const html = await res.text();
+  assert.match(html, /ThumbGate Pro/);
+  assert.match(html, /Buy the operator loop that proves your AI agent stopped repeating the mistake\./);
+  assert.match(html, /\/checkout\/pro\?plan_id=pro&billing_cycle=monthly/);
+});
+
 test('startServer accepts an explicit bind host', async () => {
   const explicit = await startServer({ port: 0, host: '0.0.0.0' });
   try {
@@ -489,9 +505,11 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /\$19/);
   assert.match(body, /\$149/);
   assert.match(body, /plausible\.io\/js\/script\.js/);
+  assert.match(body, /data-domain="app\.example\.com"/);
   assert.match(body, /googletagmanager\.com\/gtag\/js\?id=G-TEST1234/);
   assert.match(body, /google-site-verification" content="test-verification-token"/);
-  assert.match(body, /gtag\('config', 'G-TEST1234', \{ send_page_view: false \}\)/);
+  assert.match(body, /gtag\('config', 'G-TEST1234'\)/);
+  assert.doesNotMatch(body, /thumbgate-production\.up\.railway\.app/);
   assert.doesNotMatch(body, /mailto:/i);
 });
 
@@ -701,9 +719,17 @@ test('public MCP discovery manifest exposes progressive tool, skill, and app loa
   assert.ok(body.primaryFlows.some((flow) => flow.name === 'metric-autoresearch' && flow.tools.includes('run_autoresearch')));
   assert.ok(body.primaryFlows.some((flow) => flow.name === 'visual-proof-retrieval' && flow.tools.includes('plan_multimodal_retrieval')));
   assert.ok(body.primaryFlows.some((flow) => flow.name === 'context-footprint-optimizer' && flow.tools.includes('plan_context_footprint')));
+  assert.ok(body.primaryFlows.some((flow) => flow.name === 'agent-design-governance' && flow.tools.includes('plan_agent_design_governance')));
+  assert.ok(body.primaryFlows.some((flow) => flow.name === 'proactive-agent-eval-guardrails' && flow.tools.includes('plan_proactive_agent_eval_guardrails')));
+  assert.ok(body.primaryFlows.some((flow) => flow.name === 'reward-hacking-guardrails' && flow.tools.includes('plan_reward_hacking_guardrails')));
+  assert.ok(body.primaryFlows.some((flow) => flow.name === 'oss-pr-opportunity-scout' && flow.tools.includes('plan_oss_pr_opportunity_scout')));
+  assert.ok(body.primaryFlows.some((flow) => flow.name === 'chatgpt-ads-readiness-pack' && flow.tools.includes('plan_chatgpt_ads_readiness')));
   assert.ok(body.skills.some((skill) => skill.name === 'thumbgate'));
   assert.ok(body.skills.some((skill) => skill.name === 'visual-proof-retrieval'));
   assert.ok(body.skills.some((skill) => skill.name === 'context-footprint-optimizer'));
+  assert.ok(body.skills.some((skill) => skill.name === 'agent-design-governance'));
+  assert.ok(body.skills.some((skill) => skill.name === 'reward-hacking-guardrails'));
+  assert.ok(body.skills.some((skill) => skill.name === 'oss-pr-opportunity-scout'));
   assert.ok(body.applications.some((app) => app.name === 'dashboard'));
   assert.ok(body.footprint.mcpToolDiscovery.footprint.savings.reductionRatio > 0);
   assert.match(body.proof.verificationEvidenceUrl, /VERIFICATION_EVIDENCE\.md/);
@@ -740,6 +766,11 @@ test('public MCP tool index supports just-in-time per-tool schema loading', asyn
   assert.equal(captureFeedback.inputSchema, undefined);
   assert.ok(index.tools.some((tool) => tool.name === 'run_autoresearch'));
   assert.ok(index.tools.some((tool) => tool.name === 'plan_multimodal_retrieval'));
+  assert.ok(index.tools.some((tool) => tool.name === 'plan_agent_design_governance'));
+  assert.ok(index.tools.some((tool) => tool.name === 'plan_proactive_agent_eval_guardrails'));
+  assert.ok(index.tools.some((tool) => tool.name === 'plan_reward_hacking_guardrails'));
+  assert.ok(index.tools.some((tool) => tool.name === 'plan_oss_pr_opportunity_scout'));
+  assert.ok(index.tools.some((tool) => tool.name === 'plan_chatgpt_ads_readiness'));
 
   const schemaRes = await fetch(apiUrl('/.well-known/mcp/tools/capture_feedback.json'));
   assert.equal(schemaRes.status, 200);
@@ -759,6 +790,24 @@ test('public MCP tool index supports just-in-time per-tool schema loading', asyn
   const multimodalSchema = await multimodalSchemaRes.json();
   assert.equal(multimodalSchema.name, 'plan_multimodal_retrieval');
   assert.equal(multimodalSchema.inputSchema.properties.evidenceTypes.type, 'array');
+
+  const agentDesignSchemaRes = await fetch(apiUrl('/.well-known/mcp/tools/plan_agent_design_governance.json'));
+  assert.equal(agentDesignSchemaRes.status, 200);
+  const agentDesignSchema = await agentDesignSchemaRes.json();
+  assert.equal(agentDesignSchema.name, 'plan_agent_design_governance');
+  assert.equal(agentDesignSchema.inputSchema.properties.highRiskTools.type, 'array');
+
+  const rewardSchemaRes = await fetch(apiUrl('/.well-known/mcp/tools/plan_reward_hacking_guardrails.json'));
+  assert.equal(rewardSchemaRes.status, 200);
+  const rewardSchema = await rewardSchemaRes.json();
+  assert.equal(rewardSchema.name, 'plan_reward_hacking_guardrails');
+  assert.equal(rewardSchema.inputSchema.properties.metrics.type, 'array');
+
+  const adsSchemaRes = await fetch(apiUrl('/.well-known/mcp/tools/plan_chatgpt_ads_readiness.json'));
+  assert.equal(adsSchemaRes.status, 200);
+  const adsSchema = await adsSchemaRes.json();
+  assert.equal(adsSchema.name, 'plan_chatgpt_ads_readiness');
+  assert.equal(adsSchema.inputSchema.properties.proofLinks.type, 'array');
 });
 
 test('public MCP skills and applications are machine-readable for agent onboarding', async () => {
@@ -775,6 +824,11 @@ test('public MCP skills and applications are machine-readable for agent onboardi
   assert.ok(skills.skills.some((skill) => skill.name === 'workflow-hardening-sprint'));
   assert.ok(skills.skills.some((skill) => skill.name === 'visual-proof-retrieval'));
   assert.ok(skills.skills.some((skill) => skill.name === 'context-footprint-optimizer'));
+  assert.ok(skills.skills.some((skill) => skill.name === 'agent-design-governance'));
+  assert.ok(skills.skills.some((skill) => skill.name === 'proactive-agent-eval-guardrails'));
+  assert.ok(skills.skills.some((skill) => skill.name === 'reward-hacking-guardrails'));
+  assert.ok(skills.skills.some((skill) => skill.name === 'oss-pr-opportunity-scout'));
+  assert.ok(skills.skills.some((skill) => skill.name === 'chatgpt-ads-readiness-pack'));
   assert.ok(skills.skills.every((skill) => Array.isArray(skill.recommendedFlow)));
   assert.ok(applications.applications.some((app) => app.name === 'workflow-sprint-intake'));
   assert.ok(applications.applications.every((app) => app.url.startsWith('https://app.example.com/')));
@@ -1207,6 +1261,19 @@ test('cancel page serves retry message and records first-party telemetry', async
   assert.match(body, /data-reason="too_expensive"/);
   assert.match(body, /sendTelemetry\('checkout_cancelled'\)/);
   assert.match(body, /sendTelemetry\('reason_not_buying'/);
+  assert.match(body, /Send workflow first/);
+  assert.match(body, /id="send-workflow-first"/);
+  assert.match(body, /data-recovery-offer="workflow_sprint_intake"/);
+  assert.match(body, /checkout_cancel_workflow_intake_clicked/);
+  assert.match(body, /checkout_cancel_workflow_sprint_intake/);
+  assert.match(body, /utm_medium', 'checkout_cancel_recovery'/);
+  assert.match(body, /Book \$499 diagnostic/);
+  assert.match(body, /Start \$1500 sprint/);
+  assert.match(body, /Restart \$19 Pro trial/);
+  assert.match(body, /data-recovery-offer="pro_trial_retry"/);
+  assert.match(body, /data-recovery-offer="sprint_diagnostic"/);
+  assert.match(body, /data-recovery-offer="workflow_sprint"/);
+  assert.match(body, /checkout_recovery_offer_clicked/);
   assert.match(body, /retryUrl\.searchParams\.set\(key, value\)/);
   assert.match(body, /Return to Context Gateway/);
 
@@ -1242,7 +1309,7 @@ test('checkout fallback URLs preserve Stripe session placeholders while carrying
 
 test('checkout bootstrap route preserves attribution and records first-party telemetry in local mode', async () => {
   const res = await fetch(
-    apiUrl('/checkout/pro?acquisition_id=acq_bootstrap&visitor_id=visitor_bootstrap&session_id=session_bootstrap&install_id=inst_bootstrap&utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&utm_term=agentic+feedback&creator=reach_vb&community=ClaudeCode&post_id=1rsudq0&comment_id=oa9mqjf&campaign_variant=comment_problem_solution&offer_code=REDDIT-EARLY&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2Fpricing'),
+    apiUrl('/checkout/pro?confirm=1&acquisition_id=acq_bootstrap&visitor_id=visitor_bootstrap&session_id=session_bootstrap&install_id=inst_bootstrap&customer_email=buyer%40example.com&utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&utm_term=agentic+feedback&creator=reach_vb&community=ClaudeCode&post_id=1rsudq0&comment_id=oa9mqjf&campaign_variant=comment_problem_solution&offer_code=REDDIT-EARLY&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2Fpricing'),
     {
       redirect: 'manual',
       headers: {
@@ -1310,7 +1377,7 @@ test('checkout bootstrap falls back to seeded journey cookies when query IDs are
     'thumbgate_acquisition_id=acq_cookie_checkout',
   ].join('; ');
   const res = await fetch(
-    apiUrl('/checkout/pro?utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro'),
+    apiUrl('/checkout/pro?confirm=1&customer_email=buyer%40example.com&utm_source=reddit&utm_medium=organic_social&utm_campaign=reddit_launch&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro'),
     {
       redirect: 'manual',
       headers: {
@@ -2601,6 +2668,8 @@ test('billing summary returns admin-only operational proxy', async () => {
   assert.equal(body.pipeline.workflowSprintLeads.total, 1);
   assert.equal(body.pipeline.workflowSprintLeads.bySource.linkedin, 1);
   assert.equal(body.pipeline.qualifiedWorkflowSprintLeads.total, 1);
+  assert.equal(body.runtimePresence.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL, true);
+  assert.equal(body.runtimePresence.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL, true);
   assert.equal(body.attribution.bookedRevenueByCampaignCents.pro_pack, 4900);
   assert.ok(body.trafficMetrics.visitors >= 1);
   assert.equal(body.operatorGeneratedAcquisition.uniqueLeads, 0);
@@ -2956,7 +3025,7 @@ test('dashboard applies analytics window query params with live billing truth', 
     assert.equal(body.analytics.efficiency.estimatedContextTokensReused, 300);
     assert.equal(typeof body.team.activeAgents, 'number');
     assert.equal(body.team.proRequired, false);
-    assert.equal(body.templateLibrary.total, 6);
+    assert.equal(body.templateLibrary.total, EXPECTED_TEMPLATE_COUNT);
     assert.equal(body.templateLibrary.categories['Git Safety'], 1);
     assert.ok(body.predictive);
     assert.equal(typeof body.predictive.upgradePropensity.pro.score, 'number');
