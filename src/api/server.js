@@ -4481,8 +4481,7 @@ async function addContext(){
         return;
       }
 
-      const rawCheckoutEmail = normalizeNullableText(bootstrapBody.customerEmail);
-      const normalizedCheckoutEmail = normalizeCheckoutCustomerEmail(rawCheckoutEmail);
+      const normalizedCheckoutEmail = normalizeCheckoutCustomerEmail(bootstrapBody.customerEmail);
       if (!normalizedCheckoutEmail) {
         appendBestEffortTelemetry(FEEDBACK_DIR, {
           eventType: 'checkout_email_deferred_to_stripe',
@@ -4490,7 +4489,6 @@ async function addContext(){
           traceId,
           page: '/checkout/pro',
           planId: analyticsMetadata.planId,
-          reason: rawCheckoutEmail ? 'invalid_customer_email' : 'missing_customer_email',
         }, req.headers, 'checkout_email_deferred_to_stripe');
       }
       bootstrapBody.customerEmail = normalizedCheckoutEmail || undefined;
