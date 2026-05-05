@@ -1,0 +1,65 @@
+{
+  "generatedAt": "2026-05-05T15:50:00.000Z",
+  "objective": "Use external template and storefront channels to pull buyers into the current ThumbGate paid motions without inventing a new public pricing story.",
+  "commercialGuardrail": {
+    "publicSelfServeOffer": "ThumbGate Pro at $19/mo or $149/yr",
+    "primaryPaidMotion": "Workflow Hardening Sprint, then Team at $49/seat/mo with 3-seat minimum after qualification",
+    "gumroadRule": "Do not publish a new paid Gumroad SKU until docs/COMMERCIAL_TRUTH.md includes it."
+  },
+  "platforms": [
+    {
+      "key": "lindy",
+      "status": "publishable_once_template_exists",
+      "sourceUrl": "https://docs.lindy.ai/fundamentals/lindy-101/templates",
+      "operatorMotion": "Free template or community-shared workflow that routes serious operators to Pro or the Workflow Hardening Sprint.",
+      "listing": {
+        "title": "Guarded AI Lead Qualification",
+        "tagline": "Qualify inbound leads with approval boundaries before CRM writes.",
+        "shortDescription": "A Lindy workflow template that qualifies inbound leads, stops risky side effects before they run, and routes serious operators into ThumbGate for proof-backed workflow hardening.",
+        "cta": "https://thumbgate.ai/#workflow-sprint-intake",
+        "selfServeFollowOn": "https://thumbgate.ai/checkout/pro"
+      }
+    },
+    {
+      "key": "gumroad",
+      "status": "draft_only_until_commercial_truth_updates",
+      "sourceUrls": [
+        "https://gumroad.com/features",
+        "https://gumroad.com/pricing"
+      ],
+      "operatorMotion": "Draft storefront copy only, or use Gumroad as a lead magnet surface until the public commercial truth includes a Gumroad SKU.",
+      "listing": {
+        "title": "Guarded Automation Workflow Kit",
+        "subtitle": "Stop one automation from making the wrong side effect twice.",
+        "currentLiveCta": "https://thumbgate.ai/guide",
+        "soloFollowOn": "https://thumbgate.ai/checkout/pro",
+        "teamFollowOn": "https://thumbgate.ai/#workflow-sprint-intake"
+      }
+    },
+    {
+      "key": "gohighlevel",
+      "status": "publishable_once_snapshot_exists",
+      "sourceUrl": "https://help.gohighlevel.com/support/solutions/articles/155000003709-selling-snapshots-on-the-app-marketplace",
+      "operatorMotion": "Vertical-specific guarded Snapshot that routes agencies with real workflow risk into the Workflow Hardening Sprint.",
+      "listing": {
+        "title": "Guarded Client Intake Snapshot",
+        "tagline": "Reusable agency workflow with approval boundaries before client-facing actions.",
+        "shortDescription": "A HighLevel Snapshot for agencies that want a repeatable intake and nurture flow without repeating the same approval, CRM, or messaging mistake across accounts.",
+        "cta": "https://thumbgate.ai/#workflow-sprint-intake"
+      }
+    }
+  ],
+  "operatorRules": [
+    "Lindy.ai: publish only a narrow template with one workflow promise.",
+    "Gumroad: do not publish paid copy until public pricing and SKU truth are updated.",
+    "GoHighLevel: sell one vertical-specific Snapshot, not a vague AI automation system.",
+    "For every channel, keep ThumbGate positioned as the trust layer and route high-risk buyers to the Workflow Hardening Sprint."
+  ],
+  "metrics": [
+    "lindy_listing_clicks",
+    "gumroad_draft_reuse_events",
+    "ghl_snapshot_inquiries",
+    "channel_to_pro_checkout_starts",
+    "channel_to_sprint_intake_submissions"
+  ]
+}
