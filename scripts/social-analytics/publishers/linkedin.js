@@ -13,6 +13,36 @@
  */
 
 const LI_REST_BASE = 'https://api.linkedin.com/rest';
+const AUTH_FAILURE_MODE_ENV = 'LINKEDIN_AUTH_FAILURE_MODE';
+
+function normalizeAuthFailureMode(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function isRecoverableLinkedInCredentialError(error) {
+  const message = String(error && error.message ? error.message : error || '');
+  return /HTTP\s+(401|403)\b/.test(message)
+    || /REVOKED_ACCESS_TOKEN/i.test(message)
+    || /LINKEDIN_ACCESS_TOKEN is not set/i.test(message)
+    || /LINKEDIN_PERSON_URN is not set/i.test(message);
+}
+
+function shouldWarnOnCredentialError(error, env = process.env) {
+  return normalizeAuthFailureMode(env[AUTH_FAILURE_MODE_ENV]) === 'warn'
+    && isRecoverableLinkedInCredentialError(error);
+}
+
+function warnAndSkipCredentialError(error) {
+  const message = String(error && error.message ? error.message : error || '');
+  const status = /HTTP\s+(401|403)\b/.exec(message)?.[1];
+  const summary = status
+    ? `LinkedIn credential rejected with HTTP ${status}; refresh LINKEDIN_ACCESS_TOKEN.`
+    : 'LinkedIn credentials are missing or unusable; refresh LINKEDIN_ACCESS_TOKEN and LINKEDIN_PERSON_URN.';
+  console.warn(`[linkedin:publisher] Skipped: ${summary}`);
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    console.warn(`::warning::LinkedIn publish skipped. ${summary}`);
+  }
+}
 
 /**
  * Build standard headers for the LinkedIn Posts API.
@@ -240,7 +270,13 @@ async function publishArticlePost(token, personUrn, text, articleUrl, title) {
   return postUrn;
 }
 
-module.exports = { publishTextPost, publishImagePost, publishArticlePost };
+module.exports = {
+  isRecoverableLinkedInCredentialError,
+  publishTextPost,
+  publishImagePost,
+  publishArticlePost,
+  shouldWarnOnCredentialError,
+};
 
 // ---------------------------------------------------------------------------
 // Stand-alone execution
@@ -269,11 +305,21 @@ if (require.main === module) {
   const personUrn = process.env.LINKEDIN_PERSON_URN;
 
   if (!token) {
-    console.error('LINKEDIN_ACCESS_TOKEN is not set');
+    const err = new Error('LINKEDIN_ACCESS_TOKEN is not set');
+    if (shouldWarnOnCredentialError(err)) {
+      warnAndSkipCredentialError(err);
+      process.exit(0);
+    }
+    console.error(err.message);
     process.exit(1);
   }
   if (!personUrn) {
-    console.error('LINKEDIN_PERSON_URN is not set');
+    const err = new Error('LINKEDIN_PERSON_URN is not set');
+    if (shouldWarnOnCredentialError(err)) {
+      warnAndSkipCredentialError(err);
+      process.exit(0);
+    }
+    console.error(err.message);
     process.exit(1);
   }
 
@@ -287,6 +333,10 @@ if (require.main === module) {
       }
       console.log(`[linkedin:publisher] Done. Post URN: ${postUrn}`);
     } catch (err) {
+      if (shouldWarnOnCredentialError(err)) {
+        warnAndSkipCredentialError(err);
+        process.exit(0);
+      }
       console.error('[linkedin:publisher] Failed:', err.message);
       process.exit(1);
     }
