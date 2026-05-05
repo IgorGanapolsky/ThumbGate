@@ -130,6 +130,30 @@ test('zero-filming automation docs and canonical IG/TikTok assets exist', () => 
   assert.match(fs.readFileSync(captionPath, 'utf8'), /Pre-Action Checks don't ask - they enforce\./);
 });
 
+test('guarded template channel listings stay operator-ready and commercially honest', () => {
+  const socialKit = read('docs/marketing/social-posts.md');
+  const markdown = read('docs/marketing/guarded-template-channel-listings.md');
+  const pack = JSON.parse(read('docs/marketing/guarded-template-channel-listings.json'));
+
+  assert.match(socialKit, /\[guarded-template-channel-listings\.md\]/);
+  assert.match(markdown, /Lindy\.ai/);
+  assert.match(markdown, /Gumroad/);
+  assert.match(markdown, /GoHighLevel/);
+  assert.match(markdown, /do not publish a new paid Gumroad SKU until `docs\/COMMERCIAL_TRUTH\.md` includes it/i);
+  assert.match(markdown, /ThumbGate Pro at \$19\/mo or \$149\/yr/);
+  assert.match(markdown, /Workflow Hardening Sprint/);
+  assert.match(markdown, /operator artifact, not proof of live listings/i);
+  assert.doesNotMatch(markdown, /guaranteed revenue|guaranteed installs|live listing approved/i);
+
+  assert.equal(pack.platforms.length, 3);
+  assert.equal(pack.platforms[0].key, 'lindy');
+  assert.equal(pack.platforms[1].key, 'gumroad');
+  assert.equal(pack.platforms[2].key, 'gohighlevel');
+  assert.equal(pack.commercialGuardrail.publicSelfServeOffer, 'ThumbGate Pro at $19/mo or $149/yr');
+  assert.ok(pack.operatorRules.some((entry) => /do not publish paid copy/i.test(entry)));
+  assert.ok(pack.metrics.includes('ghl_snapshot_inquiries'));
+});
+
 test('guarded automation template pack stays trust-layer-first and claim-safe', () => {
   const socialKit = read('docs/marketing/social-posts.md');
   const markdown = read('docs/marketing/guarded-automation-template-pack.md');
