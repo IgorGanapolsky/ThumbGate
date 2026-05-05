@@ -1468,7 +1468,6 @@ function renderCheckoutIntentPage({
   sprintCheckoutHref,
   sprintDiagnosticPriceDollars = 499,
   workflowSprintPriceDollars = 1500,
-  botClassification,
 }) {
   const safeConfirmHref = escapeHtmlAttribute(confirmHref);
   const safeWorkflowIntakeHref = escapeHtmlAttribute(workflowIntakeHref);
@@ -1480,81 +1479,12 @@ function renderCheckoutIntentPage({
     ? escapeHtmlAttribute(sprintCheckoutHref)
     : '';
   const diagnosticAction = safeDiagnosticCheckoutHref
-    ? `<a class="btn secondary" data-checkout-intent="sprint_diagnostic_checkout" href="${safeDiagnosticCheckoutHref}" rel="nofollow noopener">Book $${sprintDiagnosticPriceDollars} diagnostic</a>`
+    ? `<a data-i="sprint_diagnostic_checkout" href="${safeDiagnosticCheckoutHref}">Book $${sprintDiagnosticPriceDollars} diagnostic</a>`
     : '';
   const sprintAction = safeSprintCheckoutHref
-    ? `<a class="btn secondary" data-checkout-intent="workflow_sprint_checkout" href="${safeSprintCheckoutHref}" rel="nofollow noopener">Start $${workflowSprintPriceDollars} sprint</a>`
+    ? `<a data-i="workflow_sprint_checkout" href="${safeSprintCheckoutHref}">Start $${workflowSprintPriceDollars} sprint</a>`
     : '';
-  const classification = botClassification?.isBot ? 'bot_deflected' : 'human_confirm_required';
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="robots" content="noindex,nofollow">
-  <title>ThumbGate Pro - Confirm checkout</title>
-  <style>
-    *{box-sizing:border-box}
-    body{background:#0a0a0a;color:#e5e5e5;font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px}
-    .card{background:#141414;border:1px solid #222;border-radius:8px;padding:40px;max-width:560px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.5)}
-    h1{margin:0 0 12px;font-size:24px;color:#22d3ee}
-    p{color:#9ca3af;font-size:14px;line-height:1.55;margin:0 0 18px}
-    .actions{display:grid;gap:12px;margin-top:22px}
-    .btn{display:block;text-align:center;text-decoration:none;font-weight:800;padding:14px 18px;border-radius:8px;font-size:15px;border:1px solid transparent}
-    .primary{background:#22d3ee;color:#000}
-    .secondary{background:#1f2937;color:#f9fafb;border-color:#374151}
-    .ghost{background:transparent;color:#e5e5e5;border-color:#374151}
-    .sub{margin-top:16px;font-size:12px;color:#6b7280;text-align:center}
-    .back{color:#6b7280;font-size:13px;text-decoration:underline}
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>Choose the right paid path.</h1>
-    <p>ThumbGate Pro is $19/mo for a solo operator. If the real problem is a team workflow, buy the diagnostic, start the sprint, or send the workflow first so we can scope it before you pay.</p>
-    <div class="actions">
-      <a class="btn primary" data-checkout-intent="pro_checkout_confirmed" href="${safeConfirmHref}" rel="noopener">Continue to Stripe</a>
-      ${diagnosticAction}
-      ${sprintAction}
-      <a class="btn secondary" data-checkout-intent="workflow_sprint_intake" href="${safeWorkflowIntakeHref}">Send workflow first</a>
-      <a class="btn ghost" data-checkout-intent="team_paid_path" href="${safeTeamOptionsHref}">See diagnostic and sprint options</a>
-    </div>
-    <div class="sub">Payments handled by Stripe. Card required; billed today. Cancel anytime.</div>
-    <div class="sub"><a class="back" href="/">Back to homepage</a></div>
-  </div>
-  <script>
-    (function () {
-      function sendTelemetry(eventType, extra) {
-        var payload = Object.assign({
-          eventType: eventType,
-          clientType: 'web',
-          page: '/checkout/pro',
-          checkoutIntentClassification: '${classification}'
-        }, extra || {});
-        var body = JSON.stringify(payload);
-        if (navigator.sendBeacon) {
-          navigator.sendBeacon('/v1/telemetry/ping', new Blob([body], { type: 'application/json' }));
-          return;
-        }
-        fetch('/v1/telemetry/ping', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: body,
-          keepalive: true
-        }).catch(function () {});
-      }
-      document.querySelectorAll('[data-checkout-intent]').forEach(function (link) {
-        link.addEventListener('click', function () {
-          sendTelemetry('checkout_interstitial_cta_clicked', {
-            ctaId: link.getAttribute('data-checkout-intent'),
-            ctaPlacement: 'checkout_interstitial'
-          });
-        });
-      });
-    }());
-  </script>
-</body>
-</html>`;
+  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{background:#0a0a0a;color:#eee;font-family:system-ui,sans-serif}div{max-width:560px;margin:12vh auto}a{display:block;margin:10px 0;padding:12px;border:1px solid #374151;color:inherit;text-align:center}.primary{background:#22d3ee;color:#000}</style><div><h1>Choose the right paid path.</h1><p>Pick Pro, diagnostic, sprint, or intake.</p><a class="primary" data-i="pro_checkout_confirmed" href="${safeConfirmHref}">Continue to Stripe</a>${diagnosticAction}${sprintAction}<a data-i="workflow_sprint_intake" href="${safeWorkflowIntakeHref}">Send workflow first</a><a data-i="team_paid_path" href="${safeTeamOptionsHref}">See diagnostic and sprint options</a><p>Stripe checkout.</p><a href="/">Back</a></div><script>addEventListener('click',e=>{let a=e.target.closest('[data-i]');if(a&&navigator.sendBeacon)navigator.sendBeacon('/v1/telemetry/ping',new Blob([JSON.stringify({eventType:'checkout_interstitial_cta_clicked',clientType:'web',page:'/checkout/pro',ctaId:a.dataset.i,ctaPlacement:'checkout_interstitial'})],{type:'application/json'}))})</script>`;
 }
 
 function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneyState(req, parsed)) {

@@ -191,6 +191,16 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
                   pageViews: 4,
                   checkoutStarts: 2,
                 },
+                ctas: {
+                  checkoutInterstitialViews: 3,
+                  checkoutInterstitialClicks: 2,
+                  checkoutInterstitialProConfirms: 1,
+                  checkoutInterstitialWorkflowIntakeClicks: 1,
+                  checkoutInterstitialTeamPathClicks: 0,
+                  checkoutInterstitialDiagnosticCheckoutClicks: 1,
+                  checkoutInterstitialWorkflowSprintCheckoutClicks: 0,
+                  checkoutBotDeflections: 4,
+                },
                 signups: {
                   uniqueLeads: 2,
                 },
@@ -214,6 +224,16 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
                   visitors: 21,
                   pageViews: 15,
                   checkoutStarts: 9,
+                },
+                ctas: {
+                  checkoutInterstitialViews: 12,
+                  checkoutInterstitialClicks: 5,
+                  checkoutInterstitialProConfirms: 3,
+                  checkoutInterstitialWorkflowIntakeClicks: 1,
+                  checkoutInterstitialTeamPathClicks: 1,
+                  checkoutInterstitialDiagnosticCheckoutClicks: 2,
+                  checkoutInterstitialWorkflowSprintCheckoutClicks: 1,
+                  checkoutBotDeflections: 7,
                 },
                 signups: {
                   uniqueLeads: 6,
@@ -295,8 +315,9 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
 
   const formatted = formatReport(report);
   assert.match(formatted, /Source: hosted-via-railway-env/);
-  assert.match(formatted, /Today: visitors 6, pageViews 4, checkoutStarts 2/);
+  assert.match(formatted, /Today: visitors 6, pageViews 4, checkoutStarts 2.*checkoutIntent views 3, clicks 2, stripeConfirms 1, intakeClicks 1, teamPathClicks 0, diagnosticClicks 1, sprintCheckoutClicks 0, botDeflections 4/);
   assert.match(formatted, /30d: visitors 21, pageViews 15, checkoutStarts 9, paidOrders 2, bookedRevenue \$20.00/);
+  assert.match(formatted, /30d: .*checkoutIntent views 12, clicks 5, stripeConfirms 3, intakeClicks 1, teamPathClicks 1, diagnosticClicks 2, sprintCheckoutClicks 1, botDeflections 7/);
 });
 
 test('getHostedAuditViaHttp reads hosted billing summary without Railway CLI', async () => {
