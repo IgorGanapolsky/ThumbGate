@@ -1,6 +1,6 @@
 # Skool Listing Copy — ThumbGate Operator Lab
 
-Updated: 2026-05-04
+Updated: 2026-05-05
 
 Use this for Skool fields (sidebar, About page, discovery keywords, Classroom course description) without making unverified traction claims.
 
@@ -55,4 +55,3 @@ Intake: `https://thumbgate-production.up.railway.app/#workflow-sprint-intake`
 ## 4) Welcome DM (paste into an invite note)
 
 Hey — I’m building ThumbGate Operator Lab for people shipping AI-agent workflows. If you have one repeated agent mistake you want to eliminate this week, post it using the template and I’ll suggest a Pre-Action Gate + proof run.
-

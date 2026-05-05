@@ -42,13 +42,7 @@ CTA (optional): guide `https://thumbgate-production.up.railway.app/guide`
 
 ## Day 4 — “Diagnostic vs Sprint vs Pro” (routing clarity)
 
-Post: a simple decision tree:
-- If you want self-serve first → guide + Pro
-- If you have one repeated failure blocking rollout → Sprint
-- If you are unsure which path is correct → Diagnostic (only if configured)
-CTAs:
-- Sprint intake: `https://thumbgate-production.up.railway.app/#workflow-sprint-intake`
-- Pro checkout: `https://thumbgate-production.up.railway.app/checkout/pro`
+Post: paste `skool-day4-routing-post.md` (Version A).
 
 ## Day 5 — “proof pack” (only after pain is confirmed)
 
@@ -64,4 +58,3 @@ Post: summarize 1–3 anonymized patterns seen (no sensitive details) and ask fo
 
 Action: publish the first Classroom lesson (or create a draft) based on `skool-classroom-course-draft.md`.
 Post: “Classroom is live: 1 workflow hardening teardown” (keep it short, link within Skool).
-

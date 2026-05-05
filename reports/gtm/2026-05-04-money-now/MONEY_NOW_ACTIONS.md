@@ -35,10 +35,12 @@ Skool discovery minimum threshold typically requires: cover image, group descrip
 1. Upload Skool cover image: `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`.
 2. Upload Skool icon: `docs/marketing/assets/thumbgate-skool-icon-128x128.png`.
 3. Add About media (optional): follow `reports/gtm/2026-05-04-community-course-promo/skool-media-upload-steps.md`.
-4. Publish the first post: pick a draft in `reports/gtm/2026-05-04-community-course-promo/skool-first-post.md`.
-5. Invite the first 10–20 people: populate `docs/OUTREACH_TARGETS.md` first, then invite.
+4. Publish + pin “Start Here”: pick Version A in `reports/gtm/2026-05-04-community-course-promo/skool-start-here-post.md`.
+5. Publish the first post: pick a draft in `reports/gtm/2026-05-04-community-course-promo/skool-first-post.md`.
+6. Invite the first 10–20 people: populate `docs/OUTREACH_TARGETS.md` first, then invite.
    - Optional: use the Skool-specific invite queue template: `reports/gtm/2026-05-04-community-course-promo/skool-invite-target-queue.md`.
-6. Keep the approval queue current in `reports/gtm/2026-05-04-community-course-promo/operator-approval-queue.md`.
+7. Keep the approval queue current in `reports/gtm/2026-05-04-community-course-promo/operator-approval-queue.md`.
+8. Optional (Day 4): post routing clarity from `reports/gtm/2026-05-04-community-course-promo/skool-day4-routing-post.md`.
 
 ## Top Send Queue
 

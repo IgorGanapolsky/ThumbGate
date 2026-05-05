@@ -27,6 +27,7 @@ Optional CTA (if you want a link in the post):
 - Self-serve setup guide: https://thumbgate-production.up.railway.app/guide
 - Pro checkout ($19/mo or $149/yr): https://thumbgate-production.up.railway.app/checkout/pro
 - Workflow Hardening Sprint intake: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Workflow Hardening Diagnostic ($499): only mention this as “available” when `THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL` is configured in the hosted runtime (do not paste a stale/private link).
 
 ## Version B (more technical)
 

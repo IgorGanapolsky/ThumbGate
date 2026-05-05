@@ -9,13 +9,16 @@ This file is a refresh checklist. It is intentionally written so it can be compl
 ## Source of truth (Skool Help Center)
 
 - Discovery FAQs (Last updated: 2026-04-08): https://help.skool.com/article/153-discovery-faqs
-- Why isn’t my group visible on Discovery? (Published: ~2026-04): https://help.skool.com/article/151-why-isnt-my-group-visible-in-discovery
+  - Notes: “Updates coming to the Discovery algorithm in Q2 of 2026.”
+- Why isn’t my group visible on Discovery? (Last updated: 2026-04-15): https://help.skool.com/article/151-why-isnt-my-group-visible-in-discovery
 - How to set up my group’s About page? (Last updated: 2025-12-09): https://help.skool.com/article/123-how-to-set-up-my-group-s-about-page
 - How to set up my group logo and cover photo? (Last updated: 2025-06-18): https://help.skool.com/article/120-how-to-set-up-my-group-logo-and-cover-photo
+- How to rank higher in Discovery? (Last updated: 2025-10-20): https://help.skool.com/article/152-how-to-rank-higher-in-discovery
 - How to pin a post? (Last updated: 2025-03-03): https://help.skool.com/article/38-how-do-to-pin-a-post
-- What is Classroom? (Published: ~2026-01): https://help.skool.com/article/166-what-is-classroom
+- What is Classroom? (Last updated: 2025-12-16): https://help.skool.com/article/166-what-is-classroom
 - How to add videos (Last updated: 2026-02-12): https://help.skool.com/article/58-video
-- How to setup pricing for the group? (Published: ~2025-11): https://help.skool.com/article/215-how-to-setup-pricing-for-the-group
+- How to setup pricing for the group? (Last updated: 2025-10-28): https://help.skool.com/article/215-how-to-setup-pricing-for-the-group
+- How to toggle between private and public? (Last updated: 2025-05-16): https://help.skool.com/article/122-how-to-toggle-between-private-and-public
 
 ## Skool discovery / setup (verify in Skool UI)
 
@@ -25,6 +28,12 @@ Minimum threshold (per Skool Help Center, summary):
 - About page completed
 - at least 1 post written
 - members invited
+
+- Notes from Help Center:
+  - “Unlisted” generally means the minimum threshold is not met yet.
+  - Once the minimum threshold is met, Skool review is typically fast (often within ~1 hour); visibility can take up to ~2 hours depending on review/queue.
+  - Discovery ranking is driven by member growth, engagement, and retention; low-quality engagement can trigger penalties.
+  - Skool states it intentionally hides exact threshold numbers (members/posts/activity) to prevent gaming; treat “minimum threshold” as “complete setup + some real activity.”
 
 - [ ] Cover image uploaded
 - [ ] Icon uploaded
