@@ -41,8 +41,8 @@ jobs:
     timeout-minutes: 5
 
     env:
-      LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
-      LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
+      ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
+      THUMBGATE_ANALYTICS_DB: .thumbgate/marketing-analytics.sqlite
 
     steps:
       - name: Checkout
@@ -52,19 +52,36 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '18'
+          cache: 'npm'
 
-      - name: Publish post
+      - name: Install dependencies
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Publish post via Zernio
         env:
           COMMENTARY: ${{ github.event.inputs.commentary }}
-          ARTICLE_URL: ${{ github.event.inputs.article_url }}
-          ARTICLE_TITLE: ${{ github.event.inputs.article_title }}
         run: |
-          if [ -n "$ARTICLE_URL" ] && [ -n "$ARTICLE_TITLE" ]; then
-            node scripts/social-analytics/publishers/linkedin.js \
-              --text="$COMMENTARY" \
-              --article-url="$ARTICLE_URL" \
-              --title="$ARTICLE_TITLE"
-          else
-            node scripts/social-analytics/publishers/linkedin.js \
-              --text="$COMMENTARY"
-          fi
+          node - <<'NODE'
+          const { publishToAllPlatforms } = require('./scripts/social-analytics/publishers/zernio');
+
+          const text = process.env.COMMENTARY || '';
+          if (!text.trim()) {
+            throw new Error('commentary is required');
+          }
+
+          publishToAllPlatforms(text, {
+            campaign: 'voice_agent_reliability_diagnostic',
+            medium: 'social',
+            platforms: ['linkedin', 'threads', 'instagram'],
+          })
+            .then((result) => {
+              console.log(JSON.stringify(result, null, 2));
+              if (result.errors && result.errors.length > 0) {
+                process.exit(1);
+              }
+            })
+            .catch((error) => {
+              console.error(error.message);
+              process.exit(1);
+            });
+          NODE
