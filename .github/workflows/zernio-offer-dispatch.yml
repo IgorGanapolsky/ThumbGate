@@ -1,0 +1,107 @@
+name: Zernio Offer Dispatch
+
+on:
+  workflow_dispatch:
+    inputs:
+      text:
+        description: 'Offer post body. Include the paid CTA and intake link.'
+        required: true
+        type: string
+      platforms:
+        description: 'Comma-separated Zernio platforms to publish to.'
+        required: false
+        type: string
+        default: 'linkedin,threads,bluesky,instagram'
+      campaign:
+        description: 'UTM campaign slug.'
+        required: false
+        type: string
+        default: 'manual_offer_dispatch'
+      medium:
+        description: 'UTM medium.'
+        required: false
+        type: string
+        default: 'social'
+      dry_run:
+        description: 'Validate only; do not publish.'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zernio-offer-dispatch
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
+      THUMBGATE_ANALYTICS_DB: .thumbgate/marketing-analytics.sqlite
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v6
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Validate offer copy
+        env:
+          OFFER_TEXT: ${{ github.event.inputs.text }}
+          OFFER_PLATFORMS: ${{ github.event.inputs.platforms }}
+        run: |
+          node - <<'NODE'
+          const { validateContentForPlatforms } = require('./scripts/social-analytics/platform-limits');
+          const qualityGate = require('./scripts/social-quality-gate');
+
+          const text = process.env.OFFER_TEXT || '';
+          const platforms = (process.env.OFFER_PLATFORMS || '')
+            .split(',')
+            .map((platform) => platform.trim())
+            .filter(Boolean)
+            .map((platform) => ({ platform, accountId: 'validation' }));
+
+          if (!text.trim()) {
+            throw new Error('Offer text is required.');
+          }
+          if (!/https:\/\/(thumbgate\.ai|buy\.stripe\.com)\//.test(text)) {
+            throw new Error('Offer text must include a ThumbGate or Stripe CTA.');
+          }
+          const gate = qualityGate.gatePost(text);
+          if (!gate.allowed) {
+            throw new Error(`Offer blocked by quality gate: ${gate.findings.map((f) => f.reason).join(', ')}`);
+          }
+          const limits = validateContentForPlatforms(text, platforms);
+          if (limits.valid.length === 0 && limits.rejected.length > 0) {
+            throw new Error(`Offer exceeds every requested platform limit: ${JSON.stringify(limits.rejected)}`);
+          }
+          for (const rejected of limits.rejected) {
+            console.log(`::warning::${rejected.platform} will be skipped: ${rejected.length}/${rejected.limit} chars`);
+          }
+          NODE
+
+      - name: Publish offer via Zernio
+        if: github.event.inputs.dry_run != 'true'
+        env:
+          OFFER_TEXT: ${{ github.event.inputs.text }}
+          OFFER_PLATFORMS: ${{ github.event.inputs.platforms }}
+          OFFER_CAMPAIGN: ${{ github.event.inputs.campaign }}
+          OFFER_MEDIUM: ${{ github.event.inputs.medium }}
+        run: |
+          node scripts/social-analytics/publishers/zernio.js \
+            --text="$OFFER_TEXT" \
+            --platforms="$OFFER_PLATFORMS" \
+            --campaign="$OFFER_CAMPAIGN" \
+            --medium="$OFFER_MEDIUM"
