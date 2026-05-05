@@ -42,6 +42,10 @@ jobs:
 
     env:
       ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
+      REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+      REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+      REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
+      REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
       THUMBGATE_ANALYTICS_DB: .thumbgate/marketing-analytics.sqlite
 
     steps:
@@ -62,21 +66,32 @@ jobs:
           COMMENTARY: ${{ github.event.inputs.commentary }}
         run: |
           node - <<'NODE'
-          const { publishToAllPlatforms } = require('./scripts/social-analytics/publishers/zernio');
+          const reddit = require('./scripts/social-analytics/publishers/reddit');
 
-          const text = process.env.COMMENTARY || '';
-          if (!text.trim()) {
-            throw new Error('commentary is required');
-          }
+          const text = `I am opening one same-day diagnostic slot for an AI voice-agent or automation team.
 
-          publishToAllPlatforms(text, {
-            campaign: 'voice_agent_reliability_diagnostic',
-            medium: 'social',
-            platforms: ['bluesky'],
+          Best fit: home services, local lead-gen, or appointment-booking bots where missed calls, after-hours intake, qualification branches, booking handoffs, CRM sync, or proof gaps can quietly lose leads.
+
+          What I will deliver for $499:
+          - 20 failure-case checks
+          - missed-call and after-hours intake review
+          - qualification and handoff failure map
+          - CRM sync / booking proof review
+          - prioritized fix list your team can use immediately
+
+          Checkout: https://buy.stripe.com/00w14neyUcXA5pL5e33sI0e
+          Intake: https://thumbgate.ai/#workflow-sprint-intake
+
+          Disclosure: I built ThumbGate and I am selling this diagnostic.`;
+
+          reddit.publishToReddit({
+            subreddit: 'SideProject',
+            title: 'Offering one $499 AI voice-agent reliability diagnostic today',
+            text,
           })
             .then((result) => {
               console.log(JSON.stringify(result, null, 2));
-              if (result.errors && result.errors.length > 0) {
+              if (result.blocked) {
                 process.exit(1);
               }
             })
