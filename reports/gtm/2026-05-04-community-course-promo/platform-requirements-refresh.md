@@ -10,11 +10,21 @@ This file is a refresh checklist. It is intentionally written so it can be compl
 
 - Discovery FAQs (Last updated: 2026-04-08): https://help.skool.com/article/153-discovery-faqs
 - Why isn’t my group visible on Discovery? (Published: ~2026-04): https://help.skool.com/article/151-why-isnt-my-group-visible-in-discovery
+- How to set up my group’s About page? (Last updated: 2025-12-09): https://help.skool.com/article/123-how-to-set-up-my-group-s-about-page
+- How to set up my group logo and cover photo? (Last updated: 2025-06-18): https://help.skool.com/article/120-how-to-set-up-my-group-logo-and-cover-photo
 - How to pin a post? (Last updated: 2025-03-03): https://help.skool.com/article/38-how-do-to-pin-a-post
 - What is Classroom? (Published: ~2026-01): https://help.skool.com/article/166-what-is-classroom
 - How to add videos (Last updated: 2026-02-12): https://help.skool.com/article/58-video
+- How to setup pricing for the group? (Published: ~2025-11): https://help.skool.com/article/215-how-to-setup-pricing-for-the-group
 
 ## Skool discovery / setup (verify in Skool UI)
+
+Minimum threshold (per Skool Help Center, summary):
+- cover image set
+- group description filled
+- About page completed
+- at least 1 post written
+- members invited
 
 - [ ] Cover image uploaded
 - [ ] Icon uploaded

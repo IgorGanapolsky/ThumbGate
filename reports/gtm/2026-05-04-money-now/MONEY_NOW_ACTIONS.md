@@ -37,6 +37,7 @@ Skool discovery minimum threshold typically requires: cover image, group descrip
 3. Add About media (optional): follow `reports/gtm/2026-05-04-community-course-promo/skool-media-upload-steps.md`.
 4. Publish the first post: pick a draft in `reports/gtm/2026-05-04-community-course-promo/skool-first-post.md`.
 5. Invite the first 10–20 people: populate `docs/OUTREACH_TARGETS.md` first, then invite.
+   - Optional: use the Skool-specific invite queue template: `reports/gtm/2026-05-04-community-course-promo/skool-invite-target-queue.md`.
 6. Keep the approval queue current in `reports/gtm/2026-05-04-community-course-promo/operator-approval-queue.md`.
 
 ## Top Send Queue

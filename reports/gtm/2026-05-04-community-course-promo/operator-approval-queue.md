@@ -22,6 +22,7 @@ Note: Use `https://thumbgate-production.up.railway.app` as the canonical CTA bas
 - Publish + pin “Start Here” post: pick Version A from `skool-start-here-post.md`
 - Refresh listing fields (sidebar/About/keywords) from `skool-listing-copy.md`
 - Invite first 10–20: populate `docs/OUTREACH_TARGETS.md` first, then invite
+- Invite target queue template (Skool-specific): `skool-invite-target-queue.md`
 - Refresh Skool discovery requirements checklist in `platform-requirements-refresh.md`
 - Optional: prepare a Skool promo-group post (Classifieds-style) from `skool-classifieds-post-drafts.md`
 - Optional: run the week plan: `skool-7-day-launch-plan.md`
