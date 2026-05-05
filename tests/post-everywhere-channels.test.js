@@ -18,7 +18,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const { DEFAULT_PLATFORMS, DISPATCHERS, parsePostFile } = require('../scripts/post-everywhere');
+const { DEFAULT_PLATFORMS, DISPATCHERS, parsePostFile, postEverywhere } = require('../scripts/post-everywhere');
 
 const FOCUS_CHANNELS = Object.freeze([
   'reddit',
@@ -193,28 +193,40 @@ function withZernioSpy(fn) {
 
 test('postToLinkedIn routes through zernio.publishToAllPlatforms with {platforms:["linkedin"]}', async () => {
   await withZernioSpy(async (calls) => {
-    await DISPATCHERS.linkedin({ body: 'Hello from LinkedIn.' }, false);
+    await DISPATCHERS.linkedin({ body: 'Hello from LinkedIn.', utmCampaign: 'unit-campaign' }, false);
     assert.equal(calls.length, 1, 'publishToAllPlatforms must be called exactly once');
     assert.equal(calls[0].content, 'Hello from LinkedIn.');
-    assert.deepEqual(calls[0].options, { platforms: ['linkedin'] });
+    assert.deepEqual(calls[0].options, {
+      platforms: ['linkedin'],
+      campaign: 'unit-campaign',
+      medium: 'social',
+    });
   });
 });
 
 test('postToThreads routes through zernio.publishToAllPlatforms with {platforms:["threads"]}', async () => {
   await withZernioSpy(async (calls) => {
-    await DISPATCHERS.threads({ title: 'T', body: 'Short threads body.' }, false);
+    await DISPATCHERS.threads({ title: 'T', body: 'Short threads body.', utmCampaign: 'unit-campaign' }, false);
     assert.equal(calls.length, 1);
     assert.ok(calls[0].content.includes('Short threads body.'));
-    assert.deepEqual(calls[0].options, { platforms: ['threads'] });
+    assert.deepEqual(calls[0].options, {
+      platforms: ['threads'],
+      campaign: 'unit-campaign',
+      medium: 'social',
+    });
   });
 });
 
 test('postToBluesky routes through zernio.publishToAllPlatforms with {platforms:["bluesky"]}', async () => {
   await withZernioSpy(async (calls) => {
-    await DISPATCHERS.bluesky({ title: 'B', body: 'Short bluesky body.' }, false);
+    await DISPATCHERS.bluesky({ title: 'B', body: 'Short bluesky body.', utmCampaign: 'unit-campaign' }, false);
     assert.equal(calls.length, 1);
     assert.ok(calls[0].content.includes('Short bluesky body.'));
-    assert.deepEqual(calls[0].options, { platforms: ['bluesky'] });
+    assert.deepEqual(calls[0].options, {
+      platforms: ['bluesky'],
+      campaign: 'unit-campaign',
+      medium: 'social',
+    });
   });
 });
 
@@ -263,17 +275,61 @@ test('threads publisher module exposes postTextThread, not publishPost', () => {
     'threads.publishPost must not exist — it was an invented name that broke silently');
 });
 
-test('marketing-autopilot workflow default platforms match focus channels', () => {
+test('postEverywhere applies the requested campaign to tracked URLs', async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'post-everywhere-campaign-'));
+  const originalLinkedIn = DISPATCHERS.linkedin;
+  try {
+    const filePath = path.join(tmp, 'linkedin.md');
+    fs.writeFileSync(
+      filePath,
+      [
+        '# LinkedIn Post: campaign attribution',
+        '**Title:** Campaign attribution check',
+        '**Body:**',
+        'One repeated workflow failure is enough to justify a proof run.',
+        'https://thumbgate.ai/#workflow-sprint-intake',
+        '',
+      ].join('\n')
+    );
+
+    let capturedBody = '';
+    DISPATCHERS.linkedin = async (parsed) => {
+      capturedBody = parsed.body;
+      return { ok: true };
+    };
+
+    await postEverywhere(filePath, {
+      platforms: ['linkedin'],
+      dryRun: true,
+      campaign: 'autopilot-text-test',
+    });
+
+    assert.match(capturedBody, /utm_source=linkedin/);
+    assert.match(capturedBody, /utm_campaign=autopilot-text-test/);
+  } finally {
+    DISPATCHERS.linkedin = originalLinkedIn;
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('marketing-autopilot workflow generates a post file before invoking post-everywhere', () => {
   const workflow = fs.readFileSync(
     path.join(__dirname, '..', '.github', 'workflows', 'marketing-autopilot.yml'),
     'utf8'
   );
 
-  // The default platform list must contain all six focus channels.
-  for (const platform of FOCUS_CHANNELS) {
-    // Reddit goes through a dedicated OAuth step, so it doesn't need to be
-    // in the Zernio-side default list. The other five must be.
-    if (platform === 'reddit') continue;
+  assert.match(
+    workflow,
+    /POST_FILE="scripts\/marketing-output\/autopilot-paid-sprint-\$WEEK-h\$HOUR\.md"/,
+    'marketing-autopilot must create a concrete post file for post-everywhere'
+  );
+  assert.match(
+    workflow,
+    /node scripts\/post-everywhere\.js\s+\\\n\s+"\$POST_FILE"/,
+    'post-everywhere requires the post file as its first CLI argument'
+  );
+
+  for (const platform of ['linkedin', 'threads', 'bluesky', 'instagram']) {
     assert.match(
       workflow,
       new RegExp(`default:\\s*['"][^'"]*${platform}`),
@@ -281,7 +337,11 @@ test('marketing-autopilot workflow default platforms match focus channels', () =
     );
   }
 
-  // Must NOT default to twitter/X.
+  assert.doesNotMatch(
+    workflow,
+    /default:\s*['"][^'"]*youtube/,
+    'marketing-autopilot text step must not default to YouTube because YouTube posts require video content'
+  );
   assert.doesNotMatch(
     workflow,
     /default:\s*['"][^'"]*twitter/,
