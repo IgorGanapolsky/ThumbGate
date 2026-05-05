@@ -194,6 +194,14 @@ function groupAccountsByPlatform(accounts) {
   return groups;
 }
 
+function platformRequiresMediaContent(platform) {
+  return String(platform || '').trim().toLowerCase() === 'instagram';
+}
+
+function hasMediaItems(options = {}) {
+  return Array.isArray(options.mediaItems) && options.mediaItems.length > 0;
+}
+
 function inferContentType(filePath) {
   const ext = path.extname(String(filePath || '')).toLowerCase();
   if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg';
@@ -549,6 +557,7 @@ async function publishToAllPlatforms(content, options = {}) {
 
   const published = [];
   const errors = [];
+  const skipped = [];
   const requestedPlatforms = Array.isArray(options.platforms) && options.platforms.length > 0
     ? new Set(options.platforms.map((platform) => String(platform || '').trim()).filter(Boolean))
     : null;
@@ -559,8 +568,18 @@ async function publishToAllPlatforms(content, options = {}) {
       continue;
     }
 
+    if (platformRequiresMediaContent(platform) && !hasMediaItems(options)) {
+      const reason = 'media_content_required';
+      console.warn(
+        `[zernio:publisher] SKIPPED ${platform} - media content is required; use the Instagram card or video workflow.`,
+      );
+      skipped.push({ platform, reason });
+      continue;
+    }
+
     try {
       const result = await publishPost(content, platformAccounts, {
+        mediaItems: options.mediaItems,
         utm: {
           source: platform,
           medium: options.medium || ZERNIO_UTM.medium,
@@ -574,8 +593,8 @@ async function publishToAllPlatforms(content, options = {}) {
     }
   }
 
-  console.log(`[zernio:publisher] Bulk publish complete. published=${published.length} errors=${errors.length}`);
-  return { published, errors };
+  console.log(`[zernio:publisher] Bulk publish complete. published=${published.length} skipped=${skipped.length} errors=${errors.length}`);
+  return { published, skipped, errors };
 }
 
 module.exports = {
@@ -643,7 +662,9 @@ if (require.main === module) {
           medium,
           platforms: requestedPlatforms,
         });
-        console.log(`[zernio:publisher] Done. published=${result.published.length} errors=${result.errors.length}`);
+        console.log(
+          `[zernio:publisher] Done. published=${result.published.length} skipped=${result.skipped?.length || 0} errors=${result.errors.length}`,
+        );
         if (result.errors.length > 0) {
           process.exit(1);
         }
