@@ -57,7 +57,7 @@ test('buildPlatformPost can create paid voice-agent diagnostic copy', () => {
 
   assert.match(linkedinPost, /voice-agent reliability diagnostics/);
   assert.match(linkedinPost, /\$499 diagnostic/);
-  assert.match(linkedinPost, new RegExp(DIAGNOSTIC_CHECKOUT_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.ok(linkedinPost.includes(DIAGNOSTIC_CHECKOUT_URL));
   assert.match(linkedinPost, /utm_medium=paid_service/);
   assert.match(linkedinPost, /utm_campaign=voice_agent_reliability_diagnostic/);
   assert.match(linkedinPost, /utm_content=voice_agent_diagnostic_linkedin/);
