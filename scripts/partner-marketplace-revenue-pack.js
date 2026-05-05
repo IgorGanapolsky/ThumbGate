@@ -34,6 +34,12 @@ const CHANNELS = [
     ].join(' '),
     primaryMotion: 'sprint',
     assetRoles: ['og_image', 'hero_screenshot', 'dashboard_screenshot'],
+    submissionChecklist: [
+      'Build a Lindy webhook workflow that receives a proposed AI-agent action payload.',
+      'Add an HTTP Request step that calls the ThumbGate preflight endpoint or sprint intake URL with Lindy attribution.',
+      'Test allow, block, and checkpoint branches with one risky command and one safe command.',
+      'Submit the workflow as an integration/template request only after the test run records a tracked CTA click or qualified sprint conversation.',
+    ],
   },
   {
     key: 'gumroad',
@@ -56,6 +62,12 @@ const CHANNELS = [
     ].join(' '),
     primaryMotion: 'pro',
     assetRoles: ['icon', 'gumroad_cover', 'terminal_screenshot'],
+    submissionChecklist: [
+      'Create a Gumroad digital product for the AI Agent Mistake Prevention Kit.',
+      'Use the square icon as the thumbnail, the comparison graphic as the cover, and the terminal demo as the proof screenshot.',
+      'Package the setup checklist, first repeated-mistake worksheet, and Pro activation link as the downloadable product content.',
+      'Publish only after the listing uses the tracked Gumroad Pro CTA and avoids claiming marketplace sales or approval.',
+    ],
   },
   {
     key: 'gohighlevel',
@@ -79,6 +91,12 @@ const CHANNELS = [
     ].join(' '),
     primaryMotion: 'sprint',
     assetRoles: ['icon', 'og_image', 'workflow_screenshot'],
+    submissionChecklist: [
+      'Create or update a GoHighLevel private marketplace app or agency snapshot first.',
+      'Scope OAuth/webhook behavior to workflow-hardening intake and proof review; do not request broad client data scopes before a buyer need is confirmed.',
+      'Use the icon, OG graphic, and workflow explainer screenshot as the first visual set.',
+      'Submit a public marketplace app only after private testing proves stable attribution and at least one qualified agency workflow conversation.',
+    ],
   },
 ];
 
@@ -269,6 +287,7 @@ function buildPartnerListing(channel, links = buildRevenueLinks()) {
       : 'qualified_team_conversation',
     attribution: tracking,
     assetManifest,
+    submissionChecklist: channel.submissionChecklist,
     proofLinks: [COMMERCIAL_TRUTH_LINK, VERIFICATION_EVIDENCE_LINK],
   };
 }
@@ -341,6 +360,9 @@ function renderListingMarkdown(listing) {
     '',
     'Recommended visual assets:',
     ...listing.assetManifest.map((asset) => `- ${asset.file} (${asset.dimensions}) - ${asset.role}`),
+    '',
+    'Submission checklist:',
+    ...listing.submissionChecklist.map((item) => `- [ ] ${item}`),
     '',
     `Proof links: ${listing.proofLinks.join(' | ')}`,
     '',
@@ -422,6 +444,7 @@ function renderPartnerMarketplaceCsv(pack) {
     'landing_path',
     'surface',
     'asset_files',
+    'submission_checklist',
     'official_sources',
     'proof_links',
   ];
@@ -448,6 +471,7 @@ function renderPartnerMarketplaceCsv(pack) {
     listing.attribution.landingPath,
     listing.attribution.surface,
     listing.assetManifest.map((asset) => asset.file).join(' | '),
+    listing.submissionChecklist.join(' | '),
     listing.officialSources.join(' | '),
     listing.proofLinks.join(' | '),
   ]));

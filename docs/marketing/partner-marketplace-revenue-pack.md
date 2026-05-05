@@ -1,6 +1,6 @@
 # Partner Marketplace Revenue Pack
 
-Updated: 2026-05-05T15:37:36.208Z
+Updated: 2026-05-05T15:42:41.609Z
 
 This is a sales operator artifact. It is not proof of revenue, submitted listings, sent messages, installs, or marketplace approval.
 
@@ -39,6 +39,12 @@ Recommended visual assets:
 - docs/marketing/gallery/05-hero.png (1344x800) - Marketplace hero screenshot
 - docs/marketing/gallery/01-dashboard.png (1344x800) - Dashboard proof screenshot
 
+Submission checklist:
+- [ ] Build a Lindy webhook workflow that receives a proposed AI-agent action payload.
+- [ ] Add an HTTP Request step that calls the ThumbGate preflight endpoint or sprint intake URL with Lindy attribution.
+- [ ] Test allow, block, and checkpoint branches with one risky command and one safe command.
+- [ ] Submit the workflow as an integration/template request only after the test run records a tracked CTA click or qualified sprint conversation.
+
 Proof links: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md | https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ### Gumroad
@@ -64,6 +70,12 @@ Recommended visual assets:
 - public/assets/brand/thumbgate-icon-512.png (512x512) - App icon, marketplace icon, GPT avatar, square listing thumbnail
 - docs/marketing/gallery/04-comparison.png (1344x800) - Digital product cover and comparison image
 - docs/marketing/gallery/03-terminal-demo.png (1344x800) - CLI and blocked-action demo screenshot
+
+Submission checklist:
+- [ ] Create a Gumroad digital product for the AI Agent Mistake Prevention Kit.
+- [ ] Use the square icon as the thumbnail, the comparison graphic as the cover, and the terminal demo as the proof screenshot.
+- [ ] Package the setup checklist, first repeated-mistake worksheet, and Pro activation link as the downloadable product content.
+- [ ] Publish only after the listing uses the tracked Gumroad Pro CTA and avoids claiming marketplace sales or approval.
 
 Proof links: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md | https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
@@ -91,6 +103,12 @@ Recommended visual assets:
 - public/assets/brand/thumbgate-icon-512.png (512x512) - App icon, marketplace icon, GPT avatar, square listing thumbnail
 - public/og.png (1200x630) - Open Graph, social preview, Lindy/GHL listing hero
 - docs/marketing/gallery/02-how-it-works.png (1344x800) - Workflow explainer screenshot
+
+Submission checklist:
+- [ ] Create or update a GoHighLevel private marketplace app or agency snapshot first.
+- [ ] Scope OAuth/webhook behavior to workflow-hardening intake and proof review; do not request broad client data scopes before a buyer need is confirmed.
+- [ ] Use the icon, OG graphic, and workflow explainer screenshot as the first visual set.
+- [ ] Submit a public marketplace app only after private testing proves stable attribution and at least one qualified agency workflow conversation.
 
 Proof links: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md | https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 

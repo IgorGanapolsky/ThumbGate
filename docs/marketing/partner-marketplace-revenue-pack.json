@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-05T15:37:36.208Z",
+  "generatedAt": "2026-05-05T15:42:41.609Z",
   "channels": [
     "Lindy.ai",
     "Gumroad",
@@ -61,6 +61,12 @@
           "status": "ready"
         }
       ],
+      "submissionChecklist": [
+        "Build a Lindy webhook workflow that receives a proposed AI-agent action payload.",
+        "Add an HTTP Request step that calls the ThumbGate preflight endpoint or sprint intake URL with Lindy attribution.",
+        "Test allow, block, and checkpoint branches with one risky command and one safe command.",
+        "Submit the workflow as an integration/template request only after the test run records a tracked CTA click or qualified sprint conversation."
+      ],
       "proofLinks": [
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
@@ -118,6 +124,12 @@
           "role": "CLI and blocked-action demo screenshot",
           "status": "ready"
         }
+      ],
+      "submissionChecklist": [
+        "Create a Gumroad digital product for the AI Agent Mistake Prevention Kit.",
+        "Use the square icon as the thumbnail, the comparison graphic as the cover, and the terminal demo as the proof screenshot.",
+        "Package the setup checklist, first repeated-mistake worksheet, and Pro activation link as the downloadable product content.",
+        "Publish only after the listing uses the tracked Gumroad Pro CTA and avoids claiming marketplace sales or approval."
       ],
       "proofLinks": [
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
@@ -177,6 +189,12 @@
           "role": "Workflow explainer screenshot",
           "status": "ready"
         }
+      ],
+      "submissionChecklist": [
+        "Create or update a GoHighLevel private marketplace app or agency snapshot first.",
+        "Scope OAuth/webhook behavior to workflow-hardening intake and proof review; do not request broad client data scopes before a buyer need is confirmed.",
+        "Use the icon, OG graphic, and workflow explainer screenshot as the first visual set.",
+        "Submit a public marketplace app only after private testing proves stable attribution and at least one qualified agency workflow conversation."
       ],
       "proofLinks": [
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",

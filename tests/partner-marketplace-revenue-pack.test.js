@@ -67,17 +67,23 @@ test('channel postures match current platform fit from official documentation', 
   assert.ok(lindy.officialSources.some((source) => /http-request/.test(source)));
   assert.match(lindy.longDescription, /Webhook trigger/i);
   assert.match(lindy.longDescription, /HTTP Request/i);
+  assert.ok(lindy.submissionChecklist.some((item) => /webhook workflow/i.test(item)));
+  assert.ok(lindy.submissionChecklist.some((item) => /allow, block, and checkpoint/i.test(item)));
 
   assert.match(gumroad.productMotion, /Digital product/i);
   assert.ok(gumroad.officialSources.some((source) => /gumroad\.com\/features/.test(source)));
   assert.match(gumroad.shortDescription, /setup kit/i);
   assert.match(gumroad.listingStatus, /digital product listing/i);
+  assert.ok(gumroad.submissionChecklist.some((item) => /digital product/i.test(item)));
+  assert.ok(gumroad.submissionChecklist.some((item) => /tracked Gumroad Pro CTA/i.test(item)));
 
   assert.match(ghl.productMotion, /Marketplace app/i);
   assert.ok(ghl.officialSources.some((source) => /CreateMarketplaceApp/.test(source)));
   assert.ok(ghl.officialSources.some((source) => /gohighlevel\.com\/landing-marketplace/.test(source)));
   assert.match(ghl.longDescription, /private marketplace app/i);
   assert.match(ghl.listingStatus, /private/i);
+  assert.ok(ghl.submissionChecklist.some((item) => /private marketplace app/i.test(item)));
+  assert.ok(ghl.submissionChecklist.some((item) => /qualified agency workflow conversation/i.test(item)));
 });
 
 test('visual asset audit covers square icons, OG graphics, and listing screenshots', () => {
@@ -118,6 +124,9 @@ test('rendered partner marketplace artifacts are operator-ready and source-backe
   assert.match(markdown, /Gumroad/);
   assert.match(markdown, /GoHighLevel/);
   assert.match(markdown, /Visual Asset Audit/);
+  assert.match(markdown, /Submission checklist/);
+  assert.match(markdown, /Create a Gumroad digital product for the AI Agent Mistake Prevention Kit/);
+  assert.match(markdown, /Create or update a GoHighLevel private marketplace app or agency snapshot first/);
   assert.match(markdown, /docs\.lindy\.ai\/skills\/by-lindy\/webhooks/);
   assert.match(markdown, /gumroad\.com\/features/);
   assert.match(markdown, /marketplace\.gohighlevel\.com\/docs\/oauth\/CreateMarketplaceApp/);
@@ -125,6 +134,7 @@ test('rendered partner marketplace artifacts are operator-ready and source-backe
   assert.doesNotMatch(markdown, /guaranteed revenue|approved partner/i);
 
   assert.match(csv, /^key,name,productMotion,listingStatus,/);
+  assert.match(csv.split('\n')[0], /submission_checklist/);
   assert.match(csv, /lindy_sprint_listing/);
   assert.match(csv, /gumroad_pro_listing/);
   assert.match(csv, /gohighlevel_sprint_listing/);
