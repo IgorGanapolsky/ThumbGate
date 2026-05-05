@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+const fs = require('node:fs');
+const path = require('node:path');
 const { buildUTMLink } = require('./utm');
 const { publishInstagramThumbGate } = require('./publish-instagram-thumbgate');
 const {
@@ -8,10 +10,12 @@ const {
   groupAccountsByPlatform,
   publishPost,
   schedulePost,
+  uploadLocalMedia,
 } = require('./publishers/zernio');
 const { THUMBGATE_CAPTION } = require('./instagram-thumbgate-post');
 const { resolveHostedBillingConfig } = require('../hosted-config');
 
+const REPO_ROOT = path.resolve(__dirname, '../..');
 const APP_ORIGIN = resolveHostedBillingConfig({
   requestOrigin: 'https://thumbgate-production.up.railway.app',
 }).appOrigin;
@@ -20,6 +24,11 @@ const LAUNCH_CAMPAIGN = 'first_customer_push';
 const OPERATOR_LAB_CAMPAIGN = 'operator_lab_launch';
 const SKOOL_OPERATOR_LAB_URL = 'https://www.skool.com/thumbgate-operator-lab-6000';
 const DEFAULT_LAUNCH_PLATFORMS = ['linkedin', 'instagram', 'threads', 'bluesky', 'reddit', 'youtube'];
+const OPERATOR_LAB_MEDIA_PATHS = {
+  landscape: path.join(REPO_ROOT, 'docs/marketing/assets/thumbgate-operator-lab-social-landscape.png'),
+  square: path.join(REPO_ROOT, 'docs/marketing/assets/thumbgate-operator-lab-social-square.png'),
+  verticalVideo: path.join(REPO_ROOT, 'docs/marketing/assets/thumbgate-operator-lab-explainer-vertical.mp4'),
+};
 
 function parseArgs(argv = []) {
   const options = {
@@ -172,6 +181,37 @@ function buildOperatorLabPost(platform) {
   ].join(' ');
 }
 
+function resolveOperatorLabMediaPath(platform, offer = 'launch') {
+  if (offer !== 'operator-lab') {
+    return '';
+  }
+
+  const normalized = String(platform || '').trim().toLowerCase();
+  if (normalized === 'instagram' || normalized === 'threads') {
+    return OPERATOR_LAB_MEDIA_PATHS.square;
+  }
+  if (normalized === 'tiktok' || normalized === 'youtube') {
+    return OPERATOR_LAB_MEDIA_PATHS.verticalVideo;
+  }
+  if (normalized === 'twitter' || normalized === 'x' || normalized === 'linkedin' || normalized === 'reddit' || normalized === 'bluesky') {
+    return OPERATOR_LAB_MEDIA_PATHS.landscape;
+  }
+  return '';
+}
+
+async function buildMediaItemsForPlatform(platform, offer, uploadMedia = uploadLocalMedia) {
+  const mediaPath = resolveOperatorLabMediaPath(platform, offer);
+  if (!mediaPath) {
+    return [];
+  }
+  if (!fs.existsSync(mediaPath)) {
+    throw new Error(`Operator Lab media missing for ${platform}: ${mediaPath}`);
+  }
+
+  const uploaded = await uploadMedia(mediaPath);
+  return [uploaded];
+}
+
 function buildPlatformPost(platform, offer = 'launch') {
   if (offer === 'operator-lab') {
     return buildOperatorLabPost(platform);
@@ -308,6 +348,7 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
     publishPost: publisher.publishPost || publishPost,
     schedulePost: publisher.schedulePost || schedulePost,
     publishInstagramThumbGate: publisher.publishInstagramThumbGate || publishInstagramThumbGate,
+    uploadLocalMedia: publisher.uploadLocalMedia || uploadLocalMedia,
   };
 
   const platforms = Array.isArray(options.platforms) && options.platforms.length > 0
@@ -316,11 +357,22 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
   const schedule = String(options.schedule || '').trim();
   const timezone = String(options.timezone || DEFAULT_TIMEZONE).trim() || DEFAULT_TIMEZONE;
   const offer = String(options.offer || 'launch').trim() || 'launch';
-  const accounts = await api.getConnectedAccounts();
+  let accounts = [];
+  let accountLookupError = null;
+  try {
+    accounts = await api.getConnectedAccounts();
+  } catch (error) {
+    if (options.dryRun === true && /ZERNIO_API_KEY/i.test(error && error.message ? error.message : String(error))) {
+      accountLookupError = error;
+    } else {
+      throw error;
+    }
+  }
   const groupedAccounts = api.groupAccountsByPlatform(accounts);
   const results = {
     dryRun: options.dryRun === true,
     platforms,
+    accountLookupError: accountLookupError ? accountLookupError.message : undefined,
     previews: [],
     published: [],
     scheduled: [],
@@ -331,15 +383,17 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
   for (const platform of platforms) {
     const normalizedPlatform = String(platform || '').trim().toLowerCase();
     const platformAccounts = groupedAccounts.get(normalizedPlatform) || [];
-    if (platformAccounts.length === 0) {
+    if (platformAccounts.length === 0 && !(results.dryRun && accountLookupError)) {
       results.skipped.push({ platform: normalizedPlatform, reason: 'not_connected' });
       continue;
     }
 
     const content = buildPlatformPost(normalizedPlatform, offer);
+    const mediaPath = resolveOperatorLabMediaPath(normalizedPlatform, offer);
     results.previews.push({
       platform: normalizedPlatform,
       content,
+      mediaPath: mediaPath || undefined,
       accountCount: platformAccounts.length,
     });
 
@@ -360,16 +414,25 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
           continue;
         }
 
-        const instagramResult = await api.publishInstagramThumbGate({ caption: content });
+        const instagramOptions = {
+          caption: content,
+          utm,
+        };
+        if (mediaPath) {
+          instagramOptions.imagePath = mediaPath;
+          instagramOptions.postOnly = true;
+        }
+        const instagramResult = await api.publishInstagramThumbGate(instagramOptions);
         results.published.push({ platform: normalizedPlatform, result: instagramResult });
         continue;
       }
 
+      const mediaItems = await buildMediaItemsForPlatform(normalizedPlatform, offer, api.uploadLocalMedia);
       if (schedule) {
-        const scheduledResult = await api.schedulePost(content, platformAccounts, schedule, timezone, { utm });
+        const scheduledResult = await api.schedulePost(content, platformAccounts, schedule, timezone, { utm, mediaItems });
         results.scheduled.push({ platform: normalizedPlatform, result: scheduledResult });
       } else {
-        const publishResult = await api.publishPost(content, platformAccounts, { utm });
+        const publishResult = await api.publishPost(content, platformAccounts, { utm, mediaItems });
         results.published.push({ platform: normalizedPlatform, result: publishResult });
       }
     } catch (error) {
@@ -405,7 +468,9 @@ module.exports = {
   DEFAULT_TIMEZONE,
   LAUNCH_CAMPAIGN,
   OPERATOR_LAB_CAMPAIGN,
+  OPERATOR_LAB_MEDIA_PATHS,
   SKOOL_OPERATOR_LAB_URL,
+  buildMediaItemsForPlatform,
   buildCampaignEntries,
   buildLandingUrl,
   buildOperatorLabPost,
@@ -414,4 +479,5 @@ module.exports = {
   defaultCampaignSchedule,
   parseArgs,
   publishLaunchCampaign,
+  resolveOperatorLabMediaPath,
 };

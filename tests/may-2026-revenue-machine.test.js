@@ -82,6 +82,24 @@ test('formatPlan gives the operator exact next steps', () => {
   assert.match(output, /Top leaking source: website/);
 });
 
+test('buildRevenuePlan treats configured sprint checkout links as a close-path action', () => {
+  const base = report();
+  const plan = buildRevenuePlan(report({
+    hostedAudit: {
+      ...base.hostedAudit,
+      runtimePresence: {
+        THUMBGATE_GA_MEASUREMENT_ID: true,
+        THUMBGATE_CHECKOUT_FALLBACK_URL: true,
+        THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL: true,
+        THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL: true,
+      },
+    },
+  }));
+
+  assert.ok(!plan.actions.some((action) => action.status === 'blocked_on_payment_links'));
+  assert.ok(plan.actions.some((action) => action.title === 'Convert the live paid diagnostic/sprint path into outbound closes'));
+});
+
 test('buildRevenuePlan avoids blocked account actions when runtime presence is unknown', () => {
   const plan = buildRevenuePlan(report({
     diagnosis: {

@@ -259,7 +259,7 @@ Safe preview:
 gh workflow run thumbgate-creator-platform-promo.yml \
   --repo IgorGanapolsky/ThumbGate \
   -f mode=preview \
-  -f platforms=linkedin,instagram,reddit,tiktok,youtube,twitter
+  -f platforms=twitter,linkedin,instagram,reddit,tiktok,youtube,threads,bluesky
 ```
 
 Schedule after operator approval:
@@ -268,7 +268,7 @@ Schedule after operator approval:
 gh workflow run thumbgate-creator-platform-promo.yml \
   --repo IgorGanapolsky/ThumbGate \
   -f mode=schedule \
-  -f platforms=linkedin,instagram,tiktok,youtube \
+  -f platforms=twitter,linkedin,instagram,reddit,tiktok,youtube,threads,bluesky \
   -f timezone=America/New_York \
   -f schedule='2026-05-05T10:15:00-04:00'
 ```
@@ -279,7 +279,7 @@ Publish after operator approval:
 gh workflow run thumbgate-creator-platform-promo.yml \
   --repo IgorGanapolsky/ThumbGate \
   -f mode=publish \
-  -f platforms=linkedin,instagram,tiktok,youtube
+  -f platforms=twitter,linkedin,instagram,reddit,tiktok,youtube,threads,bluesky
 ```
 
 ## Stop Conditions

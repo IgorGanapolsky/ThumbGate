@@ -1,7 +1,7 @@
 # Workflow Hardening Sprint
 
 Status: current  
-Updated: April 9, 2026
+Updated: May 5, 2026
 
 Use [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md) for live pricing and traction claims. Use [VERIFICATION_EVIDENCE.md](VERIFICATION_EVIDENCE.md) and the proof reports for engineering proof.
 
@@ -53,6 +53,7 @@ Only move forward when the buyer has:
 ## Commercial Motion
 
 - This is a pilot-by-request service offer, not a new public self-serve subscription tier.
+- The live paid close path is configured for a `$499` Workflow Hardening Diagnostic and a `$1500` Workflow Hardening Sprint.
 - The public self-serve offer remains Pro at `$19/mo or $149/yr` per [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md).
 - Team pricing currently anchors at `$49/seat/mo` with a `3`-seat minimum, but the public Team path is still intake-first.
 - Use booked pilots, paid orders, or named pilot agreements as commercial proof.
@@ -63,6 +64,11 @@ Only move forward when the buyer has:
 Primary intake:
 
 - https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+
+Paid close links:
+
+- Diagnostic ($499): https://buy.stripe.com/00w14neyUcXA5pL5e33sI0e
+- Sprint ($1500): https://buy.stripe.com/fZu9AT76saPsg4pbCr3sI0f
 
 Email fallback:
 

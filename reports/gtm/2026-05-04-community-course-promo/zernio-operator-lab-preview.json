@@ -1,0 +1,69 @@
+{
+  "dryRun": true,
+  "platforms": [
+    "twitter",
+    "linkedin",
+    "instagram",
+    "reddit",
+    "tiktok",
+    "youtube",
+    "threads",
+    "bluesky"
+  ],
+  "accountLookupError": "ZERNIO_API_KEY environment variable is required",
+  "previews": [
+    {
+      "platform": "twitter",
+      "content": "Free ThumbGate Operator Lab: turn one repeated AI-agent mistake into one prevention rule. https://www.skool.com/thumbgate-operator-lab-6000?utm_source=x&utm_medium=community_course&utm_campaign=operator_lab_launch&utm_content=operator_lab_twitter",
+      "mediaPath": "/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo/docs/marketing/assets/thumbgate-operator-lab-social-landscape.png",
+      "accountCount": 0
+    },
+    {
+      "platform": "linkedin",
+      "content": "I started a free ThumbGate Operator Lab for people running AI coding agents in real repos.\n\nThe format is deliberately practical: bring one repeated Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, or MCP failure, and we turn it into a prevention rule, pre-action gate, or workflow-hardening teardown.\n\nThe best first win is narrow: one mistake, one rule, one blocked repeat.\n\nhttps://www.skool.com/thumbgate-operator-lab-6000?utm_source=linkedin&utm_medium=community_course&utm_campaign=operator_lab_launch&utm_content=operator_lab_linkedin",
+      "mediaPath": "/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo/docs/marketing/assets/thumbgate-operator-lab-social-landscape.png",
+      "accountCount": 0
+    },
+    {
+      "platform": "instagram",
+      "content": "Stop repeated AI-agent mistakes.\n\nThumbGate Operator Lab is open and free: bring one Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, or MCP failure and turn it into a prevention rule.\n\nhttps://www.skool.com/thumbgate-operator-lab-6000?utm_source=instagram&utm_medium=community_course&utm_campaign=operator_lab_launch&utm_content=operator_lab_instagram",
+      "mediaPath": "/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo/docs/marketing/assets/thumbgate-operator-lab-social-square.png",
+      "accountCount": 0
+    },
+    {
+      "platform": "reddit",
+      "content": "I started a free Skool group for people using AI coding agents in real repos.\n\nThe premise: post one repeated agent mistake, then turn it into a prevention rule or pre-action gate instead of another prompt tweak.\n\nUseful for Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, and MCP workflows.\n\nhttps://www.skool.com/thumbgate-operator-lab-6000?utm_source=reddit&utm_medium=community_course&utm_campaign=operator_lab_launch&utm_content=operator_lab_reddit",
+      "mediaPath": "/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo/docs/marketing/assets/thumbgate-operator-lab-social-landscape.png",
+      "accountCount": 0
+    },
+    {
+      "platform": "tiktok",
+      "content": "Your AI coding agent keeps repeating the same mistake.\n\nBring it to the free ThumbGate Operator Lab. One failure becomes one prevention rule.\n\nhttps://www.skool.com/thumbgate-operator-lab-6000?utm_source=tiktok&utm_medium=community_course&utm_campaign=operator_lab_launch&utm_content=operator_lab_tiktok\n\n#AIAgents #ClaudeCode #Cursor #DeveloperTools #ThumbGate",
+      "mediaPath": "/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo/docs/marketing/assets/thumbgate-operator-lab-explainer-vertical.mp4",
+      "accountCount": 0
+    },
+    {
+      "platform": "youtube",
+      "content": "Free ThumbGate Operator Lab: bring one repeated AI-agent mistake and turn it into a prevention rule.\n\nFor Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, and MCP operators.\n\nhttps://www.skool.com/thumbgate-operator-lab-6000?utm_source=youtube&utm_medium=community_course&utm_campaign=operator_lab_launch&utm_content=operator_lab_youtube",
+      "mediaPath": "/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo/docs/marketing/assets/thumbgate-operator-lab-explainer-vertical.mp4",
+      "accountCount": 0
+    },
+    {
+      "platform": "threads",
+      "content": "ThumbGate Operator Lab is a free community for turning repeated AI-agent mistakes into prevention rules and pre-action gates. https://www.skool.com/thumbgate-operator-lab-6000?utm_source=threads&utm_medium=community_course&utm_campaign=operator_lab_launch&utm_content=operator_lab_threads",
+      "mediaPath": "/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo/docs/marketing/assets/thumbgate-operator-lab-social-square.png",
+      "accountCount": 0
+    },
+    {
+      "platform": "bluesky",
+      "content": "ThumbGate Operator Lab is a free community for turning repeated AI-agent mistakes into prevention rules and pre-action gates. https://www.skool.com/thumbgate-operator-lab-6000?utm_source=bluesky&utm_medium=community_course&utm_campaign=operator_lab_launch&utm_content=operator_lab_bluesky",
+      "mediaPath": "/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo/docs/marketing/assets/thumbgate-operator-lab-social-landscape.png",
+      "accountCount": 0
+    }
+  ],
+  "published": [],
+  "scheduled": [],
+  "skipped": [],
+  "errors": [],
+  "generatedAt": "2026-05-05T12:26:38.069Z"
+}

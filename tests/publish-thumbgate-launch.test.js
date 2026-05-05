@@ -1,15 +1,19 @@
 'use strict';
 
+const fs = require('node:fs');
+const path = require('node:path');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
   DEFAULT_LAUNCH_PLATFORMS,
   LAUNCH_CAMPAIGN,
+  OPERATOR_LAB_MEDIA_PATHS,
   OPERATOR_LAB_CAMPAIGN,
   buildPlatformPost,
   parseArgs,
   publishLaunchCampaign,
+  resolveOperatorLabMediaPath,
 } = require('../scripts/social-analytics/publish-thumbgate-launch');
 
 test('buildPlatformPost creates tracked launch copy for X', () => {
@@ -47,6 +51,15 @@ test('buildPlatformPost can create Skool operator lab copy', () => {
   assert.match(post, /utm_content=operator_lab_linkedin/);
   assert.ok(xPost.length <= 280, `X operator-lab post should fit 280 chars; got ${xPost.length}`);
   assert.match(xPost, /utm_content=operator_lab_twitter/);
+});
+
+test('resolveOperatorLabMediaPath maps platform creative assets', () => {
+  assert.equal(resolveOperatorLabMediaPath('linkedin', 'operator-lab'), OPERATOR_LAB_MEDIA_PATHS.landscape);
+  assert.equal(resolveOperatorLabMediaPath('instagram', 'operator-lab'), OPERATOR_LAB_MEDIA_PATHS.square);
+  assert.equal(resolveOperatorLabMediaPath('threads', 'operator-lab'), OPERATOR_LAB_MEDIA_PATHS.square);
+  assert.equal(resolveOperatorLabMediaPath('tiktok', 'operator-lab'), OPERATOR_LAB_MEDIA_PATHS.verticalVideo);
+  assert.equal(resolveOperatorLabMediaPath('youtube', 'operator-lab'), OPERATOR_LAB_MEDIA_PATHS.verticalVideo);
+  assert.equal(resolveOperatorLabMediaPath('linkedin'), '');
 });
 
 test('publishLaunchCampaign previews default platforms in dry run mode', async () => {
@@ -90,6 +103,10 @@ test('publishLaunchCampaign uses operator lab UTM settings when requested', asyn
       calls.push({ content, platforms, options });
       return { id: 'linkedin_post_1' };
     },
+    uploadLocalMedia: async (mediaPath) => ({
+      type: mediaPath.endsWith('.mp4') ? 'video' : 'image',
+      url: `https://cdn.example.test/${mediaPath.split('/').pop()}`,
+    }),
   };
 
   const result = await publishLaunchCampaign({
@@ -101,7 +118,97 @@ test('publishLaunchCampaign uses operator lab UTM settings when requested', asyn
   assert.equal(calls[0].options.utm.source, 'linkedin');
   assert.equal(calls[0].options.utm.medium, 'community_course');
   assert.equal(calls[0].options.utm.campaign, OPERATOR_LAB_CAMPAIGN);
+  assert.deepEqual(calls[0].options.mediaItems, [
+    {
+      type: 'image',
+      url: 'https://cdn.example.test/thumbgate-operator-lab-social-landscape.png',
+    },
+  ]);
   assert.match(calls[0].content, /skool\.com\/thumbgate-operator-lab-6000/);
+});
+
+test('publishLaunchCampaign includes operator lab media paths in dry-run previews', async () => {
+  const fakePublisher = {
+    getConnectedAccounts: async () => ([
+      { platform: 'linkedin', accountId: 'acc_l1' },
+      { platform: 'youtube', accountId: 'acc_y1' },
+    ]),
+    groupAccountsByPlatform(accounts) {
+      const groups = new Map();
+      for (const account of accounts) {
+        const existing = groups.get(account.platform) || [];
+        existing.push(account);
+        groups.set(account.platform, existing);
+      }
+      return groups;
+    },
+  };
+
+  const result = await publishLaunchCampaign({
+    dryRun: true,
+    platforms: ['linkedin', 'youtube'],
+    offer: 'operator-lab',
+  }, fakePublisher);
+
+  assert.equal(result.previews[0].mediaPath, OPERATOR_LAB_MEDIA_PATHS.landscape);
+  assert.equal(result.previews[1].mediaPath, OPERATOR_LAB_MEDIA_PATHS.verticalVideo);
+  assert.equal(result.published.length, 0);
+});
+
+test('publishLaunchCampaign can preview dry-run posts when Zernio key is missing', async () => {
+  const fakePublisher = {
+    getConnectedAccounts: async () => {
+      throw new Error('ZERNIO_API_KEY environment variable is required');
+    },
+    groupAccountsByPlatform() {
+      return new Map();
+    },
+  };
+
+  const result = await publishLaunchCampaign({
+    dryRun: true,
+    platforms: ['linkedin'],
+    offer: 'operator-lab',
+  }, fakePublisher);
+
+  assert.equal(result.previews.length, 1);
+  assert.match(result.accountLookupError, /ZERNIO_API_KEY/);
+  assert.equal(result.previews[0].mediaPath, OPERATOR_LAB_MEDIA_PATHS.landscape);
+  assert.equal(result.skipped.length, 0);
+});
+
+test('creator platform promo workflow defaults to full operator lab media channels', () => {
+  const workflowPath = path.resolve(__dirname, '..', '.github/workflows/thumbgate-creator-platform-promo.yml');
+  const workflow = fs.readFileSync(workflowPath, 'utf8');
+
+  assert.match(workflow, /default: 'twitter,linkedin,instagram,reddit,tiktok,youtube,threads,bluesky'/);
+  assert.match(workflow, /--offer=operator-lab/);
+});
+
+test('publishLaunchCampaign passes operator lab image to Instagram workflow', async () => {
+  const calls = [];
+  const fakePublisher = {
+    getConnectedAccounts: async () => ([
+      { platform: 'instagram', accountId: 'acc_i1' },
+    ]),
+    groupAccountsByPlatform(accounts) {
+      return new Map([['instagram', accounts]]);
+    },
+    publishInstagramThumbGate: async (options) => {
+      calls.push(options);
+      return { success: true, postId: 'ig_operator_lab_1' };
+    },
+  };
+
+  const result = await publishLaunchCampaign({
+    platforms: ['instagram'],
+    offer: 'operator-lab',
+  }, fakePublisher);
+
+  assert.equal(result.published.length, 1);
+  assert.equal(calls[0].imagePath, OPERATOR_LAB_MEDIA_PATHS.square);
+  assert.equal(calls[0].postOnly, true);
+  assert.equal(calls[0].utm.medium, 'community_course');
 });
 
 test('publishLaunchCampaign publishes requested platforms with per-platform UTM settings', async () => {

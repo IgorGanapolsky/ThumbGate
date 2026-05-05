@@ -51,9 +51,9 @@ Goal: generate operator-lab promo post drafts for off-platform shares without pu
 - Local dry-run (generates drafts only; requires no posting credentials):
 
 ```bash
-npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms='linkedin,instagram,threads,bluesky,reddit,youtube'
+npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms='twitter,linkedin,instagram,reddit,tiktok,youtube,threads,bluesky'
 ```
 
 - GitHub Actions dry-run (same output intent; safe preview mode):
   - Workflow: `.github/workflows/thumbgate-creator-platform-promo.yml`
-  - Inputs: `mode=preview`, `platforms=linkedin,instagram,threads,bluesky,reddit,youtube`
+  - Inputs: `mode=preview`, `platforms=twitter,linkedin,instagram,reddit,tiktok,youtube,threads,bluesky`

@@ -14,12 +14,19 @@ This file must not carry unverified live metrics, PR numbers, or “today/30d/li
 
 When you paste metrics into any report, include the exact command + timestamp and keep the raw output in the operator log (not in this file).
 
+Latest operator readback was run with `npm run revenue:status` at 2026-05-05T12:25:06.708Z. It showed real traffic and checkout intent but no sprint leads: today had 187 visitors, 28 checkout starts, 0 paid orders, and 0 sprint leads; 30d had 6169 visitors, 133 checkout starts, 4 paid orders, $149 booked, 475 signups, and 0 sprint leads. Treat the next bottleneck as qualified outreach and checkout close.
+
+Live paid close links are configured in production:
+
+- Workflow Hardening Diagnostic ($499): `https://buy.stripe.com/00w14neyUcXA5pL5e33sI0e`
+- Workflow Hardening Sprint ($1500): `https://buy.stripe.com/fZu9AT76saPsg4pbCr3sI0f`
+
 ## Do First
 1. Refresh truth via `npm run revenue:status` + `npm run revenue:plan` (operator-run; do not invent numbers).
-2. If there is a ready release that fixes `/pro`, publish it before sending any Pro outreach (avoid sending users to a broken surface).
-3. Send the 4 warm Reddit Workflow Hardening Sprint DMs.
-4. Send the 3 self-serve Pro guide-first messages.
-5. Send the 5 strongest production-rollout sprint messages.
+2. Send the 4 warm Reddit Workflow Hardening Sprint DMs.
+3. Send the 3 self-serve Pro guide-first messages.
+4. Send the 5 strongest production-rollout sprint messages.
+5. When a lead confirms a concrete repeated workflow failure, use `revenue-close-room.md` and send the live $499 diagnostic or $1500 sprint checkout link.
 6. After each verified send, run that row's `Log after send` command from `operator-send-now.md`.
 7. Only send proof links after the buyer confirms pain.
 8. Use `revenue-close-room.md` for follow-up scripts once there is a reply.

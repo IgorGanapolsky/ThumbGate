@@ -1,7 +1,7 @@
 # Commercial Truth
 
 Status: current
-Updated: April 10, 2026
+Updated: May 5, 2026
 
 This document is the source of truth for product, pricing, traction, and proof claims in this repository.
 
@@ -11,13 +11,13 @@ This document is the source of truth for product, pricing, traction, and proof c
 - The local CLI is the adoption wedge; it is not the primary monetization story.
 - The primary commercial motion is the **Workflow Hardening Sprint** for one workflow, followed by Team expansion when shared enforcement, approval boundaries, and auditability matter across operators.
 - The current public self-serve commercial offer is **Pro at $19/mo or $149/yr** via Stripe checkout.
-- The current paid services motion also includes a **Workflow Hardening Diagnostic ($499)** as a paid triage session for one repeated workflow failure. This is offered on request and should only be described as “available” when `THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL` is configured in the hosted runtime.
+- The current paid services motion also includes a **Workflow Hardening Diagnostic ($499)** as a paid triage session for one repeated workflow failure and a **Workflow Hardening Sprint ($1500)** for one concrete workflow. These are offered on request and should only be described as “available” when `THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL` and `THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL` are configured in the hosted runtime.
 - Legacy one-time Stripe links are retained only for past buyers and are not a current public offer.
 - The current Team pricing anchor is **$49/seat/mo with a 3-seat minimum**, and the public Team path remains an **intake-led pilot for the first workflow** until hosted rollout scope is qualified.
 - The open-source runtime now supports history-aware lesson distillation from up to 8 prior recorded entries in the current Claude auto-capture path, linked 60-second feedback sessions, and reflector rule proposals across CLI, hosted API, Cursor, and Claude Desktop surfaces.
 - The runtime now supports Workflow Sentinel blast-radius scoring plus Docker Sandboxes routing guidance for high-risk local actions, and the hosted path supports signed sandbox dispatch for isolated team automations.
 - Package publishing is governed by Changesets, SemVer, version-sync checks, and verification evidence; release claims should stay inspectable instead of being inferred from a diff.
-- Verified cumulative booked revenue through March 19, 2026 is **$20.00** from `2` reconciled Stripe charges tied to the current product; there is no evidence of any additional same-day booked charge beyond that cumulative total.
+- Live hosted revenue status on May 5, 2026 showed **$169.00** lifetime booked revenue from `6` paid orders and **$149.00** booked revenue from `4` paid orders in the trailing 30 days. Treat this as hosted telemetry evidence until reconciled against Stripe exports.
 - Engineering verification is strong and should be cited through `docs/VERIFICATION_EVIDENCE.md` and machine-readable proof reports.
 
 ## Product Tiers

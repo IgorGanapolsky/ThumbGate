@@ -164,8 +164,20 @@ function buildRuntimeGapActions({ runtime, runtimeKnown }) {
   ].filter(Boolean);
 }
 
-function buildSprintPathAction({ visitors, checkoutStarts, sprintLeads }) {
+function buildSprintPathAction({ visitors, checkoutStarts, sprintLeads, runtime, runtimeKnown }) {
   if (sprintLeads === 0 && visitors >= 500) {
+    const paidPathConfigured = !runtimeKnown || (
+      runtime.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL &&
+      runtime.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL
+    );
+    if (paidPathConfigured) {
+      return agentReadyAction(
+        'Convert the live paid diagnostic/sprint path into outbound closes',
+        `${visitors} visitors and ${checkoutStarts} checkout starts in 30d produced 0 sprint leads, but the paid diagnostic/sprint checkout path is configured. The bottleneck is now buyer follow-up, not payment-link setup.`,
+        'Use the warm discovery queue, confirm one concrete workflow pain, then send the live $499 diagnostic or $1500 sprint checkout link from revenue-close-room.md.'
+      );
+    }
+
     return humanBlockedAction(
       'blocked_on_payment_links',
       'Activate paid high-ticket path above the sprint intake',
