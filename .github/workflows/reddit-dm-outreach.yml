@@ -1,0 +1,64 @@
+name: Reddit Warm DM Outreach
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Preview messages without sending'
+        required: false
+        type: boolean
+        default: true
+      mark_contacted:
+        description: 'Update local pipeline state after successful sends'
+        required: false
+        type: boolean
+        default: true
+      to:
+        description: 'Comma-separated Reddit usernames, or all'
+        required: true
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reddit-warm-dm-outreach
+  cancel-in-progress: false
+
+jobs:
+  reddit-dm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+      REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+      REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
+      REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Send or preview warm Reddit DMs
+        run: |
+          ARGS=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          if [ "${{ github.event.inputs.mark_contacted }}" = "true" ]; then
+            ARGS="$ARGS --mark-contacted"
+          fi
+          if [ -z "${{ github.event.inputs.to }}" ]; then
+            echo "Refusing to run without an explicit to input. Use one username or all." >&2
+            exit 1
+          fi
+          ARGS="$ARGS --to=${{ github.event.inputs.to }}"
+          node scripts/reddit-dm-outreach.js $ARGS
