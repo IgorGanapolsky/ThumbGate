@@ -43,6 +43,8 @@ Source:
 Approval-ready steps (no uploads here):
 
 1. Upload cover + icon (use a normal browser if the in-app file picker blocks uploads).
+   - Cover: `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`
+   - Icon: `docs/marketing/assets/thumbgate-skool-icon-128x128.png`
 2. Paste About copy and save: `reports/gtm/2026-05-04-community-course-promo/skool-about-copy.md`.
 3. Publish + pin the “Start Here” post from the same file.
 4. Invite the first 10–20 warm contacts.

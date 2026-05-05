@@ -75,6 +75,37 @@ function loadDrafts(draftFile = DRAFT_FILE) {
   }
 }
 
+function saveDrafts(drafts, draftFile = DRAFT_FILE) {
+  const dir = path.dirname(draftFile);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  const body = drafts.length > 0
+    ? `${drafts.map((draft) => JSON.stringify(draft)).join('\n')}\n`
+    : '';
+  fs.writeFileSync(draftFile, body);
+}
+
+function reconcileDraftsWithState(drafts, state) {
+  const postedByParentUri = new Map(
+    Object.entries(state?.repliedTo?.bluesky || {})
+      .filter(([, value]) => value && value.postedUri),
+  );
+  let changed = false;
+
+  for (const draft of drafts) {
+    if (draft?.platform !== 'bluesky' || draft?.postedUri) continue;
+    const parentUri = draft?.reply?.parent?.uri;
+    if (!parentUri) continue;
+    const posted = postedByParentUri.get(parentUri);
+    if (!posted) continue;
+    draft.postedUri = posted.postedUri;
+    draft.postedCid = posted.postedCid || null;
+    draft.postedAt = posted.postedAt || null;
+    changed = true;
+  }
+
+  return changed;
+}
+
 async function listNotifications(session, limit = 40) {
   const host = session.pdsHost || DEFAULT_PDS_HOST;
   const { status, json } = await atprotoRequest(
@@ -165,24 +196,26 @@ async function publishReply(session, draft, { request = atprotoRequest, now = ()
 async function publishApprovedDrafts({
   sessionFactory = createSession,
   loadDrafts: loadDraftsFn = loadDrafts,
+  saveDrafts: saveDraftsFn = saveDrafts,
   loadState: loadStateFn = loadState,
   saveState: saveStateFn = saveState,
   publishReply: publishReplyFn = publishReply,
   confirmPublish = false,
   dryRun = false,
 } = {}) {
-  const drafts = loadDraftsFn()
+  const drafts = loadDraftsFn();
+  const eligibleDrafts = drafts
     .filter((draft) => draft.platform === 'bluesky')
     .filter((draft) => draft.approved === true)
     .filter((draft) => !draft.postedUri);
 
   if (dryRun) {
-    return { eligible: drafts.length, published: 0, dryRun: true };
+    return { eligible: eligibleDrafts.length, published: 0, dryRun: true };
   }
 
   if (!confirmPublish) {
     return {
-      eligible: drafts.length,
+      eligible: eligibleDrafts.length,
       published: 0,
       blocked: true,
       reason: 'missing_confirm_publish',
@@ -193,26 +226,41 @@ async function publishApprovedDrafts({
   const state = loadStateFn();
   state.repliedTo = state.repliedTo || {};
   state.repliedTo.bluesky = state.repliedTo.bluesky || {};
+  const reconciled = reconcileDraftsWithState(drafts, state);
+  if (reconciled) {
+    saveDraftsFn(drafts);
+  }
 
   const published = [];
   const failed = [];
-  for (const draft of drafts) {
+  for (const draft of eligibleDrafts) {
     try {
       const result = await publishReplyFn(session, draft);
+      const postedAt = new Date().toISOString();
       const previousReplyState = state.repliedTo.bluesky[result.parentUri] || null;
       state.repliedTo.bluesky[result.parentUri] = Object.assign({}, previousReplyState, {
-        postedAt: new Date().toISOString(),
+        postedAt,
         postedUri: result.uri,
         postedCid: result.cid,
       });
+      draft.postedAt = postedAt;
+      draft.postedUri = result.uri;
+      draft.postedCid = result.cid;
       published.push(result);
     } catch (err) {
       failed.push({ parentUri: draft.reply?.parent?.uri || draft.notification?.uri || '', error: err.message });
     }
   }
 
+  saveDraftsFn(drafts);
   saveStateFn(state);
-  return { eligible: drafts.length, published: published.length, failed: failed.length, results: published, failures: failed };
+  return {
+    eligible: eligibleDrafts.length,
+    published: published.length,
+    failed: failed.length,
+    results: published,
+    failures: failed,
+  };
 }
 
 async function monitor({
@@ -316,6 +364,8 @@ module.exports = {
   createSession,
   listNotifications,
   loadDrafts,
+  saveDrafts,
+  reconcileDraftsWithState,
   extractPostText,
   buildReplyContext,
   assertPublishableDraft,

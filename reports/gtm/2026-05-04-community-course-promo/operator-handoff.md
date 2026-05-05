@@ -9,9 +9,9 @@ Updated: 2026-05-05
 - Production landing page: `https://thumbgate-production.up.railway.app/`
 - Marketing site: `https://thumbgate.ai/`
 - Workflow sprint intake: linked from the production landing page
-- Skool artwork (hosted):
-  - Cover: `https://thumbgate.ai/assets/skool/thumbgate-skool-cover-1084x576.png`
-  - Icon: `https://thumbgate.ai/assets/skool/thumbgate-skool-icon-128x128.png`
+- Skool artwork (local files):
+  - Cover: `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`
+  - Icon: `docs/marketing/assets/thumbgate-skool-icon-128x128.png`
 
 ## Skool Status
 
@@ -33,8 +33,8 @@ Current blockers:
 
 Workaround for the in-app file picker:
 
-- If Skool allows URL-based embeds in the About editor, use the hosted artwork URLs above.
 - If Skool requires file uploads for cover/icon (likely), do the upload in a normal browser outside the in-app file picker surface.
+- If you need URL-based embeds in the About editor, host the files first (do not assume the marketing site currently serves these paths).
 
 ## Recommended Setup
 
@@ -90,3 +90,7 @@ Zernio analytics polling is blocked by the Analytics add-on paywall. Treat Zerni
 ## Automation Update
 
 The `thumbgate-creator-platform-promo.yml` workflow now passes `--offer=operator-lab`, so previews/schedules/publishes from that workflow promote the free Skool Operator Lab instead of the older first-customer launch copy.
+
+As of 2026-05-05, local dry-runs can preview the Operator Lab campaign without Zernio credentials and include the planned media attachments in the preview JSON:
+
+`npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms=linkedin,instagram,threads,bluesky,reddit,youtube`

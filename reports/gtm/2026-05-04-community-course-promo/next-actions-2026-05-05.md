@@ -21,10 +21,10 @@ Goal: get Skool Discovery eligibility unblocked with clean artwork + About page 
 
 - Paste-ready About + pinned post copy:
   - `reports/gtm/2026-05-04-community-course-promo/skool-about-copy.md`
-- Hosted artwork URLs (for About embeds and social sharing):
-  - Cover: `https://thumbgate.ai/assets/skool/thumbgate-skool-cover-1084x576.png`
-  - Icon: `https://thumbgate.ai/assets/skool/thumbgate-skool-icon-128x128.png`
-- If Skool requires direct file upload for cover/icon, upload in a normal browser outside the in-app file picker surface.
+- Artwork (local files for direct upload):
+  - Cover: `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`
+  - Icon: `docs/marketing/assets/thumbgate-skool-icon-128x128.png`
+- If Skool requires direct file upload for cover/icon, upload in a normal browser outside the in-app file picker surface (Codex in-app file picker is blocked).
 
 ## Promo Workflow Readiness (approval needed to run, safe in preview)
 

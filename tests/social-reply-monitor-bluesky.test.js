@@ -10,6 +10,7 @@ const {
   assertPublishableDraft,
   publishApprovedDrafts,
   publishReply,
+  reconcileDraftsWithState,
 } = require('../scripts/social-reply-monitor-bluesky');
 
 test('extractPostText returns record text when present', () => {
@@ -258,18 +259,21 @@ test('publishApprovedDrafts blocks live publishing without explicit confirm flag
 
 test('publishApprovedDrafts records posted URI in reply monitor state after confirmed publish', async () => {
   let savedState = null;
+  let savedDrafts = null;
+  const drafts = [{
+    platform: 'bluesky',
+    approved: true,
+    draftReply: 'ready',
+    reply: {
+      root: { uri: 'at://did:plc:a/app.bsky.feed.post/root', cid: 'rootCid' },
+      parent: { uri: 'at://did:plc:a/app.bsky.feed.post/parent', cid: 'parentCid' },
+    },
+  }];
   const result = await publishApprovedDrafts({
     sessionFactory: async () => ({ did: 'did:plc:me', accessJwt: 'jwt', pdsHost: 'pds.example' }),
-    loadDrafts: () => [{
-      platform: 'bluesky',
-      approved: true,
-      draftReply: 'ready',
-      reply: {
-        root: { uri: 'at://did:plc:a/app.bsky.feed.post/root', cid: 'rootCid' },
-        parent: { uri: 'at://did:plc:a/app.bsky.feed.post/parent', cid: 'parentCid' },
-      },
-    }],
+    loadDrafts: () => drafts,
     loadState: () => ({ repliedTo: { bluesky: {} }, lastCheck: {} }),
+    saveDrafts: (nextDrafts) => { savedDrafts = nextDrafts.map((draft) => ({ ...draft })); },
     saveState: (state) => { savedState = state; },
     publishReply: async () => ({
       uri: 'at://did:plc:me/app.bsky.feed.post/reply',
@@ -282,4 +286,38 @@ test('publishApprovedDrafts records posted URI in reply monitor state after conf
 
   assert.equal(result.published, 1);
   assert.equal(savedState.repliedTo.bluesky['at://did:plc:a/app.bsky.feed.post/parent'].postedUri, 'at://did:plc:me/app.bsky.feed.post/reply');
+  assert.equal(savedDrafts.length, 1);
+  assert.equal(savedDrafts[0].postedUri, 'at://did:plc:me/app.bsky.feed.post/reply');
+  assert.equal(savedDrafts[0].postedCid, 'replyCid');
+  assert.ok(savedDrafts[0].postedAt);
+});
+
+test('reconcileDraftsWithState backfills posted metadata from reply monitor state', () => {
+  const drafts = [{
+    platform: 'bluesky',
+    approved: true,
+    draftReply: 'ready',
+    reply: {
+      root: { uri: 'at://did:plc:a/app.bsky.feed.post/root', cid: 'rootCid' },
+      parent: { uri: 'at://did:plc:a/app.bsky.feed.post/parent', cid: 'parentCid' },
+    },
+  }];
+  const state = {
+    repliedTo: {
+      bluesky: {
+        'at://did:plc:a/app.bsky.feed.post/parent': {
+          postedUri: 'at://did:plc:me/app.bsky.feed.post/reply',
+          postedCid: 'replyCid',
+          postedAt: '2026-05-05T18:40:00.000Z',
+        },
+      },
+    },
+  };
+
+  const changed = reconcileDraftsWithState(drafts, state);
+
+  assert.equal(changed, true);
+  assert.equal(drafts[0].postedUri, 'at://did:plc:me/app.bsky.feed.post/reply');
+  assert.equal(drafts[0].postedCid, 'replyCid');
+  assert.equal(drafts[0].postedAt, '2026-05-05T18:40:00.000Z');
 });

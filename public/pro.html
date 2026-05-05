@@ -777,8 +777,9 @@ __GA_BOOTSTRAP__
       <div class="aside-card" data-pro-paid-recovery>
         <div class="aside-kicker">Team workflow blocked?</div>
         <h3>Buy the paid diagnostic</h3>
-        <p>Skip self-serve Pro and pay for workflow hardening now.</p>
+        <p>Skip self-serve Pro and pay for the smallest useful review now.</p>
         <div class="price-stack">
+          <a class="btn-secondary" data-quick-read-link href="https://buy.stripe.com/aFa8wPgH29Lo4lH35V3sI0w" onclick="sendFirstPartyTelemetry('quick_read_checkout_started',{ctaId:'pro_page_quick_read_checkout',ctaPlacement:'pro_paid_recovery',planId:'quick_read',offer:'agent_failure_quick_read',price:19});sendGa4Event('begin_checkout',{currency:'USD',value:19,items:[{item_id:'agent_failure_quick_read',item_name:'AI Agent Failure Quick Read'}]});">Pay $19 quick read</a>
           <a class="btn-primary" data-sprint-diagnostic-link href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__" onclick="sendFirstPartyTelemetry('workflow_sprint_diagnostic_checkout_started',{ctaId:'pro_page_sprint_diagnostic_checkout'});sendGa4Event('begin_checkout',{currency:'USD',value:__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__});">Pay $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</a>
           <a class="btn-secondary" data-workflow-sprint-link href="__WORKFLOW_SPRINT_CHECKOUT_URL__" onclick="sendFirstPartyTelemetry('workflow_sprint_checkout_started',{ctaId:'pro_page_workflow_sprint_checkout'});sendGa4Event('begin_checkout',{currency:'USD',value:__WORKFLOW_SPRINT_PRICE_DOLLARS__});">Pay $__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint</a>
         </div>
@@ -1081,6 +1082,7 @@ globalThis.buyerJourney = globalThis.ThumbGateBuyerIntent.initializeBehaviorAnal
   ],
   ctaImpressions: [
     { selector: '.btn-pro-checkout', ctaId: 'pro_checkout', ctaPlacement: 'pro_page', planId: 'pro' },
+    { selector: '[data-quick-read-link]', ctaId: 'pro_page_quick_read_checkout', ctaPlacement: 'pro_paid_recovery', planId: 'quick_read' },
     { selector: '[data-sprint-diagnostic-link]', ctaId: 'pro_page_sprint_diagnostic_checkout', ctaPlacement: 'pro_paid_recovery', planId: 'sprint_diagnostic' },
     { selector: '[data-workflow-sprint-link]', ctaId: 'pro_page_workflow_sprint_checkout', ctaPlacement: 'pro_paid_recovery', planId: 'workflow_sprint' },
     { selector: '.btn-demo', ctaId: 'pro_demo', ctaPlacement: 'pro_page', planId: 'proof' },

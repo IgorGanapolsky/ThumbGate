@@ -8,9 +8,12 @@ const {
   groupAccountsByPlatform,
   publishPost,
   schedulePost,
+  uploadLocalMedia,
 } = require('./publishers/zernio');
 const { THUMBGATE_CAPTION } = require('./instagram-thumbgate-post');
 const { resolveHostedBillingConfig } = require('../hosted-config');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const APP_ORIGIN = resolveHostedBillingConfig({
   requestOrigin: 'https://thumbgate-production.up.railway.app',
@@ -20,6 +23,26 @@ const LAUNCH_CAMPAIGN = 'first_customer_push';
 const OPERATOR_LAB_CAMPAIGN = 'operator_lab_launch';
 const SKOOL_OPERATOR_LAB_URL = 'https://www.skool.com/thumbgate-operator-lab-6000';
 const DEFAULT_LAUNCH_PLATFORMS = ['twitter', 'linkedin', 'instagram'];
+const DEFAULT_OPERATOR_LAB_PLATFORMS = ['linkedin', 'instagram', 'threads', 'bluesky', 'reddit', 'youtube'];
+
+const REPO_ROOT = path.resolve(__dirname, '..', '..');
+const OPERATOR_LAB_MEDIA = {
+  landscape: path.join(REPO_ROOT, 'docs', 'marketing', 'assets', 'thumbgate-skool-cover-1084x576.png'),
+  square: path.join(REPO_ROOT, 'docs', 'marketing', 'assets', 'thumbgate-skool-icon-128x128.png'),
+};
+
+function resolveOperatorLabMediaPlan(platform) {
+  const normalized = String(platform || '').trim().toLowerCase();
+  if (normalized === 'instagram') return [OPERATOR_LAB_MEDIA.square];
+  return [OPERATOR_LAB_MEDIA.landscape];
+}
+
+function describeMediaPlan(paths = []) {
+  return paths.map((p) => ({
+    path: p,
+    exists: fs.existsSync(p),
+  }));
+}
 
 const OPERATOR_LAB_POSTS = {
   twitter: {
@@ -298,18 +321,25 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
     publishPost: publisher.publishPost || publishPost,
     schedulePost: publisher.schedulePost || schedulePost,
     publishInstagramThumbGate: publisher.publishInstagramThumbGate || publishInstagramThumbGate,
+    uploadLocalMedia: publisher.uploadLocalMedia || uploadLocalMedia,
   };
 
+  const offer = String(options.offer || 'launch').trim() || 'launch';
   const platforms = Array.isArray(options.platforms) && options.platforms.length > 0
     ? options.platforms
-    : DEFAULT_LAUNCH_PLATFORMS;
+    : (offer === 'operator-lab' ? DEFAULT_OPERATOR_LAB_PLATFORMS : DEFAULT_LAUNCH_PLATFORMS);
   const schedule = String(options.schedule || '').trim();
   const timezone = String(options.timezone || DEFAULT_TIMEZONE).trim() || DEFAULT_TIMEZONE;
-  const offer = String(options.offer || 'launch').trim() || 'launch';
-  const accounts = await api.getConnectedAccounts();
-  const groupedAccounts = api.groupAccountsByPlatform(accounts);
+
+  let groupedAccounts = new Map();
+  if (!(options.dryRun === true && !process.env.ZERNIO_API_KEY)) {
+    const accounts = await api.getConnectedAccounts();
+    groupedAccounts = api.groupAccountsByPlatform(accounts);
+  }
+
   const results = {
     dryRun: options.dryRun === true,
+    offer,
     platforms,
     previews: [],
     published: [],
@@ -321,16 +351,18 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
   for (const platform of platforms) {
     const normalizedPlatform = String(platform || '').trim().toLowerCase();
     const platformAccounts = groupedAccounts.get(normalizedPlatform) || [];
-    if (platformAccounts.length === 0) {
+    if (platformAccounts.length === 0 && !results.dryRun) {
       results.skipped.push({ platform: normalizedPlatform, reason: 'not_connected' });
       continue;
     }
 
     const content = buildPlatformPost(normalizedPlatform, offer);
+    const mediaPlanPaths = offer === 'operator-lab' ? resolveOperatorLabMediaPlan(normalizedPlatform) : [];
     results.previews.push({
       platform: normalizedPlatform,
       content,
-      accountCount: platformAccounts.length,
+      accountCount: platformAccounts.length || 0,
+      mediaPlan: describeMediaPlan(mediaPlanPaths),
     });
 
     if (results.dryRun) {
@@ -344,7 +376,14 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
     };
 
     try {
-      if (normalizedPlatform === 'instagram') {
+      const mediaItems = [];
+      if (offer === 'operator-lab') {
+        for (const mediaPath of mediaPlanPaths) {
+          mediaItems.push(await api.uploadLocalMedia(mediaPath));
+        }
+      }
+
+      if (normalizedPlatform === 'instagram' && offer !== 'operator-lab') {
         if (schedule) {
           results.skipped.push({ platform: normalizedPlatform, reason: 'schedule_not_supported_for_instagram_launch' });
           continue;
@@ -356,10 +395,10 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
       }
 
       if (schedule) {
-        const scheduledResult = await api.schedulePost(content, platformAccounts, schedule, timezone, { utm });
+        const scheduledResult = await api.schedulePost(content, platformAccounts, schedule, timezone, { utm, mediaItems });
         results.scheduled.push({ platform: normalizedPlatform, result: scheduledResult });
       } else {
-        const publishResult = await api.publishPost(content, platformAccounts, { utm });
+        const publishResult = await api.publishPost(content, platformAccounts, { utm, mediaItems });
         results.published.push({ platform: normalizedPlatform, result: publishResult });
       }
     } catch (error) {
@@ -382,7 +421,16 @@ async function main() {
   }
 }
 
-if (require.main === module) {
+const isDirectRun = (() => {
+  try {
+    const resolvedArgv = path.resolve(process.argv[1] || '');
+    return resolvedArgv === path.resolve(__filename);
+  } catch {
+    return false;
+  }
+})();
+
+if (isDirectRun) {
   main().catch((error) => {
     console.error(error && error.message ? error.message : error);
     process.exit(1);

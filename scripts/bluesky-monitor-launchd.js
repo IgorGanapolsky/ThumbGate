@@ -15,6 +15,17 @@ const LAUNCHCTL_ENV = Object.freeze({
   PATH: '/usr/bin:/bin:/usr/sbin:/sbin',
 });
 
+function envSearchPaths(repoDir = DEFAULT_REPO_DIR) {
+  const resolvedRepoDir = path.resolve(repoDir);
+  return [
+    path.join(resolvedRepoDir, '.env'),
+    path.join(resolvedRepoDir, '.env.local'),
+    path.join(resolvedRepoDir, '.thumbgate', '.env'),
+    path.join(os.homedir(), '.thumbgate', '.env'),
+    path.join(os.homedir(), '.thumbgate', 'bluesky-monitor.env'),
+  ];
+}
+
 function escapePlistString(value) {
   return String(value || '')
     .replaceAll('&', '&amp;')
@@ -77,17 +88,42 @@ function plistPathForLabel(label = DEFAULT_LABEL) {
 
 function loadEnvSnapshot({ repoDir = DEFAULT_REPO_DIR, env = process.env } = {}) {
   const snapshot = { ...env };
-  const envPath = path.join(path.resolve(repoDir), '.env');
-  try {
-    if (!fs.existsSync(envPath)) return snapshot;
-    const parsed = parseEnvFallback(fs.readFileSync(envPath, 'utf8'));
-    for (const [key, value] of Object.entries(parsed)) {
-      if (snapshot[key] === undefined) snapshot[key] = value;
+  const checkedPaths = [];
+  for (const envPath of envSearchPaths(repoDir)) {
+    checkedPaths.push(envPath);
+    try {
+      if (!fs.existsSync(envPath)) continue;
+      const parsed = parseEnvFallback(fs.readFileSync(envPath, 'utf8'));
+      for (const [key, value] of Object.entries(parsed)) {
+        if (snapshot[key] === undefined) snapshot[key] = value;
+      }
+    } catch {
+      // Status must be diagnostic-only; never fail just because an env file is unreadable.
     }
-  } catch {
-    // Status must be diagnostic-only; never fail just because .env is unreadable.
   }
-  return snapshot;
+  return { snapshot, checkedPaths };
+}
+
+function parseInstalledPlist(plistPath) {
+  try {
+    if (!fs.existsSync(plistPath)) return null;
+    const source = fs.readFileSync(plistPath, 'utf8');
+    const readKey = (key) => {
+      const match = source.match(
+        new RegExp(`<key>${key}<\\/key>\\s*<string>([^<]+)<\\/string>`)
+      );
+      return match ? match[1] : null;
+    };
+    const scriptMatch = source.match(/<string>([^<]*bluesky-monitor-cron\.sh)<\/string>/);
+    return {
+      repoDir: readKey('THUMBGATE_REPO_DIR'),
+      scriptPath: scriptMatch ? scriptMatch[1] : null,
+      nodeBin: readKey('NODE_BIN'),
+      publishApproved: readKey('THUMBGATE_BLUESKY_PUBLISH_APPROVED'),
+    };
+  } catch {
+    return null;
+  }
 }
 
 function countJsonlRows(filePath, predicate = () => true) {
@@ -140,7 +176,8 @@ function buildBlueskyMonitorStatus(options = {}) {
   const draftPath = options.draftPath || path.join(repoDir, '.thumbgate', 'reply-drafts.jsonl');
   const statePath = options.statePath || path.join(repoDir, '.thumbgate', 'reply-monitor-state.json');
   const logPath = options.logPath || path.join(repoDir, '.thumbgate', 'bluesky-monitor.log');
-  const snapshot = loadEnvSnapshot({ repoDir, env: options.env || process.env });
+  const { snapshot, checkedPaths } = loadEnvSnapshot({ repoDir, env: options.env || process.env });
+  const installedConfig = parseInstalledPlist(plistPath);
   const state = readJsonFile(statePath) || {};
   const hasHandle = Boolean(String(snapshot.BLUESKY_HANDLE || '').trim());
   const hasAppPassword = Boolean(String(snapshot.BLUESKY_APP_PASSWORD || '').trim());
@@ -154,7 +191,17 @@ function buildBlueskyMonitorStatus(options = {}) {
       BLUESKY_HANDLE: hasHandle,
       BLUESKY_APP_PASSWORD: hasAppPassword,
     },
+    envFilesChecked: checkedPaths,
     canMonitor: hasHandle && hasAppPassword,
+    installation: {
+      repoDir,
+      installedRepoDir: installedConfig?.repoDir || null,
+      scriptPath: installedConfig?.scriptPath || null,
+      nodeBin: installedConfig?.nodeBin || null,
+      publishApproved: installedConfig?.publishApproved === 'true',
+      repoMismatch: Boolean(installedConfig?.repoDir)
+        && path.resolve(installedConfig.repoDir) !== repoDir,
+    },
     drafts: {
       path: draftPath,
       exists: fs.existsSync(draftPath),
@@ -290,12 +337,14 @@ module.exports = {
   buildBlueskyMonitorPlist,
   buildBlueskyMonitorStatus,
   countJsonlRows,
+  envSearchPaths,
   escapePlistString,
   installBlueskyMonitorLaunchAgent,
   isCliInvocation,
   loadEnvSnapshot,
   loadLaunchAgent,
   parseArgs,
+  parseInstalledPlist,
   plistPathForLabel,
   runLaunchctl,
 };

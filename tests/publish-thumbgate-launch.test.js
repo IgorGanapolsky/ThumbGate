@@ -70,6 +70,7 @@ test('publishLaunchCampaign previews default platforms in dry run mode', async (
   const result = await publishLaunchCampaign({ dryRun: true }, fakePublisher);
 
   assert.equal(result.dryRun, true);
+  assert.equal(result.offer, 'launch');
   assert.deepEqual(result.platforms, DEFAULT_LAUNCH_PLATFORMS);
   assert.equal(result.previews.length, 3);
   assert.equal(result.published.length, 0);
@@ -90,6 +91,13 @@ test('publishLaunchCampaign uses operator lab UTM settings when requested', asyn
       calls.push({ content, platforms, options });
       return { id: 'linkedin_post_1' };
     },
+    uploadLocalMedia: async () => ({
+      url: 'https://example.test/operator-lab.png',
+      type: 'image',
+      key: 'operator-lab.png',
+      size: 1234,
+      contentType: 'image/png',
+    }),
   };
 
   const result = await publishLaunchCampaign({
@@ -101,6 +109,8 @@ test('publishLaunchCampaign uses operator lab UTM settings when requested', asyn
   assert.equal(calls[0].options.utm.source, 'linkedin');
   assert.equal(calls[0].options.utm.medium, 'community_course');
   assert.equal(calls[0].options.utm.campaign, OPERATOR_LAB_CAMPAIGN);
+  assert.ok(Array.isArray(calls[0].options.mediaItems));
+  assert.equal(calls[0].options.mediaItems.length, 1);
   assert.match(calls[0].content, /skool\.com\/thumbgate-operator-lab-6000/);
 });
 

@@ -726,6 +726,7 @@ __GA_BOOTSTRAP__
         <span>Send one messy AI-agent workflow. We turn it into clear rules, examples, and pre-action checks, plus AI Agent Governance Sprint approval boundaries and rollback safety before it touches developer-machine risk surfaces.</span>
       </div>
       <div class="hero-paid-actions">
+        <a class="starter" href="https://buy.stripe.com/aFa8wPgH29Lo4lH35V3sI0w" onclick="sendFirstPartyTelemetry('quick_read_checkout_started',{ctaId:'hero_quick_read_checkout',ctaPlacement:'hero_paid_path',planId:'quick_read',offer:'agent_failure_quick_read',price:19});sendGa4Event('begin_checkout',{currency:'USD',value:19,items:[{item_id:'agent_failure_quick_read',item_name:'AI Agent Failure Quick Read'}]});">Pay $19 quick read &rarr;</a>
         <a class="starter" href="https://buy.stripe.com/7sY4gzgH24r49G17mb3sI0g" onclick="sendFirstPartyTelemetry('founder_workflow_diagnostic_checkout_started',{ctaId:'hero_founder_workflow_diagnostic_checkout',ctaPlacement:'hero_paid_path',planId:'team',offer:'founder_workflow_diagnostic',price:99});sendGa4Event('begin_checkout',{currency:'USD',value:99,items:[{item_id:'founder_workflow_diagnostic',item_name:'Founder Workflow Diagnostic'}]});">Pay $99 diagnostic &rarr;</a>
         <a class="diagnostic" href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__" onclick="sendFirstPartyTelemetry('workflow_sprint_diagnostic_checkout_started',{ctaId:'hero_workflow_sprint_diagnostic_checkout',ctaPlacement:'hero_paid_path',planId:'team',offer:'workflow_hardening_diagnostic',price:sprintDiagnosticPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:sprintDiagnosticPriceDollars,items:[{item_id:'workflow_hardening_diagnostic',item_name:'Workflow Hardening Diagnostic'}]});">Pay $499 diagnostic &rarr;</a>
         <a class="sprint" href="__WORKFLOW_SPRINT_CHECKOUT_URL__" onclick="sendFirstPartyTelemetry('workflow_sprint_checkout_started',{ctaId:'hero_workflow_sprint_checkout',ctaPlacement:'hero_paid_path',planId:'team',offer:'workflow_hardening_sprint',price:workflowSprintPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:workflowSprintPriceDollars,items:[{item_id:'workflow_hardening_sprint',item_name:'Workflow Hardening Sprint'}]});">Pay $1500 sprint &rarr;</a>
@@ -1553,6 +1554,16 @@ __GA_BOOTSTRAP__
         <span class="team-intake-badge">30-minute intake</span>
       </div>
       <div class="team-paid-path" data-sprint-paid-path aria-label="Paid workflow hardening options">
+        <div class="team-paid-card">
+          <div>
+            <h4>AI Agent Failure Quick Read</h4>
+            <p>Async read for one failure symptom or log: likely root cause, one prevention-rule idea, and the next check to run.</p>
+          </div>
+          <div>
+            <div class="team-paid-price">$19</div>
+            <a class="team-paid-link" href="https://buy.stripe.com/aFa8wPgH29Lo4lH35V3sI0w" onclick="sendFirstPartyTelemetry('quick_read_checkout_started',{ctaId:'workflow_sprint_quick_read_checkout',ctaPlacement:'team_paid_path',planId:'quick_read',offer:'agent_failure_quick_read',price:19});sendGa4Event('begin_checkout',{currency:'USD',value:19,items:[{item_id:'agent_failure_quick_read',item_name:'AI Agent Failure Quick Read'}]});">Pay for quick read</a>
+          </div>
+        </div>
         <div class="team-paid-card">
           <div>
             <h4>Workflow Hardening Diagnostic</h4>
