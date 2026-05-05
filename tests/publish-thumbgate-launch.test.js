@@ -12,6 +12,7 @@ const {
   PAID_SPRINT_IMPLEMENTATION_PAYMENT_URL,
   buildPaidSprintCheckoutUrls,
   buildPlatformPost,
+  classifyPublishFailure,
   getPlatformFailures,
   parseArgs,
   publishLaunchCampaign,
@@ -281,7 +282,17 @@ test('getPlatformFailures extracts Zernio platform-level publish failures', () =
   assert.match(failures[0].error, /NO_SELFS/);
 });
 
-test('publishLaunchCampaign reports Zernio platform failures as errors', async () => {
+test('classifyPublishFailure treats duplicate Zernio posts as nonfatal', () => {
+  const classification = classifyPublishFailure({
+    platform: 'linkedin',
+    error: 'Zernio API 409: This exact content is already scheduled, publishing, or was posted to this account within the last 24 hours.',
+  });
+
+  assert.equal(classification.fatal, false);
+  assert.equal(classification.reason, 'duplicate_recent_post');
+});
+
+test('publishLaunchCampaign skips unsupported Reddit text posts', async () => {
   const fakePublisher = {
     getConnectedAccounts: async () => ([
       { platform: 'reddit', accountId: 'acc_r1' },
@@ -313,7 +324,40 @@ test('publishLaunchCampaign reports Zernio platform failures as errors', async (
   const result = await publishLaunchCampaign({ platforms: ['reddit'], offer: 'paid-sprint' }, fakePublisher);
 
   assert.equal(result.published.length, 0);
-  assert.equal(result.errors.length, 1);
-  assert.equal(result.errors[0].platform, 'reddit');
-  assert.match(result.errors[0].error, /NO_SELFS/);
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.skipped.length, 1);
+  assert.equal(result.skipped[0].platform, 'reddit');
+  assert.equal(result.skipped[0].reason, 'unsupported_reddit_text_post');
+  assert.match(result.skipped[0].error, /NO_SELFS/);
+});
+
+test('publishLaunchCampaign skips recent duplicate Zernio posts', async () => {
+  const fakePublisher = {
+    getConnectedAccounts: async () => ([
+      { platform: 'linkedin', accountId: 'acc_l1' },
+    ]),
+    groupAccountsByPlatform(accounts) {
+      return new Map([['linkedin', accounts]]);
+    },
+    publishPost: async () => ({
+      post: {
+        status: 'failed',
+        platforms: [
+          {
+            platform: 'linkedin',
+            status: 'failed',
+            errorMessage: 'Zernio API 409: This exact content is already scheduled, publishing, or was posted to this account within the last 24 hours.',
+          },
+        ],
+      },
+    }),
+  };
+
+  const result = await publishLaunchCampaign({ platforms: ['linkedin'], offer: 'paid-sprint' }, fakePublisher);
+
+  assert.equal(result.published.length, 0);
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.skipped.length, 1);
+  assert.equal(result.skipped[0].platform, 'linkedin');
+  assert.equal(result.skipped[0].reason, 'duplicate_recent_post');
 });

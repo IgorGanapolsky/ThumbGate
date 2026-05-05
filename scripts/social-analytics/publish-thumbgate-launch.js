@@ -441,14 +441,64 @@ function getPlatformFailures(result) {
   return failures;
 }
 
+function classifyPublishFailure(failure) {
+  const platform = String(failure?.platform || '').trim().toLowerCase();
+  const error = String(failure?.error || '').trim();
+  const normalizedError = error.toLowerCase();
+
+  if (
+    normalizedError.includes('zernio api 409')
+    || (
+      normalizedError.includes('already')
+      && (
+        normalizedError.includes('within the last 24 hours')
+        || normalizedError.includes('scheduled')
+        || normalizedError.includes('publishing')
+        || normalizedError.includes('posted')
+      )
+    )
+  ) {
+    return {
+      fatal: false,
+      reason: 'duplicate_recent_post',
+    };
+  }
+
+  if (
+    platform === 'reddit'
+    && normalizedError.includes('no_selfs')
+    && normalizedError.includes("doesn't allow text posts")
+  ) {
+    return {
+      fatal: false,
+      reason: 'unsupported_reddit_text_post',
+    };
+  }
+
+  return {
+    fatal: true,
+    reason: 'publish_failed',
+  };
+}
+
 function recordPublishResult(results, normalizedPlatform, result, bucket = 'published') {
   const failures = getPlatformFailures(result);
   if (failures.length > 0) {
     for (const failure of failures) {
-      results.errors.push({
-        platform: failure.platform === 'unknown' ? normalizedPlatform : failure.platform,
+      const platform = failure.platform === 'unknown' ? normalizedPlatform : failure.platform;
+      const classification = classifyPublishFailure({ ...failure, platform });
+      const entry = {
+        platform,
         error: failure.error,
-      });
+      };
+      if (classification.fatal) {
+        results.errors.push(entry);
+      } else {
+        results.skipped.push({
+          ...entry,
+          reason: classification.reason,
+        });
+      }
     }
     return;
   }
@@ -610,6 +660,7 @@ module.exports = {
   buildPaidSprintCheckoutUrls,
   buildPaidSprintPost,
   buildPaidSprintUrl,
+  classifyPublishFailure,
   defaultCampaignSchedule,
   getPlatformFailures,
   parseArgs,
