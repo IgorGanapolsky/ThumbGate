@@ -384,6 +384,54 @@ function buildCampaignEntries() {
   }));
 }
 
+function getPlatformFailures(result) {
+  const failures = [];
+  const seen = new Set();
+  function pushFailure(platform, error) {
+    const normalizedPlatform = String(platform || '').trim() || 'unknown';
+    const normalizedError = String(error || 'platform publish failed');
+    const key = `${normalizedPlatform}::${normalizedError}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    failures.push({
+      platform: normalizedPlatform,
+      error: normalizedError,
+    });
+  }
+
+  const platformResults = Array.isArray(result?.platformResults) ? result.platformResults : [];
+  for (const platformResult of platformResults) {
+    if (String(platformResult?.status || '').toLowerCase() !== 'failed') continue;
+    pushFailure(platformResult.platform, platformResult.error || platformResult.errorMessage);
+  }
+
+  const postPlatforms = Array.isArray(result?.post?.platforms) ? result.post.platforms : [];
+  for (const postPlatform of postPlatforms) {
+    if (String(postPlatform?.status || '').toLowerCase() !== 'failed') continue;
+    pushFailure(postPlatform.platform, postPlatform.errorMessage || postPlatform.error);
+  }
+
+  if (String(result?.post?.status || '').toLowerCase() === 'failed' && failures.length === 0) {
+    pushFailure('unknown', result.error || result.message || 'post publish failed');
+  }
+
+  return failures;
+}
+
+function recordPublishResult(results, normalizedPlatform, result, bucket = 'published') {
+  const failures = getPlatformFailures(result);
+  if (failures.length > 0) {
+    for (const failure of failures) {
+      results.errors.push({
+        platform: failure.platform === 'unknown' ? normalizedPlatform : failure.platform,
+        error: failure.error,
+      });
+    }
+    return;
+  }
+  results[bucket].push({ platform: normalizedPlatform, result });
+}
+
 function defaultCampaignSchedule(now = new Date()) {
   const target = new Date(now.getTime());
   target.setDate(target.getDate() + 1);
@@ -463,10 +511,10 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
 
       if (schedule) {
         const scheduledResult = await api.schedulePost(content, platformAccounts, schedule, timezone, { utm });
-        results.scheduled.push({ platform: normalizedPlatform, result: scheduledResult });
+        recordPublishResult(results, normalizedPlatform, scheduledResult, 'scheduled');
       } else {
         const publishResult = await api.publishPost(content, platformAccounts, { utm });
-        results.published.push({ platform: normalizedPlatform, result: publishResult });
+        recordPublishResult(results, normalizedPlatform, publishResult, 'published');
       }
     } catch (error) {
       results.errors.push({
@@ -514,6 +562,8 @@ module.exports = {
   buildPaidSprintPost,
   buildPaidSprintUrl,
   defaultCampaignSchedule,
+  getPlatformFailures,
   parseArgs,
   publishLaunchCampaign,
+  recordPublishResult,
 };

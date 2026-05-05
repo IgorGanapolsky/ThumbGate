@@ -12,6 +12,7 @@ const {
   PAID_SPRINT_IMPLEMENTATION_PAYMENT_URL,
   buildPaidSprintCheckoutUrls,
   buildPlatformPost,
+  getPlatformFailures,
   parseArgs,
   publishLaunchCampaign,
 } = require('../scripts/social-analytics/publish-thumbgate-launch');
@@ -242,4 +243,67 @@ test('publishLaunchCampaign routes Instagram through the media-backed workflow',
   assert.equal(result.published[0].platform, 'instagram');
   assert.equal(result.published[0].result.success, true);
   assert.match(result.published[0].result.caption, /utm_content=launch_post_instagram/);
+});
+
+test('getPlatformFailures extracts Zernio platform-level publish failures', () => {
+  const failures = getPlatformFailures({
+    post: {
+      status: 'failed',
+      platforms: [
+        {
+          platform: 'reddit',
+          status: 'failed',
+          errorMessage: "Reddit submit failed with API errors: NO_SELFS: This community doesn't allow text posts: sr",
+        },
+      ],
+    },
+    platformResults: [
+      {
+        platform: 'reddit',
+        status: 'failed',
+        error: "Reddit submit failed with API errors: NO_SELFS: This community doesn't allow text posts: sr",
+      },
+    ],
+  });
+
+  assert.equal(failures.length, 1);
+  assert.equal(failures[0].platform, 'reddit');
+  assert.match(failures[0].error, /NO_SELFS/);
+});
+
+test('publishLaunchCampaign reports Zernio platform failures as errors', async () => {
+  const fakePublisher = {
+    getConnectedAccounts: async () => ([
+      { platform: 'reddit', accountId: 'acc_r1' },
+    ]),
+    groupAccountsByPlatform(accounts) {
+      return new Map([['reddit', accounts]]);
+    },
+    publishPost: async () => ({
+      post: {
+        status: 'failed',
+        platforms: [
+          {
+            platform: 'reddit',
+            status: 'failed',
+            errorMessage: "Reddit submit failed with API errors: NO_SELFS: This community doesn't allow text posts: sr",
+          },
+        ],
+      },
+      platformResults: [
+        {
+          platform: 'reddit',
+          status: 'failed',
+          error: "Reddit submit failed with API errors: NO_SELFS: This community doesn't allow text posts: sr",
+        },
+      ],
+    }),
+  };
+
+  const result = await publishLaunchCampaign({ platforms: ['reddit'], offer: 'paid-sprint' }, fakePublisher);
+
+  assert.equal(result.published.length, 0);
+  assert.equal(result.errors.length, 1);
+  assert.equal(result.errors[0].platform, 'reddit');
+  assert.match(result.errors[0].error, /NO_SELFS/);
 });
