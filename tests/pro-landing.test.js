@@ -29,7 +29,7 @@ test('pro landing page positions ThumbGate Pro as the paid operator lane', () =>
 test('pro landing page uses checkout routes for monthly and annual conversions', () => {
   const proPage = readProPage();
 
-  assert.match(proPage, /Start 7-Day Free Trial/i);
+  assert.match(proPage, /Start Pro Now/i);
   assert.match(proPage, /\/checkout\/pro\?/);
   assert.match(proPage, /pricing_pro/);
   assert.match(proPage, /billing_cycle=annual/);
@@ -42,7 +42,8 @@ test('pro landing page keeps the pricing section focused on the $19 Pro checkout
   const pricingSection = proPage.slice(proPage.indexOf('<section class="section" id="pricing">'), proPage.indexOf('<section class="section" id="faq">'));
 
   assert.match(pricingSection, /<h3>ThumbGate Pro<\/h3>/);
-  assert.match(pricingSection, /Start 7-Day Free Trial/);
+  assert.match(pricingSection, /Start Pro Now/);
+  assert.match(pricingSection, /billed today/i);
   assert.match(pricingSection, /Restart|Start|Choose annual/);
   assert.match(pricingSection, /Book a Team Pilot Call/);
   assert.doesNotMatch(pricingSection, /<h3>ThumbGate Team/);
