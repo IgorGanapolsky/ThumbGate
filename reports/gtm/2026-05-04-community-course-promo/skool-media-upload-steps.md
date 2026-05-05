@@ -24,3 +24,10 @@ Pick one of each (confirm before upload):
 
 If Skool limits you to one media item on About, prefer the hero image first.
 
+## 4) Optional social share images (not required for discovery)
+
+If you want a consistent promo bundle ready for Skool posts and off-platform shares:
+
+- Landscape: `docs/marketing/assets/thumbgate-operator-lab-social-landscape.png`
+- Square: `docs/marketing/assets/thumbgate-operator-lab-social-square.png`
+- Story: `docs/marketing/assets/thumbgate-operator-lab-social-story.png`

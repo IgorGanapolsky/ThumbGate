@@ -245,6 +245,7 @@
     "revenue:repair:github-marketplace": "node bin/cli.js repair-github-marketplace --write",
     "cfo:report": "node bin/cli.js cfo",
     "creator:links": "node scripts/creator-campaigns.js",
+    "marketing:assets:operator-lab": "node scripts/marketing/generate-operator-lab-assets.js",
     "stripe:live": "node scripts/stripe-live-status.js",
     "stripe:webhook:audit": "node scripts/rotate-stripe-webhook-secret.js --audit",
     "stripe:webhook:disable-legacy": "node scripts/rotate-stripe-webhook-secret.js --disable-legacy",
