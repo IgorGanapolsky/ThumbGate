@@ -4413,8 +4413,8 @@ async function addContext(){
       const isConfirmedCheckout = confirmParam === '1'
         || confirmParam === 'true'
         || req.method === 'POST';
-      if (!isConfirmedCheckout) {
-        const eventType = botClassification.isBot ? 'checkout_bot_deflected' : 'checkout_interstitial_view';
+      if (!isConfirmedCheckout && botClassification.isBot) {
+        const eventType = 'checkout_bot_deflected';
         appendBestEffortTelemetry(FEEDBACK_DIR, {
           eventType,
           clientType: 'web',
@@ -4481,20 +4481,19 @@ async function addContext(){
         return;
       }
 
-      const normalizedCheckoutEmail = normalizeCheckoutCustomerEmail(bootstrapBody.customerEmail);
+      const rawCheckoutEmail = normalizeNullableText(bootstrapBody.customerEmail);
+      const normalizedCheckoutEmail = normalizeCheckoutCustomerEmail(rawCheckoutEmail);
       if (!normalizedCheckoutEmail) {
         appendBestEffortTelemetry(FEEDBACK_DIR, {
-          eventType: 'checkout_email_gate_shown',
+          eventType: 'checkout_email_deferred_to_stripe',
           clientType: 'web',
           traceId,
           page: '/checkout/pro',
           planId: analyticsMetadata.planId,
-        }, req.headers, 'checkout_email_gate_shown');
-        const { html, headers } = renderCheckoutIntentGate(parsed, responseHeaders);
-        sendHtml(res, 200, html, headers);
-        return;
+          reason: rawCheckoutEmail ? 'invalid_customer_email' : 'missing_customer_email',
+        }, req.headers, 'checkout_email_deferred_to_stripe');
       }
-      bootstrapBody.customerEmail = normalizedCheckoutEmail;
+      bootstrapBody.customerEmail = normalizedCheckoutEmail || undefined;
 
       appendBestEffortTelemetry(FEEDBACK_DIR, {
         eventType: 'checkout_bootstrap',

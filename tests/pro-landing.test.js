@@ -87,6 +87,22 @@ test('pro landing page tracks paid CTAs without unsupported claims', () => {
   assert.doesNotMatch(proPage, /no credit card/i);
 });
 
+test('pro landing page routes high-intent team buyers to paid diagnostic and sprint checkout', () => {
+  const proPage = readProPage();
+
+  assert.match(proPage, /data-pro-paid-recovery/);
+  assert.match(proPage, /href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__"/);
+  assert.match(proPage, /href="__WORKFLOW_SPRINT_CHECKOUT_URL__"/);
+  assert.match(proPage, /Pay \$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic/);
+  assert.match(proPage, /Pay \$__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint/);
+  assert.match(proPage, /pro_page_sprint_diagnostic_checkout/);
+  assert.match(proPage, /pro_page_workflow_sprint_checkout/);
+  assert.match(proPage, /workflow_sprint_diagnostic_checkout_started/);
+  assert.match(proPage, /workflow_sprint_checkout_started/);
+  assert.match(proPage, /initializeProPaidRecovery/);
+  assert.match(proPage, /sendGa4Event\('begin_checkout'/);
+});
+
 test('pro landing page captures buyer email and reuses it for checkout', () => {
   const proPage = readProPage();
   const buyerIntentScript = readBuyerIntentScript();

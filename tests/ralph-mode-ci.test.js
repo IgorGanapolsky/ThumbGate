@@ -178,6 +178,69 @@ test('recordTweetReply increments only on successful reply creation', () => {
   assert.match(logs[1], /Replied to @somebody: reply_123/);
 });
 
+test('postLinkedIn and recorder only count real published LinkedIn ids', async () => {
+  const subject = loadRalphMode({
+    LINKEDIN_ACCESS_TOKEN: 'linkedin-token',
+    LINKEDIN_PERSON_URN: 'urn:li:person:abc',
+  });
+  const originalFetch = global.fetch;
+  const requests = [];
+  global.fetch = async (_url, options) => {
+    requests.push(JSON.parse(options.body));
+    if (requests.length === 1) {
+      return {
+        ok: false,
+        status: 401,
+        json: async () => ({ message: 'Expired token' }),
+      };
+    }
+    return {
+      ok: true,
+      status: 201,
+      json: async () => ({ id: 'urn:li:share:123' }),
+    };
+  };
+
+  try {
+    const blocked = await subject.postLinkedIn('blocked post');
+    assert.equal(blocked.ok, false);
+    assert.equal(blocked.id, '');
+    assert.equal(blocked.status, 401);
+    assert.equal(blocked.error, 'HTTP 401');
+
+    const posted = await subject.postLinkedIn('published post');
+    assert.deepEqual(posted, {
+      id: 'urn:li:share:123',
+      ok: true,
+      status: 201,
+      error: '',
+    });
+    assert.equal(requests[1].author, 'urn:li:person:abc');
+  } finally {
+    global.fetch = originalFetch;
+  }
+
+  const report = { linkedin: 0 };
+  const logs = [];
+  const skipped = subject.recordLinkedInPost(report, {
+    ok: false,
+    status: 401,
+    error: 'HTTP 401',
+  }, (line) => logs.push(line));
+  assert.equal(skipped, false);
+  assert.equal(report.linkedin, 0);
+  assert.match(logs[0], /LinkedIn skipped: HTTP 401/);
+
+  const counted = subject.recordLinkedInPost(report, {
+    ok: true,
+    status: 201,
+    id: 'urn:li:share:123',
+  }, (line) => logs.push(line));
+  assert.equal(counted, true);
+  assert.equal(report.linkedin, 1);
+  assert.match(logs[1], /LinkedIn posted: urn:li:share:123/);
+});
+
 test('Ralph Mode tweet angles advertise current Pro and Team pricing', () => {
   const subject = loadRalphMode();
   const joined = subject.TWEET_ANGLES.join('\n');
