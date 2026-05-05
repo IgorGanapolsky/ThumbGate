@@ -200,6 +200,15 @@ function buildOperatorLabUrl(platform, content) {
   });
 }
 
+function buildPaidSprintUrl(platform, content) {
+  return buildUTMLink(`${APP_ORIGIN}/pro`, {
+    source: platform,
+    medium: 'organic_social',
+    campaign: 'paid_workflow_sprint',
+    content,
+  });
+}
+
 function renderTrackedPost(spec, platform, urlBuilder) {
   if (spec.raw) return spec.raw;
   const lines = Array.isArray(spec.lines) ? spec.lines : [];
@@ -222,9 +231,63 @@ function buildOperatorLabPost(platform) {
   }, fallbackKey, buildOperatorLabUrl);
 }
 
+function buildPaidSprintPost(platform) {
+  const normalized = String(platform || '').trim().toLowerCase();
+  const key = normalized === 'x' ? 'twitter' : normalized;
+  const url = buildPaidSprintUrl(key || 'zernio', `paid_sprint_${key || 'generic'}`);
+  const compact = [
+    'I opened a paid ThumbGate workflow-hardening lane for teams running AI coding agents in real repos.',
+    '$499 diagnostic: map one repeated Claude Code/Codex/Cursor failure into prevention rules and a hardening plan.',
+    '$1500 sprint: implement the first guardrails and verify the same failure gets blocked.',
+    url,
+  ];
+
+  if (key === 'linkedin') {
+    return [
+      'I opened a paid ThumbGate workflow-hardening lane for teams running Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, or MCP agents in real repos.',
+      '',
+      'The offer is intentionally narrow:',
+      '',
+      '- $499 diagnostic: one risky AI-agent workflow, failure-pattern review, prevention-rule map, and concrete hardening plan',
+      '- $1500 sprint: implement the first guardrails and prove the same failure gets blocked',
+      '',
+      'This is for teams seeing repeated agent mistakes: unsafe file edits, bad deploy steps, ignored repo rules, or risky tool calls that keep coming back across sessions.',
+      '',
+      url,
+    ].join('\n');
+  }
+
+  if (key === 'instagram') {
+    return [
+      'Stop repeated AI-agent mistakes.',
+      '',
+      '$499 diagnostic: map one risky workflow.',
+      '$1500 sprint: implement the first guardrails.',
+      '',
+      'For Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, and MCP teams.',
+      '',
+      url,
+    ].join('\n');
+  }
+
+  if (key === 'bluesky') {
+    return [
+      'Paid ThumbGate workflow hardening is open.',
+      '$499 diagnostic. $1500 implementation sprint.',
+      'For repeated Claude/Codex/Cursor failures.',
+      'https://thumbgate.ai/pro',
+    ].join(' ');
+  }
+
+  return compact.join(' ');
+}
+
 function buildPlatformPost(platform, offer = 'launch') {
   if (offer === 'operator-lab') {
     return buildOperatorLabPost(platform);
+  }
+  if (offer === 'paid-sprint') {
+    return buildPaidSprintPost(platform);
   }
 
   const normalized = String(platform || '').trim().toLowerCase();
@@ -401,6 +464,8 @@ module.exports = {
   buildOperatorLabPost,
   buildOperatorLabUrl,
   buildPlatformPost,
+  buildPaidSprintPost,
+  buildPaidSprintUrl,
   defaultCampaignSchedule,
   parseArgs,
   publishLaunchCampaign,
