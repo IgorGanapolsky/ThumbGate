@@ -215,6 +215,7 @@ test('Ralph workflows are scheduled, stateful, and split outbound from reply eng
   assert.match(ralph, /actions\/cache\/restore@v[45]/);
   assert.match(ralph, /actions\/cache\/save@v[45]/);
   assert.match(ralph, /node scripts\/ralph-loop\.js --mode="\$MODE"/);
+  assert.match(ralph, /GITHUB_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT\s*\|\|\s*github\.token\s*\}\}/);
   assert.match(ralph, /\.thumbgate\/reply-monitor-state\.json/);
   assert.match(ralph, /\.thumbgate\/reply-drafts\.jsonl/);
   assert.match(ralph, /\.thumbgate\/social-launch-assets\.json/);

@@ -42,7 +42,7 @@ jobs:
     timeout-minutes: 20
 
     env:
-      GITHUB_TOKEN: ${{ github.token }}
+      GITHUB_TOKEN: ${{ secrets.GH_PAT || github.token }}
       ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
       ZERNIO_INSTAGRAM_ACCOUNT_ID: ${{ secrets.ZERNIO_INSTAGRAM_ACCOUNT_ID }}
       ZERNIO_LINKEDIN_ACCOUNT_ID: ${{ secrets.ZERNIO_LINKEDIN_ACCOUNT_ID }}
