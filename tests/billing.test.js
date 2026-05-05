@@ -389,7 +389,7 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(result.status, 'sent');
     assert.equal(result.customerEmail, 'buyer@example.com');
     assert.equal(delivered.length, 1);
-    assert.equal(delivered[0].subject, 'Your 7-day ThumbGate Pro trial is live');
+    assert.equal(delivered[0].subject, 'Your ThumbGate Pro subscription is live');
     assert.match(delivered[0].text, /npx thumbgate pro --activate --key=tg_test_activation_key/);
     assert.match(delivered[0].text, /Pre-Action Checks/);
     assert.match(delivered[0].text, /Give one concrete thumbs up or thumbs down/);
@@ -532,7 +532,7 @@ describe('billing.js — funnel ledger', () => {
       assert.equal(sent.providerId, 'resend_email_001');
       assert.equal(acceptedBodies.length, 1);
       assert.deepEqual(acceptedBodies[0].to, ['buyer@example.com']);
-      assert.equal(acceptedBodies[0].subject, 'Your 7-day ThumbGate Pro trial is live');
+      assert.equal(acceptedBodies[0].subject, 'Your ThumbGate Pro subscription is live');
       assert.match(acceptedBodies[0].text, /npx thumbgate pro --activate --key=tg_resend_success/);
       assert.match(acceptedBodies[0].html, /Pre-Action Checks/);
     } finally {
