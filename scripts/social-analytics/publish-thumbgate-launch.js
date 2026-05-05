@@ -103,7 +103,7 @@ const CAMPAIGN_POSTS = [
   {
     slug: 'checkout_path',
     posts: {
-      twitter: { content: 'campaign_checkout_path', source: 'x', separator: ' ', lines: ['If your agent repeats the same repo mistake every week, the fix is not another prompt.', 'ThumbGate blocks known-bad patterns before the next tool call lands.', 'Free local path, Pro trial here:'] },
+      twitter: { content: 'campaign_checkout_path', source: 'x', separator: ' ', lines: ['If your agent repeats the same repo mistake every week, the fix is not another prompt.', 'ThumbGate blocks known-bad patterns before the next tool call lands.', 'Free local path, pay-now Pro here:'] },
       linkedin: { content: 'campaign_checkout_path', separator: ' ', lines: ['Repeated agent mistakes are a systems problem, not a prompt-writing problem.', 'ThumbGate turns explicit feedback into prevention rules and gives individual operators a paid path when they want the dashboard, exports, and check debugger.'] },
       instagram: { content: 'campaign_checkout_path', separator: '\n\n', lines: ['ThumbGate turns thumbs-down feedback into a prevention rule.', 'Next session, the same mistake gets blocked.'] },
       tiktok: { raw: 'Stop your AI agent from repeating the same mistake. One thumbs-down = permanent block.\n\nFree to start. Pro when you need the dashboard.\n\n#ThumbGate #AIAgents #DeveloperTools' },
@@ -233,7 +233,7 @@ function buildPlatformPost(platform, offer = 'launch') {
     return [
       'Claude Code kept repeating the same mistakes across sessions.',
       'ThumbGate turns thumbs-down feedback into a prevention rule that blocks the same pattern next time.',
-      'Local-first. Free path. Pro trial.',
+      'Local-first. Free path. Pay-now Pro.',
       buildLandingUrl('x', 'launch_post_twitter'),
     ].join(' ');
   }
