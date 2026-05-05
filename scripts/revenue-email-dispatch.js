@@ -83,9 +83,9 @@ async function main(argv = process.argv.slice(2), deps = {}) {
   console.log(JSON.stringify({
     campaign: options.campaign,
     leadId: message.pipelineLeadId,
-    sent: result.sent === true,
-    providerId: result.id || result.providerId || null,
-    reason: result.reason || null,
+    sent: Boolean(result.sent),
+    providerId: result?.id || result?.providerId || null,
+    reason: result?.reason || null,
   }, null, 2));
   return result;
 }
