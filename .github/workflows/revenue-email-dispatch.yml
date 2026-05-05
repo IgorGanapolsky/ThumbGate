@@ -37,9 +37,9 @@ jobs:
       THUMBGATE_TRIAL_EMAIL_REPLY_TO: igor.ganapolsky@gmail.com
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm

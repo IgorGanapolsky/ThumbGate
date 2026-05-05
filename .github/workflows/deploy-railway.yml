@@ -40,7 +40,7 @@ jobs:
       STRIPE_SECRET_KEY_ROTATED_AT: ${{ vars.STRIPE_SECRET_KEY_ROTATED_AT }}
       STRIPE_WEBHOOK_SECRET_ROTATED_AT: ${{ vars.STRIPE_WEBHOOK_SECRET_ROTATED_AT }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 2
       - name: Detect deployable changes
@@ -68,7 +68,7 @@ jobs:
           printf '%s\n' "$CHANGED_FILES" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
           echo "should_deploy=$SHOULD_DEPLOY" >> "$GITHUB_OUTPUT"
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
       - name: Check Railway deployment configuration

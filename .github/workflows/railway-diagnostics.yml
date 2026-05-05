@@ -47,9 +47,9 @@ jobs:
       RAILWAY_HTTP_LOG_LINES: ${{ github.event.inputs.http_log_lines || '50' }}
       RAILWAY_SETTLE_SECONDS: ${{ github.event.inputs.settle_seconds || '20' }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
 
