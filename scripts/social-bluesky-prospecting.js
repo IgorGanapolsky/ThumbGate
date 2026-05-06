@@ -129,6 +129,9 @@ function scoreProspect(post) {
     'nsfw',
     'hiring',
     'job opening',
+    'fbi',
+    'treason',
+    'trump',
     'politics',
   ];
   if (negative.some((term) => text.includes(term))) {
@@ -137,7 +140,8 @@ function scoreProspect(post) {
 
   const weighted = [
     [8, 'repeated_mistake', /\b(repeat|again|same mistake|keeps? doing|keeps? breaking|regression)\b/],
-    [8, 'dangerous_action', /\b(delete|deleted|rm -rf|drop table|force push|overwrite|credential|secret|charged twice)\b/],
+    [8, 'dangerous_action', /\b(delete|deleted|rm -rf|drop table|force push|overwrite|charged twice)\b/],
+    [8, 'secret_risk', /\b(\.env|api key|secret key|plaintext api|credential|credentials)\b/],
     [7, 'agent_tooling', /\b(agent|coding agent|ai agent|claude code|cursor|cline|roo code|gemini cli|mcp)\b/],
     [6, 'memory_context', /\b(memory|context|remember|forgot|session|instruction|claude\.md|rules?)\b/],
     [5, 'guardrail_need', /\b(guardrail|approval|policy|prevent|block|pre.?action|hook|firewall|governance)\b/],
@@ -207,6 +211,8 @@ async function searchPosts(session, query, {
 async function prospectBluesky({
   sessionFactory = createSession,
   searchPosts: searchPostsFn = searchPosts,
+  listOwnReplyParents: listOwnReplyParentsFn = listOwnReplyParents,
+  hasOwnReplyToPost: hasOwnReplyToPostFn = hasOwnReplyToPost,
   loadState: loadStateFn = loadState,
   saveState: saveStateFn = saveState,
   saveDraft: saveDraftFn = saveDraft,
@@ -220,6 +226,10 @@ async function prospectBluesky({
   const session = await sessionFactory();
   const state = loadStateFn();
   state.seen = state.seen || {};
+  const ownReplyParents = await listOwnReplyParentsFn(session).catch((err) => {
+    console.warn(`[bluesky-prospect] could not load own reply parents: ${sanitizeForLog(err.message)}`);
+    return new Set();
+  });
 
   const candidates = await collectProspectCandidates({
     session,
@@ -230,11 +240,23 @@ async function prospectBluesky({
     seen: state.seen,
   });
   candidates.sort((a, b) => b.scored.score - a.scored.score);
-  const selected = candidates.slice(0, maxDrafts);
   const createdAt = now().toISOString();
   const drafts = [];
 
-  for (const { post, scored } of selected) {
+  for (const { post, scored } of candidates) {
+    if (drafts.length >= maxDrafts) break;
+    if (ownReplyParents.has(post.uri) || await hasOwnReplyToPostFn(session, post)) {
+      if (!dryRun) {
+        state.seen[post.uri] = {
+          skippedAt: createdAt,
+          reason: 'already_replied',
+          score: scored.score,
+          query: post.query,
+        };
+      }
+      continue;
+    }
+
     const draft = buildProspectDraft({ post, scored, createdAt });
     drafts.push(draft);
 
@@ -285,6 +307,104 @@ async function collectProspectCandidates({
     candidates.push(...rankProspectPosts({ posts, session, seen, minScore }));
   }
   return candidates;
+}
+
+function buildListRecordsParams(session, limit, cursor) {
+  const params = new URLSearchParams({
+    repo: session.did,
+    collection: 'app.bsky.feed.post',
+    limit: String(limit),
+  });
+  if (cursor) params.set('cursor', cursor);
+  return params;
+}
+
+async function requestOwnPostRecords(session, cursor, limit, request) {
+  const params = buildListRecordsParams(session, limit, cursor);
+  const { status, json } = await request(
+    'GET',
+    session.pdsHost || DEFAULT_PDS_HOST,
+    `/xrpc/com.atproto.repo.listRecords?${params.toString()}`,
+    { headers: { Authorization: `Bearer ${session.accessJwt}` } },
+  );
+  if (status !== 200) {
+    throw new Error(`listRecords failed: ${status} ${json.error || ''}`);
+  }
+  return {
+    records: Array.isArray(json.records) ? json.records : [],
+    cursor: typeof json.cursor === 'string' ? json.cursor : '',
+  };
+}
+
+function addReplyParentUris(parents, records) {
+  for (const item of records) {
+    const parentUri = item?.value?.reply?.parent?.uri;
+    if (parentUri) parents.add(parentUri);
+  }
+}
+
+async function listOwnReplyParents(session, {
+  request = atprotoRequest,
+  limit = 100,
+  maxPages = 10,
+} = {}) {
+  if (!session?.did || !session?.accessJwt) return new Set();
+  const parents = new Set();
+  let cursor = '';
+
+  for (let page = 0; page < maxPages; page += 1) {
+    const pageResult = await requestOwnPostRecords(session, cursor, limit, request);
+    addReplyParentUris(parents, pageResult.records);
+    cursor = pageResult.cursor;
+    if (!cursor || pageResult.records.length === 0) break;
+  }
+
+  return parents;
+}
+
+async function getPostThread(session, uri, {
+  request = atprotoRequest,
+  depth = 8,
+} = {}) {
+  const params = new URLSearchParams({
+    uri,
+    depth: String(depth),
+    parentHeight: '0',
+  });
+  const { status, json } = await request(
+    'GET',
+    DEFAULT_PDS_HOST,
+    `/xrpc/app.bsky.feed.getPostThread?${params.toString()}`,
+    { headers: { Authorization: `Bearer ${session.accessJwt}` } },
+  );
+  if (status !== 200) {
+    throw new Error(`getPostThread failed for "${uri}": ${status} ${json.error || ''}`);
+  }
+  return json.thread || null;
+}
+
+function threadHasReplyFromDid(thread, did) {
+  if (!thread || !did) return false;
+  const replies = Array.isArray(thread.replies) ? thread.replies : [];
+  for (const reply of replies) {
+    if (reply?.post?.author?.did === did) return true;
+    if (threadHasReplyFromDid(reply, did)) return true;
+  }
+  return false;
+}
+
+async function hasOwnReplyToPost(session, post, {
+  getPostThread: getPostThreadFn = getPostThread,
+} = {}) {
+  if (!post?.uri || !session?.did) return false;
+  if (isOwnPost(post, session)) return true;
+  try {
+    const thread = await getPostThreadFn(session, post.uri);
+    return threadHasReplyFromDid(thread, session.did);
+  } catch (err) {
+    console.warn(`[bluesky-prospect] could not verify prior replies for ${sanitizeForLog(post.uri)}: ${sanitizeForLog(err.message)}`);
+    return false;
+  }
 }
 
 function rankProspectPosts({ posts = [], session, seen = {}, minScore }) {
@@ -356,7 +476,10 @@ if (isMainModule) {
 module.exports = {
   DEFAULT_QUERIES,
   buildProspectReply,
+  getPostThread,
+  hasOwnReplyToPost,
   isOwnPost,
+  listOwnReplyParents,
   normalizeSearchPost,
   parseQueries,
   postUrl,
