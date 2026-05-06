@@ -23,6 +23,7 @@ const GUIDE_FILES = [
   'guides/reasoning-compression-guardrails.html',
   'guides/deepseek-v4-runtime-guardrails.html',
   'guides/background-agent-governance.html',
+  'guides/ai-agent-workflow-migration-checklist.html',
   'guides/ai-agent-governance-sprint.html',
   'guides/gpt-5-5-model-evaluation.html',
   'guides/browser-automation-safety.html',
@@ -134,6 +135,21 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('pre-dispatch governance check'));
     assert.ok(html.includes('risk-tiered review'));
     assert.ok(html.includes('Workflow Hardening Sprint'));
+  });
+
+  it('AI agent workflow migration checklist routes buyers into the paid diagnostic', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/ai-agent-workflow-migration-checklist.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('AI Agent Workflow Migration Checklist'));
+    assert.ok(html.includes('$499 Agent Workflow Migration Diagnostic'));
+    assert.ok(html.includes('Pay $499 diagnostic'));
+    assert.ok(html.includes('https://buy.stripe.com/00w14neyUcXA5pL5e33sI0e'));
+    assert.ok(html.includes('workflow-sprint-intake'));
+    assert.ok(html.includes('Pro $19/mo or $149/yr. Team $49/seat/mo.'));
+    assert.ok(html.includes('pre-action rule that stops the already-rejected mistake'));
   });
 
   it('AI agent governance sprint guide routes buyers into the Team intake', () => {
