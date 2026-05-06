@@ -15,7 +15,7 @@ on:
       platforms:
         description: 'Comma-separated Zernio platforms'
         required: false
-        default: 'linkedin,instagram,twitter'
+        default: 'linkedin,instagram,threads,bluesky,reddit,youtube'
       schedule:
         description: 'ISO-8601 scheduled time, required for schedule mode'
         required: false
@@ -24,6 +24,10 @@ on:
         description: 'IANA timezone for schedule mode'
         required: false
         default: 'America/New_York'
+      offer:
+        description: 'Campaign offer to publish'
+        required: false
+        default: 'operator-lab'
 
 permissions:
   contents: read
@@ -61,14 +65,14 @@ jobs:
         run: |
           npm run social:publish:launch -- \
             --dry-run \
-            --offer=operator-lab \
+            --offer="${{ github.event.inputs.offer }}" \
             --platforms="${{ github.event.inputs.platforms }}"
 
       - name: Publish campaign
         if: github.event.inputs.mode == 'publish'
         run: |
           npm run social:publish:launch -- \
-            --offer=operator-lab \
+            --offer="${{ github.event.inputs.offer }}" \
             --platforms="${{ github.event.inputs.platforms }}"
 
       - name: Schedule campaign
@@ -80,7 +84,7 @@ jobs:
           fi
 
           npm run social:publish:launch -- \
-            --offer=operator-lab \
+            --offer="${{ github.event.inputs.offer }}" \
             --platforms="${{ github.event.inputs.platforms }}" \
             --schedule="${{ github.event.inputs.schedule }}" \
             --timezone="${{ github.event.inputs.timezone }}"

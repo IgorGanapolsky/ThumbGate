@@ -2,7 +2,7 @@
 
 /**
  * Integration tests: GET /checkout/pro must not create Stripe sessions for
- * bots. Browsers hit the session-create path as before; bots get an HTML
+ * bots. Browsers go straight to Stripe checkout; bots get an HTML
  * interstitial that only creates the session on explicit confirm.
  */
 
@@ -160,7 +160,7 @@ describe('/checkout/pro bot guard', () => {
     }
   });
 
-  it('asks real browsers for email without the extra intent interstitial', async () => {
+  it('sends real browsers straight to checkout without the extra intent interstitial or email gate', async () => {
     try { fs.unlinkSync(path.join(ENV.THUMBGATE_FEEDBACK_DIR, 'telemetry-pings.jsonl')); } catch {}
     const res = await fetch(`${origin}/checkout/pro`, {
       redirect: 'manual',
@@ -169,13 +169,8 @@ describe('/checkout/pro bot guard', () => {
         accept: BROWSER_ACCEPT,
       },
     });
-    assert.equal(res.status, 200);
-    const body = await res.text();
-    assert.match(body, /Email for Stripe receipt/);
-    assert.match(body, /name="?customer_email"?/);
-    assert.match(body, /name="?confirm"? value="?1"?/);
-    assert.doesNotMatch(body, /Choose the right paid path/);
-    assert.doesNotMatch(body, /checkout\.stripe\.com/);
+    assert.ok(res.status >= 300 && res.status < 400, `expected checkout redirect, got ${res.status}`);
+    assert.match(res.headers.get('location') || '', /\/success\?/);
 
     const events = readFunnelEvents();
     assert.equal(
@@ -184,12 +179,16 @@ describe('/checkout/pro bot guard', () => {
       'real browsers should not be slowed by the intent interstitial',
     );
     assert.ok(
-      events.some((e) => e.eventType === 'checkout_email_gate_shown'),
-      'email gate should be tracked before checkout session creation',
+      events.some((e) => e.eventType === 'checkout_email_deferred_to_stripe'),
+      'missing email should be tracked as delegated to Stripe collection',
+    );
+    assert.ok(
+      events.some((e) => e.eventType === 'checkout_bootstrap'),
+      'real browsers should reach checkout session creation',
     );
   });
 
-  it('asks confirmed real browsers for an email before creating Stripe sessions', async () => {
+  it('lets confirmed real browsers proceed while Stripe collects the email', async () => {
     try { fs.unlinkSync(path.join(ENV.THUMBGATE_FEEDBACK_DIR, 'telemetry-pings.jsonl')); } catch {}
     const res = await fetch(`${origin}/checkout/pro?confirm=1`, {
       redirect: 'manual',
@@ -198,21 +197,17 @@ describe('/checkout/pro bot guard', () => {
         accept: BROWSER_ACCEPT,
       },
     });
-    assert.equal(res.status, 200);
-    const body = await res.text();
-    assert.match(body, /Email for Stripe receipt/);
-    assert.match(body, /name="?customer_email"?/);
-    assert.match(body, /name="?confirm"? value="?1"?/);
+    assert.ok(res.status >= 300 && res.status < 400, `expected checkout redirect, got ${res.status}`);
+    assert.match(res.headers.get('location') || '', /\/success\?/);
 
     const events = readFunnelEvents();
-    assert.equal(
-      events.filter((e) => e.eventType === 'checkout_bootstrap').length,
-      0,
-      'email gate should not create a checkout session',
+    assert.ok(
+      events.some((e) => e.eventType === 'checkout_email_deferred_to_stripe'),
+      'missing email should be tracked as delegated to Stripe collection',
     );
     assert.ok(
-      events.some((e) => e.eventType === 'checkout_email_gate_shown'),
-      'email gate should be tracked separately from checkout starts',
+      events.some((e) => e.eventType === 'checkout_bootstrap'),
+      'confirmed browsers should create a checkout session without our email gate',
     );
   });
 

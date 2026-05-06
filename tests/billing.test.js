@@ -270,6 +270,13 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(withEmail.customer_email, 'buyer@example.com');
     assert.equal(withoutEmail.mode, 'subscription');
     assert.equal(withoutEmail.payment_method_collection, 'always');
+    assert.equal(withoutEmail.allow_promotion_codes, true);
+    assert.deepEqual(withoutEmail.after_expiration, {
+      recovery: {
+        enabled: true,
+        allow_promotion_codes: true,
+      },
+    });
     assert.equal(Object.prototype.hasOwnProperty.call(withoutEmail, 'subscription_data'), false);
     assert.equal(withoutEmail.metadata.priceId, billing.CONFIG.STRIPE_PRICE_ID_PRO_MONTHLY);
     assert.equal(withoutEmail.line_items[0].price_data.unit_amount, 1900);

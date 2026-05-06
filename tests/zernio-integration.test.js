@@ -262,7 +262,7 @@ describe('zernio publisher', () => {
             data: [
               { platform: 'twitter', _id: 'acc_t1', name: 'Twitter' },
               { platform: 'twitter', accountId: 'acc_t2', name: 'Twitter Backup' },
-              { platform: 'instagram', accountId: 'acc_i1', name: 'Instagram' },
+              { platform: 'linkedin', accountId: 'acc_l1', name: 'LinkedIn' },
             ],
           }),
         };
@@ -288,8 +288,105 @@ describe('zernio publisher', () => {
     assert.equal(publishedBodies[0].platforms[0].platform, 'twitter');
     assert.match(publishedBodies[0].content, /utm_source=twitter/);
     assert.equal(publishedBodies[1].platforms.length, 1);
-    assert.equal(publishedBodies[1].platforms[0].platform, 'instagram');
-    assert.match(publishedBodies[1].content, /utm_source=instagram/);
+    assert.equal(publishedBodies[1].platforms[0].platform, 'linkedin');
+    assert.match(publishedBodies[1].content, /utm_source=linkedin/);
+  });
+
+  it('publishToAllPlatforms skips Instagram text-only dispatches without failing other platforms', async () => {
+    const publishedBodies = [];
+
+    global.fetch = async (url, options) => {
+      if (url.includes('/accounts')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [
+              { platform: 'bluesky', accountId: 'acc_b1', name: 'Bluesky' },
+              { platform: 'instagram', accountId: 'acc_i1', name: 'Instagram' },
+            ],
+          }),
+        };
+      }
+      if (url.includes('/posts')) {
+        publishedBodies.push(JSON.parse(options.body));
+        return {
+          ok: true,
+          json: async () => ({ data: { id: 'text_post_123', status: 'published' } }),
+        };
+      }
+      throw new Error(`Unexpected URL: ${url}`);
+    };
+
+    const result = await publishToAllPlatforms(
+      'Voice agent reliability diagnostic is open today at https://buy.stripe.com/3cI7sLgH25v8dWh5e33sI0o',
+      {
+        campaign: 'voice_agent_reliability_diagnostic',
+        medium: 'social',
+        platforms: ['bluesky', 'instagram'],
+      }
+    );
+
+    assert.equal(result.published.length, 1);
+    assert.equal(result.published[0].platform, 'bluesky');
+    assert.deepEqual(result.skipped, [{ platform: 'instagram', reason: 'media_content_required' }]);
+    assert.equal(result.errors.length, 0);
+    assert.equal(publishedBodies.length, 1);
+    assert.deepEqual(publishedBodies[0].platforms, [{ platform: 'bluesky', accountId: 'acc_b1' }]);
+  });
+
+  it('publishToAllPlatforms honors requested platforms and campaign attribution', async () => {
+    const publishedBodies = [];
+
+    global.fetch = async (url, options) => {
+      if (url.includes('/accounts')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [
+              { platform: 'linkedin', accountId: 'acc_l1', name: 'LinkedIn' },
+              { platform: 'threads', accountId: 'acc_t1', name: 'Threads' },
+            ],
+          }),
+        };
+      }
+      if (url.includes('/posts')) {
+        publishedBodies.push(JSON.parse(options.body));
+        return {
+          ok: true,
+          json: async () => ({ data: { id: 'offer_post_123', status: 'published' } }),
+        };
+      }
+      throw new Error(`Unexpected URL: ${url}`);
+    };
+
+    const result = await publishToAllPlatforms(
+      'Voice agent reliability diagnostic is open now at https://thumbgate.ai/#workflow-sprint-intake',
+      {
+        campaign: 'voice_agent_reliability_diagnostic',
+        medium: 'social',
+        platforms: ['linkedin'],
+      }
+    );
+
+    assert.equal(result.published.length, 1);
+    assert.equal(result.published[0].platform, 'linkedin');
+    assert.equal(publishedBodies.length, 1);
+    assert.deepEqual(publishedBodies[0].platforms, [{ platform: 'linkedin', accountId: 'acc_l1' }]);
+    assert.match(publishedBodies[0].content, /utm_source=linkedin/);
+    assert.match(publishedBodies[0].content, /utm_campaign=voice_agent_reliability_diagnostic/);
+  });
+
+  it('Zernio offer dispatch workflow validates CTA and passes campaign inputs to CLI', () => {
+    const workflowPath = path.join(__dirname, '..', '.github', 'workflows', 'zernio-offer-dispatch.yml');
+    const workflow = fs.readFileSync(workflowPath, 'utf8');
+
+    assert.match(workflow, /workflow_dispatch:/);
+    assert.match(workflow, /ZERNIO_API_KEY: \$\{\{ secrets\.ZERNIO_API_KEY \}\}/);
+    assert.match(workflow, /thumbgate\\\.ai\|buy\\\.stripe\\\.com/);
+    assert.match(workflow, /default: 'linkedin,threads,bluesky'/);
+    assert.match(workflow, /--platforms="\$OFFER_PLATFORMS"/);
+    assert.match(workflow, /--campaign="\$OFFER_CAMPAIGN"/);
+    assert.match(workflow, /--medium="\$OFFER_MEDIUM"/);
   });
 
   it('schedulePost includes scheduledFor and timezone in body', async () => {
