@@ -46,6 +46,10 @@ GitHub Actions workflow:
 
 - `.github/workflows/thumbgate-creator-platform-promo.yml`
 
+Creator platform requirements refresher (media constraints + asset truth):
+
+- `reports/gtm/2026-05-06-community-course-promo/creator-platform-requirements-2026-05-06.md`
+
 Preview is safe (no publish) and should be used before any external action:
 
 - `mode=preview` runs `--dry-run` with the Operator Lab media plan (`--offer=operator-lab`)
