@@ -6,9 +6,13 @@ Use this as the operator cockpit for the current run. Full copy, follow-ups, CTA
 
 ## Current Revenue State
 
-Canonical truth table for today’s run lives in:
+Updated: 2026-05-06
 
-- `reports/gtm/2026-05-05-money-today/operator-close-packet.md`
+Canonical operator runbook for today’s run lives in:
+
+- `reports/gtm/2026-05-06-money-today/NEXT_ACTIONS.md`
+
+Note: any operator close packet that contains emails, names, or other PII must stay local-only and git-ignored.
 
 Snapshot (as-of the May 4 baseline):
 

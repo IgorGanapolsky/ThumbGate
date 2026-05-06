@@ -43,6 +43,7 @@ GitHub Actions workflow:
 Preview is safe (no publish) and should be used before any external action:
 
 - `mode=preview` runs `--dry-run` with the Operator Lab media plan (`--offer=operator-lab`)
+- The workflow uploads a `thumbgate-creator-platform-promo-preview` artifact containing `promo-preview.json` (captions + media plan) for approval review.
 - `mode=publish` / `mode=schedule` are external actions and require explicit confirmation
 
 Approval-ready GitHub Actions inputs:

@@ -66,7 +66,14 @@ jobs:
           npm run social:publish:launch -- \
             --dry-run \
             --offer="${{ github.event.inputs.offer }}" \
-            --platforms="${{ github.event.inputs.platforms }}"
+            --platforms="${{ github.event.inputs.platforms }}" | tee promo-preview.json
+
+      - name: Upload preview artifact
+        if: github.event.inputs.mode == 'preview'
+        uses: actions/upload-artifact@v4
+        with:
+          name: thumbgate-creator-platform-promo-preview
+          path: promo-preview.json
 
       - name: Publish campaign
         if: github.event.inputs.mode == 'publish'
