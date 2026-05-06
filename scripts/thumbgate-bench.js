@@ -7,11 +7,26 @@ const path = require('node:path');
 
 const ROOT = path.join(__dirname, '..');
 const DEFAULT_SUITE_PATH = path.join(ROOT, 'bench', 'thumbgate-bench.json');
+const DEFAULT_PROGRAMBENCH_SUITE_PATH = path.join(ROOT, 'bench', 'programbench-smoke.json');
 const DEFAULT_MIN_SCORE = 90;
 const BACKSLASH = '\\';
 const ESCAPED_BACKSLASH = String.raw`\\`;
 const PIPE = '|';
 const ESCAPED_PIPE = String.raw`\|`;
+const PROGRAMBENCH_CLEANROOM_POLICY = Object.freeze({
+  internet: 'blocked',
+  sourceLookup: 'blocked',
+  decompilation: 'blocked',
+  systrace: 'blocked',
+  sourceRepository: 'hidden',
+});
+const PROGRAMBENCH_REQUIRED_GATES = Object.freeze([
+  'behavior_probe_before_build',
+  'differential_oracle_defined',
+  'cli_contract_preserved',
+  'no_source_lookup',
+  'completion_requires_executable_parity',
+]);
 
 function parseBooleanOption(args, arg) {
   if (arg === '--json') {
@@ -20,6 +35,10 @@ function parseBooleanOption(args, arg) {
   }
   if (arg === '--use-runtime-state') {
     args.useRuntimeState = true;
+    return true;
+  }
+  if (arg === '--programbench-smoke' || arg === '--programbench') {
+    args.programbenchSmoke = true;
     return true;
   }
   if (arg === '--help' || arg === '-h') {
@@ -53,6 +72,7 @@ function parseMinScoreOption(args, arg) {
 
 function parseValueOption(args, arg) {
   return parsePathOption(args, arg, '--scenarios', 'suitePath')
+    || parsePathOption(args, arg, '--programbench-scenarios', 'programbenchSuitePath')
     || parsePathOption(args, arg, '--out-dir', 'outDir')
     || parseMinScoreOption(args, arg);
 }
@@ -63,6 +83,8 @@ function parseArgs(argv = process.argv.slice(2)) {
     outDir: null,
     json: false,
     useRuntimeState: false,
+    programbenchSmoke: false,
+    programbenchSuitePath: DEFAULT_PROGRAMBENCH_SUITE_PATH,
     minScore: DEFAULT_MIN_SCORE,
   };
 
@@ -80,11 +102,54 @@ function usage() {
     '',
     'Options:',
     `  --scenarios=<path>      Scenario suite JSON. Default: ${path.relative(ROOT, DEFAULT_SUITE_PATH)}`,
+    `  --programbench-smoke    Include ProgramBench-style cleanroom proof from ${path.relative(ROOT, DEFAULT_PROGRAMBENCH_SUITE_PATH)}`,
+    '  --programbench          Alias for --programbench-smoke.',
+    `  --programbench-scenarios=<path> ProgramBench-style smoke suite JSON. Default: ${path.relative(ROOT, DEFAULT_PROGRAMBENCH_SUITE_PATH)}`,
     '  --out-dir=<path>        Report directory. Default: .thumbgate/bench/<timestamp>',
     '  --min-score=<0-100>     Required score before exit code 1. Default: 90',
     '  --json                  Print the JSON report to stdout.',
     '  --use-runtime-state     Evaluate against current runtime state instead of an isolated temp state.',
   ].join('\n');
+}
+
+function loadProgramBenchSmokeSuite(filePath = DEFAULT_PROGRAMBENCH_SUITE_PATH) {
+  const suite = readJson(filePath);
+  assertObject(suite, 'ProgramBench smoke suite');
+  if (!Array.isArray(suite.tasks) || suite.tasks.length === 0) {
+    throw new Error('ProgramBench smoke suite must define a non-empty tasks array');
+  }
+
+  const seen = new Set();
+  const tasks = suite.tasks.map((task, index) => {
+    assertObject(task, `ProgramBench smoke task ${index + 1}`);
+    const id = stableId(task.id);
+    if (!id) throw new Error(`ProgramBench smoke task ${index + 1} must define id`);
+    if (seen.has(id)) throw new Error(`Duplicate ProgramBench smoke task id: ${id}`);
+    seen.add(id);
+    if (!task.intent) throw new Error(`ProgramBench smoke task ${id} must define intent`);
+    assertObject(task.behaviorProbe, `ProgramBench smoke task ${id} behaviorProbe`);
+    assertObject(task.differentialOracle, `ProgramBench smoke task ${id} differentialOracle`);
+    assertObject(task.contract, `ProgramBench smoke task ${id} contract`);
+    return {
+      ...task,
+      id,
+      blockedAssumptions: Array.isArray(task.blockedAssumptions) ? task.blockedAssumptions : [],
+      requiredGates: Array.isArray(task.requiredGates) && task.requiredGates.length > 0
+        ? task.requiredGates
+        : [...PROGRAMBENCH_REQUIRED_GATES],
+      oracleSignals: Array.isArray(task.differentialOracle.signals)
+        ? task.differentialOracle.signals
+        : [],
+    };
+  });
+
+  return {
+    version: suite.version || 1,
+    name: suite.name || 'ThumbGate ProgramBench Smoke',
+    description: suite.description || '',
+    sourcePath: filePath,
+    tasks,
+  };
 }
 
 function stableId(value) {
@@ -337,8 +402,116 @@ function scoreResults(results, replayResults = []) {
   };
 }
 
+function hasAllBlockedAssumptions(task) {
+  return ['internet', 'source_lookup', 'decompilation', 'systrace']
+    .every((assumption) => task.blockedAssumptions.includes(assumption));
+}
+
+function evaluateProgramBenchEvidence(task) {
+  return {
+    behavior_probe_before_build: Boolean(task.behaviorProbe.command && task.behaviorProbe.expectedBehavior),
+    differential_oracle_defined: Boolean(task.differentialOracle.command && task.oracleSignals.length > 0),
+    cli_contract_preserved: task.contract.surface === 'cli' && Boolean(task.contract.preserved),
+    no_source_lookup: hasAllBlockedAssumptions(task),
+    completion_requires_executable_parity: task.completionPolicy === 'executable_parity',
+  };
+}
+
+function runProgramBenchSmokeScenario(task) {
+  const evidence = evaluateProgramBenchEvidence(task);
+  const missingGates = task.requiredGates.filter((gate) => !evidence[gate]);
+  return {
+    id: task.id,
+    intent: task.intent,
+    repositoryShape: task.repositoryShape || 'unknown',
+    passed: missingGates.length === 0,
+    requiredGates: task.requiredGates,
+    missingGates,
+    blockedAssumptions: task.blockedAssumptions,
+    behaviorProbe: task.behaviorProbe.command,
+    differentialOracle: task.differentialOracle.command,
+    oracleSignals: task.oracleSignals,
+    evidence,
+  };
+}
+
+function runProgramBenchSmokeSuite(suite) {
+  return suite.tasks.map(runProgramBenchSmokeScenario);
+}
+
+function scoreProgramBenchResults(results) {
+  const total = results.length;
+  const passed = results.filter((result) => result.passed).length;
+  const cleanroomPolicyRate = divide(
+    results.filter((result) => result.evidence.no_source_lookup).length,
+    total,
+  );
+  const behaviorProbeRate = divide(
+    results.filter((result) => result.evidence.behavior_probe_before_build).length,
+    total,
+  );
+  const oracleCoverageRate = divide(
+    results.filter((result) => result.evidence.differential_oracle_defined).length,
+    total,
+  );
+  const cliContractRate = divide(
+    results.filter((result) => result.evidence.cli_contract_preserved).length,
+    total,
+  );
+  const executableParityRate = divide(
+    results.filter((result) => result.evidence.completion_requires_executable_parity).length,
+    total,
+  );
+  const unsupportedCompletionRate = 1 - executableParityRate;
+  const taskSuccessRate = divide(passed, total);
+  const score = Math.round(100 * (
+    (cleanroomPolicyRate * 0.25) +
+    (behaviorProbeRate * 0.2) +
+    (oracleCoverageRate * 0.2) +
+    (cliContractRate * 0.15) +
+    (executableParityRate * 0.1) +
+    (taskSuccessRate * 0.1)
+  ));
+
+  return {
+    score,
+    totalTasks: total,
+    taskSuccessRate: roundRate(taskSuccessRate),
+    cleanroomPolicyRate: roundRate(cleanroomPolicyRate),
+    behaviorProbeRate: roundRate(behaviorProbeRate),
+    oracleCoverageRate: roundRate(oracleCoverageRate),
+    cliContractRate: roundRate(cliContractRate),
+    executableParityRate: roundRate(executableParityRate),
+    unsupportedCompletionRate: roundRate(unsupportedCompletionRate),
+  };
+}
+
+function buildProgramBenchSmokeProof(options = {}) {
+  const suite = loadProgramBenchSmokeSuite(options.programbenchSuitePath || DEFAULT_PROGRAMBENCH_SUITE_PATH);
+  const results = runProgramBenchSmokeSuite(suite);
+  const metrics = scoreProgramBenchResults(results);
+  return {
+    benchmark: suite.name,
+    version: suite.version,
+    mode: 'programbench-style-smoke',
+    officialProgramBenchScore: null,
+    officialBenchmark: false,
+    summary: 'Cleanroom proof adapter for whole-repo clone tasks; this is not an official ProgramBench score.',
+    sourcePath: path.relative(ROOT, suite.sourcePath),
+    cleanroomPolicy: PROGRAMBENCH_CLEANROOM_POLICY,
+    requiredGates: PROGRAMBENCH_REQUIRED_GATES,
+    passed: metrics.score >= 95 && results.every((result) => result.passed),
+    metrics,
+    failedTasks: results.filter((result) => !result.passed).map((result) => result.id),
+    tasks: results,
+  };
+}
+
 function buildReport(suite, results, replayResults, options = {}) {
   const metrics = scoreResults(results, replayResults);
+  const programBench = options.programbenchSmoke
+    ? buildProgramBenchSmokeProof(options)
+    : null;
   return {
     benchmark: suite.name,
     version: suite.version,
@@ -346,8 +519,11 @@ function buildReport(suite, results, replayResults, options = {}) {
     sourcePath: path.relative(ROOT, suite.sourcePath),
     isolatedRuntime: !options.useRuntimeState,
     minScore: options.minScore,
-    passed: metrics.score >= options.minScore && results.every((result) => result.passed),
+    passed: metrics.score >= options.minScore
+      && results.every((result) => result.passed)
+      && (!programBench || programBench.passed),
     metrics,
+    programBench,
     failedScenarios: results.filter((result) => !result.passed).map((result) => result.id),
     scenarios: results,
   };
@@ -403,6 +579,35 @@ function renderMarkdown(report) {
     lines.push(`| ${cells} |`);
   }
 
+  if (report.programBench) {
+    lines.push(
+      '',
+      '## ProgramBench-Style Cleanroom Proof',
+      '',
+      `- Mode: ${report.programBench.mode}`,
+      `- Official ProgramBench score: ${report.programBench.officialProgramBenchScore === null ? 'not claimed' : report.programBench.officialProgramBenchScore}`,
+      `- Result: ${report.programBench.passed ? 'PASS' : 'FAIL'}`,
+      `- Score: ${report.programBench.metrics.score}/100`,
+      `- Cleanroom policy rate: ${Math.round(report.programBench.metrics.cleanroomPolicyRate * 100)}%`,
+      `- Behavior probe rate: ${Math.round(report.programBench.metrics.behaviorProbeRate * 100)}%`,
+      `- Oracle coverage rate: ${Math.round(report.programBench.metrics.oracleCoverageRate * 100)}%`,
+      `- Unsupported completion rate: ${Math.round(report.programBench.metrics.unsupportedCompletionRate * 100)}%`,
+      '',
+      '| Task | Repository shape | Missing gates | Result |',
+      '| --- | --- | --- | --- |',
+    );
+
+    for (const task of report.programBench.tasks) {
+      const cells = [
+        task.id,
+        task.repositoryShape,
+        task.missingGates.length > 0 ? task.missingGates.join(', ') : 'none',
+        task.passed ? 'PASS' : 'FAIL',
+      ].map(escapeMarkdownTableCell).join(' | ');
+      lines.push(`| ${cells} |`);
+    }
+  }
+
   if (report.failedScenarios.length > 0) {
     lines.push('', '## Failed Scenarios', '');
     for (const id of report.failedScenarios) {
@@ -429,6 +634,8 @@ function runBenchmark(options = {}) {
   const report = buildReport(suite, firstPass, replayPass, {
     minScore: options.minScore ?? DEFAULT_MIN_SCORE,
     useRuntimeState: Boolean(options.useRuntimeState),
+    programbenchSmoke: Boolean(options.programbenchSmoke),
+    programbenchSuitePath: options.programbenchSuitePath,
   });
   const outDir = resolveOutDir(options.outDir);
   const paths = writeReport(report, outDir);
@@ -477,15 +684,21 @@ if (isExecutedDirectly()) {
 
 module.exports = {
   DEFAULT_SUITE_PATH,
+  DEFAULT_PROGRAMBENCH_SUITE_PATH,
   DEFAULT_MIN_SCORE,
   parseArgs,
   loadScenarioSuite,
+  loadProgramBenchSmokeSuite,
   normalizeDecision,
   expectedMatches,
   runScenario,
   runSuitePass,
+  runProgramBenchSmokeScenario,
+  runProgramBenchSmokeSuite,
   scoreResults,
+  scoreProgramBenchResults,
   buildReport,
+  buildProgramBenchSmokeProof,
   renderMarkdown,
   writeReport,
   runBenchmark,
