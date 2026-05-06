@@ -1,8 +1,8 @@
 name: Weekly Social Post
 
 # Runs the build-in-public weekly stats post every Monday at 14:00 UTC (9am ET).
-# Uses Zernio as the primary publisher (LinkedIn, Instagram, YouTube, Threads,
-# Bluesky). X/Twitter was dropped from distribution 2026-04-20.
+# Scheduled runs are dry-run by default while Zernio ROI is unproven; paid
+# publishing requires workflow opt-in or THUMBGATE_ENABLE_ZERNIO_WEEKLY_SOCIAL=1.
 
 on:
   schedule:
@@ -18,6 +18,11 @@ on:
         description: 'Number of days to include in stats window'
         required: false
         default: '7'
+      publish_enabled:
+        description: 'Allow paid Zernio publishing for this manual run'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write   # needed to commit state file changes back to repo
@@ -39,6 +44,7 @@ jobs:
       ZERNIO_LINKEDIN_ACCOUNT_ID: ${{ secrets.ZERNIO_LINKEDIN_ACCOUNT_ID }}
       ZERNIO_YOUTUBE_ACCOUNT_ID: ${{ secrets.ZERNIO_YOUTUBE_ACCOUNT_ID }}
       ZERNIO_PROFILE_ID: ${{ secrets.ZERNIO_PROFILE_ID }}
+      THUMBGATE_ENABLE_ZERNIO_WEEKLY_SOCIAL: ${{ vars.THUMBGATE_ENABLE_ZERNIO_WEEKLY_SOCIAL || '0' }}
       # X/Twitter fallback publisher was retired 2026-04-20. Zernio is the
       # sole publisher; if it fails, the job surfaces the error and exits.
       # Dev.to — article publishing
@@ -82,11 +88,21 @@ jobs:
           fi
           PERIOD_DAYS="${{ github.event.inputs.period_days }}"
           PERIOD_DAYS="${PERIOD_DAYS:-7}"
+          SHOULD_PUBLISH=false
+          if [ "${{ github.event.inputs.publish_enabled }}" = "true" ] || [ "$THUMBGATE_ENABLE_ZERNIO_WEEKLY_SOCIAL" = "1" ]; then
+            SHOULD_PUBLISH=true
+          fi
+          if [ "$DRY_RUN_FLAG" = "--dry-run" ] || [ "$SHOULD_PUBLISH" != "true" ]; then
+            EFFECTIVE_DRY_RUN=true
+            echo "Weekly Zernio publishing disabled; generating dry-run output only."
+          else
+            EFFECTIVE_DRY_RUN=false
+          fi
           node -e "
             const { runWeeklyPost } = require('./scripts/weekly-auto-post');
             runWeeklyPost({
               periodDays: parseInt('$PERIOD_DAYS'),
-              dryRun: '$DRY_RUN_FLAG' === '--dry-run',
+              dryRun: '$EFFECTIVE_DRY_RUN' === 'true',
             })
             .then(r => {
               console.log(JSON.stringify(r, null, 2));
@@ -104,6 +120,10 @@ jobs:
           sudo apt-get install -y ffmpeg --quiet
 
       - name: Generate and post marketing video (TikTok + YouTube + Instagram Reels)
+        if: >-
+          github.event.inputs.dry_run == 'true' ||
+          github.event.inputs.publish_enabled == 'true' ||
+          vars.THUMBGATE_ENABLE_ZERNIO_WEEKLY_SOCIAL == '1'
         env:
           ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
           ZERNIO_TIKTOK_ACCOUNT_ID: ${{ secrets.ZERNIO_TIKTOK_ACCOUNT_ID }}
@@ -113,6 +133,10 @@ jobs:
           DRY_RUN_FLAG=""
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
             DRY_RUN_FLAG="--dry-run"
+          fi
+          if [ "$DRY_RUN_FLAG" != "--dry-run" ] && [ "${{ github.event.inputs.publish_enabled }}" != "true" ] && [ "$THUMBGATE_ENABLE_ZERNIO_WEEKLY_SOCIAL" != "1" ]; then
+            echo "Weekly Zernio video publishing disabled by default."
+            exit 0
           fi
           # post-video.js: generates slides → stitches with ffmpeg → uploads → posts to all video platforms
           # Marketing DB dedup prevents double-posting within 7 days
