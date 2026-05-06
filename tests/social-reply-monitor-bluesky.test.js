@@ -8,6 +8,8 @@ const {
   buildReplyContext,
   monitor,
   assertPublishableDraft,
+  isSafeAutoReply,
+  parseLimitArg,
   publishApprovedDrafts,
   publishReply,
   reconcileDraftsWithState,
@@ -154,6 +156,50 @@ test('monitor writes draft + state on real run', async () => {
   assert.ok(savedState);
   assert.ok(savedState.repliedTo.bluesky['at://did:plc:other/app.bsky.feed.post/a']);
   assert.ok(savedState.lastCheck.bluesky);
+});
+
+test('monitor can auto-approve a bounded safe Bluesky reply for autonomous publishing', async () => {
+  const session = { did: 'did:plc:me', handle: 'me.test', pdsHost: 'pds.example', accessJwt: 'jwt' };
+  const notifications = [
+    {
+      uri: 'at://did:plc:other/app.bsky.feed.post/a',
+      cid: 'cidA',
+      reason: 'reply',
+      indexedAt: '2026-04-21T00:00:00Z',
+      author: { handle: 'someone.bsky.social', did: 'did:plc:someone' },
+      record: { text: 'hello' },
+    },
+  ];
+
+  let savedDraft = null;
+  const result = await monitor({
+    sessionFactory: async () => session,
+    listNotifications: async () => notifications,
+    generateReply: async () => 'Pre-action checks are useful because they stop the repeated bad move before another tool call spends money.',
+    saveDraft: (d) => { savedDraft = d; },
+    saveState: () => {},
+    loadState: () => ({ repliedTo: { bluesky: {} }, lastCheck: {} }),
+    dryRun: false,
+    autoApproveSafe: true,
+    autoApproveLimit: 1,
+  });
+
+  assert.equal(result.approved, 1);
+  assert.equal(savedDraft.approved, true);
+  assert.equal(savedDraft.autoPost, true);
+  assert.equal(savedDraft.approvalReason, 'safe_auto_reply');
+});
+
+test('safe auto-reply gate rejects promotional or link-bearing replies', () => {
+  assert.equal(isSafeAutoReply('This local check stops the repeated bad move before the next tool call.'), true);
+  assert.equal(isSafeAutoReply('Buy now at https://example.com'), false);
+  assert.equal(isSafeAutoReply('DM me for a limited time sale'), false);
+});
+
+test('parseLimitArg accepts positive integer limits only', () => {
+  assert.equal(parseLimitArg(['--limit=2']), 2);
+  assert.equal(parseLimitArg(['--limit=0']), null);
+  assert.equal(parseLimitArg(['--limit=nope']), null);
 });
 
 test('monitor skips notifications already recorded as replied', async () => {
