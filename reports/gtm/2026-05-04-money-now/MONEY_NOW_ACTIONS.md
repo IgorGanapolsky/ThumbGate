@@ -1,15 +1,21 @@
 # Money Now Actions
 
-Updated: 2026-05-04T19:53:13.010Z
+Updated: 2026-05-05
 
 Use this as the operator cockpit for the current run. Full copy, follow-ups, CTAs, and logging commands live in `operator-send-now.md`; the pipeline truth table lives in `sales-pipeline.md`.
 
 ## Current Revenue State
-- Live billing verification: verified for this run.
-- Paid orders: 4.
-- Checkout starts: 87.
-- Pipeline: 20 active leads, 0 contacted, 0 replied, 0 paid in the local sales ledger.
-- Revenue bottleneck: sending and logging outreach, not more prospect research.
+
+Canonical truth table for today’s run lives in:
+
+- `reports/gtm/2026-05-05-money-today/operator-close-packet.md`
+
+Snapshot (as-of the May 4 baseline):
+
+- Paid orders: 4
+- Checkout starts: 87
+- Pipeline: 20 active leads, 0 contacted, 0 replied, 0 paid in the local sales ledger
+- Revenue bottleneck: sending and logging outreach, not more prospect research
 
 ## Do First
 1. Send the 4 warm Reddit Workflow Hardening Sprint DMs.
@@ -17,6 +23,9 @@ Use this as the operator cockpit for the current run. Full copy, follow-ups, CTA
 3. Send the 5 strongest production-rollout sprint messages.
 4. After each send, run that row's `Log after send` command from `operator-send-now.md`.
 5. Only send proof links after the buyer confirms pain.
+
+Guardrail reminder: do not publish posts, send messages, invite members, upload files, create accounts, change billing, submit forms, or run paid ads without explicit action-time confirmation.
+
 
 ## Top Send Queue
 

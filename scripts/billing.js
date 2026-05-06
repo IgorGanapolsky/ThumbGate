@@ -412,9 +412,7 @@ function resolveCheckoutBrandUrls(appOrigin) {
   };
 }
 
-// Resolve the per-tier product image that ships to Stripe `product_data.images`.
-// Keeping three distinct URLs means the Stripe dashboard and checkout surface
-// never show twins for Free/Pro/Team; see tests/billing-tier-icons.test.js.
+// Resolve the per-tier product image used by Stripe Checkout.
 function resolveTierIconUrl(planId, appOrigin) {
   const brandUrls = resolveCheckoutBrandUrls(appOrigin);
   const normalized = typeof planId === 'string' ? planId.toLowerCase() : '';
@@ -2546,6 +2544,8 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
     payment_method_types: ['card', 'link'],
     mode: pack ? 'payment' : 'subscription',
     line_items: lineItems,
+    allow_promotion_codes: true,
+    after_expiration: { recovery: { enabled: true, allow_promotion_codes: true } },
     branding_settings: buildCheckoutBrandingSettings(appOrigin),
     metadata: serializeStripeMetadata({
       ...checkoutMetadata,

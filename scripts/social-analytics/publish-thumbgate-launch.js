@@ -8,9 +8,12 @@ const {
   groupAccountsByPlatform,
   publishPost,
   schedulePost,
+  uploadLocalMedia,
 } = require('./publishers/zernio');
 const { THUMBGATE_CAPTION } = require('./instagram-thumbgate-post');
 const { resolveHostedBillingConfig } = require('../hosted-config');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const APP_ORIGIN = resolveHostedBillingConfig({
   requestOrigin: 'https://thumbgate-production.up.railway.app',
@@ -18,8 +21,33 @@ const APP_ORIGIN = resolveHostedBillingConfig({
 const DEFAULT_TIMEZONE = 'America/New_York';
 const LAUNCH_CAMPAIGN = 'first_customer_push';
 const OPERATOR_LAB_CAMPAIGN = 'operator_lab_launch';
+const PAID_SPRINT_CAMPAIGN = 'paid_workflow_sprint';
+const VOICE_AGENT_DIAGNOSTIC_CAMPAIGN = 'voice_agent_reliability_diagnostic';
 const SKOOL_OPERATOR_LAB_URL = 'https://www.skool.com/thumbgate-operator-lab-6000';
+const DIAGNOSTIC_CHECKOUT_URL = 'https://buy.stripe.com/00w14neyUcXA5pL5e33sI0e';
+const PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL = 'https://buy.stripe.com/3cI7sLgH25v8dWh5e33sI0o';
+const PAID_SPRINT_IMPLEMENTATION_PAYMENT_URL = 'https://buy.stripe.com/8x25kDcqMaPs9G15e33sI0p';
 const DEFAULT_LAUNCH_PLATFORMS = ['twitter', 'linkedin', 'instagram'];
+const DEFAULT_OPERATOR_LAB_PLATFORMS = ['linkedin', 'instagram', 'threads', 'bluesky', 'reddit', 'youtube'];
+
+const REPO_ROOT = path.resolve(__dirname, '..', '..');
+const OPERATOR_LAB_MEDIA = {
+  landscape: path.join(REPO_ROOT, 'docs', 'marketing', 'assets', 'thumbgate-skool-cover-1084x576.png'),
+  square: path.join(REPO_ROOT, 'docs', 'marketing', 'assets', 'thumbgate-skool-icon-128x128.png'),
+};
+
+function resolveOperatorLabMediaPlan(platform) {
+  const normalized = String(platform || '').trim().toLowerCase();
+  if (normalized === 'instagram') return [OPERATOR_LAB_MEDIA.square];
+  return [OPERATOR_LAB_MEDIA.landscape];
+}
+
+function describeMediaPlan(paths = []) {
+  return paths.map((p) => ({
+    path: p,
+    exists: fs.existsSync(p),
+  }));
+}
 
 const OPERATOR_LAB_POSTS = {
   twitter: {
@@ -200,6 +228,55 @@ function buildOperatorLabUrl(platform, content) {
   });
 }
 
+function buildPaidSprintUrl(platform, content) {
+  return buildUTMLink(PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL, {
+    source: platform,
+    medium: 'organic_social',
+    campaign: PAID_SPRINT_CAMPAIGN,
+    content,
+  });
+}
+
+function buildVoiceAgentDiagnosticUrl(platform, content) {
+  return buildUTMLink(`${APP_ORIGIN}/#workflow-sprint-intake`, {
+    source: platform,
+    medium: 'paid_service',
+    campaign: VOICE_AGENT_DIAGNOSTIC_CAMPAIGN,
+    content,
+  });
+}
+
+function buildPaidSprintCheckoutUrls(platform, content) {
+  const source = platform || 'zernio';
+  const baseContent = content || `paid_sprint_${source}`;
+  return {
+    diagnostic: buildUTMLink(PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL, {
+      source,
+      medium: 'organic_social',
+      campaign: PAID_SPRINT_CAMPAIGN,
+      content: `${baseContent}_diagnostic`,
+    }),
+    sprint: buildUTMLink(PAID_SPRINT_IMPLEMENTATION_PAYMENT_URL, {
+      source,
+      medium: 'organic_social',
+      campaign: PAID_SPRINT_CAMPAIGN,
+      content: `${baseContent}_sprint`,
+    }),
+  };
+}
+
+function mediumForOffer(offer) {
+  if (offer === 'voice-agent-diagnostic') return 'paid_service';
+  return offer === 'operator-lab' ? 'community_course' : 'organic_social';
+}
+
+function campaignForOffer(offer) {
+  if (offer === 'operator-lab') return OPERATOR_LAB_CAMPAIGN;
+  if (offer === 'paid-sprint') return PAID_SPRINT_CAMPAIGN;
+  if (offer === 'voice-agent-diagnostic') return VOICE_AGENT_DIAGNOSTIC_CAMPAIGN;
+  return LAUNCH_CAMPAIGN;
+}
+
 function renderTrackedPost(spec, platform, urlBuilder) {
   if (spec.raw) return spec.raw;
   const lines = Array.isArray(spec.lines) ? spec.lines : [];
@@ -222,9 +299,123 @@ function buildOperatorLabPost(platform) {
   }, fallbackKey, buildOperatorLabUrl);
 }
 
+function buildPaidSprintPost(platform) {
+  const normalized = String(platform || '').trim().toLowerCase();
+  const key = normalized === 'x' ? 'twitter' : normalized;
+  const links = buildPaidSprintCheckoutUrls(key || 'zernio', `paid_sprint_${key || 'generic'}`);
+  const compact = [
+    'Paid ThumbGate hardening is open.',
+    '$499 diagnostic maps one repeated Claude/Codex/Cursor failure into prevention rules.',
+    links.diagnostic,
+    '$1500 sprint implements the first guardrails.',
+    links.sprint,
+  ];
+
+  if (key === 'linkedin') {
+    return [
+      'I opened a paid ThumbGate workflow-hardening lane for teams running Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, or MCP agents in real repos.',
+      '',
+      'The offer is intentionally narrow:',
+      '',
+      '- $499 diagnostic: one risky AI-agent workflow, failure-pattern review, prevention-rule map, and concrete hardening plan',
+      '- $1500 sprint: implement the first guardrails and prove the same failure gets blocked',
+      '',
+      'This is for teams seeing repeated agent mistakes: unsafe file edits, bad deploy steps, ignored repo rules, or risky tool calls that keep coming back across sessions.',
+      '',
+      `Book the $499 diagnostic: ${links.diagnostic}`,
+      `Start the $1500 sprint: ${links.sprint}`,
+    ].join('\n');
+  }
+
+  if (key === 'twitter') {
+    return [
+      'Paid ThumbGate workflow hardening is open:',
+      '$499 diagnostic for repeated Claude/Codex/Cursor failures.',
+      links.diagnostic,
+    ].join(' ');
+  }
+
+  if (key === 'instagram') {
+    return [
+      'Stop repeated AI-agent mistakes.',
+      '',
+      '$499 diagnostic: map one risky workflow.',
+      '$1500 sprint: implement the first guardrails.',
+      '',
+      'For Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, and MCP teams.',
+      '',
+      `Diagnostic: ${links.diagnostic}`,
+      `Sprint: ${links.sprint}`,
+    ].join('\n');
+  }
+
+  if (key === 'bluesky') {
+    return [
+      'Paid ThumbGate workflow hardening is open.',
+      '$499 diagnostic. $1500 implementation sprint.',
+      'For repeated Claude/Codex/Cursor failures.',
+      links.diagnostic,
+    ].join(' ');
+  }
+
+  return compact.join(' ');
+}
+
+function buildVoiceAgentDiagnosticPost(platform) {
+  const normalized = String(platform || '').trim().toLowerCase();
+  const key = normalized === 'x' ? 'twitter' : normalized;
+  const intakeUrl = buildVoiceAgentDiagnosticUrl(key || 'zernio', `voice_agent_diagnostic_${key || 'generic'}`);
+
+  if (key === 'linkedin') {
+    return [
+      'I have 3 paid voice-agent reliability diagnostics open this week.',
+      '',
+      'This is for teams shipping phone, support, or sales agents where missed intents, brittle handoffs, latency, tool failures, or unclear escalation paths are already costing real calls.',
+      '',
+      '$499 diagnostic: I review one agent flow, logs/transcripts if available, and the current eval or monitoring setup. You get a concrete failure map, prevention-rule plan, and first-fix checklist.',
+      '',
+      `Checkout: ${DIAGNOSTIC_CHECKOUT_URL}`,
+      `Intake: ${intakeUrl}`,
+    ].join('\n');
+  }
+
+  if (key === 'threads') {
+    return [
+      'Opening 3 paid voice-agent reliability diagnostics this week.',
+      '',
+      '$499: one live phone/support/sales agent flow, failure map, eval gaps, escalation risks, and first-fix checklist.',
+      '',
+      `Checkout: ${DIAGNOSTIC_CHECKOUT_URL}`,
+      `Intake: ${intakeUrl}`,
+    ].join('\n');
+  }
+
+  if (key === 'bluesky') {
+    return [
+      'Voice-agent reliability diagnostic: $499.',
+      'One flow, failure map, eval gaps, first-fix checklist.',
+      'Checkout:',
+      DIAGNOSTIC_CHECKOUT_URL,
+    ].join(' ');
+  }
+
+  return [
+    'Paid voice-agent reliability diagnostic is open.',
+    '$499 for one flow: failure map, eval gaps, escalation risks, first-fix checklist.',
+    DIAGNOSTIC_CHECKOUT_URL,
+    intakeUrl,
+  ].join(' ');
+}
+
 function buildPlatformPost(platform, offer = 'launch') {
   if (offer === 'operator-lab') {
     return buildOperatorLabPost(platform);
+  }
+  if (offer === 'paid-sprint') {
+    return buildPaidSprintPost(platform);
+  }
+  if (offer === 'voice-agent-diagnostic') {
+    return buildVoiceAgentDiagnosticPost(platform);
   }
 
   const normalized = String(platform || '').trim().toLowerCase();
@@ -278,6 +469,104 @@ function buildCampaignEntries() {
   }));
 }
 
+function getPlatformFailures(result) {
+  const failures = [];
+  const seen = new Set();
+  function pushFailure(platform, error) {
+    const normalizedPlatform = String(platform || '').trim() || 'unknown';
+    const normalizedError = String(error || 'platform publish failed');
+    const key = `${normalizedPlatform}::${normalizedError}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    failures.push({
+      platform: normalizedPlatform,
+      error: normalizedError,
+    });
+  }
+
+  const platformResults = Array.isArray(result?.platformResults) ? result.platformResults : [];
+  for (const platformResult of platformResults) {
+    if (String(platformResult?.status || '').toLowerCase() !== 'failed') continue;
+    pushFailure(platformResult.platform, platformResult.error || platformResult.errorMessage);
+  }
+
+  const postPlatforms = Array.isArray(result?.post?.platforms) ? result.post.platforms : [];
+  for (const postPlatform of postPlatforms) {
+    if (String(postPlatform?.status || '').toLowerCase() !== 'failed') continue;
+    pushFailure(postPlatform.platform, postPlatform.errorMessage || postPlatform.error);
+  }
+
+  if (String(result?.post?.status || '').toLowerCase() === 'failed' && failures.length === 0) {
+    pushFailure('unknown', result.error || result.message || 'post publish failed');
+  }
+
+  return failures;
+}
+
+function classifyPublishFailure(failure) {
+  const platform = String(failure?.platform || '').trim().toLowerCase();
+  const error = String(failure?.error || '').trim();
+  const normalizedError = error.toLowerCase();
+
+  if (
+    normalizedError.includes('zernio api 409')
+    || (
+      normalizedError.includes('already')
+      && (
+        normalizedError.includes('within the last 24 hours')
+        || normalizedError.includes('scheduled')
+        || normalizedError.includes('publishing')
+        || normalizedError.includes('posted')
+      )
+    )
+  ) {
+    return {
+      fatal: false,
+      reason: 'duplicate_recent_post',
+    };
+  }
+
+  if (
+    platform === 'reddit'
+    && normalizedError.includes('no_selfs')
+    && normalizedError.includes("doesn't allow text posts")
+  ) {
+    return {
+      fatal: false,
+      reason: 'unsupported_reddit_text_post',
+    };
+  }
+
+  return {
+    fatal: true,
+    reason: 'publish_failed',
+  };
+}
+
+function recordPublishResult(results, normalizedPlatform, result, bucket = 'published') {
+  const failures = getPlatformFailures(result);
+  if (failures.length > 0) {
+    for (const failure of failures) {
+      const platform = failure.platform === 'unknown' ? normalizedPlatform : failure.platform;
+      const classification = classifyPublishFailure({ ...failure, platform });
+      const entry = {
+        platform,
+        error: failure.error,
+      };
+      if (classification.fatal) {
+        results.errors.push(entry);
+      } else {
+        results.skipped.push({
+          ...entry,
+          reason: classification.reason,
+        });
+      }
+    }
+    return;
+  }
+  results[bucket].push({ platform: normalizedPlatform, result });
+}
+
 function defaultCampaignSchedule(now = new Date()) {
   const target = new Date(now.getTime());
   target.setDate(target.getDate() + 1);
@@ -298,18 +587,26 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
     publishPost: publisher.publishPost || publishPost,
     schedulePost: publisher.schedulePost || schedulePost,
     publishInstagramThumbGate: publisher.publishInstagramThumbGate || publishInstagramThumbGate,
+    uploadLocalMedia: publisher.uploadLocalMedia || uploadLocalMedia,
   };
 
+  const offer = String(options.offer || 'launch').trim() || 'launch';
+  const defaultPlatforms = offer === 'operator-lab' ? DEFAULT_OPERATOR_LAB_PLATFORMS : DEFAULT_LAUNCH_PLATFORMS;
   const platforms = Array.isArray(options.platforms) && options.platforms.length > 0
     ? options.platforms
-    : DEFAULT_LAUNCH_PLATFORMS;
+    : defaultPlatforms;
   const schedule = String(options.schedule || '').trim();
   const timezone = String(options.timezone || DEFAULT_TIMEZONE).trim() || DEFAULT_TIMEZONE;
-  const offer = String(options.offer || 'launch').trim() || 'launch';
-  const accounts = await api.getConnectedAccounts();
-  const groupedAccounts = api.groupAccountsByPlatform(accounts);
+
+  let groupedAccounts = new Map();
+  if (!(options.dryRun === true && !process.env.ZERNIO_API_KEY)) {
+    const accounts = await api.getConnectedAccounts();
+    groupedAccounts = api.groupAccountsByPlatform(accounts);
+  }
+
   const results = {
     dryRun: options.dryRun === true,
+    offer,
     platforms,
     previews: [],
     published: [],
@@ -321,16 +618,18 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
   for (const platform of platforms) {
     const normalizedPlatform = String(platform || '').trim().toLowerCase();
     const platformAccounts = groupedAccounts.get(normalizedPlatform) || [];
-    if (platformAccounts.length === 0) {
+    if (platformAccounts.length === 0 && !results.dryRun) {
       results.skipped.push({ platform: normalizedPlatform, reason: 'not_connected' });
       continue;
     }
 
     const content = buildPlatformPost(normalizedPlatform, offer);
+    const mediaPlanPaths = offer === 'operator-lab' ? resolveOperatorLabMediaPlan(normalizedPlatform) : [];
     results.previews.push({
       platform: normalizedPlatform,
       content,
-      accountCount: platformAccounts.length,
+      accountCount: platformAccounts.length || 0,
+      mediaPlan: describeMediaPlan(mediaPlanPaths),
     });
 
     if (results.dryRun) {
@@ -339,12 +638,19 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
 
     const utm = {
       source: normalizedPlatform === 'twitter' ? 'x' : normalizedPlatform,
-      medium: offer === 'operator-lab' ? 'community_course' : 'organic_social',
-      campaign: offer === 'operator-lab' ? OPERATOR_LAB_CAMPAIGN : LAUNCH_CAMPAIGN,
+      medium: mediumForOffer(offer),
+      campaign: campaignForOffer(offer),
     };
 
     try {
-      if (normalizedPlatform === 'instagram') {
+      const mediaItems = [];
+      if (offer === 'operator-lab') {
+        for (const mediaPath of mediaPlanPaths) {
+          mediaItems.push(await api.uploadLocalMedia(mediaPath));
+        }
+      }
+
+      if (normalizedPlatform === 'instagram' && offer !== 'operator-lab') {
         if (schedule) {
           results.skipped.push({ platform: normalizedPlatform, reason: 'schedule_not_supported_for_instagram_launch' });
           continue;
@@ -356,17 +662,30 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
       }
 
       if (schedule) {
-        const scheduledResult = await api.schedulePost(content, platformAccounts, schedule, timezone, { utm });
-        results.scheduled.push({ platform: normalizedPlatform, result: scheduledResult });
+        const scheduledResult = await api.schedulePost(content, platformAccounts, schedule, timezone, { utm, mediaItems });
+        recordPublishResult(results, normalizedPlatform, scheduledResult, 'scheduled');
       } else {
-        const publishResult = await api.publishPost(content, platformAccounts, { utm });
-        results.published.push({ platform: normalizedPlatform, result: publishResult });
+        const publishResult = await api.publishPost(content, platformAccounts, { utm, mediaItems });
+        recordPublishResult(results, normalizedPlatform, publishResult, 'published');
       }
     } catch (error) {
-      results.errors.push({
+      const errorMessage = error && error.message ? error.message : String(error);
+      const classification = classifyPublishFailure({
         platform: normalizedPlatform,
-        error: error && error.message ? error.message : String(error),
+        error: errorMessage,
       });
+      if (classification.fatal) {
+        results.errors.push({
+          platform: normalizedPlatform,
+          error: errorMessage,
+        });
+      } else {
+        results.skipped.push({
+          platform: normalizedPlatform,
+          error: errorMessage,
+          reason: classification.reason,
+        });
+      }
     }
   }
 
@@ -382,7 +701,16 @@ async function main() {
   }
 }
 
-if (require.main === module) {
+const isDirectRun = (() => {
+  try {
+    const resolvedArgv = path.resolve(process.argv[1] || '');
+    return resolvedArgv === path.resolve(__filename);
+  } catch {
+    return false;
+  }
+})();
+
+if (isDirectRun) {
   main().catch((error) => {
     console.error(error && error.message ? error.message : error);
     process.exit(1);
@@ -393,15 +721,28 @@ module.exports = {
   APP_ORIGIN,
   DEFAULT_LAUNCH_PLATFORMS,
   DEFAULT_TIMEZONE,
+  DIAGNOSTIC_CHECKOUT_URL,
   LAUNCH_CAMPAIGN,
   OPERATOR_LAB_CAMPAIGN,
+  PAID_SPRINT_CAMPAIGN,
+  PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL,
+  PAID_SPRINT_IMPLEMENTATION_PAYMENT_URL,
   SKOOL_OPERATOR_LAB_URL,
+  VOICE_AGENT_DIAGNOSTIC_CAMPAIGN,
   buildCampaignEntries,
   buildLandingUrl,
   buildOperatorLabPost,
   buildOperatorLabUrl,
   buildPlatformPost,
+  buildPaidSprintCheckoutUrls,
+  buildPaidSprintPost,
+  buildPaidSprintUrl,
+  buildVoiceAgentDiagnosticPost,
+  buildVoiceAgentDiagnosticUrl,
+  classifyPublishFailure,
   defaultCampaignSchedule,
+  getPlatformFailures,
   parseArgs,
   publishLaunchCampaign,
+  recordPublishResult,
 };

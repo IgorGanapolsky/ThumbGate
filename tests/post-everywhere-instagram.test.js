@@ -130,11 +130,17 @@ describe('post-everywhere (Instagram dispatcher)', () => {
     const results = await postEverywhere(filePath, {
       platforms: ['instagram'],
       dryRun: false,
+      campaign: 'instagram-unit-campaign',
       deps: { instagram: deps },
     });
 
     assert.equal(deps.postCalls.length, 1, 'poster invoked exactly once');
     assert.equal(deps.postCalls[0].imagePath, imagePath, 'imagePath passed through unchanged');
+    assert.deepEqual(deps.postCalls[0].utm, {
+      source: 'instagram',
+      medium: 'social',
+      campaign: 'instagram-unit-campaign',
+    });
     assert.match(deps.postCalls[0].caption, /Live test/);
     assert.match(deps.postCalls[0].caption, /sufficiently long live/);
     assert.equal(deps.cardCalls.length, 0, 'no auto-generation when imagePath supplied');

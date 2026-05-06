@@ -266,9 +266,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 3.36 MB → 3.44 MB (2026-05-04) after finishing the remaining
   // high-ROI runtime planners: DeepSeek sparse-attention guardrails, upstream
   // contribution planning, reward-hacking checks, and ChatGPT ads readiness.
+  // Bumped 3.44 MB → 3.45 MB (2026-05-05) for the live $19 quick-read
+  // checkout CTA on public buyer paths. The observed package is ~3.440 MB.
   assert.ok(
-    manifest.unpackedSize <= 3_440_000,
-    `npm package should stay <= 3.44 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_450_000,
+    `npm package should stay <= 3.45 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

@@ -1,12 +1,17 @@
 # ThumbGate Community + Course Promo Operator Handoff
 
 Generated: 2026-05-04
+Updated: 2026-05-05
 
 ## Live Assets
 
 - Skool group: `https://www.skool.com/thumbgate-operator-lab-6000`
 - Production landing page: `https://thumbgate-production.up.railway.app/`
+- Marketing site: `https://thumbgate.ai/`
 - Workflow sprint intake: linked from the production landing page
+- Skool artwork (local files):
+  - Cover: `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`
+  - Icon: `docs/marketing/assets/thumbgate-skool-icon-128x128.png`
 
 ## Skool Status
 
@@ -25,6 +30,11 @@ Current blockers:
 - The About page is waiting on final public-save confirmation.
 - Cover/icon uploads are blocked by the in-app browser file-picker surface, but local assets are ready.
 - The first post and invite steps require action-time confirmation before publication/sending.
+
+Workaround for the in-app file picker:
+
+- If Skool requires file uploads for cover/icon (likely), do the upload in a normal browser outside the in-app file picker surface.
+- If you need URL-based embeds in the About editor, host the files first (do not assume the marketing site currently serves these paths).
 
 ## Recommended Setup
 
@@ -50,11 +60,26 @@ The best first win is narrow: one mistake, one rule, one blocked repeat.
 
 ## Research Notes
 
-- Skool official help confirms group pricing can be free for members and supports subscription, freemium, tiered, and one-time pricing.
-- Skool official payment terms say owner plans are recurring subscriptions after the trial.
-- Skool official category help says groups can have up to 10 categories, which matches the 10-category setup above.
-- Skool official cover/photo help says group logo and cover photo are configured from Settings > General.
-- Skool official Discovery help says eligibility requires the group description, About page description/images, a cover image, and enough real posts/activity. It also says high-quality artwork, a strong about page, authentic engagement, and active owner/admin behavior are ranking boosts.
+Skool official sources (verified 2026-05-05):
+
+- Pricing models supported: free, subscription, freemium, tiered pricing, and one-time payment.
+  - https://help.skool.com/article/215-how-to-setup-pricing-for-the-group
+- Owner billing: plans are recurring subscriptions after a 14-day free trial.
+  - https://help.skool.com/article/227-payment-terms-and-policy
+- Category limit: up to 10 categories per group.
+  - https://help.skool.com/article/67-how-to-setup-categories
+- Cover + icon setup path: Settings > General (opens the native file manager).
+  - https://help.skool.com/article/120-how-to-set-up-my-group-logo-and-cover-photo
+- About page: must be completed for Discovery eligibility and supports uploading images/videos in the editor.
+  - https://help.skool.com/article/123-how-to-set-up-my-group-s-about-page
+- Discovery eligibility + ranking:
+  - Eligibility needs: minimum threshold of members/posts/activity + group description + about page description/images + cover image. (Threshold values are not published.)
+  - Visibility timing: once threshold is hit, visibility is typically within ~2 hours.
+  - Ranking boosts: high-quality artwork/about page, authentic engagement, active owner/admin behavior.
+  - https://help.skool.com/article/153-discovery-faqs
+- Discovery “unlisted” checklist (new groups):
+  - Cover image, group description, completed About page, at least one post, invite members.
+  - https://help.skool.com/article/151-why-isnt-my-group-visible-in-discovery
 
 ## Zernio Status
 
@@ -65,3 +90,7 @@ Zernio analytics polling is blocked by the Analytics add-on paywall. Treat Zerni
 ## Automation Update
 
 The `thumbgate-creator-platform-promo.yml` workflow now passes `--offer=operator-lab`, so previews/schedules/publishes from that workflow promote the free Skool Operator Lab instead of the older first-customer launch copy.
+
+As of 2026-05-05, local dry-runs can preview the Operator Lab campaign without Zernio credentials and include the planned media attachments in the preview JSON:
+
+`npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms=linkedin,instagram,threads,bluesky,reddit,youtube`
