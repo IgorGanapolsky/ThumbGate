@@ -12,6 +12,10 @@ on:
           - preview
           - publish
           - schedule
+      confirm:
+        description: 'Required for publish/schedule. Type PUBLISH to proceed.'
+        required: false
+        default: ''
       platforms:
         description: 'Comma-separated Zernio platforms'
         required: false
@@ -51,6 +55,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Guard external actions
+        if: github.event.inputs.mode != 'preview'
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "PUBLISH" ]; then
+            echo "Refusing to run mode=${{ github.event.inputs.mode }} without confirm=PUBLISH" >&2
+            exit 1
+          fi
 
       - uses: actions/setup-node@v4
         with:

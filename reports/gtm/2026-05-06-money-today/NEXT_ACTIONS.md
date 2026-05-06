@@ -7,6 +7,7 @@ Outcome target: generate `>=1` qualified Diagnostic/Sprint conversation today.
 - Send 4 warm Reddit Sprint DMs (from `reports/gtm/2026-05-04-money-now/operator-send-now.md`).
 - Upload Skool cover/icon + About media (from `docs/marketing/assets/*`) to unblock Discovery eligibility.
 - (Optional) Run GitHub Actions with `mode=preview` to generate an approval artifact (safe; still uses GitHub).
+- Never run `mode=publish` / `mode=schedule` unless you intend to publish/schedule (requires `confirm=PUBLISH`).
 
 ## Action-time confirmation checklist (read before doing anything external)
 
