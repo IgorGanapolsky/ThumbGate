@@ -665,7 +665,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "0.92.0",
     "@google/genai": "1.49.0",
-    "@huggingface/transformers": "^4.1.0",
+    "@huggingface/transformers": "^4.2.0",
     "@lancedb/lancedb": "^0.27.2",
     "apache-arrow": "^18.1.0",
     "better-sqlite3": "^12.9.0",
