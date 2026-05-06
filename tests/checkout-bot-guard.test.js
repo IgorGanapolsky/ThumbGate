@@ -2,7 +2,7 @@
 
 /**
  * Integration tests: GET /checkout/pro must not create Stripe sessions for
- * bots. Browsers hit the session-create path as before; bots get an HTML
+ * bots. Browsers go straight to Stripe checkout; bots get an HTML
  * interstitial that only creates the session on explicit confirm.
  */
 

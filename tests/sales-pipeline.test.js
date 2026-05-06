@@ -243,6 +243,20 @@ test('renders an operator report that separates targeting from actual sales prog
   assert.match(markdown, /Proof rule: Use proof pack only after the buyer confirms pain/);
 });
 
+test('report aliases status and summary to the operator funnel view', () => {
+  const tempDir = makeTempDir();
+  const statePath = path.join(tempDir, 'sales-pipeline.jsonl');
+  importRevenueLoopReport(makeReport(), { statePath });
+
+  const fromStatus = runCli(['status', '--state', statePath]);
+  const fromSummary = runCli(['summary', '--state', statePath]);
+
+  assert.equal(fromStatus.command, 'report');
+  assert.equal(fromSummary.command, 'report');
+  assert.equal(fromStatus.summary.total, 2);
+  assert.equal(fromSummary.summary.total, 2);
+});
+
 test('helpers sanitize invalid input without losing operator-safe defaults', () => {
   const sanitized = sanitizeSalesLead({
     source: '  ',

@@ -5,6 +5,8 @@ const assert = require('node:assert/strict');
 
 const {
   buildProspectReply,
+  hasOwnReplyToPost,
+  listOwnReplyParents,
   normalizeSearchPost,
   parseQueries,
   postUrl,
@@ -30,6 +32,22 @@ test('scoreProspect prioritizes repeated agent failures with guardrail intent', 
 
   const low = scoreProspect({ text: 'crypto airdrop giveaway for bots', metrics: {} });
   assert.equal(low.score, 0);
+
+  const benignSecret = scoreProspect({
+    text: 'The secret to good memory is knowing what to forget.',
+    metrics: {},
+  });
+  assert.equal(benignSecret.reasons.includes('dangerous_action'), false);
+  assert.equal(benignSecret.reasons.includes('secret_risk'), false);
+
+  const secretRisk = scoreProspect({
+    text: 'My AI coding agent could read plaintext API keys from 47 .env files.',
+    metrics: {},
+  });
+  assert.ok(secretRisk.reasons.includes('secret_risk'));
+
+  const politics = scoreProspect({ text: 'AI deleted files about Trump and the FBI', metrics: {} });
+  assert.equal(politics.score, 0);
 });
 
 test('buildProspectReply stays substantive and under Bluesky length', () => {
@@ -78,6 +96,8 @@ test('prospectBluesky queues draft-only approved=false replies and dedupes state
       prospect,
       { ...prospect, uri: 'at://did:plc:me/app.bsky.feed.post/own', author: { did: 'did:plc:me', handle: 'me.bsky.social' } },
     ],
+    listOwnReplyParents: async () => new Set(),
+    hasOwnReplyToPost: async () => false,
     loadState: () => state,
     saveState: (next) => { savedState = next; },
     saveDraft: (draft) => { savedDrafts.push(draft); },
@@ -97,6 +117,111 @@ test('prospectBluesky queues draft-only approved=false replies and dedupes state
   assert.equal(savedState.lastCheck, '2026-05-04T15:45:00.000Z');
 });
 
+test('prospectBluesky skips prospects already replied to by the account', async () => {
+  const savedDrafts = [];
+  let savedState = null;
+  const session = { did: 'did:plc:me', handle: 'me.bsky.social', accessJwt: 'jwt' };
+  const prospect = {
+    uri: 'at://did:plc:them/app.bsky.feed.post/3abc',
+    cid: 'cid1',
+    text: 'AI coding agent deleted files again. Need guardrails for production workflows.',
+    author: { did: 'did:plc:them', handle: 'them.bsky.social' },
+    metrics: { replies: 3, reposts: 1, likes: 12 },
+    query: 'AI agent deleted files',
+  };
+
+  const result = await prospectBluesky({
+    sessionFactory: async () => session,
+    searchPosts: async () => [prospect],
+    listOwnReplyParents: async () => new Set(),
+    hasOwnReplyToPost: async () => true,
+    loadState: () => ({ seen: {}, lastCheck: null }),
+    saveState: (next) => { savedState = next; },
+    saveDraft: (draft) => { savedDrafts.push(draft); },
+    queries: ['AI agent deleted files'],
+    maxDrafts: 3,
+    now: () => new Date('2026-05-05T21:35:00.000Z'),
+  });
+
+  assert.equal(result.queued, 0);
+  assert.equal(savedDrafts.length, 0);
+  assert.equal(savedState.seen[prospect.uri].reason, 'already_replied');
+  assert.equal(savedState.lastCheck, '2026-05-05T21:35:00.000Z');
+});
+
+test('prospectBluesky skips prospects found in own recent reply parents', async () => {
+  const savedDrafts = [];
+  const prospect = {
+    uri: 'at://did:plc:them/app.bsky.feed.post/3abc',
+    cid: 'cid1',
+    text: 'AI coding agent deleted files again. Need guardrails for production workflows.',
+    author: { did: 'did:plc:them', handle: 'them.bsky.social' },
+    metrics: { replies: 3, reposts: 1, likes: 12 },
+    query: 'AI agent deleted files',
+  };
+
+  const result = await prospectBluesky({
+    sessionFactory: async () => ({ did: 'did:plc:me', handle: 'me.bsky.social', accessJwt: 'jwt' }),
+    searchPosts: async () => [prospect],
+    listOwnReplyParents: async () => new Set([prospect.uri]),
+    hasOwnReplyToPost: async () => {
+      throw new Error('thread fallback should not run when feed-level dedupe matches');
+    },
+    loadState: () => ({ seen: {}, lastCheck: null }),
+    saveState: () => {},
+    saveDraft: (draft) => { savedDrafts.push(draft); },
+    queries: ['AI agent deleted files'],
+  });
+
+  assert.equal(result.queued, 0);
+  assert.equal(savedDrafts.length, 0);
+});
+
+test('listOwnReplyParents reads recent Bluesky reply parents from repo records', async () => {
+  const parents = await listOwnReplyParents(
+    { did: 'did:plc:me', accessJwt: 'jwt', pdsHost: 'example.pds' },
+    {
+      request: async (method, host, path) => {
+        assert.equal(method, 'GET');
+        assert.equal(host, 'example.pds');
+        assert.match(path, /com\.atproto\.repo\.listRecords/);
+        return {
+          status: 200,
+          json: {
+            records: [
+              { value: { text: 'top level' } },
+              { value: { reply: { parent: { uri: 'at://did:plc:them/app.bsky.feed.post/3abc' } } } },
+            ],
+          },
+        };
+      },
+    },
+  );
+
+  assert.deepEqual([...parents], ['at://did:plc:them/app.bsky.feed.post/3abc']);
+});
+
+test('hasOwnReplyToPost detects existing replies in a Bluesky thread', async () => {
+  const replied = await hasOwnReplyToPost(
+    { did: 'did:plc:me', accessJwt: 'jwt' },
+    {
+      uri: 'at://did:plc:them/app.bsky.feed.post/3abc',
+      author: { did: 'did:plc:them', handle: 'them.bsky.social' },
+    },
+    {
+      getPostThread: async () => ({
+        post: { author: { did: 'did:plc:them' } },
+        replies: [
+          { post: { author: { did: 'did:plc:other' } }, replies: [] },
+          { post: { author: { did: 'did:plc:me' } }, replies: [] },
+        ],
+      }),
+    },
+  );
+
+  assert.equal(replied, true);
+});
+
 test('prospectBluesky dry-run does not save drafts or state', async () => {
   let writes = 0;
   const result = await prospectBluesky({
@@ -110,6 +235,8 @@ test('prospectBluesky dry-run does not save drafts or state', async () => {
       query: 'MCP tool call mistake',
     }],
     loadState: () => ({ seen: {}, lastCheck: null }),
+    listOwnReplyParents: async () => new Set(),
+    hasOwnReplyToPost: async () => false,
     saveState: () => { writes += 1; },
     saveDraft: () => { writes += 1; },
     queries: ['MCP tool call mistake'],
