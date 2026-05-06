@@ -14,6 +14,39 @@ const BUSINESS_FOOTER = [
   'Unsubscribe: mailto:igor.ganapolsky@gmail.com?subject=unsubscribe',
 ].join('\n');
 
+function qsrN8nCampaign({ to, company, leadId }) {
+  return {
+    to,
+    subject: 'n8n workflow templates for QSR ops',
+    text: [
+      `Hi ${company},`,
+      '',
+      'I built a private n8n workflow vault for QSR teams and restaurant-tech consultants.',
+      '',
+      'The starter package covers five practical workflows:',
+      '',
+      '- order intake cleanup',
+      '- inventory reorder alerts',
+      '- loyalty winback segments',
+      '- review triage',
+      '- daily store ops digests',
+      '',
+      'It is designed for self-hosting, so operators keep POS/customer/store data inside their own n8n instance. This may fit your team as a lightweight automation add-on for QSR clients who already ask for POS, SMS, email, reporting, or inventory help.',
+      '',
+      'Sales page: https://igorganapolsky.github.io/qsr-n8n-workflow-vault-site/',
+      '',
+      'There is a $99 starter vault and a $499 setup diagnostic for teams that want their POS/SMS/email/inventory stack mapped before implementation.',
+      '',
+      'Worth sending you the starter package outline?',
+      '',
+      'Igor',
+      '',
+      'If this is not relevant, reply no and I will not follow up.',
+    ].join('\n'),
+    pipelineLeadId: leadId,
+  };
+}
+
 const CAMPAIGNS = {
   aiventyx_marketplace_followup: {
     to: 'qaisermehdi3@gmail.com',
@@ -32,6 +65,31 @@ const CAMPAIGNS = {
     ].join('\n'),
     pipelineLeadId: 'aiventyx_qaiser_marketplace_listings',
   },
+  qsr_n8n_northwestern_pos: qsrN8nCampaign({
+    to: 'info@nwcrpos.com',
+    company: 'Northwestern POS',
+    leadId: 'qsr_n8n_northwestern_pos',
+  }),
+  qsr_n8n_postron: qsrN8nCampaign({
+    to: 'hello@postron.com',
+    company: 'POSTRON',
+    leadId: 'qsr_n8n_postron',
+  }),
+  qsr_n8n_southwest_food_solutions: qsrN8nCampaign({
+    to: 'rick@southwestfoodsolutions.com',
+    company: 'Southwest Food Solutions',
+    leadId: 'qsr_n8n_southwest_food_solutions',
+  }),
+  qsr_n8n_qsr_solutions: qsrN8nCampaign({
+    to: 'admin@qsrsolutions.com',
+    company: 'QSR Solutions',
+    leadId: 'qsr_n8n_qsr_solutions',
+  }),
+  qsr_n8n_anbe_tech_solutions: qsrN8nCampaign({
+    to: 'sales@anbetechsolutions.com',
+    company: 'Anbe Tech Solutions',
+    leadId: 'qsr_n8n_anbe_tech_solutions',
+  }),
 };
 
 function parseArgs(argv = process.argv.slice(2)) {
@@ -87,6 +145,9 @@ async function main(argv = process.argv.slice(2), deps = {}) {
     providerId: result?.id || result?.providerId || null,
     reason: result?.reason || null,
   }, null, 2));
+  if (!result.sent) {
+    throw new Error(`Revenue email was not sent: ${result?.reason || 'unknown_error'}`);
+  }
   return result;
 }
 

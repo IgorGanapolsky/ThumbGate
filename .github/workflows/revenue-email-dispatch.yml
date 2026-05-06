@@ -9,6 +9,11 @@ on:
         type: choice
         options:
           - aiventyx_marketplace_followup
+          - qsr_n8n_northwestern_pos
+          - qsr_n8n_postron
+          - qsr_n8n_southwest_food_solutions
+          - qsr_n8n_qsr_solutions
+          - qsr_n8n_anbe_tech_solutions
       dry_run:
         description: 'Preview without sending.'
         required: false

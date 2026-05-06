@@ -18,6 +18,16 @@ test('revenue email campaign includes required commercial compliance footer and 
   assert.match(message.text, /Unsubscribe:/);
 });
 
+test('QSR n8n outreach campaigns point to live checkout surface and include opt-out', () => {
+  const message = renderMessage(CAMPAIGNS.qsr_n8n_northwestern_pos);
+  assert.equal(message.to, 'info@nwcrpos.com');
+  assert.match(message.text, /QSR teams and restaurant-tech consultants/);
+  assert.match(message.text, /igorganapolsky\.github\.io\/qsr-n8n-workflow-vault-site/);
+  assert.match(message.text, /\$99 starter vault/);
+  assert.match(message.text, /reply no and I will not follow up/i);
+  assert.match(message.text, /Unsubscribe:/);
+});
+
 test('revenue email dispatch requires explicit confirm send', async () => {
   const result = await main(['--campaign=aiventyx_marketplace_followup'], {
     sendEmail: async () => {
@@ -39,6 +49,15 @@ test('revenue email dispatch sends through injected transport when confirmed', a
   assert.equal(result.sent, true);
   assert.equal(calls.length, 1);
   assert.equal(calls[0].to, 'qaisermehdi3@gmail.com');
+});
+
+test('revenue email dispatch fails loudly when provider refuses the send', async () => {
+  await assert.rejects(
+    main(['--campaign=aiventyx_marketplace_followup', '--confirm-send'], {
+      sendEmail: async () => ({ sent: false, reason: 'api_error' }),
+    }),
+    /Revenue email was not sent: api_error/
+  );
 });
 
 test('parseArgs captures campaign and guards', () => {
