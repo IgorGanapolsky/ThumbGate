@@ -48,6 +48,16 @@ const COMPARE_FILES = [
 
 const ALL_FILES = [...GUIDE_FILES, ...COMPARE_FILES];
 
+function hasCheckoutPath(html, pathname) {
+  return Array.from(
+    html.matchAll(/<a\b[^>]*\bhref="([^"]+)"/g),
+    (match) => match[1]
+  ).some((href) => {
+    const url = new URL(href, 'https://thumbgate.ai');
+    return url.protocol === 'https:' && url.hostname === 'buy.stripe.com' && url.pathname === pathname;
+  });
+}
+
 describe('SEO guide and comparison pages', () => {
   it('all configured HTML files exist', () => {
     assert.ok(ALL_FILES.length > 0, 'SEO guide file list is empty');
@@ -145,8 +155,12 @@ describe('SEO guide and comparison pages', () => {
 
     assert.ok(html.includes('AI Agent Workflow Migration Checklist'));
     assert.ok(html.includes('$499 Agent Workflow Migration Diagnostic'));
+    assert.ok(html.includes('Pay $19 quick read'));
+    assert.ok(html.includes('Pay $1 first rule'));
     assert.ok(html.includes('Pay $499 diagnostic'));
-    assert.ok(html.includes('https://buy.stripe.com/00w14neyUcXA5pL5e33sI0e'));
+    assert.ok(hasCheckoutPath(html, '/aFa8wPgH29Lo4lH35V3sI0w'));
+    assert.ok(hasCheckoutPath(html, '/4gM6oHgH2bTw4lH6i73sI0z'));
+    assert.ok(hasCheckoutPath(html, '/00w14neyUcXA5pL5e33sI0e'));
     assert.ok(html.includes('workflow-sprint-intake'));
     assert.ok(html.includes('Pro $19/mo or $149/yr. Team $49/seat/mo.'));
     assert.ok(html.includes('pre-action rule that stops the already-rejected mistake'));
