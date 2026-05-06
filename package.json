@@ -608,7 +608,9 @@
     "test:brand-assets": "node --test tests/brand-assets.test.js",
     "test:enforcement-teeth": "node --test tests/enforcement-teeth.test.js",
     "test:bayes-optimal-gate": "node --test tests/bayes-optimal-gate.test.js",
-    "test:actionable-remediations": "node --test tests/actionable-remediations.test.js"
+    "test:actionable-remediations": "node --test tests/actionable-remediations.test.js",
+    "social:cleanup:duplicates": "node scripts/social-analytics/cleanup-zernio-duplicates.js",
+    "test:cleanup-zernio-duplicates": "node --test tests/cleanup-zernio-duplicates.test.js"
   },
   "keywords": [
     "mcp",

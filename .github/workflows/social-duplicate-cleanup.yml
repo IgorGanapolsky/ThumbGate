@@ -1,0 +1,65 @@
+name: Social Duplicate Cleanup
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_delete:
+        description: 'Actually delete older duplicate Instagram/TikTok posts'
+        required: false
+        type: boolean
+        default: false
+      platforms:
+        description: 'Comma-separated platforms to audit'
+        required: false
+        default: 'instagram,tiktok'
+      limit:
+        description: 'Number of recent Zernio posts to scan'
+        required: false
+        default: '200'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: social-duplicate-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
+      INPUT_CONFIRM_DELETE: ${{ github.event.inputs.confirm_delete }}
+      INPUT_PLATFORMS: ${{ github.event.inputs.platforms || 'instagram,tiktok' }}
+      INPUT_LIMIT: ${{ github.event.inputs.limit || '200' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Audit or delete older duplicates
+        run: |
+          FLAGS=""
+          if [ "$INPUT_CONFIRM_DELETE" = "true" ]; then
+            FLAGS="--confirm-delete"
+          fi
+          node scripts/social-analytics/cleanup-zernio-duplicates.js \
+            --platforms="$INPUT_PLATFORMS" \
+            --limit="$INPUT_LIMIT" \
+            --out=".thumbgate/social-duplicate-cleanup.json" \
+            $FLAGS
+
+      - name: Upload cleanup report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: social-duplicate-cleanup-${{ github.run_id }}
+          retention-days: 14
+          path: .thumbgate/social-duplicate-cleanup.json
