@@ -1,6 +1,6 @@
 # Money Now Actions
 
-Updated: 2026-05-05
+Updated: 2026-05-06
 
 Use this as the operator cockpit for the current run. Full copy, follow-ups, CTAs, and logging commands live in `operator-send-now.md`; the pipeline truth table lives in `sales-pipeline.md`.
 
@@ -23,6 +23,12 @@ Snapshot (operator-reported as-of 2026-05-05; not commercial proof):
 - Sprint leads: 0
 - Pipeline: 20 active leads, 0 contacted, 0 replied, 0 paid in the local sales ledger (stage movement is tracked in `sales-pipeline.md`)
 - Revenue bottleneck: sending and logging outreach, not more prospect research
+
+## Next approval-ready money action (requires confirmation)
+
+Send the first 4 warm Reddit Workflow Hardening Sprint DMs (the top rows in `operator-send-now.md`) and immediately log each send in the sales ledger (`sales-pipeline.md`).
+
+Guardrail: do not send messages or publish posts without explicit action-time confirmation.
 
 ## Do First
 1. Send the 4 warm Reddit Workflow Hardening Sprint DMs.
