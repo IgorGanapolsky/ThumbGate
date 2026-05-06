@@ -2,6 +2,8 @@
 
 const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
+const { spawnSync } = require('node:child_process');
+const path = require('node:path');
 
 const {
   selectHarness,
@@ -11,9 +13,13 @@ const {
   getHarnessPath,
   scoreHarnessAudit,
   buildHarnessOptimizationAudit,
+  buildHarnessFitAudit,
+  buildSolverWorkflowGovernance,
   HARNESSES,
   CODE_EDIT_TOOL_NAMES,
 } = require('../scripts/harness-selector');
+
+const CLI = path.resolve(__dirname, '..', 'bin', 'cli.js');
 
 // ---------------------------------------------------------------------------
 // extractCommandText
@@ -329,5 +335,86 @@ describe('harness optimization audit', () => {
     assert.ok(Number.isInteger(audit.score));
     assert.ok(audit.totals.specializedHarnessCount >= 4);
     assert.ok(audit.recommendations.length >= 1);
+  });
+});
+
+describe('model-harness fit audit', () => {
+  it('flags same-model harness parity gaps', () => {
+    const audit = buildHarnessFitAudit({
+      'same-model-different-harness': true,
+      'native-harness': 'codex',
+      'generic-harness': 'generic-router',
+      'tool-schema-parity': false,
+      'permission-parity': false,
+      'handoff-drift': '9',
+    });
+
+    assert.equal(audit.name, 'thumbgate-model-harness-fit-audit');
+    assert.equal(audit.status, 'native-required');
+    assert.ok(audit.signals.some((signal) => signal.id === 'model_harness_fit'));
+    assert.ok(audit.recommendations.some((line) => line.includes('same task, same model')));
+  });
+
+  it('harness-audit --harness-fit emits JSON proof', () => {
+    const result = spawnSync(process.execPath, [
+      CLI,
+      'harness-audit',
+      '--harness-fit',
+      '--same-model-different-harness',
+      '--native-harness=codex',
+      '--generic-harness=generic',
+      '--tool-schema-parity=false',
+      '--json',
+    ], {
+      cwd: path.resolve(__dirname, '..'),
+      encoding: 'utf8',
+    });
+
+    assert.equal(result.status, 0, result.stderr);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.name, 'thumbgate-model-harness-fit-audit');
+    assert.ok(payload.signals.some((signal) => signal.id === 'model_harness_fit'));
+  });
+});
+
+describe('solver workflow governance audit', () => {
+  it('flags solver-backed workflow governance gaps', () => {
+    const audit = buildSolverWorkflowGovernance({
+      solver: 'cuopt',
+      'multi-agent': true,
+      'objective-defined': true,
+      'constraints-defined': false,
+      'scenario-replay': false,
+      'approval-gate': false,
+      'rollback-plan': false,
+      'solver-provenance': true,
+      'data-freshness-hours': '48',
+    });
+
+    assert.equal(audit.name, 'thumbgate-solver-workflow-governance');
+    assert.equal(audit.status, 'blocked');
+    assert.ok(audit.signals.some((signal) => signal.id === 'solver_workflow_governance'));
+    assert.ok(audit.signals.some((signal) => signal.id === 'solver_data_freshness'));
+  });
+
+  it('harness-audit --solver-workflow emits JSON proof', () => {
+    const result = spawnSync(process.execPath, [
+      CLI,
+      'harness-audit',
+      '--solver-workflow',
+      '--solver=cuopt',
+      '--multi-agent',
+      '--constraints-defined=false',
+      '--scenario-replay=false',
+      '--json',
+    ], {
+      cwd: path.resolve(__dirname, '..'),
+      encoding: 'utf8',
+    });
+
+    assert.equal(result.status, 0, result.stderr);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.name, 'thumbgate-solver-workflow-governance');
+    assert.ok(payload.signals.some((signal) => signal.id === 'solver_workflow_governance'));
   });
 });
