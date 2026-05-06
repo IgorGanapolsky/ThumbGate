@@ -1355,6 +1355,37 @@ function modelCandidatesCmd() {
   process.stdout.write(`\nReport path: ${reportPath}\n`);
 }
 
+function benchCmd() {
+  const args = parseArgs(process.argv.slice(3));
+  const { runBenchmark } = require(path.join(PKG_ROOT, 'scripts', 'thumbgate-bench'));
+  const minScore = args['min-score'] ? Number(args['min-score']) : undefined;
+  const report = runBenchmark({
+    suitePath: args.scenarios ? path.resolve(CWD, args.scenarios) : undefined,
+    programbenchSmoke: Boolean(args['programbench-smoke'] || args.programbench),
+    programbenchSuitePath: args['programbench-scenarios']
+      ? path.resolve(CWD, args['programbench-scenarios'])
+      : undefined,
+    outDir: args['out-dir'] ? path.resolve(CWD, args['out-dir']) : undefined,
+    minScore: Number.isFinite(minScore) ? minScore : undefined,
+    useRuntimeState: Boolean(args['use-runtime-state']),
+  });
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    console.log(`ThumbGate Bench: ${report.metrics.score}/100 ${report.passed ? 'PASS' : 'FAIL'}`);
+    if (report.programBench) {
+      console.log(`ProgramBench-style smoke: ${report.programBench.metrics.score}/100 ${report.programBench.passed ? 'PASS' : 'FAIL'}`);
+    }
+    console.log(`Report: ${report.reportPaths.markdown}`);
+    console.log(`JSON: ${report.reportPaths.json}`);
+  }
+
+  if (!report.passed) {
+    process.exitCode = 1;
+  }
+}
+
 function risk() {
   const args = parseArgs(process.argv.slice(3));
   const riskScorer = require(path.join(PKG_ROOT, 'scripts', 'risk-scorer'));
@@ -2269,6 +2300,7 @@ function help() {
   console.log('  north-star            Show proof-backed workflow-run progress toward the North Star');
   console.log('  model-fit             Detect local embedding profile and write evidence report');
   console.log('  model-candidates      Rank managed model candidates and benchmark routing plans');
+  console.log('  bench                 Run ThumbGate Bench reports (--programbench-smoke for cleanroom proof)');
   console.log('  risk                  Train or query the boosted local risk scorer');
   console.log('  eval                  Turn feedback into reusable prompt/workflow eval proof');
   console.log('  optimize              [PRO] Prune CLAUDE.md and migrate rules to Pre-Action Checks');
@@ -2495,6 +2527,10 @@ switch (COMMAND) {
   case 'model-candidates':
   case 'managed-models':
     modelCandidatesCmd();
+    break;
+  case 'bench':
+  case 'benchmark':
+    benchCmd();
     break;
   case 'upstream-contributions':
   case 'upstream-contribution-engine':
