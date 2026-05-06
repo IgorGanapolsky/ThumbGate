@@ -1699,7 +1699,34 @@ function gateStats() {
 
 function harnessAudit() {
   const args = parseArgs(process.argv.slice(3));
-  const { buildHarnessOptimizationAudit } = require(path.join(PKG_ROOT, 'scripts', 'harness-selector'));
+  const {
+    buildHarnessOptimizationAudit,
+    buildHarnessFitAudit,
+    formatHarnessFitAudit,
+    buildSolverWorkflowGovernance,
+    formatSolverWorkflowGovernance,
+  } = require(path.join(PKG_ROOT, 'scripts', 'harness-selector'));
+
+  if (args['harness-fit'] || args.fit) {
+    const audit = buildHarnessFitAudit(args);
+    if (args.json) {
+      console.log(JSON.stringify(audit, null, 2));
+      return;
+    }
+    process.stdout.write(formatHarnessFitAudit(audit));
+    return;
+  }
+
+  if (args['solver-workflow'] || args.solverWorkflow || args.solver) {
+    const audit = buildSolverWorkflowGovernance(args);
+    if (args.json) {
+      console.log(JSON.stringify(audit, null, 2));
+      return;
+    }
+    process.stdout.write(formatSolverWorkflowGovernance(audit));
+    return;
+  }
+
   const audit = buildHarnessOptimizationAudit({
     rootDir: CWD,
     docTokenBudget: args['doc-token-budget'],
