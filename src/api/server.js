@@ -1508,7 +1508,7 @@ function renderCheckoutIntentPage({
   const teardownAction = safeWorkflowTeardownCheckoutHref
     ? `<a data-i="workflow_teardown_checkout" href="${safeWorkflowTeardownCheckoutHref}">Pay $99 teardown</a>`
     : '';
-  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{background:#0a0a0a;color:#eee;font-family:system-ui,sans-serif}div{max-width:560px;margin:12vh auto}a{display:block;margin:10px 0;padding:12px;border:1px solid #374151;color:inherit;text-align:center}.primary{background:#22d3ee;color:#000}</style><div><h1>Choose the right paid path.</h1><p>Pick a paid proof step today, or send the workflow first.</p><a class="primary" data-i="pro_checkout_confirmed" href="${safeConfirmHref}">Pay in Stripe</a>${firstRuleAction}${quickReadAction}${teardownAction}${diagnosticAction}${sprintAction}<a data-i="workflow_sprint_intake" href="${safeWorkflowIntakeHref}">Send workflow first</a><a data-i="team_paid_path" href="${safeTeamOptionsHref}">See options</a><p>Stripe checkout.</p><a href="/">Back</a></div><script>addEventListener('click',e=>{let a=e.target.closest('[data-i]');if(a&&navigator.sendBeacon)navigator.sendBeacon('/v1/telemetry/ping',new Blob([JSON.stringify({eventType:'checkout_interstitial_cta_clicked',clientType:'web',page:'/checkout/pro',ctaId:a.dataset.i,ctaPlacement:'checkout_interstitial'})],{type:'application/json'}))})</script>`;
+  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{background:#0a0a0a;color:#eee;font-family:system-ui,sans-serif}div{max-width:560px;margin:12vh auto}a{display:block;margin:10px 0;padding:12px;border:1px solid #374151;color:inherit;text-align:center}.primary{background:#22d3ee;color:#000}.high-ticket{border-color:#4ade80;color:#4ade80}</style><div><h1>Choose the right paid path.</h1><p>For one repeated workflow failure, start with the diagnostic or sprint. Use Pro only when you need the local self-serve dashboard.</p>${diagnosticAction.replace('<a ', '<a class="high-ticket" ')}${sprintAction.replace('<a ', '<a class="high-ticket" ')}<a class="primary" data-i="pro_checkout_confirmed" href="${safeConfirmHref}">Pay in Stripe</a>${teardownAction}${quickReadAction}${firstRuleAction}<a data-i="workflow_sprint_intake" href="${safeWorkflowIntakeHref}">Send workflow first</a><a data-i="team_paid_path" href="${safeTeamOptionsHref}">See options</a><p>Stripe checkout.</p><a href="/">Back</a></div><script>addEventListener('click',e=>{let a=e.target.closest('[data-i]');if(a&&navigator.sendBeacon)navigator.sendBeacon('/v1/telemetry/ping',new Blob([JSON.stringify({eventType:'checkout_interstitial_cta_clicked',clientType:'web',page:'/checkout/pro',ctaId:a.dataset.i,ctaPlacement:'checkout_interstitial'})],{type:'application/json'}))})</script>`;
 }
 
 function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneyState(req, parsed)) {
@@ -3000,16 +3000,16 @@ function renderCheckoutCancelledPage(runtimeConfig) {
   const workflowSprintPriceDollars = runtimeConfig.workflowSprintPriceDollars || 1500;
   const workflowSprintIntakeUrl = `${escapeHtmlAttribute(runtimeConfig.appOrigin)}/#workflow-sprint-intake`;
   const recoveryOfferLinks = [
-    `<a href="${firstFailureRuleCheckoutUrl}" data-recovery-offer="first_failure_rule" data-offer-price="1">Pay $1 first rule</a>`,
-    `<a href="${quickReadCheckoutUrl}" data-recovery-offer="quick_read" data-offer-price="19">Pay $19 quick read</a>`,
-    `<a href="${workflowTeardownCheckoutUrl}" data-recovery-offer="workflow_teardown" data-offer-price="99">Pay $99 teardown</a>`,
-    `<a id="send-workflow-first" href="${workflowSprintIntakeUrl}" data-recovery-offer="workflow_sprint_intake" data-offer-price="0">Send workflow first</a>`,
     diagnosticCheckoutUrl
       ? `<a href="${diagnosticCheckoutUrl}" data-recovery-offer="sprint_diagnostic" data-offer-price="${sprintDiagnosticPriceDollars}">Book $${sprintDiagnosticPriceDollars} diagnostic</a>`
       : '',
     workflowSprintCheckoutUrl
       ? `<a href="${workflowSprintCheckoutUrl}" data-recovery-offer="workflow_sprint" data-offer-price="${workflowSprintPriceDollars}">Start $${workflowSprintPriceDollars} sprint</a>`
       : '',
+    `<a href="${workflowTeardownCheckoutUrl}" data-recovery-offer="workflow_teardown" data-offer-price="99">Pay $99 teardown</a>`,
+    `<a href="${quickReadCheckoutUrl}" data-recovery-offer="quick_read" data-offer-price="19">Pay $19 quick read</a>`,
+    `<a href="${firstFailureRuleCheckoutUrl}" data-recovery-offer="first_failure_rule" data-offer-price="1">Pay $1 first rule</a>`,
+    `<a id="send-workflow-first" href="${workflowSprintIntakeUrl}" data-recovery-offer="workflow_sprint_intake" data-offer-price="0">Send workflow first</a>`,
   ].filter(Boolean).join('\n        ');
   const recoveryOfferCard = recoveryOfferLinks
     ? `<div class="card recovery-card">
