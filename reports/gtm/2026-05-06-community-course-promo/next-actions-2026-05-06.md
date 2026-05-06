@@ -26,6 +26,14 @@ Objective: satisfy Skool’s “unlisted” checklist (cover image, group descri
 
 Known issue (as-of 2026-05-06): Codex in-app browser file picker blocks Skool cover/icon uploads. Workaround is a normal browser upload outside the in-app picker surface.
 
+Approval-ready upload steps (no new copy required):
+
+1. Open: https://www.skool.com/thumbgate-operator-lab-6000
+2. Admin → Group settings → Branding (cover + icon)
+3. Upload cover: `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`
+4. Upload icon: `docs/marketing/assets/thumbgate-skool-icon-128x128.png`
+5. Paste About copy: `reports/gtm/2026-05-04-community-course-promo/skool-about-copy.md` (if it ever got lost)
+
 ## 3) Promo Workflow Readiness (approval needed to run publish/schedule)
 
 GitHub Actions workflow:
@@ -36,6 +44,13 @@ Preview is safe (no publish) and should be used before any external action:
 
 - `mode=preview` runs `--dry-run` with the Operator Lab media plan (`--offer=operator-lab`)
 - `mode=publish` / `mode=schedule` are external actions and require explicit confirmation
+
+Approval-ready GitHub Actions inputs:
+
+- Workflow: `.github/workflows/thumbgate-creator-platform-promo.yml`
+- `mode`: `preview`
+- `offer`: `operator-lab`
+- `platforms`: `linkedin,instagram,threads,bluesky,reddit,youtube`
 
 ## 4) Course listing copy (no external actions)
 
@@ -52,3 +67,4 @@ npm run social:zernio:status
 npm run social:poll
 ```
 
+Local status as-of 2026-05-06: `npm run social:zernio:status` exits non-zero with `NO DATA` when `ZERNIO_API_KEY` is missing (expected in this repo checkout unless explicitly loaded).
