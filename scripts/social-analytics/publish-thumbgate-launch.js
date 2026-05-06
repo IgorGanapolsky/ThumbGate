@@ -22,7 +22,9 @@ const DEFAULT_TIMEZONE = 'America/New_York';
 const LAUNCH_CAMPAIGN = 'first_customer_push';
 const OPERATOR_LAB_CAMPAIGN = 'operator_lab_launch';
 const PAID_SPRINT_CAMPAIGN = 'paid_workflow_sprint';
+const VOICE_AGENT_DIAGNOSTIC_CAMPAIGN = 'voice_agent_reliability_diagnostic';
 const SKOOL_OPERATOR_LAB_URL = 'https://www.skool.com/thumbgate-operator-lab-6000';
+const DIAGNOSTIC_CHECKOUT_URL = 'https://buy.stripe.com/00w14neyUcXA5pL5e33sI0e';
 const PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL = 'https://buy.stripe.com/3cI7sLgH25v8dWh5e33sI0o';
 const PAID_SPRINT_IMPLEMENTATION_PAYMENT_URL = 'https://buy.stripe.com/8x25kDcqMaPs9G15e33sI0p';
 const DEFAULT_LAUNCH_PLATFORMS = ['twitter', 'linkedin', 'instagram'];
@@ -235,6 +237,15 @@ function buildPaidSprintUrl(platform, content) {
   });
 }
 
+function buildVoiceAgentDiagnosticUrl(platform, content) {
+  return buildUTMLink(`${APP_ORIGIN}/#workflow-sprint-intake`, {
+    source: platform,
+    medium: 'paid_service',
+    campaign: VOICE_AGENT_DIAGNOSTIC_CAMPAIGN,
+    content,
+  });
+}
+
 function buildPaidSprintCheckoutUrls(platform, content) {
   const source = platform || 'zernio';
   const baseContent = content || `paid_sprint_${source}`;
@@ -255,12 +266,14 @@ function buildPaidSprintCheckoutUrls(platform, content) {
 }
 
 function mediumForOffer(offer) {
+  if (offer === 'voice-agent-diagnostic') return 'paid_service';
   return offer === 'operator-lab' ? 'community_course' : 'organic_social';
 }
 
 function campaignForOffer(offer) {
   if (offer === 'operator-lab') return OPERATOR_LAB_CAMPAIGN;
   if (offer === 'paid-sprint') return PAID_SPRINT_CAMPAIGN;
+  if (offer === 'voice-agent-diagnostic') return VOICE_AGENT_DIAGNOSTIC_CAMPAIGN;
   return LAUNCH_CAMPAIGN;
 }
 
@@ -348,12 +361,61 @@ function buildPaidSprintPost(platform) {
   return compact.join(' ');
 }
 
+function buildVoiceAgentDiagnosticPost(platform) {
+  const normalized = String(platform || '').trim().toLowerCase();
+  const key = normalized === 'x' ? 'twitter' : normalized;
+  const intakeUrl = buildVoiceAgentDiagnosticUrl(key || 'zernio', `voice_agent_diagnostic_${key || 'generic'}`);
+
+  if (key === 'linkedin') {
+    return [
+      'I have 3 paid voice-agent reliability diagnostics open this week.',
+      '',
+      'This is for teams shipping phone, support, or sales agents where missed intents, brittle handoffs, latency, tool failures, or unclear escalation paths are already costing real calls.',
+      '',
+      '$499 diagnostic: I review one agent flow, logs/transcripts if available, and the current eval or monitoring setup. You get a concrete failure map, prevention-rule plan, and first-fix checklist.',
+      '',
+      `Checkout: ${DIAGNOSTIC_CHECKOUT_URL}`,
+      `Intake: ${intakeUrl}`,
+    ].join('\n');
+  }
+
+  if (key === 'threads') {
+    return [
+      'Opening 3 paid voice-agent reliability diagnostics this week.',
+      '',
+      '$499: one live phone/support/sales agent flow, failure map, eval gaps, escalation risks, and first-fix checklist.',
+      '',
+      `Checkout: ${DIAGNOSTIC_CHECKOUT_URL}`,
+      `Intake: ${intakeUrl}`,
+    ].join('\n');
+  }
+
+  if (key === 'bluesky') {
+    return [
+      'Voice-agent reliability diagnostic: $499.',
+      'One flow, failure map, eval gaps, first-fix checklist.',
+      'Checkout:',
+      DIAGNOSTIC_CHECKOUT_URL,
+    ].join(' ');
+  }
+
+  return [
+    'Paid voice-agent reliability diagnostic is open.',
+    '$499 for one flow: failure map, eval gaps, escalation risks, first-fix checklist.',
+    DIAGNOSTIC_CHECKOUT_URL,
+    intakeUrl,
+  ].join(' ');
+}
+
 function buildPlatformPost(platform, offer = 'launch') {
   if (offer === 'operator-lab') {
     return buildOperatorLabPost(platform);
   }
   if (offer === 'paid-sprint') {
     return buildPaidSprintPost(platform);
+  }
+  if (offer === 'voice-agent-diagnostic') {
+    return buildVoiceAgentDiagnosticPost(platform);
   }
 
   const normalized = String(platform || '').trim().toLowerCase();
@@ -659,12 +721,14 @@ module.exports = {
   APP_ORIGIN,
   DEFAULT_LAUNCH_PLATFORMS,
   DEFAULT_TIMEZONE,
+  DIAGNOSTIC_CHECKOUT_URL,
   LAUNCH_CAMPAIGN,
   OPERATOR_LAB_CAMPAIGN,
   PAID_SPRINT_CAMPAIGN,
   PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL,
   PAID_SPRINT_IMPLEMENTATION_PAYMENT_URL,
   SKOOL_OPERATOR_LAB_URL,
+  VOICE_AGENT_DIAGNOSTIC_CAMPAIGN,
   buildCampaignEntries,
   buildLandingUrl,
   buildOperatorLabPost,
@@ -673,6 +737,8 @@ module.exports = {
   buildPaidSprintCheckoutUrls,
   buildPaidSprintPost,
   buildPaidSprintUrl,
+  buildVoiceAgentDiagnosticPost,
+  buildVoiceAgentDiagnosticUrl,
   classifyPublishFailure,
   defaultCampaignSchedule,
   getPlatformFailures,
