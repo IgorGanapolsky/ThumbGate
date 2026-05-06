@@ -34,6 +34,17 @@ function readText(relativePath) {
   return fs.readFileSync(path.join(PROJECT_ROOT, relativePath), 'utf8');
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function mentionsCanonicalOrigin(artifact) {
+  return [CANONICAL_PUBLIC_ORIGIN, CANONICAL_APP_ORIGIN].some((origin) => {
+    const originPattern = new RegExp(`(^|[^\\w.+-])${escapeRegExp(origin)}(?=$|[/?#"'\\s<>).])`);
+    return originPattern.test(artifact);
+  });
+}
+
 test('pricing matches 2026 standard', () => {
   assert.match('$19/mo or $149/yr', /\$19\/mo or \$149\/yr/);
 });
@@ -396,7 +407,7 @@ test('active GTM scripts and reports point to the canonical offer without foundi
     assert.doesNotMatch(artifact, /buy\.stripe\.com/);
     assert.doesNotMatch(artifact, /founding users today/i);
     assert.ok(
-      artifact.includes(CANONICAL_PUBLIC_ORIGIN) || artifact.includes(CANONICAL_APP_ORIGIN),
+      mentionsCanonicalOrigin(artifact),
       'GTM artifact should point to the public site or canonical app origin',
     );
     assert.doesNotMatch(artifact, /Always-On/i);

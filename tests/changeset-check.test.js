@@ -10,6 +10,7 @@ const {
   MIN_SUMMARY_LENGTH,
   collectChangesets,
   evaluateChangesetRequirement,
+  getChangedFiles,
   isReleaseRelevantFile,
   isVersionedReleaseChangeSet,
   parseChangesetMarkdown,
@@ -164,6 +165,11 @@ test('isVersionedReleaseChangeSet detects a release PR that already consumed its
   ]), true);
   assert.equal(isVersionedReleaseChangeSet([
     'CHANGELOG.md',
+    'package-lock.json',
+    'package.json',
+  ]), true);
+  assert.equal(isVersionedReleaseChangeSet([
+    'CHANGELOG.md',
     'package.json',
   ]), false);
 });
@@ -182,6 +188,32 @@ test('evaluateChangesetRequirement allows release-relevant changes when a releas
   assert.equal(result.ok, true);
   assert.equal(result.required, true);
   assert.match(result.reason, /already consumed pending changesets/i);
+});
+
+test('getChangedFiles includes deleted changesets so versioned release PRs pass', () => {
+  const calls = [];
+  const runner = (_cmd, args) => {
+    calls.push(args);
+    if (args[0] === 'merge-base') {
+      return 'abc123\n';
+    }
+    if (args[0] === 'diff') {
+      return '.changeset/example.md\nCHANGELOG.md\npackage.json\n';
+    }
+    throw new Error(`unexpected git args: ${args.join(' ')}`);
+  };
+
+  const changedFiles = getChangedFiles({ baseRef: 'origin/main', cwd: '/', runner });
+
+  assert.deepEqual(changedFiles, [
+    '.changeset/example.md',
+    'CHANGELOG.md',
+    'package.json',
+  ]);
+  assert.deepEqual(
+    calls.find((args) => args[0] === 'diff').slice(0, 3),
+    ['diff', '--name-only', '--diff-filter=ACDMRTUXBD']
+  );
 });
 
 test('release confidence docs keep the buyer-facing changeset story explicit', () => {
