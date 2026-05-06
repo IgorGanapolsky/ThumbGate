@@ -9,6 +9,7 @@ const {
   monitor,
   assertPublishableDraft,
   isSafeAutoReply,
+  normalizeAutoReplyKey,
   parseLimitArg,
   publishApprovedDrafts,
   publishReply,
@@ -194,6 +195,41 @@ test('safe auto-reply gate rejects promotional or link-bearing replies', () => {
   assert.equal(isSafeAutoReply('This local check stops the repeated bad move before the next tool call.'), true);
   assert.equal(isSafeAutoReply('Buy now at https://example.com'), false);
   assert.equal(isSafeAutoReply('DM me for a limited time sale'), false);
+});
+
+test('monitor does not auto-approve duplicate safe replies in one pass', async () => {
+  const session = { did: 'did:plc:me', handle: 'me.test', pdsHost: 'pds.example', accessJwt: 'jwt' };
+  const notifications = ['a', 'b', 'c'].map((id) => ({
+    uri: `at://did:plc:other/app.bsky.feed.post/${id}`,
+    cid: `cid${id}`,
+    reason: 'reply',
+    indexedAt: '2026-04-21T00:00:00Z',
+    author: { handle: `${id}.bsky.social`, did: `did:plc:${id}` },
+    record: { text: 'hello' },
+  }));
+  const savedDrafts = [];
+
+  const result = await monitor({
+    sessionFactory: async () => session,
+    listNotifications: async () => notifications,
+    generateReply: async () => 'Pre-action checks stop the repeated bad move before another tool call spends money.',
+    saveDraft: (d) => { savedDrafts.push(d); },
+    saveState: () => {},
+    loadState: () => ({ repliedTo: { bluesky: {} }, lastCheck: {} }),
+    dryRun: false,
+    autoApproveSafe: true,
+    autoApproveLimit: 3,
+  });
+
+  assert.equal(result.approved, 1);
+  assert.equal(savedDrafts.filter((draft) => draft.approved).length, 1);
+});
+
+test('normalizeAutoReplyKey collapses punctuation and spacing', () => {
+  assert.equal(
+    normalizeAutoReplyKey('Pre-action checks stop repeated mistakes.'),
+    normalizeAutoReplyKey('pre action   checks stop repeated mistakes'),
+  );
 });
 
 test('parseLimitArg accepts positive integer limits only', () => {

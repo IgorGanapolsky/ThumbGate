@@ -60,6 +60,15 @@ function isSafeAutoReply(text) {
   return true;
 }
 
+function normalizeAutoReplyKey(text) {
+  return String(text || '')
+    .toLowerCase()
+    .replace(/https?:\/\/\S+/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
 function loadState() {
   try {
     if (fs.existsSync(STATE_FILE)) return JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
@@ -301,6 +310,7 @@ async function monitor({
   let queued = 0;
   let approved = 0;
   let skipped = 0;
+  const approvedReplyKeys = new Set();
 
   for (const n of actionable) {
     if (state.repliedTo.bluesky[n.uri]) { skipped += 1; continue; }
@@ -332,11 +342,18 @@ async function monitor({
       },
       autoPost: false,
     };
-    if (autoApproveSafe && approved < autoApproveLimit && isSafeAutoReply(reply)) {
+    const replyKey = normalizeAutoReplyKey(reply);
+    if (
+      autoApproveSafe &&
+      approved < autoApproveLimit &&
+      isSafeAutoReply(reply) &&
+      !approvedReplyKeys.has(replyKey)
+    ) {
       draft.approved = true;
       draft.autoPost = true;
       draft.approvedAt = draft.createdAt;
       draft.approvalReason = 'safe_auto_reply';
+      approvedReplyKeys.add(replyKey);
       approved += 1;
     }
 
@@ -400,5 +417,6 @@ module.exports = {
   publishApprovedDrafts,
   publishReply,
   isSafeAutoReply,
+  normalizeAutoReplyKey,
   parseLimitArg,
 };
