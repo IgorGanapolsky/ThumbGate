@@ -41,11 +41,15 @@ test('resolveHostedAuditApiKey prefers operator key over general API key', () =>
   }), 'tg_operator');
   assert.equal(resolveHostedAuditApiKey({
     THUMBGATE_API_KEY: 'tg_api',
-  }), 'tg_api');
+  }, { operatorKey: null }), 'tg_api');
   assert.equal(resolveHostedAuditApiKey({
     THUMBGATE_OPERATOR_KEY: '   ',
     THUMBGATE_API_KEY: '',
-  }), '');
+  }, { operatorKey: null }), '');
+  assert.equal(resolveHostedAuditApiKey({
+    THUMBGATE_OPERATOR_KEY: '   ',
+    THUMBGATE_API_KEY: 'tg_api',
+  }, { operatorKey: 'tg_local_operator' }), 'tg_local_operator');
 });
 
 test('fetchWithTimeout rejects stalled hosted calls with a readable error', async () => {
