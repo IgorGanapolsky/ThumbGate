@@ -23,6 +23,8 @@ Objective: satisfy Skool’s “unlisted” checklist (cover image, group descri
 - Artwork (local files for direct upload):
   - Cover: `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`
   - Icon: `docs/marketing/assets/thumbgate-skool-icon-128x128.png`
+- Official requirements refresher:
+  - `reports/gtm/2026-05-06-community-course-promo/skool-discovery-requirements-2026-05-06.md`
 
 Known issue (as-of 2026-05-06): Codex in-app browser file picker blocks Skool cover/icon uploads. Workaround is a normal browser upload outside the in-app picker surface.
 
@@ -32,7 +34,11 @@ Approval-ready upload steps (no new copy required):
 2. Admin → Group settings → Branding (cover + icon)
 3. Upload cover: `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`
 4. Upload icon: `docs/marketing/assets/thumbgate-skool-icon-128x128.png`
-5. Paste About copy: `reports/gtm/2026-05-04-community-course-promo/skool-about-copy.md` (if it ever got lost)
+5. About page → paste copy: `reports/gtm/2026-05-04-community-course-promo/skool-about-copy.md` (if it ever got lost)
+6. About page → upload at least one image/video (Discovery eligibility requires About page completion):
+   - Hero image: `docs/marketing/assets/thumbgate-operator-lab-about-hero.png`
+   - Explainer (landscape): `docs/marketing/assets/thumbgate-operator-lab-explainer.mp4`
+   - Explainer (vertical): `docs/marketing/assets/thumbgate-operator-lab-explainer-vertical.mp4`
 
 ## 3) Promo Workflow Readiness (approval needed to run publish/schedule)
 
@@ -46,12 +52,24 @@ Preview is safe (no publish) and should be used before any external action:
 - The workflow uploads a `thumbgate-creator-platform-promo-preview` artifact containing `promo-preview.json` (captions + media plan) for approval review.
 - `mode=publish` / `mode=schedule` are external actions and require explicit confirmation
 
+Local-only preview already generated (safe; no publish):
+
+- `reports/gtm/2026-05-06-community-course-promo/promo-preview-operator-lab-2026-05-06.json`
+
 Approval-ready GitHub Actions inputs:
 
 - Workflow: `.github/workflows/thumbgate-creator-platform-promo.yml`
 - `mode`: `preview`
 - `offer`: `operator-lab`
 - `platforms`: `linkedin,instagram,threads,bluesky,reddit,youtube`
+
+Approval-ready UI steps (GitHub web):
+
+1. Repo → Actions → `ThumbGate Creator Platform Promo`
+2. `Run workflow`
+3. Set `mode=preview` (safe)
+4. Confirm `offer=operator-lab` and `platforms=...`
+5. Run → download the `thumbgate-creator-platform-promo-preview` artifact and review captions/media before any publish/schedule
 
 ## 4) Course listing copy (no external actions)
 

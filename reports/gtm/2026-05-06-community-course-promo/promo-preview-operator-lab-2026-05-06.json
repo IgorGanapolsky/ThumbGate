@@ -1,0 +1,84 @@
+{
+  "dryRun": true,
+  "offer": "operator-lab",
+  "platforms": [
+    "linkedin",
+    "instagram",
+    "threads",
+    "bluesky",
+    "reddit",
+    "youtube"
+  ],
+  "previews": [
+    {
+      "platform": "linkedin",
+      "content": "I started a free ThumbGate Operator Lab for people running AI coding agents in real repos.\n\nThe format is deliberately practical: bring one repeated Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, or MCP failure, and we turn it into a prevention rule, pre-action gate, or workflow-hardening teardown.\n\nThe best first win is narrow: one mistake, one rule, one blocked repeat.\n\nhttps://www.skool.com/thumbgate-operator-lab-6000?utm_source=linkedin&utm_medium=community_course&utm_campaign=operator_lab_launch&utm_content=operator_lab_linkedin",
+      "accountCount": 0,
+      "mediaPlan": [
+        {
+          "path": "/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo/docs/marketing/assets/thumbgate-skool-cover-1084x576.png",
+          "exists": true
+        }
+      ]
+    },
+    {
+      "platform": "instagram",
+      "content": "Stop repeated AI-agent mistakes.\n\nThumbGate Operator Lab is open and free: bring one Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, or MCP failure and turn it into a prevention rule.\n\nhttps://www.skool.com/thumbgate-operator-lab-6000?utm_source=instagram&utm_medium=community_course&utm_campaign=operator_lab_launch&utm_content=operator_lab_instagram",
+      "accountCount": 0,
+      "mediaPlan": [
+        {
+          "path": "/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo/docs/marketing/assets/thumbgate-skool-icon-128x128.png",
+          "exists": true
+        }
+      ]
+    },
+    {
+      "platform": "threads",
+      "content": "ThumbGate Operator Lab is a free community for turning repeated AI-agent mistakes into prevention rules and pre-action gates. https://www.skool.com/thumbgate-operator-lab-6000?utm_source=threads&utm_medium=community_course&utm_campaign=operator_lab_launch&utm_content=operator_lab_threads",
+      "accountCount": 0,
+      "mediaPlan": [
+        {
+          "path": "/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo/docs/marketing/assets/thumbgate-skool-cover-1084x576.png",
+          "exists": true
+        }
+      ]
+    },
+    {
+      "platform": "bluesky",
+      "content": "ThumbGate Operator Lab is a free community for turning repeated AI-agent mistakes into prevention rules and pre-action gates. https://www.skool.com/thumbgate-operator-lab-6000?utm_source=bluesky&utm_medium=community_course&utm_campaign=operator_lab_launch&utm_content=operator_lab_bluesky",
+      "accountCount": 0,
+      "mediaPlan": [
+        {
+          "path": "/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo/docs/marketing/assets/thumbgate-skool-cover-1084x576.png",
+          "exists": true
+        }
+      ]
+    },
+    {
+      "platform": "reddit",
+      "content": "I started a free Skool group for people using AI coding agents in real repos.\n\nThe premise: post one repeated agent mistake, then turn it into a prevention rule or pre-action gate instead of another prompt tweak.\n\nUseful for Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, and MCP workflows.\n\nhttps://www.skool.com/thumbgate-operator-lab-6000?utm_source=reddit&utm_medium=community_course&utm_campaign=operator_lab_launch&utm_content=operator_lab_reddit",
+      "accountCount": 0,
+      "mediaPlan": [
+        {
+          "path": "/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo/docs/marketing/assets/thumbgate-skool-cover-1084x576.png",
+          "exists": true
+        }
+      ]
+    },
+    {
+      "platform": "youtube",
+      "content": "Free ThumbGate Operator Lab: bring one repeated AI-agent mistake and turn it into a prevention rule.\n\nFor Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, and MCP operators.\n\nhttps://www.skool.com/thumbgate-operator-lab-6000?utm_source=youtube&utm_medium=community_course&utm_campaign=operator_lab_launch&utm_content=operator_lab_youtube",
+      "accountCount": 0,
+      "mediaPlan": [
+        {
+          "path": "/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo/docs/marketing/assets/thumbgate-skool-cover-1084x576.png",
+          "exists": true
+        }
+      ]
+    }
+  ],
+  "published": [],
+  "scheduled": [],
+  "skipped": [],
+  "errors": []
+}

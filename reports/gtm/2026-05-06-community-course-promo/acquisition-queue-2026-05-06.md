@@ -29,21 +29,37 @@ Skool Operator Lab (free funnel):
 
 - https://www.skool.com/thumbgate-operator-lab-6000
 
-Checklist sources (verified 2026-05-05; re-check before action):
+Checklist sources (verified 2026-05-06; re-check before action):
 
 - https://help.skool.com/article/151-why-isnt-my-group-visible-in-discovery
 - https://help.skool.com/article/123-how-to-set-up-my-group-s-about-page
+- https://help.skool.com/article/153-discovery-faqs
+- https://help.skool.com/article/120-how-to-set-up-my-group-logo-and-cover-photo
+- https://help.skool.com/article/38-how-do-to-pin-a-post
+- https://help.skool.com/article/14-how-do-i-invite-members-to-my-community
+- https://help.skool.com/article/152-how-to-rank-higher-in-discovery
+
+Refreshed checklist bundle:
+
+- `reports/gtm/2026-05-06-community-course-promo/skool-discovery-requirements-2026-05-06.md`
 
 Approval-ready steps:
 
 1. Upload cover + icon (use a normal browser if in-app file picker blocks uploads).
 2. Paste About copy and save: `reports/gtm/2026-05-04-community-course-promo/skool-about-copy.md`.
-3. Publish + pin the “Start Here” post from the same file.
-4. Invite the first `10–20` warm contacts.
+3. Upload at least one About page image/video:
+   - `docs/marketing/assets/thumbgate-operator-lab-about-hero.png`
+   - `docs/marketing/assets/thumbgate-operator-lab-explainer.mp4`
+4. Publish + pin the “Start Here” post from the same file.
+5. Invite the first `10–20` warm contacts.
 
 ## Lane C: Public posting (lead-gen → Skool)
 
 Posting objective: recruit operators to post one repeated mistake in Skool, then route to Diagnostic/Sprint only when pain is confirmed.
+
+Approval-ready local preview (captions + media plan; safe):
+
+- `reports/gtm/2026-05-06-community-course-promo/promo-preview-operator-lab-2026-05-06.json`
 
 Angles (pick one per post; keep it narrow):
 
@@ -60,4 +76,3 @@ CTA (Skool-first):
 Paid CTA (only after pain is confirmed):
 
 - Intake: `https://thumbgate-production.up.railway.app/#workflow-sprint-intake`
-

@@ -14,11 +14,14 @@ Canonical operator runbook for today’s run lives in:
 
 Note: any operator close packet that contains emails, names, or other PII must stay local-only and git-ignored.
 
-Snapshot (as-of the May 4 baseline):
+Snapshot (operator-reported as-of 2026-05-05; not commercial proof):
 
 - Paid orders: 4
-- Checkout starts: 87
-- Pipeline: 20 active leads, 0 contacted, 0 replied, 0 paid in the local sales ledger
+- Checkout starts: 133
+- Booked: `$149`
+- Signups: 475
+- Sprint leads: 0
+- Pipeline: 20 active leads, 0 contacted, 0 replied, 0 paid in the local sales ledger (stage movement is tracked in `sales-pipeline.md`)
 - Revenue bottleneck: sending and logging outreach, not more prospect research
 
 ## Do First
