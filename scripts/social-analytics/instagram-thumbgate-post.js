@@ -27,6 +27,18 @@ Works with Claude Code, Cursor, Codex, Gemini.
 
 #AIAgents #DeveloperTools #ClaudeCode #ThumbGate`;
 
+function getBlockedReasons(result) {
+  if (!result || !Array.isArray(result.reasons)) {
+    return [];
+  }
+
+  return result.reasons.map((reason) => reason.reason || reason.id || String(reason));
+}
+
+function isDuplicateContentBlock(result) {
+  return getBlockedReasons(result).includes('duplicate_content_all_platforms');
+}
+
 async function postThumbGateToInstagram(options = {}) {
   const caption = String(options.caption || THUMBGATE_CAPTION).trim();
   const imagePath = options.imagePath ? path.resolve(options.imagePath) : '';
@@ -73,9 +85,17 @@ async function postThumbGateToInstagram(options = {}) {
       result = await publishPost(caption, platforms, publishOptions);
     }
     if (result && result.blocked) {
-      const reasons = Array.isArray(result.reasons)
-        ? result.reasons.map((reason) => reason.reason || reason.id || String(reason)).join(', ')
-        : 'quality gate blocked the caption';
+      if (isDuplicateContentBlock(result)) {
+        console.log('✅ Instagram post skipped: duplicate content already published within the configured window.');
+        return {
+          ...result,
+          success: true,
+          skipped: true,
+          skipReason: 'duplicate_content_all_platforms',
+        };
+      }
+
+      const reasons = getBlockedReasons(result).join(', ') || 'quality gate blocked the caption';
       throw new Error(`Instagram post blocked: ${reasons}`);
     }
 
@@ -108,4 +128,9 @@ if (require.main === module) {
   })();
 }
 
-module.exports = { postThumbGateToInstagram, THUMBGATE_CAPTION };
+module.exports = {
+  postThumbGateToInstagram,
+  THUMBGATE_CAPTION,
+  getBlockedReasons,
+  isDuplicateContentBlock,
+};
