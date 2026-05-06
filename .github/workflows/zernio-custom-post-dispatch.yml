@@ -31,11 +31,12 @@ jobs:
           node-version: '20'
           cache: npm
 
-      - run: npm ci --ignore-scripts
+      - run: npm ci --onnxruntime-node-install-cuda=skip
 
       - name: Publish via Zernio
         env:
           POST_TEXT: ${{ github.event.inputs.text }}
+          THUMBGATE_DEDUP_LOG_PATH: ${{ runner.temp }}/zernio-dedup-log.json
         run: |
           if [ -z "${ZERNIO_API_KEY:-}" ]; then
             echo "ZERNIO_API_KEY is not configured." >&2
