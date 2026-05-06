@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.16.21
+
+### Patch Changes
+
+- Add the AI Agent Workflow Migration Checklist guide with $1 first-rule, $19 quick-read, and $499 diagnostic checkout paths so agent-migration traffic can convert without waiting for a sales conversation.
+
 ## 1.16.20
 
 ### Patch Changes
