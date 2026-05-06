@@ -49,3 +49,8 @@ UI steps (GitHub web):
 Optional local-only preview (safe; no publish):
 
 - Output: `reports/gtm/2026-05-06-community-course-promo/promo-preview-operator-lab-2026-05-06.json`
+
+Paid offer variant preview (safe; no publish):
+
+- Output: `reports/gtm/2026-05-06-money-today/promo-preview-paid-sprint-2026-05-06.json`
+- Note: If we want a GitHub Actions artifact for the paid lane, re-run the same workflow with `offer=paid-sprint` and `mode=preview` (still no publish).

@@ -1,0 +1,58 @@
+
+> thumbgate@1.16.20 social:publish:launch
+> node scripts/social-analytics/publish-thumbgate-launch.js --dry-run --offer=paid-sprint --platforms=linkedin,reddit,bluesky,threads,instagram,youtube
+
+{
+  "dryRun": true,
+  "offer": "paid-sprint",
+  "platforms": [
+    "linkedin",
+    "reddit",
+    "bluesky",
+    "threads",
+    "instagram",
+    "youtube"
+  ],
+  "previews": [
+    {
+      "platform": "linkedin",
+      "content": "I opened a paid ThumbGate workflow-hardening lane for teams running Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, or MCP agents in real repos.\n\nThe offer is intentionally narrow:\n\n- $499 diagnostic: one risky AI-agent workflow, failure-pattern review, prevention-rule map, and concrete hardening plan\n- $1500 sprint: implement the first guardrails and prove the same failure gets blocked\n\nThis is for teams seeing repeated agent mistakes: unsafe file edits, bad deploy steps, ignored repo rules, or risky tool calls that keep coming back across sessions.\n\nBook the $499 diagnostic: https://buy.stripe.com/3cI7sLgH25v8dWh5e33sI0o?utm_source=linkedin&utm_medium=organic_social&utm_campaign=paid_workflow_sprint&utm_content=paid_sprint_linkedin_diagnostic\nStart the $1500 sprint: https://buy.stripe.com/8x25kDcqMaPs9G15e33sI0p?utm_source=linkedin&utm_medium=organic_social&utm_campaign=paid_workflow_sprint&utm_content=paid_sprint_linkedin_sprint",
+      "accountCount": 0,
+      "mediaPlan": []
+    },
+    {
+      "platform": "reddit",
+      "content": "Paid ThumbGate hardening is open. $499 diagnostic maps one repeated Claude/Codex/Cursor failure into prevention rules. https://buy.stripe.com/3cI7sLgH25v8dWh5e33sI0o?utm_source=reddit&utm_medium=organic_social&utm_campaign=paid_workflow_sprint&utm_content=paid_sprint_reddit_diagnostic $1500 sprint implements the first guardrails. https://buy.stripe.com/8x25kDcqMaPs9G15e33sI0p?utm_source=reddit&utm_medium=organic_social&utm_campaign=paid_workflow_sprint&utm_content=paid_sprint_reddit_sprint",
+      "accountCount": 0,
+      "mediaPlan": []
+    },
+    {
+      "platform": "bluesky",
+      "content": "Paid ThumbGate workflow hardening is open. $499 diagnostic. $1500 implementation sprint. For repeated Claude/Codex/Cursor failures. https://buy.stripe.com/3cI7sLgH25v8dWh5e33sI0o?utm_source=bluesky&utm_medium=organic_social&utm_campaign=paid_workflow_sprint&utm_content=paid_sprint_bluesky_diagnostic",
+      "accountCount": 0,
+      "mediaPlan": []
+    },
+    {
+      "platform": "threads",
+      "content": "Paid ThumbGate hardening is open. $499 diagnostic maps one repeated Claude/Codex/Cursor failure into prevention rules. https://buy.stripe.com/3cI7sLgH25v8dWh5e33sI0o?utm_source=threads&utm_medium=organic_social&utm_campaign=paid_workflow_sprint&utm_content=paid_sprint_threads_diagnostic $1500 sprint implements the first guardrails. https://buy.stripe.com/8x25kDcqMaPs9G15e33sI0p?utm_source=threads&utm_medium=organic_social&utm_campaign=paid_workflow_sprint&utm_content=paid_sprint_threads_sprint",
+      "accountCount": 0,
+      "mediaPlan": []
+    },
+    {
+      "platform": "instagram",
+      "content": "Stop repeated AI-agent mistakes.\n\n$499 diagnostic: map one risky workflow.\n$1500 sprint: implement the first guardrails.\n\nFor Claude Code, Codex, Cursor, Gemini, Amp, OpenCode, and MCP teams.\n\nDiagnostic: https://buy.stripe.com/3cI7sLgH25v8dWh5e33sI0o?utm_source=instagram&utm_medium=organic_social&utm_campaign=paid_workflow_sprint&utm_content=paid_sprint_instagram_diagnostic\nSprint: https://buy.stripe.com/8x25kDcqMaPs9G15e33sI0p?utm_source=instagram&utm_medium=organic_social&utm_campaign=paid_workflow_sprint&utm_content=paid_sprint_instagram_sprint",
+      "accountCount": 0,
+      "mediaPlan": []
+    },
+    {
+      "platform": "youtube",
+      "content": "Paid ThumbGate hardening is open. $499 diagnostic maps one repeated Claude/Codex/Cursor failure into prevention rules. https://buy.stripe.com/3cI7sLgH25v8dWh5e33sI0o?utm_source=youtube&utm_medium=organic_social&utm_campaign=paid_workflow_sprint&utm_content=paid_sprint_youtube_diagnostic $1500 sprint implements the first guardrails. https://buy.stripe.com/8x25kDcqMaPs9G15e33sI0p?utm_source=youtube&utm_medium=organic_social&utm_campaign=paid_workflow_sprint&utm_content=paid_sprint_youtube_sprint",
+      "accountCount": 0,
+      "mediaPlan": []
+    }
+  ],
+  "published": [],
+  "scheduled": [],
+  "skipped": [],
+  "errors": []
+}

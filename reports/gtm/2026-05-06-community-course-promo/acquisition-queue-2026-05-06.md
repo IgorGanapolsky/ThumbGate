@@ -23,6 +23,10 @@ Approval-ready sequence:
 2. After each send, run that row’s `Log after send` command.
 3. Only after pain is confirmed, reply with Diagnostic/Sprint close copy and include proof links.
 
+DM + reply copy snippets (for cold/warm follow-ups; approval still required before send):
+
+- `reports/gtm/2026-05-06-community-course-promo/outreach-drafts-2026-05-06.md`
+
 ## Lane B: Skool (Discovery eligibility)
 
 Skool Operator Lab (free funnel):
