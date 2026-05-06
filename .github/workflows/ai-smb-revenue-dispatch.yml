@@ -1,0 +1,102 @@
+name: AI SMB Revenue Dispatch
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'send-email, post-social, or both'
+        required: true
+        type: choice
+        default: both
+        options:
+          - both
+          - send-email
+          - post-social
+      email_json:
+        description: 'JSON array of {to,subject,text}'
+        required: false
+        default: '[]'
+      social_text:
+        description: 'Text to publish through Zernio'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ai-smb-revenue-dispatch
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      THUMBGATE_TRIAL_EMAIL_FROM: ${{ secrets.THUMBGATE_TRIAL_EMAIL_FROM }}
+      ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Send campaign emails through Resend
+        if: github.event.inputs.mode == 'both' || github.event.inputs.mode == 'send-email'
+        env:
+          EMAIL_JSON: ${{ github.event.inputs.email_json }}
+        run: |
+          node <<'NODE'
+          const messages = JSON.parse(process.env.EMAIL_JSON || '[]');
+          const apiKey = process.env.RESEND_API_KEY || '';
+          const from = process.env.THUMBGATE_TRIAL_EMAIL_FROM || 'Saas Growth Dispatch <onboarding@resend.dev>';
+          if (!apiKey) throw new Error('RESEND_API_KEY missing');
+          if (!Array.isArray(messages) || messages.length === 0) {
+            console.log('No email messages supplied.');
+            process.exit(0);
+          }
+          const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+          let sent = 0;
+          let failed = 0;
+          for (const message of messages) {
+            const payload = {
+              from,
+              to: [message.to],
+              subject: message.subject,
+              text: message.text,
+              reply_to: 'igor.ganapolsky@gmail.com',
+            };
+            const response = await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(payload),
+            });
+            const body = await response.text();
+            if (response.ok) {
+              sent += 1;
+              console.log(`sent ${message.to}: ${body}`);
+            } else {
+              failed += 1;
+              console.log(`failed ${message.to}: HTTP ${response.status} ${body}`);
+            }
+            await sleep(350);
+          }
+          console.log(JSON.stringify({ sent, failed }));
+          if (failed > 0) process.exit(1);
+          NODE
+
+      - name: Publish social through Zernio
+        if: github.event.inputs.mode == 'both' || github.event.inputs.mode == 'post-social'
+        env:
+          SOCIAL_TEXT: ${{ github.event.inputs.social_text }}
+        run: |
+          if [ -z "$SOCIAL_TEXT" ]; then
+            echo "No social text supplied."
+            exit 0
+          fi
+          node scripts/social-analytics/publishers/zernio.js --text="$SOCIAL_TEXT"
