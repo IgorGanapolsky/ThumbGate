@@ -54,7 +54,15 @@ test('Zernio calendar creates two promotion posts per kit', () => {
   assert.equal(calendar.length, 8);
   assert.ok(calendar.some((item) => item.platform === 'linkedin'));
   assert.ok(calendar.some((item) => item.platform === 'threads'));
-  assert.ok(calendar.every((item) => item.post.includes('https://buy.stripe.com/')));
+  const liveCheckoutUrls = new Set(Object.values(LIVE_OFFERS).map((offer) => offer.checkoutUrl));
+  for (const item of calendar) {
+    const rawUrls = item.post.match(/\bhttps:\/\/\S+/g) || [];
+    assert.equal(rawUrls.length, 1, 'calendar post must include exactly one checkout URL');
+    const checkoutUrl = new URL(rawUrls[0]);
+    assert.equal(checkoutUrl.protocol, 'https:');
+    assert.equal(checkoutUrl.hostname, 'buy.stripe.com');
+    assert.ok(liveCheckoutUrls.has(checkoutUrl.href));
+  }
 });
 
 test('rendered pack is checkout-ready without unsupported traction claims', () => {
