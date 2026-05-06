@@ -1282,10 +1282,16 @@ test('cancel page serves retry message and records first-party telemetry', async
   assert.match(body, /checkout_cancel_workflow_intake_clicked/);
   assert.match(body, /checkout_cancel_workflow_sprint_intake/);
   assert.match(body, /utm_medium', 'checkout_cancel_recovery'/);
+  assert.match(body, /Pay \$1 first rule/);
+  assert.match(body, /Pay \$19 quick read/);
+  assert.match(body, /Pay \$99 teardown/);
   assert.match(body, /Book \$499 diagnostic/);
   assert.match(body, /Start \$1500 sprint/);
   assert.match(body, /Restart \$19 Pro checkout/);
   assert.match(body, /data-recovery-offer="pro_pay_now_retry"/);
+  assert.match(body, /data-recovery-offer="first_failure_rule"/);
+  assert.match(body, /data-recovery-offer="quick_read"/);
+  assert.match(body, /data-recovery-offer="workflow_teardown"/);
   assert.match(body, /data-recovery-offer="sprint_diagnostic"/);
   assert.match(body, /data-recovery-offer="workflow_sprint"/);
   assert.match(body, /checkout_recovery_offer_clicked/);
