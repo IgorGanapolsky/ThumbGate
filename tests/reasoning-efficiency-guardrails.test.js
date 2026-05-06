@@ -25,6 +25,16 @@ test('normalizeOptions extracts reasoning compression signals', () => {
     verifier: true,
     'low-confidence-steps': '2',
     'high-confidence-failures': '1',
+    'prompt-tokens': '120000',
+    'output-tokens': '800',
+    'ttft-ms': '1800',
+    'tokens-per-second': '42',
+    'kv-cache': 'false',
+    'kv-cache-hit-rate': '0.41',
+    quantized: true,
+    'quality-delta': '-0.03',
+    'prefill-budget-ms': '800',
+    'decode-budget-tps': '60',
   });
 
   assert.equal(options.workload, 'math-routing');
@@ -35,6 +45,16 @@ test('normalizeOptions extracts reasoning compression signals', () => {
   assert.equal(options.verifier, true);
   assert.equal(options.lowConfidenceSteps, 2);
   assert.equal(options.highConfidenceFailures, 1);
+  assert.equal(options.promptTokens, 120000);
+  assert.equal(options.outputTokens, 800);
+  assert.equal(options.ttftMs, 1800);
+  assert.equal(options.tokensPerSecond, 42);
+  assert.equal(options.kvCache, false);
+  assert.equal(options.kvCacheHitRate, 0.41);
+  assert.equal(options.quantized, true);
+  assert.equal(options.qualityDelta, -0.03);
+  assert.equal(options.prefillBudgetMs, 800);
+  assert.equal(options.decodeBudgetTps, 60);
 });
 
 test('reasoning efficiency metric helpers compute token and accuracy deltas', () => {
@@ -100,4 +120,24 @@ test('reasoning-efficiency-guardrails CLI emits machine-readable recommendations
   assert.equal(payload.name, 'thumbgate-reasoning-efficiency-guardrails');
   assert.ok(payload.summary.recommendedTemplateCount >= 2);
   assert.ok(payload.signals.some((signal) => signal.id === 'reasoning_compression'));
+});
+
+test('buildReasoningEfficiencyGuardrailsPlan flags inference runtime economics', () => {
+  const report = buildReasoningEfficiencyGuardrailsPlan({
+    'prompt-tokens': '120000',
+    'ttft-ms': '1800',
+    'prefill-budget-ms': '800',
+    'tokens-per-second': '42',
+    'decode-budget-tps': '60',
+    'kv-cache': 'false',
+    'kv-cache-hit-rate': '0.41',
+    quantized: true,
+    'quality-delta': '-0.03',
+  });
+
+  assert.equal(report.metrics.promptTokens, 120000);
+  assert.equal(report.metrics.kvCache, false);
+  assert.ok(report.signals.some((signal) => signal.id === 'prefill_decode_split'));
+  assert.ok(report.signals.some((signal) => signal.id === 'kv_cache_policy'));
+  assert.ok(report.signals.some((signal) => signal.id === 'quantization_rollout'));
 });
