@@ -69,7 +69,10 @@ function isVersionedReleaseChangeSet(changedFiles = []) {
   const normalizedFiles = changedFiles.map((file) => String(file || '').trim().replaceAll('\\', '/'));
   return normalizedFiles.includes('package.json')
     && normalizedFiles.includes('CHANGELOG.md')
-    && normalizedFiles.some(isChangesetMarkdownFile);
+    && (
+      normalizedFiles.includes('package-lock.json')
+      || normalizedFiles.some(isChangesetMarkdownFile)
+    );
 }
 
 function splitChangesetDocument(content) {
@@ -302,7 +305,7 @@ function getChangedFiles({
   }
 
   const mergeBase = runGitCommand(['merge-base', 'HEAD', baseRef], { cwd, runner });
-  const output = runGitCommand(['diff', '--name-only', '--diff-filter=ACDMRTUXB', `${mergeBase}...HEAD`], { cwd, runner });
+  const output = runGitCommand(['diff', '--name-only', '--diff-filter=ACDMRTUXBD', `${mergeBase}...HEAD`], { cwd, runner });
   return output ? output.split('\n').map((line) => line.trim()).filter(Boolean) : [];
 }
 
