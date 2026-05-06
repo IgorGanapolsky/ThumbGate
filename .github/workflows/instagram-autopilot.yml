@@ -1,6 +1,8 @@
 name: Instagram Autopilot
 
-# Posts a ThumbGate Instagram static card once per day.
+# Generates a ThumbGate Instagram static card once per day, but scheduled
+# publishing is off by default. Screenshots showed repeated low-engagement
+# cards, so Zernio publishing must be explicitly re-enabled after proof.
 # Complements video-autopilot.yml (which posts Reels) by covering the
 # Instagram feed with image content as well.
 #
@@ -28,6 +30,11 @@ on:
         required: false
         type: boolean
         default: false
+      publish_enabled:
+        description: 'Allow paid Zernio publishing for this manual run'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -44,6 +51,7 @@ jobs:
     env:
       ZERNIO_API_KEY:              ${{ secrets.ZERNIO_API_KEY }}
       ZERNIO_INSTAGRAM_ACCOUNT_ID: ${{ secrets.ZERNIO_INSTAGRAM_ACCOUNT_ID }}
+      THUMBGATE_ENABLE_ZERNIO_INSTAGRAM_AUTOPILOT: ${{ vars.THUMBGATE_ENABLE_ZERNIO_INSTAGRAM_AUTOPILOT || '0' }}
       THUMBGATE_ANALYTICS_DB:      .thumbgate/marketing-analytics.sqlite
 
     steps:
@@ -103,12 +111,21 @@ jobs:
           " || true
 
       - name: Publish Instagram card
+        if: >-
+          github.event.inputs.image_only == 'true' ||
+          github.event.inputs.dry_run == 'true' ||
+          github.event.inputs.publish_enabled == 'true' ||
+          vars.THUMBGATE_ENABLE_ZERNIO_INSTAGRAM_AUTOPILOT == '1'
         env:
           INPUT_IMAGE_ONLY: ${{ github.event.inputs.image_only || github.event.inputs.dry_run }}
         run: |
           FLAGS=""
           if [ "$INPUT_IMAGE_ONLY" = "true" ]; then
             FLAGS="--image-only"
+          fi
+          if [ "$INPUT_IMAGE_ONLY" != "true" ] && [ "${{ github.event.inputs.publish_enabled }}" != "true" ] && [ "$THUMBGATE_ENABLE_ZERNIO_INSTAGRAM_AUTOPILOT" != "1" ]; then
+            echo "Instagram Zernio publishing disabled by default."
+            exit 0
           fi
           node scripts/social-analytics/publish-instagram-thumbgate.js $FLAGS
 
