@@ -40,6 +40,8 @@ Run GitHub Actions preview to generate an approval-ready `promo-preview.json` ar
 
 - Workflow: `.github/workflows/thumbgate-creator-platform-promo.yml`
 - Inputs: `mode=preview`, `offer=operator-lab`, `platforms=linkedin,instagram,threads,bluesky,reddit,youtube`
+- Creator platform requirements refresher:
+  - `reports/gtm/2026-05-06-community-course-promo/creator-platform-requirements-2026-05-06.md`
 
 UI steps (GitHub web):
 
