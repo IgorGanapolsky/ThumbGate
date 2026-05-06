@@ -80,8 +80,20 @@ function normalizeRuntimeSecret(value) {
   return String(value || '').trim();
 }
 
-function resolveHostedAuditApiKey(env = process.env) {
+function readLocalOperatorConfig() {
+  try {
+    const {
+      loadOperatorConfig,
+    } = require('./operational-summary');
+    return loadOperatorConfig();
+  } catch {
+    return { operatorKey: null };
+  }
+}
+
+function resolveHostedAuditApiKey(env = process.env, operatorConfig = readLocalOperatorConfig()) {
   return normalizeRuntimeSecret(env.THUMBGATE_OPERATOR_KEY)
+    || normalizeRuntimeSecret(operatorConfig && operatorConfig.operatorKey)
     || normalizeRuntimeSecret(env.THUMBGATE_API_KEY);
 }
 
