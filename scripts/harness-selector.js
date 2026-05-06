@@ -253,6 +253,190 @@ function buildHarnessOptimizationAudit(options = {}) {
   return scoreHarnessAudit(inputs, options);
 }
 
+function normalizeBoolean(value) {
+  if (value === true) return true;
+  if (value === false || value === undefined || value === null) return false;
+  return /^(1|true|yes|on)$/i.test(String(value).trim());
+}
+
+function normalizeOptionalBoolean(value, fallback = true) {
+  if (value === undefined || value === null || value === '') return fallback;
+  if (value === true) return true;
+  if (value === false) return false;
+  return /^(1|true|yes|on)$/i.test(String(value).trim());
+}
+
+function toNumber(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
+}
+
+function buildHarnessFitAudit(options = {}) {
+  const nativeHarness = String(options['native-harness'] || options.native || 'native').trim() || 'native';
+  const genericHarness = String(options['generic-harness'] || options.generic || 'generic').trim() || 'generic';
+  const sameModelDifferentHarness = normalizeBoolean(options['same-model-different-harness'] || options['same-model'] || options.crossHarness);
+  const controls = {
+    toolSchemaParity: normalizeOptionalBoolean(options['tool-schema-parity']),
+    permissionParity: normalizeOptionalBoolean(options['permission-parity']),
+    stateIsolation: normalizeOptionalBoolean(options['state-isolation']),
+    patchLoopParity: normalizeOptionalBoolean(options['patch-loop-parity']),
+    verificationParity: normalizeOptionalBoolean(options['verification-parity']),
+  };
+  const handoffDrift = toNumber(options['handoff-drift'] || options['handoff-drift-percent']);
+  const gaps = Object.entries(controls)
+    .filter(([, value]) => value === false)
+    .map(([key]) => key);
+
+  let score = 100;
+  if (sameModelDifferentHarness) score -= 15;
+  score -= gaps.length * 12;
+  if (handoffDrift !== null && handoffDrift > 0) score -= Math.min(20, Math.ceil(handoffDrift));
+
+  const signals = [];
+  if (sameModelDifferentHarness || gaps.length > 0) {
+    signals.push({
+      id: 'model_harness_fit',
+      label: 'Same model, different harness',
+      values: [
+        `${nativeHarness} vs ${genericHarness}`,
+        sameModelDifferentHarness ? 'same model run across harnesses' : null,
+        ...gaps.map((gap) => `${gap} gap`),
+      ].filter(Boolean),
+      risk: 'model quality can change when tool schemas, permissions, state, patch loops, or verification differ by harness',
+    });
+  }
+  if (handoffDrift !== null && handoffDrift > 0) {
+    signals.push({
+      id: 'handoff_drift',
+      label: 'Cross-harness handoff drift',
+      values: [`${handoffDrift}% drift`],
+      risk: 'handoffs between generic and native harnesses can lose task state or weaken verification',
+    });
+  }
+
+  const normalizedScore = Math.max(0, Math.min(100, score));
+  return {
+    name: 'thumbgate-model-harness-fit-audit',
+    status: normalizedScore >= 85 ? 'portable' : normalizedScore >= 65 ? 'watch' : 'native-required',
+    score: normalizedScore,
+    nativeHarness,
+    genericHarness,
+    controls,
+    metrics: { sameModelDifferentHarness, handoffDrift },
+    signals,
+    recommendations: [
+      'Benchmark the same task, same model, and same repository in native and generic harnesses before standardizing.',
+      'Require parity proof for tool schemas, permissions, state isolation, patch application, and verification loops.',
+      'Use the native harness for production edits when parity gaps remain; reserve generic harnesses for exploration and read-only analysis.',
+    ],
+  };
+}
+
+function formatHarnessFitAudit(report) {
+  const lines = [
+    '',
+    'ThumbGate Model-Harness Fit Audit',
+    '-'.repeat(37),
+    `Status : ${report.status}`,
+    `Score  : ${report.score}/100`,
+    `Harness: ${report.nativeHarness} vs ${report.genericHarness}`,
+    `Signals: ${report.signals.length}`,
+  ];
+  if (report.signals.length > 0) {
+    lines.push('', 'Detected harness-fit risks:');
+    for (const signal of report.signals) {
+      lines.push(`  - ${signal.label}: ${signal.values.join(', ')}`);
+      lines.push(`    Risk: ${signal.risk}`);
+    }
+  }
+  lines.push('', 'Recommendations:');
+  for (const recommendation of report.recommendations) lines.push(`  - ${recommendation}`);
+  return `${lines.join('\n')}\n\n`;
+}
+
+function buildSolverWorkflowGovernance(options = {}) {
+  const solver = String(options.solver || options['solver-engine'] || 'solver').trim() || 'solver';
+  const multiAgent = normalizeBoolean(options['multi-agent'] || options.multiAgent || options.agentic);
+  const controls = {
+    objectiveDefined: normalizeOptionalBoolean(options['objective-defined']),
+    constraintsDefined: normalizeOptionalBoolean(options['constraints-defined']),
+    scenarioReplay: normalizeOptionalBoolean(options['scenario-replay']),
+    approvalGate: normalizeOptionalBoolean(options['approval-gate']),
+    rollbackPlan: normalizeOptionalBoolean(options['rollback-plan']),
+    solverProvenance: normalizeOptionalBoolean(options['solver-provenance']),
+  };
+  const dataFreshnessHours = toNumber(options['data-freshness-hours'] || options['freshness-hours']);
+  const gaps = Object.entries(controls)
+    .filter(([, value]) => value === false)
+    .map(([key]) => key);
+
+  let score = 100;
+  if (multiAgent) score -= 8;
+  score -= gaps.length * 13;
+  if (dataFreshnessHours !== null && dataFreshnessHours > 24) score -= 10;
+
+  const signals = [];
+  if (multiAgent || gaps.length > 0) {
+    signals.push({
+      id: 'solver_workflow_governance',
+      label: 'Solver-backed agent workflow',
+      values: [
+        solver,
+        multiAgent ? 'multi-agent orchestration' : null,
+        ...gaps.map((gap) => `${gap} gap`),
+      ].filter(Boolean),
+      risk: 'natural-language-to-optimization workflows need objective, constraint, replay, approval, rollback, and provenance gates',
+    });
+  }
+  if (dataFreshnessHours !== null && dataFreshnessHours > 24) {
+    signals.push({
+      id: 'solver_data_freshness',
+      label: 'Solver data freshness',
+      values: [`${dataFreshnessHours}h old`],
+      risk: 'optimization results can look mathematically valid while using stale operational data',
+    });
+  }
+
+  const normalizedScore = Math.max(0, Math.min(100, score));
+  return {
+    name: 'thumbgate-solver-workflow-governance',
+    status: normalizedScore >= 85 ? 'ready' : normalizedScore >= 65 ? 'approval-required' : 'blocked',
+    score: normalizedScore,
+    solver,
+    controls,
+    metrics: { multiAgent, dataFreshnessHours },
+    signals,
+    recommendations: [
+      'Capture the objective function, hard constraints, soft constraints, and data freshness before invoking the solver.',
+      'Replay at least one baseline scenario and one counterfactual before approving optimized actions.',
+      'Require human approval and rollback evidence before solver output changes supply chain, routing, scheduling, or pricing decisions.',
+    ],
+  };
+}
+
+function formatSolverWorkflowGovernance(report) {
+  const lines = [
+    '',
+    'ThumbGate Solver Workflow Governance',
+    '-'.repeat(38),
+    `Status: ${report.status}`,
+    `Score : ${report.score}/100`,
+    `Solver: ${report.solver}`,
+    `Signals: ${report.signals.length}`,
+  ];
+  if (report.signals.length > 0) {
+    lines.push('', 'Detected solver workflow risks:');
+    for (const signal of report.signals) {
+      lines.push(`  - ${signal.label}: ${signal.values.join(', ')}`);
+      lines.push(`    Risk: ${signal.risk}`);
+    }
+  }
+  lines.push('', 'Recommendations:');
+  for (const recommendation of report.recommendations) lines.push(`  - ${recommendation}`);
+  return `${lines.join('\n')}\n\n`;
+}
+
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
@@ -284,6 +468,10 @@ module.exports = {
   collectDefaultHarnessAuditInputs,
   scoreHarnessAudit,
   buildHarnessOptimizationAudit,
+  buildHarnessFitAudit,
+  formatHarnessFitAudit,
+  buildSolverWorkflowGovernance,
+  formatSolverWorkflowGovernance,
   extractCommandText,
   HARNESSES,
   DEPLOY_PATTERNS,
