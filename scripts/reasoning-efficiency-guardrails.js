@@ -11,6 +11,13 @@ function normalizeBoolean(value) {
   return /^(1|true|yes|on)$/i.test(String(value).trim());
 }
 
+function normalizeOptionalBoolean(value) {
+  if (value === undefined || value === null || value === '') return null;
+  if (value === true) return true;
+  if (value === false) return false;
+  return /^(1|true|yes|on)$/i.test(String(value).trim());
+}
+
 function toNumber(value) {
   if (value === undefined || value === null || value === '') return null;
   const num = Number(value);
@@ -28,6 +35,16 @@ function normalizeOptions(options = {}) {
     lowConfidenceSteps: toNumber(options['low-confidence-steps']),
     highConfidenceFailures: toNumber(options['high-confidence-failures']),
     truncationFailures: normalizeBoolean(options['truncation-failures']),
+    promptTokens: toNumber(options['prompt-tokens'] || options['context-tokens'] || options.context),
+    outputTokens: toNumber(options['output-tokens'] || options.output),
+    ttftMs: toNumber(options['ttft-ms'] || options['time-to-first-token-ms'] || options.ttft),
+    tokensPerSecond: toNumber(options['tokens-per-second'] || options.tps),
+    kvCache: normalizeOptionalBoolean(options['kv-cache'] ?? options.kvcache),
+    kvCacheHitRate: toNumber(options['kv-cache-hit-rate'] || options['kv-hit-rate']),
+    quantized: normalizeBoolean(options.quantized || options.quantization),
+    qualityDelta: toNumber(options['quality-delta'] || options['quantized-quality-delta']),
+    prefillBudgetMs: toNumber(options['prefill-budget-ms'] || options['ttft-budget-ms']),
+    decodeBudgetTps: toNumber(options['decode-budget-tps'] || options['tokens-per-second-budget']),
   };
 }
 
@@ -89,6 +106,49 @@ function buildSignals(options) {
       risk: 'failed rollouts may reflect verifier noise or truncation rather than bad reasoning',
     });
   }
+  if (options.promptTokens !== null || options.ttftMs !== null || options.prefillBudgetMs !== null) {
+    const overBudget = options.ttftMs !== null &&
+      options.prefillBudgetMs !== null &&
+      options.ttftMs > options.prefillBudgetMs;
+    signals.push({
+      id: 'prefill_decode_split',
+      label: 'Inference prefill/decode budget',
+      values: [
+        options.promptTokens !== null ? `${options.promptTokens} prompt tokens` : null,
+        options.ttftMs !== null ? `${options.ttftMs}ms TTFT` : null,
+        options.prefillBudgetMs !== null ? `${options.prefillBudgetMs}ms prefill budget` : null,
+        options.tokensPerSecond !== null ? `${options.tokensPerSecond} tokens/sec decode` : null,
+        options.decodeBudgetTps !== null ? `${options.decodeBudgetTps} tokens/sec decode budget` : null,
+        overBudget ? 'TTFT over budget' : null,
+      ].filter(Boolean),
+      risk: 'long prompts raise prefill cost while slow decode can make cheap models miss user-facing latency budgets',
+    });
+  }
+  if ((options.promptTokens !== null && options.promptTokens >= 32000) || options.kvCacheHitRate !== null || options.kvCache === false) {
+    const lowHitRate = options.kvCacheHitRate !== null && options.kvCacheHitRate < 0.8;
+    signals.push({
+      id: 'kv_cache_policy',
+      label: 'KV cache policy',
+      values: [
+        options.kvCache === true ? 'KV cache enabled' : null,
+        options.kvCache === false ? 'KV cache missing' : null,
+        options.kvCacheHitRate !== null ? `${options.kvCacheHitRate} hit rate` : null,
+        lowHitRate ? 'low cache hit rate' : null,
+      ].filter(Boolean),
+      risk: 'uncached long-context workloads can make repeated agent calls materially more expensive and slower',
+    });
+  }
+  if (options.quantized || options.qualityDelta !== null) {
+    signals.push({
+      id: 'quantization_rollout',
+      label: 'Quantized runtime rollout',
+      values: [
+        options.quantized ? 'quantized runtime' : null,
+        options.qualityDelta !== null ? `${options.qualityDelta} quality delta` : 'missing quality delta',
+      ].filter(Boolean),
+      risk: 'quantization can cut inference cost only if quality and latency are measured before production routing',
+    });
+  }
   return signals;
 }
 
@@ -114,6 +174,16 @@ function buildReasoningEfficiencyGuardrailsPlan(rawOptions = {}, templatesPath) 
       baselineAccuracy: options.baselineAccuracy,
       compressedAccuracy: options.compressedAccuracy,
       accuracyDelta: accuracyDelta(options),
+      promptTokens: options.promptTokens,
+      outputTokens: options.outputTokens,
+      ttftMs: options.ttftMs,
+      tokensPerSecond: options.tokensPerSecond,
+      kvCache: options.kvCache,
+      kvCacheHitRate: options.kvCacheHitRate,
+      quantized: options.quantized,
+      qualityDelta: options.qualityDelta,
+      prefillBudgetMs: options.prefillBudgetMs,
+      decodeBudgetTps: options.decodeBudgetTps,
     },
     summary: {
       signalCount: signals.length,
@@ -127,8 +197,10 @@ function buildReasoningEfficiencyGuardrailsPlan(rawOptions = {}, templatesPath) 
       'Inspect low-confidence steps even when the final rollout is correct.',
       'Inspect high-confidence failed rollouts for truncation or verifier noise before penalizing the trace.',
       'Route cheaper compressed reasoning only after accuracy and efficiency both clear the gate.',
+      'Track TTFT, decode throughput, KV-cache hit rate, and prompt-token count separately for every agent runtime.',
+      'Route quantized runtimes only after latency savings clear quality and verifier baselines.',
     ],
-    exampleCommand: 'npx thumbgate reasoning-efficiency-guardrails --baseline-tokens=1200 --compressed-tokens=980 --baseline-accuracy=0.84 --compressed-accuracy=0.85 --verifier --json',
+    exampleCommand: 'npx thumbgate reasoning-efficiency-guardrails --prompt-tokens=120000 --ttft-ms=1800 --prefill-budget-ms=800 --kv-cache=false --quantized --quality-delta=-0.03 --json',
   };
 }
 

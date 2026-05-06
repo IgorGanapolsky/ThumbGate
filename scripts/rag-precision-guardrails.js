@@ -34,6 +34,14 @@ function normalizeOptions(options = {}) {
     embeddingFineTune: normalizeBoolean(options['embedding-finetune'] || options['embedding-fine-tune'] || options['fine-tune']),
     structuralNearMisses: normalizeBoolean(options['structural-near-misses'] || options['near-misses']),
     verifier: normalizeBoolean(options.verifier || options.reranker || options['second-stage']),
+    hybridRetrieval: normalizeBoolean(options['hybrid-retrieval'] || options.hybrid),
+    denseRetrieval: normalizeBoolean(options.dense || options['dense-retrieval'] || options.embeddings),
+    sparseRetrieval: normalizeBoolean(options.sparse || options['sparse-retrieval'] || options.keyword),
+    reranker: normalizeBoolean(options.reranker || options.rerank),
+    sourceGrounding: normalizeBoolean(options['source-grounding'] || options.grounding || options.citations),
+    aclFilter: normalizeBoolean(options['acl-filter'] || options.acl || options['access-control']),
+    freshnessWindowHours: toNumber(options['freshness-window-hours'] || options['freshness-hours']),
+    scaleCorpusDocuments: toNumber(options['scale-corpus-documents'] || options['corpus-documents'] || options.documents),
     latencyMs: toNumber(options['latency-ms'] || options.latency),
     latencyBudgetMs: toNumber(options['latency-budget-ms'] || options['latency-budget']),
     agenticPipeline: normalizeBoolean(options.agentic || options['agentic-pipeline']),
@@ -69,6 +77,8 @@ function buildSignals(options) {
     precisionTuningSignal(options, drop),
     ragCascadeSignal(options),
     verifierLatencySignal(options),
+    hybridScaleSignal(options),
+    retrievalGovernanceSignal(options),
   ].filter(Boolean);
 }
 
@@ -113,6 +123,48 @@ function verifierLatencySignal(options) {
   };
 }
 
+function hybridScaleSignal(options) {
+  const hybridIntent = options.hybridRetrieval || (options.denseRetrieval && options.sparseRetrieval);
+  const largeCorpus = options.scaleCorpusDocuments !== null && options.scaleCorpusDocuments >= 100000;
+  if (!(hybridIntent || largeCorpus)) return null;
+  const missingControls = [
+    options.denseRetrieval ? null : 'dense recall unmeasured',
+    options.sparseRetrieval ? null : 'sparse recall unmeasured',
+    options.reranker ? null : 'missing reranker',
+    options.sourceGrounding ? null : 'missing source grounding',
+    options.aclFilter ? null : 'missing ACL filter',
+  ].filter(Boolean);
+  return {
+    id: 'hybrid_retrieval_scale_wall',
+    label: 'Hybrid retrieval scale wall',
+    values: [
+      options.hybridRetrieval ? 'hybrid retrieval' : null,
+      options.denseRetrieval ? 'dense retrieval' : null,
+      options.sparseRetrieval ? 'sparse retrieval' : null,
+      options.scaleCorpusDocuments !== null ? `${options.scaleCorpusDocuments} documents` : null,
+      ...missingControls,
+    ].filter(Boolean),
+    risk: 'scaled RAG needs dense, sparse, reranking, grounding, and access-control evidence instead of vector-only correctness',
+  };
+}
+
+function retrievalGovernanceSignal(options) {
+  if (!options.agenticPipeline && options.sourceGrounding && options.aclFilter) return null;
+  if (!(options.agenticPipeline || options.hybridRetrieval || options.scaleCorpusDocuments !== null)) return null;
+  const gaps = [
+    options.sourceGrounding ? null : 'source evidence not enforced',
+    options.aclFilter ? null : 'access control not enforced',
+    options.freshnessWindowHours === null ? 'freshness window missing' : `${options.freshnessWindowHours}h freshness window`,
+  ].filter(Boolean);
+  if (gaps.length === 0) return null;
+  return {
+    id: 'retrieval_governance_gap',
+    label: 'Retrieval governance gap',
+    values: gaps,
+    risk: 'agentic retrieval output can leak stale or unauthorized context into downstream actions',
+  };
+}
+
 function buildRagPrecisionGuardrailsPlan(rawOptions = {}, templatesPath) {
   const options = normalizeOptions(rawOptions);
   const templates = listGateTemplates(templatesPath)
@@ -135,6 +187,14 @@ function buildRagPrecisionGuardrailsPlan(rawOptions = {}, templatesPath) {
       recallDropPercent: recallDropPercent(options),
       baselinePrecision: options.baselinePrecision,
       newPrecision: options.newPrecision,
+      hybridRetrieval: options.hybridRetrieval,
+      denseRetrieval: options.denseRetrieval,
+      sparseRetrieval: options.sparseRetrieval,
+      reranker: options.reranker,
+      sourceGrounding: options.sourceGrounding,
+      aclFilter: options.aclFilter,
+      freshnessWindowHours: options.freshnessWindowHours,
+      scaleCorpusDocuments: options.scaleCorpusDocuments,
       latencyMs: options.latencyMs,
       latencyBudgetMs: options.latencyBudgetMs,
     },
@@ -150,8 +210,10 @@ function buildRagPrecisionGuardrailsPlan(rawOptions = {}, templatesPath) {
       'Block embedding or threshold changes when recall drops without an approved rollback plan.',
       'Use a second-stage verifier or reranker for structural near misses such as negation and role reversal.',
       'Attach verifier latency budgets before routing the retrieval output into autonomous agent actions.',
+      'Measure dense recall, sparse recall, reranked relevance, source grounding, ACL filtering, and freshness as separate production gates.',
+      'Treat the retrieval layer as the agent ground truth: every autonomous action should carry source evidence and access-control proof.',
     ],
-    exampleCommand: 'npx thumbgate rag-precision-guardrails --baseline-recall=0.86 --new-recall=0.72 --threshold-change --agentic --structural-near-misses --json',
+    exampleCommand: 'npx thumbgate rag-precision-guardrails --hybrid-retrieval --dense --sparse --scale-corpus-documents=1000000 --agentic --json',
   };
 }
 

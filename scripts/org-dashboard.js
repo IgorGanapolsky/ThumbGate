@@ -119,6 +119,74 @@ function loadAgentRegistry() {
 // Org Dashboard Aggregation
 // ---------------------------------------------------------------------------
 
+function asArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function metadataFor(agent) {
+  return agent && typeof agent.metadata === 'object' && agent.metadata !== null ? agent.metadata : {};
+}
+
+function buildAgentRegistryGovernanceReport(agents = loadAgentRegistry(), opts = {}) {
+  const staleAfterHours = Number(opts.staleAfterHours || 168);
+  const now = opts.now ? new Date(opts.now).getTime() : Date.now();
+  const staleCutoff = now - staleAfterHours * 60 * 60 * 1000;
+  const unknownOwners = [];
+  const missingToolInventory = [];
+  const missingMcpServerInventory = [];
+  const missingAccessPolicy = [];
+  const staleAgents = [];
+  const highCostAgents = [];
+  const monthlyBudgetCents = Number(opts.monthlyBudgetCents || 50000);
+
+  for (const agent of agents) {
+    const metadata = metadataFor(agent);
+    if (!metadata.owner) unknownOwners.push(agent.id);
+    if (asArray(metadata.tools).length === 0) missingToolInventory.push(agent.id);
+    if (asArray(metadata.mcpServers).length === 0) missingMcpServerInventory.push(agent.id);
+    if (!metadata.accessPolicy && !metadata.permissions) missingAccessPolicy.push(agent.id);
+    if (new Date(agent.lastSeenAt || agent.registeredAt || 0).getTime() < staleCutoff) staleAgents.push(agent.id);
+    if (Number(metadata.monthlyBudgetCents || 0) > monthlyBudgetCents) highCostAgents.push(agent.id);
+  }
+
+  const totalAgents = agents.length;
+  const gapCount = unknownOwners.length +
+    missingToolInventory.length +
+    missingMcpServerInventory.length +
+    missingAccessPolicy.length +
+    staleAgents.length +
+    highCostAgents.length;
+  const status = gapCount === 0 ? 'managed' : gapCount <= Math.max(2, totalAgents) ? 'watch' : 'fragmented';
+
+  return {
+    name: 'thumbgate-agent-registry-governance',
+    status,
+    totalAgents,
+    staleAfterHours,
+    counts: {
+      unknownOwners: unknownOwners.length,
+      missingToolInventory: missingToolInventory.length,
+      missingMcpServerInventory: missingMcpServerInventory.length,
+      missingAccessPolicy: missingAccessPolicy.length,
+      staleAgents: staleAgents.length,
+      highCostAgents: highCostAgents.length,
+    },
+    samples: {
+      unknownOwners: unknownOwners.slice(0, 5),
+      missingToolInventory: missingToolInventory.slice(0, 5),
+      missingMcpServerInventory: missingMcpServerInventory.slice(0, 5),
+      missingAccessPolicy: missingAccessPolicy.slice(0, 5),
+      staleAgents: staleAgents.slice(0, 5),
+      highCostAgents: highCostAgents.slice(0, 5),
+    },
+    recommendations: [
+      'Register every agent with owner, project, runtime, tool inventory, MCP server inventory, and access policy metadata.',
+      'Block unowned agents from production tools until identity, permissions, and budget are explicit.',
+      'Review stale agents and high-budget agents before granting cross-agent orchestration or autonomous write access.',
+    ],
+  };
+}
+
 /**
  * Generate org-wide dashboard aggregating all agent sessions.
  * Pro feature — returns limited data on free tier.
@@ -153,6 +221,10 @@ function generateOrgDashboard(opts = {}) {
     toolCalls: a.toolCalls || 0,
     gateBlocks: a.gateBlocks || 0,
     gateWarns: a.gateWarns || 0,
+    owner: metadataFor(a).owner || null,
+    runtime: metadataFor(a).runtime || null,
+    toolCount: asArray(metadataFor(a).tools).length,
+    mcpServerCount: asArray(metadataFor(a).mcpServers).length,
     adherenceRate: a.toolCalls > 0
       ? Math.round(((a.toolCalls - (a.gateBlocks || 0) - (a.gateWarns || 0)) / a.toolCalls) * 10000) / 100
       : 100,
@@ -182,6 +254,7 @@ function generateOrgDashboard(opts = {}) {
     topBlockedGates,
     riskAgents: pro ? riskAgents : riskAgents.slice(0, 1),
     agents: pro ? agentSummaries : agentSummaries.slice(0, 3),
+    registryGovernance: buildAgentRegistryGovernanceReport(allAgents, opts),
     proRequired: !pro,
   };
 
@@ -201,6 +274,7 @@ module.exports = {
   recordAgentActivity,
   loadAgentRegistry,
   generateOrgDashboard,
+  buildAgentRegistryGovernanceReport,
   getRegistryPath,
   REGISTRY_FILENAME,
 };
