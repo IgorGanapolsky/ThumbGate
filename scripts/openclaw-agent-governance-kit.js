@@ -208,7 +208,7 @@ function renderZernioCsv(pack = buildOpenClawGovernancePack()) {
     ['day', 'platform', 'kit', 'post'],
     ...pack.zernioCalendar.map((item) => [item.day, item.platform, item.kit, item.post]),
   ];
-  return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
+  return `${rows.map((row) => row.map((cell) => csvCell(cell)).join(',')).join('\n')}\n`;
 }
 
 function writeOpenClawGovernancePack(pack = buildOpenClawGovernancePack(), options = {}) {
@@ -245,7 +245,7 @@ function writeOpenClawGovernancePack(pack = buildOpenClawGovernancePack(), optio
     ...pack.kits.map((kit) => `- ${kit.name} - ${dollars(kit.priceCents)} - ${kit.checkout.checkoutUrl}`),
     '',
     '## First Post To Send',
-    normalizeText(pack.zernioCalendar[0] && pack.zernioCalendar[0].post),
+    normalizeText(pack.zernioCalendar[0]?.post),
     '',
     '## Truth Labels',
     ...pack.guardrails.map((item) => `- ${item}`),
