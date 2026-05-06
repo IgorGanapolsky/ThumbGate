@@ -32,6 +32,40 @@ const CAMPAIGNS = {
     ].join('\n'),
     pipelineLeadId: 'aiventyx_qaiser_marketplace_listings',
   },
+  contractor_bid_radar_nj_founder_pilot: {
+    to: [
+      'ignazio@201electric.com',
+      'geronimo@geronimoelectric.com',
+      'office@oceancoastelectric.com',
+      'info@flashelectriccontractors.com',
+      'nick@tafsolar.com',
+      'info@landair.net',
+      'higherpowerec@outlook.com',
+      'info@clearsolar.us',
+    ],
+    subject: 'NJ bid/permit radar for electrical and solar contractors',
+    text: [
+      'Hi,',
+      '',
+      'I found a few New Jersey public-source signals today that look relevant to electrical and solar contractors:',
+      '',
+      '- East Orange school solar PPA',
+      '- Edison PSE&G electrical substation zoning item',
+      '- Wall Township zoning/planning agendas',
+      '- NJDCA construction permit and big-permit feeds',
+      '',
+      'I am testing Contractor Bid Radar: one short daily email with public RFPs, permits, zoning/planning items, source links, confidence labels, and the recommended next action.',
+      '',
+      'Founder pilot is $199/month for one trade and one metro. One useful bid or early project signal should more than cover it.',
+      '',
+      'Checkout: https://buy.stripe.com/3cI3cvcqMg9M5pL35V3sI1c',
+      '',
+      'If this is not relevant, reply "no" and I will not follow up.',
+      '',
+      'Igor',
+    ].join('\n'),
+    pipelineLeadId: 'contractor_bid_radar_nj_founder_pilot',
+  },
 };
 
 function parseArgs(argv = process.argv.slice(2)) {
@@ -73,21 +107,31 @@ async function main(argv = process.argv.slice(2), deps = {}) {
   }
 
   const send = deps.sendEmail || sendEmail;
-  const result = await send({
-    to: message.to,
-    subject: message.subject,
-    text: message.text,
-    from: process.env.RESEND_FROM_EMAIL || DEFAULT_FROM,
-    replyTo: process.env.THUMBGATE_TRIAL_EMAIL_REPLY_TO || DEFAULT_REPLY_TO,
-  });
+  const recipients = Array.isArray(message.to) ? message.to : [message.to];
+  const results = [];
+  for (const recipient of recipients) {
+    const result = await send({
+      to: recipient,
+      subject: message.subject,
+      text: message.text,
+      from: process.env.RESEND_FROM_EMAIL || DEFAULT_FROM,
+      replyTo: process.env.THUMBGATE_TRIAL_EMAIL_REPLY_TO || DEFAULT_REPLY_TO,
+    });
+    results.push({
+      to: recipient,
+      sent: Boolean(result.sent),
+      providerId: result?.id || result?.providerId || null,
+      reason: result?.reason || null,
+    });
+  }
   console.log(JSON.stringify({
     campaign: options.campaign,
     leadId: message.pipelineLeadId,
-    sent: Boolean(result.sent),
-    providerId: result?.id || result?.providerId || null,
-    reason: result?.reason || null,
+    sent: results.every((result) => result.sent),
+    sentCount: results.filter((result) => result.sent).length,
+    results,
   }, null, 2));
-  return result;
+  return { sent: results.every((result) => result.sent), results };
 }
 
 function isCliEntrypoint(entry = process.argv[1]) {

@@ -9,6 +9,7 @@ on:
         type: choice
         options:
           - aiventyx_marketplace_followup
+          - contractor_bid_radar_nj_founder_pilot
       dry_run:
         description: 'Preview without sending.'
         required: false
