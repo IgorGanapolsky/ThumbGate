@@ -63,6 +63,12 @@ const {
   buildMcpDirectoryRevenuePack,
   writeMcpDirectoryRevenuePack,
 } = require('./mcp-directory-revenue-pack');
+const {
+  getSalesPipelinePath,
+  importRevenueLoopReport,
+  loadSalesLeads,
+  summarizeSalesPipeline,
+} = require('./sales-pipeline');
 
 function buildDependencies(overrides = {}) {
   return {
@@ -133,6 +139,44 @@ function buildPackWriteOptions(options = {}) {
   };
 }
 
+function resolveSalesPipelineImportSource(written = {}, repoRoot = path.resolve(__dirname, '..')) {
+  if (written.reportDir) {
+    return path.resolve(written.reportDir, 'gtm-revenue-loop.json');
+  }
+
+  if (written.docsPath) {
+    return path.resolve(repoRoot, 'docs', 'marketing', 'gtm-revenue-loop.json');
+  }
+
+  return null;
+}
+
+function syncSalesPipeline(
+  report,
+  written = {},
+  repoRoot = path.resolve(__dirname, '..'),
+  dependencies = {}
+) {
+  const importer = dependencies.importRevenueLoopReport || importRevenueLoopReport;
+  const readLeads = dependencies.loadSalesLeads || loadSalesLeads;
+  const summarize = dependencies.summarizeSalesPipeline || summarizeSalesPipeline;
+  const resolveStatePath = dependencies.getSalesPipelinePath || getSalesPipelinePath;
+  const sourcePath = resolveSalesPipelineImportSource(written, repoRoot);
+  if (!sourcePath) {
+    return null;
+  }
+
+  const result = importer(report, { sourcePath });
+  const leads = readLeads();
+  return {
+    imported: result.imported.length,
+    skipped: result.skipped.length,
+    sourcePath,
+    statePath: resolveStatePath(),
+    summary: summarize(leads),
+  };
+}
+
 async function main(argv = process.argv.slice(2), overrides = {}) {
   const deps = buildDependencies(overrides);
   const options = deps.parseArgs(argv);
@@ -162,6 +206,7 @@ async function main(argv = process.argv.slice(2), overrides = {}) {
   const mcpDirectoryWritten = deps.writeMcpDirectoryRevenuePack(mcpDirectoryPack, packWriteOptions);
   const githubOutreachJobs = buildGitHubOutreachJobs(written);
   const githubOutreachWritten = githubOutreachJobs.map((job) => deps.runGitHubOutreach(job));
+  const pipelineSync = (deps.syncSalesPipeline || syncSalesPipeline)(report, written);
 
   console.log('\n✅ GTM automation complete.');
   if (written.docsPath) {
@@ -208,6 +253,14 @@ async function main(argv = process.argv.slice(2), overrides = {}) {
       console.log(`GitHub outreach asset updated: ${asset.docsPath}`);
     }
   }
+  if (pipelineSync) {
+    console.log(
+      `Sales pipeline synced: ${pipelineSync.imported} imported, ${pipelineSync.skipped} skipped. `
+      + `Active ${pipelineSync.summary.active}, contacted ${pipelineSync.summary.contacted}, `
+      + `replied ${pipelineSync.summary.replies}, paid ${pipelineSync.summary.paid}.`
+    );
+    console.log(`Sales pipeline state: ${pipelineSync.statePath}`);
+  }
   console.log(`State: ${report.directive.state} | Targets: ${report.targets.length}`);
 }
 
@@ -224,4 +277,6 @@ module.exports = {
   buildDependencies,
   isCliInvocation,
   main,
+  resolveSalesPipelineImportSource,
+  syncSalesPipeline,
 };
