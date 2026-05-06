@@ -132,6 +132,10 @@ test('public landing page exposes env-driven paid sprint checkout path', () => {
   assert.match(landingPage, /quick_read_checkout_started/);
   assert.match(landingPage, /Pay \$499 diagnostic/);
   assert.match(landingPage, /Pay \$1500 sprint/);
+  assert.match(landingPage, /Reliable AI Agent Governance Setup/);
+  assert.match(landingPage, /\$3,997/);
+  assert.match(landingPage, /\$297\/mo/);
+  assert.match(landingPage, /governance_setup_intake_clicked/);
   assert.match(landingPage, /Send workflow first/);
   assert.match(landingPage, /Pay for diagnostic/);
   assert.match(landingPage, /Pay for sprint/);

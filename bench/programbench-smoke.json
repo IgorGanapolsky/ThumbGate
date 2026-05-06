@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "name": "ThumbGate ProgramBench Smoke",
+  "description": "A small ProgramBench-style cleanroom proof lane for whole-repo clone tasks. This is not an official ProgramBench score.",
+  "tasks": [
+    {
+      "id": "textstat-cli-parity",
+      "intent": "Recreate a text statistics CLI from behavior, not source.",
+      "repositoryShape": "single-package-node-cli",
+      "behaviorProbe": {
+        "command": "fixture-bin textstat --words --chars sample.txt",
+        "expectedBehavior": "prints stable word and character counts with the original flag names"
+      },
+      "differentialOracle": {
+        "command": "compare original-cli rebuilt-cli -- sample.txt",
+        "signals": ["stdout", "exit_code", "flag_contract"]
+      },
+      "contract": {
+        "surface": "cli",
+        "preserved": true
+      },
+      "completionPolicy": "executable_parity",
+      "blockedAssumptions": ["internet", "source_lookup", "decompilation", "systrace"],
+      "requiredGates": [
+        "behavior_probe_before_build",
+        "differential_oracle_defined",
+        "cli_contract_preserved",
+        "no_source_lookup",
+        "completion_requires_executable_parity"
+      ]
+    },
+    {
+      "id": "config-linter-clone",
+      "intent": "Clone a config linter's observable validation behavior across good and bad inputs.",
+      "repositoryShape": "multi-file-node-cli",
+      "behaviorProbe": {
+        "command": "fixture-bin configlint --format=json examples/invalid.yml",
+        "expectedBehavior": "reports deterministic JSON diagnostics and non-zero status for invalid config"
+      },
+      "differentialOracle": {
+        "command": "compare original-cli rebuilt-cli -- --format=json examples/invalid.yml",
+        "signals": ["stdout_json_schema", "stderr", "exit_code"]
+      },
+      "contract": {
+        "surface": "cli",
+        "preserved": true
+      },
+      "completionPolicy": "executable_parity",
+      "blockedAssumptions": ["internet", "source_lookup", "decompilation", "systrace"]
+    },
+    {
+      "id": "filesystem-transformer-clone",
+      "intent": "Clone a filesystem transformation tool while preserving output files and dry-run behavior.",
+      "repositoryShape": "node-cli-with-fixtures",
+      "behaviorProbe": {
+        "command": "fixture-bin transform --dry-run fixtures/project",
+        "expectedBehavior": "prints planned file changes without mutating the input tree"
+      },
+      "differentialOracle": {
+        "command": "compare original-cli rebuilt-cli -- --dry-run fixtures/project",
+        "signals": ["stdout", "exit_code", "filesystem_diff"]
+      },
+      "contract": {
+        "surface": "cli",
+        "preserved": true
+      },
+      "completionPolicy": "executable_parity",
+      "blockedAssumptions": ["internet", "source_lookup", "decompilation", "systrace"]
+    }
+  ]
+}
