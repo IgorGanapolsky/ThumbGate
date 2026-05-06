@@ -42,6 +42,15 @@ test('revenue email dispatch sends through injected transport when confirmed', a
   assert.equal(calls[0].to, 'qaisermehdi3@gmail.com');
 });
 
+test('revenue email dispatch fails loudly when provider refuses the send', async () => {
+  await assert.rejects(
+    main(['--campaign=aiventyx_marketplace_followup', '--confirm-send'], {
+      sendEmail: async () => ({ sent: false, reason: 'api_error' }),
+    }),
+    /Revenue email was not sent: api_error/
+  );
+});
+
 test('parseArgs captures campaign and guards', () => {
   assert.deepEqual(parseArgs(['--campaign=aiventyx_marketplace_followup', '--dry-run', '--confirm-send']), {
     campaign: 'aiventyx_marketplace_followup',

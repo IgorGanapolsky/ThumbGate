@@ -42,6 +42,23 @@ const DRAFT_FILE = path.resolve(__dirname, '..', '.thumbgate', 'reply-drafts.jso
 
 const args = new Set(process.argv.slice(2));
 const DRY_RUN = args.has('--dry-run');
+const AUTO_APPROVE_SAFE = args.has('--auto-approve-safe');
+
+function parseLimitArg(argv = process.argv.slice(2), name = '--limit=') {
+  const raw = argv.find((arg) => arg.startsWith(name));
+  if (!raw) return null;
+  const parsed = Number.parseInt(raw.slice(name.length), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function isSafeAutoReply(text) {
+  if (typeof text !== 'string') return false;
+  const trimmed = text.trim();
+  if (trimmed.length < 20 || trimmed.length > 260) return false;
+  if (/https?:\/\//i.test(trimmed)) return false;
+  if (/\b(buy|checkout|discount|dm me|hire me|sale|limited time)\b/i.test(trimmed)) return false;
+  return true;
+}
 
 function loadState() {
   try {
@@ -271,6 +288,8 @@ async function monitor({
   saveState: saveStateFn = saveState,
   loadState: loadStateFn = loadState,
   dryRun = DRY_RUN,
+  autoApproveSafe = false,
+  autoApproveLimit = 3,
 } = {}) {
   const session = await sessionFactory();
   const state = loadStateFn();
@@ -280,6 +299,7 @@ async function monitor({
   const actionable = notifications.filter((n) => ['reply', 'mention', 'quote'].includes(n.reason));
 
   let queued = 0;
+  let approved = 0;
   let skipped = 0;
 
   for (const n of actionable) {
@@ -312,6 +332,13 @@ async function monitor({
       },
       autoPost: false,
     };
+    if (autoApproveSafe && approved < autoApproveLimit && isSafeAutoReply(reply)) {
+      draft.approved = true;
+      draft.autoPost = true;
+      draft.approvedAt = draft.createdAt;
+      draft.approvalReason = 'safe_auto_reply';
+      approved += 1;
+    }
 
     if (dryRun) {
       console.log(
@@ -332,9 +359,9 @@ async function monitor({
   }
 
   console.log(
-    `[bluesky-monitor] notifications=${notifications.length} actionable=${actionable.length} queued=${queued} skipped=${skipped} dryRun=${dryRun}`,
+    `[bluesky-monitor] notifications=${notifications.length} actionable=${actionable.length} queued=${queued} approved=${approved} skipped=${skipped} dryRun=${dryRun}`,
   );
-  return { notifications: notifications.length, actionable: actionable.length, queued, skipped };
+  return { notifications: notifications.length, actionable: actionable.length, queued, approved, skipped };
 }
 
 const isMainModule =
@@ -344,9 +371,10 @@ const isMainModule =
 if (isMainModule) {
   const publishMode = args.has('--publish-approved');
   const confirmPublish = args.has('--confirm-publish');
+  const autoApproveLimit = parseLimitArg() || 3;
   const task = publishMode
     ? publishApprovedDrafts({ dryRun: DRY_RUN, confirmPublish })
-    : monitor();
+    : monitor({ autoApproveSafe: AUTO_APPROVE_SAFE, autoApproveLimit });
   task.catch((err) => {
     if (isTransientAtprotoError(err)) {
       console.warn(
@@ -371,4 +399,6 @@ module.exports = {
   assertPublishableDraft,
   publishApprovedDrafts,
   publishReply,
+  isSafeAutoReply,
+  parseLimitArg,
 };
