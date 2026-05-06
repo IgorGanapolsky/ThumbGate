@@ -9,12 +9,26 @@ const {
   publishInstagramThumbGate,
   IMAGE_PATH,
 } = require('../scripts/social-analytics/publish-instagram-thumbgate');
+const {
+  getBlockedReasons,
+  isDuplicateContentBlock,
+} = require('../scripts/social-analytics/instagram-thumbgate-post');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const TEST_IMAGE_PATH = path.join(REPO_ROOT, '.thumbgate', 'test-publish-instagram.png');
 
 let sharpAvailable = false;
 try { require('sharp'); sharpAvailable = true; } catch {}
+
+it('should classify Zernio duplicate-content blocks as safe skips', () => {
+  const result = {
+    blocked: true,
+    reasons: [{ reason: 'duplicate_content_all_platforms' }],
+  };
+
+  assert.deepEqual(getBlockedReasons(result), ['duplicate_content_all_platforms']);
+  assert.equal(isDuplicateContentBlock(result), true);
+});
 
 describe('Publish Instagram ThumbGate', { skip: !sharpAvailable ? 'sharp not installed' : false }, () => {
   let tmpDedupPath;
@@ -103,4 +117,5 @@ describe('Publish Instagram ThumbGate', { skip: !sharpAvailable ? 'sharp not ins
     console.log(`✅ Post-only mode succeeded`);
     console.log(`   Post ID: ${result.postId}`);
   });
+
 });
