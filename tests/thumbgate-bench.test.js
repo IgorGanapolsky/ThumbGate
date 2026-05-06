@@ -9,9 +9,13 @@ const { execFileSync } = require('node:child_process');
 
 const {
   DEFAULT_SUITE_PATH,
+  DEFAULT_PROGRAMBENCH_SUITE_PATH,
   loadScenarioSuite,
+  loadProgramBenchSmokeSuite,
   runSuitePass,
+  runProgramBenchSmokeSuite,
   scoreResults,
+  scoreProgramBenchResults,
   runBenchmark,
   renderMarkdown,
   escapeMarkdownTableCell,
@@ -77,6 +81,31 @@ test('ThumbGate Bench writes machine-readable and markdown reports', () => {
   }
 });
 
+test('ThumbGate Bench loads ProgramBench-style cleanroom smoke tasks', () => {
+  const suite = loadProgramBenchSmokeSuite(DEFAULT_PROGRAMBENCH_SUITE_PATH);
+
+  assert.equal(suite.name, 'ThumbGate ProgramBench Smoke');
+  assert.equal(suite.tasks.length, 3);
+  assert.equal(new Set(suite.tasks.map((task) => task.id)).size, 3);
+  assert.ok(suite.tasks.every((task) => task.blockedAssumptions.includes('source_lookup')));
+});
+
+test('ThumbGate ProgramBench-style smoke enforces proof gates', () => {
+  const suite = loadProgramBenchSmokeSuite(DEFAULT_PROGRAMBENCH_SUITE_PATH);
+  const results = runProgramBenchSmokeSuite(suite);
+  const metrics = scoreProgramBenchResults(results);
+
+  assert.equal(results.length, 3);
+  assert.ok(results.every((result) => result.passed));
+  assert.ok(results.every((result) => result.evidence.behavior_probe_before_build));
+  assert.ok(results.every((result) => result.evidence.differential_oracle_defined));
+  assert.equal(metrics.cleanroomPolicyRate, 1);
+  assert.equal(metrics.behaviorProbeRate, 1);
+  assert.equal(metrics.oracleCoverageRate, 1);
+  assert.equal(metrics.unsupportedCompletionRate, 0);
+  assert.equal(metrics.score, 100);
+});
+
 test('ThumbGate Bench markdown includes scenario evidence table', () => {
   const suite = loadScenarioSuite(DEFAULT_SUITE_PATH);
   const results = runSuitePass(suite, { useRuntimeState: false });
@@ -88,6 +117,30 @@ test('ThumbGate Bench markdown includes scenario evidence table', () => {
     passed: true,
     isolatedRuntime: true,
     metrics: scoreResults(results, results),
+    programBench: {
+      benchmark: 'ThumbGate ProgramBench Smoke',
+      version: 1,
+      mode: 'programbench-style-smoke',
+      officialProgramBenchScore: null,
+      officialBenchmark: false,
+      cleanroomPolicy: {},
+      passed: true,
+      metrics: {
+        score: 100,
+        cleanroomPolicyRate: 1,
+        behaviorProbeRate: 1,
+        oracleCoverageRate: 1,
+        unsupportedCompletionRate: 0,
+      },
+      tasks: [
+        {
+          id: 'textstat-cli-parity',
+          repositoryShape: 'single-package-node-cli',
+          missingGates: [],
+          passed: true,
+        },
+      ],
+    },
     failedScenarios: [],
     scenarios: results,
   };
@@ -96,6 +149,8 @@ test('ThumbGate Bench markdown includes scenario evidence table', () => {
   assert.match(markdown, /github-force-push-main/);
   assert.match(markdown, /database-drop-production-table/);
   assert.match(markdown, /safe-source-validation/);
+  assert.match(markdown, /ProgramBench-Style Cleanroom Proof/);
+  assert.match(markdown, /textstat-cli-parity/);
 });
 
 test('ThumbGate Bench escapes markdown table cells safely', () => {
@@ -118,6 +173,29 @@ test('ThumbGate Bench CLI emits JSON report when requested', () => {
     assert.equal(report.passed, true);
     assert.equal(report.metrics.unsafeActionRate, 0);
     assert.ok(report.reportPaths.json.endsWith('thumbgate-bench-report.json'));
+  } finally {
+    fs.rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test('ThumbGate Bench CLI can emit ProgramBench-style smoke proof', () => {
+  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-programbench-cli-'));
+  try {
+    const stdout = execFileSync(
+      process.execPath,
+      ['scripts/thumbgate-bench.js', '--programbench-smoke', '--json', `--out-dir=${outDir}`, '--min-score=90'],
+      {
+        cwd: path.join(__dirname, '..'),
+        encoding: 'utf8',
+      },
+    );
+    const report = JSON.parse(stdout);
+
+    assert.equal(report.passed, true);
+    assert.equal(report.programBench.mode, 'programbench-style-smoke');
+    assert.equal(report.programBench.officialProgramBenchScore, null);
+    assert.equal(report.programBench.metrics.unsupportedCompletionRate, 0);
+    assert.ok(report.reportPaths.markdown.endsWith('thumbgate-bench-report.md'));
   } finally {
     fs.rmSync(outDir, { recursive: true, force: true });
   }

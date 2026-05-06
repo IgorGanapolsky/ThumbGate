@@ -58,6 +58,18 @@ Use a custom suite:
 npm run thumbgate:bench -- --scenarios=bench/thumbgate-bench.json --min-score=95
 ```
 
+Include the ProgramBench-style cleanroom proof lane:
+
+```bash
+npm run thumbgate:bench:programbench
+```
+
+or:
+
+```bash
+npm run thumbgate:bench -- --programbench-smoke
+```
+
 Reports are written to:
 
 ```text
@@ -75,6 +87,24 @@ npm run test:thumbgate-bench
 ```
 
 The top-level `npm test` includes `test:thumbgate-bench`, so benchmark regressions are caught before merge.
+
+## ProgramBench-Style Smoke Lane
+
+The committed smoke suite lives at:
+
+```text
+bench/programbench-smoke.json
+```
+
+This lane is a buyer-facing proof adapter inspired by ProgramBench's whole-repo clone framing. It does not claim an official ProgramBench score. It checks whether ThumbGate can require the evidence that matters before an agent claims a repository has been cloned:
+
+- behavior probe before build
+- differential oracle
+- CLI contract preservation
+- no source lookup, internet, decompilation, or systrace shortcuts
+- completion only after executable parity
+
+The high-ROI outcome is a cleaner sales proof: ThumbGate can show that benchmark-style autonomy is gated by evidence, not vibes or unsupported completion claims.
 
 ## Why This Helps Sales
 
