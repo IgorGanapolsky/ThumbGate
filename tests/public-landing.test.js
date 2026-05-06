@@ -136,6 +136,11 @@ test('public landing page exposes env-driven paid sprint checkout path', () => {
   assert.match(landingPage, /\$3,997/);
   assert.match(landingPage, /\$297\/mo/);
   assert.match(landingPage, /governance_setup_intake_clicked/);
+  assert.match(landingPage, /OpenClaw Agent Governance Kit/);
+  assert.match(landingPage, /https:\/\/buy\.stripe\.com\/bJe14naiE9Lo7xT49Z3sI12/);
+  assert.match(landingPage, /openclaw_governance_kit_checkout_started/);
+  assert.match(landingPage, /team_openclaw_governance_kit_checkout/);
+  assert.match(landingPage, /Buy kit/);
   assert.match(landingPage, /Send workflow first/);
   assert.match(landingPage, /Pay for diagnostic/);
   assert.match(landingPage, /Pay for sprint/);
