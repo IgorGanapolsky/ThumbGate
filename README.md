@@ -132,7 +132,7 @@ The catalog currently includes the April 23, 2026 Tinker additions:
 - `tinker/qwen3.6-27b` for the cheap fast-path
 - `tinker/kimi-k2.6-128k` for long-trace review and multi-agent sessions
 
-Each recommendation ships with the benchmark commands to run next: feedback-derived prompt eval, `gate-eval`, and `thumbgate bench`. That keeps model selection evidence-backed instead of hype-driven.
+Each recommendation ships with the benchmark commands to run next: feedback-derived prompt eval, `gate-eval`, and `thumbgate bench`. For whole-repo clone claims, add `npx thumbgate bench --programbench-smoke` to generate a ProgramBench-style cleanroom proof report without claiming an official ProgramBench score. That keeps model selection evidence-backed instead of hype-driven.
 
 ![Feedback Pipeline](docs/diagrams/feedback_pipeline.png)
 
@@ -240,6 +240,7 @@ npx thumbgate native-messaging-audit  # inspect local browser bridges and extens
 npx thumbgate dashboard  # open local dashboard
 npx thumbgate serve      # start MCP server on stdio
 npx thumbgate bench      # run reliability benchmark
+npx thumbgate bench --programbench-smoke  # include cleanroom whole-repo proof lane
 ```
 
 ---
@@ -374,7 +375,7 @@ Every Changeset is tied to the exact `main` merge commit and generates Verificat
 - **[Claude Desktop Extension](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb)** — One-click install for Claude Desktop
 - **[Codex Plugin](https://thumbgate-production.up.railway.app/codex-plugin)** — Auto-updating standalone bundle and install page for Codex CLI
 - **[Perplexity Command Center](docs/PERPLEXITY_MAX_COMMAND_CENTER.md)** — AI-search visibility + lead discovery
-- **[ThumbGate Bench](docs/THUMBGATE_BENCH.md)** — Reliability benchmark for check evaluation
+- **[ThumbGate Bench](docs/THUMBGATE_BENCH.md)** — Reliability benchmark and ProgramBench-style cleanroom proof lane
 - **[Manus AI Skill](skills/thumbgate/SKILL.md)** — ThumbGate integration for Manus AI agents
 
 ---

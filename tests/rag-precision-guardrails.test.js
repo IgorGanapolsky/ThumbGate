@@ -25,6 +25,14 @@ test('normalizeOptions extracts RAG precision and agentic pipeline signals', () 
     'threshold-change': true,
     agentic: 'true',
     'structural-near-misses': 'yes',
+    'hybrid-retrieval': true,
+    dense: true,
+    sparse: true,
+    reranker: true,
+    'source-grounding': true,
+    'acl-filter': true,
+    'freshness-window-hours': '12',
+    'scale-corpus-documents': '1000000',
     'latency-ms': '440',
     'latency-budget-ms': '300',
   });
@@ -38,6 +46,14 @@ test('normalizeOptions extracts RAG precision and agentic pipeline signals', () 
   assert.equal(options.thresholdChanged, true);
   assert.equal(options.agenticPipeline, true);
   assert.equal(options.structuralNearMisses, true);
+  assert.equal(options.hybridRetrieval, true);
+  assert.equal(options.denseRetrieval, true);
+  assert.equal(options.sparseRetrieval, true);
+  assert.equal(options.reranker, true);
+  assert.equal(options.sourceGrounding, true);
+  assert.equal(options.aclFilter, true);
+  assert.equal(options.freshnessWindowHours, 12);
+  assert.equal(options.scaleCorpusDocuments, 1000000);
   assert.equal(options.latencyMs, 440);
   assert.equal(options.latencyBudgetMs, 300);
 });
@@ -108,4 +124,20 @@ test('rag-precision-guardrails CLI emits machine-readable recommendations', () =
   assert.equal(payload.name, 'thumbgate-rag-precision-guardrails');
   assert.equal(payload.summary.recommendedTemplateCount, 2);
   assert.ok(payload.signals.some((signal) => signal.id === 'precision_tuning'));
+});
+
+test('buildRagPrecisionGuardrailsPlan flags hybrid retrieval scale governance gaps', () => {
+  const report = buildRagPrecisionGuardrailsPlan({
+    'hybrid-retrieval': true,
+    dense: true,
+    sparse: true,
+    agentic: true,
+    'scale-corpus-documents': '1000000',
+  });
+
+  assert.equal(report.metrics.hybridRetrieval, true);
+  assert.equal(report.metrics.scaleCorpusDocuments, 1000000);
+  assert.ok(report.signals.some((signal) => signal.id === 'hybrid_retrieval_scale_wall'));
+  assert.ok(report.signals.some((signal) => signal.id === 'retrieval_governance_gap'));
+  assert.ok(report.nextActions.some((action) => action.includes('dense recall')));
 });
