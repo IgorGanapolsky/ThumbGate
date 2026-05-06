@@ -1,0 +1,40 @@
+name: Bluesky Owned Post
+
+on:
+  workflow_dispatch:
+    inputs:
+      text:
+        description: 'Owned-account Bluesky post text, max 300 chars.'
+        required: true
+        type: string
+      confirm_post:
+        description: 'Required. Type POST to publish.'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bluesky-owned-post
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BLUESKY_HANDLE: ${{ secrets.BLUESKY_HANDLE }}
+      BLUESKY_APP_PASSWORD: ${{ secrets.BLUESKY_APP_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Publish owned Bluesky post
+        run: |
+          node scripts/bluesky-owned-post.js \
+            --text="${{ github.event.inputs.text }}" \
+            --confirm-post="${{ github.event.inputs.confirm_post }}"
+
