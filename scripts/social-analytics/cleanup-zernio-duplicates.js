@@ -46,10 +46,10 @@ function normalizePlatform(value) {
 function normalizeText(value) {
   return String(value || '')
     .toLowerCase()
-    .replace(/https?:\/\/\S+/g, ' ')
-    .replace(/[#@][\w.-]+/g, ' ')
-    .replace(/[^\p{L}\p{N}]+/gu, ' ')
-    .replace(/\s+/g, ' ')
+    .replaceAll(/https?:\/\/\S+/g, ' ')
+    .replaceAll(/[#@][\w.-]+/g, ' ')
+    .replaceAll(/[^\p{L}\p{N}]+/gu, ' ')
+    .replaceAll(/\s+/g, ' ')
     .trim();
 }
 
@@ -88,9 +88,13 @@ function resolveUrl(post) {
 }
 
 function resolveMediaSignature(post) {
-  const mediaItems = Array.isArray(post?.mediaItems)
-    ? post.mediaItems
-    : (Array.isArray(post?.media) ? post.media : []);
+  let mediaItems = [];
+  if (Array.isArray(post?.mediaItems)) {
+    mediaItems = post.mediaItems;
+  } else if (Array.isArray(post?.media)) {
+    mediaItems = post.media;
+  }
+
   return mediaItems
     .map((item) => firstString(item?.url, item?.publicUrl, item?.key, item?.id))
     .filter(Boolean)
@@ -212,7 +216,7 @@ module.exports = {
   summarizePost,
 };
 
-if (require.main === module) {
+if (path.resolve(process.argv[1] || '') === __filename) {
   run(parseArgs(process.argv.slice(2)))
     .then(printResult)
     .catch((error) => {
