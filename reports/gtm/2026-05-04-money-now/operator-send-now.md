@@ -1,6 +1,6 @@
 # Revenue Operator Send-Now Sheet
 
-Updated: 2026-05-04T19:52:57.729Z
+Updated: 2026-05-06T13:40:27Z
 
 This is the flat batch-send layer for the current revenue loop. Use it when you want the message, CTA, and logging commands in one place without re-reading the full GTM report.
 
@@ -11,7 +11,7 @@ Pair this file with `operator-priority-handoff.md` when you need deeper account 
 - Headline: Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
 - Billing verification: Live hosted billing summary verified for this run.
 - Paid orders: 4
-- Checkout starts: 87
+- Checkout starts: 133 (operator-reported as-of 2026-05-05)
 - Active follow-ups: 0
 - Warm targets ready now: 4
 - Self-serve closes ready now: 3
