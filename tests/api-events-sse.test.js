@@ -19,6 +19,10 @@ const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
 
+if (process.env.CODEX_SANDBOX) {
+  console.log('Skipping SSE contract tests because CODEX_SANDBOX blocks socket listen permission.');
+} else {
+
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sse-test-'));
 const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sse-proof-'));
 delete process.env.THUMBGATE_PROJECT_DIR;
@@ -40,7 +44,7 @@ let apiOrigin = '';
 const authHeader = { authorization: 'Bearer sse-test-key' };
 
 test.before(async () => {
-  handle = await startServer({ port: 0 });
+  handle = await startServer({ port: 0, host: '127.0.0.1' });
   apiOrigin = `http://localhost:${handle.port}`;
 });
 
@@ -194,3 +198,5 @@ test('POST /v1/feedback/rules fans out a rules-updated event to subscribers', as
     stream.close();
   }
 });
+
+}

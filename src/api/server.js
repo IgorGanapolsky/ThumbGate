@@ -1484,7 +1484,7 @@ function renderCheckoutIntentPage({
   const sprintAction = safeSprintCheckoutHref
     ? `<a data-i="workflow_sprint_checkout" href="${safeSprintCheckoutHref}">Start $${workflowSprintPriceDollars} sprint</a>`
     : '';
-  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{background:#0a0a0a;color:#eee;font-family:system-ui,sans-serif}div{max-width:560px;margin:12vh auto}a{display:block;margin:10px 0;padding:12px;border:1px solid #374151;color:inherit;text-align:center}.primary{background:#22d3ee;color:#000}</style><div><h1>Choose the right paid path.</h1><p>Pick Pro, diagnostic, sprint, or intake.</p><a class="primary" data-i="pro_checkout_confirmed" href="${safeConfirmHref}">Continue to Stripe</a>${diagnosticAction}${sprintAction}<a data-i="workflow_sprint_intake" href="${safeWorkflowIntakeHref}">Send workflow first</a><a data-i="team_paid_path" href="${safeTeamOptionsHref}">See diagnostic and sprint options</a><p>Stripe checkout.</p><a href="/">Back</a></div><script>addEventListener('click',e=>{let a=e.target.closest('[data-i]');if(a&&navigator.sendBeacon)navigator.sendBeacon('/v1/telemetry/ping',new Blob([JSON.stringify({eventType:'checkout_interstitial_cta_clicked',clientType:'web',page:'/checkout/pro',ctaId:a.dataset.i,ctaPlacement:'checkout_interstitial'})],{type:'application/json'}))})</script>`;
+  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{background:#0a0a0a;color:#eee;font-family:system-ui,sans-serif}div{max-width:560px;margin:12vh auto}a{display:block;margin:10px 0;padding:12px;border:1px solid #374151;color:inherit;text-align:center}.primary{background:#22d3ee;color:#000}</style><div><h1>Choose the right paid path.</h1><p>Pick Pro, diagnostic, sprint, or intake.</p><a class="primary" data-i="pro_checkout_confirmed" href="${safeConfirmHref}">Pay in Stripe</a>${diagnosticAction}${sprintAction}<a data-i="workflow_sprint_intake" href="${safeWorkflowIntakeHref}">Send workflow first</a><a data-i="team_paid_path" href="${safeTeamOptionsHref}">See options</a><p>Stripe checkout.</p><a href="/">Back</a></div><script>addEventListener('click',e=>{let a=e.target.closest('[data-i]');if(a&&navigator.sendBeacon)navigator.sendBeacon('/v1/telemetry/ping',new Blob([JSON.stringify({eventType:'checkout_interstitial_cta_clicked',clientType:'web',page:'/checkout/pro',ctaId:a.dataset.i,ctaPlacement:'checkout_interstitial'})],{type:'application/json'}))})</script>`;
 }
 
 function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneyState(req, parsed)) {
@@ -2963,6 +2963,8 @@ function renderCheckoutSuccessPage(runtimeConfig) {
 }
 
 function renderCheckoutCancelledPage(runtimeConfig) {
+  const firstFailureRuleCheckoutUrl = 'https://buy.stripe.com/4gM6oHgH2bTw4lH6i73sI0z';
+  const quickReadCheckoutUrl = 'https://buy.stripe.com/aFa8wPgH29Lo4lH35V3sI0w';
   const diagnosticCheckoutUrl = runtimeConfig.sprintDiagnosticCheckoutUrl
     ? escapeHtmlAttribute(runtimeConfig.sprintDiagnosticCheckoutUrl)
     : '';
@@ -2973,6 +2975,8 @@ function renderCheckoutCancelledPage(runtimeConfig) {
   const workflowSprintPriceDollars = runtimeConfig.workflowSprintPriceDollars || 1500;
   const workflowSprintIntakeUrl = `${escapeHtmlAttribute(runtimeConfig.appOrigin)}/#workflow-sprint-intake`;
   const recoveryOfferLinks = [
+    `<a href="${firstFailureRuleCheckoutUrl}" data-recovery-offer="first_failure_rule" data-offer-price="1">Pay $1 first rule</a>`,
+    `<a href="${quickReadCheckoutUrl}" data-recovery-offer="quick_read" data-offer-price="19">Pay $19 quick read</a>`,
     `<a id="send-workflow-first" href="${workflowSprintIntakeUrl}" data-recovery-offer="workflow_sprint_intake" data-offer-price="0">Send workflow first</a>`,
     diagnosticCheckoutUrl
       ? `<a href="${diagnosticCheckoutUrl}" data-recovery-offer="sprint_diagnostic" data-offer-price="${sprintDiagnosticPriceDollars}">Book $${sprintDiagnosticPriceDollars} diagnostic</a>`
@@ -2984,7 +2988,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
   const recoveryOfferCard = recoveryOfferLinks
     ? `<div class="card recovery-card">
       <h2>Need help deciding?</h2>
-      <p>If Pro is not the right next step, send the workflow first. We can qualify the blocker, confirm the proof plan, and route you to the diagnostic or sprint only when the scope is real.</p>
+      <p>If Pro is not the right next step, start smaller or send the workflow first. We can qualify the blocker, confirm the proof plan, and route you to the diagnostic or sprint only when the scope is real.</p>
       <div class="actions">
         ${recoveryOfferLinks}
       </div>
@@ -3106,7 +3110,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
       </div>
       <div class="actions">
         <button type="button" id="submit-reason">Send feedback</button>
-        <a id="retry-checkout" href="/checkout/pro" class="secondary" data-recovery-offer="pro_trial_retry" data-offer-price="19">Restart $19 Pro trial</a>
+        <a id="retry-checkout" href="/checkout/pro" class="secondary" data-recovery-offer="pro_pay_now_retry" data-offer-price="19">Restart $19 Pro checkout</a>
         <a href="${runtimeConfig.appOrigin}" class="secondary">Return to Context Gateway</a>
       </div>
       <p class="note" id="status">No feedback sent yet.</p>
@@ -4481,20 +4485,19 @@ async function addContext(){
         return;
       }
 
-      const normalizedCheckoutEmail = normalizeCheckoutCustomerEmail(bootstrapBody.customerEmail);
+      const rawCheckoutEmail = normalizeNullableText(bootstrapBody.customerEmail);
+      const normalizedCheckoutEmail = normalizeCheckoutCustomerEmail(rawCheckoutEmail);
       if (!normalizedCheckoutEmail) {
         appendBestEffortTelemetry(FEEDBACK_DIR, {
-          eventType: 'checkout_email_gate_shown',
+          eventType: 'checkout_email_deferred_to_stripe',
           clientType: 'web',
           traceId,
           page: '/checkout/pro',
           planId: analyticsMetadata.planId,
-        }, req.headers, 'checkout_email_gate_shown');
-        const { html, headers } = renderCheckoutIntentGate(parsed, responseHeaders);
-        sendHtml(res, 200, html, headers);
-        return;
+          reason: rawCheckoutEmail ? 'invalid_customer_email' : 'missing_customer_email',
+        }, req.headers, 'checkout_email_deferred_to_stripe');
       }
-      bootstrapBody.customerEmail = normalizedCheckoutEmail;
+      bootstrapBody.customerEmail = normalizedCheckoutEmail || undefined;
 
       appendBestEffortTelemetry(FEEDBACK_DIR, {
         eventType: 'checkout_bootstrap',
