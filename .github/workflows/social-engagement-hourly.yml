@@ -27,6 +27,11 @@ on:
         required: false
         type: boolean
         default: false
+      publish_enabled:
+        description: 'Allow paid Zernio posting for this manual run'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -39,7 +44,7 @@ jobs:
   post-via-zernio:
     # Only post at 2pm UTC, not on reply-monitor runs
     if: >-
-      github.event.schedule == '0 14 * * *' ||
+      (github.event.schedule == '0 14 * * *' && vars.THUMBGATE_ENABLE_ZERNIO_DAILY_SOCIAL == '1') ||
       github.event.inputs.action == 'all' ||
       github.event.inputs.action == 'post'
     runs-on: ubuntu-latest
@@ -52,6 +57,7 @@ jobs:
       ZERNIO_REDDIT_ACCOUNT_ID: ${{ secrets.ZERNIO_REDDIT_ACCOUNT_ID }}
       ZERNIO_TIKTOK_ACCOUNT_ID: ${{ secrets.ZERNIO_TIKTOK_ACCOUNT_ID }}
       ZERNIO_YOUTUBE_ACCOUNT_ID: ${{ secrets.ZERNIO_YOUTUBE_ACCOUNT_ID }}
+      THUMBGATE_ENABLE_ZERNIO_DAILY_SOCIAL: ${{ vars.THUMBGATE_ENABLE_ZERNIO_DAILY_SOCIAL || '0' }}
       PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
     steps:
       - uses: actions/checkout@v6
@@ -67,6 +73,10 @@ jobs:
           DRY_RUN=""
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
             DRY_RUN="--dry-run"
+          fi
+          if [ "$DRY_RUN" != "--dry-run" ] && [ "${{ github.event.inputs.publish_enabled }}" != "true" ] && [ "$THUMBGATE_ENABLE_ZERNIO_DAILY_SOCIAL" != "1" ]; then
+            echo "Daily Zernio posting disabled by default."
+            exit 0
           fi
           node scripts/social-post-hourly.js $DRY_RUN
 
