@@ -87,6 +87,9 @@ async function main(argv = process.argv.slice(2), deps = {}) {
     providerId: result?.id || result?.providerId || null,
     reason: result?.reason || null,
   }, null, 2));
+  if (!result.sent) {
+    throw new Error(`Revenue email was not sent: ${result?.reason || 'unknown_error'}`);
+  }
   return result;
 }
 

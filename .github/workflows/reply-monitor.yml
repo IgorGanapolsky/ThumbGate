@@ -32,6 +32,15 @@ on:
         required: false
         type: boolean
         default: false
+      autonomous_bluesky_publish:
+        description: 'Auto-approve and publish a bounded set of safe Bluesky replies'
+        required: false
+        type: boolean
+        default: false
+      bluesky_publish_limit:
+        description: 'Maximum safe Bluesky replies to auto-publish'
+        required: false
+        default: '3'
 
 permissions:
   contents: read
@@ -90,12 +99,22 @@ jobs:
             ARGS="$ARGS --dry-run"
           fi
           if [ "${{ github.event.inputs.platform }}" = "bluesky" ]; then
-            node scripts/social-reply-monitor-bluesky.js $ARGS
+            if [ "${{ github.event.inputs.autonomous_bluesky_publish }}" = "true" ]; then
+              node scripts/social-reply-monitor-bluesky.js $ARGS --auto-approve-safe --limit="${{ github.event.inputs.bluesky_publish_limit }}"
+              node scripts/social-reply-monitor-bluesky.js --publish-approved --confirm-publish
+            else
+              node scripts/social-reply-monitor-bluesky.js $ARGS
+            fi
           else
             node scripts/social-reply-monitor.js $ARGS
             if [ -z "${{ github.event.inputs.platform }}" ]; then
               if [ -n "$BLUESKY_HANDLE" ] && [ -n "$BLUESKY_APP_PASSWORD" ]; then
-                node scripts/social-reply-monitor-bluesky.js $ARGS
+                if [ "${{ github.event.inputs.autonomous_bluesky_publish }}" = "true" ]; then
+                  node scripts/social-reply-monitor-bluesky.js $ARGS --auto-approve-safe --limit="${{ github.event.inputs.bluesky_publish_limit }}"
+                  node scripts/social-reply-monitor-bluesky.js --publish-approved --confirm-publish
+                else
+                  node scripts/social-reply-monitor-bluesky.js $ARGS
+                fi
               else
                 echo "Skipping Bluesky monitor: BLUESKY_HANDLE or BLUESKY_APP_PASSWORD is missing."
               fi
