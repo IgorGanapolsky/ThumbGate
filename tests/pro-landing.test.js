@@ -99,6 +99,7 @@ test('pro landing page routes high-intent team buyers to paid diagnostic and spr
   assert.match(proPage, /https:\/\/buy\.stripe\.com\/4gM6oHgH2bTw4lH6i73sI0z/);
   assert.match(proPage, /Pay \$19 quick read/);
   assert.match(proPage, /https:\/\/buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
+  assert.match(proPage, /quick_read_checkout_started/);
   assert.match(proPage, /Pay \$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic/);
   assert.match(proPage, /Pay \$__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint/);
   assert.match(proPage, /pro_page_sprint_diagnostic_checkout/);

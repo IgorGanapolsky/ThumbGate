@@ -8,8 +8,14 @@ const {
   DIAGNOSTIC_CHECKOUT_URL,
   LAUNCH_CAMPAIGN,
   OPERATOR_LAB_CAMPAIGN,
+  PAID_SPRINT_CAMPAIGN,
+  PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL,
+  PAID_SPRINT_IMPLEMENTATION_PAYMENT_URL,
   VOICE_AGENT_DIAGNOSTIC_CAMPAIGN,
+  buildPaidSprintCheckoutUrls,
   buildPlatformPost,
+  classifyPublishFailure,
+  getPlatformFailures,
   parseArgs,
   publishLaunchCampaign,
 } = require('../scripts/social-analytics/publish-thumbgate-launch');
@@ -65,6 +71,26 @@ test('buildPlatformPost can create paid voice-agent diagnostic copy', () => {
   assert.match(threadsPost, /utm_content=voice_agent_diagnostic_threads/);
 });
 
+test('buildPlatformPost creates paid sprint copy with direct checkout links', () => {
+  const linkedInPost = buildPlatformPost('linkedin', 'paid-sprint');
+  const xPost = buildPlatformPost('twitter', 'paid-sprint');
+  const threadsPost = buildPlatformPost('threads', 'paid-sprint');
+  const links = buildPaidSprintCheckoutUrls('linkedin', 'paid_sprint_linkedin');
+
+  assert.match(linkedInPost, /\$499 diagnostic/);
+  assert.match(linkedInPost, /\$1500 sprint/);
+  assert.ok(linkedInPost.includes(PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL));
+  assert.ok(linkedInPost.includes(PAID_SPRINT_IMPLEMENTATION_PAYMENT_URL));
+  assert.ok(linkedInPost.includes(links.diagnostic));
+  assert.ok(linkedInPost.includes(links.sprint));
+  assert.match(linkedInPost, /utm_campaign=paid_workflow_sprint/);
+  assert.match(linkedInPost, /utm_content=paid_sprint_linkedin_diagnostic/);
+  assert.match(xPost, /buy\.stripe\.com/);
+  assert.ok(xPost.length <= 280, `X paid-sprint post should fit 280 chars; got ${xPost.length}`);
+  assert.match(threadsPost, /buy\.stripe\.com/);
+  assert.ok(threadsPost.length <= 500, `Threads paid-sprint post should fit 500 chars; got ${threadsPost.length}`);
+});
+
 test('publishLaunchCampaign previews default platforms in dry run mode', async () => {
   const fakePublisher = {
     getConnectedAccounts: async () => ([
@@ -86,6 +112,7 @@ test('publishLaunchCampaign previews default platforms in dry run mode', async (
   const result = await publishLaunchCampaign({ dryRun: true }, fakePublisher);
 
   assert.equal(result.dryRun, true);
+  assert.equal(result.offer, 'launch');
   assert.deepEqual(result.platforms, DEFAULT_LAUNCH_PLATFORMS);
   assert.equal(result.previews.length, 3);
   assert.equal(result.published.length, 0);
@@ -106,6 +133,13 @@ test('publishLaunchCampaign uses operator lab UTM settings when requested', asyn
       calls.push({ content, platforms, options });
       return { id: 'linkedin_post_1' };
     },
+    uploadLocalMedia: async () => ({
+      url: 'https://example.test/operator-lab.png',
+      type: 'image',
+      key: 'operator-lab.png',
+      size: 1234,
+      contentType: 'image/png',
+    }),
   };
 
   const result = await publishLaunchCampaign({
@@ -117,6 +151,8 @@ test('publishLaunchCampaign uses operator lab UTM settings when requested', asyn
   assert.equal(calls[0].options.utm.source, 'linkedin');
   assert.equal(calls[0].options.utm.medium, 'community_course');
   assert.equal(calls[0].options.utm.campaign, OPERATOR_LAB_CAMPAIGN);
+  assert.ok(Array.isArray(calls[0].options.mediaItems));
+  assert.equal(calls[0].options.mediaItems.length, 1);
   assert.match(calls[0].content, /skool\.com\/thumbgate-operator-lab-6000/);
 });
 
@@ -146,6 +182,34 @@ test('publishLaunchCampaign uses paid voice-agent diagnostic UTM settings when r
   assert.equal(calls[0].options.utm.campaign, VOICE_AGENT_DIAGNOSTIC_CAMPAIGN);
   assert.match(calls[0].content, /Checkout:/);
   assert.match(calls[0].content, /\$499 diagnostic/);
+});
+
+test('publishLaunchCampaign uses paid sprint UTM settings when requested', async () => {
+  const calls = [];
+  const fakePublisher = {
+    getConnectedAccounts: async () => ([
+      { platform: 'linkedin', accountId: 'acc_l1' },
+    ]),
+    groupAccountsByPlatform(accounts) {
+      return new Map([['linkedin', accounts]]);
+    },
+    publishPost: async (content, platforms, options) => {
+      calls.push({ content, platforms, options });
+      return { id: 'linkedin_post_1' };
+    },
+  };
+
+  const result = await publishLaunchCampaign({
+    platforms: ['linkedin'],
+    offer: 'paid-sprint',
+  }, fakePublisher);
+
+  assert.equal(result.published.length, 1);
+  assert.equal(calls[0].options.utm.source, 'linkedin');
+  assert.equal(calls[0].options.utm.medium, 'organic_social');
+  assert.equal(calls[0].options.utm.campaign, PAID_SPRINT_CAMPAIGN);
+  assert.match(calls[0].content, /buy\.stripe\.com/);
+  assert.match(calls[0].content, /utm_campaign=paid_workflow_sprint/);
 });
 
 test('publishLaunchCampaign publishes requested platforms with per-platform UTM settings', async () => {
@@ -234,4 +298,132 @@ test('publishLaunchCampaign routes Instagram through the media-backed workflow',
   assert.equal(result.published[0].platform, 'instagram');
   assert.equal(result.published[0].result.success, true);
   assert.match(result.published[0].result.caption, /utm_content=launch_post_instagram/);
+});
+
+test('getPlatformFailures extracts Zernio platform-level publish failures', () => {
+  const failures = getPlatformFailures({
+    post: {
+      status: 'failed',
+      platforms: [
+        {
+          platform: 'reddit',
+          status: 'failed',
+          errorMessage: "Reddit submit failed with API errors: NO_SELFS: This community doesn't allow text posts: sr",
+        },
+      ],
+    },
+    platformResults: [
+      {
+        platform: 'reddit',
+        status: 'failed',
+        error: "Reddit submit failed with API errors: NO_SELFS: This community doesn't allow text posts: sr",
+      },
+    ],
+  });
+
+  assert.equal(failures.length, 1);
+  assert.equal(failures[0].platform, 'reddit');
+  assert.match(failures[0].error, /NO_SELFS/);
+});
+
+test('classifyPublishFailure treats duplicate Zernio posts as nonfatal', () => {
+  const classification = classifyPublishFailure({
+    platform: 'linkedin',
+    error: 'Zernio API 409: This exact content is already scheduled, publishing, or was posted to this account within the last 24 hours.',
+  });
+
+  assert.equal(classification.fatal, false);
+  assert.equal(classification.reason, 'duplicate_recent_post');
+});
+
+test('publishLaunchCampaign skips unsupported Reddit text posts', async () => {
+  const fakePublisher = {
+    getConnectedAccounts: async () => ([
+      { platform: 'reddit', accountId: 'acc_r1' },
+    ]),
+    groupAccountsByPlatform(accounts) {
+      return new Map([['reddit', accounts]]);
+    },
+    publishPost: async () => ({
+      post: {
+        status: 'failed',
+        platforms: [
+          {
+            platform: 'reddit',
+            status: 'failed',
+            errorMessage: "Reddit submit failed with API errors: NO_SELFS: This community doesn't allow text posts: sr",
+          },
+        ],
+      },
+      platformResults: [
+        {
+          platform: 'reddit',
+          status: 'failed',
+          error: "Reddit submit failed with API errors: NO_SELFS: This community doesn't allow text posts: sr",
+        },
+      ],
+    }),
+  };
+
+  const result = await publishLaunchCampaign({ platforms: ['reddit'], offer: 'paid-sprint' }, fakePublisher);
+
+  assert.equal(result.published.length, 0);
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.skipped.length, 1);
+  assert.equal(result.skipped[0].platform, 'reddit');
+  assert.equal(result.skipped[0].reason, 'unsupported_reddit_text_post');
+  assert.match(result.skipped[0].error, /NO_SELFS/);
+});
+
+test('publishLaunchCampaign skips recent duplicate Zernio posts', async () => {
+  const fakePublisher = {
+    getConnectedAccounts: async () => ([
+      { platform: 'linkedin', accountId: 'acc_l1' },
+    ]),
+    groupAccountsByPlatform(accounts) {
+      return new Map([['linkedin', accounts]]);
+    },
+    publishPost: async () => ({
+      post: {
+        status: 'failed',
+        platforms: [
+          {
+            platform: 'linkedin',
+            status: 'failed',
+            errorMessage: 'Zernio API 409: This exact content is already scheduled, publishing, or was posted to this account within the last 24 hours.',
+          },
+        ],
+      },
+    }),
+  };
+
+  const result = await publishLaunchCampaign({ platforms: ['linkedin'], offer: 'paid-sprint' }, fakePublisher);
+
+  assert.equal(result.published.length, 0);
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.skipped.length, 1);
+  assert.equal(result.skipped[0].platform, 'linkedin');
+  assert.equal(result.skipped[0].reason, 'duplicate_recent_post');
+});
+
+test('publishLaunchCampaign skips recent duplicate Zernio exceptions', async () => {
+  const fakePublisher = {
+    getConnectedAccounts: async () => ([
+      { platform: 'bluesky', accountId: 'acc_b1' },
+    ]),
+    groupAccountsByPlatform(accounts) {
+      return new Map([['bluesky', accounts]]);
+    },
+    publishPost: async () => {
+      throw new Error('Zernio API 409 for POST /posts: {"error":"This exact content is already scheduled, publishing, or was posted to this account within the last 24 hours.","details":{"platform":"bluesky"}}');
+    },
+  };
+
+  const result = await publishLaunchCampaign({ platforms: ['bluesky'], offer: 'paid-sprint' }, fakePublisher);
+
+  assert.equal(result.published.length, 0);
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.skipped.length, 1);
+  assert.equal(result.skipped[0].platform, 'bluesky');
+  assert.equal(result.skipped[0].reason, 'duplicate_recent_post');
 });
