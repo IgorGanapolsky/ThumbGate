@@ -679,7 +679,23 @@ __GA_BOOTSTRAP__
     <p style="font-size:18px;color:var(--text-muted);max-width:720px;margin:0 auto 20px;line-height:1.6;">Every retry loop, every hallucinated import, every "let me try a different approach" — those are billable tokens on every LLM vendor's bill. ThumbGate is machine-speed pre-action defense: thumbs-down once, block that exact mistake on every future call, surface the next highest-ROI remediation, and show which agent surfaces are actually active before rollout. Across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — any MCP-compatible agent, forever, including fast-moving vibe coding workflows.</p>
     <p style="font-size:15px;color:var(--text-dim);max-width:760px;margin:0 auto 24px;line-height:1.6;">As desktop agents move into parallel sessions, terminals, and production workflows, ThumbGate checks the thing benchmarks miss: is this next action a known workflow, an open-ended agent, a costly fan-out, or a blind tool call with no way to verify it worked?</p>
 
-    <!-- HERO PRICING CARD — visible in first viewport so $19/mo and $149/yr never get buried -->
+    <div class="hero-paid-path" aria-label="Paid AI agent governance sprint checkout options">
+      <div>
+        <strong>Need buyer-ready proof today?</strong>
+        <span>For one repeated workflow failure, book the $499 diagnostic or $1500 sprint first. Same-day Workflow Teardown and smaller paid reads remain available when you need clear rules, examples, and pre-action checks before a larger scope.</span>
+      </div>
+      <div class="hero-paid-actions">
+        <a class="diagnostic" href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__" onclick="sendFirstPartyTelemetry('workflow_sprint_diagnostic_checkout_started',{ctaId:'hero_workflow_sprint_diagnostic_checkout',price:sprintDiagnosticPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:sprintDiagnosticPriceDollars});">Pay $499 diagnostic &rarr;</a>
+        <a class="sprint" href="__WORKFLOW_SPRINT_CHECKOUT_URL__" onclick="sendFirstPartyTelemetry('workflow_sprint_checkout_started',{ctaId:'hero_workflow_sprint_checkout',price:workflowSprintPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:workflowSprintPriceDollars});">Pay $1500 sprint &rarr;</a>
+        <a class="starter" title="First AI Agent Failure Rule" href="https://buy.stripe.com/4gM6oHgH2bTw4lH6i73sI0z" onclick="sendFirstPartyTelemetry('first_failure_rule_checkout_started',{ctaId:'hero_first_failure_rule_checkout',price:1});sendGa4Event('begin_checkout',{currency:'USD',value:1,items:[{item_id:'first_failure_rule',item_name:'First AI Agent Failure Rule'}]});">Pay $1 first rule &rarr;</a>
+        <a class="starter" title="AI Agent Failure Quick Read" href="https://buy.stripe.com/aFa8wPgH29Lo4lH35V3sI0w" onclick="sendFirstPartyTelemetry('quick_read_checkout_started',{ctaId:'hero_quick_read_checkout',price:19});">Pay $19 quick read &rarr;</a>
+        <a class="starter" href="https://buy.stripe.com/7sYfZhgH29LodWhdKz3sI0v" onclick="sendFirstPartyTelemetry('workflow_teardown_checkout_started',{ctaId:'hero_workflow_teardown_checkout'})">Pay $99 teardown</a>
+        <a class="intake" href="#workflow-sprint-intake" onclick="sendFirstPartyTelemetry('workflow_sprint_recovery_intake_clicked',{ctaId:'hero_workflow_sprint_recovery_intake'});sendGa4Event('generate_lead',{method:'workflow_sprint_recovery_intake'});">Send workflow first &rarr;</a>
+        <a class="starter" href="/guides/ai-agent-governance-sprint">See sprint scope &rarr;</a>
+      </div>
+    </div>
+
+    <!-- HERO PRICING CARD — secondary path after the proof-led paid offers -->
     <div id="pro-pitch" style="max-width:820px;margin:0 auto 32px;padding:24px 28px;background:linear-gradient(180deg,rgba(17,17,19,0.94) 0%,rgba(22,22,24,0.94) 100%);border:1px solid rgba(34,211,238,0.32);border-radius:20px;box-shadow:0 0 0 1px rgba(34,211,238,0.18),0 24px 64px rgba(0,0,0,0.35);text-align:left;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
         <div>
@@ -705,22 +721,6 @@ __GA_BOOTSTRAP__
         </div>
       </div>
       <p style="margin:14px 0 0;font-size:11px;color:var(--text-muted);text-align:center;">Card required · billed today · cancel anytime · your rules and captures stay local. <a href="/go/install" style="color:var(--cyan);text-decoration:none;">Prefer free? Install CLI →</a></p>
-    </div>
-
-    <div class="hero-paid-path" aria-label="Paid AI agent governance sprint checkout options">
-      <div>
-        <strong>Need buyer-ready proof today?</strong>
-        <span>Same-day Workflow Teardown: start with a $1 first failure rule, use $19 for the AI Agent Failure Quick Read, use $99 for teardown, or choose $499 for clear rules, examples, and pre-action checks.</span>
-      </div>
-      <div class="hero-paid-actions">
-        <a class="starter" title="First AI Agent Failure Rule" href="https://buy.stripe.com/4gM6oHgH2bTw4lH6i73sI0z" onclick="sendFirstPartyTelemetry('first_failure_rule_checkout_started',{ctaId:'hero_first_failure_rule_checkout',price:1});sendGa4Event('begin_checkout',{currency:'USD',value:1,items:[{item_id:'first_failure_rule',item_name:'First AI Agent Failure Rule'}]});">Pay $1 first rule &rarr;</a>
-        <a class="starter" title="AI Agent Failure Quick Read" href="https://buy.stripe.com/aFa8wPgH29Lo4lH35V3sI0w" onclick="sendFirstPartyTelemetry('quick_read_checkout_started',{ctaId:'hero_quick_read_checkout',price:19});">Pay $19 quick read &rarr;</a>
-        <a class="starter" href="https://buy.stripe.com/7sYfZhgH29LodWhdKz3sI0v" onclick="sendFirstPartyTelemetry('workflow_teardown_checkout_started',{ctaId:'hero_workflow_teardown_checkout'})">Pay $99 teardown</a>
-        <a class="diagnostic" href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__" onclick="sendFirstPartyTelemetry('workflow_sprint_diagnostic_checkout_started',{ctaId:'hero_workflow_sprint_diagnostic_checkout',price:sprintDiagnosticPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:sprintDiagnosticPriceDollars});">Pay $499 diagnostic &rarr;</a>
-        <a class="sprint" href="__WORKFLOW_SPRINT_CHECKOUT_URL__" onclick="sendFirstPartyTelemetry('workflow_sprint_checkout_started',{ctaId:'hero_workflow_sprint_checkout',price:workflowSprintPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:workflowSprintPriceDollars});">Pay $1500 sprint &rarr;</a>
-        <a class="intake" href="#workflow-sprint-intake" onclick="sendFirstPartyTelemetry('workflow_sprint_recovery_intake_clicked',{ctaId:'hero_workflow_sprint_recovery_intake'});sendGa4Event('generate_lead',{method:'workflow_sprint_recovery_intake'});">Send workflow first &rarr;</a>
-        <a class="starter" href="/guides/ai-agent-governance-sprint">See sprint scope &rarr;</a>
-      </div>
     </div>
 
     <a href="/dashboard" class="hero-dashboard-preview" style="display:block;max-width:620px;margin:0 auto 28px;background:linear-gradient(135deg,#0d1220 0%,#121a2e 100%);border:1px solid rgba(34,211,238,0.35);border-radius:12px;padding:20px 24px;box-shadow:0 0 48px rgba(34,211,238,0.15);font-family:var(--mono);text-align:left;text-decoration:none;color:inherit;" title="Open your live dashboard">
