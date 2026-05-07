@@ -62,7 +62,7 @@ test('buildRalphSteps keeps hourly all mode focused on sensing, replying, and au
   assert.match(steps.find((step) => step.id === 'sync-launch-assets').skipReason, /ZERNIO_API_KEY/);
   assert.deepEqual(steps.find((step) => step.id === 'reply-monitor').args.slice(-1), ['--dry-run']);
   // Bluesky reply monitor uses direct AT Protocol (Zernio has no inbound API as
-  // of 2026-04-21). Gated on BLUESKY_HANDLE + BLUESKY_APP_PASSWORD; drafts-only.
+  // of 2026-04-21). Gated on BLUESKY_HANDLE + BLUESKY_APP_PASSWORD.
   const bluesky = steps.find((step) => step.id === 'reply-monitor-bluesky');
   assert.deepEqual(bluesky.args.slice(-1), ['--dry-run']);
   assert.match(bluesky.skipReason, /BLUESKY_HANDLE|BLUESKY_APP_PASSWORD/);
@@ -71,6 +71,31 @@ test('buildRalphSteps keeps hourly all mode focused on sensing, replying, and au
   assert.match(prospecting.description, /relevant agent-reliability pain/);
   assert.match(prospecting.skipReason, /BLUESKY_HANDLE|BLUESKY_APP_PASSWORD/);
   assert.equal(ids.includes('daily-social-post'), false);
+});
+
+test('buildRalphSteps can publish bounded safe Bluesky replies on the scheduled loop', () => {
+  const steps = buildRalphSteps({ mode: 'engage', dryRun: false }, {
+    BLUESKY_HANDLE: 'igor.example.bsky.social',
+    BLUESKY_APP_PASSWORD: 'app-password',
+    THUMBGATE_AUTONOMOUS_BLUESKY_PUBLISH: '1',
+    THUMBGATE_BLUESKY_PUBLISH_LIMIT: '2',
+  });
+  const ids = steps.map((step) => step.id);
+  const bluesky = steps.find((step) => step.id === 'reply-monitor-bluesky');
+  const publish = steps.find((step) => step.id === 'publish-approved-bluesky');
+
+  assert.deepEqual(ids.slice(0, 5), [
+    'sync-launch-assets',
+    'reply-monitor',
+    'reply-monitor-bluesky',
+    'publish-approved-bluesky',
+    'prospect-bluesky',
+  ]);
+  assert.deepEqual(bluesky.args.slice(-2), ['--auto-approve-safe', '--limit=2']);
+  assert.equal(bluesky.skipReason, undefined);
+  assert.deepEqual(publish.args.slice(-2), ['--publish-approved', '--confirm-publish']);
+  assert.equal(publish.skipReason, undefined);
+  assert.match(publish.description, /safe auto-approval/);
 });
 
 test('buildRalphSteps supports manual post mode with skip evidence', () => {
@@ -220,6 +245,8 @@ test('Ralph workflows are scheduled, stateful, and split outbound from reply eng
   assert.match(ralph, /\.thumbgate\/reply-drafts\.jsonl/);
   assert.match(ralph, /\.thumbgate\/social-launch-assets\.json/);
   assert.match(ralph, /BLUESKY_HANDLE/);
+  assert.match(ralph, /THUMBGATE_AUTONOMOUS_BLUESKY_PUBLISH/);
+  assert.match(ralph, /THUMBGATE_BLUESKY_PUBLISH_LIMIT/);
   assert.match(ralph, /scripts\/social-reply-monitor-bluesky\.js/);
   assert.match(ralphMode, /name: Ralph Mode - 24\/7 Engagement Loop/);
   assert.match(ralphMode, /cron: '0 \*\/2 \* \* \*'/);
