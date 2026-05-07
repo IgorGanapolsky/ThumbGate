@@ -1,0 +1,77 @@
+{
+  "name": "thumbgate",
+  "displayName": "ThumbGate",
+  "description": "Pre-action checks for AI coding agents in VS Code, Open VSX-compatible IDEs, and Antigravity-style VS Code forks.",
+  "version": "1.16.22",
+  "publisher": "igorganapolsky",
+  "license": "MIT",
+  "icon": "assets/logo-400x400.png",
+  "homepage": "https://thumbgate-production.up.railway.app/guide?utm_source=vscode&utm_medium=marketplace&utm_campaign=vscode_extension",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/IgorGanapolsky/ThumbGate.git",
+    "directory": "plugins/vscode-extension"
+  },
+  "bugs": {
+    "url": "https://github.com/IgorGanapolsky/ThumbGate/issues"
+  },
+  "engines": {
+    "vscode": "^1.105.0"
+  },
+  "categories": [
+    "Machine Learning",
+    "Other"
+  ],
+  "keywords": [
+    "mcp",
+    "ai agent",
+    "guardrails",
+    "pre-action checks",
+    "thumbgate",
+    "copilot"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:thumbgate.initWorkspace",
+    "onCommand:thumbgate.openDashboard",
+    "onCommand:thumbgate.capturePositive",
+    "onCommand:thumbgate.captureNegative",
+    "onCommand:thumbgate.showStats",
+    "onCommand:thumbgate.upgradePro"
+  ],
+  "main": "./src/extension.js",
+  "contributes": {
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "thumbgate",
+        "label": "ThumbGate"
+      }
+    ],
+    "commands": [
+      {
+        "command": "thumbgate.initWorkspace",
+        "title": "ThumbGate: Init Workspace"
+      },
+      {
+        "command": "thumbgate.openDashboard",
+        "title": "ThumbGate: Open Dashboard"
+      },
+      {
+        "command": "thumbgate.capturePositive",
+        "title": "ThumbGate: Capture Positive Feedback"
+      },
+      {
+        "command": "thumbgate.captureNegative",
+        "title": "ThumbGate: Capture Negative Feedback"
+      },
+      {
+        "command": "thumbgate.showStats",
+        "title": "ThumbGate: Show Stats"
+      },
+      {
+        "command": "thumbgate.upgradePro",
+        "title": "ThumbGate: Upgrade to Pro"
+      }
+    ]
+  }
+}
