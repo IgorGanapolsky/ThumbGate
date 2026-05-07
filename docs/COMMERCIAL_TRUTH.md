@@ -23,8 +23,8 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 ### Free (local, `npx thumbgate serve`)
 
-- 3 lifetime feedback captures
-- 1 auto-promoted prevention rule
+- Unlimited feedback captures
+- Up to 5 active auto-promoted prevention rules
 - No recall or lesson search
 - No exports (DPO, Databricks, HuggingFace)
 - 5 built-in checks plus local PreToolUse hook blocking
