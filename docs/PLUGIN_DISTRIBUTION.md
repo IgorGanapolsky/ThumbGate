@@ -120,6 +120,34 @@ Cursor update rules:
 
 Promotion and release operations are tracked in [CURSOR_PLUGIN_OPERATIONS.md](CURSOR_PLUGIN_OPERATIONS.md).
 
+## VS Code / Open VSX
+
+- Extension root: `plugins/vscode-extension/`
+- Extension manifest: `plugins/vscode-extension/package.json`
+- Runtime: local stdio MCP server launched via `npx --yes --package thumbgate@latest thumbgate serve`
+- MCP provider: `contributes.mcpServerDefinitionProviders`
+- Workspace fallback: `.vscode/mcp.json`
+- Build command: `npm run build:vscode-extension`
+- Marketplace command: `cd plugins/vscode-extension && npx --yes @vscode/vsce publish`
+- Open VSX command: `cd plugins/vscode-extension && npx --yes ovsx publish *.vsix`
+- Promotion rule: do not claim VS Code Marketplace or Open VSX installs until the listing dashboard proves them.
+
+## Antigravity-compatible VSIX
+
+- Install guide: `plugins/antigravity-extension/INSTALL.md`
+- Distribution path: Open VSX or direct VSIX built from `plugins/vscode-extension/`
+- Runtime: same `thumbgate@latest` MCP server.
+- Promotion rule: say "Antigravity-compatible VS Code extension/MCP setup"; do not claim an Antigravity Marketplace listing until one exists and is live.
+
+## JetBrains
+
+- Scaffold root: `plugins/jetbrains-plugin/`
+- Manifest: `plugins/jetbrains-plugin/src/main/resources/META-INF/plugin.xml`
+- Gradle build: `plugins/jetbrains-plugin/build.gradle.kts`
+- Runtime: project `.mcp.json` pointing at `npx --yes --package thumbgate@latest thumbgate serve`
+- Marketplace path: first JetBrains Marketplace upload is manual; future releases can use Gradle publishing after approval.
+- Promotion rule: treat JetBrains as a discovery lane until Marketplace approval and billing data prove traction.
+
 ## Gemini (Function Calling)
 
 - Use: `adapters/gemini/function-declarations.json`
