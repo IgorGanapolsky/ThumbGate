@@ -1149,7 +1149,8 @@ function loadResolvedRevenueEvents(options = {}) {
     const derived = deriveRevenueEventFromPaidProviderEvent(entry);
     if (!derived) continue;
     if (hasRevenueEventMatch(resolved, derived)) continue;
-    resolved.push(derived);
+    const priced = resolveGithubMarketplaceRevenueEntry(derived, { annotate: false }).entry;
+    resolved.push(priced);
   }
 
   return mergeRevenueEvents(resolved, extraRevenueEvents);
