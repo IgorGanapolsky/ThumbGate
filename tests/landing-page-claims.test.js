@@ -53,23 +53,23 @@ describe('Free tier bullets: extraction', () => {
 });
 
 describe('Free tier bullets: code-backed claims', () => {
-  test('"3 feedback captures total" matches FREE_TIER_LIMITS.capture_feedback.lifetime', () => {
+  test('"Unlimited feedback captures" matches FREE_TIER_LIMITS.capture_feedback.lifetime', () => {
     const { FREE_TIER_LIMITS } = require(path.join(ROOT, 'scripts', 'rate-limiter.js'));
-    assert.equal(FREE_TIER_LIMITS.capture_feedback.lifetime, 3,
-      'rate-limiter says free gets N captures; landing page says 3 — must match');
+    assert.equal(FREE_TIER_LIMITS.capture_feedback.lifetime, Infinity,
+      'free tier captures must be unlimited to back habit-formation flow');
     assert.ok(
-      FREE_BULLETS.some((b) => /3 feedback captures/i.test(b)),
-      'Landing page must claim "3 feedback captures"',
+      FREE_BULLETS.some((b) => /unlimited (feedback )?captures/i.test(b)),
+      'Landing page must claim "unlimited captures"',
     );
   });
 
-  test('"1 prevention rule" matches FREE_TIER_MAX_GATES + prevention_rules.lifetime', () => {
+  test('"5 prevention rules" matches FREE_TIER_MAX_GATES', () => {
     const { FREE_TIER_LIMITS, FREE_TIER_MAX_GATES } = require(path.join(ROOT, 'scripts', 'rate-limiter.js'));
-    assert.equal(FREE_TIER_MAX_GATES, 1, 'FREE_TIER_MAX_GATES must be 1 to back "1 rule" claim');
-    assert.equal(FREE_TIER_LIMITS.prevention_rules.lifetime, 1, 'prevention_rules.lifetime must be 1');
+    assert.equal(FREE_TIER_MAX_GATES, 5, 'FREE_TIER_MAX_GATES must be 5 to back "5 active prevention rules" claim');
+    assert.equal(FREE_TIER_LIMITS.prevention_rules.lifetime, Infinity, 'prevention_rules.lifetime must be Infinity (cap is via FREE_TIER_MAX_GATES)');
     assert.ok(
-      FREE_BULLETS.some((b) => /1 (auto-promoted )?prevention rule/i.test(b)),
-      'Landing page must claim exactly 1 prevention rule',
+      FREE_BULLETS.some((b) => /5 (active )?(auto-promoted )?prevention rules/i.test(b)),
+      'Landing page must claim 5 active prevention rules',
     );
   });
 
