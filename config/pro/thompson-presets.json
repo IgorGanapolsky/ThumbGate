@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "name": "ThumbGate Pro Thompson Sampling Presets",
+  "presets": [
+    {
+      "id": "conservative",
+      "description": "Prefer warn before block until repeated harmful evidence accumulates.",
+      "alpha": 1,
+      "beta": 3,
+      "blockThreshold": 0.82,
+      "warnThreshold": 0.55
+    },
+    {
+      "id": "balanced",
+      "description": "Default local hardening profile for repeated workflow failures.",
+      "alpha": 2,
+      "beta": 2,
+      "blockThreshold": 0.72,
+      "warnThreshold": 0.48
+    },
+    {
+      "id": "strict",
+      "description": "Use for high-blast-radius workflows such as production data, deploys, billing, and destructive git.",
+      "alpha": 3,
+      "beta": 1,
+      "blockThreshold": 0.62,
+      "warnThreshold": 0.38
+    },
+    {
+      "id": "evidence-first",
+      "description": "Bias toward interventions when the agent lacks proof for claims or risky writes.",
+      "alpha": 4,
+      "beta": 2,
+      "blockThreshold": 0.66,
+      "warnThreshold": 0.42
+    }
+  ]
+}
