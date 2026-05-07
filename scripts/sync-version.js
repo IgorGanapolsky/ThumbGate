@@ -55,7 +55,7 @@ function syncJsonField(target, field, expectedValue, drifted, checkOnly) {
 
 function syncVersion(opts) {
   const options = opts || {};
-  const checkOnly = options.check || false;
+  const checkOnly = options.check || options.checkOnly || false;
   const pkg = readJson('package.json');
   const version = pkg.version;
   const homepageUrl = pkg.homepage;
@@ -417,7 +417,44 @@ function syncVersion(opts) {
     targets.push(publicIndexPath);
   }
 
-  // 14. adapters/mcp/server-stdio.js — MCP server metadata
+  // 14. public/numbers.html — generated proof snapshot version markers
+  const publicNumbersPath = 'public/numbers.html';
+  if (fs.existsSync(path.join(PROJECT_ROOT, publicNumbersPath))) {
+    const publicNumbersFile = path.join(PROJECT_ROOT, publicNumbersPath);
+    let numbersContent = fs.readFileSync(publicNumbersFile, 'utf-8');
+    let numbersContentChanged = false;
+
+    const softwareVersionMatch = numbersContent.match(new RegExp(`"softwareVersion":\\s*"(${VERSION_PATTERN})"`));
+    if (softwareVersionMatch && softwareVersionMatch[1] !== version) {
+      drifted.push({ file: publicNumbersPath, field: 'softwareVersion', current: softwareVersionMatch[1] });
+      if (!checkOnly) {
+        numbersContent = numbersContent.replace(
+          new RegExp(`"softwareVersion":\\s*"${VERSION_PATTERN}"`),
+          `"softwareVersion": "${version}"`
+        );
+        numbersContentChanged = true;
+      }
+    }
+
+    const freshnessVersionMatch = numbersContent.match(new RegExp(`Updated:\\s*\\d{4}-\\d{2}-\\d{2}\\s*·\\s*Version\\s+(${VERSION_PATTERN})`));
+    if (freshnessVersionMatch && freshnessVersionMatch[1] !== version) {
+      drifted.push({ file: publicNumbersPath, field: 'freshness-version', current: freshnessVersionMatch[1] });
+      if (!checkOnly) {
+        numbersContent = numbersContent.replace(
+          new RegExp(`(Updated:\\s*\\d{4}-\\d{2}-\\d{2}\\s*·\\s*Version\\s+)${VERSION_PATTERN}`),
+          `$1${version}`
+        );
+        numbersContentChanged = true;
+      }
+    }
+
+    if (numbersContentChanged) {
+      fs.writeFileSync(publicNumbersFile, numbersContent);
+    }
+    targets.push(publicNumbersPath);
+  }
+
+  // 15. adapters/mcp/server-stdio.js — MCP server metadata
   const serverStdioPath = 'adapters/mcp/server-stdio.js';
   const serverStdioFile = path.join(PROJECT_ROOT, serverStdioPath);
   if (fs.existsSync(serverStdioFile)) {
@@ -435,7 +472,7 @@ function syncVersion(opts) {
     targets.push(serverStdioPath);
   }
 
-  // 15. mcpize.yaml
+  // 16. mcpize.yaml
   const mcpizePath = 'mcpize.yaml';
   const mcpizeFile = path.join(PROJECT_ROOT, mcpizePath);
   if (fs.existsSync(mcpizeFile)) {
