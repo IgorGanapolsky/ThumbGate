@@ -103,6 +103,7 @@ jobs:
           path: |
             .thumbgate/reply-monitor-state.json
             .thumbgate/reply-drafts.jsonl
+            .thumbgate/bluesky-prospect-state.json
             .thumbgate/social-launch-assets.json
           key: ralph-loop-state-${{ github.run_id }}
           restore-keys: |
@@ -130,6 +131,7 @@ jobs:
           path: |
             .artifacts/ralph-loop/
             .thumbgate/reply-drafts.jsonl
+            .thumbgate/bluesky-prospect-state.json
             .thumbgate/social-launch-assets.json
           if-no-files-found: ignore
           retention-days: 14
@@ -141,5 +143,6 @@ jobs:
           path: |
             .thumbgate/reply-monitor-state.json
             .thumbgate/reply-drafts.jsonl
+            .thumbgate/bluesky-prospect-state.json
             .thumbgate/social-launch-assets.json
           key: ralph-loop-state-${{ github.run_id }}

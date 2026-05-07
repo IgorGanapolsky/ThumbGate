@@ -243,6 +243,7 @@ test('Ralph workflows are scheduled, stateful, and split outbound from reply eng
   assert.match(ralph, /GITHUB_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT\s*\|\|\s*github\.token\s*\}\}/);
   assert.match(ralph, /\.thumbgate\/reply-monitor-state\.json/);
   assert.match(ralph, /\.thumbgate\/reply-drafts\.jsonl/);
+  assert.match(ralph, /\.thumbgate\/bluesky-prospect-state\.json/);
   assert.match(ralph, /\.thumbgate\/social-launch-assets\.json/);
   assert.match(ralph, /BLUESKY_HANDLE/);
   assert.match(ralph, /THUMBGATE_AUTONOMOUS_BLUESKY_PUBLISH/);
