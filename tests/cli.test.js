@@ -797,6 +797,44 @@ describe('bin/cli.js', () => {
     assert.doesNotMatch(result.stdout, /\$10\/mo|38 spots remaining|first 50 users|Founding Member/i);
   });
 
+  test('pro --upgrade installs the shipped public Pro config bundle', () => {
+    const homeDir = makeTmpDir();
+    const projectDir = makeTmpDir();
+
+    const result = runCliSync(['pro', '--upgrade'], {
+      cwd: projectDir,
+      env: unlicensedProEnv(homeDir, {
+        THUMBGATE_NO_NUDGE: '1',
+      }),
+    });
+
+    assert.equal(result.status, 0, `pro --upgrade failed:\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`);
+    assert.match(result.stdout, /Pro configs installed to \.thumbgate/);
+    assert.doesNotMatch(result.stderr, /ENOENT|constraints-pro\.json/);
+
+    const thumbgateDir = path.join(projectDir, '.thumbgate');
+    for (const fileName of [
+      'constraints-pro.json',
+      'prevention-rules-pro.md',
+      'thompson-presets.json',
+      'reminders-pro.json',
+    ]) {
+      assert.ok(
+        fs.existsSync(path.join(thumbgateDir, fileName)),
+        `${fileName} should be installed into the project .thumbgate directory`,
+      );
+    }
+
+    const constraints = JSON.parse(fs.readFileSync(path.join(thumbgateDir, 'constraints-pro.json'), 'utf8'));
+    assert.ok(
+      constraints.constraints.length >= 10,
+      'Pro constraints bundle should include the advertised 10 local constraints',
+    );
+
+    fs.rmSync(projectDir, { recursive: true, force: true });
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  });
+
   test('pro command launches local dashboard when a license is already saved', async () => {
     const homeDir = makeTmpDir();
     const licenseDir = path.join(homeDir, '.thumbgate');

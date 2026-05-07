@@ -1112,7 +1112,6 @@ function pro() {
   }
 
   if (args.upgrade) {
-    const proDir = path.join(PKG_ROOT, 'pro');
     const thumbgateDir = path.join(CWD, '.thumbgate');
     if (!fs.existsSync(thumbgateDir)) fs.mkdirSync(thumbgateDir, { recursive: true });
 
@@ -1122,6 +1121,21 @@ function pro() {
       ['thompson-presets.json', '4 sampling presets'],
       ['reminders-pro.json', '8 reminder templates'],
     ];
+
+    const candidateDirs = [
+      path.join(PKG_ROOT, 'config', 'pro'),
+      path.join(PKG_ROOT, 'pro'),
+    ];
+    const proDir = candidateDirs.find((dir) =>
+      files.every(([file]) => fs.existsSync(path.join(dir, file)))
+    );
+
+    if (!proDir) {
+      console.error('Pro upgrade bundle is missing from this ThumbGate install.');
+      console.error(`Expected files under: ${path.join(PKG_ROOT, 'config', 'pro')}`);
+      console.error('Please upgrade to the latest thumbgate package and retry: npm install -g thumbgate@latest');
+      process.exit(1);
+    }
 
     for (const [file] of files) {
       fs.copyFileSync(path.join(proDir, file), path.join(thumbgateDir, file));
