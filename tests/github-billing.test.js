@@ -273,6 +273,46 @@ describe('billing.js — GitHub Marketplace Webhooks', () => {
     const revenueEvents = readRevenueEvents().filter((entry) => entry.orderId === '4444');
     assert.equal(revenueEvents.length, 1);
   });
+
+  test('loadResolvedRevenueEvents — funnel-derived paid events resolve plan amounts', () => {
+    process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = JSON.stringify({
+      77: { amountCents: 1900, currency: 'USD', recurringInterval: 'month' },
+    });
+    delete require.cache[require.resolve('../scripts/billing')];
+    billing = require('../scripts/billing');
+
+    const funnelLedgerPath = process.env._TEST_FUNNEL_LEDGER_PATH;
+    const funnelOnlyOrderId = 'gh_marketplace_funnel_only_5555';
+    const funnelEntry = {
+      timestamp: new Date().toISOString(),
+      stage: 'paid',
+      event: 'github_marketplace_purchased',
+      evidence: funnelOnlyOrderId,
+      metadata: {
+        provider: 'github_marketplace',
+        customerId: 'github_user_5555',
+        source: 'github_marketplace',
+        marketplaceOrderId: funnelOnlyOrderId,
+        planId: 77,
+        billingCycle: 'monthly',
+        monthly_price_in_cents: 1900,
+        priceModel: 'flat-rate',
+      },
+    };
+    fs.appendFileSync(funnelLedgerPath, `${JSON.stringify(funnelEntry)}\n`, 'utf-8');
+
+    const resolved = billing.loadResolvedRevenueEvents();
+    const match = resolved.find((entry) => entry && entry.orderId === funnelOnlyOrderId);
+    assert.ok(match, 'funnel-derived paid event should surface in resolved revenue events');
+    assert.equal(match.amountKnown, true);
+    assert.equal(match.amountCents, 1900);
+    assert.equal(match.currency, 'USD');
+    assert.equal(match.recurringInterval, 'month');
+
+    delete process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
+    delete require.cache[require.resolve('../scripts/billing')];
+    billing = require('../scripts/billing');
+  });
 });
 
 describe('API server — GitHub Webhook Route', () => {
