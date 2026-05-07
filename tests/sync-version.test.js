@@ -74,6 +74,15 @@ test('sync-version covers public MCP discovery manifests', serial, () => {
   );
 });
 
+test('sync-version covers the generated numbers page version markers', serial, () => {
+  const { syncVersion } = require('../scripts/sync-version');
+  const result = syncVersion({ checkOnly: true });
+  assert.ok(
+    result.targets.includes('public/numbers.html'),
+    'public/numbers.html should be a sync target'
+  );
+});
+
 test('sync-version no longer tracks an embedded pro package manifest', serial, () => {
   const { syncVersion } = require('../scripts/sync-version');
   const result = syncVersion({ checkOnly: true });
@@ -164,5 +173,34 @@ test('sync-version updates multiple public landing markers in one pass', serial,
     assert.ok(synced.includes(`MIT License · v${version}`), 'footer marker should be synced');
   } finally {
     fs.writeFileSync(publicIndexPath, original);
+  }
+});
+
+test('sync-version detects and repairs public numbers page version drift', serial, () => {
+  const { syncVersion } = require('../scripts/sync-version');
+  const { version } = require('../package.json');
+  const numbersPath = path.join(ROOT, 'public', 'numbers.html');
+  const original = fs.readFileSync(numbersPath, 'utf8');
+  const drifted = original
+    .replace(/"softwareVersion": "\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?"/, '"softwareVersion": "0.0.1"')
+    .replace(/Updated:\s*\d{4}-\d{2}-\d{2}\s*·\s*Version\s+\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/, 'Updated: 2026-05-07 · Version 0.0.1');
+
+  try {
+    fs.writeFileSync(numbersPath, drifted);
+    const result = syncVersion({ checkOnly: false });
+    assert.ok(
+      result.drifted.some((entry) => entry.file === 'public/numbers.html' && entry.field === 'softwareVersion'),
+      `expected softwareVersion drift, found: ${JSON.stringify(result.drifted)}`
+    );
+    assert.ok(
+      result.drifted.some((entry) => entry.file === 'public/numbers.html' && entry.field === 'freshness-version'),
+      `expected freshness version drift, found: ${JSON.stringify(result.drifted)}`
+    );
+
+    const synced = fs.readFileSync(numbersPath, 'utf8');
+    assert.ok(synced.includes(`"softwareVersion": "${version}"`), 'softwareVersion should be synced');
+    assert.match(synced, new RegExp(`Updated:\\s*\\d{4}-\\d{2}-\\d{2}\\s*·\\s*Version\\s+${version.replaceAll('.', '\\.')}`));
+  } finally {
+    fs.writeFileSync(numbersPath, original);
   }
 });
