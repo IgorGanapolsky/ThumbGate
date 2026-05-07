@@ -22,6 +22,7 @@ const VALID_MODES = new Set(['all', 'engage', 'poll', 'audit', 'post']);
 const RALPH_STATE_PATHS = [
   path.relative(REPO_ROOT, DEFAULT_REPLY_STATE_PATH),
   path.relative(REPO_ROOT, DEFAULT_DRAFTS_PATH),
+  path.join('.thumbgate', 'bluesky-prospect-state.json'),
   path.relative(REPO_ROOT, DEFAULT_LAUNCH_ASSETS_PATH),
 ];
 const VALUE_OPTIONS = new Map([
