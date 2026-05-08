@@ -833,7 +833,7 @@ __GA_BOOTSTRAP__
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
         <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('claude_section_extension_click',{cta:'install_claude_extension'})" style="background:#d97706;color:#fff;">Download Claude Extension (.mcpb)</a>
-        <a href="/guide.html" class="btn-free" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">Claude Desktop setup guide</a>
+        <a href="/guide" class="btn-free" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">Claude Desktop setup guide</a>
         <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/.claude-plugin/README.md" class="btn-free" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">Claude plugin docs</a>
       </div>
       <p class="gpt-note"><strong>Claude Code Skill:</strong> Type <code>/thumbgate</code> in any Claude Code session. Auto-triggers on “check”, “feedback”, “block mistake”. Free skill on top of the same local gateway.</p>
@@ -879,15 +879,15 @@ __GA_BOOTSTRAP__
     <div class="compatibility-grid">
       <a class="compat-card" href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" target="_blank" rel="noopener" onclick="if(typeof posthog!=='undefined')posthog.capture('compat_claude_desktop_click',{cta:'download_claude_desktop'})" style="border-color:rgba(217,119,6,0.3);background:linear-gradient(135deg, rgba(217,119,6,0.06) 0%, var(--bg-card) 100%);">
         <h3>🧩 Claude Desktop Extension</h3>
-        <p>Install the published Claude Desktop plugin <code>.mcpb</code> bundle today. Claude Code users can add the repo marketplace immediately with <code>/plugin marketplace add</code>. No waiting for directory approval. <a href="/guide.html" style="color:var(--text-muted);text-decoration:underline;" onclick="event.stopPropagation();">60-second setup guide →</a></p>
+        <p>Install the published Claude Desktop plugin <code>.mcpb</code> bundle today. Claude Code users can add the repo marketplace immediately with <code>/plugin marketplace add</code>. No waiting for directory approval. <a href="/guide" style="color:var(--text-muted);text-decoration:underline;" onclick="event.stopPropagation();">60-second setup guide →</a></p>
         <div class="card-arrow" style="color:#d97706;">Download .mcpb bundle →</div>
       </a>
-      <a class="compat-card seo-card" href="/guides/claude-code-prevent-repeated-mistakes.html" rel="noopener">
+      <a class="compat-card seo-card" href="/guides/claude-code-prevent-repeated-mistakes" rel="noopener">
         <h3>⚡ Claude Code Skill</h3>
         <p>Type <code>/thumbgate</code> in any Claude Code session. Auto-triggers on "check", "feedback", "block mistake". Free skill on top of the same local gateway teams later harden into a shared workflow.</p>
         <div class="card-arrow">Read the Claude Code guide →</div>
       </a>
-      <a class="compat-card" href="/guide.html" rel="noopener">
+      <a class="compat-card" href="/guide" rel="noopener">
         <h3>🤖 AI CLIs</h3>
         <p>Claude Code, Codex, Gemini CLI, Amp, and OpenCode all use the same gateway and memory model. Any MCP-compatible agent gets pre-action checks, feedback memory, and enforcement out of the box.</p>
         <div class="card-arrow">Open the setup guide →</div>
@@ -902,12 +902,12 @@ __GA_BOOTSTRAP__
         <p>Codex gets a standalone ThumbGate plugin bundle, a repo-local plugin profile, and the same auto-updating MCP launcher. The runtime resolves <code>thumbgate@latest</code> when Codex starts, so npm fixes reach active installs. The install page includes the zip, MCP config, and verification path in one place.</p>
         <div class="card-arrow">Open the Codex install page →</div>
       </a>
-      <a class="compat-card" href="/guides/cursor-prevent-repeated-mistakes.html" rel="noopener">
+      <a class="compat-card" href="/guides/cursor-prevent-repeated-mistakes" rel="noopener">
         <h3>🎯 Cursor plugin</h3>
         <p>Drop the ThumbGate MCP config into <code>.cursor/mcp.json</code> and Cursor gets the same pre-action checks as Claude Code and Codex. Ships with bundled rules, commands, hooks, and agents.</p>
         <div class="card-arrow">Read the Cursor guide →</div>
       </a>
-      <a class="compat-card" href="/guide.html" rel="noopener">
+      <a class="compat-card" href="/guide" rel="noopener">
         <h3>✏️ Editor workflows</h3>
         <p>VS Code works when you run an MCP-compatible agent inside it (Continue, Cline, etc.). Any editor that speaks MCP stdio gets the same gateway.</p>
         <div class="card-arrow">Open the setup guide →</div>
@@ -996,7 +996,7 @@ __GA_BOOTSTRAP__
     <div style="max-width:900px;margin:26px auto 0;border:1px solid rgba(34,211,238,0.14);border-radius:8px;background:rgba(17,17,19,0.55);padding:14px 16px;">
       <div style="color:var(--cyan);font-weight:700;">Compare ThumbGate with other agent-safety approaches</div>
       <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;font-size:13px;line-height:1.4;">
-        <a href="/guides">Browse the guide library</a>
+        <a href="/learn">Browse the guide library</a>
         <a href="/compare/speclock">SpecLock</a>
         <a href="/compare/mem0">Mem0</a>
         <a href="/compare/fallow">Fallow</a>
@@ -1261,7 +1261,7 @@ __GA_BOOTSTRAP__
         <p style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;">No self-serve trial. Team is $49/seat/mo with a 3-seat minimum and starts with the Workflow Hardening Sprint intake, not a self-serve trial.</p>
       </div>
     </div>
-    <p style="text-align:center;color:var(--text-muted);font-size:13px;margin:40px 0;">Need a custom diagnostic, sprint, or setup? <a href="/services" style="color:var(--cyan);text-decoration:none;">See services →</a></p>
+    <p style="text-align:center;color:var(--text-muted);font-size:13px;margin:40px 0;">Need a custom diagnostic, sprint, or setup? <a href="#workflow-sprint-intake" style="color:var(--cyan);text-decoration:none;">Send workflow first →</a></p>
   </div>
 </section>
 
@@ -1402,7 +1402,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What does Pro cost?</div>
-        <div class="faq-a">Pro is $19/mo or $149/yr for individual operators and bills immediately through Stripe so the self-serve path can create revenue today. Team is $49/seat/mo and includes a 7-day money-back guarantee.</div>
+        <div class="faq-a">Pro is $19/mo or $149/yr for individual operators and bills immediately through Stripe. Team is $49/seat/mo with a 3-seat minimum and starts through the workflow intake so scope, shared rules, and rollout proof are explicit before a team rollout.</div>
       </div>
     </div>
   </div>
