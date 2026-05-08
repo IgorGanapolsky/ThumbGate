@@ -340,9 +340,13 @@ test('public landing page includes an explicit Team rollout lane with shared wor
   assert.match(landingPage, /checkout_abandon/);
   assert.match(landingPage, /workflow_sprint_intake_started/);
   assert.match(landingPage, /workflow_sprint_intake_submit_attempted/);
+  // Team intake form must not be wrapped in a <details> disclosure (would require a click).
+  // Tighten the regex to match only an <details> that has NOT been closed before the form,
+  // so unrelated <details> wrappers elsewhere on the page (e.g. the buyer-guides SEO grid)
+  // do not falsely trip this assertion.
   assert.doesNotMatch(
     landingPage,
-    /<details[^>]*>[\s\S]*?<form[^>]+action="\/v1\/intake\/workflow-sprint"/,
+    /<details[^>]*>(?:(?!<\/details>)[\s\S])*?<form[^>]+action="\/v1\/intake\/workflow-sprint"/,
     'Team intake must be visible without a disclosure click'
   );
 });
