@@ -1162,6 +1162,9 @@ function repairGithubMarketplaceRevenueLedger(options = {}) {
   const rows = loadJsonlFile(ledgerPath);
   const resolvedAt = new Date().toISOString();
   const repairs = [];
+
+  // Pass 1: in-place repair of rows already in revenue-events.jsonl that have
+  // unknown amounts but resolvable plan metadata.
   const updatedRows = rows.map((entry) => {
     const result = resolveGithubMarketplaceRevenueEntry(entry, {
       annotate: true,
@@ -1179,21 +1182,76 @@ function repairGithubMarketplaceRevenueLedger(options = {}) {
       currency: normalizeCurrency(result.entry.currency),
       recurringInterval: normalizeText(result.entry.recurringInterval),
       pricingSource: normalizeText(metadata.githubMarketplaceAmountSource),
+      source: 'in_place',
     });
     return result.entry;
   });
 
+  // Pass 2: append rows for funnel-derived paid github_marketplace events that
+  // never landed in the revenue ledger. The webhook handler at handleGithubWebhook
+  // skips appendRevenueEvent when hasRevenueEventMatch is true, so duplicates from
+  // a re-run are already prevented; the only way an order gets here is if the
+  // revenue write was skipped at webhook time (e.g. funnel pre-existed, planPricing
+  // had unknown amount at the time, or the row was created via a different path).
+  const funnelRecords = loadFunnelLedger().filter(
+    (e) =>
+      e &&
+      e.stage === 'paid' &&
+      normalizeText((e.metadata && e.metadata.provider) || e.provider) === 'github_marketplace'
+  );
+
+  for (const funnelEntry of funnelRecords) {
+    const derived = deriveRevenueEventFromPaidProviderEvent(funnelEntry);
+    if (!derived) continue;
+    if (hasRevenueEventMatch(updatedRows, derived)) continue;
+
+    const resolved = resolveGithubMarketplaceRevenueEntry(derived, {
+      annotate: true,
+      resolvedAt,
+    });
+    // Skip funnel-derived rows that still have unknown amounts after resolving —
+    // we don't want to permanently bake amountKnown:false rows when there's no
+    // pricing data to attach. Better to leave them off-disk and keep the
+    // read-time merge in loadResolvedRevenueEvents covering them.
+    if (!resolved.changed || !resolved.entry.amountKnown) continue;
+
+    const persisted = {
+      ...resolved.entry,
+      metadata: {
+        ...sanitizeMetadata(resolved.entry.metadata),
+        recoveredFromFunnelLedger: true,
+        funnelRecordedAt: normalizeText(funnelEntry.timestamp) || null,
+      },
+    };
+    updatedRows.push(persisted);
+
+    const metadata = sanitizeMetadata(persisted.metadata);
+    repairs.push({
+      orderId: normalizeText(persisted.orderId),
+      customerId: normalizeText(persisted.customerId),
+      planId: normalizeText(metadata.planId ?? persisted.planId),
+      amountCents: normalizeInteger(persisted.amountCents),
+      currency: normalizeCurrency(persisted.currency),
+      recurringInterval: normalizeText(persisted.recurringInterval),
+      pricingSource: normalizeText(metadata.githubMarketplaceAmountSource),
+      source: 'funnel_derived',
+    });
+  }
+
   const writeResult = write && repairs.length > 0
     ? writeJsonlRecords(ledgerPath, updatedRows)
-    : { written: false, rowCount: rows.length };
+    : { written: false, rowCount: updatedRows.length };
 
   return {
     ledgerPath,
     write,
     wrote: Boolean(writeResult.written),
     scanned: rows.length,
+    funnelScanned: funnelRecords.length,
     repaired: repairs.length,
-    unchanged: rows.length - repairs.length,
+    repairedInPlace: repairs.filter((r) => r.source === 'in_place').length,
+    repairedFromFunnel: repairs.filter((r) => r.source === 'funnel_derived').length,
+    unchanged: rows.length - repairs.filter((r) => r.source === 'in_place').length,
     repairs,
     writeResult,
   };
