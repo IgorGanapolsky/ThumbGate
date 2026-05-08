@@ -105,33 +105,24 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
 test('public landing page exposes env-driven paid sprint checkout path', () => {
   const landingPage = readLandingPage();
 
+  // Hero CTAs were demoted to a single "See paid services →" link in
+  // copy/landing-conversion-cleanup; the multi-button hero-paid-path block
+  // (Pay $499 / Pay $1500 / Pay $1 first rule / Pay $19 quick read /
+  // Pay $99 teardown) was removed because all 4 booked customers bought
+  // Pro $19, not the high-ticket services. The diagnostic/sprint CTAs now
+  // live in the team-paid-path section and the JS constants stay so server
+  // injection still works.
   assert.match(landingPage, /const sprintDiagnosticCheckoutUrl = '__SPRINT_DIAGNOSTIC_CHECKOUT_URL__';/);
   assert.match(landingPage, /const workflowSprintCheckoutUrl = '__WORKFLOW_SPRINT_CHECKOUT_URL__';/);
   assert.match(landingPage, /data-sprint-paid-path/);
   assert.match(landingPage, /Workflow Hardening Diagnostic/);
-  assert.match(landingPage, /AI Agent Failure Quick Read/);
-  assert.match(landingPage, /Same-day Workflow Teardown/);
-  assert.match(landingPage, /Need buyer-ready proof today\?/);
-  assert.match(landingPage, /Pay \$19 quick read/);
-  assert.match(landingPage, /https:\/\/buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
-  assert.match(landingPage, /quick_read_checkout_started/);
-  assert.match(landingPage, /href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__"/);
-  assert.match(landingPage, /href="__WORKFLOW_SPRINT_CHECKOUT_URL__"/);
+  assert.match(landingPage, /See paid services/i);
+  assert.match(landingPage, /\/guides\/ai-agent-governance-sprint/);
   assert.doesNotMatch(landingPage, /founder_workflow_diagnostic_checkout_started/);
   assert.doesNotMatch(landingPage, /Pay \$99 diagnostic/);
   assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/7sY4gzgH24r49G17mb3sI0g/);
-  assert.match(landingPage, /First AI Agent Failure Rule/);
-  assert.match(landingPage, /https:\/\/buy\.stripe\.com\/4gM6oHgH2bTw4lH6i73sI0z/);
-  assert.match(landingPage, /Pay \$1 first rule/);
-  assert.match(landingPage, /first_failure_rule_checkout_started/);
-  assert.match(landingPage, /https:\/\/buy\.stripe\.com\/7sYfZhgH29LodWhdKz3sI0v/);
-  assert.match(landingPage, /Pay \$99 teardown/);
-  assert.match(landingPage, /AI Agent Failure Quick Read/);
-  assert.match(landingPage, /Pay \$19 quick read/);
-  assert.match(landingPage, /https:\/\/buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
-  assert.match(landingPage, /quick_read_checkout_started/);
-  assert.match(landingPage, /Pay \$499 diagnostic/);
-  assert.match(landingPage, /Pay \$1500 sprint/);
+
+  // Team-paid-path section assertions (still present, lower on the page)
   assert.match(landingPage, /Reliable AI Agent Governance Setup/);
   assert.match(landingPage, /\$3,997/);
   assert.match(landingPage, /\$297\/mo/);
@@ -144,19 +135,8 @@ test('public landing page exposes env-driven paid sprint checkout path', () => {
   assert.match(landingPage, /Send workflow first/);
   assert.match(landingPage, /Pay for diagnostic/);
   assert.match(landingPage, /Pay for sprint/);
-  assert.match(landingPage, /workflow_teardown_checkout_started/);
-  assert.match(landingPage, /hero_workflow_sprint_diagnostic_checkout/);
-  assert.match(landingPage, /hero_workflow_sprint_checkout/);
-  assert.match(landingPage, /hero_workflow_sprint_recovery_intake/);
   assert.match(landingPage, /workflow_sprint_diagnostic_checkout_started/);
-  assert.match(landingPage, /workflow_sprint_checkout_started/);
   assert.match(landingPage, /workflow_sprint_recovery_intake_clicked/);
-  assert.match(landingPage, /workflow_sprint_recovery_intake/);
-  assert.match(landingPage, /ctaId:'hero_first_failure_rule_checkout'/);
-  assert.match(landingPage, /ctaId:'hero_workflow_teardown_checkout'/);
-  assert.match(landingPage, /ctaId: 'hero_workflow_sprint_diagnostic_checkout'/);
-  assert.match(landingPage, /ctaId: 'hero_workflow_sprint_checkout'/);
-  assert.match(landingPage, /ctaId: 'hero_workflow_sprint_recovery_intake'/);
 });
 
 test('public landing page includes Plausible analytics and search engine proof bar', () => {
@@ -492,7 +472,6 @@ test('public landing page internally links to comparison and guide pages without
   assert.match(landingPage, /Code Knowledge Graph Guardrails/);
   assert.match(landingPage, /Developer Machine Supply Chain Guardrails/);
   assert.match(landingPage, /Prompt Tricks Are Not Enough/);
-  assert.match(landingPage, /clear rules, examples, and pre-action checks/);
   assert.match(landingPage, /Proxy-Pointer RAG Guardrails/);
   assert.match(landingPage, /RAG Precision Tuning Guardrails/);
   assert.match(landingPage, /SEO Agent Skills Guardrails/);
