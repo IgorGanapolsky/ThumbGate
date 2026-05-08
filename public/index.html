@@ -778,8 +778,51 @@ __GA_BOOTSTRAP__
       <span style="display:inline-flex;align-items:center;gap:4px;">🔌 6 agent integrations</span>
     </div>
     <p style="font-size:13px;color:var(--text-muted);margin:16px auto 0;max-width:660px;">No, you do not have to chat inside the GPT forever. The GPT is advice and checkpointing; local hooks do the hard blocking for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and MCP-compatible agents.</p>
-    <div id="demo" style="margin:28px auto 0;max-width:560px;text-align:center;" onclick="posthog.capture('hero_demo_view')">
-      <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;letter-spacing:0.04em;text-transform:uppercase;">▶ 90-second demo · force-push → 👎 → blocked</div>
+    <!-- Animated terminal block demo — pure CSS, no .mp4 needed. Plays instantly. -->
+    <div id="demo-animated" style="margin:28px auto 12px;max-width:560px;text-align:left;" aria-label="Animation: ThumbGate blocking git push --force on Claude Code">
+      <div style="background:#0b1020;border:1px solid #233;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.45);overflow:hidden;font-family:var(--mono);font-size:14px;line-height:1.6;">
+        <div style="background:#111827;padding:8px 14px;display:flex;align-items:center;gap:6px;border-bottom:1px solid #233;">
+          <span style="width:10px;height:10px;border-radius:50%;background:#ef4444;"></span>
+          <span style="width:10px;height:10px;border-radius:50%;background:#eab308;"></span>
+          <span style="width:10px;height:10px;border-radius:50%;background:#22c55e;"></span>
+          <span style="margin-left:10px;font-size:11px;color:#9ca3af;">claude-code · ~/projects/api</span>
+        </div>
+        <div style="padding:18px 16px;color:#e5e7eb;min-height:170px;">
+          <div class="tg-line tg-line-1"><span style="color:#22d3ee;">$</span> <span class="tg-typed-1"></span><span class="tg-cursor"></span></div>
+          <div class="tg-line tg-line-2" style="color:#f87171;font-weight:600;">[ThumbGate] 🛑 BLOCKED: rule <code style="background:#1f2937;padding:1px 6px;border-radius:4px;color:#fca5a5;">no-force-push-to-main</code></div>
+          <div class="tg-line tg-line-3" style="color:#9ca3af;">  reason: you thumbs-downed this on 2026-04-22 — patterns matching <code style="background:#1f2937;padding:1px 6px;border-radius:4px;color:#fde047;">git push --force *main*</code> are blocked permanently.</div>
+          <div class="tg-line tg-line-4" style="color:#4ade80;">→ ThumbGate suggested: open a PR or use <code style="background:#1f2937;padding:1px 6px;border-radius:4px;color:#86efac;">git push --force-with-lease</code></div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:12px;color:var(--text-muted);margin-top:8px;">Animated · runs in your browser · the real CLI does the same in &lt;100 ms</div>
+    </div>
+    <style>
+      #demo-animated .tg-line { opacity: 0; }
+      #demo-animated .tg-cursor { display: inline-block; width: 8px; height: 14px; background: #22d3ee; vertical-align: -2px; margin-left: 2px; animation: tg-blink 1s steps(2, start) infinite; }
+      #demo-animated .tg-typed-1::before {
+        content: 'git push --force origin main';
+        display: inline-block;
+        white-space: nowrap;
+        overflow: hidden;
+        max-width: 0;
+        animation: tg-type 2.4s steps(28, end) 0.4s forwards, tg-loop-reset 9s infinite;
+      }
+      #demo-animated .tg-line-1 { animation: tg-show 0.1s 0.4s forwards, tg-loop-reset 9s infinite; }
+      #demo-animated .tg-line-2 { animation: tg-show 0.4s 3.2s forwards, tg-loop-reset 9s infinite; }
+      #demo-animated .tg-line-3 { animation: tg-show 0.4s 3.8s forwards, tg-loop-reset 9s infinite; }
+      #demo-animated .tg-line-4 { animation: tg-show 0.4s 4.4s forwards, tg-loop-reset 9s infinite; }
+      @keyframes tg-show { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes tg-type { from { max-width: 0; } to { max-width: 30ch; } }
+      @keyframes tg-blink { to { visibility: hidden; } }
+      @keyframes tg-loop-reset { 0%, 88% { opacity: var(--tg-end, 1); } 90%, 100% { opacity: 0; } }
+      @media (prefers-reduced-motion: reduce) {
+        #demo-animated .tg-line, #demo-animated .tg-typed-1::before { animation: none; opacity: 1; max-width: 30ch; }
+        #demo-animated .tg-cursor { animation: none; }
+      }
+    </style>
+
+    <div id="demo" style="margin:0 auto 0;max-width:560px;text-align:center;" onclick="posthog.capture('hero_demo_view')">
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;letter-spacing:0.04em;text-transform:uppercase;">▶ 90-second walkthrough · force-push → 👎 → blocked</div>
       <video src="/assets/tiktok-agent-memory.mp4" controls playsinline preload="metadata" poster="/assets/instagram-card.png" style="width:100%;max-width:560px;border-radius:12px;border:1px solid var(--border);background:#000;box-shadow:0 10px 40px rgba(0,0,0,0.4);"></video>
       <a href="/checkout/pro?utm_source=website&utm_medium=hero_demo&utm_campaign=pro_trial&cta_id=hero_post_demo" onclick="posthog.capture('hero_cta_click',{cta:'start_trial_post_demo'})" style="display:inline-block;margin-top:14px;color:var(--cyan);font-size:14px;font-weight:700;text-decoration:none;">→ Start Pro</a>
     </div>
