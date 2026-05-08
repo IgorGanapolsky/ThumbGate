@@ -116,7 +116,7 @@ test('sync-version detects landing page hero badge drift without relying on trai
   const original = fs.readFileSync(landingPath, 'utf8');
 
   try {
-    fs.writeFileSync(landingPath, original.replace(/New in v\d+\.\d+\.\d+:?/, 'New in v0.0.1'));
+    fs.writeFileSync(landingPath, original.replace(/<meta name="thumbgate-version" content="\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?">/, '<meta name="thumbgate-version" content="0.0.1">'));
     const result = syncVersion({ checkOnly: true });
     assert.ok(
       result.drifted.some((entry) => entry.file === 'public/index.html' && entry.field === 'hero-release-note'),
@@ -135,7 +135,7 @@ test('sync-version detects public landing footer drift', serial, () => {
   try {
     fs.writeFileSync(
       publicIndexPath,
-      original.replace(/MIT License · v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/, 'MIT License · v0.0.1')
+      original.replace(/MIT License · (?:npm )?v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/, 'MIT License · npm v0.0.1')
     );
     const result = syncVersion({ checkOnly: true });
     assert.ok(
@@ -153,8 +153,8 @@ test('sync-version updates multiple public landing markers in one pass', serial,
   const publicIndexPath = path.join(ROOT, 'public', 'index.html');
   const original = fs.readFileSync(publicIndexPath, 'utf8');
   const drifted = original
-    .replace(/New in v\d+\.\d+\.\d+:?/, 'New in v0.0.1')
-    .replace(/MIT License · v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/, 'MIT License · v0.0.1');
+    .replace(/<meta name="thumbgate-version" content="\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?">/, '<meta name="thumbgate-version" content="0.0.1">')
+    .replace(/MIT License · (?:npm )?v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/, 'MIT License · npm v0.0.1');
 
   try {
     fs.writeFileSync(publicIndexPath, drifted);
@@ -169,8 +169,8 @@ test('sync-version updates multiple public landing markers in one pass', serial,
     );
 
     const synced = fs.readFileSync(publicIndexPath, 'utf8');
-    assert.ok(synced.includes(`New in v${version}`), 'hero marker should be synced');
-    assert.ok(synced.includes(`MIT License · v${version}`), 'footer marker should be synced');
+    assert.ok(synced.includes(`<meta name="thumbgate-version" content="${version}">`), 'hero marker should be synced');
+    assert.ok(synced.includes(`MIT License · npm v${version}`), 'footer marker should be synced');
   } finally {
     fs.writeFileSync(publicIndexPath, original);
   }
