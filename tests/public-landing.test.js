@@ -448,7 +448,7 @@ test('public landing page internally links to comparison and guide pages without
 
   assert.match(landingPage, /id="compare-guides"/);
   assert.match(landingPage, /Browse the guide library/i);
-  assert.match(landingPage, /href="\/guides"/);
+  assert.match(landingPage, /href="\/learn"/);
   // No internal marketing jargon visible to customers
   assert.doesNotMatch(landingPage, /GSD Pages/);
   assert.doesNotMatch(landingPage, /Bottom of funnel/i);
