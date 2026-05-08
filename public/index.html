@@ -728,31 +728,20 @@ __GA_BOOTSTRAP__
         <span>Your dashboard · <span style="color:#eab308;background:rgba(234,179,8,0.1);padding:2px 6px;border-radius:3px;letter-spacing:0.04em;">Sample</span></span>
         <span style="display:inline-flex;align-items:center;gap:6px;color:#4ade80;"><span style="width:6px;height:6px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px #4ade80;animation:pulse 1.6s ease-in-out infinite;"></span>enforcing</span>
       </div>
-      <div style="font-size:13px;color:var(--text-muted);margin-bottom:4px;">💸 Tokens saved — since install (Sonnet-blended, conservative)</div>
-      <div id="hero-savings-counter" data-target="0" style="font-size:44px;font-weight:700;color:#4ade80;letter-spacing:-0.02em;line-height:1;margin-bottom:18px;">$0.00</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">📊 Pro dashboard preview — sample data, your live feed renders the same shape</div>
       <div style="font-size:12px;line-height:1.8;border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;">
         <div style="color:#4ade80;">✅ check:no-force-push — blocked 12×</div>
         <div style="color:#4ade80;">✅ check:no-hallucinated-import — blocked 8×</div>
-        <div style="color:#f87171;">❌ check:no-drop-prod — FIRED · saved ~$3.40</div>
+        <div style="color:#f87171;">❌ check:no-drop-prod — FIRED · saved a 90-min restore</div>
         <div style="color:var(--text-muted);font-size:11px;margin-top:8px;">Sample shown. Your own dashboard tracks live feedback log, actionable remediations, and agent surface inventory from day one. <span style="color:var(--cyan);">Open dashboard →</span></div>
       </div>
     </a>
     <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}</style>
-    <script>
-      (function(){
-        var el=document.getElementById('hero-savings-counter');
-        if(!el)return;
-        var target=parseFloat(el.getAttribute('data-target'))||0;
-        var start=null,dur=1800;
-        function tick(t){if(!start)start=t;var p=Math.min((t-start)/dur,1);var v=target*(1-Math.pow(1-p,3));el.textContent='$'+v.toFixed(2);if(p<1)requestAnimationFrame(tick);}
-        requestAnimationFrame(tick);
-      })();
-    </script>
     <div class="hero-signals">
       <a class="signal-pill signal-down" href="#how-it-works" title="See how check interception works">Block repeat hallucinations before the model sees them</a>
       <a class="signal-pill signal-up" href="/dashboard" title="See the remediation and inventory dashboard">Thumbs-down once, blocked forever</a>
       <a class="signal-pill" href="/dashboard" title="See the remediation and inventory dashboard">Actionable remediations + agent surface inventory</a>
-      <a class="signal-pill" href="#install" title="Install the CLI">CLI-first workflow governance with a live tokens-saved counter</a>
+      <a class="signal-pill" href="#install" title="Install the CLI">CLI-first workflow governance with a local Pro dashboard</a>
     </div>
     <p class="hero-persona" style="display:none">For consultancies, platform teams, and AI product teams with one workflow owner, one repeated failure, and one buyer who needs proof before a wider rollout.</p>
     <div class="hero-actions" style="margin-top:32px;">
@@ -773,9 +762,9 @@ __GA_BOOTSTRAP__
     </div>
     <div class="hero-trust-bar" style="display:flex;justify-content:center;flex-wrap:wrap;gap:20px;margin:20px auto 0;max-width:660px;font-size:12px;color:var(--text-muted);">
       <span style="display:inline-flex;align-items:center;gap:4px;">🔓 MIT Open Source</span>
-      <span style="display:inline-flex;align-items:center;gap:4px;">⭐ 14 GitHub Stars</span>
       <span style="display:inline-flex;align-items:center;gap:4px;">🛡️ Local-first — no cloud required</span>
       <span style="display:inline-flex;align-items:center;gap:4px;">🔌 6 agent integrations</span>
+      <span style="display:inline-flex;align-items:center;gap:4px;">⚡ PreToolUse hook enforcement</span>
     </div>
     <p style="font-size:13px;color:var(--text-muted);margin:16px auto 0;max-width:660px;">No, you do not have to chat inside the GPT forever. The GPT is advice and checkpointing; local hooks do the hard blocking for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and MCP-compatible agents.</p>
     <!-- Animated terminal block demo — pure CSS, no .mp4 needed. Plays instantly. -->
