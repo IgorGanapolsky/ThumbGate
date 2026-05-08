@@ -217,7 +217,17 @@ async function postToTikTok(parsed, dryRun) {
   }
 
   const tiktok = getPublisher('tiktok');
-  return tiktok.publishPost({ text });
+  // TikTok's Direct Post API only accepts video uploads; there is no text-only
+  // endpoint. publishTikTokVideo(...) requires { videoUrl, title, token } and
+  // is not exposed through this dispatcher's text-first post pipeline. Surface
+  // a clear error instead of throwing TypeError on an undefined publishPost.
+  if (typeof tiktok.publishTikTokVideo !== 'function') {
+    throw new Error('TikTok publisher missing publishTikTokVideo entrypoint');
+  }
+  throw new Error(
+    'TikTok publishing via post-everywhere is not supported: TikTok requires a video upload, not text. ' +
+    'Use scripts/social-pipeline.js with a recorded MP4, or call publishTikTokVideo({ videoUrl, title }) directly.'
+  );
 }
 
 async function postToYouTube(parsed, dryRun) {
