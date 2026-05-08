@@ -109,29 +109,25 @@ test('public landing page exposes env-driven paid sprint checkout path', () => {
   assert.match(landingPage, /const workflowSprintCheckoutUrl = '__WORKFLOW_SPRINT_CHECKOUT_URL__';/);
   assert.match(landingPage, /data-sprint-paid-path/);
   assert.match(landingPage, /Workflow Hardening Diagnostic/);
-  assert.match(landingPage, /AI Agent Failure Quick Read/);
-  assert.match(landingPage, /Same-day Workflow Teardown/);
-  assert.match(landingPage, /Need buyer-ready proof today\?/);
-  assert.match(landingPage, /Pay \$19 quick read/);
-  assert.match(landingPage, /https:\/\/buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
-  assert.match(landingPage, /quick_read_checkout_started/);
+  assert.match(landingPage, /Have one AI-agent failure that keeps repeating\?/);
+  assert.match(landingPage, /one real workflow, one repeated failure pattern, enforceable pre-action gates/);
   assert.match(landingPage, /href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__"/);
   assert.match(landingPage, /href="__WORKFLOW_SPRINT_CHECKOUT_URL__"/);
   assert.doesNotMatch(landingPage, /founder_workflow_diagnostic_checkout_started/);
   assert.doesNotMatch(landingPage, /Pay \$99 diagnostic/);
   assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/7sY4gzgH24r49G17mb3sI0g/);
-  assert.match(landingPage, /First AI Agent Failure Rule/);
-  assert.match(landingPage, /https:\/\/buy\.stripe\.com\/4gM6oHgH2bTw4lH6i73sI0z/);
-  assert.match(landingPage, /Pay \$1 first rule/);
-  assert.match(landingPage, /first_failure_rule_checkout_started/);
-  assert.match(landingPage, /https:\/\/buy\.stripe\.com\/7sYfZhgH29LodWhdKz3sI0v/);
-  assert.match(landingPage, /Pay \$99 teardown/);
-  assert.match(landingPage, /AI Agent Failure Quick Read/);
-  assert.match(landingPage, /Pay \$19 quick read/);
-  assert.match(landingPage, /https:\/\/buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
-  assert.match(landingPage, /quick_read_checkout_started/);
+  assert.doesNotMatch(landingPage, /First AI Agent Failure Rule/);
+  assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/4gM6oHgH2bTw4lH6i73sI0z/);
+  assert.doesNotMatch(landingPage, /Pay \$1 first rule/);
+  assert.doesNotMatch(landingPage, /first_failure_rule_checkout_started/);
+  assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/7sYfZhgH29LodWhdKz3sI0v/);
+  assert.doesNotMatch(landingPage, /Pay \$99 teardown/);
+  assert.doesNotMatch(landingPage, /AI Agent Failure Quick Read/);
+  assert.doesNotMatch(landingPage, /Pay \$19 quick read/);
+  assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
+  assert.doesNotMatch(landingPage, /quick_read_checkout_started/);
   assert.match(landingPage, /Pay \$499 diagnostic/);
-  assert.match(landingPage, /Pay \$1500 sprint/);
+  assert.doesNotMatch(landingPage, /Pay \$1500 sprint/);
   assert.match(landingPage, /Reliable AI Agent Governance Setup/);
   assert.match(landingPage, /\$3,997/);
   assert.match(landingPage, /\$297\/mo/);
@@ -144,18 +140,18 @@ test('public landing page exposes env-driven paid sprint checkout path', () => {
   assert.match(landingPage, /Send workflow first/);
   assert.match(landingPage, /Pay for diagnostic/);
   assert.match(landingPage, /Pay for sprint/);
-  assert.match(landingPage, /workflow_teardown_checkout_started/);
+  assert.doesNotMatch(landingPage, /workflow_teardown_checkout_started/);
   assert.match(landingPage, /hero_workflow_sprint_diagnostic_checkout/);
-  assert.match(landingPage, /hero_workflow_sprint_checkout/);
+  assert.doesNotMatch(landingPage, /hero_workflow_sprint_checkout/);
   assert.match(landingPage, /hero_workflow_sprint_recovery_intake/);
   assert.match(landingPage, /workflow_sprint_diagnostic_checkout_started/);
   assert.match(landingPage, /workflow_sprint_checkout_started/);
   assert.match(landingPage, /workflow_sprint_recovery_intake_clicked/);
   assert.match(landingPage, /workflow_sprint_recovery_intake/);
-  assert.match(landingPage, /ctaId:'hero_first_failure_rule_checkout'/);
-  assert.match(landingPage, /ctaId:'hero_workflow_teardown_checkout'/);
+  assert.doesNotMatch(landingPage, /ctaId:'hero_first_failure_rule_checkout'/);
+  assert.doesNotMatch(landingPage, /ctaId:'hero_workflow_teardown_checkout'/);
   assert.match(landingPage, /ctaId: 'hero_workflow_sprint_diagnostic_checkout'/);
-  assert.match(landingPage, /ctaId: 'hero_workflow_sprint_checkout'/);
+  assert.doesNotMatch(landingPage, /ctaId: 'hero_workflow_sprint_checkout'/);
   assert.match(landingPage, /ctaId: 'hero_workflow_sprint_recovery_intake'/);
 });
 
@@ -221,21 +217,15 @@ test('public landing page positions ThumbGate as agent governance for AI coding 
 test('public landing page exposes browser-bridge safety buyer guides', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /\/guides\/browser-automation-safety/);
-  assert.match(landingPage, /Browser Automation Safety for AI Agents/);
-  assert.match(landingPage, /\/guides\/native-messaging-host-security/);
-  assert.match(landingPage, /Native Messaging Host Security/);
-  assert.match(landingPage, /cross-app bridges/i);
-  assert.match(landingPage, /pre-authorized extension paths/i);
+  assert.match(landingPage, /\/guides/);
+  assert.match(landingPage, /Browse the guide library/i);
 });
 
 test('public landing page exposes AEO listicle for production AI agent safety', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /\/guides\/best-tools-stop-ai-agents-breaking-production/);
-  assert.match(landingPage, /Best Tools to Stop AI Agents From Breaking Production/);
-  assert.match(landingPage, /long-tail answer-engine page/i);
-  assert.match(landingPage, /parallel coding agents/i);
+  assert.match(landingPage, /\/guides/);
+  assert.match(landingPage, /Browse the guide library/i);
 });
 
 test('public landing page hero features both thumbs up AND thumbs down prominently', () => {
@@ -427,7 +417,7 @@ test('public landing page includes Plausible custom event tracking for all CTAs'
   assert.match(landingPage, /fetch\('\/v1\/telemetry\/ping'/);
   assert.match(landingPage, /\/go\/gpt\?utm_source=website/);
   assert.match(landingPage, /\/go\/install\?utm_source=website/);
-  assert.match(landingPage, /\/go\/github\?utm_source=website/);
+  assert.match(landingPage, /#workflow-sprint-intake/);
 
   // trackClick wires up CTA events by selector and event name
   assert.match(landingPage, /trackClick\('.btn-pro', 'checkout_start'/);
@@ -457,55 +447,8 @@ test('public landing page internally links to comparison and guide pages without
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /id="compare-guides"/);
-  assert.match(landingPage, /Popular Buyer Questions/i);
-  assert.match(landingPage, /How buyers discover ThumbGate/i);
-  assert.match(landingPage, /href="\/compare\/speclock"/);
-  assert.match(landingPage, /href="\/compare\/mem0"/);
-  assert.match(landingPage, /href="\/guides\/pre-action-checks"/);
-  assert.match(landingPage, /href="\/guides\/agent-harness-optimization"/);
-  assert.match(landingPage, /href="\/guides\/code-knowledge-graph-guardrails"/);
-  assert.match(landingPage, /href="\/guides\/developer-machine-supply-chain-guardrails"/);
-  assert.match(landingPage, /href="\/guides\/prompt-tricks-to-workflow-rules"/);
-  assert.match(landingPage, /href="\/guides\/semantic-programmatic-seo-guardrails"/);
-  assert.match(landingPage, /href="\/guides\/proxy-pointer-rag-guardrails"/);
-  assert.match(landingPage, /href="\/guides\/rag-precision-tuning-guardrails"/);
-  assert.match(landingPage, /href="\/guides\/internal-ai-engineering-stack-guardrails"/);
-  assert.match(landingPage, /href="\/guides\/seo-agent-skills-guardrails"/);
-  assert.match(landingPage, /href="\/compare\/fallow"/);
-  assert.match(landingPage, /href="\/guides\/claude-code-skills-guardrails"/);
-  assert.match(landingPage, /href="\/guides\/long-running-agent-context-management"/);
-  assert.match(landingPage, /href="\/guides\/reasoning-compression-guardrails"/);
-  assert.match(landingPage, /href="\/guides\/background-agent-governance"/);
-  assert.match(landingPage, /href="\/guides\/ai-agent-governance-sprint"/);
-  assert.match(landingPage, /href="\/guides\/gpt-5-5-model-evaluation"/);
-  assert.match(landingPage, /href="\/guides\/ai-search-topical-presence"/);
-  assert.match(landingPage, /href="\/guides\/relational-knowledge-ai-recommendations"/);
-  assert.match(landingPage, /href="\/guides\/claude-code-feedback"/);
-  assert.match(landingPage, /href="\/guides\/stop-repeated-ai-agent-mistakes"/);
-  assert.match(landingPage, /href="\/guides\/cursor-agent-guardrails"/);
-  assert.match(landingPage, /href="\/guides\/codex-cli-guardrails"/);
-  assert.match(landingPage, /href="\/guides\/gemini-cli-feedback-memory"/);
-  assert.match(landingPage, /href="\/guides\/roo-code-alternative-cline"/);
-  assert.match(landingPage, /href="\/guides\/autoresearch-agent-safety"/);
-  assert.match(landingPage, /Autoresearch Safety for Self-Improving Agents/);
-  assert.match(landingPage, /AI Agent Harness Optimization/);
-  assert.match(landingPage, /Code Knowledge Graph Guardrails/);
-  assert.match(landingPage, /Developer Machine Supply Chain Guardrails/);
-  assert.match(landingPage, /Prompt Tricks Are Not Enough/);
-  assert.match(landingPage, /clear rules, examples, and pre-action checks/);
-  assert.match(landingPage, /Proxy-Pointer RAG Guardrails/);
-  assert.match(landingPage, /RAG Precision Tuning Guardrails/);
-  assert.match(landingPage, /SEO Agent Skills Guardrails/);
-  assert.match(landingPage, /ThumbGate vs Fallow/);
-  assert.match(landingPage, /Claude Code Skills Guardrails/);
-  assert.match(landingPage, /Long-Running Agent Context Management/);
-  assert.match(landingPage, /Reasoning Compression Guardrails/);
-  assert.match(landingPage, /Background Agent Governance/);
-  assert.match(landingPage, /risk-tiered review/);
-  assert.match(landingPage, /AI Agent Governance Sprint/);
-  assert.match(landingPage, /approval boundaries, rollback safety/);
-  assert.match(landingPage, /AI Search Topical Presence/);
-  assert.match(landingPage, /Relational Knowledge in AI Recommendations/);
+  assert.match(landingPage, /Browse the guide library/i);
+  assert.match(landingPage, /href="\/guides"/);
   // No internal marketing jargon visible to customers
   assert.doesNotMatch(landingPage, /GSD Pages/);
   assert.doesNotMatch(landingPage, /Bottom of funnel/i);
@@ -517,8 +460,6 @@ test('public landing page labels data processing boundaries for trust review', (
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /Data Processing Boundaries/);
-  assert.match(landingPage, /GPT-5\.5 Model Evaluation/);
-  assert.match(landingPage, /dashboard-analysis workloads/);
   assert.match(landingPage, /Local enforcement data stays/i);
   assert.match(landingPage, /hosted processing surfaces/i);
 });
@@ -532,7 +473,7 @@ test('public landing page promotes the Autoresearch safety pack', () => {
   assert.match(landingPage, /holdout tests/i);
   assert.match(landingPage, /reward hacking/i);
   assert.match(landingPage, /verification evidence/i);
-  assert.match(landingPage, /cta_id=autoresearch_pro_trial/);
+  assert.match(landingPage, /cta_id=autoresearch_pro_checkout/);
 });
 
 test('public landing page advertises the Codex standalone plugin install path', () => {
@@ -684,7 +625,7 @@ test('public landing page includes pay-now Pro path and email capture gate', () 
   assert.match(landingPage, /PAY-NOW PRO/);
   assert.match(landingPage, /Billed today/);
   assert.match(landingPage, /pro-email/);
-  assert.match(landingPage, /handleProTrial/);
+  assert.match(landingPage, /handleProCheckout/);
   assert.match(landingPage, /\/js\/buyer-intent\.js/);
   assert.match(buyerIntentScript, /customer_email/);
   assert.match(buyerIntentScript, /\/go\/pro/);
@@ -693,7 +634,7 @@ test('public landing page includes pay-now Pro path and email capture gate', () 
   assert.match(buyerIntentScript, /initializeBehaviorAnalytics/);
   assert.match(buyerIntentScript, /buyer_email_abandon/);
   assert.match(landingPage, /initializeBehaviorAnalytics/);
-  assert.match(landingPage, /pricing_pro_trial/);
+  assert.match(landingPage, /pricing_pro_checkout/);
   assert.match(buyerIntentScript, /dataset\.baseHref/);
   assert.doesNotMatch(buyerIntentScript, /setAttribute\('href'/);
   assert.doesNotMatch(landingPage, /props:\s*\{\s*email:/);

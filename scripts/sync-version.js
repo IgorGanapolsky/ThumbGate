@@ -376,22 +376,26 @@ function syncVersion(opts) {
     targets.push(mcpSubmPath);
   }
 
-  // 13. public/index.html — static landing proof pill + footer version
+  // 13. public/index.html — static landing proof/version markers + footer version
   const publicIndexPath = 'public/index.html';
   if (fs.existsSync(path.join(PROJECT_ROOT, publicIndexPath))) {
     const publicIndexFile = path.join(PROJECT_ROOT, publicIndexPath);
     let publicContent = fs.readFileSync(publicIndexFile, 'utf-8');
     let publicContentChanged = false;
-    const heroVersionMatch = publicContent.match(new RegExp(`New in v(${VERSION_PATTERN}):?`));
+    const heroMetaVersionPattern = new RegExp(`<meta name="thumbgate-version" content="(${VERSION_PATTERN})">`);
+    const heroReleaseNotePattern = new RegExp(`New in v(${VERSION_PATTERN}):?`);
+    const heroVersionMatch = heroMetaVersionPattern.exec(publicContent) || heroReleaseNotePattern.exec(publicContent);
     if (heroVersionMatch && heroVersionMatch[1] !== version) {
       drifted.push({ file: publicIndexPath, field: 'hero-release-note', current: heroVersionMatch[1] });
       if (!checkOnly) {
-        publicContent = publicContent.replace(new RegExp(`New in v${VERSION_PATTERN}:?`), `New in v${version}`);
+        publicContent = publicContent
+          .replace(new RegExp(`<meta name="thumbgate-version" content="${VERSION_PATTERN}">`), `<meta name="thumbgate-version" content="${version}">`)
+          .replace(new RegExp(`New in v${VERSION_PATTERN}:?`), `New in v${version}`);
         publicContentChanged = true;
       }
     }
 
-    const proofMatch = publicContent.match(new RegExp(`Versioned proof: v(${VERSION_PATTERN})`));
+    const proofMatch = new RegExp(`Versioned proof: v(${VERSION_PATTERN})`).exec(publicContent);
     if (proofMatch && proofMatch[1] !== version) {
       drifted.push({ file: publicIndexPath, field: 'proof-pill', current: proofMatch[1] });
       if (!checkOnly) {
@@ -400,12 +404,12 @@ function syncVersion(opts) {
       }
     }
 
-    const footerMatch = publicContent.match(new RegExp(`(?:Context Gateway|MIT License) [•·] v(${VERSION_PATTERN})`));
+    const footerMatch = new RegExp(`(?:Context Gateway|MIT License) [•·] (?:npm )?v(${VERSION_PATTERN})`).exec(publicContent);
     if (footerMatch && footerMatch[1] !== version) {
       drifted.push({ file: publicIndexPath, field: 'footer-version', current: footerMatch[1] });
       if (!checkOnly) {
         publicContent = publicContent.replace(
-          new RegExp(`((?:Context Gateway|MIT License) [•·] )v${VERSION_PATTERN}`),
+          new RegExp(`((?:Context Gateway|MIT License) [•·] (?:npm )?)v${VERSION_PATTERN}`),
           `$1v${version}`
         );
         publicContentChanged = true;
