@@ -276,6 +276,10 @@
     .link-row { margin-top: 24px; display: flex; flex-wrap: wrap; gap: 14px; color: var(--muted); }
     .proof-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .proof-grid a { color: var(--cyan); font-weight: 800; }
+    .guide-library { padding: 12px 0 36px; }
+    .guide-library details { border-top: 1px solid var(--line); padding-top: 18px; }
+    .guide-library summary { cursor: pointer; color: var(--muted); font-weight: 800; }
+    .guide-links { justify-content: flex-start; margin-top: 16px; }
     footer { border-top: 1px solid rgba(255, 255, 255, 0.08); padding: 32px 0; color: var(--dim); }
     .footer-row { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
     .footer-links { display: flex; flex-wrap: wrap; gap: 16px; }
@@ -553,6 +557,37 @@
           <div class="card"><h3>Claude guide</h3><p><a href="/guides/claude-code-prevent-repeated-mistakes">Prevent repeated mistakes</a></p></div>
           <div class="card"><h3>All agents</h3><p><a href="/guide">Setup guide</a></p></div>
         </div>
+      </div>
+    </section>
+
+    <section id="compare-guides" class="guide-library" aria-label="Comparison and implementation guides">
+      <div class="wrap">
+        <details>
+          <summary>Guides and comparisons for deeper evaluation</summary>
+          <div class="link-row guide-links">
+            <a href="/compare/speclock">SpecLock comparison</a>
+            <a href="/compare/mem0">Mem0 comparison</a>
+            <a href="/compare/fallow">Fallow comparison</a>
+            <a href="/guides/pre-action-checks">Pre-action checks</a>
+            <a href="/guides/agent-harness-optimization">Agent harness optimization</a>
+            <a href="/guides/code-knowledge-graph-guardrails">Code knowledge graph guardrails</a>
+            <a href="/guides/developer-machine-supply-chain-guardrails">Developer machine supply chain guardrails</a>
+            <a href="/guides/proxy-pointer-rag-guardrails">Proxy-pointer RAG guardrails</a>
+            <a href="/guides/rag-precision-tuning-guardrails">RAG precision tuning guardrails</a>
+            <a href="/guides/internal-ai-engineering-stack-guardrails">Internal AI engineering stack guardrails</a>
+            <a href="/guides/seo-agent-skills-guardrails">SEO agent skills guardrails</a>
+            <a href="/guides/claude-code-skills-guardrails">Claude Code skills guardrails</a>
+            <a href="/guides/long-running-agent-context-management">Long-running agent context management</a>
+            <a href="/guides/reasoning-compression-guardrails">Reasoning compression guardrails</a>
+            <a href="/guides/browser-automation-safety">Browser automation safety</a>
+            <a href="/guides/native-messaging-host-security">Native messaging host security</a>
+            <a href="/guides/ai-search-topical-presence">AI search topical presence</a>
+            <a href="/guides/best-tools-stop-ai-agents-breaking-production">Best tools to stop AI agents breaking production</a>
+            <a href="/guides/relational-knowledge-ai-recommendations">Relational knowledge AI recommendations</a>
+            <a href="/guides/claude-code-feedback">Claude Code feedback</a>
+            <a href="/guides/autoresearch-agent-safety">Autoresearch agent safety</a>
+          </div>
+        </details>
       </div>
     </section>
   </main>

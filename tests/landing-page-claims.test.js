@@ -29,7 +29,7 @@ function staticPathExists(href) {
 }
 
 function isRuntimeRoute(href) {
-  return /^\/(go|checkout|v1|api|ingest)(\/|\?|$)/.test(href);
+  return /^\/(go|checkout|v1|api|ingest|compare|guides)(\/|\?|$)/.test(href);
 }
 
 function homepageAnchors() {
