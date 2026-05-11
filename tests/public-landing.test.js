@@ -648,12 +648,20 @@ test('public landing page includes pay-now Pro path and email capture gate', () 
   assert.doesNotMatch(landingPage, /props:\s*\{\s*email:/);
 });
 
-test('public landing page keeps Team on an intake-led start instead of a trial claim', () => {
+test('public landing page Team card exposes both self-serve checkout AND intake-led path (without claiming a free trial)', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /No self-serve trial\./);
-  assert.match(landingPage, /Team is \$49\/seat\/mo with a 3-seat minimum and starts with the Workflow Hardening Sprint intake, not a self-serve trial\./);
+  // Self-serve checkout for 3-seat Team at $147/mo (existing STRIPE_PRICE_ID_TEAM_MONTHLY).
+  assert.match(landingPage, /Start 3-seat Team — \$147\/mo/);
+  assert.match(landingPage, /plan_id=team/);
+  assert.match(landingPage, /seat_count=3/);
+  assert.match(landingPage, /pricing_team_self_serve/);
+  // Intake remains as a fallback for qualification-first buyers.
+  assert.match(landingPage, /Or qualify first via Workflow Hardening Sprint intake/);
+  assert.match(landingPage, /Team is \$49\/seat\/mo with a 3-seat minimum\./);
+  // Still must not claim a free trial.
   assert.doesNotMatch(landingPage, /Both start with a 7-day free trial/);
+  assert.doesNotMatch(landingPage, /free trial/i);
 });
 
 test('public landing page includes dashboard preview in Pro card', () => {
