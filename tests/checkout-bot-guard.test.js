@@ -80,26 +80,23 @@ describe('/checkout/pro bot guard', () => {
     });
     assert.equal(res.status, 200);
     const body = await res.text();
-    assert.match(body, /Choose the right paid path/);
-    assert.match(body, /Send workflow first/);
+    assert.match(body, /Start ThumbGate Pro/);
+    assert.match(body, /Continue to secure Stripe checkout/);
+    assert.match(body, /Not ready\? Send the workflow first/);
     assert.match(body, /checkout_interstitial_workflow_sprint_intake/);
     assert.match(body, /checkout_interstitial_cta_clicked/);
     assert.match(body, /\/checkout\/pro\?confirm=1/);
-    assert.match(body, /Pay \$1 first rule/);
-    assert.match(body, /Pay \$19 quick read/);
-    assert.match(body, /Pay \$99 teardown/);
-    assert.match(body, /Book \$499 diagnostic/);
-    assert.match(body, /Start \$1500 sprint/);
-    assert.match(body, /checkout_interstitial_first_failure_rule_checkout/);
-    assert.match(body, /checkout_interstitial_quick_read_checkout/);
-    assert.match(body, /checkout_interstitial_workflow_teardown_checkout/);
-    assert.match(body, /checkout_interstitial_sprint_diagnostic_checkout/);
-    assert.match(body, /checkout_interstitial_workflow_sprint_checkout/);
-    assert.match(body, /https:\/\/buy\.stripe\.com\/4gM6oHgH2bTw4lH6i73sI0z/);
-    assert.match(body, /https:\/\/buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
-    assert.match(body, /https:\/\/buy\.stripe\.com\/7sYfZhgH29LodWhdKz3sI0v/);
-    assert.match(body, /https:\/\/buy\.stripe\.com\/test-diagnostic/);
-    assert.match(body, /https:\/\/buy\.stripe\.com\/test-sprint/);
+    assert.doesNotMatch(body, /Pay \$1 first rule/);
+    assert.doesNotMatch(body, /Pay \$19 quick read/);
+    assert.doesNotMatch(body, /Pay \$99 teardown/);
+    assert.doesNotMatch(body, /Book \$499 diagnostic/);
+    assert.doesNotMatch(body, /Start \$1500 sprint/);
+    assert.doesNotMatch(body, /checkout_interstitial_first_failure_rule_checkout/);
+    assert.doesNotMatch(body, /checkout_interstitial_quick_read_checkout/);
+    assert.doesNotMatch(body, /checkout_interstitial_workflow_teardown_checkout/);
+    assert.doesNotMatch(body, /checkout_interstitial_sprint_diagnostic_checkout/);
+    assert.doesNotMatch(body, /checkout_interstitial_workflow_sprint_checkout/);
+    assert.doesNotMatch(body, /buy\.stripe\.com/);
     assert.doesNotMatch(body, /checkout\.stripe\.com/);
   });
 
@@ -119,14 +116,14 @@ describe('/checkout/pro bot guard', () => {
     assert.match(body, /&amp;landing_path=%2Fpricing/);
     assert.match(body, /utm_medium=checkout_interstitial_recovery/);
     assert.match(body, /cta_id=checkout_interstitial_workflow_sprint_intake/);
-    assert.match(body, /cta_id=checkout_interstitial_first_failure_rule_checkout/);
-    assert.match(body, /cta_id=checkout_interstitial_quick_read_checkout/);
-    assert.match(body, /cta_id=checkout_interstitial_workflow_teardown_checkout/);
-    assert.match(body, /cta_id=checkout_interstitial_sprint_diagnostic_checkout/);
-    assert.match(body, /cta_id=checkout_interstitial_workflow_sprint_checkout/);
+    assert.doesNotMatch(body, /cta_id=checkout_interstitial_first_failure_rule_checkout/);
+    assert.doesNotMatch(body, /cta_id=checkout_interstitial_quick_read_checkout/);
+    assert.doesNotMatch(body, /cta_id=checkout_interstitial_workflow_teardown_checkout/);
+    assert.doesNotMatch(body, /cta_id=checkout_interstitial_sprint_diagnostic_checkout/);
+    assert.doesNotMatch(body, /cta_id=checkout_interstitial_workflow_sprint_checkout/);
   });
 
-  it('falls back to verified default checkout URLs when paid path env vars are missing', async () => {
+  it('keeps the bot-safe page simple when paid path env vars are missing', async () => {
     const diagnosticCheckoutUrl = process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL;
     const workflowSprintCheckoutUrl = process.env.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL;
     delete process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL;
@@ -142,8 +139,8 @@ describe('/checkout/pro bot guard', () => {
       });
       assert.equal(res.status, 200);
       const body = await res.text();
-      assert.match(body, /https:\/\/buy\.stripe\.com\/3cI7sLgH25v8dWh5e33sI0o/);
-      assert.match(body, /https:\/\/buy\.stripe\.com\/8x25kDcqMaPs9G15e33sI0p/);
+      assert.match(body, /Start ThumbGate Pro/);
+      assert.doesNotMatch(body, /buy\.stripe\.com/);
       assert.doesNotMatch(body, /href=""/);
     } finally {
       process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL = diagnosticCheckoutUrl;
@@ -161,7 +158,7 @@ describe('/checkout/pro bot guard', () => {
     });
     assert.equal(res.status, 200);
     const body = await res.text();
-    assert.match(body, /Choose the right paid path/);
+    assert.match(body, /Start ThumbGate Pro/);
   });
 
   it('returns HTML interstitial for LLM crawlers (ClaudeBot, GPTBot)', async () => {
@@ -176,7 +173,7 @@ describe('/checkout/pro bot guard', () => {
       });
       assert.equal(res.status, 200, `expected 200 interstitial for ${ua}`);
       const body = await res.text();
-      assert.match(body, /Choose the right paid path/);
+      assert.match(body, /Start ThumbGate Pro/);
     }
   });
 
@@ -193,7 +190,7 @@ describe('/checkout/pro bot guard', () => {
       });
       assert.equal(res.status, 200);
       const body = await res.text();
-      assert.match(body, /Choose the right paid path/);
+      assert.match(body, /Start ThumbGate Pro/);
     }
   });
 

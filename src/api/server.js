@@ -1468,50 +1468,13 @@ function buildCheckoutIntentHref(baseUrl, metadata = {}, overrides = {}) {
 
 function renderCheckoutIntentPage({
   confirmHref,
-  firstRuleCheckoutHref,
-  quickReadCheckoutHref,
-  workflowTeardownCheckoutHref,
   workflowIntakeHref,
   teamOptionsHref,
-  diagnosticCheckoutHref,
-  sprintCheckoutHref,
-  sprintDiagnosticPriceDollars = 499,
-  workflowSprintPriceDollars = 1500,
 }) {
   const safeConfirmHref = escapeHtmlAttribute(confirmHref);
-  const safeFirstRuleCheckoutHref = firstRuleCheckoutHref
-    ? escapeHtmlAttribute(firstRuleCheckoutHref)
-    : '';
-  const safeQuickReadCheckoutHref = quickReadCheckoutHref
-    ? escapeHtmlAttribute(quickReadCheckoutHref)
-    : '';
-  const safeWorkflowTeardownCheckoutHref = workflowTeardownCheckoutHref
-    ? escapeHtmlAttribute(workflowTeardownCheckoutHref)
-    : '';
   const safeWorkflowIntakeHref = escapeHtmlAttribute(workflowIntakeHref);
   const safeTeamOptionsHref = escapeHtmlAttribute(teamOptionsHref);
-  const safeDiagnosticCheckoutHref = diagnosticCheckoutHref
-    ? escapeHtmlAttribute(diagnosticCheckoutHref)
-    : '';
-  const safeSprintCheckoutHref = sprintCheckoutHref
-    ? escapeHtmlAttribute(sprintCheckoutHref)
-    : '';
-  const diagnosticAction = safeDiagnosticCheckoutHref
-    ? `<a data-i="sprint_diagnostic_checkout" href="${safeDiagnosticCheckoutHref}">Book $${sprintDiagnosticPriceDollars} diagnostic</a>`
-    : '';
-  const sprintAction = safeSprintCheckoutHref
-    ? `<a data-i="workflow_sprint_checkout" href="${safeSprintCheckoutHref}">Start $${workflowSprintPriceDollars} sprint</a>`
-    : '';
-  const firstRuleAction = safeFirstRuleCheckoutHref
-    ? `<a data-i="first_failure_rule_checkout" href="${safeFirstRuleCheckoutHref}">Pay $1 first rule</a>`
-    : '';
-  const quickReadAction = safeQuickReadCheckoutHref
-    ? `<a data-i="quick_read_checkout" href="${safeQuickReadCheckoutHref}">Pay $19 quick read</a>`
-    : '';
-  const teardownAction = safeWorkflowTeardownCheckoutHref
-    ? `<a data-i="workflow_teardown_checkout" href="${safeWorkflowTeardownCheckoutHref}">Pay $99 teardown</a>`
-    : '';
-  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{background:#0a0a0a;color:#eee;font-family:system-ui,sans-serif}div{max-width:560px;margin:12vh auto}a{display:block;margin:10px 0;padding:12px;border:1px solid #374151;color:inherit;text-align:center}.primary{background:#22d3ee;color:#000}.high-ticket{border-color:#4ade80;color:#4ade80}</style><div><h1>Choose the right paid path.</h1><p>For one repeated workflow failure, start with the diagnostic or sprint. Use Pro only when you need the local self-serve dashboard.</p>${diagnosticAction.replace('<a ', '<a class="high-ticket" ')}${sprintAction.replace('<a ', '<a class="high-ticket" ')}<a class="primary" data-i="pro_checkout_confirmed" href="${safeConfirmHref}">Pay in Stripe</a>${teardownAction}${quickReadAction}${firstRuleAction}<a data-i="workflow_sprint_intake" href="${safeWorkflowIntakeHref}">Send workflow first</a><a data-i="team_paid_path" href="${safeTeamOptionsHref}">See options</a><p>Stripe checkout.</p><a href="/">Back</a></div><script>addEventListener('click',e=>{let a=e.target.closest('[data-i]');if(a&&navigator.sendBeacon)navigator.sendBeacon('/v1/telemetry/ping',new Blob([JSON.stringify({eventType:'checkout_interstitial_cta_clicked',clientType:'web',page:'/checkout/pro',ctaId:a.dataset.i,ctaPlacement:'checkout_interstitial'})],{type:'application/json'}))})</script>`;
+  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{background:#0a0a0a;color:#eee;font-family:system-ui,sans-serif}div{max-width:560px;margin:12vh auto;padding:0 18px}a{display:block;margin:10px 0;padding:12px;border:1px solid #374151;border-radius:10px;color:inherit;text-align:center;text-decoration:none}.primary{background:#22d3ee;color:#000;border-color:#22d3ee;font-weight:800}.muted{color:#9ca3af;font-size:14px}</style><div><h1>Start ThumbGate Pro.</h1><p>Pro is the $19/mo local dashboard and export lane for people who already use the free CLI.</p><a class="primary" data-i="pro_checkout_confirmed" href="${safeConfirmHref}">Continue to secure Stripe checkout</a><a data-i="workflow_sprint_intake" href="${safeWorkflowIntakeHref}">Not ready? Send the workflow first</a><a data-i="team_paid_path" href="${safeTeamOptionsHref}">Need this across a team?</a><p class="muted">No charge happens on this page. Stripe collects payment details on the next screen.</p><a href="/">Back to ThumbGate</a></div><script>addEventListener('click',e=>{let a=e.target.closest('[data-i]');if(a&&navigator.sendBeacon)navigator.sendBeacon('/v1/telemetry/ping',new Blob([JSON.stringify({eventType:'checkout_interstitial_cta_clicked',clientType:'web',page:'/checkout/pro',ctaId:a.dataset.i,ctaPlacement:'checkout_interstitial'})],{type:'application/json'}))})</script>`;
 }
 
 function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneyState(req, parsed)) {
@@ -2996,28 +2959,8 @@ function renderCheckoutSuccessPage(runtimeConfig) {
 }
 
 function renderCheckoutCancelledPage(runtimeConfig) {
-  const firstFailureRuleCheckoutUrl = escapeHtmlAttribute(FIRST_FAILURE_RULE_CHECKOUT_URL);
-  const quickReadCheckoutUrl = escapeHtmlAttribute(QUICK_READ_CHECKOUT_URL);
-  const workflowTeardownCheckoutUrl = escapeHtmlAttribute(WORKFLOW_TEARDOWN_CHECKOUT_URL);
-  const diagnosticCheckoutUrl = runtimeConfig.sprintDiagnosticCheckoutUrl
-    ? escapeHtmlAttribute(runtimeConfig.sprintDiagnosticCheckoutUrl)
-    : '';
-  const workflowSprintCheckoutUrl = runtimeConfig.workflowSprintCheckoutUrl
-    ? escapeHtmlAttribute(runtimeConfig.workflowSprintCheckoutUrl)
-    : '';
-  const sprintDiagnosticPriceDollars = runtimeConfig.sprintDiagnosticPriceDollars || 499;
-  const workflowSprintPriceDollars = runtimeConfig.workflowSprintPriceDollars || 1500;
   const workflowSprintIntakeUrl = `${escapeHtmlAttribute(runtimeConfig.appOrigin)}/#workflow-sprint-intake`;
   const recoveryOfferLinks = [
-    diagnosticCheckoutUrl
-      ? `<a href="${diagnosticCheckoutUrl}" data-recovery-offer="sprint_diagnostic" data-offer-price="${sprintDiagnosticPriceDollars}">Book $${sprintDiagnosticPriceDollars} diagnostic</a>`
-      : '',
-    workflowSprintCheckoutUrl
-      ? `<a href="${workflowSprintCheckoutUrl}" data-recovery-offer="workflow_sprint" data-offer-price="${workflowSprintPriceDollars}">Start $${workflowSprintPriceDollars} sprint</a>`
-      : '',
-    `<a href="${workflowTeardownCheckoutUrl}" data-recovery-offer="workflow_teardown" data-offer-price="99">Pay $99 teardown</a>`,
-    `<a href="${quickReadCheckoutUrl}" data-recovery-offer="quick_read" data-offer-price="19">Pay $19 quick read</a>`,
-    `<a href="${firstFailureRuleCheckoutUrl}" data-recovery-offer="first_failure_rule" data-offer-price="1">Pay $1 first rule</a>`,
     `<a id="send-workflow-first" href="${workflowSprintIntakeUrl}" data-recovery-offer="workflow_sprint_intake" data-offer-price="0">Send workflow first</a>`,
   ].filter(Boolean).join('\n        ');
   const recoveryOfferCard = recoveryOfferLinks
@@ -4526,60 +4469,10 @@ async function addContext(){
           ctaPlacement: 'checkout_interstitial',
           planId: 'team',
         });
-        const firstRuleCheckoutHref = buildCheckoutIntentHref(FIRST_FAILURE_RULE_CHECKOUT_URL, analyticsMetadata, {
-          utmMedium: 'checkout_interstitial_paid_path',
-          utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_first_failure_rule',
-          ctaId: 'checkout_interstitial_first_failure_rule_checkout',
-          ctaPlacement: 'checkout_interstitial',
-          planId: 'first_failure_rule',
-        });
-        const quickReadCheckoutHref = buildCheckoutIntentHref(QUICK_READ_CHECKOUT_URL, analyticsMetadata, {
-          utmMedium: 'checkout_interstitial_paid_path',
-          utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_quick_read',
-          ctaId: 'checkout_interstitial_quick_read_checkout',
-          ctaPlacement: 'checkout_interstitial',
-          planId: 'quick_read',
-        });
-        const workflowTeardownCheckoutHref = buildCheckoutIntentHref(WORKFLOW_TEARDOWN_CHECKOUT_URL, analyticsMetadata, {
-          utmMedium: 'checkout_interstitial_paid_path',
-          utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_workflow_teardown',
-          ctaId: 'checkout_interstitial_workflow_teardown_checkout',
-          ctaPlacement: 'checkout_interstitial',
-          planId: 'workflow_teardown',
-        });
-        const diagnosticCheckoutHref = buildCheckoutIntentHref(
-          hostedConfig.sprintDiagnosticCheckoutUrl || SPRINT_DIAGNOSTIC_CHECKOUT_URL,
-          analyticsMetadata,
-          {
-            utmMedium: 'checkout_interstitial_paid_path',
-            utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_diagnostic',
-            ctaId: 'checkout_interstitial_sprint_diagnostic_checkout',
-            ctaPlacement: 'checkout_interstitial',
-            planId: 'sprint_diagnostic',
-          }
-        );
-        const sprintCheckoutHref = buildCheckoutIntentHref(
-          hostedConfig.workflowSprintCheckoutUrl || WORKFLOW_SPRINT_CHECKOUT_URL,
-          analyticsMetadata,
-          {
-            utmMedium: 'checkout_interstitial_paid_path',
-            utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_workflow_sprint',
-            ctaId: 'checkout_interstitial_workflow_sprint_checkout',
-            ctaPlacement: 'checkout_interstitial',
-            planId: 'workflow_sprint',
-          }
-        );
         const html = renderCheckoutIntentPage({
           confirmHref: buildCheckoutConfirmHref(parsed),
-          firstRuleCheckoutHref,
-          quickReadCheckoutHref,
-          workflowTeardownCheckoutHref,
           workflowIntakeHref,
           teamOptionsHref,
-          diagnosticCheckoutHref,
-          sprintCheckoutHref,
-          sprintDiagnosticPriceDollars: hostedConfig.sprintDiagnosticPriceDollars || 499,
-          workflowSprintPriceDollars: hostedConfig.workflowSprintPriceDollars || 1500,
           botClassification,
         });
         sendHtml(res, 200, html, responseHeaders);
