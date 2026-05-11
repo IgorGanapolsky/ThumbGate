@@ -45,6 +45,12 @@ If someone is not already bought into ThumbGate, do not lead with architecture. 
 
 The buying question is simple: **what repeated AI mistake would be worth blocking before the next tool call?**
 
+### Try it without waiting for a mistake
+
+After `npx thumbgate init`, run `npx thumbgate test-block` for a 30-second guided demo.
+It installs a temporary rule, triggers a SAFE blocked tool call, shows you the catch,
+and removes the rule. No risk to your real workflow — just proof the catch works.
+
 ---
 
 ## The Problem — the bill nobody talks about

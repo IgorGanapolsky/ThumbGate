@@ -56,6 +56,7 @@ function buildTrackedMarketplaceLink(baseUrl, tracking = {}) {
 function buildAiventyxTrackingMetadata(key) {
   const normalizedKey = normalizeText(key).toLowerCase();
   const upperKey = normalizedKey.toUpperCase();
+  const landingSlug = normalizedKey === 'free' ? 'install' : normalizedKey;
   return {
     utmSource: AIVENTYX_SOURCE,
     utmMedium: AIVENTYX_MEDIUM,
@@ -65,7 +66,7 @@ function buildAiventyxTrackingMetadata(key) {
     offerCode: `AIVENTYX-${upperKey}`,
     ctaPlacement: 'marketplace_listing',
     ctaId: `aiventyx_${normalizedKey}_listing`,
-    landingPath: '/',
+    landingPath: `/go/${landingSlug}`,
   };
 }
 
@@ -155,7 +156,7 @@ function buildAiventyxListings(links = buildPublicAiventyxRevenueLinks()) {
       category: AI_CODING_CATEGORY,
       pricingModel: 'Workflow Hardening Sprint, then Team at $49/seat/mo with 3-seat minimum after qualification',
       APIEndpoint: links.appOrigin,
-      primaryCTA: buildTrackedMarketplaceLink(links.sprintLink, teamsTracking),
+      primaryCTA: buildTrackedMarketplaceLink(`${links.appOrigin}/go/teams`, teamsTracking),
       headline: 'Harden one AI-agent workflow before scaling it team-wide.',
       description: [
         'ThumbGate Teams starts with a Workflow Hardening Sprint: one workflow, one owner, one repeated failure, one proof review.',

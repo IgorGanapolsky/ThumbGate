@@ -415,6 +415,18 @@ const TRACKED_LINK_TARGETS = Object.freeze({
       plan_id: 'free',
     },
   },
+  teams: {
+    path: '/#workflow-sprint-intake',
+    ctaId: 'go_teams',
+    ctaPlacement: 'link_router',
+    eventType: 'team_intake_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'link_router',
+      utm_campaign: 'team_rollout',
+      plan_id: 'team',
+    },
+  },
   reddit: {
     path: '/',
     ctaId: 'go_reddit',
@@ -3947,6 +3959,24 @@ function createApiServer() {
         hostedConfig,
         isHeadRequest,
         slug: trackedLinkMatch[1],
+      });
+      return;
+    }
+
+    if (
+      isGetLikeRequest
+      && pathname === '/'
+      && parsed.searchParams.get('utm_source') === 'aiventyx'
+      && parsed.searchParams.get('utm_campaign') !== 'aiventyx_free_listing'
+      && parsed.searchParams.get('utm_campaign') !== 'aiventyx_pro_listing'
+    ) {
+      serveTrackedLinkRedirect({
+        req,
+        res,
+        parsed,
+        hostedConfig,
+        isHeadRequest,
+        slug: 'teams',
       });
       return;
     }
