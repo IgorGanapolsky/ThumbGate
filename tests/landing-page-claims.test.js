@@ -38,7 +38,7 @@ const FREE_BULLETS = extractTierBullets(
 );
 const PRO_BULLETS = extractTierBullets(
   INDEX_HTML,
-  /Solo Pro/,
+  /<div class="tier"[^>]*>Pro<\/div>/,
 );
 const TEAM_BULLETS = extractTierBullets(
   INDEX_HTML,
