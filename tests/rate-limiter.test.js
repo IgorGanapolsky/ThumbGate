@@ -51,14 +51,11 @@ describe('rate-limiter', () => {
     if (fs.existsSync(TEMP_USAGE_FILE)) fs.unlinkSync(TEMP_USAGE_FILE);
   });
 
-  it('allows 3 capture_feedback on free tier then blocks', () => {
-    for (let i = 0; i < 3; i++) {
+  it('allows unlimited capture_feedback on free tier (habit-building lane)', () => {
+    for (let i = 0; i < 50; i++) {
       const result = rateLimiter.checkLimit('capture_feedback');
       assert.equal(result.allowed, true, `call ${i + 1} should be allowed`);
     }
-    const blocked = rateLimiter.checkLimit('capture_feedback');
-    assert.equal(blocked.allowed, false, 'call 4 should be blocked');
-    assert.ok(blocked.message.includes('3 free feedback captures') || blocked.message.includes('Upgrade') || blocked.message.includes('Pro'), 'blocked message should mention limit or upgrade');
   });
 
   it('blocks recall on free tier (Pro-only)', () => {
