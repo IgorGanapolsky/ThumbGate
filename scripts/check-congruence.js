@@ -137,8 +137,8 @@ async function main() {
   }
 
   check(
-    landingHtml.includes(`v${version}`),
-    `public/index.html missing version v${version} (found in package.json)`
+    landingHtml.includes(`v${version}`) || landingHtml.includes('v__PACKAGE_VERSION__'),
+    `public/index.html missing version placeholder for v${version} (found in package.json)`
   );
 
   check(
@@ -152,7 +152,8 @@ async function main() {
     // current SVG-mark + `.logo-text` nav ("ThumbGate</span></a>").
     'public/index.html (nav)':
       landingHtml.includes('ThumbGate</a>')
-      || landingHtml.includes('class="logo-text">ThumbGate</span>'),
+      || landingHtml.includes('class="logo-text">ThumbGate</span>')
+      || landingHtml.includes('<span>ThumbGate</span>'),
     'public/index.html (title)': landingHtml.includes('<title>ThumbGate'),
     'README.md (heading)': readmeMd.startsWith('# ThumbGate'),
     'package.json (description)': pkg.description.includes('ThumbGate'),
@@ -165,7 +166,8 @@ async function main() {
     check(present, `Brand "ThumbGate" missing from ${surface}`);
   }
 
-  // --- Tech stack congruence: key terms must appear in both README and landing page ---
+  // --- Tech stack congruence: key terms must appear in README, while the
+  // narrow homepage only has to explain the execution mechanism that converts.
   const techTerms = [
     'SQLite',
     'FTS5',
@@ -180,20 +182,11 @@ async function main() {
       readmeMd.includes(term),
       `Tech term "${term}" missing from README.md`
     );
-    check(
-      landingHtml.includes(term),
-      `Tech term "${term}" missing from public/index.html`
-    );
   }
-
-  // --- SEO positioning terms must appear on landing page ---
-  const seoTerms = ['human-in-the-loop', 'vibe coding'];
-  for (const term of seoTerms) {
-    check(
-      landingHtml.toLowerCase().includes(term.toLowerCase()),
-      `SEO term "${term}" missing from public/index.html`
-    );
-  }
+  check(
+    landingHtml.includes('PreToolUse'),
+    'Tech term "PreToolUse" missing from public/index.html'
+  );
 
   // --- FAQPage schema must exist for rich results ---
   check(
@@ -211,11 +204,13 @@ async function main() {
     'README.md contains unresolved merge conflict markers'
   );
   check(
-    landingHtml.includes('doesn\'t touch the model') || landingHtml.includes('different from model-training feedback loops'),
+    landingHtml.includes('It does not magically understand every bad judgment')
+      || landingHtml.includes('doesn\'t touch the model')
+      || landingHtml.includes('different from model-training feedback loops'),
     'public/index.html missing honest disclaimer (FAQ or inline)'
   );
   check(
-    /\$19\/mo/i.test(landingHtml) && /\$149\/yr/i.test(landingHtml),
+    /\$19[\s\S]{0,80}\/mo/i.test(landingHtml) && /\$149\/year|\$149\/yr/i.test(landingHtml),
     'public/index.html must advertise the current Pro monthly and annual pricing'
   );
   check(
@@ -247,8 +242,8 @@ async function main() {
     'docs/COMMERCIAL_TRUTH.md must record the current Team pricing anchor'
   );
   check(
-    /shared lessons and org visibility/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must mention shared lessons and org visibility'
+    /ThumbGate turns one thumbs-down into a local PreToolUse rule/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must match the narrow landing-page meta description'
   );
   check(
     /\$19\/mo or \$149\/yr/i.test(readmeMd),
@@ -259,7 +254,6 @@ async function main() {
     'README.md must advertise the current Team pricing anchor'
   );
   for (const [surface, text] of Object.entries({
-    'public/index.html': landingHtml,
     'public/compare.html': compareHtml,
     'public/pro.html': proHtml,
     'docs/landing-page.html': docsLandingHtml,
@@ -304,80 +298,40 @@ async function main() {
   );
 
   check(
-    landingHtml.includes('👍'),
-    'public/index.html must visibly include the thumbs-up icon'
+    /Stop Claude Code from force-pushing to main\./i.test(landingHtml),
+    'public/index.html must keep the narrow Claude Code homepage headline'
   );
   check(
-    landingHtml.includes('👎'),
-    'public/index.html must visibly include the thumbs-down icon'
-  );
-  check(
-    /workflow-sprint-intake/.test(landingHtml),
-    'public/index.html must expose the team workflow intake path'
-  );
-  check(
-    /shared lesson db|shared lesson database/i.test(landingHtml),
-    'public/index.html must describe the shared Team lesson database'
-  );
-  check(
-    /org dashboard/i.test(landingHtml),
-    'public/index.html must describe the Team org dashboard'
+    /PreToolUse rule/i.test(landingHtml),
+    'public/index.html must explain the pre-action gate mechanism'
   );
   check(
     /personal local dashboard/i.test(landingHtml),
     'public/index.html must keep the personal Pro dashboard message'
   );
   check(
-    /history-aware/i.test(landingHtml),
-    'public/index.html must mention history-aware lesson distillation'
+    /recognizable tool calls and repeated patterns/i.test(landingHtml),
+    'public/index.html must state the honest blocking scope'
   );
   check(
-    /feedback session/i.test(landingHtml),
-    'public/index.html must mention the linked feedback session flow'
+    !/\$499|\$1500|\$3,997|\$97/.test(landingHtml),
+    'public/index.html must not advertise service or bundle pricing on the homepage'
   );
   check(
     /3 feedback captures total/i.test(landingHtml) || /3 captures/i.test(landingHtml),
     'public/index.html must advertise the truthful free-tier capture limits'
   );
   check(
-    /1 rule/i.test(landingHtml) || /1 prevention rule/i.test(landingHtml),
+    /1 active prevention rule/i.test(landingHtml) || /1 rule/i.test(landingHtml) || /1 prevention rule/i.test(landingHtml),
     'public/index.html must advertise the truthful free-tier rule limit'
-  );
-  check(
-    landingHtml.includes(PRODUCTHUNT_URL),
-    'public/index.html must link to the live Product Hunt listing'
-  );
-  check(
-    /Claude Desktop plugin/i.test(landingHtml),
-    'public/index.html must promote the Claude Desktop plugin install lane'
-  );
-  check(
-    /thumbs[\s-]?up/i.test(landingHtml),
-    'public/index.html must explain the thumbs-up feedback path'
   );
   check(
     /thumbs[\s-]?down/i.test(landingHtml),
     'public/index.html must explain the thumbs-down feedback path'
   );
   check(
-    githubAbout.metaDescription.includes('👍'),
-    'config/github-about.json metaDescription must include the thumbs-up icon'
-  );
-  check(
-    githubAbout.metaDescription.includes('👎'),
-    'config/github-about.json metaDescription must include the thumbs-down icon'
-  );
-  check(
-    /thumbs[\s-]?up/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must mention thumbs-up feedback'
-  );
-  check(
-    /thumbs[\s-]?down/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must mention thumbs-down feedback'
-  );
-  check(
-    /history-aware lessons/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must mention history-aware lessons'
+    /PreToolUse rule/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must match the narrow Claude Code homepage'
   );
   check(
     /agent governance/i.test(githubAbout.githubDescription),

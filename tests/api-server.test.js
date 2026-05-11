@@ -507,16 +507,17 @@ test('root serves the landing page by default', async () => {
 
   const body = await res.text();
   assert.match(body, /ThumbGate/);
-  assert.match(body, /self-improving/i);
-  assert.match(body, /learns from every mistake/i);
+  assert.match(body, /Stop Claude Code from force-pushing to main\./);
+  assert.match(body, /PreToolUse rule/);
+  assert.match(body, /Memory reminds an agent\. ThumbGate gates it\./);
   assert.match(body, /npx thumbgate init/);
-  assert.match(body, /Thompson Sampling/i);
+  assert.match(body, /recognizable tool calls and repeated patterns/i);
   assert.match(body, /FAQPage/);
   assert.match(body, /SoftwareApplication/);
-  assert.match(body, /InstallAction/);
-  assert.match(body, /BuyAction/);
-  assert.match(body, /CommunicateAction/);
-  assert.match(body, /ThumbGate Workflow Hardening Sprint/);
+  assert.doesNotMatch(body, /InstallAction/);
+  assert.doesNotMatch(body, /BuyAction/);
+  assert.doesNotMatch(body, /CommunicateAction/);
+  assert.doesNotMatch(body, /ThumbGate Workflow Hardening Sprint/);
   assert.match(body, /\$19/);
   assert.match(body, /\$149/);
   assert.match(body, /plausible\.io\/js\/script\.js/);
