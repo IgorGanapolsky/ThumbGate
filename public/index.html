@@ -669,7 +669,7 @@ __GA_BOOTSTRAP__
 <!-- NAV -->
 <nav>
   <div class="container">
-    <a href="#" class="nav-logo"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+    <a href="/" class="nav-logo"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
     <div class="nav-links">
       <a href="#how-it-works">How It Works</a>
       <a href="#pricing">Pricing</a>
@@ -685,7 +685,7 @@ __GA_BOOTSTRAP__
       <a href="#claude-code-section" class="nav-claude" onclick="posthog.capture('nav_claude_click')" style="display:none;">Claude</a>
       <a href="#workflow-sprint-intake" onclick="posthog.capture('workflow_sprint')" style="display:none;">Start Sprint</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" target="_blank" rel="noopener" onclick="posthog.capture('nav_claude_extension_click',{cta:'install_claude_extension'})" class="nav-cta" style="background:#d97706;display:none;">Claude Extension</a>
-      <a href="/go/gpt?utm_source=website&utm_medium=nav&utm_campaign=chatgpt_gpt&cta_id=nav_open_gpt&cta_placement=nav" target="_blank" rel="noopener" onclick="posthog.capture('nav_cta_click',{cta:'open_gpt'})" class="nav-cta">Install Free</a>
+      <a href="/go/install?utm_source=website&utm_medium=nav&utm_campaign=install_free&cta_id=nav_install_free&cta_placement=nav" onclick="posthog.capture('nav_cta_click',{cta:'install_free'})" class="nav-cta">Install Free</a>
     </div>
   </div>
 </nav>
@@ -709,7 +709,7 @@ __GA_BOOTSTRAP__
         <span class="cmd">npx thumbgate init</span>
         <span class="copy-hint">click to copy</span>
       </div>
-      <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="posthog.capture('hero_install_click',{cta:'install_cli'})" class="btn-gpt-page btn-install-hero">Install Free CLI</a>
+      <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="event.preventDefault(); navigator.clipboard.writeText('npx thumbgate init'); this.textContent='Copied ✓ — paste in your repo'; setTimeout(()=>{this.textContent='Install Free CLI'},2000); try{posthog.capture('hero_install_click',{cta:'install_cli'})}catch(_){}" class="btn-gpt-page btn-install-hero" title="Click to copy: npx thumbgate init">Install Free CLI</a>
       <a href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__" class="btn-pro-page hero-diagnostic" onclick="sendFirstPartyTelemetry('workflow_sprint_diagnostic_checkout_started',{ctaId:'hero_workflow_sprint_diagnostic_checkout',price:sprintDiagnosticPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:sprintDiagnosticPriceDollars});">Pay $499 diagnostic</a>
     </div>
 
@@ -1442,7 +1442,7 @@ __GA_BOOTSTRAP__
         <span class="cmd">npx thumbgate init</span>
         <span class="copy-hint">click to copy</span>
       </div>
-      <a href="/go/install?utm_source=website&utm_medium=homepage_final&utm_campaign=install_free&cta_id=final_install_cli&cta_placement=final_cta" onclick="posthog.capture('final_install_click',{cta:'install_cli'})" class="btn-pro btn-install-link" style="padding:14px 36px;font-size:16px;">Install Free CLI</a>
+      <a href="/go/install?utm_source=website&utm_medium=homepage_final&utm_campaign=install_free&cta_id=final_install_cli&cta_placement=final_cta" onclick="event.preventDefault(); navigator.clipboard.writeText('npx thumbgate init'); this.textContent='Copied ✓ — paste in your repo'; setTimeout(()=>{this.textContent='Install Free CLI'},2000); try{posthog.capture('final_install_click',{cta:'install_cli'})}catch(_){}" class="btn-pro btn-install-link" style="padding:14px 36px;font-size:16px;" title="Click to copy: npx thumbgate init">Install Free CLI</a>
     </div>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;align-items:center;margin-top:12px;opacity:0.7;">
       <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('final_claude_extension_click',{cta:'install_claude_extension'})" style="padding:8px 16px;font-size:12px;background:#d97706;color:#fff;">Install Claude Extension</a>
