@@ -32,6 +32,14 @@ function isRuntimeRoute(href) {
   return /^\/(go|checkout|v1|api|ingest)(\/|\?|$)/.test(href);
 }
 
+function homepageAnchors() {
+  return [...indexHtml.matchAll(/<a\b[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g)]
+    .map((match) => ({
+      href: match[1],
+      text: visibleText(match[2]),
+    }));
+}
+
 function pricingCardText(cardClass) {
   const pattern = new RegExp(`<div class="card price-card ${cardClass}">([\\s\\S]*?)<a class="btn`, 'i');
   const match = indexHtml.match(pattern);
@@ -76,6 +84,21 @@ describe('homepage claims match shipped code', () => {
     assert.doesNotMatch(text, /\$97/);
     assert.doesNotMatch(text, /income guarantee/i);
   });
+
+  test('homepage presents the branded domain instead of raw deployment URLs', () => {
+    assert.doesNotMatch(indexHtml, /thumbgate-production\.up\.railway\.app/);
+    assert.doesNotMatch(indexHtml, /railway\.app/);
+    assert.match(indexHtml, /data-domain="thumbgate\.ai"/);
+  });
+
+  test('homepage does not imply third-party integrations or claims that are not implemented', () => {
+    const text = visibleText(indexHtml);
+    assert.doesNotMatch(text, /Cloudflare Artifacts/i);
+    assert.doesNotMatch(text, /GPT-5\.5/i);
+    assert.doesNotMatch(text, /Dreaming/i);
+    assert.doesNotMatch(text, /AWS Rex/i);
+    assert.doesNotMatch(text, /TOON/i);
+  });
 });
 
 describe('homepage links', () => {
@@ -97,9 +120,22 @@ describe('homepage links', () => {
     assert.deepEqual(broken, []);
   });
 
-  test('top-of-funnel CTAs use working runtime routes', () => {
-    assert.match(indexHtml, /href="\/go\/install\?/);
-    assert.match(indexHtml, /href="\/go\/pro\?/);
+  test('top-of-funnel CTAs resolve directly without ambiguous homepage loops', () => {
+    const ctas = homepageAnchors().filter((anchor) => (
+      /install free|go pro/i.test(anchor.text)
+    ));
+
+    assert.ok(ctas.length >= 4, 'expected nav, hero, and pricing CTAs');
+    assert.ok(
+      ctas.some((anchor) => anchor.text === 'Install free' && anchor.href.startsWith('/guide?')),
+      'install CTAs must open the setup guide directly'
+    );
+    assert.ok(
+      ctas.some((anchor) => anchor.text === 'Go Pro - $19/mo' && anchor.href.startsWith('/checkout/pro?confirm=1')),
+      'Pro CTAs must open confirmed checkout directly'
+    );
+    assert.doesNotMatch(indexHtml, /href="\/go\/install\?/);
+    assert.doesNotMatch(indexHtml, /href="\/go\/pro\?/);
     assert.doesNotMatch(indexHtml, /thumbgate-production\.up\.railway\.app\/go\/install/);
     assert.doesNotMatch(indexHtml, /thumbgate-production\.up\.railway\.app\/go\/pro/);
   });

@@ -13,7 +13,7 @@
   __GOOGLE_SITE_VERIFICATION_META__
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+  <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
   __GA_BOOTSTRAP__
   <style>
     :root {
@@ -37,6 +37,7 @@
     body {
       margin: 0;
       min-width: 320px;
+      overflow-x: hidden;
       background: var(--bg);
       color: var(--text);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -60,8 +61,20 @@
       justify-content: space-between;
       gap: 24px;
     }
-    .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; }
-    .brand img { width: 28px; height: 28px; }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1;
+    }
+    .brand img {
+      width: 40px;
+      height: 40px;
+      display: block;
+      flex: 0 0 auto;
+    }
     .nav-links { display: flex; align-items: center; gap: 22px; color: var(--muted); font-size: 14px; }
     .nav-links a { white-space: nowrap; }
     .btn {
@@ -93,7 +106,9 @@
       grid-template-columns: minmax(0, 1fr) minmax(420px, 0.92fr);
       gap: 46px;
       align-items: center;
+      min-width: 0;
     }
+    .hero-grid > * { min-width: 0; }
     .eyebrow {
       display: inline-flex;
       align-items: center;
@@ -112,6 +127,7 @@
       font-size: clamp(42px, 6vw, 76px);
       line-height: 0.95;
       letter-spacing: 0;
+      overflow-wrap: anywhere;
     }
     .lead {
       max-width: 680px;
@@ -119,6 +135,7 @@
       font-size: clamp(18px, 2vw, 22px);
       line-height: 1.45;
       margin: 0 0 28px;
+      overflow-wrap: anywhere;
     }
     .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
     .install-pill {
@@ -138,6 +155,7 @@
     .install-pill code { color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .install-pill .copy-label { color: var(--cyan); font-family: inherit; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
     .terminal {
+      min-width: 0;
       border: 1px solid rgba(98, 213, 247, 0.24);
       border-radius: 12px;
       background: linear-gradient(180deg, #10151c, #07090c);
@@ -177,7 +195,7 @@
     .kicker { color: var(--cyan); text-transform: uppercase; font-size: 12px; font-weight: 900; letter-spacing: 0.14em; }
     h2 { margin: 10px 0 10px; font-size: clamp(30px, 4vw, 46px); line-height: 1.08; letter-spacing: 0; }
     .section-head p, .plain-copy { color: var(--muted); font-size: 17px; line-height: 1.62; }
-    .steps, .rules, .pricing-grid, .proof-grid {
+    .steps, .rules, .pricing-grid, .proof-grid, .signal-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 18px;
@@ -204,6 +222,13 @@
       font-weight: 900;
     }
     .rules { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .signal-grid { margin-top: 26px; }
+    .signal-card strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text);
+      font-size: 16px;
+    }
     .rule code {
       display: block;
       width: 100%;
@@ -256,17 +281,27 @@
     .footer-links { display: flex; flex-wrap: wrap; gap: 16px; }
 
     @media (max-width: 900px) {
-      .hero-grid, .steps, .rules, .pricing-grid, .proof-grid { grid-template-columns: 1fr; }
+      .hero-grid, .steps, .rules, .pricing-grid, .proof-grid, .signal-grid { grid-template-columns: 1fr; }
       .nav { align-items: flex-start; padding: 16px 0; }
       .nav-links { display: none; }
       .hero { padding-top: 54px; }
       .term-body { min-height: 300px; padding: 18px; }
     }
     @media (max-width: 560px) {
-      .wrap { width: min(100% - 28px, 1120px); }
-      h1 { font-size: 42px; }
+      .wrap { width: auto; max-width: none; margin-left: 14px; margin-right: 14px; }
+      .nav { gap: 12px; }
+      .brand { font-size: 17px; }
+      .brand img { width: 36px; height: 36px; }
+      .hero-grid { display: block; }
+      h1 { max-width: 330px; font-size: 29px; line-height: 1.08; word-break: normal; overflow-wrap: normal; }
+      .lead { max-width: 330px; font-size: 15px; }
       .hero-actions, .link-row { flex-direction: column; align-items: stretch; }
+      .hero-actions { max-width: 330px; }
       .btn, .price-card .btn { width: 100%; }
+      .topbar .btn { display: none; }
+      .terminal { width: 100%; margin-top: 46px; }
+      .term-body { font-size: 12px; }
+      .term-body .muted { color: var(--muted); }
       .founder { grid-template-columns: 1fr; }
     }
   </style>
@@ -290,7 +325,7 @@
         "name": "ThumbGate Pro",
         "price": "19",
         "priceCurrency": "USD",
-        "url": "https://thumbgate.ai/go/pro?utm_source=website&utm_medium=homepage&utm_campaign=claude_code_homepage"
+        "url": "https://thumbgate.ai/checkout/pro?confirm=1&utm_source=website&utm_medium=homepage&utm_campaign=claude_code_homepage&plan_id=pro&landing_path=%2F"
       }
     ],
     "url": "https://thumbgate.ai/"
@@ -335,7 +370,7 @@
         <a href="/guides/claude-code-prevent-repeated-mistakes">Claude Code guide</a>
         <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
       </nav>
-      <a class="btn btn-cyan btn-small" href="/go/install?utm_source=website&utm_medium=nav&utm_campaign=claude_code_homepage&cta_id=nav_install&cta_placement=nav" data-event="install_click" data-cta-id="nav_install">Install free</a>
+      <a class="btn btn-cyan btn-small" href="/guide?utm_source=website&utm_medium=nav&utm_campaign=claude_code_homepage&cta_id=nav_install&cta_placement=nav" data-event="install_click" data-cta-id="nav_install">Install free</a>
     </div>
   </header>
 
@@ -347,8 +382,8 @@
           <h1>Stop Claude Code from force-pushing to main.</h1>
           <p class="lead">ThumbGate turns one thumbs-down into a local PreToolUse rule that blocks the next matching tool call before it runs. Memory reminds an agent. ThumbGate gates it.</p>
           <div class="hero-actions">
-            <a class="btn btn-primary" href="/go/install?utm_source=website&utm_medium=hero&utm_campaign=claude_code_homepage&cta_id=hero_install&cta_placement=hero" data-event="install_click" data-cta-id="hero_install">Install free</a>
-            <a class="btn btn-secondary" href="/go/pro?utm_source=website&utm_medium=hero&utm_campaign=claude_code_homepage&cta_id=hero_pro&cta_placement=hero" data-event="pro_click" data-cta-id="hero_pro">Go Pro - $19/mo</a>
+            <a class="btn btn-primary" href="/guide?utm_source=website&utm_medium=hero&utm_campaign=claude_code_homepage&cta_id=hero_install&cta_placement=hero" data-event="install_click" data-cta-id="hero_install">Install free</a>
+            <a class="btn btn-secondary" href="/checkout/pro?confirm=1&utm_source=website&utm_medium=hero&utm_campaign=claude_code_homepage&cta_id=hero_pro&cta_placement=hero&plan_id=pro&landing_path=%2F" data-event="pro_click" data-cta-id="hero_pro">Go Pro - $19/mo</a>
           </div>
           <button class="install-pill" type="button" onclick="copyInstall(this)" aria-label="Copy ThumbGate install command">
             <code>npx thumbgate init</code>
@@ -385,6 +420,30 @@
             <span class="number">3</span>
             <h3>Block the repeat</h3>
             <p>The next matching tool call is stopped before it mutates files, branches, databases, or config.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="kicker">Why now</div>
+          <h2>Repeated agent mistakes are getting more expensive.</h2>
+          <p>Frontier model calls, long-context retries, and autonomous edits all raise the cost of letting the same failure rerun. ThumbGate focuses on the narrow control point you can verify: the next tool call.</p>
+        </div>
+        <div class="signal-grid">
+          <div class="card signal-card">
+            <strong>Token and cash pressure</strong>
+            <p>Every repeated bad tool call burns context, model output, and human review time. Blocking the repeat is cheaper than explaining it again.</p>
+          </div>
+          <div class="card signal-card">
+            <strong>Versioned proof</strong>
+            <p>Teams need a record of what was blocked, why it was blocked, and which rule created the decision. The proof has to survive the session.</p>
+          </div>
+          <div class="card signal-card">
+            <strong>Data-layer accountability</strong>
+            <p>Runtime sandboxes help, but teams still need local rules for repo, file, branch, secret, and production-data boundaries.</p>
           </div>
         </div>
       </div>
@@ -444,7 +503,7 @@
         <div class="section-head">
           <div class="kicker">Pricing</div>
           <h2>Start free. Upgrade when you need more rules.</h2>
-          <p>No diagnostic wall on the homepage. No bundle sprawl. Install the local CLI first.</p>
+          <p>No service upsells on the homepage. No bundle sprawl. Install the local CLI first.</p>
         </div>
         <div class="pricing-grid">
           <div class="card price-card free">
@@ -457,7 +516,7 @@
               <li>Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, and OpenCode setup guide</li>
               <li>No DPO export, team sync, or hosted dashboard</li>
             </ul>
-            <a class="btn btn-primary" href="/go/install?utm_source=website&utm_medium=pricing&utm_campaign=claude_code_homepage&cta_id=pricing_install&cta_placement=pricing" data-event="install_click" data-cta-id="pricing_install">Install free</a>
+            <a class="btn btn-primary" href="/guide?utm_source=website&utm_medium=pricing&utm_campaign=claude_code_homepage&cta_id=pricing_install&cta_placement=pricing" data-event="install_click" data-cta-id="pricing_install">Install free</a>
           </div>
           <div class="card price-card pro">
             <h3>Pro</h3>
@@ -469,7 +528,7 @@
               <li>DPO training data export</li>
               <li>Annual option: $149/year</li>
             </ul>
-            <a class="btn btn-cyan" href="/go/pro?utm_source=website&utm_medium=pricing&utm_campaign=claude_code_homepage&cta_id=pricing_pro&cta_placement=pricing" data-event="pro_click" data-cta-id="pricing_pro">Go Pro - $19/mo</a>
+            <a class="btn btn-cyan" href="/checkout/pro?confirm=1&utm_source=website&utm_medium=pricing&utm_campaign=claude_code_homepage&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2F" data-event="pro_click" data-cta-id="pricing_pro">Go Pro - $19/mo</a>
           </div>
         </div>
         <div class="link-row">

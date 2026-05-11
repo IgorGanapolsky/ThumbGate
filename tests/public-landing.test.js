@@ -83,6 +83,19 @@ test('public landing page is honest about scope', () => {
   assert.doesNotMatch(landingPage, /stops every bad AI coding decision/i);
 });
 
+test('public landing page explains current buying pressure without unsupported vendor claims', () => {
+  assert.match(landingPage, /Repeated agent mistakes are getting more expensive\./);
+  assert.match(landingPage, /Token and cash pressure/);
+  assert.match(landingPage, /Versioned proof/);
+  assert.match(landingPage, /Data-layer accountability/);
+  assert.match(landingPage, /the next tool call/);
+  assert.doesNotMatch(landingPage, /Cloudflare Artifacts/i);
+  assert.doesNotMatch(landingPage, /GPT-5\.5/i);
+  assert.doesNotMatch(landingPage, /Dreaming/i);
+  assert.doesNotMatch(landingPage, /Rex/i);
+  assert.doesNotMatch(landingPage, /TOON/i);
+});
+
 test('public landing page keeps SEO JSON-LD for the trimmed offer', () => {
   assert.match(landingPage, /"@type": "SoftwareApplication"/);
   assert.match(landingPage, /"@type": "FAQPage"/);
