@@ -21,15 +21,17 @@ test('README keeps the enterprise story tied to control-plane language and proof
   assert.match(readme, /exact `main` merge commit/i);
 });
 
-test('public landing page positions ThumbGate as policy plus isolated execution', () => {
+test('public landing page stays narrow and honest about local pre-action enforcement', () => {
   const landing = read(path.join('public', 'index.html'));
 
-  assert.match(landing, /workflow governance/i);
-  assert.match(landing, /isolated execution/i);
-  assert.match(landing, /Docker Sandboxes/i);
-  assert.match(landing, /signed hosted sandbox dispatch/i);
-  assert.match(landing, /Changeset/i);
-  assert.match(landing, /exact main-branch merge commit/i);
+  assert.match(landing, /Stop Claude Code from force-pushing to main/i);
+  assert.match(landing, /Pre-Action Checks/i);
+  assert.match(landing, /recognizable tool calls and repeated patterns/i);
+  assert.match(landing, /Runtime sandboxes help/i);
+  assert.match(landing, /VS Code works when you run an MCP-compatible agent inside it/i);
+  assert.doesNotMatch(landing, /signed hosted sandbox dispatch/i);
+  assert.doesNotMatch(landing, /Docker Sandboxes/i);
+  assert.doesNotMatch(landing, /exact main-branch merge commit/i);
 });
 
 test('docs landing page carries the enterprise story across buyer-facing copy', () => {

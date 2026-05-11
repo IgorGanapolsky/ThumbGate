@@ -9,8 +9,10 @@
 ### Cursor Directory (cursor.directory/thumbgate)
 > Pre-action checks that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.
 
-### Public Landing Page (thumbgate-production.up.railway.app)
-> ThumbGate turns one thumbs-down into a local PreToolUse rule that blocks the next matching Claude Code tool call before it runs.
+### Public Landing Page (thumbgate.ai)
+> ThumbGate turns one thumbs-down into local Pre-Action Checks that block the next matching Claude Code tool call before it runs.
+
+**Canonical landing meta description:** ThumbGate turns one thumbs-down into a local PreToolUse rule that blocks the next matching Claude Code tool call before it runs.
 
 ### NPM package.json
 > Pre-action checks that block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.
@@ -90,7 +92,7 @@
 - Anthropic Academy lessons: workflows are easier to evaluate and more reliable; agents are more flexible but harder to instrument, test, evaluate, and budget.
 
 ## Surface Rules
-- Root landing page is Claude Code-first until conversion data proves a broader page works better. Vendor-neutral integration coverage belongs in guides, comparison pages, and agent-specific docs.
+- Root landing page stays Claude Code-first until conversion data proves a broader page works better. Vendor-neutral integration coverage belongs in guides, comparison pages, and agent-specific docs.
 - Promote shipped surfaces explicitly: Claude Code, Cursor plugin, Codex, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent.
 - Mention history-aware lesson distillation when the surface is describing vague thumbs feedback, linked follow-up notes, or rule proposals from conversation history.
 - Do not claim a standalone VS Code extension. Say VS Code works through the MCP-compatible agent running inside the editor.
