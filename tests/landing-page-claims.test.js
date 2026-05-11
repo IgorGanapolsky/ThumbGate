@@ -51,17 +51,18 @@ describe('homepage claims match shipped code', () => {
   test('Free tier copy matches rate-limiter constants', () => {
     const { FREE_TIER_LIMITS, FREE_TIER_MAX_GATES } = require(path.join(root, 'scripts', 'rate-limiter.js'));
 
-    assert.equal(FREE_TIER_LIMITS.capture_feedback.lifetime, 3);
-    assert.equal(FREE_TIER_LIMITS.prevention_rules.lifetime, 1);
-    assert.equal(FREE_TIER_MAX_GATES, 1);
-    assert.match(indexHtml, /3 feedback captures total/);
-    assert.match(indexHtml, /1 active prevention rule/);
+    assert.equal(FREE_TIER_LIMITS.capture_feedback.lifetime, Infinity);
+    assert.equal(FREE_TIER_LIMITS.prevention_rules.lifetime, Infinity);
+    assert.equal(FREE_TIER_MAX_GATES, 5);
+    assert.match(indexHtml, /Unlimited local feedback captures/);
+    assert.match(indexHtml, /5 active prevention rules/);
   });
 
   test('Free tier does not claim paid-only exports or team sync', () => {
     const text = pricingCardText('free');
     assert.match(text, /No DPO export, team sync, or hosted dashboard/);
-    assert.doesNotMatch(text, /Unlimited/);
+    assert.doesNotMatch(text, /DPO training data export/);
+    assert.doesNotMatch(text, /Personal local dashboard/);
   });
 
   test('Pro tier claims have code-backed surfaces', () => {

@@ -63,8 +63,8 @@ test('public landing page keeps optional first-party, GA4, Plausible, and PostHo
 test('public landing page pricing is simple and claim-backed', () => {
   assert.match(landingPage, /class="card price-card free"/);
   assert.match(landingPage, /class="card price-card pro"/);
-  assert.match(landingPage, /3 feedback captures total/);
-  assert.match(landingPage, /1 active prevention rule/);
+  assert.match(landingPage, /Unlimited local feedback captures/);
+  assert.match(landingPage, /5 active prevention rules/);
   assert.match(landingPage, /No DPO export, team sync, or hosted dashboard/);
   assert.match(landingPage, /\$19 <small>\/mo<\/small>/);
   assert.match(landingPage, /Annual option: \$149\/year/);

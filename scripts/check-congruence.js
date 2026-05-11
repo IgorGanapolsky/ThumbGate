@@ -318,11 +318,11 @@ async function main() {
     'public/index.html must not advertise service or bundle pricing on the homepage'
   );
   check(
-    /3 feedback captures total/i.test(landingHtml) || /3 captures/i.test(landingHtml),
+    /Unlimited local feedback captures/i.test(landingHtml),
     'public/index.html must advertise the truthful free-tier capture limits'
   );
   check(
-    /1 active prevention rule/i.test(landingHtml) || /1 rule/i.test(landingHtml) || /1 prevention rule/i.test(landingHtml),
+    /5 active prevention rules/i.test(landingHtml),
     'public/index.html must advertise the truthful free-tier rule limit'
   );
   check(
