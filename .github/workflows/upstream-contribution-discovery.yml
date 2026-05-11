@@ -46,7 +46,7 @@ jobs:
             --json \
             $LIVE_FLAG > upstream-contribution-engine.json
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: upstream-contribution-engine
           path: |
