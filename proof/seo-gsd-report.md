@@ -1,6 +1,6 @@
 # SEO/GEO GSD Proof Report
 
-Generated: 2026-05-11T19:29:16.911Z
+Generated: 2026-05-11T19:39:05.853Z
 Result: 6/6 passed
 
 ## Requirements
