@@ -10,12 +10,44 @@ const publicDir = path.join(root, 'public');
 const indexHtml = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8');
 
 function visibleText(html) {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+  const withoutScriptsAndStyles = stripRawTextElements(html, ['script', 'style']);
+  return withoutScriptsAndStyles
     .replace(/<[^>]+>/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function stripRawTextElements(html, tagNames) {
+  let output = html;
+  for (const tagName of tagNames) {
+    const openTag = `<${tagName}`;
+    const closeTag = `</${tagName}`;
+    let cursor = 0;
+    let stripped = '';
+    const lower = output.toLowerCase();
+    while (cursor < output.length) {
+      const start = lower.indexOf(openTag, cursor);
+      if (start === -1) {
+        stripped += output.slice(cursor);
+        break;
+      }
+      const openEnd = output.indexOf('>', start);
+      if (openEnd === -1) {
+        stripped += output.slice(cursor);
+        break;
+      }
+      stripped += output.slice(cursor, start);
+      const endStart = lower.indexOf(closeTag, openEnd + 1);
+      if (endStart === -1) {
+        cursor = openEnd + 1;
+        continue;
+      }
+      const closeEnd = output.indexOf('>', endStart);
+      cursor = closeEnd === -1 ? output.length : closeEnd + 1;
+    }
+    output = stripped;
+  }
+  return output;
 }
 
 function staticPathExists(href) {
