@@ -91,7 +91,9 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /\/mo/);
   assert.match(landingPage, /\$49/);
   assert.match(landingPage, /\/seat\/mo/);
-  assert.match(landingPage, /See how it works/);
+  // Free tier price-sub copy moved from "See how it works..." to
+  // "Block repeated mistakes daily..." in feat/free-tier-unlimited-captures.
+  assert.match(landingPage, /Block repeated mistakes daily|See how it works/);
   assert.match(landingPage, /3 captures total.*1 rule/i);
   assert.doesNotMatch(landingPage, /3 captures.*1 rule.*1 agent/i);
   assert.match(landingPage, /solo side lane/i);
