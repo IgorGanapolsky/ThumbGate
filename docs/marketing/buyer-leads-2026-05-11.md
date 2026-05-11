@@ -157,3 +157,57 @@ These users are **building exactly what ThumbGate does**. Two outcomes possible:
 **Hard rule:** Do not auto-post. Every reply ships from the CEO's GitHub account, reviewed, possibly edited. AI-generated voice was thumbs-downed on 2026-04-21 and that lock stays on.
 
 **Tracking:** Add a `LEAD-2026-05-11-{tier}.{n}` tag in any reply UTM (e.g., `?utm_source=github_issue_outreach&utm_medium=direct_reply&utm_campaign=lead_2026_05_11&utm_content=lead_1_3_calebthecm`). When their checkout fires, we'll see exactly which lead converted.
+
+---
+
+## Tier 1.5 — Hacker News fresh pain (last 7-14 days)
+
+These are public HN comments. Engagement path: reply to their HN comment (CEO logs into HN web UI, replies in voice). HN profile usually shows contact email — Plan B is direct outreach.
+
+### HN Lead 1.5.1 — `@ihatemodels` (2026-05-08)
+- **Source:** [HN comment #48057849](https://news.ycombinator.com/item?id=48057849)
+- **Direct buyer-signal quote:** *"You're solving a real problem, and despite beeing a bit broke ATM, I'd be willing to pay for a tool like this given the amount of time I spend on review."*
+- **Tier:** Pro $19/mo (explicit "I'd pay" signal in the comment itself)
+- **Draft reply (HN-voice, short):**
+  > If you want to try ThumbGate free: `npx thumbgate init`. 👎 once on a Claude review-time mistake, the same pattern blocks next session. The free tier covers daily-driver use (5 active rules); Pro at $19 if/when you want recall across sessions + DPO export. I'm Igor, building it — DM if you want me to wire a rule against a specific failure you've seen.
+
+### HN Lead 1.5.2 — `@reubenlavin` (2026-05-07)
+- **Source:** [HN comment #48056665](https://news.ycombinator.com/item?id=48056665)
+- **Direct buyer-signal:** *"I'm particularly interested in the disable-model-invocation: true safety on /exec and /cleanup. It addresses the biggest hurdle for AI in infra: the fear of an [agent doing something bad]."*
+- **Tier:** Team $147/mo or Sprint $499 (infra concern = team-scale)
+- **Draft reply:**
+  > Same fear is what got me to build ThumbGate (`npx thumbgate init`) — but as a local PreToolUse hook layer instead of a model-invocation flag. /exec and /cleanup-flavored commands can be gated with a rule that auto-promotes on the first 👎. If you have a specific destructive command you want to block, send it — I'll wire the rule today and you can verify.
+
+### HN Lead 1.5.3 — `@selfsimilar` (2026-05-11)
+- **Source:** [HN comment #48098105](https://news.ycombinator.com/item?id=48098105)
+- **Quote:** *"For 7 months I'd been prompting and shipping without ever sitting down and actually reading the code Claude wrote. I'd look at the diff, verify it compiled, test the ha[ppy path]."*
+- **Pain:** The "trust the agent's output without verifying" failure mode → eventually burns.
+- **Tier:** Pro $19/mo (individual operator)
+- **Draft reply:**
+  > The "trust without reading" pattern is the most expensive habit to unlearn. ThumbGate's enforcement layer doesn't fix it for you, but it stops the next destructive action that you'd have rubber-stamped without reading. `npx thumbgate init` — one 👎 on a destructive Claude tool call and it blocks the next attempt. Free tier covers daily-driver use.
+
+---
+
+## Tier 1.7 — HN canonical "AI deleted production DB" thread
+
+[hn:47911524](https://news.ycombinator.com/item?id=47911524) — 860 points, 1032 comments. **The biggest public conversation about ThumbGate's exact prevented failure mode.**
+
+Specific commenters in that thread who described the failure firsthand:
+
+- **`@lowbloodsugar`** ([hn:47918606](https://news.ycombinator.com/item?id=47918606)) — Quoted the original incident: "Cursor running Anthropic's flagship Claude Opus 4.6 — deleted our production database and all volume-level backups in a single API call"
+- **`@noobcoder`** ([hn:47930429](https://news.ycombinator.com/item?id=47930429)) — Detailed walkthrough: "April 25, 2026, Cursor running Claude Opus 4.6 deleted PocketOS's entire production database and all volume-level backups in a single Railway API call. It took nine seconds."
+- **`@mennylevinski`** ([hn:48008954](https://news.ycombinator.com/item?id=48008954)) — Same incident framing
+- **`@kstenerud`** ([hn:47500015](https://news.ycombinator.com/item?id=47500015)) — Multi-incident catalog: "Claude Code + Terraform (March 2026): A developer gave Claude Code access to their AWS infrastructure. It replaced their Terraform state file with..."
+
+**Strategy:** The thread is 2 weeks cold but the audience is still actively engaging. A thoughtful comment from @IgorGanapolsky on the parent (or as a reply to a recent comment) that says: *"Built [ThumbGate](https://thumbgate.ai) precisely to prevent this — local PreToolUse hook blocks the destructive API call after one 👎. Free tier: `npx thumbgate init`. Open source."* — would land in front of the entire thread audience.
+
+Risk: HN's "show HN" / shilling sensitivity. The comment should be contextual, not promotional. Ideal hook: respond to a specific complaint, not to the OP.
+
+---
+
+## Tier 2.5 — Direct competitor / partner intel (HN Show HN)
+
+- **`@yakkomajuri`** — [AgentPort](https://agentport.sh/), 8 HN points — "Open-source Security Gateway For Agents". Builds adjacent infra. Possible partner integration (their gateway sends events to ThumbGate's enforcement engine?) or M&A target.
+- **`@AgastyaTodi`** — [AgentArmor](https://github.com/Agastya910/agentarmor), 10 HN points — "8-layer security framework for AI agents". Competing positioning.
+- **`@infamous-oven`** — [BetterClaw](https://news.ycombinator.com/item?id=47973502), 2 HN points — "Compile a paragraph into a workflow that gates agent tools". Adjacent.
+- **`@metadata` mentioned Safe Boundary** (spectralcore.com/safeboundary) — database security proxy for AI agents. Direct horizontal.
