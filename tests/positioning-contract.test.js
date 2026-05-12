@@ -46,9 +46,9 @@ test('public surfaces lead with outcomes instead of infrastructure abstractions'
   assert.match(readme, /Prevent expensive AI mistakes/i);
   assert.match(readme, /Make AI stop repeating mistakes/i);
   assert.match(readme, /reliable operator/i);
-  assert.match(landingPage, /Stop the same mistake before|paying Anthropic to watch/i);
-  assert.match(landingPage, /machine-speed pre-action defense/i);
-  assert.match(landingPage, /agent surface inventory/i);
+  assert.match(landingPage, /Stop Claude Code from force-pushing to main/i);
+  assert.match(landingPage, /turns one thumbs-down into local Pre-Action Checks/i);
+  assert.match(landingPage, /recognizable tool calls and repeated patterns/i);
   assert.match(gptInstructions, /Sell outcomes before infrastructure/i);
   assert.doesNotMatch(landingPage, /Global enforcement/i);
   assert.doesNotMatch(readme, /Behavior control system/i);
@@ -211,7 +211,7 @@ test('public landing copy stays vendor-neutral and honest about editor support',
   const congruence = readText(path.join('docs', 'MARKETING_COPY_CONGRUENCE.md'));
   const landingPage = readText(path.join('public', 'index.html'));
 
-  assert.match(congruence, /Root landing page stays vendor-neutral/i);
+  assert.match(congruence, /Root landing page stays Claude Code-first/i);
   assert.match(congruence, /Do not claim a standalone VS Code extension/i);
   assert.match(landingPage, /Claude Code/i);
   assert.match(landingPage, /Cursor/i);
