@@ -1,11 +1,5 @@
 'use strict';
 
-jest.mock('stripe', () => ({
-  webhooks: {
-    constructEvent: jest.fn(),
-  },
-}));
-
 /**
  * tests/billing.test.js
  */
