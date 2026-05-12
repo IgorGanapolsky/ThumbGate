@@ -90,15 +90,17 @@ test('packaged well-known MCP server card is valid JSON', () => {
   assert.equal(typeof payload.version, 'string');
 });
 
-test('landing page does not render empty revenue links', async () => {
+test('landing page does not render empty or deprecated revenue links', async () => {
   const res = await fetch(`${origin}/`);
   assert.equal(res.status, 200);
   const html = await res.text();
 
   assert.doesNotMatch(html, /href=""/, 'rendered landing page must not contain empty href links');
   assert.doesNotMatch(html, /__SPRINT_DIAGNOSTIC_CHECKOUT_URL__|__WORKFLOW_SPRINT_CHECKOUT_URL__/);
-  assert.match(html, /https:\/\/buy\.stripe\.com\/3cI7sLgH25v8dWh5e33sI0o/);
-  assert.match(html, /https:\/\/buy\.stripe\.com\/8x25kDcqMaPs9G15e33sI0p/);
+  assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/3cI7sLgH25v8dWh5e33sI0o/);
+  assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/8x25kDcqMaPs9G15e33sI0p/);
+  assert.match(html, /\/checkout\/pro\?confirm=1/);
+  assert.match(html, /\/guide\?utm_source=website/);
 });
 
 test('landing page internal links resolve without auth or broken .html aliases', async () => {
