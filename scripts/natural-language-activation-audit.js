@@ -2,6 +2,7 @@
 'use strict';
 
 const fs = require('node:fs');
+const path = require('node:path');
 
 const ACTIVATION_SOURCES = new Set(['hidden_state', 'logit', 'behavioral_inference', 'unavailable']);
 const RISK_PATTERNS = [
@@ -172,6 +173,6 @@ module.exports = {
   formatNaturalLanguageActivationAudit,
 };
 
-if (require.main === module) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
   main();
 }

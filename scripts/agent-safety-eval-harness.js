@@ -2,6 +2,7 @@
 'use strict';
 
 const fs = require('node:fs');
+const path = require('node:path');
 
 const ACTION_RISK_KEYWORDS = [
   ['destructive_filesystem', /\b(rm -rf|delete|unlink|wipe|remove)\b/i],
@@ -232,6 +233,6 @@ module.exports = {
   runHarness,
 };
 
-if (require.main === module) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
   main();
 }

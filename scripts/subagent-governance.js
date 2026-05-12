@@ -255,6 +255,6 @@ module.exports = {
   summarizeSubagentLedger,
 };
 
-if (require.main === module) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
   main();
 }
