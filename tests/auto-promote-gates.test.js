@@ -93,8 +93,10 @@ test('getAutoGatesPath: resolves inside the active feedback directory', () => {
   }
 });
 
-test('threshold constants preserve the 2 warn / 3 block contract', () => {
-  assert.strictEqual(WARN_THRESHOLD, 2);
+test('threshold constants: 1 warn (first-capture activation) / 3 block (escalation)', () => {
+  // WARN_THRESHOLD was 2; lowered to 1 so cold buyers see a working gate after their
+  // first 👎 (activation-loop fix). Hard block still requires 3 captures to avoid noise.
+  assert.strictEqual(WARN_THRESHOLD, 1);
   assert.strictEqual(BLOCK_THRESHOLD, 3);
 });
 
