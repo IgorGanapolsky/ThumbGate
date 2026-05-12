@@ -1122,6 +1122,7 @@ test('robots and sitemap endpoints publish crawl metadata for the canonical app 
   assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/<\/loc>/);
   assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/compare\/speclock<\/loc>/);
   assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/compare\/mem0<\/loc>/);
+  assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/compare\/claude-managed-agents<\/loc>/);
   assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/guides\/pre-action-checks<\/loc>/);
   assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/guides\/claude-code-feedback<\/loc>/);
   assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/guides\/autoresearch-agent-safety<\/loc>/);

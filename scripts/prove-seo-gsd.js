@@ -124,6 +124,7 @@ async function run() {
           '/',
           '/compare/speclock',
           '/compare/mem0',
+          '/compare/claude-managed-agents',
           '/compare/fallow',
           '/guides/pre-action-checks',
           '/guides/agent-harness-optimization',
@@ -165,6 +166,7 @@ async function run() {
         for (const pathname of [
           '/compare/speclock',
           '/compare/mem0',
+          '/compare/claude-managed-agents',
           '/compare/fallow',
           '/guides/pre-action-checks',
           '/guides/agent-harness-optimization',
