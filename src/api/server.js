@@ -188,6 +188,10 @@ const {
   checkLimit,
   UPGRADE_MESSAGE: RATE_LIMIT_MESSAGE,
 } = require('../../scripts/rate-limiter');
+const {
+  checkAndRecord: publicRateCheck,
+  sendRateLimited: sendPublicRateLimited,
+} = require('../../scripts/public-rate-limiter');
 const { sendProblem, PROBLEM_TYPES } = require('../../scripts/problem-detail');
 const { TOOLS: MCP_TOOLS } = require('../../scripts/tool-registry');
 const resendMailer = require('../../scripts/mailer/resend-mailer');
@@ -4912,6 +4916,10 @@ async function addContext(){
     }
 
     if (req.method === 'POST' && pathname === '/v1/telemetry/ping') {
+      // 2026-05-12 audit: telemetry ingest was unrate-limited. A single
+      // hostile client could flood disk via append-only JSONL.
+      const rl = publicRateCheck('telemetry_ping', req);
+      if (!rl.allowed) { sendPublicRateLimited(res, rl); return; }
       const { FEEDBACK_DIR } = getFeedbackPaths();
       try {
         const payload = await parseJsonBody(req, 16 * 1024);
@@ -5033,6 +5041,33 @@ async function addContext(){
     }
 
     if (req.method === 'POST' && pathname === '/v1/intake/workflow-sprint') {
+      // 2026-05-12 audit: lead-pipeline spam vector. A scripted submitter
+      // could flood this endpoint with fake leads, drowning real signal.
+      // Two gates: per-IP rate-limit (5/hr) AND bot-pattern detection.
+      // Note: we only reject on confirmed bot USER-AGENT PATTERN MATCHES,
+      // not on the bot-detector's "empty/short user-agent" heuristic — that
+      // heuristic is appropriate for analytics-de-noising but too aggressive
+      // for lead-rejection (legitimate CLI/integration clients often have
+      // sparse UAs and we don't want to silently drop them).
+      const rl = publicRateCheck('intake_workflow_sprint', req);
+      if (!rl.allowed) { sendPublicRateLimited(res, rl); return; }
+      try {
+        const _botDetectorIntake = require('../../scripts/bot-detector');
+        if (typeof _botDetectorIntake?.classifyVisitor === 'function') {
+          const c = _botDetectorIntake.classifyVisitor(req);
+          // Only reject on UA pattern match (real bot signature), not on
+          // empty-UA or other softer signals.
+          if (c?.type === 'bot' && typeof c.reason === 'string' && c.reason.startsWith('UA matches:')) {
+            res.writeHead(204, { 'Access-Control-Allow-Origin': '*' }); // NOSONAR javascript:S5122 - Public lead-intake bot rejection is intentionally origin-agnostic and returns no body.
+            res.end();
+            return;
+          }
+        }
+      } catch (err) {
+        if (process.env.THUMBGATE_DEBUG_BOT_DETECTOR === '1') {
+          console.warn('bot-detector intake check failed:', err && err.message ? err.message : String(err));
+        }
+      }
       const { FEEDBACK_DIR } = getFeedbackPaths();
       const traceId = createTraceId('sprint_intake');
       const journeyState = resolveJourneyState(req, parsed);
@@ -5353,6 +5388,11 @@ async function addContext(){
 
     // Public checkout session creation for top-of-funnel acquisition.
     if (req.method === 'POST' && pathname === '/v1/billing/checkout') {
+      // 2026-05-12 audit: checkout-session creation was unrate-limited at the
+      // edge. Stripe rate-limits us downstream, but bursts still cost us tokens
+      // + API calls + log noise. 20/min/IP is well above any legitimate flow.
+      const rl = publicRateCheck('checkout_create', req);
+      if (!rl.allowed) { sendPublicRateLimited(res, rl); return; }
       try {
         const body = await parseJsonBody(req);
         const traceId = body.traceId || createTraceId('checkout');
@@ -5398,6 +5438,10 @@ async function addContext(){
     }
 
     if (req.method === 'GET' && pathname === '/v1/billing/session') {
+      // 2026-05-12 audit: read endpoint, but unbounded reads still cost CPU
+      // and could be used to enumerate session IDs. 60/min is generous.
+      const rl = publicRateCheck('checkout_session', req);
+      if (!rl.allowed) { sendPublicRateLimited(res, rl); return; }
       try {
         const sessionId = parsed.searchParams.get('sessionId');
         const requestedTraceId = parsed.searchParams.get('traceId') || '';
@@ -5533,6 +5577,10 @@ async function addContext(){
       }
 
       if (req.method === 'POST' && pathname === '/v1/intents/plan') {
+        // 2026-05-12 audit: compute-heavy private-API path. 30/min is plenty
+        // for legitimate operator flows.
+        const rl = publicRateCheck('intents_plan', req);
+        if (!rl.allowed) { sendPublicRateLimited(res, rl); return; }
         const body = await parseJsonBody(req);
         try {
           const intentRouter = requirePrivateApiModule('intentRouter', 'Intent planning');
@@ -5672,6 +5720,10 @@ async function addContext(){
       }
 
       if (req.method === 'POST' && pathname === '/v1/jobs/harness') {
+        // 2026-05-12 audit: compute-heavy harness execution. 30/min keeps the
+        // job runner from being a per-IP CPU drain.
+        const rl = publicRateCheck('harness_job', req);
+        if (!rl.allowed) { sendPublicRateLimited(res, rl); return; }
         const body = await parseJsonBody(req);
         const identifier = body.harness || body.harnessId;
         if (!identifier) {

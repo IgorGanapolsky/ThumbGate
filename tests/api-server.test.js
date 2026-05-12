@@ -40,6 +40,11 @@ process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL = 'https://buy.stripe.com/d
 process.env.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL = 'https://buy.stripe.com/sprint-test';
 process.env.THUMBGATE_GA_MEASUREMENT_ID = 'G-TEST1234';
 process.env.THUMBGATE_GOOGLE_SITE_VERIFICATION = 'test-verification-token';
+// 2026-05-12: public-rate-limiter applies per-IP buckets at the HTTP edge.
+// Multi-test runs all hit 127.0.0.1, exhausting the shared per-IP budget
+// (e.g. intake_workflow_sprint = 5/hr). Disable in test runs; the limiter
+// itself has its own unit tests in tests/public-rate-limiter.test.js.
+process.env.THUMBGATE_NO_RATE_LIMIT = '1';
 process.env.THUMBGATE_BUILD_METADATA_PATH = path.join(tmpFeedbackDir, 'build-metadata.json');
 fs.writeFileSync(
   process.env.THUMBGATE_BUILD_METADATA_PATH,
