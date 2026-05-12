@@ -92,6 +92,83 @@ const TIERS = [
     ],
     prices: [],
   },
+  // One-off SKUs currently sold via hardcoded buy.stripe.com Payment Links in
+  // src/api/server.js. Recreating these as persistent products + one-time
+  // prices lets thumbgate.ai swap to env-driven Payment Link URLs once the
+  // workflow has captured the new URLs.
+  {
+    tier: 'first_failure_rule',
+    name: 'ThumbGate — First Failure Rule',
+    description: 'One prevention rule shipped to your repo within 24 hours. Buy the proof that a single rule blocks a class of repeated AI-agent mistakes.',
+    imageUrl: `${PUBLIC_ORIGIN}/assets/brand/thumbgate-icon-512.png`,
+    marketingFeatures: [
+      { name: 'One prevention rule shipped within 24h' },
+      { name: 'PR opened against your repo with the rule + test' },
+      { name: 'Refund if we cannot extract a rule from your trace' },
+    ],
+    prices: [
+      { lookupKey: 'thumbgate_first_failure_rule', unitAmount: 100, interval: null, nickname: 'First Failure Rule — $1 one-time' },
+    ],
+  },
+  {
+    tier: 'quick_read',
+    name: 'ThumbGate — Quick Read',
+    description: '20-minute written teardown of one repeated AI-agent failure pattern in your repo + a recommended Pre-Action Check.',
+    imageUrl: `${PUBLIC_ORIGIN}/assets/brand/thumbgate-icon-512.png`,
+    marketingFeatures: [
+      { name: '20-minute written teardown of one failure pattern' },
+      { name: 'Recommended Pre-Action Check + lesson DB entry' },
+      { name: 'Delivered in 48 hours' },
+    ],
+    prices: [
+      { lookupKey: 'thumbgate_quick_read', unitAmount: 1900, interval: null, nickname: 'Quick Read — $19 one-time' },
+    ],
+  },
+  {
+    tier: 'workflow_teardown',
+    name: 'ThumbGate — Workflow Teardown',
+    description: 'Deep teardown of one AI-agent workflow: root-cause analysis, prevention rules, and an installable Pre-Action Check pack.',
+    imageUrl: `${PUBLIC_ORIGIN}/assets/brand/thumbgate-icon-512.png`,
+    marketingFeatures: [
+      { name: 'Full workflow teardown with root-cause analysis' },
+      { name: 'Pre-Action Check pack delivered as a PR' },
+      { name: 'One async follow-up call to walk through findings' },
+    ],
+    prices: [
+      { lookupKey: 'thumbgate_workflow_teardown', unitAmount: 9900, interval: null, nickname: 'Workflow Teardown — $99 one-time' },
+    ],
+  },
+  {
+    tier: 'sprint_diagnostic',
+    name: 'ThumbGate — Sprint Diagnostic',
+    description: 'Two-day diagnostic on your AI-agent workflow: failure-trace analysis, top-5 prevention rules, and a Pre-Action Check pack scoped to your stack.',
+    imageUrl: `${PUBLIC_ORIGIN}/assets/brand/thumbgate-icon-pro-512.png`,
+    marketingFeatures: [
+      { name: 'Two-day diagnostic on your AI-agent workflow' },
+      { name: 'Top-5 prevention rules ranked by impact' },
+      { name: 'Scoped Pre-Action Check pack delivered as a PR' },
+      { name: '60-minute findings review call' },
+    ],
+    prices: [
+      { lookupKey: 'thumbgate_sprint_diagnostic', unitAmount: 49900, interval: null, nickname: 'Sprint Diagnostic — $499 one-time' },
+    ],
+  },
+  {
+    tier: 'workflow_sprint',
+    name: 'ThumbGate — Workflow Sprint',
+    description: 'Full-week workflow hardening sprint: end-to-end teardown, prevention-rule synthesis, Pre-Action Check rollout, and a paired engineering session.',
+    imageUrl: `${PUBLIC_ORIGIN}/assets/brand/thumbgate-icon-team-512.png`,
+    marketingFeatures: [
+      { name: 'Full-week workflow hardening sprint' },
+      { name: 'End-to-end teardown + prevention-rule synthesis' },
+      { name: 'Pre-Action Check rollout against your repo' },
+      { name: 'Paired engineering session with the founder' },
+      { name: '30-day async follow-up window' },
+    ],
+    prices: [
+      { lookupKey: 'thumbgate_workflow_sprint', unitAmount: 150000, interval: null, nickname: 'Workflow Sprint — $1,500 one-time' },
+    ],
+  },
 ];
 
 const STRIPE_API = 'https://api.stripe.com/v1';
@@ -160,7 +237,58 @@ async function findPriceByLookupKey(lookupKey, secretKey) {
   return (res.data && res.data[0]) || null;
 }
 
-async function upsertTier(tierSpec, secretKey) {
+// Walks Payment Links to find one whose metadata tags it as managed by this
+// bootstrap for a given lookup_key. Required because Stripe doesn't index
+// Payment Links by an arbitrary key.
+async function findPaymentLinkByLookupKey(lookupKey, secretKey) {
+  let starting_after = null;
+  while (true) {
+    const qs = starting_after ? `?limit=100&starting_after=${starting_after}&active=true` : '?limit=100&active=true';
+    const page = await stripeRequest('GET', `/payment_links${qs}`, null, secretKey);
+    for (const link of page.data || []) {
+      if (link.metadata && link.metadata.thumbgate_lookup_key === lookupKey) return link;
+    }
+    if (!page.has_more) return null;
+    starting_after = page.data[page.data.length - 1].id;
+  }
+}
+
+async function ensurePaymentLinkForPrice({ lookupKey, priceId, tier, secretKey }) {
+  if (!priceId) return null;
+  const existing = await findPaymentLinkByLookupKey(lookupKey, secretKey);
+  if (existing && existing.active) {
+    console.log(`  payment link for ${lookupKey} already exists: ${existing.url}`);
+    return existing;
+  }
+  const payload = {
+    line_items: [{ price: priceId, quantity: 1 }],
+    allow_promotion_codes: true,
+    billing_address_collection: 'auto',
+    metadata: {
+      thumbgate_tier: tier,
+      thumbgate_lookup_key: lookupKey,
+      managed_by: 'stripe-bootstrap-saas-catalog',
+    },
+    after_completion: { type: 'redirect', redirect: { url: `${PUBLIC_ORIGIN}/thanks?lk=${encodeURIComponent(lookupKey)}` } },
+  };
+  if (DRY_RUN) {
+    console.log(`  [dry-run] would POST /payment_links for ${lookupKey}:`, JSON.stringify(payload, null, 2));
+    return { url: `https://buy.stripe.com/DRYRUN_${lookupKey}`, id: `plink_dryrun_${lookupKey}` };
+  }
+  const created = await stripeRequest('POST', '/payment_links', payload, secretKey);
+  console.log(`  created payment link ${created.id} for ${lookupKey}: ${created.url}`);
+  return created;
+}
+
+// Only one-off SKUs get Payment Links auto-generated. SaaS subscriptions are
+// driven by inline Checkout Sessions in src/api/server.js, so a stable
+// Payment Link for them would never be referenced.
+const PAYMENT_LINK_TIERS = new Set([
+  'first_failure_rule', 'quick_read', 'workflow_teardown',
+  'sprint_diagnostic', 'workflow_sprint',
+]);
+
+async function upsertTier(tierSpec, secretKey, summary) {
   console.log(`\n=== ${tierSpec.name} (tier=${tierSpec.tier}) ===`);
 
   let product = await findProductByTier(tierSpec.tier, secretKey);
@@ -195,11 +323,13 @@ async function upsertTier(tierSpec, secretKey) {
 
   for (const priceSpec of tierSpec.prices) {
     const existing = await findPriceByLookupKey(priceSpec.lookupKey, secretKey);
-    if (existing
+    const isRecurring = Boolean(priceSpec.interval);
+    const existingInterval = (existing && existing.recurring && existing.recurring.interval) || null;
+    const matches = existing
       && existing.product === product.id
       && existing.unit_amount === priceSpec.unitAmount
-      && existing.recurring
-      && existing.recurring.interval === priceSpec.interval) {
+      && existingInterval === priceSpec.interval;
+    if (matches) {
       console.log(`  price ${priceSpec.lookupKey} already matches (${existing.id}), skipping`);
       continue;
     }
@@ -213,17 +343,35 @@ async function upsertTier(tierSpec, secretKey) {
       product: product.id,
       currency: 'usd',
       unit_amount: priceSpec.unitAmount,
-      recurring: { interval: priceSpec.interval },
       lookup_key: priceSpec.lookupKey,
       nickname: priceSpec.nickname,
       transfer_lookup_key: true,
       metadata: { thumbgate_tier: tierSpec.tier, managed_by: 'stripe-bootstrap-saas-catalog' },
     };
+    if (isRecurring) {
+      pricePayload.recurring = { interval: priceSpec.interval };
+    }
+    let createdPriceId = null;
     if (DRY_RUN) {
       console.log(`  [dry-run] would POST /prices for ${priceSpec.lookupKey}:`, JSON.stringify(pricePayload, null, 2));
+      createdPriceId = `price_dryrun_${priceSpec.lookupKey}`;
     } else {
       const created = await stripeRequest('POST', '/prices', pricePayload, secretKey);
-      console.log(`  created price ${created.id} for ${priceSpec.lookupKey} (${created.unit_amount}c/${created.recurring && created.recurring.interval})`);
+      const intervalLabel = created.recurring && created.recurring.interval ? created.recurring.interval : 'one_time';
+      console.log(`  created price ${created.id} for ${priceSpec.lookupKey} (${created.unit_amount}c/${intervalLabel})`);
+      createdPriceId = created.id;
+    }
+    if (PAYMENT_LINK_TIERS.has(tierSpec.tier)) {
+      const priceIdForLink = createdPriceId || (existing && existing.id);
+      const link = await ensurePaymentLinkForPrice({
+        lookupKey: priceSpec.lookupKey,
+        priceId: priceIdForLink,
+        tier: tierSpec.tier,
+        secretKey,
+      });
+      if (summary && link && link.url) {
+        summary.paymentLinks[priceSpec.lookupKey] = link.url;
+      }
     }
   }
   return product;
@@ -241,15 +389,23 @@ async function main() {
     process.exitCode = 1;
     return;
   }
+  // Keep the no-prefix log line — the self-heal auto-fix on this branch
+  // (commit 3b2b47ad) flagged slicing 8 chars of an sk_live_* as a partial
+  // secret leak in logs.
   console.log(`stripe-bootstrap-saas-catalog: mode=${DRY_RUN ? 'DRY RUN' : 'WRITE'} key=configured`);
+  const summary = { paymentLinks: {} };
   for (const tier of TIERS) {
     try {
-      await upsertTier(tier, secretKey);
+      await upsertTier(tier, secretKey, summary);
     } catch (err) {
       console.error(`  FAILED ${tier.tier}: ${err.message}`);
       if (err.detail) console.error('  detail:', JSON.stringify(err.detail, null, 2));
       process.exitCode = 1;
     }
+  }
+  console.log('\n=== Payment Link summary (use these to update src/api/server.js constants) ===');
+  for (const [key, url] of Object.entries(summary.paymentLinks)) {
+    console.log(`  ${key}: ${url}`);
   }
   console.log('\nBootstrap complete.');
 }
