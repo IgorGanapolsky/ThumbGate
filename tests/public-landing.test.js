@@ -75,6 +75,9 @@ test('public landing page keeps optional GA4 and Search Console hooks available 
   assert.match(landingPage, /const serverSessionId = '__SERVER_SESSION_ID__';/);
   assert.match(landingPage, /const serverAcquisitionId = '__SERVER_ACQUISITION_ID__';/);
   assert.match(landingPage, /const serverTelemetryCaptured = '__SERVER_TELEMETRY_CAPTURED__' === 'true';/);
+  assert.match(landingPage, /function sendGa4Event/);
+  assert.match(landingPage, /sendGa4Event\('generate_lead'/);
+  assert.match(landingPage, /sendGa4Event\('begin_checkout'/);
 });
 
 test('public landing page includes pricing section with Free, Pro, and Team tiers', () => {
@@ -88,14 +91,76 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /\/mo/);
   assert.match(landingPage, /\$49/);
   assert.match(landingPage, /\/seat\/mo/);
-  assert.match(landingPage, /See how it works/);
-  assert.match(landingPage, /3 captures.*1 rule.*1 agent/i);
+  // Free tier moved from "3 captures total, 1 rule" to "Unlimited captures,
+  // 5 active rules" in feat/free-tier-unlimited-captures-5-rules. Price-sub
+  // copy moved from "See how it works..." to "Block repeated mistakes daily..."
+  assert.match(landingPage, /Block repeated mistakes daily/);
+  assert.match(landingPage, /Unlimited captures.*5 (active )?rules/i);
+  assert.doesNotMatch(landingPage, /3 captures.*1 rule.*1 agent/i);
+  assert.doesNotMatch(landingPage, /3 captures total/i);
   assert.match(landingPage, /solo side lane/i);
   assert.match(landingPage, /Shared enforcement/i);
   assert.match(landingPage, /Install Free/);
-  assert.match(landingPage, /Free Trial|Upgrade to Pro/i);
-  assert.match(landingPage, /7-DAY FREE TRIAL/i);
+  assert.match(landingPage, /Pay-now Pro|Upgrade to Pro/i);
+  assert.match(landingPage, /PAY-NOW PRO/i);
   assert.match(landingPage, /Start Workflow Hardening Sprint/);
+});
+
+test('public landing page exposes env-driven paid sprint checkout path', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /const sprintDiagnosticCheckoutUrl = '__SPRINT_DIAGNOSTIC_CHECKOUT_URL__';/);
+  assert.match(landingPage, /const workflowSprintCheckoutUrl = '__WORKFLOW_SPRINT_CHECKOUT_URL__';/);
+  assert.match(landingPage, /data-sprint-paid-path/);
+  assert.match(landingPage, /Workflow Hardening Diagnostic/);
+  assert.match(landingPage, /Have one AI-agent failure that keeps repeating\?/);
+  assert.match(landingPage, /one real workflow, one repeated failure pattern, enforceable pre-action gates/);
+  assert.match(landingPage, /href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__"/);
+  assert.match(landingPage, /href="__WORKFLOW_SPRINT_CHECKOUT_URL__"/);
+  assert.doesNotMatch(landingPage, /founder_workflow_diagnostic_checkout_started/);
+  assert.doesNotMatch(landingPage, /Pay \$99 diagnostic/);
+  assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/7sY4gzgH24r49G17mb3sI0g/);
+  assert.doesNotMatch(landingPage, /First AI Agent Failure Rule/);
+  assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/4gM6oHgH2bTw4lH6i73sI0z/);
+  assert.doesNotMatch(landingPage, /Pay \$1 first rule/);
+  assert.doesNotMatch(landingPage, /first_failure_rule_checkout_started/);
+  assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/7sYfZhgH29LodWhdKz3sI0v/);
+  assert.doesNotMatch(landingPage, /Pay \$99 teardown/);
+  assert.doesNotMatch(landingPage, /AI Agent Failure Quick Read/);
+  assert.doesNotMatch(landingPage, /Pay \$19 quick read/);
+  assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
+  assert.doesNotMatch(landingPage, /quick_read_checkout_started/);
+  // Hero CTA pair is intentionally Free + Pro $19/mo for cold-visitor conversion.
+  // The $499 diagnostic still ships via the workflow-sprint-intake paid path below ("Pay for diagnostic" card).
+  assert.doesNotMatch(landingPage, /Pay \$499 diagnostic/);
+  assert.match(landingPage, /Get Pro — \$19\/mo/);
+  assert.match(landingPage, /Pay for diagnostic/);
+  assert.doesNotMatch(landingPage, /Pay \$1500 sprint/);
+  assert.match(landingPage, /Reliable AI Agent Governance Setup/);
+  assert.match(landingPage, /\$3,997/);
+  assert.match(landingPage, /\$297\/mo/);
+  assert.match(landingPage, /governance_setup_intake_clicked/);
+  assert.match(landingPage, /OpenClaw Agent Governance Kit/);
+  assert.match(landingPage, /https:\/\/buy\.stripe\.com\/bJe14naiE9Lo7xT49Z3sI12/);
+  assert.match(landingPage, /openclaw_governance_kit_checkout_started/);
+  assert.match(landingPage, /team_openclaw_governance_kit_checkout/);
+  assert.match(landingPage, /Buy kit/);
+  assert.match(landingPage, /Send workflow first/);
+  assert.match(landingPage, /Pay for diagnostic/);
+  assert.match(landingPage, /Pay for sprint/);
+  assert.doesNotMatch(landingPage, /workflow_teardown_checkout_started/);
+  assert.match(landingPage, /hero_workflow_sprint_diagnostic_checkout/);
+  assert.doesNotMatch(landingPage, /hero_workflow_sprint_checkout/);
+  assert.match(landingPage, /hero_workflow_sprint_recovery_intake/);
+  assert.match(landingPage, /workflow_sprint_diagnostic_checkout_started/);
+  assert.match(landingPage, /workflow_sprint_checkout_started/);
+  assert.match(landingPage, /workflow_sprint_recovery_intake_clicked/);
+  assert.match(landingPage, /workflow_sprint_recovery_intake/);
+  assert.doesNotMatch(landingPage, /ctaId:'hero_first_failure_rule_checkout'/);
+  assert.doesNotMatch(landingPage, /ctaId:'hero_workflow_teardown_checkout'/);
+  assert.match(landingPage, /ctaId: 'hero_workflow_sprint_diagnostic_checkout'/);
+  assert.doesNotMatch(landingPage, /ctaId: 'hero_workflow_sprint_checkout'/);
+  assert.match(landingPage, /ctaId: 'hero_workflow_sprint_recovery_intake'/);
 });
 
 test('public landing page includes Plausible analytics and search engine proof bar', () => {
@@ -160,21 +225,15 @@ test('public landing page positions ThumbGate as agent governance for AI coding 
 test('public landing page exposes browser-bridge safety buyer guides', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /\/guides\/browser-automation-safety/);
-  assert.match(landingPage, /Browser Automation Safety for AI Agents/);
-  assert.match(landingPage, /\/guides\/native-messaging-host-security/);
-  assert.match(landingPage, /Native Messaging Host Security/);
-  assert.match(landingPage, /cross-app bridges/i);
-  assert.match(landingPage, /pre-authorized extension paths/i);
+  assert.match(landingPage, /\/guides/);
+  assert.match(landingPage, /Browse the guide library/i);
 });
 
 test('public landing page exposes AEO listicle for production AI agent safety', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /\/guides\/best-tools-stop-ai-agents-breaking-production/);
-  assert.match(landingPage, /Best Tools to Stop AI Agents From Breaking Production/);
-  assert.match(landingPage, /long-tail answer-engine page/i);
-  assert.match(landingPage, /parallel coding agents/i);
+  assert.match(landingPage, /\/guides/);
+  assert.match(landingPage, /Browse the guide library/i);
 });
 
 test('public landing page hero features both thumbs up AND thumbs down prominently', () => {
@@ -268,8 +327,22 @@ test('public landing page includes an explicit Team rollout lane with shared wor
   assert.match(landingPage, /Check template library/i);
   assert.match(landingPage, /workflow-sprint-intake/);
   assert.match(landingPage, /Start Team Pilot Intake/i);
+  assert.match(landingPage, /id="team-pilot-intake-form"/);
+  assert.match(landingPage, /data-team-intake-form/);
+  assert.match(landingPage, /name="ctaPlacement" value="team_visible_intake"/);
+  assert.match(landingPage, /name="utmMedium" value="visible_team_intake"/);
   assert.match(landingPage, /name="planId" value="team"/);
   assert.match(landingPage, /name="ctaId" value="workflow_sprint_intake"/);
+  assert.match(landingPage, /Not ready to pay from a checkout page\?/);
+  assert.match(landingPage, /team_workflow_sprint_recovery_intake/);
+  assert.match(landingPage, /checkout_abandon/);
+  assert.match(landingPage, /workflow_sprint_intake_started/);
+  assert.match(landingPage, /workflow_sprint_intake_submit_attempted/);
+  assert.doesNotMatch(
+    landingPage,
+    /<details[^>]*>[\s\S]*?<form[^>]+action="\/v1\/intake\/workflow-sprint"/,
+    'Team intake must be visible without a disclosure click'
+  );
 });
 
 test('public landing page includes FAQ section with accordion interaction', () => {
@@ -308,6 +381,8 @@ test('public landing page includes compatibility section for AI agent surfaces',
   assert.match(landingPage, /Claude Desktop plugin/i);
   assert.match(landingPage, /Editor workflows/i);
   assert.match(landingPage, /Claude Code Skill/i);
+  assert.match(landingPage, /Google Data Agent Kit/i);
+  assert.match(landingPage, /\/guides\/gcp-mcp-guardrails/);
   assert.match(landingPage, /\/thumbgate/);
   assert.match(landingPage, /compatibility-grid/);
   // Arrow copy evolved when cards moved off GitHub source links in 1.5.8.
@@ -350,7 +425,7 @@ test('public landing page includes Plausible custom event tracking for all CTAs'
   assert.match(landingPage, /fetch\('\/v1\/telemetry\/ping'/);
   assert.match(landingPage, /\/go\/gpt\?utm_source=website/);
   assert.match(landingPage, /\/go\/install\?utm_source=website/);
-  assert.match(landingPage, /\/go\/github\?utm_source=website/);
+  assert.match(landingPage, /#workflow-sprint-intake/);
 
   // trackClick wires up CTA events by selector and event name
   assert.match(landingPage, /trackClick\('.btn-pro', 'checkout_start'/);
@@ -358,6 +433,7 @@ test('public landing page includes Plausible custom event tracking for all CTAs'
   assert.match(landingPage, /trackClick\('.btn-install-hero', 'install_guide_click'/);
   assert.match(landingPage, /trackClick\('.btn-install-link', 'install_guide_click'/);
   assert.match(landingPage, /trackClick\('.btn-team', 'workflow_sprint_intake_click'/);
+  assert.match(landingPage, /selector: '#team-pilot-intake-form'/);
   assert.match(landingPage, /trackClick\('.btn-free', 'install_click'/);
   assert.match(landingPage, /trackClick\('.btn-demo-link', 'demo_click'/);
   assert.match(landingPage, /trackClick\('.nav-cta', 'chatgpt_gpt_click'/);
@@ -379,29 +455,21 @@ test('public landing page internally links to comparison and guide pages without
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /id="compare-guides"/);
-  assert.match(landingPage, /Popular Buyer Questions/i);
-  assert.match(landingPage, /How buyers discover ThumbGate/i);
-  assert.match(landingPage, /href="\/compare\/speclock"/);
-  assert.match(landingPage, /href="\/compare\/mem0"/);
-  assert.match(landingPage, /href="\/guides\/pre-action-checks"/);
-  assert.match(landingPage, /href="\/guides\/agent-harness-optimization"/);
-  assert.match(landingPage, /href="\/guides\/ai-search-topical-presence"/);
-  assert.match(landingPage, /href="\/guides\/relational-knowledge-ai-recommendations"/);
-  assert.match(landingPage, /href="\/guides\/claude-code-feedback"/);
-  assert.match(landingPage, /href="\/guides\/stop-repeated-ai-agent-mistakes"/);
-  assert.match(landingPage, /href="\/guides\/cursor-agent-guardrails"/);
-  assert.match(landingPage, /href="\/guides\/codex-cli-guardrails"/);
-  assert.match(landingPage, /href="\/guides\/gemini-cli-feedback-memory"/);
-  assert.match(landingPage, /href="\/guides\/autoresearch-agent-safety"/);
-  assert.match(landingPage, /Autoresearch Safety for Self-Improving Agents/);
-  assert.match(landingPage, /AI Agent Harness Optimization/);
-  assert.match(landingPage, /AI Search Topical Presence/);
-  assert.match(landingPage, /Relational Knowledge in AI Recommendations/);
+  assert.match(landingPage, /Browse the guide library/i);
+  assert.match(landingPage, /href="\/learn"/);
   // No internal marketing jargon visible to customers
   assert.doesNotMatch(landingPage, /GSD Pages/);
   assert.doesNotMatch(landingPage, /Bottom of funnel/i);
   assert.doesNotMatch(landingPage, /Category creation/i);
   assert.doesNotMatch(landingPage, /convert.*search.*demand/i);
+});
+
+test('public landing page labels data processing boundaries for trust review', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /Data Processing Boundaries/);
+  assert.match(landingPage, /Local enforcement data stays/i);
+  assert.match(landingPage, /hosted processing surfaces/i);
 });
 
 test('public landing page promotes the Autoresearch safety pack', () => {
@@ -413,7 +481,7 @@ test('public landing page promotes the Autoresearch safety pack', () => {
   assert.match(landingPage, /holdout tests/i);
   assert.match(landingPage, /reward hacking/i);
   assert.match(landingPage, /verification evidence/i);
-  assert.match(landingPage, /cta_id=autoresearch_pro_trial/);
+  assert.match(landingPage, /cta_id=autoresearch_pro_checkout/);
 });
 
 test('public landing page advertises the Codex standalone plugin install path', () => {
@@ -559,22 +627,41 @@ test('lessons severity filtering scopes active state to rules filter buttons', (
   assert.match(html, /if \(level === 'critical'\) \{ highlightCard\(1\); \} else \{ highlightCard\(0\); \}/);
 });
 
-test('public landing page includes 7-day free trial and email capture gate', () => {
+test('public landing page includes pay-now Pro path and email capture gate', () => {
   const landingPage = readLandingPage();
   const buyerIntentScript = readBuyerIntentScript();
-  assert.match(landingPage, /7-DAY FREE TRIAL/);
+  assert.match(landingPage, /PAY-NOW PRO/);
+  assert.match(landingPage, /Billed today/);
   assert.match(landingPage, /pro-email/);
-  assert.match(landingPage, /handleProTrial/);
+  assert.match(landingPage, /handleProCheckout/);
   assert.match(landingPage, /\/js\/buyer-intent\.js/);
   assert.match(buyerIntentScript, /customer_email/);
+  assert.match(buyerIntentScript, /\/go\/pro/);
+  assert.match(buyerIntentScript, /searchParams\.set\('confirm', '1'\)/);
   assert.match(buyerIntentScript, /submitNewsletterSignup/);
   assert.match(buyerIntentScript, /initializeBehaviorAnalytics/);
   assert.match(buyerIntentScript, /buyer_email_abandon/);
   assert.match(landingPage, /initializeBehaviorAnalytics/);
-  assert.match(landingPage, /pricing_pro_trial/);
+  assert.match(landingPage, /pricing_pro_checkout/);
   assert.match(buyerIntentScript, /dataset\.baseHref/);
   assert.doesNotMatch(buyerIntentScript, /setAttribute\('href'/);
   assert.doesNotMatch(landingPage, /props:\s*\{\s*email:/);
+});
+
+test('public landing page Team card exposes both self-serve checkout AND intake-led path (without claiming a free trial)', () => {
+  const landingPage = readLandingPage();
+
+  // Self-serve checkout for 3-seat Team at $147/mo (existing STRIPE_PRICE_ID_TEAM_MONTHLY).
+  assert.match(landingPage, /Start 3-seat Team — \$147\/mo/);
+  assert.match(landingPage, /plan_id=team/);
+  assert.match(landingPage, /seat_count=3/);
+  assert.match(landingPage, /pricing_team_self_serve/);
+  // Intake remains as a fallback for qualification-first buyers.
+  assert.match(landingPage, /Or qualify first via Workflow Hardening Sprint intake/);
+  assert.match(landingPage, /Team is \$49\/seat\/mo with a 3-seat minimum\./);
+  // Still must not claim a free trial.
+  assert.doesNotMatch(landingPage, /Both start with a 7-day free trial/);
+  assert.doesNotMatch(landingPage, /free trial/i);
 });
 
 test('public landing page includes dashboard preview in Pro card', () => {

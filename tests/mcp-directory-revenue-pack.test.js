@@ -13,7 +13,7 @@ const {
   DIRECTORY_SOURCE,
   DIRECTORY_SURFACE,
   DOCS_PATH,
-  GLAMA_LEGACY_URL,
+  GLAMA_CANONICAL_URL,
   GLAMA_SEARCH_URL,
   MCP_SO_URL,
   PUNKPEYE_LIST_URL,
@@ -23,15 +23,16 @@ const {
   buildTrackedDirectoryLink,
   isCliInvocation,
   parseArgs,
+  renderMcpDirectorySurfacesCsv,
   renderMcpDirectoryRevenuePackMarkdown,
   writeMcpDirectoryRevenuePack,
 } = require('../scripts/mcp-directory-revenue-pack');
 
 const LINKS_FIXTURE = {
-  appOrigin: 'https://thumbgate-production.up.railway.app',
-  guideLink: 'https://thumbgate-production.up.railway.app/guide',
-  proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
-  sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+  appOrigin: 'https://thumbgate.ai',
+  guideLink: 'https://thumbgate.ai/guide',
+  proCheckoutLink: 'https://thumbgate.ai/checkout/pro',
+  sprintLink: 'https://thumbgate.ai/#workflow-sprint-intake',
   proPriceLabel: '$19/mo or $149/yr',
 };
 
@@ -51,7 +52,7 @@ test('directory surfaces preserve the current repair priorities and evidence dat
   ]);
   assert.equal(pack.surfaces[0].surfaceUrl, MCP_SO_URL);
   assert.equal(pack.surfaces[1].surfaceUrl, GLAMA_SEARCH_URL);
-  assert.equal(pack.surfaces[1].submissionPath, GLAMA_LEGACY_URL);
+  assert.equal(pack.surfaces[1].submissionPath, GLAMA_CANONICAL_URL);
   assert.equal(pack.surfaces[2].surfaceUrl, SMITHERY_SEARCH_URL);
   assert.equal(pack.surfaces[2].submissionPath, 'https://smithery.ai/new');
   assert.equal(pack.surfaces[3].surfaceUrl, PUNKPEYE_LIST_URL);
@@ -64,9 +65,9 @@ test('operator queue focuses on repair before expansion', () => {
   const pack = buildMcpDirectoryRevenuePack(LINKS_FIXTURE);
 
   assert.deepEqual(pack.operatorQueue.map((entry) => entry.key), [
-    'repair_glama_slug',
+    'refresh_glama_metadata',
     'repair_smithery_namespace',
-    'update_punkpeye_entry',
+    'remove_punkpeye_legacy_duplicate',
     'add_appcypher_entry',
     'keep_mcp_so_canonical',
   ]);
@@ -103,7 +104,7 @@ test('follow-on offers use tracked directory CTAs for guide, Pro, and sprint lan
 });
 
 test('tracked directory link helper keeps attribution machine-readable', () => {
-  const url = new URL(buildTrackedDirectoryLink('https://thumbgate-production.up.railway.app/guide', {
+  const url = new URL(buildTrackedDirectoryLink('https://thumbgate.ai/guide', {
     utmCampaign: 'mcp_directory_guide',
     utmContent: 'guide',
     campaignVariant: 'directory_repair',
@@ -124,7 +125,8 @@ test('rendered markdown stays operator-ready and names the legacy leaks explicit
   });
 
   assert.match(markdown, /MCP Directory Repair Pack/);
-  assert.match(markdown, /legacy `mcp-memory-gateway`/);
+  assert.match(markdown, /MCP Memory Gateway/);
+  assert.match(markdown, /mcp-memory-gateway/);
   assert.match(markdown, /`rlhf-loop\/thumbgate`/);
   assert.match(markdown, /punkpeye awesome-mcp-servers/);
   assert.match(markdown, /Proof-backed setup guide/);
@@ -132,6 +134,16 @@ test('rendered markdown stays operator-ready and names the legacy leaks explicit
   assert.match(markdown, /ThumbGate Pro/);
   assert.match(markdown, /VERIFICATION_EVIDENCE\.md/);
   assert.doesNotMatch(markdown, /official registry approved|guaranteed installs|guaranteed revenue/i);
+});
+
+test('directory surfaces csv stays operator-ready and machine-readable', () => {
+  const csv = renderMcpDirectorySurfacesCsv(buildMcpDirectoryRevenuePack(LINKS_FIXTURE));
+
+  assert.match(csv, /^key,name,role,publicStatus,operatorUse,surfaceUrl,submissionPath,support,evidenceCheckedAt,evidenceSummary,nextRepair,proof$/m);
+  assert.match(csv, /mcp_so,MCP\.so canonical listing,/);
+  assert.match(csv, /glama,Glama canonical listing,/);
+  assert.match(csv, /smithery,Smithery search result,/);
+  assert.doesNotMatch(csv, /guaranteed installs|guaranteed revenue|official registry approved/i);
 });
 
 test('checked-in MCP directory pack stays in sync with the generator output', () => {
@@ -148,7 +160,7 @@ test('checked-in MCP directory pack stays in sync with the generator output', ()
   assert.equal(markdown, committed);
 });
 
-test('CLI options and artifact writing emit markdown, JSON, and queue CSV', () => {
+test('CLI options and artifact writing emit markdown, JSON, queue CSV, and surfaces CSV', () => {
   const tempDir = makeTempDir();
   const options = parseArgs(['--write-docs', '--report-dir', tempDir]);
   const pack = buildMcpDirectoryRevenuePack(LINKS_FIXTURE);
@@ -163,11 +175,13 @@ test('CLI options and artifact writing emit markdown, JSON, and queue CSV', () =
   assert.equal(fs.existsSync(path.join(tempDir, 'mcp-directory-revenue-pack.md')), true);
   assert.equal(fs.existsSync(path.join(tempDir, 'mcp-directory-revenue-pack.json')), true);
   assert.equal(fs.existsSync(path.join(tempDir, 'mcp-directory-operator-queue.csv')), true);
+  assert.equal(fs.existsSync(path.join(tempDir, 'mcp-directory-surfaces.csv')), true);
 
   const json = JSON.parse(fs.readFileSync(path.join(tempDir, 'mcp-directory-revenue-pack.json'), 'utf8'));
   assert.equal(json.operatorQueue.length, 5);
   assert.equal(json.measurementPlan.northStar, 'directory_referral_to_paid_intent');
-  assert.match(fs.readFileSync(path.join(tempDir, 'mcp-directory-operator-queue.csv'), 'utf8'), /repair_glama_slug/);
+  assert.match(fs.readFileSync(path.join(tempDir, 'mcp-directory-operator-queue.csv'), 'utf8'), /refresh_glama_metadata/);
+  assert.match(fs.readFileSync(path.join(tempDir, 'mcp-directory-surfaces.csv'), 'utf8'), /mcp_so,MCP\.so canonical listing/);
 });
 
 test('CLI entrypoint detection is path based', () => {

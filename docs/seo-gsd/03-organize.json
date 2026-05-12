@@ -5,7 +5,23 @@
       "pageType": "integration",
       "queries": [
         {
-          "id": "kw_15_cursor-prevent-repeated-mistakes",
+          "id": "kw_14_claude-code-masterclass-guardrails",
+          "query": "claude code masterclass guardrails",
+          "source": "seed",
+          "notes": "Claude Code education demand proves a growing buyer audience that needs a safety kit after learning to automate more workflows.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 91,
+          "intent": "commercial",
+          "pillar": "pre-action-checks",
+          "persona": "claude-code-builder",
+          "pageType": "integration",
+          "opportunityScore": 89
+        },
+        {
+          "id": "kw_29_cursor-prevent-repeated-mistakes",
           "query": "cursor prevent repeated mistakes",
           "source": "seed",
           "notes": "High-intent Cursor workflow page for developers already feeling repeat-failure pain.",
@@ -21,7 +37,7 @@
           "opportunityScore": 89
         },
         {
-          "id": "kw_16_claude-code-prevent-repeated-mistakes",
+          "id": "kw_30_claude-code-prevent-repeated-mistakes",
           "query": "claude code prevent repeated mistakes",
           "source": "seed",
           "notes": "High-intent pain query for Claude Code buyers.",
@@ -37,7 +53,7 @@
           "opportunityScore": 89
         },
         {
-          "id": "kw_17_codex-cli-guardrails",
+          "id": "kw_31_codex-cli-guardrails",
           "query": "codex cli guardrails",
           "source": "seed",
           "notes": "Guardrail-focused page for Codex CLI buyers who want prevention, not just memory.",
@@ -85,7 +101,71 @@
           "opportunityScore": 83
         },
         {
-          "id": "kw_12_ai-coding-agent-guardrails",
+          "id": "kw_5_code-knowledge-graph-guardrails",
+          "query": "code knowledge graph guardrails",
+          "source": "seed",
+          "notes": "Fresh Claude Code plugin and code-graph demand where ThumbGate can own the enforcement layer after graph-based code understanding.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "commercial",
+          "pillar": "pre-action-checks",
+          "persona": "engineering-lead",
+          "pageType": "guide",
+          "opportunityScore": 83
+        },
+        {
+          "id": "kw_6_developer-machine-supply-chain-guardrails",
+          "query": "developer machine supply chain guardrails",
+          "source": "seed",
+          "notes": "Developer-machine compromise and package-manager risk map directly to ThumbGate pre-action gates before agents run risky local commands.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "commercial",
+          "pillar": "pre-action-checks",
+          "persona": "engineering-lead",
+          "pageType": "guide",
+          "opportunityScore": 83
+        },
+        {
+          "id": "kw_11_internal-ai-engineering-stack-guardrails",
+          "query": "internal ai engineering stack guardrails",
+          "source": "seed",
+          "notes": "Fresh Cloudflare-style AI engineering stack demand where ThumbGate can govern AI gateways, MCP portals, AGENTS.md/LLM wiki freshness, AI review, and sandboxed background agents.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "commercial",
+          "pillar": "pre-action-checks",
+          "persona": "engineering-lead",
+          "pageType": "guide",
+          "opportunityScore": 83
+        },
+        {
+          "id": "kw_16_reasoning-compression-guardrails",
+          "query": "reasoning compression guardrails",
+          "source": "seed",
+          "notes": "Fresh efficient-reasoning research where ThumbGate can govern step-level confidence, verifier outcomes, and token-saving model routes.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 92,
+          "intent": "commercial",
+          "pillar": "pre-action-checks",
+          "persona": "platform-engineer",
+          "pageType": "guide",
+          "opportunityScore": 83
+        },
+        {
+          "id": "kw_26_ai-coding-agent-guardrails",
           "query": "ai coding agent guardrails",
           "source": "seed",
           "notes": "Broader category demand that feeds comparison and guide pages.",
@@ -101,7 +181,7 @@
           "opportunityScore": 83
         },
         {
-          "id": "kw_13_autoresearch-agent-safety",
+          "id": "kw_27_autoresearch-agent-safety",
           "query": "autoresearch agent safety",
           "source": "seed",
           "notes": "Emerging self-improving agent query where ThumbGate can own the safety and proof-control wedge.",
@@ -117,7 +197,7 @@
           "opportunityScore": 83
         },
         {
-          "id": "kw_14_stop-ai-coding-agents-from-repeating-mistakes",
+          "id": "kw_28_stop-ai-coding-agents-from-repeating-mistakes",
           "query": "stop ai coding agents from repeating mistakes",
           "source": "seed",
           "notes": "Problem-led copy that maps to landing-page positioning.",
@@ -133,7 +213,23 @@
           "opportunityScore": 83
         },
         {
-          "id": "kw_5_browser-automation-safety",
+          "id": "kw_15_long-running-agent-context-management",
+          "query": "long running agent context management",
+          "source": "seed",
+          "notes": "Fresh Slack engineering pattern where ThumbGate can gate director journals, critic reviews, credibility scoring, and timelines for long-running agents.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 93,
+          "intent": "informational",
+          "pillar": "pre-action-checks",
+          "persona": "platform-engineer",
+          "pageType": "guide",
+          "opportunityScore": 75
+        },
+        {
+          "id": "kw_19_browser-automation-safety",
           "query": "browser automation safety",
           "source": "seed",
           "notes": "High-intent browser-agent safety query tied to prompt injection, permissions, and cross-app automation risk.",
@@ -149,7 +245,7 @@
           "opportunityScore": 75
         },
         {
-          "id": "kw_6_native-messaging-host-security",
+          "id": "kw_20_native-messaging-host-security",
           "query": "native messaging host security",
           "source": "seed",
           "notes": "Security-led query that maps directly to browser bridge auditing and explicit connector governance.",
@@ -165,20 +261,20 @@
           "opportunityScore": 75
         }
       ],
-      "totalOpportunityScore": 832,
+      "totalOpportunityScore": 1328,
       "primaryQuery": {
-        "id": "kw_15_cursor-prevent-repeated-mistakes",
-        "query": "cursor prevent repeated mistakes",
+        "id": "kw_14_claude-code-masterclass-guardrails",
+        "query": "claude code masterclass guardrails",
         "source": "seed",
-        "notes": "High-intent Cursor workflow page for developers already feeling repeat-failure pain.",
+        "notes": "Claude Code education demand proves a growing buyer audience that needs a safety kit after learning to automate more workflows.",
         "impressions": null,
         "clicks": null,
         "ctr": null,
         "position": null,
-        "businessValue": 87,
+        "businessValue": 91,
         "intent": "commercial",
         "pillar": "pre-action-checks",
-        "persona": "cursor-builder",
+        "persona": "claude-code-builder",
         "pageType": "integration",
         "opportunityScore": 89
       },
@@ -188,7 +284,8 @@
         "claude-code-builder",
         "codex-builder",
         "cursor-builder",
-        "engineering-lead"
+        "engineering-lead",
+        "platform-engineer"
       ],
       "intents": [
         "commercial",
@@ -196,90 +293,59 @@
       ]
     },
     {
-      "pillar": "feedback-loop",
-      "pageType": "integration",
-      "queries": [
-        {
-          "id": "kw_11_claude-code-feedback-memory",
-          "query": "claude code feedback memory",
-          "source": "seed",
-          "notes": "Agent-specific workflow page with high compatibility intent.",
-          "impressions": null,
-          "clicks": null,
-          "ctr": null,
-          "position": null,
-          "businessValue": 92,
-          "intent": "commercial",
-          "pillar": "feedback-loop",
-          "persona": "claude-code-builder",
-          "pageType": "integration",
-          "opportunityScore": 89
-        },
-        {
-          "id": "kw_18_gemini-cli-feedback-memory",
-          "query": "gemini cli feedback memory",
-          "source": "seed",
-          "notes": "Integration page for Gemini CLI users who need memory plus enforcement.",
-          "impressions": null,
-          "clicks": null,
-          "ctr": null,
-          "position": null,
-          "businessValue": 82,
-          "intent": "commercial",
-          "pillar": "feedback-loop",
-          "persona": "gemini-builder",
-          "pageType": "integration",
-          "opportunityScore": 89
-        },
-        {
-          "id": "kw_10_thumbs-up-thumbs-down-feedback-for-ai-coding-agents",
-          "query": "thumbs up thumbs down feedback for ai coding agents",
-          "source": "seed",
-          "notes": "Differentiates the explicit feedback loop and aligns with the brand.",
-          "impressions": null,
-          "clicks": null,
-          "ctr": null,
-          "position": null,
-          "businessValue": 95,
-          "intent": "commercial",
-          "pillar": "feedback-loop",
-          "persona": "ai-engineer",
-          "pageType": "guide",
-          "opportunityScore": 83
-        }
-      ],
-      "totalOpportunityScore": 261,
-      "primaryQuery": {
-        "id": "kw_11_claude-code-feedback-memory",
-        "query": "claude code feedback memory",
-        "source": "seed",
-        "notes": "Agent-specific workflow page with high compatibility intent.",
-        "impressions": null,
-        "clicks": null,
-        "ctr": null,
-        "position": null,
-        "businessValue": 92,
-        "intent": "commercial",
-        "pillar": "feedback-loop",
-        "persona": "claude-code-builder",
-        "pageType": "integration",
-        "opportunityScore": 89
-      },
-      "personas": [
-        "ai-engineer",
-        "claude-code-builder",
-        "gemini-builder"
-      ],
-      "intents": [
-        "commercial"
-      ]
-    },
-    {
       "pillar": "ai-agent-reliability",
       "pageType": "guide",
       "queries": [
         {
-          "id": "kw_7_ai-search-topical-presence",
+          "id": "kw_7_prompt-tricks-to-workflow-rules",
+          "query": "prompt tricks to workflow rules",
+          "source": "seed",
+          "notes": "Fresh prompt-engineering skepticism that maps directly to ThumbGate converting clear instructions, examples, and repeated failures into enforceable local checks.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "informational",
+          "pillar": "ai-agent-reliability",
+          "persona": "ai-engineer",
+          "pageType": "guide",
+          "opportunityScore": 72
+        },
+        {
+          "id": "kw_17_background-agent-governance",
+          "query": "background agent governance",
+          "source": "seed",
+          "notes": "New team-buying query for unattended agent PRs where alignment context, isolated execution, risk-tiered review, and audit evidence create immediate ROI.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "informational",
+          "pillar": "ai-agent-reliability",
+          "persona": "ai-engineer",
+          "pageType": "guide",
+          "opportunityScore": 72
+        },
+        {
+          "id": "kw_18_gpt-5-5-model-evaluation",
+          "query": "gpt-5.5 model evaluation",
+          "source": "seed",
+          "notes": "Fresh frontier-model upgrade query that maps to ThumbGate model candidate benchmarking, dashboard-analysis workloads, and routing governance before teams move expensive work.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "informational",
+          "pillar": "ai-agent-reliability",
+          "persona": "ai-engineer",
+          "pageType": "guide",
+          "opportunityScore": 72
+        },
+        {
+          "id": "kw_21_ai-search-topical-presence",
           "query": "ai search topical presence",
           "source": "seed",
           "notes": "High-intent GEO query for teams trying to become the obvious recommendation in AI search and agent answers.",
@@ -290,12 +356,12 @@
           "businessValue": 93,
           "intent": "informational",
           "pillar": "ai-agent-reliability",
-          "persona": "ai-engineer",
+          "persona": "growth-engineer",
           "pageType": "guide",
           "opportunityScore": 72
         },
         {
-          "id": "kw_8_best-tools-to-stop-ai-agents-from-breaking-production",
+          "id": "kw_22_best-tools-to-stop-ai-agents-from-breaking-production",
           "query": "best tools to stop ai agents from breaking production",
           "source": "seed",
           "notes": "Listicle-style answer-engine query that maps directly to buyer prompts about production agent reliability.",
@@ -311,7 +377,7 @@
           "opportunityScore": 72
         },
         {
-          "id": "kw_9_relational-knowledge-ai-recommendations",
+          "id": "kw_23_relational-knowledge-ai-recommendations",
           "query": "relational knowledge ai recommendations",
           "source": "seed",
           "notes": "Captures research-led interest in how AI systems decide which brands and tools to recommend.",
@@ -327,17 +393,17 @@
           "opportunityScore": 72
         }
       ],
-      "totalOpportunityScore": 216,
+      "totalOpportunityScore": 432,
       "primaryQuery": {
-        "id": "kw_7_ai-search-topical-presence",
-        "query": "ai search topical presence",
+        "id": "kw_7_prompt-tricks-to-workflow-rules",
+        "query": "prompt tricks to workflow rules",
         "source": "seed",
-        "notes": "High-intent GEO query for teams trying to become the obvious recommendation in AI search and agent answers.",
+        "notes": "Fresh prompt-engineering skepticism that maps directly to ThumbGate converting clear instructions, examples, and repeated failures into enforceable local checks.",
         "impressions": null,
         "clicks": null,
         "ctr": null,
         "position": null,
-        "businessValue": 93,
+        "businessValue": 94,
         "intent": "informational",
         "pillar": "ai-agent-reliability",
         "persona": "ai-engineer",
@@ -345,7 +411,8 @@
         "opportunityScore": 72
       },
       "personas": [
-        "ai-engineer"
+        "ai-engineer",
+        "growth-engineer"
       ],
       "intents": [
         "informational"
@@ -386,9 +453,41 @@
           "persona": "tool-evaluator",
           "pageType": "comparison",
           "opportunityScore": 100
+        },
+        {
+          "id": "kw_13_thumbgate-vs-fallow",
+          "query": "thumbgate vs fallow",
+          "source": "seed",
+          "notes": "Bottom-of-funnel positioning against JS/TS static-analysis and agent-review tooling; Fallow finds code health issues while ThumbGate enforces agent action boundaries.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 93,
+          "intent": "comparison",
+          "pillar": "comparison",
+          "persona": "tool-evaluator",
+          "pageType": "comparison",
+          "opportunityScore": 100
+        },
+        {
+          "id": "kw_33_roo-code-alternative-cline",
+          "query": "roo code alternative cline",
+          "source": "seed",
+          "notes": "Time-sensitive migration query for Roo users who need portable lesson memory before the May 15, 2026 shutdown.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 83,
+          "intent": "comparison",
+          "pillar": "comparison",
+          "persona": "tool-evaluator",
+          "pageType": "comparison",
+          "opportunityScore": 99
         }
       ],
-      "totalOpportunityScore": 200,
+      "totalOpportunityScore": 399,
       "primaryQuery": {
         "id": "kw_1_thumbgate-vs-speclock",
         "query": "thumbgate vs speclock",
@@ -410,6 +509,207 @@
       ],
       "intents": [
         "comparison"
+      ]
+    },
+    {
+      "pillar": "feedback-loop",
+      "pageType": "integration",
+      "queries": [
+        {
+          "id": "kw_25_claude-code-feedback-memory",
+          "query": "claude code feedback memory",
+          "source": "seed",
+          "notes": "Agent-specific workflow page with high compatibility intent.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 92,
+          "intent": "commercial",
+          "pillar": "feedback-loop",
+          "persona": "claude-code-builder",
+          "pageType": "integration",
+          "opportunityScore": 89
+        },
+        {
+          "id": "kw_32_gemini-cli-feedback-memory",
+          "query": "gemini cli feedback memory",
+          "source": "seed",
+          "notes": "Integration page for Gemini CLI users who need memory plus enforcement.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 82,
+          "intent": "commercial",
+          "pillar": "feedback-loop",
+          "persona": "gemini-builder",
+          "pageType": "integration",
+          "opportunityScore": 89
+        },
+        {
+          "id": "kw_24_thumbs-up-thumbs-down-feedback-for-ai-coding-agents",
+          "query": "thumbs up thumbs down feedback for ai coding agents",
+          "source": "seed",
+          "notes": "Differentiates the explicit feedback loop and aligns with the brand.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 95,
+          "intent": "commercial",
+          "pillar": "feedback-loop",
+          "persona": "ai-engineer",
+          "pageType": "guide",
+          "opportunityScore": 83
+        }
+      ],
+      "totalOpportunityScore": 261,
+      "primaryQuery": {
+        "id": "kw_25_claude-code-feedback-memory",
+        "query": "claude code feedback memory",
+        "source": "seed",
+        "notes": "Agent-specific workflow page with high compatibility intent.",
+        "impressions": null,
+        "clicks": null,
+        "ctr": null,
+        "position": null,
+        "businessValue": 92,
+        "intent": "commercial",
+        "pillar": "feedback-loop",
+        "persona": "claude-code-builder",
+        "pageType": "integration",
+        "opportunityScore": 89
+      },
+      "personas": [
+        "ai-engineer",
+        "claude-code-builder",
+        "gemini-builder"
+      ],
+      "intents": [
+        "commercial"
+      ]
+    },
+    {
+      "pillar": "seo-governance",
+      "pageType": "guide",
+      "queries": [
+        {
+          "id": "kw_8_semantic-programmatic-seo-guardrails",
+          "query": "semantic programmatic seo guardrails",
+          "source": "seed",
+          "notes": "Fresh semantic pSEO demand where ThumbGate can own the governance layer: authority maps, brand context rules, semantic internal linking, and technical monitoring before AI content scales.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "commercial",
+          "pillar": "seo-governance",
+          "persona": "growth-engineer",
+          "pageType": "guide",
+          "opportunityScore": 83
+        },
+        {
+          "id": "kw_12_seo-agent-skills-guardrails",
+          "query": "seo agent skills guardrails",
+          "source": "seed",
+          "notes": "Fresh SEO-agent demand where ThumbGate can govern workspaces, proof context, brand rules, internal-link checks, and publish gates.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "commercial",
+          "pillar": "seo-governance",
+          "persona": "growth-engineer",
+          "pageType": "guide",
+          "opportunityScore": 83
+        }
+      ],
+      "totalOpportunityScore": 166,
+      "primaryQuery": {
+        "id": "kw_8_semantic-programmatic-seo-guardrails",
+        "query": "semantic programmatic seo guardrails",
+        "source": "seed",
+        "notes": "Fresh semantic pSEO demand where ThumbGate can own the governance layer: authority maps, brand context rules, semantic internal linking, and technical monitoring before AI content scales.",
+        "impressions": null,
+        "clicks": null,
+        "ctr": null,
+        "position": null,
+        "businessValue": 94,
+        "intent": "commercial",
+        "pillar": "seo-governance",
+        "persona": "growth-engineer",
+        "pageType": "guide",
+        "opportunityScore": 83
+      },
+      "personas": [
+        "growth-engineer"
+      ],
+      "intents": [
+        "commercial"
+      ]
+    },
+    {
+      "pillar": "document-rag-safety",
+      "pageType": "guide",
+      "queries": [
+        {
+          "id": "kw_9_proxy-pointer-rag-guardrails",
+          "query": "proxy pointer rag guardrails",
+          "source": "seed",
+          "notes": "Fresh document-RAG demand where ThumbGate can own grounding gates for section trees, image pointers, visual claims, and cross-document leakage.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "commercial",
+          "pillar": "document-rag-safety",
+          "persona": "rag-engineer",
+          "pageType": "guide",
+          "opportunityScore": 83
+        },
+        {
+          "id": "kw_10_rag-precision-tuning-guardrails",
+          "query": "rag precision tuning guardrails",
+          "source": "seed",
+          "notes": "Fresh retrieval-quality demand where ThumbGate can gate embedding fine-tunes, threshold changes, recall regressions, and verifier latency before agentic RAG pipelines act.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "commercial",
+          "pillar": "document-rag-safety",
+          "persona": "rag-engineer",
+          "pageType": "guide",
+          "opportunityScore": 83
+        }
+      ],
+      "totalOpportunityScore": 166,
+      "primaryQuery": {
+        "id": "kw_9_proxy-pointer-rag-guardrails",
+        "query": "proxy pointer rag guardrails",
+        "source": "seed",
+        "notes": "Fresh document-RAG demand where ThumbGate can own grounding gates for section trees, image pointers, visual claims, and cross-document leakage.",
+        "impressions": null,
+        "clicks": null,
+        "ctr": null,
+        "position": null,
+        "businessValue": 94,
+        "intent": "commercial",
+        "pillar": "document-rag-safety",
+        "persona": "rag-engineer",
+        "pageType": "guide",
+        "opportunityScore": 83
+      },
+      "personas": [
+        "rag-engineer"
+      ],
+      "intents": [
+        "commercial"
       ]
     }
   ],
@@ -419,7 +719,23 @@
       "pageType": "integration",
       "queries": [
         {
-          "id": "kw_15_cursor-prevent-repeated-mistakes",
+          "id": "kw_14_claude-code-masterclass-guardrails",
+          "query": "claude code masterclass guardrails",
+          "source": "seed",
+          "notes": "Claude Code education demand proves a growing buyer audience that needs a safety kit after learning to automate more workflows.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 91,
+          "intent": "commercial",
+          "pillar": "pre-action-checks",
+          "persona": "claude-code-builder",
+          "pageType": "integration",
+          "opportunityScore": 89
+        },
+        {
+          "id": "kw_29_cursor-prevent-repeated-mistakes",
           "query": "cursor prevent repeated mistakes",
           "source": "seed",
           "notes": "High-intent Cursor workflow page for developers already feeling repeat-failure pain.",
@@ -435,7 +751,7 @@
           "opportunityScore": 89
         },
         {
-          "id": "kw_16_claude-code-prevent-repeated-mistakes",
+          "id": "kw_30_claude-code-prevent-repeated-mistakes",
           "query": "claude code prevent repeated mistakes",
           "source": "seed",
           "notes": "High-intent pain query for Claude Code buyers.",
@@ -451,7 +767,7 @@
           "opportunityScore": 89
         },
         {
-          "id": "kw_17_codex-cli-guardrails",
+          "id": "kw_31_codex-cli-guardrails",
           "query": "codex cli guardrails",
           "source": "seed",
           "notes": "Guardrail-focused page for Codex CLI buyers who want prevention, not just memory.",
@@ -499,7 +815,71 @@
           "opportunityScore": 83
         },
         {
-          "id": "kw_12_ai-coding-agent-guardrails",
+          "id": "kw_5_code-knowledge-graph-guardrails",
+          "query": "code knowledge graph guardrails",
+          "source": "seed",
+          "notes": "Fresh Claude Code plugin and code-graph demand where ThumbGate can own the enforcement layer after graph-based code understanding.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "commercial",
+          "pillar": "pre-action-checks",
+          "persona": "engineering-lead",
+          "pageType": "guide",
+          "opportunityScore": 83
+        },
+        {
+          "id": "kw_6_developer-machine-supply-chain-guardrails",
+          "query": "developer machine supply chain guardrails",
+          "source": "seed",
+          "notes": "Developer-machine compromise and package-manager risk map directly to ThumbGate pre-action gates before agents run risky local commands.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "commercial",
+          "pillar": "pre-action-checks",
+          "persona": "engineering-lead",
+          "pageType": "guide",
+          "opportunityScore": 83
+        },
+        {
+          "id": "kw_11_internal-ai-engineering-stack-guardrails",
+          "query": "internal ai engineering stack guardrails",
+          "source": "seed",
+          "notes": "Fresh Cloudflare-style AI engineering stack demand where ThumbGate can govern AI gateways, MCP portals, AGENTS.md/LLM wiki freshness, AI review, and sandboxed background agents.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "commercial",
+          "pillar": "pre-action-checks",
+          "persona": "engineering-lead",
+          "pageType": "guide",
+          "opportunityScore": 83
+        },
+        {
+          "id": "kw_16_reasoning-compression-guardrails",
+          "query": "reasoning compression guardrails",
+          "source": "seed",
+          "notes": "Fresh efficient-reasoning research where ThumbGate can govern step-level confidence, verifier outcomes, and token-saving model routes.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 92,
+          "intent": "commercial",
+          "pillar": "pre-action-checks",
+          "persona": "platform-engineer",
+          "pageType": "guide",
+          "opportunityScore": 83
+        },
+        {
+          "id": "kw_26_ai-coding-agent-guardrails",
           "query": "ai coding agent guardrails",
           "source": "seed",
           "notes": "Broader category demand that feeds comparison and guide pages.",
@@ -515,7 +895,7 @@
           "opportunityScore": 83
         },
         {
-          "id": "kw_13_autoresearch-agent-safety",
+          "id": "kw_27_autoresearch-agent-safety",
           "query": "autoresearch agent safety",
           "source": "seed",
           "notes": "Emerging self-improving agent query where ThumbGate can own the safety and proof-control wedge.",
@@ -531,7 +911,7 @@
           "opportunityScore": 83
         },
         {
-          "id": "kw_14_stop-ai-coding-agents-from-repeating-mistakes",
+          "id": "kw_28_stop-ai-coding-agents-from-repeating-mistakes",
           "query": "stop ai coding agents from repeating mistakes",
           "source": "seed",
           "notes": "Problem-led copy that maps to landing-page positioning.",
@@ -547,7 +927,23 @@
           "opportunityScore": 83
         },
         {
-          "id": "kw_5_browser-automation-safety",
+          "id": "kw_15_long-running-agent-context-management",
+          "query": "long running agent context management",
+          "source": "seed",
+          "notes": "Fresh Slack engineering pattern where ThumbGate can gate director journals, critic reviews, credibility scoring, and timelines for long-running agents.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 93,
+          "intent": "informational",
+          "pillar": "pre-action-checks",
+          "persona": "platform-engineer",
+          "pageType": "guide",
+          "opportunityScore": 75
+        },
+        {
+          "id": "kw_19_browser-automation-safety",
           "query": "browser automation safety",
           "source": "seed",
           "notes": "High-intent browser-agent safety query tied to prompt injection, permissions, and cross-app automation risk.",
@@ -563,7 +959,7 @@
           "opportunityScore": 75
         },
         {
-          "id": "kw_6_native-messaging-host-security",
+          "id": "kw_20_native-messaging-host-security",
           "query": "native messaging host security",
           "source": "seed",
           "notes": "Security-led query that maps directly to browser bridge auditing and explicit connector governance.",
@@ -579,20 +975,20 @@
           "opportunityScore": 75
         }
       ],
-      "totalOpportunityScore": 832,
+      "totalOpportunityScore": 1328,
       "primaryQuery": {
-        "id": "kw_15_cursor-prevent-repeated-mistakes",
-        "query": "cursor prevent repeated mistakes",
+        "id": "kw_14_claude-code-masterclass-guardrails",
+        "query": "claude code masterclass guardrails",
         "source": "seed",
-        "notes": "High-intent Cursor workflow page for developers already feeling repeat-failure pain.",
+        "notes": "Claude Code education demand proves a growing buyer audience that needs a safety kit after learning to automate more workflows.",
         "impressions": null,
         "clicks": null,
         "ctr": null,
         "position": null,
-        "businessValue": 87,
+        "businessValue": 91,
         "intent": "commercial",
         "pillar": "pre-action-checks",
-        "persona": "cursor-builder",
+        "persona": "claude-code-builder",
         "pageType": "integration",
         "opportunityScore": 89
       },
@@ -602,7 +998,8 @@
         "claude-code-builder",
         "codex-builder",
         "cursor-builder",
-        "engineering-lead"
+        "engineering-lead",
+        "platform-engineer"
       ],
       "intents": [
         "commercial",
@@ -610,90 +1007,59 @@
       ]
     },
     {
-      "pillar": "feedback-loop",
-      "pageType": "integration",
-      "queries": [
-        {
-          "id": "kw_11_claude-code-feedback-memory",
-          "query": "claude code feedback memory",
-          "source": "seed",
-          "notes": "Agent-specific workflow page with high compatibility intent.",
-          "impressions": null,
-          "clicks": null,
-          "ctr": null,
-          "position": null,
-          "businessValue": 92,
-          "intent": "commercial",
-          "pillar": "feedback-loop",
-          "persona": "claude-code-builder",
-          "pageType": "integration",
-          "opportunityScore": 89
-        },
-        {
-          "id": "kw_18_gemini-cli-feedback-memory",
-          "query": "gemini cli feedback memory",
-          "source": "seed",
-          "notes": "Integration page for Gemini CLI users who need memory plus enforcement.",
-          "impressions": null,
-          "clicks": null,
-          "ctr": null,
-          "position": null,
-          "businessValue": 82,
-          "intent": "commercial",
-          "pillar": "feedback-loop",
-          "persona": "gemini-builder",
-          "pageType": "integration",
-          "opportunityScore": 89
-        },
-        {
-          "id": "kw_10_thumbs-up-thumbs-down-feedback-for-ai-coding-agents",
-          "query": "thumbs up thumbs down feedback for ai coding agents",
-          "source": "seed",
-          "notes": "Differentiates the explicit feedback loop and aligns with the brand.",
-          "impressions": null,
-          "clicks": null,
-          "ctr": null,
-          "position": null,
-          "businessValue": 95,
-          "intent": "commercial",
-          "pillar": "feedback-loop",
-          "persona": "ai-engineer",
-          "pageType": "guide",
-          "opportunityScore": 83
-        }
-      ],
-      "totalOpportunityScore": 261,
-      "primaryQuery": {
-        "id": "kw_11_claude-code-feedback-memory",
-        "query": "claude code feedback memory",
-        "source": "seed",
-        "notes": "Agent-specific workflow page with high compatibility intent.",
-        "impressions": null,
-        "clicks": null,
-        "ctr": null,
-        "position": null,
-        "businessValue": 92,
-        "intent": "commercial",
-        "pillar": "feedback-loop",
-        "persona": "claude-code-builder",
-        "pageType": "integration",
-        "opportunityScore": 89
-      },
-      "personas": [
-        "ai-engineer",
-        "claude-code-builder",
-        "gemini-builder"
-      ],
-      "intents": [
-        "commercial"
-      ]
-    },
-    {
       "pillar": "ai-agent-reliability",
       "pageType": "guide",
       "queries": [
         {
-          "id": "kw_7_ai-search-topical-presence",
+          "id": "kw_7_prompt-tricks-to-workflow-rules",
+          "query": "prompt tricks to workflow rules",
+          "source": "seed",
+          "notes": "Fresh prompt-engineering skepticism that maps directly to ThumbGate converting clear instructions, examples, and repeated failures into enforceable local checks.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "informational",
+          "pillar": "ai-agent-reliability",
+          "persona": "ai-engineer",
+          "pageType": "guide",
+          "opportunityScore": 72
+        },
+        {
+          "id": "kw_17_background-agent-governance",
+          "query": "background agent governance",
+          "source": "seed",
+          "notes": "New team-buying query for unattended agent PRs where alignment context, isolated execution, risk-tiered review, and audit evidence create immediate ROI.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "informational",
+          "pillar": "ai-agent-reliability",
+          "persona": "ai-engineer",
+          "pageType": "guide",
+          "opportunityScore": 72
+        },
+        {
+          "id": "kw_18_gpt-5-5-model-evaluation",
+          "query": "gpt-5.5 model evaluation",
+          "source": "seed",
+          "notes": "Fresh frontier-model upgrade query that maps to ThumbGate model candidate benchmarking, dashboard-analysis workloads, and routing governance before teams move expensive work.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "informational",
+          "pillar": "ai-agent-reliability",
+          "persona": "ai-engineer",
+          "pageType": "guide",
+          "opportunityScore": 72
+        },
+        {
+          "id": "kw_21_ai-search-topical-presence",
           "query": "ai search topical presence",
           "source": "seed",
           "notes": "High-intent GEO query for teams trying to become the obvious recommendation in AI search and agent answers.",
@@ -704,12 +1070,12 @@
           "businessValue": 93,
           "intent": "informational",
           "pillar": "ai-agent-reliability",
-          "persona": "ai-engineer",
+          "persona": "growth-engineer",
           "pageType": "guide",
           "opportunityScore": 72
         },
         {
-          "id": "kw_8_best-tools-to-stop-ai-agents-from-breaking-production",
+          "id": "kw_22_best-tools-to-stop-ai-agents-from-breaking-production",
           "query": "best tools to stop ai agents from breaking production",
           "source": "seed",
           "notes": "Listicle-style answer-engine query that maps directly to buyer prompts about production agent reliability.",
@@ -725,7 +1091,7 @@
           "opportunityScore": 72
         },
         {
-          "id": "kw_9_relational-knowledge-ai-recommendations",
+          "id": "kw_23_relational-knowledge-ai-recommendations",
           "query": "relational knowledge ai recommendations",
           "source": "seed",
           "notes": "Captures research-led interest in how AI systems decide which brands and tools to recommend.",
@@ -741,17 +1107,17 @@
           "opportunityScore": 72
         }
       ],
-      "totalOpportunityScore": 216,
+      "totalOpportunityScore": 432,
       "primaryQuery": {
-        "id": "kw_7_ai-search-topical-presence",
-        "query": "ai search topical presence",
+        "id": "kw_7_prompt-tricks-to-workflow-rules",
+        "query": "prompt tricks to workflow rules",
         "source": "seed",
-        "notes": "High-intent GEO query for teams trying to become the obvious recommendation in AI search and agent answers.",
+        "notes": "Fresh prompt-engineering skepticism that maps directly to ThumbGate converting clear instructions, examples, and repeated failures into enforceable local checks.",
         "impressions": null,
         "clicks": null,
         "ctr": null,
         "position": null,
-        "businessValue": 93,
+        "businessValue": 94,
         "intent": "informational",
         "pillar": "ai-agent-reliability",
         "persona": "ai-engineer",
@@ -759,7 +1125,8 @@
         "opportunityScore": 72
       },
       "personas": [
-        "ai-engineer"
+        "ai-engineer",
+        "growth-engineer"
       ],
       "intents": [
         "informational"
@@ -800,9 +1167,41 @@
           "persona": "tool-evaluator",
           "pageType": "comparison",
           "opportunityScore": 100
+        },
+        {
+          "id": "kw_13_thumbgate-vs-fallow",
+          "query": "thumbgate vs fallow",
+          "source": "seed",
+          "notes": "Bottom-of-funnel positioning against JS/TS static-analysis and agent-review tooling; Fallow finds code health issues while ThumbGate enforces agent action boundaries.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 93,
+          "intent": "comparison",
+          "pillar": "comparison",
+          "persona": "tool-evaluator",
+          "pageType": "comparison",
+          "opportunityScore": 100
+        },
+        {
+          "id": "kw_33_roo-code-alternative-cline",
+          "query": "roo code alternative cline",
+          "source": "seed",
+          "notes": "Time-sensitive migration query for Roo users who need portable lesson memory before the May 15, 2026 shutdown.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 83,
+          "intent": "comparison",
+          "pillar": "comparison",
+          "persona": "tool-evaluator",
+          "pageType": "comparison",
+          "opportunityScore": 99
         }
       ],
-      "totalOpportunityScore": 200,
+      "totalOpportunityScore": 399,
       "primaryQuery": {
         "id": "kw_1_thumbgate-vs-speclock",
         "query": "thumbgate vs speclock",
@@ -825,6 +1224,521 @@
       "intents": [
         "comparison"
       ]
+    },
+    {
+      "pillar": "feedback-loop",
+      "pageType": "integration",
+      "queries": [
+        {
+          "id": "kw_25_claude-code-feedback-memory",
+          "query": "claude code feedback memory",
+          "source": "seed",
+          "notes": "Agent-specific workflow page with high compatibility intent.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 92,
+          "intent": "commercial",
+          "pillar": "feedback-loop",
+          "persona": "claude-code-builder",
+          "pageType": "integration",
+          "opportunityScore": 89
+        },
+        {
+          "id": "kw_32_gemini-cli-feedback-memory",
+          "query": "gemini cli feedback memory",
+          "source": "seed",
+          "notes": "Integration page for Gemini CLI users who need memory plus enforcement.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 82,
+          "intent": "commercial",
+          "pillar": "feedback-loop",
+          "persona": "gemini-builder",
+          "pageType": "integration",
+          "opportunityScore": 89
+        },
+        {
+          "id": "kw_24_thumbs-up-thumbs-down-feedback-for-ai-coding-agents",
+          "query": "thumbs up thumbs down feedback for ai coding agents",
+          "source": "seed",
+          "notes": "Differentiates the explicit feedback loop and aligns with the brand.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 95,
+          "intent": "commercial",
+          "pillar": "feedback-loop",
+          "persona": "ai-engineer",
+          "pageType": "guide",
+          "opportunityScore": 83
+        }
+      ],
+      "totalOpportunityScore": 261,
+      "primaryQuery": {
+        "id": "kw_25_claude-code-feedback-memory",
+        "query": "claude code feedback memory",
+        "source": "seed",
+        "notes": "Agent-specific workflow page with high compatibility intent.",
+        "impressions": null,
+        "clicks": null,
+        "ctr": null,
+        "position": null,
+        "businessValue": 92,
+        "intent": "commercial",
+        "pillar": "feedback-loop",
+        "persona": "claude-code-builder",
+        "pageType": "integration",
+        "opportunityScore": 89
+      },
+      "personas": [
+        "ai-engineer",
+        "claude-code-builder",
+        "gemini-builder"
+      ],
+      "intents": [
+        "commercial"
+      ]
+    }
+  ],
+  "authorityMap": [
+    {
+      "pillar": "pre-action-checks",
+      "primaryQuery": "claude code masterclass guardrails",
+      "authorityScore": 100,
+      "rankPermission": "expand",
+      "proofPages": [
+        "/guides/reasoning-compression-guardrails",
+        "/guides/deepseek-v4-runtime-guardrails",
+        "/guides/pre-action-checks",
+        "/guides/agent-harness-optimization",
+        "/guides/code-knowledge-graph-guardrails"
+      ],
+      "nextAction": "Publish semantic variants with proof-backed internal links."
+    },
+    {
+      "pillar": "ai-agent-reliability",
+      "primaryQuery": "prompt tricks to workflow rules",
+      "authorityScore": 100,
+      "rankPermission": "expand",
+      "proofPages": [],
+      "nextAction": "Publish semantic variants with proof-backed internal links."
+    },
+    {
+      "pillar": "comparison",
+      "primaryQuery": "thumbgate vs speclock",
+      "authorityScore": 100,
+      "rankPermission": "expand",
+      "proofPages": [
+        "/compare/speclock",
+        "/compare/mem0",
+        "/compare/fallow"
+      ],
+      "nextAction": "Publish semantic variants with proof-backed internal links."
+    },
+    {
+      "pillar": "feedback-loop",
+      "primaryQuery": "claude code feedback memory",
+      "authorityScore": 100,
+      "rankPermission": "expand",
+      "proofPages": [],
+      "nextAction": "Publish semantic variants with proof-backed internal links."
+    },
+    {
+      "pillar": "seo-governance",
+      "primaryQuery": "semantic programmatic seo guardrails",
+      "authorityScore": 100,
+      "rankPermission": "expand",
+      "proofPages": [
+        "/guides/semantic-programmatic-seo-guardrails",
+        "/guides/seo-agent-skills-guardrails"
+      ],
+      "nextAction": "Publish semantic variants with proof-backed internal links."
+    },
+    {
+      "pillar": "document-rag-safety",
+      "primaryQuery": "proxy pointer rag guardrails",
+      "authorityScore": 100,
+      "rankPermission": "expand",
+      "proofPages": [
+        "/guides/proxy-pointer-rag-guardrails",
+        "/guides/rag-precision-tuning-guardrails"
+      ],
+      "nextAction": "Publish semantic variants with proof-backed internal links."
+    }
+  ],
+  "semanticMesh": [
+    {
+      "path": "/compare/speclock",
+      "pillar": "comparison",
+      "relatedPaths": [
+        "/compare/mem0",
+        "/guides/pre-action-checks"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "healthy",
+      "nextStep": "Keep proof and adjacent links fresh."
+    },
+    {
+      "path": "/compare/mem0",
+      "pillar": "comparison",
+      "relatedPaths": [
+        "/compare/speclock",
+        "/guides/claude-code-feedback"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "healthy",
+      "nextStep": "Keep proof and adjacent links fresh."
+    },
+    {
+      "path": "/compare/fallow",
+      "pillar": "comparison",
+      "relatedPaths": [
+        "/guides/code-knowledge-graph-guardrails",
+        "/guides/agent-harness-optimization",
+        "/guides/pre-action-checks"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "healthy",
+      "nextStep": "Keep proof and adjacent links fresh."
+    },
+    {
+      "path": "/guides/roo-code-alternative-cline",
+      "pillar": "agent-workflows",
+      "relatedPaths": [
+        "/guides/codex-cli-guardrails",
+        "/guides/stop-repeated-ai-agent-mistakes"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "healthy",
+      "nextStep": "Keep proof and adjacent links fresh."
+    },
+    {
+      "path": "/guides/claude-code-skills-guardrails",
+      "pillar": "agent-workflows",
+      "relatedPaths": [
+        "/guides/claude-code-feedback",
+        "/guides/prompt-tricks-to-workflow-rules",
+        "/guides/pre-action-checks"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "healthy",
+      "nextStep": "Keep proof and adjacent links fresh."
+    },
+    {
+      "path": "/guides/claude-code-feedback",
+      "pillar": "agent-workflows",
+      "relatedPaths": [
+        "/guides/pre-action-checks",
+        "/compare/mem0"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "healthy",
+      "nextStep": "Keep proof and adjacent links fresh."
+    },
+    {
+      "path": "/guides/cursor-agent-guardrails",
+      "pillar": "agent-workflows",
+      "relatedPaths": [
+        "/guides/stop-repeated-ai-agent-mistakes",
+        "/guides/pre-action-checks"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "healthy",
+      "nextStep": "Keep proof and adjacent links fresh."
+    },
+    {
+      "path": "/guides/codex-cli-guardrails",
+      "pillar": "agent-workflows",
+      "relatedPaths": [
+        "/guides/pre-action-checks",
+        "/compare/mem0"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "healthy",
+      "nextStep": "Keep proof and adjacent links fresh."
+    },
+    {
+      "path": "/guides/gemini-cli-feedback-memory",
+      "pillar": "agent-workflows",
+      "relatedPaths": [
+        "/compare/mem0",
+        "/guides/stop-repeated-ai-agent-mistakes"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "healthy",
+      "nextStep": "Keep proof and adjacent links fresh."
+    },
+    {
+      "path": "/guides/claude-desktop",
+      "pillar": "agent-workflows",
+      "relatedPaths": [
+        "/guides/claude-code-feedback",
+        "/guides/pre-action-checks"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "healthy",
+      "nextStep": "Keep proof and adjacent links fresh."
+    },
+    {
+      "path": "/guides/semantic-programmatic-seo-guardrails",
+      "pillar": "seo-governance",
+      "relatedPaths": [
+        "/guides/ai-search-topical-presence",
+        "/guides/prompt-tricks-to-workflow-rules",
+        "/compare/mem0"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "healthy",
+      "nextStep": "Keep proof and adjacent links fresh."
+    },
+    {
+      "path": "/guides/proxy-pointer-rag-guardrails",
+      "pillar": "document-rag-safety",
+      "relatedPaths": [
+        "/guides/rag-precision-tuning-guardrails",
+        "/guides/code-knowledge-graph-guardrails",
+        "/guides/pre-action-checks"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "healthy",
+      "nextStep": "Keep proof and adjacent links fresh."
+    },
+    {
+      "path": "/guides/rag-precision-tuning-guardrails",
+      "pillar": "document-rag-safety",
+      "relatedPaths": [
+        "/guides/proxy-pointer-rag-guardrails",
+        "/guides/pre-action-checks",
+        "/guides/background-agent-governance"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "healthy",
+      "nextStep": "Keep proof and adjacent links fresh."
+    },
+    {
+      "path": "/guides/internal-ai-engineering-stack-guardrails",
+      "pillar": "ai-stack-governance",
+      "relatedPaths": [
+        "/guides/code-knowledge-graph-guardrails",
+        "/guides/long-running-agent-context-management",
+        "/guides/rag-precision-tuning-guardrails"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "healthy",
+      "nextStep": "Keep proof and adjacent links fresh."
+    },
+    {
+      "path": "/guides/seo-agent-skills-guardrails",
+      "pillar": "seo-governance",
+      "relatedPaths": [
+        "/guides/semantic-programmatic-seo-guardrails",
+        "/guides/ai-search-topical-presence",
+        "/compare/fallow"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "healthy",
+      "nextStep": "Keep proof and adjacent links fresh."
+    },
+    {
+      "path": "/guides/reasoning-compression-guardrails",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/gpt-5-5-model-evaluation",
+        "/guides/agent-harness-optimization",
+        "/guides/pre-action-checks"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "needs-links",
+      "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
+    },
+    {
+      "path": "/guides/deepseek-v4-runtime-guardrails",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/reasoning-compression-guardrails",
+        "/guides/long-running-agent-context-management",
+        "/guides/gpt-5-5-model-evaluation"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "needs-links",
+      "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
+    },
+    {
+      "path": "/guides/pre-action-checks",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/compare/speclock",
+        "/guides/claude-code-feedback"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "healthy",
+      "nextStep": "Keep proof and adjacent links fresh."
+    },
+    {
+      "path": "/guides/agent-harness-optimization",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/pre-action-checks",
+        "/guides/codex-cli-guardrails"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "healthy",
+      "nextStep": "Keep proof and adjacent links fresh."
+    },
+    {
+      "path": "/guides/code-knowledge-graph-guardrails",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/pre-action-checks",
+        "/guides/agent-harness-optimization",
+        "/guides/best-tools-stop-ai-agents-breaking-production"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "needs-links",
+      "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
+    },
+    {
+      "path": "/guides/developer-machine-supply-chain-guardrails",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/pre-action-checks",
+        "/guides/code-knowledge-graph-guardrails",
+        "/guides/best-tools-stop-ai-agents-breaking-production"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "needs-links",
+      "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
+    },
+    {
+      "path": "/guides/stop-repeated-ai-agent-mistakes",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/pre-action-checks",
+        "/guides/claude-code-feedback"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "healthy",
+      "nextStep": "Keep proof and adjacent links fresh."
+    },
+    {
+      "path": "/guides/autoresearch-agent-safety",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/pre-action-checks",
+        "/guides/codex-cli-guardrails"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "healthy",
+      "nextStep": "Keep proof and adjacent links fresh."
+    },
+    {
+      "path": "/guides/long-running-agent-context-management",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/background-agent-governance",
+        "/guides/agent-harness-optimization",
+        "/guides/pre-action-checks"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "needs-links",
+      "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
+    },
+    {
+      "path": "/guides/browser-automation-safety",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/native-messaging-host-security",
+        "/guides/pre-action-checks"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "needs-links",
+      "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
+    },
+    {
+      "path": "/guides/native-messaging-host-security",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/browser-automation-safety",
+        "/guides/pre-action-checks"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "needs-links",
+      "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
+    },
+    {
+      "path": "/guides/best-tools-stop-ai-agents-breaking-production",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/pre-action-checks",
+        "/guides/agent-harness-optimization",
+        "/guides/ai-search-topical-presence"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "needs-links",
+      "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
+    },
+    {
+      "path": "/guides/prompt-tricks-to-workflow-rules",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/pre-action-checks",
+        "/guides/agent-harness-optimization",
+        "/guides/best-tools-stop-ai-agents-breaking-production"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "needs-links",
+      "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
+    },
+    {
+      "path": "/guides/background-agent-governance",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/pre-action-checks",
+        "/guides/agent-harness-optimization",
+        "/guides/best-tools-stop-ai-agents-breaking-production"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "needs-links",
+      "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
+    },
+    {
+      "path": "/guides/gpt-5-5-model-evaluation",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/agent-harness-optimization",
+        "/guides/background-agent-governance",
+        "/guides/pre-action-checks"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "needs-links",
+      "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
+    },
+    {
+      "path": "/guides/ai-search-topical-presence",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/relational-knowledge-ai-recommendations",
+        "/guides/pre-action-checks"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "needs-links",
+      "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
+    },
+    {
+      "path": "/guides/relational-knowledge-ai-recommendations",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/ai-search-topical-presence",
+        "/compare/mem0"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "healthy",
+      "nextStep": "Keep proof and adjacent links fresh."
     }
   ]
 }

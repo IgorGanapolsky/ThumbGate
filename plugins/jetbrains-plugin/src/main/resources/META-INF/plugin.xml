@@ -1,0 +1,25 @@
+<idea-plugin>
+  <id>ai.thumbgate.jetbrains</id>
+  <name>ThumbGate</name>
+  <vendor email="support@thumbgate.ai" url="https://thumbgate.ai">ThumbGate</vendor>
+  <description><![CDATA[
+    ThumbGate adds pre-action checks, feedback capture, and repeated-mistake prevention for AI coding workflows.
+  ]]></description>
+
+  <depends>com.intellij.modules.platform</depends>
+
+  <actions>
+    <action id="ThumbGate.InitProject"
+            class="ai.thumbgate.jetbrains.ThumbGateInitProjectAction"
+            text="ThumbGate: Init Project"
+            description="Install ThumbGate MCP config for this project">
+      <add-to-group group-id="ToolsMenu" anchor="last"/>
+    </action>
+    <action id="ThumbGate.OpenDashboard"
+            class="ai.thumbgate.jetbrains.ThumbGateOpenDashboardAction"
+            text="ThumbGate: Open Dashboard"
+            description="Open the ThumbGate dashboard">
+      <add-to-group group-id="ToolsMenu" anchor="last"/>
+    </action>
+  </actions>
+</idea-plugin>

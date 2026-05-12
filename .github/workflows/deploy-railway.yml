@@ -33,6 +33,7 @@ jobs:
       THUMBGATE_BILLING_API_BASE_URL: ${{ vars.THUMBGATE_BILLING_API_BASE_URL || vars.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate-production.up.railway.app' }}
       THUMBGATE_FEEDBACK_DIR: ${{ vars.THUMBGATE_FEEDBACK_DIR }}
       THUMBGATE_GA_MEASUREMENT_ID: ${{ vars.THUMBGATE_GA_MEASUREMENT_ID }}
+      THUMBGATE_CHECKOUT_FALLBACK_URL: ${{ vars.THUMBGATE_CHECKOUT_FALLBACK_URL }}
       THUMBGATE_GOOGLE_SITE_VERIFICATION: ${{ vars.THUMBGATE_GOOGLE_SITE_VERIFICATION }}
       RAILWAY_TOKEN_ROTATED_AT: ${{ vars.RAILWAY_TOKEN_ROTATED_AT }}
       THUMBGATE_API_KEY_ROTATED_AT: ${{ vars.THUMBGATE_API_KEY_ROTATED_AT }}
@@ -48,7 +49,7 @@ jobs:
           BEFORE_SHA='${{ github.event.before }}'
           CHANGED_FILES=''
           SHOULD_DEPLOY=true
-          DEPLOYABLE_PATTERN='^(src/|scripts/.*\.(js|mjs|cjs)$|config/|adapters/.*\.(js|mjs|cjs|json|ya?ml|toml)$|public/|\.well-known/|openapi/|workers/|Dockerfile$|railway\.json$|package\.json$|package-lock\.json$)'
+          DEPLOYABLE_PATTERN='^(src/|scripts/.*\.(js|mjs|cjs)$|config/|adapters/.*\.(js|mjs|cjs|json|ya?ml|toml)$|public/|\.well-known/|openapi/|workers/|\.github/workflows/deploy-railway\.yml$|Dockerfile$|railway\.json$|package\.json$|package-lock\.json$)'
 
           if [ "$GITHUB_EVENT_NAME" = "push" ] && [ -n "$BEFORE_SHA" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
             CHANGED_FILES="$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" | sed '/^$/d')"
@@ -155,6 +156,9 @@ jobs:
           fi
           if [ -n "$THUMBGATE_GA_MEASUREMENT_ID" ]; then
             retry_railway "set THUMBGATE_GA_MEASUREMENT_ID" railway variables set --skip-deploys THUMBGATE_GA_MEASUREMENT_ID="$THUMBGATE_GA_MEASUREMENT_ID" "${SERVICE_ARGS[@]}"
+          fi
+          if [ -n "$THUMBGATE_CHECKOUT_FALLBACK_URL" ]; then
+            retry_railway "set THUMBGATE_CHECKOUT_FALLBACK_URL" railway variables set --skip-deploys THUMBGATE_CHECKOUT_FALLBACK_URL="$THUMBGATE_CHECKOUT_FALLBACK_URL" "${SERVICE_ARGS[@]}"
           fi
           if [ -n "$THUMBGATE_GOOGLE_SITE_VERIFICATION" ]; then
             retry_railway "set THUMBGATE_GOOGLE_SITE_VERIFICATION" railway variables set --skip-deploys THUMBGATE_GOOGLE_SITE_VERIFICATION="$THUMBGATE_GOOGLE_SITE_VERIFICATION" "${SERVICE_ARGS[@]}"

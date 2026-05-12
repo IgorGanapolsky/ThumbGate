@@ -3,18 +3,21 @@
   "tiers": {
     "nano": {
       "label": "GPT-5.4 nano",
+      "modelId": "gpt-5.4-nano",
       "taskTypes": ["classification", "extraction", "ranking", "labeling", "summarization"],
       "maxContextTokens": 32000,
       "costMultiplier": 0.1
     },
     "mini": {
       "label": "GPT-5.4 mini",
+      "modelId": "gpt-5.4-mini",
       "taskTypes": ["code-edit", "test-generation", "review", "tool-use", "debugging"],
       "maxContextTokens": 200000,
       "costMultiplier": 0.4
     },
     "frontier": {
-      "label": "GPT-5.4",
+      "label": "GPT-5.5",
+      "modelId": "gpt-5.5",
       "taskTypes": ["architecture", "cross-file", "complex-debugging", "large-context"],
       "maxContextTokens": 1000000,
       "costMultiplier": 1.0,

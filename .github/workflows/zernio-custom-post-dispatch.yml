@@ -1,0 +1,46 @@
+name: Zernio Custom Post Dispatch
+
+on:
+  workflow_dispatch:
+    inputs:
+      text:
+        description: 'Post body to publish via Zernio'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zernio-custom-post-dispatch
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Publish via Zernio
+        env:
+          POST_TEXT: ${{ github.event.inputs.text }}
+          THUMBGATE_DEDUP_LOG_PATH: ${{ runner.temp }}/zernio-dedup-log.json
+        run: |
+          if [ -z "${ZERNIO_API_KEY:-}" ]; then
+            echo "ZERNIO_API_KEY is not configured." >&2
+            exit 1
+          fi
+
+          node scripts/social-analytics/publishers/zernio.js --text="$POST_TEXT"
