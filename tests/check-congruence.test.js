@@ -34,14 +34,11 @@ test('GitHub About source-of-truth matches local public surfaces', () => {
   assert.deepEqual(collectLocalGitHubAboutErrors(ROOT), []);
 });
 
-test('GitHub About config keeps a rich landing description and a valid GitHub description', () => {
+test('GitHub About config keeps the narrow homepage description and a valid GitHub description', () => {
   const about = loadGitHubAboutConfig(ROOT);
-  assert.match(about.metaDescription, /👍/u);
-  assert.match(about.metaDescription, /👎/u);
-  assert.match(about.metaDescription, /thumbs up/i);
-  assert.match(about.metaDescription, /thumbs down/i);
-  assert.match(about.metaDescription, /history-aware lessons/i);
-  assert.match(about.metaDescription, /shared lessons and org visibility/i);
+  assert.match(about.metaDescription, /ThumbGate turns one thumbs-down into a local PreToolUse rule/i);
+  assert.match(about.metaDescription, /Claude Code tool call/i);
+  assert.doesNotMatch(about.metaDescription, /shared lessons and org visibility/i);
   assert.match(about.githubDescription, /agent governance/i);
   assert.ok(about.githubDescription.length <= MAX_GITHUB_DESCRIPTION_LENGTH);
 });
