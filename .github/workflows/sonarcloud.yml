@@ -108,6 +108,14 @@ jobs:
 
       - name: Generate Python coverage report
         if: steps.sonar-scope.outputs.scan == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]')
+        env:
+          # The previous JS coverage step (`Generate LCOV coverage report`) creates
+          # a `.coverage/raw` directory at repo root, which makes Python coverage's
+          # default `.coverage` data-file path resolve to an existing *directory* —
+          # `IsADirectoryError: [Errno 21]`. Park Python coverage's binary data
+          # file under the per-run temp dir instead so the two languages never
+          # collide on disk regardless of which step runs first.
+          COVERAGE_FILE: ${{ runner.temp }}/python-coverage.data
         run: |
           python3 -m pip install coverage
           tmp_dir="$(mktemp -d)"
