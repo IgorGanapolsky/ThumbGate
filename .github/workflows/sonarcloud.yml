@@ -46,6 +46,13 @@ jobs:
           fi
 
           git diff --name-only "$BASE_SHA" "$HEAD_SHA" > /tmp/sonar-changed-files.txt
+          awk '/^(src|scripts|bin)\// { print }' /tmp/sonar-changed-files.txt > /tmp/sonar-changed-source-files.txt
+          if [[ -s /tmp/sonar-changed-source-files.txt ]]; then
+            SOURCE_PATHS=$(paste -sd, /tmp/sonar-changed-source-files.txt)
+          else
+            SOURCE_PATHS="src,scripts,bin"
+          fi
+          echo "source_paths=$SOURCE_PATHS" >> "$GITHUB_OUTPUT"
           if grep -E '^(src/|scripts/|bin/|package(-lock)?\.json$|sonar-project\.properties$|\.github/workflows/sonarcloud\.yml$)' /tmp/sonar-changed-files.txt > /dev/null; then
             echo "scan=true" >> "$GITHUB_OUTPUT"
             echo "reason=sonar-surface-changed" >> "$GITHUB_OUTPUT"
@@ -234,6 +241,7 @@ jobs:
         with:
           args: >
             -Dsonar.projectVersion=${{ steps.package-version.outputs.version }}
+            -Dsonar.sources=${{ steps.sonar-scope.outputs.source_paths }}
 
       - name: Auto-review pre-approved SonarCloud hotspots
         if: steps.sonar-scope.outputs.scan == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]') && (github.event_name == 'pull_request' || github.event_name == 'merge_group')
