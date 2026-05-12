@@ -54,9 +54,10 @@ On explicit user preference signals (`up/down`, `correct/wrong`, or subjective "
 3. Reject vague signals (for example bare "thumbs down") from memory promotion.
 4. Regenerate prevention rules (The Pre-Action Gates) from accumulated mistakes.
 5. Dogfood: use the Reliability Gateway to optimize this repository's own agentic performance.
-
 ## PR and Branch Hygiene
 
+- All new feature and fix branches must branch from `develop`.
+- PRs should target `develop` for integration testing.
 - Start PR work by checking open PRs, review state, branch status, and CI.
 - Merge ready PRs autonomously once required checks are green and no actionable comments remain.
 - Pending CI checks and `REVIEW_REQUIRED` are blockers, not mergeable states; do not admin-merge around them.
@@ -69,9 +70,11 @@ On explicit user preference signals (`up/down`, `correct/wrong`, or subjective "
 
 ## Verification Protocol
 
+- `main` and `develop` must both be green before any completion claim.
 - Never trust a dirty primary checkout for final verification.
 - Use a dedicated clean worktree for verification and run `npm ci` before tests.
 - Standard verification suite:
+...
   - `npm test`
   - `npm run test:coverage`
   - `npm run prove:adapters`

@@ -116,6 +116,27 @@ Rules:
 
 Violations block merge. Pin fixes with regression tests in `tests/public-core-boundary.test.js`.
 
+## Operational Directives
+
+### Evidence-Based Communication
+- Show proof with every claim (file counts, command output, CI links).
+- Say **"I believe this is done, verifying now..."** instead of "Done!".
+- Never claim completion without verification.
+
+### No Manual Handoffs
+- Never instruct the CEO to perform a step you can do yourself.
+- If you violate this: record the mistake in ThumbGate memory, then learn from it.
+
+### Honesty Protocol
+- Lying is not allowed.
+- If something fails or isn't working, report it immediately.
+- If you hallucinate or violate a directive, provide an in-depth report and log it.
+
+### Continuous Learning
+- Record every significant action and lesson in ThumbGate.
+- Log mistakes in both ThumbGate and ML pipeline (if active).
+- Query ThumbGate at session start; update at session end.
+
 ## Session Directive: PR Management & System Hygiene
 
 ### CTO Protocol

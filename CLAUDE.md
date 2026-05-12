@@ -86,8 +86,9 @@ curl -s https://thumbgate-production.up.railway.app/dashboard | grep 'ThumbGate 
 
 ## PR and CI Protocol
 
-1. Branch from `main`. Name: `fix/...`, `feat/...`, `chore/...`.
-2. Push to remote. Create PR via `gh pr create --repo IgorGanapolsky/ThumbGate`.
+1. Branch from `develop` (if exists) or `main`. Name: `fix/...`, `feat/...`, `chore/...`.
+2. All new work should target the `develop` branch for integration.
+3. Push to remote. Create PR via `gh pr create --repo IgorGanapolsky/ThumbGate`.
 3. Wait for CI (runs on push to `main` and `feat/**` branches).
 4. After push, run: `gh pr view --json reviewDecision,comments,reviewThreads`
 5. If unresolved threads > 0 → fix them → push again → re-check.
