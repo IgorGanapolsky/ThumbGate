@@ -106,6 +106,104 @@ jobs:
             --exclude='tests/**/*.js' \
             --exclude='scripts/social-reply-monitor.js'
 
+      - name: Generate Python coverage report
+        if: steps.sonar-scope.outputs.scan == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]')
+        run: |
+          python3 -m pip install coverage
+          tmp_dir="$(mktemp -d)"
+          feedback_log="$tmp_dir/feedback-log.jsonl"
+          retrieval_log="$tmp_dir/retrieval.jsonl"
+          lesson_db="$tmp_dir/lessons.sqlite"
+          invalid_feedback_log="$tmp_dir/invalid-feedback-log.jsonl"
+          reward_feedback_log="$tmp_dir/reward-feedback-log.jsonl"
+          empty_lesson_db="$tmp_dir/empty-lessons.sqlite"
+          feedback_dir="$tmp_dir/default-feedback-dir"
+          report_path="$tmp_dir/report.md"
+
+          python3 <<'PY' "$feedback_log" "$retrieval_log" "$lesson_db" "$invalid_feedback_log" "$reward_feedback_log" "$empty_lesson_db" "$feedback_dir"
+          import json
+          import os
+          import sqlite3
+          import sys
+
+          feedback_log, retrieval_log, lesson_db, invalid_feedback_log, reward_feedback_log, empty_lesson_db, feedback_dir = sys.argv[1:8]
+          feedback_rows = [
+              {"id": "fb_1", "signal": "negative", "context": "Agent repeated a git failure", "whatWentWrong": "Skipped branch check", "blocked": True, "tags": ["git"], "timestamp": "2026-05-12T12:00:00Z"},
+              {"id": "fb_2", "signal": "positive", "context": "Agent verified tests before final", "allowed": True, "tags": ["testing"], "timestamp": "2026-05-12T12:03:00Z"},
+              {"id": "fb_3", "signal": "negative", "context": "Agent skipped repro test", "allowed": True, "tags": ["testing"], "timestamp": "2026-05-12T12:06:00Z"},
+              {"id": "fb_4", "signal": "positive", "context": "Agent wrote a complete report", "allowed": True, "tags": ["reporting"], "timestamp": "2026-05-12T12:09:00Z"},
+          ]
+          retrieval_rows = [
+              {"queryFeedbackId": "fb_1", "matchedFeedbackId": "old_1", "score": 0.92, "matchedSignal": "negative"},
+              {"queryFeedbackId": "fb_1", "matchedFeedbackId": "old_2", "score": 0.71, "matchedSignal": "negative"},
+              {"queryFeedbackId": "fb_2", "matchedFeedbackId": "old_3", "score": 0.64, "matchedSignal": "positive"},
+          ]
+          with open(feedback_log, "w", encoding="utf-8") as handle:
+              for row in feedback_rows:
+                  handle.write(json.dumps(row) + "\n")
+          with open(retrieval_log, "w", encoding="utf-8") as handle:
+              for row in retrieval_rows:
+                  handle.write(json.dumps(row) + "\n")
+          with open(invalid_feedback_log, "w", encoding="utf-8") as handle:
+              handle.write("{not-json}\n")
+              handle.write(json.dumps(["not", "an", "object"]) + "\n")
+              handle.write("\n")
+              handle.write(json.dumps({"id": "fb_bad_ts", "signal": "up", "context": {"nested": "debug crash"}, "tags": [], "timestamp": "not-a-date"}) + "\n")
+          with open(reward_feedback_log, "w", encoding="utf-8") as handle:
+              handle.write(json.dumps({"id": "reward_pos", "reward": 1, "context": ["search", "found"], "richContext": {"domain": "research"}, "gateDecision": "accepted"}) + "\n")
+              handle.write(json.dumps({"id": "reward_neg", "reward": -1, "context": "secret leaked", "decision": "deny", "failureType": "security", "tags": ["security"]}) + "\n")
+          os.makedirs(feedback_dir, exist_ok=True)
+          with open(os.path.join(feedback_dir, "feedback-log.jsonl"), "w", encoding="utf-8") as handle:
+              handle.write(json.dumps({"id": "default_1", "signal": "thumbs_down", "context": "rm command allowed", "actionType": "no-action", "tags": ["shell"]}) + "\n")
+          db = sqlite3.connect(lesson_db)
+          db.executescript("""
+          CREATE TABLE lessons (
+            id TEXT PRIMARY KEY,
+            signal TEXT NOT NULL,
+            context TEXT,
+            whatWentWrong TEXT,
+            whatToChange TEXT,
+            whatWorked TEXT,
+            domain TEXT,
+            tags TEXT,
+            rootCause TEXT,
+            importance TEXT DEFAULT 'medium',
+            skill TEXT,
+            timestamp TEXT NOT NULL,
+            sourceFeedbackId TEXT,
+            pruned INTEGER DEFAULT 0
+          );
+          INSERT INTO lessons (id, signal, context, domain, tags, timestamp, sourceFeedbackId, pruned)
+          VALUES
+            ('lesson_1', 'negative', 'git force push failed', 'git', '["git"]', '2026-05-12T12:00:00Z', 'fb_1', 0),
+            ('lesson_2', 'positive', 'tests verified', 'testing', '["testing"]', '2026-05-12T12:03:00Z', 'fb_2', 0);
+          """)
+          db.commit()
+          db.close()
+          sqlite3.connect(empty_lesson_db).close()
+          PY
+
+          python3 -m coverage run --branch --source=scripts scripts/feedback_quality_eval.py \
+            --feedback-log "$feedback_log" \
+            --lesson-db "$lesson_db" \
+            --retrieval-log "$retrieval_log" \
+            --write-report "$report_path" \
+            --json > "$tmp_dir/report.json"
+          python3 -m coverage run --append --branch --source=scripts scripts/feedback_quality_eval.py \
+            --feedback-log "$invalid_feedback_log" \
+            --lesson-db "$empty_lesson_db" \
+            --min-support 1 > "$tmp_dir/invalid-report.md"
+          python3 -m coverage run --append --branch --source=scripts scripts/feedback_quality_eval.py \
+            --feedback-log "$reward_feedback_log" \
+            --lesson-db "$tmp_dir/missing-lessons.sqlite" \
+            --json > "$tmp_dir/reward-report.json"
+          THUMBGATE_FEEDBACK_DIR="$feedback_dir" python3 -m coverage run --append --branch --source=scripts scripts/feedback_quality_eval.py \
+            --json > "$tmp_dir/default-report.json"
+          python3 -m coverage run --append --branch --source=scripts scripts/feedback_quality_eval.py \
+            --feedback-log "$tmp_dir/missing-feedback-log.jsonl" \
+            --json > "$tmp_dir/missing-report.json"
+          python3 -m coverage xml -o coverage/python-coverage.xml
+
       - name: Read package version
         id: package-version
         if: steps.sonar-scope.outputs.scan == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]')

@@ -369,48 +369,63 @@ def feedback_id_for_retrieval(row: Dict[str, Any]) -> Optional[str]:
     return None
 
 
-def compute_retrieval_metrics(retrieval_rows: List[Dict[str, Any]]) -> Dict[str, Any]:
-    if not retrieval_rows:
-        return {
-            "available": False,
-            "rows": 0,
-            "queries": 0,
-            "averageTopScore": None,
-            "negativeNeighborRate": None,
-            "error": None,
-        }
+def unavailable_retrieval_metrics() -> Dict[str, Any]:
+    return {
+        "available": False,
+        "rows": 0,
+        "queries": 0,
+        "averageTopScore": None,
+        "negativeNeighborRate": None,
+        "error": None,
+    }
 
+
+def bucket_retrieval_rows(retrieval_rows: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
     by_feedback: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
-    scored_rows = []
-    negative_neighbors = 0
-    labeled_neighbors = 0
     for row in retrieval_rows:
         feedback_id = feedback_id_for_retrieval(row) or "unknown"
         by_feedback[feedback_id].append(row)
-        score = retrieval_score(row)
-        if score is not None:
-            scored_rows.append((feedback_id, score))
+    return by_feedback
+
+
+def top_retrieval_scores(by_feedback: Dict[str, List[Dict[str, Any]]]) -> List[float]:
+    top_scores = []
+    for rows in by_feedback.values():
+        scores = [score for score in (retrieval_score(row) for row in rows) if score is not None]
+        if scores:
+            top_scores.append(max(scores))
+    return top_scores
+
+
+def retrieval_neighbor_summary(retrieval_rows: List[Dict[str, Any]]) -> Dict[str, int]:
+    summary = {"labeled": 0, "negative": 0}
+    for row in retrieval_rows:
         neighbor_signal = normalize_signal({
             "signal": row.get("matchedSignal") or row.get("neighborSignal") or row.get("signal")
         })
-        if neighbor_signal:
-            labeled_neighbors += 1
-            if neighbor_signal == "negative":
-                negative_neighbors += 1
+        if not neighbor_signal:
+            continue
+        summary["labeled"] += 1
+        if neighbor_signal == "negative":
+            summary["negative"] += 1
+    return summary
 
-    top_scores = []
-    for feedback_id, rows in by_feedback.items():
-        scores = [retrieval_score(row) for row in rows]
-        scores = [score for score in scores if score is not None]
-        if scores:
-            top_scores.append(max(scores))
+
+def compute_retrieval_metrics(retrieval_rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    if not retrieval_rows:
+        return unavailable_retrieval_metrics()
+
+    by_feedback = bucket_retrieval_rows(retrieval_rows)
+    top_scores = top_retrieval_scores(by_feedback)
+    neighbor_summary = retrieval_neighbor_summary(retrieval_rows)
+    labeled_neighbors = neighbor_summary["labeled"]
 
     return {
         "available": True,
         "rows": len(retrieval_rows),
         "queries": len(by_feedback),
         "averageTopScore": round(sum(top_scores) / len(top_scores), 4) if top_scores else None,
-        "negativeNeighborRate": rate(negative_neighbors, labeled_neighbors) if labeled_neighbors else None,
+        "negativeNeighborRate": rate(neighbor_summary["negative"], labeled_neighbors) if labeled_neighbors else None,
         "error": None,
     }
 
@@ -454,42 +469,59 @@ def compute_gate_metrics(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
-def build_recommendations(report: Dict[str, Any]) -> List[str]:
-    recommendations = []
+def base_recommendations(report: Dict[str, Any]) -> List[str]:
+    items = []
     if report["usableEntries"] < 10:
-        recommendations.append("Collect at least 10 usable feedback entries before making threshold changes.")
+        items.append("Collect at least 10 usable feedback entries before making threshold changes.")
+    if not report["gateMetrics"]["available"]:
+        items.append("Start logging gate decisions as blocked/allowed so precision, recall, and false-positive rate can be computed.")
+    return items
 
-    gate_metrics = report["gateMetrics"]
-    if not gate_metrics["available"]:
-        recommendations.append("Start logging gate decisions as blocked/allowed so precision, recall, and false-positive rate can be computed.")
 
+def storage_recommendations(report: Dict[str, Any]) -> List[str]:
+    items = []
     sqlite_metrics = report.get("sqliteLessonMetrics") or {}
     if sqlite_metrics.get("available") and sqlite_metrics.get("negativeLessonCoverage", 0) < 0.8:
-        recommendations.append("Backfill SQLite lesson rows for negative feedback before treating SQL dashboards as complete eval evidence.")
+        items.append("Backfill SQLite lesson rows for negative feedback before treating SQL dashboards as complete eval evidence.")
 
     retrieval_metrics = report.get("retrievalMetrics") or {}
     if retrieval_metrics.get("available") and retrieval_metrics.get("negativeNeighborRate") is not None and retrieval_metrics["negativeNeighborRate"] >= 0.5:
-        recommendations.append("Inspect LanceDB retrieval neighborhoods: most labeled neighbors are negative, which is a good candidate for repeated-failure clustering.")
+        items.append("Inspect LanceDB retrieval neighborhoods: most labeled neighbors are negative, which is a good candidate for repeated-failure clustering.")
+    return items
 
+
+def category_recommendations(report: Dict[str, Any]) -> List[str]:
+    items = []
     weak_categories = [
         row for row in report["categoryMetrics"]
         if row["support"] >= report["minSupport"] and row["negativeRate"] >= 0.5
     ]
     if weak_categories:
         top = weak_categories[0]
-        recommendations.append(
+        items.append(
             f"Tighten prevention rules for {top['category']}: {top['negative']} negative signals across {top['support']} entries."
         )
+    return items
 
+
+def tag_recommendations(report: Dict[str, Any]) -> List[str]:
     volatile_tags = [
         row for row in report["tagMetrics"]
         if row["support"] >= report["minSupport"] and 0.35 <= row["positiveRate"] <= 0.65
     ]
-    if volatile_tags:
-        recommendations.append(
-            f"Review mixed-signal tag '{volatile_tags[0]['tag']}' before promoting broad rules; signal is not separable yet."
-        )
+    if not volatile_tags:
+        return []
+    return [
+        f"Review mixed-signal tag '{volatile_tags[0]['tag']}' before promoting broad rules; signal is not separable yet."
+    ]
 
+
+def build_recommendations(report: Dict[str, Any]) -> List[str]:
+    recommendations = []
+    recommendations.extend(base_recommendations(report))
+    recommendations.extend(storage_recommendations(report))
+    recommendations.extend(category_recommendations(report))
+    recommendations.extend(tag_recommendations(report))
     if not recommendations:
         recommendations.append("No immediate eval action required; keep collecting feedback and rerun this report after the next batch.")
     return recommendations
