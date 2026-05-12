@@ -17,6 +17,10 @@ const {
 } = require('../scripts/cross-encoder-reranker');
 
 const llmClientPath = require.resolve('../scripts/llm-client');
+const {
+  computeCacheKey,
+  getCachePath,
+} = require('../scripts/retrieval-cache');
 
 async function withMockedLlmClient(mock, fn) {
   const previous = require.cache[llmClientPath];
@@ -185,6 +189,37 @@ describe('retrieveWithRerankingSync', () => {
     if (results.length > 0) {
       assert.equal(results[0].id, 'target', `Cross-encoder should rank force-push lesson first, got: ${results[0].id} (${results[0].title})`);
     }
+
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('caches sync reranking results in the caller feedback directory', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-rerank-cache-'));
+    const lessons = [
+      { id: 'target', title: 'MISTAKE: force push wiped history', content: 'Never use git push --force on protected branches.', tags: ['negative'], metadata: { toolsUsed: ['Bash'] }, timestamp: new Date().toISOString() },
+      { id: 'decoy', title: 'SUCCESS: normal push', content: 'A normal feature branch push was safe.', tags: ['positive'], metadata: { toolsUsed: ['Bash'] }, timestamp: new Date().toISOString() },
+    ];
+    fs.writeFileSync(
+      path.join(tmpDir, 'memory-log.jsonl'),
+      lessons.map((l) => JSON.stringify(l)).join('\n') + '\n',
+    );
+
+    const options = {
+      feedbackDir: tmpDir,
+      candidateCount: 10,
+      maxResults: 1,
+    };
+    const first = retrieveWithRerankingSync('Bash', 'git push --force', options);
+    assert.equal(first[0].id, 'target');
+
+    fs.writeFileSync(path.join(tmpDir, 'memory-log.jsonl'), '');
+    const second = retrieveWithRerankingSync('Bash', 'git push --force', options);
+    assert.deepEqual(second, first);
+
+    const cache = JSON.parse(fs.readFileSync(getCachePath({ feedbackDir: tmpDir }), 'utf8'));
+    const cacheKey = computeCacheKey('Bash', 'git push --force', options);
+    assert.ok(cache[cacheKey]);
+    assert.equal(cache[cacheKey].results[0].id, 'target');
 
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
