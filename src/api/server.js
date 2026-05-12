@@ -4414,6 +4414,20 @@ async function addContext(){
     if (isGetLikeRequest && pathname.startsWith('/guides/')) {
       try {
         const slug = normalizePublicPageSlug(pathname.replace('/guides/', ''));
+        // SEO consolidation: 301-redirect duplicate/inferior pages to their canonical
+        // counterparts so split ranking signal is consolidated. Each entry should be
+        // backed by an actual audit (see docs/marketing/seo-intent-audit-*.md).
+        const GUIDE_CANONICAL_REDIRECTS = {
+          // /cursor-agent-guardrails and /cursor-prevent-repeated-mistakes have the
+          // same <title> and <h1>. The latter has install command + TL;DR + richer FAQ.
+          'cursor-agent-guardrails': 'cursor-prevent-repeated-mistakes',
+        };
+        if (Object.prototype.hasOwnProperty.call(GUIDE_CANONICAL_REDIRECTS, slug)) {
+          const canonical = GUIDE_CANONICAL_REDIRECTS[slug];
+          res.writeHead(301, { Location: `/guides/${canonical}` });
+          res.end();
+          return;
+        }
         const guidePath = path.join(GUIDES_DIR, `${slug}.html`);
         if (!guidePath.startsWith(GUIDES_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
         const html = fs.readFileSync(guidePath, 'utf-8');
