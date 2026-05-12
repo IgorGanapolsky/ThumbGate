@@ -277,7 +277,6 @@ jobs:
           fi
       - name: Capture Railway diagnostics
         if: failure() && steps.railway-config.outputs.enabled == 'true'
-        continue-on-error: true
         run: bash scripts/capture-railway-diagnostics.sh railway-diagnostics
       - name: Upload Railway diagnostics artifact
         if: always() && steps.railway-config.outputs.enabled == 'true'
