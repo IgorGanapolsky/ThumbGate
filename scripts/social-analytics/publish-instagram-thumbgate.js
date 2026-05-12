@@ -59,6 +59,8 @@ async function publishInstagramThumbGate(options = {}) {
       });
       if (schedule) {
         console.log(`[workflow] ✅ Post scheduled: ${postResult.id || postResult.data?.id}`);
+      } else if (postResult.skipped) {
+        console.log(`[workflow] ✅ Post skipped: ${postResult.skipReason}`);
       } else {
         console.log(`[workflow] ✅ Post published: ${postResult.id || postResult.data?.id}`);
       }
@@ -67,6 +69,8 @@ async function publishInstagramThumbGate(options = {}) {
         success: true,
         imagePath: postOnly ? undefined : imagePath,
         postId: postResult.id || postResult.data?.id,
+        skipped: Boolean(postResult.skipped),
+        skipReason: postResult.skipReason,
         scheduled: Boolean(schedule),
         scheduledFor: schedule || undefined,
       };

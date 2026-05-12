@@ -14,6 +14,7 @@ const {
   buildAiventyxMarketplacePlan,
   buildAiventyxNinetyDayPlan,
   buildAiventyxTrackingMetadata,
+  buildPublicAiventyxRevenueLinks,
   buildTrackedMarketplaceLink,
   isCliInvocation,
   parseArgs,
@@ -114,15 +115,20 @@ test('checked-in Aiventyx pack stays in sync with the generator output', () => {
   assert.ok(updatedMatch, 'expected checked-in pack to include an Updated line');
 
   const markdown = renderAiventyxMarketplaceMarkdown({
-    ...buildAiventyxMarketplacePlan({
-      appOrigin: 'https://thumbgate.ai',
-      proCheckoutLink: 'https://thumbgate.ai/checkout/pro',
-      sprintLink: 'https://thumbgate.ai/#workflow-sprint-intake',
-    }),
+    ...buildAiventyxMarketplacePlan(),
     generatedAt: updatedMatch[1],
   });
 
   assert.equal(markdown, committed);
+});
+
+test('default Aiventyx marketplace links use the public buyer origin', () => {
+  const links = buildPublicAiventyxRevenueLinks();
+  const listings = buildAiventyxListings();
+
+  assert.equal(links.appOrigin, 'https://thumbgate.ai');
+  assert.ok(listings.every((listing) => listing.APIEndpoint === 'https://thumbgate.ai'));
+  assert.ok(listings.every((listing) => listing.primaryCTA.startsWith('https://thumbgate.ai/')));
 });
 
 test('CSV export keeps listing submission fields and attribution in one operator file', () => {

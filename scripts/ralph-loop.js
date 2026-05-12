@@ -22,6 +22,7 @@ const VALID_MODES = new Set(['all', 'engage', 'poll', 'audit', 'post']);
 const RALPH_STATE_PATHS = [
   path.relative(REPO_ROOT, DEFAULT_REPLY_STATE_PATH),
   path.relative(REPO_ROOT, DEFAULT_DRAFTS_PATH),
+  path.join('.thumbgate', 'bluesky-prospect-state.json'),
   path.relative(REPO_ROOT, DEFAULT_LAUNCH_ASSETS_PATH),
 ];
 const VALUE_OPTIONS = new Map([
@@ -101,6 +102,15 @@ function hasAllEnv(env, keys = []) {
   return keys.every((key) => Boolean(env[key]));
 }
 
+function envFlagEnabled(value) {
+  return /^(1|true|yes|on)$/i.test(String(value || '').trim());
+}
+
+function parsePositiveInteger(value, fallback) {
+  const parsed = Number.parseInt(String(value || '').trim(), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 function makeNodeStep(id, scriptPath, args = [], extra = {}) {
   return {
     id,
@@ -135,6 +145,11 @@ function wants(mode, names) {
 function buildRalphSteps(options = {}, env = process.env) {
   const mode = normalizeMode(options.mode || 'all');
   const dryRun = Boolean(options.dryRun);
+  const autonomousBlueskyPublish = !dryRun && envFlagEnabled(env.THUMBGATE_AUTONOMOUS_BLUESKY_PUBLISH);
+  const blueskyPublishLimit = parsePositiveInteger(
+    env.THUMBGATE_BLUESKY_PUBLISH_LIMIT || options.blueskyPublishLimit,
+    3,
+  );
   const steps = [];
 
   if (wants(mode, ['poll'])) {
@@ -165,9 +180,13 @@ function buildRalphSteps(options = {}, env = process.env) {
     if (dryRun) {
       replyArgs.push('--dry-run');
     }
+    const blueskyReplyArgs = [...replyArgs];
+    if (autonomousBlueskyPublish) {
+      blueskyReplyArgs.push('--auto-approve-safe', `--limit=${blueskyPublishLimit}`);
+    }
     // Bluesky reply monitor: Zernio has no inbound/comments API, so we poll AT
-    // Protocol directly. This only queues drafts to .thumbgate/reply-drafts.jsonl
-    // — never auto-posts. Human review required before send.
+    // Protocol directly. Scheduled mode may auto-publish only bounded safe
+    // replies: no URLs, no sales terms, and max 260 chars.
     steps.push(
       makeNodeStep(
         'reply-monitor',
@@ -181,13 +200,25 @@ function buildRalphSteps(options = {}, env = process.env) {
       makeNodeStep(
         'reply-monitor-bluesky',
         'scripts/social-reply-monitor-bluesky.js',
-        replyArgs,
+        blueskyReplyArgs,
         {
           stage: 'engage',
-          description: 'Polls Bluesky notifications via AT Protocol and queues draft replies for human review (never auto-posts).',
+          description: autonomousBlueskyPublish
+            ? 'Polls Bluesky notifications, auto-approves bounded safe replies, and leaves risky drafts for review.'
+            : 'Polls Bluesky notifications via AT Protocol and queues draft replies for human review.',
           requiredEnvAll: ['BLUESKY_HANDLE', 'BLUESKY_APP_PASSWORD'],
         }
       ),
+      ...(autonomousBlueskyPublish ? [makeNodeStep(
+        'publish-approved-bluesky',
+        'scripts/social-reply-monitor-bluesky.js',
+        ['--publish-approved', '--confirm-publish'],
+        {
+          stage: 'engage',
+          description: 'Publishes only Bluesky drafts that passed the safe auto-approval gate in this run.',
+          requiredEnvAll: ['BLUESKY_HANDLE', 'BLUESKY_APP_PASSWORD'],
+        }
+      )] : []),
       makeNodeStep(
         'prospect-bluesky',
         'scripts/social-bluesky-prospecting.js',

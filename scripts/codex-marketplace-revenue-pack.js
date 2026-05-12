@@ -25,6 +25,7 @@ const REPO_ROOT = path.resolve(__dirname, '..');
 const CODEX_SOURCE = 'codex';
 const CODEX_SURFACE = 'codex_plugin';
 const CODEX_MEDIUM = 'plugin_page';
+const CODEX_PUBLIC_APP_ORIGIN = 'https://thumbgate.ai';
 const CANONICAL_SHORT_DESCRIPTION = 'Auto-updating ThumbGate plugin for Codex. Capture thumbs-up/down feedback, turn repeated failures into Pre-Action Checks, and keep proof close to the install path.';
 const CANONICAL_HEADLINE = 'Stop Codex from repeating the same tool mistake.';
 const CANONICAL_SUBHEAD = 'ThumbGate gives Codex an auto-updating MCP runtime, local-first feedback memory, and hard pre-action gates before risky commands, edits, or publishes run again.';
@@ -32,6 +33,16 @@ const INSTALL_DOC_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/p
 const PROFILE_README_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/codex-profile/README.md';
 const BRIDGE_README_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/claude-codex-bridge/README.md';
 const PROOF_LINKS = [COMMERCIAL_TRUTH_LINK, VERIFICATION_EVIDENCE_LINK];
+
+function buildCodexRevenueLinks(baseLinks = buildRevenueLinks()) {
+  return {
+    ...baseLinks,
+    appOrigin: CODEX_PUBLIC_APP_ORIGIN,
+    guideLink: `${CODEX_PUBLIC_APP_ORIGIN}/guide`,
+    proCheckoutLink: `${CODEX_PUBLIC_APP_ORIGIN}/checkout/pro`,
+    sprintLink: `${CODEX_PUBLIC_APP_ORIGIN}/#workflow-sprint-intake`,
+  };
+}
 
 function buildTrackedCodexLink(baseUrl, tracking = {}) {
   const url = new URL(buildUTMLink(baseUrl, {
@@ -59,7 +70,7 @@ function buildTrackedCodexLink(baseUrl, tracking = {}) {
   return url.toString();
 }
 
-function buildEvidenceSurfaces(links = buildRevenueLinks(), about = readGitHubAbout(), repoRoot = REPO_ROOT) {
+function buildEvidenceSurfaces(links = buildCodexRevenueLinks(), about = readGitHubAbout(), repoRoot = REPO_ROOT) {
   const surfaces = [
     {
       key: 'install_page',
@@ -115,7 +126,7 @@ function buildEvidenceSurfaces(links = buildRevenueLinks(), about = readGitHubAb
   }));
 }
 
-function buildListingCopy(links = buildRevenueLinks()) {
+function buildListingCopy(links = buildCodexRevenueLinks()) {
   const followOnOffers = [
     {
       key: 'pro',
@@ -175,7 +186,7 @@ function buildListingCopy(links = buildRevenueLinks()) {
   };
 }
 
-function buildOperatorQueue(links = buildRevenueLinks()) {
+function buildOperatorQueue(links = buildCodexRevenueLinks()) {
   const queue = [
     {
       key: 'solo_repeat_mistake',
@@ -238,7 +249,7 @@ function buildOperatorQueue(links = buildRevenueLinks()) {
   }));
 }
 
-function buildOutreachDrafts(links = buildRevenueLinks()) {
+function buildOutreachDrafts(links = buildCodexRevenueLinks()) {
   const installLink = buildTrackedCodexLink(`${links.appOrigin}/codex-plugin`, {
     utmCampaign: 'codex_outreach_install',
     utmContent: 'plugin_page',
@@ -299,7 +310,7 @@ function buildMeasurementPlan() {
   };
 }
 
-function buildCodexMarketplaceRevenuePack(links = buildRevenueLinks(), about = readGitHubAbout(), repoRoot = REPO_ROOT) {
+function buildCodexMarketplaceRevenuePack(links = buildCodexRevenueLinks(), about = readGitHubAbout(), repoRoot = REPO_ROOT) {
   return {
     generatedAt: new Date().toISOString(),
     channel: 'Codex',
@@ -462,7 +473,9 @@ if (isCliInvocation()) {
 module.exports = {
   CANONICAL_HEADLINE,
   CANONICAL_SHORT_DESCRIPTION,
+  CODEX_PUBLIC_APP_ORIGIN,
   buildCodexMarketplaceRevenuePack,
+  buildCodexRevenueLinks,
   buildEvidenceSurfaces,
   buildListingCopy,
   buildMeasurementPlan,

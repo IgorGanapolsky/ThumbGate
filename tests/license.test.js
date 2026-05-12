@@ -57,6 +57,40 @@ test('activateLicense rejects invalid prefixes but accepts legacy Stripe keys', 
   }
 });
 
+test('activateLicense persists a Pro key that verifyLicense reads from the local license path', () => {
+  const { moduleExports: license, homeDir, restore } = loadWithIsolatedLicenseEnv(LICENSE_MODULE_ID);
+  try {
+    const key = 'tg_pro_localtiercoverage1234567890';
+    const activation = license.activateLicense(key, { homeDir });
+
+    assert.equal(activation.success, true);
+    assert.equal(activation.path, license.getLicensePath(homeDir));
+
+    const verified = license.verifyLicense({ homeDir });
+    assert.equal(verified.valid, true);
+    assert.equal(verified.source, 'file');
+    assert.equal(verified.key, key);
+    assert.equal(verified.path, activation.path);
+  } finally {
+    restore();
+  }
+});
+
+test('verifyLicense prefers a valid Pro env key over the local license file', () => {
+  const { moduleExports: license, homeDir, restore } = loadWithIsolatedLicenseEnv(LICENSE_MODULE_ID);
+  try {
+    license.activateLicense('tg_pro_filetiercoverage1234567890', { homeDir });
+    process.env.THUMBGATE_PRO_KEY = 'tg_pro_envtiercoverage1234567890';
+
+    const verified = license.verifyLicense({ homeDir });
+    assert.equal(verified.valid, true);
+    assert.equal(verified.source, 'env');
+    assert.equal(verified.key, 'tg_pro_envtiercoverage1234567890');
+  } finally {
+    restore();
+  }
+});
+
 test('Pro feature gate blocks without license', () => {
   const { moduleExports: proFeatures, restore } = loadWithIsolatedLicenseEnv(
     PRO_FEATURES_MODULE_ID,

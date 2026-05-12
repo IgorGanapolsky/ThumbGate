@@ -27,6 +27,11 @@ on:
         required: false
         type: boolean
         default: false
+      publish_enabled:
+        description: 'Required to publish through paid Zernio provider'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -93,7 +98,7 @@ jobs:
           NODE
 
       - name: Publish offer via Zernio
-        if: github.event.inputs.dry_run != 'true'
+        if: github.event.inputs.dry_run != 'true' && github.event.inputs.publish_enabled == 'true'
         env:
           OFFER_TEXT: ${{ github.event.inputs.text }}
           OFFER_PLATFORMS: ${{ github.event.inputs.platforms }}

@@ -30,6 +30,9 @@ test('pro landing page uses checkout routes for monthly and annual conversions',
   const proPage = readProPage();
 
   assert.match(proPage, /Start Pro Now/i);
+  assert.match(proPage, /Pay \$19 quick read/i);
+  assert.match(proPage, /pro_page_hero_quick_read_checkout/);
+  assert.match(proPage, /pro_page_nav_quick_read_checkout/);
   assert.match(proPage, /\/checkout\/pro\?/);
   assert.match(proPage, /pricing_pro/);
   assert.match(proPage, /billing_cycle=annual/);

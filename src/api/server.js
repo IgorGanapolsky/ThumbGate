@@ -13,6 +13,11 @@ const {
 const POSTHOG_API_PATHS = new Set(['/capture', '/batch', '/decide', '/e', '/engage']);
 const POSTHOG_INGEST_HOST = 'us.i.posthog.com';
 const POSTHOG_STATIC_PATH_PREFIX = '/static/';
+const FIRST_FAILURE_RULE_CHECKOUT_URL = 'https://buy.stripe.com/4gM6oHgH2bTw4lH6i73sI0z';
+const QUICK_READ_CHECKOUT_URL = 'https://buy.stripe.com/aFa8wPgH29Lo4lH35V3sI0w';
+const WORKFLOW_TEARDOWN_CHECKOUT_URL = 'https://buy.stripe.com/7sYfZhgH29LodWhdKz3sI0v';
+const SPRINT_DIAGNOSTIC_CHECKOUT_URL = 'https://buy.stripe.com/3cI7sLgH25v8dWh5e33sI0o';
+const WORKFLOW_SPRINT_CHECKOUT_URL = 'https://buy.stripe.com/8x25kDcqMaPs9G15e33sI0p';
 
 function getPosthogProxyPath(pathname) {
   return pathname.slice('/ingest'.length) || '/';
@@ -207,6 +212,7 @@ const NUMBERS_PAGE_PATH = path.resolve(__dirname, '../../public/numbers.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
 const COMPARE_DIR = path.resolve(__dirname, '../../public/compare');
+const USE_CASES_DIR = path.resolve(__dirname, '../../public/use-cases');
 const PUBLIC_DIR = path.resolve(__dirname, '../../public');
 const PUBLIC_ASSETS_DIR = path.resolve(__dirname, '../../public/assets');
 const BUYER_INTENT_SCRIPT_PATH = path.resolve(__dirname, '../../public/js/buyer-intent.js');
@@ -1462,6 +1468,9 @@ function buildCheckoutIntentHref(baseUrl, metadata = {}, overrides = {}) {
 
 function renderCheckoutIntentPage({
   confirmHref,
+  firstRuleCheckoutHref,
+  quickReadCheckoutHref,
+  workflowTeardownCheckoutHref,
   workflowIntakeHref,
   teamOptionsHref,
   diagnosticCheckoutHref,
@@ -1470,6 +1479,15 @@ function renderCheckoutIntentPage({
   workflowSprintPriceDollars = 1500,
 }) {
   const safeConfirmHref = escapeHtmlAttribute(confirmHref);
+  const safeFirstRuleCheckoutHref = firstRuleCheckoutHref
+    ? escapeHtmlAttribute(firstRuleCheckoutHref)
+    : '';
+  const safeQuickReadCheckoutHref = quickReadCheckoutHref
+    ? escapeHtmlAttribute(quickReadCheckoutHref)
+    : '';
+  const safeWorkflowTeardownCheckoutHref = workflowTeardownCheckoutHref
+    ? escapeHtmlAttribute(workflowTeardownCheckoutHref)
+    : '';
   const safeWorkflowIntakeHref = escapeHtmlAttribute(workflowIntakeHref);
   const safeTeamOptionsHref = escapeHtmlAttribute(teamOptionsHref);
   const safeDiagnosticCheckoutHref = diagnosticCheckoutHref
@@ -1484,7 +1502,16 @@ function renderCheckoutIntentPage({
   const sprintAction = safeSprintCheckoutHref
     ? `<a data-i="workflow_sprint_checkout" href="${safeSprintCheckoutHref}">Start $${workflowSprintPriceDollars} sprint</a>`
     : '';
-  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{background:#0a0a0a;color:#eee;font-family:system-ui,sans-serif}div{max-width:560px;margin:12vh auto}a{display:block;margin:10px 0;padding:12px;border:1px solid #374151;color:inherit;text-align:center}.primary{background:#22d3ee;color:#000}</style><div><h1>Choose the right paid path.</h1><p>Pick Pro, diagnostic, sprint, or intake.</p><a class="primary" data-i="pro_checkout_confirmed" href="${safeConfirmHref}">Pay in Stripe</a>${diagnosticAction}${sprintAction}<a data-i="workflow_sprint_intake" href="${safeWorkflowIntakeHref}">Send workflow first</a><a data-i="team_paid_path" href="${safeTeamOptionsHref}">See options</a><p>Stripe checkout.</p><a href="/">Back</a></div><script>addEventListener('click',e=>{let a=e.target.closest('[data-i]');if(a&&navigator.sendBeacon)navigator.sendBeacon('/v1/telemetry/ping',new Blob([JSON.stringify({eventType:'checkout_interstitial_cta_clicked',clientType:'web',page:'/checkout/pro',ctaId:a.dataset.i,ctaPlacement:'checkout_interstitial'})],{type:'application/json'}))})</script>`;
+  const firstRuleAction = safeFirstRuleCheckoutHref
+    ? `<a data-i="first_failure_rule_checkout" href="${safeFirstRuleCheckoutHref}">Pay $1 first rule</a>`
+    : '';
+  const quickReadAction = safeQuickReadCheckoutHref
+    ? `<a data-i="quick_read_checkout" href="${safeQuickReadCheckoutHref}">Pay $19 quick read</a>`
+    : '';
+  const teardownAction = safeWorkflowTeardownCheckoutHref
+    ? `<a data-i="workflow_teardown_checkout" href="${safeWorkflowTeardownCheckoutHref}">Pay $99 teardown</a>`
+    : '';
+  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Confirm — ThumbGate Pro</title><style>body{background:#0a0a0a;color:#eee;font-family:system-ui,-apple-system,sans-serif;line-height:1.5}main{max-width:520px;margin:8vh auto;padding:0 20px}.brand{display:flex;align-items:center;gap:10px;margin-bottom:24px;font-size:14px;color:#94a3b8}.brand-mark{width:24px;height:24px;background:#22d3ee;border-radius:6px;display:inline-block}h1{font-size:24px;margin:0 0 8px;color:#fff}.price{font-size:32px;font-weight:700;color:#22d3ee;margin:8px 0 4px}.price small{font-size:14px;color:#94a3b8;font-weight:400}p{color:#cbd5e1;margin:8px 0}a{display:block;text-decoration:none}a.primary{background:#22d3ee;color:#000;padding:16px;text-align:center;border-radius:8px;font-weight:700;font-size:16px;margin:20px 0 10px}a.secondary{border:1px solid #374151;color:#cbd5e1;padding:12px;text-align:center;border-radius:8px;margin:8px 0;font-size:14px}.trust{margin:24px 0;padding:16px;border:1px solid #1f2937;border-radius:8px;background:#0f172a}.trust-item{font-size:13px;color:#cbd5e1;padding:4px 0;display:flex;gap:8px}.trust-item::before{content:"✓";color:#22d3ee;font-weight:700}details{margin-top:32px;font-size:13px;color:#94a3b8}details summary{cursor:pointer;padding:8px 0}details a{border:1px solid #374151;color:#94a3b8;padding:10px;text-align:center;border-radius:6px;margin:6px 0;font-size:13px}.back{text-align:center;color:#64748b;font-size:12px;margin-top:24px}.back a{color:#64748b;display:inline}</style><main><div class="brand"><span class="brand-mark"></span><span>ThumbGate</span></div><h1>Start ThumbGate Pro</h1><div class="price">$19<small>/mo</small></div><p>Block every repeat AI-agent mistake. Local-first. MIT-licensed CLI included. Cancel anytime.</p><a class="primary" data-i="pro_checkout_confirmed" href="${safeConfirmHref}">Pay $19/mo with Stripe →</a><div class="trust"><div class="trust-item">6 paying customers, 18,000+ installs verified on npm</div><div class="trust-item">Cancel anytime — instant refund within 7 days</div><div class="trust-item">MIT open source · no vendor lock-in</div><div class="trust-item">Works with Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode</div></div><details><summary>Other paid paths (diagnostic, sprint, teardown, single-rule)</summary>${diagnosticAction.replace('<a ', '<a class="secondary" ')}${sprintAction.replace('<a ', '<a class="secondary" ')}${teardownAction.replace('<a ', '<a class="secondary" ')}${quickReadAction.replace('<a ', '<a class="secondary" ')}${firstRuleAction.replace('<a ', '<a class="secondary" ')}<a class="secondary" data-i="workflow_sprint_intake" href="${safeWorkflowIntakeHref}">Send workflow first (intake)</a><a class="secondary" data-i="team_paid_path" href="${safeTeamOptionsHref}">See all options</a></details><p class="back"><a href="/">← Back to thumbgate.ai</a></p></main><script>addEventListener('click',e=>{let a=e.target.closest('[data-i]');if(a&&navigator.sendBeacon)navigator.sendBeacon('/v1/telemetry/ping',new Blob([JSON.stringify({eventType:'checkout_interstitial_cta_clicked',clientType:'web',page:'/checkout/pro',ctaId:a.dataset.i,ctaPlacement:'checkout_interstitial'})],{type:'application/json'}))})</script></html>`;
 }
 
 function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneyState(req, parsed)) {
@@ -1561,6 +1588,12 @@ function renderCheckoutIntentGate(parsed, responseHeaders = {}) {
 
 function normalizeTrackedLinkSlug(value) {
   return String(value || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+}
+
+function normalizePublicPageSlug(value) {
+  return String(value || '')
+    .replace(/\.html$/i, '')
+    .replace(/[^a-z0-9-]/g, '');
 }
 
 function getTrackedLinkTarget(slug) {
@@ -1915,8 +1948,8 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
     '__CHECKOUT_FALLBACK_URL__': runtimeConfig.checkoutFallbackUrl,
     '__PRO_PRICE_DOLLARS__': runtimeConfig.proPriceDollars,
     '__PRO_PRICE_LABEL__': runtimeConfig.proPriceLabel,
-    '__SPRINT_DIAGNOSTIC_CHECKOUT_URL__': runtimeConfig.sprintDiagnosticCheckoutUrl || '',
-    '__WORKFLOW_SPRINT_CHECKOUT_URL__': runtimeConfig.workflowSprintCheckoutUrl || '',
+    '__SPRINT_DIAGNOSTIC_CHECKOUT_URL__': runtimeConfig.sprintDiagnosticCheckoutUrl || SPRINT_DIAGNOSTIC_CHECKOUT_URL,
+    '__WORKFLOW_SPRINT_CHECKOUT_URL__': runtimeConfig.workflowSprintCheckoutUrl || WORKFLOW_SPRINT_CHECKOUT_URL,
     '__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__': runtimeConfig.sprintDiagnosticPriceDollars || 499,
     '__WORKFLOW_SPRINT_PRICE_DOLLARS__': runtimeConfig.workflowSprintPriceDollars || 1500,
     '__GA_MEASUREMENT_ID__': runtimeConfig.gaMeasurementId || '',
@@ -2963,8 +2996,9 @@ function renderCheckoutSuccessPage(runtimeConfig) {
 }
 
 function renderCheckoutCancelledPage(runtimeConfig) {
-  const firstFailureRuleCheckoutUrl = 'https://buy.stripe.com/4gM6oHgH2bTw4lH6i73sI0z';
-  const quickReadCheckoutUrl = 'https://buy.stripe.com/aFa8wPgH29Lo4lH35V3sI0w';
+  const firstFailureRuleCheckoutUrl = escapeHtmlAttribute(FIRST_FAILURE_RULE_CHECKOUT_URL);
+  const quickReadCheckoutUrl = escapeHtmlAttribute(QUICK_READ_CHECKOUT_URL);
+  const workflowTeardownCheckoutUrl = escapeHtmlAttribute(WORKFLOW_TEARDOWN_CHECKOUT_URL);
   const diagnosticCheckoutUrl = runtimeConfig.sprintDiagnosticCheckoutUrl
     ? escapeHtmlAttribute(runtimeConfig.sprintDiagnosticCheckoutUrl)
     : '';
@@ -2975,15 +3009,16 @@ function renderCheckoutCancelledPage(runtimeConfig) {
   const workflowSprintPriceDollars = runtimeConfig.workflowSprintPriceDollars || 1500;
   const workflowSprintIntakeUrl = `${escapeHtmlAttribute(runtimeConfig.appOrigin)}/#workflow-sprint-intake`;
   const recoveryOfferLinks = [
-    `<a href="${firstFailureRuleCheckoutUrl}" data-recovery-offer="first_failure_rule" data-offer-price="1">Pay $1 first rule</a>`,
-    `<a href="${quickReadCheckoutUrl}" data-recovery-offer="quick_read" data-offer-price="19">Pay $19 quick read</a>`,
-    `<a id="send-workflow-first" href="${workflowSprintIntakeUrl}" data-recovery-offer="workflow_sprint_intake" data-offer-price="0">Send workflow first</a>`,
     diagnosticCheckoutUrl
       ? `<a href="${diagnosticCheckoutUrl}" data-recovery-offer="sprint_diagnostic" data-offer-price="${sprintDiagnosticPriceDollars}">Book $${sprintDiagnosticPriceDollars} diagnostic</a>`
       : '',
     workflowSprintCheckoutUrl
       ? `<a href="${workflowSprintCheckoutUrl}" data-recovery-offer="workflow_sprint" data-offer-price="${workflowSprintPriceDollars}">Start $${workflowSprintPriceDollars} sprint</a>`
       : '',
+    `<a href="${workflowTeardownCheckoutUrl}" data-recovery-offer="workflow_teardown" data-offer-price="99">Pay $99 teardown</a>`,
+    `<a href="${quickReadCheckoutUrl}" data-recovery-offer="quick_read" data-offer-price="19">Pay $19 quick read</a>`,
+    `<a href="${firstFailureRuleCheckoutUrl}" data-recovery-offer="first_failure_rule" data-offer-price="1">Pay $1 first rule</a>`,
+    `<a id="send-workflow-first" href="${workflowSprintIntakeUrl}" data-recovery-offer="workflow_sprint_intake" data-offer-price="0">Send workflow first</a>`,
   ].filter(Boolean).join('\n        ');
   const recoveryOfferCard = recoveryOfferLinks
     ? `<div class="card recovery-card">
@@ -4167,6 +4202,15 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/lessons/') {
+      res.writeHead(302, {
+        Location: '/lessons',
+        'Cache-Control': 'no-store',
+      });
+      res.end();
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/lessons') {
       try {
         const html = loadLessonsPageHtml(req, expectedApiKey);
@@ -4219,7 +4263,7 @@ async function addContext(){
       return;
     }
 
-    if (isGetLikeRequest && pathname === '/guide') {
+    if (isGetLikeRequest && (pathname === '/guide' || pathname === '/guide.html')) {
       try {
         const html = fs.readFileSync(GUIDE_PAGE_PATH, 'utf-8');
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
@@ -4229,7 +4273,7 @@ async function addContext(){
       return;
     }
 
-    if (isGetLikeRequest && pathname === '/codex-plugin') {
+    if (isGetLikeRequest && (pathname === '/codex-plugin' || pathname === '/codex-plugin.html')) {
       try {
         const html = fs.readFileSync(CODEX_PLUGIN_PAGE_PATH, 'utf-8');
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
@@ -4239,7 +4283,7 @@ async function addContext(){
       return;
     }
 
-    if (isGetLikeRequest && pathname === '/compare') {
+    if (isGetLikeRequest && (pathname === '/compare' || pathname === '/compare.html')) {
       try {
         const html = fs.readFileSync(COMPARE_PAGE_PATH, 'utf-8');
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
@@ -4249,7 +4293,7 @@ async function addContext(){
       return;
     }
 
-    if (isGetLikeRequest && pathname === '/blog') {
+    if (isGetLikeRequest && (pathname === '/blog' || pathname === '/blog.html')) {
       try {
         const blogPath = path.resolve(__dirname, '../../public/blog.html');
         const html = fs.readFileSync(blogPath, 'utf-8');
@@ -4260,13 +4304,31 @@ async function addContext(){
       return;
     }
 
-    if (isGetLikeRequest && pathname === '/learn') {
+    if (isGetLikeRequest && (pathname === '/learn' || pathname === '/learn.html')) {
       try {
         const html = fs.readFileSync(LEARN_PAGE_PATH, 'utf-8');
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch {
         sendJson(res, 404, { error: 'Learn page not found' });
       }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/guides' || pathname === '/guides/' || pathname === '/guides.html')) {
+      res.writeHead(302, {
+        Location: '/learn',
+        'Cache-Control': 'no-store',
+      });
+      res.end();
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/services' || pathname === '/services.html')) {
+      res.writeHead(302, {
+        Location: '/#workflow-sprint-intake',
+        'Cache-Control': 'no-store',
+      });
+      res.end();
       return;
     }
 
@@ -4305,7 +4367,7 @@ async function addContext(){
 
     if (isGetLikeRequest && pathname.startsWith('/learn/')) {
       try {
-        const slug = pathname.replace('/learn/', '').replace(/[^a-z0-9-]/g, '');
+        const slug = normalizePublicPageSlug(pathname.replace('/learn/', ''));
         const articlePath = path.join(LEARN_DIR, `${slug}.html`);
         if (!articlePath.startsWith(LEARN_DIR)) {
           sendJson(res, 403, { error: 'Forbidden' });
@@ -4321,7 +4383,7 @@ async function addContext(){
 
     if (isGetLikeRequest && pathname.startsWith('/guides/')) {
       try {
-        const slug = pathname.replace('/guides/', '').replace(/[^a-z0-9-]/g, '');
+        const slug = normalizePublicPageSlug(pathname.replace('/guides/', ''));
         const guidePath = path.join(GUIDES_DIR, `${slug}.html`);
         if (!guidePath.startsWith(GUIDES_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
         const html = fs.readFileSync(guidePath, 'utf-8');
@@ -4332,12 +4394,23 @@ async function addContext(){
 
     if (isGetLikeRequest && pathname.startsWith('/compare/') && pathname !== '/compare') {
       try {
-        const slug = pathname.replace('/compare/', '').replace(/[^a-z0-9-]/g, '');
+        const slug = normalizePublicPageSlug(pathname.replace('/compare/', ''));
         const comparePath = path.join(COMPARE_DIR, `${slug}.html`);
         if (!comparePath.startsWith(COMPARE_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
         const html = fs.readFileSync(comparePath, 'utf-8');
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch { sendJson(res, 404, { error: 'Comparison not found' }); }
+      return;
+    }
+
+    if (isGetLikeRequest && pathname.startsWith('/use-cases/')) {
+      try {
+        const slug = normalizePublicPageSlug(pathname.replace('/use-cases/', ''));
+        const useCasePath = path.join(USE_CASES_DIR, `${slug}.html`);
+        if (!useCasePath.startsWith(USE_CASES_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
+        const html = fs.readFileSync(useCasePath, 'utf-8');
+        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      } catch { sendJson(res, 404, { error: 'Use case not found' }); }
       return;
     }
 
@@ -4453,26 +4526,54 @@ async function addContext(){
           ctaPlacement: 'checkout_interstitial',
           planId: 'team',
         });
-        const diagnosticCheckoutHref = hostedConfig.sprintDiagnosticCheckoutUrl
-          ? buildCheckoutIntentHref(hostedConfig.sprintDiagnosticCheckoutUrl, analyticsMetadata, {
+        const firstRuleCheckoutHref = buildCheckoutIntentHref(FIRST_FAILURE_RULE_CHECKOUT_URL, analyticsMetadata, {
+          utmMedium: 'checkout_interstitial_paid_path',
+          utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_first_failure_rule',
+          ctaId: 'checkout_interstitial_first_failure_rule_checkout',
+          ctaPlacement: 'checkout_interstitial',
+          planId: 'first_failure_rule',
+        });
+        const quickReadCheckoutHref = buildCheckoutIntentHref(QUICK_READ_CHECKOUT_URL, analyticsMetadata, {
+          utmMedium: 'checkout_interstitial_paid_path',
+          utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_quick_read',
+          ctaId: 'checkout_interstitial_quick_read_checkout',
+          ctaPlacement: 'checkout_interstitial',
+          planId: 'quick_read',
+        });
+        const workflowTeardownCheckoutHref = buildCheckoutIntentHref(WORKFLOW_TEARDOWN_CHECKOUT_URL, analyticsMetadata, {
+          utmMedium: 'checkout_interstitial_paid_path',
+          utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_workflow_teardown',
+          ctaId: 'checkout_interstitial_workflow_teardown_checkout',
+          ctaPlacement: 'checkout_interstitial',
+          planId: 'workflow_teardown',
+        });
+        const diagnosticCheckoutHref = buildCheckoutIntentHref(
+          hostedConfig.sprintDiagnosticCheckoutUrl || SPRINT_DIAGNOSTIC_CHECKOUT_URL,
+          analyticsMetadata,
+          {
             utmMedium: 'checkout_interstitial_paid_path',
             utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_diagnostic',
             ctaId: 'checkout_interstitial_sprint_diagnostic_checkout',
             ctaPlacement: 'checkout_interstitial',
             planId: 'sprint_diagnostic',
-          })
-          : '';
-        const sprintCheckoutHref = hostedConfig.workflowSprintCheckoutUrl
-          ? buildCheckoutIntentHref(hostedConfig.workflowSprintCheckoutUrl, analyticsMetadata, {
+          }
+        );
+        const sprintCheckoutHref = buildCheckoutIntentHref(
+          hostedConfig.workflowSprintCheckoutUrl || WORKFLOW_SPRINT_CHECKOUT_URL,
+          analyticsMetadata,
+          {
             utmMedium: 'checkout_interstitial_paid_path',
             utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_workflow_sprint',
             ctaId: 'checkout_interstitial_workflow_sprint_checkout',
             ctaPlacement: 'checkout_interstitial',
             planId: 'workflow_sprint',
-          })
-          : '';
+          }
+        );
         const html = renderCheckoutIntentPage({
           confirmHref: buildCheckoutConfirmHref(parsed),
+          firstRuleCheckoutHref,
+          quickReadCheckoutHref,
+          workflowTeardownCheckoutHref,
           workflowIntakeHref,
           teamOptionsHref,
           diagnosticCheckoutHref,

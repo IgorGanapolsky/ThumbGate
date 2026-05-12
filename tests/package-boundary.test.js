@@ -121,6 +121,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'scripts/statusline-meta.js',
     'scripts/tool-registry.js',
     'skills/thumbgate/SKILL.md',
+    'config/pro/constraints-pro.json',
+    'config/pro/prevention-rules-pro.md',
+    'config/pro/thompson-presets.json',
+    'config/pro/reminders-pro.json',
     '.claude-plugin/plugin.json',
     'README.md',
     'LICENSE',
@@ -208,9 +212,15 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // judge-reward-function, prompting-operating-system, proxy-pointer RAG
   // guardrails, and gemini-embedding-policy required by packaged RAG/vector
   // entrypoints. Keep one-file headroom for release merge churn.
+  // Bumped 242 → 245 (2026-05-06) to ship ThumbGate Bench from the npm
+  // package: scripts/thumbgate-bench.js plus the default and ProgramBench-style
+  // bench fixtures. The CLI now exposes `thumbgate bench --programbench-smoke`.
+  // Bumped 245 → 249 (2026-05-07) to ship the four public Pro upgrade bundle
+  // files under config/pro so `thumbgate pro --upgrade` works from npm without
+  // reintroducing the private top-level pro/ subtree.
   assert.ok(
-    manifest.fileCount <= 242,
-    `npm package should stay <= 242 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 249,
+    `npm package should stay <= 249 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -268,9 +278,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // contribution planning, reward-hacking checks, and ChatGPT ads readiness.
   // Bumped 3.44 MB → 3.45 MB (2026-05-05) for the live $19 quick-read
   // checkout CTA on public buyer paths. The observed package is ~3.440 MB.
+  // Bumped 3.45 MB → 3.50 MB (2026-05-06) for the packaged bench runner,
+  // default ThumbGate Bench fixture, ProgramBench-style smoke fixture, and
+  // landing-page governance setup intake copy. Observed package is ~3.479 MB.
+  // Bumped 3.50 MB -> 3.52 MB (2026-05-07) for the four public Pro upgrade
+  // bundle files under config/pro. Observed package is ~3.505 MB.
   assert.ok(
-    manifest.unpackedSize <= 3_450_000,
-    `npm package should stay <= 3.45 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_520_000,
+    `npm package should stay <= 3.52 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

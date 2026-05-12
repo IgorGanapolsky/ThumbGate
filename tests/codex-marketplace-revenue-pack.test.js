@@ -9,7 +9,9 @@ const path = require('node:path');
 const {
   CANONICAL_HEADLINE,
   CANONICAL_SHORT_DESCRIPTION,
+  CODEX_PUBLIC_APP_ORIGIN,
   buildCodexMarketplaceRevenuePack,
+  buildCodexRevenueLinks,
   buildEvidenceSurfaces,
   buildListingCopy,
   buildMeasurementPlan,
@@ -69,6 +71,22 @@ test('tracked Codex links keep attribution machine-readable', () => {
   assert.equal(installUrl.searchParams.get('utm_medium'), 'plugin_page');
   assert.equal(installUrl.searchParams.get('utm_campaign'), 'codex_plugin_page');
   assert.equal(installUrl.searchParams.get('surface'), 'codex_plugin');
+});
+
+test('default Codex revenue links stay on the branded public domain', () => {
+  const links = buildCodexRevenueLinks({
+    appOrigin: 'https://thumbgate-production.up.railway.app',
+    guideLink: 'https://thumbgate-production.up.railway.app/guide',
+    proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
+    sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+    proPriceLabel: '$19/mo or $149/yr',
+  });
+  const pack = buildCodexMarketplaceRevenuePack(undefined, ABOUT_FIXTURE, path.join(__dirname, '..'));
+
+  assert.equal(links.appOrigin, CODEX_PUBLIC_APP_ORIGIN);
+  assert.equal(links.proCheckoutLink, `${CODEX_PUBLIC_APP_ORIGIN}/checkout/pro`);
+  assert.equal(pack.canonicalIdentity.installPageUrl, `${CODEX_PUBLIC_APP_ORIGIN}/codex-plugin`);
+  assert.match(pack.listingCopy.followOnOffers[0].cta, /thumbgate\.ai\/checkout\/pro/);
 });
 
 test('listing copy keeps proof and follow-on motions explicit', () => {

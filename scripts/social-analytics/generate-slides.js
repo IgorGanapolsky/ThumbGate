@@ -113,6 +113,17 @@ const TEMPLATES = {
     ],
   },
 
+  'tiktok-engagement': {
+    name: 'tiktok-engagement',
+    slides: [
+      { holdSeconds: 3, title: ['Your AI agent', 'just repeated', 'the same mistake.'], subtitle: 'Again.', lines: [], cta: null },
+      { holdSeconds: 4, title: ['Memory is not', 'enforcement.'], subtitle: null, lines: ['Memory: "remember not to do this"', 'Gate: blocks the tool call', 'That difference matters.'], cta: null },
+      { holdSeconds: 5, title: ['ThumbGate path:'], subtitle: null, lines: ['1. 👎 capture the bad action', '2. turn it into a prevention rule', '3. check before the tool runs', '4. block the repeat'], cta: null },
+      { holdSeconds: 5, title: ['Example gate:'], subtitle: null, lines: ['Agent: rm config/prod.json', 'Rule: protected production config', 'Decision: ✗ block before execution', 'Outcome: no rollback needed'], cta: null },
+      { holdSeconds: 5, title: ['Comment one', 'command you want', 'blocked.'], subtitle: 'I will turn the clearest one into a rule example.', lines: [], cta: null },
+    ],
+  },
+
 };
 
 // ---------------------------------------------------------------------------

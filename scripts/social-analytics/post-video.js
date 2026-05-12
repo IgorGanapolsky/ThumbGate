@@ -29,7 +29,7 @@ const { loadLocalEnv } = require('./load-env');
 
 loadLocalEnv();
 
-const { hashContent, isDuplicate, record } = require('./db/marketing-db');
+const { hashContent, isDuplicate, list, record } = require('./db/marketing-db');
 const zernioPublisher = require('./publishers/zernio');
 
 // ---------------------------------------------------------------------------
@@ -42,11 +42,18 @@ const ACCOUNTS = {
   instagram: process.env.ZERNIO_INSTAGRAM_ACCOUNT_ID || '69bed6ad6cb7b8cf4c8b0865',
 };
 
-// Per-platform cooldown in hours — prevents over-posting even when CI fires every 4h
+// Per-platform cooldown in hours — prevents over-posting even when CI fires every 4h.
+// TikTok/Instagram stay conservative until their engagement recovers; the
+// screenshots showed repeated-looking low-view posts, so volume is the bug.
 const PLATFORM_COOLDOWN_HOURS = {
-  tiktok:    4,   // up to 6 videos/day — TikTok rewards frequency
-  instagram: 8,   // up to 3 Reels/day
+  tiktok:    24,  // one genuinely distinct experiment/day
+  instagram: 24,  // one Reel/day; IG penalizes repeated-looking grids
   youtube:   12,  // 1-2 Shorts/day
+};
+
+const TIKTOK_ENGAGEMENT_FIRST_COMMENTS = {
+  default: 'What is the exact AI-agent command or edit you wish had been blocked before it ran?',
+  'operator-lab': 'Drop one repeated agent mistake. I will turn the clearest one into a prevention-rule example.',
 };
 
 const CAPTIONS = {
@@ -54,18 +61,18 @@ const CAPTIONS = {
   // ledger attributes views → installs → paid. GitHub is kept as secondary
   // proof ("open source") but no longer the primary click target, because
   // clicks on github.com never touch our funnel tracker.
-  tiktok: `Your AI agent deleted prod config because it "looked unused" 😬
+  tiktok: `POV: your coding agent says "small cleanup" and removes prod config.
 
-ThumbGate v1.4.1 intercepts BEFORE the action runs. Checks it against lessons from past failures. Blocks it permanently.
+The fix is not another reminder in CLAUDE.md.
+It is a pre-action gate:
 
-👎 feedback → lesson DB → prevention rule → physical gate
+bad action -> lesson -> prevention rule -> blocked before the tool call
 
-Not a prompt. A block.
+Comment the one command you want your agent blocked from repeating.
 
-See what it's blocked this week: https://thumbgate-production.up.railway.app/numbers
-Source (MIT): https://github.com/IgorGanapolsky/ThumbGate
+Live numbers: https://thumbgate-production.up.railway.app/numbers
 
-#ClaudeCode #AIAgents #DevTools #TechTok #Coding #SoftwareDev #AITools #Programming #DevTok`,
+#ClaudeCode #CursorAI #Codex #AIAgents #DevTools #TechTok #Coding`,
 
   youtube: `ThumbGate v1.4.1: How to stop AI coding agents from repeating mistakes
 
@@ -104,9 +111,11 @@ function buildOperatorLabUrl(platform) {
 }
 
 const OPERATOR_LAB_CAPTIONS = {
-  tiktok: `Stop fixing the same AI-agent mistake twice.
+  tiktok: `If your AI agent repeats the same mistake, do not write another reminder.
 
-ThumbGate Operator Lab is the free Skool path for turning one repeated failure into a prevention rule, wiring it into a PreToolUse gate, and proving it blocks before the action runs.
+Turn the repeat into a pre-action rule and prove the next bad tool call gets blocked.
+
+Comment the repeated failure you want turned into a gate.
 
 Join free: ${buildOperatorLabUrl('tiktok')}
 
@@ -156,6 +165,15 @@ function parseArgs(argv) {
   }
   if (opts.offer === 'operator-lab' && opts.template === 'auto') opts.template = 'operator-lab';
   if (opts.offer === 'operator-lab' && opts.campaign === 'default') opts.campaign = OPERATOR_LAB_CAMPAIGN;
+  if (
+    opts.offer === 'default' &&
+    opts.template === 'auto' &&
+    Array.isArray(opts.platforms) &&
+    opts.platforms.length === 1 &&
+    opts.platforms[0] === 'tiktok'
+  ) {
+    opts.template = 'tiktok-engagement';
+  }
   return opts;
 }
 
@@ -244,7 +262,10 @@ function buildPlatformPlan(platform, baseHash, offer = 'default') {
 
   const contentHash = hashContent(`${baseHash}::${platform}`);
   const cooldownHours = PLATFORM_COOLDOWN_HOURS[platform] || 4;
-  return { platform, caption, contentHash, cooldownDays: cooldownHours / 24, offer };
+  const firstComment = platform === 'tiktok'
+    ? TIKTOK_ENGAGEMENT_FIRST_COMMENTS[offer] || TIKTOK_ENGAGEMENT_FIRST_COMMENTS.default
+    : undefined;
+  return { platform, caption, contentHash, cooldownDays: cooldownHours / 24, offer, firstComment };
 }
 
 function duplicateResult(plan, isDuplicateFn = isDuplicate) {
@@ -254,13 +275,30 @@ function duplicateResult(plan, isDuplicateFn = isDuplicate) {
   return { platform: plan.platform, status: 'skipped', reason: 'duplicate', existing };
 }
 
+function platformCooldownResult(plan, listFn = list) {
+  const rows = listFn({
+    platform: plan.platform,
+    type: 'video',
+    days: Math.max(plan.cooldownDays, 1),
+    limit: 20,
+  });
+  const cutoffMs = Date.now() - plan.cooldownDays * 86_400_000;
+  const existing = rows.find(row => (
+    row.status === 'published' &&
+    Date.parse(row.published_at || '') >= cutoffMs
+  ));
+  if (!existing) return null;
+  console.log(`[post-video] SKIP ${plan.platform} — platform cooldown (${existing.published_at}): ${existing.post_url}`);
+  return { platform: plan.platform, status: 'skipped', reason: 'platform_cooldown', existing };
+}
+
 function recordPostOutcome({ plan, status, postUrl, error, campaign, mediaUrl, templateId, response, recordFn = record }) {
   const tags = [plan.offer || 'default', 'short', campaign].filter(Boolean);
   if (status === 'published') {
     console.log(`[post-video] ✓ ${plan.platform}: ${postUrl}`);
     recordFn({ type: 'video', platform: plan.platform, contentHash: plan.contentHash, postUrl, campaign,
       tags,
-      extra: { mediaUrl, templateId, zernioPostId: response.post?._id } });
+      extra: { mediaUrl, templateId, zernioPostId: response.post?._id, firstComment: plan.firstComment } });
     return;
   }
 
@@ -272,6 +310,8 @@ function recordPostOutcome({ plan, status, postUrl, error, campaign, mediaUrl, t
 async function processPlatform(plan, context) {
   const duplicate = duplicateResult(plan, context.isDuplicate);
   if (duplicate) return duplicate;
+  const platformCooldown = platformCooldownResult(plan, context.listPosts);
+  if (platformCooldown) return platformCooldown;
 
   if (context.dryRun) {
     console.log(`[post-video] DRY-RUN ${plan.platform} — would post video`);
@@ -299,7 +339,7 @@ async function processPlatform(plan, context) {
       mediaItems,
       title: YT_TITLES[plan.offer] || YT_TITLES.default,
       // YouTube Shorts use `title`; other platforms ignore it.
-      firstComment: undefined,
+      firstComment: plan.firstComment,
     });
 
     if (response && response.blocked) {
@@ -369,9 +409,11 @@ module.exports = {
   CAPTION_SETS,
   OPERATOR_LAB_CAPTIONS,
   PLATFORM_COOLDOWN_HOURS,
+  TIKTOK_ENGAGEMENT_FIRST_COMMENTS,
   buildPlatformPlan,
   buildOperatorLabUrl,
   duplicateResult,
+  platformCooldownResult,
   parseArgs,
   processPlatform,
   zernioUpload,

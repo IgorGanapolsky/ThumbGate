@@ -1,5 +1,135 @@
 # Changelog
 
+## 1.17.0
+
+### Minor Changes
+
+- [#1869](https://github.com/IgorGanapolsky/ThumbGate/pull/1869) [`3ae83c4`](https://github.com/IgorGanapolsky/ThumbGate/commit/3ae83c43e2ab5b1a39233e7ca02fe64c8a9d4c20) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Free tier now grants unlimited feedback captures and up to 5 active auto-promoted prevention rules (previously 3 lifetime captures + 1 rule). The hard 3-capture wall blocked habit formation; this opens the daily-use lane while keeping the dashboard, recall, lesson search, unlimited rules, and DPO export gated to Pro.
+
+### Patch Changes
+
+- [#1805](https://github.com/IgorGanapolsky/ThumbGate/pull/1805) [`dd324fd`](https://github.com/IgorGanapolsky/ThumbGate/commit/dd324fda27ac3e81bccaef2e786f409b2dc441c6) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Enable Ralph Loop to auto-publish a bounded set of safe Bluesky replies during scheduled engagement runs while leaving risky replies in the review draft queue.
+
+- [#1807](https://github.com/IgorGanapolsky/ThumbGate/pull/1807) [`013be4c`](https://github.com/IgorGanapolsky/ThumbGate/commit/013be4c272dff0e4c2103284e56c68804b1d25b9) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add VS Code/Open VSX, Antigravity-compatible, and JetBrains plugin distribution assets.
+
+- [#1817](https://github.com/IgorGanapolsky/ThumbGate/pull/1817) [`8ad7f56`](https://github.com/IgorGanapolsky/ThumbGate/commit/8ad7f565bd037a9453418a4244836ad2f74c4a1d) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a pure-CSS animated terminal block-demo to the hero. Loops on its own (no click-to-play), types `git push --force origin main`, then shows ThumbGate blocking the action with the rule name, reason, and a suggested fix. Honors `prefers-reduced-motion`. The existing 90-second walkthrough video stays below as the longer-form CTA.
+
+- [#1866](https://github.com/IgorGanapolsky/ThumbGate/pull/1866) [`65e563e`](https://github.com/IgorGanapolsky/ThumbGate/commit/65e563ee2533661ff3999d275f37d6d423b3634a) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix three broken navigation paths on the homepage: the ThumbGate logo link (`href="#"` → `/`), the header "Install Free" button (was pointing at the ChatGPT GPT redirect; now points at the actual install flow), and the hero + final "Install Free CLI" buttons (now copy `npx thumbgate init` to clipboard inline with visible "Copied ✓" feedback, instead of redirecting to `/guide` where buyers perceive "nothing happened").
+
+- [#1871](https://github.com/IgorGanapolsky/ThumbGate/pull/1871) [`68108a6`](https://github.com/IgorGanapolsky/ThumbGate/commit/68108a61cc258ed08ebc2e5e967b697e99385cce) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Drop "Max Smith KDP LLC" from public landing + blog footers and Schema.org publisher metadata. "KDP" reads as Kindle Direct Publishing to enterprise buyers evaluating an agent governance tool, and the trust hit is quiet but consistent. Now reads "© 2026 ThumbGate · MIT License".
+
+- [#1873](https://github.com/IgorGanapolsky/ThumbGate/pull/1873) [`88ac1b4`](https://github.com/IgorGanapolsky/ThumbGate/commit/88ac1b44620e6357a7afaa1d2e9f44a24f2faee0) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Swap landing hero secondary CTA from "Pay $499 diagnostic" to "Get Pro — $19/mo". Cold-visitor conversion: the natural hero pair is Install Free + the $19/mo self-serve path. The $499 diagnostic still ships via the Workflow Hardening Sprint intake panel below the hero, so high-ticket service buyers still have a clear path.
+
+- [#1855](https://github.com/IgorGanapolsky/ThumbGate/pull/1855) [`75d154f`](https://github.com/IgorGanapolsky/ThumbGate/commit/75d154f3338ecc9112eb0f9d8c4eb504bd62affe) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Hide visible-text leak on thumbgate.ai: analytics CTA IDs (`hero_workflow_sprint_diagnostic_checkout`, `workflow_sprint_checkout_started`, etc.) and raw HTML attribute names (`id=`, `name=`, `data-team-intake-form`) were rendering as plain `<p>` body paragraphs. Moved into a `hidden` block — strings stay in HTML for regex tests, nothing renders to visitors.
+
+- [#1844](https://github.com/IgorGanapolsky/ThumbGate/pull/1844) [`af9de4e`](https://github.com/IgorGanapolsky/ThumbGate/commit/af9de4e72bf3cda1ac5a50768247154647348cf0) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix public landing and marketing link hygiene by adding route aliases for legacy public URLs, preventing empty revenue links, and removing unsupported pricing, traction, and guarantee claims from public copy.
+
+- [#1873](https://github.com/IgorGanapolsky/ThumbGate/pull/1873) [`88ac1b4`](https://github.com/IgorGanapolsky/ThumbGate/commit/88ac1b44620e6357a7afaa1d2e9f44a24f2faee0) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add live npm weekly-downloads badge to the landing hero trust bar. Real momentum (verifiable via shields.io against `npm/dw/thumbgate`) replaces a vague "MIT open source" pill as the leading trust signal. Auto-updates as installs grow — no manual copy edits required.
+
+- [#1808](https://github.com/IgorGanapolsky/ThumbGate/pull/1808) [`3650374`](https://github.com/IgorGanapolsky/ThumbGate/commit/36503740e787db6c1da0e9ef9905f3ce30bc035d) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Persist Bluesky prospect dedupe state across Ralph Loop runs so scheduled engagement does not requeue the same prospects.
+
+- [#1869](https://github.com/IgorGanapolsky/ThumbGate/pull/1869) [`3ae83c4`](https://github.com/IgorGanapolsky/ThumbGate/commit/3ae83c43e2ab5b1a39233e7ca02fe64c8a9d4c20) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - `repairGithubMarketplaceRevenueLedger` now also walks the funnel ledger and persists resolved amounts for `paid` `github_marketplace` orders that never landed in `revenue-events.jsonl`. PR [#1810](https://github.com/IgorGanapolsky/ThumbGate/issues/1810) fixed read-time resolution; this fix completes the loop by writing recovered rows to disk so audits and downstream exports see them too. Idempotent — only persists when plan pricing produces a known amount, and skips rows already in the ledger.
+
+- [#1810](https://github.com/IgorGanapolsky/ThumbGate/pull/1810) [`dbd0476`](https://github.com/IgorGanapolsky/ThumbGate/commit/dbd0476c3537d54f467447cddc4388b3eb6701f8) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Resolve plan amounts for funnel-derived github_marketplace paid events so `cfo --today` no longer reports `$0.00` when orders only exist in the funnel ledger. The read-time deriver now runs entries through the same plan-pricing resolver the on-disk revenue ledger already uses.
+
+- [#1831](https://github.com/IgorGanapolsky/ThumbGate/pull/1831) [`8a4d5f0`](https://github.com/IgorGanapolsky/ThumbGate/commit/8a4d5f059b20dd9007ed091da3d2075a524bc427) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Simplify the public landing page conversion path, removing cluttered hero micro-offers and stale proof claims while keeping pricing claims aligned with the enforced Free, Pro, and Team feature limits.
+
+- [#1857](https://github.com/IgorGanapolsky/ThumbGate/pull/1857) [`55ec588`](https://github.com/IgorGanapolsky/ThumbGate/commit/55ec58851b55daa0dfa883af84c577bf9b9dcf85) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - `scripts/post-everywhere.js` now surfaces a clear error when TikTok routing is requested, instead of crashing with `TypeError: tiktok.publishPost is not a function`. TikTok has no text-only Direct Post endpoint; the working paths are `scripts/social-pipeline.js` with a recorded MP4 or direct `publishTikTokVideo({ videoUrl, title })` invocation.
+
+## 1.16.22
+
+### Patch Changes
+
+- [#1777](https://github.com/IgorGanapolsky/ThumbGate/pull/1777) [`990b10b`](https://github.com/IgorGanapolsky/ThumbGate/commit/990b10b6618ea07c4ba20e405ef01b21dcbbdf4e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add high-ROI agent governance runtime checks for hybrid RAG scale, inference economics, model-harness fit, solver-backed workflows, and org-wide agent registry governance.
+
+- [#1755](https://github.com/IgorGanapolsky/ThumbGate/pull/1755) [`108f8ea`](https://github.com/IgorGanapolsky/ThumbGate/commit/108f8ea572e883fefe7b4f1d246a68957abeee61) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a guarded Resend-backed Aiventyx partner email dispatch workflow for same-day marketplace revenue follow-up.
+
+- [#1769](https://github.com/IgorGanapolsky/ThumbGate/pull/1769) [`6c97652`](https://github.com/IgorGanapolsky/ThumbGate/commit/6c97652710cbe561d9f5943029a47ce031cc4c4e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a bounded Bluesky safe-reply publishing mode for manual revenue engagement runs.
+
+- [#1719](https://github.com/IgorGanapolsky/ThumbGate/pull/1719) [`6793790`](https://github.com/IgorGanapolsky/ThumbGate/commit/6793790cddb8d5d093496b131ec252ec27bf0b88) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Send real browser checkout traffic directly to the Stripe email gate while keeping bot-safe checkout interstitials.
+
+- [#1758](https://github.com/IgorGanapolsky/ThumbGate/pull/1758) [`b85f9eb`](https://github.com/IgorGanapolsky/ThumbGate/commit/b85f9ebc03386d1071ed3b0b132741899de8c906) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add first-dollar and quick-read recovery links to the checkout cancellation page so abandoned buyers can restart with a lower-friction paid path.
+
+- [#1773](https://github.com/IgorGanapolsky/ThumbGate/pull/1773) [`4432906`](https://github.com/IgorGanapolsky/ThumbGate/commit/4432906163b554d27a77d4cefb6aed60b9d6f2cd) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add low-friction checkout recovery offers to the checkout intent and cancel paths.
+
+- [#1728](https://github.com/IgorGanapolsky/ThumbGate/pull/1728) [`68f9ba2`](https://github.com/IgorGanapolsky/ThumbGate/commit/68f9ba2abeb5d44d1129cf2b572369a5a89ca792) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Track the community course platform launch kit in the test suite so Skool and course-platform promotion guardrails stay covered.
+
+- [#1747](https://github.com/IgorGanapolsky/ThumbGate/pull/1747) [`b724bb8`](https://github.com/IgorGanapolsky/ThumbGate/commit/b724bb8ea459475a07db2f67a5ca637877b03818) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Send hydrated Pro buyer CTAs directly to confirmed Stripe checkout while preserving attribution and bot-safe fallback routes.
+
+- [#1743](https://github.com/IgorGanapolsky/ThumbGate/pull/1743) [`4ad2387`](https://github.com/IgorGanapolsky/ThumbGate/commit/4ad2387af95f9568fb65af6c4a6c0f5bb9399925) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Route the paid workflow-hardening sprint campaign through direct Stripe checkout links with paid-sprint attribution.
+
+- [#1756](https://github.com/IgorGanapolsky/ThumbGate/pull/1756) [`0d527b1`](https://github.com/IgorGanapolsky/ThumbGate/commit/0d527b18b2d85cfb1fbcbb676b4fcb61105386d6) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a first-dollar failure-rule checkout CTA to the homepage and Pro buyer paths.
+
+- [#1801](https://github.com/IgorGanapolsky/ThumbGate/pull/1801) [`86277a8`](https://github.com/IgorGanapolsky/ThumbGate/commit/86277a86a2cedef4394c93a2ddec41c1e5b7d206) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix `thumbgate pro --upgrade` in the public npm package by shipping the local Pro upgrade bundle from `config/pro` and adding a clear missing-bundle error instead of referencing an unpublished top-level `pro/` subtree.
+
+- [#1754](https://github.com/IgorGanapolsky/ThumbGate/pull/1754) [`752a588`](https://github.com/IgorGanapolsky/ThumbGate/commit/752a588d5bc947366ba796a6870e8e3b9fbaa23a) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Skip Instagram in text-only Zernio offer dispatches unless media is attached, keeping LinkedIn, Threads, and Bluesky publishes from failing after a successful post.
+
+- [#1749](https://github.com/IgorGanapolsky/ThumbGate/pull/1749) [`4d70bb7`](https://github.com/IgorGanapolsky/ThumbGate/commit/4d70bb7c9969014f7de9485dfefbd91db89ed4c7) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a guarded GitHub Actions dispatch path for warm Reddit diagnostic DMs.
+
+- [#1735](https://github.com/IgorGanapolsky/ThumbGate/pull/1735) [`01adcb9`](https://github.com/IgorGanapolsky/ThumbGate/commit/01adcb9b19a7ef0ca86c52170a7ed711e81156f2) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add direct paid Pro and workflow sprint calls to action near the setup guide install path.
+
+- [#1768](https://github.com/IgorGanapolsky/ThumbGate/pull/1768) [`64d1f8d`](https://github.com/IgorGanapolsky/ThumbGate/commit/64d1f8d29b368773318003f56278fc933f743ba3) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Treat duplicate Instagram content blocks from Zernio as safe skipped outcomes instead of failing the Instagram Autopilot workflow.
+
+- [#1745](https://github.com/IgorGanapolsky/ThumbGate/pull/1745) [`0ce9a65`](https://github.com/IgorGanapolsky/ThumbGate/commit/0ce9a655407098e2ea3f352e5f86ea30a99eab8d) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Warn instead of failing the LinkedIn post-dispatch workflow when LinkedIn credentials are missing or revoked.
+
+- [#1741](https://github.com/IgorGanapolsky/ThumbGate/pull/1741) [`e6b9409`](https://github.com/IgorGanapolsky/ThumbGate/commit/e6b9409a3315d1e71a873d3706909a727dc742ac) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix marketing autopilot text publishing by generating a paid-offer post file before invoking post-everywhere, limiting the text step to text/image-capable channels, and preserving campaign UTM attribution.
+
+- [#1727](https://github.com/IgorGanapolsky/ThumbGate/pull/1727) [`532c072`](https://github.com/IgorGanapolsky/ThumbGate/commit/532c0729ebe629f79abdf033a659ba5c3f2740ff) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a guarded money marketplace distribution pack for Lindy, Gumroad, and GoHighLevel revenue motions.
+
+- [#1777](https://github.com/IgorGanapolsky/ThumbGate/pull/1777) [`990b10b`](https://github.com/IgorGanapolsky/ThumbGate/commit/990b10b6618ea07c4ba20e405ef01b21dcbbdf4e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add checkout-ready ThumbGate + OpenClaw digital kit assets, live Stripe links, Zernio promotion copy, and a landing-page CTA for the first self-serve governance kit.
+
+- [#1738](https://github.com/IgorGanapolsky/ThumbGate/pull/1738) [`50a4f8d`](https://github.com/IgorGanapolsky/ThumbGate/commit/50a4f8dffbec6180bd5ffd79968ba93801a7fe9e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a paid workflow-sprint Zernio campaign option for direct diagnostic and implementation-sprint revenue posts.
+
+- [#1792](https://github.com/IgorGanapolsky/ThumbGate/pull/1792) [`0b415b5`](https://github.com/IgorGanapolsky/ThumbGate/commit/0b415b5e20d8b2b959fda2576b4efaf86dac3e03) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Route high-intent Pro page visitors to the direct quick-read checkout while keeping the Pro dashboard checkout available.
+
+- [#1723](https://github.com/IgorGanapolsky/ThumbGate/pull/1723) [`a9588ab`](https://github.com/IgorGanapolsky/ThumbGate/commit/a9588abad5695fb497e0178d63c9cbd1197fbed3) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a high-intent paid diagnostic and sprint recovery path to the Pro page.
+
+- [#1777](https://github.com/IgorGanapolsky/ThumbGate/pull/1777) [`990b10b`](https://github.com/IgorGanapolsky/ThumbGate/commit/990b10b6618ea07c4ba20e405ef01b21dcbbdf4e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a ProgramBench-style cleanroom smoke proof lane to ThumbGate Bench, publish the benchmark fixtures with the npm package, and expose the high-ticket Reliable AI Agent Governance Setup intake path on the landing page.
+
+- [#1760](https://github.com/IgorGanapolsky/ThumbGate/pull/1760) [`d5bc51c`](https://github.com/IgorGanapolsky/ThumbGate/commit/d5bc51ce4392533be359cda45c4b1d5849953cea) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Treat thrown Zernio duplicate-post responses as skipped promo outcomes so idempotent paid-offer reruns stay green.
+
+- [#1759](https://github.com/IgorGanapolsky/ThumbGate/pull/1759) [`fb942ce`](https://github.com/IgorGanapolsky/ThumbGate/commit/fb942ce2459ff71122ef4b86987c2937aa277ded) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Treat recent duplicate social publishes and Reddit text-post restrictions as skipped promo outcomes instead of fatal ThumbGate Creator Platform Promo failures.
+
+- [#1787](https://github.com/IgorGanapolsky/ThumbGate/pull/1787) [`b2b9a28`](https://github.com/IgorGanapolsky/ThumbGate/commit/b2b9a2808fdfb97dd0dcf7a59d309cecf4b051b0) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Prioritize Workflow Hardening Diagnostic and Sprint checkout paths above lower-price Pro and intake recovery paths for high-intent visitors.
+
+- [#1753](https://github.com/IgorGanapolsky/ThumbGate/pull/1753) [`4a77d5d`](https://github.com/IgorGanapolsky/ThumbGate/commit/4a77d5d80c5527934a554a1b601fa23559e3538c) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add $19 AI Agent Failure Quick Read checkout calls to action on the homepage and Pro paid recovery path.
+
+- [#1748](https://github.com/IgorGanapolsky/ThumbGate/pull/1748) [`e83ce3c`](https://github.com/IgorGanapolsky/ThumbGate/commit/e83ce3c45338dfa8b3740cb8be22311ba8ed8626) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Remove the archived $99 hero diagnostic CTA and focus the paid homepage path on the current $499 diagnostic and $1500 workflow sprint offers.
+
+- [#1734](https://github.com/IgorGanapolsky/ThumbGate/pull/1734) [`a7a95d4`](https://github.com/IgorGanapolsky/ThumbGate/commit/a7a95d4cbb71933e60c46bf4c0fec305d98d715e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Remove remaining Pro trial copy and keep real browser checkout routed directly to Stripe-collected email/payment.
+
+- [#1720](https://github.com/IgorGanapolsky/ThumbGate/pull/1720) [`a78a7eb`](https://github.com/IgorGanapolsky/ThumbGate/commit/a78a7eb3b51880fe62b4fe2296e41c89741d8d94) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Keep Ralph Mode revenue engagement reporting honest by counting LinkedIn posts only after the platform returns a real published post id, and let Ralph Loop use the stronger GitHub token for traffic analytics when configured.
+
+- [#1679](https://github.com/IgorGanapolsky/ThumbGate/pull/1679) [`a0b7fac`](https://github.com/IgorGanapolsky/ThumbGate/commit/a0b7fac6512b0f76d942b1e4992651bd8a8d8e3b) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Automatically sync evidence-backed GTM revenue-loop targets into the local sales pipeline so operator follow-up starts from tracked leads instead of a separate manual import step.
+
+- [#1721](https://github.com/IgorGanapolsky/ThumbGate/pull/1721) [`4d8ba82`](https://github.com/IgorGanapolsky/ThumbGate/commit/4d8ba82ac26749162108a0c95a00101be78f2604) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Let revenue status audits use the local ThumbGate operator config when environment keys are not set.
+
+- [#1750](https://github.com/IgorGanapolsky/ThumbGate/pull/1750) [`d59d637`](https://github.com/IgorGanapolsky/ThumbGate/commit/d59d6374cad325bdafffc3289f18f141c3d0edd5) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add the same-day teardown checkout to the homepage paid path.
+
+- [#1736](https://github.com/IgorGanapolsky/ThumbGate/pull/1736) [`0c3373b`](https://github.com/IgorGanapolsky/ThumbGate/commit/0c3373baeca216da3ae78e4433107f32ee83f07d) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a headless Skool community reader and read-only MCP connector for revenue research without taking over the user's browser.
+
+- [#1781](https://github.com/IgorGanapolsky/ThumbGate/pull/1781) [`28dc90d`](https://github.com/IgorGanapolsky/ThumbGate/commit/28dc90d635ffad1ecbf7600e3287d4aa12ec0860) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a manual Zernio duplicate cleanup workflow for TikTok and Instagram posts.
+
+- [#1737](https://github.com/IgorGanapolsky/ThumbGate/pull/1737) [`aceb673`](https://github.com/IgorGanapolsky/ThumbGate/commit/aceb673d7ca9b12e0d23850606217d00673ee5c2) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Enable Stripe Checkout recovery URLs and promotion-code entry for paid sessions so abandoned buyers can resume checkout.
+
+- [#1755](https://github.com/IgorGanapolsky/ThumbGate/pull/1755) [`108f8ea`](https://github.com/IgorGanapolsky/ThumbGate/commit/108f8ea572e883fefe7b4f1d246a68957abeee61) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Remove the extra hosted email gate for real-browser Pro checkout starts so Stripe collects the buyer email directly while bot traffic still lands on the safe intent interstitial.
+
+- [#1800](https://github.com/IgorGanapolsky/ThumbGate/pull/1800) [`3fc5b0b`](https://github.com/IgorGanapolsky/ThumbGate/commit/3fc5b0bf569a296b8479983d9e1b6609ae374621) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Clarify the public numbers page so configured checks are labeled as inventory, recorded block/warn counts are treated as the usage evidence, zero-occurrence blocker claims are suppressed, and scorer calibration is reported as n/a until the feedback sample has both safe and harmful outcomes.
+
+- [#1746](https://github.com/IgorGanapolsky/ThumbGate/pull/1746) [`2377002`](https://github.com/IgorGanapolsky/ThumbGate/commit/2377002c459cef974896eaaf25da82472ce7777c) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a paid voice-agent reliability diagnostic offer to the Zernio promo publisher.
+
+- [#1778](https://github.com/IgorGanapolsky/ThumbGate/pull/1778) [`4dbc0a9`](https://github.com/IgorGanapolsky/ThumbGate/commit/4dbc0a99e1edf67bafd9d9fa7761592a523dcacb) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Make remaining Zernio publishing workflows opt-in by default so scheduled social, Instagram, weekly, and manual offer dispatches cannot spend paid-provider capacity or publish repeated content unless explicitly enabled.
+
+- [#1744](https://github.com/IgorGanapolsky/ThumbGate/pull/1744) [`d1d6504`](https://github.com/IgorGanapolsky/ThumbGate/commit/d1d65040232c7bf178e931cb3394b701e60e2985) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a guarded Zernio offer dispatch workflow with campaign tracking for manual paid-offer pushes.
+
+- [#1775](https://github.com/IgorGanapolsky/ThumbGate/pull/1775) [`294bb52`](https://github.com/IgorGanapolsky/ThumbGate/commit/294bb521f671157cd4993712491857f0ba54026b) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Guard Zernio video autopilot behind an explicit publish opt-in, slow TikTok and Instagram video cadence to one distinct experiment per day, and add a TikTok engagement creative that asks for concrete blocked-command examples instead of repeating generic product cards.
+
+## 1.16.21
+
+### Patch Changes
+
+- Add the AI Agent Workflow Migration Checklist guide with $1 first-rule, $19 quick-read, and $499 diagnostic checkout paths so agent-migration traffic can convert without waiting for a sales conversation.
+
 ## 1.16.20
 
 ### Patch Changes

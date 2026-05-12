@@ -6,9 +6,9 @@
 <meta name="generator" content="ThumbGate">
 <meta name="author" content="Igor Ganapolsky">
 <title>ThumbGate — The Numbers | First-Party Data Snapshot</title>
-<meta name="description" content="ThumbGate's generated first-party operational snapshot: active pre-action checks, AI agent actions blocked, estimated LLM tokens and dollars saved, and the Bayes error rate of the intervention scorer.">
+<meta name="description" content="ThumbGate's generated first-party operational snapshot: configured pre-action checks, recorded block/warn events, estimated LLM token savings when events exist, and scorer calibration when the sample supports it.">
 <meta property="og:title" content="ThumbGate — The Numbers">
-<meta property="og:description" content="Generated first-party operational metrics: gates, blocks, token savings, and scorer calibration.">
+<meta property="og:description" content="Generated first-party operational snapshot: configured gates, recorded interventions, and explicit zero-evidence caveats.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://thumbgate-production.up.railway.app/numbers">
 <meta name="twitter:card" content="summary_large_image">
@@ -25,9 +25,9 @@
   "alternateName": "thumbgate",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Cross-platform, Node.js >=18.18.0",
-  "softwareVersion": "1.16.20",
+  "softwareVersion": "1.17.0",
   "url": "https://thumbgate-production.up.railway.app/numbers",
-  "dateModified": "2026-05-05",
+  "dateModified": "2026-05-07",
   "creator": {
     "@type": "Person",
     "name": "Igor Ganapolsky",
@@ -44,8 +44,8 @@
 {
   "@context": "https://schema.org",
   "@type": "Dataset",
-  "name": "ThumbGate Live Operational Metrics",
-  "description": "First-party operational metrics from the ThumbGate pre-action check runtime: active checks, blocked AI agent actions, estimated token savings, and Bayes error rate of the intervention scorer.",
+  "name": "ThumbGate Operational Snapshot",
+  "description": "First-party operational snapshot from the ThumbGate pre-action check runtime: configured checks, recorded block/warn events, estimated token savings from recorded blocks, and Bayes error rate when the sample supports it.",
   "url": "https://thumbgate-production.up.railway.app/numbers",
   "license": "https://opensource.org/licenses/MIT",
   "creator": {
@@ -57,8 +57,8 @@
       "https://www.linkedin.com/in/igorganapolsky"
     ]
   },
-  "dateModified": "2026-05-05",
-  "datePublished": "2026-05-05",
+  "dateModified": "2026-05-07",
+  "datePublished": "2026-05-07",
   "keywords": [
     "AI agent gates",
     "LLM token savings",
@@ -69,8 +69,8 @@
   "variableMeasured": [
     {
       "@type": "PropertyValue",
-      "name": "active_gates",
-      "value": 37
+      "name": "configured_gates",
+      "value": 36
     },
     {
       "@type": "PropertyValue",
@@ -101,7 +101,7 @@
     {
       "@type": "PropertyValue",
       "name": "bayes_error_rate",
-      "value": 0
+      "value": null
     }
   ]
 }
@@ -119,6 +119,8 @@
     --cyan: #22d3ee;
     --green: #34d399;
     --amber: #fbbf24;
+    --amber-soft: rgba(251, 191, 36, 0.1);
+    --amber-line: rgba(251, 191, 36, 0.34);
   }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
   nav { padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; gap: 1.5rem; align-items: center; }
@@ -140,6 +142,16 @@
     font-weight: 600;
     margin-bottom: 2.5rem;
   }
+  .truth-note {
+    background: var(--amber-soft);
+    border: 1px solid var(--amber-line);
+    border-radius: 12px;
+    color: #fde68a;
+    padding: 16px 18px;
+    margin: 0 0 2.5rem;
+    font-size: 0.95rem;
+  }
+  .truth-note strong { color: #fff3bd; }
   .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin: 1.5rem 0; }
   .stat-card {
     background: var(--bg-card);
@@ -189,33 +201,34 @@
 
 <main class="container">
   <h1>The Numbers</h1>
-  <p class="subtitle">Generated first-party operational data from the ThumbGate runtime. No surveys or projections — this page is a release-time snapshot produced by the same local scripts that power the CLI and dashboard.</p>
-  <div class="freshness">Updated: 2026-05-05 · Version 1.16.20</div>
+  <p class="subtitle">Generated first-party operational snapshot from the ThumbGate runtime. This is not customer traction, install volume, revenue, or proof that a configured gate has fired.</p>
+  <div class="freshness">Updated: 2026-05-07 · Version 1.17.0</div>
+  <div class="truth-note"><strong>Read this first:</strong> configured checks are inventory. Recorded blocks and warnings are usage evidence. This snapshot currently reports 0 recorded hard-block event(s) and 0 recorded warning event(s).</div>
 
   <h2>Gate enforcement</h2>
   <div class="stats-grid">
     <div class="stat-card">
-      <div class="stat-label">Active gates</div>
-      <div class="stat-value">37</div>
-      <div class="stat-sub">36 manual · 1 auto-promoted</div>
+      <div class="stat-label">Configured checks</div>
+      <div class="stat-value">36</div>
+      <div class="stat-sub">36 shipped defaults · 0 auto-promoted; inventory, not usage</div>
       <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/gate-stats.js">source: gate-stats.js</a>
     </div>
     <div class="stat-card">
       <div class="stat-label">Actions blocked</div>
       <div class="stat-value">0</div>
-      <div class="stat-sub">repeat AI mistakes prevented at the gate</div>
+      <div class="stat-sub">no recorded hard-block events in this snapshot</div>
       <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/gate-stats.js">source: gate-stats.js</a>
     </div>
     <div class="stat-card">
       <div class="stat-label">Actions warned</div>
       <div class="stat-value">0</div>
-      <div class="stat-sub">soft interventions; not blocks</div>
+      <div class="stat-sub">no recorded soft-warning events in this snapshot</div>
       <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/gate-stats.js">source: gate-stats.js</a>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Top blocked gate</div>
-      <div class="stat-value" style="font-size:1.1rem;">local-only-git-writes (0 blocks)</div>
-      <div class="stat-sub">highest-occurrence prevention rule</div>
+      <div class="stat-label">Top recorded blocker</div>
+      <div class="stat-value" style="font-size:1.1rem;">No recorded blocker yet</div>
+      <div class="stat-sub">top blocker appears only after at least one recorded block</div>
       <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/gate-stats.js">source: gate-stats.js</a>
     </div>
   </div>
@@ -225,25 +238,25 @@
     <div class="stat-card">
       <div class="stat-label">Estimated hours saved</div>
       <div class="stat-value">0.0</div>
-      <div class="stat-sub">~15 min per blocked mistake × blocks+warns</div>
+      <div class="stat-sub">0 because no block/warn events are recorded</div>
       <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/gate-stats.js">source: gate-stats.js</a>
     </div>
     <div class="stat-card">
       <div class="stat-label">Estimated LLM dollars saved</div>
       <div class="stat-value">$0.00</div>
-      <div class="stat-sub">blended Sonnet/Opus/Haiku 80/15/5 mix</div>
+      <div class="stat-sub">0 because no recorded block events feed this estimate</div>
       <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/token-savings.js">source: token-savings.js</a>
     </div>
     <div class="stat-card">
       <div class="stat-label">Tokens not spent</div>
       <div class="stat-value">0</div>
-      <div class="stat-sub">2,000 input + 600 output per block, conservative</div>
+      <div class="stat-sub">0 because no recorded block events feed this estimate</div>
       <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/token-savings.js">source: token-savings.js</a>
     </div>
     <div class="stat-card">
       <div class="stat-label">Scorer Bayes error</div>
-      <div class="stat-value">0.0%</div>
-      <div class="stat-sub">irreducible error given current feature set</div>
+      <div class="stat-value">n/a</div>
+      <div class="stat-sub">needs both safe and harmful feedback sequences</div>
       <a class="stat-source" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/bayes-optimal-gate.js">source: bayes-optimal-gate.js</a>
     </div>
   </div>
@@ -252,11 +265,11 @@
   <div class="method">
     <p><strong>Where the numbers come from.</strong> This page is regenerated from local scripts — no survey data, no hand-edited figures, no third-party attribution. Every number on this page is produced by code in the public <a href="https://github.com/IgorGanapolsky/ThumbGate">ThumbGate repo</a>.</p>
     <ul>
-      <li><strong>Active checks</strong> — union of shipped default rules and the auto-promotion ledger (auto).</li>
-      <li><strong>Actions blocked/warned</strong> — sum of <code>occurrences</code> across gates with the corresponding action.</li>
-      <li><strong>Hours saved</strong> — conservative 15-minute/incident estimate for debugging a repeated AI mistake × (blocks + warns).</li>
-      <li><strong>Dollars saved</strong> — blended per-call token estimate (2k input + 600 output) × blocks × 2026-04-15 Anthropic + OpenAI list prices. See <code>scripts/token-savings.js</code> for the full price snapshot.</li>
-      <li><strong>Bayes error rate</strong> — irreducible classifier error of the current risk scorer given its feature set. High values mean "add features, don't tune thresholds."</li>
+      <li><strong>Configured checks</strong> — union of shipped default rules and the auto-promotion ledger. This is inventory, not proof that the check fired.</li>
+      <li><strong>Actions blocked/warned</strong> — recorded intervention counts from gate occurrence data. These are the evidence counters.</li>
+      <li><strong>Hours saved</strong> — conservative 15-minute/incident estimate, shown only as a function of recorded block/warn counts.</li>
+      <li><strong>Dollars saved</strong> — blended per-call token estimate (2k input + 600 output) × recorded blocks × 2026-04-15 Anthropic + OpenAI list prices. See <code>scripts/token-savings.js</code> for the full price snapshot.</li>
+      <li><strong>Bayes error rate</strong> — shown only when the feedback sample contains both safe and harmful outcomes. One-class samples are reported as n/a.</li>
     </ul>
     <p style="margin-top:12px;">Last auto-promotion: none. Regenerated on every release via <code>npm run numbers:generate</code> and on a weekly cadence.</p>
   </div>
@@ -264,7 +277,7 @@
   <div class="cta">
     <a href="https://www.npmjs.com/package/thumbgate">Install ThumbGate — npx thumbgate init</a>
     <div class="footer-note">Prefer the raw feed? See <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> or run <code>npm run gate:stats</code> locally.</div>
-    <div class="footer-note">Generated at 2026-05-05T14:49:47.056Z UTC.</div>
+    <div class="footer-note">Generated at 2026-05-07T14:59:51.816Z UTC.</div>
   </div>
 </main>
 </body>

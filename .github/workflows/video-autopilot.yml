@@ -1,14 +1,16 @@
 name: Video Autopilot
 
-# Fires every 4 hours. Generates a marketing slide video and posts to
-# TikTok, YouTube Shorts, and Instagram Reels via Zernio.
+# Fires every 4 hours, but scheduled runs are gated off by default. The
+# workflow can still generate dry-runs, but paid Zernio publishing requires an
+# explicit workflow input or repo variable because low-engagement duplicate
+# posts were burning attention without revenue.
 #
 # Content rotation: 6 templates picked by least-recently-used order in
 # the marketing DB — never double-posts the same template within 7 days.
 #
 # Per-platform cooldowns (enforced by marketing DB):
-#   TikTok:    4 h  (up to 6 videos/day)
-#   Instagram: 8 h  (up to 3 Reels/day)
+#   TikTok:    24 h (one distinct experiment/day)
+#   Instagram: 24 h (one Reel/day)
 #   YouTube:  12 h  (up to 2 Shorts/day)
 #
 # The CI run is a no-op (skips all platforms) if cooldowns haven't expired.
@@ -35,6 +37,11 @@ on:
         required: false
         type: boolean
         default: false
+      publish_enabled:
+        description: 'Allow paid Zernio publishing for this manual run'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -53,6 +60,7 @@ jobs:
       ZERNIO_TIKTOK_ACCOUNT_ID:   ${{ secrets.ZERNIO_TIKTOK_ACCOUNT_ID }}
       ZERNIO_YOUTUBE_ACCOUNT_ID:  ${{ secrets.ZERNIO_YOUTUBE_ACCOUNT_ID }}
       ZERNIO_INSTAGRAM_ACCOUNT_ID: ${{ secrets.ZERNIO_INSTAGRAM_ACCOUNT_ID }}
+      THUMBGATE_ENABLE_ZERNIO_VIDEO_AUTOPILOT: ${{ vars.THUMBGATE_ENABLE_ZERNIO_VIDEO_AUTOPILOT || '0' }}
       THUMBGATE_ANALYTICS_DB: .thumbgate/marketing-analytics.sqlite
 
     steps:
@@ -136,6 +144,7 @@ jobs:
           INPUT_OFFER: ${{ github.event.inputs.offer || 'default' }}
           INPUT_PLATFORMS: ${{ github.event.inputs.platforms || 'tiktok,youtube,instagram' }}
           INPUT_DRY_RUN: ${{ github.event.inputs.dry_run }}
+          INPUT_PUBLISH_ENABLED: ${{ github.event.inputs.publish_enabled }}
         run: |
           TEMPLATE="$INPUT_TEMPLATE"
           OFFER="$INPUT_OFFER"
@@ -143,6 +152,11 @@ jobs:
           DRY_RUN_FLAG=""
           if [ "$INPUT_DRY_RUN" = "true" ]; then
             DRY_RUN_FLAG="--dry-run"
+          fi
+          if [ "$INPUT_DRY_RUN" != "true" ] && [ "$INPUT_PUBLISH_ENABLED" != "true" ] && [ "$THUMBGATE_ENABLE_ZERNIO_VIDEO_AUTOPILOT" != "1" ]; then
+            echo "Zernio paid video publishing is disabled by default."
+            echo "Set workflow input publish_enabled=true for a manual run, or repo variable THUMBGATE_ENABLE_ZERNIO_VIDEO_AUTOPILOT=1 for scheduled publishing."
+            exit 0
           fi
           WEEK=$(date +%Y-W%V)
           node scripts/social-analytics/post-video.js \
