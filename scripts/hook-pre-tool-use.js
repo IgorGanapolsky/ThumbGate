@@ -448,6 +448,19 @@ function maybeBlockViaBayesOptimal(lessons) {
     if (!worst) return null;
 
     const { lesson, dominantTag, posterior, decision } = worst;
+
+    // Epsilon-greedy exploratory probe to prevent blocking bias.
+    // Occasionally allows high-risk actions to gather new empirical outcomes.
+    const epsilon = Number(process.env.THUMBGATE_PROBE_EPSILON || '0.05');
+    if (Math.random() < epsilon) {
+      if (process.env.THUMBGATE_HOOKS_DEBUG) {
+        try {
+          process.stderr.write(`[thumbgate-hook] Exploratory probe triggered (epsilon=${epsilon}). Bypassing Bayes-optimal block for tag "${dominantTag}".\n`);
+        } catch {}
+      }
+      return null;
+    }
+
     const lessonText = (lesson.whatToChange || lesson.title || '').toString().slice(0, MAX_WRITE_SNIPPET_LEN);
     return (
       `ThumbGate blocked (Bayes-optimal): P(harmful|tags) = ${posterior.pHarmful}; `

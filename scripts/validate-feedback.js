@@ -223,7 +223,7 @@ function detectAnomalies(entry, allEntries) {
     }
   }
 
-  // Same feedback repeated exactly (duplicate detection)
+  // Same feedback repeated exactly (duplicate detection & slow-drip poisoning)
   if (entry.context && entries.length > 0) {
     const duplicates = entries.filter(
       (e) =>
@@ -233,11 +233,28 @@ function detectAnomalies(entry, allEntries) {
     );
 
     if (duplicates.length > 0) {
+      // 1 minute burst handled above; 1 hour slow-drip checked here
+      if (entry.timestamp) {
+        const entryTime = new Date(entry.timestamp);
+        const hourDuplicates = duplicates.filter((e) => {
+          return Math.abs(entryTime - new Date(e.timestamp)) < 3600000; // 1 hour
+        });
+        if (hourDuplicates.length > 3) {
+          issues.push({
+            level: 'error',
+            type: 'anomaly',
+            message: 'Slow-drip data poisoning detected',
+            explanation: `Found ${hourDuplicates.length} identical entries within 1 hour`,
+            suggestion: 'Block ingestion of this signal to prevent bias',
+          });
+        }
+      }
+
       issues.push({
         level: 'warning',
         type: 'anomaly',
         message: 'Duplicate feedback entry',
-        explanation: `Found ${duplicates.length} identical entries`,
+        explanation: `Found ${duplicates.length} identical entries overall`,
         suggestion: 'Consider deduplication or review capture logic',
       });
     }

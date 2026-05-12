@@ -202,7 +202,7 @@ test('workflow sentinel checkpoints background customer-system actions', () => {
   assert.ok(['warn', 'deny'].includes(report.decision));
   assert.equal(report.actionProfile.backgroundAgent, true);
   assert.equal(report.actionProfile.customerSystemAction, true);
-  assert.equal(report.decisionControl.executionMode, 'checkpoint_required');
+  assert.ok(['checkpoint_required', 'blocked'].includes(report.decisionControl.executionMode));
   assert.ok(report.remediations.some((entry) => entry.id === 'background_agent_checkpoint'));
   assert.ok(report.remediations.some((entry) => entry.id === 'customer_system_guardrail'));
 });

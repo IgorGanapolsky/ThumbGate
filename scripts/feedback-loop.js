@@ -1275,6 +1275,12 @@ function captureFeedback(params) {
           // Store the synthesized rule
           const rulesPath = path.join(path.dirname(MEMORY_LOG_PATH), 'synthesized-rules.jsonl');
           appendJSONLLocal(rulesPath, rule);
+          
+          // Real-time synthesis: re-render the prevention rules markdown immediately
+          // so the new rule is active for the very next tool call.
+          try {
+            writePreventionRules(undefined, getEffectiveSetting('prevention_min_occurrences', 2));
+          } catch (_err) { /* non-blocking */ }
         } else {
           // Park rejected rules in a side log so operators can audit them.
           synthesisResult.autoPromoted = false;

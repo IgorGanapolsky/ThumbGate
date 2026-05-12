@@ -55,7 +55,9 @@ function normalizeOptions(raw = {}) {
 }
 
 function hasEvidence(options) {
-  return options.evidence.length > 0 || options.hasVerifierTrace || EVIDENCE_RE.test(options.candidateText);
+  // Prevent Verifier Theater: merely using words like "proof" or "artifact" in text
+  // is not enough. Must provide actual evidence artifacts or a verifier trace.
+  return options.evidence.length > 0 || options.hasVerifierTrace;
 }
 
 function buildSignals(options) {

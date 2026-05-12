@@ -69,9 +69,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
         run: npm run branch-protection:check
       - name: Run tests
-        run: npm test
+        env:
+          TEST_TOTAL_SHARDS: 4
+          TEST_SHARD_INDEX: ${{ matrix.shard }}
+        run: node scripts/test-shard.js
 
       - name: Run gate-eval regression suite
+        if: matrix.shard == 1
         # Exits non-zero if any case in config/evals/*.json fails against
         # config/specs/*.json. Any constraint regex change that flips a
         # previously-blocking case to pass (or vice versa) blocks merge
@@ -79,34 +83,43 @@ jobs:
         run: npm run gate-eval:ci
 
       - name: Run coverage
+        if: matrix.shard == 1
         run: npm run test:coverage
 
       - name: Check congruence (branding, tech stack, version across all surfaces)
+        if: matrix.shard == 1
         run: npm run test:congruence
 
       - name: Run adapter proof
+        if: matrix.shard == 1
         run: npm run prove:adapters
 
       - name: Run automation proof
+        if: matrix.shard == 1
         run: npm run prove:automation
 
       - name: Run runtime proof
+        if: matrix.shard == 1
         run: npm run prove:runtime
 
       - name: Run evolution proof
+        if: matrix.shard == 1
         run: npm run prove:evolution
 
       - name: Run workflow contract proof
+        if: matrix.shard == 1
         run: npm run prove:workflow-contract
 
       - name: Run autoresearch proof
+        if: matrix.shard == 1
         run: npm run prove:autoresearch
 
       - name: Run Tessl distribution proof
+        if: matrix.shard == 1
         run: npm run prove:tessl
 
       - name: Write prompt evaluation report
-        if: always()
+        if: always() && matrix.shard == 1
         run: |
           mkdir -p proof
           node scripts/prompt-eval.js --min-score=0 --synthetic --synthetic-variants=1 --suite-output proof/prompt-eval-suite.generated.json --output proof/prompt-eval-report.json --json > /dev/null
@@ -130,7 +143,7 @@ jobs:
         run: npm run test:congruence:live
 
       - name: Upload proof artifacts
-        if: always()
+        if: always() && matrix.shard == 1
         uses: actions/upload-artifact@v7
         with:
           name: proof-artifacts
