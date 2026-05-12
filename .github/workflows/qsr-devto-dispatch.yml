@@ -1,0 +1,122 @@
+name: QSR Dev.to Dispatch
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Publish QSR automation article
+        run: |
+          node - <<'NODE'
+          const devto = require('./scripts/social-analytics/publishers/devto');
+
+          const body = [
+            'Most restaurant AI pitches start with a customer-facing chatbot.',
+            '',
+            'That is usually the riskiest place to start.',
+            '',
+            'For quick-service restaurants, the first useful AI automation is often a manager-facing workflow:',
+            '',
+            '- low-stock alerts',
+            '- shift handoff summaries',
+            '- waste reports',
+            '- review response drafts',
+            '- order triage that escalates risky cases',
+            '',
+            'These workflows are less flashy, but they are easier to test. They create value without asking the AI to make unsafe allergy, refund, or food-safety decisions in public.',
+            '',
+            '## The workflow I would map first',
+            '',
+            'If I were diagnosing a QSR operation, I would start with inventory and shift handoff data.',
+            '',
+            'Why?',
+            '',
+            'Because the inputs already exist:',
+            '',
+            '- Google Sheets',
+            '- POS exports',
+            '- manager notes',
+            '- waste logs',
+            '- delivery invoices',
+            '- Slack or email alerts',
+            '',
+            'And the output is clear:',
+            '',
+            '> What should the manager do before the next rush?',
+            '',
+            'That is a better first AI workflow than "let the AI take every order."',
+            '',
+            '## A practical QSR automation stack',
+            '',
+            'A useful first version can be simple:',
+            '',
+            '1. n8n pulls inventory or shift notes.',
+            '2. A small AI step summarizes risk.',
+            '3. Rules flag missing or dangerous cases.',
+            '4. The manager receives a short action brief.',
+            '5. Every decision is logged for review.',
+            '',
+            'You do not need a giant agent framework to start. You need clean inputs, human escalation, and a workflow that saves the manager time today.',
+            '',
+            '## Where AI should not be trusted blindly',
+            '',
+            'Restaurant automations need guardrails around:',
+            '',
+            '- allergy requests',
+            '- refund disputes',
+            '- illness or food-safety complaints',
+            '- unavailable menu items',
+            '- incorrect pickup times',
+            '- customer payment issues',
+            '- public review replies',
+            '',
+            'The right pattern is not full autonomy. The right pattern is triage, draft, escalate, and log.',
+            '',
+            '## I made a small QSR automation pack',
+            '',
+            'I built a QSR AI Ops Pack with n8n workflows, OpenClaw-ready agent specs, prompt libraries, and test payloads for:',
+            '',
+            '- AI order triage',
+            '- inventory alerts',
+            '- daily waste reporting',
+            '- review response drafts',
+            '- shift handoffs',
+            '',
+            'There is also a $499 diagnostic for teams that want one restaurant workflow mapped before they build.',
+            '',
+            'Diagnostic:',
+            'https://iganapolsky.gumroad.com/l/qsr-ai-automation-diagnostic',
+            '',
+            'Landing page:',
+            'https://igorganapolsky.github.io/qsr-ai-ops-pack-site/',
+            '',
+            'The goal is not 10,000 random templates. The goal is one restaurant workflow that is safe enough to test and valuable enough to ship.',
+          ].join('\n');
+
+          devto.publishArticle({
+            title: 'The first restaurant AI workflow I would automate is not the chatbot',
+            body_markdown: body,
+            tags: ['ai', 'automation', 'n8n', 'startups'],
+            published: true,
+            canonical_url: 'https://igorganapolsky.github.io/qsr-ai-ops-pack-site/',
+          }).then((article) => {
+            console.log(`QSR_DEVTO_URL=${article.url}`);
+          }).catch((error) => {
+            console.error(error.message);
+            process.exit(1);
+          });
+          NODE

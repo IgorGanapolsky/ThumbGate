@@ -43,7 +43,7 @@ This avoids platform-specific rewrite cost and keeps the product under a small b
 ## Claude (MCP)
 
 - Use: `adapters/claude/.mcp.json`
-- Transport: local stdio MCP server launched via `npx -y thumbgate@1.16.8 serve`
+- Transport: local stdio MCP server launched via `npx -y thumbgate@1.17.0 serve`
 
 ## Claude Desktop Extensions
 
@@ -58,7 +58,7 @@ This avoids platform-specific rewrite cost and keeps the product under a small b
 - Release workflow: `.github/workflows/publish-claude-plugin.yml`
 - Latest direct download: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb`
 - Latest review packet zip: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-plugin-review.zip`
-- Local install path: `claude mcp add thumbgate -- npx -y thumbgate@1.16.8 serve`
+- Local install path: `claude mcp add thumbgate -- npx -y thumbgate@1.17.0 serve`
 - Promotion rule: treat directory inclusion as a discoverability lane, not customer proof
 
 Build the `.mcpb` for Claude Desktop review or direct installation with:
@@ -119,6 +119,34 @@ Cursor update rules:
 4. For repo-backed Team Marketplaces, enable Auto Refresh when the Cursor admin UI exposes it.
 
 Promotion and release operations are tracked in [CURSOR_PLUGIN_OPERATIONS.md](CURSOR_PLUGIN_OPERATIONS.md).
+
+## VS Code / Open VSX
+
+- Extension root: `plugins/vscode-extension/`
+- Extension manifest: `plugins/vscode-extension/package.json`
+- Runtime: local stdio MCP server launched via `npx --yes --package thumbgate@latest thumbgate serve`
+- MCP provider: `contributes.mcpServerDefinitionProviders`
+- Workspace fallback: `.vscode/mcp.json`
+- Build command: `npm run build:vscode-extension`
+- Marketplace command: `cd plugins/vscode-extension && npx --yes @vscode/vsce publish`
+- Open VSX command: `cd plugins/vscode-extension && npx --yes ovsx publish *.vsix`
+- Promotion rule: do not claim VS Code Marketplace or Open VSX installs until the listing dashboard proves them.
+
+## Antigravity-compatible VSIX
+
+- Install guide: `plugins/antigravity-extension/INSTALL.md`
+- Distribution path: Open VSX or direct VSIX built from `plugins/vscode-extension/`
+- Runtime: same `thumbgate@latest` MCP server.
+- Promotion rule: say "Antigravity-compatible VS Code extension/MCP setup"; do not claim an Antigravity Marketplace listing until one exists and is live.
+
+## JetBrains
+
+- Scaffold root: `plugins/jetbrains-plugin/`
+- Manifest: `plugins/jetbrains-plugin/src/main/resources/META-INF/plugin.xml`
+- Gradle build: `plugins/jetbrains-plugin/build.gradle.kts`
+- Runtime: project `.mcp.json` pointing at `npx --yes --package thumbgate@latest thumbgate serve`
+- Marketplace path: first JetBrains Marketplace upload is manual; future releases can use Gradle publishing after approval.
+- Promotion rule: treat JetBrains as a discovery lane until Marketplace approval and billing data prove traction.
 
 ## Gemini (Function Calling)
 

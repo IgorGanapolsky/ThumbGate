@@ -6,6 +6,7 @@
 'use strict';
 
 const STRIPE_TIMEOUT_MS = 5000;
+const STRIPE_RECONCILIATION_SUMMARY_TIMEOUT_MS = 3500;
 function withTimeout(promise, ms = STRIPE_TIMEOUT_MS) {
   return Promise.race([
     promise,
@@ -411,9 +412,7 @@ function resolveCheckoutBrandUrls(appOrigin) {
   };
 }
 
-// Resolve the per-tier product image that ships to Stripe `product_data.images`.
-// Keeping three distinct URLs means the Stripe dashboard and checkout surface
-// never show twins for Free/Pro/Team; see tests/billing-tier-icons.test.js.
+// Resolve the per-tier product image used by Stripe Checkout.
 function resolveTierIconUrl(planId, appOrigin) {
   const brandUrls = resolveCheckoutBrandUrls(appOrigin);
   const normalized = typeof planId === 'string' ? planId.toLowerCase() : '';
@@ -1127,7 +1126,13 @@ function deriveRevenueEventFromPaidProviderEvent(entry = {}) {
 
 function loadResolvedRevenueEvents(options = {}) {
   const analyticsWindow = resolveAnalyticsWindow(options);
-  const extraRevenueEvents = Array.isArray(options.extraRevenueEvents) ? options.extraRevenueEvents : [];
+  const extraRevenueEvents = Array.isArray(options.extraRevenueEvents)
+    ? filterEntriesForWindow(
+      options.extraRevenueEvents,
+      analyticsWindow,
+      (entry) => entry && entry.timestamp
+    )
+    : [];
   const revenueEvents = filterEntriesForWindow(
     loadRevenueLedger(),
     analyticsWindow,
@@ -1144,7 +1149,8 @@ function loadResolvedRevenueEvents(options = {}) {
     const derived = deriveRevenueEventFromPaidProviderEvent(entry);
     if (!derived) continue;
     if (hasRevenueEventMatch(resolved, derived)) continue;
-    resolved.push(derived);
+    const priced = resolveGithubMarketplaceRevenueEntry(derived, { annotate: false }).entry;
+    resolved.push(priced);
   }
 
   return mergeRevenueEvents(resolved, extraRevenueEvents);
@@ -1156,6 +1162,9 @@ function repairGithubMarketplaceRevenueLedger(options = {}) {
   const rows = loadJsonlFile(ledgerPath);
   const resolvedAt = new Date().toISOString();
   const repairs = [];
+
+  // Pass 1: in-place repair of rows already in revenue-events.jsonl that have
+  // unknown amounts but resolvable plan metadata.
   const updatedRows = rows.map((entry) => {
     const result = resolveGithubMarketplaceRevenueEntry(entry, {
       annotate: true,
@@ -1173,21 +1182,76 @@ function repairGithubMarketplaceRevenueLedger(options = {}) {
       currency: normalizeCurrency(result.entry.currency),
       recurringInterval: normalizeText(result.entry.recurringInterval),
       pricingSource: normalizeText(metadata.githubMarketplaceAmountSource),
+      source: 'in_place',
     });
     return result.entry;
   });
 
+  // Pass 2: append rows for funnel-derived paid github_marketplace events that
+  // never landed in the revenue ledger. The webhook handler at handleGithubWebhook
+  // skips appendRevenueEvent when hasRevenueEventMatch is true, so duplicates from
+  // a re-run are already prevented; the only way an order gets here is if the
+  // revenue write was skipped at webhook time (e.g. funnel pre-existed, planPricing
+  // had unknown amount at the time, or the row was created via a different path).
+  const funnelRecords = loadFunnelLedger().filter(
+    (e) =>
+      e &&
+      e.stage === 'paid' &&
+      normalizeText((e.metadata && e.metadata.provider) || e.provider) === 'github_marketplace'
+  );
+
+  for (const funnelEntry of funnelRecords) {
+    const derived = deriveRevenueEventFromPaidProviderEvent(funnelEntry);
+    if (!derived) continue;
+    if (hasRevenueEventMatch(updatedRows, derived)) continue;
+
+    const resolved = resolveGithubMarketplaceRevenueEntry(derived, {
+      annotate: true,
+      resolvedAt,
+    });
+    // Skip funnel-derived rows that still have unknown amounts after resolving —
+    // we don't want to permanently bake amountKnown:false rows when there's no
+    // pricing data to attach. Better to leave them off-disk and keep the
+    // read-time merge in loadResolvedRevenueEvents covering them.
+    if (!resolved.changed || !resolved.entry.amountKnown) continue;
+
+    const persisted = {
+      ...resolved.entry,
+      metadata: {
+        ...sanitizeMetadata(resolved.entry.metadata),
+        recoveredFromFunnelLedger: true,
+        funnelRecordedAt: normalizeText(funnelEntry.timestamp) || null,
+      },
+    };
+    updatedRows.push(persisted);
+
+    const metadata = sanitizeMetadata(persisted.metadata);
+    repairs.push({
+      orderId: normalizeText(persisted.orderId),
+      customerId: normalizeText(persisted.customerId),
+      planId: normalizeText(metadata.planId ?? persisted.planId),
+      amountCents: normalizeInteger(persisted.amountCents),
+      currency: normalizeCurrency(persisted.currency),
+      recurringInterval: normalizeText(persisted.recurringInterval),
+      pricingSource: normalizeText(metadata.githubMarketplaceAmountSource),
+      source: 'funnel_derived',
+    });
+  }
+
   const writeResult = write && repairs.length > 0
     ? writeJsonlRecords(ledgerPath, updatedRows)
-    : { written: false, rowCount: rows.length };
+    : { written: false, rowCount: updatedRows.length };
 
   return {
     ledgerPath,
     write,
     wrote: Boolean(writeResult.written),
     scanned: rows.length,
+    funnelScanned: funnelRecords.length,
     repaired: repairs.length,
-    unchanged: rows.length - repairs.length,
+    repairedInPlace: repairs.filter((r) => r.source === 'in_place').length,
+    repairedFromFunnel: repairs.filter((r) => r.source === 'funnel_derived').length,
+    unchanged: rows.length - repairs.filter((r) => r.source === 'in_place').length,
     repairs,
     writeResult,
   };
@@ -2263,6 +2327,7 @@ function getBusinessAnalytics(options = {}) {
       conversionByOfferCode,
     },
     trafficMetrics,
+    ctas: telemetry.ctas || {},
     operatorGeneratedAcquisition,
     dataQuality,
     sourceDiagnostics,
@@ -2349,6 +2414,7 @@ function getBillingSummary(options = {}) {
     newsletter: business.newsletter,
     attribution: business.attribution,
     trafficMetrics: business.trafficMetrics,
+    ctas: business.ctas,
     operatorGeneratedAcquisition: business.operatorGeneratedAcquisition,
     dataQuality: business.dataQuality,
     sourceDiagnostics: business.sourceDiagnostics,
@@ -2369,7 +2435,12 @@ function getBillingSummary(options = {}) {
 
 async function getBillingSummaryLive(options = {}) {
   try {
-    const extraRevenueEvents = await listStripeReconciledRevenueEvents().catch(() => []);
+    const reconciliationTimeoutMs = normalizeInteger(options.stripeReconciliationTimeoutMs)
+      || STRIPE_RECONCILIATION_SUMMARY_TIMEOUT_MS;
+    const extraRevenueEvents = await withTimeout(
+      listStripeReconciledRevenueEvents(),
+      reconciliationTimeoutMs
+    ).catch(() => []);
     return getBillingSummary({
       ...options,
       extraRevenueEvents,
@@ -2509,12 +2580,31 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
         quantity: checkoutSelection.quantity,
       }];
 
+  const explicitTrialDays = normalizeInteger(
+    checkoutMetadata?.trialPeriodDays
+    ?? checkoutMetadata?.trial_period_days
+    ?? checkoutMetadata?.trialDays
+    ?? checkoutMetadata?.trial_days
+  );
+  const trialFlag = (normalizeText(checkoutMetadata?.trial) || '').toLowerCase();
+  const shouldStartTrial = !pack && (
+    explicitTrialDays > 0
+    || trialFlag === '1'
+    || trialFlag === 'true'
+    || trialFlag === 'yes'
+  );
+  const trialPeriodDays = explicitTrialDays > 0
+    ? Math.min(explicitTrialDays, 30)
+    : 7;
+
   const sessionPayload = {
     success_url: successUrl,
     cancel_url: cancelUrl,
     payment_method_types: ['card', 'link'],
     mode: pack ? 'payment' : 'subscription',
     line_items: lineItems,
+    allow_promotion_codes: true,
+    after_expiration: { recovery: { enabled: true, allow_promotion_codes: true } },
     branding_settings: buildCheckoutBrandingSettings(appOrigin),
     metadata: serializeStripeMetadata({
       ...checkoutMetadata,
@@ -2525,10 +2615,9 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
       packId: pack ? pack.id : null,
       credits: pack ? pack.credits : null,
     }),
-    // 7-day free trial for subscriptions — don't require card upfront
     ...(pack ? {} : {
-      subscription_data: { trial_period_days: 7 },
-      payment_method_collection: 'if_required',
+      payment_method_collection: 'always',
+      ...(shouldStartTrial ? { subscription_data: { trial_period_days: trialPeriodDays } } : {}),
     }),
   };
 

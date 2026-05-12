@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ThumbGate vs Agentix Labs | Product Enforcement vs Custom AI Agent Services</title>
+  <meta name="description" content="Agentix Labs sells custom AI agent and automation services. ThumbGate is the local-first enforcement layer that blocks repeated AI-agent mistakes before execution." />
+  <meta property="og:title" content="ThumbGate vs Agentix Labs | Product Enforcement vs Custom AI Agent Services" />
+  <meta property="og:description" content="A practical comparison for teams deciding between custom AI agent services and an open-source pre-action enforcement layer." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/compare/agentix-labs" />
+  <link rel="canonical" href="https://thumbgate.ai/compare/agentix-labs" />
+  <link rel="llm-context" href="/public/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+  <style>
+    :root { --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #161618; --line: #222225; --text: #e8e8ec; --muted: #8b8b96; --cyan: #22d3ee; --green: #4ade80; --amber: #fbbf24; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); background: rgba(10, 10, 11, 0.88); border-bottom: 1px solid var(--line); }
+    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; padding-bottom: 14px; }
+    .brand { font-weight: 700; color: var(--text); display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(34, 211, 238, 0.22); background: rgba(34, 211, 238, 0.1); color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 700; }
+    h1 { font-size: clamp(34px, 5vw, 56px); line-height: 1.06; letter-spacing: -0.04em; margin: 16px 0; max-width: 820px; }
+    .hero p { max-width: 760px; color: var(--muted); font-size: 18px; }
+    .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 24px; padding-bottom: 72px; }
+    .card, .detail-section, .sidebar-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: 16px; }
+    .card { padding: 24px; }
+    .detail-section { padding: 24px; margin-bottom: 18px; }
+    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+    .detail-section p, .detail-section li, .sidebar-card p { color: var(--muted); }
+    .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
+    .comparison-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+    .comparison-table th, .comparison-table td { border: 1px solid var(--line); padding: 12px; text-align: left; vertical-align: top; }
+    .comparison-table th { background: var(--bg-raised); color: var(--cyan); }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+    .pill { border: 1px solid var(--line); background: var(--bg-raised); border-radius: 999px; padding: 10px 14px; font-size: 14px; font-weight: 650; }
+    .pill.good { color: #b8f7c8; border-color: rgba(74, 222, 128, 0.28); background: rgba(74, 222, 128, 0.1); }
+    .pill.warn { color: #ffe2a4; border-color: rgba(251, 191, 36, 0.28); background: rgba(251, 191, 36, 0.1); }
+    .sidebar { display: flex; flex-direction: column; gap: 18px; }
+    .sidebar-card { padding: 20px; }
+    .sidebar-card:first-child { position: sticky; top: 84px; max-height: calc(100vh - 104px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .proof-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+    .cta-button { display: inline-flex; align-items: center; justify-content: center; margin-top: 18px; padding: 12px 16px; border-radius: 10px; background: var(--cyan); color: #071116; font-weight: 700; text-decoration: none; }
+    .related-card { display: block; padding: 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg-raised); margin-top: 12px; color: var(--text); }
+    .related-label { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .faq-item { border-top: 1px solid var(--line); padding: 14px 0; }
+    .faq-item summary { cursor: pointer; font-weight: 600; }
+    .faq-item p { color: var(--muted); }
+    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } .sidebar-card:first-child { position: static; max-height: none; overflow: visible; } }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "ThumbGate vs Agentix Labs",
+  "description": "Agentix Labs sells custom AI agent and automation services. ThumbGate is the local-first enforcement layer that blocks repeated AI-agent mistakes before execution.",
+  "about": ["thumbgate vs agentix labs", "AI agent enforcement layer", "custom AI agents vs pre-action checks"],
+  "url": "https://thumbgate.ai/compare/agentix-labs",
+  "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+  "mainEntityOfPage": "https://thumbgate.ai/compare/agentix-labs"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is Agentix Labs a direct ThumbGate competitor?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Agentix Labs is adjacent competition because it sells custom AI agent, automation, and infrastructure services. ThumbGate is a self-serve and local-first enforcement product for blocking repeated AI-agent mistakes before tool execution."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can an AI automation agency use ThumbGate?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. ThumbGate can be the reusable pre-action enforcement layer under agency-built agent workflows, especially when clients need safe action execution, approval boundaries, audit evidence, and prevention of repeated tool-call failures."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="container">
+      <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+    </div>
+  </div>
+
+  <main class="container">
+    <section class="hero">
+      <div class="eyebrow">comparison | thumbgate vs agentix labs</div>
+      <h1>ThumbGate vs Agentix Labs</h1>
+      <p>Agentix Labs validates the market for production AI-agent hardening. It appears to sell custom AI agent and automation services. ThumbGate is the productized enforcement layer that blocks repeated agent mistakes before execution.</p>
+      <div class="pill-row">
+        <div class="pill good">ThumbGate: local-first pre-action enforcement</div>
+        <div class="pill warn">Agentix Labs: custom AI agent services</div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div>
+        <div class="card">
+          <h2>The short answer</h2>
+          <p>Agentix Labs is adjacent competition, not a direct npm/devtool replacement. Their positioning around production-grade, policy-aware AI agents proves buyers care about safe execution, observability, guardrails, and automation ROI.</p>
+          <p>ThumbGate should use that demand signal to own the narrower wedge: deterministic pre-action checks that stop repeated tool-call failures before they run.</p>
+        </div>
+
+        <section class="detail-section">
+          <h2>Comparison table</h2>
+          <table class="comparison-table">
+            <tr><th>Buyer question</th><th>ThumbGate</th><th>Agentix Labs-style services</th></tr>
+            <tr><td>What is the category?</td><td>Open-source developer tool and paid workflow hardening offer.</td><td>Custom AI agent, automation, and infrastructure services.</td></tr>
+            <tr><td>What gets shipped?</td><td>Local CLI, hooks, lessons, rules, dashboards, proof artifacts, and team rollout paths.</td><td>Client-specific agents, automations, integrations, and managed implementation work.</td></tr>
+            <tr><td>Where is the control point?</td><td>Before tool execution: inspectable policy over tool name, args, cwd, evidence, and normalized command shape.</td><td>Inside the broader implementation: orchestration, workflows, integrations, and human-in-the-loop design.</td></tr>
+            <tr><td>Best fit</td><td>Teams that already have coding agents and need repeated mistakes blocked this week.</td><td>Organizations that want a vendor to design and build agent workflows for them.</td></tr>
+            <tr><td>Pricing path</td><td>Free, Pro $19/mo or $149/yr, Team $49/seat/mo, plus Workflow Hardening Sprint intake.</td><td>Likely project or retainer-based services, depending on implementation scope.</td></tr>
+          </table>
+        </section>
+
+        <section class="detail-section">
+          <h2>How to position ThumbGate against them</h2>
+          <ul>
+            <li>Do not attack agencies. They validate the buyer pain.</li>
+            <li>Say ThumbGate is the enforcement layer agencies and platform teams can reuse under many custom workflows.</li>
+            <li>Lead with deterministic gates, not generic AI safety language.</li>
+            <li>Use their market language as buyer vocabulary: production-grade agents, policy-aware orchestration, safe action execution, observability, auditability, and human-in-the-loop boundaries.</li>
+          </ul>
+        </section>
+
+        <section class="detail-section">
+          <h2>Choose ThumbGate when</h2>
+          <ul>
+            <li>Your AI coding agent repeats the same known failure after feedback.</li>
+            <li>You need a local-first tool that works across Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, and OpenCode.</li>
+            <li>You want proof that a bad action was blocked before execution.</li>
+            <li>You want a workflow hardening sprint focused on one repeated failure, not a months-long transformation project.</li>
+          </ul>
+        </section>
+
+        <section class="detail-section">
+          <h2>Choose an AI automation agency when</h2>
+          <ul>
+            <li>You do not yet know what agent workflow to build.</li>
+            <li>You need custom integrations, CRM/ERP work, RAG, voice agents, or business-process redesign.</li>
+            <li>You want managed implementation capacity more than self-serve developer control.</li>
+          </ul>
+        </section>
+
+        <div class="detail-section">
+          <h2>FAQ</h2>
+          <details class="faq-item">
+            <summary>Is Agentix Labs a direct ThumbGate competitor?</summary>
+            <p>It is adjacent competition. Agentix Labs appears to sell custom AI agent and automation services. ThumbGate sells productized enforcement for teams that already use tool-calling agents and need repeated mistakes blocked before execution.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Can agencies use ThumbGate?</summary>
+            <p>Yes. Agencies can use ThumbGate as the reusable safety and enforcement layer beneath client-specific orchestration, especially where safe action execution and approval boundaries matter.</p>
+          </details>
+        </div>
+      </div>
+
+      <aside class="sidebar">
+        <div class="sidebar-card">
+          <h2>GSD execution brief</h2>
+          <p>This page captures high-intent demand from teams comparing custom AI-agent services against a concrete enforcement layer.</p>
+          <p><strong>Opportunity score:</strong> 92</p>
+          <p><strong>Primary persona:</strong> platform team or automation agency evaluator</p>
+          <p><strong>Keyword cluster:</strong> thumbgate vs agentix labs, AI agent enforcement layer, custom AI agents guardrails</p>
+          <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
+          <div class="proof-links"><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a><a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub repository</a></div>
+          <a class="cta-button" href="/?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=compare_agentix_labs&amp;cta_placement=seo_brief#workflow-sprint-intake">Start workflow hardening</a>
+        </div>
+        <div class="sidebar-card">
+          <h2>Related pages</h2>
+          <a class="related-card" href="/compare/ai-experience-orchestration"><span class="related-label">Related page</span><strong>AI Experience Orchestration Still Needs Enforcement</strong></a>
+          <a class="related-card" href="/use-cases/platform-teams"><span class="related-label">Use case</span><strong>ThumbGate for Platform Teams</strong></a>
+          <a class="related-card" href="/guides/pre-action-checks"><span class="related-label">Guide</span><strong>What Are Pre-Action Checks?</strong></a>
+        </div>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>

@@ -6,11 +6,14 @@ const path = require('node:path');
 
 const {
   buildGitHubOutreachJobs,
+  buildPackWriteOptions,
   isCliInvocation,
   main,
+  resolveSalesPipelineImportSource,
+  syncSalesPipeline,
 } = require('../scripts/autonomous-sales-agent');
 
-test('automation emits LinkedIn, Aiventyx, ChatGPT, Codex, and GitHub outreach assets from the revenue loop outputs', async () => {
+test('automation emits LinkedIn, Roo, Aiventyx, ChatGPT, Codex, and GitHub outreach assets from the revenue loop outputs', async () => {
   const calls = [];
   const logs = [];
   const originalLog = console.log;
@@ -95,6 +98,14 @@ test('automation emits LinkedIn, Aiventyx, ChatGPT, Codex, and GitHub outreach a
         calls.push(['writeRedditDmWorkflowHardeningPack', pack.channel, options.writeDocs]);
         return { docsPath: '/tmp/reddit.md' };
       },
+      buildRooSunsetDemandPack(report) {
+        calls.push(['buildRooSunsetDemandPack', report.targets.length]);
+        return { channel: 'roo' };
+      },
+      writeRooSunsetDemandPack(pack, options) {
+        calls.push(['writeRooSunsetDemandPack', pack.channel, options.writeDocs]);
+        return { docsPath: '/tmp/roo.md' };
+      },
       buildCodexMarketplaceRevenuePack() {
         calls.push(['buildCodexMarketplaceRevenuePack']);
         return { channel: 'codex' };
@@ -111,9 +122,31 @@ test('automation emits LinkedIn, Aiventyx, ChatGPT, Codex, and GitHub outreach a
         calls.push(['writeCodexPluginRevenuePack', pack.channel, options.writeDocs]);
         return { docsPath: '/tmp/codex-plugin.md' };
       },
+      buildMcpDirectoryRevenuePack() {
+        calls.push(['buildMcpDirectoryRevenuePack']);
+        return { channel: 'mcp-directory' };
+      },
+      writeMcpDirectoryRevenuePack(pack, options) {
+        calls.push(['writeMcpDirectoryRevenuePack', pack.channel, options.writeDocs]);
+        return { docsPath: '/tmp/mcp-directory.md' };
+      },
       runGitHubOutreach(options) {
         calls.push(['runGitHubOutreach', options]);
         return { docsPath: options.outPath };
+      },
+      syncSalesPipeline(report, written) {
+        calls.push(['syncSalesPipeline', report.targets.length, written.reportDir]);
+        return {
+          imported: 2,
+          skipped: 0,
+          statePath: '/tmp/.thumbgate/sales-pipeline.jsonl',
+          summary: {
+            active: 2,
+            contacted: 0,
+            replies: 0,
+            paid: 0,
+          },
+        };
       },
     });
   } finally {
@@ -138,10 +171,14 @@ test('automation emits LinkedIn, Aiventyx, ChatGPT, Codex, and GitHub outreach a
     ['writeChatgptGptRevenuePack', 'chatgpt', true],
     ['buildRedditDmWorkflowHardeningPack', 2],
     ['writeRedditDmWorkflowHardeningPack', 'reddit', true],
+    ['buildRooSunsetDemandPack', 2],
+    ['writeRooSunsetDemandPack', 'roo', true],
     ['buildCodexMarketplaceRevenuePack'],
     ['writeCodexMarketplaceRevenuePack', 'codex', true],
     ['buildCodexPluginRevenuePack', 2],
     ['writeCodexPluginRevenuePack', 'codex-plugin', true],
+    ['buildMcpDirectoryRevenuePack'],
+    ['writeMcpDirectoryRevenuePack', 'mcp-directory', true],
     ['runGitHubOutreach', {
       queuePath: path.resolve('/tmp/reports/gtm', 'gtm-target-queue.jsonl'),
       reportPath: path.resolve('/tmp/reports/gtm', 'gtm-revenue-loop.json'),
@@ -152,15 +189,20 @@ test('automation emits LinkedIn, Aiventyx, ChatGPT, Codex, and GitHub outreach a
       reportPath: path.resolve(repoRoot, 'docs/marketing/gtm-revenue-loop.json'),
       outPath: path.resolve(repoRoot, 'docs/OUTREACH_TARGETS.md'),
     }],
+    ['syncSalesPipeline', 2, '/tmp/reports/gtm'],
   ]);
   assert.ok(logs.some((line) => line.includes('Aiventyx pack updated: /tmp/aiventyx.md')));
   assert.ok(logs.some((line) => line.includes('LinkedIn pack updated: /tmp/linkedin.md')));
   assert.ok(logs.some((line) => line.includes('ChatGPT pack updated: /tmp/chatgpt.md')));
   assert.ok(logs.some((line) => line.includes('Reddit DM pack updated: /tmp/reddit.md')));
+  assert.ok(logs.some((line) => line.includes('Roo sunset pack updated: /tmp/roo.md')));
   assert.ok(logs.some((line) => line.includes('Codex marketplace pack updated: /tmp/codex-marketplace.md')));
   assert.ok(logs.some((line) => line.includes('Codex plugin pack updated: /tmp/codex-plugin.md')));
+  assert.ok(logs.some((line) => line.includes('MCP directory pack updated: /tmp/mcp-directory.md')));
   assert.ok(logs.some((line) => line.includes('GitHub outreach asset updated: /tmp/reports/gtm/OUTREACH_TARGETS.md')));
   assert.ok(logs.some((line) => line.includes(`GitHub outreach asset updated: ${path.resolve(repoRoot, 'docs/OUTREACH_TARGETS.md')}`)));
+  assert.ok(logs.some((line) => line.includes('Sales pipeline synced: 2 imported, 0 skipped. Active 2, contacted 0, replied 0, paid 0.')));
+  assert.ok(logs.some((line) => line.includes('Sales pipeline state: /tmp/.thumbgate/sales-pipeline.jsonl')));
   assert.ok(logs.some((line) => line.includes('State: cold-start | Targets: 2')));
 });
 
@@ -183,6 +225,93 @@ test('buildGitHubOutreachJobs writes report-dir and repo docs assets from the cu
       outPath: path.resolve(repoRoot, 'docs/OUTREACH_TARGETS.md'),
     },
   ]);
+});
+
+test('buildPackWriteOptions mirrors revenue-loop doc behavior for channel packs', () => {
+  assert.deepEqual(
+    buildPackWriteOptions({}),
+    { writeDocs: true },
+  );
+  assert.deepEqual(
+    buildPackWriteOptions({ reportDir: 'reports/gtm/test' }),
+    { reportDir: 'reports/gtm/test', writeDocs: false },
+  );
+  assert.deepEqual(
+    buildPackWriteOptions({ writeDocs: true, reportDir: 'reports/gtm/test' }),
+    { writeDocs: true, reportDir: 'reports/gtm/test' },
+  );
+});
+
+test('resolveSalesPipelineImportSource prefers report-dir JSON and falls back to docs JSON', () => {
+  const repoRoot = path.resolve(__dirname, '..');
+
+  assert.equal(
+    resolveSalesPipelineImportSource({ reportDir: '/tmp/reports/gtm' }, repoRoot),
+    path.resolve('/tmp/reports/gtm', 'gtm-revenue-loop.json'),
+  );
+  assert.equal(
+    resolveSalesPipelineImportSource({ docsPath: path.join(repoRoot, 'docs', 'marketing', 'gtm-revenue-loop.md') }, repoRoot),
+    path.resolve(repoRoot, 'docs', 'marketing', 'gtm-revenue-loop.json'),
+  );
+  assert.equal(resolveSalesPipelineImportSource({}, repoRoot), null);
+});
+
+test('syncSalesPipeline imports GTM targets and summarizes the local pipeline', () => {
+  const repoRoot = path.resolve(__dirname, '..');
+  const statePath = path.resolve(__dirname, 'fixtures', 'sales-pipeline-sync.jsonl');
+  const report = {
+    targets: [
+      {
+        source: 'github',
+        channel: 'github',
+        username: 'builder',
+        repoName: 'approval-workflow',
+        repoUrl: 'https://github.com/builder/approval-workflow',
+        description: 'Approval workflow with repeated handoff failures.',
+        motionReason: 'One repeated approval failure is already visible.',
+        offer: 'workflow_hardening_sprint',
+        cta: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+        firstTouchDraft: 'I can harden one AI-agent workflow for you.',
+      },
+    ],
+  };
+  const sync = syncSalesPipeline(report, {
+    reportDir: '/tmp/reports/gtm',
+  }, repoRoot, {
+    importRevenueLoopReport: (payload, options) => {
+      assert.equal(payload.targets.length, 1);
+      assert.equal(options.sourcePath, path.resolve('/tmp/reports/gtm', 'gtm-revenue-loop.json'));
+      return {
+        imported: [{ leadId: 'github_builder_approval_workflow' }],
+        skipped: [],
+      };
+    },
+    loadSalesLeads: () => [{
+      leadId: 'github_builder_approval_workflow',
+      stage: 'targeted',
+      revenue: { amountCents: 0 },
+    }],
+    summarizeSalesPipeline: () => ({
+      active: 1,
+      contacted: 0,
+      replies: 0,
+      paid: 0,
+    }),
+    getSalesPipelinePath: () => statePath,
+  });
+
+  assert.deepEqual(sync, {
+    imported: 1,
+    skipped: 0,
+    sourcePath: path.resolve('/tmp/reports/gtm', 'gtm-revenue-loop.json'),
+    statePath,
+    summary: {
+      active: 1,
+      contacted: 0,
+      replies: 0,
+      paid: 0,
+    },
+  });
 });
 
 test('CLI entrypoint detection is path based', () => {

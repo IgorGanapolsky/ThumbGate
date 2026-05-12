@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, feat/**]
+    # Pull requests already run this full suite. Running it again on every
+    # feature-branch push doubles PR latency and spend without adding signal.
+    branches: [main]
   pull_request:
     branches: [main]
   merge_group:

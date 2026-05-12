@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 let dotenv = null;
 try {
@@ -15,33 +16,49 @@ function resolveEnvPath(envPath = DEFAULT_ENV_PATH) {
   return path.isAbsolute(envPath) ? envPath : path.resolve(process.cwd(), envPath);
 }
 
-function loadLocalEnv(options = {}) {
-  const resolvedPath = resolveEnvPath(options.envPath);
-  if (!fs.existsSync(resolvedPath)) {
-    return {
-      exists: false,
-      loadedKeys: [],
-      path: resolvedPath,
-    };
-  }
+function resolveEnvPaths(envPath = DEFAULT_ENV_PATH) {
+  const primaryPath = resolveEnvPath(envPath);
+  const repoRoot = path.dirname(primaryPath);
+  const candidates = [
+    primaryPath,
+    path.join(repoRoot, '.env.local'),
+    path.join(repoRoot, '.thumbgate', '.env'),
+    path.join(os.homedir(), '.thumbgate', '.env'),
+    path.join(os.homedir(), '.thumbgate', 'bluesky-monitor.env'),
+    path.join(os.homedir(), '.thumbgate', 'reddit-monitor.env'),
+  ];
 
-  const source = fs.readFileSync(resolvedPath, 'utf8');
-  const parsed = dotenv ? dotenv.parse(source) : parseEnvFallback(source);
+  return Array.from(new Set(candidates.map((candidate) => path.resolve(candidate))));
+}
+
+function loadLocalEnv(options = {}) {
+  const resolvedPaths = resolveEnvPaths(options.envPath);
   const loadedKeys = [];
   const override = options.override === true;
+  const loadedPaths = [];
 
-  for (const [key, value] of Object.entries(parsed)) {
-    if (!override && process.env[key] !== undefined) {
+  for (const resolvedPath of resolvedPaths) {
+    if (!fs.existsSync(resolvedPath)) {
       continue;
     }
-    process.env[key] = value;
-    loadedKeys.push(key);
+    const source = fs.readFileSync(resolvedPath, 'utf8');
+    const parsed = dotenv ? dotenv.parse(source) : parseEnvFallback(source);
+
+    for (const [key, value] of Object.entries(parsed)) {
+      if (!override && process.env[key] !== undefined) {
+        continue;
+      }
+      process.env[key] = value;
+      loadedKeys.push(key);
+    }
+    loadedPaths.push(resolvedPath);
   }
 
   return {
-    exists: true,
+    exists: loadedPaths.length > 0,
     loadedKeys,
-    path: resolvedPath,
+    path: resolvedPaths[0],
+    paths: loadedPaths,
   };
 }
 
@@ -74,4 +91,5 @@ module.exports = {
   loadLocalEnv,
   parseEnvFallback,
   resolveEnvPath,
+  resolveEnvPaths,
 };

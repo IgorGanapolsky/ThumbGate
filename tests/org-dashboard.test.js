@@ -14,6 +14,7 @@ const {
   recordAgentActivity,
   loadAgentRegistry,
   generateOrgDashboard,
+  buildAgentRegistryGovernanceReport,
   getRegistryPath,
 } = require('../scripts/org-dashboard');
 
@@ -134,5 +135,57 @@ describe('org dashboard', () => {
     assert.equal(byOverride.proRequired, false);
     assert.ok(byAuthContext.agents.some((agent) => agent.id === 'team-agent'));
     assert.ok(byOverride.agents.some((agent) => agent.id === 'team-agent'));
+  });
+
+  it('includes agent registry governance gaps for admins', () => {
+    registerAgent({
+      agentId: 'owned-agent',
+      source: 'cli',
+      metadata: {
+        owner: 'ops@example.com',
+        runtime: 'codex',
+        tools: ['Edit', 'Bash'],
+        mcpServers: ['github'],
+        accessPolicy: 'least-privilege',
+      },
+    });
+    registerAgent({
+      agentId: 'unowned-agent',
+      source: 'mcp',
+      metadata: {},
+    });
+
+    const dash = generateOrgDashboard({ windowHours: 1, proOverride: true });
+
+    assert.equal(dash.registryGovernance.name, 'thumbgate-agent-registry-governance');
+    assert.equal(dash.registryGovernance.counts.unknownOwners, 1);
+    assert.equal(dash.registryGovernance.counts.missingToolInventory, 1);
+    assert.equal(dash.registryGovernance.counts.missingMcpServerInventory, 1);
+    assert.ok(dash.agents.some((agent) => agent.id === 'owned-agent' && agent.toolCount === 2));
+  });
+});
+
+describe('agent registry governance report', () => {
+  it('marks a complete registry as managed', () => {
+    const report = buildAgentRegistryGovernanceReport([
+      {
+        id: 'complete-agent',
+        registeredAt: '2026-05-06T12:00:00.000Z',
+        lastSeenAt: '2026-05-06T12:00:00.000Z',
+        metadata: {
+          owner: 'owner@example.com',
+          tools: ['Read'],
+          mcpServers: ['github'],
+          permissions: ['read'],
+          monthlyBudgetCents: 1000,
+        },
+      },
+    ], {
+      now: '2026-05-06T13:00:00.000Z',
+    });
+
+    assert.equal(report.status, 'managed');
+    assert.equal(report.counts.unknownOwners, 0);
+    assert.equal(report.counts.missingToolInventory, 0);
   });
 });

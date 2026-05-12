@@ -40,6 +40,7 @@ const {
 const {
   buildInferenceCachePolicy,
   evaluateCacheCandidate,
+  planDepthWiseKvSharing,
 } = require('../scripts/inference-cache-policy');
 const {
   buildEnterpriseAgentRollout,
@@ -567,6 +568,31 @@ test('inference cache policy prioritizes stable prefixes before semantic cache o
   assert.equal(weak.decision, 'warn');
   assert.ok(weak.issues.includes('prefix_cache_high_roi_not_enabled'));
   assert.ok(weak.issues.includes('semantic_cache_overhead_not_justified'));
+});
+
+test('depth-wise KV cache sharing requires training-adapted model before rollout', () => {
+  const ready = planDepthWiseKvSharing({
+    layerCount: 32,
+    cacheBudgetRatio: 0.5,
+    trainingAdapted: true,
+    unknownHardware: true,
+  });
+  assert.equal(ready.decision, 'pilot');
+  assert.equal(ready.technique, 'stochastic-kv-routing-depth-wise-cache-sharing');
+  assert.equal(ready.targetSharedLayerRatio, 0.5);
+  assert.ok(ready.estimatedKvMemoryReduction > 0.4);
+  assert.ok(ready.deploymentModes.includes('share-every-other-layer'));
+  assert.ok(ready.gates.includes('block rollout if golden eval pass rate regresses'));
+
+  const unsafe = planDepthWiseKvSharing({
+    layerCount: 32,
+    cacheBudgetRatio: 0.5,
+    trainingAdapted: false,
+    latencySensitive: true,
+  });
+  assert.equal(unsafe.decision, 'research');
+  assert.ok(unsafe.issues.includes('requires_training_or_finetune_adaptation'));
+  assert.ok(unsafe.issues.includes('avoid_runtime_only_cross_layer_sharing_for_ttfb'));
 });
 
 test('post-training governance requires dataset, checkpoint, redaction, evals, reward spec, and spend cap', () => {
