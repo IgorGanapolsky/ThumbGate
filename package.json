@@ -119,7 +119,6 @@
     "scripts/gate-templates.js",
     "scripts/gates-engine.js",
     "scripts/gemini-embedding-policy.js",
-    "scripts/growth-campaigns.js",
     "scripts/harness-selector.js",
     "scripts/hf-papers.js",
     "scripts/hook-runtime.js",

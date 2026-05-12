@@ -260,7 +260,7 @@ function runTestBlock(argv = [], io = {}) {
   return { code: 0, opts, decision };
 }
 
-if (require.main === module || path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
+if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
   const result = runTestBlock(process.argv.slice(2));
   process.exit(result.code);
 }
