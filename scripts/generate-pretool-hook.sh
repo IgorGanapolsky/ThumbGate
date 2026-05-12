@@ -13,15 +13,12 @@ set -euo pipefail
 
 INPUT=$(cat)
 
-# Resolve the gate-check command.
-# Prefer local node path if inside the repo, otherwise use npx.
+# Resolve the gate-check command from the hook's shipped directory only.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GATE_ENGINE="$SCRIPT_DIR/gates-engine.js"
 
 if [ -f "$GATE_ENGINE" ]; then
   RESULT=$(echo "$INPUT" | node "$GATE_ENGINE" 2>/dev/null) || true
-elif command -v thumbgate >/dev/null 2>&1; then
-  RESULT=$(echo "$INPUT" | thumbgate gate-check 2>/dev/null) || true
 else
   RESULT=""
 fi
