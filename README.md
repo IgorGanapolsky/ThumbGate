@@ -107,7 +107,10 @@ ThumbGate operates as a 4-layer enforcement stack between your AI agent and your
 Your thumbs-up/down reactions are captured via MCP protocol, CLI, or the ChatGPT GPT surface. Each reaction is stored as a structured lesson with context, timestamp, and severity.
 
 ### Layer 2: Check Engine
-The check engine converts lessons into enforceable rules using pattern matching, semantic similarity (via LanceDB vectors), and Thompson Sampling for adaptive rule selection. Rules stay in local ThumbGate runtime state.
+The check engine converts lessons into enforceable rules using pattern matching, semantic similarity (via LanceDB vectors), and **Bayesian Thompson Sampling** for adaptive reliability tracking. 
+
+- **Real-time Synthesis:** Rules are synthesized and activated **immediately** upon feedback capture, ensuring zero-lag protection.
+- **Exploratory Probes:** Implements $\varepsilon$-greedy exploration to occasionally bypass blocks, gathering fresh success signals to prevent system rigidity (blocking bias).
 
 ### Layer 3: Pre-Action Interception
 Before any agent action executes, ThumbGate's `PreToolUse` hook intercepts the command and evaluates it against all active checks. This happens at the MCP protocol level — the agent physically cannot bypass it.
