@@ -357,12 +357,12 @@ curl -X POST http://localhost:3456/v1/dpo/export \
 | Layer | Technology |
 |-------|-----------|
 | **Storage** | SQLite + FTS5, LanceDB vectors, JSONL logs |
-| **Capture** | Unlimited feedback captures (free + Pro) |
-| **Intelligence** | MemAlign dual recall, Thompson Sampling |
-| **Enforcement** | PreToolUse hook engine, Checks config |
+| **Capture** | **Real-time synthesis**, Feedback sessions |
+| **Intelligence** | MemAlign dual recall, Thompson Sampling, **Bayesian Belief Updates** |
+| **Enforcement** | PreToolUse hook engine, **Exploratory Probes** |
 | **Interfaces** | MCP stdio, HTTP API, CLI (Node.js >=18) |
 | **Billing** | Stripe |
-| **Execution** | Railway, Cloudflare Workers, Docker Sandboxes |
+| **Execution** | Railway, Cloudflare Workers, **Parallelized CI (4-shard)** |
 | **Governance** | Workflow Sentinel, control plane, Docker Sandboxes |
 
 Every Changeset is tied to the exact `main` merge commit and generates Verification Evidence for Release Confidence.
