@@ -163,6 +163,7 @@
     "scripts/operational-integrity.js",
     "scripts/perplexity-client.js",
     "scripts/pr-manager.js",
+    "scripts/public-rate-limiter.js",
     "scripts/private-core-boundary.js",
     "scripts/pro-local-dashboard.js",
     "scripts/problem-detail.js",
