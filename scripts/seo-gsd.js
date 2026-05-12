@@ -40,6 +40,12 @@ const HIGH_ROI_QUERY_SEEDS = [
     notes: 'Bottom-of-funnel comparison against memory-only tooling.',
   },
   {
+    query: 'claude managed agents vs thumbgate',
+    businessValue: 99,
+    source: 'seed',
+    notes: 'Fresh enterprise comparison query for buyers worried about model-vendor ownership of agent memory, evals, and orchestration.',
+  },
+  {
     query: 'pre-action checks for ai coding agents',
     businessValue: 96,
     source: 'seed',
@@ -1472,6 +1478,55 @@ const PAGE_BLUEPRINTS = [
   buildLongRunningAgentContextGuide(),
   buildReasoningCompressionGuide(),
   buildDeepSeekV4RuntimeGuide(),
+  {
+    query: 'claude managed agents vs thumbgate',
+    path: '/compare/claude-managed-agents',
+    pageType: 'comparison',
+    pillar: 'comparison',
+    title: 'Claude Managed Agents vs ThumbGate | Vendor-Neutral Agent Governance',
+    heroTitle: 'Claude Managed Agents vs ThumbGate',
+    heroSummary: 'Hosted managed agents bundle memory, evals, and orchestration. ThumbGate keeps the reliability layer vendor-neutral, local-first, and enforced before risky actions execute.',
+    takeaways: [
+      'Claude Managed Agents validate that memory, evals, and orchestration are becoming enterprise agent infrastructure.',
+      'ThumbGate turns that infrastructure into a vendor-neutral reliability gateway across Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode.',
+      'The strongest buyer wedge is portable Pre-Action Checks that block known-bad tool calls before execution, regardless of the model provider.',
+    ],
+    sections: [
+      {
+        heading: 'The enterprise concern',
+        paragraphs: [
+          'When one model vendor owns the agent runtime, memory, evals, and orchestration layer, the reliability data becomes part of that vendor relationship. That is convenient, but it also creates lock-in around the operational memory of what agents are allowed to do.',
+          'ThumbGate positions the reliability layer below the model provider. A team can use hosted managed agents where they help, while keeping prevention rules, proof artifacts, and execution gates portable.',
+        ],
+      },
+      {
+        heading: 'What ThumbGate should own',
+        bullets: [
+          'Local Agent Dreaming: feedback, incidents, review comments, and CI failures become reusable local lessons.',
+          'Outcome gates: success rubrics become evidence requirements before completion, merge, publish, or deploy claims.',
+          'Subagent governance: worktree ownership, branch budgets, and duplicate-work prevention stay outside one hosted model runtime.',
+          'Vendor-neutral enforcement: the same Pre-Action Checks can govern Claude, Codex, Gemini, Cursor, and future agent surfaces.',
+        ],
+      },
+      {
+        heading: 'Best next step',
+        paragraphs: [
+          'Use this comparison for enterprise buyers who like the managed-agent direction but do not want one provider to own institutional memory, eval evidence, and orchestration policy. Route them from this page into Pre-Action Checks or the platform-team rollout.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Does ThumbGate replace Claude Managed Agents?',
+        answer: 'No. ThumbGate complements hosted managed agents by keeping reliability memory, proof, and pre-action enforcement portable across model providers.',
+      },
+      {
+        question: 'Why is portability important for agent memory and evals?',
+        answer: 'Agent memory and evals become operational infrastructure once agents can edit repos, run commands, and touch customer workflows. Portability lets teams preserve that infrastructure when they switch or add model providers.',
+      },
+    ],
+    relatedPaths: ['/guides/pre-action-checks', '/use-cases/platform-teams', '/compare/mem0'],
+  },
   {
     query: 'pre-action checks for ai coding agents',
     path: '/guides/pre-action-checks',

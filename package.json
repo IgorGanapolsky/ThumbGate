@@ -37,6 +37,7 @@
     "openapi/",
     "public/blog.html",
     "public/codex-plugin.html",
+    "public/compare/",
     "public/compare.html",
     "public/dashboard.html",
     "public/guide.html",

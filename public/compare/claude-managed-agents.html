@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Managed Agents vs ThumbGate | Vendor-Neutral Agent Governance</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Compare Claude Managed Agents with ThumbGate's vendor-neutral agent governance layer for memory, evals, orchestration, and pre-action enforcement.">
+<meta name="keywords" content="Claude Managed Agents, Anthropic agent memory, agent evals, agent orchestration, ThumbGate, vendor neutral agent governance, pre-action checks">
+<meta property="og:title" content="Claude Managed Agents vs ThumbGate">
+<meta property="og:description" content="Hosted managed agents centralize memory, evals, and orchestration. ThumbGate keeps the reliability layer model-neutral, local-first, and enforced before action.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate-production.up.railway.app/compare/claude-managed-agents">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/compare/claude-managed-agents">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Claude Managed Agents vs ThumbGate",
+  "description": "A comparison of hosted managed agents and ThumbGate's vendor-neutral reliability gateway for agent memory, evals, orchestration, and pre-action checks.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate-production.up.railway.app"
+  },
+  "datePublished": "2026-05-12",
+  "dateModified": "2026-05-12",
+  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/compare/claude-managed-agents"
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does ThumbGate replace Claude Managed Agents?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. ThumbGate is a vendor-neutral reliability gateway that can sit below Claude, Codex, Cursor, Gemini, and other agents. Hosted managed agents coordinate work; ThumbGate enforces learned safety rules before risky actions execute."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why should enterprises keep agent memory and evals portable?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Agent memory and evals become operational infrastructure once agents can change repos, run commands, or touch customer systems. Keeping that layer portable reduces model-vendor lock-in and makes reliability evidence reusable across agent runtimes."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is Local Agent Dreaming?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Local Agent Dreaming is ThumbGate's pattern for turning feedback, incidents, review comments, and CI failures into reusable local lessons and Pre-Action Checks without sending the reliability memory to a hosted model vendor."
+      }
+    }
+  ]
+}
+</script>
+
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0a0a0b;
+    --bg-card: #161618;
+    --border: #222225;
+    --text: #e8e8ec;
+    --muted: #8b8b94;
+    --cyan: #22d3ee;
+    --green: #34d399;
+    --amber: #fbbf24;
+    --red: #f87171;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+  .container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  nav { padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
+  nav a { color: var(--muted); text-decoration: none; font-size: 0.9rem; }
+  nav a:hover { color: var(--cyan); }
+  nav .brand { color: var(--text); font-weight: 700; font-size: 1.1rem; }
+  h1 { font-size: 2.35rem; line-height: 1.15; margin: 2rem 0 1rem; }
+  h2 { font-size: 1.5rem; margin: 2.5rem 0 1rem; color: var(--cyan); }
+  h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+  p, li { color: var(--text); margin-bottom: 0.75rem; }
+  ul { padding-left: 1.25rem; }
+  code { background: #1a1a1e; padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.9em; color: var(--cyan); }
+  .breadcrumb { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
+  .breadcrumb a { color: var(--muted); }
+  .lede { color: var(--muted); font-size: 1.08rem; }
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; margin: 1rem 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin: 1rem 0 1.5rem; }
+  .comparison-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.94rem; }
+  .comparison-table th, .comparison-table td { padding: 0.8rem; border: 1px solid var(--border); text-align: left; vertical-align: top; }
+  .comparison-table th { background: #111113; color: var(--cyan); }
+  .yes { color: var(--green); }
+  .partial { color: var(--amber); }
+  .no { color: var(--red); }
+  .cta { display: inline-block; background: var(--cyan); color: #000; padding: 0.78rem 1.2rem; border-radius: 8px; text-decoration: none; font-weight: 700; margin-right: 0.75rem; }
+  .secondary { color: var(--cyan); text-decoration: underline; }
+  footer { border-top: 1px solid var(--border); padding: 2rem; text-align: center; color: var(--muted); font-size: 0.85rem; }
+  footer a { color: var(--muted); text-decoration: underline; }
+  @media (max-width: 640px) { h1 { font-size: 1.8rem; } .container { padding: 1rem; } .comparison-table { font-size: 0.82rem; } }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="brand">ThumbGate</a>
+  <a href="/guide">Guide</a>
+  <a href="/compare">Compare</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a>
+</nav>
+
+<div class="container">
+  <p class="breadcrumb"><a href="/">Home</a> / <a href="/compare">Compare</a> / Claude Managed Agents</p>
+
+  <h1>Claude Managed Agents validate the category. ThumbGate keeps the reliability layer portable.</h1>
+  <p class="lede">Hosted managed-agent platforms bundle memory, evals, and orchestration into one vendor runtime. That is convenient for teams all-in on one model. It is risky for enterprises that need agent reliability evidence to survive model switches, procurement changes, and multi-agent tooling.</p>
+
+  <h2>The high-ROI product split</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Hosted managed agents</h3>
+      <p>Best when a team wants one provider to own the runtime, lead agent, subagent delegation, memory, and eval loop.</p>
+    </div>
+    <div class="card">
+      <h3>ThumbGate</h3>
+      <p>Best when a team needs model-neutral agent memory, eval evidence, and Pre-Action Checks before code, money, or customer systems change.</p>
+    </div>
+    <div class="card">
+      <h3>Enterprise wedge</h3>
+      <p>Agent memory is becoming infrastructure. The buyer question is whether that infrastructure should be trapped inside one model vendor.</p>
+    </div>
+  </div>
+
+  <h2>Comparison table</h2>
+  <div style="overflow-x:auto;">
+    <table class="comparison-table">
+      <tr>
+        <th>Capability</th>
+        <th>Claude Managed Agents</th>
+        <th>ThumbGate</th>
+      </tr>
+      <tr>
+        <td>Lead-agent orchestration</td>
+        <td class="yes">Yes — hosted delegation and coordination</td>
+        <td class="partial">Governed through local workflows, hooks, and evidence gates</td>
+      </tr>
+      <tr>
+        <td>Agent memory</td>
+        <td class="yes">Integrated into the hosted agent runtime</td>
+        <td class="yes">Local-first lessons, ContextFS, search, and feedback logs</td>
+      </tr>
+      <tr>
+        <td>Eval loop</td>
+        <td class="yes">Provider-managed outcome evaluation</td>
+        <td class="yes">Repo-native tests, proof reports, feedback evals, and claim evidence</td>
+      </tr>
+      <tr>
+        <td>Vendor portability</td>
+        <td class="partial">Strongest inside one model ecosystem</td>
+        <td class="yes">Works across Claude Code, Cursor, Codex, Gemini, Amp, and OpenCode</td>
+      </tr>
+      <tr>
+        <td>Pre-action enforcement</td>
+        <td class="partial">Depends on hosted runtime controls</td>
+        <td class="yes">Blocks known-bad tool calls before execution</td>
+      </tr>
+      <tr>
+        <td>Local governance evidence</td>
+        <td class="partial">Hosted logs and provider dashboards</td>
+        <td class="yes">Git-native evidence, local memory, proof artifacts, and audit trails</td>
+      </tr>
+      <tr>
+        <td>Procurement posture</td>
+        <td class="partial">Model-vendor consolidation</td>
+        <td class="yes">Neutral reliability gateway under multiple agents</td>
+      </tr>
+    </table>
+  </div>
+
+  <h2>What ThumbGate should own</h2>
+  <ul>
+    <li><strong>Local Agent Dreaming:</strong> feedback, incidents, review comments, and CI failures become reusable local lessons and Pre-Action Checks.</li>
+    <li><strong>Outcome gates:</strong> success rubrics become evidence requirements before an agent can claim completion, merge, publish, or deploy.</li>
+    <li><strong>Subagent governance:</strong> worktree ownership, branch budgets, and duplicate-work prevention stay outside any one model provider.</li>
+    <li><strong>Vendor-neutral proof:</strong> the same reliability memory can govern Claude, Codex, Gemini, Cursor, and future agent runtimes.</li>
+  </ul>
+
+  <h2>Buyer-safe message</h2>
+  <div class="card">
+    <p><strong>Use hosted managed agents for orchestration. Use ThumbGate for portable enforcement.</strong></p>
+    <p>That message converts the market shift into a practical enterprise buying motion: keep the convenience of managed agents, but do not let one provider own the institutional memory of what your agents are allowed to do.</p>
+    <p>
+      <a href="/guides/pre-action-checks" class="cta">See Pre-Action Checks</a>
+      <a href="/use-cases/platform-teams" class="secondary">Read the platform-team rollout</a>
+    </p>
+  </div>
+</div>
+
+<footer>
+  <p>ThumbGate — vendor-neutral Pre-Action Checks for AI coding agents</p>
+  <p><a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> | <a href="https://www.npmjs.com/package/thumbgate">npm</a> | <a href="/compare">Compare</a> | <a href="/dashboard">Dashboard</a></p>
+</footer>
+</body>
+</html>
