@@ -273,6 +273,111 @@ describe('billing.js — GitHub Marketplace Webhooks', () => {
     const revenueEvents = readRevenueEvents().filter((entry) => entry.orderId === '4444');
     assert.equal(revenueEvents.length, 1);
   });
+
+  test('loadResolvedRevenueEvents — funnel-derived paid events resolve plan amounts', () => {
+    process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = JSON.stringify({
+      77: { amountCents: 1900, currency: 'USD', recurringInterval: 'month' },
+    });
+    delete require.cache[require.resolve('../scripts/billing')];
+    billing = require('../scripts/billing');
+
+    const funnelLedgerPath = process.env._TEST_FUNNEL_LEDGER_PATH;
+    const funnelOnlyOrderId = 'gh_marketplace_funnel_only_5555';
+    const funnelEntry = {
+      timestamp: new Date().toISOString(),
+      stage: 'paid',
+      event: 'github_marketplace_purchased',
+      evidence: funnelOnlyOrderId,
+      metadata: {
+        provider: 'github_marketplace',
+        customerId: 'github_user_5555',
+        source: 'github_marketplace',
+        marketplaceOrderId: funnelOnlyOrderId,
+        planId: 77,
+        billingCycle: 'monthly',
+        monthly_price_in_cents: 1900,
+        priceModel: 'flat-rate',
+      },
+    };
+    fs.appendFileSync(funnelLedgerPath, `${JSON.stringify(funnelEntry)}\n`, 'utf-8');
+
+    const resolved = billing.loadResolvedRevenueEvents();
+    const match = resolved.find((entry) => entry && entry.orderId === funnelOnlyOrderId);
+    assert.ok(match, 'funnel-derived paid event should surface in resolved revenue events');
+    assert.equal(match.amountKnown, true);
+    assert.equal(match.amountCents, 1900);
+    assert.equal(match.currency, 'USD');
+    assert.equal(match.recurringInterval, 'month');
+
+    delete process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
+    delete require.cache[require.resolve('../scripts/billing')];
+    billing = require('../scripts/billing');
+  });
+
+  test('repairGithubMarketplaceRevenueLedger — persists funnel-derived paid orders to disk', () => {
+    process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON = JSON.stringify({
+      88: { amountCents: 4900, currency: 'USD', recurringInterval: 'month' },
+    });
+    delete require.cache[require.resolve('../scripts/billing')];
+    billing = require('../scripts/billing');
+
+    const funnelLedgerPath = process.env._TEST_FUNNEL_LEDGER_PATH;
+    const orderId = 'gh_marketplace_repair_funnel_8888';
+    fs.appendFileSync(
+      funnelLedgerPath,
+      `${JSON.stringify({
+        timestamp: new Date().toISOString(),
+        stage: 'paid',
+        event: 'github_marketplace_purchased',
+        evidence: orderId,
+        metadata: {
+          provider: 'github_marketplace',
+          customerId: 'github_user_8888',
+          source: 'github_marketplace',
+          marketplaceOrderId: orderId,
+          planId: 88,
+          billingCycle: 'monthly',
+        },
+      })}\n`,
+      'utf-8'
+    );
+
+    // Dry run first — must report the repair without writing.
+    const dry = billing.repairGithubMarketplaceRevenueLedger({ write: false });
+    const dryThis = dry.repairs.filter((r) => r.orderId === orderId && r.source === 'funnel_derived');
+    assert.equal(dryThis.length, 1, 'this funnel-derived row should be detected');
+    assert.equal(dry.wrote, false, 'dry run must not write');
+    assert.equal(
+      readRevenueEvents().filter((r) => r.orderId === orderId).length,
+      0,
+      'dry run must not append to ledger'
+    );
+
+    // Real run — must persist the resolved row to disk.
+    const written = billing.repairGithubMarketplaceRevenueLedger({ write: true });
+    const writtenThis = written.repairs.filter((r) => r.orderId === orderId && r.source === 'funnel_derived');
+    assert.equal(writtenThis.length, 1);
+    assert.equal(written.wrote, true);
+    const persisted = readRevenueEvents().filter((r) => r.orderId === orderId);
+    assert.equal(persisted.length, 1, 'funnel-derived row must be persisted exactly once');
+    assert.equal(persisted[0].amountKnown, true);
+    assert.equal(persisted[0].amountCents, 4900);
+    assert.equal(persisted[0].metadata.recoveredFromFunnelLedger, true);
+
+    // Idempotency — second run for THIS row must not double-write.
+    const second = billing.repairGithubMarketplaceRevenueLedger({ write: true });
+    const secondThis = second.repairs.filter((r) => r.orderId === orderId && r.source === 'funnel_derived');
+    assert.equal(secondThis.length, 0, 'second pass must skip this already-persisted row');
+    assert.equal(
+      readRevenueEvents().filter((r) => r.orderId === orderId).length,
+      1,
+      'no duplicate after re-run'
+    );
+
+    delete process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
+    delete require.cache[require.resolve('../scripts/billing')];
+    billing = require('../scripts/billing');
+  });
 });
 
 describe('API server — GitHub Webhook Route', () => {

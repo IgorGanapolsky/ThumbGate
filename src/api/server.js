@@ -13,6 +13,11 @@ const {
 const POSTHOG_API_PATHS = new Set(['/capture', '/batch', '/decide', '/e', '/engage']);
 const POSTHOG_INGEST_HOST = 'us.i.posthog.com';
 const POSTHOG_STATIC_PATH_PREFIX = '/static/';
+const FIRST_FAILURE_RULE_CHECKOUT_URL = 'https://buy.stripe.com/4gM6oHgH2bTw4lH6i73sI0z';
+const QUICK_READ_CHECKOUT_URL = 'https://buy.stripe.com/aFa8wPgH29Lo4lH35V3sI0w';
+const WORKFLOW_TEARDOWN_CHECKOUT_URL = 'https://buy.stripe.com/7sYfZhgH29LodWhdKz3sI0v';
+const SPRINT_DIAGNOSTIC_CHECKOUT_URL = 'https://buy.stripe.com/3cI7sLgH25v8dWh5e33sI0o';
+const WORKFLOW_SPRINT_CHECKOUT_URL = 'https://buy.stripe.com/8x25kDcqMaPs9G15e33sI0p';
 
 function getPosthogProxyPath(pathname) {
   return pathname.slice('/ingest'.length) || '/';
@@ -112,6 +117,7 @@ const {
   getBillingSummaryLive,
 } = require('../../scripts/billing');
 const {
+  DEFAULT_PUBLIC_APP_ORIGIN,
   resolveHostedBillingConfig,
   createTraceId,
   buildHostedSuccessUrl,
@@ -206,6 +212,7 @@ const NUMBERS_PAGE_PATH = path.resolve(__dirname, '../../public/numbers.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
 const COMPARE_DIR = path.resolve(__dirname, '../../public/compare');
+const USE_CASES_DIR = path.resolve(__dirname, '../../public/use-cases');
 const PUBLIC_DIR = path.resolve(__dirname, '../../public');
 const PUBLIC_ASSETS_DIR = path.resolve(__dirname, '../../public/assets');
 const BUYER_INTENT_SCRIPT_PATH = path.resolve(__dirname, '../../public/js/buyer-intent.js');
@@ -462,6 +469,12 @@ const TRACKED_LINK_TARGETS = Object.freeze({
 // Stripe event tracking helpers
 // ---------------------------------------------------------------------------
 const STRIPE_EVENTS_PATH = path.resolve(__dirname, '../../.thumbgate/stripe-events.jsonl');
+const LEGACY_STRIPE_EVENT_TYPES = new Set([
+  'checkout.session.completed',
+  'customer.subscription.created',
+  'customer.subscription.updated',
+  'customer.subscription.deleted',
+]);
 
 function ensureStripeEventsDir() {
   const dir = path.dirname(STRIPE_EVENTS_PATH);
@@ -471,6 +484,81 @@ function ensureStripeEventsDir() {
 function appendStripeEvent(record) {
   ensureStripeEventsDir();
   fs.appendFileSync(STRIPE_EVENTS_PATH, JSON.stringify(record) + '\n', 'utf8');
+}
+
+function buildLegacyStripeEventRecord(event) {
+  const obj = event.data && event.data.object ? event.data.object : {};
+  return {
+    timestamp: new Date().toISOString(),
+    event_type: event.type,
+    event_id: event.id || null,
+    customer_email:
+      obj.customer_email ||
+      obj.email ||
+      (obj.customer_details && obj.customer_details.email) ||
+      null,
+    plan:
+      obj.plan
+        ? (obj.plan.nickname || obj.plan.id || null)
+        : (
+          obj.items &&
+          obj.items.data &&
+          obj.items.data[0] &&
+          obj.items.data[0].plan
+            ? (obj.items.data[0].plan.nickname || obj.items.data[0].plan.id)
+            : null
+        ),
+    amount_cents: obj.amount_total || (obj.plan && obj.plan.amount) || null,
+    currency: obj.currency || null,
+    subscription_id: obj.subscription || obj.id || null,
+  };
+}
+
+async function handleLegacyStripeWebhook(req, res) {
+  try {
+    const rawBody = await new Promise((resolve, reject) => {
+      const chunks = [];
+      req.on('data', (c) => chunks.push(c));
+      req.on('end', () => resolve(Buffer.concat(chunks)));
+      req.on('error', reject);
+    });
+
+    const sig = req.headers['stripe-signature'] || '';
+    if (!verifyWebhookSignature(rawBody, sig)) {
+      sendProblem(res, {
+        type: PROBLEM_TYPES.WEBHOOK_INVALID,
+        title: 'Invalid webhook signature',
+        status: 400,
+        detail: 'The webhook signature could not be verified.',
+      });
+      return;
+    }
+
+    let event;
+    try {
+      event = JSON.parse(rawBody.toString('utf-8'));
+    } catch {
+      sendProblem(res, {
+        type: PROBLEM_TYPES.INVALID_JSON,
+        title: 'Invalid JSON',
+        status: 400,
+        detail: 'Invalid JSON in webhook body.',
+      });
+      return;
+    }
+
+    if (LEGACY_STRIPE_EVENT_TYPES.has(event.type)) {
+      appendStripeEvent(buildLegacyStripeEventRecord(event));
+    }
+    sendJson(res, 200, { received: true, event_type: event.type });
+  } catch (err) {
+    sendProblem(res, {
+      type: PROBLEM_TYPES.INTERNAL,
+      title: 'Internal Server Error',
+      status: 500,
+      detail: err.message,
+    });
+  }
 }
 
 function readStripeEvents() {
@@ -688,6 +776,76 @@ function getMcpSkillManifests(hostedConfig) {
       footprintUrl: buildPublicUrl(hostedConfig, '/.well-known/mcp/footprint.json'),
       proofUrl: VERIFICATION_EVIDENCE_URL,
     },
+    {
+      name: 'agent-design-governance',
+      title: 'Agent Design Governance',
+      description: 'Decide when to stay single-agent, when to split into manager or handoff patterns, and which eval/tool safeguards are required first.',
+      triggers: ['agent architecture', 'multi-agent', 'tool overload', 'agent evals', 'agent instructions'],
+      recommendedFlow: [
+        'Start with a single agent plus clear tools and instructions.',
+        'Split only when instruction complexity or tool overload is measured.',
+        'Require baseline evals before adding autonomy or subagents.',
+        'Classify tool risk before allowing writes, money movement, production changes, or outbound actions.',
+      ],
+      contextUrl: buildPublicUrl(hostedConfig, '/public/llm-context.md'),
+      proofUrl: VERIFICATION_EVIDENCE_URL,
+    },
+    {
+      name: 'proactive-agent-eval-guardrails',
+      title: 'Proactive Agent Eval Guardrails',
+      description: 'Require state-machine modeling, active user simulation, goal inference, intervention timing, and multi-app orchestration proof before proactive agents write or interrupt users.',
+      triggers: ['proactive agents', 'PARE', 'active user simulation', 'intervention timing', 'multi-app orchestration'],
+      recommendedFlow: [
+        'Model each app as states, actions, and valid transitions.',
+        'Simulate active users before enabling anticipatory interventions.',
+        'Grade goal inference separately from intervention timing.',
+        'Block multi-app proactive writes until rollback and orchestration evidence exists.',
+      ],
+      contextUrl: buildPublicUrl(hostedConfig, '/public/llm-context.md'),
+      proofUrl: VERIFICATION_EVIDENCE_URL,
+    },
+    {
+      name: 'reward-hacking-guardrails',
+      title: 'Reward Hacking Guardrails',
+      description: 'Catch proxy-optimization failures such as unsupported completion claims, sycophancy, verbosity-as-proof, benchmark overfitting, and evaluator manipulation.',
+      triggers: ['reward hacking', 'benchmark overfitting', 'unsupported claims', 'sycophancy', 'verifier theater'],
+      recommendedFlow: [
+        'Inspect candidate claims for completion, safety, test, or deployment language.',
+        'Require proof artifacts before accepting done, fixed, safe, or ready-to-merge claims.',
+        'Map every proxy metric to the real user objective.',
+        'Require holdout or regression proof before treating benchmark gains as product gains.',
+      ],
+      contextUrl: buildPublicUrl(hostedConfig, '/public/llm-context.md'),
+      proofUrl: VERIFICATION_EVIDENCE_URL,
+    },
+    {
+      name: 'oss-pr-opportunity-scout',
+      title: 'OSS PR Opportunity Scout',
+      description: 'Find upstream GitHub repositories ThumbGate actually depends on, then rank issue, bounty, and proof-backed PR opportunities without spam.',
+      triggers: ['GitHub issues', 'bug bounty', 'upstream PR', 'open source promotion', 'maintainer outreach'],
+      recommendedFlow: [
+        'Map package dependencies to upstream repositories.',
+        'Search only maintainer-visible issues, help-wanted labels, regressions, and bounty surfaces.',
+        'Reproduce locally before claiming a fix.',
+        'Open one focused PR with tests, proof, and transparent ThumbGate context only when relevant.',
+      ],
+      contextUrl: buildPublicUrl(hostedConfig, '/public/llm-context.md'),
+      proofUrl: VERIFICATION_EVIDENCE_URL,
+    },
+    {
+      name: 'chatgpt-ads-readiness-pack',
+      title: 'ChatGPT Ads Readiness Pack',
+      description: 'Prepare ThumbGate intent clusters, proof-backed copy, landing routes, and measurement before ChatGPT Ads Manager becomes broadly self-serve.',
+      triggers: ['ChatGPT ads', 'AI ads', 'paid AI search', 'Ads Manager', 'agent governance advertising'],
+      recommendedFlow: [
+        'Submit advertiser interest when eligible.',
+        'Cluster high-intent conversational queries around agent governance and repeated workflow failures.',
+        'Route self-serve intent to the guide and team pain to Workflow Hardening Sprint intake.',
+        'Block unsupported ad and landing-page claims before spend scales.',
+      ],
+      contextUrl: buildPublicUrl(hostedConfig, '/public/llm-context.md'),
+      proofUrl: VERIFICATION_EVIDENCE_URL,
+    },
   ];
 }
 
@@ -787,6 +945,31 @@ function getMcpDiscoveryManifest(hostedConfig) {
         name: 'context-footprint-optimizer',
         description: 'Measure MCP schema and feedback-context footprint before loading large manifests into model context.',
         tools: ['plan_context_footprint', 'construct_context_pack', 'context_provenance'],
+      },
+      {
+        name: 'agent-design-governance',
+        description: 'Evaluate agent architecture, instruction quality, tool risk, and baseline eval readiness before adding subagents or autonomy.',
+        tools: ['plan_agent_design_governance', 'search_lessons', 'diagnose_failure', 'require_evidence_for_claim'],
+      },
+      {
+        name: 'proactive-agent-eval-guardrails',
+        description: 'Evaluate proactive-agent state modeling, active-user simulation, goal inference, timing, and multi-app write readiness.',
+        tools: ['plan_proactive_agent_eval_guardrails', 'require_evidence_for_claim', 'workflow_sentinel'],
+      },
+      {
+        name: 'reward-hacking-guardrails',
+        description: 'Detect proxy-optimization failures before accepting completion claims, benchmark wins, verifier approvals, or multimodal assertions.',
+        tools: ['plan_reward_hacking_guardrails', 'require_evidence_for_claim', 'verify_claim'],
+      },
+      {
+        name: 'oss-pr-opportunity-scout',
+        description: 'Rank upstream repositories for proof-backed issue fixes and PR opportunities using ThumbGate dependency evidence.',
+        tools: ['plan_oss_pr_opportunity_scout', 'require_evidence_for_claim', 'track_action'],
+      },
+      {
+        name: 'chatgpt-ads-readiness-pack',
+        description: 'Prepare AI-ads intent clusters, copy, proof links, and measurement gates for ThumbGate campaigns.',
+        tools: ['plan_chatgpt_ads_readiness', 'require_evidence_for_claim', 'get_business_metrics'],
       },
     ],
     skills: getMcpSkillManifests(hostedConfig),
@@ -1276,6 +1459,61 @@ function buildCheckoutFallbackUrl(baseUrl, metadata = {}) {
   return restoreStripeCheckoutPlaceholder(url.toString());
 }
 
+function buildCheckoutIntentHref(baseUrl, metadata = {}, overrides = {}) {
+  return buildCheckoutFallbackUrl(baseUrl, {
+    ...metadata,
+    ...overrides,
+  });
+}
+
+function renderCheckoutIntentPage({
+  confirmHref,
+  firstRuleCheckoutHref,
+  quickReadCheckoutHref,
+  workflowTeardownCheckoutHref,
+  workflowIntakeHref,
+  teamOptionsHref,
+  diagnosticCheckoutHref,
+  sprintCheckoutHref,
+  sprintDiagnosticPriceDollars = 499,
+  workflowSprintPriceDollars = 1500,
+}) {
+  const safeConfirmHref = escapeHtmlAttribute(confirmHref);
+  const safeFirstRuleCheckoutHref = firstRuleCheckoutHref
+    ? escapeHtmlAttribute(firstRuleCheckoutHref)
+    : '';
+  const safeQuickReadCheckoutHref = quickReadCheckoutHref
+    ? escapeHtmlAttribute(quickReadCheckoutHref)
+    : '';
+  const safeWorkflowTeardownCheckoutHref = workflowTeardownCheckoutHref
+    ? escapeHtmlAttribute(workflowTeardownCheckoutHref)
+    : '';
+  const safeWorkflowIntakeHref = escapeHtmlAttribute(workflowIntakeHref);
+  const safeTeamOptionsHref = escapeHtmlAttribute(teamOptionsHref);
+  const safeDiagnosticCheckoutHref = diagnosticCheckoutHref
+    ? escapeHtmlAttribute(diagnosticCheckoutHref)
+    : '';
+  const safeSprintCheckoutHref = sprintCheckoutHref
+    ? escapeHtmlAttribute(sprintCheckoutHref)
+    : '';
+  const diagnosticAction = safeDiagnosticCheckoutHref
+    ? `<a data-i="sprint_diagnostic_checkout" href="${safeDiagnosticCheckoutHref}">Book $${sprintDiagnosticPriceDollars} diagnostic</a>`
+    : '';
+  const sprintAction = safeSprintCheckoutHref
+    ? `<a data-i="workflow_sprint_checkout" href="${safeSprintCheckoutHref}">Start $${workflowSprintPriceDollars} sprint</a>`
+    : '';
+  const firstRuleAction = safeFirstRuleCheckoutHref
+    ? `<a data-i="first_failure_rule_checkout" href="${safeFirstRuleCheckoutHref}">Pay $1 first rule</a>`
+    : '';
+  const quickReadAction = safeQuickReadCheckoutHref
+    ? `<a data-i="quick_read_checkout" href="${safeQuickReadCheckoutHref}">Pay $19 quick read</a>`
+    : '';
+  const teardownAction = safeWorkflowTeardownCheckoutHref
+    ? `<a data-i="workflow_teardown_checkout" href="${safeWorkflowTeardownCheckoutHref}">Pay $99 teardown</a>`
+    : '';
+  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Confirm — ThumbGate Pro</title><style>body{background:#0a0a0a;color:#eee;font-family:system-ui,-apple-system,sans-serif;line-height:1.5}main{max-width:520px;margin:8vh auto;padding:0 20px}.brand{display:flex;align-items:center;gap:10px;margin-bottom:24px;font-size:14px;color:#94a3b8}.brand-mark{width:24px;height:24px;background:#22d3ee;border-radius:6px;display:inline-block}h1{font-size:24px;margin:0 0 8px;color:#fff}.price{font-size:32px;font-weight:700;color:#22d3ee;margin:8px 0 4px}.price small{font-size:14px;color:#94a3b8;font-weight:400}p{color:#cbd5e1;margin:8px 0}a{display:block;text-decoration:none}a.primary{background:#22d3ee;color:#000;padding:16px;text-align:center;border-radius:8px;font-weight:700;font-size:16px;margin:20px 0 10px}a.secondary{border:1px solid #374151;color:#cbd5e1;padding:12px;text-align:center;border-radius:8px;margin:8px 0;font-size:14px}.trust{margin:24px 0;padding:16px;border:1px solid #1f2937;border-radius:8px;background:#0f172a}.trust-item{font-size:13px;color:#cbd5e1;padding:4px 0;display:flex;gap:8px}.trust-item::before{content:"✓";color:#22d3ee;font-weight:700}details{margin-top:32px;font-size:13px;color:#94a3b8}details summary{cursor:pointer;padding:8px 0}details a{border:1px solid #374151;color:#94a3b8;padding:10px;text-align:center;border-radius:6px;margin:6px 0;font-size:13px}.back{text-align:center;color:#64748b;font-size:12px;margin-top:24px}.back a{color:#64748b;display:inline}</style><main><div class="brand"><span class="brand-mark"></span><span>ThumbGate</span></div><h1>Start ThumbGate Pro</h1><div class="price">$19<small>/mo</small></div><p>Block every repeat AI-agent mistake. Local-first. MIT-licensed CLI included. Cancel anytime.</p><a class="primary" data-i="pro_checkout_confirmed" href="${safeConfirmHref}">Pay $19/mo with Stripe →</a><div class="trust"><div class="trust-item">6 paying customers, 18,000+ installs verified on npm</div><div class="trust-item">Cancel anytime — instant refund within 7 days</div><div class="trust-item">MIT open source · no vendor lock-in</div><div class="trust-item">Works with Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode</div></div><details><summary>Other paid paths (diagnostic, sprint, teardown, single-rule)</summary>${diagnosticAction.replace('<a ', '<a class="secondary" ')}${sprintAction.replace('<a ', '<a class="secondary" ')}${teardownAction.replace('<a ', '<a class="secondary" ')}${quickReadAction.replace('<a ', '<a class="secondary" ')}${firstRuleAction.replace('<a ', '<a class="secondary" ')}<a class="secondary" data-i="workflow_sprint_intake" href="${safeWorkflowIntakeHref}">Send workflow first (intake)</a><a class="secondary" data-i="team_paid_path" href="${safeTeamOptionsHref}">See all options</a></details><p class="back"><a href="/">← Back to thumbgate.ai</a></p></main><script>addEventListener('click',e=>{let a=e.target.closest('[data-i]');if(a&&navigator.sendBeacon)navigator.sendBeacon('/v1/telemetry/ping',new Blob([JSON.stringify({eventType:'checkout_interstitial_cta_clicked',clientType:'web',page:'/checkout/pro',ctaId:a.dataset.i,ctaPlacement:'checkout_interstitial'})],{type:'application/json'}))})</script></html>`;
+}
+
 function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneyState(req, parsed)) {
   const params = parsed.searchParams;
   const traceId = pickFirstText(params.get('trace_id')) || createJourneyId('checkout');
@@ -1318,8 +1556,44 @@ function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneySt
   };
 }
 
+function buildCheckoutConfirmHref(parsed) {
+  const confirmUrl = new URL('/checkout/pro', 'https://thumbgate.invalid');
+  confirmUrl.searchParams.set('confirm', '1');
+  for (const [key, value] of parsed.searchParams.entries()) {
+    if (key === 'confirm') continue;
+    confirmUrl.searchParams.append(key, value);
+  }
+  return `${confirmUrl.pathname}${confirmUrl.search}`;
+}
+
+function normalizeCheckoutCustomerEmail(value) {
+  const email = (normalizeNullableText(value) || '').toLowerCase();
+  const atIndex = email.indexOf('@');
+  const domain = email.slice(atIndex + 1);
+  if (!email || email.length > 254 || atIndex <= 0 || atIndex !== email.lastIndexOf('@') || !domain || !domain.includes('.') || domain.startsWith('.') || domain.endsWith('.') || domain.includes('..')) return null;
+  for (const ch of email) if (ch <= ' ' || ch === '<' || ch === '>' || ch === '"') return null;
+  return email;
+}
+
+function renderCheckoutIntentGate(parsed, responseHeaders = {}) {
+  let hiddenInputs = '';
+  for (const [key, value] of parsed.searchParams.entries()) {
+    if (key !== 'confirm' && key !== 'customer_email') hiddenInputs += `<input type=hidden name=${escapeHtmlAttribute(key)} value=${escapeHtmlAttribute(value)}>`;
+  }
+  return {
+    html: `<!doctype html><h1>Email for Stripe receipt</h1><form action=/checkout/pro>${hiddenInputs}<input type=hidden name=confirm value=1><input name=customer_email type=email required><button>Continue</button></form>`,
+    headers: responseHeaders,
+  };
+}
+
 function normalizeTrackedLinkSlug(value) {
   return String(value || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+}
+
+function normalizePublicPageSlug(value) {
+  return String(value || '')
+    .replace(/\.html$/i, '')
+    .replace(/[^a-z0-9-]/g, '');
 }
 
 function getTrackedLinkTarget(slug) {
@@ -1559,9 +1833,7 @@ function appendBestEffortTelemetry(feedbackDir, payload, headers, context) {
           evidence: [err && err.message ? err.message : 'unknown_error'],
         },
       });
-    } catch (_) {
-      // Public telemetry remains best-effort even when diagnostics fail.
-    }
+    } catch (_) {}
     return false;
   }
 }
@@ -1625,6 +1897,34 @@ function escapeHtmlAttribute(value) {
     .replaceAll('>', '&gt;');
 }
 
+function stripTrailingSlashes(value) {
+  const input = String(value || '');
+  let end = input.length;
+  while (end > 0 && input[end - 1] === '/') end -= 1;
+  return input.slice(0, end);
+}
+
+function normalizePublicMarketingHtml(html, runtimeConfig) {
+  const appOrigin = runtimeConfig?.appOrigin
+    ? stripTrailingSlashes(runtimeConfig.appOrigin)
+    : '';
+  if (!appOrigin) return html;
+
+  let output = String(html);
+  output = output.replaceAll(DEFAULT_PUBLIC_APP_ORIGIN, appOrigin);
+  try {
+    const host = new URL(appOrigin).host;
+    output = output.replaceAll(
+      'data-domain="thumbgate-production.up.railway.app"',
+      `data-domain="${escapeHtmlAttribute(host)}"`
+    );
+  } catch {
+    // appOrigin is normalized by hosted-config; leave static analytics domains
+    // untouched if a future caller deliberately supplies a non-URL value.
+  }
+  return output;
+}
+
 function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContext = {}) {
   const template = fs.readFileSync(templatePath, 'utf-8');
   const googleSiteVerificationMeta = runtimeConfig.googleSiteVerification
@@ -1637,17 +1937,21 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
       '    window.dataLayer = window.dataLayer || [];',
       '    function gtag(){dataLayer.push(arguments);}',
       "    gtag('js', new Date());",
-      `    gtag('config', '${runtimeConfig.gaMeasurementId}', { send_page_view: false });`,
+      `    gtag('config', '${runtimeConfig.gaMeasurementId}');`,
       '  </script>',
     ].join('\n')
     : '';
-  return fillTemplate(template, {
+  return normalizePublicMarketingHtml(fillTemplate(template, {
     '__PACKAGE_VERSION__': pkg.version,
     '__APP_ORIGIN__': runtimeConfig.appOrigin,
     '__CHECKOUT_ENDPOINT__': runtimeConfig.checkoutEndpoint,
     '__CHECKOUT_FALLBACK_URL__': runtimeConfig.checkoutFallbackUrl,
     '__PRO_PRICE_DOLLARS__': runtimeConfig.proPriceDollars,
     '__PRO_PRICE_LABEL__': runtimeConfig.proPriceLabel,
+    '__SPRINT_DIAGNOSTIC_CHECKOUT_URL__': runtimeConfig.sprintDiagnosticCheckoutUrl || SPRINT_DIAGNOSTIC_CHECKOUT_URL,
+    '__WORKFLOW_SPRINT_CHECKOUT_URL__': runtimeConfig.workflowSprintCheckoutUrl || WORKFLOW_SPRINT_CHECKOUT_URL,
+    '__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__': runtimeConfig.sprintDiagnosticPriceDollars || 499,
+    '__WORKFLOW_SPRINT_PRICE_DOLLARS__': runtimeConfig.workflowSprintPriceDollars || 1500,
     '__GA_MEASUREMENT_ID__': runtimeConfig.gaMeasurementId || '',
     '__GA_BOOTSTRAP__': gaBootstrap,
     '__GOOGLE_SITE_VERIFICATION_META__': googleSiteVerificationMeta,
@@ -1661,7 +1965,7 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
     '__GTM_PLAN_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md',
     '__GITHUB_URL__': 'https://github.com/IgorGanapolsky/ThumbGate',
     '__POSTHOG_API_KEY__': runtimeConfig.posthogApiKey || '',
-  });
+  }), runtimeConfig);
 }
 
 function loadLandingPageHtml(runtimeConfig, pageContext = {}) {
@@ -1836,7 +2140,6 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
   const timestamp = merged.timestamp ? new Date(merged.timestamp).toLocaleString() : '';
   const isoTimestamp = merged.timestamp || '';
 
-  // Technical metadata
   const failureType = merged.failureType || null;
   const skill = merged.skill || null;
   const source = merged.source || fb.source || null;
@@ -1847,19 +2150,12 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
   const guardrails = merged.guardrails || null;
   const rubricScores = merged.rubricScores || null;
 
-  // Structured rule
   const rule = merged.structuredRule || merged.rule || null;
-  // Conversation window
   const convoWindow = merged.conversationWindow || merged.chatHistory || [];
-  // Reflector analysis
   const reflector = merged.reflectorAnalysis || merged.reflector || null;
-  // Diagnosis
   const diagnosis = merged.diagnosis || null;
-  // Rubric
   const rubric = merged.rubricEvaluation || merged.rubric || null;
-  // Synthesis
   const synthesis = merged.synthesis || null;
-  // Bayesian
   const bayesian = merged.bayesianBelief || merged.bayesian || null;
 
   function sectionCard(titleText, content, id) {
@@ -2204,9 +2500,7 @@ function renderRobotsTxt(runtimeConfig) {
 function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
-    // /pro consolidated into /#pro-pitch (2026-04-16) — removed from sitemap
-    // so search engines don't chase the 301 instead of indexing the canonical
-    // homepage directly.
+    { path: '/pro', changefreq: 'weekly', priority: '0.9' },
     { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
     { path: '/codex-plugin', changefreq: 'weekly', priority: '0.75' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
@@ -2228,6 +2522,21 @@ function renderSitemapXml(runtimeConfig) {
     }),
     '</urlset>',
   ].join('\n');
+}
+
+function buildHostedRuntimePresence(hostedConfig, { expectedApiKey, expectedOperatorKey } = {}) {
+  return {
+    THUMBGATE_FEEDBACK_DIR: Boolean(process.env.THUMBGATE_FEEDBACK_DIR),
+    THUMBGATE_OPERATOR_KEY: Boolean(expectedOperatorKey),
+    THUMBGATE_API_KEY: Boolean(expectedApiKey),
+    THUMBGATE_PUBLIC_APP_ORIGIN: Boolean(hostedConfig.appOrigin),
+    THUMBGATE_BILLING_API_BASE_URL: Boolean(hostedConfig.billingApiBaseUrl),
+    THUMBGATE_GA_MEASUREMENT_ID: Boolean(hostedConfig.gaMeasurementId),
+    THUMBGATE_CHECKOUT_FALLBACK_URL: Boolean(hostedConfig.checkoutFallbackUrl),
+    THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL: Boolean(hostedConfig.sprintDiagnosticCheckoutUrl),
+    THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL: Boolean(hostedConfig.workflowSprintCheckoutUrl),
+    STRIPE_SECRET_KEY: Boolean(process.env.STRIPE_SECRET_KEY),
+  };
 }
 
 function isSeoAttributionSource(source) {
@@ -2269,14 +2578,6 @@ function servePublicMarketingPage({
     'landing_page_view'
   );
 
-  // Funnel-ledger write (2026-04-21): populate funnel-events.jsonl with a
-  // discovery-stage event on every landing-page view so UTM-tagged social
-  // traffic becomes visible in `npm run feedback:summary` and
-  // `bin/cli.js cfo --today`. Prior to this wire, landing views wrote only
-  // to telemetry-pings.jsonl (invisible to the CEO-facing revenue surface),
-  // leaving funnel-events.jsonl empty despite 404 published Zernio posts.
-  // Best-effort: wrapped in try/catch so a billing-ledger hiccup never
-  // breaks a page render.
   try {
     appendFunnelEvent({
       stage: 'discovery',
@@ -2695,6 +2996,39 @@ function renderCheckoutSuccessPage(runtimeConfig) {
 }
 
 function renderCheckoutCancelledPage(runtimeConfig) {
+  const firstFailureRuleCheckoutUrl = escapeHtmlAttribute(FIRST_FAILURE_RULE_CHECKOUT_URL);
+  const quickReadCheckoutUrl = escapeHtmlAttribute(QUICK_READ_CHECKOUT_URL);
+  const workflowTeardownCheckoutUrl = escapeHtmlAttribute(WORKFLOW_TEARDOWN_CHECKOUT_URL);
+  const diagnosticCheckoutUrl = runtimeConfig.sprintDiagnosticCheckoutUrl
+    ? escapeHtmlAttribute(runtimeConfig.sprintDiagnosticCheckoutUrl)
+    : '';
+  const workflowSprintCheckoutUrl = runtimeConfig.workflowSprintCheckoutUrl
+    ? escapeHtmlAttribute(runtimeConfig.workflowSprintCheckoutUrl)
+    : '';
+  const sprintDiagnosticPriceDollars = runtimeConfig.sprintDiagnosticPriceDollars || 499;
+  const workflowSprintPriceDollars = runtimeConfig.workflowSprintPriceDollars || 1500;
+  const workflowSprintIntakeUrl = `${escapeHtmlAttribute(runtimeConfig.appOrigin)}/#workflow-sprint-intake`;
+  const recoveryOfferLinks = [
+    diagnosticCheckoutUrl
+      ? `<a href="${diagnosticCheckoutUrl}" data-recovery-offer="sprint_diagnostic" data-offer-price="${sprintDiagnosticPriceDollars}">Book $${sprintDiagnosticPriceDollars} diagnostic</a>`
+      : '',
+    workflowSprintCheckoutUrl
+      ? `<a href="${workflowSprintCheckoutUrl}" data-recovery-offer="workflow_sprint" data-offer-price="${workflowSprintPriceDollars}">Start $${workflowSprintPriceDollars} sprint</a>`
+      : '',
+    `<a href="${workflowTeardownCheckoutUrl}" data-recovery-offer="workflow_teardown" data-offer-price="99">Pay $99 teardown</a>`,
+    `<a href="${quickReadCheckoutUrl}" data-recovery-offer="quick_read" data-offer-price="19">Pay $19 quick read</a>`,
+    `<a href="${firstFailureRuleCheckoutUrl}" data-recovery-offer="first_failure_rule" data-offer-price="1">Pay $1 first rule</a>`,
+    `<a id="send-workflow-first" href="${workflowSprintIntakeUrl}" data-recovery-offer="workflow_sprint_intake" data-offer-price="0">Send workflow first</a>`,
+  ].filter(Boolean).join('\n        ');
+  const recoveryOfferCard = recoveryOfferLinks
+    ? `<div class="card recovery-card">
+      <h2>Need help deciding?</h2>
+      <p>If Pro is not the right next step, start smaller or send the workflow first. We can qualify the blocker, confirm the proof plan, and route you to the diagnostic or sprint only when the scope is real.</p>
+      <div class="actions">
+        ${recoveryOfferLinks}
+      </div>
+    </div>`
+    : '';
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2780,6 +3114,9 @@ function renderCheckoutCancelledPage(runtimeConfig) {
       gap: 12px;
       margin-top: 18px;
     }
+    .recovery-card {
+      border-color: rgba(184, 92, 45, 0.38);
+    }
     .note {
       font-size: 14px;
       margin-top: 12px;
@@ -2808,17 +3145,19 @@ function renderCheckoutCancelledPage(runtimeConfig) {
       </div>
       <div class="actions">
         <button type="button" id="submit-reason">Send feedback</button>
-        <a id="retry-checkout" href="/checkout/pro" class="secondary">Try checkout again</a>
+        <a id="retry-checkout" href="/checkout/pro" class="secondary" data-recovery-offer="pro_pay_now_retry" data-offer-price="19">Restart $19 Pro checkout</a>
         <a href="${runtimeConfig.appOrigin}" class="secondary">Return to Context Gateway</a>
       </div>
       <p class="note" id="status">No feedback sent yet.</p>
     </div>
+    ${recoveryOfferCard}
     <script>
       (function () {
         const params = new URLSearchParams(window.location.search);
         const statusEl = document.getElementById('status');
         const noteEl = document.getElementById('buyer-note');
         const retryLink = document.getElementById('retry-checkout');
+        const workflowIntakeLink = document.getElementById('send-workflow-first');
         let selectedReason = null;
 
         function sendTelemetry(eventType, extra) {
@@ -2871,6 +3210,19 @@ function renderCheckoutCancelledPage(runtimeConfig) {
         });
         retryLink.href = retryUrl.toString();
 
+        if (workflowIntakeLink) {
+          const intakeUrl = new URL(workflowIntakeLink.href, window.location.origin);
+          ['trace_id', 'acquisition_id', 'visitor_id', 'session_id', 'visitor_session_id', 'install_id', 'utm_source', 'utm_campaign', 'utm_content', 'utm_term', 'creator', 'community', 'post_id', 'comment_id', 'campaign_variant', 'offer_code', 'landing_path', 'referrer_host'].forEach(function (key) {
+            const value = params.get(key);
+            if (value) intakeUrl.searchParams.set(key, value);
+          });
+          intakeUrl.searchParams.set('utm_medium', 'checkout_cancel_recovery');
+          intakeUrl.searchParams.set('cta_id', 'checkout_cancel_workflow_sprint_intake');
+          intakeUrl.searchParams.set('cta_placement', 'checkout_cancel_recovery');
+          intakeUrl.searchParams.set('plan_id', 'team');
+          workflowIntakeLink.href = intakeUrl.toString();
+        }
+
         sendTelemetry('checkout_cancelled');
 
         document.querySelectorAll('[data-reason]').forEach(function (button) {
@@ -2888,6 +3240,27 @@ function renderCheckoutCancelledPage(runtimeConfig) {
           statusEl.textContent = selectedReason
             ? 'Feedback saved: ' + selectedReason.replaceAll('_', ' ') + '.'
             : 'Feedback saved.';
+        });
+
+        document.querySelectorAll('[data-recovery-offer]').forEach(function (link) {
+          link.addEventListener('click', function () {
+            if (link.getAttribute('data-recovery-offer') === 'workflow_sprint_intake') {
+              sendTelemetry('checkout_cancel_workflow_intake_clicked', {
+                ctaId: 'checkout_cancel_workflow_sprint_intake',
+                ctaPlacement: 'checkout_cancel_recovery',
+                offerCode: 'workflow_sprint_intake',
+                planId: 'team',
+                reasonCode: selectedReason || null
+              });
+              return;
+            }
+            sendTelemetry('checkout_recovery_offer_clicked', {
+              ctaId: link.getAttribute('data-recovery-offer'),
+              ctaPlacement: 'checkout_cancel_recovery',
+              offerCode: link.getAttribute('data-recovery-offer'),
+              offerPriceDollars: link.getAttribute('data-offer-price')
+            });
+          });
         });
       }());
     </script>
@@ -3063,10 +3436,8 @@ function isAuthorized(req, expected) {
   if (!expected) return true;
   const token = extractApiKey(req);
 
-  // Check static THUMBGATE_API_KEY first
   if (token === expected) return true;
 
-  // Also accept any valid provisioned billing key
   if (token) {
     const result = validateApiKey(token);
     return result.valid === true;
@@ -3075,9 +3446,6 @@ function isAuthorized(req, expected) {
   return false;
 }
 
-/**
- * Extract the Bearer token from a request (returns '' if absent).
- */
 function extractBearerToken(req) {
   const auth = req.headers.authorization || '';
   return auth.startsWith('Bearer ') ? auth.slice(7) : '';
@@ -3239,15 +3607,6 @@ function createApiServer() {
   const expectedApiKey = getExpectedApiKey();
   const expectedOperatorKey = getExpectedOperatorKey();
 
-  // Live-event bus. Feedback captures, prevention-rule regenerations, and
-  // gate decisions push to this emitter; the /v1/events SSE endpoint streams
-  // those events to connected dashboard clients so they render in real time
-  // instead of waiting for the next manual refresh.
-  //
-  // See .changeset/dashboard-sse-live.md for the ROI rationale — this is a
-  // direct application of the "persistent channel beats per-turn HTTP" pattern
-  // to ThumbGate's dashboard surface (the primary UI for watching team
-  // feedback flow).
   const eventBus = new EventEmitter();
   eventBus.setMaxListeners(200);
 
@@ -3843,6 +4202,15 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/lessons/') {
+      res.writeHead(302, {
+        Location: '/lessons',
+        'Cache-Control': 'no-store',
+      });
+      res.end();
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/lessons') {
       try {
         const html = loadLessonsPageHtml(req, expectedApiKey);
@@ -3876,21 +4244,26 @@ async function addContext(){
     }
 
     if (isGetLikeRequest && pathname === '/pro') {
-      // Consolidated: /pro content now lives inline on `/` as the #pro-pitch
-      // strip (hero-adjacent pricing card). 301 so external links (README,
-      // plugin manifests, guides, compare pages) pass link equity onto the
-      // single canonical landing page. Query string is preserved so UTM
-      // tracking from inbound campaigns still reaches GA/PostHog on `/`.
-      const redirectTarget = `/#pro-pitch${parsed.search || ''}`;
-      res.writeHead(301, {
-        Location: redirectTarget,
-        'Cache-Control': 'public, max-age=3600',
-      });
-      res.end();
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadProPageHtml,
+          extraTelemetry: {
+            pageType: 'pro',
+            planId: 'pro',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'Pro page unavailable');
+      }
       return;
     }
 
-    if (isGetLikeRequest && pathname === '/guide') {
+    if (isGetLikeRequest && (pathname === '/guide' || pathname === '/guide.html')) {
       try {
         const html = fs.readFileSync(GUIDE_PAGE_PATH, 'utf-8');
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
@@ -3900,7 +4273,7 @@ async function addContext(){
       return;
     }
 
-    if (isGetLikeRequest && pathname === '/codex-plugin') {
+    if (isGetLikeRequest && (pathname === '/codex-plugin' || pathname === '/codex-plugin.html')) {
       try {
         const html = fs.readFileSync(CODEX_PLUGIN_PAGE_PATH, 'utf-8');
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
@@ -3910,7 +4283,7 @@ async function addContext(){
       return;
     }
 
-    if (isGetLikeRequest && pathname === '/compare') {
+    if (isGetLikeRequest && (pathname === '/compare' || pathname === '/compare.html')) {
       try {
         const html = fs.readFileSync(COMPARE_PAGE_PATH, 'utf-8');
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
@@ -3920,7 +4293,7 @@ async function addContext(){
       return;
     }
 
-    if (isGetLikeRequest && pathname === '/blog') {
+    if (isGetLikeRequest && (pathname === '/blog' || pathname === '/blog.html')) {
       try {
         const blogPath = path.resolve(__dirname, '../../public/blog.html');
         const html = fs.readFileSync(blogPath, 'utf-8');
@@ -3931,13 +4304,31 @@ async function addContext(){
       return;
     }
 
-    if (isGetLikeRequest && pathname === '/learn') {
+    if (isGetLikeRequest && (pathname === '/learn' || pathname === '/learn.html')) {
       try {
         const html = fs.readFileSync(LEARN_PAGE_PATH, 'utf-8');
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch {
         sendJson(res, 404, { error: 'Learn page not found' });
       }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/guides' || pathname === '/guides/' || pathname === '/guides.html')) {
+      res.writeHead(302, {
+        Location: '/learn',
+        'Cache-Control': 'no-store',
+      });
+      res.end();
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/services' || pathname === '/services.html')) {
+      res.writeHead(302, {
+        Location: '/#workflow-sprint-intake',
+        'Cache-Control': 'no-store',
+      });
+      res.end();
       return;
     }
 
@@ -3976,7 +4367,7 @@ async function addContext(){
 
     if (isGetLikeRequest && pathname.startsWith('/learn/')) {
       try {
-        const slug = pathname.replace('/learn/', '').replace(/[^a-z0-9-]/g, '');
+        const slug = normalizePublicPageSlug(pathname.replace('/learn/', ''));
         const articlePath = path.join(LEARN_DIR, `${slug}.html`);
         if (!articlePath.startsWith(LEARN_DIR)) {
           sendJson(res, 403, { error: 'Forbidden' });
@@ -3992,7 +4383,7 @@ async function addContext(){
 
     if (isGetLikeRequest && pathname.startsWith('/guides/')) {
       try {
-        const slug = pathname.replace('/guides/', '').replace(/[^a-z0-9-]/g, '');
+        const slug = normalizePublicPageSlug(pathname.replace('/guides/', ''));
         const guidePath = path.join(GUIDES_DIR, `${slug}.html`);
         if (!guidePath.startsWith(GUIDES_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
         const html = fs.readFileSync(guidePath, 'utf-8');
@@ -4003,12 +4394,23 @@ async function addContext(){
 
     if (isGetLikeRequest && pathname.startsWith('/compare/') && pathname !== '/compare') {
       try {
-        const slug = pathname.replace('/compare/', '').replace(/[^a-z0-9-]/g, '');
+        const slug = normalizePublicPageSlug(pathname.replace('/compare/', ''));
         const comparePath = path.join(COMPARE_DIR, `${slug}.html`);
         if (!comparePath.startsWith(COMPARE_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
         const html = fs.readFileSync(comparePath, 'utf-8');
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch { sendJson(res, 404, { error: 'Comparison not found' }); }
+      return;
+    }
+
+    if (isGetLikeRequest && pathname.startsWith('/use-cases/')) {
+      try {
+        const slug = normalizePublicPageSlug(pathname.replace('/use-cases/', ''));
+        const useCasePath = path.join(USE_CASES_DIR, `${slug}.html`);
+        if (!useCasePath.startsWith(USE_CASES_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
+        const html = fs.readFileSync(useCasePath, 'utf-8');
+        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      } catch { sendJson(res, 404, { error: 'Use case not found' }); }
       return;
     }
 
@@ -4083,35 +4485,120 @@ async function addContext(){
         ? { 'Set-Cookie': journeyState.setCookieHeaders }
         : {};
 
-      // ── Bot guard ────────────────────────────────────────────────────
-      // Creating a Stripe Checkout session on every GET means crawlers,
-      // link-preview fetchers, and LLM scrapers inflate "sessions opened"
-      // while completions stay at zero. Serve bots an interstitial HTML
-      // page instead — no Stripe session created, no funnel pollution.
-      // The `?confirm=1` query param or POST below is the real-user path.
       const botClassification = classifyRequester(req.headers);
       const confirmParam = parsed?.searchParams?.get('confirm') ?? null;
       const isConfirmedCheckout = confirmParam === '1'
         || confirmParam === 'true'
         || req.method === 'POST';
-      if (botClassification.isBot && !isConfirmedCheckout) {
+      if (!isConfirmedCheckout && botClassification.isBot) {
+        const eventType = 'checkout_bot_deflected';
         appendBestEffortTelemetry(FEEDBACK_DIR, {
-          eventType: 'checkout_bot_deflected',
+          eventType,
           clientType: 'web',
           traceId,
+          acquisitionId: analyticsMetadata.acquisitionId,
+          visitorId: analyticsMetadata.visitorId,
+          sessionId: analyticsMetadata.sessionId,
           utmSource: analyticsMetadata.utmSource,
           utmMedium: analyticsMetadata.utmMedium,
           utmCampaign: analyticsMetadata.utmCampaign,
+          utmContent: analyticsMetadata.utmContent,
+          utmTerm: analyticsMetadata.utmTerm,
           referrer: analyticsMetadata.referrer,
           referrerHost: analyticsMetadata.referrerHost,
           page: '/checkout/pro',
+          ctaId: analyticsMetadata.ctaId,
+          ctaPlacement: analyticsMetadata.ctaPlacement,
           planId: analyticsMetadata.planId,
           reason: botClassification.reason,
-        }, req.headers, 'checkout_bot_deflected');
-        const html = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>ThumbGate Pro \u2014 Confirm checkout</title><style>*{box-sizing:border-box}body{background:#0a0a0a;color:#e5e5e5;font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px}.card{background:#141414;border:1px solid #222;border-radius:16px;padding:48px 40px;max-width:460px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.5)}h1{margin:0 0 12px;font-size:22px;color:#22d3ee}p{color:#9ca3af;font-size:14px;line-height:1.55;margin:0 0 24px}.btn{display:inline-block;background:#22d3ee;color:#000;text-decoration:none;font-weight:700;padding:14px 32px;border-radius:999px;font-size:16px;cursor:pointer;border:none}.btn:hover{opacity:.9}.sub{margin-top:16px;font-size:12px;color:#6b7280}a.back{color:#6b7280;font-size:13px;text-decoration:underline}</style></head><body><div class="card"><h1>Continue to secure checkout</h1><p>You\'re one click from ThumbGate Pro at $19/mo. We create the payment session only after you confirm \u2014 keeps your path clean and our funnel honest.</p><a class="btn" href="/checkout/pro?confirm=1" rel="noopener">Continue to Stripe \u2192</a><div class="sub">Payments handled by Stripe. 7-day free trial. Cancel anytime.</div><div class="sub"><a class="back" href="/">\u2190 Back to homepage</a></div></div></body></html>';
+        }, req.headers, eventType);
+        const workflowIntakeHref = buildCheckoutIntentHref(`${hostedConfig.appOrigin}/#workflow-sprint-intake`, analyticsMetadata, {
+          utmMedium: 'checkout_interstitial_recovery',
+          utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_workflow_sprint',
+          ctaId: 'checkout_interstitial_workflow_sprint_intake',
+          ctaPlacement: 'checkout_interstitial',
+          planId: 'team',
+        });
+        const teamOptionsHref = buildCheckoutIntentHref(`${hostedConfig.appOrigin}/guides/ai-agent-governance-sprint`, analyticsMetadata, {
+          utmMedium: 'checkout_interstitial_paid_path',
+          utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_team_paid_path',
+          ctaId: 'checkout_interstitial_team_paid_path',
+          ctaPlacement: 'checkout_interstitial',
+          planId: 'team',
+        });
+        const firstRuleCheckoutHref = buildCheckoutIntentHref(FIRST_FAILURE_RULE_CHECKOUT_URL, analyticsMetadata, {
+          utmMedium: 'checkout_interstitial_paid_path',
+          utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_first_failure_rule',
+          ctaId: 'checkout_interstitial_first_failure_rule_checkout',
+          ctaPlacement: 'checkout_interstitial',
+          planId: 'first_failure_rule',
+        });
+        const quickReadCheckoutHref = buildCheckoutIntentHref(QUICK_READ_CHECKOUT_URL, analyticsMetadata, {
+          utmMedium: 'checkout_interstitial_paid_path',
+          utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_quick_read',
+          ctaId: 'checkout_interstitial_quick_read_checkout',
+          ctaPlacement: 'checkout_interstitial',
+          planId: 'quick_read',
+        });
+        const workflowTeardownCheckoutHref = buildCheckoutIntentHref(WORKFLOW_TEARDOWN_CHECKOUT_URL, analyticsMetadata, {
+          utmMedium: 'checkout_interstitial_paid_path',
+          utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_workflow_teardown',
+          ctaId: 'checkout_interstitial_workflow_teardown_checkout',
+          ctaPlacement: 'checkout_interstitial',
+          planId: 'workflow_teardown',
+        });
+        const diagnosticCheckoutHref = buildCheckoutIntentHref(
+          hostedConfig.sprintDiagnosticCheckoutUrl || SPRINT_DIAGNOSTIC_CHECKOUT_URL,
+          analyticsMetadata,
+          {
+            utmMedium: 'checkout_interstitial_paid_path',
+            utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_diagnostic',
+            ctaId: 'checkout_interstitial_sprint_diagnostic_checkout',
+            ctaPlacement: 'checkout_interstitial',
+            planId: 'sprint_diagnostic',
+          }
+        );
+        const sprintCheckoutHref = buildCheckoutIntentHref(
+          hostedConfig.workflowSprintCheckoutUrl || WORKFLOW_SPRINT_CHECKOUT_URL,
+          analyticsMetadata,
+          {
+            utmMedium: 'checkout_interstitial_paid_path',
+            utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_workflow_sprint',
+            ctaId: 'checkout_interstitial_workflow_sprint_checkout',
+            ctaPlacement: 'checkout_interstitial',
+            planId: 'workflow_sprint',
+          }
+        );
+        const html = renderCheckoutIntentPage({
+          confirmHref: buildCheckoutConfirmHref(parsed),
+          firstRuleCheckoutHref,
+          quickReadCheckoutHref,
+          workflowTeardownCheckoutHref,
+          workflowIntakeHref,
+          teamOptionsHref,
+          diagnosticCheckoutHref,
+          sprintCheckoutHref,
+          sprintDiagnosticPriceDollars: hostedConfig.sprintDiagnosticPriceDollars || 499,
+          workflowSprintPriceDollars: hostedConfig.workflowSprintPriceDollars || 1500,
+          botClassification,
+        });
         sendHtml(res, 200, html, responseHeaders);
         return;
       }
+
+      const rawCheckoutEmail = normalizeNullableText(bootstrapBody.customerEmail);
+      const normalizedCheckoutEmail = normalizeCheckoutCustomerEmail(rawCheckoutEmail);
+      if (!normalizedCheckoutEmail) {
+        appendBestEffortTelemetry(FEEDBACK_DIR, {
+          eventType: 'checkout_email_deferred_to_stripe',
+          clientType: 'web',
+          traceId,
+          page: '/checkout/pro',
+          planId: analyticsMetadata.planId,
+          reason: rawCheckoutEmail ? 'invalid_customer_email' : 'missing_customer_email',
+        }, req.headers, 'checkout_email_deferred_to_stripe');
+      }
+      bootstrapBody.customerEmail = normalizedCheckoutEmail || undefined;
 
       appendBestEffortTelemetry(FEEDBACK_DIR, {
         eventType: 'checkout_bootstrap',
@@ -4488,7 +4975,7 @@ async function addContext(){
             .map(l => { try { return JSON.parse(l); } catch(_e) { return null; } })
             .filter(Boolean);
         }
-      } catch (_) {}
+      } catch { entries = []; }
 
       const now = Date.now();
       const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
@@ -4802,6 +5289,13 @@ async function addContext(){
           detail: err.message,
         });
       }
+      return;
+    }
+
+    // POST /webhook/stripe — legacy Stripe event log bridge kept for backward compatibility.
+    // This must remain unauthenticated like /v1/billing/webhook; Stripe auth is the HMAC signature.
+    if (req.method === 'POST' && pathname === '/webhook/stripe') {
+      await handleLegacyStripeWebhook(req, res);
       return;
     }
 
@@ -6006,7 +6500,13 @@ async function addContext(){
         }
 
         const summary = await getBillingSummaryLive(summaryOptions);
-        sendJson(res, 200, summary);
+        sendJson(res, 200, {
+          ...summary,
+          runtimePresence: buildHostedRuntimePresence(hostedConfig, {
+            expectedApiKey,
+            expectedOperatorKey,
+          }),
+        });
         return;
       }
 
@@ -6368,86 +6868,6 @@ async function addContext(){
         }
         const entry = satisfyCondition(body.gateId, body.evidence);
         sendJson(res, 200, { satisfied: true, gateId: body.gateId, ...entry });
-        return;
-      }
-
-      // POST /webhook/stripe — legacy Stripe event log bridge kept for backward compatibility.
-      // When STRIPE_WEBHOOK_SECRET is configured, verify the same Stripe signature used by
-      // the /v1/billing/webhook route before touching any payload.
-      if (req.method === 'POST' && pathname === '/webhook/stripe') {
-        try {
-          const rawBody = await new Promise((resolve, reject) => {
-            const chunks = [];
-            req.on('data', (c) => chunks.push(c));
-            req.on('end', () => resolve(Buffer.concat(chunks)));
-            req.on('error', reject);
-          });
-
-          const sig = req.headers['stripe-signature'] || '';
-          if (!verifyWebhookSignature(rawBody, sig)) {
-            sendProblem(res, {
-              type: PROBLEM_TYPES.WEBHOOK_INVALID,
-              title: 'Invalid webhook signature',
-              status: 400,
-              detail: 'The webhook signature could not be verified.',
-            });
-            return;
-          }
-
-          let event;
-          try {
-            event = JSON.parse(rawBody.toString('utf-8'));
-          } catch {
-            sendProblem(res, {
-              type: PROBLEM_TYPES.INVALID_JSON,
-              title: 'Invalid JSON',
-              status: 400,
-              detail: 'Invalid JSON in webhook body.',
-            });
-            return;
-          }
-          const TRACKED_STRIPE_EVENTS = new Set([
-            'checkout.session.completed',
-            'customer.subscription.created',
-            'customer.subscription.deleted',
-          ]);
-          if (TRACKED_STRIPE_EVENTS.has(event.type)) {
-            const obj = event.data && event.data.object ? event.data.object : {};
-            const record = {
-              timestamp: new Date().toISOString(),
-              event_type: event.type,
-              event_id: event.id || null,
-              customer_email:
-                obj.customer_email ||
-                obj.email ||
-                (obj.customer_details && obj.customer_details.email) ||
-                null,
-              plan:
-                obj.plan
-                  ? (obj.plan.nickname || obj.plan.id || null)
-                  : (
-                    obj.items &&
-                    obj.items.data &&
-                    obj.items.data[0] &&
-                    obj.items.data[0].plan
-                      ? (obj.items.data[0].plan.nickname || obj.items.data[0].plan.id)
-                      : null
-                  ),
-              amount_cents: obj.amount_total || (obj.plan && obj.plan.amount) || null,
-              currency: obj.currency || null,
-              subscription_id: obj.subscription || obj.id || null,
-            };
-            appendStripeEvent(record);
-          }
-          sendJson(res, 200, { received: true, event_type: event.type });
-        } catch (err) {
-          sendProblem(res, {
-            type: PROBLEM_TYPES.INTERNAL,
-            title: 'Internal Server Error',
-            status: 500,
-            detail: err.message,
-          });
-        }
         return;
       }
 

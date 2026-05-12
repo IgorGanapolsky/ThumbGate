@@ -57,7 +57,7 @@ Curious if this framing resonates more than “memory” or “AI employee” do
 **Top comment:**
 
 ```text
-If useful, I built this as an open-source project. You can try it free for 7 days — no credit card, installs in 2 minutes:
+If useful, I built this as an open-source project. You can try it free for 7 days — card required, no charge today, installs in 2 minutes:
 
 Try free: https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=claude_workflow_hardening_march_2026&utm_content=claudecode_post&community=ClaudeCode&campaign_variant=workflow_hardening_sprint&offer_code=REDDIT-SPRINT#workflow-sprint-intake
 
@@ -86,7 +86,7 @@ Claude Code helped implement the tool surface, tests, docs, and verification loo
 What is free:
 The self-hosted version is free to try. Paid tiers are optional, but the core local workflow can be used without paying.
 
-Try free for 7 days (no credit card):
+Try free for 7 days (card required, no charge today):
 https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=organic_social&utm_campaign=ai_reliability_system_march_2026&utm_content=claudeai_showcase&community=ClaudeAI&campaign_variant=showcase_safe&offer_code=REDDIT-EARLY#workflow-sprint-intake
 
 Source code: https://github.com/IgorGanapolsky/ThumbGate

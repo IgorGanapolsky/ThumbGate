@@ -51,3 +51,10 @@ test('autonomous-workflow module exports expected API', () => {
   assert.equal(typeof workflow.readWorkflowReport, 'function');
   assert.equal(typeof workflow.writeWorkflowReport, 'function');
 });
+
+test('ai-engineering-stack-guardrails module exports expected API', () => {
+  const stack = require('../scripts/ai-engineering-stack-guardrails');
+  assert.equal(typeof stack.buildAiEngineeringStackGuardrailsPlan, 'function');
+  assert.equal(typeof stack.formatAiEngineeringStackGuardrailsPlan, 'function');
+  assert.equal(typeof stack.normalizeOptions, 'function');
+});

@@ -132,7 +132,7 @@ The catalog currently includes the April 23, 2026 Tinker additions:
 - `tinker/qwen3.6-27b` for the cheap fast-path
 - `tinker/kimi-k2.6-128k` for long-trace review and multi-agent sessions
 
-Each recommendation ships with the benchmark commands to run next: feedback-derived prompt eval, `gate-eval`, and `thumbgate bench`. That keeps model selection evidence-backed instead of hype-driven.
+Each recommendation ships with the benchmark commands to run next: feedback-derived prompt eval, `gate-eval`, and `thumbgate bench`. For whole-repo clone claims, add `npx thumbgate bench --programbench-smoke` to generate a ProgramBench-style cleanroom proof report without claiming an official ProgramBench score. That keeps model selection evidence-backed instead of hype-driven.
 
 ![Feedback Pipeline](docs/diagrams/feedback_pipeline.png)
 
@@ -146,6 +146,9 @@ Each recommendation ships with the benchmark commands to run next: feedback-deri
 |-------|---------|
 | **Claude Code** | `npx thumbgate init --agent claude-code` |
 | **Cursor** | `npx thumbgate init --agent cursor` |
+| **VS Code / Open VSX** | [plugins/vscode-extension/README.md](plugins/vscode-extension/README.md) |
+| **Antigravity-compatible** | [plugins/antigravity-extension/INSTALL.md](plugins/antigravity-extension/INSTALL.md) |
+| **JetBrains** | [plugins/jetbrains-plugin/README.md](plugins/jetbrains-plugin/README.md) |
 | **Codex** | `npx thumbgate init --agent codex` |
 | **Gemini CLI** | `npx thumbgate init --agent gemini` |
 | **Amp** | `npx thumbgate init --agent amp` |
@@ -234,10 +237,13 @@ npx thumbgate doctor     # health check
 npx thumbgate capture    # create a check from text
 npx thumbgate lessons    # see what's been learned
 npx thumbgate explore    # terminal explorer for lessons, checks, stats
+npx thumbgate background-governance  # review background-agent run risk
+npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai --json  # evaluate GPT-5.5 routing
 npx thumbgate native-messaging-audit  # inspect local browser bridges and extension hosts
 npx thumbgate dashboard  # open local dashboard
 npx thumbgate serve      # start MCP server on stdio
 npx thumbgate bench      # run reliability benchmark
+npx thumbgate bench --programbench-smoke  # include cleanroom whole-repo proof lane
 ```
 
 ---
@@ -257,9 +263,9 @@ npx thumbgate bench      # run reliability benchmark
 | Org-wide dashboard | — | — | ✅ |
 | Approval + audit proof | — | — | ✅ |
 
-The free tier gives you 3 lifetime feedback captures and 1 auto-promoted prevention rule — enough to prove the enforcement loop works. MCP integrations for all agents (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode) ship free.
+The free tier gives you unlimited feedback captures and up to 5 active auto-promoted prevention rules — generous enough to make ThumbGate part of your daily flow. MCP integrations for all agents (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode) ship free.
 
-Pro ($19/mo or $149/yr) lifts those caps and adds history-aware lesson recall, lesson search, DPO export, and a personal dashboard. Team ($49/seat/mo) adds a shared hosted lesson DB, org dashboard, and shared enforcement across the org. Pro and Team include `open_feedback_session`, `append_feedback_context`, and `finalize_feedback_session` for structured multi-turn feedback capture.
+Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recall, lesson search, DPO export, and a personal dashboard. Team ($49/seat/mo) adds a shared hosted lesson DB, org dashboard, and shared enforcement across the org. Pro and Team include `open_feedback_session`, `append_feedback_context`, and `finalize_feedback_session` for structured multi-turn feedback capture.
 
 **Best first paid motion for teams:** the **Workflow Hardening Sprint** — qualify one repeated failure before committing to a full rollout. **[Start intake →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake)**
 
@@ -348,7 +354,7 @@ curl -X POST http://localhost:3456/v1/dpo/export \
 | Layer | Technology |
 |-------|-----------|
 | **Storage** | SQLite + FTS5, LanceDB vectors, JSONL logs |
-| **Capture** | 3 feedback captures lifetime (free), unlimited (Pro) |
+| **Capture** | Unlimited feedback captures (free + Pro) |
 | **Intelligence** | MemAlign dual recall, Thompson Sampling |
 | **Enforcement** | PreToolUse hook engine, Checks config |
 | **Interfaces** | MCP stdio, HTTP API, CLI (Node.js >=18) |
@@ -360,7 +366,7 @@ Every Changeset is tied to the exact `main` merge commit and generates Verificat
 
 ---
 
-**Popular buyer questions:** **[AI search topical presence](https://thumbgate-production.up.railway.app/guides/ai-search-topical-presence?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Relational knowledge and AI recommendations](https://thumbgate-production.up.railway.app/guides/relational-knowledge-ai-recommendations?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Stop repeated AI agent mistakes](https://thumbgate-production.up.railway.app/guides/stop-repeated-ai-agent-mistakes?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Browser automation safety](https://thumbgate-production.up.railway.app/guides/browser-automation-safety?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Native messaging host security](https://thumbgate-production.up.railway.app/guides/native-messaging-host-security?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Autoresearch agent safety](https://thumbgate-production.up.railway.app/guides/autoresearch-agent-safety?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Cursor guardrails](https://thumbgate-production.up.railway.app/guides/cursor-agent-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Codex CLI guardrails](https://thumbgate-production.up.railway.app/guides/codex-cli-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Gemini CLI memory + enforcement](https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)**
+**Popular buyer questions:** **[AI search topical presence](https://thumbgate-production.up.railway.app/guides/ai-search-topical-presence?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Relational knowledge and AI recommendations](https://thumbgate-production.up.railway.app/guides/relational-knowledge-ai-recommendations?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Background agent governance](https://thumbgate-production.up.railway.app/guides/background-agent-governance?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[GPT-5.5 model evaluation](https://thumbgate-production.up.railway.app/guides/gpt-5-5-model-evaluation?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Stop repeated AI agent mistakes](https://thumbgate-production.up.railway.app/guides/stop-repeated-ai-agent-mistakes?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Browser automation safety](https://thumbgate-production.up.railway.app/guides/browser-automation-safety?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Native messaging host security](https://thumbgate-production.up.railway.app/guides/native-messaging-host-security?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Autoresearch agent safety](https://thumbgate-production.up.railway.app/guides/autoresearch-agent-safety?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Cursor guardrails](https://thumbgate-production.up.railway.app/guides/cursor-agent-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Codex CLI guardrails](https://thumbgate-production.up.railway.app/guides/codex-cli-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Gemini CLI memory + enforcement](https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Google Cloud MCP guardrails](https://thumbgate-production.up.railway.app/guides/gcp-mcp-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Roo Code alternative: migrate to Cline](https://thumbgate-production.up.railway.app/guides/roo-code-alternative-cline?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)**
 
 **[Workflow Hardening Sprint](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=top_cta#workflow-sprint-intake)** · **[Live Dashboard](https://thumbgate-production.up.railway.app/dashboard?utm_source=github&utm_medium=readme&utm_campaign=top_cta)**
 
@@ -371,8 +377,11 @@ Every Changeset is tied to the exact `main` merge commit and generates Verificat
 - **[Open ThumbGate GPT](https://thumbgate-production.up.railway.app/go/gpt?utm_source=github&utm_medium=readme&utm_campaign=readme_gpt)** — ThumbGate GPT: start here. Paste agent actions, get advice + checkpointing. No, users do not have to keep chatting inside the ThumbGate GPT to use ThumbGate — the hard enforcement layer still runs where the work happens.
 - **[Claude Desktop Extension](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb)** — One-click install for Claude Desktop
 - **[Codex Plugin](https://thumbgate-production.up.railway.app/codex-plugin)** — Auto-updating standalone bundle and install page for Codex CLI
+- **[VS Code / Open VSX Extension](plugins/vscode-extension/README.md)** — Marketplace-ready MCP provider and `.vscode/mcp.json` fallback for VS Code-compatible IDEs
+- **[Antigravity-compatible VSIX](plugins/antigravity-extension/INSTALL.md)** — Open VSX/direct VSIX install path while Antigravity-specific marketplace support is still unproven
+- **[JetBrains Plugin Scaffold](plugins/jetbrains-plugin/README.md)** — IntelliJ/PyCharm Marketplace path for the same `thumbgate@latest` runtime
 - **[Perplexity Command Center](docs/PERPLEXITY_MAX_COMMAND_CENTER.md)** — AI-search visibility + lead discovery
-- **[ThumbGate Bench](docs/THUMBGATE_BENCH.md)** — Reliability benchmark for check evaluation
+- **[ThumbGate Bench](docs/THUMBGATE_BENCH.md)** — Reliability benchmark and ProgramBench-style cleanroom proof lane
 - **[Manus AI Skill](skills/thumbgate/SKILL.md)** — ThumbGate integration for Manus AI agents
 
 ---
@@ -406,9 +415,9 @@ Those are suggestions the agent can ignore. ThumbGate checks are enforced — th
 If it supports MCP or pre-action hooks, yes. Claude Code, Claude Desktop, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode all work out of the box.
 
 **Is it free?**
-The free tier gives you 3 lifetime feedback captures and 1 auto-promoted prevention rule — enough to prove the enforcement loop works. MCP integrations ship free for every agent.
+The free tier gives you unlimited feedback captures and up to 5 active auto-promoted prevention rules — generous enough for solo devs to use daily. MCP integrations ship free for every agent.
 
-Pro ($19/mo or $149/yr) lifts those caps and adds history-aware lesson recall, lesson search, and a personal dashboard. Team ($49/seat/mo) adds a shared hosted lesson DB, org dashboard, and shared enforcement.
+Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recall, lesson search, and a personal dashboard. Team ($49/seat/mo) adds a shared hosted lesson DB, org dashboard, and shared enforcement.
 
 ---
 

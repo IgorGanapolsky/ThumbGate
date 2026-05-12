@@ -3,9 +3,13 @@ const assert = require('node:assert/strict');
 
 const {
   DEFAULT_REPO,
+  DEFAULT_FETCH_TIMEOUT_MS,
+  DEFAULT_COMMAND_TIMEOUT_MS,
   parseArgs,
   parseGhVariableList,
   parseHtmlSignals,
+  resolveHostedAuditApiKey,
+  fetchWithTimeout,
   buildDiagnosis,
   formatReport,
   getHostedAuditViaHttp,
@@ -15,7 +19,55 @@ const {
 test('parseArgs defaults to the ThumbGate repo slug', () => {
   const options = parseArgs([]);
   assert.equal(options.repo, DEFAULT_REPO);
+  assert.equal(options.fetchTimeoutMs, DEFAULT_FETCH_TIMEOUT_MS);
+  assert.equal(options.commandTimeoutMs, DEFAULT_COMMAND_TIMEOUT_MS);
   assert.equal(DEFAULT_REPO, 'IgorGanapolsky/ThumbGate');
+});
+
+test('parseArgs accepts bounded audit timeout overrides', () => {
+  const options = parseArgs([
+    '--fetch-timeout-ms=2500',
+    '--command-timeout-ms=7000',
+  ]);
+
+  assert.equal(options.fetchTimeoutMs, 2500);
+  assert.equal(options.commandTimeoutMs, 7000);
+});
+
+test('resolveHostedAuditApiKey prefers operator key over general API key', () => {
+  assert.equal(resolveHostedAuditApiKey({
+    THUMBGATE_OPERATOR_KEY: 'tg_operator',
+    THUMBGATE_API_KEY: 'tg_api',
+  }), 'tg_operator');
+  assert.equal(resolveHostedAuditApiKey({
+    THUMBGATE_API_KEY: 'tg_api',
+  }, { operatorKey: null }), 'tg_api');
+  assert.equal(resolveHostedAuditApiKey({
+    THUMBGATE_OPERATOR_KEY: '   ',
+    THUMBGATE_API_KEY: '',
+  }, { operatorKey: null }), '');
+  assert.equal(resolveHostedAuditApiKey({
+    THUMBGATE_OPERATOR_KEY: '   ',
+    THUMBGATE_API_KEY: 'tg_api',
+  }, { operatorKey: 'tg_local_operator' }), 'tg_local_operator');
+});
+
+test('fetchWithTimeout rejects stalled hosted calls with a readable error', async () => {
+  await assert.rejects(
+    fetchWithTimeout(
+      async (_url, options) => new Promise((_resolve, reject) => {
+        options.signal.addEventListener('abort', () => {
+          const error = new Error('aborted');
+          error.name = 'AbortError';
+          reject(error);
+        });
+      }),
+      new URL('https://example.com/v1/billing/summary'),
+      {},
+      1
+    ),
+    /Timed out fetching https:\/\/example\.com\/v1\/billing\/summary after 1ms/
+  );
 });
 
 test('parseGhVariableList reads gh variable output', () => {
@@ -46,7 +98,7 @@ test('parseHtmlSignals detects telemetry and tracking hooks', () => {
   assert.equal(signals.workflowSprintIntake, true);
 });
 
-test('buildDiagnosis identifies local fallback blind spot and runtime gaps', () => {
+test('buildDiagnosis prioritizes GA4 runtime config over stale local fallback labels', () => {
   const diagnosis = buildDiagnosis({
     publicProbe: {
       root: {
@@ -63,6 +115,8 @@ test('buildDiagnosis identifies local fallback blind spot and runtime gaps', () 
     hostedAudit: {
       runtimePresence: {
         THUMBGATE_GA_MEASUREMENT_ID: false,
+        THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL: false,
+        THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL: false,
         THUMBGATE_PUBLIC_APP_ORIGIN: false,
         THUMBGATE_BILLING_API_BASE_URL: false,
       },
@@ -85,13 +139,15 @@ test('buildDiagnosis identifies local fallback blind spot and runtime gaps', () 
     },
   });
 
-  assert.equal(diagnosis.primaryIssue, 'operator_blind_spot_local_fallback');
+  assert.equal(diagnosis.primaryIssue, 'ga4_runtime_config_gap');
   assert.equal(diagnosis.trackingImplemented, true);
   assert.equal(diagnosis.telemetryIngressWorking, true);
   assert.equal(diagnosis.hostedSummaryWorking, true);
   assert.equal(diagnosis.hostedTrafficObserved, true);
   assert.equal(diagnosis.hostedRevenueObserved, true);
   assert.ok(diagnosis.gaps.includes('GA4 runtime env is missing in Railway'));
+  assert.ok(diagnosis.gaps.includes('Workflow Hardening Diagnostic payment link env is missing in Railway'));
+  assert.ok(diagnosis.gaps.includes('Workflow Hardening Sprint payment link env is missing in Railway'));
 });
 
 test('generateRevenueStatusReport uses hosted railway audit when available', async () => {
@@ -99,6 +155,7 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
   const report = await generateRevenueStatusReport({
     repo: 'IgorGanapolsky/ThumbGate',
     timeZone: 'America/New_York',
+    fetchTimeoutMs: 45000,
     apiKey: '',
     runCommandFn(command, args) {
       runCalls.push([command, ...args]);
@@ -138,6 +195,16 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
                   pageViews: 4,
                   checkoutStarts: 2,
                 },
+                ctas: {
+                  checkoutInterstitialViews: 3,
+                  checkoutInterstitialClicks: 2,
+                  checkoutInterstitialProConfirms: 1,
+                  checkoutInterstitialWorkflowIntakeClicks: 1,
+                  checkoutInterstitialTeamPathClicks: 0,
+                  checkoutInterstitialDiagnosticCheckoutClicks: 1,
+                  checkoutInterstitialWorkflowSprintCheckoutClicks: 0,
+                  checkoutBotDeflections: 4,
+                },
                 signups: {
                   uniqueLeads: 2,
                 },
@@ -161,6 +228,16 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
                   visitors: 21,
                   pageViews: 15,
                   checkoutStarts: 9,
+                },
+                ctas: {
+                  checkoutInterstitialViews: 12,
+                  checkoutInterstitialClicks: 5,
+                  checkoutInterstitialProConfirms: 3,
+                  checkoutInterstitialWorkflowIntakeClicks: 1,
+                  checkoutInterstitialTeamPathClicks: 1,
+                  checkoutInterstitialDiagnosticCheckoutClicks: 2,
+                  checkoutInterstitialWorkflowSprintCheckoutClicks: 1,
+                  checkoutBotDeflections: 7,
                 },
                 signups: {
                   uniqueLeads: 6,
@@ -233,14 +310,18 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
   });
 
   assert.equal(report.source, 'hosted-via-railway-env');
-  assert.equal(report.diagnosis.primaryIssue, 'operator_blind_spot_local_fallback');
+  assert.equal(report.diagnosis.primaryIssue, 'ga4_runtime_config_gap');
   assert.equal(report.hostedAudit.summaries['30d'].revenue.bookedRevenueCents, 2000);
   assert.ok(runCalls.some((call) => call[0] === 'railway' && call.includes('run')));
+  assert.ok(
+    runCalls.some((call) => call[0] === 'railway' && call.some((arg) => String(arg).includes('const fetchTimeoutMs = 45000;')))
+  );
 
   const formatted = formatReport(report);
   assert.match(formatted, /Source: hosted-via-railway-env/);
-  assert.match(formatted, /Today: visitors 6, pageViews 4, checkoutStarts 2/);
+  assert.match(formatted, /Today: visitors 6, pageViews 4, checkoutStarts 2.*checkoutIntent views 3, clicks 2, stripeConfirms 1, intakeClicks 1, teamPathClicks 0, diagnosticClicks 1, sprintCheckoutClicks 0, botDeflections 4/);
   assert.match(formatted, /30d: visitors 21, pageViews 15, checkoutStarts 9, paidOrders 2, bookedRevenue \$20.00/);
+  assert.match(formatted, /30d: .*checkoutIntent views 12, clicks 5, stripeConfirms 3, intakeClicks 1, teamPathClicks 1, diagnosticClicks 2, sprintCheckoutClicks 1, botDeflections 7/);
 });
 
 test('getHostedAuditViaHttp reads hosted billing summary without Railway CLI', async () => {
@@ -260,9 +341,19 @@ test('getHostedAuditViaHttp reads hosted billing summary without Railway CLI', a
             visitors: 3,
             checkoutStarts: 1,
           },
+          ctas: {
+            checkoutStartsBySource: {
+              website: 1,
+            },
+          },
           revenue: {
             paidOrders: 1,
             bookedRevenueCents: 4900,
+          },
+          attribution: {
+            paidBySource: {
+              website: 1,
+            },
           },
           dataQuality: {
             attributionCoverage: 1,
@@ -277,6 +368,38 @@ test('getHostedAuditViaHttp reads hosted billing summary without Railway CLI', a
   assert.equal(hostedAudit.runtimePresenceKnown, false);
   assert.deepEqual(requestedWindows, ['today', '30d', 'lifetime']);
   assert.equal(hostedAudit.summaries['30d'].revenue.bookedRevenueCents, 4900);
+  assert.equal(hostedAudit.summaries['30d'].ctas.checkoutStartsBySource.website, 1);
+  assert.equal(hostedAudit.summaries['30d'].attribution.paidBySource.website, 1);
+});
+
+test('getHostedAuditViaHttp carries hosted runtime presence when exposed', async () => {
+  const hostedAudit = await getHostedAuditViaHttp({
+    appOrigin: 'https://example.com',
+    apiKey: 'tg_test_key',
+    timeZone: 'America/New_York',
+    fetchImpl: async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        runtimePresence: {
+          THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL: true,
+          THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL: true,
+        },
+        trafficMetrics: {
+          visitors: 3,
+          checkoutStarts: 1,
+        },
+        revenue: {
+          paidOrders: 0,
+          bookedRevenueCents: 0,
+        },
+      }),
+    }),
+  });
+
+  assert.equal(hostedAudit.runtimePresenceKnown, true);
+  assert.equal(hostedAudit.runtimePresence.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL, true);
+  assert.equal(hostedAudit.runtimePresence.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL, true);
 });
 
 test('generateRevenueStatusReport prefers hosted HTTP API when THUMBGATE_API_KEY is available', async () => {
@@ -350,4 +473,73 @@ test('generateRevenueStatusReport prefers hosted HTTP API when THUMBGATE_API_KEY
   assert.equal(report.hostedAudit.summaries.today.revenue.bookedRevenueCents, 4900);
   assert.ok(!runCalls.some((call) => call[0] === 'railway'));
   assert.match(formatReport(report), /Railway runtime inspected: no/);
+});
+
+test('generateRevenueStatusReport degrades when local fallback summary is unavailable', async () => {
+  const report = await generateRevenueStatusReport({
+    repo: 'IgorGanapolsky/ThumbGate',
+    timeZone: 'America/New_York',
+    apiKey: '',
+    runCommandFn() {
+      return {
+        status: 1,
+        stdout: '',
+        stderr: 'gh unavailable',
+        error: null,
+      };
+    },
+    fetchPublicProbe: async () => ({
+      health: {
+        status: 200,
+        version: '1.5.0',
+      },
+      root: {
+        status: 200,
+        signals: {
+          plausibleScript: true,
+          telemetryEndpoint: true,
+          gaLoaderScript: false,
+        },
+      },
+      telemetryPing: {
+        status: 204,
+      },
+    }),
+    localFallbackFn: async () => {
+      throw new Error('operator key mismatch');
+    },
+  });
+
+  assert.equal(report.source, 'local-fallback');
+  assert.equal(report.hostedAudit.summaries.today.status, 'unavailable');
+  assert.ok(report.diagnosis.gaps.includes('operator key mismatch'));
+  assert.ok(report.diagnosis.gaps.includes('local operational billing summary is unavailable'));
+});
+
+test('generateRevenueStatusReport degrades when public runtime probe fails', async () => {
+  const report = await generateRevenueStatusReport({
+    repo: 'IgorGanapolsky/ThumbGate',
+    timeZone: 'America/New_York',
+    apiKey: '',
+    runCommandFn(command) {
+      if (command === 'gh') {
+        return {
+          status: 1,
+          stdout: '',
+          stderr: 'not authenticated',
+          error: null,
+        };
+      }
+      throw new Error(`Unexpected command: ${command}`);
+    },
+    fetchPublicProbe: async () => {
+      throw new Error('Timed out fetching https://example.com/health after 5ms');
+    },
+  });
+
+  assert.equal(report.source, 'local-fallback');
+  assert.equal(report.publicProbe.health.status, 0);
+  assert.ok(
+    report.diagnosis.gaps.includes('Public runtime probe failed: Timed out fetching https://example.com/health after 5ms')
+  );
 });

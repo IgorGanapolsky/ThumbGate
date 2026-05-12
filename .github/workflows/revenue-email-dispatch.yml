@@ -1,0 +1,59 @@
+name: Revenue Email Dispatch
+
+on:
+  workflow_dispatch:
+    inputs:
+      campaign:
+        description: 'Approved revenue email campaign key.'
+        required: true
+        type: choice
+        options:
+          - aiventyx_marketplace_followup
+      dry_run:
+        description: 'Preview without sending.'
+        required: false
+        type: boolean
+        default: true
+      confirm_send:
+        description: 'Required to send the email.'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: revenue-email-dispatch
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      RESEND_FROM_EMAIL: ${{ secrets.THUMBGATE_TRIAL_EMAIL_FROM }}
+      THUMBGATE_TRIAL_EMAIL_REPLY_TO: igor.ganapolsky@gmail.com
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Dispatch revenue email
+        run: |
+          ARGS="--campaign=${{ github.event.inputs.campaign }}"
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          if [ "${{ github.event.inputs.confirm_send }}" = "true" ]; then
+            ARGS="$ARGS --confirm-send"
+          fi
+          node scripts/revenue-email-dispatch.js $ARGS

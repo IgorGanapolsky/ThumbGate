@@ -9,6 +9,7 @@ const {
   analyzeTargetEvidence,
   applyPipelineStateToTargets,
   buildFallbackMessage,
+  buildBillingVerification,
   buildCheckoutCloseDraft,
   buildOperatorHandoffPayload,
   buildOperatorSendNowPayload,
@@ -24,10 +25,15 @@ const {
   hasCredibleRepoDescription,
   hasCredibleRepoIdentity,
   hasLowBuyerIntentSignals,
+  parseHistoricalCommercialTruthRevenue,
   parseArgs,
   prospectTargets,
+  readHistoricalCommercialTruthRevenue,
+  applyHistoricalRevenueProof,
+  formatHistoricalRevenueProofLine,
   renderMarketplaceCopyMarkdown,
   renderOperatorHandoffMarkdown,
+  renderOperatorSendNowMarkdown,
   renderOperatorSendNowCsv,
   renderRevenueLoopMarkdown,
   renderTeamOutreachMessagesMarkdown,
@@ -127,6 +133,70 @@ test('post-first-dollar directive downgrades to historical proof language when h
   assert.ok(directive.actions.some((entry) => /current live revenue/i.test(entry)));
 });
 
+test('historical commercial truth helpers parse, read, apply, and format verified revenue proof', () => {
+  const markdown = [
+    '# Commercial truth',
+    '',
+    'Verified cumulative booked revenue through March 19, 2026 is **$20.00** from `2` reconciled Stripe charges.',
+  ].join('\n');
+
+  const parsed = parseHistoricalCommercialTruthRevenue(markdown);
+  const read = readHistoricalCommercialTruthRevenue({
+    fsImpl: {
+      readFileSync(filePath, encoding) {
+        assert.equal(filePath, '/tmp/commercial-truth.md');
+        assert.equal(encoding, 'utf8');
+        return markdown;
+      },
+    },
+    filePath: '/tmp/commercial-truth.md',
+  });
+  const applied = applyHistoricalRevenueProof({
+    revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+    trafficMetrics: { checkoutStarts: 0 },
+  }, parsed);
+
+  assert.deepEqual(parsed, {
+    asOfDate: 'March 19, 2026',
+    paidOrders: 2,
+    bookedRevenueCents: 2000,
+    sourceDocument: 'docs/COMMERCIAL_TRUTH.md',
+  });
+  assert.deepEqual(read, parsed);
+  assert.equal(applied.revenue.paidOrders, 2);
+  assert.equal(applied.revenue.bookedRevenueCents, 2000);
+  assert.deepEqual(applied.revenue.historicalProof, parsed);
+  assert.equal(
+    formatHistoricalRevenueProofLine(parsed),
+    '2 paid order(s), $20.00 booked through March 19, 2026 from docs/COMMERCIAL_TRUTH.md.'
+  );
+});
+
+test('historical commercial truth helpers stay inert for missing or unusable proof', () => {
+  const emptySummary = {
+    revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+    pipeline: {},
+  };
+
+  assert.equal(parseHistoricalCommercialTruthRevenue('No verified revenue line here.'), null);
+  assert.equal(readHistoricalCommercialTruthRevenue({
+    fsImpl: {
+      readFileSync() {
+        throw new Error('missing');
+      },
+    },
+    filePath: '/tmp/missing.md',
+  }), null);
+  assert.equal(applyHistoricalRevenueProof(emptySummary, null), emptySummary);
+  assert.equal(formatHistoricalRevenueProofLine(null), '');
+  assert.equal(formatHistoricalRevenueProofLine({
+    asOfDate: 'March 19, 2026',
+    paidOrders: 0,
+    bookedRevenueCents: 0,
+    sourceDocument: 'docs/COMMERCIAL_TRUTH.md',
+  }), '');
+});
+
 test('resolveRevenueLoopSummary prefers hosted revenue status when local operator auth is missing', async () => {
   const result = await resolveRevenueLoopSummary({
     getOperationalBillingSummaryFn: async () => ({
@@ -162,6 +232,30 @@ test('resolveRevenueLoopSummary prefers hosted revenue status when local operato
   assert.equal(result.summary.trafficMetrics.checkoutStarts, 1);
 });
 
+test('resolveRevenueLoopSummary requests and labels a 30d hosted summary by default', async () => {
+  let requestedOptions = null;
+  const result = await resolveRevenueLoopSummary({
+    getOperationalBillingSummaryFn: async (options) => {
+      requestedOptions = options;
+      return {
+        source: 'hosted',
+        summaryWindow: options.window,
+        summary: {
+          revenue: { paidOrders: 4, bookedRevenueCents: 14900 },
+          trafficMetrics: { checkoutStarts: 77 },
+          signups: { uniqueLeads: 424 },
+          pipeline: {},
+        },
+        fallbackReason: null,
+      };
+    },
+  });
+
+  assert.equal(requestedOptions.window, '30d');
+  assert.equal(result.summaryWindow, '30d');
+  assert.equal(result.summary.revenue.bookedRevenueCents, 14900);
+});
+
 test('resolveRevenueLoopSummary keeps local numbers when hosted revenue status still falls back', async () => {
   const result = await resolveRevenueLoopSummary({
     getOperationalBillingSummaryFn: async () => ({
@@ -185,6 +279,7 @@ test('resolveRevenueLoopSummary keeps local numbers when hosted revenue status s
         },
       },
     }),
+    readHistoricalCommercialTruthRevenueFn: () => null,
   });
 
   assert.equal(result.source, 'local');
@@ -301,6 +396,54 @@ test('resolveRevenueLoopSummary selects the freshest hosted window with commerci
   assert.equal(result.summary.trafficMetrics.checkoutStarts, 531);
 });
 
+test('resolveRevenueLoopSummary prefers booked revenue over checkout-only daily activity', async () => {
+  const result = await resolveRevenueLoopSummary({
+    getOperationalBillingSummaryFn: async () => ({
+      source: 'local',
+      summary: {
+        revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+        trafficMetrics: { checkoutStarts: 0 },
+        signups: { uniqueLeads: 0 },
+        pipeline: {},
+      },
+      fallbackReason: 'Hosted operational summary is not configured.',
+    }),
+    generateRevenueStatusReportFn: async () => ({
+      source: 'hosted-via-railway-env',
+      hostedAudit: {
+        summaries: {
+          today: {
+            status: 200,
+            revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+            trafficMetrics: { checkoutStarts: 13 },
+            signups: { uniqueLeads: 13 },
+            pipeline: {},
+          },
+          '30d': {
+            status: 200,
+            revenue: { paidOrders: 6, bookedRevenueCents: 16900 },
+            trafficMetrics: { checkoutStarts: 583 },
+            signups: { uniqueLeads: 399 },
+            pipeline: {},
+          },
+          lifetime: {
+            status: 200,
+            revenue: { paidOrders: 6, bookedRevenueCents: 16900 },
+            trafficMetrics: { checkoutStarts: 677 },
+            signups: { uniqueLeads: 414 },
+            pipeline: {},
+          },
+        },
+      },
+    }),
+  });
+
+  assert.equal(result.source, 'hosted-via-railway-env');
+  assert.equal(result.summaryWindow, '30d');
+  assert.equal(result.summary.revenue.paidOrders, 6);
+  assert.equal(deriveRevenueDirective(result.summary).state, 'post-first-dollar');
+});
+
 test('resolveRevenueLoopSummary skips hosted audit when local metrics are explicitly requested', async () => {
   let hostedAuditCalls = 0;
   const result = await resolveRevenueLoopSummary({
@@ -325,6 +468,101 @@ test('resolveRevenueLoopSummary skips hosted audit when local metrics are explic
 
   assert.equal(result.source, 'local');
   assert.equal(hostedAuditCalls, 0);
+});
+
+test('resolveRevenueLoopSummary falls back to historical commercial truth revenue when hosted billing is unavailable', async () => {
+  const result = await resolveRevenueLoopSummary({
+    getOperationalBillingSummaryFn: async () => ({
+      source: 'local-unverified',
+      summary: {
+        revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+        trafficMetrics: { checkoutStarts: 0 },
+        signups: { uniqueLeads: 0 },
+        pipeline: {},
+      },
+      fallbackReason: 'Hosted operational summary is not configured.',
+    }),
+    generateRevenueStatusReportFn: async () => ({
+      source: 'local-fallback',
+      hostedAudit: {
+        summaries: {
+          today: {
+            status: 503,
+            revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+          },
+        },
+      },
+    }),
+    readHistoricalCommercialTruthRevenueFn: () => ({
+      asOfDate: 'March 19, 2026',
+      paidOrders: 2,
+      bookedRevenueCents: 2000,
+      sourceDocument: 'docs/COMMERCIAL_TRUTH.md',
+    }),
+  });
+
+  assert.equal(result.source, 'local-unverified');
+  assert.equal(result.summaryWindow, 'historical-commercial-truth');
+  assert.equal(result.summary.revenue.paidOrders, 2);
+  assert.equal(result.summary.revenue.bookedRevenueCents, 2000);
+  assert.equal(result.summary.revenue.historicalProof.asOfDate, 'March 19, 2026');
+  assert.match(result.fallbackReason, /Historical commercial proof applied/);
+  assert.equal(deriveRevenueDirective(
+    result.summary,
+    buildMotionCatalog(buildRevenueLinks()),
+    { mode: 'historical-local' }
+  ).state, 'post-first-dollar');
+});
+
+test('resolveRevenueLoopSummary keeps revenue loop moving when local billing throws before fallback', async () => {
+  const result = await resolveRevenueLoopSummary({
+    getOperationalBillingSummaryFn: async () => {
+      throw new Error('Hosted billing summary rejected credentials (HTTP 401).');
+    },
+    generateRevenueStatusReportFn: async () => ({
+      source: 'local-fallback',
+      hostedAudit: {
+        summaries: {
+          today: {
+            status: 401,
+            revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+          },
+        },
+      },
+    }),
+    readHistoricalCommercialTruthRevenueFn: () => ({
+      asOfDate: 'March 19, 2026',
+      paidOrders: 2,
+      bookedRevenueCents: 2000,
+      sourceDocument: 'docs/COMMERCIAL_TRUTH.md',
+    }),
+    hostedStatusRetries: 0,
+  });
+
+  assert.equal(result.source, 'local-unverified');
+  assert.equal(result.summaryWindow, 'historical-commercial-truth');
+  assert.equal(result.summary.revenue.paidOrders, 2);
+  assert.equal(result.summary.revenue.bookedRevenueCents, 2000);
+  assert.match(result.fallbackReason, /HTTP 401/);
+  assert.match(result.fallbackReason, /Historical commercial proof applied/);
+});
+
+test('buildBillingVerification keeps local-unverified mode when no historical proof exists', () => {
+  const verification = buildBillingVerification({
+    source: 'local-unverified',
+    fallbackReason: 'Hosted operational summary is not configured.',
+    snapshot: {
+      paidOrders: 0,
+      bookedRevenueCents: 0,
+    },
+  });
+
+  assert.deepEqual(verification, {
+    mode: 'local-unverified',
+    label: 'Hosted billing could not be verified in this run; local fallback is not safe for fresh traction claims.',
+    source: 'local-unverified',
+    fallbackReason: 'Hosted operational summary is not configured.',
+  });
 });
 
 test('argument and commercial snapshot helpers stay bounded and explicit', () => {
@@ -1888,6 +2126,51 @@ test('revenue loop report records billing verification context for historical lo
   assert.match(report.verification.label, /Historical booked revenue is verified/);
 });
 
+test('operator payload surfaces historical revenue proof when billing falls back to commercial truth', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const report = buildRevenueLoopReport({
+    source: 'local-unverified',
+    fallbackReason: 'Hosted operational summary is not configured. Historical commercial proof applied from docs/COMMERCIAL_TRUTH.md.',
+    summary: {
+      revenue: {
+        paidOrders: 2,
+        bookedRevenueCents: 2000,
+        historicalProof: {
+          asOfDate: 'March 19, 2026',
+          paidOrders: 2,
+          bookedRevenueCents: 2000,
+          sourceDocument: 'docs/COMMERCIAL_TRUTH.md',
+        },
+      },
+      trafficMetrics: { checkoutStarts: 0 },
+      signups: {},
+      pipeline: {},
+    },
+    motionCatalog: catalog,
+    directive: deriveRevenueDirective({
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    }, catalog, {
+      mode: 'historical-local',
+    }),
+    targets: [],
+  });
+  const payload = buildOperatorHandoffPayload(report);
+  const markdown = renderRevenueLoopMarkdown({
+    ...report,
+    snapshotWindow: 'historical-commercial-truth',
+  });
+
+  assert.match(payload.summary.billingVerification, /Historical booked revenue is verified/);
+  assert.match(payload.summary.historicalRevenueProof, /March 19, 2026/);
+  assert.match(payload.summary.historicalRevenueProof, /\$20\.00/);
+  assert.match(markdown, /Revenue window: historical-commercial-truth/);
+  assert.match(markdown, /Historical revenue proof: 2 paid order\(s\), \$20\.00 booked through March 19, 2026/);
+});
+
 test('marketplace copy pack stays tied to current revenue-loop evidence', () => {
   const links = buildRevenueLinks();
   const catalog = buildMotionCatalog(links);
@@ -2204,6 +2487,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     const teamOutreach = fs.readFileSync(path.join(reportDir, 'team-outreach-messages.md'), 'utf8');
     const operatorHandoff = fs.readFileSync(path.join(reportDir, 'operator-priority-handoff.md'), 'utf8');
     const operatorHandoffJson = JSON.parse(fs.readFileSync(path.join(reportDir, 'operator-priority-handoff.json'), 'utf8'));
+    const operatorSendNowMarkdown = fs.readFileSync(path.join(reportDir, 'operator-send-now.md'), 'utf8');
     const operatorSendNowCsv = fs.readFileSync(path.join(reportDir, 'operator-send-now.csv'), 'utf8');
     const operatorSendNowJson = JSON.parse(fs.readFileSync(path.join(reportDir, 'operator-send-now.json'), 'utf8'));
 
@@ -2219,6 +2503,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.ok(fs.existsSync(path.join(reportDir, 'team-outreach-messages.md')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-priority-handoff.md')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-priority-handoff.json')));
+    assert.ok(fs.existsSync(path.join(reportDir, 'operator-send-now.md')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-send-now.csv')));
     assert.ok(fs.existsSync(path.join(reportDir, 'operator-send-now.json')));
     assert.match(csv, /^temperature,source,channel,username,accountName,company,contactUrl,contactSurfaces,repoName,repoUrl,updatedAt,offer,pipelineStage,pipelineLeadId,nextOperatorAction,pipelineUpdatedAt,evidenceScore,evidence,evidenceSource,evidenceLinks,claimGuardrails,outreachAngle,motionLabel,motionReason,proofPackTrigger,cta,firstTouchDraft,painConfirmedFollowUpDraft,selfServeFollowUpDraft,checkoutCloseDraft,markContactedCommand,markRepliedCommand,markCallBookedCommand,markCheckoutStartedCommand,markSprintIntakeCommand,markPaidCommand/m);
@@ -2259,14 +2544,27 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.match(operatorHandoff, /Send Now: Warm Discovery/);
     assert.match(operatorHandoff, /Pipeline lead id: reddit_builder_production_mcp_server/);
     assert.match(operatorHandoff, /Log after pain-confirmed reply: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
+    assert.match(operatorHandoff, /Evidence sources: Target signal: https:\/\/github\.com\/example\/production-mcp-server; Commercial truth:/);
+    assert.match(operatorHandoff, /Claim guardrails: Do not claim revenue, installs, or marketplace approval without direct command evidence\./);
     assert.equal(operatorHandoffJson.sections.find((section) => section.key === 'send_now_warm_discovery').label, 'Send Now: Warm Discovery');
     assert.equal(operatorHandoffJson.sections.find((section) => section.key === 'send_now_warm_discovery').targets[0].pipelineLeadId, 'reddit_builder_production_mcp_server');
-    assert.match(operatorSendNowCsv, /^rank,sectionKey,sectionLabel,temperature,source,channel,pipelineStage,pipelineLeadId,username,accountName,company,repoName,repoUrl,contactSurface,contactSurfaces,pipelineUpdatedAt,nextOperatorStep,evidenceScore,evidence,motionLabel,whyNow,proofRule,cta,firstTouchDraft,painConfirmedFollowUpDraft,selfServeFollowUpDraft,checkoutCloseDraft,markContactedCommand,markRepliedCommand,markCallBookedCommand,markCheckoutStartedCommand,markSprintIntakeCommand,markPaidCommand/m);
+    assert.match(operatorSendNowMarkdown, /Revenue Operator Send-Now Sheet/);
+    assert.match(operatorSendNowMarkdown, /Pair this file with `operator-priority-handoff\.md`/);
+    assert.match(operatorSendNowMarkdown, /## Send Now: Warm Discovery/);
+    assert.match(operatorSendNowMarkdown, /Log after send: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
+    assert.deepEqual(operatorHandoffJson.sections.find((section) => section.key === 'send_now_warm_discovery').targets[0].claimGuardrails, [
+      'Do not claim revenue, installs, or marketplace approval without direct command evidence.',
+    ]);
+    assert.match(operatorSendNowCsv, /^rank,sectionKey,sectionLabel,temperature,source,channel,pipelineStage,pipelineLeadId,username,accountName,company,repoName,repoUrl,contactSurface,contactSurfaces,pipelineUpdatedAt,nextOperatorStep,evidenceScore,evidence,evidenceLinks,claimGuardrails,motionLabel,whyNow,proofRule,cta,firstTouchDraft,painConfirmedFollowUpDraft,selfServeFollowUpDraft,checkoutCloseDraft,markContactedCommand,markRepliedCommand,markCallBookedCommand,markCheckoutStartedCommand,markSprintIntakeCommand,markPaidCommand/m);
     assert.match(operatorSendNowCsv, /send_now_warm_discovery/);
     assert.match(operatorSendNowCsv, /reddit_builder_production_mcp_server/);
     assert.match(operatorSendNowCsv, /Builder Labs/);
+    assert.match(operatorSendNowCsv, /Target signal: https:\/\/github\.com\/example\/production-mcp-server; Commercial truth:/);
+    assert.match(operatorSendNowCsv, /Do not claim revenue, installs, or marketplace approval without direct command evidence\./);
     assert.equal(operatorSendNowJson.rows[0].sectionKey, 'send_now_warm_discovery');
     assert.equal(operatorSendNowJson.rows[0].pipelineLeadId, 'reddit_builder_production_mcp_server');
+    assert.equal(operatorSendNowJson.rows[0].evidenceSources[0].label, 'Target signal');
+    assert.equal(operatorSendNowJson.rows[0].claimGuardrails[0], 'Do not claim revenue, installs, or marketplace approval without direct command evidence.');
     assert.equal(operatorSendNowJson.rows[0].markSprintIntakeCommand.includes('sprint_intake'), true);
   } finally {
     fs.rmSync(reportDir, { recursive: true, force: true });
@@ -2371,6 +2669,7 @@ test('writeRevenueLoopOutputs mirrors dedicated GTM docs instead of overwriting 
     assert.ok(fs.existsSync(path.join(marketingDir, 'team-outreach-messages.md')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'operator-priority-handoff.md')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'operator-priority-handoff.json')));
+    assert.ok(fs.existsSync(path.join(marketingDir, 'operator-send-now.md')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'operator-send-now.csv')));
     assert.ok(fs.existsSync(path.join(marketingDir, 'operator-send-now.json')));
   } finally {
@@ -2414,6 +2713,19 @@ test('operator send-now export flattens ranked handoff rows for batch ops', () =
       pipelineStage: 'targeted',
       evidenceScore: 9,
       evidence: ['workflow control surface', '42 GitHub stars'],
+      evidenceSources: [
+        {
+          label: 'Target signal',
+          url: 'https://github.com/example/production-mcp-server',
+        },
+        {
+          label: 'Commercial truth',
+          url: catalog.pro.truth,
+        },
+      ],
+      claimGuardrails: [
+        'Do not claim revenue, installs, or marketplace approval without direct command evidence.',
+      ],
       motionLabel: catalog.sprint.label,
       motionReason: 'Lead with rollout proof for one production workflow that cannot afford repeated agent mistakes.',
       proofPackTrigger: 'Use proof pack only after the buyer confirms pain.',
@@ -2424,15 +2736,67 @@ test('operator send-now export flattens ranked handoff rows for batch ops', () =
   };
 
   const payload = buildOperatorSendNowPayload(report);
+  const markdown = renderOperatorSendNowMarkdown(report);
   const csv = renderOperatorSendNowCsv(report);
 
   assert.equal(payload.rows.length, 1);
   assert.equal(payload.rows[0].sectionKey, 'send_now_warm_discovery');
   assert.equal(payload.rows[0].pipelineLeadId, 'reddit_builder_production_mcp_server');
   assert.equal(payload.rows[0].company, 'Builder Labs');
+  assert.equal(payload.rows[0].evidenceSources[0].label, 'Target signal');
+  assert.equal(payload.rows[0].claimGuardrails[0], 'Do not claim revenue, installs, or marketplace approval without direct command evidence.');
   assert.match(csv, /send_now_warm_discovery/);
   assert.match(csv, /Reddit DM: https:\/\/www\.reddit\.com\/user\/builder\//);
+  assert.match(csv, /Target signal: https:\/\/github\.com\/example\/production-mcp-server; Commercial truth:/);
   assert.match(csv, /I can harden one workflow, then prove it\./);
+  assert.match(markdown, /Contact surface: https:\/\/www\.reddit\.com\/user\/builder\//);
+  assert.match(markdown, /Contact surfaces: Reddit DM: https:\/\/www\.reddit\.com\/user\/builder\//);
+  assert.match(markdown, /Company: Builder Labs/);
+  assert.match(markdown, /Log after call booked: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
+  assert.match(markdown, /Log after sprint intake: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
+  assert.match(markdown, /Log after paid: `npm run sales:pipeline -- advance --lead 'reddit_builder_production_mcp_server'/);
+});
+
+test('operator send-now markdown includes historical proof when commercial truth drives the fallback', () => {
+  const links = buildRevenueLinks();
+  const catalog = buildMotionCatalog(links);
+  const report = buildRevenueLoopReport({
+    source: 'local-unverified',
+    fallbackReason: 'Hosted operational summary is not configured. Historical commercial proof applied from docs/COMMERCIAL_TRUTH.md.',
+    summary: {
+      revenue: {
+        paidOrders: 2,
+        bookedRevenueCents: 2000,
+        historicalProof: {
+          asOfDate: 'March 19, 2026',
+          paidOrders: 2,
+          bookedRevenueCents: 2000,
+          sourceDocument: 'docs/COMMERCIAL_TRUTH.md',
+        },
+      },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    },
+    motionCatalog: catalog,
+    directive: deriveRevenueDirective({
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      trafficMetrics: {},
+      signups: {},
+      pipeline: {},
+    }, catalog, {
+      mode: 'historical-local',
+    }),
+    targets: [],
+  });
+
+  const markdown = renderOperatorSendNowMarkdown({
+    ...report,
+    snapshotWindow: 'historical-commercial-truth',
+  });
+
+  assert.match(markdown, /Billing verification: Historical booked revenue is verified/);
+  assert.match(markdown, /Historical revenue proof: 2 paid order\(s\), \$20\.00 booked through March 19, 2026/);
 });
 
 test('warm-target report output does not emit blank repo placeholders in follow-up drafts', () => {
@@ -2728,6 +3092,16 @@ test('runRevenueLoop writes an evidence-backed target queue with discovery warni
     const { report, written } = await runRevenueLoop({
       maxTargets: 2,
       reportDir,
+      getOperationalBillingSummaryFn: async () => ({
+        source: 'local',
+        fallbackReason: 'hosted operational summary is disabled for this test',
+        summary: {
+          trafficMetrics: { visitors: 3, checkoutStarts: 1 },
+          signups: { uniqueLeads: 1 },
+          revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+          pipeline: { workflowSprintLeads: { total: 0 } },
+        },
+      }),
       fetchImpl: async (url) => {
         if (String(url).includes('Claude+Code+review+automation')) {
           return {

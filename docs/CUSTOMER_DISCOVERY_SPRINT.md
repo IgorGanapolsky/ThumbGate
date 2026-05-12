@@ -61,6 +61,7 @@ The revenue loop emits these operator artifacts in that folder:
 - `team-outreach-messages.md` for the warm-outbound copy layer tied to the same ranked queue
 - `operator-priority-handoff.md` for the ranked send order across warm discovery and cold GitHub targets
 - `operator-priority-handoff.json` for the same ranked send order, CTA, proof rule, and sales commands in machine-readable form
+- `operator-send-now.md` for the flat batch-send markdown handoff with ready-now drafts and logging commands
 - `operator-send-now.csv` for one flat batch-send sheet with the ready-now rows, drafts, and log commands
 - `operator-send-now.json` for the same ready-now batch-send payload in machine-readable form
 - `claude-workflow-hardening-pack.md` for Claude-first positioning, buyer lanes, and evidence-backed outbound copy
@@ -83,6 +84,13 @@ The revenue loop emits these operator artifacts in that folder:
 - `gemini-cli-demand-pack.md` for Gemini CLI memory-demand, local-first, and cloud-workflow conversion copy
 - `gemini-cli-demand-pack.json` for the same Gemini operator pack in machine-readable form
 - `gemini-cli-operator-queue.csv` for Gemini-specific queue rows and next asks
+- `roo-sunset-demand-pack.md` for Roo-to-Cline migration demand, proof sequencing, and paid-intent copy
+- `roo-sunset-demand-pack.json` for the same Roo migration operator pack in machine-readable form
+- `roo-sunset-operator-queue.csv` for Roo migration queue rows and next asks
+- `roo-sunset-channel-drafts.csv` for Roo migration post and outreach copy in one operator file
+- `roo-sunset-send-now.md` for the flat Roo migration send order with CTA sequencing and sales logging commands
+- `roo-sunset-send-now.json` for the same Roo send-now handoff in machine-readable form
+- `roo-sunset-send-now.csv` for one flat Roo batch-send sheet with add/advance commands
 - `linkedin-workflow-hardening-pack.md` for LinkedIn founder-post, comment, and DM workflow-hardening copy
 - `linkedin-workflow-hardening-pack.json` for the same LinkedIn operator pack in machine-readable form
 - `linkedin-operator-queue.csv` for LinkedIn-specific queue rows and next asks
@@ -93,6 +101,7 @@ The revenue loop emits these operator artifacts in that folder:
 - `mcp-directory-revenue-pack.md` for MCP directory repair priorities, proof-backed listing status, and canonical naming fixes
 - `mcp-directory-revenue-pack.json` for the same MCP directory repair pack in machine-readable form
 - `mcp-directory-operator-queue.csv` for MCP directory-specific repair tasks and next asks
+- `mcp-directory-surfaces.csv` for one-sheet MCP directory submission and repair fields
 
 That report now carries both warm discovery leads and cold GitHub prospects in one machine-readable queue so the operator can import a single artifact and still contact the warm engagers first.
 Every artifact inherits the same evidence backstop:

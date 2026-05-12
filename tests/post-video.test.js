@@ -57,6 +57,7 @@ function baseContext(extra = {}) {
     // Inject DB stubs so the real marketing-db (backed by better-sqlite3,
     // which isn't always installable in CI) is never touched.
     isDuplicate: () => null,
+    listPosts: () => [],
     record: () => {},
     ...extra,
   };
@@ -90,8 +91,8 @@ describe('post-video (Instagram presign fix)', () => {
 
   it('enforces the per-platform cooldown table', () => {
     const { PLATFORM_COOLDOWN_HOURS } = require('../scripts/social-analytics/post-video');
-    assert.ok(PLATFORM_COOLDOWN_HOURS.instagram >= 8, 'instagram cooldown respected');
-    assert.ok(PLATFORM_COOLDOWN_HOURS.tiktok <= 6, 'tiktok cooldown allows ≥ 4 posts/day');
+    assert.ok(PLATFORM_COOLDOWN_HOURS.instagram >= 24, 'instagram cooldown prevents duplicate-looking grids');
+    assert.ok(PLATFORM_COOLDOWN_HOURS.tiktok >= 24, 'tiktok cooldown prioritizes one strong daily experiment');
   });
 
   it('parseArgs parses --platforms and --dry-run', () => {
@@ -100,6 +101,24 @@ describe('post-video (Instagram presign fix)', () => {
     assert.deepEqual(opts.platforms, ['tiktok', 'instagram']);
     assert.equal(opts.dryRun, true);
     assert.equal(opts.campaign, 'v1');
+  });
+
+  it('parseArgs maps operator-lab offer to the operator-lab template and campaign', () => {
+    const { parseArgs } = require('../scripts/social-analytics/post-video');
+    const opts = parseArgs(['--offer=operator-lab', '--platforms=youtube']);
+
+    assert.equal(opts.offer, 'operator-lab');
+    assert.equal(opts.template, 'operator-lab');
+    assert.equal(opts.campaign, 'operator_lab_launch');
+    assert.deepEqual(opts.platforms, ['youtube']);
+  });
+
+  it('parseArgs maps tiktok-only auto runs to the engagement template', () => {
+    const { parseArgs } = require('../scripts/social-analytics/post-video');
+    const opts = parseArgs(['--platforms=tiktok']);
+
+    assert.equal(opts.template, 'tiktok-engagement');
+    assert.deepEqual(opts.platforms, ['tiktok']);
   });
 
   it('buildPlatformPlan returns null for unknown platforms', () => {
@@ -111,7 +130,27 @@ describe('post-video (Instagram presign fix)', () => {
     const { buildPlatformPlan } = require('../scripts/social-analytics/post-video');
     const plan = buildPlatformPlan('instagram', 'base');
     assert.equal(plan.platform, 'instagram');
-    assert.ok(Math.abs(plan.cooldownDays - (8 / 24)) < 1e-9);
+    assert.ok(Math.abs(plan.cooldownDays - 1) < 1e-9);
+  });
+
+  it('buildPlatformPlan adds a TikTok first comment prompt only on TikTok', () => {
+    const { buildPlatformPlan } = require('../scripts/social-analytics/post-video');
+    const tiktok = buildPlatformPlan('tiktok', 'base');
+    const instagram = buildPlatformPlan('instagram', 'base');
+
+    assert.match(tiktok.firstComment, /exact AI-agent command/);
+    assert.equal(instagram.firstComment, undefined);
+  });
+
+  it('buildPlatformPlan uses operator-lab captions with tracked Skool links', () => {
+    const { buildPlatformPlan } = require('../scripts/social-analytics/post-video');
+    const plan = buildPlatformPlan('youtube', 'base', 'operator-lab');
+
+    assert.equal(plan.offer, 'operator-lab');
+    assert.match(plan.caption, /skool\.com\/thumbgate-operator-lab-6000/);
+    assert.match(plan.caption, /utm_source=youtube/);
+    assert.match(plan.caption, /utm_medium=short_video/);
+    assert.match(plan.caption, /utm_campaign=operator_lab_launch/);
   });
 
   it('processPlatform uploads via presign flow and publishes via shared publishPost', async () => {
@@ -132,10 +171,63 @@ describe('post-video (Instagram presign fix)', () => {
     assert.equal(mediaItem.contentType, 'video/mp4');
     assert.equal(mediaItem.type, 'video', 'type coerced to video for Reels');
     assert.ok(mediaItem.size > 0);
+    assert.equal(
+      tr.publishes[0].options.title,
+      'ThumbGate v1.4.1: Stop AI Agents From Repeating Mistakes #shorts'
+    );
 
     assert.equal(result.platform, 'instagram');
     assert.equal(result.status, 'published');
     assert.ok(result.postUrl.includes('instagram.test'));
+  });
+
+  it('processPlatform sends TikTok first-comment bait to Zernio', async () => {
+    const { processPlatform, buildPlatformPlan } = require('../scripts/social-analytics/post-video');
+    const tr = buildTrackers();
+    const plan = buildPlatformPlan('tiktok', 'test-hash');
+    const context = baseContext({ ...tr });
+
+    await processPlatform(plan, context);
+
+    assert.equal(tr.publishes.length, 1);
+    assert.equal(tr.publishes[0].options.firstComment, plan.firstComment);
+  });
+
+  it('processPlatform skips recent platform videos even when content hash differs', async () => {
+    const { processPlatform, buildPlatformPlan } = require('../scripts/social-analytics/post-video');
+    const tr = buildTrackers();
+    const plan = buildPlatformPlan('instagram', 'new-hash');
+    const context = baseContext({
+      ...tr,
+      listPosts: () => [{
+        platform: 'instagram',
+        type: 'video',
+        status: 'published',
+        published_at: new Date().toISOString(),
+        post_url: 'https://instagram.test/p/existing',
+      }],
+    });
+
+    const result = await processPlatform(plan, context);
+
+    assert.equal(result.status, 'skipped');
+    assert.equal(result.reason, 'platform_cooldown');
+    assert.equal(tr.uploads.length, 0);
+    assert.equal(tr.publishes.length, 0);
+  });
+
+  it('processPlatform sends the operator-lab YouTube Shorts title', async () => {
+    const { processPlatform, buildPlatformPlan } = require('../scripts/social-analytics/post-video');
+    const tr = buildTrackers();
+    const plan = buildPlatformPlan('youtube', 'test-hash', 'operator-lab');
+    const context = baseContext({ ...tr });
+
+    await processPlatform(plan, context);
+
+    assert.equal(
+      tr.publishes[0].options.title,
+      'ThumbGate Operator Lab: Stop Repeated AI Agent Mistakes #shorts'
+    );
   });
 
   it('processPlatform reuses the same uploaded media for a second platform', async () => {
@@ -210,5 +302,27 @@ describe('post-video (Instagram presign fix)', () => {
       !/^https?:\/\/github\.com\/IgorGanapolsky\/ThumbGate/m.test(CAPTIONS.instagram),
       `instagram caption must not use github.com as the sole bare-URL CTA:\n${CAPTIONS.instagram}`
     );
+  });
+});
+
+describe('generate-slides operator-lab template', () => {
+  it('exports a non-numeric operator-lab template for revenue video campaigns', () => {
+    const { TEMPLATES, pickTemplate } = require('../scripts/social-analytics/generate-slides');
+
+    assert.equal(pickTemplate('operator-lab'), 'operator-lab');
+    assert.ok(TEMPLATES['operator-lab']);
+    assert.match(TEMPLATES['operator-lab'].name, /operator-lab/);
+    assert.ok(TEMPLATES['operator-lab'].slides.length >= 5);
+  });
+
+  it('exports a TikTok engagement template for comment-led tests', () => {
+    const { TEMPLATES, pickTemplate } = require('../scripts/social-analytics/generate-slides');
+
+    assert.equal(pickTemplate('tiktok-engagement'), 'tiktok-engagement');
+    assert.ok(TEMPLATES['tiktok-engagement']);
+    assert.match(TEMPLATES['tiktok-engagement'].name, /tiktok-engagement/);
+    assert.ok(TEMPLATES['tiktok-engagement'].slides.some(slide => (
+      Array.isArray(slide.title) && slide.title.join(' ').includes('Comment one')
+    )));
   });
 });

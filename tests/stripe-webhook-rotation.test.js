@@ -6,11 +6,15 @@ const { EventEmitter } = require('node:events');
 
 const {
   DEFAULT_ENDPOINT_URL,
+  LEGACY_ENDPOINT_URLS,
   REQUIRED_EVENTS,
   assertLiveStripeKey,
+  auditStripeWebhookEndpoints,
   createWebhookEndpoint,
+  disableLegacyWebhookEndpoints,
   disableWebhookEndpoint,
   encodeForm,
+  findLegacyEnabledEndpoints,
   findSameUrlEndpoints,
   getSecretUpdatedAt,
   listWebhookEndpoints,
@@ -79,6 +83,8 @@ test('stripe webhook rotation form encoding keeps array fields compatible with S
 
   assert.match(encoded, /url=https%3A%2F%2Fthumbgate-production\.up\.railway\.app%2Fv1%2Fbilling%2Fwebhook/);
   assert.match(encoded, /enabled_events%5B%5D=checkout\.session\.completed/);
+  assert.match(encoded, /enabled_events%5B%5D=customer\.subscription\.created/);
+  assert.match(encoded, /enabled_events%5B%5D=customer\.subscription\.updated/);
   assert.match(encoded, /enabled_events%5B%5D=customer\.subscription\.deleted/);
   assert.match(encoded, /description=ThumbGate%20billing%20webhook/);
 });
@@ -102,6 +108,20 @@ test('stripe webhook rotation finds enabled endpoints for the exact billing URL 
   assert.deepEqual(
     findSameUrlEndpoints(endpoints, DEFAULT_ENDPOINT_URL, 'we_new').map((endpoint) => endpoint.id),
     ['we_keep'],
+  );
+});
+
+test('stripe webhook audit detects enabled legacy rlhf-feedback-loop endpoints', () => {
+  const endpoints = [
+    { id: 'we_current', url: DEFAULT_ENDPOINT_URL, status: 'enabled' },
+    { id: 'we_dead', url: LEGACY_ENDPOINT_URLS[0], status: 'enabled' },
+    { id: 'we_dead_disabled', url: LEGACY_ENDPOINT_URLS[1], status: 'disabled' },
+    { id: 'we_other', url: 'https://example.com/webhook', status: 'enabled' },
+  ];
+
+  assert.deepEqual(
+    findLegacyEnabledEndpoints(endpoints).map((endpoint) => endpoint.id),
+    ['we_dead'],
   );
 });
 
@@ -280,6 +300,73 @@ test('stripe webhook rotation Stripe helpers paginate, create, and disable endpo
     },
   });
   assert.equal(disabled.status, 'disabled');
+});
+
+test('stripe webhook audit reports healthy only when current endpoint is enabled and legacy endpoints are disabled', async () => {
+  const healthy = await auditStripeWebhookEndpoints({
+    stripeKey: 'sk_test_example',
+    requireLive: false,
+    listWebhookEndpoints: async () => [
+      { id: 'we_current', url: DEFAULT_ENDPOINT_URL, status: 'enabled', enabled_events: REQUIRED_EVENTS },
+      { id: 'we_dead_disabled', url: LEGACY_ENDPOINT_URLS[0], status: 'disabled' },
+    ],
+  });
+
+  assert.equal(healthy.healthy, true);
+  assert.deepEqual(healthy.currentEnabledEndpoints.map((endpoint) => endpoint.id), ['we_current']);
+  assert.deepEqual(healthy.legacyEnabledEndpoints, []);
+
+  const unhealthy = await auditStripeWebhookEndpoints({
+    stripeKey: 'sk_test_example',
+    requireLive: false,
+    listWebhookEndpoints: async () => [
+      { id: 'we_current', url: DEFAULT_ENDPOINT_URL, status: 'enabled' },
+      { id: 'we_dead', url: LEGACY_ENDPOINT_URLS[0], status: 'enabled' },
+    ],
+  });
+
+  assert.equal(unhealthy.healthy, false);
+  assert.deepEqual(unhealthy.legacyEnabledEndpoints.map((endpoint) => endpoint.id), ['we_dead']);
+});
+
+test('stripe webhook legacy cleanup disables only stale live endpoints', async () => {
+  const disabled = [];
+  const result = await disableLegacyWebhookEndpoints({
+    stripeKey: 'sk_live_example',
+    listWebhookEndpoints: async () => [
+      { id: 'we_current', url: DEFAULT_ENDPOINT_URL, status: 'enabled' },
+      { id: 'we_dead', url: LEGACY_ENDPOINT_URLS[0], status: 'enabled' },
+      { id: 'we_dead_disabled', url: LEGACY_ENDPOINT_URLS[1], status: 'disabled' },
+      { id: 'we_other', url: 'https://example.com/webhook', status: 'enabled' },
+    ],
+    disableWebhookEndpoint: async ({ endpointId }) => {
+      disabled.push(endpointId);
+      return { id: endpointId, status: 'disabled' };
+    },
+  });
+
+  assert.equal(result.dryRun, false);
+  assert.equal(result.legacyEnabledCountBefore, 1);
+  assert.deepEqual(result.disabledEndpointIds, ['we_dead']);
+  assert.deepEqual(disabled, ['we_dead']);
+});
+
+test('stripe webhook legacy cleanup supports dry run without side effects', async () => {
+  const result = await disableLegacyWebhookEndpoints({
+    stripeKey: 'sk_test_example',
+    requireLive: false,
+    dryRun: true,
+    listWebhookEndpoints: async () => [
+      { id: 'we_dead', url: LEGACY_ENDPOINT_URLS[0], status: 'enabled' },
+    ],
+    disableWebhookEndpoint: async () => {
+      throw new Error('should not disable in dry run');
+    },
+  });
+
+  assert.equal(result.dryRun, true);
+  assert.deepEqual(result.legacyEnabledEndpoints.map((endpoint) => endpoint.id), ['we_dead']);
+  assert.deepEqual(result.disabledEndpointIds, []);
 });
 
 test('stripe webhook rotation dry run reports matching endpoints without GitHub writes', async () => {
