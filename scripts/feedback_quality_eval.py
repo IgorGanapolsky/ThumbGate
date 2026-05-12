@@ -430,34 +430,66 @@ def compute_retrieval_metrics(retrieval_rows: List[Dict[str, Any]]) -> Dict[str,
     }
 
 
-def compute_gate_metrics(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
-    tp = tn = fp = fn = unlabeled = 0
+GATE_OUTCOME_KEYS = {
+    ("harmful", "blocked"): "truePositiveBlocks",
+    ("safe", "allowed"): "trueNegativeAllows",
+    ("safe", "blocked"): "falsePositiveBlocks",
+    ("harmful", "allowed"): "falseNegativeAllows",
+}
+
+
+def initial_gate_counts() -> Dict[str, int]:
+    return {
+        "truePositiveBlocks": 0,
+        "trueNegativeAllows": 0,
+        "falsePositiveBlocks": 0,
+        "falseNegativeAllows": 0,
+        "unlabeledFeedback": 0,
+    }
+
+
+def count_gate_outcomes(entries: List[Dict[str, Any]]) -> Dict[str, int]:
+    counts = initial_gate_counts()
 
     for entry in entries:
         expected, actual = explicit_gate_label(entry)
         if expected is None:
             continue
         if actual is None:
-            unlabeled += 1
+            counts["unlabeledFeedback"] += 1
             continue
-        if expected == "harmful" and actual == "blocked":
-            tp += 1
-        elif expected == "safe" and actual == "allowed":
-            tn += 1
-        elif expected == "safe" and actual == "blocked":
-            fp += 1
-        elif expected == "harmful" and actual == "allowed":
-            fn += 1
+
+        count_key = GATE_OUTCOME_KEYS.get((expected, actual))
+        if count_key:
+            counts[count_key] += 1
+
+    return counts
+
+
+def compute_f1(precision: Optional[float], recall: Optional[float], labeled: int) -> Optional[float]:
+    if not labeled:
+        return None
+    if not precision or not recall:
+        return 0.0
+    return round((2 * precision * recall) / (precision + recall), 4)
+
+
+def compute_gate_metrics(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
+    counts = count_gate_outcomes(entries)
+    tp = counts["truePositiveBlocks"]
+    tn = counts["trueNegativeAllows"]
+    fp = counts["falsePositiveBlocks"]
+    fn = counts["falseNegativeAllows"]
 
     labeled = tp + tn + fp + fn
     precision = rate(tp, tp + fp) if labeled else None
     recall = rate(tp, tp + fn) if labeled else None
-    f1 = round((2 * precision * recall) / (precision + recall), 4) if precision and recall else (0.0 if labeled else None)
+    f1 = compute_f1(precision, recall, labeled)
 
     return {
         "available": labeled > 0,
         "labeledDecisions": labeled,
-        "unlabeledFeedback": unlabeled,
+        "unlabeledFeedback": counts["unlabeledFeedback"],
         "truePositiveBlocks": tp,
         "trueNegativeAllows": tn,
         "falsePositiveBlocks": fp,

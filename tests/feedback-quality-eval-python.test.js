@@ -119,6 +119,30 @@ test('feedback quality eval computes gate precision and recall when blocked/allo
   assert.equal(report.gateMetrics.recall, 0.5);
 });
 
+test('feedback quality eval counts unlabeled gate rows and reports zero F1 for missed harmful labels', () => {
+  const dir = tempDir();
+  const feedbackLog = path.join(dir, 'feedback-log.jsonl');
+  writeJsonl(feedbackLog, [
+    { id: 'tn', signal: 'positive', context: 'safe test run', allowed: true, tags: ['testing'] },
+    { id: 'fn', signal: 'negative', context: 'unsafe command allowed', allowed: true, tags: ['security'] },
+    { id: 'missing', signal: 'negative', context: 'unsafe command without gate label', tags: ['security'] },
+    { id: 'ignored', signal: 'neutral', context: 'neutral feedback', blocked: true, tags: ['notes'] },
+  ]);
+
+  const result = runScript(['--feedback-log', feedbackLog, '--json', '--min-support', '1']);
+  assert.equal(result.status, 0, result.stderr);
+
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.gateMetrics.available, true);
+  assert.equal(report.gateMetrics.labeledDecisions, 2);
+  assert.equal(report.gateMetrics.unlabeledFeedback, 1);
+  assert.equal(report.gateMetrics.trueNegativeAllows, 1);
+  assert.equal(report.gateMetrics.falseNegativeAllows, 1);
+  assert.equal(report.gateMetrics.precision, 0);
+  assert.equal(report.gateMetrics.recall, 0);
+  assert.equal(report.gateMetrics.f1, 0);
+});
+
 test('feedback quality eval e2e joins JSONL feedback, SQLite lessons, and LanceDB-style retrieval export', () => {
   const dir = tempDir();
   const feedbackLog = path.join(dir, 'feedback-log.jsonl');

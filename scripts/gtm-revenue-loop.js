@@ -2884,6 +2884,15 @@ async function runRevenueLoop(options = {}) {
   };
 }
 
+function buildRunSummaryLog(report) {
+  return safeLogValue(JSON.stringify({
+    state: safeLogValue(report.directive.state, 120),
+    paidOrders: report.snapshot.paidOrders,
+    bookedRevenueCents: report.snapshot.bookedRevenueCents,
+    targets: report.targets.length,
+  }, null, 2));
+}
+
 async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
   const { report, written } = await runRevenueLoop(options);
@@ -2894,12 +2903,7 @@ async function main(argv = process.argv.slice(2)) {
   if (written.reportDir) {
     console.log(`Artifact reports: ${written.reportDir}`);
   }
-  console.log(safeLogValue(JSON.stringify({
-    state: report.directive.state,
-    paidOrders: report.snapshot.paidOrders,
-    bookedRevenueCents: report.snapshot.bookedRevenueCents,
-    targets: report.targets.length,
-  }, null, 2)));
+  console.log(buildRunSummaryLog(report));
 }
 
 function isCliInvocation(argv = process.argv) {
@@ -2955,6 +2959,8 @@ module.exports = {
   applyHistoricalRevenueProof,
   formatHistoricalRevenueProofLine,
   buildBillingVerification,
+  buildRunSummaryLog,
+  safeLogValue,
   writeRevenueLoopOutputs,
   buildMarketplaceCopy,
   enrichGitHubTarget,

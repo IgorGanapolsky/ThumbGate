@@ -195,6 +195,10 @@ async function searchTweets(query, { maxResults = 10, dryRun = false } = {}) {
   return data.data || [];
 }
 
+function formatSearchResult(tweet) {
+  return `  [${safeLogValue(tweet.id, 80)}] ${safeLogValue(tweet.text, 100)}...`;
+}
+
 // ---------------------------------------------------------------------------
 // Thread helpers
 // ---------------------------------------------------------------------------
@@ -279,7 +283,7 @@ async function main() {
     } else {
       results.forEach(t => {
         const metrics = t.public_metrics || {};
-        console.log(`  [${safeLogValue(t.id, 80)}] ${safeLogValue(t.text, 100)}...`);
+        console.log(formatSearchResult(t));
         console.log(`    ↩ ${metrics.reply_count || 0}  🔁 ${metrics.retweet_count || 0}  ❤️ ${metrics.like_count || 0}\n`);
       });
     }
@@ -369,6 +373,7 @@ module.exports = {
   percentEncode,
   generateOAuthSignature,
   parseTweetsFromThread,
+  formatSearchResult,
   safeLogValue,
 };
 
