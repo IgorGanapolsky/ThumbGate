@@ -241,7 +241,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log(`stripe-bootstrap-saas-catalog: mode=${DRY_RUN ? 'DRY RUN' : 'WRITE'} key=${secretKey.slice(0, 8)}…`);
+  console.log(`stripe-bootstrap-saas-catalog: mode=${DRY_RUN ? 'DRY RUN' : 'WRITE'} key=configured`);
   for (const tier of TIERS) {
     try {
       await upsertTier(tier, secretKey);
