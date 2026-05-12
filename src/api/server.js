@@ -639,6 +639,81 @@ function getSafeDataDir(req, parsed) {
   return path.resolve(path.dirname(FEEDBACK_LOG_PATH));
 }
 
+function buildHealthPayload({
+  feedbackPaths = getFeedbackPaths(),
+  hostedConfig,
+  buildMetadata = BUILD_METADATA,
+  accessSync = fs.accessSync,
+  uptime = process.uptime,
+} = {}) {
+  const checks = {};
+  let allOk = true;
+
+  try {
+    accessSync(feedbackPaths.FEEDBACK_DIR, fs.constants.W_OK);
+    checks.feedbackDir = { ok: true };
+  } catch (err) {
+    checks.feedbackDir = { ok: false, error: err?.code || 'inaccessible' };
+    allOk = false;
+  }
+
+  if (hostedConfig?.appOrigin) {
+    checks.hostedConfig = { ok: true };
+  } else {
+    checks.hostedConfig = { ok: false, error: 'missing_appOrigin' };
+    allOk = false;
+  }
+
+  if (buildMetadata?.buildSha) {
+    checks.buildMetadata = { ok: true };
+  } else {
+    checks.buildMetadata = { ok: false, error: 'missing_buildSha' };
+    allOk = false;
+  }
+
+  return {
+    statusCode: allOk ? 200 : 503,
+    payload: {
+      status: allOk ? 'ok' : 'degraded',
+      version: pkg.version,
+      buildSha: buildMetadata?.buildSha,
+      uptime: uptime(),
+      checks,
+      deployment: {
+        appOrigin: hostedConfig?.appOrigin,
+        billingApiBaseUrl: hostedConfig?.billingApiBaseUrl,
+      },
+    },
+  };
+}
+
+function buildHealthzPayload({
+  requestFeedbackPaths,
+  accessSync = fs.accessSync,
+} = {}) {
+  const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH } = requestFeedbackPaths;
+  const checks = {};
+  let allOk = true;
+  for (const [label, p] of [['feedbackLog', FEEDBACK_LOG_PATH], ['memoryLog', MEMORY_LOG_PATH]]) {
+    try {
+      accessSync(path.dirname(p), fs.constants.W_OK);
+      checks[label] = { ok: true };
+    } catch (err) {
+      checks[label] = { ok: false, error: err?.code || 'inaccessible' };
+      allOk = false;
+    }
+  }
+  return {
+    statusCode: allOk ? 200 : 503,
+    payload: {
+      status: allOk ? 'ok' : 'degraded',
+      feedbackLogPath: FEEDBACK_LOG_PATH,
+      memoryLogPath: MEMORY_LOG_PATH,
+      checks,
+    },
+  };
+}
+
 function findRecordById(id, feedbackDir) {
   const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
   const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
@@ -4893,28 +4968,16 @@ async function addContext(){
     }
 
     if (isGetLikeRequest && pathname === '/health') {
-      sendJson(res, 200, {
-        status: 'ok',
-        version: pkg.version,
-        buildSha: BUILD_METADATA.buildSha,
-        uptime: process.uptime(),
-        deployment: {
-          appOrigin: hostedConfig.appOrigin,
-          billingApiBaseUrl: hostedConfig.billingApiBaseUrl,
-        },
-      }, {}, {
+      const health = buildHealthPayload({ hostedConfig });
+      sendJson(res, health.statusCode, health.payload, {}, {
         headOnly: isHeadRequest,
       });
       return;
     }
 
     if (isGetLikeRequest && pathname === '/healthz') {
-      const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH } = requestFeedbackPaths;
-      sendJson(res, 200, {
-        status: 'ok',
-        feedbackLogPath: FEEDBACK_LOG_PATH,
-        memoryLogPath: MEMORY_LOG_PATH,
-      }, {}, {
+      const healthz = buildHealthzPayload({ requestFeedbackPaths });
+      sendJson(res, healthz.statusCode, healthz.payload, {}, {
         headOnly: isHeadRequest,
       });
       return;
@@ -6994,6 +7057,8 @@ module.exports = {
   startServer,
   __test__: {
     buildCheckoutFallbackUrl,
+    buildHealthPayload,
+    buildHealthzPayload,
     createPrivateCoreUnavailableError,
     buildPosthogProxyRequestOptions,
     getPosthogProxyPath,

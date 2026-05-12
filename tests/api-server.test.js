@@ -132,6 +132,72 @@ test('health endpoint returns ok', async () => {
   assert.equal(body.buildSha, 'test-build-sha');
 });
 
+test('/health surfaces a per-check breakdown (no longer always-green theater)', async () => {
+  // Regression test for the 2026-05-12 audit finding: /health used to return
+  // status: 'ok' unconditionally regardless of feedback-dir / hosted-config /
+  // build-metadata state. It must now expose a `checks` object so uptime
+  // monitors can detect real degradation, not just process liveness.
+  const res = await fetch(apiUrl('/health'), { headers: authHeader });
+  const body = await res.json();
+  assert.ok(body.checks, '/health response must include a `checks` object');
+  assert.ok(body.checks.feedbackDir, 'checks.feedbackDir must exist');
+  assert.ok(body.checks.hostedConfig, 'checks.hostedConfig must exist');
+  assert.ok(body.checks.buildMetadata, 'checks.buildMetadata must exist');
+  // In a healthy test env, all three should be ok=true.
+  assert.equal(body.checks.feedbackDir.ok, true);
+  assert.equal(body.checks.hostedConfig.ok, true);
+  assert.equal(body.checks.buildMetadata.ok, true);
+});
+
+test('/healthz surfaces a per-check breakdown', async () => {
+  const res = await fetch(apiUrl('/healthz'), { headers: authHeader });
+  const body = await res.json();
+  assert.ok(body.checks, '/healthz response must include a `checks` object');
+  assert.ok(body.checks.feedbackLog, 'checks.feedbackLog must exist');
+  assert.ok(body.checks.memoryLog, 'checks.memoryLog must exist');
+});
+
+test('/health helper marks degraded subsystems explicitly', () => {
+  const health = __test__.buildHealthPayload({
+    feedbackPaths: { FEEDBACK_DIR: '/tmp/thumbgate-missing-feedback' },
+    hostedConfig: { billingApiBaseUrl: 'https://billing.example.com' },
+    buildMetadata: {},
+    accessSync() {
+      const error = new Error('missing');
+      error.code = 'ENOENT';
+      throw error;
+    },
+    uptime: () => 123,
+  });
+
+  assert.equal(health.statusCode, 503);
+  assert.equal(health.payload.status, 'degraded');
+  assert.equal(health.payload.uptime, 123);
+  assert.equal(health.payload.checks.feedbackDir.error, 'ENOENT');
+  assert.equal(health.payload.checks.hostedConfig.error, 'missing_appOrigin');
+  assert.equal(health.payload.checks.buildMetadata.error, 'missing_buildSha');
+});
+
+test('/healthz helper marks unwritable log directories degraded', () => {
+  const healthz = __test__.buildHealthzPayload({
+    requestFeedbackPaths: {
+      FEEDBACK_LOG_PATH: '/tmp/thumbgate-feedback-ok/feedback-log.jsonl',
+      MEMORY_LOG_PATH: '/tmp/thumbgate-feedback-denied/memory-log.jsonl',
+    },
+    accessSync(dir) {
+      if (dir.endsWith('thumbgate-feedback-ok')) return;
+      const error = new Error('denied');
+      error.code = 'EACCES';
+      throw error;
+    },
+  });
+
+  assert.equal(healthz.statusCode, 503);
+  assert.equal(healthz.payload.status, 'degraded');
+  assert.equal(healthz.payload.checks.feedbackLog.ok, true);
+  assert.equal(healthz.payload.checks.memoryLog.error, 'EACCES');
+});
+
 test('PostHog proxy path allowlist blocks sibling-path SSRF attempts', () => {
   assert.equal(__test__.getPosthogProxyPath('/ingest/capture'), '/capture');
   assert.equal(__test__.getPosthogProxyPath('/ingest'), '/');
