@@ -12,7 +12,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="thumbgate-version" content="1.17.0">
   __GOOGLE_SITE_VERIFICATION_META__
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/thumbgate-icon.png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
   __GA_BOOTSTRAP__
@@ -62,7 +62,7 @@
       justify-content: space-between;
       gap: 24px;
     }
-    .brand {
+    .nav-logo {
       display: inline-flex;
       align-items: center;
       gap: 12px;
@@ -70,7 +70,7 @@
       font-weight: 900;
       line-height: 1;
     }
-    .brand img {
+    .nav-logo img {
       width: 40px;
       height: 40px;
       display: block;
@@ -295,8 +295,8 @@
     @media (max-width: 560px) {
       .wrap { width: auto; max-width: none; margin-left: 14px; margin-right: 14px; }
       .nav { gap: 12px; }
-      .brand { font-size: 17px; }
-      .brand img { width: 36px; height: 36px; }
+      .nav-logo { font-size: 17px; }
+      .nav-logo img { width: 36px; height: 36px; }
       .hero-grid { display: block; }
       h1 { max-width: 330px; font-size: 29px; line-height: 1.08; word-break: normal; overflow-wrap: normal; }
       .lead { max-width: 330px; font-size: 15px; }
@@ -364,9 +364,9 @@
 <body>
   <header class="topbar">
     <div class="wrap nav">
-      <a class="brand" href="/" aria-label="ThumbGate home">
-        <img src="/assets/brand/thumbgate-mark.svg" alt="">
-        <span>ThumbGate</span>
+      <a class="nav-logo" href="/" aria-label="ThumbGate home">
+        <img src="/assets/brand/thumbgate-mark-inline.svg" alt="">
+        <span class="logo-text">ThumbGate</span>
       </a>
       <nav class="nav-links" aria-label="Primary navigation">
         <a href="#how">How it works</a>
