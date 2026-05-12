@@ -100,16 +100,27 @@ test('renderSeoPageHtml includes structured data, thumbs messaging, proof links,
 });
 
 test('page lookup and sitemap entries stay aligned', () => {
-  const page = findSeoPageByPath('/guides/cursor-agent-guardrails');
-  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/cursor-agent-guardrails');
+  // 2026-05-12: cursor query canonicalized to /guides/cursor-prevent-repeated-mistakes
+  // (the old path /guides/cursor-agent-guardrails now 301-redirects there — see
+  // GUIDE_CANONICAL_REDIRECTS in src/api/server.js). Page spec + sitemap entries
+  // must reflect the canonical path only.
+  const page = findSeoPageByPath('/guides/cursor-prevent-repeated-mistakes');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/cursor-prevent-repeated-mistakes');
 
   assert.ok(page);
   assert.equal(page.pageType, 'integration');
   assert.deepEqual(sitemapEntry, {
-    path: '/guides/cursor-agent-guardrails',
+    path: '/guides/cursor-prevent-repeated-mistakes',
     changefreq: 'monthly',
     priority: '0.8',
   });
+
+  // The redirected path must NOT have its own page spec or sitemap entry.
+  assert.equal(findSeoPageByPath('/guides/cursor-agent-guardrails'), null);
+  assert.equal(
+    THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/cursor-agent-guardrails'),
+    undefined
+  );
 });
 
 test('Autoresearch safety page is discoverable and commercially classified', () => {

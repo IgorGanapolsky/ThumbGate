@@ -1642,7 +1642,9 @@ const PAGE_BLUEPRINTS = [
   },
   {
     query: 'claude code feedback memory',
-    path: '/guides/claude-code-feedback',
+    // Canonical path. /guides/claude-code-feedback now 301-redirects here
+    // (see GUIDE_CANONICAL_REDIRECTS in src/api/server.js).
+    path: '/guides/claude-code-prevent-repeated-mistakes',
     pageType: 'integration',
     pillar: 'agent-workflows',
     title: 'Claude Code Feedback Memory with Thumbs Up and Thumbs Down',
@@ -1690,7 +1692,9 @@ const PAGE_BLUEPRINTS = [
   },
   {
     query: 'cursor prevent repeated mistakes',
-    path: '/guides/cursor-agent-guardrails',
+    // Canonical path. /guides/cursor-agent-guardrails now 301-redirects here
+    // (see GUIDE_CANONICAL_REDIRECTS in src/api/server.js).
+    path: '/guides/cursor-prevent-repeated-mistakes',
     pageType: 'integration',
     pillar: 'agent-workflows',
     title: 'Cursor Agent Guardrails | Stop Repeated Mistakes with ThumbGate',
