@@ -45,6 +45,17 @@ const PUBLIC_ORIGIN = process.env.THUMBGATE_PUBLIC_APP_ORIGIN
 
 const DRY_RUN = process.argv.includes('--dry-run');
 
+// Desired display name + statement descriptor for the account this bootstrap
+// runs against. The Stripe Account API exposes a `business_profile.name` field
+// and a top-level `statement_descriptor`. Both are idempotent — re-running
+// when already set is a no-op write. The dashboard "Public business name"
+// shown to logged-in CEOs and the Checkout-page "merchant name" both read
+// from `business_profile.name`.
+const DESIRED_ACCOUNT_PROFILE = {
+  businessProfileName: process.env.THUMBGATE_STRIPE_BUSINESS_NAME || 'Thumbgate Ops',
+  statementDescriptor: process.env.THUMBGATE_STRIPE_STATEMENT_DESCRIPTOR || 'THUMBGATE',
+};
+
 const TIERS = [
   {
     tier: 'pro',
@@ -217,6 +228,51 @@ function encodeForStripe(obj, prefix) {
     }
   }
   return pairs.join('&');
+}
+
+async function ensureAccountProfile(secretKey) {
+  console.log('\n=== Account profile ===');
+  let current;
+  try {
+    current = await stripeRequest('GET', '/account', null, secretKey);
+  } catch (err) {
+    console.warn(`  could not fetch /account: ${err.message} — skipping rename step`);
+    return;
+  }
+  const currentBpName = (current && current.business_profile && current.business_profile.name) || '';
+  const currentStmt = (current && current.settings && current.settings.payments && current.settings.payments.statement_descriptor) || '';
+  const wantsBpName = DESIRED_ACCOUNT_PROFILE.businessProfileName;
+  const wantsStmt = DESIRED_ACCOUNT_PROFILE.statementDescriptor;
+  console.log(`  current business_profile.name=${JSON.stringify(currentBpName)}`);
+  console.log(`  current statement_descriptor=${JSON.stringify(currentStmt)}`);
+  const updates = {};
+  if (currentBpName !== wantsBpName) {
+    updates.business_profile = { name: wantsBpName };
+  }
+  if (currentStmt !== wantsStmt) {
+    updates.settings = { payments: { statement_descriptor: wantsStmt } };
+  }
+  if (Object.keys(updates).length === 0) {
+    console.log('  profile already converged, skipping');
+    return;
+  }
+  console.log(`  will update: ${Object.keys(updates).join(', ')} → name=${wantsBpName}, stmt=${wantsStmt}`);
+  if (DRY_RUN) {
+    console.log('  [dry-run] would POST /account with:', JSON.stringify(updates, null, 2));
+    return;
+  }
+  try {
+    await stripeRequest('POST', '/account', updates, secretKey);
+    console.log('  ✓ account profile updated');
+  } catch (err) {
+    // Standalone (non-Connect) accounts can reject the API write — Stripe
+    // sometimes routes Public details edits exclusively through the
+    // dashboard for those accounts. Log + continue so we still create
+    // products. The CEO will see this in the workflow log and can change
+    // the display name manually in 30 seconds if needed.
+    console.warn(`  ✗ account profile update failed: ${err.message}`);
+    console.warn('  fall back: change "Public business name" in Stripe dashboard → Settings → Business → Public details');
+  }
 }
 
 async function findProductByTier(tier, secretKey) {
@@ -393,6 +449,7 @@ async function main() {
   // (commit 3b2b47ad) flagged slicing 8 chars of an sk_live_* as a partial
   // secret leak in logs.
   console.log(`stripe-bootstrap-saas-catalog: mode=${DRY_RUN ? 'DRY RUN' : 'WRITE'} key=configured`);
+  await ensureAccountProfile(secretKey);
   const summary = { paymentLinks: {} };
   for (const tier of TIERS) {
     try {
