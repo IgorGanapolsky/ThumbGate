@@ -9,6 +9,7 @@
     "checkoutStarts": 78,
     "activeFollowUps": 0,
     "warmTargetsReadyNow": 4,
+    "githubProspectsReadyNow": 6,
     "selfServeTargetsReadyNow": 3,
     "productionRolloutTargetsReadyNow": 3,
     "coldGitHubTargetsReadyNext": 0
