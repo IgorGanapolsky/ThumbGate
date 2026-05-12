@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "1.16.22",
+  "version": "1.17.0",
   "description": "ThumbGate self-improving agent governance: thumbs-up/down turns every mistake into a prevention rule and blocks repeat patterns. 33 pre-action checks, budget enforcement, and self-protection for Claude Code, Cursor, Codex, Gemini CLI, and Amp.",
   "homepage": "https://thumbgate-production.up.railway.app",
   "repository": {
@@ -78,6 +78,7 @@
     "scripts/cli-feedback.js",
     "scripts/cli-schema.js",
     "scripts/cli-status.js",
+    "scripts/cli-test-block.js",
     "scripts/cli-telemetry.js",
     "scripts/cloudflare-dynamic-sandbox.js",
     "scripts/code-mode-mcp-plan.js",
@@ -448,6 +449,7 @@
     "feedback:summary": "npm run test:api && node scripts/feedback-to-rules.js",
     "feedback:rules": "node scripts/feedback-to-rules.js --rules",
     "feedback:stats": "node .claude/scripts/feedback/capture-feedback.js --stats",
+    "test-block": "node bin/cli.js test-block",
     "demo:narration": "node scripts/render-demo-video/generate-narration.js",
     "demo:render": "node scripts/render-demo-video/render.js",
     "demo:render:full": "npm run demo:narration && npm run demo:render",

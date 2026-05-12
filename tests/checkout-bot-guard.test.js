@@ -80,7 +80,7 @@ describe('/checkout/pro bot guard', () => {
     });
     assert.equal(res.status, 200);
     const body = await res.text();
-    assert.match(body, /Choose the right paid path/);
+    assert.match(body, /Start ThumbGate Pro/);
     assert.match(body, /Send workflow first/);
     assert.match(body, /checkout_interstitial_workflow_sprint_intake/);
     assert.match(body, /checkout_interstitial_cta_clicked/);
@@ -126,6 +126,31 @@ describe('/checkout/pro bot guard', () => {
     assert.match(body, /cta_id=checkout_interstitial_workflow_sprint_checkout/);
   });
 
+  it('falls back to verified default checkout URLs when paid path env vars are missing', async () => {
+    const diagnosticCheckoutUrl = process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL;
+    const workflowSprintCheckoutUrl = process.env.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL;
+    delete process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL;
+    delete process.env.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL;
+
+    try {
+      const res = await fetch(`${origin}/checkout/pro`, {
+        redirect: 'manual',
+        headers: {
+          'user-agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+          accept: 'text/html,*/*',
+        },
+      });
+      assert.equal(res.status, 200);
+      const body = await res.text();
+      assert.match(body, /https:\/\/buy\.stripe\.com\/3cI7sLgH25v8dWh5e33sI0o/);
+      assert.match(body, /https:\/\/buy\.stripe\.com\/8x25kDcqMaPs9G15e33sI0p/);
+      assert.doesNotMatch(body, /href=""/);
+    } finally {
+      process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL = diagnosticCheckoutUrl;
+      process.env.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL = workflowSprintCheckoutUrl;
+    }
+  });
+
   it('returns HTML interstitial for curl (missing browser headers)', async () => {
     const res = await fetch(`${origin}/checkout/pro`, {
       redirect: 'manual',
@@ -136,7 +161,7 @@ describe('/checkout/pro bot guard', () => {
     });
     assert.equal(res.status, 200);
     const body = await res.text();
-    assert.match(body, /Choose the right paid path/);
+    assert.match(body, /Start ThumbGate Pro/);
   });
 
   it('returns HTML interstitial for LLM crawlers (ClaudeBot, GPTBot)', async () => {
@@ -151,7 +176,7 @@ describe('/checkout/pro bot guard', () => {
       });
       assert.equal(res.status, 200, `expected 200 interstitial for ${ua}`);
       const body = await res.text();
-      assert.match(body, /Choose the right paid path/);
+      assert.match(body, /Start ThumbGate Pro/);
     }
   });
 
@@ -168,7 +193,7 @@ describe('/checkout/pro bot guard', () => {
       });
       assert.equal(res.status, 200);
       const body = await res.text();
-      assert.match(body, /Choose the right paid path/);
+      assert.match(body, /Start ThumbGate Pro/);
     }
   });
 
