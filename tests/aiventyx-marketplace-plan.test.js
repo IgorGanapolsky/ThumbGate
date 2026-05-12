@@ -39,7 +39,7 @@ test('Aiventyx listings cover free, Pro, and Teams without inventing traction', 
   assert.equal(listings.find((listing) => listing.key === 'pro').pricingModel, '$19/mo or $149/yr');
   assert.match(listings.find((listing) => listing.key === 'free').primaryCTA, /\/go\/install\?/);
   assert.match(listings.find((listing) => listing.key === 'pro').primaryCTA, /\/go\/pro\?/);
-  assert.match(listings.find((listing) => listing.key === 'teams').primaryCTA, /#workflow-sprint-intake/);
+  assert.match(listings.find((listing) => listing.key === 'teams').primaryCTA, /\/go\/teams\?/);
   assert.ok(listings.every((listing) => /utm_source=aiventyx/.test(listing.primaryCTA)));
   assert.ok(listings.every((listing) => /utm_medium=marketplace/.test(listing.primaryCTA)));
   assert.ok(listings.every((listing) => listing.attribution.utmContent === AIVENTYX_CONTENT));
@@ -63,6 +63,7 @@ test('tracked marketplace links and metadata stay machine-readable for attributi
   assert.equal(tracked.searchParams.get('utm_campaign'), 'aiventyx_pro_listing');
   assert.equal(tracked.searchParams.get('offer_code'), 'AIVENTYX-PRO');
   assert.equal(tracked.searchParams.get('plan_id'), 'pro');
+  assert.equal(tracked.searchParams.get('landing_path'), '/go/pro');
 });
 
 test('90-day plan keeps paid conversion as the north star and defers deeper integration', () => {
