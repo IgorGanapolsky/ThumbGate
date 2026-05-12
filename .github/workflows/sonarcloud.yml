@@ -120,7 +120,7 @@ jobs:
           feedback_dir="$tmp_dir/default-feedback-dir"
           report_path="$tmp_dir/report.md"
 
-          python3 <<'PY' "$feedback_log" "$retrieval_log" "$lesson_db" "$invalid_feedback_log" "$reward_feedback_log" "$empty_lesson_db" "$feedback_dir"
+          python3 - <<'PY' "$feedback_log" "$retrieval_log" "$lesson_db" "$invalid_feedback_log" "$reward_feedback_log" "$empty_lesson_db" "$feedback_dir"
           import json
           import os
           import sqlite3

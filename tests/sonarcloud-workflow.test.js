@@ -86,6 +86,7 @@ test('SonarCloud workflow caches scanner packages for real scans', () => {
 test('SonarCloud workflow publishes Python coverage for Python eval scripts', () => {
   assert.match(workflow, /name: Generate Python coverage report/);
   assert.match(workflow, /python3 -m pip install coverage/);
+  assert.match(workflow, /python3 - <<'PY' "\$feedback_log" "\$retrieval_log" "\$lesson_db"/);
   assert.match(workflow, /python3 -m coverage run --branch --source=scripts scripts\/feedback_quality_eval\.py/);
   assert.match(workflow, /python3 -m coverage run --append --branch --source=scripts scripts\/feedback_quality_eval\.py/);
   assert.match(workflow, /THUMBGATE_FEEDBACK_DIR="\$feedback_dir" python3 -m coverage run --append/);
