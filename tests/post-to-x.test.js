@@ -10,6 +10,7 @@ const {
   postThread,
   searchTweets,
   parseTweetsFromThread,
+  safeLogValue,
 } = require('../scripts/post-to-x');
 
 const ORIGINAL_FETCH = globalThis.fetch;
@@ -47,6 +48,16 @@ describe('percentEncode', () => {
   it('passes through alphanumeric and standard URI-safe chars', () => {
     assert.equal(percentEncode('hello'), 'hello');
     assert.equal(percentEncode('a-b_c.d~e'), 'a-b_c.d~e');
+  });
+});
+
+describe('safeLogValue', () => {
+  it('strips control characters that can forge log lines', () => {
+    assert.equal(safeLogValue('abc\r\nINJECT\tdef'), 'abc  INJECT def');
+  });
+
+  it('truncates long log values', () => {
+    assert.equal(safeLogValue('abcdef', 3), 'abc');
   });
 });
 

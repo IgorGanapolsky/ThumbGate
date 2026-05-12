@@ -38,6 +38,14 @@ const SELF_SERVE_ONLY_SIGNALS = /\b(awesome|list|example|template|demo|tutorial|
 const LOW_BUYER_INTENT_SIGNALS = /\b(learn|learning|tutorial|course|playground|starter|sample|sandbox|quickstart|boilerplate|template|demo|example|lab|portfolio|showcase|case study)\b/;
 const SELF_SERVE_TOOLING_SIGNALS = /\b(plugin|plugins|extension|extensions|hook|hooks|statusline|status line|config|profile|installer|install|setup|rule pack|ruleset|local-first|local first|workspace rules)\b/;
 const MAX_CREDIBLE_DESCRIPTION_LENGTH = 500;
+
+function safeLogValue(value, maxLength = 1000) {
+  return String(value ?? '')
+    .replace(/[\r\n\t]/g, ' ')
+    .replace(/[\u0000-\u001f\u007f]/g, '')
+    .slice(0, maxLength);
+}
+
 const SUSPICIOUS_REPO_DESCRIPTION_PATTERNS = [
   /^\s*skip to content\b/i,
   /\bshowing \d+ changed files\b/i,
@@ -2886,12 +2894,12 @@ async function main(argv = process.argv.slice(2)) {
   if (written.reportDir) {
     console.log(`Artifact reports: ${written.reportDir}`);
   }
-  console.log(JSON.stringify({
+  console.log(safeLogValue(JSON.stringify({
     state: report.directive.state,
     paidOrders: report.snapshot.paidOrders,
     bookedRevenueCents: report.snapshot.bookedRevenueCents,
     targets: report.targets.length,
-  }, null, 2));
+  }, null, 2)));
 }
 
 function isCliInvocation(argv = process.argv) {
