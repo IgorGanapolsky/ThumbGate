@@ -2,4 +2,4 @@
 "thumbgate": patch
 ---
 
-Rewrite the Pro pricing card from feature-bullets to outcome-claims. Each bullet now leads with what the buyer gets ("Block every repeat mistake", "Never re-explain a correction", "Ship hardened agents to production") before stating the mechanism that delivers it. Sub-headline tightened from "For builders who want proof, exports, and unlimited local learning" to "Stop paying tokens to re-correct the same agent mistake across sessions." Tier label simplified from "Solo Pro" to "Pro" — solo-buyer framing was a self-imposed ceiling. All existing test substrings preserved.
+Keep homepage pricing simple and claim-backed: Free is the local CLI with unlimited captures and 5 active prevention rules, while Pro is the $19/mo dashboard and export lane with unlimited local prevention rules. The homepage avoids unsupported customer, install, guarantee, and service-bundle claims.
