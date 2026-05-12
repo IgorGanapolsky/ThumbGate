@@ -132,6 +132,31 @@ test('health endpoint returns ok', async () => {
   assert.equal(body.buildSha, 'test-build-sha');
 });
 
+test('/health surfaces a per-check breakdown (no longer always-green theater)', async () => {
+  // Regression test for the 2026-05-12 audit finding: /health used to return
+  // status: 'ok' unconditionally regardless of feedback-dir / hosted-config /
+  // build-metadata state. It must now expose a `checks` object so uptime
+  // monitors can detect real degradation, not just process liveness.
+  const res = await fetch(apiUrl('/health'), { headers: authHeader });
+  const body = await res.json();
+  assert.ok(body.checks, '/health response must include a `checks` object');
+  assert.ok(body.checks.feedbackDir, 'checks.feedbackDir must exist');
+  assert.ok(body.checks.hostedConfig, 'checks.hostedConfig must exist');
+  assert.ok(body.checks.buildMetadata, 'checks.buildMetadata must exist');
+  // In a healthy test env, all three should be ok=true.
+  assert.equal(body.checks.feedbackDir.ok, true);
+  assert.equal(body.checks.hostedConfig.ok, true);
+  assert.equal(body.checks.buildMetadata.ok, true);
+});
+
+test('/healthz surfaces a per-check breakdown', async () => {
+  const res = await fetch(apiUrl('/healthz'), { headers: authHeader });
+  const body = await res.json();
+  assert.ok(body.checks, '/healthz response must include a `checks` object');
+  assert.ok(body.checks.feedbackLog, 'checks.feedbackLog must exist');
+  assert.ok(body.checks.memoryLog, 'checks.memoryLog must exist');
+});
+
 test('PostHog proxy path allowlist blocks sibling-path SSRF attempts', () => {
   assert.equal(__test__.getPosthogProxyPath('/ingest/capture'), '/capture');
   assert.equal(__test__.getPosthogProxyPath('/ingest'), '/');
