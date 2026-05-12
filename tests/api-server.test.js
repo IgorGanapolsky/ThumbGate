@@ -157,6 +157,47 @@ test('/healthz surfaces a per-check breakdown', async () => {
   assert.ok(body.checks.memoryLog, 'checks.memoryLog must exist');
 });
 
+test('/health helper marks degraded subsystems explicitly', () => {
+  const health = __test__.buildHealthPayload({
+    feedbackPaths: { FEEDBACK_DIR: '/tmp/thumbgate-missing-feedback' },
+    hostedConfig: { billingApiBaseUrl: 'https://billing.example.com' },
+    buildMetadata: {},
+    accessSync() {
+      const error = new Error('missing');
+      error.code = 'ENOENT';
+      throw error;
+    },
+    uptime: () => 123,
+  });
+
+  assert.equal(health.statusCode, 503);
+  assert.equal(health.payload.status, 'degraded');
+  assert.equal(health.payload.uptime, 123);
+  assert.equal(health.payload.checks.feedbackDir.error, 'ENOENT');
+  assert.equal(health.payload.checks.hostedConfig.error, 'missing_appOrigin');
+  assert.equal(health.payload.checks.buildMetadata.error, 'missing_buildSha');
+});
+
+test('/healthz helper marks unwritable log directories degraded', () => {
+  const healthz = __test__.buildHealthzPayload({
+    requestFeedbackPaths: {
+      FEEDBACK_LOG_PATH: '/tmp/thumbgate-feedback-ok/feedback-log.jsonl',
+      MEMORY_LOG_PATH: '/tmp/thumbgate-feedback-denied/memory-log.jsonl',
+    },
+    accessSync(dir) {
+      if (dir.endsWith('thumbgate-feedback-ok')) return;
+      const error = new Error('denied');
+      error.code = 'EACCES';
+      throw error;
+    },
+  });
+
+  assert.equal(healthz.statusCode, 503);
+  assert.equal(healthz.payload.status, 'degraded');
+  assert.equal(healthz.payload.checks.feedbackLog.ok, true);
+  assert.equal(healthz.payload.checks.memoryLog.error, 'EACCES');
+});
+
 test('PostHog proxy path allowlist blocks sibling-path SSRF attempts', () => {
   assert.equal(__test__.getPosthogProxyPath('/ingest/capture'), '/capture');
   assert.equal(__test__.getPosthogProxyPath('/ingest'), '/');
