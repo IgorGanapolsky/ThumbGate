@@ -556,6 +556,51 @@ test('/go/pro falls back to default UTM attribution when no params are supplied'
   assert.equal(url.searchParams.get('plan_id'), 'pro');
 });
 
+test('/go/install and /go/teams keep Aiventyx marketplace links alive', async () => {
+  const installRes = await fetch(apiUrl('/go/install?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_free_listing'), {
+    redirect: 'manual',
+  });
+  assert.equal(installRes.status, 302);
+  assert.equal(installRes.headers.get('x-thumbgate-link-slug'), 'install');
+  const installUrl = new URL(installRes.headers.get('location'));
+  assert.equal(installUrl.pathname, '/guide');
+  assert.equal(installUrl.searchParams.get('utm_source'), 'aiventyx');
+  assert.equal(installUrl.searchParams.get('utm_campaign'), 'aiventyx_free_listing');
+  assert.equal(installUrl.searchParams.get('plan_id'), 'free');
+  assert.equal(installUrl.searchParams.get('landing_path'), '/go/install');
+
+  const teamsRes = await fetch(apiUrl('/go/teams?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_teams_listing'), {
+    redirect: 'manual',
+  });
+  assert.equal(teamsRes.status, 302);
+  assert.equal(teamsRes.headers.get('x-thumbgate-link-slug'), 'teams');
+  const teamsUrl = new URL(teamsRes.headers.get('location'));
+  assert.equal(teamsUrl.origin, 'https://app.example.com');
+  assert.equal(teamsUrl.pathname, '/');
+  assert.equal(teamsUrl.hash, '#workflow-sprint-intake');
+  assert.equal(teamsUrl.searchParams.get('utm_source'), 'aiventyx');
+  assert.equal(teamsUrl.searchParams.get('utm_campaign'), 'aiventyx_teams_listing');
+  assert.equal(teamsUrl.searchParams.get('plan_id'), 'team');
+  assert.equal(teamsUrl.searchParams.get('cta_id'), 'go_teams');
+  assert.equal(teamsUrl.searchParams.get('landing_path'), '/go/teams');
+});
+
+test('legacy Aiventyx root Teams URL redirects to the tracked team intake path', async () => {
+  const res = await fetch(apiUrl('/?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_teams_listing'), {
+    redirect: 'manual',
+  });
+  assert.equal(res.status, 302);
+  assert.equal(res.headers.get('x-thumbgate-link-slug'), 'teams');
+  const url = new URL(res.headers.get('location'));
+  assert.equal(url.pathname, '/');
+  assert.equal(url.hash, '#workflow-sprint-intake');
+  assert.equal(url.searchParams.get('utm_source'), 'aiventyx');
+  assert.equal(url.searchParams.get('utm_medium'), 'marketplace');
+  assert.equal(url.searchParams.get('utm_campaign'), 'aiventyx_teams_listing');
+  assert.equal(url.searchParams.get('plan_id'), 'team');
+  assert.equal(url.searchParams.get('landing_path'), '/go/teams');
+});
+
 test('/go/:slug returns 404 JSON for slugs not registered in TRACKED_LINK_TARGETS', async () => {
   const res = await fetch(apiUrl('/go/malicious?utm_source=x'), { redirect: 'manual' });
   assert.equal(res.status, 404);
