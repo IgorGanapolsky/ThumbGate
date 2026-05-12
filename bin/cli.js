@@ -2399,6 +2399,7 @@ function help() {
   console.log('  npx thumbgate lessons --query="deploy" --remote');
   console.log('  npx thumbgate gate-stats --json');
   console.log('  npx thumbgate capture --feedback=down --context="agent broke deploy" --json');
+  console.log('  npx thumbgate test-block     # 30s guided demo: install test rule, trigger a safe block, clean up');
   proNudge();
 }
 
@@ -2450,6 +2451,17 @@ switch (COMMAND) {
     capture();
     upgradeNudge();
     break;
+  case 'test-block': {
+    const { runTestBlock } = require(path.join(PKG_ROOT, 'scripts', 'cli-test-block'));
+    try {
+      const result = runTestBlock(process.argv.slice(3));
+      process.exit(result.code);
+    } catch (err) {
+      console.error(`test-block error: ${err && err.message ? err.message : err}`);
+      process.exit(1);
+    }
+    break;
+  }
   case 'stats':
     stats();
     upgradeNudge();
