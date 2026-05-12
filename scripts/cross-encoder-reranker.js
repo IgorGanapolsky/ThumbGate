@@ -191,6 +191,17 @@ function retrieveWithRerankingSync(toolName, actionContext, options = {}) {
   });
 
   if (candidates.length === 0) return [];
+
+  // Fast-path: If top candidate is extremely strong (>= 0.85), skip second heuristic pass
+  // to further reduce tool-call latency.
+  if (candidates[0].relevanceScore >= 0.85) {
+    const results = candidates.slice(0, maxResults);
+    if (enableCache) {
+      setCachedRetrieval(toolName, actionContext, results, { candidateCount, maxResults, feedbackDir });
+    }
+    return results;
+  }
+
   if (candidates.length <= maxResults) {
     if (enableCache) {
       setCachedRetrieval(toolName, actionContext, candidates, { candidateCount, maxResults, feedbackDir });
