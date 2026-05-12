@@ -2097,6 +2097,7 @@ function buildOperatorHandoffPayload(report) {
   const rankedTargets = rankOperatorTargets(Array.isArray(report?.targets) ? report.targets.map(enrichRenderableTarget) : []);
   const followUpTargets = rankedTargets.filter((target) => normalizePipelineStage(target.pipelineStage) !== 'targeted');
   const freshTargets = rankedTargets.filter((target) => normalizePipelineStage(target.pipelineStage) === 'targeted');
+  const githubTargets = freshTargets.filter((target) => normalizeText(target.source).toLowerCase() === 'github');
   const selfServeTargets = freshTargets.filter((target) => normalizeText(target.motion).toLowerCase() === 'pro');
   const warmTargets = freshTargets.filter((target) => (
     normalizeText(target.temperature).toLowerCase() === 'warm'
@@ -2147,6 +2148,7 @@ function buildOperatorHandoffPayload(report) {
       checkoutStarts: Number(report?.snapshot?.checkoutStarts || 0),
       activeFollowUps: followUpTargets.length,
       warmTargetsReadyNow: warmTargets.length,
+      githubProspectsReadyNow: githubTargets.length,
       selfServeTargetsReadyNow: selfServeTargets.length,
       productionRolloutTargetsReadyNow: productionTargets.length,
       coldGitHubTargetsReadyNext: coldTargets.length,
@@ -2195,6 +2197,7 @@ function renderOperatorHandoffMarkdown(report) {
     `Updated: ${handoff.generatedAt}`,
     '',
     'This is the ranked send order for the current zero-to-one revenue loop. Work follow-ups first, then warm discovery, then self-serve closes, then production-rollout buyers, then expand into the remaining cold GitHub targets with the same proof discipline.',
+    'GitHub prospects can land in the self-serve, production-rollout, or seed-next buckets depending on urgency and buying signal, so read the GitHub total first and the sub-buckets second.',
     '',
     'This handoff sits on top of `gtm-revenue-loop.md`, `gtm-target-queue.csv`, and `team-outreach-messages.md` so an operator can decide who to contact next without re-ranking the queue manually.',
     '',
@@ -2209,9 +2212,10 @@ function renderOperatorHandoffMarkdown(report) {
     `- Checkout starts: ${handoff.summary.checkoutStarts}`,
     `- Active follow-ups: ${handoff.summary.activeFollowUps}`,
     `- Warm targets ready now: ${handoff.summary.warmTargetsReadyNow}`,
+    `- GitHub prospects ready now: ${handoff.summary.githubProspectsReadyNow}`,
     `- Self-serve closes ready now: ${handoff.summary.selfServeTargetsReadyNow}`,
     `- Production-rollout targets ready now: ${handoff.summary.productionRolloutTargetsReadyNow}`,
-    `- Cold GitHub targets ready next: ${handoff.summary.coldGitHubTargetsReadyNext}`,
+    `- Seed-stage cold GitHub targets ready next: ${handoff.summary.coldGitHubTargetsReadyNext}`,
     '',
     '## Operator Rules',
     ...handoff.operatorRules.map((rule) => {
@@ -2583,6 +2587,70 @@ function renderMarketplaceCopyMarkdown(pack) {
   ].join('\n');
 }
 
+function renderMarketplaceSurfacesCsv(pack) {
+  const proofLinks = Array.isArray(pack?.proofLinks) ? pack.proofLinks.filter(Boolean).join(' | ') : '';
+  const proofPolicy = normalizeText(pack?.proofPolicy);
+  const rows = [
+    [
+      'surfaceType',
+      'surfaceKey',
+      'surfaceLabel',
+      'headline',
+      'shortDescription',
+      'audience',
+      'listingAngle',
+      'evidenceSummary',
+      'primaryCtaLabel',
+      'primaryCta',
+      'secondaryCtaLabel',
+      'secondaryCta',
+      'proofPolicy',
+      'proofLinks',
+      'sampleTargets',
+    ],
+    [
+      'default',
+      'default_listing',
+      'Default listing',
+      normalizeText(pack?.headline),
+      normalizeText(pack?.shortDescription),
+      'Operators validating the primary ThumbGate marketplace pitch against current GTM evidence.',
+      normalizeText(pack?.longDescription),
+      Array.isArray(pack?.topSignals)
+        ? pack.topSignals.map((signal) => normalizeText(signal.summary)).filter(Boolean).join(' | ')
+        : '',
+      normalizeText(pack?.recommendedCtas?.[0]?.label),
+      normalizeText(pack?.recommendedCtas?.[0]?.cta),
+      normalizeText(pack?.recommendedCtas?.[1]?.label),
+      normalizeText(pack?.recommendedCtas?.[1]?.cta),
+      proofPolicy,
+      proofLinks,
+      Array.isArray(pack?.sampleTargets)
+        ? pack.sampleTargets.map((target) => normalizeText(target.account)).filter(Boolean).join(' | ')
+        : '',
+    ],
+    ...((Array.isArray(pack?.listingVariants) ? pack.listingVariants : []).map((variant) => [
+      'variant',
+      normalizeText(variant.key),
+      normalizeText(variant.label),
+      normalizeText(variant.headline),
+      normalizeText(variant.shortDescription),
+      normalizeText(variant.audience),
+      normalizeText(variant.listingAngle),
+      normalizeText(variant.evidenceSummary),
+      normalizeText(variant.primaryCta?.label),
+      normalizeText(variant.primaryCta?.cta),
+      normalizeText(variant.secondaryCta?.label),
+      normalizeText(variant.secondaryCta?.cta),
+      proofPolicy,
+      proofLinks,
+      Array.isArray(variant.sampleTargets) ? variant.sampleTargets.join(' | ') : '',
+    ])),
+  ];
+
+  return `${rows.map((row) => row.map(escapeCsvValue).join(',')).join('\n')}\n`;
+}
+
 function escapeCsvValue(value) {
   const text = normalizeText(value);
   if (!text) return '';
@@ -2691,6 +2759,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
   const reportJsonDocsPath = path.join(docsDir, 'gtm-revenue-loop.json');
   const marketplaceDocsPath = path.join(docsDir, 'gtm-marketplace-copy.md');
   const marketplaceJsonDocsPath = path.join(docsDir, 'gtm-marketplace-copy.json');
+  const marketplaceSurfacesCsvDocsPath = path.join(docsDir, 'gtm-marketplace-surfaces.csv');
   const queueCsvDocsPath = path.join(docsDir, 'gtm-target-queue.csv');
   const queueJsonlDocsPath = path.join(docsDir, 'gtm-target-queue.jsonl');
   const teamOutreachDocsPath = path.join(docsDir, 'team-outreach-messages.md');
@@ -2702,6 +2771,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
   const markdown = renderRevenueLoopMarkdown(report);
   const marketplaceCopy = report.marketplaceCopy || buildMarketplaceCopy(report);
   const marketplaceMarkdown = renderMarketplaceCopyMarkdown(marketplaceCopy);
+  const marketplaceSurfacesCsv = renderMarketplaceSurfacesCsv(marketplaceCopy);
   const csv = renderRevenueLoopCsv(report);
   const jsonl = renderRevenueLoopJsonl(report);
   const teamOutreachMarkdown = renderTeamOutreachMessagesMarkdown(report);
@@ -2721,6 +2791,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     fs.writeFileSync(path.join(reportDir, 'gtm-revenue-loop.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'gtm-marketplace-copy.md'), marketplaceMarkdown, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'gtm-marketplace-copy.json'), `${JSON.stringify(marketplaceCopy, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(path.join(reportDir, 'gtm-marketplace-surfaces.csv'), marketplaceSurfacesCsv, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'gtm-target-queue.csv'), csv, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'gtm-target-queue.jsonl'), jsonl, 'utf8');
     fs.writeFileSync(path.join(reportDir, 'team-outreach-messages.md'), teamOutreachMarkdown, 'utf8');
@@ -2737,6 +2808,7 @@ function writeRevenueLoopOutputs(report, options = {}) {
     fs.writeFileSync(reportJsonDocsPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
     fs.writeFileSync(marketplaceDocsPath, marketplaceMarkdown, 'utf8');
     fs.writeFileSync(marketplaceJsonDocsPath, `${JSON.stringify(marketplaceCopy, null, 2)}\n`, 'utf8');
+    fs.writeFileSync(marketplaceSurfacesCsvDocsPath, marketplaceSurfacesCsv, 'utf8');
     fs.writeFileSync(queueCsvDocsPath, csv, 'utf8');
     fs.writeFileSync(queueJsonlDocsPath, jsonl, 'utf8');
     fs.writeFileSync(teamOutreachDocsPath, teamOutreachMarkdown, 'utf8');
@@ -2859,6 +2931,7 @@ module.exports = {
   applyPipelineStateToTargets,
   renderRevenueLoopMarkdown,
   renderMarketplaceCopyMarkdown,
+  renderMarketplaceSurfacesCsv,
   buildOperatorHandoffPayload,
   buildOperatorSendNowPayload,
   renderOperatorHandoffMarkdown,
