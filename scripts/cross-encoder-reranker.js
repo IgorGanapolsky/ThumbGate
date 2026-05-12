@@ -19,6 +19,7 @@
  */
 
 const { retrieveRelevantLessons, scoreRelevance, buildActionSignature } = require('./lesson-retrieval');
+const { getCachedRetrieval, setCachedRetrieval } = require('./retrieval-cache');
 
 /**
  * Heuristic cross-encoder: scores a (query, document) pair jointly.
@@ -176,7 +177,13 @@ function retrieveWithRerankingSync(toolName, actionContext, options = {}) {
     candidateCount = 20,
     maxResults = 5,
     feedbackDir,
+    enableCache = true,
   } = options;
+
+  if (enableCache) {
+    const cached = getCachedRetrieval(toolName, actionContext, { candidateCount, maxResults, feedbackDir });
+    if (cached) return cached;
+  }
 
   const candidates = retrieveRelevantLessons(toolName, actionContext, {
     maxResults: candidateCount,
@@ -184,7 +191,12 @@ function retrieveWithRerankingSync(toolName, actionContext, options = {}) {
   });
 
   if (candidates.length === 0) return [];
-  if (candidates.length <= maxResults) return candidates;
+  if (candidates.length <= maxResults) {
+    if (enableCache) {
+      setCachedRetrieval(toolName, actionContext, candidates, { candidateCount, maxResults, feedbackDir });
+    }
+    return candidates;
+  }
 
   const query = `${toolName || ''} ${actionContext || ''}`.trim();
 
@@ -196,12 +208,18 @@ function retrieveWithRerankingSync(toolName, actionContext, options = {}) {
   const reranked = candidates.map((c, i) => ({
     ...c,
     crossEncoderScore: rerankedScores[i],
-    combinedScore: c.relevanceScore * 0.4 + rerankedScores[i] * 0.6,
+    combinedScore: (c.relevanceScore || 0) * 0.4 + rerankedScores[i] * 0.6,
   }));
 
-  return reranked
+  const results = reranked
     .sort((a, b) => b.combinedScore - a.combinedScore)
     .slice(0, maxResults);
+
+  if (enableCache) {
+    setCachedRetrieval(toolName, actionContext, results, { candidateCount, maxResults, feedbackDir });
+  }
+
+  return results;
 }
 
 // --- Utility functions ---
