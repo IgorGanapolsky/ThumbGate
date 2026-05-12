@@ -2097,6 +2097,7 @@ function buildOperatorHandoffPayload(report) {
   const rankedTargets = rankOperatorTargets(Array.isArray(report?.targets) ? report.targets.map(enrichRenderableTarget) : []);
   const followUpTargets = rankedTargets.filter((target) => normalizePipelineStage(target.pipelineStage) !== 'targeted');
   const freshTargets = rankedTargets.filter((target) => normalizePipelineStage(target.pipelineStage) === 'targeted');
+  const githubTargets = freshTargets.filter((target) => normalizeText(target.source).toLowerCase() === 'github');
   const selfServeTargets = freshTargets.filter((target) => normalizeText(target.motion).toLowerCase() === 'pro');
   const warmTargets = freshTargets.filter((target) => (
     normalizeText(target.temperature).toLowerCase() === 'warm'
@@ -2147,6 +2148,7 @@ function buildOperatorHandoffPayload(report) {
       checkoutStarts: Number(report?.snapshot?.checkoutStarts || 0),
       activeFollowUps: followUpTargets.length,
       warmTargetsReadyNow: warmTargets.length,
+      githubProspectsReadyNow: githubTargets.length,
       selfServeTargetsReadyNow: selfServeTargets.length,
       productionRolloutTargetsReadyNow: productionTargets.length,
       coldGitHubTargetsReadyNext: coldTargets.length,
@@ -2195,6 +2197,7 @@ function renderOperatorHandoffMarkdown(report) {
     `Updated: ${handoff.generatedAt}`,
     '',
     'This is the ranked send order for the current zero-to-one revenue loop. Work follow-ups first, then warm discovery, then self-serve closes, then production-rollout buyers, then expand into the remaining cold GitHub targets with the same proof discipline.',
+    'GitHub prospects can land in the self-serve, production-rollout, or seed-next buckets depending on urgency and buying signal, so read the GitHub total first and the sub-buckets second.',
     '',
     'This handoff sits on top of `gtm-revenue-loop.md`, `gtm-target-queue.csv`, and `team-outreach-messages.md` so an operator can decide who to contact next without re-ranking the queue manually.',
     '',
@@ -2209,9 +2212,10 @@ function renderOperatorHandoffMarkdown(report) {
     `- Checkout starts: ${handoff.summary.checkoutStarts}`,
     `- Active follow-ups: ${handoff.summary.activeFollowUps}`,
     `- Warm targets ready now: ${handoff.summary.warmTargetsReadyNow}`,
+    `- GitHub prospects ready now: ${handoff.summary.githubProspectsReadyNow}`,
     `- Self-serve closes ready now: ${handoff.summary.selfServeTargetsReadyNow}`,
     `- Production-rollout targets ready now: ${handoff.summary.productionRolloutTargetsReadyNow}`,
-    `- Cold GitHub targets ready next: ${handoff.summary.coldGitHubTargetsReadyNext}`,
+    `- Seed-stage cold GitHub targets ready next: ${handoff.summary.coldGitHubTargetsReadyNext}`,
     '',
     '## Operator Rules',
     ...handoff.operatorRules.map((rule) => {

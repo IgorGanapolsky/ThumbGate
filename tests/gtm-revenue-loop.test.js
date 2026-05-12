@@ -1506,9 +1506,11 @@ test('operator handoff markdown prioritizes follow-ups, then warm discovery, the
   assert.match(markdown, /Follow Up Now/);
   assert.match(markdown, /Active follow-ups: 1/);
   assert.match(markdown, /Warm targets ready now: 1/);
+  assert.match(markdown, /GitHub prospects ready now: 1/);
   assert.match(markdown, /Self-serve closes ready now: 0/);
   assert.match(markdown, /Production-rollout targets ready now: 1/);
-  assert.match(markdown, /Cold GitHub targets ready next: 0/);
+  assert.match(markdown, /Seed-stage cold GitHub targets ready next: 0/);
+  assert.match(markdown, /GitHub prospects can land in the self-serve, production-rollout, or seed-next buckets/);
   assert.ok(markdown.indexOf('@follow_builder') < markdown.indexOf('@warm_builder'));
   assert.ok(markdown.indexOf('@warm_builder') < markdown.indexOf('@builder'));
   assert.match(markdown, /Send Next: Production Rollout/);
@@ -1657,6 +1659,7 @@ test('operator handoff payload mirrors the ranked queue and sales commands in ma
   assert.equal(payload.summary.revenueState, 'post-first-dollar');
   assert.equal(payload.summary.activeFollowUps, 1);
   assert.equal(payload.summary.warmTargetsReadyNow, 1);
+  assert.equal(payload.summary.githubProspectsReadyNow, 2);
   assert.equal(payload.summary.selfServeTargetsReadyNow, 1);
   assert.equal(payload.summary.productionRolloutTargetsReadyNow, 1);
   assert.equal(payload.summary.coldGitHubTargetsReadyNext, 0);
