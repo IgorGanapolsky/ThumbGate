@@ -2527,14 +2527,32 @@ function renderRobotsTxt(runtimeConfig) {
   ].join('\n');
 }
 
+// Pages that 301-redirect to a canonical URL. The sitemap MUST list only canonical
+// URLs — otherwise Google receives a "this exists" signal for a path that immediately
+// 301s, which produces conflicting canonicalization signals. Keep in sync with the
+// GUIDE_CANONICAL_REDIRECTS map in the /guides/ route handler.
+const SITEMAP_REDIRECTED_PATHS = new Set([
+  '/guides/cursor-agent-guardrails',
+  '/guides/claude-code-feedback',
+]);
+
 function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
     { path: '/pro', changefreq: 'weekly', priority: '0.9' },
     { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
     { path: '/codex-plugin', changefreq: 'weekly', priority: '0.75' },
+    // Top-level public pages — all currently return 200 on prod but were missing
+    // from the sitemap, leaving Google without an authoritative crawl path for them.
+    { path: '/guide', changefreq: 'weekly', priority: '0.85' },
+    { path: '/blog', changefreq: 'weekly', priority: '0.7' },
+    { path: '/lessons', changefreq: 'weekly', priority: '0.7' },
+    { path: '/numbers', changefreq: 'monthly', priority: '0.6' },
+    { path: '/learn', changefreq: 'monthly', priority: '0.6' },
+    { path: '/use-cases/regulated-workflows', changefreq: 'monthly', priority: '0.7' },
+    { path: '/use-cases/platform-teams', changefreq: 'monthly', priority: '0.7' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
-  ];
+  ].filter((entry) => !SITEMAP_REDIRECTED_PATHS.has(entry.path));
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',

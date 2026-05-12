@@ -63,11 +63,32 @@ After initial audit, ran a 2nd-pass cannibalization scan and rewrote the 7 jargo
 
 Re-running the jargon-vs-searcher heuristic post-rewrite, all 7 pages now have a **negative gap** (more searcher language than jargon). All flipped from positive/zero gap to between -2 and -6.
 
+## Sitemap fixes (also in this PR)
+
+1. **Two redirected paths excluded from sitemap.** `/guides/cursor-agent-guardrails` and `/guides/claude-code-feedback` were listed even though they 301-redirect. Google should never receive "this page exists" signals for redirect targets. New `SITEMAP_REDIRECTED_PATHS` set filters them out, kept in sync with `GUIDE_CANONICAL_REDIRECTS` by comment.
+2. **Seven live pages added to sitemap.** `/guide`, `/blog`, `/lessons`, `/numbers`, `/learn`, `/use-cases/regulated-workflows`, `/use-cases/platform-teams` — all returned 200 on prod but were absent from the sitemap, leaving Google without an authoritative crawl path.
+
+## CEO action needed: Google Search Console verification
+
+The verification meta tag in `public/index.html` is wired (`__GOOGLE_SITE_VERIFICATION_META__` placeholder, substituted at runtime from `runtimeConfig.googleSiteVerification`), but the underlying env var `THUMBGATE_GOOGLE_SITE_VERIFICATION` is NOT set in Railway production. Result: no verification meta tag in prod HTML, so Search Console can't verify ownership of thumbgate.ai.
+
+**Manual unlock steps:**
+
+1. Go to [Google Search Console](https://search.google.com/search-console/welcome)
+2. Add `https://thumbgate.ai/` as a URL-prefix property
+3. Pick "HTML tag" verification method → copy the `content="..."` value
+4. In Railway dashboard → ThumbGate service → Variables → add `THUMBGATE_GOOGLE_SITE_VERIFICATION=<the_content_value>`
+5. Wait for Railway to redeploy (~2 min)
+6. Back in Search Console, click "Verify"
+7. Once verified, submit sitemap: `https://thumbgate.ai/sitemap.xml`
+
+After this, Search Console will start surfacing actual query data (which queries bring traffic, CTR, position, impressions). That data is the foundation for the deeper SEO work that's still deferred.
+
 ## Still out of scope (intentionally deferred)
 
-- Body content rewrites (only title/H1/meta-description changed in this PR). The bodies remain as-is until we see real Google Search Console data on which of these pages get traffic worth deep-rewriting.
-- Killing pages with 0 inbound traffic. Needs the data.
-- Schema-type alignment review (article suggests checking if `Service` vs `HowTo` vs `FAQPage` is the right choice). The current 14-schema-type stack may be overclaiming. Defer to a dedicated audit when Search Console data is wired.
+- Body content rewrites for the 3 pages where paragraph 2+ still uses precise technical vocabulary (`/proxy-pointer-rag-guardrails` / `/agent-harness-optimization` / `/autoresearch-agent-safety`). The first-paragraph hook now matches the new title; deeper paragraphs preserve the named-technique terminology for the SERP visitors who actually want the specialist content. Defer the deeper edit until Search Console shows whether searcher behavior on these pages warrants it.
+- Killing pages with 0 inbound traffic. Needs the GSC data.
+- Schema-type alignment review. The current 14-schema-type stack may be overclaiming. Defer to a dedicated audit.
 
 ## Expected impact
 

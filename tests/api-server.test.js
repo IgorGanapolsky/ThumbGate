@@ -1251,7 +1251,11 @@ test('robots and sitemap endpoints publish crawl metadata for the canonical app 
   assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/compare\/speclock<\/loc>/);
   assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/compare\/mem0<\/loc>/);
   assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/guides\/pre-action-checks<\/loc>/);
-  assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/guides\/claude-code-feedback<\/loc>/);
+  // /guides/claude-code-feedback is 301-redirected to /guides/claude-code-prevent-repeated-mistakes
+  // and must be EXCLUDED from sitemap to avoid conflicting canonical signals to Google.
+  assert.doesNotMatch(sitemapBody, /<loc>https:\/\/app\.example\.com\/guides\/claude-code-feedback<\/loc>/);
+  // /guides/cursor-agent-guardrails is also redirected and must be excluded.
+  assert.doesNotMatch(sitemapBody, /<loc>https:\/\/app\.example\.com\/guides\/cursor-agent-guardrails<\/loc>/);
   assert.match(sitemapBody, /<loc>https:\/\/app\.example\.com\/guides\/autoresearch-agent-safety<\/loc>/);
   assert.match(sitemapBody, /<changefreq>weekly<\/changefreq>/);
   assert.match(sitemapBody, /<priority>0\.9<\/priority>/);
