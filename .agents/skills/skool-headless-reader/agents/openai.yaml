@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skool Headless Reader"
+  short_description: "Read Skool communities headlessly for revenue research."
+  default_prompt: "Read this Skool community headlessly and identify revenue opportunities for ThumbGate."

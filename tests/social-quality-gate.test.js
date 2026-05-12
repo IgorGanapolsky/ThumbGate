@@ -10,7 +10,7 @@ test('has 9+ patterns', () => { assert.ok(BOT_SLOP_PATTERNS.length >= 9); });
 test('allows genuine post', () => { assert.equal(scanForSlop('I built an MCP server that stops coding agents from repeating mistakes. Every thumbs-down becomes a prevention rule.\nnpx thumbgate init\nhttps://github.com/IgorGanapolsky/ThumbGate').allowed, true); });
 test('blocks emoji spam', () => { assert.equal(scanForSlop('Check out! 🚀🚀🚀🔥🔥🔥 Amazing!').allowed, false); });
 test('blocks generic opener', () => { assert.equal(scanForSlop('Excited to announce we just shipped our new product!').allowed, false); });
-test('blocks hashtag spam', () => { assert.equal(scanForSlop('Great! #AI #ML #Dev #Code #Agent #MCP #LLM #Open').allowed, false); });
+test('blocks hashtag spam', () => { assert.equal(scanForSlop('Great! #AI #ML #Dev #Code #Agent #MCP #LLM #Open #Build #Launch #Growth #SaaS #Tools #Ops #Ship #Proof').allowed, false); });
 test('blocks engagement bait', () => { assert.equal(scanForSlop('Like if you agree that AI agents need better safety!').allowed, false); });
 test('blocks AI phrasing', () => { assert.equal(scanForSlop("In today's rapidly evolving AI landscape we present a novel approach.").allowed, false); });
 test('blocks fake urgency', () => { assert.equal(scanForSlop("Don't miss out on our latest release — limited time!").allowed, false); });

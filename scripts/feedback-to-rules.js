@@ -32,7 +32,17 @@ function normalize(ctx) {
   return (ctx || '').replace(/\/Users\/[^\s/]+/g, '~').replace(/:[0-9]+/g, '').toLowerCase().trim();
 }
 
-const HIGH_RISK_TAGS = new Set(['git-workflow', 'scope-control', 'trust-breach', 'execution-gap', 'regression', 'security']);
+// HIGH_RISK_TAGS triggers single-capture promotion (count >= 1 && hasHighRisk).
+// Tags here MUST overlap with what inferSemanticTags() actually emits (see scripts/feedback-loop.js)
+// — otherwise cold buyers' first 👎 stays a lesson and never becomes a gate.
+const HIGH_RISK_TAGS = new Set([
+  // Original semantic-category labels
+  'git-workflow', 'scope-control', 'trust-breach', 'execution-gap', 'regression', 'security',
+  // Tags inferSemanticTags() emits for destructive / irreversible operations
+  'destructive', 'force-push', 'delete', 'drop', 'force-overwrite',
+  'production', 'database', 'payment', 'credentials', 'secrets',
+  'rm-rf', 'reset-hard', 'truncate', 'data-loss',
+]);
 function analyze(entries) {
   let positiveCount = 0, negativeCount = 0;
   const categories = {};

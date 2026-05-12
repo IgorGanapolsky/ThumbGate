@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 
+const fs = require('node:fs');
 const path = require('node:path');
+const { ensureDir } = require('./fs-utils');
 const {
   COMMERCIAL_TRUTH_LINK,
   VERIFICATION_EVIDENCE_LINK,
@@ -9,6 +11,7 @@ const {
 } = require('./gtm-revenue-loop');
 const {
   buildTrackedPackLink,
+  csvCell,
   isCliInvocation: isCliCall,
   parseReportArgs,
   renderRevenuePackMarkdown,
@@ -19,17 +22,22 @@ const REPO_ROOT = path.resolve(__dirname, '..');
 const DOCS_PATH = path.join(REPO_ROOT, 'docs', 'marketing', 'mcp-directory-revenue-pack.md');
 const MCP_SO_URL = 'https://mcp.so/server/thumbgate/IgorGanapolsky';
 const GLAMA_SEARCH_URL = 'https://glama.ai/mcp/servers?query=thumbgate';
-const GLAMA_LEGACY_URL = 'https://glama.ai/mcp/servers/IgorGanapolsky/mcp-memory-gateway';
+const GLAMA_CANONICAL_URL = 'https://glama.ai/mcp/servers/IgorGanapolsky/ThumbGate';
 const SMITHERY_SEARCH_URL = 'https://smithery.ai/search?q=thumbgate';
 const SMITHERY_DETAILS_URL = 'https://smithery.ai/servers/rlhf-loop/thumbgate';
 const PUNKPEYE_LIST_URL = 'https://github.com/punkpeye/awesome-mcp-servers';
 const APPCYPHER_LIST_URL = 'https://github.com/appcypher/awesome-mcp-servers';
 const MCP_DIRECTORIES_GUIDE_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/marketing/mcp-directories.md';
 const MCP_HUB_SUBMISSION_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/mcp-hub-submission.md';
-const CHECKED_AT = '2026-04-29';
+const CHECKED_AT = '2026-05-03';
 const DIRECTORY_SOURCE = 'mcp_directories';
 const DIRECTORY_MEDIUM = 'directory';
 const DIRECTORY_SURFACE = 'mcp_directory';
+const MCP_DIRECTORY_APP_ORIGIN = 'https://thumbgate.ai';
+
+function buildMcpDirectoryRevenueLinks() {
+  return buildRevenueLinks({ appOrigin: MCP_DIRECTORY_APP_ORIGIN });
+}
 
 function buildTrackedDirectoryLink(baseUrl, tracking = {}) {
   return buildTrackedPackLink(baseUrl, tracking, {
@@ -57,16 +65,16 @@ function buildSurfaces() {
     },
     {
       key: 'glama',
-      name: 'Glama search result',
-      role: 'High-volume MCP registry search surface that still leaks legacy naming.',
-      publicStatus: 'Search for `thumbgate` resolves to the legacy slug `IgorGanapolsky/mcp-memory-gateway`.',
-      operatorUse: 'Repair the public slug, summary, and package naming before pushing more Glama-facing discovery.',
+      name: 'Glama canonical listing',
+      role: 'High-volume MCP registry surface with a canonical ThumbGate slug but stale legacy metadata.',
+      publicStatus: 'Search for `thumbgate` now resolves to the canonical `IgorGanapolsky/ThumbGate` listing.',
+      operatorUse: 'Clean up the remaining legacy metadata and FAQ payload before pushing more Glama-facing discovery.',
       surfaceUrl: GLAMA_SEARCH_URL,
-      submissionPath: GLAMA_LEGACY_URL,
+      submissionPath: GLAMA_CANONICAL_URL,
       support: MCP_DIRECTORIES_GUIDE_URL,
       evidenceCheckedAt: CHECKED_AT,
-      evidenceSummary: 'Search HTML exposes `ThumbGate` as the display name but still points to the legacy `mcp-memory-gateway` slug and legacy plain-text description.',
-      nextRepair: 'Claim or update the listing so the slug, repo name, and summary are ThumbGate-only and no longer mention the old gateway positioning.',
+      evidenceSummary: 'Search results now resolve to the ThumbGate slug, but the canonical page still ships legacy schema text about `memory management and gateway capabilities` and an FAQ answer that opens with `The MCP Memory Gateway`.',
+      nextRepair: 'Update the canonical Glama metadata and FAQ content so the schema description, FAQ answer, and page copy are ThumbGate-only.',
       proof: VERIFICATION_EVIDENCE_LINK,
     },
     {
@@ -87,14 +95,14 @@ function buildSurfaces() {
       key: 'punkpeye',
       name: 'punkpeye awesome-mcp-servers',
       role: 'Largest GitHub awesome-list discovery surface in the current repo research.',
-      publicStatus: 'Listed, but under the legacy repository `IgorGanapolsky/mcp-memory-gateway`.',
-      operatorUse: 'Open a repair PR that swaps the repo name and keeps the description ThumbGate-only.',
+      publicStatus: 'Listed under the canonical ThumbGate repository, but the README still carries a duplicate legacy `IgorGanapolsky/mcp-memory-gateway` entry.',
+      operatorUse: 'Open a cleanup PR that removes the duplicate legacy entry while preserving the canonical ThumbGate listing.',
       surfaceUrl: PUNKPEYE_LIST_URL,
       submissionPath: 'https://github.com/punkpeye/awesome-mcp-servers/blob/main/README.md',
       support: MCP_DIRECTORIES_GUIDE_URL,
       evidenceCheckedAt: CHECKED_AT,
-      evidenceSummary: 'README search returns a live entry, but it still points to `IgorGanapolsky/mcp-memory-gateway` instead of `IgorGanapolsky/ThumbGate`.',
-      nextRepair: 'Submit a PR replacing the legacy repo path with the ThumbGate repo while keeping the pre-action gates description.',
+      evidenceSummary: 'README search now shows both a canonical `IgorGanapolsky/ThumbGate` entry and a second legacy `IgorGanapolsky/mcp-memory-gateway` entry.',
+      nextRepair: 'Submit a PR removing the duplicate legacy entry so discovery points at one canonical ThumbGate listing.',
       proof: VERIFICATION_EVIDENCE_LINK,
     },
     {
@@ -114,7 +122,7 @@ function buildSurfaces() {
   ];
 }
 
-function buildFollowOnOffers(links = buildRevenueLinks()) {
+function buildFollowOnOffers(links = buildMcpDirectoryRevenueLinks()) {
   return [
     {
       label: 'Proof-backed setup guide',
@@ -165,13 +173,13 @@ function buildFollowOnOffers(links = buildRevenueLinks()) {
 function buildOperatorQueue() {
   return [
     {
-      key: 'repair_glama_slug',
+      key: 'refresh_glama_metadata',
       audience: 'Glama listing owner or claimant',
-      evidence: 'Search for `thumbgate` still resolves to `IgorGanapolsky/mcp-memory-gateway`, which leaks the retired product identity into a major MCP registry.',
-      proofTrigger: 'Do this before sending more discovery traffic into Glama because the current slug and summary still encode legacy positioning.',
-      proofAsset: GLAMA_SEARCH_URL,
-      nextAsk: GLAMA_LEGACY_URL,
-      recommendedMotion: 'Claim or edit the Glama listing so the slug, summary, and repo link are ThumbGate-only.',
+      evidence: 'Glama search now resolves to `IgorGanapolsky/ThumbGate`, but the canonical page still carries legacy schema text about `memory management and gateway capabilities` and an FAQ answer that begins with `The MCP Memory Gateway`.',
+      proofTrigger: 'Do this before sending more discovery traffic into Glama because the canonical listing still carries legacy metadata and FAQ copy.',
+      proofAsset: GLAMA_CANONICAL_URL,
+      nextAsk: GLAMA_CANONICAL_URL,
+      recommendedMotion: 'Edit the canonical Glama listing so the schema description, FAQ answer, and repo-facing copy are ThumbGate-only.',
     },
     {
       key: 'repair_smithery_namespace',
@@ -183,13 +191,13 @@ function buildOperatorQueue() {
       recommendedMotion: 'Publish or migrate Smithery to a canonical ThumbGate namespace and retire `rlhf-loop`.',
     },
     {
-      key: 'update_punkpeye_entry',
+      key: 'remove_punkpeye_legacy_duplicate',
       audience: 'GitHub awesome-list maintainer or contributor',
-      evidence: 'The most visible awesome list already carries a live entry, but it still points to `IgorGanapolsky/mcp-memory-gateway`.',
-      proofTrigger: 'Repair before doing net-new list work because this is a direct naming mismatch on an already-indexed surface.',
+      evidence: 'The most visible awesome list now carries the canonical `IgorGanapolsky/ThumbGate` entry plus a second legacy `IgorGanapolsky/mcp-memory-gateway` duplicate.',
+      proofTrigger: 'Repair before doing net-new list work because discovery should not split across both a canonical and legacy entry.',
       proofAsset: PUNKPEYE_LIST_URL,
       nextAsk: 'https://github.com/punkpeye/awesome-mcp-servers/pulls',
-      recommendedMotion: 'Open a small README PR that swaps the repo URL to `IgorGanapolsky/ThumbGate` and preserves the pre-action gates thesis.',
+      recommendedMotion: 'Open a small README PR that deletes the duplicate legacy entry and preserves the canonical ThumbGate listing.',
     },
     {
       key: 'add_appcypher_entry',
@@ -217,7 +225,7 @@ function buildOutreachDrafts() {
     {
       channel: 'Glama claim or support request',
       audience: 'Glama listing maintainer',
-      draft: 'ThumbGate currently appears in Glama search under the legacy `IgorGanapolsky/mcp-memory-gateway` slug even though the active repository, npm package, and public launch surface are all `ThumbGate`. Please update the slug and summary so the listing points to `IgorGanapolsky/ThumbGate` and uses ThumbGate-only copy.',
+      draft: 'ThumbGate now resolves to the canonical Glama listing, but the page still carries legacy metadata: the schema description still says `memory management and gateway capabilities`, and the FAQ answer still opens with `The MCP Memory Gateway`. Please refresh that metadata and FAQ copy so the canonical listing is ThumbGate-only.',
     },
     {
       channel: 'Smithery publish note',
@@ -227,7 +235,7 @@ function buildOutreachDrafts() {
     {
       channel: 'punkpeye README PR body',
       audience: 'awesome-mcp-servers maintainer',
-      draft: 'This PR updates the ThumbGate entry from the retired `IgorGanapolsky/mcp-memory-gateway` repository to the active `IgorGanapolsky/ThumbGate` repository. The description remains focused on ThumbGate as pre-action gates that prevent AI coding agents from repeating known mistakes.',
+      draft: 'This PR removes the duplicate legacy `IgorGanapolsky/mcp-memory-gateway` entry and keeps the canonical `IgorGanapolsky/ThumbGate` listing in place. The description remains focused on ThumbGate as pre-action gates that prevent AI coding agents from repeating known mistakes.',
     },
     {
       channel: 'appcypher README PR body',
@@ -259,8 +267,8 @@ function buildMeasurementPlan() {
     milestones: [
       {
         window: 'days_0_30',
-        goal: 'Repair legacy naming on Glama, Smithery, and the highest-reach awesome list before broadening directory distribution.',
-        decisionRule: 'Do not add lower-priority directories until the visible legacy-name leaks are fixed or actively queued.',
+        goal: 'Refresh Glama metadata, repair Smithery namespace drift, and remove the punkpeye legacy duplicate before broadening directory distribution.',
+        decisionRule: 'Do not add lower-priority directories until the visible legacy-name leaks and duplicate entries are fixed or actively queued.',
       },
       {
         window: 'days_31_60',
@@ -281,14 +289,14 @@ function buildMeasurementPlan() {
   };
 }
 
-function buildMcpDirectoryRevenuePack(links = buildRevenueLinks()) {
+function buildMcpDirectoryRevenuePack(links = buildMcpDirectoryRevenueLinks()) {
   return {
     generatedAt: new Date().toISOString(),
     objective: 'Repair MCP directory drift so ThumbGate discovery points to one canonical identity and one proof-backed install path.',
     state: 'directory-repair',
     headline: 'Fix legacy-name MCP directory drift before scaling discovery.',
     shortDescription: 'ThumbGate already has live MCP directory discovery, but major surfaces still leak retired names and old repo paths. Repair those first, then scale directory acquisition.',
-    summary: 'Current checks show one canonical listing on MCP.so, two legacy-name directory results on Glama and Smithery, one legacy repo entry on the highest-reach awesome list, and one missing awesome-list entry.',
+    summary: 'Current checks show one canonical listing on MCP.so, one canonical-but-stale Glama listing, one legacy Smithery namespace, one canonical-plus-legacy duplicate on the highest-reach awesome list, and one missing awesome-list entry.',
     canonicalIdentity: {
       displayName: 'ThumbGate',
       repository: 'https://github.com/IgorGanapolsky/ThumbGate',
@@ -336,8 +344,44 @@ function renderMcpDirectoryRevenuePackMarkdown(pack) {
   });
 }
 
+function renderMcpDirectorySurfacesCsv(pack = {}) {
+  const surfaces = Array.isArray(pack.surfaces) ? pack.surfaces : [];
+  const rows = [
+    [
+      'key',
+      'name',
+      'role',
+      'publicStatus',
+      'operatorUse',
+      'surfaceUrl',
+      'submissionPath',
+      'support',
+      'evidenceCheckedAt',
+      'evidenceSummary',
+      'nextRepair',
+      'proof',
+    ],
+    ...surfaces.map((surface) => ([
+      surface.key,
+      surface.name,
+      surface.role,
+      surface.publicStatus,
+      surface.operatorUse,
+      surface.surfaceUrl,
+      surface.submissionPath,
+      surface.support,
+      surface.evidenceCheckedAt,
+      surface.evidenceSummary,
+      surface.nextRepair,
+      surface.proof,
+    ])),
+  ];
+
+  return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
+}
+
 function writeMcpDirectoryRevenuePack(pack, options = {}) {
-  return writeStandardRevenuePack({
+  const written = writeStandardRevenuePack({
     repoRoot: REPO_ROOT,
     docsPath: DOCS_PATH,
     pack,
@@ -346,6 +390,20 @@ function writeMcpDirectoryRevenuePack(pack, options = {}) {
     jsonName: 'mcp-directory-revenue-pack.json',
     csvName: 'mcp-directory-operator-queue.csv',
   });
+  const surfacesCsv = renderMcpDirectorySurfacesCsv(pack);
+  const docsDir = path.dirname(DOCS_PATH);
+
+  if (written.reportDir) {
+    ensureDir(written.reportDir);
+    fs.writeFileSync(path.join(written.reportDir, 'mcp-directory-surfaces.csv'), surfacesCsv, 'utf8');
+  }
+
+  if (written.docsPath) {
+    ensureDir(docsDir);
+    fs.writeFileSync(path.join(docsDir, 'mcp-directory-surfaces.csv'), surfacesCsv, 'utf8');
+  }
+
+  return written;
 }
 
 function parseArgs(argv = []) {
@@ -385,7 +443,8 @@ module.exports = {
   DIRECTORY_SOURCE,
   DIRECTORY_SURFACE,
   DOCS_PATH,
-  GLAMA_LEGACY_URL,
+  MCP_DIRECTORY_APP_ORIGIN,
+  GLAMA_CANONICAL_URL,
   GLAMA_SEARCH_URL,
   MCP_SO_URL,
   PUNKPEYE_LIST_URL,
@@ -395,6 +454,7 @@ module.exports = {
   buildTrackedDirectoryLink,
   isCliInvocation,
   parseArgs,
+  renderMcpDirectorySurfacesCsv,
   renderMcpDirectoryRevenuePackMarkdown,
   writeMcpDirectoryRevenuePack,
 };

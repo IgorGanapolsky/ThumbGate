@@ -1,6 +1,6 @@
 (function(global) {
   var BUYER_EMAIL_STORAGE_KEY = 'thumbgateBuyerEmail';
-  var CHECKOUT_LINK_SELECTOR = 'a[href*="/checkout/pro"]';
+  var CHECKOUT_LINK_SELECTOR = 'a[href*="/checkout/pro"], a[href*="/go/pro"]';
   var BUYER_EMAIL_SELECTOR = '[data-buyer-email]';
 
   function normalizeBuyerEmail(value) {
@@ -47,9 +47,13 @@
       ? global.location.origin
       : 'https://thumbgate.invalid';
     var checkoutUrl = new URL(String(urlValue || '/checkout/pro'), origin);
-    if (checkoutUrl.origin !== origin || checkoutUrl.pathname !== '/checkout/pro') {
+    var isHostedProRoute = checkoutUrl.origin === origin
+      && (checkoutUrl.pathname === '/checkout/pro' || checkoutUrl.pathname === '/go/pro');
+    if (!isHostedProRoute) {
       checkoutUrl = new URL('/checkout/pro', origin);
     }
+    checkoutUrl.pathname = '/checkout/pro';
+    checkoutUrl.searchParams.set('confirm', '1');
     if (isValidBuyerEmail(email)) {
       checkoutUrl.searchParams.set('customer_email', normalizeBuyerEmail(email));
     } else {

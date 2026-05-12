@@ -9,14 +9,19 @@ const {
 
 const DEFAULT_REPO = 'IgorGanapolsky/ThumbGate';
 const DEFAULT_RAILWAY_SERVICE = 'thumbgate';
+const DEFAULT_FETCH_TIMEOUT_MS = 15000;
+const DEFAULT_COMMAND_TIMEOUT_MS = 30000;
 const HOSTED_WINDOWS = ['today', '30d', 'lifetime'];
 const RUNTIME_KEYS = [
   'THUMBGATE_FEEDBACK_DIR',
+  'THUMBGATE_OPERATOR_KEY',
   'THUMBGATE_API_KEY',
   'THUMBGATE_PUBLIC_APP_ORIGIN',
   'THUMBGATE_BILLING_API_BASE_URL',
   'THUMBGATE_GA_MEASUREMENT_ID',
   'THUMBGATE_CHECKOUT_FALLBACK_URL',
+  'THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL',
+  'THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL',
   'STRIPE_SECRET_KEY',
 ];
 
@@ -25,6 +30,14 @@ function parseArgs(argv = []) {
     json: false,
     repo: process.env.THUMBGATE_GITHUB_REPO || DEFAULT_REPO,
     timeZone: process.env.TZ || 'America/New_York',
+    fetchTimeoutMs: parsePositiveInteger(
+      process.env.THUMBGATE_REVENUE_STATUS_FETCH_TIMEOUT_MS,
+      DEFAULT_FETCH_TIMEOUT_MS
+    ),
+    commandTimeoutMs: parsePositiveInteger(
+      process.env.THUMBGATE_REVENUE_STATUS_COMMAND_TIMEOUT_MS,
+      DEFAULT_COMMAND_TIMEOUT_MS
+    ),
   };
 
   for (const arg of argv) {
@@ -38,10 +51,50 @@ function parseArgs(argv = []) {
     }
     if (arg.startsWith('--timezone=')) {
       options.timeZone = arg.slice('--timezone='.length).trim() || options.timeZone;
+      continue;
+    }
+    if (arg.startsWith('--fetch-timeout-ms=')) {
+      options.fetchTimeoutMs = parsePositiveInteger(
+        arg.slice('--fetch-timeout-ms='.length),
+        options.fetchTimeoutMs
+      );
+      continue;
+    }
+    if (arg.startsWith('--command-timeout-ms=')) {
+      options.commandTimeoutMs = parsePositiveInteger(
+        arg.slice('--command-timeout-ms='.length),
+        options.commandTimeoutMs
+      );
     }
   }
 
   return options;
+}
+
+function parsePositiveInteger(value, fallback) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function normalizeRuntimeSecret(value) {
+  return String(value || '').trim();
+}
+
+function readLocalOperatorConfig() {
+  try {
+    const {
+      loadOperatorConfig,
+    } = require('./operational-summary');
+    return loadOperatorConfig();
+  } catch {
+    return { operatorKey: null };
+  }
+}
+
+function resolveHostedAuditApiKey(env = process.env, operatorConfig = readLocalOperatorConfig()) {
+  return normalizeRuntimeSecret(env.THUMBGATE_OPERATOR_KEY)
+    || normalizeRuntimeSecret(operatorConfig && operatorConfig.operatorKey)
+    || normalizeRuntimeSecret(env.THUMBGATE_API_KEY);
 }
 
 function parseGhVariableList(stdout = '') {
@@ -80,46 +133,61 @@ function normalizeWindowSummary(status, payload = {}) {
   return {
     status,
     trafficMetrics: payload.trafficMetrics || {},
+    ctas: payload.ctas || {},
     signups: payload.signups || {},
     revenue: payload.revenue || {},
     pipeline: payload.pipeline || {},
+    attribution: payload.attribution || {},
     dataQuality: payload.dataQuality || {},
   };
 }
 
 function windowSnapshot(summary = {}) {
   return {
+    status: summary.status,
     trafficMetrics: summary.trafficMetrics || {},
+    ctas: summary.ctas || {},
     signups: summary.signups || {},
     revenue: summary.revenue || {},
     pipeline: summary.pipeline || {},
+    attribution: summary.attribution || {},
     dataQuality: summary.dataQuality || {},
   };
 }
 
 function buildDiagnosis({ publicProbe, hostedAudit }) {
-  const today = hostedAudit && hostedAudit.summaries ? hostedAudit.summaries.today : null;
-  const trailing30 = hostedAudit && hostedAudit.summaries ? hostedAudit.summaries['30d'] : null;
-  const runtimePresence = hostedAudit ? hostedAudit.runtimePresence : {};
-  const runtimePresenceKnown = Boolean(hostedAudit && hostedAudit.runtimePresenceKnown !== false);
-  const traffic30 = trailing30 && trailing30.trafficMetrics ? trailing30.trafficMetrics : {};
-  const revenue30 = trailing30 && trailing30.revenue ? trailing30.revenue : {};
+  const today = hostedAudit?.summaries?.today || null;
+  const trailing30 = hostedAudit?.summaries?.['30d'] || null;
+  const runtimePresence = hostedAudit?.runtimePresence || {};
+  const runtimePresenceKnown = Boolean(hostedAudit?.runtimePresenceKnown !== false);
+  const traffic30 = trailing30?.trafficMetrics || {};
+  const revenue30 = trailing30?.revenue || {};
 
   const trackingImplemented = Boolean(
-    publicProbe &&
-    publicProbe.root &&
-    publicProbe.root.signals &&
-    publicProbe.root.signals.telemetryEndpoint &&
+    publicProbe?.root?.signals?.telemetryEndpoint &&
     publicProbe.root.signals.plausibleScript
   );
-  const telemetryIngressWorking = Boolean(publicProbe && publicProbe.telemetryPing && publicProbe.telemetryPing.status === 204);
-  const hostedSummaryWorking = Boolean(today && today.status === 200 && trailing30 && trailing30.status === 200);
+  const telemetryIngressWorking = Boolean(publicProbe?.telemetryPing?.status === 204);
+  const hostedSummaryWorking = Boolean(today?.status === 200 && trailing30?.status === 200);
   const hostedTrafficObserved = Number(traffic30.visitors || 0) > 0 || Number(traffic30.pageViews || 0) > 0;
   const hostedRevenueObserved = Number(revenue30.paidOrders || 0) > 0 || Number(revenue30.bookedRevenueCents || 0) > 0;
+  const gaRuntimeMissing = runtimePresenceKnown && !runtimePresence.THUMBGATE_GA_MEASUREMENT_ID;
+  const sprintCheckoutRuntimeMissing = runtimePresenceKnown && (
+    !runtimePresence.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL ||
+    !runtimePresence.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL
+  );
 
   let primaryIssue = 'inconclusive';
   if (trackingImplemented && telemetryIngressWorking && hostedSummaryWorking && hostedTrafficObserved) {
-    primaryIssue = 'operator_blind_spot_local_fallback';
+    if (gaRuntimeMissing) {
+      primaryIssue = 'ga4_runtime_config_gap';
+    } else if (sprintCheckoutRuntimeMissing) {
+      primaryIssue = 'paid_sprint_checkout_config_gap';
+    } else if (hostedRevenueObserved) {
+      primaryIssue = 'hosted_revenue_observed';
+    } else {
+      primaryIssue = 'conversion_or_pricing_gap';
+    }
   } else if (trackingImplemented && telemetryIngressWorking && hostedSummaryWorking) {
     primaryIssue = 'low_traffic';
   } else if (trackingImplemented && telemetryIngressWorking) {
@@ -129,8 +197,17 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
   }
 
   const gaps = [];
-  if (runtimePresenceKnown && !runtimePresence.THUMBGATE_GA_MEASUREMENT_ID) {
+  if (publicProbe?.error) {
+    gaps.push(`Public runtime probe failed: ${publicProbe.error}`);
+  }
+  if (gaRuntimeMissing) {
     gaps.push('GA4 runtime env is missing in Railway');
+  }
+  if (runtimePresenceKnown && !runtimePresence.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL) {
+    gaps.push('Workflow Hardening Diagnostic payment link env is missing in Railway');
+  }
+  if (runtimePresenceKnown && !runtimePresence.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL) {
+    gaps.push('Workflow Hardening Sprint payment link env is missing in Railway');
   }
   if (runtimePresenceKnown && !runtimePresence.THUMBGATE_PUBLIC_APP_ORIGIN) {
     gaps.push('THUMBGATE_PUBLIC_APP_ORIGIN is not explicitly set in Railway runtime');
@@ -157,13 +234,25 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
 
 function formatWindowBlock(label, summary = {}) {
   const traffic = summary.trafficMetrics || {};
+  const ctas = summary.ctas || {};
   const revenue = summary.revenue || {};
   const signups = summary.signups || {};
   const pipeline = summary.pipeline || {};
   const sprintLeads = pipeline.workflowSprintLeads || {};
+  const interstitialViews = Number(ctas.checkoutInterstitialViews || 0);
+  const interstitialClicks = Number(ctas.checkoutInterstitialClicks || 0);
+  const proConfirms = Number(ctas.checkoutInterstitialProConfirms || 0);
+  const workflowClicks = Number(ctas.checkoutInterstitialWorkflowIntakeClicks || 0);
+  const teamPathClicks = Number(ctas.checkoutInterstitialTeamPathClicks || 0);
+  const diagnosticClicks = Number(ctas.checkoutInterstitialDiagnosticCheckoutClicks || 0);
+  const sprintCheckoutClicks = Number(ctas.checkoutInterstitialWorkflowSprintCheckoutClicks || 0);
+  const botDeflections = Number(ctas.checkoutBotDeflections || 0);
+  const intentSuffix = interstitialViews || interstitialClicks || proConfirms || workflowClicks || teamPathClicks || diagnosticClicks || sprintCheckoutClicks || botDeflections
+    ? `, checkoutIntent views ${interstitialViews}, clicks ${interstitialClicks}, stripeConfirms ${proConfirms}, intakeClicks ${workflowClicks}, teamPathClicks ${teamPathClicks}, diagnosticClicks ${diagnosticClicks}, sprintCheckoutClicks ${sprintCheckoutClicks}, botDeflections ${botDeflections}`
+    : '';
 
   return [
-    `${label}: visitors ${traffic.visitors || 0}, pageViews ${traffic.pageViews || 0}, checkoutStarts ${traffic.checkoutStarts || 0}, paidOrders ${revenue.paidOrders || 0}, bookedRevenue ${centsToDollars(revenue.bookedRevenueCents || 0)}, sprintLeads ${sprintLeads.total || 0}, signups ${signups.uniqueLeads || 0}`,
+    `${label}: visitors ${traffic.visitors || 0}, pageViews ${traffic.pageViews || 0}, checkoutStarts ${traffic.checkoutStarts || 0}, paidOrders ${revenue.paidOrders || 0}, bookedRevenue ${centsToDollars(revenue.bookedRevenueCents || 0)}, sprintLeads ${sprintLeads.total || 0}, signups ${signups.uniqueLeads || 0}${intentSuffix}`,
   ];
 }
 
@@ -222,6 +311,7 @@ function formatReport(report) {
 function runCommand(command, args, options = {}) {
   const result = spawnSync(command, args, {
     encoding: 'utf8',
+    timeout: DEFAULT_COMMAND_TIMEOUT_MS,
     ...options,
   });
   return {
@@ -243,26 +333,46 @@ function requireCommandSuccess(name, result) {
   return result.stdout;
 }
 
-function getRepoVariables({ repo = DEFAULT_REPO, runCommandFn = runCommand } = {}) {
+function getRepoVariables({ repo = DEFAULT_REPO, runCommandFn = runCommand, commandTimeoutMs = DEFAULT_COMMAND_TIMEOUT_MS } = {}) {
   const stdout = requireCommandSuccess(
     'gh variable list',
-    runCommandFn('gh', ['variable', 'list', '-R', repo])
+    runCommandFn('gh', ['variable', 'list', '-R', repo], { timeout: commandTimeoutMs })
   );
   return parseGhVariableList(stdout);
 }
 
-async function probePublicRuntime(appOrigin) {
+async function fetchWithTimeout(fetchImpl, url, options = {}, timeoutMs = DEFAULT_FETCH_TIMEOUT_MS) {
+  const timeout = parsePositiveInteger(timeoutMs, DEFAULT_FETCH_TIMEOUT_MS);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    return await fetchImpl(url, {
+      ...options,
+      signal: options.signal || controller.signal,
+    });
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      const displayUrl = url?.href || String(url);
+      throw new Error(`Timed out fetching ${displayUrl} after ${timeout}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function probePublicRuntime(appOrigin, { fetchImpl = fetch, timeoutMs = DEFAULT_FETCH_TIMEOUT_MS } = {}) {
   const healthUrl = new URL('/health', appOrigin);
   const rootUrl = new URL('/', appOrigin);
   const telemetryUrl = new URL('/v1/telemetry/ping', appOrigin);
 
-  const healthRes = await fetch(healthUrl);
+  const healthRes = await fetchWithTimeout(fetchImpl, healthUrl, {}, timeoutMs);
   const healthJson = await healthRes.json();
-  const rootRes = await fetch(rootUrl);
+  const rootRes = await fetchWithTimeout(fetchImpl, rootUrl, {}, timeoutMs);
   const rootHtml = await rootRes.text();
 
   const probeId = crypto.randomUUID();
-  const telemetryRes = await fetch(telemetryUrl, {
+  const telemetryRes = await fetchWithTimeout(fetchImpl, telemetryUrl, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -282,7 +392,7 @@ async function probePublicRuntime(appOrigin) {
       utmCampaign: 'ops_live_audit',
       ctaId: 'ops_live_audit',
     }),
-  });
+  }, timeoutMs);
 
   return {
     health: {
@@ -300,10 +410,24 @@ async function probePublicRuntime(appOrigin) {
   };
 }
 
-function buildRailwayAuditSnippet({ appOrigin, timeZone }) {
+function buildRailwayAuditSnippet({
+  appOrigin,
+  timeZone,
+  fetchTimeoutMs = DEFAULT_FETCH_TIMEOUT_MS,
+}) {
   return `
     (async () => {
       const base = ${JSON.stringify(appOrigin)};
+      const fetchTimeoutMs = ${JSON.stringify(fetchTimeoutMs)};
+      async function fetchWithTimeout(url, options = {}) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), fetchTimeoutMs);
+        try {
+          return await fetch(url, { ...options, signal: controller.signal });
+        } finally {
+          clearTimeout(timer);
+        }
+      }
       const runtimePresence = {};
       for (const key of ${JSON.stringify(RUNTIME_KEYS)}) {
         runtimePresence[key] = Boolean(process.env[key]);
@@ -314,9 +438,9 @@ function buildRailwayAuditSnippet({ appOrigin, timeZone }) {
         const url = new URL('/v1/billing/summary', base);
         url.searchParams.set('window', window);
         url.searchParams.set('timezone', ${JSON.stringify(timeZone)});
-        const response = await fetch(url, {
+        const response = await fetchWithTimeout(url, {
           headers: {
-            authorization: 'Bearer ' + process.env.THUMBGATE_API_KEY,
+            authorization: 'Bearer ' + (process.env.THUMBGATE_OPERATOR_KEY || process.env.THUMBGATE_API_KEY),
             accept: 'application/json',
           },
         });
@@ -324,9 +448,11 @@ function buildRailwayAuditSnippet({ appOrigin, timeZone }) {
         summaries[window] = {
           status: response.status,
           trafficMetrics: payload.trafficMetrics || {},
+          ctas: payload.ctas || {},
           signups: payload.signups || {},
           revenue: payload.revenue || {},
           pipeline: payload.pipeline || {},
+          attribution: payload.attribution || {},
           dataQuality: payload.dataQuality || {},
         };
       }
@@ -350,9 +476,11 @@ function getHostedAuditViaRailway({
   service = DEFAULT_RAILWAY_SERVICE,
   appOrigin = DEFAULT_PUBLIC_APP_ORIGIN,
   timeZone = 'America/New_York',
+  fetchTimeoutMs = DEFAULT_FETCH_TIMEOUT_MS,
   runCommandFn = runCommand,
+  commandTimeoutMs = DEFAULT_COMMAND_TIMEOUT_MS,
 } = {}) {
-  const snippet = buildRailwayAuditSnippet({ appOrigin, timeZone });
+  const snippet = buildRailwayAuditSnippet({ appOrigin, timeZone, fetchTimeoutMs });
   const stdout = requireCommandSuccess(
     'railway run',
     runCommandFn('railway', [
@@ -367,7 +495,7 @@ function getHostedAuditViaRailway({
       'node',
       '-e',
       snippet,
-    ])
+    ], { timeout: commandTimeoutMs })
   );
   const hostedAudit = JSON.parse(stdout);
   return {
@@ -379,36 +507,42 @@ function getHostedAuditViaRailway({
 
 async function getHostedAuditViaHttp({
   appOrigin = DEFAULT_PUBLIC_APP_ORIGIN,
-  apiKey = process.env.THUMBGATE_API_KEY,
+  apiKey = resolveHostedAuditApiKey(),
   timeZone = 'America/New_York',
   fetchImpl = fetch,
+  timeoutMs = DEFAULT_FETCH_TIMEOUT_MS,
 } = {}) {
   if (!apiKey) {
-    throw new Error('THUMBGATE_API_KEY is not set for hosted billing summary audit.');
+    throw new Error('THUMBGATE_OPERATOR_KEY or THUMBGATE_API_KEY is not set for hosted billing summary audit.');
   }
 
   const summaries = {};
+  let runtimePresence = null;
   for (const window of HOSTED_WINDOWS) {
     const url = new URL('/v1/billing/summary', appOrigin);
     url.searchParams.set('window', window);
     url.searchParams.set('timezone', timeZone);
-    const response = await fetchImpl(url, {
+    const response = await fetchWithTimeout(fetchImpl, url, {
       headers: {
         authorization: `Bearer ${apiKey}`,
         accept: 'application/json',
       },
-    });
+    }, timeoutMs);
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
       throw new Error(`Hosted billing summary ${window} returned ${response.status}`);
+    }
+    if (!runtimePresence && payload.runtimePresence && typeof payload.runtimePresence === 'object') {
+      runtimePresence = payload.runtimePresence;
     }
     summaries[window] = normalizeWindowSummary(response.status, payload);
   }
 
   return {
     auditMethod: 'hosted-http-api',
-    runtimePresenceKnown: false,
-    runtimePresence: {
+    runtimePresenceKnown: Boolean(runtimePresence),
+    runtimePresence: runtimePresence || {
+      THUMBGATE_OPERATOR_KEY: Boolean(process.env.THUMBGATE_OPERATOR_KEY),
       THUMBGATE_API_KEY: true,
     },
     summaries,
@@ -436,18 +570,43 @@ async function generateRevenueStatusReport({
   runCommandFn = runCommand,
   fetchPublicProbe = probePublicRuntime,
   fetchImpl = fetch,
-  apiKey = process.env.THUMBGATE_API_KEY,
+  apiKey = resolveHostedAuditApiKey(),
+  fetchTimeoutMs = DEFAULT_FETCH_TIMEOUT_MS,
+  commandTimeoutMs = DEFAULT_COMMAND_TIMEOUT_MS,
+  localFallbackFn = getLocalFallback,
 } = {}) {
   let repoVars = {};
   let repoVarError = null;
   try {
-    repoVars = getRepoVariables({ repo, runCommandFn });
+    repoVars = getRepoVariables({ repo, runCommandFn, commandTimeoutMs });
   } catch (error) {
     repoVarError = error;
   }
 
   const appOrigin = repoVars.THUMBGATE_PUBLIC_APP_ORIGIN || DEFAULT_PUBLIC_APP_ORIGIN;
-  const publicProbe = await fetchPublicProbe(appOrigin);
+  let publicProbe;
+  try {
+    publicProbe = await fetchPublicProbe(appOrigin, {
+      fetchImpl,
+      timeoutMs: fetchTimeoutMs,
+    });
+  } catch (error) {
+    publicProbe = {
+      error: error?.message || String(error),
+      health: {
+        status: 0,
+        version: null,
+        deployment: null,
+      },
+      root: {
+        status: 0,
+        signals: {},
+      },
+      telemetryPing: {
+        status: 0,
+      },
+    };
+  }
   const hostedApiOrigin = repoVars.THUMBGATE_BILLING_API_BASE_URL || appOrigin;
   let hostedHttpError = null;
 
@@ -457,6 +616,7 @@ async function generateRevenueStatusReport({
       apiKey,
       timeZone,
       fetchImpl,
+      timeoutMs: fetchTimeoutMs,
     });
 
     return {
@@ -492,7 +652,9 @@ async function generateRevenueStatusReport({
       service: repoVars.RAILWAY_SERVICE || DEFAULT_RAILWAY_SERVICE,
       appOrigin: hostedApiOrigin,
       timeZone,
+      fetchTimeoutMs,
       runCommandFn,
+      commandTimeoutMs,
     });
 
     return {
@@ -514,7 +676,19 @@ async function generateRevenueStatusReport({
       }),
     };
   } catch (error) {
-    const fallback = await getLocalFallback(timeZone);
+    let fallback;
+    let fallbackError = null;
+    try {
+      fallback = await localFallbackFn(timeZone);
+    } catch (localError) {
+      fallbackError = localError;
+      fallback = {
+        source: 'local',
+        fallbackReason: 'local operational billing summary is unavailable',
+        summary: normalizeWindowSummary('unavailable'),
+      };
+    }
+
     return {
       generatedAt: new Date().toISOString(),
       repo,
@@ -539,8 +713,8 @@ async function generateRevenueStatusReport({
         error: error.message,
       },
       diagnosis: {
-        trackingImplemented: Boolean(publicProbe.root && publicProbe.root.signals && publicProbe.root.signals.telemetryEndpoint),
-        telemetryIngressWorking: Boolean(publicProbe.telemetryPing && publicProbe.telemetryPing.status === 204),
+        trackingImplemented: Boolean(publicProbe.root?.signals?.telemetryEndpoint),
+        telemetryIngressWorking: Boolean(publicProbe.telemetryPing?.status === 204),
         hostedSummaryWorking: false,
         hostedTrafficObserved: false,
         hostedRevenueObserved: false,
@@ -548,9 +722,11 @@ async function generateRevenueStatusReport({
         hostedAuditMethod: 'local-fallback',
         primaryIssue: 'hosted_summary_access_or_config_gap',
         gaps: [
+          publicProbe.error ? `Public runtime probe failed: ${publicProbe.error}` : null,
           repoVarError?.message,
           hostedHttpError?.message,
           error.message,
+          fallbackError?.message,
           fallback.fallbackReason,
         ].filter(Boolean),
       },
@@ -563,6 +739,8 @@ async function main(argv = process.argv.slice(2)) {
   const report = await generateRevenueStatusReport({
     repo: options.repo,
     timeZone: options.timeZone,
+    fetchTimeoutMs: options.fetchTimeoutMs,
+    commandTimeoutMs: options.commandTimeoutMs,
   });
 
   if (options.json) {
@@ -576,12 +754,17 @@ async function main(argv = process.argv.slice(2)) {
 module.exports = {
   DEFAULT_REPO,
   DEFAULT_RAILWAY_SERVICE,
+  DEFAULT_FETCH_TIMEOUT_MS,
+  DEFAULT_COMMAND_TIMEOUT_MS,
   HOSTED_WINDOWS,
   RUNTIME_KEYS,
   parseArgs,
+  parsePositiveInteger,
+  resolveHostedAuditApiKey,
   parseGhVariableList,
   parseHtmlSignals,
   centsToDollars,
+  fetchWithTimeout,
   buildDiagnosis,
   formatReport,
   buildRailwayAuditSnippet,
@@ -591,7 +774,7 @@ module.exports = {
 
 if (require.main === module) {
   main().catch((error) => {
-    process.stderr.write(`${error && error.message ? error.message : String(error)}\n`);
+    process.stderr.write(`${error?.message || String(error)}\n`);
     process.exit(1);
   });
 }

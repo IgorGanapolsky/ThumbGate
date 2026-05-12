@@ -19,5 +19,10 @@ test('guide explains when to use Pro versus the workflow hardening sprint', () =
   assert.match(GUIDE_HTML, /Workflow Hardening Sprint/i);
   assert.match(GUIDE_HTML, /one workflow, one owner, and one repeated failure/i);
   assert.match(GUIDE_HTML, /Get Pro — \$19\/mo or \$149\/yr/);
+  assert.match(GUIDE_HTML, /https:\/\/buy\.stripe\.com\/00w14neyUcXA5pL5e33sI0e/);
+  assert.match(GUIDE_HTML, /Pay \$499 diagnostic/);
+  assert.match(GUIDE_HTML, /https:\/\/buy\.stripe\.com\/fZu9AT76saPsg4pbCr3sI0f/);
+  assert.match(GUIDE_HTML, /Pay \$1500 sprint/);
+  assert.match(GUIDE_HTML, /Send workflow first/);
   assert.match(GUIDE_HTML, /#workflow-sprint-intake/);
 });

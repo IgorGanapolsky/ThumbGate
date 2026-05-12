@@ -38,7 +38,7 @@ const FREE_BULLETS = extractTierBullets(
 );
 const PRO_BULLETS = extractTierBullets(
   INDEX_HTML,
-  /Solo Pro/,
+  /<div class="tier"[^>]*>Pro<\/div>/,
 );
 const TEAM_BULLETS = extractTierBullets(
   INDEX_HTML,
@@ -53,23 +53,23 @@ describe('Free tier bullets: extraction', () => {
 });
 
 describe('Free tier bullets: code-backed claims', () => {
-  test('"3 feedback captures total" matches FREE_TIER_LIMITS.capture_feedback.lifetime', () => {
+  test('"Unlimited feedback captures" matches FREE_TIER_LIMITS.capture_feedback.lifetime', () => {
     const { FREE_TIER_LIMITS } = require(path.join(ROOT, 'scripts', 'rate-limiter.js'));
-    assert.equal(FREE_TIER_LIMITS.capture_feedback.lifetime, 3,
-      'rate-limiter says free gets N captures; landing page says 3 — must match');
+    assert.equal(FREE_TIER_LIMITS.capture_feedback.lifetime, Infinity,
+      'free tier captures must be unlimited to back habit-formation flow');
     assert.ok(
-      FREE_BULLETS.some((b) => /3 feedback captures/i.test(b)),
-      'Landing page must claim "3 feedback captures"',
+      FREE_BULLETS.some((b) => /unlimited (feedback )?captures/i.test(b)),
+      'Landing page must claim "unlimited captures"',
     );
   });
 
-  test('"1 prevention rule" matches FREE_TIER_MAX_GATES + prevention_rules.lifetime', () => {
+  test('"5 prevention rules" matches FREE_TIER_MAX_GATES', () => {
     const { FREE_TIER_LIMITS, FREE_TIER_MAX_GATES } = require(path.join(ROOT, 'scripts', 'rate-limiter.js'));
-    assert.equal(FREE_TIER_MAX_GATES, 1, 'FREE_TIER_MAX_GATES must be 1 to back "1 rule" claim');
-    assert.equal(FREE_TIER_LIMITS.prevention_rules.lifetime, 1, 'prevention_rules.lifetime must be 1');
+    assert.equal(FREE_TIER_MAX_GATES, 5, 'FREE_TIER_MAX_GATES must be 5 to back "5 active prevention rules" claim');
+    assert.equal(FREE_TIER_LIMITS.prevention_rules.lifetime, Infinity, 'prevention_rules.lifetime must be Infinity (cap is via FREE_TIER_MAX_GATES)');
     assert.ok(
-      FREE_BULLETS.some((b) => /1 (auto-promoted )?prevention rule/i.test(b)),
-      'Landing page must claim exactly 1 prevention rule',
+      FREE_BULLETS.some((b) => /5 (active )?(auto-promoted )?prevention rules/i.test(b)),
+      'Landing page must claim 5 active prevention rules',
     );
   });
 
@@ -231,7 +231,7 @@ describe('Pro tier bullets: code-backed claims', () => {
 
   test('compat cards that do NOT promise a download must link to a guide or real directory — never to a GitHub source browser', () => {
     // Rule: if the card does NOT promise a download, the outer href must be
-    //   (a) a local /guide.html, /guides/*.html, or dedicated install page, or
+    //   (a) a local /guide, /guide.html, /guides/*, or dedicated install page, or
     //   (b) a real external directory/listing (mcp.so, chatgpt.com, npmjs.com,
     //       pulsemcp.com, smithery.ai, cursor.directory), or
     //   (c) an internal redirect like /go/gpt.
@@ -258,7 +258,8 @@ describe('Pro tier bullets: code-backed claims', () => {
         /^\s*(Download|Get the) .* (plugin|bundle|extension)/i.test(cardArrow);
       if (promisesDownload) continue;
 
-      const isLocalGuide = /^\/guide(s)?(\.html|\/)/.test(outerHref);
+      const isLocalGuide = /^\/guide(?:\.html)?(?:[?#]|$)/.test(outerHref) ||
+        /^\/guides(?:\.html|\/)/.test(outerHref);
       const isLocalInstallPage = /^\/codex-plugin(?:[?#]|$)/.test(outerHref);
       const isInternalRedirect = /^\/go\//.test(outerHref);
       const isAllowedDirectory = allowedExternalDirectories.some((d) =>
@@ -267,7 +268,7 @@ describe('Pro tier bullets: code-backed claims', () => {
 
       assert.ok(
         isLocalGuide || isLocalInstallPage || isInternalRedirect || isAllowedDirectory,
-        `Non-download card (arrow: "${cardArrow.trim()}") has href "${outerHref}" — must link to /guide.html, /guides/*, /codex-plugin, /go/*, or a real external directory (mcp.so, chatgpt.com, npmjs.com, etc.), NOT a GitHub source browser`,
+        `Non-download card (arrow: "${cardArrow.trim()}") has href "${outerHref}" — must link to /guide, /guide.html, /guides/*, /codex-plugin, /go/*, or a real external directory (mcp.so, chatgpt.com, npmjs.com, etc.), NOT a GitHub source browser`,
       );
 
       assert.doesNotMatch(

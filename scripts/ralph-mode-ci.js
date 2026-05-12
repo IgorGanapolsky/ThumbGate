@@ -134,8 +134,24 @@ async function postLinkedIn(text) {
       visibility: { 'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC' },
     }),
   });
-  const j = await r.json();
-  return { id: j.id, status: r.status };
+  const j = await parseJsonResponse(r);
+  const id = j.id || '';
+  return {
+    id,
+    ok: r.ok && Boolean(id),
+    status: r.status,
+    error: id ? '' : extractApiError(j, r.status),
+  };
+}
+
+function recordLinkedInPost(report, result, log = console.log) {
+  if (result && result.ok && result.id) {
+    log('LinkedIn posted: ' + result.id);
+    report.linkedin++;
+    return true;
+  }
+  log('LinkedIn skipped: ' + (result?.error || `HTTP ${result?.status || 'unknown'}`));
+  return false;
 }
 
 async function ghApi(endpoint) {
@@ -251,9 +267,9 @@ async function main() {
           'Every AI agent framework ships memory. None ship enforcement.\n\nThumbGate adds PreToolUse hooks that block bad actions before execution. Thompson Sampling adapts. Self-distillation auto-learns.\n\nhttps://github.com/IgorGanapolsky/ThumbGate',
         ];
         const r = await postLinkedIn(angles[Math.floor(Date.now() / 14400000) % angles.length]);
-        console.log('LinkedIn posted: ' + (r.id || r.status));
-        state.lastLinkedinPost = new Date().toISOString();
-        report.linkedin++;
+        if (recordLinkedInPost(report, r)) {
+          state.lastLinkedinPost = new Date().toISOString();
+        }
       } else {
         console.log('LinkedIn: skipped (' + Math.round(4 - hoursSince) + 'hr until next)');
       }
@@ -425,8 +441,10 @@ module.exports = {
   extractApiError,
   main,
   parseJsonResponse,
+  postLinkedIn,
   postTweet,
   isDirectInvocation,
+  recordLinkedInPost,
   recordTweetPost,
   recordTweetReply,
   replyTweet,

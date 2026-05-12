@@ -1,0 +1,79 @@
+name: Social Dedupe Cleanup
+
+on:
+  workflow_dispatch:
+    inputs:
+      delete:
+        description: 'Delete older duplicate posts instead of auditing only'
+        required: false
+        type: boolean
+        default: false
+      confirm_delete:
+        description: 'Required for delete=true. Type DELETE_DUPLICATE_SOCIAL_POSTS.'
+        required: false
+        type: string
+        default: ''
+      platforms:
+        description: 'Comma-separated platforms to clean'
+        required: false
+        type: string
+        default: 'instagram,tiktok'
+      statuses:
+        description: 'Optional comma-separated statuses to consider'
+        required: false
+        type: string
+        default: ''
+      limit:
+        description: 'Maximum recent Zernio posts to inspect'
+        required: false
+        type: string
+        default: '100'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: social-dedupe-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Audit/delete duplicate social posts
+        run: |
+          args=(
+            "--platforms=${{ github.event.inputs.platforms }}"
+            "--statuses=${{ github.event.inputs.statuses }}"
+            "--limit=${{ github.event.inputs.limit }}"
+          )
+          if [ "${{ github.event.inputs.delete }}" = "true" ]; then
+            args+=("--delete")
+            args+=("--confirm-delete=${{ github.event.inputs.confirm_delete }}")
+          else
+            args+=("--dry-run")
+          fi
+
+          node scripts/social-analytics/cleanup-zernio-duplicates.js "${args[@]}" | tee social-dedupe-cleanup-result.json
+
+      - name: Upload cleanup evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: social-dedupe-cleanup-result
+          path: social-dedupe-cleanup-result.json

@@ -17,6 +17,7 @@ const STANDARD_MARKETPLACE_FEE = 'Accept the standard Aiventyx marketplace fee f
 const AIVENTYX_SOURCE = 'aiventyx';
 const AIVENTYX_MEDIUM = 'marketplace';
 const AIVENTYX_CONTENT = 'dashboard';
+const BUYER_ORIGIN = 'https://thumbgate.ai';
 
 function normalizeText(value) {
   return value === undefined || value === null ? '' : String(value).trim();
@@ -93,7 +94,16 @@ function parseArgs(argv = []) {
   return options;
 }
 
-function buildAiventyxListings(links = buildRevenueLinks()) {
+function buildPublicAiventyxRevenueLinks() {
+  return buildRevenueLinks({
+    appOrigin: BUYER_ORIGIN,
+    guideLink: `${BUYER_ORIGIN}/guide`,
+    proCheckoutLink: `${BUYER_ORIGIN}/checkout/pro`,
+    sprintLink: `${BUYER_ORIGIN}/#workflow-sprint-intake`,
+  });
+}
+
+function buildAiventyxListings(links = buildPublicAiventyxRevenueLinks()) {
   const freeTracking = buildAiventyxTrackingMetadata('free');
   const proTracking = {
     ...buildAiventyxTrackingMetadata('pro'),
@@ -211,7 +221,7 @@ function buildAiventyxFollowUp(plan = buildAiventyxNinetyDayPlan()) {
   ].join('\n\n');
 }
 
-function buildAiventyxMarketplacePlan(links = buildRevenueLinks()) {
+function buildAiventyxMarketplacePlan(links = buildPublicAiventyxRevenueLinks()) {
   const listings = buildAiventyxListings(links);
   const ninetyDayPlan = buildAiventyxNinetyDayPlan();
 
@@ -417,6 +427,7 @@ module.exports = {
   buildAiventyxMarketplacePlan,
   buildAiventyxNinetyDayPlan,
   buildAiventyxTrackingMetadata,
+  buildPublicAiventyxRevenueLinks,
   buildTrackedMarketplaceLink,
   isCliInvocation,
   parseArgs,
