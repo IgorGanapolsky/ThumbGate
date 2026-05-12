@@ -242,6 +242,8 @@ async function runPackagedRuntimeSmoke(options = {}) {
       THUMBGATE_PROJECT_DIR: projectDir,
       THUMBGATE_LOCAL_API_ORIGIN: origin,
       THUMBGATE_API_KEY: 'tg_packaged_runtime_smoke',
+      THUMBGATE_BUILD_SHA: 'packaged-runtime-smoke',
+      THUMBGATE_BUILD_GENERATED_AT: '2026-05-12T00:00:00.000Z',
       NO_COLOR: '1',
     };
 
