@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "name": "ThumbGate Pro Reminder Templates",
+  "reminders": [
+    {
+      "id": "verify-before-claim",
+      "text": "Verify with a tool before claiming this is done."
+    },
+    {
+      "id": "read-local-contract",
+      "text": "Read the local implementation and tests before editing."
+    },
+    {
+      "id": "protect-user-work",
+      "text": "Do not revert user changes or unrelated dirty worktree state."
+    },
+    {
+      "id": "billing-truth",
+      "text": "Do not claim revenue unless Stripe or billing evidence proves it."
+    },
+    {
+      "id": "configured-is-not-fired",
+      "text": "Configured checks are inventory; recorded blocks and warnings are usage evidence."
+    },
+    {
+      "id": "checkout-health",
+      "text": "Verify the paid landing page and checkout route before sending traffic."
+    },
+    {
+      "id": "narrow-tests",
+      "text": "Run the smallest relevant test set for this change."
+    },
+    {
+      "id": "bounded-workflow",
+      "text": "Name the workflow owner, repeated failure, proof artifact, and stop condition."
+    }
+  ]
+}

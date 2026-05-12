@@ -10,6 +10,7 @@
  * Usage:
  *   node scripts/social-analytics/post-video.js
  *   node scripts/social-analytics/post-video.js --campaign=v1.4.1 --dry-run
+ *   node scripts/social-analytics/post-video.js --offer=operator-lab --platforms=youtube
  *   node scripts/social-analytics/post-video.js --video=/path/to/custom.mp4
  *
  * Required env:
@@ -28,7 +29,7 @@ const { loadLocalEnv } = require('./load-env');
 
 loadLocalEnv();
 
-const { hashContent, isDuplicate, record } = require('./db/marketing-db');
+const { hashContent, isDuplicate, list, record } = require('./db/marketing-db');
 const zernioPublisher = require('./publishers/zernio');
 
 // ---------------------------------------------------------------------------
@@ -41,11 +42,18 @@ const ACCOUNTS = {
   instagram: process.env.ZERNIO_INSTAGRAM_ACCOUNT_ID || '69bed6ad6cb7b8cf4c8b0865',
 };
 
-// Per-platform cooldown in hours — prevents over-posting even when CI fires every 4h
+// Per-platform cooldown in hours — prevents over-posting even when CI fires every 4h.
+// TikTok/Instagram stay conservative until their engagement recovers; the
+// screenshots showed repeated-looking low-view posts, so volume is the bug.
 const PLATFORM_COOLDOWN_HOURS = {
-  tiktok:    4,   // up to 6 videos/day — TikTok rewards frequency
-  instagram: 8,   // up to 3 Reels/day
+  tiktok:    24,  // one genuinely distinct experiment/day
+  instagram: 24,  // one Reel/day; IG penalizes repeated-looking grids
   youtube:   12,  // 1-2 Shorts/day
+};
+
+const TIKTOK_ENGAGEMENT_FIRST_COMMENTS = {
+  default: 'What is the exact AI-agent command or edit you wish had been blocked before it ran?',
+  'operator-lab': 'Drop one repeated agent mistake. I will turn the clearest one into a prevention-rule example.',
 };
 
 const CAPTIONS = {
@@ -53,18 +61,18 @@ const CAPTIONS = {
   // ledger attributes views → installs → paid. GitHub is kept as secondary
   // proof ("open source") but no longer the primary click target, because
   // clicks on github.com never touch our funnel tracker.
-  tiktok: `Your AI agent deleted prod config because it "looked unused" 😬
+  tiktok: `POV: your coding agent says "small cleanup" and removes prod config.
 
-ThumbGate v1.4.1 intercepts BEFORE the action runs. Checks it against lessons from past failures. Blocks it permanently.
+The fix is not another reminder in CLAUDE.md.
+It is a pre-action gate:
 
-👎 feedback → lesson DB → prevention rule → physical gate
+bad action -> lesson -> prevention rule -> blocked before the tool call
 
-Not a prompt. A block.
+Comment the one command you want your agent blocked from repeating.
 
-See what it's blocked this week: https://thumbgate-production.up.railway.app/numbers
-Source (MIT): https://github.com/IgorGanapolsky/ThumbGate
+Live numbers: https://thumbgate-production.up.railway.app/numbers
 
-#ClaudeCode #AIAgents #DevTools #TechTok #Coding #SoftwareDev #AITools #Programming #DevTok`,
+#ClaudeCode #CursorAI #Codex #AIAgents #DevTools #TechTok #Coding`,
 
   youtube: `ThumbGate v1.4.1: How to stop AI coding agents from repeating mistakes
 
@@ -94,18 +102,77 @@ Free + open source. Link in bio 👆
 
 const YT_TITLE = 'ThumbGate v1.4.1: Stop AI Agents From Repeating Mistakes #shorts';
 
+const OPERATOR_LAB_URL = 'https://www.skool.com/thumbgate-operator-lab-6000';
+const OPERATOR_LAB_CAMPAIGN = 'operator_lab_launch';
+
+function buildOperatorLabUrl(platform) {
+  const source = platform === 'twitter' ? 'x' : platform;
+  return `${OPERATOR_LAB_URL}?utm_source=${encodeURIComponent(source)}&utm_medium=short_video&utm_campaign=${OPERATOR_LAB_CAMPAIGN}&utm_content=operator_lab_${encodeURIComponent(platform)}`;
+}
+
+const OPERATOR_LAB_CAPTIONS = {
+  tiktok: `If your AI agent repeats the same mistake, do not write another reminder.
+
+Turn the repeat into a pre-action rule and prove the next bad tool call gets blocked.
+
+Comment the repeated failure you want turned into a gate.
+
+Join free: ${buildOperatorLabUrl('tiktok')}
+
+#AIAgents #ClaudeCode #DevTools #Coding #AgentOps #BuildInPublic`,
+
+  youtube: `ThumbGate Operator Lab: stop fixing the same AI-agent mistake twice.
+
+Pick one repeated failure, turn it into a prevention rule, wire the PreToolUse gate, and prove the next bad action is blocked before it runs.
+
+Free Skool lab: ${buildOperatorLabUrl('youtube')}
+Source: https://github.com/IgorGanapolsky/ThumbGate
+
+#AIAgents #ClaudeCode #DevTools #Shorts`,
+
+  instagram: `Stop fixing the same AI-agent mistake twice.
+
+ThumbGate Operator Lab is the free Skool path for turning one repeated failure into a prevention rule, wiring it into a PreToolUse gate, and proving it blocks before action.
+
+Free Skool lab in bio.
+
+#AIAgents #ClaudeCode #DevTools #Coding #AgentOps #BuildInPublic`,
+};
+
+const CAPTION_SETS = {
+  default: CAPTIONS,
+  'operator-lab': OPERATOR_LAB_CAPTIONS,
+};
+
+const YT_TITLES = {
+  default: YT_TITLE,
+  'operator-lab': 'ThumbGate Operator Lab: Stop Repeated AI Agent Mistakes #shorts',
+};
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 function parseArgs(argv) {
-  const opts = { dryRun: false, campaign: 'default', videoPath: null, platforms: null, template: 'auto' };
+  const opts = { dryRun: false, campaign: 'default', videoPath: null, platforms: null, template: 'auto', offer: 'default' };
   for (const arg of argv) {
     if (arg === '--dry-run') opts.dryRun = true;
     else if (arg.startsWith('--campaign=')) opts.campaign = arg.slice(11);
     else if (arg.startsWith('--video=')) opts.videoPath = arg.slice(8);
     else if (arg.startsWith('--platforms=')) opts.platforms = arg.slice(12).split(',');
     else if (arg.startsWith('--template=')) opts.template = arg.slice(11);
+    else if (arg.startsWith('--offer=')) opts.offer = arg.slice(8);
+  }
+  if (opts.offer === 'operator-lab' && opts.template === 'auto') opts.template = 'operator-lab';
+  if (opts.offer === 'operator-lab' && opts.campaign === 'default') opts.campaign = OPERATOR_LAB_CAMPAIGN;
+  if (
+    opts.offer === 'default' &&
+    opts.template === 'auto' &&
+    Array.isArray(opts.platforms) &&
+    opts.platforms.length === 1 &&
+    opts.platforms[0] === 'tiktok'
+  ) {
+    opts.template = 'tiktok-engagement';
   }
   return opts;
 }
@@ -185,8 +252,9 @@ function prepareVideo(opts) {
   return { videoPath, templateId };
 }
 
-function buildPlatformPlan(platform, baseHash) {
-  const caption = CAPTIONS[platform];
+function buildPlatformPlan(platform, baseHash, offer = 'default') {
+  const captions = CAPTION_SETS[offer] || CAPTION_SETS.default;
+  const caption = captions[platform];
   if (!caption) {
     console.warn(`[post-video] No caption for platform: ${platform} — skipping`);
     return null;
@@ -194,7 +262,10 @@ function buildPlatformPlan(platform, baseHash) {
 
   const contentHash = hashContent(`${baseHash}::${platform}`);
   const cooldownHours = PLATFORM_COOLDOWN_HOURS[platform] || 4;
-  return { platform, caption, contentHash, cooldownDays: cooldownHours / 24 };
+  const firstComment = platform === 'tiktok'
+    ? TIKTOK_ENGAGEMENT_FIRST_COMMENTS[offer] || TIKTOK_ENGAGEMENT_FIRST_COMMENTS.default
+    : undefined;
+  return { platform, caption, contentHash, cooldownDays: cooldownHours / 24, offer, firstComment };
 }
 
 function duplicateResult(plan, isDuplicateFn = isDuplicate) {
@@ -204,12 +275,30 @@ function duplicateResult(plan, isDuplicateFn = isDuplicate) {
   return { platform: plan.platform, status: 'skipped', reason: 'duplicate', existing };
 }
 
+function platformCooldownResult(plan, listFn = list) {
+  const rows = listFn({
+    platform: plan.platform,
+    type: 'video',
+    days: Math.max(plan.cooldownDays, 1),
+    limit: 20,
+  });
+  const cutoffMs = Date.now() - plan.cooldownDays * 86_400_000;
+  const existing = rows.find(row => (
+    row.status === 'published' &&
+    Date.parse(row.published_at || '') >= cutoffMs
+  ));
+  if (!existing) return null;
+  console.log(`[post-video] SKIP ${plan.platform} — platform cooldown (${existing.published_at}): ${existing.post_url}`);
+  return { platform: plan.platform, status: 'skipped', reason: 'platform_cooldown', existing };
+}
+
 function recordPostOutcome({ plan, status, postUrl, error, campaign, mediaUrl, templateId, response, recordFn = record }) {
+  const tags = [plan.offer || 'default', 'short', campaign].filter(Boolean);
   if (status === 'published') {
     console.log(`[post-video] ✓ ${plan.platform}: ${postUrl}`);
     recordFn({ type: 'video', platform: plan.platform, contentHash: plan.contentHash, postUrl, campaign,
-      tags: ['v1.4.1', 'short', campaign],
-      extra: { mediaUrl, templateId, zernioPostId: response.post?._id } });
+      tags,
+      extra: { mediaUrl, templateId, zernioPostId: response.post?._id, firstComment: plan.firstComment } });
     return;
   }
 
@@ -221,6 +310,8 @@ function recordPostOutcome({ plan, status, postUrl, error, campaign, mediaUrl, t
 async function processPlatform(plan, context) {
   const duplicate = duplicateResult(plan, context.isDuplicate);
   if (duplicate) return duplicate;
+  const platformCooldown = platformCooldownResult(plan, context.listPosts);
+  if (platformCooldown) return platformCooldown;
 
   if (context.dryRun) {
     console.log(`[post-video] DRY-RUN ${plan.platform} — would post video`);
@@ -246,8 +337,9 @@ async function processPlatform(plan, context) {
       { platform: plan.platform, accountId: ACCOUNTS[plan.platform] },
     ], {
       mediaItems,
+      title: YT_TITLES[plan.offer] || YT_TITLES.default,
       // YouTube Shorts use `title`; other platforms ignore it.
-      firstComment: undefined,
+      firstComment: plan.firstComment,
     });
 
     if (response && response.blocked) {
@@ -294,12 +386,12 @@ async function main() {
   const opts = parseArgs(process.argv.slice(2));
   const apiKey = opts.dryRun ? null : requireKey();
   const platforms = opts.platforms || ['tiktok', 'youtube', 'instagram'];
-  console.log(`[post-video] campaign=${opts.campaign} platforms=${platforms.join(',')} dryRun=${opts.dryRun}`);
+  console.log(`[post-video] campaign=${opts.campaign} offer=${opts.offer} platforms=${platforms.join(',')} dryRun=${opts.dryRun}`);
 
   const { videoPath, templateId } = prepareVideo(opts);
-  const baseHash = hashContent(`video::template-${templateId}::${opts.campaign}`);
+  const baseHash = hashContent(`video::template-${templateId}::${opts.campaign}::offer-${opts.offer}`);
   const context = { apiKey, campaign: opts.campaign, dryRun: opts.dryRun, mediaItem: null, templateId, videoPath };
-  const plans = platforms.map(platform => buildPlatformPlan(platform, baseHash)).filter(Boolean);
+  const plans = platforms.map(platform => buildPlatformPlan(platform, baseHash, opts.offer)).filter(Boolean);
   const results = [];
 
   for (const plan of plans) {
@@ -314,9 +406,14 @@ async function main() {
 module.exports = {
   ACCOUNTS,
   CAPTIONS,
+  CAPTION_SETS,
+  OPERATOR_LAB_CAPTIONS,
   PLATFORM_COOLDOWN_HOURS,
+  TIKTOK_ENGAGEMENT_FIRST_COMMENTS,
   buildPlatformPlan,
+  buildOperatorLabUrl,
   duplicateResult,
+  platformCooldownResult,
   parseArgs,
   processPlatform,
   zernioUpload,

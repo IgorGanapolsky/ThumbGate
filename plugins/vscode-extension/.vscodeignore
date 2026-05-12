@@ -1,0 +1,6 @@
+.git/**
+.github/**
+node_modules/**
+test/**
+*.vsix
+npm-debug.log

@@ -97,6 +97,73 @@ describe('vector-store — embedding config', () => {
   });
 });
 
+describe('vector-store — Gemini Embedding 2 provider', () => {
+  it('uses task-prefixed Gemini embeddings when the managed provider is enabled', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-test-gemini-'));
+    const calls = [];
+    try {
+      process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+      process.env.THUMBGATE_EMBED_PROVIDER = 'gemini';
+      process.env.GEMINI_API_KEY = 'test-key';
+      process.env.THUMBGATE_GEMINI_EMBED_DIM = '768';
+      delete process.env.THUMBGATE_VECTOR_STUB_EMBED;
+      delete require.cache[require.resolve('../scripts/vector-store')];
+      const vectorStore = require('../scripts/vector-store');
+      vectorStore.setLanceLoaderForTests(async () => {
+        const tables = new Map();
+        return {
+          connect: async () => ({
+            tableNames: async () => [...tables.keys()],
+            openTable: async (name) => {
+              const rows = tables.get(name) || [];
+              return {
+                add: async (records) => {
+                  rows.push(...records);
+                  tables.set(name, rows);
+                },
+                search: () => ({
+                  limit: (limit) => ({
+                    toArray: async () => rows.slice(0, limit),
+                  }),
+                }),
+              };
+            },
+            createTable: async (name, records) => {
+              tables.set(name, [...records]);
+              return {
+                add: async (more) => {
+                  const rows = tables.get(name) || [];
+                  rows.push(...more);
+                  tables.set(name, rows);
+                },
+              };
+            },
+          }),
+        };
+      });
+      vectorStore.setGeminiEmbedderForTests(async (preparedText, config, options) => {
+        calls.push({ preparedText, config, options });
+        return Array(768).fill(0).map((_, index) => (index === 0 ? 1 : 0));
+      });
+
+      await vectorStore.upsertFeedback(makeFeedbackEvent('fb_gemini', 'force push to main blocked', 'negative'));
+      await vectorStore.searchSimilar('force push main', 5);
+
+      assert.equal(calls.length, 2);
+      assert.match(calls[0].preparedText, /^title: fb_gemini \| text:/);
+      assert.match(calls[1].preparedText, /^task: code retrieval \| query: force push main/);
+      assert.equal(vectorStore.getLastEmbeddingProfile().activeProfile.model, 'gemini-embedding-2');
+      assert.equal(vectorStore.getLastEmbeddingProfile().activeProfile.outputDimensionality, 768);
+    } finally {
+      delete process.env.THUMBGATE_EMBED_PROVIDER;
+      delete process.env.GEMINI_API_KEY;
+      delete process.env.THUMBGATE_GEMINI_EMBED_DIM;
+      delete require.cache[require.resolve('../scripts/vector-store')];
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+});
+
 describe('vector-store — searchSimilar() on empty store', () => {
   it('returns empty array when table does not exist', async () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-test-02-'));

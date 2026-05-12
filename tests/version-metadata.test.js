@@ -22,6 +22,7 @@ const {
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const CANONICAL_APP_ORIGIN = 'https://thumbgate-production.up.railway.app';
+const CANONICAL_PUBLIC_ORIGIN = 'https://thumbgate.ai';
 const CURRENT_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/ThumbGate';
 const PRIVATE_CORE_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/ThumbGate-Core';
 
@@ -31,6 +32,17 @@ function readJson(relativePath) {
 
 function readText(relativePath) {
   return fs.readFileSync(path.join(PROJECT_ROOT, relativePath), 'utf8');
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function mentionsCanonicalOrigin(artifact) {
+  return [CANONICAL_PUBLIC_ORIGIN, CANONICAL_APP_ORIGIN].some((origin) => {
+    const originPattern = new RegExp(`(^|[^\\w.+-])${escapeRegExp(origin)}(?=$|[/?#"'\\s<>).])`);
+    return originPattern.test(artifact);
+  });
 }
 
 test('pricing matches 2026 standard', () => {
@@ -394,7 +406,10 @@ test('active GTM scripts and reports point to the canonical offer without foundi
   for (const artifact of [outreachTargets, xAutomationReport, githubOutreach, xAutomation, autonomousSales]) {
     assert.doesNotMatch(artifact, /buy\.stripe\.com/);
     assert.doesNotMatch(artifact, /founding users today/i);
-    assert.match(artifact, /thumbgate-production\.up\.railway\.app/);
+    assert.ok(
+      mentionsCanonicalOrigin(artifact),
+      'GTM artifact should point to the public site or canonical app origin',
+    );
     assert.doesNotMatch(artifact, /Always-On/i);
     assert.doesNotMatch(artifact, /Mistake-Free/i);
   }

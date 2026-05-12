@@ -4,6 +4,8 @@ name: Ralph Loop Audience Engagement
 # - hourly audience sensing and reply monitoring
 # - cache-backed state so CI does not forget handled replies
 # - Reddit remains draft-only; LinkedIn replies pass the social quality gate
+# - Bluesky can auto-publish a bounded set of safe replies: no URLs, no sales
+#   terms, and capped length. Risky drafts still require review.
 # - outbound campaign posts stay in the separate Ralph Mode workflow
 # - X/Twitter was retired from distribution 2026-04-20.
 
@@ -28,6 +30,15 @@ on:
         required: false
         type: boolean
         default: false
+      autonomous_bluesky_publish:
+        description: 'Auto-publish bounded safe Bluesky replies'
+        required: false
+        type: boolean
+        default: true
+      bluesky_publish_limit:
+        description: 'Maximum safe Bluesky replies to publish per run'
+        required: false
+        default: '3'
 
 permissions:
   contents: read
@@ -42,7 +53,7 @@ jobs:
     timeout-minutes: 20
 
     env:
-      GITHUB_TOKEN: ${{ github.token }}
+      GITHUB_TOKEN: ${{ secrets.GH_PAT || github.token }}
       ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
       ZERNIO_INSTAGRAM_ACCOUNT_ID: ${{ secrets.ZERNIO_INSTAGRAM_ACCOUNT_ID }}
       ZERNIO_LINKEDIN_ACCOUNT_ID: ${{ secrets.ZERNIO_LINKEDIN_ACCOUNT_ID }}
@@ -56,12 +67,17 @@ jobs:
       REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
       REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
       REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
+      # Optional comma/newline-separated Reddit post/comment URLs to monitor
+      # beyond inbox replies. Replies remain draft-only.
+      THUMBGATE_REDDIT_TRACKED_THREADS: https://www.reddit.com/r/ClaudeCode/comments/1szi5qp/
       LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
       LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
-      # Bluesky reply monitor (AT Protocol direct). Drafts are queued to
-      # .thumbgate/reply-drafts.jsonl for human review — never auto-posts.
+      # Bluesky reply monitor (scripts/social-reply-monitor-bluesky.js, AT Protocol direct).
+      # Safe replies may auto-publish; risky drafts are queued for review.
       BLUESKY_HANDLE: ${{ secrets.BLUESKY_HANDLE }}
       BLUESKY_APP_PASSWORD: ${{ secrets.BLUESKY_APP_PASSWORD }}
+      THUMBGATE_AUTONOMOUS_BLUESKY_PUBLISH: ${{ github.event_name == 'workflow_dispatch' && format('{0}', inputs.autonomous_bluesky_publish) || vars.THUMBGATE_AUTONOMOUS_BLUESKY_PUBLISH || '1' }}
+      THUMBGATE_BLUESKY_PUBLISH_LIMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.bluesky_publish_limit || vars.THUMBGATE_BLUESKY_PUBLISH_LIMIT || '3' }}
       PLAUSIBLE_API_KEY: ${{ secrets.PLAUSIBLE_API_KEY }}
       PLAUSIBLE_SITE_ID: ${{ secrets.PLAUSIBLE_SITE_ID }}
 
@@ -87,6 +103,7 @@ jobs:
           path: |
             .thumbgate/reply-monitor-state.json
             .thumbgate/reply-drafts.jsonl
+            .thumbgate/bluesky-prospect-state.json
             .thumbgate/social-launch-assets.json
           key: ralph-loop-state-${{ github.run_id }}
           restore-keys: |
@@ -114,6 +131,7 @@ jobs:
           path: |
             .artifacts/ralph-loop/
             .thumbgate/reply-drafts.jsonl
+            .thumbgate/bluesky-prospect-state.json
             .thumbgate/social-launch-assets.json
           if-no-files-found: ignore
           retention-days: 14
@@ -125,5 +143,6 @@ jobs:
           path: |
             .thumbgate/reply-monitor-state.json
             .thumbgate/reply-drafts.jsonl
+            .thumbgate/bluesky-prospect-state.json
             .thumbgate/social-launch-assets.json
           key: ralph-loop-state-${{ github.run_id }}

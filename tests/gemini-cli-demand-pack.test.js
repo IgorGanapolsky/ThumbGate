@@ -69,12 +69,15 @@ test('Gemini demand surfaces stay tied to real guides and proof surfaces', () =>
     'gcp_guardrails_guide',
     'local_first_comparison',
     'proof_backed_setup_guide',
+    'gemini_enterprise_agent_gallery',
   ]);
   assert.match(surfaces[0].url, /guides\/gemini-cli-feedback-memory\?/);
   assert.match(surfaces[1].url, /guides\/gcp-mcp-guardrails\?/);
   assert.match(surfaces[2].url, /compare\/mem0\?/);
+  assert.match(surfaces[4].url, /guides\/gcp-mcp-guardrails\?/);
+  assert.match(surfaces[4].supportUrl, /cloud\.google\.com\/blog\/products\/ai-machine-learning\/partner-built-agents-available-in-gemini-enterprise/);
   assert.ok(surfaces.every((surface) => /VERIFICATION_EVIDENCE\.md/.test(surface.proofUrl)));
-  assert.ok(surfaces.every((surface) => !/guaranteed revenue|approved marketplace|top ranking/i.test(surface.operatorUse)));
+  assert.ok(surfaces.every((surface) => !/guaranteed revenue|approved marketplace|approved partner|top ranking/i.test(surface.operatorUse)));
 });
 
 test('tracked Gemini links keep attribution machine-readable', () => {
@@ -117,9 +120,11 @@ test('follow-on offers and operator queue keep Pro and sprint motions explicit',
   assert.deepEqual(offers.map((offer) => offer.key), ['pro', 'sprint']);
   assert.match(offers[0].cta, /utm_campaign=gemini_cli_pro_follow_on/);
   assert.match(offers[1].cta, /utm_campaign=gemini_cli_team_follow_on/);
-  assert.equal(queue.length, 3);
+  assert.equal(queue.length, 4);
   assert.match(queue[0].recommendedMotion, /Guide -> proof -> Pro/);
   assert.match(queue[1].recommendedMotion, /Workflow Hardening Sprint/);
+  assert.match(queue[2].audience, /Gemini Enterprise Agent Gallery/);
+  assert.match(queue[2].recommendedMotion, /Workflow Hardening Sprint/);
 });
 
 test('outreach drafts avoid leading with proof before pain is confirmed', () => {
@@ -135,17 +140,20 @@ test('outreach drafts avoid leading with proof before pain is confirmed', () => 
 test('active channel drafts stay tied to Gemini guides, comparison, and first-touch guardrails', () => {
   const drafts = buildChannelDrafts(LINKS_FIXTURE, REPORT_FIXTURE);
 
-  assert.equal(drafts.length, 4);
+  assert.equal(drafts.length, 5);
   assert.deepEqual(drafts.map((draft) => draft.channel), [
     'Reddit',
     'LinkedIn',
     'Threads',
     'Bluesky',
+    'LinkedIn',
   ]);
   assert.match(drafts[0].cta, /guides\/gemini-cli-feedback-memory/);
   assert.match(drafts[1].cta, /guides\/gcp-mcp-guardrails/);
   assert.match(drafts[2].cta, /guides\/gemini-cli-feedback-memory/);
   assert.match(drafts[3].cta, /compare\/mem0/);
+  assert.match(drafts[4].key, /gemini_enterprise_agent_gallery/);
+  assert.match(drafts[4].draft, /without claiming to be a Google partner agent/);
   assert.ok(drafts.every((draft) => !draft.draft.includes('VERIFICATION_EVIDENCE.md')));
   assert.ok(drafts.every((draft) => !draft.draft.includes('COMMERCIAL_TRUTH.md')));
 });
@@ -181,6 +189,7 @@ test('rendered pack is operator-ready and anchored to guides plus proof', () => 
   assert.match(markdown, new RegExp(CANONICAL_SHORT_DESCRIPTION.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(markdown, /guides\/gemini-cli-feedback-memory/);
   assert.match(markdown, /guides\/gcp-mcp-guardrails/);
+  assert.match(markdown, /Gemini Enterprise Agent Gallery governance angle/);
   assert.match(markdown, /Active Channel Drafts/);
   assert.match(markdown, /LinkedIn — Founder post/);
   assert.match(markdown, /COMMERCIAL_TRUTH\.md/);
@@ -194,6 +203,7 @@ test('CSV export keeps one operator queue file for Gemini lanes', () => {
   assert.match(csv, /^key,audience,evidence,proofTrigger,proofAsset,nextAsk,recommendedMotion/);
   assert.match(csv, /memory_first_builder/);
   assert.match(csv, /gcp_workflow_owner/);
+  assert.match(csv, /gemini_enterprise_governance_owner/);
 });
 
 test('channel draft CSV keeps active Gemini outbound surfaces in one operator file', () => {
@@ -203,6 +213,7 @@ test('channel draft CSV keeps active Gemini outbound surfaces in one operator fi
   assert.match(csv, /Reddit/);
   assert.match(csv, /LinkedIn/);
   assert.match(csv, /compare\/mem0/);
+  assert.match(csv, /gemini_enterprise_agent_gallery/);
 });
 
 test('CLI options and artifact writing emit markdown, JSON, and queue CSV', () => {

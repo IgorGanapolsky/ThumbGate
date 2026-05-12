@@ -48,6 +48,36 @@ test.beforeEach(() => {
   fs.rmSync(compatDir, { recursive: true, force: true });
 });
 
+test('loadTelemetryEvents can read a bounded tail without parsing a partial first row', () => {
+  const feedbackDir = path.join(tmpDir, 'tail-feedback');
+  const telemetryPath = path.join(feedbackDir, 'telemetry-pings.jsonl');
+  fs.mkdirSync(feedbackDir, { recursive: true });
+  fs.writeFileSync(telemetryPath, [
+    JSON.stringify({
+      eventType: 'landing_page_view',
+      clientType: 'web',
+      visitorId: 'old',
+      receivedAt: '2026-05-01T00:00:00.000Z',
+      page: '/',
+      filler: 'x'.repeat(512),
+    }),
+    JSON.stringify({
+      eventType: 'checkout_start',
+      clientType: 'web',
+      visitorId: 'recent',
+      receivedAt: '2026-05-04T14:00:00.000Z',
+      page: '/checkout/pro',
+    }),
+    '',
+  ].join('\n'), 'utf-8');
+
+  const rows = loadTelemetryEvents(feedbackDir, { maxBytes: 220 });
+
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].eventType, 'checkout_start');
+  assert.equal(rows[0].visitorId, 'recent');
+});
+
 test('sanitizeTelemetryPayload normalizes modern web payloads', () => {
   const entry = sanitizeTelemetryPayload({
     eventType: 'checkout_start',
@@ -539,6 +569,106 @@ test('getTelemetryAnalytics keeps generic CTA clicks separate from checkout star
   assert.equal(analytics.ctas.byCampaign.proof_launch, 2);
   assert.equal(analytics.ctas.checkoutStartsByCampaign.proof_launch, 1);
   assert.equal(analytics.ctas.clickToCheckoutRate, 0.5);
+});
+
+test('getTelemetryAnalytics summarizes checkout interstitial buyer choices', () => {
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'checkout_interstitial_view',
+    clientType: 'web',
+    acquisitionId: 'acq_intent_1',
+    visitorId: 'visitor_intent_1',
+    sessionId: 'session_intent_1',
+    source: 'reddit',
+    utmSource: 'reddit',
+    utmCampaign: 'workflow_hardening',
+    ctaId: 'pricing_pro',
+    ctaPlacement: 'pricing',
+    page: '/checkout/pro',
+  });
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'checkout_interstitial_cta_clicked',
+    clientType: 'web',
+    acquisitionId: 'acq_intent_1',
+    visitorId: 'visitor_intent_1',
+    sessionId: 'session_intent_1',
+    source: 'reddit',
+    utmSource: 'reddit',
+    utmCampaign: 'workflow_hardening',
+    ctaId: 'workflow_sprint_intake',
+    ctaPlacement: 'checkout_interstitial',
+    planId: 'team',
+    page: '/checkout/pro',
+    checkoutIntentClassification: 'human_confirm_required',
+  });
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'checkout_interstitial_cta_clicked',
+    clientType: 'web',
+    acquisitionId: 'acq_intent_2',
+    visitorId: 'visitor_intent_2',
+    sessionId: 'session_intent_2',
+    source: 'reddit',
+    utmSource: 'reddit',
+    utmCampaign: 'workflow_hardening',
+    ctaId: 'pro_checkout_confirmed',
+    ctaPlacement: 'checkout_interstitial',
+    planId: 'pro',
+    page: '/checkout/pro',
+  });
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'checkout_interstitial_cta_clicked',
+    clientType: 'web',
+    acquisitionId: 'acq_intent_3',
+    visitorId: 'visitor_intent_3',
+    sessionId: 'session_intent_3',
+    source: 'reddit',
+    utmSource: 'reddit',
+    utmCampaign: 'workflow_hardening',
+    ctaId: 'sprint_diagnostic_checkout',
+    ctaPlacement: 'checkout_interstitial',
+    planId: 'sprint_diagnostic',
+    page: '/checkout/pro',
+  });
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'checkout_interstitial_cta_clicked',
+    clientType: 'web',
+    acquisitionId: 'acq_intent_4',
+    visitorId: 'visitor_intent_4',
+    sessionId: 'session_intent_4',
+    source: 'reddit',
+    utmSource: 'reddit',
+    utmCampaign: 'workflow_hardening',
+    ctaId: 'workflow_sprint_checkout',
+    ctaPlacement: 'checkout_interstitial',
+    planId: 'workflow_sprint',
+    page: '/checkout/pro',
+  });
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'checkout_bot_deflected',
+    clientType: 'web',
+    source: 'reddit',
+    utmSource: 'reddit',
+    utmCampaign: 'workflow_hardening',
+    ctaId: 'pricing_pro',
+    page: '/checkout/pro',
+    reason: 'bot_user_agent',
+  });
+
+  const analytics = getTelemetryAnalytics(tmpDir);
+  assert.equal(analytics.ctas.checkoutInterstitialViews, 1);
+  assert.equal(analytics.ctas.checkoutInterstitialClicks, 4);
+  assert.equal(analytics.ctas.checkoutInterstitialProConfirms, 1);
+  assert.equal(analytics.ctas.checkoutInterstitialWorkflowIntakeClicks, 1);
+  assert.equal(analytics.ctas.checkoutInterstitialTeamPathClicks, 0);
+  assert.equal(analytics.ctas.checkoutInterstitialDiagnosticCheckoutClicks, 1);
+  assert.equal(analytics.ctas.checkoutInterstitialWorkflowSprintCheckoutClicks, 1);
+  assert.equal(analytics.ctas.checkoutBotDeflections, 1);
+  assert.equal(analytics.ctas.byId.workflow_sprint_intake, 1);
+  assert.equal(analytics.ctas.byCampaign.workflow_hardening, 4);
+  assert.equal(analytics.ctas.checkoutInterstitialClickRate, 4);
+  assert.equal(analytics.ctas.checkoutInterstitialProConfirmRate, 1);
+  assert.equal(analytics.ctas.checkoutInterstitialWorkflowIntakeRate, 1);
+  assert.equal(analytics.ctas.checkoutInterstitialDiagnosticCheckoutRate, 1);
+  assert.equal(analytics.ctas.checkoutInterstitialWorkflowSprintCheckoutRate, 1);
 });
 
 test('getTelemetryAnalytics exposes the first-party marketing conversion funnel', () => {

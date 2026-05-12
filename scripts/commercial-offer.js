@@ -1,6 +1,6 @@
 'use strict';
 
-const PRO_MONTHLY_PAYMENT_LINK = 'https://thumbgate-production.up.railway.app/go/pro?utm_source=offer';
+const PRO_MONTHLY_PAYMENT_LINK = 'https://thumbgate.ai/go/pro?utm_source=offer';
 const PRO_ANNUAL_PAYMENT_LINK = 'https://buy.stripe.com/3cI8wPfCYaPs2dzdKz3sI07';
 
 const PRO_MONTHLY_PRICE_ID = 'price_1THQY7GGBpd520QYHoS7RG0J';

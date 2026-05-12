@@ -32,6 +32,7 @@ const CANONICAL_HEADLINE = 'Turn Gemini CLI memory demand into enforced workflow
 const CANONICAL_SHORT_DESCRIPTION = 'ThumbGate gives Gemini CLI local-first memory that can become prevention rules and Pre-Action Checks before the next risky MCP call runs.';
 const GEMINI_GUIDE_URL = 'https://thumbgate-production.up.railway.app/guides/gemini-cli-feedback-memory';
 const GCP_GUIDE_URL = 'https://thumbgate-production.up.railway.app/guides/gcp-mcp-guardrails';
+const GEMINI_ENTERPRISE_AGENT_GALLERY_URL = 'https://cloud.google.com/blog/products/ai-machine-learning/partner-built-agents-available-in-gemini-enterprise';
 const GUIDE_URL = 'https://thumbgate-production.up.railway.app/guide';
 const MEM0_COMPARE_URL = 'https://thumbgate-production.up.railway.app/compare/mem0';
 const GEMINI_GUIDE_SOURCE_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/gemini-cli-feedback-memory.html';
@@ -131,8 +132,25 @@ function buildEvidenceSurfaces(links = buildRevenueLinks(), about = readGitHubAb
     operatorUse: 'General setup path once the buyer accepts the memory-to-enforcement story and wants the shortest install route.',
     buyerSignal: 'Operators who want one install path plus explicit proof and pricing guardrails before they keep evaluating.',
   };
+  const enterpriseSurface = {
+    key: 'gemini_enterprise_agent_gallery',
+    name: 'Gemini Enterprise Agent Gallery governance angle',
+    url: buildTrackedGeminiLink(GCP_GUIDE_URL, {
+      utmCampaign: 'gemini_enterprise_agent_gallery',
+      utmContent: 'agent_gallery_governance',
+      campaignVariant: 'centralized_agent_governance',
+      offerCode: 'GEMINI-ENTERPRISE_AGENT_GALLERY',
+      ctaId: 'gemini_enterprise_agent_gallery',
+      ctaPlacement: 'guide_surface',
+      surface: 'gemini_enterprise',
+    }),
+    supportUrl: GEMINI_ENTERPRISE_AGENT_GALLERY_URL,
+    evidenceSource: 'Google Cloud Gemini Enterprise Agent Gallery announcement',
+    operatorUse: 'Use for enterprise buyers evaluating centrally governed partner agents, procurement requests, audit trails, and safe tool use inside Gemini Enterprise.',
+    buyerSignal: 'IT and platform owners who want employee agent discovery without losing approval control, identity, auditability, or data-protection boundaries.',
+  };
 
-  return [guideSurface, gcpSurface, localFirstSurface, setupSurface].map((surface) => ({
+  return [guideSurface, gcpSurface, localFirstSurface, setupSurface, enterpriseSurface].map((surface) => ({
     ...surface,
     repositoryUrl: about.repositoryUrl,
     proofUrl: VERIFICATION_EVIDENCE_LINK,
@@ -226,6 +244,24 @@ function buildOperatorQueue(links = buildRevenueLinks(), report = {}) {
         surface: 'gemini_workflow_queue',
       }),
       recommendedMotion: 'Qualify one high-risk workflow for the Workflow Hardening Sprint.',
+    },
+    {
+      key: 'gemini_enterprise_governance_owner',
+      audience: 'IT owner evaluating Gemini Enterprise Agent Gallery or partner-built agents',
+      evidence: 'Google is moving partner-built agents into a centrally governed Gemini Enterprise Agent Gallery with access requests, admin approvals, agent identity, audit trails, Agent Gateway, and Model Armor. ThumbGate should sell the adjacent workflow-level enforcement layer for repeated mistakes and risky tool calls.',
+      proofTrigger: 'They are reviewing how employees request, deploy, or audit specialized agents and need proof that repeated tool-call mistakes become enforceable pre-action checks.',
+      proofAsset: GEMINI_ENTERPRISE_AGENT_GALLERY_URL,
+      nextAsk: buildTrackedGeminiLink(links.sprintLink, {
+        utmMedium: OUTREACH_MEDIUM,
+        utmCampaign: 'gemini_enterprise_queue_sprint',
+        utmContent: 'workflow_sprint',
+        campaignVariant: 'agent_gallery_governance',
+        offerCode: 'GEMINI-ENTERPRISE_QUEUE_SPRINT',
+        ctaId: 'gemini_enterprise_queue_sprint',
+        ctaPlacement: 'operator_queue',
+        surface: 'gemini_enterprise_queue',
+      }),
+      recommendedMotion: 'Lead with governance fit, then qualify one partner-agent workflow for the Workflow Hardening Sprint.',
     },
     {
       key: 'local_first_evaluator',
@@ -346,6 +382,16 @@ function buildChannelDrafts(links = buildRevenueLinks(), report = {}) {
     ctaPlacement: 'channel_draft',
     surface: 'gemini_bluesky',
   });
+  const enterpriseCta = buildTrackedGeminiLink(GCP_GUIDE_URL, {
+    utmMedium: LINKEDIN_MEDIUM,
+    utmCampaign: 'gemini_enterprise_agent_gallery',
+    utmContent: 'agent_gallery_governance',
+    campaignVariant: 'enterprise_governance',
+    offerCode: 'GEMINI-ENTERPRISE-LINKEDIN',
+    ctaId: 'gemini_enterprise_linkedin',
+    ctaPlacement: 'channel_draft',
+    surface: 'gemini_enterprise_linkedin',
+  });
 
   return [
     {
@@ -387,6 +433,16 @@ function buildChannelDrafts(links = buildRevenueLinks(), report = {}) {
       cta: blueskyCta,
       proofTiming: 'Lead with the comparison surface first. Send Commercial Truth and Verification Evidence only after the buyer replies with a concrete privacy or workflow objection.',
       draft: `Hosted memory is not the only option for Gemini CLI. If you want the workflow history to stay local and still become enforceable checks before the next MCP call runs, start with the local-first comparison: ${blueskyCta} .`,
+    },
+    {
+      key: 'gemini_enterprise_agent_gallery',
+      channel: 'LinkedIn',
+      format: 'Technical founder post',
+      audience: 'Enterprise IT or platform owner evaluating Gemini Enterprise partner agents',
+      evidenceSummary: 'Google is making partner-built agents discoverable inside Gemini Enterprise with centralized request, approval, identity, and audit controls. The adjacent gap is workflow-specific learned enforcement after real mistakes.',
+      cta: enterpriseCta,
+      proofTiming: 'Do not claim Google partner status or Agent Gallery approval. Use the Google announcement as market context, then route concrete workflow risk to the GCP guardrails guide or sprint intake.',
+      draft: `Gemini Enterprise Agent Gallery changes the buyer question from “can employees find agents?” to “how do we keep specialized agents safe after they start taking actions?” Centralized approval, identity, and audit are table stakes. The next layer is learned pre-action enforcement: when one workflow mistake happens, the repeat gets blocked before the next tool call. ThumbGate fits that governance gap without claiming to be a Google partner agent. Start with the GCP guardrails angle: ${enterpriseCta} .`,
     },
   ];
 }
