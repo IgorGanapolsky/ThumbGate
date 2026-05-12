@@ -2467,10 +2467,19 @@ function renderRobotsTxt(runtimeConfig) {
   return [
     'User-agent: *',
     'Allow: /',
+    // 2026-05-12: every crawler GET on /checkout/pro creates a live Stripe
+    // session even when no human is on the other end. Stripe sees 50 sessions
+    // in 24h, 0 paid, 0 email captured. Disallow so non-human fetchers stop
+    // inflating the "checkout starts" metric and creating zombie sessions.
+    // Real humans still reach checkout via JS-driven clicks (not crawled).
+    'Disallow: /checkout/',
+    'Disallow: /v1/billing/',
     '',
     '# AI crawler access — allow all major LLM crawlers',
     'User-agent: GPTBot',
     'Allow: /',
+    'Disallow: /checkout/',
+    'Disallow: /v1/billing/',
     '',
     'User-agent: ClaudeBot',
     'Allow: /',
