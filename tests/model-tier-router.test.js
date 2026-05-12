@@ -260,6 +260,13 @@ test('config version is 1', () => {
   assert.equal(config.version, 1);
 });
 
+test('frontier tier is pinned to GPT-5.5 while cheaper tiers stay explicit', () => {
+  assert.equal(config.tiers.frontier.label, 'GPT-5.5');
+  assert.equal(config.tiers.frontier.modelId, 'gpt-5.5');
+  assert.equal(config.tiers.mini.modelId, 'gpt-5.4-mini');
+  assert.equal(config.tiers.nano.modelId, 'gpt-5.4-nano');
+});
+
 test('config escalation threshold matches TIERS.mini.maxContext', () => {
   assert.equal(config.escalationRules.contextThreshold, TIERS.mini.maxContext);
 });

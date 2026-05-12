@@ -526,7 +526,10 @@ function writeSalesPipelineReport({ outPath, leads }) {
 function parseArgs(argv = []) {
   const firstArg = argv[0];
   const hasCommand = firstArg ? !firstArg.startsWith('--') : false;
-  const command = hasCommand ? firstArg : 'report';
+  const rawCommand = hasCommand ? firstArg : 'report';
+  const command = rawCommand === 'status' || rawCommand === 'summary'
+    ? 'report'
+    : rawCommand;
   const args = hasCommand ? argv.slice(1) : argv;
   const options = { command };
 

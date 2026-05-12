@@ -6,7 +6,10 @@ const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
 
 const MAX_AUTO_GATES = 10;
-const WARN_THRESHOLD = 2; // 2+ repeated failures surface a warning gate
+// 1+ failure auto-promotes to a warning gate. Cold buyers expect "one 👎 → blocked next time"
+// — a 2-capture threshold made first-capture invisible and broke the activation loop. Block
+// escalation still requires 3 captures (BLOCK_THRESHOLD) so noise doesn't auto-hard-block.
+const WARN_THRESHOLD = 1;
 const BLOCK_THRESHOLD = 3; // 3+ repeated failures hard-block the action
 const WINDOW_DAYS = 30;
 

@@ -125,8 +125,16 @@ test('DISPATCHERS.linkedin and DISPATCHERS.threads route through zernio.publishT
     assert.equal(linkedinResult.via, 'zernio-stub');
     assert.equal(threadsResult.via, 'zernio-stub');
     assert.equal(calls.length, 2);
-    assert.deepEqual(calls[0].options, { platforms: ['linkedin'] });
-    assert.deepEqual(calls[1].options, { platforms: ['threads'] });
+    assert.deepEqual(calls[0].options, {
+      platforms: ['linkedin'],
+      campaign: 'organic',
+      medium: 'social',
+    });
+    assert.deepEqual(calls[1].options, {
+      platforms: ['threads'],
+      campaign: 'organic',
+      medium: 'social',
+    });
     assert.equal(calls[0].content, 'hello-linkedin');
     assert.ok(calls[1].content.includes('hello-threads'));
   } finally {

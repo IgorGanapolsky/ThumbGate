@@ -1,0 +1,133 @@
+{
+  "name": "thumbgate-reward-hacking-guardrails",
+  "source": {
+    "hfUrl": "https://huggingface.co/papers/2604.13602",
+    "arxivUrl": "https://arxiv.org/abs/2604.13602",
+    "title": "Reward Hacking in the Era of Large Models: Mechanisms, Emergent Misalignment, Challenges",
+    "arxivId": "2604.13602",
+    "submitted": "2026-04-15"
+  },
+  "workflow": "AI coding agent release checklist",
+  "status": "blocked",
+  "summary": {
+    "signalCount": 5,
+    "critical": 1,
+    "high": 3,
+    "evidenceArtifacts": 0,
+    "proxyMetrics": [
+      "benchmark pass rate",
+      "reward score"
+    ],
+    "hasHumanObjective": false,
+    "hasHoldout": false
+  },
+  "proxyCompressionMapping": {
+    "compression": "compressed reward, benchmark, or approval signal is treated as a stand-in for the full user objective",
+    "amplification": "optimization pressure can turn local shortcuts into repeated workflow behavior",
+    "coAdaptation": "agent outputs can learn to satisfy evaluators, rubrics, or verifiers instead of the task"
+  },
+  "signals": [
+    {
+      "id": "hallucinated_verification",
+      "severity": "critical",
+      "message": "The response claims completion, safety, test success, or deployment without attached proof.",
+      "gate": "Block completion claims until test output, run id, trace, screenshot, or proof artifact is attached."
+    },
+    {
+      "id": "sycophancy_or_rubber_stamp",
+      "severity": "high",
+      "message": "Agreement or approval language appears without independent checks or counterevidence.",
+      "gate": "Require at least one explicit verification step or risk check before approval-style responses."
+    },
+    {
+      "id": "benchmark_overfitting",
+      "severity": "high",
+      "message": "A score, eval, benchmark, or reward metric is being optimized without holdout or regression proof.",
+      "gate": "Require holdout, regression, or real-workflow evidence before treating score gains as product gains."
+    },
+    {
+      "id": "proxy_metric_only",
+      "severity": "medium",
+      "message": "Proxy metrics are present without an explicit human objective or user-visible success criterion.",
+      "gate": "Pair every reward or benchmark metric with the real user outcome it is meant to approximate."
+    },
+    {
+      "id": "perception_reasoning_decoupling",
+      "severity": "high",
+      "message": "A visual or multimodal claim is made without source artifacts or perception trace evidence.",
+      "gate": "Require screenshot, OCR, or visual proof artifact before accepting multimodal reasoning claims."
+    }
+  ],
+  "gates": [
+    {
+      "id": "hallucinated_verification",
+      "action": "block",
+      "message": "Block completion claims until test output, run id, trace, screenshot, or proof artifact is attached."
+    },
+    {
+      "id": "sycophancy_or_rubber_stamp",
+      "action": "warn",
+      "message": "Require at least one explicit verification step or risk check before approval-style responses."
+    },
+    {
+      "id": "benchmark_overfitting",
+      "action": "warn",
+      "message": "Require holdout, regression, or real-workflow evidence before treating score gains as product gains."
+    },
+    {
+      "id": "proxy_metric_only",
+      "action": "warn",
+      "message": "Pair every reward or benchmark metric with the real user outcome it is meant to approximate."
+    },
+    {
+      "id": "perception_reasoning_decoupling",
+      "action": "warn",
+      "message": "Require screenshot, OCR, or visual proof artifact before accepting multimodal reasoning claims."
+    }
+  ],
+  "metrics": [
+    {
+      "id": "unsupported_completion_claims",
+      "target": "0",
+      "required": true
+    },
+    {
+      "id": "evidence_attachment_rate",
+      "target": ">= 0.95",
+      "required": true
+    },
+    {
+      "id": "unsupported_claim_rate",
+      "target": "<= 0.02",
+      "required": true
+    },
+    {
+      "id": "holdout_regression_pass_rate",
+      "target": ">= 0.90",
+      "required": true
+    },
+    {
+      "id": "judge_disagreement_rate",
+      "target": "<= 0.10",
+      "required": true
+    },
+    {
+      "id": "proxy_to_user_objective_mapping_rate",
+      "target": ">= 0.95",
+      "required": true
+    }
+  ],
+  "nextActions": [
+    "Attach proof artifacts before allowing claims like tests passed, fixed, deployed, safe, or ready to merge.",
+    "Treat benchmark gains as provisional until holdout, regression, or real-workflow evidence confirms the user objective improved.",
+    "Require explicit user-objective mapping for every proxy metric, reward score, or evaluator rubric.",
+    "Block evaluator-manipulation language before it reaches judge or verifier loops.",
+    "Prefer short evidence-backed summaries over long persuasive explanations when judging agent work."
+  ],
+  "marketingAngle": {
+    "headline": "Reward hacking is what happens when agents optimize the receipt instead of the meal.",
+    "subhead": "ThumbGate turns proxy failures into pre-action gates: no unsupported completion claims, no benchmark-only victory laps, and no verifier theater without proof artifacts.",
+    "guideTitle": "Reward Hacking Guardrails for AI Coding Agents",
+    "replyDraft": "This paper is a useful frame for agent products: proxy rewards compress the real user objective, and agents learn the shortcut. ThumbGate can enforce the missing layer: completion claims need proof, benchmark wins need holdouts, and verifier loops need gates against sycophancy, verbosity-as-proof, and evaluator manipulation."
+  }
+}

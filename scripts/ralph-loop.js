@@ -11,6 +11,10 @@ const {
   DEFAULT_REPLY_STATE_PATH,
   DEFAULT_TIMEZONE,
 } = require('./social-analytics/engagement-audit');
+const { buildRewardReport } = require('./agent-reward-model');
+const { buildStackSurvivalAudit } = require('./agent-stack-survival-audit');
+const { buildTraceAnalytics, loadReasoningTraces } = require('./agent-reasoning-traces');
+const { loadEpisodes } = require('./session-episode-store');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const DEFAULT_ARTIFACT_DIR = path.join(REPO_ROOT, '.artifacts', 'ralph-loop');
@@ -18,6 +22,7 @@ const VALID_MODES = new Set(['all', 'engage', 'poll', 'audit', 'post']);
 const RALPH_STATE_PATHS = [
   path.relative(REPO_ROOT, DEFAULT_REPLY_STATE_PATH),
   path.relative(REPO_ROOT, DEFAULT_DRAFTS_PATH),
+  path.join('.thumbgate', 'bluesky-prospect-state.json'),
   path.relative(REPO_ROOT, DEFAULT_LAUNCH_ASSETS_PATH),
 ];
 const VALUE_OPTIONS = new Map([
@@ -97,6 +102,15 @@ function hasAllEnv(env, keys = []) {
   return keys.every((key) => Boolean(env[key]));
 }
 
+function envFlagEnabled(value) {
+  return /^(1|true|yes|on)$/i.test(String(value || '').trim());
+}
+
+function parsePositiveInteger(value, fallback) {
+  const parsed = Number.parseInt(String(value || '').trim(), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 function makeNodeStep(id, scriptPath, args = [], extra = {}) {
   return {
     id,
@@ -131,6 +145,11 @@ function wants(mode, names) {
 function buildRalphSteps(options = {}, env = process.env) {
   const mode = normalizeMode(options.mode || 'all');
   const dryRun = Boolean(options.dryRun);
+  const autonomousBlueskyPublish = !dryRun && envFlagEnabled(env.THUMBGATE_AUTONOMOUS_BLUESKY_PUBLISH);
+  const blueskyPublishLimit = parsePositiveInteger(
+    env.THUMBGATE_BLUESKY_PUBLISH_LIMIT || options.blueskyPublishLimit,
+    3,
+  );
   const steps = [];
 
   if (wants(mode, ['poll'])) {
@@ -161,9 +180,13 @@ function buildRalphSteps(options = {}, env = process.env) {
     if (dryRun) {
       replyArgs.push('--dry-run');
     }
+    const blueskyReplyArgs = [...replyArgs];
+    if (autonomousBlueskyPublish) {
+      blueskyReplyArgs.push('--auto-approve-safe', `--limit=${blueskyPublishLimit}`);
+    }
     // Bluesky reply monitor: Zernio has no inbound/comments API, so we poll AT
-    // Protocol directly. This only queues drafts to .thumbgate/reply-drafts.jsonl
-    // — never auto-posts. Human review required before send.
+    // Protocol directly. Scheduled mode may auto-publish only bounded safe
+    // replies: no URLs, no sales terms, and max 260 chars.
     steps.push(
       makeNodeStep(
         'reply-monitor',
@@ -171,16 +194,38 @@ function buildRalphSteps(options = {}, env = process.env) {
         replyArgs,
         {
           stage: 'engage',
-          description: 'Checks Reddit, X, and LinkedIn reply surfaces with platform-safe posting and draft rules.',
+          description: 'Checks Reddit and LinkedIn reply surfaces with platform-safe posting and draft rules.',
         }
       ),
       makeNodeStep(
         'reply-monitor-bluesky',
         'scripts/social-reply-monitor-bluesky.js',
+        blueskyReplyArgs,
+        {
+          stage: 'engage',
+          description: autonomousBlueskyPublish
+            ? 'Polls Bluesky notifications, auto-approves bounded safe replies, and leaves risky drafts for review.'
+            : 'Polls Bluesky notifications via AT Protocol and queues draft replies for human review.',
+          requiredEnvAll: ['BLUESKY_HANDLE', 'BLUESKY_APP_PASSWORD'],
+        }
+      ),
+      ...(autonomousBlueskyPublish ? [makeNodeStep(
+        'publish-approved-bluesky',
+        'scripts/social-reply-monitor-bluesky.js',
+        ['--publish-approved', '--confirm-publish'],
+        {
+          stage: 'engage',
+          description: 'Publishes only Bluesky drafts that passed the safe auto-approval gate in this run.',
+          requiredEnvAll: ['BLUESKY_HANDLE', 'BLUESKY_APP_PASSWORD'],
+        }
+      )] : []),
+      makeNodeStep(
+        'prospect-bluesky',
+        'scripts/social-bluesky-prospecting.js',
         replyArgs,
         {
           stage: 'engage',
-          description: 'Polls Bluesky notifications via AT Protocol and queues draft replies for human review (never auto-posts).',
+          description: 'Searches Bluesky for relevant agent-reliability pain and queues technical ThumbGate reply drafts (never auto-posts).',
           requiredEnvAll: ['BLUESKY_HANDLE', 'BLUESKY_APP_PASSWORD'],
         }
       ),
@@ -204,12 +249,32 @@ function buildRalphSteps(options = {}, env = process.env) {
     ));
   }
 
-  steps.push({
-    id: 'engagement-audit',
-    stage: 'prove',
-    type: 'internal',
-    description: 'Builds a machine-readable Ralph Loop audit from reply state, drafts, and launch assets.',
-  });
+  steps.push(...[
+    {
+      id: 'reward-report',
+      stage: 'prove',
+      type: 'internal',
+      description: 'Scores session episodes as RL-style rewards and ranks the next prevention gates.',
+    },
+    {
+      id: 'trace-intelligence',
+      stage: 'prove',
+      type: 'internal',
+      description: 'Analyzes observable agent reasoning traces for shape drift, missing verification, and eval-ready gate tuples.',
+    },
+    {
+      id: 'stack-survival-audit',
+      stage: 'prove',
+      type: 'internal',
+      description: 'Checks that ThumbGate stays context-rich, modular, sandboxed, and thin as AI scaffolding collapses.',
+    },
+    {
+      id: 'engagement-audit',
+      stage: 'prove',
+      type: 'internal',
+      description: 'Builds a machine-readable Ralph Loop audit from reply state, drafts, and launch assets.',
+    },
+  ]);
 
   return steps.map((step) => withSkipReason(step, env));
 }
@@ -240,6 +305,22 @@ function runAuditStep(options = {}) {
   });
 }
 
+function runRewardStep() {
+  return buildRewardReport(loadEpisodes(), {
+    maxPairs: 5,
+    maxGateCandidates: 5,
+    maxWorst: 5,
+  });
+}
+
+function runTraceStep() {
+  return buildTraceAnalytics(loadReasoningTraces());
+}
+
+function runStackSurvivalStep() {
+  return buildStackSurvivalAudit();
+}
+
 function runStep(step, options = {}, deps = {}) {
   const startedAt = new Date().toISOString();
 
@@ -255,6 +336,39 @@ function runStep(step, options = {}, deps = {}) {
   }
 
   if (step.type === 'internal') {
+    if (step.id === 'reward-report') {
+      const reward = runRewardStep();
+      return {
+        id: step.id,
+        stage: step.stage,
+        status: 'passed',
+        reward,
+        startedAt,
+        finishedAt: new Date().toISOString(),
+      };
+    }
+    if (step.id === 'trace-intelligence') {
+      const trace = runTraceStep();
+      return {
+        id: step.id,
+        stage: step.stage,
+        status: 'passed',
+        trace,
+        startedAt,
+        finishedAt: new Date().toISOString(),
+      };
+    }
+    if (step.id === 'stack-survival-audit') {
+      const stack = runStackSurvivalStep();
+      return {
+        id: step.id,
+        stage: step.stage,
+        status: 'passed',
+        stack,
+        startedAt,
+        finishedAt: new Date().toISOString(),
+      };
+    }
     const audit = runAuditStep(options);
     return {
       id: step.id,
@@ -312,6 +426,24 @@ function renderMarkdownReport(report) {
 
   lines.push(
     '',
+    '## Reward Model',
+    '',
+    `- Episodes analyzed: ${report.reward?.episodesAnalyzed ?? 0}`,
+    `- Average reward: ${report.reward?.averageReward ?? 0}`,
+    `- Gate candidates: ${report.reward?.gateCandidates?.length ?? 0}`,
+    '',
+    '## Trace Intelligence',
+    '',
+    `- Traces analyzed: ${report.trace?.tracesAnalyzed ?? 0}`,
+    `- Average shape score: ${report.trace?.averageShapeScore ?? 0}`,
+    `- Trace gate candidates: ${report.trace?.gateCandidates?.length ?? 0}`,
+    '',
+    '## Stack Survival',
+    '',
+    `- Verdict: ${report.stack?.verdict ?? 'unknown'}`,
+    `- Overall score: ${report.stack?.overallScore ?? 0}`,
+    `- High-ROI actions: ${report.stack?.highRoiActions?.length ?? 0}`,
+    '',
     '## Audit',
     '',
     `- Checked: ${report.audit.totals.checked}`,
@@ -346,6 +478,12 @@ function runRalphLoop(options = {}, deps = {}) {
   const results = steps.map((step) => runStep(step, normalized, { ...deps, env }));
   const auditStep = results.find((step) => step.id === 'engagement-audit');
   const audit = auditStep?.audit ? auditStep.audit : runAuditStep(normalized);
+  const rewardStep = results.find((step) => step.id === 'reward-report');
+  const reward = rewardStep?.reward ? rewardStep.reward : runRewardStep();
+  const traceStep = results.find((step) => step.id === 'trace-intelligence');
+  const trace = traceStep?.trace ? traceStep.trace : runTraceStep();
+  const stackStep = results.find((step) => step.id === 'stack-survival-audit');
+  const stack = stackStep?.stack ? stackStep.stack : runStackSurvivalStep();
   const report = {
     generatedAt: new Date().toISOString(),
     mode: normalized.mode,
@@ -353,6 +491,9 @@ function runRalphLoop(options = {}, deps = {}) {
     cadence: 'hourly_ci',
     statePaths: RALPH_STATE_PATHS,
     steps: results,
+    reward,
+    trace,
+    stack,
     audit,
   };
   report.artifacts = writeReports(report, normalized.artifactDir || DEFAULT_ARTIFACT_DIR);

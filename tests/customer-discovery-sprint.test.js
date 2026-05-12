@@ -18,6 +18,7 @@ const EXPECTED_ARTIFACTS = [
   'team-outreach-messages.md',
   'operator-priority-handoff.md',
   'operator-priority-handoff.json',
+  'operator-send-now.md',
   'operator-send-now.csv',
   'operator-send-now.json',
   'claude-workflow-hardening-pack.md',
@@ -37,12 +38,20 @@ const EXPECTED_ARTIFACTS = [
   'gemini-cli-demand-pack.md',
   'gemini-cli-demand-pack.json',
   'gemini-cli-operator-queue.csv',
+  'roo-sunset-demand-pack.md',
+  'roo-sunset-demand-pack.json',
+  'roo-sunset-operator-queue.csv',
+  'roo-sunset-channel-drafts.csv',
+  'roo-sunset-send-now.md',
+  'roo-sunset-send-now.json',
+  'roo-sunset-send-now.csv',
   'linkedin-workflow-hardening-pack.md',
   'linkedin-workflow-hardening-pack.json',
   'linkedin-operator-queue.csv',
   'mcp-directory-revenue-pack.md',
   'mcp-directory-revenue-pack.json',
   'mcp-directory-operator-queue.csv',
+  'mcp-directory-surfaces.csv',
 ];
 
 function escapeRegExp(value) {

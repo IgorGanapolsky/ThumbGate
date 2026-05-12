@@ -7,6 +7,13 @@ const {
   extractPostText,
   buildReplyContext,
   monitor,
+  assertPublishableDraft,
+  isSafeAutoReply,
+  normalizeAutoReplyKey,
+  parseLimitArg,
+  publishApprovedDrafts,
+  publishReply,
+  reconcileDraftsWithState,
 } = require('../scripts/social-reply-monitor-bluesky');
 
 test('extractPostText returns record text when present', () => {
@@ -152,6 +159,85 @@ test('monitor writes draft + state on real run', async () => {
   assert.ok(savedState.lastCheck.bluesky);
 });
 
+test('monitor can auto-approve a bounded safe Bluesky reply for autonomous publishing', async () => {
+  const session = { did: 'did:plc:me', handle: 'me.test', pdsHost: 'pds.example', accessJwt: 'jwt' };
+  const notifications = [
+    {
+      uri: 'at://did:plc:other/app.bsky.feed.post/a',
+      cid: 'cidA',
+      reason: 'reply',
+      indexedAt: '2026-04-21T00:00:00Z',
+      author: { handle: 'someone.bsky.social', did: 'did:plc:someone' },
+      record: { text: 'hello' },
+    },
+  ];
+
+  let savedDraft = null;
+  const result = await monitor({
+    sessionFactory: async () => session,
+    listNotifications: async () => notifications,
+    generateReply: async () => 'Pre-action checks are useful because they stop the repeated bad move before another tool call spends money.',
+    saveDraft: (d) => { savedDraft = d; },
+    saveState: () => {},
+    loadState: () => ({ repliedTo: { bluesky: {} }, lastCheck: {} }),
+    dryRun: false,
+    autoApproveSafe: true,
+    autoApproveLimit: 1,
+  });
+
+  assert.equal(result.approved, 1);
+  assert.equal(savedDraft.approved, true);
+  assert.equal(savedDraft.autoPost, true);
+  assert.equal(savedDraft.approvalReason, 'safe_auto_reply');
+});
+
+test('safe auto-reply gate rejects promotional or link-bearing replies', () => {
+  assert.equal(isSafeAutoReply('This local check stops the repeated bad move before the next tool call.'), true);
+  assert.equal(isSafeAutoReply('Buy now at https://example.com'), false);
+  assert.equal(isSafeAutoReply('DM me for a limited time sale'), false);
+});
+
+test('monitor does not auto-approve duplicate safe replies in one pass', async () => {
+  const session = { did: 'did:plc:me', handle: 'me.test', pdsHost: 'pds.example', accessJwt: 'jwt' };
+  const notifications = ['a', 'b', 'c'].map((id) => ({
+    uri: `at://did:plc:other/app.bsky.feed.post/${id}`,
+    cid: `cid${id}`,
+    reason: 'reply',
+    indexedAt: '2026-04-21T00:00:00Z',
+    author: { handle: `${id}.bsky.social`, did: `did:plc:${id}` },
+    record: { text: 'hello' },
+  }));
+  const savedDrafts = [];
+
+  const result = await monitor({
+    sessionFactory: async () => session,
+    listNotifications: async () => notifications,
+    generateReply: async () => 'Pre-action checks stop the repeated bad move before another tool call spends money.',
+    saveDraft: (d) => { savedDrafts.push(d); },
+    saveState: () => {},
+    loadState: () => ({ repliedTo: { bluesky: {} }, lastCheck: {} }),
+    dryRun: false,
+    autoApproveSafe: true,
+    autoApproveLimit: 3,
+  });
+
+  assert.equal(result.approved, 1);
+  assert.equal(savedDrafts.filter((draft) => draft.approved).length, 1);
+});
+
+test('normalizeAutoReplyKey collapses punctuation and spacing', () => {
+  assert.equal(
+    normalizeAutoReplyKey('Pre-action checks stop repeated mistakes.'),
+    normalizeAutoReplyKey('pre action   checks stop repeated mistakes'),
+  );
+});
+
+test('parseLimitArg accepts positive integer limits only', () => {
+  assert.equal(parseLimitArg(['--limit=2']), 2);
+  assert.equal(parseLimitArg(['--limit=0']), null);
+  assert.equal(parseLimitArg(['--limit=nope']), null);
+});
+
 test('monitor skips notifications already recorded as replied', async () => {
   const session = { did: 'did:plc:me', handle: 'me.test', pdsHost: 'pds.example', accessJwt: 'jwt' };
   const notifications = [
@@ -184,4 +270,136 @@ test('monitor skips notifications already recorded as replied', async () => {
   assert.equal(result.queued, 0);
   assert.equal(result.skipped, 1);
   assert.equal(gen, 0);
+});
+
+test('publishReply refuses unapproved drafts', async () => {
+  await assert.rejects(
+    () => publishReply({ did: 'did:plc:me', accessJwt: 'jwt', pdsHost: 'pds.example' }, {
+      platform: 'bluesky',
+      approved: false,
+      draftReply: 'hello',
+      reply: {
+        root: { uri: 'at://did:plc:a/app.bsky.feed.post/root', cid: 'rootCid' },
+        parent: { uri: 'at://did:plc:a/app.bsky.feed.post/parent', cid: 'parentCid' },
+      },
+    }),
+    /unapproved/,
+  );
+});
+
+test('publishReply creates an AT Protocol reply record for approved drafts', async () => {
+  let call = null;
+  const draft = {
+    platform: 'bluesky',
+    approved: true,
+    draftReply: 'The distinction is observability vs enforcement.',
+    reply: {
+      root: { uri: 'at://did:plc:a/app.bsky.feed.post/root', cid: 'rootCid' },
+      parent: { uri: 'at://did:plc:a/app.bsky.feed.post/parent', cid: 'parentCid' },
+    },
+  };
+  const result = await publishReply(
+    { did: 'did:plc:me', accessJwt: 'jwt', pdsHost: 'pds.example' },
+    draft,
+    {
+      now: () => new Date('2026-05-04T13:00:00Z'),
+      request: async (...args) => {
+        call = args;
+        return { status: 200, json: { uri: 'at://did:plc:me/app.bsky.feed.post/reply', cid: 'replyCid' } };
+      },
+    },
+  );
+
+  assert.equal(result.uri, 'at://did:plc:me/app.bsky.feed.post/reply');
+  assert.equal(call[0], 'POST');
+  assert.equal(call[1], 'pds.example');
+  assert.equal(call[2], '/xrpc/com.atproto.repo.createRecord');
+  assert.equal(call[3].body.collection, 'app.bsky.feed.post');
+  assert.equal(call[3].body.record.text, draft.draftReply);
+  assert.deepEqual(call[3].body.record.reply.parent, draft.reply.parent);
+});
+
+test('publishApprovedDrafts blocks live publishing without explicit confirm flag', async () => {
+  const result = await publishApprovedDrafts({
+    loadDrafts: () => [{
+      platform: 'bluesky',
+      approved: true,
+      draftReply: 'ready',
+      reply: {
+        root: { uri: 'at://did:plc:a/app.bsky.feed.post/root', cid: 'rootCid' },
+        parent: { uri: 'at://did:plc:a/app.bsky.feed.post/parent', cid: 'parentCid' },
+      },
+    }],
+    confirmPublish: false,
+    dryRun: false,
+  });
+
+  assert.equal(result.blocked, true);
+  assert.equal(result.reason, 'missing_confirm_publish');
+  assert.equal(result.published, 0);
+});
+
+test('publishApprovedDrafts records posted URI in reply monitor state after confirmed publish', async () => {
+  let savedState = null;
+  let savedDrafts = null;
+  const drafts = [{
+    platform: 'bluesky',
+    approved: true,
+    draftReply: 'ready',
+    reply: {
+      root: { uri: 'at://did:plc:a/app.bsky.feed.post/root', cid: 'rootCid' },
+      parent: { uri: 'at://did:plc:a/app.bsky.feed.post/parent', cid: 'parentCid' },
+    },
+  }];
+  const result = await publishApprovedDrafts({
+    sessionFactory: async () => ({ did: 'did:plc:me', accessJwt: 'jwt', pdsHost: 'pds.example' }),
+    loadDrafts: () => drafts,
+    loadState: () => ({ repliedTo: { bluesky: {} }, lastCheck: {} }),
+    saveDrafts: (nextDrafts) => { savedDrafts = nextDrafts.map((draft) => ({ ...draft })); },
+    saveState: (state) => { savedState = state; },
+    publishReply: async () => ({
+      uri: 'at://did:plc:me/app.bsky.feed.post/reply',
+      cid: 'replyCid',
+      parentUri: 'at://did:plc:a/app.bsky.feed.post/parent',
+    }),
+    confirmPublish: true,
+    dryRun: false,
+  });
+
+  assert.equal(result.published, 1);
+  assert.equal(savedState.repliedTo.bluesky['at://did:plc:a/app.bsky.feed.post/parent'].postedUri, 'at://did:plc:me/app.bsky.feed.post/reply');
+  assert.equal(savedDrafts.length, 1);
+  assert.equal(savedDrafts[0].postedUri, 'at://did:plc:me/app.bsky.feed.post/reply');
+  assert.equal(savedDrafts[0].postedCid, 'replyCid');
+  assert.ok(savedDrafts[0].postedAt);
+});
+
+test('reconcileDraftsWithState backfills posted metadata from reply monitor state', () => {
+  const drafts = [{
+    platform: 'bluesky',
+    approved: true,
+    draftReply: 'ready',
+    reply: {
+      root: { uri: 'at://did:plc:a/app.bsky.feed.post/root', cid: 'rootCid' },
+      parent: { uri: 'at://did:plc:a/app.bsky.feed.post/parent', cid: 'parentCid' },
+    },
+  }];
+  const state = {
+    repliedTo: {
+      bluesky: {
+        'at://did:plc:a/app.bsky.feed.post/parent': {
+          postedUri: 'at://did:plc:me/app.bsky.feed.post/reply',
+          postedCid: 'replyCid',
+          postedAt: '2026-05-05T18:40:00.000Z',
+        },
+      },
+    },
+  };
+
+  const changed = reconcileDraftsWithState(drafts, state);
+
+  assert.equal(changed, true);
+  assert.equal(drafts[0].postedUri, 'at://did:plc:me/app.bsky.feed.post/reply');
+  assert.equal(drafts[0].postedCid, 'replyCid');
+  assert.equal(drafts[0].postedAt, '2026-05-05T18:40:00.000Z');
 });
