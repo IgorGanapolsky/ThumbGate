@@ -21,10 +21,8 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  test:
+  quality-gates:
     runs-on: ubuntu-latest
-    # Keep enough headroom for the full suite plus proof lanes on main.
-    timeout-minutes: 60
     env:
       STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
       STRIPE_PRICE_ID: ${{ secrets.STRIPE_PRICE_ID }}
@@ -68,14 +66,78 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
         run: npm run branch-protection:check
+
+  test-shards:
+    name: test shard ${{ matrix.shard }}/4
+    needs: quality-gates
+    runs-on: ubuntu-latest
+    # Keep enough headroom for each shard of the full suite.
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    env:
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      STRIPE_PRICE_ID: ${{ secrets.STRIPE_PRICE_ID }}
+      STRIPE_PRODUCT_ID: ${{ secrets.STRIPE_PRODUCT_ID }}
+      STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      THUMBGATE_API_KEY: ${{ secrets.THUMBGATE_API_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            workers/package-lock.json
+
+      - name: Install deps
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
       - name: Run tests
         env:
           TEST_TOTAL_SHARDS: 4
           TEST_SHARD_INDEX: ${{ matrix.shard }}
         run: node scripts/test-shard.js
 
+  proof-lanes:
+    needs: quality-gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      STRIPE_PRICE_ID: ${{ secrets.STRIPE_PRICE_ID }}
+      STRIPE_PRODUCT_ID: ${{ secrets.STRIPE_PRODUCT_ID }}
+      STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      THUMBGATE_API_KEY: ${{ secrets.THUMBGATE_API_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            workers/package-lock.json
+
+      - name: Install deps
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
       - name: Run gate-eval regression suite
-        if: matrix.shard == 1
         # Exits non-zero if any case in config/evals/*.json fails against
         # config/specs/*.json. Any constraint regex change that flips a
         # previously-blocking case to pass (or vice versa) blocks merge
@@ -83,43 +145,34 @@ jobs:
         run: npm run gate-eval:ci
 
       - name: Run coverage
-        if: matrix.shard == 1
         run: npm run test:coverage
 
       - name: Check congruence (branding, tech stack, version across all surfaces)
-        if: matrix.shard == 1
         run: npm run test:congruence
 
       - name: Run adapter proof
-        if: matrix.shard == 1
         run: npm run prove:adapters
 
       - name: Run automation proof
-        if: matrix.shard == 1
         run: npm run prove:automation
 
       - name: Run runtime proof
-        if: matrix.shard == 1
         run: npm run prove:runtime
 
       - name: Run evolution proof
-        if: matrix.shard == 1
         run: npm run prove:evolution
 
       - name: Run workflow contract proof
-        if: matrix.shard == 1
         run: npm run prove:workflow-contract
 
       - name: Run autoresearch proof
-        if: matrix.shard == 1
         run: npm run prove:autoresearch
 
       - name: Run Tessl distribution proof
-        if: matrix.shard == 1
         run: npm run prove:tessl
 
       - name: Write prompt evaluation report
-        if: always() && matrix.shard == 1
+        if: always()
         run: |
           mkdir -p proof
           node scripts/prompt-eval.js --min-score=0 --synthetic --synthetic-variants=1 --suite-output proof/prompt-eval-suite.generated.json --output proof/prompt-eval-report.json --json > /dev/null
@@ -143,7 +196,7 @@ jobs:
         run: npm run test:congruence:live
 
       - name: Upload proof artifacts
-        if: always() && matrix.shard == 1
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: proof-artifacts
@@ -164,3 +217,25 @@ jobs:
             proof/tessl-report.md
             proof/prompt-eval-report.json
             proof/prompt-eval-suite.generated.json
+
+  test:
+    name: test
+    needs: [quality-gates, test-shards, proof-lanes]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check CI shard and proof results
+        run: |
+          if [ "${{ needs['quality-gates'].result }}" != "success" ]; then
+            echo "quality-gates failed with result ${{ needs['quality-gates'].result }}" >&2
+            exit 1
+          fi
+          if [ "${{ needs['test-shards'].result }}" != "success" ]; then
+            echo "test-shards failed with result ${{ needs['test-shards'].result }}" >&2
+            exit 1
+          fi
+          if [ "${{ needs['proof-lanes'].result }}" != "success" ]; then
+            echo "proof-lanes failed with result ${{ needs['proof-lanes'].result }}" >&2
+            exit 1
+          fi
+          echo "CI quality gates, test shards, and proof lanes passed."
