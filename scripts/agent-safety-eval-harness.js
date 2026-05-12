@@ -22,7 +22,7 @@ function classifyActionRisk(action = {}) {
   const categories = ACTION_RISK_KEYWORDS
     .filter(([, pattern]) => pattern.test(text))
     .map(([category]) => category);
-  const stage = categories.length === 0 ? 'fast_allow' : categories.length === 1 ? 'deep_check' : 'human_approval';
+  const stage = resolveRiskStage(categories.length);
   return {
     allowed: stage === 'fast_allow',
     stage,
@@ -31,6 +31,12 @@ function classifyActionRisk(action = {}) {
       ? 'No high-impact action keywords matched.'
       : `Matched high-impact categories: ${categories.join(', ')}.`,
   };
+}
+
+function resolveRiskStage(categoryCount) {
+  if (categoryCount === 0) return 'fast_allow';
+  if (categoryCount === 1) return 'deep_check';
+  return 'human_approval';
 }
 
 function checkSubagentHandoff(params = {}) {
@@ -47,7 +53,7 @@ function checkSubagentHandoff(params = {}) {
     }
     : { allowed: true, stage: 'return_allow', categories: [], reason: 'No return-check manipulation markers found.' };
   const intentAligned = userIntent && task
-    ? task.toLowerCase().split(/\W+/).filter((word) => word.length > 4 && userIntent.toLowerCase().includes(word)).length > 0
+    ? task.toLowerCase().split(/\W+/).some((word) => word.length > 4 && userIntent.toLowerCase().includes(word))
     : true;
   return {
     allowed: outbound.stage !== 'human_approval' && returnRisk.allowed && intentAligned,
@@ -135,11 +141,18 @@ function validateToolCallContract(tool = {}) {
 }
 
 function selectInferenceEngineProfile(params = {}) {
-  const workload = params.workload || 'agentic';
-  const contextTokens = Number(params.contextTokens || 0);
-  const hasBlackwell = Boolean(params.hasBlackwell);
-  const openAiCompatibleRequired = params.openAiCompatibleRequired !== false;
-  const candidates = [
+  const candidates = buildInferenceCandidates(params).map((candidate) => scoreInferenceCandidate(candidate, params));
+
+  candidates.sort((a, b) => b.score - a.score);
+  return {
+    selected: candidates[0].engine,
+    candidates,
+    policy: 'Benchmark before switching engines; do not claim TokenSpeed performance without local workload evidence.',
+  };
+}
+
+function buildInferenceCandidates(params = {}) {
+  return [
     {
       engine: 'tokenspeed',
       score: 0,
@@ -159,32 +172,39 @@ function selectInferenceEngineProfile(params = {}) {
       productionReady: true,
     },
   ];
+}
 
-  for (const candidate of candidates) {
-    if (candidate.engine === 'tokenspeed') {
-      if (workload === 'agentic') candidate.score += 3;
-      if (contextTokens >= 50000) candidate.score += 2;
-      if (hasBlackwell) candidate.score += 2;
-      if (!params.allowPreview) candidate.score -= 4;
-      candidate.reason.push('Best treated as benchmark/preview until production hardening is proven locally.');
-    }
-    if (candidate.engine === 'vllm') {
-      candidate.score += openAiCompatibleRequired ? 3 : 1;
-      candidate.score += 1;
-      candidate.reason.push('Safe default for OpenAI-compatible serving and broad model support.');
-    }
-    if (candidate.engine === 'llama.cpp') {
-      candidate.score += params.localCpuOnly ? 3 : 0;
-      candidate.reason.push('Good local fallback, not the first choice for high-throughput agent serving.');
-    }
-  }
+function scoreInferenceCandidate(candidate, params = {}) {
+  if (candidate.engine === 'tokenspeed') return scoreTokenSpeedCandidate(candidate, params);
+  if (candidate.engine === 'vllm') return scoreVllmCandidate(candidate, params);
+  if (candidate.engine === 'llama.cpp') return scoreLlamaCppCandidate(candidate, params);
+  return candidate;
+}
 
-  candidates.sort((a, b) => b.score - a.score);
-  return {
-    selected: candidates[0].engine,
-    candidates,
-    policy: 'Benchmark before switching engines; do not claim TokenSpeed performance without local workload evidence.',
-  };
+function scoreTokenSpeedCandidate(candidate, params = {}) {
+  const scored = { ...candidate, reason: [...candidate.reason] };
+  const contextTokens = Number(params.contextTokens || 0);
+  if ((params.workload || 'agentic') === 'agentic') scored.score += 3;
+  if (contextTokens >= 50000) scored.score += 2;
+  if (params.hasBlackwell) scored.score += 2;
+  if (!params.allowPreview) scored.score -= 4;
+  scored.reason.push('Best treated as benchmark/preview until production hardening is proven locally.');
+  return scored;
+}
+
+function scoreVllmCandidate(candidate, params = {}) {
+  const scored = { ...candidate, reason: [...candidate.reason] };
+  scored.score += params.openAiCompatibleRequired !== false ? 3 : 1;
+  scored.score += 1;
+  scored.reason.push('Safe default for OpenAI-compatible serving and broad model support.');
+  return scored;
+}
+
+function scoreLlamaCppCandidate(candidate, params = {}) {
+  const scored = { ...candidate, reason: [...candidate.reason] };
+  scored.score += params.localCpuOnly ? 3 : 0;
+  scored.reason.push('Good local fallback, not the first choice for high-throughput agent serving.');
+  return scored;
 }
 
 function planAgentDreamReplay(events = []) {
@@ -223,12 +243,15 @@ function main() {
 
 module.exports = {
   classifyActionRisk,
+  resolveRiskStage,
   checkSubagentHandoff,
   buildPetriStyleScenario,
   scoreJudgeAlignment,
   evaluateSelfValidationPlan,
   validateToolCallContract,
   selectInferenceEngineProfile,
+  buildInferenceCandidates,
+  scoreInferenceCandidate,
   planAgentDreamReplay,
   runHarness,
 };

@@ -48,7 +48,7 @@ function evaluateReconstruction(params = {}) {
   const threshold = Number.isFinite(params.threshold) ? params.threshold : 0.92;
   const original = entriesByLayer(params.originalActivations);
   const reconstructed = entriesByLayer(params.reconstructedActivations);
-  const layers = Object.keys(original).sort().map((layer) => {
+  const layers = Object.keys(original).sort((left, right) => left.localeCompare(right)).map((layer) => {
     const cosine = cosineSimilarity(original[layer], reconstructed[layer]);
     return {
       layer,
@@ -107,13 +107,7 @@ function buildNaturalLanguageActivationAudit(samples = [], options = {}) {
   const inferred = records.length - backed;
   const reconstructionRecords = records.filter((record) => record.reconstruction);
   const flagged = records.filter((record) => record.flags.length > 0);
-  const mode = records.length === 0
-    ? 'empty'
-    : backed === records.length
-      ? 'activation_backed'
-      : backed === 0
-        ? 'behavioral_inference_only'
-        : 'mixed';
+  const mode = resolveAuditMode(records.length, backed);
 
   return {
     generatedAt: new Date().toISOString(),
@@ -138,6 +132,13 @@ function buildNaturalLanguageActivationAudit(samples = [], options = {}) {
     })),
     records,
   };
+}
+
+function resolveAuditMode(recordCount, activationBackedCount) {
+  if (recordCount === 0) return 'empty';
+  if (activationBackedCount === recordCount) return 'activation_backed';
+  if (activationBackedCount === 0) return 'behavioral_inference_only';
+  return 'mixed';
 }
 
 function formatNaturalLanguageActivationAudit(report) {
@@ -168,6 +169,7 @@ module.exports = {
   flattenVector,
   cosineSimilarity,
   evaluateReconstruction,
+  resolveAuditMode,
   normalizeActivationSample,
   buildNaturalLanguageActivationAudit,
   formatNaturalLanguageActivationAudit,

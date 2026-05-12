@@ -16,12 +16,12 @@ function loadRoleTemplates(options = {}) {
 }
 
 function listRoleTemplates(options = {}) {
-  return Object.keys(loadRoleTemplates(options).roles || {}).sort();
+  return Object.keys(loadRoleTemplates(options).roles || {}).sort((left, right) => left.localeCompare(right));
 }
 
 function getRoleTemplate(roleName, options = {}) {
   const templates = loadRoleTemplates(options);
-  const role = templates.roles && templates.roles[roleName];
+  const role = templates.roles?.[roleName];
   if (!role) {
     throw new Error(`Unknown subagent role: ${roleName}`);
   }
@@ -32,14 +32,47 @@ function normalizeWriteScope(scope) {
   return [...new Set((Array.isArray(scope) ? scope : [])
     .map((entry) => String(entry || '').trim())
     .filter(Boolean))]
-    .sort();
+    .sort((left, right) => left.localeCompare(right));
 }
 
 function scopesOverlap(left, right) {
   if (!left || !right) return false;
-  const a = left.replace(/\/+$/, '');
-  const b = right.replace(/\/+$/, '');
+  const a = trimTrailingSlashes(left);
+  const b = trimTrailingSlashes(right);
   return a === b || a.startsWith(`${b}/`) || b.startsWith(`${a}/`);
+}
+
+function trimTrailingSlashes(value) {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === '/') end -= 1;
+  return value.slice(0, end);
+}
+
+function resolveRoleRuntime(role, gates) {
+  return role && Number.isFinite(role.maxRuntimeMinutes)
+    ? role.maxRuntimeMinutes
+    : (gates.defaultMaxRuntimeMinutes || 45);
+}
+
+function collectPlanEvidence(plan, role) {
+  const evidence = new Set(Array.isArray(plan.expectedEvidence) ? plan.expectedEvidence : []);
+  const missingEvidence = (role?.requiredEvidence || []).filter((item) => !evidence.has(item));
+  return { evidence, missingEvidence };
+}
+
+function buildNormalizedPlan(plan, role, normalizedWriteScope, evidence, estimatedRuntime) {
+  return {
+    runId: plan.runId || `subagent-${Date.now()}`,
+    role: plan.role,
+    task: String(plan.task || '').trim(),
+    owner: String(plan.owner || '').trim(),
+    pattern: plan.pattern || role?.pattern || 'inline_tool_subagent',
+    mcpProfile: plan.mcpProfile || role?.mcpProfile || 'default',
+    writeScope: normalizedWriteScope,
+    expectedEvidence: [...evidence].sort((left, right) => left.localeCompare(right)),
+    estimatedRuntimeMinutes: estimatedRuntime || null,
+    externalActions: plan.externalActions || role?.externalActions || 'none',
+  };
 }
 
 function findWriteScopeConflicts(activeRuns, candidateScope) {
@@ -65,7 +98,7 @@ function evaluateSubagentRunPlan(plan = {}, options = {}) {
   const gates = templates.lifecycleGates || {};
   const blockers = [];
   const warnings = [];
-  const role = templates.roles && templates.roles[plan.role];
+  const role = templates.roles?.[plan.role];
 
   if (!role) {
     blockers.push(`Unknown subagent role: ${plan.role || '(missing)'}`);
@@ -76,15 +109,13 @@ function evaluateSubagentRunPlan(plan = {}, options = {}) {
   if (gates.requireOwner !== false && !owner) blockers.push('Subagent run requires an owner.');
   if (gates.requireTask !== false && !task) blockers.push('Subagent run requires a task.');
 
-  const maxRuntime = role && Number.isFinite(role.maxRuntimeMinutes)
-    ? role.maxRuntimeMinutes
-    : (gates.defaultMaxRuntimeMinutes || 45);
+  const maxRuntime = resolveRoleRuntime(role, gates);
   const estimatedRuntime = Number(plan.estimatedRuntimeMinutes || 0);
   if (estimatedRuntime > maxRuntime) {
     blockers.push(`Estimated runtime ${estimatedRuntime}m exceeds ${maxRuntime}m for ${plan.role}.`);
   }
 
-  const normalizedWriteScope = normalizeWriteScope(plan.writeScope || (role && role.writeScope));
+  const normalizedWriteScope = normalizeWriteScope(plan.writeScope || role?.writeScope);
   const conflicts = gates.requireDisjointWriteScopes === false
     ? []
     : findWriteScopeConflicts(plan.activeRuns, normalizedWriteScope);
@@ -93,29 +124,16 @@ function evaluateSubagentRunPlan(plan = {}, options = {}) {
   }
 
   const wantsAgentMessaging = Boolean(plan.agentToAgentMessaging);
-  if (wantsAgentMessaging && !(role && role.allowAgentMessaging)) {
+  if (wantsAgentMessaging && !role?.allowAgentMessaging) {
     blockers.push('Agent-to-agent messaging is blocked for this role.');
   }
 
-  const evidence = new Set(Array.isArray(plan.expectedEvidence) ? plan.expectedEvidence : []);
-  const missingEvidence = (role && Array.isArray(role.requiredEvidence) ? role.requiredEvidence : [])
-    .filter((item) => !evidence.has(item));
+  const { evidence, missingEvidence } = collectPlanEvidence(plan, role);
   if (missingEvidence.length > 0) {
     warnings.push(`Expected evidence should include: ${missingEvidence.join(', ')}.`);
   }
 
-  const normalizedPlan = {
-    runId: plan.runId || `subagent-${Date.now()}`,
-    role: plan.role,
-    task,
-    owner,
-    pattern: plan.pattern || (role && role.pattern) || 'inline_tool_subagent',
-    mcpProfile: plan.mcpProfile || (role && role.mcpProfile) || 'default',
-    writeScope: normalizedWriteScope,
-    expectedEvidence: [...evidence].sort(),
-    estimatedRuntimeMinutes: estimatedRuntime || null,
-    externalActions: plan.externalActions || (role && role.externalActions) || 'none',
-  };
+  const normalizedPlan = buildNormalizedPlan(plan, role, normalizedWriteScope, evidence, estimatedRuntime);
 
   return {
     allowed: blockers.length === 0,
