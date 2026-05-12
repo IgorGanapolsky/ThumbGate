@@ -5053,17 +5053,21 @@ async function addContext(){
       if (!rl.allowed) { sendPublicRateLimited(res, rl); return; }
       try {
         const _botDetectorIntake = require('../../scripts/bot-detector');
-        if (_botDetectorIntake && typeof _botDetectorIntake.classifyVisitor === 'function') {
+        if (typeof _botDetectorIntake?.classifyVisitor === 'function') {
           const c = _botDetectorIntake.classifyVisitor(req);
           // Only reject on UA pattern match (real bot signature), not on
           // empty-UA or other softer signals.
-          if (c && c.type === 'bot' && typeof c.reason === 'string' && c.reason.startsWith('UA matches:')) {
-            res.writeHead(204, { 'Access-Control-Allow-Origin': '*' });
+          if (c?.type === 'bot' && typeof c.reason === 'string' && c.reason.startsWith('UA matches:')) {
+            res.writeHead(204, { 'Access-Control-Allow-Origin': '*' }); // NOSONAR javascript:S5122 - Public lead-intake bot rejection is intentionally origin-agnostic and returns no body.
             res.end();
             return;
           }
         }
-      } catch (_) { /* bot-detector missing — fail open */ }
+      } catch (err) {
+        if (process.env.THUMBGATE_DEBUG_BOT_DETECTOR === '1') {
+          console.warn('bot-detector intake check failed:', err && err.message ? err.message : String(err));
+        }
+      }
       const { FEEDBACK_DIR } = getFeedbackPaths();
       const traceId = createTraceId('sprint_intake');
       const journeyState = resolveJourneyState(req, parsed);

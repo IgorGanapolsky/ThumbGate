@@ -49,7 +49,7 @@ const _lastAccessed = new Map();
 function _clientIp(req) {
   // Trust X-Forwarded-For only when behind a known proxy (Railway). Always
   // fall back to socket address.
-  const xff = req.headers && req.headers['x-forwarded-for'];
+  const xff = req.headers?.['x-forwarded-for'];
   if (xff && typeof xff === 'string') {
     // First (leftmost) IP is the originating client per RFC 7239 convention,
     // assuming the proxy chain is trusted.
