@@ -55,6 +55,7 @@ The revenue loop emits these operator artifacts in that folder:
 - `gtm-revenue-loop.json` for machine-readable truth
 - `gtm-marketplace-copy.md` for listing-ready copy based on the same target evidence
 - `gtm-marketplace-copy.json` for machine-readable listing copy and target themes
+- `gtm-marketplace-surfaces.csv` for a flat operator submission sheet covering the default listing plus evidence-backed variants
 - `gtm-target-queue.csv` for spreadsheet sorting
 - `gtm-target-queue.jsonl` for line-by-line operator handoff with first-touch and pain-confirmed follow-up drafts
 - `team-outreach-messages.md` for the warm-outbound copy layer tied to the same ranked queue
