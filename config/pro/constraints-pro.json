@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "name": "ThumbGate Pro Constraints",
+  "description": "Public Pro upgrade bundle installed by `thumbgate pro --upgrade` for local workflow hardening.",
+  "constraints": [
+    {
+      "id": "evidence-before-completion",
+      "severity": "critical",
+      "rule": "Do not claim done, fixed, shipped, published, or paid until the relevant command, URL, PR, workflow, or billing record has been checked."
+    },
+    {
+      "id": "read-before-write",
+      "severity": "high",
+      "rule": "Before editing existing code, read the surrounding implementation and tests so the patch follows local contracts."
+    },
+    {
+      "id": "no-destructive-git-without-intent",
+      "severity": "critical",
+      "rule": "Block destructive git operations such as reset --hard, checkout --, clean -fd, and force-push unless the operator explicitly requested that exact operation."
+    },
+    {
+      "id": "production-data-write-gate",
+      "severity": "critical",
+      "rule": "Block production database writes, deletes, migrations, and irreversible data operations unless a backup, target environment, and rollback plan are present."
+    },
+    {
+      "id": "secrets-redaction",
+      "severity": "critical",
+      "rule": "Never print, commit, paste, or persist secrets. Use only sanitized status output when verifying credentials."
+    },
+    {
+      "id": "test-before-merge",
+      "severity": "high",
+      "rule": "Before saying a code change is ready, run the narrow relevant tests or explain exactly why verification could not run."
+    },
+    {
+      "id": "no-synthetic-traction",
+      "severity": "critical",
+      "rule": "Do not describe views, clicks, stars, configured gates, or generated artifacts as revenue, customers, or proven interventions."
+    },
+    {
+      "id": "paid-path-health",
+      "severity": "high",
+      "rule": "Before promoting a paid offer, verify the landing page and checkout route return HTTP 200 and point to the intended Stripe path."
+    },
+    {
+      "id": "single-source-commercial-truth",
+      "severity": "high",
+      "rule": "Commercial claims must match docs/COMMERCIAL_TRUTH.md for pricing, traction, tier limits, and proof language."
+    },
+    {
+      "id": "bounded-agent-run",
+      "severity": "high",
+      "rule": "Long-running agent work must have a bounded objective, progress evidence, and a stop condition instead of open-ended activity."
+    }
+  ]
+}

@@ -12,6 +12,10 @@
  *   node scripts/social-reply-monitor.js --dry-run          # Preview replies without posting
  *
  * Env vars: see individual publisher modules.
+ *   THUMBGATE_REDDIT_TRACKED_THREADS — comma/newline separated Reddit post URLs
+ *     to watch in addition to inbox replies.
+ *   THUMBGATE_REPLY_MONITOR_STATE_FILE — optional state path override.
+ *   THUMBGATE_REPLY_DRAFT_FILE — optional draft path override.
  * Reply generation uses smart templates (zero cost, no external API).
  *
  * State file: .thumbgate/reply-monitor-state.json — tracks which replies we've already responded to.
@@ -22,28 +26,44 @@ const path = require('path');
 const { loadLocalEnv } = require('./social-analytics/load-env');
 const { gateContextualReply, commentExplicitlyRequestsProduct } = require('./social-quality-gate');
 
-const STATE_FILE = path.resolve(__dirname, '..', '.thumbgate', 'reply-monitor-state.json');
+const DEFAULT_STATE_FILE = path.resolve(__dirname, '..', '.thumbgate', 'reply-monitor-state.json');
+const DEFAULT_DRAFT_FILE = path.resolve(__dirname, '..', '.thumbgate', 'reply-drafts.jsonl');
 const REDDIT_API_BASE = 'https://oauth.reddit.com';
 
 loadLocalEnv();
+
+function resolveRuntimeFile(envName, defaultPath) {
+  const configured = process.env[envName];
+  return configured ? path.resolve(configured) : defaultPath;
+}
+
+function getStateFile() {
+  return resolveRuntimeFile('THUMBGATE_REPLY_MONITOR_STATE_FILE', DEFAULT_STATE_FILE);
+}
+
+function getDraftFile() {
+  return resolveRuntimeFile('THUMBGATE_REPLY_DRAFT_FILE', DEFAULT_DRAFT_FILE);
+}
 
 // ---------------------------------------------------------------------------
 // State management
 // ---------------------------------------------------------------------------
 
 function loadState() {
+  const stateFile = getStateFile();
   try {
-    if (fs.existsSync(STATE_FILE)) {
-      return JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
+    if (fs.existsSync(stateFile)) {
+      return JSON.parse(fs.readFileSync(stateFile, 'utf8'));
     }
   } catch { /* ignore */ }
   return { repliedTo: {}, lastCheck: {} };
 }
 
 function saveState(state) {
-  const dir = path.dirname(STATE_FILE);
+  const stateFile = getStateFile();
+  const dir = path.dirname(stateFile);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+  fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
 }
 
 // ---------------------------------------------------------------------------
@@ -54,12 +74,11 @@ function saveState(state) {
 // Draft file for human review (Reddit replies are NEVER auto-posted)
 // ---------------------------------------------------------------------------
 
-const DRAFT_FILE = path.resolve(__dirname, '..', '.thumbgate', 'reply-drafts.jsonl');
-
 function saveDraft(draft) {
-  const dir = path.dirname(DRAFT_FILE);
+  const draftFile = getDraftFile();
+  const dir = path.dirname(draftFile);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.appendFileSync(DRAFT_FILE, JSON.stringify(draft) + '\n');
+  fs.appendFileSync(draftFile, JSON.stringify(draft) + '\n');
 }
 
 // ---------------------------------------------------------------------------
@@ -106,7 +125,7 @@ async function generateReply(comment, context) {
 
   // Extract the specific topic they're asking about
   const mentionsSetup = /install|setup|config|init|npx|how.+start/i.test(lc);
-  const mentionsHow = /how does|how do|explain|what is|can you describe/i.test(lc);
+  const mentionsHow = /how (?:does|do|are|is|can|you)|explain|what is|can you describe|curious how|curious if|wondering/i.test(lc);
   const mentionsGates = /gate|block|prevent|hook|intercept|firewall/i.test(lc);
   const mentionsMemory = /memory|context|session|forget|amnesia|remember/i.test(lc);
   const mentionsCursor = /cursor|windsurf|copilot|cline/i.test(lc);
@@ -115,8 +134,26 @@ async function generateReply(comment, context) {
   const mentionsThanks = /thanks|thank you|cool|nice|interesting|awesome/i.test(lc);
   const mentionsSkillsProcess = /skill|template|process|workflow|review|sprint|implement|phase/i.test(lc);
   const mentionsConflictingDocs = /context doc|context docs|conflicting|inconsisten|claude\.md|cursorrules|instruction/i.test(lc);
+  const mentionsOverBlocking = /over.?block|false positive|too broad|brittle/i.test(lc);
+  const mentionsDeterministicPolicy = /deterministic|non.?deterministic|regex|ast|llm as policy|classif|policy/i.test(lc);
 
   // Build response that addresses THEIR specific point
+  if (isReddit && mentionsGates && (mentionsOverBlocking || mentionsDeterministicPolicy || mentionsScaling)) {
+    const reply = mentionsDeterministicPolicy || mentionsScaling
+      ? [
+        'The enforced part is deterministic.',
+        'A thumbs-down can produce a proposed rule, but the thing that runs before execution is an inspectable policy over the tool name, args, cwd, and normalized command shape.',
+        'I do not want an LLM making the final allow/deny call at runtime either.',
+        'For teams, I treat sharing as promotion: personal gates stay local until a recurring pattern is generalized, reviewed, and promoted so one person\'s weird local path does not become everyone\'s brittle rule.'
+      ].join(' ')
+      : [
+        'The main guardrail against over-blocking is scope.',
+        'A thumbs-down should not become a broad ban; it becomes a narrow Pre-Action Gate tied to the rejected tool/action pattern and the evidence around it.',
+        'If it blocks a good attempt, that is feedback too: loosen or expire that gate instead of letting it sit as permanent policy.'
+      ].join(' ');
+    const gate = gateContextualReply(comment, reply, context);
+    return gate.allowed ? reply : null;
+  }
   if (mentionsSkillsProcess || mentionsConflictingDocs) {
     const reply = [
       'That matches what I have seen too.',
@@ -215,15 +252,16 @@ async function getRedditToken() {
 async function checkRedditReplies(state, dryRun) {
   console.log('[reply-monitor] Checking Reddit inbox...');
 
+  const userAgent = process.env.REDDIT_USER_AGENT || `thumbgate/1.0 by ${process.env.REDDIT_USERNAME || 'operator'}`;
   let token;
   try {
     token = await getRedditToken();
   } catch (err) {
     console.warn(`[reply-monitor] Reddit auth failed: ${err.message}`);
-    return [];
+    const trackedResults = await checkTrackedRedditThreads({ token: null, userAgent, state });
+    state.lastCheck.reddit = new Date().toISOString();
+    return trackedResults;
   }
-
-  const userAgent = `thumbgate/1.0 by ${process.env.REDDIT_USERNAME}`;
 
   // Fetch inbox (comment replies)
   const res = await fetch(`${REDDIT_API_BASE}/message/inbox?limit=25`, {
@@ -235,7 +273,9 @@ async function checkRedditReplies(state, dryRun) {
 
   if (!res.ok) {
     console.warn(`[reply-monitor] Reddit inbox fetch failed: ${res.status}`);
-    return [];
+    const trackedResults = await checkTrackedRedditThreads({ token, userAgent, state });
+    state.lastCheck.reddit = new Date().toISOString();
+    return trackedResults;
   }
 
   const data = await res.json();
@@ -253,41 +293,227 @@ async function checkRedditReplies(state, dryRun) {
 
     console.log(`[reply-monitor] New Reddit reply from u/${reply.data.author}: "${commentBody.slice(0, 80)}..."`);
 
-    const isQuestion = /\?/.test(commentBody);
+    const isQuestion = looksLikeQuestion(commentBody);
     const generatedReply = await generateReply(commentBody, {
       platform: 'reddit',
+      author: reply.data.author,
       postTitle,
       isQuestion,
     });
 
-    if (!generatedReply || generatedReply === '__DRAFT__') {
-      console.warn(`[reply-monitor] Could not generate reply for ${commentId}`);
-      continue;
-    }
-
-    console.log(`[reply-monitor] Generated reply: "${generatedReply.slice(0, 100)}..."`);
-
-    // Reddit is ALWAYS draft-only — never auto-post.
-    // Bot detection on Reddit is aggressive; human must review and post manually.
-    const draft = {
-      platform: 'reddit',
+    const result = draftRedditReply({
+      state,
       commentId,
+      generatedReply,
       author: reply.data.author,
       subreddit: reply.data.subreddit,
-      theirComment: commentBody.slice(0, 500),
-      suggestedReply: generatedReply,
+      commentBody,
       postTitle,
-      draftedAt: new Date().toISOString(),
-      status: 'pending_review',
-    };
-    saveDraft(draft);
-    state.repliedTo[commentId] = { at: new Date().toISOString(), platform: 'reddit', drafted: true };
-    results.push({ commentId, reply: generatedReply, posted: false, drafted: true });
-    console.log(`[reply-monitor] 📝 DRAFTED reply for ${commentId} (saved to .thumbgate/reply-drafts.jsonl — post manually)`);
-
+      permalink: reply.data.context,
+      source: 'inbox',
+    });
+    if (result) results.push(result);
   }
 
+  const trackedResults = await checkTrackedRedditThreads({ token, userAgent, state });
+  results.push(...trackedResults);
+
   state.lastCheck.reddit = new Date().toISOString();
+  return results;
+}
+
+function looksLikeQuestion(text) {
+  return /\?/.test(String(text || '')) || /\b(?:curious how|curious if|wondering|how are you|how do you|how does|what is|can you|could you)\b/i.test(String(text || ''));
+}
+
+function draftRedditReply({
+  state,
+  commentId,
+  generatedReply,
+  author,
+  subreddit,
+  commentBody,
+  postTitle,
+  permalink,
+  source,
+}) {
+  if (!generatedReply || generatedReply === '__DRAFT__') {
+    console.warn(`[reply-monitor] Could not generate reply for ${commentId}`);
+    return null;
+  }
+
+  console.log(`[reply-monitor] Generated reply: "${generatedReply.slice(0, 100)}..."`);
+
+  // Reddit is ALWAYS draft-only — never auto-post.
+  // Bot detection on Reddit is aggressive; human must review and post manually.
+  const draft = {
+    platform: 'reddit',
+    commentId,
+    author,
+    subreddit,
+    theirComment: commentBody.slice(0, 500),
+    suggestedReply: generatedReply,
+    postTitle,
+    permalink,
+    source,
+    draftedAt: new Date().toISOString(),
+    status: 'pending_review',
+  };
+  saveDraft(draft);
+  state.repliedTo[commentId] = {
+    at: new Date().toISOString(),
+    platform: 'reddit',
+    drafted: true,
+    source,
+  };
+  console.log(`[reply-monitor] DRAFTED reply for ${commentId} (saved to ${path.relative(process.cwd(), getDraftFile())} — post manually)`);
+  return { commentId, reply: generatedReply, posted: false, drafted: true, source };
+}
+
+function getTrackedRedditThreadTargets(env = process.env) {
+  const raw = env.THUMBGATE_REDDIT_TRACKED_THREADS || '';
+  return raw
+    .split(/[\n,]+/)
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map(parseRedditThreadTarget)
+    .filter(Boolean);
+}
+
+function parseRedditThreadTarget(value) {
+  const input = String(value || '').trim();
+  if (!input) return null;
+  try {
+    const url = new URL(input.startsWith('www.') ? `https://${input}` : input);
+    const postMatch = /\/comments\/([a-z0-9]+)/i.exec(url.pathname);
+    if (!postMatch) return null;
+    const commentMatch = /\/comment\/([a-z0-9]+)/i.exec(url.pathname);
+    return {
+      url: input,
+      postId: postMatch[1],
+      commentId: commentMatch ? `t1_${commentMatch[1]}` : null,
+    };
+  } catch {
+    const postMatch = /\b(?:t3_)?([a-z0-9]{5,})\b/i.exec(input);
+    return postMatch ? { url: input, postId: postMatch[1], commentId: null } : null;
+  }
+}
+
+async function fetchRedditThread(token, userAgent, target) {
+  const url = token
+    ? `${REDDIT_API_BASE}/comments/${encodeURIComponent(target.postId)}?limit=500&depth=3&sort=new`
+    : `https://www.reddit.com/comments/${encodeURIComponent(target.postId)}.json?limit=500&depth=3&sort=new`;
+  const headers = {
+    'User-Agent': userAgent,
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(url, {
+    headers,
+  });
+  if (!res.ok) {
+    console.warn(`[reply-monitor] Reddit thread fetch failed for ${target.postId}: ${res.status}`);
+    return [];
+  }
+  const listing = await res.json();
+  return Array.isArray(listing) ? listing : [];
+}
+
+function flattenRedditComments(children, output = []) {
+  for (const child of children || []) {
+    if (child?.kind !== 't1') continue;
+    const data = child.data || {};
+    output.push(data);
+    const replies = data.replies;
+    if (replies && typeof replies === 'object') {
+      flattenRedditComments(replies.data?.children || [], output);
+    }
+  }
+  return output;
+}
+
+function hasOperatorReply(comment, comments, operatorUsernames) {
+  const commentName = comment.name;
+  if (!commentName) return false;
+  return comments.some((candidate) => (
+    candidate.parent_id === commentName &&
+    operatorUsernames.has(String(candidate.author || '').toLowerCase())
+  ));
+}
+
+async function draftTrackedRedditComment({
+  comment,
+  comments,
+  operatorUsernames,
+  post,
+  state,
+  target,
+}) {
+  const commentId = comment.name;
+  if (!commentId || state.repliedTo[commentId]) return null;
+  if (operatorUsernames.has(String(comment.author || '').toLowerCase())) return null;
+  if (hasOperatorReply(comment, comments, operatorUsernames)) {
+    state.repliedTo[commentId] = {
+      at: new Date().toISOString(),
+      platform: 'reddit',
+      alreadyAnswered: true,
+      source: 'tracked_thread',
+    };
+    return null;
+  }
+
+  const commentBody = comment.body || '';
+  const generatedReply = await generateReply(commentBody, {
+    platform: 'reddit',
+    postTitle: post.title || comment.link_title || '',
+    isQuestion: looksLikeQuestion(commentBody),
+    author: comment.author,
+  });
+  return draftRedditReply({
+    state,
+    commentId,
+    generatedReply,
+    author: comment.author,
+    subreddit: comment.subreddit || post.subreddit,
+    commentBody,
+    postTitle: post.title || comment.link_title || '',
+    permalink: comment.permalink ? `https://www.reddit.com${comment.permalink}` : target.url,
+    source: 'tracked_thread',
+  });
+}
+
+async function checkTrackedRedditThreads({ token, userAgent, state }) {
+  const targets = getTrackedRedditThreadTargets();
+  if (targets.length === 0) return [];
+
+  const operatorUsernames = new Set([
+    process.env.REDDIT_USERNAME,
+    'eazyigz123',
+    'IgorGanapolsky',
+  ].filter(Boolean).map((value) => String(value).toLowerCase()));
+  const results = [];
+
+  for (const target of targets) {
+    console.log(`[reply-monitor] Checking tracked Reddit thread ${target.postId}...`);
+    const listing = await fetchRedditThread(token, userAgent, target);
+    const post = listing[0]?.data?.children?.[0]?.data || {};
+    const comments = flattenRedditComments(listing[1]?.data?.children || []);
+    const candidateComments = target.commentId
+      ? comments.filter((comment) => comment.name === target.commentId || comment.parent_id === target.commentId)
+      : comments;
+
+    for (const comment of candidateComments) {
+      const result = await draftTrackedRedditComment({
+        comment,
+        comments,
+        operatorUsernames,
+        post,
+        state,
+        target,
+      });
+      if (result) results.push(result);
+    }
+  }
+
   return results;
 }
 
@@ -342,8 +568,13 @@ async function monitor({ platforms, dryRun } = {}) {
 }
 
 module.exports = {
+  checkTrackedRedditThreads,
+  flattenRedditComments,
   generateReply,
+  getTrackedRedditThreadTargets,
+  looksLikeQuestion,
   monitor,
+  parseRedditThreadTarget,
 };
 
 // ---------------------------------------------------------------------------

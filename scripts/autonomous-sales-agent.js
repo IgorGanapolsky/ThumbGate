@@ -52,6 +52,10 @@ const {
   writeRedditDmWorkflowHardeningPack,
 } = require('./reddit-dm-workflow-hardening-pack');
 const {
+  buildRooSunsetDemandPack,
+  writeRooSunsetDemandPack,
+} = require('./roo-sunset-demand-pack');
+const {
   buildCodexMarketplaceRevenuePack,
   writeCodexMarketplaceRevenuePack,
 } = require('./codex-marketplace-revenue-pack');
@@ -59,6 +63,12 @@ const {
   buildMcpDirectoryRevenuePack,
   writeMcpDirectoryRevenuePack,
 } = require('./mcp-directory-revenue-pack');
+const {
+  getSalesPipelinePath,
+  importRevenueLoopReport,
+  loadSalesLeads,
+  summarizeSalesPipeline,
+} = require('./sales-pipeline');
 
 function buildDependencies(overrides = {}) {
   return {
@@ -79,6 +89,8 @@ function buildDependencies(overrides = {}) {
     writeChatgptGptRevenuePack,
     buildRedditDmWorkflowHardeningPack,
     writeRedditDmWorkflowHardeningPack,
+    buildRooSunsetDemandPack,
+    writeRooSunsetDemandPack,
     buildCodexMarketplaceRevenuePack,
     writeCodexMarketplaceRevenuePack,
     buildCodexPluginRevenuePack,
@@ -120,32 +132,81 @@ function buildGitHubOutreachJobs(written = {}, repoRoot = path.resolve(__dirname
   return jobs;
 }
 
+function buildPackWriteOptions(options = {}) {
+  return {
+    ...options,
+    writeDocs: Boolean(options.writeDocs || !options.reportDir),
+  };
+}
+
+function resolveSalesPipelineImportSource(written = {}, repoRoot = path.resolve(__dirname, '..')) {
+  if (written.reportDir) {
+    return path.resolve(written.reportDir, 'gtm-revenue-loop.json');
+  }
+
+  if (written.docsPath) {
+    return path.resolve(repoRoot, 'docs', 'marketing', 'gtm-revenue-loop.json');
+  }
+
+  return null;
+}
+
+function syncSalesPipeline(
+  report,
+  written = {},
+  repoRoot = path.resolve(__dirname, '..'),
+  dependencies = {}
+) {
+  const importer = dependencies.importRevenueLoopReport || importRevenueLoopReport;
+  const readLeads = dependencies.loadSalesLeads || loadSalesLeads;
+  const summarize = dependencies.summarizeSalesPipeline || summarizeSalesPipeline;
+  const resolveStatePath = dependencies.getSalesPipelinePath || getSalesPipelinePath;
+  const sourcePath = resolveSalesPipelineImportSource(written, repoRoot);
+  if (!sourcePath) {
+    return null;
+  }
+
+  const result = importer(report, { sourcePath });
+  const leads = readLeads();
+  return {
+    imported: result.imported.length,
+    skipped: result.skipped.length,
+    sourcePath,
+    statePath: resolveStatePath(),
+    summary: summarize(leads),
+  };
+}
+
 async function main(argv = process.argv.slice(2), overrides = {}) {
   const deps = buildDependencies(overrides);
   const options = deps.parseArgs(argv);
+  const packWriteOptions = buildPackWriteOptions(options);
   const { report, written } = await deps.runRevenueLoop(options);
   const claudePack = deps.buildClaudeWorkflowHardeningPack(report);
-  const claudeWritten = deps.writeClaudeWorkflowHardeningPack(claudePack, options);
+  const claudeWritten = deps.writeClaudeWorkflowHardeningPack(claudePack, packWriteOptions);
   const cursorPack = deps.buildCursorMarketplaceRevenuePack();
-  const cursorWritten = deps.writeCursorMarketplaceRevenuePack(cursorPack, options);
+  const cursorWritten = deps.writeCursorMarketplaceRevenuePack(cursorPack, packWriteOptions);
   const aiventyxPlan = deps.buildAiventyxMarketplacePlan();
-  const aiventyxWritten = deps.writeAiventyxMarketplaceOutputs(aiventyxPlan, options);
+  const aiventyxWritten = deps.writeAiventyxMarketplaceOutputs(aiventyxPlan, packWriteOptions);
   const geminiPack = deps.buildGeminiCliDemandPack(report);
-  const geminiWritten = deps.writeGeminiCliDemandPack(geminiPack, options);
+  const geminiWritten = deps.writeGeminiCliDemandPack(geminiPack, packWriteOptions);
   const linkedinPack = deps.buildLinkedinWorkflowHardeningPack(report);
-  const linkedinWritten = deps.writeLinkedinWorkflowHardeningPack(linkedinPack, options);
+  const linkedinWritten = deps.writeLinkedinWorkflowHardeningPack(linkedinPack, packWriteOptions);
   const chatgptPack = deps.buildChatgptGptRevenuePack(report);
-  const chatgptWritten = deps.writeChatgptGptRevenuePack(chatgptPack, options);
+  const chatgptWritten = deps.writeChatgptGptRevenuePack(chatgptPack, packWriteOptions);
   const redditPack = deps.buildRedditDmWorkflowHardeningPack(report);
-  const redditWritten = deps.writeRedditDmWorkflowHardeningPack(redditPack, options);
+  const redditWritten = deps.writeRedditDmWorkflowHardeningPack(redditPack, packWriteOptions);
+  const rooPack = deps.buildRooSunsetDemandPack(report);
+  const rooWritten = deps.writeRooSunsetDemandPack(rooPack, packWriteOptions);
   const codexMarketplacePack = deps.buildCodexMarketplaceRevenuePack();
-  const codexMarketplaceWritten = deps.writeCodexMarketplaceRevenuePack(codexMarketplacePack, options);
+  const codexMarketplaceWritten = deps.writeCodexMarketplaceRevenuePack(codexMarketplacePack, packWriteOptions);
   const codexPluginPack = deps.buildCodexPluginRevenuePack(report);
-  const codexPluginWritten = deps.writeCodexPluginRevenuePack(codexPluginPack, options);
+  const codexPluginWritten = deps.writeCodexPluginRevenuePack(codexPluginPack, packWriteOptions);
   const mcpDirectoryPack = deps.buildMcpDirectoryRevenuePack();
-  const mcpDirectoryWritten = deps.writeMcpDirectoryRevenuePack(mcpDirectoryPack, options);
+  const mcpDirectoryWritten = deps.writeMcpDirectoryRevenuePack(mcpDirectoryPack, packWriteOptions);
   const githubOutreachJobs = buildGitHubOutreachJobs(written);
   const githubOutreachWritten = githubOutreachJobs.map((job) => deps.runGitHubOutreach(job));
+  const pipelineSync = (deps.syncSalesPipeline || syncSalesPipeline)(report, written);
 
   console.log('\n✅ GTM automation complete.');
   if (written.docsPath) {
@@ -175,6 +236,9 @@ async function main(argv = process.argv.slice(2), overrides = {}) {
   if (redditWritten.docsPath) {
     console.log(`Reddit DM pack updated: ${redditWritten.docsPath}`);
   }
+  if (rooWritten.docsPath) {
+    console.log(`Roo sunset pack updated: ${rooWritten.docsPath}`);
+  }
   if (codexMarketplaceWritten.docsPath) {
     console.log(`Codex marketplace pack updated: ${codexMarketplaceWritten.docsPath}`);
   }
@@ -189,6 +253,14 @@ async function main(argv = process.argv.slice(2), overrides = {}) {
       console.log(`GitHub outreach asset updated: ${asset.docsPath}`);
     }
   }
+  if (pipelineSync) {
+    console.log(
+      `Sales pipeline synced: ${pipelineSync.imported} imported, ${pipelineSync.skipped} skipped. `
+      + `Active ${pipelineSync.summary.active}, contacted ${pipelineSync.summary.contacted}, `
+      + `replied ${pipelineSync.summary.replies}, paid ${pipelineSync.summary.paid}.`
+    );
+    console.log(`Sales pipeline state: ${pipelineSync.statePath}`);
+  }
   console.log(`State: ${report.directive.state} | Targets: ${report.targets.length}`);
 }
 
@@ -201,7 +273,10 @@ if (isCliInvocation(process.argv)) {
 
 module.exports = {
   buildGitHubOutreachJobs,
+  buildPackWriteOptions,
   buildDependencies,
   isCliInvocation,
   main,
+  resolveSalesPipelineImportSource,
+  syncSalesPipeline,
 };

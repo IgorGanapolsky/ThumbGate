@@ -76,8 +76,8 @@ describe('generate-numbers-page renderer', () => {
       'expected Dataset JSON-LD type',
     );
     assert.ok(
-      html.includes('"name": "active_gates"'),
-      'expected active_gates property in Dataset',
+      html.includes('"name": "configured_gates"'),
+      'expected configured_gates property in Dataset',
     );
     assert.ok(
       html.includes('"name": "actions_blocked"'),
@@ -125,6 +125,41 @@ describe('generate-numbers-page renderer', () => {
       html.includes('never-force-push-main'),
       'expected top blocked gate id',
     );
+  });
+
+  it('renders zero recorded intervention counts as zero evidence, not traction', () => {
+    const zero = renderNumbersPage({
+      version: '1.12.2',
+      nowIso: '2026-04-20T10:00:00.000Z',
+      nowDate: '2026-04-20',
+      gate: {
+        ...FIXTURE_STATS,
+        totalBlocked: 0,
+        totalWarned: 0,
+        topBlocked: null,
+        estimatedHoursSaved: '0.0',
+        bayesErrorRate: null,
+      },
+      savings: {
+        ...FIXTURE_SAVINGS,
+        blockedCalls: 0,
+        tokensSavedInput: 0,
+        tokensSavedOutput: 0,
+        tokensSavedTotal: 0,
+        dollarsSaved: 0,
+        dollarsSavedDisplay: '$0.00',
+        tokensSavedDisplay: '0',
+      },
+    });
+
+    assert.match(zero, /configured checks are inventory/i);
+    assert.match(zero, /0 recorded hard-block event\(s\)/);
+    assert.match(zero, /no recorded hard-block events in this snapshot/i);
+    assert.match(zero, /No recorded blocker yet/);
+    assert.match(zero, /n\/a/);
+    assert.doesNotMatch(zero, /repeat AI mistakes prevented at the gate/);
+    assert.doesNotMatch(zero, /highest-occurrence prevention rule/);
+    assert.doesNotMatch(zero, /local-only-git-writes \(0 blocks\)/);
   });
 
   it('links each stat back to its source script so numbers are auditable', () => {

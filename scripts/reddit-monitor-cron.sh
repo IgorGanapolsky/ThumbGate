@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_DIR="/Users/igorganapolsky/workspace/git/igor/thumbgate"
+REPO_DIR="${THUMBGATE_REPO_DIR:-/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo}"
 LOG_FILE="${REPO_DIR}/.thumbgate/reddit-monitor.log"
+NODE_BIN="${NODE_BIN:-$(command -v node)}"
 
 mkdir -p "${REPO_DIR}/.thumbgate"
 
@@ -21,6 +22,6 @@ fi
 echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] Reddit monitor run starting" >> "$LOG_FILE"
 
 cd "$REPO_DIR"
-/opt/homebrew/bin/node scripts/social-reply-monitor.js >> "$LOG_FILE" 2>&1
+"$NODE_BIN" scripts/social-reply-monitor.js --platform=reddit >> "$LOG_FILE" 2>&1
 
 echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] Reddit monitor run complete" >> "$LOG_FILE"

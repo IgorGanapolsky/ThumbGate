@@ -55,7 +55,7 @@ function syncJsonField(target, field, expectedValue, drifted, checkOnly) {
 
 function syncVersion(opts) {
   const options = opts || {};
-  const checkOnly = options.check || false;
+  const checkOnly = options.check || options.checkOnly || false;
   const pkg = readJson('package.json');
   const version = pkg.version;
   const homepageUrl = pkg.homepage;
@@ -376,22 +376,26 @@ function syncVersion(opts) {
     targets.push(mcpSubmPath);
   }
 
-  // 13. public/index.html — static landing proof pill + footer version
+  // 13. public/index.html — static landing proof/version markers + footer version
   const publicIndexPath = 'public/index.html';
   if (fs.existsSync(path.join(PROJECT_ROOT, publicIndexPath))) {
     const publicIndexFile = path.join(PROJECT_ROOT, publicIndexPath);
     let publicContent = fs.readFileSync(publicIndexFile, 'utf-8');
     let publicContentChanged = false;
-    const heroVersionMatch = publicContent.match(new RegExp(`New in v(${VERSION_PATTERN}):?`));
+    const heroMetaVersionPattern = new RegExp(`<meta name="thumbgate-version" content="(${VERSION_PATTERN})">`);
+    const heroReleaseNotePattern = new RegExp(`New in v(${VERSION_PATTERN}):?`);
+    const heroVersionMatch = heroMetaVersionPattern.exec(publicContent) || heroReleaseNotePattern.exec(publicContent);
     if (heroVersionMatch && heroVersionMatch[1] !== version) {
       drifted.push({ file: publicIndexPath, field: 'hero-release-note', current: heroVersionMatch[1] });
       if (!checkOnly) {
-        publicContent = publicContent.replace(new RegExp(`New in v${VERSION_PATTERN}:?`), `New in v${version}`);
+        publicContent = publicContent
+          .replace(new RegExp(`<meta name="thumbgate-version" content="${VERSION_PATTERN}">`), `<meta name="thumbgate-version" content="${version}">`)
+          .replace(new RegExp(`New in v${VERSION_PATTERN}:?`), `New in v${version}`);
         publicContentChanged = true;
       }
     }
 
-    const proofMatch = publicContent.match(new RegExp(`Versioned proof: v(${VERSION_PATTERN})`));
+    const proofMatch = new RegExp(`Versioned proof: v(${VERSION_PATTERN})`).exec(publicContent);
     if (proofMatch && proofMatch[1] !== version) {
       drifted.push({ file: publicIndexPath, field: 'proof-pill', current: proofMatch[1] });
       if (!checkOnly) {
@@ -400,12 +404,12 @@ function syncVersion(opts) {
       }
     }
 
-    const footerMatch = publicContent.match(new RegExp(`(?:Context Gateway|MIT License) [•·] v(${VERSION_PATTERN})`));
+    const footerMatch = new RegExp(`(?:Context Gateway|MIT License) [•·] (?:npm )?v(${VERSION_PATTERN})`).exec(publicContent);
     if (footerMatch && footerMatch[1] !== version) {
       drifted.push({ file: publicIndexPath, field: 'footer-version', current: footerMatch[1] });
       if (!checkOnly) {
         publicContent = publicContent.replace(
-          new RegExp(`((?:Context Gateway|MIT License) [•·] )v${VERSION_PATTERN}`),
+          new RegExp(`((?:Context Gateway|MIT License) [•·] (?:npm )?)v${VERSION_PATTERN}`),
           `$1v${version}`
         );
         publicContentChanged = true;
@@ -417,7 +421,44 @@ function syncVersion(opts) {
     targets.push(publicIndexPath);
   }
 
-  // 14. adapters/mcp/server-stdio.js — MCP server metadata
+  // 14. public/numbers.html — generated proof snapshot version markers
+  const publicNumbersPath = 'public/numbers.html';
+  if (fs.existsSync(path.join(PROJECT_ROOT, publicNumbersPath))) {
+    const publicNumbersFile = path.join(PROJECT_ROOT, publicNumbersPath);
+    let numbersContent = fs.readFileSync(publicNumbersFile, 'utf-8');
+    let numbersContentChanged = false;
+
+    const softwareVersionMatch = numbersContent.match(new RegExp(`"softwareVersion":\\s*"(${VERSION_PATTERN})"`));
+    if (softwareVersionMatch && softwareVersionMatch[1] !== version) {
+      drifted.push({ file: publicNumbersPath, field: 'softwareVersion', current: softwareVersionMatch[1] });
+      if (!checkOnly) {
+        numbersContent = numbersContent.replace(
+          new RegExp(`"softwareVersion":\\s*"${VERSION_PATTERN}"`),
+          `"softwareVersion": "${version}"`
+        );
+        numbersContentChanged = true;
+      }
+    }
+
+    const freshnessVersionMatch = numbersContent.match(new RegExp(`Updated:\\s*\\d{4}-\\d{2}-\\d{2}\\s*·\\s*Version\\s+(${VERSION_PATTERN})`));
+    if (freshnessVersionMatch && freshnessVersionMatch[1] !== version) {
+      drifted.push({ file: publicNumbersPath, field: 'freshness-version', current: freshnessVersionMatch[1] });
+      if (!checkOnly) {
+        numbersContent = numbersContent.replace(
+          new RegExp(`(Updated:\\s*\\d{4}-\\d{2}-\\d{2}\\s*·\\s*Version\\s+)${VERSION_PATTERN}`),
+          `$1${version}`
+        );
+        numbersContentChanged = true;
+      }
+    }
+
+    if (numbersContentChanged) {
+      fs.writeFileSync(publicNumbersFile, numbersContent);
+    }
+    targets.push(publicNumbersPath);
+  }
+
+  // 15. adapters/mcp/server-stdio.js — MCP server metadata
   const serverStdioPath = 'adapters/mcp/server-stdio.js';
   const serverStdioFile = path.join(PROJECT_ROOT, serverStdioPath);
   if (fs.existsSync(serverStdioFile)) {
@@ -435,7 +476,7 @@ function syncVersion(opts) {
     targets.push(serverStdioPath);
   }
 
-  // 15. mcpize.yaml
+  // 16. mcpize.yaml
   const mcpizePath = 'mcpize.yaml';
   const mcpizeFile = path.join(PROJECT_ROOT, mcpizePath);
   if (fs.existsSync(mcpizeFile)) {

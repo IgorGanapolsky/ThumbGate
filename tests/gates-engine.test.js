@@ -1487,24 +1487,34 @@ test('evaluateGates blocks boostedRisk highRiskTags before advisory memory', () 
 test('git commit on PR branch registers thread-resolution claim gate and blocks next non-evidence tool', () => {
   cleanupStateFiles();
   const tmpConfig = makeTempPath('pr-commit-empty-gates.json');
-  fs.writeFileSync(tmpConfig, JSON.stringify({ version: 1, gates: [] }));
+  try {
+    setTaskScope({
+      allowedPaths: ['README.md'],
+      summary: 'Keep the commit-claim registration test isolated from the caller worktree.',
+    });
+    fs.writeFileSync(tmpConfig, JSON.stringify({ version: 1, gates: [] }));
 
-  const commitResult = evaluateGates('Bash', {
-    command: 'git commit -m "fix review feedback"',
-    branchName: 'fix/review-feedback',
-    prNumber: 123,
-  }, tmpConfig);
-  assert.equal(commitResult, null);
-  assert.ok(hasAction(PR_THREAD_RESOLUTION_ACTION));
-  assert.ok(loadClaimGates().claims.some((claim) => claim.requiredActions.includes('pr_threads_checked')));
+    const commitResult = evaluateGates('Bash', {
+      command: 'git commit -m "fix review feedback"',
+      branchName: 'fix/review-feedback',
+      prNumber: 123,
+      changedFiles: ['README.md'],
+    }, tmpConfig);
+    assert.equal(commitResult, null);
+    assert.ok(hasAction(PR_THREAD_RESOLUTION_ACTION));
+    assert.ok(loadClaimGates().claims.some((claim) => claim.requiredActions.includes('pr_threads_checked')));
 
-  const blocked = evaluatePendingPrThreadResolutionGate('Read', { file_path: 'README.md' });
-  assert.ok(blocked);
-  assert.equal(blocked.decision, 'deny');
-  assert.equal(blocked.gate, 'pr-thread-resolution-verified-required');
+    const blocked = evaluatePendingPrThreadResolutionGate('Read', { file_path: 'README.md' });
+    assert.ok(blocked);
+    assert.equal(blocked.decision, 'deny');
+    assert.equal(blocked.gate, 'pr-thread-resolution-verified-required');
 
-  satisfyCondition('pr_threads_checked', 'reviewThreads first:50 returned 0 unresolved');
-  assert.equal(evaluatePendingPrThreadResolutionGate('Read', { file_path: 'README.md' }), null);
+    satisfyCondition('pr_threads_checked', 'reviewThreads first:50 returned 0 unresolved');
+    assert.equal(evaluatePendingPrThreadResolutionGate('Read', { file_path: 'README.md' }), null);
+  } finally {
+    fs.rmSync(tmpConfig, { force: true });
+    cleanupStateFiles();
+  }
 });
 
 test('evaluateGates blocks raw GitHub auto-merge even after merge permission is satisfied', () => {

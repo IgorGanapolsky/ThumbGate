@@ -1,22 +1,38 @@
 {
   "intents": {
-    "comparison": 2,
-    "commercial": 11,
-    "informational": 5
+    "comparison": 4,
+    "commercial": 20,
+    "informational": 9
   },
   "personas": {
-    "tool-evaluator": 2,
-    "engineering-lead": 2,
-    "ai-engineer": 8,
-    "claude-code-builder": 2,
+    "tool-evaluator": 4,
+    "engineering-lead": 5,
+    "ai-engineer": 10,
+    "growth-engineer": 3,
+    "rag-engineer": 2,
+    "claude-code-builder": 3,
+    "platform-engineer": 2,
     "ai-research-engineer": 1,
     "cursor-builder": 1,
     "codex-builder": 1,
     "gemini-builder": 1
   },
   "pageTypes": {
-    "comparison": 2,
-    "guide": 11,
-    "integration": 5
+    "comparison": 4,
+    "guide": 23,
+    "integration": 6
+  },
+  "contextGovernance": {
+    "brandPersona": "Technical, direct, proof-backed, and buyer-useful. ThumbGate is the enforcement layer, not generic AI content.",
+    "negativeConstraints": [
+      "Do not claim partnerships, approval, revenue, or compliance unless the proof artifact exists.",
+      "Do not publish stale pricing; use $19/mo Pro, $149/yr Pro, and $49/seat/mo Team only when the commercial truth source agrees.",
+      "Do not create find-and-replace pages that only swap one keyword or platform name."
+    ],
+    "requiredContext": [
+      "ThumbGate turns thumbs-up/down feedback into pre-action checks.",
+      "Every buyer-facing page needs a concrete next step: Pro checkout, workflow sprint intake, or a proof-backed guide.",
+      "Every generated page must include verification evidence, automation proof, llm-context, FAQPage, and TechArticle schema."
+    ]
   }
 }

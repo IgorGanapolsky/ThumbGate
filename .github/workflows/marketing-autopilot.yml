@@ -1,7 +1,8 @@
 name: Marketing Autopilot
 
 # Text content autopilot — fires every 4 hours.
-# Posts to LinkedIn, Threads, Bluesky, Instagram, YouTube via Zernio.
+# Posts text/image content to LinkedIn, Threads, Bluesky, and Instagram.
+# YouTube remains video-only via the video autopilot.
 # Posts to Reddit via the configured OAuth publisher.
 # Posts Dev.to articles on a separate slower cadence.
 # Marketing DB dedup prevents double-posting within configured windows.
@@ -30,9 +31,9 @@ on:
         type: boolean
         default: false
       platforms:
-        description: 'Comma-separated Zernio platforms (default: linkedin,threads,bluesky,instagram,youtube)'
+        description: 'Comma-separated text-capable platforms (default: linkedin,threads,bluesky,instagram)'
         required: false
-        default: 'linkedin,threads,bluesky,instagram,youtube'
+        default: 'linkedin,threads,bluesky,instagram'
 
 permissions:
   contents: write
@@ -110,13 +111,13 @@ jobs:
             echo "PERPLEXITY_API_KEY not set — skipping AI content generation"
           fi
 
-      - name: Post text content via Zernio (LinkedIn, Threads, Bluesky, Instagram, YouTube)
+      - name: Post text content via Zernio (LinkedIn, Threads, Bluesky, Instagram)
         if: |
           github.event_name == 'schedule' ||
           github.event.inputs.action == 'text-posts' ||
           github.event.inputs.action == 'full'
         env:
-          INPUT_PLATFORMS: ${{ github.event.inputs.platforms || 'linkedin,threads,bluesky,instagram,youtube' }}
+          INPUT_PLATFORMS: ${{ github.event.inputs.platforms || 'linkedin,threads,bluesky,instagram' }}
           INPUT_DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: |
           PLATFORMS="$INPUT_PLATFORMS"
@@ -124,7 +125,24 @@ jobs:
           if [ "$INPUT_DRY_RUN" = "true" ]; then DRY_RUN_FLAG="--dry-run"; fi
           WEEK=$(date +%Y-W%V)
           HOUR=$(date +%H)
+          mkdir -p scripts/marketing-output
+          POST_FILE="scripts/marketing-output/autopilot-paid-sprint-$WEEK-h$HOUR.md"
+          cat > "$POST_FILE" <<'POST'
+          # LinkedIn Post: paid workflow hardening sprint
+          **Title:** Opening two workflow hardening sprint slots
+          **Body:**
+          I am opening two paid Workflow Hardening Sprint slots for teams running coding agents in production repos.
+
+          The scope is intentionally narrow: one repeated failure, one prevention rule, one proof run, and a rollout note your team can inspect.
+
+          Use the $499 diagnostic if you want the failure mapped first, or the $1500 sprint if the workflow is already known.
+
+          Diagnostic: https://buy.stripe.com/00w14neyUcXA5pL5e33sI0e
+          Sprint: https://buy.stripe.com/fZu9AT76saPsg4pbCr3sI0f
+          Scope: https://thumbgate.ai/#workflow-sprint-intake
+          POST
           node scripts/post-everywhere.js \
+            "$POST_FILE" \
             --platforms="$PLATFORMS" \
             --campaign="autopilot-text-$WEEK-h$HOUR" \
             $DRY_RUN_FLAG \

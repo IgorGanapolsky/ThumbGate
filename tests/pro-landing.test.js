@@ -29,11 +29,34 @@ test('pro landing page positions ThumbGate Pro as the paid operator lane', () =>
 test('pro landing page uses checkout routes for monthly and annual conversions', () => {
   const proPage = readProPage();
 
-  assert.match(proPage, /Start 7-Day Free Trial/i);
+  assert.match(proPage, /Start Pro Now/i);
+  assert.match(proPage, /Pay \$19 quick read/i);
+  assert.match(proPage, /pro_page_hero_quick_read_checkout/);
+  assert.match(proPage, /pro_page_nav_quick_read_checkout/);
   assert.match(proPage, /\/checkout\/pro\?/);
+  assert.match(proPage, /pricing_pro/);
   assert.match(proPage, /billing_cycle=annual/);
   assert.match(proPage, /\$19\/mo/);
   assert.match(proPage, /\$149\/yr/);
+});
+
+test('pro landing page keeps the pricing section focused on the $19 Pro checkout', () => {
+  const proPage = readProPage();
+  const pricingSection = proPage.slice(proPage.indexOf('<section class="section" id="pricing">'), proPage.indexOf('<section class="section" id="faq">'));
+
+  assert.match(pricingSection, /<h3>ThumbGate Pro<\/h3>/);
+  assert.match(pricingSection, /Start Pro Now/);
+  assert.match(pricingSection, /billed today/i);
+  assert.match(pricingSection, /Restart|Start|Choose annual/);
+  assert.match(pricingSection, /Book a Team Pilot Call/);
+  assert.doesNotMatch(pricingSection, /<h3>ThumbGate Team/);
+});
+
+test('pro landing page does not leak trial copy into the buyer path', () => {
+  const proPage = readProPage();
+
+  assert.match(proPage, /Start Pro Now/);
+  assert.doesNotMatch(proPage, /Free Trial|free trial|7-day trial|7-Day Free Trial|no charge today/i);
 });
 
 test('pro landing page links to proof assets and live demo surfaces', () => {
@@ -67,6 +90,31 @@ test('pro landing page tracks paid CTAs without unsupported claims', () => {
   assert.doesNotMatch(proPage, /no credit card/i);
 });
 
+test('pro landing page routes high-intent team buyers to paid diagnostic and sprint checkout', () => {
+  const proPage = readProPage();
+
+  assert.match(proPage, /data-pro-paid-recovery/);
+  assert.match(proPage, /data-first-rule-link/);
+  assert.match(proPage, /data-quick-read-link/);
+  assert.match(proPage, /href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__"/);
+  assert.match(proPage, /href="__WORKFLOW_SPRINT_CHECKOUT_URL__"/);
+  assert.match(proPage, /Pay \$1 first rule/);
+  assert.match(proPage, /https:\/\/buy\.stripe\.com\/4gM6oHgH2bTw4lH6i73sI0z/);
+  assert.match(proPage, /Pay \$19 quick read/);
+  assert.match(proPage, /https:\/\/buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
+  assert.match(proPage, /quick_read_checkout_started/);
+  assert.match(proPage, /Pay \$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic/);
+  assert.match(proPage, /Pay \$__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint/);
+  assert.match(proPage, /pro_page_sprint_diagnostic_checkout/);
+  assert.match(proPage, /pro_page_workflow_sprint_checkout/);
+  assert.match(proPage, /first_failure_rule_checkout_started/);
+  assert.match(proPage, /quick_read_checkout_started/);
+  assert.match(proPage, /workflow_sprint_diagnostic_checkout_started/);
+  assert.match(proPage, /workflow_sprint_checkout_started/);
+  assert.match(proPage, /initializeProPaidRecovery/);
+  assert.match(proPage, /sendGa4Event\('begin_checkout'/);
+});
+
 test('pro landing page captures buyer email and reuses it for checkout', () => {
   const proPage = readProPage();
   const buyerIntentScript = readBuyerIntentScript();
@@ -77,6 +125,7 @@ test('pro landing page captures buyer email and reuses it for checkout', () => {
   assert.match(proPage, /data-buyer-email/);
   assert.match(proPage, /\/js\/buyer-intent\.js/);
   assert.match(buyerIntentScript, /customer_email/);
+  assert.match(buyerIntentScript, /searchParams\.set\('confirm', '1'\)/);
   assert.match(buyerIntentScript, /initializeEmailCheckoutButtons/);
   assert.match(buyerIntentScript, /initializeBehaviorAnalytics/);
   assert.match(proPage, /sendFirstPartyTelemetry/);
