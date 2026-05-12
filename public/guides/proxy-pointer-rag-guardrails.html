@@ -263,7 +263,7 @@
     <section class="hero">
       <div class="eyebrow">guide | proxy pointer rag guardrails</div>
       <h1>How to stop your RAG agent from returning the wrong image</h1>
-      <p>Proxy-pointer RAG keeps visual document systems cheaper by preserving section trees and image pointers instead of embedding every image. ThumbGate turns that structure into pre-action checks before agents answer with charts, figures, or screenshots.</p>
+      <p>When a multimodal RAG agent returns the wrong image, it's usually pulling a stale or off-topic pointer from a section tree it never validated. The fix is to gate visual answers before they reach the user. ThumbGate's pre-action checks block image-attached responses unless the pointer resolves to the right section, document version, and context.</p>
       <div class="signal-row">
         <div class="signal-pill up">👍 Thumbs up reinforces good behavior</div>
         <div class="signal-pill down">👎 Thumbs down blocks repeated mistakes</div>
