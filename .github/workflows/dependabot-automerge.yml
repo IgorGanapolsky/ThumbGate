@@ -35,7 +35,6 @@ jobs:
           fetch-depth: 0
 
       - name: Auto-approve update
-        continue-on-error: true
         uses: actions/github-script@v9
         with:
           github-token: ${{ github.token }}

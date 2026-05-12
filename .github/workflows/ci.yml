@@ -180,7 +180,6 @@ jobs:
 
       - name: Sync GitHub About metadata on main
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           THUMBGATE_GITHUB_ABOUT_VERIFY_ATTEMPTS: 6

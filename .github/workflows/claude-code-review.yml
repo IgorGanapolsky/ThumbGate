@@ -38,4 +38,3 @@ jobs:
             3. Performance issues
             4. Code quality and maintainability
             Be concise. Flag only real issues.
-        continue-on-error: true
