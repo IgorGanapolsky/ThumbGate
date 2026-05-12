@@ -6,6 +6,7 @@ const path = require('path');
 const { execFileSync, spawnSync } = require('child_process');
 
 const DEFAULT_BASE_BRANCH = 'main';
+const BASE_BRANCHES = new Set(['main', 'develop']);
 const FIXED_GIT_BIN_CANDIDATES = [
   '/usr/bin/git',
   '/opt/homebrew/bin/git',
@@ -800,7 +801,7 @@ function evaluateOperationalIntegrity(options = {}) {
     }
   }
 
-  if (options.requirePrForReleaseSensitive && hasReleaseSensitiveFiles && currentBranch && currentBranch !== baseBranch && !openPr) {
+  if (options.requirePrForReleaseSensitive && hasReleaseSensitiveFiles && currentBranch && !BASE_BRANCHES.has(currentBranch) && currentBranch !== baseBranch && !openPr) {
     blockers.push(buildBlocker(
       'release_sensitive_changes_require_pr',
       `Release-sensitive changes on ${currentBranch} require an open pull request before continuing.`,
