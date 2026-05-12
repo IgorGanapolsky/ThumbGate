@@ -17,7 +17,29 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+      # 2026-05-12 audit: This workflow creates Sentry releases on every main push,
+      # but the runtime has ZERO @sentry/* SDK instrumentation. Errors are never
+      # sent to Sentry, so releases have nothing to associate with — pure theater.
+      # Plus the old `continue-on-error: true` meant the job ran green even when
+      # the auth token was missing.
+      #
+      # Honest version: only attempt the release when SENTRY_AUTH_TOKEN is set,
+      # and surface failures rather than hide them. Until @sentry/node (or
+      # equivalent) is wired into src/api/server.js and bin/cli.js, the releases
+      # are still cosmetic — but at least they fail visibly when broken.
+      - name: Skip if Sentry not configured
+        id: precheck
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          if [ -z "$SENTRY_AUTH_TOKEN" ]; then
+            echo "::notice::SENTRY_AUTH_TOKEN not set — skipping Sentry release (no theater)."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Create Sentry Release
+        if: steps.precheck.outputs.skip != 'true'
         uses: getsentry/action-release@v3
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -26,4 +48,5 @@ jobs:
         with:
           environment: production
           version: ${{ github.sha }}
-        continue-on-error: true
+        # NOTE: `continue-on-error: true` removed so genuine release failures
+        # surface in CI instead of always-green theater.

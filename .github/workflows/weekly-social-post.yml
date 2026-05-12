@@ -144,19 +144,14 @@ jobs:
             --campaign=weekly-$(date +%Y-W%V) \
             $DRY_RUN_FLAG
 
-      - name: Commit state file changes
-        if: github.event.inputs.dry_run != 'true'
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # Stage any state files written by the weekly post script.
-          # These live under .thumbgate/ which is git-tracked state (not ignored).
-          git add .thumbgate/ || true
-
-          if git diff --cached --quiet; then
-            echo "No state file changes to commit."
-          else
-            git commit -m "chore: update weekly-post state [skip ci]"
-            git push
-          fi
+      # The weekly-post-state.json + marketing-analytics.sqlite files live under
+      # .thumbgate/ which IS gitignored (see .gitignore line 25). A previous
+      # version of this workflow had a comment claiming the path was tracked and
+      # ran `git add .thumbgate/` + `git commit` — both no-ops, the workflow
+      # finished green and persisted nothing. Fixed 2026-05-12.
+      #
+      # The state files are regenerable each run from the public APIs the script
+      # polls, so we don't need to persist them. The script re-derives state on
+      # every invocation from external truth (Plausible, Stripe, etc.). If we
+      # later need cross-run continuity (e.g., to dedupe within a 7-day window),
+      # move that state to `reports/weekly-social-state/` (NOT in .thumbgate/).
