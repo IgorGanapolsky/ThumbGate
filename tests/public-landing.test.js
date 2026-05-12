@@ -91,9 +91,13 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /\/mo/);
   assert.match(landingPage, /\$49/);
   assert.match(landingPage, /\/seat\/mo/);
-  assert.match(landingPage, /See how it works/);
-  assert.match(landingPage, /3 captures total.*1 rule/i);
+  // Free tier moved from "3 captures total, 1 rule" to "Unlimited captures,
+  // 5 active rules" in feat/free-tier-unlimited-captures-5-rules. Price-sub
+  // copy moved from "See how it works..." to "Block repeated mistakes daily..."
+  assert.match(landingPage, /Block repeated mistakes daily/);
+  assert.match(landingPage, /Unlimited captures.*5 (active )?rules/i);
   assert.doesNotMatch(landingPage, /3 captures.*1 rule.*1 agent/i);
+  assert.doesNotMatch(landingPage, /3 captures total/i);
   assert.match(landingPage, /solo side lane/i);
   assert.match(landingPage, /Shared enforcement/i);
   assert.match(landingPage, /Install Free/);
@@ -126,7 +130,11 @@ test('public landing page exposes env-driven paid sprint checkout path', () => {
   assert.doesNotMatch(landingPage, /Pay \$19 quick read/);
   assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
   assert.doesNotMatch(landingPage, /quick_read_checkout_started/);
-  assert.match(landingPage, /Pay \$499 diagnostic/);
+  // Hero CTA pair is intentionally Free + Pro $19/mo for cold-visitor conversion.
+  // The $499 diagnostic still ships via the workflow-sprint-intake paid path below ("Pay for diagnostic" card).
+  assert.doesNotMatch(landingPage, /Pay \$499 diagnostic/);
+  assert.match(landingPage, /Get Pro — \$19\/mo/);
+  assert.match(landingPage, /Pay for diagnostic/);
   assert.doesNotMatch(landingPage, /Pay \$1500 sprint/);
   assert.match(landingPage, /Reliable AI Agent Governance Setup/);
   assert.match(landingPage, /\$3,997/);
@@ -640,12 +648,20 @@ test('public landing page includes pay-now Pro path and email capture gate', () 
   assert.doesNotMatch(landingPage, /props:\s*\{\s*email:/);
 });
 
-test('public landing page keeps Team on an intake-led start instead of a trial claim', () => {
+test('public landing page Team card exposes both self-serve checkout AND intake-led path (without claiming a free trial)', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /No self-serve trial\./);
-  assert.match(landingPage, /Team is \$49\/seat\/mo with a 3-seat minimum and starts with the Workflow Hardening Sprint intake, not a self-serve trial\./);
+  // Self-serve checkout for 3-seat Team at $147/mo (existing STRIPE_PRICE_ID_TEAM_MONTHLY).
+  assert.match(landingPage, /Start 3-seat Team — \$147\/mo/);
+  assert.match(landingPage, /plan_id=team/);
+  assert.match(landingPage, /seat_count=3/);
+  assert.match(landingPage, /pricing_team_self_serve/);
+  // Intake remains as a fallback for qualification-first buyers.
+  assert.match(landingPage, /Or qualify first via Workflow Hardening Sprint intake/);
+  assert.match(landingPage, /Team is \$49\/seat\/mo with a 3-seat minimum\./);
+  // Still must not claim a free trial.
   assert.doesNotMatch(landingPage, /Both start with a 7-day free trial/);
+  assert.doesNotMatch(landingPage, /free trial/i);
 });
 
 test('public landing page includes dashboard preview in Pro card', () => {

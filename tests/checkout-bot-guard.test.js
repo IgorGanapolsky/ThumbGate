@@ -80,7 +80,7 @@ describe('/checkout/pro bot guard', () => {
     });
     assert.equal(res.status, 200);
     const body = await res.text();
-    assert.match(body, /Choose the right paid path/);
+    assert.match(body, /Start ThumbGate Pro/);
     assert.match(body, /Send workflow first/);
     assert.match(body, /checkout_interstitial_workflow_sprint_intake/);
     assert.match(body, /checkout_interstitial_cta_clicked/);
@@ -161,7 +161,7 @@ describe('/checkout/pro bot guard', () => {
     });
     assert.equal(res.status, 200);
     const body = await res.text();
-    assert.match(body, /Choose the right paid path/);
+    assert.match(body, /Start ThumbGate Pro/);
   });
 
   it('returns HTML interstitial for LLM crawlers (ClaudeBot, GPTBot)', async () => {
@@ -176,7 +176,7 @@ describe('/checkout/pro bot guard', () => {
       });
       assert.equal(res.status, 200, `expected 200 interstitial for ${ua}`);
       const body = await res.text();
-      assert.match(body, /Choose the right paid path/);
+      assert.match(body, /Start ThumbGate Pro/);
     }
   });
 
@@ -193,7 +193,7 @@ describe('/checkout/pro bot guard', () => {
       });
       assert.equal(res.status, 200);
       const body = await res.text();
-      assert.match(body, /Choose the right paid path/);
+      assert.match(body, /Start ThumbGate Pro/);
     }
   });
 

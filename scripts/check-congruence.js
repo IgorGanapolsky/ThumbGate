@@ -336,12 +336,12 @@ async function main() {
     'public/index.html must mention the linked feedback session flow'
   );
   check(
-    /3 feedback captures total/i.test(landingHtml) || /3 captures/i.test(landingHtml),
-    'public/index.html must advertise the truthful free-tier capture limits'
+    /unlimited (feedback )?captures/i.test(landingHtml),
+    'public/index.html must advertise the truthful free-tier capture limits (unlimited)'
   );
   check(
-    /1 rule/i.test(landingHtml) || /1 prevention rule/i.test(landingHtml),
-    'public/index.html must advertise the truthful free-tier rule limit'
+    /5 (active )?(auto-promoted )?prevention rules/i.test(landingHtml),
+    'public/index.html must advertise the truthful free-tier rule limit (5 active rules)'
   );
   check(
     landingHtml.includes(PRODUCTHUNT_URL),

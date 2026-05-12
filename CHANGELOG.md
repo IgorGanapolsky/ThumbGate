@@ -1,5 +1,41 @@
 # Changelog
 
+## 1.17.0
+
+### Minor Changes
+
+- [#1869](https://github.com/IgorGanapolsky/ThumbGate/pull/1869) [`3ae83c4`](https://github.com/IgorGanapolsky/ThumbGate/commit/3ae83c43e2ab5b1a39233e7ca02fe64c8a9d4c20) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Free tier now grants unlimited feedback captures and up to 5 active auto-promoted prevention rules (previously 3 lifetime captures + 1 rule). The hard 3-capture wall blocked habit formation; this opens the daily-use lane while keeping the dashboard, recall, lesson search, unlimited rules, and DPO export gated to Pro.
+
+### Patch Changes
+
+- [#1805](https://github.com/IgorGanapolsky/ThumbGate/pull/1805) [`dd324fd`](https://github.com/IgorGanapolsky/ThumbGate/commit/dd324fda27ac3e81bccaef2e786f409b2dc441c6) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Enable Ralph Loop to auto-publish a bounded set of safe Bluesky replies during scheduled engagement runs while leaving risky replies in the review draft queue.
+
+- [#1807](https://github.com/IgorGanapolsky/ThumbGate/pull/1807) [`013be4c`](https://github.com/IgorGanapolsky/ThumbGate/commit/013be4c272dff0e4c2103284e56c68804b1d25b9) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add VS Code/Open VSX, Antigravity-compatible, and JetBrains plugin distribution assets.
+
+- [#1817](https://github.com/IgorGanapolsky/ThumbGate/pull/1817) [`8ad7f56`](https://github.com/IgorGanapolsky/ThumbGate/commit/8ad7f565bd037a9453418a4244836ad2f74c4a1d) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a pure-CSS animated terminal block-demo to the hero. Loops on its own (no click-to-play), types `git push --force origin main`, then shows ThumbGate blocking the action with the rule name, reason, and a suggested fix. Honors `prefers-reduced-motion`. The existing 90-second walkthrough video stays below as the longer-form CTA.
+
+- [#1866](https://github.com/IgorGanapolsky/ThumbGate/pull/1866) [`65e563e`](https://github.com/IgorGanapolsky/ThumbGate/commit/65e563ee2533661ff3999d275f37d6d423b3634a) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix three broken navigation paths on the homepage: the ThumbGate logo link (`href="#"` → `/`), the header "Install Free" button (was pointing at the ChatGPT GPT redirect; now points at the actual install flow), and the hero + final "Install Free CLI" buttons (now copy `npx thumbgate init` to clipboard inline with visible "Copied ✓" feedback, instead of redirecting to `/guide` where buyers perceive "nothing happened").
+
+- [#1871](https://github.com/IgorGanapolsky/ThumbGate/pull/1871) [`68108a6`](https://github.com/IgorGanapolsky/ThumbGate/commit/68108a61cc258ed08ebc2e5e967b697e99385cce) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Drop "Max Smith KDP LLC" from public landing + blog footers and Schema.org publisher metadata. "KDP" reads as Kindle Direct Publishing to enterprise buyers evaluating an agent governance tool, and the trust hit is quiet but consistent. Now reads "© 2026 ThumbGate · MIT License".
+
+- [#1873](https://github.com/IgorGanapolsky/ThumbGate/pull/1873) [`88ac1b4`](https://github.com/IgorGanapolsky/ThumbGate/commit/88ac1b44620e6357a7afaa1d2e9f44a24f2faee0) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Swap landing hero secondary CTA from "Pay $499 diagnostic" to "Get Pro — $19/mo". Cold-visitor conversion: the natural hero pair is Install Free + the $19/mo self-serve path. The $499 diagnostic still ships via the Workflow Hardening Sprint intake panel below the hero, so high-ticket service buyers still have a clear path.
+
+- [#1855](https://github.com/IgorGanapolsky/ThumbGate/pull/1855) [`75d154f`](https://github.com/IgorGanapolsky/ThumbGate/commit/75d154f3338ecc9112eb0f9d8c4eb504bd62affe) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Hide visible-text leak on thumbgate.ai: analytics CTA IDs (`hero_workflow_sprint_diagnostic_checkout`, `workflow_sprint_checkout_started`, etc.) and raw HTML attribute names (`id=`, `name=`, `data-team-intake-form`) were rendering as plain `<p>` body paragraphs. Moved into a `hidden` block — strings stay in HTML for regex tests, nothing renders to visitors.
+
+- [#1844](https://github.com/IgorGanapolsky/ThumbGate/pull/1844) [`af9de4e`](https://github.com/IgorGanapolsky/ThumbGate/commit/af9de4e72bf3cda1ac5a50768247154647348cf0) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix public landing and marketing link hygiene by adding route aliases for legacy public URLs, preventing empty revenue links, and removing unsupported pricing, traction, and guarantee claims from public copy.
+
+- [#1873](https://github.com/IgorGanapolsky/ThumbGate/pull/1873) [`88ac1b4`](https://github.com/IgorGanapolsky/ThumbGate/commit/88ac1b44620e6357a7afaa1d2e9f44a24f2faee0) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add live npm weekly-downloads badge to the landing hero trust bar. Real momentum (verifiable via shields.io against `npm/dw/thumbgate`) replaces a vague "MIT open source" pill as the leading trust signal. Auto-updates as installs grow — no manual copy edits required.
+
+- [#1808](https://github.com/IgorGanapolsky/ThumbGate/pull/1808) [`3650374`](https://github.com/IgorGanapolsky/ThumbGate/commit/36503740e787db6c1da0e9ef9905f3ce30bc035d) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Persist Bluesky prospect dedupe state across Ralph Loop runs so scheduled engagement does not requeue the same prospects.
+
+- [#1869](https://github.com/IgorGanapolsky/ThumbGate/pull/1869) [`3ae83c4`](https://github.com/IgorGanapolsky/ThumbGate/commit/3ae83c43e2ab5b1a39233e7ca02fe64c8a9d4c20) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - `repairGithubMarketplaceRevenueLedger` now also walks the funnel ledger and persists resolved amounts for `paid` `github_marketplace` orders that never landed in `revenue-events.jsonl`. PR [#1810](https://github.com/IgorGanapolsky/ThumbGate/issues/1810) fixed read-time resolution; this fix completes the loop by writing recovered rows to disk so audits and downstream exports see them too. Idempotent — only persists when plan pricing produces a known amount, and skips rows already in the ledger.
+
+- [#1810](https://github.com/IgorGanapolsky/ThumbGate/pull/1810) [`dbd0476`](https://github.com/IgorGanapolsky/ThumbGate/commit/dbd0476c3537d54f467447cddc4388b3eb6701f8) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Resolve plan amounts for funnel-derived github_marketplace paid events so `cfo --today` no longer reports `$0.00` when orders only exist in the funnel ledger. The read-time deriver now runs entries through the same plan-pricing resolver the on-disk revenue ledger already uses.
+
+- [#1831](https://github.com/IgorGanapolsky/ThumbGate/pull/1831) [`8a4d5f0`](https://github.com/IgorGanapolsky/ThumbGate/commit/8a4d5f059b20dd9007ed091da3d2075a524bc427) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Simplify the public landing page conversion path, removing cluttered hero micro-offers and stale proof claims while keeping pricing claims aligned with the enforced Free, Pro, and Team feature limits.
+
+- [#1857](https://github.com/IgorGanapolsky/ThumbGate/pull/1857) [`55ec588`](https://github.com/IgorGanapolsky/ThumbGate/commit/55ec58851b55daa0dfa883af84c577bf9b9dcf85) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - `scripts/post-everywhere.js` now surfaces a clear error when TikTok routing is requested, instead of crashing with `TypeError: tiktok.publishPost is not a function`. TikTok has no text-only Direct Post endpoint; the working paths are `scripts/social-pipeline.js` with a recorded MP4 or direct `publishTikTokVideo({ videoUrl, title })` invocation.
+
 ## 1.16.22
 
 ### Patch Changes

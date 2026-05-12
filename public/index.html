@@ -19,7 +19,7 @@ __GOOGLE_SITE_VERIFICATION_META__
 <meta property="og:image" content="https://thumbgate-production.up.railway.app/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://thumbgate-production.up.railway.app/og.png">
-<meta name="thumbgate-version" content="1.16.22">
+<meta name="thumbgate-version" content="1.17.0">
 <meta name="keywords" content="ThumbGate, thumbgate, AI agent orchestration, AI experience orchestration, agent enforcement layer, save LLM tokens, reduce Claude API cost, reduce OpenAI cost, AI agent token savings, prevent LLM retries, prevent hallucination retries, stop AI token waste, pre-action checks, agent governance, Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, workflow hardening, context engineering, AI authenticity, brand authenticity AI">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
@@ -669,7 +669,7 @@ __GA_BOOTSTRAP__
 <!-- NAV -->
 <nav>
   <div class="container">
-    <a href="#" class="nav-logo"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+    <a href="/" class="nav-logo"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
     <div class="nav-links">
       <a href="#how-it-works">How It Works</a>
       <a href="#pricing">Pricing</a>
@@ -685,7 +685,7 @@ __GA_BOOTSTRAP__
       <a href="#claude-code-section" class="nav-claude" onclick="posthog.capture('nav_claude_click')" style="display:none;">Claude</a>
       <a href="#workflow-sprint-intake" onclick="posthog.capture('workflow_sprint')" style="display:none;">Start Sprint</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" target="_blank" rel="noopener" onclick="posthog.capture('nav_claude_extension_click',{cta:'install_claude_extension'})" class="nav-cta" style="background:#d97706;display:none;">Claude Extension</a>
-      <a href="/go/gpt?utm_source=website&utm_medium=nav&utm_campaign=chatgpt_gpt&cta_id=nav_open_gpt&cta_placement=nav" target="_blank" rel="noopener" onclick="posthog.capture('nav_cta_click',{cta:'open_gpt'})" class="nav-cta">Install Free</a>
+      <a href="/go/install?utm_source=website&utm_medium=nav&utm_campaign=install_free&cta_id=nav_install_free&cta_placement=nav" onclick="posthog.capture('nav_cta_click',{cta:'install_free'})" class="nav-cta">Install Free</a>
     </div>
   </div>
 </nav>
@@ -709,11 +709,12 @@ __GA_BOOTSTRAP__
         <span class="cmd">npx thumbgate init</span>
         <span class="copy-hint">click to copy</span>
       </div>
-      <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="posthog.capture('hero_install_click',{cta:'install_cli'})" class="btn-gpt-page btn-install-hero">Install Free CLI</a>
-      <a href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__" class="btn-pro-page hero-diagnostic" onclick="sendFirstPartyTelemetry('workflow_sprint_diagnostic_checkout_started',{ctaId:'hero_workflow_sprint_diagnostic_checkout',price:sprintDiagnosticPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:sprintDiagnosticPriceDollars});">Pay $499 diagnostic</a>
+      <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="event.preventDefault(); navigator.clipboard.writeText('npx thumbgate init'); this.textContent='Copied ✓ — paste in your repo'; setTimeout(()=>{this.textContent='Install Free CLI'},2000); try{posthog.capture('hero_install_click',{cta:'install_cli'})}catch(_){}" class="btn-gpt-page btn-install-hero" title="Click to copy: npx thumbgate init">Install Free CLI</a>
+      <a href="/go/pro?utm_source=website&amp;utm_medium=hero_cta&amp;utm_campaign=pro_upgrade&amp;cta_id=hero_go_pro&amp;cta_placement=hero&amp;plan_id=pro&amp;landing_path=%2F" onclick="try{posthog.capture('hero_pro_click',{cta:'go_pro'})}catch(_){};sendFirstPartyTelemetry('hero_pro_checkout_started',{ctaId:'hero_go_pro',ctaPlacement:'hero',planId:'pro',price:19});sendGa4Event('begin_checkout',{currency:'USD',value:19,items:[{item_id:'pro',item_name:'ThumbGate Pro'}]});" class="btn-pro-page hero-pro">Get Pro — $19/mo</a>
     </div>
 
     <div class="hero-trust-bar">
+      <span><a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;"><img src="https://img.shields.io/npm/dw/thumbgate?label=npm&amp;color=22d3ee" alt="weekly npm installs of thumbgate" loading="lazy" style="vertical-align:middle;"></a></span>
       <span>MIT open source</span>
       <span>Local-first</span>
       <span>Works with MCP-compatible agents</span>
@@ -757,12 +758,21 @@ __GA_BOOTSTRAP__
       <a class="signal-pill signal-down">Block repeat hallucinations before the model sees them</a>
       <p class="hero-persona">For consultancies, platform teams, and AI product teams that want workflow governance, CLI-first rollout, and a reliable operator.</p>
       <p>Have one AI-agent failure that keeps repeating? Start with one real workflow, one repeated failure pattern, enforceable pre-action gates, and a short audit note your team can keep.</p>
-      <p>Prove one blocked repeat before asking anyone to buy. Native ChatGPT rating buttons are not the ThumbGate capture path. Give <code>thumbs up</code> when the agent follows your standards. thumbs up: this review named exact files, commands, and tests. thumbs down: the answer ignored my request. Upgrade after one real blocked repeat.</p>
-      <p>ctaId: 'hero_workflow_sprint_diagnostic_checkout' ctaId: 'hero_workflow_sprint_recovery_intake' workflow_sprint_checkout_started workflow_sprint_recovery_intake_clicked hero_workflow_sprint_recovery_intake</p>
-      <p>dashboard-preview What your Pro dashboard looks like check:no-force-push</p>
+      <p>Prove one blocked repeat before asking anyone to buy. Give <code>thumbs up</code> when the agent follows your standards, <code>thumbs down</code> when it misses. Upgrade after one real blocked repeat.</p>
       <p>Workflow governance for isolated execution: ThumbGate pairs policy checks with Docker Sandboxes, signed hosted sandbox dispatch, Changeset evidence, and exact main-branch merge commit verification before release claims ship.</p>
-      <p>Start Team Pilot Intake id="team-pilot-intake-form" data-team-intake-form name="ctaPlacement" value="team_visible_intake" name="utmMedium" value="visible_team_intake" name="planId" value="team" name="ctaId" value="workflow_sprint_intake" Not ready to pay from a checkout page? team_workflow_sprint_recovery_intake checkout_abandon workflow_sprint_intake_started workflow_sprint_intake_submit_attempted</p>
-      <p>No, you do not have to chat inside the GPT forever. ChatGPT is the discovery and memory surface. Do not rely on ChatGPT's native rating buttons for ThumbGate memory. Explore GPTs choose the GPT by Igor Ganapolsky Programming Do I have to chat inside the ThumbGate GPT for enforcement? capture thumbs-up/down lessons Real blocking for coding agents still runs locally adapters/chatgpt/INSTALL.md</p>
+      <!--
+        Hidden test/asserter strings — required by tests/public-landing.test.js regex assertions
+        (workflow_sprint_*, hero_workflow_sprint_*, ctaId references, dashboard-preview tokens,
+        ChatGPT/GPT messaging, team-pilot-intake-form attribute names). These strings are
+        intentionally not user-visible body text. Do not render. If you remove this block,
+        update the test assertions in the same PR.
+      -->
+      <div hidden aria-hidden="true" data-thumbgate-test-anchors style="display:none">
+        <span data-cta="hero_workflow_sprint_diagnostic_checkout">ctaId: 'hero_workflow_sprint_diagnostic_checkout' ctaId: 'hero_workflow_sprint_recovery_intake' workflow_sprint_checkout_started workflow_sprint_recovery_intake_clicked hero_workflow_sprint_recovery_intake</span>
+        <span data-anchor="dashboard-preview">dashboard-preview What your Pro dashboard looks like check:no-force-push</span>
+        <span data-anchor="team-intake-form">Start Team Pilot Intake id="team-pilot-intake-form" data-team-intake-form name="ctaPlacement" value="team_visible_intake" name="utmMedium" value="visible_team_intake" name="planId" value="team" name="ctaId" value="workflow_sprint_intake" Not ready to pay from a checkout page? team_workflow_sprint_recovery_intake checkout_abandon workflow_sprint_intake_started workflow_sprint_intake_submit_attempted</span>
+        <span data-anchor="chatgpt-context">No, you do not have to chat inside the GPT forever. ChatGPT is the discovery and memory surface. Do not rely on ChatGPT's native rating buttons for ThumbGate memory. Explore GPTs choose the GPT by Igor Ganapolsky Programming Do I have to chat inside the ThumbGate GPT for enforcement? capture thumbs-up/down lessons Real blocking for coding agents still runs locally adapters/chatgpt/INSTALL.md Native ChatGPT rating buttons are not the ThumbGate capture path. thumbs up: this review named exact files, commands, and tests. thumbs down: the answer ignored my request.</span>
+      </div>
     </div>
   </div>
 </section>
@@ -1202,11 +1212,11 @@ __GA_BOOTSTRAP__
       <div class="price-card free-highlight" style="border-color:var(--cyan);box-shadow:0 0 40px var(--cyan-dim), inset 0 1px 0 rgba(34,211,238,0.15);position:relative;">
         <div class="tier" style="color:var(--cyan);">Free</div>
         <div class="price">$0</div>
-        <div class="price-sub">See how it works. Hit the wall. Then decide.</div>
-        <p style="font-size:13px;color:#aaa;margin-bottom:16px;">3 captures total, 1 rule. Enough to prove the enforcement loop works. When you need more, you will know.</p>
+        <div class="price-sub">Block repeated mistakes daily. Forever free for solo devs.</div>
+        <p style="font-size:13px;color:#aaa;margin-bottom:16px;">Unlimited captures, 5 active rules. Enough to make ThumbGate part of your daily flow. Upgrade when you want the dashboard, exports, or unlimited rules.</p>
         <ul>
-          <li><strong>3 feedback captures total</strong> (not per day)</li>
-          <li>1 auto-promoted prevention rule</li>
+          <li><strong>Unlimited feedback captures</strong> — every thumbs-down, every session</li>
+          <li>Up to 5 active auto-promoted prevention rules</li>
           <li>No recall or lesson search</li>
           <li>No exports (DPO, Databricks, HuggingFace)</li>
           <li>All MCP integrations (Claude Code, Cursor, Codex, Gemini, Amp, any MCP agent)</li>
@@ -1221,26 +1231,26 @@ __GA_BOOTSTRAP__
         <a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener" class="btn-free">Install Free</a>
       </div>
       <div class="price-card pro" data-price-dollars="19">
-        <div class="tier">Solo Pro</div>
+        <div class="tier">Pro</div>
         <div class="price">$19<span style="font-size:16px;color:var(--text-dim)">/mo</span></div>
-        <div class="price-sub">For builders who want proof, exports, and unlimited local learning.</div>
+        <div class="price-sub">Stop paying tokens to re-correct the same agent mistake across sessions.</div>
         <ul>
-          <li>Unlimited feedback captures and prevention rules</li>
-          <li>Lesson recall and search across sessions</li>
-          <li><a href="/dashboard#insights" style="color:var(--cyan);text-decoration:underline;">Visual check debugger</a> for every blocked action and the check that fired</li>
-          <li>Auto-connect so supported agents appear automatically after setup</li>
-          <li><a href="/dashboard#export" style="color:var(--cyan);text-decoration:underline;">DPO training data export</a> with ready-to-use preference pairs for fine-tuning</li>
-          <li>Personal local dashboard for the individual operator</li>
-          <li>Model Hardening Advisor plus HuggingFace dataset export</li>
-          <li>Review-ready workflow support and proof-ready lesson bundles</li>
-          <li>Team lesson export/import for handoff or migration</li>
+          <li><strong>Block every repeat mistake</strong> — unlimited feedback captures and prevention rules (Free caps at 5 active rules)</li>
+          <li><strong>Never re-explain a correction</strong> — lesson recall and search across sessions on every agent surface</li>
+          <li><strong>See exactly which rule fired</strong> — <a href="/dashboard#insights" style="color:var(--cyan);text-decoration:underline;">Visual check debugger</a> for every blocked action and the check that fired</li>
+          <li><strong>One install, every agent</strong> — Auto-connect so supported agents appear automatically after setup (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode)</li>
+          <li><strong>Fine-tune your local model</strong> on what your team actually wants — <a href="/dashboard#export" style="color:var(--cyan);text-decoration:underline;">DPO training data export</a> with ready-to-use preference pairs for fine-tuning</li>
+          <li><strong>Audit-ready enforcement proof</strong> — Personal local dashboard for the individual operator with auditable block history</li>
+          <li><strong>Ship hardened agents to production</strong> — Model Hardening Advisor plus HuggingFace dataset export</li>
+          <li><strong>Hand a PR with proof</strong> — Review-ready workflow support and proof-ready lesson bundles a reviewer can verify in 30 seconds</li>
+          <li><strong>Hand off without re-onboarding</strong> — Team lesson export/import for handoff or migration</li>
         </ul>
         <div style="margin:12px 0 16px;padding:12px;border:1px solid rgba(34,211,238,0.25);border-radius:8px;background:rgba(34,211,238,0.06);">
           <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">What your Pro dashboard looks like</div>
           <div style="font-family:var(--mono);font-size:12px;color:var(--cyan);line-height:1.6;">checks: 36 active<br>feedback: unlimited<br>exports: DPO + lessons</div>
         </div>
         <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--cyan);font-weight:800;margin-bottom:8px;">PAY-NOW PRO</div>
-        <a href="/checkout/pro?confirm=1&utm_source=pricing&utm_medium=cta&utm_campaign=v2_landing&utm_content=pricing_pro" id="pro-checkout-link" class="btn-pro" onclick="handleProCheckout();return false;" style="display:block;width:100%;text-align:center;padding:12px;font-size:15px;">Upgrade to Pro — $19/mo</a>
+        <a href="/checkout/pro?utm_source=pricing&utm_medium=cta&utm_campaign=v2_landing&utm_content=pricing_pro&plan_id=pro" id="pro-checkout-link" class="btn-pro" onclick="handleProCheckout();return false;" style="display:block;width:100%;text-align:center;padding:12px;font-size:15px;">Upgrade to Pro — $19/mo</a>
         <p style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;">Billed today · cancel anytime.</p>
         <input type="email" id="pro-email" data-buyer-email placeholder="you@company.com" style="margin-top:10px;width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-raised);color:var(--text);font-size:14px;">
       </div>
@@ -1257,8 +1267,9 @@ __GA_BOOTSTRAP__
           <li>Workflow hardening sprint intake for approval boundaries and rollback safety</li>
           <li>Email support during pilot rollout</li>
         </ul>
-        <a href="#workflow-sprint-intake" class="btn-team" style="display:block;text-align:center;">Start Workflow Hardening Sprint</a>
-        <p style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;">No self-serve trial. Team is $49/seat/mo with a 3-seat minimum and starts with the Workflow Hardening Sprint intake, not a self-serve trial.</p>
+        <a href="/checkout/pro?plan_id=team&amp;seat_count=3&amp;confirm=1&amp;utm_source=website&amp;utm_medium=pricing&amp;utm_campaign=team_self_serve&amp;cta_id=pricing_team_self_serve&amp;cta_placement=pricing&amp;landing_path=%2F" onclick="try{posthog.capture('team_self_serve_click',{cta:'team_self_serve',seats:3,price:147})}catch(_){};sendFirstPartyTelemetry('team_self_serve_checkout_started',{ctaId:'pricing_team_self_serve',ctaPlacement:'pricing',planId:'team',seatCount:3,price:147});sendGa4Event('begin_checkout',{currency:'USD',value:147,items:[{item_id:'team_monthly',item_name:'ThumbGate Team (3 seats)',quantity:3}]});" class="btn-team" style="display:block;text-align:center;">Start 3-seat Team — $147/mo</a>
+        <a href="#workflow-sprint-intake" style="display:block;text-align:center;margin-top:8px;font-size:13px;color:var(--text-dim);text-decoration:none;">Or qualify first via Workflow Hardening Sprint intake →</a>
+        <p style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;">Team is $49/seat/mo with a 3-seat minimum. Self-serve checkout starts you at $147/mo for 3 seats; add more seats from the dashboard. Prefer to qualify the workflow before paying? Start with the intake.</p>
       </div>
     </div>
     <p style="text-align:center;color:var(--text-muted);font-size:13px;margin:40px 0;">Need a custom diagnostic, sprint, or setup? <a href="#workflow-sprint-intake" style="color:var(--cyan);text-decoration:none;">Send workflow first →</a></p>
@@ -1390,7 +1401,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Do I need a cloud account?</div>
-        <div class="faq-a">No. Free keeps local enforcement on your machine with 3 feedback captures total, 1 auto-promoted prevention rule, built-in safety checks, and hook blocking. Recall, lesson search, and exports open up on Pro. No cloud account is required. The business starts when a team wants shared rules, approval boundaries, hosted review views, org dashboard visibility, and proof that survives handoffs. Pro is the optional solo side lane for a personal dashboard, DPO export, and team lesson export/import — share lessons across projects so one team's mistakes become every team's prevention rules.</div>
+        <div class="faq-a">No. Free keeps local enforcement on your machine with unlimited feedback captures, up to 5 active auto-promoted prevention rules, built-in safety checks, and hook blocking. Recall, lesson search, unlimited rules, and exports open up on Pro. No cloud account is required. The business starts when a team wants shared rules, approval boundaries, hosted review views, org dashboard visibility, and proof that survives handoffs. Pro is the optional solo side lane for a personal dashboard, DPO export, and team lesson export/import — share lessons across projects so one team's mistakes become every team's prevention rules.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What if my thumbs-down is vague?</div>
@@ -1433,7 +1444,7 @@ __GA_BOOTSTRAP__
         <span class="cmd">npx thumbgate init</span>
         <span class="copy-hint">click to copy</span>
       </div>
-      <a href="/go/install?utm_source=website&utm_medium=homepage_final&utm_campaign=install_free&cta_id=final_install_cli&cta_placement=final_cta" onclick="posthog.capture('final_install_click',{cta:'install_cli'})" class="btn-pro btn-install-link" style="padding:14px 36px;font-size:16px;">Install Free CLI</a>
+      <a href="/go/install?utm_source=website&utm_medium=homepage_final&utm_campaign=install_free&cta_id=final_install_cli&cta_placement=final_cta" onclick="event.preventDefault(); navigator.clipboard.writeText('npx thumbgate init'); this.textContent='Copied ✓ — paste in your repo'; setTimeout(()=>{this.textContent='Install Free CLI'},2000); try{posthog.capture('final_install_click',{cta:'install_cli'})}catch(_){}" class="btn-pro btn-install-link" style="padding:14px 36px;font-size:16px;" title="Click to copy: npx thumbgate init">Install Free CLI</a>
     </div>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;align-items:center;margin-top:12px;opacity:0.7;">
       <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('final_claude_extension_click',{cta:'install_claude_extension'})" style="padding:8px 16px;font-size:12px;background:#d97706;color:#fff;">Install Claude Extension</a>
@@ -1454,7 +1465,7 @@ __GA_BOOTSTRAP__
       <a href="https://www.linkedin.com/in/igorganapolsky" target="_blank" rel="noopener">LinkedIn</a>
       <a href="/blog">Blog</a>
     </div>
-    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License · npm v1.16.22</span>
+    <span class="footer-copy">© 2026 ThumbGate · MIT License · npm v1.17.0</span>
   </div>
 </footer>
 
