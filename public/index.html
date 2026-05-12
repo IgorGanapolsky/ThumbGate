@@ -1231,26 +1231,26 @@ __GA_BOOTSTRAP__
         <a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener" class="btn-free">Install Free</a>
       </div>
       <div class="price-card pro" data-price-dollars="19">
-        <div class="tier">Solo Pro</div>
+        <div class="tier">Pro</div>
         <div class="price">$19<span style="font-size:16px;color:var(--text-dim)">/mo</span></div>
-        <div class="price-sub">For builders who want proof, exports, and unlimited local learning.</div>
+        <div class="price-sub">Stop paying tokens to re-correct the same agent mistake across sessions.</div>
         <ul>
-          <li>Unlimited feedback captures and prevention rules</li>
-          <li>Lesson recall and search across sessions</li>
-          <li><a href="/dashboard#insights" style="color:var(--cyan);text-decoration:underline;">Visual check debugger</a> for every blocked action and the check that fired</li>
-          <li>Auto-connect so supported agents appear automatically after setup</li>
-          <li><a href="/dashboard#export" style="color:var(--cyan);text-decoration:underline;">DPO training data export</a> with ready-to-use preference pairs for fine-tuning</li>
-          <li>Personal local dashboard for the individual operator</li>
-          <li>Model Hardening Advisor plus HuggingFace dataset export</li>
-          <li>Review-ready workflow support and proof-ready lesson bundles</li>
-          <li>Team lesson export/import for handoff or migration</li>
+          <li><strong>Block every repeat mistake</strong> — unlimited feedback captures and prevention rules (Free caps at 5 active rules)</li>
+          <li><strong>Never re-explain a correction</strong> — lesson recall and search across sessions on every agent surface</li>
+          <li><strong>See exactly which rule fired</strong> — <a href="/dashboard#insights" style="color:var(--cyan);text-decoration:underline;">Visual check debugger</a> for every blocked action and the check that fired</li>
+          <li><strong>One install, every agent</strong> — Auto-connect so supported agents appear automatically after setup (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode)</li>
+          <li><strong>Fine-tune your local model</strong> on what your team actually wants — <a href="/dashboard#export" style="color:var(--cyan);text-decoration:underline;">DPO training data export</a> with ready-to-use preference pairs for fine-tuning</li>
+          <li><strong>Audit-ready enforcement proof</strong> — Personal local dashboard for the individual operator with auditable block history</li>
+          <li><strong>Ship hardened agents to production</strong> — Model Hardening Advisor plus HuggingFace dataset export</li>
+          <li><strong>Hand a PR with proof</strong> — Review-ready workflow support and proof-ready lesson bundles a reviewer can verify in 30 seconds</li>
+          <li><strong>Hand off without re-onboarding</strong> — Team lesson export/import for handoff or migration</li>
         </ul>
         <div style="margin:12px 0 16px;padding:12px;border:1px solid rgba(34,211,238,0.25);border-radius:8px;background:rgba(34,211,238,0.06);">
           <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">What your Pro dashboard looks like</div>
           <div style="font-family:var(--mono);font-size:12px;color:var(--cyan);line-height:1.6;">checks: 36 active<br>feedback: unlimited<br>exports: DPO + lessons</div>
         </div>
         <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--cyan);font-weight:800;margin-bottom:8px;">PAY-NOW PRO</div>
-        <a href="/checkout/pro?confirm=1&utm_source=pricing&utm_medium=cta&utm_campaign=v2_landing&utm_content=pricing_pro" id="pro-checkout-link" class="btn-pro" onclick="handleProCheckout();return false;" style="display:block;width:100%;text-align:center;padding:12px;font-size:15px;">Upgrade to Pro — $19/mo</a>
+        <a href="/checkout/pro?utm_source=pricing&utm_medium=cta&utm_campaign=v2_landing&utm_content=pricing_pro&plan_id=pro" id="pro-checkout-link" class="btn-pro" onclick="handleProCheckout();return false;" style="display:block;width:100%;text-align:center;padding:12px;font-size:15px;">Upgrade to Pro — $19/mo</a>
         <p style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;">Billed today · cancel anytime.</p>
         <input type="email" id="pro-email" data-buyer-email placeholder="you@company.com" style="margin-top:10px;width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-raised);color:var(--text);font-size:14px;">
       </div>
@@ -1267,8 +1267,9 @@ __GA_BOOTSTRAP__
           <li>Workflow hardening sprint intake for approval boundaries and rollback safety</li>
           <li>Email support during pilot rollout</li>
         </ul>
-        <a href="#workflow-sprint-intake" class="btn-team" style="display:block;text-align:center;">Start Workflow Hardening Sprint</a>
-        <p style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;">No self-serve trial. Team is $49/seat/mo with a 3-seat minimum and starts with the Workflow Hardening Sprint intake, not a self-serve trial.</p>
+        <a href="/checkout/pro?plan_id=team&amp;seat_count=3&amp;confirm=1&amp;utm_source=website&amp;utm_medium=pricing&amp;utm_campaign=team_self_serve&amp;cta_id=pricing_team_self_serve&amp;cta_placement=pricing&amp;landing_path=%2F" onclick="try{posthog.capture('team_self_serve_click',{cta:'team_self_serve',seats:3,price:147})}catch(_){};sendFirstPartyTelemetry('team_self_serve_checkout_started',{ctaId:'pricing_team_self_serve',ctaPlacement:'pricing',planId:'team',seatCount:3,price:147});sendGa4Event('begin_checkout',{currency:'USD',value:147,items:[{item_id:'team_monthly',item_name:'ThumbGate Team (3 seats)',quantity:3}]});" class="btn-team" style="display:block;text-align:center;">Start 3-seat Team — $147/mo</a>
+        <a href="#workflow-sprint-intake" style="display:block;text-align:center;margin-top:8px;font-size:13px;color:var(--text-dim);text-decoration:none;">Or qualify first via Workflow Hardening Sprint intake →</a>
+        <p style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;">Team is $49/seat/mo with a 3-seat minimum. Self-serve checkout starts you at $147/mo for 3 seats; add more seats from the dashboard. Prefer to qualify the workflow before paying? Start with the intake.</p>
       </div>
     </div>
     <p style="text-align:center;color:var(--text-muted);font-size:13px;margin:40px 0;">Need a custom diagnostic, sprint, or setup? <a href="#workflow-sprint-intake" style="color:var(--cyan);text-decoration:none;">Send workflow first →</a></p>
