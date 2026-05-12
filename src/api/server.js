@@ -5228,6 +5228,62 @@ async function addContext(){
       return;
     }
 
+    // Public terms of service — required by Stripe / Stripe Checkout for the
+    // "Terms of service URL" field in Business → Public details. Mirrors the
+    // /privacy + /support pages: thin HTML, no external deps, no DB hit.
+    if (isGetLikeRequest && pathname === '/terms') {
+      sendHtml(res, 200, `<!DOCTYPE html><html><head><title>Terms of Service — ThumbGate</title></head><body>
+<h1>Terms of Service</h1>
+<p><strong>ThumbGate</strong> (npm: thumbgate)</p>
+<p>Last updated: 2026-05-12</p>
+<h2>The Service</h2>
+<p>ThumbGate provides pre-action gates for AI coding agents: a local CLI (MIT-licensed) and an optional hosted tier at thumbgate-production.up.railway.app. By installing the CLI or paying for a subscription, you agree to these terms.</p>
+<h2>Payment</h2>
+<p>Paid tiers are billed through Stripe. Subscriptions auto-renew until cancelled. One-off purchases (Sprint Diagnostic, Workflow Sprint, Quick Read, Workflow Teardown, First Failure Rule) are charged once.</p>
+<h2>Refunds</h2>
+<p>Pro and Team subscriptions: cancel anytime; we issue a full refund within 7 days of the first charge, prorated thereafter. One-off purchases: refund on request if we cannot deliver the scoped artifact.</p>
+<h2>Acceptable Use</h2>
+<p>You may not use ThumbGate to (a) circumvent the safety controls of other AI providers, (b) generate malware or content that violates third-party terms, or (c) resell the hosted tier without written permission.</p>
+<h2>Disclaimer of Warranty</h2>
+<p>The service is provided "as is", without warranty of any kind. ThumbGate is a guard rail, not a guarantee. We do not warrant that every AI-agent mistake will be prevented.</p>
+<h2>Limitation of Liability</h2>
+<p>Total liability for any claim is limited to the amount you paid in the 12 months preceding the claim.</p>
+<h2>Governing Law</h2>
+<p>These terms are governed by the laws of the State of New York, United States.</p>
+<h2>Changes</h2>
+<p>We may update these terms; material changes will be announced via the email on file at least 14 days before they take effect.</p>
+<h2>Contact</h2><p>igor.ganapolsky@gmail.com</p>
+<p><a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> · <a href="/privacy">Privacy</a> · <a href="/support">Support</a></p>
+</body></html>`, {}, {
+        headOnly: isHeadRequest,
+      });
+      return;
+    }
+
+    // Public support / contact page — required for Stripe Business → Public
+    // details "Customer support URL" field. Single source of truth for how
+    // customers reach us (email, GitHub issues, status page).
+    if (isGetLikeRequest && pathname === '/support') {
+      sendHtml(res, 200, `<!DOCTYPE html><html><head><title>Support — ThumbGate</title></head><body>
+<h1>Support</h1>
+<p><strong>ThumbGate</strong> support, billing, and contact paths.</p>
+<h2>Email</h2>
+<p>For billing questions, refunds, subscription changes, or technical issues with the hosted tier: <a href="mailto:igor.ganapolsky@gmail.com">igor.ganapolsky@gmail.com</a>. We reply within one business day.</p>
+<h2>GitHub Issues</h2>
+<p>For bugs, CLI questions, and feature requests in the open-source CLI: <a href="https://github.com/IgorGanapolsky/ThumbGate/issues">github.com/IgorGanapolsky/ThumbGate/issues</a>.</p>
+<h2>Status</h2>
+<p>Hosted-tier status: check <a href="https://thumbgate-production.up.railway.app/health">/health</a> for current health. Railway-hosted; rebuilds take 2-5 minutes.</p>
+<h2>Refunds</h2>
+<p>Pro / Team subscriptions: 7-day full refund window from first charge. One-off purchases: refund on request if we cannot deliver. Email the address above.</p>
+<h2>Security</h2>
+<p>Disclose vulnerabilities by email; please do not post to public GitHub issues. We acknowledge within 48 hours.</p>
+<p><a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
+</body></html>`, {}, {
+        headOnly: isHeadRequest,
+      });
+      return;
+    }
+
     // Public privacy policy — required for GPT Store and marketplace listings
     if (isGetLikeRequest && pathname === '/privacy') {
       sendHtml(res, 200, `<!DOCTYPE html><html><head><title>Privacy Policy — ThumbGate</title></head><body>
