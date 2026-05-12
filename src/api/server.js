@@ -4421,6 +4421,10 @@ async function addContext(){
           // /cursor-agent-guardrails and /cursor-prevent-repeated-mistakes have the
           // same <title> and <h1>. The latter has install command + TL;DR + richer FAQ.
           'cursor-agent-guardrails': 'cursor-prevent-repeated-mistakes',
+          // Same pattern: /claude-code-feedback and /claude-code-prevent-repeated-mistakes
+          // share an <h1>. -prevent-repeated-mistakes is 161 lines with TL;DR + install
+          // command; -feedback is 338 lines of older boilerplate without an install path.
+          'claude-code-feedback': 'claude-code-prevent-repeated-mistakes',
         };
         if (Object.prototype.hasOwnProperty.call(GUIDE_CANONICAL_REDIRECTS, slug)) {
           const canonical = GUIDE_CANONICAL_REDIRECTS[slug];

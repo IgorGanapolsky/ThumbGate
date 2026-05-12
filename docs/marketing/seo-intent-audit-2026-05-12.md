@@ -43,11 +43,31 @@ Body content differs:
 
 **Shipped (this PR):** 301 redirect `/guides/cursor-agent-guardrails` → `/guides/cursor-prevent-repeated-mistakes`. Consolidates ranking signal to the better page.
 
-## Out of scope for this PR (intentional)
+## Shipped in this PR (expanded scope)
 
-- Rewriting the 7 jargon-heavy pages. That's content work, not a redirect. Defer until we have actual Search Console data showing which of those 7 pages get inbound traffic worth saving.
-- Killing pages with 0 inbound traffic. Same — needs the data.
-- Schema-type alignment review (article suggests checking if `Service` vs `HowTo` vs `FAQPage` is the right choice). The current 14-schema-type stack may be overclaiming. Defer to a dedicated audit.
+After initial audit, ran a 2nd-pass cannibalization scan and rewrote the 7 jargon-heavy pages.
+
+**Second cannibalization found and redirected:** `/claude-code-feedback` (338 lines, no install command) → `/claude-code-prevent-repeated-mistakes` (161 lines, has TL;DR + `npx thumbgate init` command).
+
+**7 title / H1 / meta-description rewrites (body content preserved):**
+
+| Slug | Before (jargon) | After (searcher) |
+|---|---|---|
+| `/proxy-pointer-rag-guardrails` | "Proxy-Pointer RAG Needs Guardrails Before Visual Answers" | "How to stop your RAG agent from returning the wrong image" |
+| `/ai-search-topical-presence` | "AI search topical presence decides who gets recommended" | "How to get your tool recommended by ChatGPT, Perplexity, and Claude" |
+| `/semantic-programmatic-seo-guardrails` | "Semantic pSEO Needs Governance Before Scale" | "How to stop your AI-generated SEO pages from hurting your rankings" |
+| `/native-messaging-host-security` | "Native messaging host security for AI browser bridges" | "How to audit AI browser extensions before they leak data" |
+| `/relational-knowledge-ai-recommendations` | "Relational knowledge explains why AI systems recommend some tools and ignore others" | "Why AI recommends some tools and ignores yours" |
+| `/agent-harness-optimization` | "AI Agent Harness Optimization That Blocks Repeat Failures" | "How to stop AI coding agents from burning tokens on failed retries" |
+| `/autoresearch-agent-safety` | "Autoresearch Agent Safety for Self-Improving Coding Agents" | "How to stop a self-improving coding agent from going off-rails" |
+
+Re-running the jargon-vs-searcher heuristic post-rewrite, all 7 pages now have a **negative gap** (more searcher language than jargon). All flipped from positive/zero gap to between -2 and -6.
+
+## Still out of scope (intentionally deferred)
+
+- Body content rewrites (only title/H1/meta-description changed in this PR). The bodies remain as-is until we see real Google Search Console data on which of these pages get traffic worth deep-rewriting.
+- Killing pages with 0 inbound traffic. Needs the data.
+- Schema-type alignment review (article suggests checking if `Service` vs `HowTo` vs `FAQPage` is the right choice). The current 14-schema-type stack may be overclaiming. Defer to a dedicated audit when Search Console data is wired.
 
 ## Expected impact
 
