@@ -80,13 +80,18 @@ async function main(argv = process.argv.slice(2), deps = {}) {
     from: process.env.RESEND_FROM_EMAIL || DEFAULT_FROM,
     replyTo: process.env.THUMBGATE_TRIAL_EMAIL_REPLY_TO || DEFAULT_REPLY_TO,
   });
-  console.log(JSON.stringify({
+  const summary = {
     campaign: options.campaign,
     leadId: message.pipelineLeadId,
     sent: Boolean(result.sent),
     providerId: result?.id || result?.providerId || null,
     reason: result?.reason || null,
-  }, null, 2));
+  };
+  console.log(JSON.stringify(summary, null, 2));
+  if (!result.sent) {
+    const reason = result?.reason ? `: ${result.reason}` : '';
+    throw new Error(`Revenue email was not sent${reason}`);
+  }
   return result;
 }
 
