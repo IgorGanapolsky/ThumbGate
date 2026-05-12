@@ -23,15 +23,13 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 ### Free (local, `npx thumbgate serve`)
 
-- 3 daily feedback captures
-- 5 daily lesson searches
-- Unlimited recall on the local runtime
-- 10 auto-promoted checks plus the core safety policy
-- 5 built-in checks
-- Single user, single machine
-- DPO/KTO export for fine-tuning
-- CLI dashboard
-- History-aware lesson distillation and linked feedback sessions
+- Unlimited feedback captures
+- Up to 5 active auto-promoted prevention rules
+- No recall or lesson search
+- No exports (DPO, Databricks, HuggingFace)
+- 5 built-in checks plus local PreToolUse hook blocking
+- Local-first enforcement on the operator's machine
+- MCP integrations for Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and compatible agents
 
 ### Pro ($19/mo or $149/yr, hosted checkout on Railway)
 
@@ -51,6 +49,16 @@ This document is the source of truth for product, pricing, traction, and proof c
 - Isolated execution guidance for risky local autonomy and signed hosted sandbox dispatch for team workflows
 - Workflow hardening sprint intake and rollout support
 - Team-wide sharing of prevention rules and proof artifacts
+
+## Data Processing & Telemetry Boundaries
+
+- The free local CLI is local-first: feedback logs, memory logs, background-agent run ledgers, gate firings, and generated proof artifacts are written under the operator's ThumbGate feedback directory unless the operator explicitly routes a workflow through hosted APIs or team sync.
+- CLI telemetry is anonymous, best-effort product telemetry for command usage and runtime health. It uses a random local install ID, does not include raw feedback context, and can be disabled with `THUMBGATE_NO_TELEMETRY=1` or `DO_NOT_TRACK=1`.
+- The public website uses first-party telemetry endpoints plus configured analytics surfaces for page views, CTA events, checkout starts, intake submissions, and newsletter signups. Treat those as hosted product analytics, not local enforcement data.
+- Hosted checkout, newsletter, intake, team sync, and API-key flows may process account, billing, email, and workflow-intake data through the hosted Railway/API path and configured payment or analytics providers.
+- Team/shared deployments should treat connector writes, customer-data workflows, telemetry exports, and shared lesson databases as approval-gated data-processing surfaces.
+- Model candidate catalogs and routing guides, including GPT-5.5 evaluation, are benchmark and planning surfaces. They do not silently call provider APIs, change runtime defaults, or imply OpenAI account availability without customer credentials and an explicit integration path.
+- ThumbGate should not claim sub-processor coverage, SOC 2 status, HIPAA eligibility, GDPR DPA terms, or enterprise data residency until those legal/compliance artifacts are actually in place.
 
 ## What we must not claim
 

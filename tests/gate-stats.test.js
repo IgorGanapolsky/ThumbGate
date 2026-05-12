@@ -132,11 +132,31 @@ test('formatStats: handles no top blocked gate', () => {
   assert.ok(output.includes('Last promotion: none'));
 });
 
+test('formatStats: does not invent a top blocked gate for zero-occurrence block rules', () => {
+  const stats = {
+    totalGates: 1,
+    manualGates: 1,
+    autoPromotedGates: 0,
+    blockGates: 1,
+    warnGates: 0,
+    totalBlocked: 0,
+    totalWarned: 0,
+    topBlocked: null,
+    lastPromotion: null,
+    estimatedHoursSaved: '0.0',
+    gates: [{ id: 'local-only-git-writes', action: 'block', occurrences: 0 }],
+  };
+  const output = formatStats(stats);
+  assert.ok(output.includes('Top blocked gate: none'));
+  assert.ok(!output.includes('local-only-git-writes (0 blocks)'));
+});
+
 // -- formatBayesErrorRate --
 
 test('formatBayesErrorRate: returns n/a for null or undefined', () => {
   assert.ok(formatBayesErrorRate(null).includes('n/a'));
   assert.ok(formatBayesErrorRate(undefined).includes('n/a'));
+  assert.ok(formatBayesErrorRate(null).includes('safe and harmful'));
 });
 
 test('formatBayesErrorRate: labels near-zero error as near-optimal', () => {

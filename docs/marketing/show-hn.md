@@ -54,8 +54,8 @@ It speaks MCP stdio, so it plugs into Claude Code, Claude Desktop,
 Cursor, Codex CLI, Gemini CLI, Amp, OpenCode — anything that speaks the
 protocol. One correction in Claude Code also protects your Cursor session.
 
-Free tier: 3 captures/day, 1 rule, 1 agent. Enough to prove one blocked
-repeat on a real workflow. Pro is $19/mo for unlimited captures + a
+Free tier: unlimited captures, 5 active auto-promoted rules. Enough to make
+ThumbGate part of your daily flow. Pro is $19/mo or $149/yr for unlimited rules + a
 local dashboard showing tokens-saved since install (Sonnet-blended
 estimate, conservative). Team is $49/seat/mo for a shared hosted
 lesson DB.

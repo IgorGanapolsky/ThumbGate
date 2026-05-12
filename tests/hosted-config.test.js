@@ -8,6 +8,8 @@ const {
   joinPublicUrl,
   createTraceId,
   resolveHostedBillingConfig,
+  DEFAULT_SPRINT_DIAGNOSTIC_PRICE_DOLLARS,
+  DEFAULT_WORKFLOW_SPRINT_PRICE_DOLLARS,
 } = require('../scripts/hosted-config');
 
 describe('hosted-config', () => {
@@ -49,5 +51,29 @@ describe('hosted-config', () => {
     });
     assert.strictEqual(config.appOrigin, 'https://thumbgate-production.up.railway.app');
     assert.strictEqual(config.billingApiBaseUrl, 'https://thumbgate-production.up.railway.app');
+  });
+
+  it('resolveHostedBillingConfig exposes optional paid sprint checkout links', () => {
+    const config = resolveHostedBillingConfig({}, {
+      THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL: 'https://buy.stripe.com/diagnostic',
+      THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL: 'https://buy.stripe.com/sprint',
+      THUMBGATE_SPRINT_DIAGNOSTIC_PRICE_DOLLARS: '499',
+      THUMBGATE_WORKFLOW_SPRINT_PRICE_DOLLARS: '1500',
+    });
+
+    assert.strictEqual(config.sprintDiagnosticCheckoutUrl, 'https://buy.stripe.com/diagnostic');
+    assert.strictEqual(config.workflowSprintCheckoutUrl, 'https://buy.stripe.com/sprint');
+    assert.strictEqual(config.sprintDiagnosticPriceDollars, 499);
+    assert.strictEqual(config.workflowSprintPriceDollars, 1500);
+  });
+
+  it('resolveHostedBillingConfig falls back to default sprint prices', () => {
+    const config = resolveHostedBillingConfig({}, {
+      THUMBGATE_SPRINT_DIAGNOSTIC_PRICE_DOLLARS: 'free',
+      THUMBGATE_WORKFLOW_SPRINT_PRICE_DOLLARS: '-1',
+    });
+
+    assert.strictEqual(config.sprintDiagnosticPriceDollars, DEFAULT_SPRINT_DIAGNOSTIC_PRICE_DOLLARS);
+    assert.strictEqual(config.workflowSprintPriceDollars, DEFAULT_WORKFLOW_SPRINT_PRICE_DOLLARS);
   });
 });

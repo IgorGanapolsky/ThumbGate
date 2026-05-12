@@ -4,7 +4,7 @@
 const BOT_SLOP_PATTERNS = [
   { id: 'emoji_spam', pattern: /(?:🚀|💡|🔥|⚡|🎯|💪|🙌|👀){3,}/g, reason: 'Excessive emoji spam' },
   { id: 'generic_opener', pattern: /^(?:Just|Excited to|Thrilled to|Happy to|Proud to) (?:\w+ )*?(?:launch|ship|release|publish|built|creat|announc)/i, reason: 'Generic shipped opener' },
-  { id: 'hashtag_spam', pattern: /#[A-Za-z]+(?:\s+#[A-Za-z]+){5,}/g, reason: 'Too many hashtags' },
+  { id: 'hashtag_spam', pattern: /#[A-Za-z]+(?:\s+#[A-Za-z]+){15,}/g, reason: 'Too many hashtags' },
   { id: 'engagement_bait', pattern: /(?:Like if you agree|Retweet if|Share this|Follow for more|Drop a .* in the comments|Who else)/i, reason: 'Engagement bait' },
   { id: 'thread_bait', pattern: /^(?:Thread|🧵|A thread on|Here are \d+ (?:ways|tips|tricks|things|reasons))/i, reason: 'Thread bait opener' },
   { id: 'ai_generated_tell', pattern: /(?:In today's rapidly evolving|In this comprehensive|Without further ado|It's worth noting that|At the end of the day)/i, reason: 'AI-generated phrasing' },

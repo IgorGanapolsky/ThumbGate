@@ -20,8 +20,8 @@ const {
 
 // Tracked click-through path: /go/pro → /checkout/pro → Stripe.
 // This captures UTM attribution in our funnel before handing off to Stripe.
-const PRO_CTA_URL = 'https://thumbgate-production.up.railway.app/go/pro?utm_source=npm&utm_medium=postinstall&utm_campaign=first_dollar';
-const WORKFLOW_SPRINT_URL = 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake';
+const PRO_CTA_URL = 'https://thumbgate.ai/go/pro?utm_source=npm&utm_medium=postinstall&utm_campaign=first_dollar';
+const WORKFLOW_SPRINT_URL = 'https://thumbgate.ai/#workflow-sprint-intake';
 
 process.stderr.write(`
   ╭─────────────────────────────────────────────────────╮

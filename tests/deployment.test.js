@@ -232,6 +232,7 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS/);
   assert.match(workflow, /RAILWAY_LOG_LINES/);
   assert.match(workflow, /RAILWAY_HTTP_LOG_LINES/);
+  assert.match(workflow, /DEPLOYABLE_PATTERN=.*\\\.github\/workflows\/deploy-railway\\\.yml/);
   assert.match(workflow, /secrets\.THUMBGATE_API_KEY/);
   assert.match(workflow, /RESEND_API_KEY:\s*\$\{\{\s*secrets\.RESEND_API_KEY\s*\}\}/);
   assert.match(workflow, /THUMBGATE_TRIAL_EMAIL_FROM:\s*\$\{\{\s*secrets\.THUMBGATE_TRIAL_EMAIL_FROM\s*\|\|\s*vars\.THUMBGATE_TRIAL_EMAIL_FROM\s*\}\}/);
@@ -239,11 +240,13 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /vars\.THUMBGATE_BILLING_API_BASE_URL \|\| vars\.THUMBGATE_PUBLIC_APP_ORIGIN \|\| 'https:\/\/thumbgate-production\.up\.railway\.app'/);
   assert.match(workflow, /THUMBGATE_PUBLIC_APP_ORIGIN/);
   assert.match(workflow, /THUMBGATE_BILLING_API_BASE_URL/);
+  assert.match(workflow, /THUMBGATE_CHECKOUT_FALLBACK_URL:\s*\$\{\{\s*vars\.THUMBGATE_CHECKOUT_FALLBACK_URL\s*\}\}/);
   assert.match(workflow, /railway variables set --skip-deploys THUMBGATE_API_KEY=/);
   assert.match(workflow, /railway variables set --skip-deploys THUMBGATE_BUILD_SHA=/);
   assert.match(workflow, /railway variables set --skip-deploys STRIPE_WEBHOOK_SECRET=/);
   assert.match(workflow, /railway variables set --skip-deploys RESEND_API_KEY=/);
   assert.match(workflow, /railway variables set --skip-deploys THUMBGATE_TRIAL_EMAIL_FROM=/);
+  assert.match(workflow, /railway variables set --skip-deploys THUMBGATE_CHECKOUT_FALLBACK_URL=/);
   assert.match(workflow, /railway up/);
   assert.match(workflow, /--ci/);
   assert.match(workflow, /--detach/);
@@ -469,6 +472,8 @@ test('CI workflow supports merge queue and cancels stale non-main runs', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
 
   assert.match(workflow, /permissions:\s+contents:\s+read\s+pull-requests:\s+read/s);
+  assert.match(workflow, /push:\s+#[\s\S]*?branches:\s*\[main\]/);
+  assert.doesNotMatch(workflow, /branches:\s*\[main,\s*feat\/\*\*\]/);
   assert.match(workflow, /merge_group:/);
   assert.match(workflow, /types:\s*\[checks_requested\]/);
   assert.match(workflow, /group:\s*ci-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.ref\s*\}\}/);
@@ -539,7 +544,7 @@ test('SonarCloud workflow polls quality gates only for PR and merge-queue scans'
   assert.match(workflow, /SONAR_TOKEN:\s*\$\{\{\s*secrets\.SONAR_TOKEN\s*\}\}/);
   assert.match(pullRequestScanStep[0], /github\.event_name == 'pull_request' \|\| github\.event_name == 'merge_group'/);
   assert.match(pullRequestScanStep[0], /!\(github\.event_name == 'pull_request' && github\.event\.pull_request\.user\.login == 'dependabot\[bot\]'\)/);
-  assert.match(pullRequestScanStep[0], /uses:\s*SonarSource\/sonarqube-scan-action@v7\.1\.0/);
+  assert.match(pullRequestScanStep[0], /uses:\s*SonarSource\/sonarqube-scan-action@v8\.0\.0/);
   assert.match(pullRequestScanStep[0], /-Dsonar\.projectVersion=\$\{\{\s*steps\.package-version\.outputs\.version\s*\}\}/);
   assert.doesNotMatch(pullRequestScanStep[0], /qualitygate\.wait=true/);
   assert.match(qualityGateStep[0], /github\.event_name == 'pull_request' \|\| github\.event_name == 'merge_group'/);

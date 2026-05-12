@@ -43,10 +43,12 @@ function calculateStats() {
     .filter((g) => g.action === 'warn')
     .reduce((sum, g) => sum + (g.occurrences || 0), 0);
 
-  // Top blocked gate
+  // Top blocked gate. A configured block rule with zero occurrences is not a
+  // "top blocker"; only recorded block events should appear here.
   const topBlocked = [...allGates]
+    .filter((g) => g.action === 'block' && Number(g.occurrences || 0) > 0)
     .sort((a, b) => (b.occurrences || 0) - (a.occurrences || 0))
-    .find((g) => g.action === 'block') || null;
+    .at(0) || null;
 
   // Last promotion event
   const lastPromotion = promotionLog.length > 0
@@ -58,11 +60,9 @@ function calculateStats() {
   const estimatedHoursSaved = (estimatedMinutesSaved / 60).toFixed(1);
 
   // Bayes error rate: irreducible error floor of the current scorer given its
-  // feature set (tag signatures). If this is near zero, the scorer is already
-  // close to optimal — threshold tuning won't help, and new features are the
-  // only lever. If this is high, the feature set can't discriminate the signal
-  // and we should add features (file path, recency, commit context) rather
-  // than tune thresholds. Null when no feedback sequences have been recorded.
+  // feature set (tag signatures). It is only meaningful when the local sample
+  // contains both harmful and safe outcomes; an all-negative or all-positive
+  // sample can produce a misleading 0.0% floor.
   const bayesErrorRate = tryComputeBayesErrorRate();
 
   return {
@@ -90,10 +90,31 @@ function tryComputeBayesErrorRate() {
       .filter(Boolean)
       .map((line) => { try { return JSON.parse(line); } catch { return null; } })
       .filter(Boolean);
+    if (!hasMixedOutcomeClasses(rows)) return null;
     return computeBayesErrorRate(rows);
   } catch {
     return null;
   }
+}
+
+function hasMixedOutcomeClasses(rows) {
+  if (!Array.isArray(rows) || rows.length < 2) return false;
+  let harmful = 0;
+  let safe = 0;
+  for (const row of rows) {
+    if (sequenceIsHarmful(row)) harmful += 1;
+    else safe += 1;
+    if (harmful > 0 && safe > 0) return true;
+  }
+  return false;
+}
+
+function sequenceIsHarmful(row) {
+  if (!row || typeof row !== 'object') return false;
+  if (typeof row.targetRisk === 'number') return row.targetRisk > 0;
+  if (typeof row.accepted === 'boolean' && row.accepted === false) return true;
+  const label = String(row.label || row.signal || '').toLowerCase();
+  return label === 'negative';
 }
 
 function formatLastPromotion(promo) {
@@ -125,7 +146,7 @@ function formatStats(stats) {
 }
 
 function formatBayesErrorRate(rate) {
-  if (rate === null || rate === undefined) return 'n/a (no feedback sequences yet)';
+  if (rate === null || rate === undefined) return 'n/a (need both safe and harmful feedback sequences)';
   const pct = (rate * 100).toFixed(1);
   if (rate < 0.02) return `${pct}% — scorer is near-optimal; add features, don't tune thresholds`;
   if (rate < 0.10) return `${pct}% — scorer has modest headroom`;

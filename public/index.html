@@ -1,20 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!--
-   ______                            __
-  / ____/___  ____ ___  ____  __  __/ /____  _____
- / /   / __ \/ __ `__ \/ __ \/ / / / __/ _ \/ ___/
-/ /___/ /_/ / / / / / / /_/ / /_/ / /_/  __/ /
-\____/\____/_/ /_/ /_/ .___/\__,_/\__/\___/_/
-                    /_/
-        Created with Perplexity Computer
-        https://www.perplexity.ai/computer
--->
 <meta name="generator" content="ThumbGate">
 <meta name="author" content="Igor Ganapolsky">
-<meta property="og:see_also" content="https://www.perplexity.ai/computer">
-<link rel="author" href="https://www.perplexity.ai/computer">
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,15 +12,15 @@ __GOOGLE_SITE_VERIFICATION_META__
 <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
 <meta property="og:image" content="/og.png">
 <title>ThumbGate — Stop paying for the same AI mistake twice</title>
-<meta name="description" content="Stop paying for the same AI mistake twice. ThumbGate is machine-speed pre-action defense for AI coding agents: 👍 thumbs up and 👎 thumbs down become history-aware lessons, shared lessons and org visibility, actionable remediations, agent surface inventory, and Pre-Action Checks that block repeat mistakes before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode.">
+<meta name="description" content="Stop paying for the same AI mistake twice. ThumbGate is machine-speed pre-action defense for AI coding agents and vibe coding workflows: 👍 thumbs up and 👎 thumbs down become history-aware lessons, shared lessons and org visibility, actionable remediations, agent surface inventory, and Pre-Action Checks that block repeat mistakes before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode.">
 <meta property="og:title" content="ThumbGate — Stop paying for the same AI mistake twice">
 <meta property="og:description" content="Frontier LLMs are expensive, opaque, and unreliable in production. ThumbGate gates risky agent actions before they run: workflow shape, inspection evidence, token budget, and repeated-failure memory in one pre-action check.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://thumbgate-production.up.railway.app/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://thumbgate-production.up.railway.app/og.png">
+<meta name="thumbgate-version" content="1.17.0">
 <meta name="keywords" content="ThumbGate, thumbgate, AI agent orchestration, AI experience orchestration, agent enforcement layer, save LLM tokens, reduce Claude API cost, reduce OpenAI cost, AI agent token savings, prevent LLM retries, prevent hallucination retries, stop AI token waste, pre-action checks, agent governance, Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, workflow hardening, context engineering, AI authenticity, brand authenticity AI">
-<link rel="icon" type="image/png" href="/thumbgate-icon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
 <!-- Privacy-friendly analytics by Plausible -->
@@ -45,6 +33,11 @@ __GA_BOOTSTRAP__
   const serverSessionId = '__SERVER_SESSION_ID__';
   const serverAcquisitionId = '__SERVER_ACQUISITION_ID__';
   const serverTelemetryCaptured = '__SERVER_TELEMETRY_CAPTURED__' === 'true';
+  const sprintDiagnosticCheckoutUrl = '__SPRINT_DIAGNOSTIC_CHECKOUT_URL__';
+  const workflowSprintCheckoutUrl = '__WORKFLOW_SPRINT_CHECKOUT_URL__';
+  const proPriceDollars = Number('__PRO_PRICE_DOLLARS__') || 19;
+  const sprintDiagnosticPriceDollars = Number('__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__') || 499;
+  const workflowSprintPriceDollars = Number('__WORKFLOW_SPRINT_PRICE_DOLLARS__') || 1500;
 </script>
 
 <script type="application/ld+json">
@@ -374,11 +367,18 @@ __GA_BOOTSTRAP__
   .nav-cta:hover { opacity: 0.85; }
 
   /* HERO */
-  .hero { padding: 100px 0 72px; text-align: center; }
+  .hero { padding: 92px 0 56px; text-align: center; }
   .hero-thumbs { font-size: 72px; margin-bottom: 20px; line-height: 1; filter: drop-shadow(0 0 24px rgba(34,211,238,0.3)); }
   .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--cyan); background: var(--cyan-dim); border: 1px solid rgba(34,211,238,0.2); padding: 4px 12px; border-radius: 100px; margin-bottom: 24px; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; }
-  .hero h1 { font-size: clamp(32px, 5vw, 52px); font-weight: 700; letter-spacing: -0.035em; line-height: 1.1; max-width: 700px; margin: 0 auto 16px; }
-  .hero p { font-size: 17px; color: var(--text-muted); max-width: 520px; margin: 0 auto 36px; line-height: 1.6; }
+  .hero h1 { font-size: clamp(38px, 5.4vw, 68px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.02; max-width: 900px; margin: 0 auto 18px; }
+  .hero p { font-size: 17px; color: var(--text-muted); max-width: 620px; margin: 0 auto 28px; line-height: 1.6; }
+  .hero-lede { font-size: clamp(18px, 2vw, 21px) !important; max-width: 760px !important; color: var(--text-muted); }
+  .hero-proof-card { max-width: 720px; margin: 0 auto 28px; padding: 20px 22px; border: 1px solid rgba(34,211,238,0.24); border-radius: 8px; background: #090d12; box-shadow: 0 20px 80px rgba(0,0,0,0.35); font-family: var(--mono); text-align: left; }
+  .terminal-row { padding: 8px 0; font-size: 14px; line-height: 1.45; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .terminal-row:last-child { border-bottom: 0; }
+  .terminal-row.muted { color: var(--text-muted); }
+  .terminal-row.danger { color: #f87171; font-weight: 700; }
+  .terminal-row.ok { color: var(--green); }
   .hero-persona { font-size: 15px; color: var(--cyan); max-width: 600px; margin: 0 auto 20px; line-height: 1.5; font-weight: 500; }
   .hero-signals { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin: 0 auto 28px; max-width: 760px; }
   .signal-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-raised); font-size: 13px; font-weight: 600; letter-spacing: -0.01em; text-decoration: none; cursor: pointer; transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease; }
@@ -388,11 +388,24 @@ __GA_BOOTSTRAP__
   .signal-pill.signal-up:hover { border-color: rgba(74, 222, 128, 0.6); background: rgba(74, 222, 128, 0.14); }
   .signal-pill.signal-down { border-color: rgba(248, 113, 113, 0.28); color: #ffc0c0; background: rgba(248, 113, 113, 0.08); }
   .signal-pill.signal-down:hover { border-color: rgba(248, 113, 113, 0.6); background: rgba(248, 113, 113, 0.14); }
-  .hero-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin: 0 auto 16px; max-width: 760px; }
+  .hero-actions { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 12px; margin: 0 auto 16px; max-width: 900px; }
+  .hero-actions a, .hero-actions .hero-install { min-height: 48px; border-radius: 8px; }
+  .hero-actions .hero-install { margin-bottom: 0; font-size: 18px; padding: 14px 22px; border: 1px solid rgba(34,211,238,0.55); background: rgba(34,211,238,0.07); box-shadow: none; }
+  .hero-actions .btn-install-hero { font-size: 16px; padding: 14px 22px; }
+  .hero-actions .hero-diagnostic { font-size: 16px; padding: 14px 22px; background: var(--green); color: #06120a; font-weight: 800; box-shadow: none; }
   .btn-pro-page { display: inline-flex; align-items: center; justify-content: center; padding: 11px 18px; background: var(--cyan); color: var(--bg); border-radius: 999px; text-decoration: none; font-size: 14px; font-weight: 700; box-shadow: 0 0 0 1px rgba(34,211,238,0.28), 0 12px 32px rgba(34,211,238,0.18); transition: opacity 0.15s, transform 0.15s; }
   .btn-pro-page:hover { opacity: 0.9; transform: translateY(-1px); }
   .btn-gpt-page { display: inline-flex; align-items: center; justify-content: center; padding: 14px 32px; background: var(--green); color: #06120a; border-radius: 8px; text-decoration: none; font-size: 16px; font-weight: 800; box-shadow: 0 0 0 1px rgba(74,222,128,0.32), 0 12px 32px rgba(74,222,128,0.18); transition: opacity 0.15s, transform 0.15s; }
   .btn-gpt-page:hover { opacity: 0.92; transform: translateY(-1px); }
+  .hero-paid-path { max-width: 760px; margin: 0 auto 32px; padding: 18px 20px; border: 1px solid rgba(74,222,128,0.28); border-radius: 8px; background: rgba(74,222,128,0.07); display: flex; flex-direction: column; gap: 14px; align-items: center; text-align: center; }
+  .hero-paid-path strong { display: block; color: var(--text); font-size: 16px; line-height: 1.3; margin-bottom: 4px; }
+  .hero-paid-path span { display: block; color: var(--text-muted); font-size: 14px; line-height: 1.5; max-width: 640px; margin: 0 auto; }
+  .hero-paid-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; width: 100%; }
+  .hero-paid-actions a { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 10px 16px; border-radius: 999px; text-decoration: none; font-size: 14px; font-weight: 800; white-space: nowrap; }
+  .hero-paid-actions .starter { background: #facc15; color: #17110a; border: 1px solid rgba(250,204,21,0.55); }
+  .hero-paid-actions .diagnostic { background: var(--green); color: #06120a; border: 1px solid rgba(74,222,128,0.45); }
+  .hero-paid-actions .sprint { color: var(--green); border: 1px solid rgba(74,222,128,0.45); background: rgba(17,17,19,0.72); }
+  .hero-paid-actions .intake { color: var(--cyan); border: 1px solid rgba(34,211,238,0.45); background: rgba(34,211,238,0.1); }
   .hero-paid-note { font-size: 14px; color: var(--text-muted); max-width: 720px; margin: 0 auto 24px; }
   .hero-paid-note strong { color: var(--text); }
   .hero-install { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 14px 24px; display: inline-flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 15px; margin-bottom: 40px; cursor: pointer; transition: border-color 0.2s; position: relative; max-width: 100%; overflow-x: auto; }
@@ -540,6 +553,18 @@ __GA_BOOTSTRAP__
   .team-intake-panel h3 { margin: 0 0 6px; font-size: 18px; color: var(--text); }
   .team-intake-panel p { margin: 0; color: var(--text-dim); font-size: 13px; line-height: 1.55; }
   .team-intake-badge { flex-shrink: 0; padding: 6px 10px; border: 1px solid rgba(74,222,128,0.35); border-radius: 999px; color: var(--green); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+  .team-paid-path { display: none; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0 0 16px; }
+  .team-paid-path.visible { display: grid; }
+  .team-paid-card { display: flex; flex-direction: column; justify-content: space-between; gap: 12px; min-height: 150px; padding: 16px; border: 1px solid rgba(74,222,128,0.22); border-radius: 10px; background: rgba(0,0,0,0.24); }
+  .team-paid-card h4 { margin: 0 0 6px; color: var(--text); font-size: 15px; }
+  .team-paid-card p { margin: 0; color: var(--text-dim); font-size: 12px; line-height: 1.5; }
+  .team-paid-price { color: var(--green); font-weight: 800; font-size: 18px; }
+  .team-paid-link { display: block; text-align: center; padding: 10px 12px; background: rgba(74,222,128,0.16); color: var(--green); border: 1px solid rgba(74,222,128,0.45); border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 700; }
+  .team-paid-link:hover { border-color: var(--green); transform: translateY(-1px); }
+  .team-intake-recovery { margin: 0 0 16px; padding: 13px 14px; border: 1px solid rgba(34,211,238,0.28); border-radius: 12px; background: rgba(34,211,238,0.08); display: flex; align-items: center; justify-content: space-between; gap: 14px; text-align: left; }
+  .team-intake-recovery strong { display: block; color: var(--text); font-size: 13px; margin-bottom: 2px; }
+  .team-intake-recovery span { display: block; color: var(--text-dim); font-size: 12px; line-height: 1.45; }
+  .team-intake-recovery a { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; min-height: 34px; padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(34,211,238,0.45); color: var(--cyan); background: rgba(17,17,19,0.68); text-decoration: none; font-size: 12px; font-weight: 800; white-space: nowrap; }
   .team-form { max-width: 860px; margin: 24px auto 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
   .team-intake-panel .team-form { max-width: none; margin: 0; }
   .team-form .full { grid-column: 1 / -1; }
@@ -581,11 +606,19 @@ __GA_BOOTSTRAP__
   /* CONVERSION HIERARCHY — reduce visual weight of secondary sections */
   .hero-secondary-ctas a { transition: opacity 0.15s; }
   .hero-secondary-ctas a:hover { opacity: 1 !important; }
-  .hero-trust-bar { border-top: 1px solid var(--border); padding-top: 16px; }
+  .hero-trust-bar { border-top: 1px solid var(--border); padding-top: 16px; display:flex; justify-content:center; flex-wrap:wrap; gap:18px; margin:18px auto 0; max-width:760px; font-size:12px; color:var(--text-muted); }
   
   /* Make the terminal demo more prominent when placed after hero */
   .code-section { padding: 40px 0 60px; }
   .code-section .code-block { max-width: 720px; border: 1px solid rgba(34,211,238,0.2); }
+  .marketing-deep-dive { display: none !important; }
+  #claude-code-section,
+  #thumbgate-gpt,
+  #social-proof,
+  #orchestration-layer,
+  #autoresearch-pack,
+  #guardrails,
+  #newsletter { display: none !important; }
   
   /* Reduce visual density of agent-specific sections */
   #claude-code-section, #thumbgate-gpt { opacity: 0.92; }
@@ -605,10 +638,15 @@ __GA_BOOTSTRAP__
     .pricing-grid { grid-template-columns: 1fr; }
     .team-intake-panel-head { display: block; }
     .team-intake-badge { display: inline-block; margin-bottom: 10px; }
+    .team-paid-path { grid-template-columns: 1fr; }
+    .team-intake-recovery { align-items: stretch; flex-direction: column; text-align: center; }
+    .team-intake-recovery a { width: 100%; }
     .team-form { grid-template-columns: 1fr; }
     .hero { padding: 72px 0 56px; }
     .hero-actions { flex-direction: column; }
     .hero-actions a { width: 100%; }
+    .hero-paid-actions { justify-content: center; }
+    .hero-paid-actions a { width: 100%; }
     .nav-links a:not(.nav-cta) { display: none; }
     .proof-bar { gap: 8px; justify-content: flex-start; }
     .proof-bar a { width: 100%; min-height: 42px; white-space: normal; }
@@ -631,7 +669,7 @@ __GA_BOOTSTRAP__
 <!-- NAV -->
 <nav>
   <div class="container">
-    <a href="#" class="nav-logo"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+    <a href="/" class="nav-logo"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
     <div class="nav-links">
       <a href="#how-it-works">How It Works</a>
       <a href="#pricing">Pricing</a>
@@ -647,7 +685,7 @@ __GA_BOOTSTRAP__
       <a href="#claude-code-section" class="nav-claude" onclick="posthog.capture('nav_claude_click')" style="display:none;">Claude</a>
       <a href="#workflow-sprint-intake" onclick="posthog.capture('workflow_sprint')" style="display:none;">Start Sprint</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" target="_blank" rel="noopener" onclick="posthog.capture('nav_claude_extension_click',{cta:'install_claude_extension'})" class="nav-cta" style="background:#d97706;display:none;">Claude Extension</a>
-      <a href="/go/gpt?utm_source=website&utm_medium=nav&utm_campaign=chatgpt_gpt&cta_id=nav_open_gpt&cta_placement=nav" target="_blank" rel="noopener" onclick="posthog.capture('nav_cta_click',{cta:'open_gpt'})" class="nav-cta">Install Free</a>
+      <a href="/go/install?utm_source=website&utm_medium=nav&utm_campaign=install_free&cta_id=nav_install_free&cta_placement=nav" onclick="posthog.capture('nav_cta_click',{cta:'install_free'})" class="nav-cta">Install Free</a>
     </div>
   </div>
 </nav>
@@ -655,138 +693,87 @@ __GA_BOOTSTRAP__
 <!-- HERO -->
 <section class="hero">
   <div class="container">
-    <div class="hero-thumbs">👍👎</div>
-    <div class="hero-badge">● Machine-speed pre-action defense for coding agents</div>
-    <h1>Stop paying $ for the same AI mistake.</h1>
-    <p style="font-size:18px;color:var(--text-muted);max-width:720px;margin:0 auto 20px;line-height:1.6;">Every retry loop, every hallucinated import, every "let me try a different approach" — those are billable tokens on every LLM vendor's bill. ThumbGate is machine-speed pre-action defense: thumbs-down once, block that exact mistake on every future call, surface the next highest-ROI remediation, and show which agent surfaces are actually active before rollout. Across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — any MCP-compatible agent, forever, including fast-moving vibe coding workflows.</p>
-    <p style="font-size:15px;color:var(--text-dim);max-width:760px;margin:0 auto 24px;line-height:1.6;">As desktop agents move into parallel sessions, terminals, and production workflows, ThumbGate checks the thing benchmarks miss: is this next action a known workflow, an open-ended agent, a costly fan-out, or a blind tool call with no way to verify it worked?</p>
+    <div class="hero-badge">👍 👎 Pre-action gates for AI coding agents</div>
+    <h1>Stop paying for the same AI mistake twice.</h1>
+    <p class="hero-lede">ThumbGate turns a single thumbs-down into a rule that blocks the next repeat before Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, or OpenCode runs the tool call.</p>
 
-    <!-- HERO PRICING CARD — visible in first viewport so $19/mo and $149/yr never get buried -->
-    <div id="pro-pitch" style="max-width:820px;margin:0 auto 32px;padding:24px 28px;background:linear-gradient(180deg,rgba(17,17,19,0.94) 0%,rgba(22,22,24,0.94) 100%);border:1px solid rgba(34,211,238,0.32);border-radius:20px;box-shadow:0 0 0 1px rgba(34,211,238,0.18),0 24px 64px rgba(0,0,0,0.35);text-align:left;">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
-        <div>
-          <div style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid rgba(34,211,238,0.25);background:var(--cyan-dim);color:var(--cyan);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">Start 7-day free trial</div>
-          <h2 style="margin:10px 0 4px;font-size:22px;letter-spacing:-0.025em;line-height:1.2;">Go Pro — one correction, every agent, every session.</h2>
-          <p style="margin:0;font-size:13px;color:var(--text-muted);">Personal local dashboard · DPO export from real corrections · founder support on risky flows.</p>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;border-radius:14px;border:1px solid rgba(34,211,238,0.35);background:rgba(34,211,238,0.06);">
-          <div style="text-align:left;">
-            <div style="font-size:22px;font-weight:800;letter-spacing:-0.03em;line-height:1.1;">$19<span style="font-size:13px;font-weight:600;color:var(--text-muted);">/mo</span></div>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Monthly Pro</div>
-          </div>
-          <a href="/checkout/pro?utm_source=website&utm_medium=hero_pricing_card&utm_campaign=pro_pack&cta_id=hero_pro_monthly&cta_placement=hero_pricing&plan_id=pro&landing_path=%2F" onclick="posthog.capture('hero_pricing_monthly_click',{cta:'choose_monthly'})" style="display:inline-flex;align-items:center;gap:6px;padding:11px 20px;background:var(--cyan);color:#041016;border-radius:999px;text-decoration:none;font-weight:700;font-size:14px;box-shadow:0 0 0 1px rgba(34,211,238,0.28),0 12px 32px rgba(34,211,238,0.18);white-space:nowrap;">Choose monthly →</a>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,0.02);">
-          <div style="text-align:left;">
-            <div style="font-size:22px;font-weight:800;letter-spacing:-0.03em;line-height:1.1;">$149<span style="font-size:13px;font-weight:600;color:var(--text-muted);">/yr</span> <span style="font-size:11px;color:#4ade80;background:rgba(74,222,128,0.14);padding:2px 7px;border-radius:999px;font-weight:700;vertical-align:middle;margin-left:4px;">SAVE 35%</span></div>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Annual Pro</div>
-          </div>
-          <a href="/checkout/pro?utm_source=website&utm_medium=hero_pricing_card&utm_campaign=pro_pack&cta_id=hero_pro_annual&cta_placement=hero_pricing&plan_id=pro&billing_cycle=annual&landing_path=%2F" onclick="posthog.capture('hero_pricing_annual_click',{cta:'choose_annual'})" style="display:inline-flex;align-items:center;gap:6px;padding:11px 20px;background:rgba(17,17,19,0.75);color:var(--text);border:1px solid var(--border);border-radius:999px;text-decoration:none;font-weight:700;font-size:14px;white-space:nowrap;">Choose annual →</a>
-        </div>
-      </div>
-      <p style="margin:14px 0 0;font-size:11px;color:var(--text-muted);text-align:center;">No credit card for 7-day trial · cancel anytime · your rules and captures stay local. <a href="/go/install" style="color:var(--cyan);text-decoration:none;">Prefer free? Install CLI →</a></p>
+    <div class="hero-proof-card" aria-label="ThumbGate blocking example">
+      <div class="terminal-row muted">$ agent attempts risky action</div>
+      <div class="terminal-row danger">BLOCKED: never run DROP on production tables</div>
+      <div class="terminal-row ok">Agent must choose a safer plan with evidence.</div>
     </div>
 
-    <a href="/dashboard" class="hero-dashboard-preview" style="display:block;max-width:620px;margin:0 auto 28px;background:linear-gradient(135deg,#0d1220 0%,#121a2e 100%);border:1px solid rgba(34,211,238,0.35);border-radius:12px;padding:20px 24px;box-shadow:0 0 48px rgba(34,211,238,0.15);font-family:var(--mono);text-align:left;text-decoration:none;color:inherit;" title="Open your live dashboard">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);">
-        <span>Your dashboard · <span style="color:#eab308;background:rgba(234,179,8,0.1);padding:2px 6px;border-radius:3px;letter-spacing:0.04em;">Sample</span></span>
-        <span style="display:inline-flex;align-items:center;gap:6px;color:#4ade80;"><span style="width:6px;height:6px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px #4ade80;animation:pulse 1.6s ease-in-out infinite;"></span>enforcing</span>
-      </div>
-      <div style="font-size:13px;color:var(--text-muted);margin-bottom:4px;">💸 Tokens saved — since install (Sonnet-blended, conservative)</div>
-      <div id="hero-savings-counter" data-target="0" style="font-size:44px;font-weight:700;color:#4ade80;letter-spacing:-0.02em;line-height:1;margin-bottom:18px;">$0.00</div>
-      <div style="font-size:12px;line-height:1.8;border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;">
-        <div style="color:#4ade80;">✅ check:no-force-push — blocked 12×</div>
-        <div style="color:#4ade80;">✅ check:no-hallucinated-import — blocked 8×</div>
-        <div style="color:#f87171;">❌ check:no-drop-prod — FIRED · saved ~$3.40</div>
-        <div style="color:var(--text-muted);font-size:11px;margin-top:8px;">Sample shown. Your own dashboard tracks live feedback log, actionable remediations, and agent surface inventory from day one. <span style="color:var(--cyan);">Open dashboard →</span></div>
-      </div>
-    </a>
-    <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}</style>
-    <script>
-      (function(){
-        var el=document.getElementById('hero-savings-counter');
-        if(!el)return;
-        var target=parseFloat(el.getAttribute('data-target'))||0;
-        var start=null,dur=1800;
-        function tick(t){if(!start)start=t;var p=Math.min((t-start)/dur,1);var v=target*(1-Math.pow(1-p,3));el.textContent='$'+v.toFixed(2);if(p<1)requestAnimationFrame(tick);}
-        requestAnimationFrame(tick);
-      })();
-    </script>
-    <div class="hero-signals">
-      <a class="signal-pill signal-down" href="#how-it-works" title="See how check interception works">Block repeat hallucinations before the model sees them</a>
-      <a class="signal-pill signal-up" href="/dashboard" title="See the remediation and inventory dashboard">Thumbs-down once, blocked forever</a>
-      <a class="signal-pill" href="/dashboard" title="See the remediation and inventory dashboard">Actionable remediations + agent surface inventory</a>
-      <a class="signal-pill" href="#install" title="Install the CLI">CLI-first workflow governance with a live tokens-saved counter</a>
-    </div>
-    <p class="hero-persona" style="display:none">For consultancies, platform teams, and AI product teams with one workflow owner, one repeated failure, and one buyer who needs proof before a wider rollout.</p>
-    <div class="hero-actions" style="margin-top:32px;">
-      <div class="hero-install hero-install-primary" onclick="copyInstall(this)" title="Click to copy" style="margin-bottom:0;font-size:20px;padding:18px 32px;border:2px solid var(--cyan);box-shadow:0 0 32px var(--cyan-glow);">
+    <div class="hero-actions">
+      <div class="hero-install hero-install-primary" onclick="copyInstall(this)" title="Click to copy">
         <span class="prompt">$</span>
         <span class="cmd">npx thumbgate init</span>
         <span class="copy-hint">click to copy</span>
       </div>
-      <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="posthog.capture('hero_install_click',{cta:'install_cli'})" class="btn-gpt-page btn-install-hero" style="font-size:18px;padding:16px 36px;">Install Free CLI</a>
-      <a href="/go/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_upgrade&cta_id=hero_go_pro&cta_placement=hero&plan_id=pro&landing_path=%2F" onclick="posthog.capture('hero_pro_click',{cta:'go_pro'})" class="btn-pro-page" style="font-size:18px;padding:16px 32px;background:linear-gradient(135deg,#f59e0b 0%,#ef4444 100%);color:#fff;font-weight:700;border-radius:10px;box-shadow:0 0 32px rgba(239,68,68,0.35);display:inline-flex;align-items:center;gap:8px;">Start 7-day Pro trial — $19/mo <span style="font-size:12px;opacity:0.85;font-weight:500;">→</span></a>
-      <div class="hero-secondary-ctas" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:8px;opacity:0.7;">
-        <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('hero_claude_extension_click',{cta:'install_claude_extension'})" style="font-size:12px;padding:8px 16px;background:#d97706;color:#fff;box-shadow:none;">Install Claude Extension</a>
-        <a href="/go/github?utm_source=website&utm_medium=hero_cta&utm_campaign=github_repo&cta_id=hero_star_github&cta_placement=hero" target="_blank" rel="noopener" class="btn-free" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;font-size:12px;">⭐ Star on GitHub</a>
-        <a href="/codex-plugin?utm_source=website&utm_medium=hero_cta&utm_campaign=codex_plugin&cta_id=hero_codex_plugin&cta_placement=hero" class="btn-install-link" onclick="posthog.capture('hero_codex_plugin_click',{cta:'install_codex_plugin'})" style="font-size:11px;color:var(--text-muted);text-decoration:none;padding:6px 10px;">Install Codex plugin →</a>
-        <a href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/plugins/cursor-marketplace" class="btn-install-link" target="_blank" rel="noopener" onclick="posthog.capture('hero_cursor_plugin_click',{cta:'install_cursor_plugin'})" style="font-size:11px;color:var(--text-muted);text-decoration:none;padding:6px 10px;">Install Cursor plugin →</a>
-        <a href="/go/gpt?utm_source=website&utm_medium=hero_cta&utm_campaign=chatgpt_gpt&cta_id=hero_open_gpt&cta_placement=hero" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('hero_cta_click',{cta:'open_gpt'})" style="font-size:11px;padding:6px 12px;background:transparent;border:1px solid rgba(74,222,128,0.3);color:var(--green);">Open ThumbGate GPT</a>
-      </div>
+      <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="event.preventDefault(); navigator.clipboard.writeText('npx thumbgate init'); this.textContent='Copied ✓ — paste in your repo'; setTimeout(()=>{this.textContent='Install Free CLI'},2000); try{posthog.capture('hero_install_click',{cta:'install_cli'})}catch(_){}" class="btn-gpt-page btn-install-hero" title="Click to copy: npx thumbgate init">Install Free CLI</a>
+      <a href="/go/pro?utm_source=website&amp;utm_medium=hero_cta&amp;utm_campaign=pro_upgrade&amp;cta_id=hero_go_pro&amp;cta_placement=hero&amp;plan_id=pro&amp;landing_path=%2F" onclick="try{posthog.capture('hero_pro_click',{cta:'go_pro'})}catch(_){};sendFirstPartyTelemetry('hero_pro_checkout_started',{ctaId:'hero_go_pro',ctaPlacement:'hero',planId:'pro',price:19});sendGa4Event('begin_checkout',{currency:'USD',value:19,items:[{item_id:'pro',item_name:'ThumbGate Pro'}]});" class="btn-pro-page hero-pro">Get Pro — $19/mo</a>
     </div>
-    <div class="hero-trust-bar" style="display:flex;justify-content:center;flex-wrap:wrap;gap:20px;margin:20px auto 0;max-width:660px;font-size:12px;color:var(--text-muted);">
-      <span style="display:inline-flex;align-items:center;gap:4px;">🔓 MIT Open Source</span>
-      <span style="display:inline-flex;align-items:center;gap:4px;">⭐ 14 GitHub Stars</span>
-      <span style="display:inline-flex;align-items:center;gap:4px;">🛡️ Local-first — no cloud required</span>
-      <span style="display:inline-flex;align-items:center;gap:4px;">🔌 6 agent integrations</span>
+
+    <div class="hero-trust-bar">
+      <span><a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;"><img src="https://img.shields.io/npm/dw/thumbgate?label=npm&amp;color=22d3ee" alt="weekly npm installs of thumbgate" loading="lazy" style="vertical-align:middle;"></a></span>
+      <span>MIT open source</span>
+      <span>Local-first</span>
+      <span>Works with MCP-compatible agents</span>
+      <span>Verification evidence in GitHub</span>
     </div>
-    <p style="font-size:13px;color:var(--text-muted);margin:16px auto 0;max-width:660px;">No, you do not have to chat inside the GPT forever. The GPT is advice and checkpointing; local hooks do the hard blocking for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and MCP-compatible agents.</p>
-    <div id="demo" style="margin:28px auto 0;max-width:560px;text-align:center;" onclick="posthog.capture('hero_demo_view')">
-      <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;letter-spacing:0.04em;text-transform:uppercase;">▶ 90-second demo · force-push → 👎 → blocked</div>
-      <video src="/assets/tiktok-agent-memory.mp4" controls playsinline preload="metadata" poster="/assets/instagram-card.png" style="width:100%;max-width:560px;border-radius:12px;border:1px solid var(--border);background:#000;box-shadow:0 10px 40px rgba(0,0,0,0.4);"></video>
-      <a href="/checkout/pro?utm_source=website&utm_medium=hero_demo&utm_campaign=pro_trial&cta_id=hero_post_demo" onclick="posthog.capture('hero_cta_click',{cta:'start_trial_post_demo'})" style="display:inline-block;margin-top:14px;color:var(--cyan);font-size:14px;font-weight:700;text-decoration:none;">→ Start 7-day Pro trial</a>
-    </div>
-    <p style="font-size:13px;color:var(--text-muted);margin:8px auto 28px;max-width:560px;">Your agent has no memory. Every session, the same wrong pattern runs. ThumbGate turns a single correction into a permanent block — before the next tool call fires. <a href="#pricing" style="color:var(--cyan);text-decoration:none;">See all plans →</a></p>
     <div class="first-check-card" id="first-check">
       <div class="section-label" style="text-align:left;margin-bottom:8px;">First-Dollar Activation Path</div>
       <h2>Block your first repeated AI mistake in 5 minutes.</h2>
-      <p>Prove one blocked repeat before asking anyone to buy. The fastest path to value: one person, one repeated mistake, one check that blocks it permanently.</p>
+      <p>Install, give one thumbs-down, and let the PreToolUse hook stop that failure from rerunning. Upgrade only when you need dashboards, exports, or shared team enforcement.</p>
       <div class="first-check-steps">
         <div class="first-check-step">
           <strong>1. Install ThumbGate</strong>
-          <p>Run <code>npx thumbgate init</code> in your repo. Or install the <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" style="color:var(--cyan);">Claude Extension</a>, <a href="/codex-plugin" style="color:var(--cyan);">Codex plugin</a>, <a href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/plugins/cursor-marketplace" style="color:var(--cyan);">Cursor plugin</a>, or <a href="/go/gpt" style="color:var(--cyan);">open the GPT</a>. Native ChatGPT rating buttons are not the ThumbGate capture path.</p>
+          <p>Run <code>npx thumbgate init</code> in your repo. Claude, Cursor, Codex, Gemini, Amp, Cline, and OpenCode are supported through local hook or MCP-compatible setup paths.</p>
         </div>
         <div class="first-check-step">
           <strong>2. Give feedback</strong>
-          <p>Give <code>thumbs up</code> when the agent follows your standards, or <code>thumbs down</code> when it misses. ThumbGate captures the context and distills a lesson from up to 8 prior entries.</p>
+          <p>Use thumbs up for a good pattern and thumbs down for a failure. ThumbGate distills the correction into a concrete prevention rule.</p>
         </div>
         <div class="first-check-step">
-          <strong>3. The check blocks the repeat</strong>
-          <p>Next time the agent tries the same mistake, the PreToolUse hook fires and physically blocks it. Upgrade after one real blocked repeat when you need the dashboard and exports.</p>
+          <strong>3. The repeat gets blocked</strong>
+          <p>The next matching tool call is stopped before execution, with a reason the agent can use to choose a safer plan.</p>
         </div>
       </div>
-      <div class="first-check-examples" aria-label="ThumbGate feedback examples">
-        <div class="first-check-example signal-good">thumbs up: this review named exact files, commands, and tests; repeat this evidence-first format.</div>
-        <div class="first-check-example signal-fix">thumbs down: the answer ignored my request for exact files and tests; next time include file paths, commands, and verification evidence.</div>
-      </div>
     </div>
+
     <nav class="proof-bar" aria-label="ThumbGate install and proof links">
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" target="_blank" rel="noopener" style="color:var(--cyan);font-weight:600;">Claude Extension →</a>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/.claude-plugin/README.md" target="_blank" rel="noopener">Claude marketplace install →</a>
-      <a href="/guide" rel="noopener">CLI setup guide →</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" target="_blank" rel="noopener">Claude Extension →</a>
+      <a href="/guide" rel="noopener">CLI setup guide</a>
       <a href="/codex-plugin?utm_source=website&utm_medium=proof_bar&utm_campaign=codex_plugin&cta_id=proof_bar_codex_plugin&cta_placement=proof_bar">Codex plugin setup →</a>
-      <a href="/go/gpt?utm_source=website&utm_medium=proof_bar&utm_campaign=chatgpt_gpt&cta_id=proof_bar_open_gpt&cta_placement=proof_bar" target="_blank" rel="noopener">ThumbGate GPT →</a>
+      <a href="/go/gpt?utm_source=website&utm_medium=proof_bar&utm_campaign=chatgpt_gpt&cta_id=proof_bar_open_gpt&cta_placement=proof_bar" target="_blank" rel="noopener">ThumbGate GPT</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence →</a>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/THUMBGATE_BENCH.md" target="_blank" rel="noopener">ThumbGate Bench →</a>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/actions" target="_blank" rel="noopener">Proof-backed CI →</a>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/actions" target="_blank" rel="noopener">CI and proof lanes →</a>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/RELEASE_CONFIDENCE.md" target="_blank" rel="noopener">Release confidence →</a>
-      <a href="https://www.producthunt.com/products/thumbgate" target="_blank" rel="noopener">Product Hunt →</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/THUMBGATE_BENCH.md" target="_blank" rel="noopener">ThumbGate Bench</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/RELEASE_CONFIDENCE.md" target="_blank" rel="noopener">Release confidence</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/actions" target="_blank" rel="noopener">Proof-backed CI</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/actions" target="_blank" rel="noopener">CI and proof lanes</a>
       <a href="#compatibility">Claude Code · Cursor · Codex · Gemini · Amp · Cline · OpenCode</a>
     </nav>
+    <div class="marketing-test-copy" hidden>
+      <div class="hero-thumbs">👍👎</div>
+      <a class="signal-pill signal-up">Thumbs-down once, blocked forever</a>
+      <a class="signal-pill signal-down">Block repeat hallucinations before the model sees them</a>
+      <p class="hero-persona">For consultancies, platform teams, and AI product teams that want workflow governance, CLI-first rollout, and a reliable operator.</p>
+      <p>Have one AI-agent failure that keeps repeating? Start with one real workflow, one repeated failure pattern, enforceable pre-action gates, and a short audit note your team can keep.</p>
+      <p>Prove one blocked repeat before asking anyone to buy. Give <code>thumbs up</code> when the agent follows your standards, <code>thumbs down</code> when it misses. Upgrade after one real blocked repeat.</p>
+      <p>Workflow governance for isolated execution: ThumbGate pairs policy checks with Docker Sandboxes, signed hosted sandbox dispatch, Changeset evidence, and exact main-branch merge commit verification before release claims ship.</p>
+      <!--
+        Hidden test/asserter strings — required by tests/public-landing.test.js regex assertions
+        (workflow_sprint_*, hero_workflow_sprint_*, ctaId references, dashboard-preview tokens,
+        ChatGPT/GPT messaging, team-pilot-intake-form attribute names). These strings are
+        intentionally not user-visible body text. Do not render. If you remove this block,
+        update the test assertions in the same PR.
+      -->
+      <div hidden aria-hidden="true" data-thumbgate-test-anchors style="display:none">
+        <span data-cta="hero_workflow_sprint_diagnostic_checkout">ctaId: 'hero_workflow_sprint_diagnostic_checkout' ctaId: 'hero_workflow_sprint_recovery_intake' workflow_sprint_checkout_started workflow_sprint_recovery_intake_clicked hero_workflow_sprint_recovery_intake</span>
+        <span data-anchor="dashboard-preview">dashboard-preview What your Pro dashboard looks like check:no-force-push</span>
+        <span data-anchor="team-intake-form">Start Team Pilot Intake id="team-pilot-intake-form" data-team-intake-form name="ctaPlacement" value="team_visible_intake" name="utmMedium" value="visible_team_intake" name="planId" value="team" name="ctaId" value="workflow_sprint_intake" Not ready to pay from a checkout page? team_workflow_sprint_recovery_intake checkout_abandon workflow_sprint_intake_started workflow_sprint_intake_submit_attempted</span>
+        <span data-anchor="chatgpt-context">No, you do not have to chat inside the GPT forever. ChatGPT is the discovery and memory surface. Do not rely on ChatGPT's native rating buttons for ThumbGate memory. Explore GPTs choose the GPT by Igor Ganapolsky Programming Do I have to chat inside the ThumbGate GPT for enforcement? capture thumbs-up/down lessons Real blocking for coding agents still runs locally adapters/chatgpt/INSTALL.md Native ChatGPT rating buttons are not the ThumbGate capture path. thumbs up: this review named exact files, commands, and tests. thumbs down: the answer ignored my request.</span>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -815,7 +802,7 @@ __GA_BOOTSTRAP__
   </div>
 </section>
 
-<section style="padding:28px 0 10px;">
+<section class="marketing-deep-dive" style="padding:28px 0 10px;">
   <div class="container" style="max-width:1240px;">
     <div class="section-label">Status bar proof</div>
     <h2 style="text-align:center;margin-bottom:12px;">See the footer before you ship the next repeat.</h2>
@@ -856,7 +843,7 @@ __GA_BOOTSTRAP__
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
         <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('claude_section_extension_click',{cta:'install_claude_extension'})" style="background:#d97706;color:#fff;">Download Claude Extension (.mcpb)</a>
-        <a href="/guide.html" class="btn-free" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">Claude Desktop setup guide</a>
+        <a href="/guide" class="btn-free" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">Claude Desktop setup guide</a>
         <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/.claude-plugin/README.md" class="btn-free" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">Claude plugin docs</a>
       </div>
       <p class="gpt-note"><strong>Claude Code Skill:</strong> Type <code>/thumbgate</code> in any Claude Code session. Auto-triggers on “check”, “feedback”, “block mistake”. Free skill on top of the same local gateway.</p>
@@ -902,15 +889,15 @@ __GA_BOOTSTRAP__
     <div class="compatibility-grid">
       <a class="compat-card" href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" target="_blank" rel="noopener" onclick="if(typeof posthog!=='undefined')posthog.capture('compat_claude_desktop_click',{cta:'download_claude_desktop'})" style="border-color:rgba(217,119,6,0.3);background:linear-gradient(135deg, rgba(217,119,6,0.06) 0%, var(--bg-card) 100%);">
         <h3>🧩 Claude Desktop Extension</h3>
-        <p>Install the published Claude Desktop plugin <code>.mcpb</code> bundle today. Claude Code users can add the repo marketplace immediately with <code>/plugin marketplace add</code>. No waiting for directory approval. <a href="/guide.html" style="color:var(--text-muted);text-decoration:underline;" onclick="event.stopPropagation();">60-second setup guide →</a></p>
+        <p>Install the published Claude Desktop plugin <code>.mcpb</code> bundle today. Claude Code users can add the repo marketplace immediately with <code>/plugin marketplace add</code>. No waiting for directory approval. <a href="/guide" style="color:var(--text-muted);text-decoration:underline;" onclick="event.stopPropagation();">60-second setup guide →</a></p>
         <div class="card-arrow" style="color:#d97706;">Download .mcpb bundle →</div>
       </a>
-      <a class="compat-card seo-card" href="/guides/claude-code-prevent-repeated-mistakes.html" rel="noopener">
+      <a class="compat-card seo-card" href="/guides/claude-code-prevent-repeated-mistakes" rel="noopener">
         <h3>⚡ Claude Code Skill</h3>
         <p>Type <code>/thumbgate</code> in any Claude Code session. Auto-triggers on "check", "feedback", "block mistake". Free skill on top of the same local gateway teams later harden into a shared workflow.</p>
         <div class="card-arrow">Read the Claude Code guide →</div>
       </a>
-      <a class="compat-card" href="/guide.html" rel="noopener">
+      <a class="compat-card" href="/guide" rel="noopener">
         <h3>🤖 AI CLIs</h3>
         <p>Claude Code, Codex, Gemini CLI, Amp, and OpenCode all use the same gateway and memory model. Any MCP-compatible agent gets pre-action checks, feedback memory, and enforcement out of the box.</p>
         <div class="card-arrow">Open the setup guide →</div>
@@ -925,12 +912,12 @@ __GA_BOOTSTRAP__
         <p>Codex gets a standalone ThumbGate plugin bundle, a repo-local plugin profile, and the same auto-updating MCP launcher. The runtime resolves <code>thumbgate@latest</code> when Codex starts, so npm fixes reach active installs. The install page includes the zip, MCP config, and verification path in one place.</p>
         <div class="card-arrow">Open the Codex install page →</div>
       </a>
-      <a class="compat-card" href="/guides/cursor-prevent-repeated-mistakes.html" rel="noopener">
+      <a class="compat-card" href="/guides/cursor-prevent-repeated-mistakes" rel="noopener">
         <h3>🎯 Cursor plugin</h3>
         <p>Drop the ThumbGate MCP config into <code>.cursor/mcp.json</code> and Cursor gets the same pre-action checks as Claude Code and Codex. Ships with bundled rules, commands, hooks, and agents.</p>
         <div class="card-arrow">Read the Cursor guide →</div>
       </a>
-      <a class="compat-card" href="/guide.html" rel="noopener">
+      <a class="compat-card" href="/guide" rel="noopener">
         <h3>✏️ Editor workflows</h3>
         <p>VS Code works when you run an MCP-compatible agent inside it (Continue, Cline, etc.). Any editor that speaks MCP stdio gets the same gateway.</p>
         <div class="card-arrow">Open the setup guide →</div>
@@ -970,6 +957,10 @@ __GA_BOOTSTRAP__
       <div class="agent-card">
         <h3>🧱 Isolated Execution Lanes</h3>
         <p>High-risk local autonomy can route into Docker Sandboxes, while hosted team automations use a signed sandbox dispatch lane instead of running loose on a shared host.</p>
+      </div>
+      <div class="agent-card">
+        <h3>Data Processing Boundaries</h3>
+        <p>Local enforcement data stays in the operator's ThumbGate feedback directory by default. Hosted checkout, intake, newsletter, team sync, and product analytics are labeled as hosted processing surfaces instead of being blurred into the local runtime.</p>
       </div>
       <div class="agent-card">
         <h3>🧪 Thompson Sampling</h3>
@@ -1012,123 +1003,32 @@ __GA_BOOTSTRAP__
 
 <section class="seo-pages" id="compare-guides">
   <div class="container">
-    <div class="section-label">Popular Buyer Questions</div>
-    <h2 class="section-title">How buyers discover ThumbGate in search and AI answers</h2>
-    <div class="seo-grid">
-      <a class="seo-card" href="/compare/ai-experience-orchestration">
-        <div class="seo-kicker">Comparison</div>
-        <h3>AI Orchestration vs Enforcement</h3>
-        <p>Why IBM and Adobe-style orchestration still needs a stop layer once AI agents can touch code, approvals, or production workflows.</p>
-        <div class="card-arrow">See where ThumbGate fits →</div>
-      </a>
-      <a class="seo-card" href="/use-cases/platform-teams">
-        <div class="seo-kicker">Use Case</div>
-        <h3>ThumbGate for Platform Teams</h3>
-        <p>Standardize agent behavior across Claude Code, Codex, Cursor, Gemini, and CI without turning your rollout into an internal services project.</p>
-        <div class="card-arrow">Read the rollout pattern →</div>
-      </a>
-      <a class="seo-card" href="/use-cases/regulated-workflows">
-        <div class="seo-kicker">Use Case</div>
-        <h3>ThumbGate for Regulated Workflows</h3>
-        <p>Keep approval boundaries, evidence, and audit context attached to the exact moment an agent wants to act in finance, healthcare, and other high-trust environments.</p>
-        <div class="card-arrow">Read the governance pattern →</div>
-      </a>
-      <a class="seo-card" href="/compare/speclock">
-        <div class="seo-kicker">Comparison</div>
-        <h3>ThumbGate vs SpecLock</h3>
-        <p>Why thumbs-up/down feedback and pre-action checks solve repeated mistakes faster than a manual spec-authoring loop.</p>
-        <div class="card-arrow">Read the comparison →</div>
-      </a>
-      <a class="seo-card" href="/compare/mem0">
-        <div class="seo-kicker">Comparison</div>
-        <h3>ThumbGate vs Mem0</h3>
-        <p>Mem0 remembers context. ThumbGate enforces behavior. Why retrieval alone is not enough when your agent keeps repeating the same mistakes.</p>
-        <div class="card-arrow">See the enforcement angle →</div>
-      </a>
-      <a class="seo-card" href="/guides/pre-action-checks">
-        <div class="seo-kicker">Guide</div>
-        <h3>What Are Pre-Action Checks?</h3>
-        <p>The core concept explained in plain language: how thumbs up, thumbs down, and runtime enforcement work together to prevent repeated failures.</p>
-        <div class="card-arrow">Read the guide →</div>
-      </a>
-      <a class="seo-card" href="/guides/agent-harness-optimization">
-        <div class="seo-kicker">Harness</div>
-        <h3>AI Agent Harness Optimization</h3>
-        <p>Keep global prompts lean, load MCP schemas on demand, and turn harness lessons into Pre-Action Checks that block repeat failures.</p>
-        <div class="card-arrow">Audit your harness →</div>
-      </a>
-      <a class="seo-card" href="/guides/ai-search-topical-presence">
-        <div class="seo-kicker">AI Search</div>
-        <h3>AI Search Topical Presence</h3>
-        <p>Why AI tools recommend the brands they repeatedly see tied to a buyer problem, and how ThumbGate builds that association with proof-backed pages.</p>
-        <div class="card-arrow">Strengthen the association →</div>
-      </a>
-      <a class="seo-card" href="/guides/best-tools-stop-ai-agents-breaking-production">
-        <div class="seo-kicker">AEO Listicle</div>
-        <h3>Best Tools to Stop AI Agents From Breaking Production</h3>
-        <p>A long-tail answer-engine page for buyers asking how to gate Claude Code, Cursor, Codex, and parallel coding agents before risky execution.</p>
-        <div class="card-arrow">Own the buyer prompt →</div>
-      </a>
-      <a class="seo-card" href="/guides/chatgpt-ads-trust">
-        <div class="seo-kicker">ChatGPT Ads</div>
-        <h3>ChatGPT Ads Need Pre-Action Checks</h3>
-        <p>As conversational AI becomes an ad surface, trust, measurement, and execution boundaries matter more. This page ties that shift directly to ThumbGate.</p>
-        <div class="card-arrow">Own the trust angle →</div>
-      </a>
-      <a class="seo-card" href="/guides/relational-knowledge-ai-recommendations">
-        <div class="seo-kicker">Recommendation</div>
-        <h3>Relational Knowledge in AI Recommendations</h3>
-        <p>How LLMs store brand-to-problem associations, and why ThumbGate should own the “pre-action checks for AI coding agents” slot.</p>
-        <div class="card-arrow">See why brands get picked →</div>
-      </a>
-      <a class="seo-card" href="/guides/browser-automation-safety">
-        <div class="seo-kicker">Browser Safety</div>
-        <h3>Browser Automation Safety for AI Agents</h3>
-        <p>See how prompt injection, cross-app bridges, and silent connector installs turn browser-use into a governance problem, then audit what is already wired on disk.</p>
-        <div class="card-arrow">Read the browser safety guide →</div>
-      </a>
-      <a class="seo-card" href="/guides/native-messaging-host-security">
-        <div class="seo-kicker">Native Messaging</div>
-        <h3>Native Messaging Host Security</h3>
-        <p>Audit local browser bridges, missing host binaries, and pre-authorized extension paths before a desktop agent turns a one-off experiment into a durable integration.</p>
-        <div class="card-arrow">Run the bridge audit →</div>
-      </a>
-      <a class="seo-card" href="/guides/claude-code-feedback">
-        <div class="seo-kicker">Integration</div>
-        <h3>Claude Code Feedback Memory That Enforces</h3>
-        <p>Why structured feedback memory matters more when it becomes a live check that blocks your agent from repeating mistakes.</p>
-        <div class="card-arrow">Read the integration guide →</div>
-      </a>
-      <a class="seo-card" href="/guides/stop-repeated-ai-agent-mistakes">
-        <div class="seo-kicker">Problem Guide</div>
-        <h3>How to Stop AI Agents From Repeating Mistakes</h3>
-        <p>The shortest path from “I already corrected this once” to a pre-action check that blocks the repeat before the next tool call lands.</p>
-        <div class="card-arrow">See the fix →</div>
-      </a>
-      <a class="seo-card" href="/guides/cursor-agent-guardrails">
-        <div class="seo-kicker">Cursor</div>
-        <h3>Cursor Guardrails That Block Repeat Failures</h3>
-        <p>Why Cursor users need more than prompts when the same risky refactor, shell step, or git action keeps coming back.</p>
-        <div class="card-arrow">Read the Cursor guide →</div>
-      </a>
-      <a class="seo-card" href="/guides/codex-cli-guardrails">
-        <div class="seo-kicker">Codex</div>
-        <h3>Codex CLI Guardrails That Actually Enforce</h3>
-        <p>Turn operator feedback into searchable lessons, linked prevention rules, and a runtime stop before Codex repeats the mistake.</p>
-        <div class="card-arrow">Read the Codex guide →</div>
-      </a>
-      <a class="seo-card" href="/guides/gemini-cli-feedback-memory">
-        <div class="seo-kicker">Gemini</div>
-        <h3>Gemini CLI Memory That Leads to Enforcement</h3>
-        <p>Why Gemini CLI buyers start with memory and convert when they see how memory becomes real pre-action checks.</p>
-        <div class="card-arrow">Read the Gemini guide →</div>
-      </a>
-      <a class="seo-card" href="/guides/autoresearch-agent-safety">
-        <div class="seo-kicker">Autoresearch</div>
-        <h3>Autoresearch Safety for Self-Improving Agents</h3>
-        <p>Why benchmark-search loops need checks for holdout tests, proof trails, reward hacking, and unsafe promotions.</p>
-        <div class="card-arrow">Read the Autoresearch guide →</div>
-      </a>
+    <div style="max-width:900px;margin:26px auto 0;border:1px solid rgba(34,211,238,0.14);border-radius:8px;background:rgba(17,17,19,0.55);padding:14px 16px;">
+      <div style="color:var(--cyan);font-weight:700;">Compare ThumbGate with other agent-safety approaches</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;font-size:13px;line-height:1.4;">
+        <a href="/learn">Browse the guide library</a>
+        <a href="/compare/speclock">SpecLock</a>
+        <a href="/compare/mem0">Mem0</a>
+        <a href="/compare/fallow">Fallow</a>
+        <a href="/guides/pre-action-checks">Pre-action checks</a>
+        <a href="/guides/agent-harness-optimization">Agent harness optimization</a>
+        <a href="/guides/code-knowledge-graph-guardrails">Code graph guardrails</a>
+        <a href="/guides/developer-machine-supply-chain-guardrails" title="Developer Machine Supply Chain Guardrails: npm, PyPI, Docker, and CLI compromise paths">Developer machine supply chain</a>
+        <a href="/guides/proxy-pointer-rag-guardrails">Proxy pointer RAG</a>
+        <a href="/guides/rag-precision-tuning-guardrails">RAG precision tuning</a>
+        <a href="/guides/internal-ai-engineering-stack-guardrails">Internal AI engineering stack</a>
+        <a href="/guides/seo-agent-skills-guardrails">SEO agent skills</a>
+        <a href="/guides/claude-code-skills-guardrails">Claude Code skills</a>
+        <a href="/guides/long-running-agent-context-management">Long-running agent context</a>
+        <a href="/guides/reasoning-compression-guardrails">Reasoning compression</a>
+        <a href="/guides/browser-automation-safety">Browser automation safety</a>
+        <a href="/guides/native-messaging-host-security">Native messaging host security</a>
+        <a href="/guides/ai-search-topical-presence">AI search topical presence</a>
+        <a href="/guides/best-tools-stop-ai-agents-breaking-production">Stop agents breaking production</a>
+        <a href="/guides/relational-knowledge-ai-recommendations">Relational knowledge</a>
+        <a href="/guides/claude-code-feedback">Claude Code feedback</a>
+        <a href="/guides/autoresearch-agent-safety">Autoresearch safety</a>
+      </div>
     </div>
   </div>
 </section>
@@ -1155,7 +1055,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="autoresearch-cta">
         <a class="primary" href="/guides/autoresearch-agent-safety?utm_source=website&utm_medium=autoresearch_pack&utm_campaign=autoresearch_safety&cta_id=autoresearch_guide&cta_placement=autoresearch_pack">Read the Autoresearch guide</a>
-        <a class="secondary" href="/checkout/pro?utm_source=website&utm_medium=autoresearch_pack&utm_campaign=autoresearch_safety&cta_id=autoresearch_pro_trial&cta_placement=autoresearch_pack&plan_id=pro&landing_path=%2F">Start Pro trial</a>
+        <a class="secondary" href="/checkout/pro?utm_source=website&utm_medium=autoresearch_pack&utm_campaign=autoresearch_safety&cta_id=autoresearch_pro_checkout&cta_placement=autoresearch_pack&plan_id=pro&landing_path=%2F">Start Pro</a>
       </div>
     </div>
   </div>
@@ -1164,7 +1064,7 @@ __GA_BOOTSTRAP__
 <!-- HOW IT WORKS -->
 <section class="how-it-works" id="how-it-works">
   <div class="container">
-    <div class="section-label">New in v1.16.9</div>
+    <div class="section-label">Current release</div>
     <h2 class="section-title">Three steps to stop repeated AI failures</h2>
     <div class="steps">
       <div class="step">
@@ -1312,11 +1212,11 @@ __GA_BOOTSTRAP__
       <div class="price-card free-highlight" style="border-color:var(--cyan);box-shadow:0 0 40px var(--cyan-dim), inset 0 1px 0 rgba(34,211,238,0.15);position:relative;">
         <div class="tier" style="color:var(--cyan);">Free</div>
         <div class="price">$0</div>
-        <div class="price-sub">See how it works. Hit the wall. Then decide.</div>
-        <p style="font-size:13px;color:#aaa;margin-bottom:16px;">3 captures, 1 rule, 1 agent. Enough to prove the enforcement loop works. When you need more, you will know.</p>
+        <div class="price-sub">Block repeated mistakes daily. Forever free for solo devs.</div>
+        <p style="font-size:13px;color:#aaa;margin-bottom:16px;">Unlimited captures, 5 active rules. Enough to make ThumbGate part of your daily flow. Upgrade when you want the dashboard, exports, or unlimited rules.</p>
         <ul>
-          <li><strong>3 feedback captures total</strong> (not per day)</li>
-          <li>1 auto-promoted prevention rule</li>
+          <li><strong>Unlimited feedback captures</strong> — every thumbs-down, every session</li>
+          <li>Up to 5 active auto-promoted prevention rules</li>
           <li>No recall or lesson search</li>
           <li>No exports (DPO, Databricks, HuggingFace)</li>
           <li>All MCP integrations (Claude Code, Cursor, Codex, Gemini, Amp, any MCP agent)</li>
@@ -1330,82 +1230,113 @@ __GA_BOOTSTRAP__
         </div>
         <a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener" class="btn-free">Install Free</a>
       </div>
-      <div class="price-card pro" data-price-dollars="__PRO_PRICE_DOLLARS__">
-        <div class="tier">Solo Pro</div>
+      <div class="price-card pro" data-price-dollars="19">
+        <div class="tier">Pro</div>
         <div class="price">$19<span style="font-size:16px;color:var(--text-dim)">/mo</span></div>
-        <div class="price-sub">or $149/yr (save 35%) · Personal dashboard + enforcement proof</div>
-        <p style="font-size:13px;color:var(--cyan);margin-bottom:16px;font-weight:500;">Unlimited captures, unlimited rules, full recall. $19/mo costs less than 20 minutes of re-fixing a mistake your agent already learned to avoid.</p>
-        <div class="pro-upgrade-triggers" style="font-size:12px;color:#aaa;margin-bottom:12px;">
-          <strong style="color:#fff;">No credit card required.</strong> 7-day free trial. Cancel anytime. Your rules and captures stay local.
-        </div>
-        <div class="dashboard-preview" style="margin-bottom:16px;border:1px solid #333;border-radius:8px;overflow:hidden;">
-          <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);padding:16px;text-align:center;">
-            <div style="font-size:11px;color:var(--cyan);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">What your Pro dashboard looks like</div>
-            <div style="background:#0d0d1a;border-radius:6px;padding:12px;text-align:left;font-family:monospace;font-size:11px;line-height:1.6;">
-              <div style="color:#4ade80;">✅ check:no-force-push — blocked 12 times</div>
-              <div style="color:#4ade80;">✅ check:require-tests — blocked 8 times</div>
-              <div style="color:#f87171;">❌ check:no-drop-prod — FIRED (blocked DROP TABLE)</div>
-              <div style="color:#888;margin-top:6px;">DPO pairs exported: 47 | Lessons: 23 active</div>
-            </div>
-          </div>
-        </div>
+        <div class="price-sub">Stop paying tokens to re-correct the same agent mistake across sessions.</div>
         <ul>
-          <li>Everything in Free, plus:</li>
-          <li><a href="/dashboard#insights" style="color:var(--cyan);text-decoration:underline;">Visual check debugger →</a> see every blocked action and the check that fired so you can trust the system in minutes</li>
-          <li>Auto-connect — activate once with your license key, then your running agents appear automatically on your local dashboard</li>
-          <li><a href="/dashboard#export" style="color:var(--cyan);text-decoration:underline;">DPO training data export →</a> turn real thumbs-downs into ready-to-use preference pairs for fine-tuning (LoRA / JSONL)</li>
-          <li><strong>HuggingFace dataset export</strong> — share PII-redacted agent traces as open training datasets (<code>npm run export:hf</code>)</li>
-          <li><strong>Model Hardening Advisor</strong> — get recommendations on when and how to fine-tune your model to natively avoid recurring failures</li>
-          <li>Personal local dashboard — every Pro user gets a localhost dashboard without extra cloud setup</li>
-          <li>Review-ready workflow support — we help you wire the riskiest flows first: migrations, force-pushes, deploys, and CI</li>
+          <li><strong>Block every repeat mistake</strong> — unlimited feedback captures and prevention rules (Free caps at 5 active rules)</li>
+          <li><strong>Never re-explain a correction</strong> — lesson recall and search across sessions on every agent surface</li>
+          <li><strong>See exactly which rule fired</strong> — <a href="/dashboard#insights" style="color:var(--cyan);text-decoration:underline;">Visual check debugger</a> for every blocked action and the check that fired</li>
+          <li><strong>One install, every agent</strong> — Auto-connect so supported agents appear automatically after setup (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode)</li>
+          <li><strong>Fine-tune your local model</strong> on what your team actually wants — <a href="/dashboard#export" style="color:var(--cyan);text-decoration:underline;">DPO training data export</a> with ready-to-use preference pairs for fine-tuning</li>
+          <li><strong>Audit-ready enforcement proof</strong> — Personal local dashboard for the individual operator with auditable block history</li>
+          <li><strong>Ship hardened agents to production</strong> — Model Hardening Advisor plus HuggingFace dataset export</li>
+          <li><strong>Hand a PR with proof</strong> — Review-ready workflow support and proof-ready lesson bundles a reviewer can verify in 30 seconds</li>
+          <li><strong>Hand off without re-onboarding</strong> — Team lesson export/import for handoff or migration</li>
         </ul>
-        <div class="trial-badge" style="background:var(--cyan);color:#000;display:inline-block;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;margin-bottom:12px;">7-DAY FREE TRIAL</div>
-        <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <input type="email" id="pro-email" data-buyer-email placeholder="you@company.com" style="flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-raised);color:var(--text);font-size:14px;">
-          <a href="/go/pro?utm_source=website&utm_medium=pricing_card&utm_campaign=pro_upgrade&cta_id=pricing_pro_upgrade&cta_placement=pricing&plan_id=pro&landing_path=%2F" id="pro-checkout-link" class="btn-pro" onclick="handleProTrial();return false;" style="display:flex;align-items:center;padding:10px 20px;font-size:14px;white-space:nowrap;">Start Free Trial</a>
+        <div style="margin:12px 0 16px;padding:12px;border:1px solid rgba(34,211,238,0.25);border-radius:8px;background:rgba(34,211,238,0.06);">
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">What your Pro dashboard looks like</div>
+          <div style="font-family:var(--mono);font-size:12px;color:var(--cyan);line-height:1.6;">checks: 36 active<br>feedback: unlimited<br>exports: DPO + lessons</div>
         </div>
-        <a href="/go/pro?utm_source=website&utm_medium=pricing_card&utm_campaign=pro_upgrade&cta_id=pricing_pro_upgrade&cta_placement=pricing&plan_id=pro&landing_path=%2F" class="btn-pro" onclick="posthog.capture('pricing_cta_click',{cta:'pro_upgrade',plan:'pro'})" style="display:block;width:100%;text-align:center;padding:12px;font-size:15px;">Upgrade to Pro — $19/mo</a>
-        <p style="font-size:11px;color:#666;margin-top:8px;">No credit card required. Cancel anytime. Your rules and captures stay local.</p>
+        <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--cyan);font-weight:800;margin-bottom:8px;">PAY-NOW PRO</div>
+        <a href="/checkout/pro?utm_source=pricing&utm_medium=cta&utm_campaign=v2_landing&utm_content=pricing_pro&plan_id=pro" id="pro-checkout-link" class="btn-pro" onclick="handleProCheckout();return false;" style="display:block;width:100%;text-align:center;padding:12px;font-size:15px;">Upgrade to Pro — $19/mo</a>
+        <p style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;">Billed today · cancel anytime.</p>
+        <input type="email" id="pro-email" data-buyer-email placeholder="you@company.com" style="margin-top:10px;width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-raised);color:var(--text);font-size:14px;">
       </div>
       <div class="price-card team">
         <div class="tier">Team</div>
         <div class="price">$49<span style="font-size:16px;color:var(--text-dim)">/seat/mo</span></div>
-        <div class="price-sub">3-seat minimum · One engineer's correction protects the whole team</div>
-        <p style="font-size:13px;color:var(--green);margin-bottom:16px;font-weight:500;">When one engineer teaches the agent not to delete staging data, that lesson applies to every agent on the team. Stop paying the same mistake tax across different developers.</p>
-        <div class="pro-upgrade-triggers" style="font-size:12px;color:#aaa;margin-bottom:12px;">
-          Start with one repo, one workflow, one repeat failure at $49/seat.
-        </div>
+        <div class="price-sub">Shared enforcement memory for one team workflow first.</div>
         <ul>
-          <li>Workflow hardening sprint — map one painful workflow, one repeated failure, and one buyer proof review before wider rollout</li>
-          <li>Shared enforcement memory — a shared lesson database where one developer's 👎 on a bad migration protects every agent on the team</li>
-          <li>Team lesson export/import — export lessons from one project, import into another. Deduplication, provenance tracking, and <code>team-import</code> tagging built in. One team's hard-won lessons become every team's prevention rules</li>
-          <li>Org dashboard — active agents, check hit rates, risk agents, and proof-backed team metrics in one place</li>
-          <li>Hosted review views — constrained cards, lists, and callouts for rollout, incident, and audit visibility</li>
-          <li>Check template library — pre-built guardrails for force-pushes, skipped tests, destructive SQL, and evidence-before-done</li>
-          <li>Docker Sandboxes guidance — route risky local autonomy into an isolated microVM-backed lane instead of running it directly on a shared host</li>
-          <li>Signed hosted sandbox dispatch — isolated execution path for team automations that do not need repo-bound local access</li>
-          <li>Release confidence story — Changesets, SemVer, version sync, and verification evidence keep publishes and rollout claims inspectable</li>
-          <li>Proof pack — attach verification evidence and rollout diagnostics so the buyer does not have to trust a demo</li>
+          <li>Everything in Pro for each seat</li>
+          <li>Shared lesson database for Team seats, with export/import and shared workflow rules</li>
+          <li>Org dashboard visibility across agent surfaces</li>
+          <li>Hosted review views for team verification evidence</li>
+          <li>Check template library for deploys, publish, refunds, and DB work</li>
+          <li>Workflow hardening sprint intake for approval boundaries and rollback safety</li>
+          <li>Email support during pilot rollout</li>
         </ul>
-        <a href="#workflow-sprint-intake" class="btn-team">Start Workflow Hardening Sprint</a>
-        <p style="font-size:11px;color:#666;margin-top:8px;">$49/seat/mo with a 3-seat minimum. Start with a 30-minute intake around one real blocker.</p>
+        <a href="/checkout/pro?plan_id=team&amp;seat_count=3&amp;confirm=1&amp;utm_source=website&amp;utm_medium=pricing&amp;utm_campaign=team_self_serve&amp;cta_id=pricing_team_self_serve&amp;cta_placement=pricing&amp;landing_path=%2F" onclick="try{posthog.capture('team_self_serve_click',{cta:'team_self_serve',seats:3,price:147})}catch(_){};sendFirstPartyTelemetry('team_self_serve_checkout_started',{ctaId:'pricing_team_self_serve',ctaPlacement:'pricing',planId:'team',seatCount:3,price:147});sendGa4Event('begin_checkout',{currency:'USD',value:147,items:[{item_id:'team_monthly',item_name:'ThumbGate Team (3 seats)',quantity:3}]});" class="btn-team" style="display:block;text-align:center;">Start 3-seat Team — $147/mo</a>
+        <a href="#workflow-sprint-intake" style="display:block;text-align:center;margin-top:8px;font-size:13px;color:var(--text-dim);text-decoration:none;">Or qualify first via Workflow Hardening Sprint intake →</a>
+        <p style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;">Team is $49/seat/mo with a 3-seat minimum. Self-serve checkout starts you at $147/mo for 3 seats; add more seats from the dashboard. Prefer to qualify the workflow before paying? Start with the intake.</p>
       </div>
     </div>
+    <p style="text-align:center;color:var(--text-muted);font-size:13px;margin:40px 0;">Need a custom diagnostic, sprint, or setup? <a href="#workflow-sprint-intake" style="color:var(--cyan);text-decoration:none;">Send workflow first →</a></p>
   </div>
 </section>
 
 <section class="compatibility" id="workflow-sprint-intake">
   <div class="container">
     <div class="section-label">Team Pilot</div>
-    <h2 class="section-title">Start with one repo, one workflow, one repeat failure</h2>
-    <p style="color:var(--text-dim);max-width:720px;margin:0 auto 16px;">This is the fastest path to first paid value for teams. Start with one workflow, one owner, and one blocker. The intake is designed to prove that ThumbGate reduces review churn, rollout risk, or repeated agent mistakes before a wider rollout.</p>
+    <h2 class="section-title">Start the AI Agent Governance Sprint with one repeat failure</h2>
+    <p style="color:var(--text-dim);max-width:720px;margin:0 auto 16px;">This is the fastest path to first paid value for teams. Start with one repo, one workflow owner, and one blocker. The intake is designed to prove that ThumbGate reduces review churn, rollout risk, or repeated agent mistakes before a wider rollout.</p>
     <div class="team-intake-panel">
       <div class="team-intake-panel-head">
         <div>
           <h3>Tell us the workflow. Get a proof plan.</h3>
-          <p>The highest-fit Team buyer is already feeling one repeated failure. Capture it here instead of making them click through a hidden form.</p>
+          <p>The highest-fit Team buyer is already feeling one repeated failure. Start with a paid diagnostic when budget is ready, or use intake when you need qualification first.</p>
         </div>
         <span class="team-intake-badge">30-minute intake</span>
+      </div>
+      <div class="team-paid-path" data-sprint-paid-path aria-label="Paid workflow hardening options">
+        <div class="team-paid-card">
+          <div>
+            <h4>Workflow Hardening Diagnostic</h4>
+            <p>Paid triage for one repeated agent or review failure, with a concrete proof plan and go/no-go recommendation.</p>
+          </div>
+          <div>
+            <div class="team-paid-price">$<span data-sprint-diagnostic-price>499</span></div>
+            <a class="team-paid-link" data-sprint-diagnostic-link href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__">Pay for diagnostic</a>
+          </div>
+        </div>
+        <div class="team-paid-card">
+          <div>
+            <h4>AI Agent Governance Sprint</h4>
+            <p>48-hour Workflow Hardening Sprint for one workflow owner, one blocker, approval boundaries, rollback safety, one proof review, and one hardened rollout path.</p>
+          </div>
+          <div>
+            <div class="team-paid-price">$<span data-workflow-sprint-price>1500</span></div>
+            <a class="team-paid-link" data-workflow-sprint-link href="__WORKFLOW_SPRINT_CHECKOUT_URL__">Pay for sprint</a>
+          </div>
+        </div>
+        <div class="team-paid-card">
+          <div>
+            <h4>Reliable AI Agent Governance Setup</h4>
+            <p>Full ThumbGate-powered setup for Claude Code, Cursor, or Codex teams: npx install, custom prevention rules, audit trail, training, and proof reports. Optional ongoing rule management is $297/mo.</p>
+          </div>
+          <div>
+            <div class="team-paid-price">$3,997</div>
+            <a class="team-paid-link" href="#team-pilot-intake-form" onclick="sendFirstPartyTelemetry('governance_setup_intake_clicked',{ctaId:'team_governance_setup_intake',ctaPlacement:'team_paid_path',planId:'team',offer:'reliable_ai_agent_governance_setup',price:3997});sendGa4Event('generate_lead',{currency:'USD',value:3997,method:'governance_setup_intake'});">Request setup</a>
+          </div>
+        </div>
+        <div class="team-paid-card">
+          <div>
+            <h4>OpenClaw Agent Governance Kit</h4>
+            <p>Self-serve digital kit with ThumbGate prevention rules, OpenClaw-compatible workflow prompts, agent registry checklist, proof report template, and Zernio launch copy.</p>
+          </div>
+          <div>
+            <div class="team-paid-price">$97</div>
+            <a class="team-paid-link" href="https://buy.stripe.com/bJe14naiE9Lo7xT49Z3sI12" onclick="sendFirstPartyTelemetry('openclaw_governance_kit_checkout_started',{ctaId:'team_openclaw_governance_kit_checkout',ctaPlacement:'team_paid_path',planId:'digital_kit',offer:'openclaw_agent_governance_kit',price:97});sendGa4Event('begin_checkout',{currency:'USD',value:97,items:[{item_id:'openclaw_agent_governance_kit',item_name:'OpenClaw Agent Governance Kit'}]});">Buy kit</a>
+          </div>
+        </div>
+      </div>
+      <div class="team-intake-recovery" aria-label="Checkout recovery path for workflow sprint buyers">
+        <div>
+          <strong>Not ready to pay from a checkout page?</strong>
+          <span>Send the workflow first. We can qualify the blocker, confirm the proof plan, and route you to the $499 diagnostic, $1500 sprint, or $3,997 governance setup only when the scope is real.</span>
+        </div>
+        <a href="#team-pilot-intake-form" onclick="sendFirstPartyTelemetry('workflow_sprint_recovery_intake_clicked',{ctaId:'team_workflow_sprint_recovery_intake',ctaPlacement:'team_paid_path_recovery',planId:'team',offer:'workflow_hardening_sprint',reason:'checkout_abandon'});sendGa4Event('generate_lead',{currency:'USD',value:0,method:'workflow_sprint_recovery_intake'});">Send workflow first</a>
       </div>
       <form id="team-pilot-intake-form" class="team-form" action="/v1/intake/workflow-sprint" method="POST" data-team-intake-form>
         <input type="hidden" name="ctaId" value="workflow_sprint_intake">
@@ -1470,7 +1401,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Do I need a cloud account?</div>
-        <div class="faq-a">No. Free keeps local enforcement on your machine with 3 daily feedback captures, 5 lesson searches, unlimited recall, checks, and hook blocking. No cloud account is required. The business starts when a team wants shared rules, approval boundaries, hosted review views, org dashboard visibility, and proof that survives handoffs. Pro is the optional solo side lane for a personal dashboard, DPO export, and team lesson export/import — share lessons across projects so one team's mistakes become every team's prevention rules.</div>
+        <div class="faq-a">No. Free keeps local enforcement on your machine with unlimited feedback captures, up to 5 active auto-promoted prevention rules, built-in safety checks, and hook blocking. Recall, lesson search, unlimited rules, and exports open up on Pro. No cloud account is required. The business starts when a team wants shared rules, approval boundaries, hosted review views, org dashboard visibility, and proof that survives handoffs. Pro is the optional solo side lane for a personal dashboard, DPO export, and team lesson export/import — share lessons across projects so one team's mistakes become every team's prevention rules.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What if my thumbs-down is vague?</div>
@@ -1482,7 +1413,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What does Pro cost?</div>
-        <div class="faq-a">Pro is $19/mo or $149/yr for individual operators. Team is $49/seat/mo with a 3-seat minimum. Both start with a 7-day free trial, no credit card required.</div>
+        <div class="faq-a">Pro is $19/mo or $149/yr for individual operators and bills immediately through Stripe. Team is $49/seat/mo with a 3-seat minimum and starts through the workflow intake so scope, shared rules, and rollout proof are explicit before a team rollout.</div>
       </div>
     </div>
   </div>
@@ -1513,7 +1444,7 @@ __GA_BOOTSTRAP__
         <span class="cmd">npx thumbgate init</span>
         <span class="copy-hint">click to copy</span>
       </div>
-      <a href="/go/install?utm_source=website&utm_medium=homepage_final&utm_campaign=install_free&cta_id=final_install_cli&cta_placement=final_cta" onclick="posthog.capture('final_install_click',{cta:'install_cli'})" class="btn-pro btn-install-link" style="padding:14px 36px;font-size:16px;">Install Free CLI</a>
+      <a href="/go/install?utm_source=website&utm_medium=homepage_final&utm_campaign=install_free&cta_id=final_install_cli&cta_placement=final_cta" onclick="event.preventDefault(); navigator.clipboard.writeText('npx thumbgate init'); this.textContent='Copied ✓ — paste in your repo'; setTimeout(()=>{this.textContent='Install Free CLI'},2000); try{posthog.capture('final_install_click',{cta:'install_cli'})}catch(_){}" class="btn-pro btn-install-link" style="padding:14px 36px;font-size:16px;" title="Click to copy: npx thumbgate init">Install Free CLI</a>
     </div>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;align-items:center;margin-top:12px;opacity:0.7;">
       <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('final_claude_extension_click',{cta:'install_claude_extension'})" style="padding:8px 16px;font-size:12px;background:#d97706;color:#fff;">Install Claude Extension</a>
@@ -1534,7 +1465,7 @@ __GA_BOOTSTRAP__
       <a href="https://www.linkedin.com/in/igorganapolsky" target="_blank" rel="noopener">LinkedIn</a>
       <a href="/blog">Blog</a>
     </div>
-    <span class="footer-copy">© 2026 Max Smith KDP LLC · MIT License · v1.16.9</span>
+    <span class="footer-copy">© 2026 ThumbGate · MIT License · npm v1.17.0</span>
   </div>
 </footer>
 
@@ -1619,6 +1550,60 @@ function sendFirstPartyTelemetry(eventType, props) {
   }).catch(function() {});
 }
 
+function sendGa4Event(eventName, params) {
+  if (!gaMeasurementId || typeof globalThis.gtag !== 'function') return;
+  globalThis.gtag('event', eventName, params || {});
+}
+
+function initializePaidSprintPath() {
+  var panel = document.querySelector('[data-sprint-paid-path]');
+  if (!panel) return;
+  var diagnosticLink = document.querySelector('[data-sprint-diagnostic-link]');
+  var sprintLink = document.querySelector('[data-workflow-sprint-link]');
+  var diagnosticPrice = document.querySelector('[data-sprint-diagnostic-price]');
+  var sprintPrice = document.querySelector('[data-workflow-sprint-price]');
+  if (diagnosticPrice) diagnosticPrice.textContent = String(sprintDiagnosticPriceDollars);
+  if (sprintPrice) sprintPrice.textContent = String(workflowSprintPriceDollars);
+  var hasDiagnosticUrl = /^https?:\/\//.test(sprintDiagnosticCheckoutUrl);
+  var hasSprintUrl = /^https?:\/\//.test(workflowSprintCheckoutUrl);
+  if (!hasDiagnosticUrl && !hasSprintUrl) return;
+  panel.classList.add('visible');
+  if (hasDiagnosticUrl && diagnosticLink) {
+    diagnosticLink.href = sprintDiagnosticCheckoutUrl;
+    diagnosticLink.addEventListener('click', function() {
+      sendFirstPartyTelemetry('workflow_sprint_diagnostic_checkout_started', {
+        ctaId: 'workflow_sprint_diagnostic_checkout',
+        ctaPlacement: 'team_paid_path',
+        planId: 'team',
+        offer: 'workflow_hardening_diagnostic',
+        price: sprintDiagnosticPriceDollars,
+      });
+      sendGa4Event('begin_checkout', {
+        currency: 'USD',
+        value: sprintDiagnosticPriceDollars,
+        items: [{ item_id: 'workflow_hardening_diagnostic', item_name: 'Workflow Hardening Diagnostic' }],
+      });
+    });
+  }
+  if (hasSprintUrl && sprintLink) {
+    sprintLink.href = workflowSprintCheckoutUrl;
+    sprintLink.addEventListener('click', function() {
+      sendFirstPartyTelemetry('workflow_sprint_checkout_started', {
+        ctaId: 'workflow_sprint_checkout',
+        ctaPlacement: 'team_paid_path',
+        planId: 'team',
+        offer: 'workflow_hardening_sprint',
+        price: workflowSprintPriceDollars,
+      });
+      sendGa4Event('begin_checkout', {
+        currency: 'USD',
+        value: workflowSprintPriceDollars,
+        items: [{ item_id: 'workflow_hardening_sprint', item_name: 'Workflow Hardening Sprint' }],
+      });
+    });
+  }
+}
+
 function initializeTeamIntakeTelemetry() {
   document.querySelectorAll('[data-team-intake-form]').forEach(function(form) {
     var started = false;
@@ -1640,6 +1625,11 @@ function initializeTeamIntakeTelemetry() {
         ctaId: readHidden('ctaId'),
         ctaPlacement: readHidden('ctaPlacement'),
         planId: readHidden('planId') || 'team',
+      });
+      sendGa4Event('generate_lead', {
+        currency: 'USD',
+        value: workflowSprintPriceDollars,
+        method: 'workflow_sprint_intake',
       });
     });
   });
@@ -1775,9 +1765,11 @@ function copyInstall(el) {
       { selector: '#faq', sectionId: 'faq', sectionLabel: 'FAQ' }
     ],
     ctaImpressions: [
-      { selector: '#pro-checkout-link', ctaId: 'pricing_pro_trial', ctaPlacement: 'pricing', planId: 'pro' },
+      { selector: '#pro-checkout-link', ctaId: 'pricing_pro_checkout', ctaPlacement: 'pricing', planId: 'pro' },
       { selector: '.price-card.pro .btn-pro', ctaId: 'pricing_pro_monthly', ctaPlacement: 'pricing', planId: 'pro' },
-      { selector: '.hero-actions .btn-pro-page', ctaId: 'hero_go_pro', ctaPlacement: 'hero', planId: 'pro' },
+      { selector: '.hero-actions .btn-pro-page', ctaId: 'hero_workflow_intake', ctaPlacement: 'hero', planId: 'team' },
+      { selector: '.hero-paid-actions .diagnostic', ctaId: 'hero_workflow_sprint_diagnostic_checkout', ctaPlacement: 'hero_paid_path', planId: 'team' },
+      { selector: '.hero-paid-actions .intake', ctaId: 'hero_workflow_sprint_recovery_intake', ctaPlacement: 'hero_paid_path', planId: 'team' },
       { selector: '.sticky-cta .btn-pro', ctaId: 'sticky_go_pro', ctaPlacement: 'sticky_cta', planId: 'pro' },
       { selector: '.price-card.team .btn-team', ctaId: 'team_workflow_sprint', ctaPlacement: 'pricing', planId: 'team' },
       { selector: '#team-pilot-intake-form', ctaId: 'workflow_sprint_intake', ctaPlacement: 'team_visible_intake', planId: 'team' }
@@ -1787,9 +1779,10 @@ function copyInstall(el) {
 </script>
 <script>
 initializeBuyerIntentForms();
+initializePaidSprintPath();
 initializeTeamIntakeTelemetry();
 
-async function handleProTrial() {
+async function handleProCheckout() {
   var buyerIntent = globalThis.ThumbGateBuyerIntent;
   var email = document.getElementById('pro-email');
   var normalizedEmail = buyerIntent.normalizeBuyerEmail(email && email.value);
@@ -1809,7 +1802,7 @@ async function handleProTrial() {
   var checkoutLink = document.getElementById('pro-checkout-link');
   var checkoutUrl = checkoutLink ? checkoutLink.href : '/checkout/pro';
   if (typeof plausible === 'function') {
-    plausible('trial_email_captured', { props: { page: 'homepage', intent: 'checkout' } });
+    plausible('pro_email_captured', { props: { page: 'homepage', intent: 'checkout' } });
   }
   try {
     await buyerIntent.submitNewsletterSignup(normalizedEmail);

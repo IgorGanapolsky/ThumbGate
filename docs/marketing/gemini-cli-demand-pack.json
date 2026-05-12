@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-30T02:05:36.802Z",
+  "generatedAt": "2026-05-04T15:07:22.568Z",
   "state": "post-first-dollar",
   "objective": "Turn Gemini CLI memory demand and Google Cloud MCP guardrail demand into tracked proof clicks, Pro checkout starts, and qualified workflow-hardening conversations.",
   "headline": "Turn Gemini CLI memory demand into enforced workflow safety.",
@@ -27,7 +27,7 @@
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
       ],
-      "appOrigin": "https://thumbgate-production.up.railway.app"
+      "appOrigin": "https://thumbgate.ai"
     },
     {
       "key": "gcp_guardrails_guide",
@@ -43,7 +43,7 @@
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
       ],
-      "appOrigin": "https://thumbgate-production.up.railway.app"
+      "appOrigin": "https://thumbgate.ai"
     },
     {
       "key": "local_first_comparison",
@@ -59,7 +59,7 @@
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
       ],
-      "appOrigin": "https://thumbgate-production.up.railway.app"
+      "appOrigin": "https://thumbgate.ai"
     },
     {
       "key": "proof_backed_setup_guide",
@@ -75,7 +75,7 @@
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
         "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
       ],
-      "appOrigin": "https://thumbgate-production.up.railway.app"
+      "appOrigin": "https://thumbgate.ai"
     }
   ],
   "followOnOffers": [
@@ -84,14 +84,14 @@
       "label": "ThumbGate Pro",
       "pricing": "$19/mo or $149/yr",
       "buyer": "Solo Gemini CLI operators who proved one blocked repeat and now want the personal dashboard plus proof-ready exports.",
-      "cta": "https://thumbgate-production.up.railway.app/checkout/pro?utm_source=gemini&utm_medium=seo_guide&utm_campaign=gemini_cli_pro_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=GEMINI-PRO_FOLLOW_ON&cta_id=gemini_pro_follow_on&cta_placement=post_install&plan_id=pro&surface=gemini_post_install"
+      "cta": "https://thumbgate.ai/checkout/pro?utm_source=gemini&utm_medium=seo_guide&utm_campaign=gemini_cli_pro_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=GEMINI-PRO_FOLLOW_ON&cta_id=gemini_pro_follow_on&cta_placement=post_install&plan_id=pro&surface=gemini_post_install"
     },
     {
       "key": "sprint",
       "label": "Workflow Hardening Sprint",
       "pricing": "Intake-led sprint, then Team at $49/seat/mo with 3-seat minimum after qualification",
       "buyer": "Teams that already named one repeated workflow failure, one owner, and one approval boundary.",
-      "cta": "https://thumbgate-production.up.railway.app/?utm_source=gemini&utm_medium=seo_guide&utm_campaign=gemini_cli_team_follow_on&utm_content=workflow_sprint&campaign_variant=teams_follow_on&offer_code=GEMINI-TEAMS_FOLLOW_ON&cta_id=gemini_team_follow_on&cta_placement=post_install&surface=gemini_post_install#workflow-sprint-intake"
+      "cta": "https://thumbgate.ai/?utm_source=gemini&utm_medium=seo_guide&utm_campaign=gemini_cli_team_follow_on&utm_content=workflow_sprint&campaign_variant=teams_follow_on&offer_code=GEMINI-TEAMS_FOLLOW_ON&cta_id=gemini_team_follow_on&cta_placement=post_install&surface=gemini_post_install#workflow-sprint-intake"
     }
   ],
   "operatorQueue": [
@@ -107,16 +107,16 @@
     {
       "key": "gcp_workflow_owner",
       "audience": "Google Cloud workflow owner running Gemini CLI near data or production systems",
-      "evidence": "The GCP guardrails guide documents BigQuery, Spanner, AlloyDB, Cloud SQL, and IAM escalation patterns. Current report production-style targets: 3.",
+      "evidence": "The GCP guardrails guide documents BigQuery, Spanner, AlloyDB, Cloud SQL, and IAM escalation patterns. Current report production-style targets: 4.",
       "proofTrigger": "They already described one risky BigQuery, Spanner, or MCP-backed workflow that cannot afford another destructive repeat.",
       "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guides/gcp-mcp-guardrails.html",
-      "nextAsk": "https://thumbgate-production.up.railway.app/?utm_source=gemini&utm_medium=operator_outreach&utm_campaign=gemini_queue_gcp_sprint&utm_content=workflow_sprint&campaign_variant=gcp_workflow_owner&offer_code=GEMINI-QUEUE_GCP_SPRINT&cta_id=gemini_queue_gcp_sprint&cta_placement=operator_queue&surface=gemini_workflow_queue#workflow-sprint-intake",
+      "nextAsk": "https://thumbgate.ai/?utm_source=gemini&utm_medium=operator_outreach&utm_campaign=gemini_queue_gcp_sprint&utm_content=workflow_sprint&campaign_variant=gcp_workflow_owner&offer_code=GEMINI-QUEUE_GCP_SPRINT&cta_id=gemini_queue_gcp_sprint&cta_placement=operator_queue&surface=gemini_workflow_queue#workflow-sprint-intake",
       "recommendedMotion": "Qualify one high-risk workflow for the Workflow Hardening Sprint."
     },
     {
       "key": "local_first_evaluator",
       "audience": "Security-sensitive evaluator comparing hosted memory versus local-first enforcement",
-      "evidence": "The Gemini guide keeps local-first posture explicit, and the compare surface supports buyers who object to hosted memory first. Current business-system targets: 4.",
+      "evidence": "The Gemini guide keeps local-first posture explicit, and the compare surface supports buyers who object to hosted memory first. Current business-system targets: 3.",
       "proofTrigger": "They care about keeping workflow history local and need proof that enforcement happens without a hosted memory dependency.",
       "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/compare/mem0.html",
       "nextAsk": "https://thumbgate-production.up.railway.app/guide?utm_source=gemini&utm_medium=seo_guide&utm_campaign=gemini_queue_local_first&utm_content=setup&campaign_variant=local_first_evaluator&offer_code=GEMINI-QUEUE_LOCAL_FIRST&cta_id=gemini_queue_local_first&cta_placement=operator_queue&surface=gemini_cli",
@@ -134,13 +134,13 @@
       "key": "proof_after_pain",
       "channel": "Pain-confirmed follow-up",
       "audience": "Solo operator who already confirmed one repeated failure",
-      "draft": "Now that the failure pattern is concrete, the next useful step is proof plus the paid operator path, not more abstract memory talk. Use Verification Evidence first, then route the buyer to the personal dashboard lane only if they want their own exports and proof-ready review surface: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md then https://thumbgate-production.up.railway.app/checkout/pro?utm_source=gemini&utm_medium=operator_outreach&utm_campaign=gemini_outreach_pro&utm_content=pro&campaign_variant=proof_after_pain&offer_code=GEMINI-OUTREACH_PRO&cta_id=gemini_outreach_pro&cta_placement=outreach_draft&plan_id=pro&surface=gemini_outreach ."
+      "draft": "Now that the failure pattern is concrete, the next useful step is proof plus the paid operator path, not more abstract memory talk. Use Verification Evidence first, then route the buyer to the personal dashboard lane only if they want their own exports and proof-ready review surface: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md then https://thumbgate.ai/checkout/pro?utm_source=gemini&utm_medium=operator_outreach&utm_campaign=gemini_outreach_pro&utm_content=pro&campaign_variant=proof_after_pain&offer_code=GEMINI-OUTREACH_PRO&cta_id=gemini_outreach_pro&cta_placement=outreach_draft&plan_id=pro&surface=gemini_outreach ."
     },
     {
       "key": "cloud_workflow",
       "channel": "Founder note",
       "audience": "Data or platform team owner",
-      "draft": "Google turned BigQuery, Spanner, AlloyDB, and Cloud SQL into MCP-call surfaces for Gemini CLI. If one of those workflows already has a repeated failure or approval-boundary risk, I am not pitching a generic plugin. I am pitching one workflow hardening sprint with proof: https://thumbgate-production.up.railway.app/?utm_source=gemini&utm_medium=operator_outreach&utm_campaign=gemini_outreach_sprint&utm_content=workflow_sprint&campaign_variant=cloud_workflow&offer_code=GEMINI-OUTREACH_SPRINT&cta_id=gemini_outreach_sprint&cta_placement=outreach_draft&surface=gemini_outreach#workflow-sprint-intake ."
+      "draft": "Google turned BigQuery, Spanner, AlloyDB, and Cloud SQL into MCP-call surfaces for Gemini CLI. If one of those workflows already has a repeated failure or approval-boundary risk, I am not pitching a generic plugin. I am pitching one workflow hardening sprint with proof: https://thumbgate.ai/?utm_source=gemini&utm_medium=operator_outreach&utm_campaign=gemini_outreach_sprint&utm_content=workflow_sprint&campaign_variant=cloud_workflow&offer_code=GEMINI-OUTREACH_SPRINT&cta_id=gemini_outreach_sprint&cta_placement=outreach_draft&surface=gemini_outreach#workflow-sprint-intake ."
     }
   ],
   "channelDrafts": [
@@ -159,7 +159,7 @@
       "channel": "LinkedIn",
       "format": "Founder post",
       "audience": "Platform, cloud, or data team lead evaluating Gemini CLI near production systems",
-      "evidenceSummary": "3 current production-style target(s) point to BigQuery, Spanner, AlloyDB, Cloud SQL, and approval-boundary risk as the strongest B2B Gemini angle.",
+      "evidenceSummary": "4 current production-style target(s) point to BigQuery, Spanner, AlloyDB, Cloud SQL, and approval-boundary risk as the strongest B2B Gemini angle.",
       "cta": "https://thumbgate-production.up.railway.app/guides/gcp-mcp-guardrails?utm_source=gemini&utm_medium=linkedin_post&utm_campaign=gemini_channel_linkedin&utm_content=guide&campaign_variant=gcp_guardrails&offer_code=GEMINI-CHANNEL-LINKEDIN&cta_id=gemini_channel_linkedin&cta_placement=channel_draft&surface=gemini_linkedin",
       "proofTiming": "Public post can mention blast radius and guardrails, but hold proof links for the DM or reply after the workflow risk is named.",
       "draft": "Gemini CLI gets interesting when it moves from drafts into BigQuery, Spanner, AlloyDB, Cloud SQL, or approval-boundary workflows. At that point the question is not “does memory exist,” it is “what stops the same risky MCP call from running again?” ThumbGate is the lane I use for that boundary. If you are evaluating Gemini near production systems, start with the guardrails guide: https://thumbgate-production.up.railway.app/guides/gcp-mcp-guardrails?utm_source=gemini&utm_medium=linkedin_post&utm_campaign=gemini_channel_linkedin&utm_content=guide&campaign_variant=gcp_guardrails&offer_code=GEMINI-CHANNEL-LINKEDIN&cta_id=gemini_channel_linkedin&cta_placement=channel_draft&surface=gemini_linkedin ."
@@ -179,7 +179,7 @@
       "channel": "Bluesky",
       "format": "Short post",
       "audience": "Security-sensitive evaluator comparing hosted memory to local-first enforcement",
-      "evidenceSummary": "4 current business-system target(s) reinforce the local-first posture: keep workflow memory local, then prove enforcement before the next risky call.",
+      "evidenceSummary": "3 current business-system target(s) reinforce the local-first posture: keep workflow memory local, then prove enforcement before the next risky call.",
       "cta": "https://thumbgate-production.up.railway.app/compare/mem0?utm_source=gemini&utm_medium=bluesky_post&utm_campaign=gemini_channel_bluesky&utm_content=comparison&campaign_variant=local_first&offer_code=GEMINI-CHANNEL-BLUESKY&cta_id=gemini_channel_bluesky&cta_placement=channel_draft&surface=gemini_bluesky",
       "proofTiming": "Lead with the comparison surface first. Send Commercial Truth and Verification Evidence only after the buyer replies with a concrete privacy or workflow objection.",
       "draft": "Hosted memory is not the only option for Gemini CLI. If you want the workflow history to stay local and still become enforceable checks before the next MCP call runs, start with the local-first comparison: https://thumbgate-production.up.railway.app/compare/mem0?utm_source=gemini&utm_medium=bluesky_post&utm_campaign=gemini_channel_bluesky&utm_content=comparison&campaign_variant=local_first&offer_code=GEMINI-CHANNEL-BLUESKY&cta_id=gemini_channel_bluesky&cta_placement=channel_draft&surface=gemini_bluesky ."

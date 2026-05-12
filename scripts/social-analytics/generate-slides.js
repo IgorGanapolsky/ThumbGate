@@ -15,6 +15,7 @@
  * Usage:
  *   node scripts/social-analytics/generate-slides.js
  *   node scripts/social-analytics/generate-slides.js --template=2
+ *   node scripts/social-analytics/generate-slides.js --template=operator-lab
  *   node scripts/social-analytics/generate-slides.js --template=auto --out=/tmp
  */
 
@@ -98,6 +99,28 @@ const TEMPLATES = {
       { holdSeconds: 5, title: ['The difference:'], subtitle: null, lines: ['CLAUDE.md   = suggestion', 'ThumbGate   = enforcement', '', 'Rules in files get ignored.', 'Gates cannot be ignored.'], cta: null },
       { holdSeconds: 5, title: ['What changes:'], subtitle: null, lines: ['→ mistakes blocked pre-execution', '→ lessons persist across sessions', '→ gates auto-promote from failures', '→ DPO export for fine-tuning', '✓  compounding safety over time'], cta: null },
       { holdSeconds: 6, title: ['ThumbGate', 'v1.4.1'], subtitle: 'Free + Open Source', lines: [], cta: { line1: 'Try the GPT →', line2: 'chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate' } },
+    ],
+  },
+
+  'operator-lab': {
+    name: 'operator-lab',
+    slides: [
+      { holdSeconds: 4, title: ['Stop fixing', 'the same AI-agent', 'mistake twice.'], subtitle: 'Turn the repeat into a rule.', lines: [], cta: null },
+      { holdSeconds: 5, title: ['The Operator Lab', 'is the free path:'], subtitle: null, lines: ['→ pick one repeated failure', '→ write the prevention rule', '→ wire the PreToolUse gate', '→ prove it blocks before action'], cta: null },
+      { holdSeconds: 6, title: ['What you leave with:'], subtitle: null, lines: ['✓  one blocked repeat', '✓  one reusable checklist', '✓  one audit trail', '✓  one safer agent workflow'], cta: null },
+      { holdSeconds: 5, title: ['Built on ThumbGate:'], subtitle: null, lines: ['feedback → lesson DB', 'lesson → prevention rule', 'rule → hard gate', 'hard gate → fewer repeats'], cta: null },
+      { holdSeconds: 6, title: ['ThumbGate', 'Operator Lab'], subtitle: 'Free Skool community', lines: [], cta: { line1: 'Join the lab →', line2: 'skool.com/thumbgate-operator-lab-6000' } },
+    ],
+  },
+
+  'tiktok-engagement': {
+    name: 'tiktok-engagement',
+    slides: [
+      { holdSeconds: 3, title: ['Your AI agent', 'just repeated', 'the same mistake.'], subtitle: 'Again.', lines: [], cta: null },
+      { holdSeconds: 4, title: ['Memory is not', 'enforcement.'], subtitle: null, lines: ['Memory: "remember not to do this"', 'Gate: blocks the tool call', 'That difference matters.'], cta: null },
+      { holdSeconds: 5, title: ['ThumbGate path:'], subtitle: null, lines: ['1. 👎 capture the bad action', '2. turn it into a prevention rule', '3. check before the tool runs', '4. block the repeat'], cta: null },
+      { holdSeconds: 5, title: ['Example gate:'], subtitle: null, lines: ['Agent: rm config/prod.json', 'Rule: protected production config', 'Decision: ✗ block before execution', 'Outcome: no rollback needed'], cta: null },
+      { holdSeconds: 5, title: ['Comment one', 'command you want', 'blocked.'], subtitle: 'I will turn the clearest one into a rule example.', lines: [], cta: null },
     ],
   },
 
@@ -193,6 +216,7 @@ print(f'Generated {len(SLIDES)} slides → {OUT_DIR}')
  */
 function pickTemplate(requestedId) {
   if (requestedId && requestedId !== 'auto') {
+    if (TEMPLATES[requestedId]) return requestedId;
     const id = Number.parseInt(requestedId, 10);
     if (!TEMPLATES[id]) { console.error(`Unknown template id: ${id}`); process.exit(1); }
     return id;
@@ -265,4 +289,12 @@ function main() {
   console.log(`[generate-slides] Done. template=${templateId} duration=${manifest.totalDuration}s`);
 }
 
-main();
+module.exports = {
+  TEMPLATES,
+  buildPythonScript,
+  pickTemplate,
+};
+
+if (require.main === module) {
+  main();
+}

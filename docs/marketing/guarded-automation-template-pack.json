@@ -1,0 +1,202 @@
+{
+  "generatedAt": "2026-05-05T15:35:00.000Z",
+  "state": "post-first-dollar",
+  "objective": "Turn n8n, Make.com, Lindy.ai, Gumroad, and GoHighLevel template demand into tracked guide clicks, Pro checkout starts, and qualified Workflow Hardening Sprint conversations.",
+  "headline": "Do not sell commodity templates. Sell one guarded workflow that is safe enough to run.",
+  "shortDescription": "ThumbGate makes n8n and Make.com automations more sellable by adding approval boundaries, rollback safety, and proof to the template the buyer already wants.",
+  "summary": "Use templates as the acquisition hook, ThumbGate as the trust layer, the Workflow Hardening Sprint as the first paid team motion, and Pro as the self-serve follow-on for solo operators.",
+  "canonicalIdentity": {
+    "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+    "homepageUrl": "https://thumbgate-production.up.railway.app",
+    "guideUrl": "https://thumbgate-production.up.railway.app/guide",
+    "workflowHardeningSprintUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md",
+    "commercialTruthUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+    "verificationEvidenceUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+  },
+  "revenueThesis": [
+    "The template is the search wedge. Buyers already look for n8n templates and Make.com templates.",
+    "ThumbGate is the differentiation wedge. Buyers do not just want automation speed; they want a workflow they can trust.",
+    "The best first paid motion for teams is still the Workflow Hardening Sprint around one repeated failure, one owner, and one proof review.",
+    "The best self-serve follow-on for solo operators is Pro at $19/mo or $149/yr after one guarded workflow proves useful."
+  ],
+  "distributionSurfaces": [
+    {
+      "key": "lindy",
+      "name": "Lindy.ai template library",
+      "operatorUse": "Sell a Lindy template that already includes the approval-boundary and proof logic the buyer would otherwise bolt on later.",
+      "bestPackaging": "One focused agent workflow plus setup instructions, expected inputs/outputs, and ThumbGate checkpoints.",
+      "rule": "Do not claim a live Lindy template until the template page is actually published."
+    },
+    {
+      "key": "gumroad",
+      "name": "Gumroad storefront",
+      "operatorUse": "Sell a guarded workflow kit as a digital product bundle with setup docs, walkthrough video, and a ThumbGate rule pack.",
+      "bestPackaging": "Direct-link sales first so ThumbGate keeps the margin and the buyer lands on a controlled page, not marketplace discovery.",
+      "rule": "Do not treat Gumroad as proof of demand until direct sales or memberships are visible in command evidence."
+    },
+    {
+      "key": "gohighlevel",
+      "name": "GoHighLevel Snapshot marketplace",
+      "operatorUse": "Sell a guarded snapshot for agencies that need workflows, funnels, and messaging assets wrapped in approval boundaries and reviewable proof.",
+      "bestPackaging": "One vertical-specific snapshot with a narrow promise and explicit post-install checkpoints.",
+      "rule": "Do not claim a published snapshot listing, review approval, or buyer installs until the Developer Portal listing is live."
+    }
+  ],
+  "templateCategories": [
+    "AI lead qualification before CRM write",
+    "Content generation before publish",
+    "Support triage before customer reply",
+    "Repo or incident workflow before deploy, merge, refund, or data sync"
+  ],
+  "channelMatches": [
+    "Lindy.ai: AI lead qualification, support triage, and calendar or inbox automations where approval boundaries matter",
+    "Gumroad: starter kits, guarded-template bundles, and solo-operator proof packs",
+    "GoHighLevel: agency snapshots for lead intake, nurture, appointment, and reporting workflows"
+  ],
+  "followOnOffers": [
+    {
+      "key": "sprint",
+      "label": "Workflow Hardening Sprint",
+      "pricing": "Intake-led sprint, then Team at $49/seat/mo with 3-seat minimum after qualification",
+      "buyer": "Teams with one workflow in n8n or Make.com that already causes repeated mistakes or operator anxiety",
+      "cta": "https://thumbgate.ai/?utm_source=template&utm_medium=operator_outreach&utm_campaign=guarded_template_sprint&utm_content=workflow_sprint&campaign_variant=template_first_team&offer_code=TEMPLATE-SPRINT&cta_id=guarded_template_sprint&cta_placement=offer_stack&surface=guarded_template#workflow-sprint-intake"
+    },
+    {
+      "key": "pro",
+      "label": "ThumbGate Pro",
+      "pricing": "$19/mo or $149/yr",
+      "buyer": "Solo operator who wants a proof-backed setup path and local enforcement around one automation workflow",
+      "cta": "https://thumbgate.ai/checkout/pro?utm_source=template&utm_medium=operator_outreach&utm_campaign=guarded_template_pro&utm_content=pro&campaign_variant=template_first_solo&offer_code=TEMPLATE-PRO&cta_id=guarded_template_pro&cta_placement=offer_stack&plan_id=pro&surface=guarded_template"
+    }
+  ],
+  "platformPackaging": [
+    {
+      "key": "lindy",
+      "productShape": "One installable agent template with clear onboarding and ThumbGate checkpoints.",
+      "monetizationAngle": "Free or community-shared template that routes serious teams into the Workflow Hardening Sprint.",
+      "conversionCue": "If the template user asks how to prevent bad side effects, route them to the sprint or Pro instead of answering with prompt tweaks."
+    },
+    {
+      "key": "gumroad",
+      "productShape": "Paid guarded workflow kit with files, SOP, setup notes, and proof checklist.",
+      "monetizationAngle": "Fastest path to sell a concrete asset before a marketplace review cycle exists elsewhere.",
+      "conversionCue": "Use Gumroad for the template sale, then upsell ThumbGate Pro for ongoing local enforcement."
+    },
+    {
+      "key": "gohighlevel",
+      "productShape": "Paid Snapshot for agencies with one vertical-specific workflow promise.",
+      "monetizationAngle": "Agency buyers already understand the value of a reusable configuration that saves setup time.",
+      "conversionCue": "Keep the listing narrow and route agencies with brittle live workflows into the Workflow Hardening Sprint."
+    }
+  ],
+  "operatorQueue": [
+    {
+      "key": "solo_template_operator",
+      "audience": "Solo builder searching for a usable n8n template",
+      "evidence": "The public guide, landing page, and regulated workflow pages all frame ThumbGate as the execution-control layer around risky actions instead of a generic prompt bundle.",
+      "proofTrigger": "They want one workflow that can be installed locally, reviewed, and blocked before bad side effects happen.",
+      "proofAsset": "https://thumbgate.ai/guide",
+      "nextAsk": "https://thumbgate.ai/checkout/pro?utm_source=template&utm_medium=operator_outreach&utm_campaign=guarded_template_queue_pro&utm_content=pro&campaign_variant=solo_template_operator&offer_code=TEMPLATE-QUEUE-PRO&cta_id=guarded_template_queue_pro&cta_placement=operator_queue&plan_id=pro&surface=guarded_template",
+      "recommendedMotion": "Show the guarded-template idea, then route the solo buyer into Pro."
+    },
+    {
+      "key": "team_template_operator",
+      "audience": "Team lead with one brittle Make.com workflow",
+      "evidence": "Platform-team and regulated-workflow surfaces already sell approval boundaries, execution control, and workflow hardening as the buyer outcome.",
+      "proofTrigger": "They can name one repeated failure around approval, rollback, publishing, CRM write, deploy, or customer communication.",
+      "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/use-cases/platform-teams.html",
+      "nextAsk": "https://thumbgate.ai/?utm_source=template&utm_medium=operator_outreach&utm_campaign=guarded_template_queue_sprint&utm_content=workflow_sprint&campaign_variant=team_template_operator&offer_code=TEMPLATE-QUEUE-SPRINT&cta_id=guarded_template_queue_sprint&cta_placement=operator_queue&surface=guarded_template#workflow-sprint-intake",
+      "recommendedMotion": "Diagnose one brittle workflow, then sell the Workflow Hardening Sprint with a starter template deliverable."
+    },
+    {
+      "key": "template_only_buyer",
+      "audience": "Buyer who only wants templates",
+      "evidence": "Commodity templates are easy to copy; ThumbGate is valuable when the buyer cares about mistakes, approval boundaries, or proof.",
+      "proofTrigger": "They ask what prevents the automation from doing the wrong thing.",
+      "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "nextAsk": "https://thumbgate.ai/guide",
+      "recommendedMotion": "Reframe from template library to guarded workflow and move them into either Pro or sprint discovery."
+    },
+    {
+      "key": "ghl_agency_buyer",
+      "audience": "Agency buyer looking for a GoHighLevel Snapshot",
+      "evidence": "HighLevel sells Snapshots as reusable packaged configurations and supports paid marketplace pricing.",
+      "proofTrigger": "They already resell or deploy repeated CRM workflows for clients and care about IP protection, setup speed, or repeatability.",
+      "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md",
+      "nextAsk": "https://thumbgate.ai/#workflow-sprint-intake",
+      "recommendedMotion": "Use the snapshot as the wedge, then sell the guarded rollout as the higher-trust offer."
+    }
+  ],
+  "outreachDrafts": [
+    {
+      "key": "n8n_solo",
+      "channel": "DM or email",
+      "audience": "n8n operator",
+      "draft": "You probably do not need another generic n8n template. You need one automation that is safe enough to run without babysitting every side effect. That is the gap ThumbGate closes: approval boundaries, rollback safety, and proof around the workflow you already want to automate. If you want the self-serve path first, start here: https://thumbgate.ai/guide"
+    },
+    {
+      "key": "make_team",
+      "channel": "DM or email",
+      "audience": "Make.com team lead",
+      "draft": "I am not pitching a bigger automation stack. I am pitching one guarded workflow your team can trust. If one Make.com scenario keeps creating approval, publish, CRM, or customer-reply risk, ThumbGate can wrap that workflow with pre-action checks and proof. If that failure is real, the next step is the Workflow Hardening Sprint intake: https://thumbgate.ai/#workflow-sprint-intake"
+    },
+    {
+      "key": "pain_confirmed",
+      "channel": "Pain-confirmed follow-up",
+      "audience": "Operator who confirmed one repeated workflow failure",
+      "draft": "Now that the repeated workflow failure is concrete, use the proof pack first and then pick the right lane. Solo operator: https://thumbgate.ai/checkout/pro . Team workflow owner: https://thumbgate.ai/#workflow-sprint-intake . Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+    },
+    {
+      "key": "gumroad_seed",
+      "channel": "Storefront copy",
+      "audience": "Gumroad buyer",
+      "draft": "This is not a generic automation template pack. It is a guarded workflow kit. You get the workflow asset, the setup notes, and the ThumbGate checks that help stop the wrong action before it runs. If your workflow risk is larger than a solo install can handle, the next step is the Workflow Hardening Sprint."
+    },
+    {
+      "key": "lindy_seed",
+      "channel": "Template description",
+      "audience": "Lindy user",
+      "draft": "Install one focused Lindy workflow that already assumes the risky step needs a checkpoint. The point is not just to automate the work. The point is to automate it with approval boundaries and proof."
+    },
+    {
+      "key": "gohighlevel_seed",
+      "channel": "Snapshot listing",
+      "audience": "HighLevel agency buyer",
+      "draft": "This Snapshot is built for agencies that want a reusable client workflow without repeating the same approval, publishing, or CRM mistake across accounts. ThumbGate is the trust layer around the snapshot, not a separate afterthought."
+    }
+  ],
+  "measurementPlan": {
+    "northStar": "guarded_template_to_paid_intent",
+    "policy": "Treat template interest as acquisition evidence only after a tracked guide click, Pro checkout start, or qualified sprint conversation exists.",
+    "minimumUsefulSignal": "One tracked Pro checkout start or one qualified sprint conversation sourced from template-first outreach.",
+    "strongSignal": "Three tracked paid-intent events across Pro checkout starts or workflow sprint conversations.",
+    "metrics": [
+      "template_guide_clicks",
+      "template_pro_checkout_starts",
+      "template_sprint_intake_submissions",
+      "template_qualified_team_conversations",
+      "template_repeat_failure_replies",
+      "lindy_template_clicks",
+      "gumroad_product_clicks",
+      "ghl_snapshot_inquiries"
+    ],
+    "guardrails": [
+      "Do not claim published Lindy templates, Gumroad sales, or published GoHighLevel snapshots unless they are actually live.",
+      "Do not claim published n8n marketplace listings or Make.com marketplace listings unless they are actually live.",
+      "Do not claim template installs, revenue, or buyer usage without direct command evidence.",
+      "Keep pricing aligned with COMMERCIAL_TRUTH.md.",
+      "Keep proof claims aligned with VERIFICATION_EVIDENCE.md.",
+      "Do not let template language collapse ThumbGate into a generic automation agency."
+    ],
+    "doNotCountAsSuccess": [
+      "Template clicks without paid intent",
+      "Template curiosity without one named workflow failure",
+      "Channel visibility without a tracked proof click, checkout start, or qualified conversation",
+      "Unverified template installs, unverified revenue, or unverified marketplace approval"
+    ]
+  },
+  "proofLinks": [
+    "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+    "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+  ]
+}

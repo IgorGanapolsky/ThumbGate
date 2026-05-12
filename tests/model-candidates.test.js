@@ -20,10 +20,26 @@ test('model candidate catalog includes Kimi K2.6 and Qwen3.6 variants', () => {
   const catalog = loadCatalog(DEFAULT_CATALOG_PATH);
   const ids = new Set(catalog.candidates.map((candidate) => candidate.id));
 
+  assert.ok(ids.has('openai/gpt-5.5'));
   assert.ok(ids.has('tinker/kimi-k2.6-32k'));
   assert.ok(ids.has('tinker/kimi-k2.6-128k'));
   assert.ok(ids.has('tinker/qwen3.6-35b-a3b'));
   assert.ok(ids.has('tinker/qwen3.6-27b'));
+  assert.ok(ids.has('self-hosted/deepseek-v4-flash-sglang'));
+  assert.ok(ids.has('self-hosted/deepseek-v4-pro-sglang'));
+});
+
+test('recommendCandidates prefers GPT-5.5 for dashboard analysis', () => {
+  const report = recommendCandidates({
+    workload: 'dashboard-analysis',
+    provider: 'openai',
+    maxCandidates: 2,
+  });
+
+  assert.equal(report.recommended[0].id, 'openai/gpt-5.5');
+  assert.ok(report.recommended[0].matchedStrengths.includes('data-analysis'));
+  assert.ok(report.recommended[0].matchedStrengths.includes('dashboard-creation'));
+  assert.ok(report.recommended[0].benchmarkPlan.metrics.includes('chartSpecValidity'));
 });
 
 test('recommendCandidates prefers Qwen 3.6 35B A3B for pretool gating', () => {
@@ -50,6 +66,19 @@ test('recommendCandidates prefers Kimi K2.6 128k for long trace review', () => {
   assert.equal(report.recommended[0].id, 'tinker/kimi-k2.6-128k');
   assert.ok(report.recommended[0].matchedStrengths.includes('long-horizon-coding'));
   assert.ok(report.recommended[0].matchedStrengths.includes('multi-agent'));
+});
+
+test('recommendCandidates supports self-hosted DeepSeek-V4 for long-context review', () => {
+  const report = recommendCandidates({
+    workload: 'long-trace-review',
+    provider: 'self-hosted',
+    family: 'deepseek',
+    maxCandidates: 2,
+  });
+
+  assert.equal(report.recommended[0].id, 'self-hosted/deepseek-v4-pro-sglang');
+  assert.ok(report.recommended[0].matchedStrengths.includes('long-context'));
+  assert.ok(report.recommended[0].benchmarkPlan.commands.some((entry) => entry.command.includes('deepseek-v4-runtime-guardrails')));
 });
 
 test('buildBenchmarkPlan anchors candidates to ThumbGate eval commands', () => {
@@ -116,6 +145,33 @@ test('model-candidates CLI prints JSON report when requested', () => {
 
     assert.equal(payload.report.recommended[0].id, 'tinker/kimi-k2.6-128k');
     assert.ok(fs.existsSync(payload.reportPath));
+  } finally {
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+  }
+});
+
+test('model-candidates CLI supports dashboard analysis workload', () => {
+  const isolatedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-model-dashboard-cli-'));
+  const feedbackDir = path.join(isolatedDir, 'feedback');
+  try {
+    const stdout = execFileSync(
+      process.execPath,
+      ['bin/cli.js', 'model-candidates', '--workload=dashboard-analysis', '--provider=openai', '--json'],
+      {
+        cwd: path.join(__dirname, '..'),
+        env: {
+          ...process.env,
+          THUMBGATE_FEEDBACK_DIR: feedbackDir,
+          THUMBGATE_NO_NUDGE: '1',
+        },
+        encoding: 'utf8',
+      },
+    );
+    const payload = JSON.parse(stdout);
+
+    assert.equal(payload.report.workload.id, 'dashboard-analysis');
+    assert.equal(payload.report.recommended[0].id, 'openai/gpt-5.5');
+    assert.match(payload.report.summary, /gpt-5\.5/i);
   } finally {
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   }

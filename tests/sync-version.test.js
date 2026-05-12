@@ -74,6 +74,15 @@ test('sync-version covers public MCP discovery manifests', serial, () => {
   );
 });
 
+test('sync-version covers the generated numbers page version markers', serial, () => {
+  const { syncVersion } = require('../scripts/sync-version');
+  const result = syncVersion({ checkOnly: true });
+  assert.ok(
+    result.targets.includes('public/numbers.html'),
+    'public/numbers.html should be a sync target'
+  );
+});
+
 test('sync-version no longer tracks an embedded pro package manifest', serial, () => {
   const { syncVersion } = require('../scripts/sync-version');
   const result = syncVersion({ checkOnly: true });
@@ -107,7 +116,7 @@ test('sync-version detects landing page hero badge drift without relying on trai
   const original = fs.readFileSync(landingPath, 'utf8');
 
   try {
-    fs.writeFileSync(landingPath, original.replace(/New in v\d+\.\d+\.\d+:?/, 'New in v0.0.1'));
+    fs.writeFileSync(landingPath, original.replace(/<meta name="thumbgate-version" content="\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?">/, '<meta name="thumbgate-version" content="0.0.1">'));
     const result = syncVersion({ checkOnly: true });
     assert.ok(
       result.drifted.some((entry) => entry.file === 'public/index.html' && entry.field === 'hero-release-note'),
@@ -126,7 +135,7 @@ test('sync-version detects public landing footer drift', serial, () => {
   try {
     fs.writeFileSync(
       publicIndexPath,
-      original.replace(/MIT License · v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/, 'MIT License · v0.0.1')
+      original.replace(/MIT License · (?:npm )?v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/, 'MIT License · npm v0.0.1')
     );
     const result = syncVersion({ checkOnly: true });
     assert.ok(
@@ -144,8 +153,8 @@ test('sync-version updates multiple public landing markers in one pass', serial,
   const publicIndexPath = path.join(ROOT, 'public', 'index.html');
   const original = fs.readFileSync(publicIndexPath, 'utf8');
   const drifted = original
-    .replace(/New in v\d+\.\d+\.\d+:?/, 'New in v0.0.1')
-    .replace(/MIT License · v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/, 'MIT License · v0.0.1');
+    .replace(/<meta name="thumbgate-version" content="\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?">/, '<meta name="thumbgate-version" content="0.0.1">')
+    .replace(/MIT License · (?:npm )?v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/, 'MIT License · npm v0.0.1');
 
   try {
     fs.writeFileSync(publicIndexPath, drifted);
@@ -160,9 +169,38 @@ test('sync-version updates multiple public landing markers in one pass', serial,
     );
 
     const synced = fs.readFileSync(publicIndexPath, 'utf8');
-    assert.ok(synced.includes(`New in v${version}`), 'hero marker should be synced');
-    assert.ok(synced.includes(`MIT License · v${version}`), 'footer marker should be synced');
+    assert.ok(synced.includes(`<meta name="thumbgate-version" content="${version}">`), 'hero marker should be synced');
+    assert.ok(synced.includes(`MIT License · npm v${version}`), 'footer marker should be synced');
   } finally {
     fs.writeFileSync(publicIndexPath, original);
+  }
+});
+
+test('sync-version detects and repairs public numbers page version drift', serial, () => {
+  const { syncVersion } = require('../scripts/sync-version');
+  const { version } = require('../package.json');
+  const numbersPath = path.join(ROOT, 'public', 'numbers.html');
+  const original = fs.readFileSync(numbersPath, 'utf8');
+  const drifted = original
+    .replace(/"softwareVersion": "\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?"/, '"softwareVersion": "0.0.1"')
+    .replace(/Updated:\s*\d{4}-\d{2}-\d{2}\s*·\s*Version\s+\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/, 'Updated: 2026-05-07 · Version 0.0.1');
+
+  try {
+    fs.writeFileSync(numbersPath, drifted);
+    const result = syncVersion({ checkOnly: false });
+    assert.ok(
+      result.drifted.some((entry) => entry.file === 'public/numbers.html' && entry.field === 'softwareVersion'),
+      `expected softwareVersion drift, found: ${JSON.stringify(result.drifted)}`
+    );
+    assert.ok(
+      result.drifted.some((entry) => entry.file === 'public/numbers.html' && entry.field === 'freshness-version'),
+      `expected freshness version drift, found: ${JSON.stringify(result.drifted)}`
+    );
+
+    const synced = fs.readFileSync(numbersPath, 'utf8');
+    assert.ok(synced.includes(`"softwareVersion": "${version}"`), 'softwareVersion should be synced');
+    assert.match(synced, new RegExp(`Updated:\\s*\\d{4}-\\d{2}-\\d{2}\\s*·\\s*Version\\s+${version.replaceAll('.', '\\.')}`));
+  } finally {
+    fs.writeFileSync(numbersPath, original);
   }
 });

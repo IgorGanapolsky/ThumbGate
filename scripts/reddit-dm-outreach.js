@@ -19,7 +19,18 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const { resolveHostedBillingConfig } = require('./hosted-config');
+const { loadLocalEnv } = require('./social-analytics/load-env');
+const { advanceSalesLead } = require('./sales-pipeline');
 const { buildWarmRedditMessages } = require('./warm-outreach-targets');
+
+loadLocalEnv();
+
+const WARM_REDDIT_LEAD_IDS = {
+  Deep_Ad1959: 'reddit_deep_ad1959_r_cursor',
+  'game-of-kton': 'reddit_game_of_kton_r_cursor',
+  leogodin217: 'reddit_leogodin217_r_claudecode',
+  'Enthu-Cutlet-1337': 'reddit_enthu_cutlet_1337_r_claudecode',
+};
 
 // Parse .env credentials line-by-line
 function parseEnv(filePath) {
@@ -43,13 +54,27 @@ function parseEnv(filePath) {
 }
 
 function getRedditCredentials() {
-  const envPath = path.join(__dirname, '..', '.env');
-  const fileEnv = fs.existsSync(envPath) ? parseEnv(envPath) : {};
   return {
-    REDDIT_CLIENT_ID: process.env.REDDIT_CLIENT_ID || fileEnv.REDDIT_CLIENT_ID,
-    REDDIT_CLIENT_SECRET: process.env.REDDIT_CLIENT_SECRET || fileEnv.REDDIT_CLIENT_SECRET,
-    REDDIT_USERNAME: process.env.REDDIT_USERNAME || fileEnv.REDDIT_USERNAME,
-    REDDIT_PASSWORD: process.env.REDDIT_PASSWORD || fileEnv.REDDIT_PASSWORD,
+    REDDIT_CLIENT_ID: process.env.REDDIT_CLIENT_ID,
+    REDDIT_CLIENT_SECRET: process.env.REDDIT_CLIENT_SECRET,
+    REDDIT_USERNAME: process.env.REDDIT_USERNAME,
+    REDDIT_PASSWORD: process.env.REDDIT_PASSWORD,
+  };
+}
+
+function markContacted(message, { advanceLead = advanceSalesLead, timestamp = new Date().toISOString() } = {}) {
+  const leadId = WARM_REDDIT_LEAD_IDS[message.to];
+  if (!leadId) return null;
+  const result = advanceLead({
+    leadId,
+    stage: 'contacted',
+    channel: 'reddit_dm',
+    note: `Sent same-day $499 workflow diagnostic offer to u/${message.to}.`,
+    timestamp,
+  });
+  return {
+    leadId,
+    unchanged: result.unchanged === true,
   };
 }
 
@@ -154,26 +179,50 @@ function sendDM(accessToken, to, subject, text) {
 // Main
 async function main() {
   try {
+    const dryRun = process.argv.includes('--dry-run');
+    const shouldMarkContacted = process.argv.includes('--mark-contacted');
+    const toArg = process.argv.find((arg) => arg.startsWith('--to='));
+    const selectedTargets = toArg
+      ? new Set(toArg.slice('--to='.length).split(',').map((item) => item.trim()).filter(Boolean))
+      : null;
     console.log('📧 Reddit DM Outreach');
     console.log('---');
-    const accessToken = await authenticate();
     const billingConfig = resolveHostedBillingConfig({
       requestOrigin: 'https://thumbgate-production.up.railway.app',
     });
-    const messages = buildWarmRedditMessages(`${billingConfig.appOrigin}/#workflow-sprint-intake`);
+    let messages = buildWarmRedditMessages(`${billingConfig.appOrigin}/#workflow-sprint-intake`);
+    if (selectedTargets && !selectedTargets.has('all')) {
+      messages = messages.filter((message) => selectedTargets.has(message.to));
+    }
 
+    if (selectedTargets && !selectedTargets.has('all') && messages.length === 0) {
+      throw new Error(`No warm Reddit messages matched --to=${Array.from(selectedTargets).join(',')}`);
+    }
+
+    if (dryRun) {
+      console.log(JSON.stringify({ dryRun: true, messages }, null, 2));
+      return;
+    }
+
+    const accessToken = await authenticate();
     console.log(`\n📨 Sending ${messages.length} direct messages...\n`);
 
+    let sent = 0;
     for (const msg of messages) {
       try {
         await sendDM(accessToken, msg.to, msg.subject, msg.text);
+        sent += 1;
         console.log(`✅ DM sent to u/${msg.to}`);
+        if (shouldMarkContacted) {
+          const tracked = markContacted(msg);
+          if (tracked) console.log(`📈 Pipeline tracked ${tracked.leadId}`);
+        }
       } catch (err) {
         console.error(`❌ Failed to send DM to u/${msg.to}:`, err.message);
       }
     }
 
-    console.log(`\n✅ Outreach complete (${messages.length}/${messages.length} sent)`);
+    console.log(`\n✅ Outreach complete (${sent}/${messages.length} sent)`);
   } catch (err) {
     console.error('❌ Error:', err.message);
     process.exit(1);
@@ -197,5 +246,6 @@ module.exports = {
   getRedditCredentials,
   isCliInvocation,
   main,
+  markContacted,
   parseEnv,
 };
