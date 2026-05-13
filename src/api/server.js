@@ -403,6 +403,27 @@ const TRACKED_LINK_TARGETS = Object.freeze({
     },
     allowCustomerEmail: true,
   },
+  // 2026-05-12: Aiventyx marketplace listing routes its Teams clicks through
+  // /go/teams (best-performing listing at ~62% CTR). Without this slug the
+  // server returned 404 + "Tracked link not found". Every Aiventyx Teams
+  // click between the URL swap and this deploy landed on that error page.
+  // Destination: 3-seat Team self-serve Stripe checkout (the path I shipped
+  // in PR #1877 — plan_id=team + seat_count=3 = $147/mo entry).
+  teams: {
+    path: '/checkout/pro',
+    ctaId: 'go_teams',
+    ctaPlacement: 'link_router',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'link_router',
+      utm_campaign: 'team_self_serve',
+      plan_id: 'team',
+      seat_count: '3',
+      billing_cycle: 'monthly',
+    },
+    allowCustomerEmail: true,
+  },
   install: {
     path: '/guide',
     ctaId: 'go_install',
@@ -2467,10 +2488,19 @@ function renderRobotsTxt(runtimeConfig) {
   return [
     'User-agent: *',
     'Allow: /',
+    // 2026-05-12: every crawler GET on /checkout/pro creates a live Stripe
+    // session even when no human is on the other end. Stripe sees 50 sessions
+    // in 24h, 0 paid, 0 email captured. Disallow so non-human fetchers stop
+    // inflating the "checkout starts" metric and creating zombie sessions.
+    // Real humans still reach checkout via JS-driven clicks (not crawled).
+    'Disallow: /checkout/',
+    'Disallow: /v1/billing/',
     '',
     '# AI crawler access — allow all major LLM crawlers',
     'User-agent: GPTBot',
     'Allow: /',
+    'Disallow: /checkout/',
+    'Disallow: /v1/billing/',
     '',
     'User-agent: ClaudeBot',
     'Allow: /',

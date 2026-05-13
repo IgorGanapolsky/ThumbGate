@@ -38,6 +38,7 @@ test('SonarCloud workflow polls quality gates only for PR and merge-queue scans'
   );
   assert.match(scanSection, /uses:\s*SonarSource\/sonarqube-scan-action@v8\.0\.0/);
   assert.match(scanSection, /-Dsonar\.projectVersion=\$\{\{\s*steps\.package-version\.outputs\.version\s*\}\}/);
+  assert.match(scanSection, /-Dsonar\.sources=\$\{\{\s*steps\.sonar-scope\.outputs\.source_paths\s*\}\}/);
   assert.doesNotMatch(scanSection, /qualitygate\.wait=true/);
   assert.doesNotMatch(scanSection, /qualitygate\.timeout=600/);
   assert.match(
@@ -59,6 +60,9 @@ test('SonarCloud workflow skips scanner startup for PRs outside scanned surfaces
   assert.match(workflow, /name: Detect Sonar-relevant changes/);
   assert.match(workflow, /id: sonar-scope/);
   assert.match(workflow, /git diff --name-only "\$BASE_SHA" "\$HEAD_SHA" > \/tmp\/sonar-changed-files\.txt/);
+  assert.match(workflow, /awk '\/\^\(src\|scripts\|bin\)\\\//);
+  assert.match(workflow, /SOURCE_PATHS=\$\(paste -sd, \/tmp\/sonar-changed-source-files\.txt\)/);
+  assert.match(workflow, /echo "source_paths=\$SOURCE_PATHS" >> "\$GITHUB_OUTPUT"/);
   assert.match(workflow, /\^\(src\/\|scripts\/\|bin\/\|package\(-lock\)\?\\\.json\$\|sonar-project\\\.properties\$\|\\\.github\/workflows\/sonarcloud\\\.yml\$\)/);
   assert.doesNotMatch(workflow, /\|tests\/\|/);
   assert.match(workflow, /name: Skip SonarCloud scan for non-Sonar PR/);
@@ -81,4 +85,14 @@ test('SonarCloud workflow caches scanner packages for real scans', () => {
   assert.match(cacheSection, /path: ~\/\.sonar\/cache/);
   assert.match(cacheSection, /key: \$\{\{\s*runner\.os\s*\}\}-sonar/);
   assert.match(cacheSection, /restore-keys: \$\{\{\s*runner\.os\s*\}\}-sonar/);
+});
+
+test('SonarCloud workflow publishes Python coverage for Python eval scripts', () => {
+  assert.match(workflow, /name: Generate Python coverage report/);
+  assert.match(workflow, /python3 -m pip install coverage/);
+  assert.match(workflow, /python3 - <<'PY' "\$feedback_log" "\$retrieval_log" "\$lesson_db"/);
+  assert.match(workflow, /python3 -m coverage run --branch --source=scripts scripts\/feedback_quality_eval\.py/);
+  assert.match(workflow, /python3 -m coverage run --append --branch --source=scripts scripts\/feedback_quality_eval\.py/);
+  assert.match(workflow, /THUMBGATE_FEEDBACK_DIR="\$feedback_dir" python3 -m coverage run --append/);
+  assert.match(workflow, /python3 -m coverage xml -o coverage\/python-coverage\.xml/);
 });
