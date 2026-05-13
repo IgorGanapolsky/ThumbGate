@@ -88,6 +88,9 @@ const {
   classifyRequester,
 } = require('../../scripts/bot-detection');
 const {
+  recordCheckoutFunnelEvent,
+} = require('../../scripts/plausible-server-events');
+const {
   buildCloudflareSandboxPlan,
 } = require('../../scripts/cloudflare-dynamic-sandbox');
 const {
@@ -4520,6 +4523,26 @@ async function addContext(){
       const isConfirmedCheckout = confirmParam === '1'
         || confirmParam === 'true'
         || req.method === 'POST';
+      // Plausible funnel event #1 of 3: page view. Fired before bot deflection
+      // so we get the full top-of-funnel count, with isBot as a prop so the
+      // dashboard can filter human vs. crawler traffic. Fire-and-forget.
+      void recordCheckoutFunnelEvent('view', {
+        page: '/checkout/pro',
+        referrer: req.headers.referer || req.headers.referrer,
+        forwardedFor: req.headers['x-forwarded-for'],
+        remoteAddr: req.socket?.remoteAddress,
+        userAgent: req.headers['user-agent'],
+        props: {
+          traceId,
+          isBot: botClassification.isBot ? 'true' : 'false',
+          botReason: botClassification.isBot ? botClassification.reason : undefined,
+          isConfirmed: isConfirmedCheckout ? 'true' : 'false',
+          utmSource: analyticsMetadata.utmSource,
+          utmMedium: analyticsMetadata.utmMedium,
+          utmCampaign: analyticsMetadata.utmCampaign,
+          planId: analyticsMetadata.planId,
+        },
+      });
       if (!isConfirmedCheckout && botClassification.isBot) {
         const eventType = 'checkout_bot_deflected';
         appendBestEffortTelemetry(FEEDBACK_DIR, {
@@ -4660,6 +4683,26 @@ async function addContext(){
         referrer: analyticsMetadata.referrer,
         referrerHost: analyticsMetadata.referrerHost,
       }, req.headers, 'checkout_bootstrap');
+      // Plausible funnel event #2 of 3: email submitted (bootstrap fired with
+      // a valid email present — the user has supplied the Stripe-receipt
+      // address). Only fires when normalizedCheckoutEmail was non-empty.
+      if (normalizedCheckoutEmail) {
+        void recordCheckoutFunnelEvent('emailSubmitted', {
+          page: '/checkout/pro',
+          referrer: req.headers.referer || req.headers.referrer,
+          forwardedFor: req.headers['x-forwarded-for'],
+          remoteAddr: req.socket?.remoteAddress,
+          userAgent: req.headers['user-agent'],
+          props: {
+            traceId,
+            utmSource: analyticsMetadata.utmSource,
+            utmMedium: analyticsMetadata.utmMedium,
+            utmCampaign: analyticsMetadata.utmCampaign,
+            planId: analyticsMetadata.planId,
+            billingCycle: analyticsMetadata.billingCycle,
+          },
+        });
+      }
 
       try {
         const result = await createCheckoutSession({
@@ -4679,6 +4722,25 @@ async function addContext(){
         });
 
         if (result.url) {
+          // Plausible funnel event #3 of 3: Stripe redirect started. Fires
+          // before the 302 so the event reaches Plausible even if the
+          // browser leaves the origin immediately. Fire-and-forget.
+          void recordCheckoutFunnelEvent('stripeRedirect', {
+            page: '/checkout/pro',
+            referrer: req.headers.referer || req.headers.referrer,
+            forwardedFor: req.headers['x-forwarded-for'],
+            remoteAddr: req.socket?.remoteAddress,
+            userAgent: req.headers['user-agent'],
+            props: {
+              traceId,
+              stripeSessionId: result.sessionId,
+              utmSource: analyticsMetadata.utmSource,
+              utmMedium: analyticsMetadata.utmMedium,
+              utmCampaign: analyticsMetadata.utmCampaign,
+              planId: analyticsMetadata.planId,
+              billingCycle: analyticsMetadata.billingCycle,
+            },
+          });
           appendBestEffortTelemetry(FEEDBACK_DIR, {
             eventType: 'stripe_redirect_started',
             clientType: 'web',
