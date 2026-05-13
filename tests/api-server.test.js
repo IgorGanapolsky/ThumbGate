@@ -705,6 +705,36 @@ test('privacy policy route covers collection, sharing, retention, and contact de
   assert.match(body, /igor\.ganapolsky@gmail\.com/i);
 });
 
+test('terms of service route covers payment, refunds, acceptable use, and limitation of liability', async () => {
+  const res = await fetch(apiUrl('/terms'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+  const body = await res.text();
+  assert.match(body, /Terms of Service/i);
+  assert.match(body, /Payment/i);
+  assert.match(body, /Refunds/i);
+  assert.match(body, /Acceptable Use/i);
+  assert.match(body, /Limitation of Liability/i);
+  assert.match(body, /igor\.ganapolsky@gmail\.com/i);
+  // Cross-links to /privacy and /support keep the legal triangle navigable.
+  assert.match(body, /href="\/privacy"/);
+  assert.match(body, /href="\/support"/);
+});
+
+test('support page exposes email, GitHub issues, status, and refund paths', async () => {
+  const res = await fetch(apiUrl('/support'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+  const body = await res.text();
+  assert.match(body, /Support/i);
+  assert.match(body, /mailto:igor\.ganapolsky@gmail\.com/i);
+  assert.match(body, /github\.com\/IgorGanapolsky\/ThumbGate\/issues/i);
+  assert.match(body, /\/health/);
+  assert.match(body, /Refunds/i);
+  assert.match(body, /href="\/privacy"/);
+  assert.match(body, /href="\/terms"/);
+});
+
 test('public HEAD routes stay unauthenticated and side-effect free', async () => {
   const telemetryPath = path.join(tmpFeedbackDir, 'telemetry-pings.jsonl');
   const checkoutSessionsPath = process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH;
@@ -1107,6 +1137,62 @@ test('/numbers route writes a discovery/landing_view entry to funnel-events.json
   assert.equal(discoveryEvent.metadata.utmMedium, 'social');
   assert.equal(discoveryEvent.metadata.utmCampaign, 'organic');
   assert.equal(discoveryEvent.metadata.utmContent, 'linkedin_post');
+});
+
+// Federal lead-gen surface — the /federal route family serves
+// public/federal.html (a marketing landing page targeted at federal-agency
+// evaluators). Routes through servePublicMarketingPage so UTM attribution
+// and landing_page_view telemetry capture agency arrivals. The boundary
+// tests in tests/public-core-boundary.test.js pin presence of the assets;
+// these tests pin the HTTP contract.
+test('/federal route returns the federal landing page with positioning content', async () => {
+  const res = await fetch(apiUrl('/federal'));
+  assert.equal(res.status, 200);
+  const body = await res.text();
+  // Sentinel strings from public/federal.html. Each is load-bearing for the
+  // landing-page contract — if any disappear, the federal positioning page
+  // has silently been replaced or stripped.
+  assert.match(body, /For Federal Agencies/i);
+  assert.match(body, /NIST 800-53/);
+  assert.match(body, /THUMBGATE_DEPLOY/);
+});
+
+test('/federal route records landing_page_view telemetry with pageType=federal', async () => {
+  const cookieHeader = [
+    'thumbgate_visitor_id=visitor_federal',
+    'thumbgate_session_id=session_federal',
+    'thumbgate_acquisition_id=acq_federal',
+  ].join('; ');
+  const res = await fetch(
+    apiUrl('/federal?utm_source=sbir&utm_medium=outbound&utm_campaign=fed_pilot'),
+    { headers: { cookie: cookieHeader } }
+  );
+  assert.equal(res.status, 200);
+
+  const telemetryEvents = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
+  const landingEvent = telemetryEvents.find((entry) => (
+    entry.eventType === 'landing_page_view' &&
+    entry.visitorId === 'visitor_federal' &&
+    entry.pageType === 'federal'
+  ));
+  assert.ok(landingEvent, 'expected landing_page_view with pageType=federal in telemetry-pings.jsonl');
+  assert.equal(landingEvent.utmSource, 'sbir');
+  assert.equal(landingEvent.utmMedium, 'outbound');
+  assert.equal(landingEvent.utmCampaign, 'fed_pilot');
+});
+
+test('/federal.html, /government, /gov aliases all serve the federal landing page', async () => {
+  for (const route of ['/federal.html', '/government', '/gov']) {
+    const res = await fetch(apiUrl(route));
+    assert.equal(res.status, 200, `${route} expected 200, got ${res.status}`);
+    const body = await res.text();
+    assert.match(body, /For Federal Agencies/i, `${route} body missing federal sentinel`);
+  }
+});
+
+test('HEAD /federal returns 200 with no body (telemetry parity with /numbers)', async () => {
+  const res = await fetch(apiUrl('/federal'), { method: 'HEAD' });
+  assert.equal(res.status, 200);
 });
 
 test('tracked link router redirects allowlisted marketing slugs and records first-party click telemetry', async () => {
