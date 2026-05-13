@@ -25,6 +25,7 @@ loadLocalEnv();
 
 function safeLogValue(value, maxLength = 500) {
   return String(value ?? '')
+    .replace(/\\[rnt]/g, ' ')
     .replace(/[\r\n\t]/g, ' ')
     .replace(/[\u0000-\u001f\u007f]/g, '')
     .slice(0, maxLength);
@@ -387,7 +388,7 @@ async function publishPost(content, platforms, options = {}) {
   const { valid: withinLimit, rejected: overLimit } = validateContentForPlatforms(content, normalizedPlatforms);
   for (const r of overLimit) {
     console.error(
-      `[zernio:publisher] BLOCKED ${r.platform} — content ${r.length} chars exceeds ${r.limit} by ${r.overBy}`,
+      `[zernio:publisher] BLOCKED ${safeLogValue(r.platform, 80)} - content ${r.length} chars exceeds ${r.limit} by ${r.overBy}`,
     );
   }
   if (withinLimit.length === 0) {
@@ -406,7 +407,7 @@ async function publishPost(content, platforms, options = {}) {
   // Dedup: filter out platforms where identical content was posted in last 24h
   const dedupedPlatforms = withinLimit.filter((p) => {
     if (isDuplicate(content, p.platform)) {
-      console.log(`[zernio:publisher] SKIPPED ${p.platform} — duplicate content within 24h`);
+      console.log(`[zernio:publisher] SKIPPED ${safeLogValue(p.platform, 80)} - duplicate content within 24h`);
       return false;
     }
     return true;
@@ -417,7 +418,7 @@ async function publishPost(content, platforms, options = {}) {
     return { blocked: true, reasons: [{ reason: 'duplicate_content_all_platforms' }] };
   }
 
-  console.log(`[zernio:publisher] Publishing to ${dedupedPlatforms.length} platform(s): ${dedupedPlatforms.map((p) => p.platform).join(', ')}`);
+  console.log(`[zernio:publisher] Publishing to ${dedupedPlatforms.length} platform(s): ${dedupedPlatforms.map((p) => safeLogValue(p.platform, 80)).join(', ')}`);
 
   // Idempotency key derived from content + platform set. Identical publish
   // requests retried within the same key window collapse to one Zernio post.
@@ -441,7 +442,7 @@ async function publishPost(content, platforms, options = {}) {
   for (const p of dedupedPlatforms) {
     recordPost(content, p.platform);
   }
-  console.log(`[zernio:publisher] Post published. id=${data.id ?? 'unknown'}`);
+  console.log(`[zernio:publisher] Post published. id=${safeLogValue(data.id ?? 'unknown', 120)}`);
   return data;
 }
 
@@ -472,7 +473,7 @@ async function schedulePost(content, platforms, scheduledFor, timezone, options 
   const { valid: withinLimit, rejected: overLimit } = validateContentForPlatforms(content, normalizedPlatforms);
   for (const r of overLimit) {
     console.error(
-      `[zernio:publisher] BLOCKED ${r.platform} schedule — content ${r.length} chars exceeds ${r.limit} by ${r.overBy}`,
+      `[zernio:publisher] BLOCKED ${safeLogValue(r.platform, 80)} schedule - content ${r.length} chars exceeds ${r.limit} by ${r.overBy}`,
     );
   }
   if (withinLimit.length === 0) {
@@ -491,7 +492,7 @@ async function schedulePost(content, platforms, scheduledFor, timezone, options 
   // Dedup: filter out platforms where identical content was scheduled in last 24h
   const dedupedPlatforms = withinLimit.filter((p) => {
     if (isDuplicate(content, p.platform)) {
-      console.log(`[zernio:publisher] SKIPPED ${p.platform} schedule — duplicate content within 24h`);
+      console.log(`[zernio:publisher] SKIPPED ${safeLogValue(p.platform, 80)} schedule - duplicate content within 24h`);
       return false;
     }
     return true;
@@ -502,7 +503,7 @@ async function schedulePost(content, platforms, scheduledFor, timezone, options 
     return { blocked: true, reasons: [{ reason: 'duplicate_content_all_platforms' }] };
   }
 
-  console.log(`[zernio:publisher] Scheduling post for ${scheduledFor} (${timezone}) to ${dedupedPlatforms.length} platform(s)`);
+  console.log(`[zernio:publisher] Scheduling post for ${safeLogValue(scheduledFor, 80)} (${safeLogValue(timezone, 80)}) to ${dedupedPlatforms.length} platform(s)`);
 
   // Include scheduledFor + timezone in the key so that two schedules of the
   // same content at different times get distinct idempotency slots.
