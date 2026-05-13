@@ -95,7 +95,7 @@ function scoreRelevance(memory, toolName, actionContext, actionSig) {
   const sig = actionSig || buildActionSignature(toolName, actionContext);
   let score = 0;
 
-  const memText = ((memory.title || '') + ' ' + (memory.content || '') + ' ' + (memory.tags || []).join(' ')).toLowerCase();
+  const memText = buildMemorySearchText(memory);
 
   if (memory.metadata?.toolsUsed?.some((t) => t.toLowerCase() === sig.toolLower)) score += 0.4;
   if (memText.includes(sig.toolLower)) score += 0.2;
@@ -139,10 +139,40 @@ function tokenize(text) {
   return (text || '').split(/[\s.,;:!?()\[\]{}"'`]+/).filter((t) => t.length > 3);
 }
 
+function stringifySearchValue(value) {
+  if (!value) return '';
+  if (Array.isArray(value)) return value.map(stringifySearchValue).filter(Boolean).join(' ');
+  if (typeof value === 'object') return Object.values(value).map(stringifySearchValue).filter(Boolean).join(' ');
+  return String(value);
+}
+
+function buildMemorySearchText(memory = {}) {
+  return [
+    memory.title,
+    memory.content,
+    memory.context,
+    memory.summary,
+    memory.whatWentWrong,
+    memory.whatWorked,
+    memory.whatToChange,
+    memory.howToAvoid,
+    memory.rootCause,
+    memory.reasoning,
+    memory.category,
+    memory.failureType,
+    memory.tags,
+    memory.structuredRule,
+    memory.metadata?.failureType,
+    memory.metadata?.toolsUsed,
+    memory.metadata?.filesInvolved,
+  ].map(stringifySearchValue).filter(Boolean).join(' ').toLowerCase();
+}
+
 module.exports = {
   retrieveRelevantLessons,
   scoreRelevance,
   buildActionSignature,
+  buildMemorySearchText,
   textBigrams,
   bigramJaccard,
 };

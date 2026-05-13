@@ -37,9 +37,14 @@ const FIELD_WEIGHTS = {
   context:        1.2,
   title:          1.0,
   rootCause:      1.0,
+  structuredRule: 1.0,
+  failureType:    0.9,
   reasoning:      0.8,
+  filesInvolved:  0.8,
+  toolsUsed:      0.7,
   tags:           0.5,
   category:       0.4,
+  metadata:       0.4,
 };
 
 // Synonym clusters: any term in a group matches all others.
@@ -55,10 +60,34 @@ const SYNONYM_GROUPS = [
   ['auth', 'authentication', 'authorization', 'token', 'api key', 'credential'],
   ['delete', 'remove', 'rm', 'drop', 'destroy', 'wipe'],
   ['merge', 'pull request', 'pr', 'rebase', 'squash'],
+  ['revenue', 'customer revenue', 'paid', 'payment', 'checkout', 'stripe'],
+  ['operator', 'test transaction', 'test payment', 'igor', 'internal', 'self-test'],
+  ['provenance', 'customer provenance', 'buyer provenance', 'non-operator buyer', 'verified customer'],
+  ['publish', 'published', 'posted', 'live post', 'zernio', 'social'],
 ];
 
 // Regex patterns that indicate the query is about a failure/mistake.
 const FAILURE_PATTERN = /fail|error|wrong|broken|mistake|bad|incorrect|problem|issue|bug|crash|broke|exception/i;
+const RISK_TOPIC_RULES = [
+  {
+    name: 'secret',
+    queryPattern: /\b(secret|api key|apikey|token|credential|password|env|\.env)\b/i,
+    lessonPattern: /\b(secret|api key|apikey|token|credential|password|env|\.env|exfiltration)\b/i,
+    multiplier: 1.45,
+  },
+  {
+    name: 'revenue',
+    queryPattern: /\b(revenue|money|paid|customer|stripe|checkout|transaction|payment)\b/i,
+    lessonPattern: /\b(revenue|customer provenance|buyer provenance|non-operator|stripe|checkout|payment)\b/i,
+    multiplier: 1.25,
+  },
+  {
+    name: 'publish',
+    queryPattern: /\b(publish|published|posted|live|reply|social|zernio|x|linkedin|threads|bluesky)\b/i,
+    lessonPattern: /\b(publish|published|posted|live|auth|zernio|social|dry-run|draft)\b/i,
+    multiplier: 1.25,
+  },
+];
 
 /**
  * Tokenise text into lowercase word-like tokens of length >= 2.
@@ -98,9 +127,31 @@ function expandTerms(terms) {
  */
 function getField(candidate, field) {
   const nested = candidate.lesson;
-  const val = (nested && nested[field]) || candidate[field] || '';
+  let val = (nested && nested[field]) || candidate[field] || '';
+  if (!val && field === 'failureType') val = candidate.metadata?.failureType || '';
+  if (!val && field === 'filesInvolved') val = candidate.metadata?.filesInvolved || '';
+  if (!val && field === 'toolsUsed') val = candidate.metadata?.toolsUsed || '';
+  if (!val && field === 'metadata') val = candidate.metadata || '';
   if (Array.isArray(val)) return val.join(' ');
+  if (val && typeof val === 'object') return Object.values(val).map((entry) => {
+    if (Array.isArray(entry)) return entry.join(' ');
+    if (entry && typeof entry === 'object') return JSON.stringify(entry);
+    return String(entry || '');
+  }).join(' ');
   return String(val);
+}
+
+function getCandidateText(candidate) {
+  return Object.keys(FIELD_WEIGHTS)
+    .map((field) => getField(candidate, field))
+    .concat([
+      candidate.title || '',
+      candidate.content || '',
+      candidate.tags || [],
+      candidate.signal || '',
+    ])
+    .flat()
+    .join(' ');
 }
 
 /**
@@ -252,6 +303,13 @@ function rerankLessons(query, candidates, options = {}) {
       }
     }
 
+    const candidateText = getCandidateText(candidate);
+    for (const rule of RISK_TOPIC_RULES) {
+      if (rule.queryPattern.test(query || '') && rule.lessonPattern.test(candidateText)) {
+        finalScore *= rule.multiplier;
+      }
+    }
+
     return { ...candidate, rerankedScore: Number(finalScore.toFixed(6)) };
   });
 
@@ -260,4 +318,4 @@ function rerankLessons(query, candidates, options = {}) {
     .slice(0, topK);
 }
 
-module.exports = { rerankLessons, fieldWeightedBM25, tokenize, expandTerms };
+module.exports = { rerankLessons, fieldWeightedBM25, tokenize, expandTerms, getCandidateText };

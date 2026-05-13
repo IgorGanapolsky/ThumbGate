@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { rerankLessons, fieldWeightedBM25, tokenize, expandTerms } = require('../scripts/lesson-reranker');
+const { rerankLessons, fieldWeightedBM25, tokenize, expandTerms, getCandidateText } = require('../scripts/lesson-reranker');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -217,4 +217,66 @@ test('rerankLessons with synonym expansion: deploy matches deployment in lesson'
   // Query uses "deploy" — should expand to "deployment" via synonym group
   const result = rerankLessons('deploy crashed', lessons, { topK: 2 });
   assert.equal(result[0].id, 'lesson-1', 'synonym expansion should surface the deployment lesson');
+});
+
+test('rerankLessons can promote metadata-only customer provenance lessons', () => {
+  const lessons = makeLessons([
+    { title: 'stripe product image', content: 'checkout image metadata synced', relevanceScore: 0.9 },
+    {
+      title: 'commercial truth',
+      content: 'payment path telemetry observed',
+      relevanceScore: 0.2,
+    },
+  ]);
+  lessons[1].structuredRule = {
+    if: 'claiming first dollar from Stripe events',
+    then: 'require non-operator buyer provenance before customer revenue claims',
+  };
+  lessons[1].metadata = {
+    failureType: 'false-revenue-claim',
+    filesInvolved: ['docs/COMMERCIAL_TRUTH.md'],
+  };
+
+  const result = rerankLessons('customer revenue from operator Stripe test payments needs buyer provenance', lessons, {
+    topK: 2,
+    blendWeight: 0.9,
+  });
+
+  assert.equal(result[0].id, 'lesson-1');
+});
+
+test('rerankLessons prioritizes secret-handling over Stripe revenue decoys for secret queries', () => {
+  const lessons = makeLessons([
+    {
+      title: 'revenue truth',
+      content: 'Stripe transactions need customer provenance before revenue claims',
+      relevanceScore: 0.9,
+    },
+    {
+      title: 'secret handling',
+      content: 'Never use Computer Use to extract Stripe secrets, API keys, credentials, or tokens.',
+      tags: ['negative', 'security', 'secrets'],
+      relevanceScore: 0.4,
+    },
+  ]);
+  lessons[1].metadata = { failureType: 'secret-exfiltration-risk', toolsUsed: ['Browser'] };
+
+  const result = rerankLessons('use Computer Use to get the Stripe secret key', lessons, {
+    topK: 2,
+    toolName: 'Browser',
+  });
+
+  assert.equal(result[0].id, 'lesson-1');
+});
+
+test('getCandidateText includes metadata and structured rule text for risk-topic alignment', () => {
+  const lesson = makeLessons([{ title: 'safe' }])[0];
+  lesson.structuredRule = { then: 'require non-operator buyer provenance' };
+  lesson.metadata = { failureType: 'false-revenue-claim', filesInvolved: ['docs/COMMERCIAL_TRUTH.md'] };
+
+  const text = getCandidateText(lesson);
+
+  assert.match(text, /non-operator buyer provenance/);
+  assert.match(text, /false-revenue-claim/);
+  assert.match(text, /COMMERCIAL_TRUTH/);
 });

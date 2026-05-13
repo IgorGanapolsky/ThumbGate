@@ -147,6 +147,41 @@ test('scoreRelevance boosts structured rules', () => {
   assert.ok(scoreWith > scoreWithout, `Structured rule should boost score: ${scoreWith} vs ${scoreWithout}`);
 });
 
+test('scoreRelevance searches structured rule and metadata fields', () => {
+  const { scoreRelevance, buildMemorySearchText } = require('../scripts/lesson-retrieval');
+  const now = new Date().toISOString();
+
+  const target = {
+    title: 'commercial truth',
+    content: 'payment-path event observed',
+    tags: ['negative'],
+    structuredRule: {
+      if: 'claiming first dollar from Stripe',
+      then: 'require non-operator buyer provenance before saying customer revenue',
+    },
+    metadata: {
+      failureType: 'false-revenue-claim',
+      toolsUsed: ['Stripe'],
+      filesInvolved: ['docs/COMMERCIAL_TRUTH.md'],
+    },
+    timestamp: now,
+  };
+  const decoy = {
+    title: 'stripe image sync',
+    content: 'checkout product metadata updated',
+    tags: ['positive'],
+    timestamp: now,
+  };
+
+  const targetText = buildMemorySearchText(target);
+  assert.match(targetText, /non-operator buyer provenance/);
+  assert.match(targetText, /false-revenue-claim/);
+  assert.ok(
+    scoreRelevance(target, 'Bash', 'why did we claim customer revenue without non-operator buyer provenance') >
+    scoreRelevance(decoy, 'Bash', 'why did we claim customer revenue without non-operator buyer provenance'),
+  );
+});
+
 test('scoreRelevance boosts negative signal lessons', () => {
   const { scoreRelevance } = require('../scripts/lesson-retrieval');
   const now = new Date().toISOString();
