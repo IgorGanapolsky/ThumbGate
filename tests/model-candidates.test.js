@@ -7,8 +7,12 @@ const { execFileSync } = require('node:child_process');
 
 const {
   DEFAULT_CATALOG_PATH,
+  DEFAULT_TOKENIZER_BRITTLENESS_CASES,
   buildBenchmarkPlan,
   buildModelCandidatesReport,
+  buildTokenizerBrittlenessPlan,
+  detectTokenizerBrittlenessSignals,
+  evaluateTokenizerBrittlenessCases,
   getModelCandidatesReportPath,
   loadCatalog,
   recommendCandidates,
@@ -27,6 +31,7 @@ test('model candidate catalog includes Kimi K2.6 and Qwen3.6 variants', () => {
   assert.ok(ids.has('tinker/qwen3.6-27b'));
   assert.ok(ids.has('self-hosted/deepseek-v4-flash-sglang'));
   assert.ok(ids.has('self-hosted/deepseek-v4-pro-sglang'));
+  assert.ok(ids.has('research/fast-byte-latent-transformer'));
 });
 
 test('recommendCandidates prefers GPT-5.5 for dashboard analysis', () => {
@@ -81,6 +86,62 @@ test('recommendCandidates supports self-hosted DeepSeek-V4 for long-context revi
   assert.ok(report.recommended[0].benchmarkPlan.commands.some((entry) => entry.command.includes('deepseek-v4-runtime-guardrails')));
 });
 
+test('tokenizer brittleness detector catches byte-sensitive ThumbGate inputs', () => {
+  const signals = detectTokenizerBrittlenessSignals('OPENAI_API_KEY=sk-prоj-test\u200b\nat run (/repo/src/api/server.js:12:9)');
+
+  assert.ok(signals.includes('secret-like'));
+  assert.ok(signals.includes('unicode-confusable'));
+  assert.ok(signals.includes('zero-width'));
+  assert.ok(signals.includes('stack-trace'));
+  assert.ok(signals.includes('file-path'));
+});
+
+test('tokenizer brittleness eval covers JSONL, Unicode, stack, SQL, and code fixtures', () => {
+  const evaluation = evaluateTokenizerBrittlenessCases(DEFAULT_TOKENIZER_BRITTLENESS_CASES);
+
+  assert.equal(evaluation.caseCount, 5);
+  assert.equal(evaluation.passed, true);
+  assert.ok(evaluation.coveredSignals.includes('malformed-json'));
+  assert.ok(evaluation.coveredSignals.includes('unicode-confusable'));
+  assert.ok(evaluation.coveredSignals.includes('stack-trace'));
+  assert.ok(evaluation.coveredSignals.includes('sql'));
+  assert.ok(evaluation.coveredSignals.includes('code-symbols'));
+  assert.ok(evaluation.cases.some((entry) => entry.byteToCodePointRatio > 1));
+});
+
+test('recommendCandidates treats Fast BLT as a research-only tokenizer-brittleness benchmark target', () => {
+  const report = recommendCandidates({
+    workload: 'tokenizer-brittleness',
+    provider: 'research',
+    maxCandidates: 1,
+  });
+
+  assert.equal(report.recommended[0].id, 'research/fast-byte-latent-transformer');
+  assert.ok(report.recommended[0].matchedStrengths.includes('tokenizer-free'));
+  assert.ok(report.recommended[0].readinessNotes.some((note) => note.includes('research-only')));
+  assert.ok(report.recommended[0].benchmarkPlan.metrics.includes('symbolPreservationRate'));
+});
+
+test('tokenizer brittleness report blocks production routing until benchmark evidence exists', () => {
+  const report = buildModelCandidatesReport({
+    workload: 'tokenizer-brittleness',
+    provider: 'research',
+    maxCandidates: 1,
+  });
+
+  assert.equal(report.tokenizerBrittleness.evaluation.passed, true);
+  assert.equal(report.tokenizerBrittleness.routingPolicy.allowProductionRouting, false);
+  assert.match(report.tokenizerBrittleness.routingPolicy.reason, /research direction/i);
+});
+
+test('buildTokenizerBrittlenessPlan keeps high-ROI recommendations dependency-free', () => {
+  const plan = buildTokenizerBrittlenessPlan();
+
+  assert.equal(plan.name, 'tokenizer-brittleness-readiness');
+  assert.ok(plan.recommendations.some((item) => /Do not add a BLT runtime dependency/i.test(item)));
+  assert.equal(plan.routingPolicy.productionDefault, 'existing-token-models-with-gates');
+});
+
 test('buildBenchmarkPlan anchors candidates to ThumbGate eval commands', () => {
   const catalog = loadCatalog(DEFAULT_CATALOG_PATH);
   const candidate = catalog.candidates.find((entry) => entry.id === 'tinker/qwen3.6-35b-a3b');
@@ -122,6 +183,19 @@ test('renderModelCandidatesReport emits readable workload summary', () => {
   assert.match(markdown, /Managed Model Candidates/);
   assert.match(markdown, /tinker\/qwen3.6-35b-a3b/);
   assert.match(markdown, /thumbgate bench/);
+});
+
+test('renderModelCandidatesReport includes tokenizer brittleness readiness for byte-level workload', () => {
+  const report = buildModelCandidatesReport({
+    workload: 'tokenizer-brittleness',
+    provider: 'research',
+    maxCandidates: 1,
+  });
+  const markdown = renderModelCandidatesReport(report);
+
+  assert.match(markdown, /Tokenizer brittleness readiness/);
+  assert.match(markdown, /research-only/);
+  assert.match(markdown, /blocked until benchmarked/);
 });
 
 test('model-candidates CLI prints JSON report when requested', () => {
@@ -172,6 +246,34 @@ test('model-candidates CLI supports dashboard analysis workload', () => {
     assert.equal(payload.report.workload.id, 'dashboard-analysis');
     assert.equal(payload.report.recommended[0].id, 'openai/gpt-5.5');
     assert.match(payload.report.summary, /gpt-5\.5/i);
+  } finally {
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+  }
+});
+
+test('model-candidates CLI supports tokenizer brittleness workload', () => {
+  const isolatedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-model-tokenizer-cli-'));
+  const feedbackDir = path.join(isolatedDir, 'feedback');
+  try {
+    const stdout = execFileSync(
+      process.execPath,
+      ['bin/cli.js', 'model-candidates', '--workload=tokenizer-brittleness', '--provider=research', '--json'],
+      {
+        cwd: path.join(__dirname, '..'),
+        env: {
+          ...process.env,
+          THUMBGATE_FEEDBACK_DIR: feedbackDir,
+          THUMBGATE_NO_NUDGE: '1',
+        },
+        encoding: 'utf8',
+      },
+    );
+    const payload = JSON.parse(stdout);
+
+    assert.equal(payload.report.workload.id, 'tokenizer-brittleness');
+    assert.equal(payload.report.recommended[0].id, 'research/fast-byte-latent-transformer');
+    assert.equal(payload.report.tokenizerBrittleness.routingPolicy.allowProductionRouting, false);
+    assert.ok(fs.existsSync(payload.reportPath));
   } finally {
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   }
