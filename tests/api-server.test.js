@@ -47,6 +47,7 @@ fs.writeFileSync(
 );
 
 const { startServer, __test__ } = require('../src/api/server');
+const apiServerModulePath = require.resolve('../src/api/server');
 const billing = require('../scripts/billing');
 const gatesEngine = require('../scripts/gates-engine');
 const { listGateTemplates } = require('../scripts/gate-templates');
@@ -130,6 +131,104 @@ test('health endpoint returns ok', async () => {
   const body = await res.json();
   assert.equal(body.status, 'ok');
   assert.equal(body.buildSha, 'test-build-sha');
+});
+
+test('/health surfaces a per-check breakdown (no longer always-green theater)', async () => {
+  // Regression test for the 2026-05-12 audit finding: /health used to return
+  // status: 'ok' unconditionally regardless of feedback-dir / hosted-config /
+  // build-metadata state. It must now expose a `checks` object so uptime
+  // monitors can detect real degradation, not just process liveness.
+  const res = await fetch(apiUrl('/health'), { headers: authHeader });
+  const body = await res.json();
+  assert.ok(body.checks, '/health response must include a `checks` object');
+  assert.ok(body.checks.feedbackDir, 'checks.feedbackDir must exist');
+  assert.ok(body.checks.hostedConfig, 'checks.hostedConfig must exist');
+  assert.ok(body.checks.buildMetadata, 'checks.buildMetadata must exist');
+  // In a healthy test env, all three should be ok=true.
+  assert.equal(body.checks.feedbackDir.ok, true);
+  assert.equal(body.checks.hostedConfig.ok, true);
+  assert.equal(body.checks.buildMetadata.ok, true);
+});
+
+test('/health returns degraded when feedback dir is not writable', async () => {
+  const originalAccessSync = fs.accessSync;
+  fs.accessSync = (target, mode) => {
+    if (target === tmpFeedbackDir && mode === fs.constants.W_OK) {
+      const error = new Error('feedback dir not writable');
+      error.code = 'EACCES';
+      throw error;
+    }
+    return originalAccessSync(target, mode);
+  };
+
+  try {
+    const res = await fetch(apiUrl('/health'), { headers: authHeader });
+    assert.equal(res.status, 503);
+    const body = await res.json();
+    assert.equal(body.status, 'degraded');
+    assert.deepEqual(body.checks.feedbackDir, { ok: false, error: 'EACCES' });
+  } finally {
+    fs.accessSync = originalAccessSync;
+  }
+});
+
+test('/health returns degraded when build metadata is missing', async () => {
+  const originalMetadataPath = process.env.THUMBGATE_BUILD_METADATA_PATH;
+  const missingMetadataPath = path.join(tmpFeedbackDir, 'missing-build-metadata.json');
+  let isolatedHandle;
+
+  process.env.THUMBGATE_BUILD_METADATA_PATH = missingMetadataPath;
+  delete require.cache[apiServerModulePath];
+  const isolatedServerModule = require('../src/api/server');
+
+  try {
+    isolatedHandle = await isolatedServerModule.startServer({ port: 0, host: '127.0.0.1' });
+    const isolatedOrigin = `http://localhost:${isolatedHandle.port}`;
+    const res = await fetch(new URL('/health', isolatedOrigin), { headers: authHeader });
+    assert.equal(res.status, 503);
+    const body = await res.json();
+    assert.equal(body.status, 'degraded');
+    assert.deepEqual(body.checks.buildMetadata, { ok: false, error: 'missing_buildSha' });
+  } finally {
+    if (isolatedHandle) {
+      await new Promise((resolve) => isolatedHandle.server.close(resolve));
+    }
+    if (originalMetadataPath === undefined) delete process.env.THUMBGATE_BUILD_METADATA_PATH;
+    else process.env.THUMBGATE_BUILD_METADATA_PATH = originalMetadataPath;
+    delete require.cache[apiServerModulePath];
+    require('../src/api/server');
+  }
+});
+
+test('/healthz surfaces a per-check breakdown', async () => {
+  const res = await fetch(apiUrl('/healthz'), { headers: authHeader });
+  const body = await res.json();
+  assert.ok(body.checks, '/healthz response must include a `checks` object');
+  assert.ok(body.checks.feedbackLog, 'checks.feedbackLog must exist');
+  assert.ok(body.checks.memoryLog, 'checks.memoryLog must exist');
+});
+
+test('/healthz returns degraded when a log directory is not writable', async () => {
+  const originalAccessSync = fs.accessSync;
+  fs.accessSync = (target, mode) => {
+    if (target === tmpFeedbackDir && mode === fs.constants.W_OK) {
+      const error = new Error('log dir not writable');
+      error.code = 'EACCES';
+      throw error;
+    }
+    return originalAccessSync(target, mode);
+  };
+
+  try {
+    const res = await fetch(apiUrl('/healthz'), { headers: authHeader });
+    assert.equal(res.status, 503);
+    const body = await res.json();
+    assert.equal(body.status, 'degraded');
+    assert.deepEqual(body.checks.feedbackLog, { ok: false, error: 'EACCES' });
+    assert.deepEqual(body.checks.memoryLog, { ok: false, error: 'EACCES' });
+  } finally {
+    fs.accessSync = originalAccessSync;
+  }
 });
 
 test('PostHog proxy path allowlist blocks sibling-path SSRF attempts', () => {
@@ -542,6 +641,35 @@ test('/go/pro 302 redirects to /checkout/pro with caller-provided UTM params pre
   assert.equal(url.searchParams.get('utm_campaign'), 'autopilot');
   assert.equal(url.searchParams.get('utm_content'), 'zero_tokens');
   assert.equal(url.searchParams.get('cta_id'), 'go_pro');
+});
+
+test('/go/teams 302 redirects to /checkout/pro with plan_id=team + seat_count=3 (3-seat self-serve)', async () => {
+  // 2026-05-12: Aiventyx marketplace listing best-performer at ~62% CTR routes
+  // its Teams clicks through /go/teams. Pin the contract: redirect to
+  // /checkout/pro with plan_id=team + seat_count=3 so the canonical Aiventyx
+  // URL keeps landing on the 3-seat $147/mo self-serve Stripe checkout.
+  const res = await fetch(apiUrl('/go/teams?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_teams_listing&cta_id=aiventyx_teams_listing&cta_placement=marketplace_listing'), { redirect: 'manual' });
+  assert.equal(res.status, 302);
+  assert.equal(res.headers.get('x-thumbgate-link-slug'), 'teams');
+  const url = new URL(res.headers.get('location'));
+  assert.equal(url.pathname, '/checkout/pro');
+  assert.equal(url.searchParams.get('plan_id'), 'team');
+  assert.equal(url.searchParams.get('seat_count'), '3');
+  assert.equal(url.searchParams.get('billing_cycle'), 'monthly');
+  assert.equal(url.searchParams.get('utm_source'), 'aiventyx');
+  assert.equal(url.searchParams.get('utm_medium'), 'marketplace');
+  assert.equal(url.searchParams.get('cta_id'), 'aiventyx_teams_listing');
+});
+
+test('/go/teams falls back to default UTM attribution when no params are supplied', async () => {
+  const res = await fetch(apiUrl('/go/teams'), { redirect: 'manual' });
+  assert.equal(res.status, 302);
+  const url = new URL(res.headers.get('location'));
+  assert.equal(url.pathname, '/checkout/pro');
+  assert.equal(url.searchParams.get('plan_id'), 'team');
+  assert.equal(url.searchParams.get('seat_count'), '3');
+  assert.equal(url.searchParams.get('utm_campaign'), 'team_self_serve');
+  assert.equal(url.searchParams.get('cta_id'), 'go_teams');
 });
 
 test('/go/pro falls back to default UTM attribution when no params are supplied', async () => {

@@ -403,6 +403,27 @@ const TRACKED_LINK_TARGETS = Object.freeze({
     },
     allowCustomerEmail: true,
   },
+  // 2026-05-12: Aiventyx marketplace listing routes its Teams clicks through
+  // /go/teams (best-performing listing at ~62% CTR). Without this slug the
+  // server returned 404 + "Tracked link not found". Every Aiventyx Teams
+  // click between the URL swap and this deploy landed on that error page.
+  // Destination: 3-seat Team self-serve Stripe checkout (the path I shipped
+  // in PR #1877 — plan_id=team + seat_count=3 = $147/mo entry).
+  teams: {
+    path: '/checkout/pro',
+    ctaId: 'go_teams',
+    ctaPlacement: 'link_router',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'link_router',
+      utm_campaign: 'team_self_serve',
+      plan_id: 'team',
+      seat_count: '3',
+      billing_cycle: 'monthly',
+    },
+    allowCustomerEmail: true,
+  },
   install: {
     path: '/guide',
     ctaId: 'go_install',
@@ -2467,10 +2488,19 @@ function renderRobotsTxt(runtimeConfig) {
   return [
     'User-agent: *',
     'Allow: /',
+    // 2026-05-12: every crawler GET on /checkout/pro creates a live Stripe
+    // session even when no human is on the other end. Stripe sees 50 sessions
+    // in 24h, 0 paid, 0 email captured. Disallow so non-human fetchers stop
+    // inflating the "checkout starts" metric and creating zombie sessions.
+    // Real humans still reach checkout via JS-driven clicks (not crawled).
+    'Disallow: /checkout/',
+    'Disallow: /v1/billing/',
     '',
     '# AI crawler access — allow all major LLM crawlers',
     'User-agent: GPTBot',
     'Allow: /',
+    'Disallow: /checkout/',
+    'Disallow: /v1/billing/',
     '',
     'User-agent: ClaudeBot',
     'Allow: /',
@@ -4884,11 +4914,49 @@ async function addContext(){
     }
 
     if (isGetLikeRequest && pathname === '/health') {
-      sendJson(res, 200, {
-        status: 'ok',
+      // History (2026-05-12): /health used to return status: 'ok' unconditionally
+      // with zero downstream checks. Uptime monitors saw "healthy" when Stripe
+      // was down, when feedback-dir was unwritable, when env was misconfigured.
+      // The fix is shallow but meaningful: probe each critical subsystem and
+      // surface failures with HTTP 503 + a per-check breakdown.
+      const checks = {};
+      let allOk = true;
+
+      // Check 1: feedback dir exists and is writable.
+      try {
+        const { FEEDBACK_DIR } = getFeedbackPaths();
+        fs.accessSync(FEEDBACK_DIR, fs.constants.W_OK);
+        checks.feedbackDir = { ok: true };
+      } catch (err) {
+        checks.feedbackDir = { ok: false, error: err?.code || 'inaccessible' };
+        allOk = false;
+      }
+
+      // Check 2: hosted config resolves the canonical app origin.
+      // If appOrigin is missing/empty, redirects + checkout flow break silently.
+      if (hostedConfig?.appOrigin) {
+        checks.hostedConfig = { ok: true };
+      } else {
+        checks.hostedConfig = { ok: false, error: 'missing_appOrigin' };
+        allOk = false;
+      }
+
+      // Check 3: build metadata loaded. If BUILD_METADATA.buildSha is empty,
+      // Railway didn't inject the deploy SHA — observability is degraded.
+      if (BUILD_METADATA?.buildSha) {
+        checks.buildMetadata = { ok: true };
+      } else {
+        checks.buildMetadata = { ok: false, error: 'missing_buildSha' };
+        allOk = false;
+      }
+
+      const statusCode = allOk ? 200 : 503;
+      sendJson(res, statusCode, {
+        status: allOk ? 'ok' : 'degraded',
         version: pkg.version,
         buildSha: BUILD_METADATA.buildSha,
         uptime: process.uptime(),
+        checks,
         deployment: {
           appOrigin: hostedConfig.appOrigin,
           billingApiBaseUrl: hostedConfig.billingApiBaseUrl,
@@ -4900,11 +4968,26 @@ async function addContext(){
     }
 
     if (isGetLikeRequest && pathname === '/healthz') {
+      // /healthz is the deeper internal probe — verifies feedback log + memory log
+      // paths exist and are writable. Returns 503 when either check fails.
       const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH } = requestFeedbackPaths;
-      sendJson(res, 200, {
-        status: 'ok',
+      const checks = {};
+      let allOk = true;
+      for (const [label, p] of [['feedbackLog', FEEDBACK_LOG_PATH], ['memoryLog', MEMORY_LOG_PATH]]) {
+        try {
+          const dir = path.dirname(p);
+          fs.accessSync(dir, fs.constants.W_OK);
+          checks[label] = { ok: true };
+        } catch (err) {
+          checks[label] = { ok: false, error: err?.code || 'inaccessible' };
+          allOk = false;
+        }
+      }
+      sendJson(res, allOk ? 200 : 503, {
+        status: allOk ? 'ok' : 'degraded',
         feedbackLogPath: FEEDBACK_LOG_PATH,
         memoryLogPath: MEMORY_LOG_PATH,
+        checks,
       }, {}, {
         headOnly: isHeadRequest,
       });

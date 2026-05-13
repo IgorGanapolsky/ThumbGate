@@ -3,6 +3,14 @@ name: Changeset Check
 on:
   pull_request:
     branches: [main]
+  # Required-check name "Verify changeset" is in the main branch protection
+  # contexts (8 of 8). Without merge_group support, Trunk's synthetic merge
+  # SHA never gets a "Verify changeset" status report, GitHub fails the
+  # "8 of 8 required status checks are expected" gate, and Trunk drops the
+  # PR from the queue — observed on #1846, #1902, #1943 (Aiventyx Teams).
+  merge_group:
+    branches: [main]
+    types: [checks_requested]
 
 permissions:
   contents: read
@@ -17,12 +25,26 @@ jobs:
     name: Verify changeset
     runs-on: ubuntu-latest
     steps:
+      # 2026-05-12: Dependabot doesn't author changesets. Without bypassing it,
+      # every Dependabot PR fails the changeset gate, blocks Trunk merge, and
+      # the PR rots. 6 stale PRs (oldest 16 days) traced to this single gate.
+      # We bypass via per-step `if:` (rather than skipping the whole job) so
+      # the required status check still reports success — a skipped job is NOT
+      # treated as "success" under strict branch-protection mode, so we must
+      # actually complete a job that exits 0.
+      - name: Bypass for Dependabot PRs
+        if: github.actor == 'dependabot[bot]'
+        run: |
+          echo "::notice::Skipping changeset check for Dependabot PR — dependency-bump bots don't author changesets."
+
       - name: Checkout
+        if: github.actor != 'dependabot[bot]'
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Setup Node
+        if: github.actor != 'dependabot[bot]'
         uses: actions/setup-node@v6
         with:
           node-version: '20'
@@ -30,6 +52,7 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Fetch base branch for changeset diff
+        if: github.actor != 'dependabot[bot]'
         # Retry the fetch to ride through transient GitHub infra 500s.
         # Without retry, a single HTTP 500 on `git fetch` (e.g. during a
         # GitHub Actions incident) fails the required status check and
@@ -53,9 +76,11 @@ jobs:
           done
 
       - name: Install release-check dependencies
+        if: github.actor != 'dependabot[bot]'
         run: npm ci --ignore-scripts --onnxruntime-node-install-cuda=skip
 
       - name: Check release-relevant changeset coverage
+        if: github.actor != 'dependabot[bot]'
         env:
           CHANGESET_BASE_REF: refs/remotes/origin/main
         run: npm run changeset:check
