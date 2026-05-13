@@ -221,16 +221,21 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 249 → 250 (2026-05-12) to ship the offline feedback-quality eval
   // script referenced by `npm run eval:feedback-quality`; otherwise the
   // published package would expose a dead script.
-  // Bumped 250 → 252 (2026-05-13) for the revenue-ROI bundle runtime
-  // additions: scripts/activation-tracker.js (required at runtime by
-  // scripts/feedback-loop.js for the activation_first_rule_promoted ping)
-  // and scripts/plausible-server-events.js (required at runtime by
-  // src/api/server.js for the /checkout/pro funnel events). Both ship in
-  // the public bundle because the packaged runtime loads them on every
-  // server boot; omitting them crashes published `thumbgate serve`.
+  // Bumped 250 → 251 (2026-05-13) to ship public/federal.html, the
+  // federal-agency lead-gen landing page served at /federal (also /government
+  // and /gov aliases). Marketing surface; in-scope for the public shell per
+  // CLAUDE.md "Public shell: CLI, hook installer, adapter configs, basic
+  // local gate runner, public JSON schemas, marketing/docs." See docs/FEDERAL.md.
+  // Bumped 251 → 253 (2026-05-13) for the revenue-ROI bundle runtime
+  // additions on top of #1972: scripts/activation-tracker.js (required at
+  // runtime by scripts/feedback-loop.js for the activation_first_rule_promoted
+  // ping) and scripts/plausible-server-events.js (required at runtime by
+  // src/api/server.js for the /checkout/pro funnel events). Both ship in the
+  // public bundle because the packaged runtime loads them on every server
+  // boot; omitting them crashes published `thumbgate serve`.
   assert.ok(
-    manifest.fileCount <= 252,
-    `npm package should stay <= 252 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 253,
+    `npm package should stay <= 253 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -293,14 +298,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // landing-page governance setup intake copy. Observed package is ~3.479 MB.
   // Bumped 3.50 MB -> 3.52 MB (2026-05-07) for the four public Pro upgrade
   // bundle files under config/pro. Observed package is ~3.505 MB.
-  // Bumped 3.52 MB → 3.60 MB (2026-05-13) for two reasons combined:
-  //   1. Revenue-ROI runtime additions: scripts/activation-tracker.js (~4 KB)
-  //      and scripts/plausible-server-events.js (~5 KB), both required at
-  //      runtime by feedback-loop.js / server.js. Observed local package
-  //      ~3.535 MB after this addition.
-  //   2. CI build reproducibly a few KB over local because of line-ending
-  //      normalization on Linux runners. Take the higher cap so CI doesn't
-  //      flake on headroom that local already passes.
+  // Bumped 3.52 MB -> 3.60 MB (2026-05-13) — CI build reproducibly a few KB
+  // over local (line-ending normalization). Headroom-only, no new files.
+  // Held at 3.60 MB (2026-05-13) for public/federal.html (#1972, ~22 KB)
+  // + scripts/activation-tracker.js + scripts/plausible-server-events.js
+  // (~9 KB combined). Observed package after all three: ~3.55 MB — still
+  // well inside the existing 3.60 MB ceiling, so no further bump needed.
+  // See docs/FEDERAL.md and .changeset/high-roi-checkout-deploy-anticlaim-bundle.md.
   assert.ok(
     manifest.unpackedSize <= 3_600_000,
     `npm package should stay <= 3.60 MB unpacked, got ${manifest.unpackedSize}`

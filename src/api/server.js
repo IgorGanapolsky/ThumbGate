@@ -212,6 +212,7 @@ const CODEX_PLUGIN_PAGE_PATH = path.resolve(__dirname, '../../public/codex-plugi
 const COMPARE_PAGE_PATH = path.resolve(__dirname, '../../public/compare.html');
 const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
 const NUMBERS_PAGE_PATH = path.resolve(__dirname, '../../public/numbers.html');
+const FEDERAL_PAGE_PATH = path.resolve(__dirname, '../../public/federal.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
 const COMPARE_DIR = path.resolve(__dirname, '../../public/compare');
@@ -4381,6 +4382,28 @@ async function addContext(){
         });
       } catch {
         sendJson(res, 404, { error: 'Numbers page not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/federal' || pathname === '/federal.html' || pathname === '/government' || pathname === '/gov')) {
+      // Federal lead-gen page. Routed through servePublicMarketingPage so agency
+      // arrivals via SBIR / GSA / outbound channels capture UTM attribution and
+      // landing_page_view telemetry for downstream pilot-pipeline analysis.
+      // /government and /gov redirect-friendly aliases serve the same page so
+      // common search queries land correctly.
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(FEDERAL_PAGE_PATH, 'utf-8'),
+          extraTelemetry: { pageType: 'federal' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Federal page not found' });
       }
       return;
     }
