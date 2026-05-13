@@ -29,6 +29,7 @@ const GUIDE_FILES = [
   'guides/browser-automation-safety.html',
   'guides/native-messaging-host-security.html',
   'guides/ai-search-topical-presence.html',
+  'guides/local-first-ai-agent-reliability.html',
   'guides/best-tools-stop-ai-agents-breaking-production.html',
   'guides/relational-knowledge-ai-recommendations.html',
   'guides/claude-code-feedback.html',
