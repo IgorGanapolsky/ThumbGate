@@ -236,15 +236,15 @@ async function ensureAccountProfile(secretKey) {
   try {
     current = await stripeRequest('GET', '/account', null, secretKey);
   } catch (err) {
-    console.warn(`  could not fetch /account: ${err.message} — skipping rename step`);
+    console.warn('  could not fetch /account — skipping rename step');
     return;
   }
   const currentBpName = (current && current.business_profile && current.business_profile.name) || '';
   const currentStmt = (current && current.settings && current.settings.payments && current.settings.payments.statement_descriptor) || '';
   const wantsBpName = DESIRED_ACCOUNT_PROFILE.businessProfileName;
   const wantsStmt = DESIRED_ACCOUNT_PROFILE.statementDescriptor;
-  console.log(`  current business_profile.name=${JSON.stringify(currentBpName)}`);
-  console.log(`  current statement_descriptor=${JSON.stringify(currentStmt)}`);
+  console.log(`  current business_profile.name matches desired: ${currentBpName === wantsBpName}`);
+  console.log(`  current statement_descriptor matches desired: ${currentStmt === wantsStmt}`);
   const updates = {};
   if (currentBpName !== wantsBpName) {
     updates.business_profile = { name: wantsBpName };
@@ -256,7 +256,7 @@ async function ensureAccountProfile(secretKey) {
     console.log('  profile already converged, skipping');
     return;
   }
-  console.log(`  will update: ${Object.keys(updates).join(', ')} → name=${wantsBpName}, stmt=${wantsStmt}`);
+  console.log(`  will update: ${Object.keys(updates).join(', ')}`);
   if (DRY_RUN) {
     console.log('  [dry-run] would POST /account with:', JSON.stringify(updates, null, 2));
     return;
@@ -270,7 +270,7 @@ async function ensureAccountProfile(secretKey) {
     // dashboard for those accounts. Log + continue so we still create
     // products. The CEO will see this in the workflow log and can change
     // the display name manually in 30 seconds if needed.
-    console.warn(`  ✗ account profile update failed: ${err.message}`);
+    console.warn('  ✗ account profile update failed');
     console.warn('  fall back: change "Public business name" in Stripe dashboard → Settings → Business → Public details');
   }
 }
