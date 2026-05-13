@@ -221,9 +221,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 249 → 250 (2026-05-12) to ship the offline feedback-quality eval
   // script referenced by `npm run eval:feedback-quality`; otherwise the
   // published package would expose a dead script.
+  // Bumped 250 → 251 (2026-05-13) to ship public/federal.html — the marketing
+  // surface for ThumbGate Federal (Core-side deployment profile). This is a
+  // single HTML file with no JS runtime cost; federal CAPABILITIES live in
+  // ThumbGate-Core behind THUMBGATE_DEPLOY=gov and never enter the public
+  // bundle (enforced by tests/public-core-boundary.test.js federal invariants).
   assert.ok(
-    manifest.fileCount <= 250,
-    `npm package should stay <= 250 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 251,
+    `npm package should stay <= 251 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
