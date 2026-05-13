@@ -104,7 +104,7 @@ function detectTokenizerBrittlenessSignals(input) {
     }
   }
 
-  return Array.from(signals).sort();
+  return Array.from(signals).sort((a, b) => a.localeCompare(b));
 }
 
 function evaluateTokenizerBrittlenessCases(cases = DEFAULT_TOKENIZER_BRITTLENESS_CASES) {
@@ -134,7 +134,7 @@ function evaluateTokenizerBrittlenessCases(cases = DEFAULT_TOKENIZER_BRITTLENESS
     caseCount: evaluated.length,
     passed: failed.length === 0,
     passRate: evaluated.length > 0 ? Number(((evaluated.length - failed.length) / evaluated.length).toFixed(4)) : 1,
-    coveredSignals: Array.from(coveredSignals).sort(),
+    coveredSignals: Array.from(coveredSignals).sort((a, b) => a.localeCompare(b)),
     cases: evaluated,
   };
 }

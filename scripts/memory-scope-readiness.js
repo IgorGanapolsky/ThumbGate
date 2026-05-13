@@ -190,7 +190,10 @@ function buildMemoryScopeReadinessReport(records = []) {
 
   const crossScopeDuplicates = [...byFingerprint.entries()]
     .filter(([, scopeKeys]) => scopeKeys.size > 1)
-    .map(([fingerprint, scopeKeys]) => ({ fingerprint, scopeKeys: [...scopeKeys].sort() }));
+    .map(([fingerprint, scopeKeys]) => ({
+      fingerprint,
+      scopeKeys: [...scopeKeys].sort((a, b) => a.localeCompare(b)),
+    }));
 
   const unscopedRecords = missingFieldsByRecord.length;
   const riskLevel = unscopedRecords > 0 || crossScopeDuplicates.length > 0 ? 'high' : 'low';
