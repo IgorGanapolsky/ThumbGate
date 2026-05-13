@@ -4578,6 +4578,7 @@ async function addContext(){
           ctaId: analyticsMetadata.ctaId,
           ctaPlacement: analyticsMetadata.ctaPlacement,
           planId: analyticsMetadata.planId,
+          isBot: botClassification.isBot ? 'true' : 'false',
           reason: botClassification.reason,
         }, req.headers, eventType);
         const workflowIntakeHref = buildCheckoutIntentHref(`${hostedConfig.appOrigin}/#workflow-sprint-intake`, analyticsMetadata, {
