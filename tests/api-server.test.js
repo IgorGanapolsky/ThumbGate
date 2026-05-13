@@ -2367,6 +2367,45 @@ test('workflow sprint intake endpoint captures a contactable lead', async () => 
   assert.ok(telemetry.some((entry) => entry.eventType === 'workflow_sprint_lead_submitted'));
 });
 
+test('workflow sprint intake supports CORS preflight', async () => {
+  const res = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
+    method: 'OPTIONS',
+    headers: {
+      origin: 'https://app.example.com',
+      'access-control-request-method': 'POST',
+      'access-control-request-headers': 'content-type',
+    },
+  });
+
+  assert.equal(res.status, 204);
+  assert.equal(res.headers.get('access-control-allow-origin'), '*');
+  assert.match(String(res.headers.get('access-control-allow-methods')), /POST/);
+});
+
+test('workflow sprint intake drops known bot user agents without writing leads', async () => {
+  const leadsBefore = readJsonl(path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl')).length;
+  const res = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'user-agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+    },
+    body: JSON.stringify({
+      email: 'bot@example.com',
+      company: 'Crawler Co',
+      workflow: 'Lead spam',
+      owner: 'Crawler',
+      runtime: 'Headless',
+      blocker: 'Known crawler signatures should not become sales leads.',
+    }),
+  });
+
+  assert.equal(res.status, 204);
+  assert.equal(res.headers.get('access-control-allow-origin'), '*');
+  const leadsAfter = readJsonl(path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl')).length;
+  assert.equal(leadsAfter, leadsBefore);
+});
+
 test('workflow sprint intake falls back to journey cookies when IDs are omitted from the payload', async () => {
   const cookieHeader = [
     'thumbgate_visitor_id=visitor_cookie_lead',
