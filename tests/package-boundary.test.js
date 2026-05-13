@@ -298,12 +298,16 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // landing-page governance setup intake copy. Observed package is ~3.479 MB.
   // Bumped 3.50 MB -> 3.52 MB (2026-05-07) for the four public Pro upgrade
   // bundle files under config/pro. Observed package is ~3.505 MB.
-  // Bumped 3.52 MB -> 3.60 MB (2026-05-13) — CI build reproducibly a few KB
-  // over local (line-ending normalization). Headroom-only, no new files.
-  // Held at 3.60 MB (2026-05-13) for public/federal.html (#1972, ~22 KB)
-  // + scripts/activation-tracker.js + scripts/plausible-server-events.js
-  // (~9 KB combined). Observed package after all three: ~3.55 MB — still
-  // well inside the existing 3.60 MB ceiling, so no further bump needed.
+  // Bumped 3.52 MB -> 3.60 MB (2026-05-13) for /terms + /support HTML pages
+  // and the offline feedback_quality_eval.py shipped in the package files
+  // array. Observed package is ~3.518 MB locally; CI is reproducibly a few
+  // KB larger (line-ending normalization), so 3.60 MB gives durable headroom.
+  // Kept at 3.60 MB (2026-05-13) after #1972 added public/federal.html — the
+  // federal-agency lead-gen landing page (~22 KB) served at /federal, /government,
+  // /gov. Observed package is ~3.543 MB after the addition, still under ceiling.
+  // Kept at 3.60 MB (2026-05-13) for the revenue-ROI runtime additions on this
+  // branch: scripts/activation-tracker.js + scripts/plausible-server-events.js
+  // (~9 KB combined). Observed package after all three: ~3.55 MB.
   // See docs/FEDERAL.md and .changeset/high-roi-checkout-deploy-anticlaim-bundle.md.
   assert.ok(
     manifest.unpackedSize <= 3_600_000,
