@@ -116,3 +116,64 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
       `marketing), bump the ceiling and add a comment here explaining why.`
   );
 });
+
+test('public-core-boundary: federal lead-gen surfaces present', () => {
+  // docs/FEDERAL.md is the technical positioning brief referenced from
+  // outbound SBIR / agency channels; public/federal.html is the landing
+  // page wired into /federal in src/api/server.js. Removing either without
+  // a documented successor breaks the federal lead-gen funnel.
+  // If you intentionally restructure these surfaces, update this assertion
+  // to point at the new canonical locations.
+  const requiredFiles = ['docs/FEDERAL.md', 'public/federal.html'];
+  const missing = requiredFiles.filter((p) => !fs.existsSync(path.join(root, p)));
+
+  assert.deepEqual(
+    missing,
+    [],
+    `Federal lead-gen surfaces missing: ${missing.join(', ')}. ` +
+      `These are referenced from outbound channels and the README docs section. ` +
+      `Per docs/FEDERAL.md "Architectural Invariants", federal capabilities must ` +
+      `remain reachable on the public marketing surface without affecting the ` +
+      `developer install path.`
+  );
+});
+
+test('public-core-boundary: only THUMBGATE_DEPLOY gates federal behavior', () => {
+  // Per docs/FEDERAL.md "Architectural Invariants" §3: `THUMBGATE_DEPLOY=gov`
+  // is the only switch that activates federal-specific behavior. This guards
+  // against env-var sprawl (e.g., THUMBGATE_GOV=1 + THUMBGATE_FEDERAL=true
+  // + THUMBGATE_FIPS=on all doing related things in different code paths).
+  // A single canonical switch keeps the boundary auditable.
+  const packaged = npmPackFiles().filter((f) => /\.(m?js|cjs|ts)$/.test(f));
+  const FORBIDDEN_SWITCHES = [
+    /process\.env\.THUMBGATE_GOV\b/,
+    /process\.env\.THUMBGATE_FEDERAL\b/,
+    /process\.env\.THUMBGATE_FIPS\b/,
+    /process\.env\.THUMBGATE_FEDRAMP\b/,
+  ];
+  const violations = [];
+
+  for (const relPath of packaged) {
+    if (relPath === SELF_PATH) continue;
+    const abs = path.join(root, relPath);
+    if (!fs.existsSync(abs)) continue;
+    const src = fs.readFileSync(abs, 'utf8');
+
+    for (const pattern of FORBIDDEN_SWITCHES) {
+      const match = src.match(pattern);
+      if (match) {
+        violations.push(`${relPath}: ${match[0]}`);
+        break;
+      }
+    }
+  }
+
+  assert.deepEqual(
+    violations,
+    [],
+    `Federal behavior must gate on THUMBGATE_DEPLOY=gov only. ` +
+      `Found alternate env switches in ${violations.length} file(s):\n  ` +
+      violations.join('\n  ') +
+      `\n\nConsolidate behind THUMBGATE_DEPLOY=gov (see docs/FEDERAL.md).`
+  );
+});
