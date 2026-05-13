@@ -1,0 +1,189 @@
+{
+  "generatedAt": "2026-05-13T17:51:37.011Z",
+  "name": "thumbgate-local-first-ai-reliability-pack",
+  "status": "guide-ready-no-revenue-claim",
+  "source": {
+    "url": "https://www.infoq.com/articles/local-first-ai-inference-cloud/",
+    "title": "Local-First AI Inference: A Cloud Architecture Pattern for Cost-Effective Document Processing",
+    "observedAt": "2026-05-13"
+  },
+  "headline": "Local-first AI reliability gates before cloud or agent execution",
+  "shortDescription": "ThumbGate turns local-first AI inference into a buyer-ready agent reliability story: deterministic local gates first, model review for uncertain actions, and human approval for high-risk changes.",
+  "objective": "Capture demand from AI infrastructure, DevEx, and security buyers who care about cloud AI cost, local control, and bounded autonomous-agent errors.",
+  "ctas": {
+    "guide": "https://thumbgate-production.up.railway.app/guides/local-first-ai-agent-reliability?utm_source=infoq&utm_medium=organic_ai_architecture&utm_campaign=local_first_ai_reliability&utm_content=public_guide&campaign_variant=seo_geo_guide&offer_code=LOCAL-FIRST_GUIDE&cta_id=local_first_guide&cta_placement=guide_body&surface=local_first_ai_reliability",
+    "installGuide": "https://thumbgate-production.up.railway.app/guide?utm_source=infoq&utm_medium=organic_ai_architecture&utm_campaign=local_first_ai_reliability&utm_content=install_guide&campaign_variant=free_install&offer_code=LOCAL-FIRST_INSTALL&cta_id=local_first_install&cta_placement=guide_sidebar&surface=local_first_ai_reliability",
+    "pro": "https://thumbgate-production.up.railway.app/checkout/pro?utm_source=infoq&utm_medium=organic_ai_architecture&utm_campaign=local_first_ai_reliability&utm_content=pro_checkout&campaign_variant=self_serve_pro&offer_code=LOCAL-FIRST_PRO&cta_id=local_first_pro&cta_placement=guide_sidebar&plan_id=pro&surface=local_first_ai_reliability",
+    "sprint": "https://thumbgate-production.up.railway.app/?utm_source=infoq&utm_medium=organic_ai_architecture&utm_campaign=local_first_ai_reliability&utm_content=workflow_sprint&campaign_variant=qualified_sprint&offer_code=LOCAL-FIRST_SPRINT&cta_id=local_first_sprint&cta_placement=guide_body&surface=local_first_ai_reliability#workflow-sprint-intake"
+  },
+  "architectureTiers": [
+    {
+      "tier": "Tier 1",
+      "name": "Local deterministic gates",
+      "owner": "ThumbGate public shell",
+      "action": "Run local policy, memory, allowlist, denylist, and proof checks before a tool call or completion claim.",
+      "successMetric": "local_gate_pass_rate",
+      "escalationRule": "Escalate only when the action is ambiguous, novel, or high blast-radius.",
+      "cta": "https://thumbgate-production.up.railway.app/guide?utm_source=infoq&utm_medium=organic_ai_architecture&utm_campaign=local_first_ai_reliability&utm_content=install_guide&campaign_variant=free_install&offer_code=LOCAL-FIRST_INSTALL&cta_id=local_first_install&cta_placement=guide_sidebar&surface=local_first_ai_reliability"
+    },
+    {
+      "tier": "Tier 2",
+      "name": "Model-assisted review path",
+      "owner": "private core or external reviewer",
+      "action": "Use retrieval, reranking, or an LLM judge only for uncertain actions that local rules cannot confidently classify.",
+      "successMetric": "model_escalation_precision",
+      "escalationRule": "Require structured evidence and reject unsupported claims instead of retrying the same hallucinated answer.",
+      "cta": "https://thumbgate-production.up.railway.app/checkout/pro?utm_source=infoq&utm_medium=organic_ai_architecture&utm_campaign=local_first_ai_reliability&utm_content=pro_checkout&campaign_variant=self_serve_pro&offer_code=LOCAL-FIRST_PRO&cta_id=local_first_pro&cta_placement=guide_sidebar&plan_id=pro&surface=local_first_ai_reliability"
+    },
+    {
+      "tier": "Tier 3",
+      "name": "Human approval queue",
+      "owner": "operator or team reviewer",
+      "action": "Route production, billing, security, and broad write actions to human review when confidence is low or evidence conflicts.",
+      "successMetric": "human_review_escape_rate",
+      "escalationRule": "Do not let uncertain actions auto-execute; require explicit approval or a smaller scoped action.",
+      "cta": "https://thumbgate-production.up.railway.app/?utm_source=infoq&utm_medium=organic_ai_architecture&utm_campaign=local_first_ai_reliability&utm_content=workflow_sprint&campaign_variant=qualified_sprint&offer_code=LOCAL-FIRST_SPRINT&cta_id=local_first_sprint&cta_placement=guide_body&surface=local_first_ai_reliability#workflow-sprint-intake"
+    }
+  ],
+  "gateChecklist": [
+    {
+      "id": "model_call_necessity_gate",
+      "label": "Model-call necessity gate",
+      "rule": "Ask whether the action needs a model at all before spending tokens or trusting a generated judgment.",
+      "buyerPain": "cloud AI cost, slow agent loops, and unnecessary exposure of local workflow state"
+    },
+    {
+      "id": "confidence_threshold_gate",
+      "label": "Confidence threshold gate",
+      "rule": "Route high-confidence local matches to execution, medium-confidence actions to model review, and low-confidence actions to human approval.",
+      "buyerPain": "silent hallucination risk and no clear escalation path"
+    },
+    {
+      "id": "task_specific_eval_gate",
+      "label": "Task-specific eval gate",
+      "rule": "Evaluate model upgrades against the exact workflow failure set, not vendor leaderboard claims.",
+      "buyerPain": "expensive migrations that do not improve the actual agent task"
+    },
+    {
+      "id": "prompt_change_regression_gate",
+      "label": "Prompt change regression gate",
+      "rule": "Treat production prompts as engineering artifacts with error-class history, regression checks, and rollback evidence.",
+      "buyerPain": "prompt tweaks that fix one failure while reopening old repeated mistakes"
+    },
+    {
+      "id": "human_review_boundary_gate",
+      "label": "Human review boundary gate",
+      "rule": "Require human approval for conflicting evidence, low confidence, or actions that touch production, billing, secrets, or public claims.",
+      "buyerPain": "unbounded autonomous-agent blast radius"
+    }
+  ],
+  "buyerSegments": [
+    {
+      "segment": "DevEx teams",
+      "intent": "reduce wasted model calls while keeping AI coding agents fast",
+      "offer": "Free install guide, then Pro when they need dashboards and proof exports",
+      "cta": "https://thumbgate-production.up.railway.app/guide?utm_source=infoq&utm_medium=organic_ai_architecture&utm_campaign=local_first_ai_reliability&utm_content=install_guide&campaign_variant=free_install&offer_code=LOCAL-FIRST_INSTALL&cta_id=local_first_install&cta_placement=guide_sidebar&surface=local_first_ai_reliability"
+    },
+    {
+      "segment": "Platform and security teams",
+      "intent": "bound autonomous-agent errors with local controls and review queues",
+      "offer": "Workflow Hardening Sprint for one repeated risky action",
+      "cta": "https://thumbgate-production.up.railway.app/?utm_source=infoq&utm_medium=organic_ai_architecture&utm_campaign=local_first_ai_reliability&utm_content=workflow_sprint&campaign_variant=qualified_sprint&offer_code=LOCAL-FIRST_SPRINT&cta_id=local_first_sprint&cta_placement=guide_body&surface=local_first_ai_reliability#workflow-sprint-intake"
+    },
+    {
+      "segment": "AI infra buyers",
+      "intent": "evaluate model upgrades using task-specific validation instead of benchmark marketing",
+      "offer": "Pro plus a validation checklist tied to real rejected actions",
+      "cta": "https://thumbgate-production.up.railway.app/checkout/pro?utm_source=infoq&utm_medium=organic_ai_architecture&utm_campaign=local_first_ai_reliability&utm_content=pro_checkout&campaign_variant=self_serve_pro&offer_code=LOCAL-FIRST_PRO&cta_id=local_first_pro&cta_placement=guide_sidebar&plan_id=pro&surface=local_first_ai_reliability"
+    }
+  ],
+  "measurementPlan": {
+    "northStar": "local_first_guide_to_verified_paid_intent",
+    "policy": "Count success only when the local-first guide produces install intent, Pro checkout start, qualified sprint intake, or verified non-operator customer revenue.",
+    "metrics": [
+      "local_first_guide_view",
+      "install_guide_click",
+      "local_first_pro_checkout_start",
+      "workflow_sprint_intake",
+      "qualified_local_first_reply",
+      "verified_customer_revenue"
+    ],
+    "guardrails": [
+      "Do not claim ThumbGate reduced cloud AI spend for a customer without evidence.",
+      "Do not claim local gates replace human review for high-risk actions.",
+      "Do not claim verified customer revenue from operator/test Stripe payments.",
+      "Do not turn architecture commentary into unsupported product performance claims."
+    ],
+    "doNotCountAsSuccess": [
+      "pageviews without CTA clicks",
+      "social impressions without replies or tracked sessions",
+      "operator/test Stripe payments",
+      "checkout starts without customer provenance",
+      "model-cost claims without workflow-specific measurements"
+    ]
+  },
+  "operatorQueue": [
+    {
+      "key": "publish_local_first_guide",
+      "audience": "AI infra and DevEx buyers",
+      "evidence": "https://www.infoq.com/articles/local-first-ai-inference-cloud/",
+      "proofAsset": "https://thumbgate.ai/guides/local-first-ai-agent-reliability",
+      "nextAsk": "Ship the local-first guide and route readers to install guide, Pro, or Workflow Hardening Sprint based on risk.",
+      "recommendedMotion": "SEO/GEO acquisition"
+    },
+    {
+      "key": "post_linkedin_architecture_commentary",
+      "audience": "LinkedIn engineering leaders",
+      "evidence": "https://www.infoq.com/articles/local-first-ai-inference-cloud/",
+      "proofAsset": "https://thumbgate-production.up.railway.app/guides/local-first-ai-agent-reliability?utm_source=infoq&utm_medium=organic_ai_architecture&utm_campaign=local_first_ai_reliability&utm_content=public_guide&campaign_variant=seo_geo_guide&offer_code=LOCAL-FIRST_GUIDE&cta_id=local_first_guide&cta_placement=guide_body&surface=local_first_ai_reliability",
+      "nextAsk": "Post architecture commentary that frames ThumbGate as local deterministic gates before model escalation.",
+      "recommendedMotion": "Founder-led discovery, no fake customer claims"
+    },
+    {
+      "key": "reply_to_local_first_threads",
+      "audience": "Reddit, Hacker News, and community threads about local AI cost and privacy",
+      "evidence": "https://www.infoq.com/articles/local-first-ai-inference-cloud/",
+      "proofAsset": "https://thumbgate-production.up.railway.app/guide?utm_source=infoq&utm_medium=organic_ai_architecture&utm_campaign=local_first_ai_reliability&utm_content=install_guide&campaign_variant=free_install&offer_code=LOCAL-FIRST_INSTALL&cta_id=local_first_install&cta_placement=guide_sidebar&surface=local_first_ai_reliability",
+      "nextAsk": "Reply only where the thread asks about AI agent reliability, cloud model cost, or human-in-the-loop boundaries.",
+      "recommendedMotion": "Guide-first self-serve"
+    },
+    {
+      "key": "route_repeated_failure_to_sprint",
+      "audience": "Teams with one named repeated autonomous-agent failure",
+      "evidence": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofAsset": "https://thumbgate-production.up.railway.app/?utm_source=infoq&utm_medium=organic_ai_architecture&utm_campaign=local_first_ai_reliability&utm_content=workflow_sprint&campaign_variant=qualified_sprint&offer_code=LOCAL-FIRST_SPRINT&cta_id=local_first_sprint&cta_placement=guide_body&surface=local_first_ai_reliability#workflow-sprint-intake",
+      "nextAsk": "Offer a workflow hardening sprint only after the buyer names a concrete repeated failure and blast radius.",
+      "recommendedMotion": "Qualified sprint intake"
+    }
+  ],
+  "channelDrafts": [
+    {
+      "id": "linkedin_local_first_architecture",
+      "channel": "LinkedIn",
+      "audience": "DevEx and platform leaders",
+      "cta": "https://thumbgate-production.up.railway.app/guides/local-first-ai-agent-reliability?utm_source=infoq&utm_medium=organic_ai_architecture&utm_campaign=local_first_ai_reliability&utm_content=public_guide&campaign_variant=seo_geo_guide&offer_code=LOCAL-FIRST_GUIDE&cta_id=local_first_guide&cta_placement=guide_body&surface=local_first_ai_reliability",
+      "draft": "The useful AI architecture question is not always \"which model?\" It is \"should this action reach a model at all?\" ThumbGate applies that local-first pattern to AI agents: local deterministic gates first, model review only for ambiguous actions, human approval for high-risk changes. Guide: https://thumbgate-production.up.railway.app/guides/local-first-ai-agent-reliability?utm_source=infoq&utm_medium=organic_ai_architecture&utm_campaign=local_first_ai_reliability&utm_content=public_guide&campaign_variant=seo_geo_guide&offer_code=LOCAL-FIRST_GUIDE&cta_id=local_first_guide&cta_placement=guide_body&surface=local_first_ai_reliability",
+      "guardrail": "Do not claim customer cost savings or verified revenue."
+    },
+    {
+      "id": "reddit_local_first_reply",
+      "channel": "Reddit",
+      "audience": "Developers discussing local AI and cloud inference cost",
+      "cta": "https://thumbgate-production.up.railway.app/guide?utm_source=infoq&utm_medium=organic_ai_architecture&utm_campaign=local_first_ai_reliability&utm_content=install_guide&campaign_variant=free_install&offer_code=LOCAL-FIRST_INSTALL&cta_id=local_first_install&cta_placement=guide_sidebar&surface=local_first_ai_reliability",
+      "draft": "This local-first pattern maps well to coding agents too. Run deterministic checks locally first, escalate uncertain actions to model review, and require human approval for high-risk writes. I wrote up the ThumbGate version here: https://thumbgate-production.up.railway.app/guide?utm_source=infoq&utm_medium=organic_ai_architecture&utm_campaign=local_first_ai_reliability&utm_content=install_guide&campaign_variant=free_install&offer_code=LOCAL-FIRST_INSTALL&cta_id=local_first_install&cta_placement=guide_sidebar&surface=local_first_ai_reliability",
+      "guardrail": "Only post as a relevant reply, not as a cold promotion."
+    },
+    {
+      "id": "sprint_qualified_followup",
+      "channel": "Manual follow-up",
+      "audience": "Teams with repeated AI-agent workflow failures",
+      "cta": "https://thumbgate-production.up.railway.app/?utm_source=infoq&utm_medium=organic_ai_architecture&utm_campaign=local_first_ai_reliability&utm_content=workflow_sprint&campaign_variant=qualified_sprint&offer_code=LOCAL-FIRST_SPRINT&cta_id=local_first_sprint&cta_placement=guide_body&surface=local_first_ai_reliability#workflow-sprint-intake",
+      "draft": "If you already have one repeated agent failure, the practical fix is a local-first gate before the next risky action. We can scope one workflow, capture the rejected behavior, add the pre-action gate, and prove the next run. Intake: https://thumbgate-production.up.railway.app/?utm_source=infoq&utm_medium=organic_ai_architecture&utm_campaign=local_first_ai_reliability&utm_content=workflow_sprint&campaign_variant=qualified_sprint&offer_code=LOCAL-FIRST_SPRINT&cta_id=local_first_sprint&cta_placement=guide_body&surface=local_first_ai_reliability#workflow-sprint-intake",
+      "guardrail": "Use only after concrete pain is confirmed."
+    }
+  ],
+  "proofLinks": [
+    "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+    "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+  ]
+}
