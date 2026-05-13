@@ -168,7 +168,11 @@ function main() {
   process.stdout.write(reminder + '\n');
 }
 
-if (require.main === module) {
+// Path-resolve check instead of `require.main === module`. SonarCloud's
+// strict type inference (rule S3403) flags the === form as always-false
+// in CommonJS, and CLAUDE.md "Hard-Won Lessons" pins the path-based form
+// as the portable fix (incident 2026-04-21 / PR #1115).
+if (require.main && require('node:path').resolve(process.argv[1] || '') === __filename) {
   try {
     main();
   } catch {
