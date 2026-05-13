@@ -245,7 +245,7 @@ describe('SEO guide and comparison pages', () => {
       path.join(PUBLIC_DIR, 'guides/semantic-programmatic-seo-guardrails.html'),
       'utf-8'
     );
-    assert.match(html, /Semantic pSEO Needs Governance Before Scale/);
+    assert.match(html, /How to stop your AI-generated SEO pages from hurting your rankings/);
     assert.match(html, /Authority map before page generation/);
     assert.match(html, /Brand context governance before drafting/);
     assert.match(html, /Semantic mesh links before publish/);
