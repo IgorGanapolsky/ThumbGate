@@ -1,0 +1,45 @@
+name: Branch Contamination Guard
+
+# Fails fast when a PR contains commits authored by the bare
+# `actions@github.com` identity that drop > LARGE_ADD_THRESHOLD lines of new
+# files onto a non-automation branch. Catches the failure mode that turned
+# PR #1910 (a 21-line redirector fix) into a 4-hour pipeline grind because a
+# 693-line Python file was injected onto its branch by off-script tooling
+# and tanked SonarCloud's coverage gate.
+#
+# Read-only: no commits, no PR comments, no pushes. Surfaces as a check
+# status only. Humans decide remediation.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: branch-contamination-guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+      - name: Run contamination audit
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
+          # Default threshold of 100 lines of new files; override per-repo via
+          # workflow env if needed. Anything above this from a bare-bot
+          # author on a feature branch is treated as contamination.
+          LARGE_ADD_THRESHOLD: '100'
+        run: node scripts/audit-pr-bot-contamination.js
