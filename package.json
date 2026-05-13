@@ -167,6 +167,7 @@
     "scripts/private-core-boundary.js",
     "scripts/pro-local-dashboard.js",
     "scripts/problem-detail.js",
+    "scripts/public-rate-limiter.js",
     "scripts/proactive-agent-eval-guardrails.js",
     "scripts/product-feedback.js",
     "scripts/prompting-operating-system.js",
