@@ -145,9 +145,72 @@ test('buildDiagnosis prioritizes GA4 runtime config over stale local fallback la
   assert.equal(diagnosis.hostedSummaryWorking, true);
   assert.equal(diagnosis.hostedTrafficObserved, true);
   assert.equal(diagnosis.hostedRevenueObserved, true);
+  assert.equal(diagnosis.paymentPathActivityObserved, true);
+  assert.equal(diagnosis.verifiedCustomerRevenueObserved, false);
   assert.ok(diagnosis.gaps.includes('GA4 runtime env is missing in Railway'));
   assert.ok(diagnosis.gaps.includes('Workflow Hardening Diagnostic payment link env is missing in Railway'));
   assert.ok(diagnosis.gaps.includes('Workflow Hardening Sprint payment link env is missing in Railway'));
+});
+
+test('buildDiagnosis explains no-money bottleneck without counting test payments as customer revenue', () => {
+  const diagnosis = buildDiagnosis({
+    publicProbe: {
+      root: {
+        signals: {
+          telemetryEndpoint: true,
+          plausibleScript: true,
+          gaLoaderScript: true,
+        },
+      },
+      telemetryPing: {
+        status: 204,
+      },
+    },
+    hostedAudit: {
+      runtimePresence: {
+        THUMBGATE_GA_MEASUREMENT_ID: true,
+        THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL: true,
+        THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL: true,
+      },
+      summaries: {
+        today: {
+          status: 200,
+        },
+        '30d': {
+          status: 200,
+          trafficMetrics: {
+            visitors: 4084,
+            pageViews: 4094,
+            checkoutStarts: 330,
+          },
+          ctas: {
+            checkoutStarts: 330,
+            uniqueCheckoutStarters: 259,
+            successPageViews: 0,
+            paidConfirmations: 0,
+            checkoutBotDeflections: 215,
+          },
+          signups: {
+            uniqueLeads: 735,
+          },
+          revenue: {
+            paidOrders: 4,
+            bookedRevenueCents: 14900,
+          },
+        },
+      },
+    },
+  });
+
+  assert.equal(diagnosis.primaryIssue, 'payment_path_unverified_no_customer_revenue');
+  assert.equal(diagnosis.verifiedCustomerRevenueObserved, false);
+  assert.equal(diagnosis.checkoutStarts30, 330);
+  assert.equal(diagnosis.checkoutCompletions30, 0);
+  assert.equal(diagnosis.botDeflections30, 215);
+  assert.ok(diagnosis.bottlenecks.some((entry) => /Checkout starts exist/i.test(entry)));
+  assert.ok(diagnosis.bottlenecks.some((entry) => /verified non-operator customer revenue is still zero/i.test(entry)));
+  assert.ok(diagnosis.bottlenecks.some((entry) => /Payment-path activity exists/i.test(entry)));
+  assert.ok(diagnosis.bottlenecks.some((entry) => /bot deflections/i.test(entry)));
 });
 
 test('generateRevenueStatusReport uses hosted railway audit when available', async () => {

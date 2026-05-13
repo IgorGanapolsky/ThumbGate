@@ -1,0 +1,216 @@
+{
+  "generatedAt": "2026-05-13T17:13:15.376Z",
+  "objective": "Ride the current skills-library and MCP safety narrative with a truthful enforcement-layer offer that can create qualified workflow-hardening conversations.",
+  "state": "verified-customer-revenue-zero",
+  "headline": "Skills libraries tell agents what to know. ThumbGate enforces what they must not repeat.",
+  "shortDescription": "Attach ThumbGate to the skills-library market narrative as the feedback-to-pre-action-gates layer for Cursor, Claude Code, Codex, Gemini CLI, and MCP teams.",
+  "summary": "Skills libraries standardize what agents know; ThumbGate makes repeated corrections enforceable before risky commands, edits, MCP calls, or completion claims run again.",
+  "canonicalIdentity": {
+    "displayName": "ThumbGate",
+    "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+    "homepageUrl": "https://thumbgate-production.up.railway.app",
+    "commercialTruthUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+    "verificationEvidenceUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+  },
+  "surfaces": [
+    {
+      "key": "skills_library_article",
+      "name": "The New Stack skills-library article",
+      "url": "https://thenewstack.io/engineering-team-skills-library/?utm_source=thenewstack&utm_medium=skills_library_moment&utm_campaign=skills_library_enforcement&utm_content=skills_library_article&campaign_variant=skills_library&offer_code=TNS-SKILLS_LIBRARY&cta_id=tns_skills_library_reply&cta_placement=source_article&surface=skills_library_enforcement",
+      "sourceUrl": "https://thenewstack.io/engineering-team-skills-library/",
+      "evidenceSource": "The New Stack: engineering-team skills library",
+      "operatorUse": "Use as the market narrative: teams are standardizing agent skills and need visibility into what agents are running.",
+      "buyerSignal": "Platform and DevEx teams asking how to govern Cursor, Claude Code, Codex, Gemini CLI, and local skill files.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "appOrigin": "https://thumbgate-production.up.railway.app",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ]
+    },
+    {
+      "key": "red_hat_skill_packs",
+      "name": "Red Hat agentic skill packs",
+      "url": "https://thenewstack.io/red-hat-agentic-skills-repository/?utm_source=thenewstack&utm_medium=skills_library_moment&utm_campaign=skills_library_enforcement&utm_content=red_hat_skill_packs&campaign_variant=enterprise_skill_packs&offer_code=TNS-RED_HAT_SKILL_PACKS&cta_id=tns_red_hat_skill_packs_reply&cta_placement=source_article&surface=skills_library_enforcement",
+      "sourceUrl": "https://thenewstack.io/red-hat-agentic-skills-repository/",
+      "evidenceSource": "The New Stack: Red Hat agentic skills repository",
+      "operatorUse": "Use for enterprise replies: bigger models are not enough; governed skills and institutional memory need enforcement before agents touch production workflows.",
+      "buyerSignal": "Infrastructure and platform owners with RHEL, OpenShift, Ansible, or internal runbook knowledge moving into agent workflows.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "appOrigin": "https://thumbgate-production.up.railway.app",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ]
+    },
+    {
+      "key": "github_mcp_security",
+      "name": "GitHub MCP security scanning",
+      "url": "https://thenewstack.io/github-mcp-security-scanning/?utm_source=thenewstack&utm_medium=skills_library_moment&utm_campaign=skills_library_enforcement&utm_content=github_mcp_security&campaign_variant=mcp_security&offer_code=TNS-GITHUB_MCP_SECURITY&cta_id=tns_github_mcp_security_reply&cta_placement=source_article&surface=skills_library_enforcement",
+      "sourceUrl": "https://thenewstack.io/github-mcp-security-scanning/",
+      "evidenceSource": "The New Stack: GitHub MCP security scanning",
+      "operatorUse": "Use for MCP safety replies: security checks are moving into the tool layer, and ThumbGate adds feedback-derived pre-action gates for repeated workflow failures.",
+      "buyerSignal": "Teams connecting agents to GitHub, databases, cloud APIs, secrets, dependency scanners, and MCP servers.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "appOrigin": "https://thumbgate-production.up.railway.app",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ]
+    },
+    {
+      "key": "thumbgate_setup_path",
+      "name": "ThumbGate proof-backed setup guide",
+      "url": "https://thumbgate-production.up.railway.app/guide?utm_source=thenewstack&utm_medium=skills_library_moment&utm_campaign=skills_library_enforcement&utm_content=setup_guide&campaign_variant=proof_backed_setup&offer_code=TNS-SKILLS_SETUP&cta_id=tns_skills_setup_guide&cta_placement=operator_pack&surface=skills_library_enforcement",
+      "sourceUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/public/guide.html",
+      "evidenceSource": "public/guide.html",
+      "operatorUse": "Use only after the buyer accepts the skills-library-to-enforcement thesis and wants to try one local workflow.",
+      "buyerSignal": "They can name one repeated AI-agent mistake that should become a pre-action gate.",
+      "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
+      "appOrigin": "https://thumbgate-production.up.railway.app",
+      "proofUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "proofLinks": [
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+        "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      ]
+    }
+  ],
+  "followOnOffers": [
+    {
+      "key": "pro",
+      "label": "ThumbGate Pro",
+      "pricing": "$19/mo or $149/yr",
+      "buyer": "Solo operators who run a local agent skill library and want dashboard, export, and unlimited custom gate support after one blocked repeat is real.",
+      "cta": "https://thumbgate-production.up.railway.app/checkout/pro?utm_source=thenewstack&utm_medium=skills_library_moment&utm_campaign=skills_library_pro_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=TNS-SKILLS_PRO&cta_id=tns_skills_pro_checkout&cta_placement=post_pain&plan_id=pro&surface=skills_library_enforcement"
+    },
+    {
+      "key": "sprint",
+      "label": "Workflow Hardening Sprint",
+      "pricing": "Intake-led sprint, then Team at $49/seat/mo with 3-seat minimum after qualification",
+      "buyer": "Platform, DevEx, or security teams that already see repeated review comments, agent drift, shadow skills, or unsafe MCP tool use.",
+      "cta": "https://thumbgate-production.up.railway.app/?utm_source=thenewstack&utm_medium=skills_library_moment&utm_campaign=skills_library_sprint_follow_on&utm_content=workflow_sprint&campaign_variant=team_follow_on&offer_code=TNS-SKILLS_SPRINT&cta_id=tns_skills_sprint_intake&cta_placement=post_pain&surface=skills_library_enforcement#workflow-sprint-intake"
+    }
+  ],
+  "operatorQueue": [
+    {
+      "key": "x_reply_skills_library",
+      "audience": "X reply to The New Stack skills-library post",
+      "evidence": "The source article frames agent sprawl, shadow skills, and skill-health dashboards as live platform-team problems.",
+      "proofTrigger": "Only reply with the ThumbGate setup link if someone asks how to enforce repeated corrections, not on the first reply.",
+      "proofAsset": "https://thenewstack.io/engineering-team-skills-library/",
+      "nextAsk": "https://thumbgate-production.up.railway.app/guide?utm_source=thenewstack&utm_medium=x_reply&utm_campaign=skills_library_x_reply&utm_content=setup_guide&campaign_variant=x_reply&offer_code=TNS-SKILLS_X_REPLY&cta_id=tns_skills_x_reply&cta_placement=reply_followup&surface=skills_library_enforcement",
+      "recommendedMotion": "Reply with the enforcement thesis first; route to guide only after pain is confirmed."
+    },
+    {
+      "key": "linkedin_founder_post",
+      "audience": "LinkedIn founder post for DevEx and platform teams",
+      "evidence": "The market is already teaching buyers to care about skills libraries; ThumbGate should add the missing enforcement loop.",
+      "proofTrigger": "A commenter mentions repeated review comments, stale skills, unsafe MCP actions, or lack of visibility into agent behavior.",
+      "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "nextAsk": "https://thumbgate-production.up.railway.app/?utm_source=thenewstack&utm_medium=linkedin_post&utm_campaign=skills_library_linkedin&utm_content=workflow_sprint&campaign_variant=founder_post&offer_code=TNS-SKILLS_LINKEDIN&cta_id=tns_skills_linkedin_sprint&cta_placement=founder_post_followup&surface=skills_library_enforcement#workflow-sprint-intake",
+      "recommendedMotion": "Founder post -> comments -> qualify one repeated workflow failure -> sprint intake."
+    },
+    {
+      "key": "platform_team_dm",
+      "audience": "Platform or DevEx lead discussing skills libraries",
+      "evidence": "Current revenue-loop state is verified-customer-revenue-zero; direct conversations matter more than passive clicks.",
+      "proofTrigger": "They can name the skills source, the agent surface, and one repeated correction they want blocked.",
+      "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+      "nextAsk": "https://thumbgate-production.up.railway.app/?utm_source=thenewstack&utm_medium=operator_outreach&utm_campaign=skills_library_platform_dm&utm_content=workflow_sprint&campaign_variant=platform_dm&offer_code=TNS-SKILLS_PLATFORM_DM&cta_id=tns_skills_platform_dm&cta_placement=dm_followup&surface=skills_library_enforcement#workflow-sprint-intake",
+      "recommendedMotion": "Ask for one repeated correction; sell one workflow-hardening sprint, not generic observability."
+    }
+  ],
+  "outreachDrafts": [
+    {
+      "channel": "X",
+      "audience": "Public reply",
+      "draft": "Skills libraries solve agent sprawl, but they still need a failure loop. The hard part is not writing one good skill. It is catching the same agent mistake twice, promoting the correction, and blocking it before the next tool call. That is the ThumbGate lane: feedback -> rule -> pre-action gate."
+    },
+    {
+      "channel": "LinkedIn",
+      "audience": "Founder post",
+      "draft": "The skills-library conversation is the right one. Teams need shared instructions for Cursor, Claude Code, Codex, Gemini CLI, and MCP agents. But instructions drift. Review comments repeat. Local skills go stale. The next layer is enforcement: capture repeated corrections, promote them into rules, and block risky actions before execution."
+    },
+    {
+      "channel": "DM",
+      "audience": "Platform lead",
+      "draft": "Saw your interest in agent skills libraries. The pattern I would test is one repeated correction from your team: a review comment, unsafe command, missing proof step, or MCP boundary. If it repeats twice, turn it into a pre-action gate and prove it blocks before the next tool call."
+    }
+  ],
+  "channelDrafts": [
+    {
+      "key": "x_reply",
+      "channel": "X",
+      "format": "reply",
+      "audience": "The New Stack skills-library thread",
+      "evidenceSummary": "The thread/article gives the market language: skills libraries, shadow skills, stale skills, agent quality signals.",
+      "cta": "https://thumbgate-production.up.railway.app/guide?utm_source=thenewstack&utm_medium=x_reply&utm_campaign=skills_library_x_reply&utm_content=setup_guide&campaign_variant=x_reply&offer_code=TNS-SKILLS_X_REPLY&cta_id=tns_skills_x_reply&cta_placement=reply_followup&surface=skills_library_enforcement",
+      "proofTiming": "No proof links in the first reply; add the setup guide only when someone asks how to enforce corrections.",
+      "draft": "Skills libraries solve agent sprawl. The next layer is enforcement: when the same correction repeats, promote it into a rule and make it a pre-action gate before the next risky tool call runs."
+    },
+    {
+      "key": "linkedin_post",
+      "channel": "LinkedIn",
+      "format": "founder post",
+      "audience": "DevEx, platform, and internal developer portal teams",
+      "evidenceSummary": "The New Stack/Port/Red Hat/GitHub coverage validates the category without requiring ThumbGate to claim traction.",
+      "cta": "https://thumbgate-production.up.railway.app/?utm_source=thenewstack&utm_medium=linkedin_post&utm_campaign=skills_library_linkedin&utm_content=workflow_sprint&campaign_variant=founder_post&offer_code=TNS-SKILLS_LINKEDIN&cta_id=tns_skills_linkedin_sprint&cta_placement=founder_post_followup&surface=skills_library_enforcement#workflow-sprint-intake",
+      "proofTiming": "Offer the sprint only after a commenter names one repeated failure or review comment.",
+      "draft": "A skills library tells agents how your company works. ThumbGate adds the failure loop: repeated correction -> reusable rule -> pre-action gate. That is how a review comment stops being tribal knowledge and starts blocking the next bad tool call."
+    },
+    {
+      "key": "platform_dm",
+      "channel": "DM",
+      "format": "direct outreach",
+      "audience": "Platform lead with visible AI-agent governance work",
+      "evidenceSummary": "Use when the prospect already talks about skills, MCP safety, internal developer portals, or agent sprawl.",
+      "cta": "https://thumbgate-production.up.railway.app/?utm_source=thenewstack&utm_medium=operator_outreach&utm_campaign=skills_library_platform_dm&utm_content=workflow_sprint&campaign_variant=platform_dm&offer_code=TNS-SKILLS_PLATFORM_DM&cta_id=tns_skills_platform_dm&cta_placement=dm_followup&surface=skills_library_enforcement#workflow-sprint-intake",
+      "proofTiming": "Ask one diagnostic question before sending links.",
+      "draft": "What is the repeated agent correction your team is tired of making? If there is one review comment or unsafe action that keeps coming back, that is the cleanest candidate for a ThumbGate pre-action gate."
+    }
+  ],
+  "measurementPlan": {
+    "northStar": "skills_library_to_qualified_workflow",
+    "policy": "Count a win only when a skills-library conversation produces a named repeated failure, tracked proof click, Pro checkout start, or workflow sprint intake.",
+    "minimumUsefulSignal": "One public reply or DM where the buyer names shadow skills, repeated review comments, MCP safety, stale agent instructions, or missing enforcement.",
+    "strongSignal": "One qualified Workflow Hardening Sprint intake tied to a skills-library, MCP safety, or agent-sprawl workflow.",
+    "metrics": [
+      "x_reply_engagement",
+      "linkedin_comment_replies",
+      "tracked_setup_guide_clicks",
+      "skills_library_sprint_intakes",
+      "named_repeated_failure_count",
+      "proof_clicks_after_pain_confirmed"
+    ],
+    "guardrails": [
+      "Do not claim ThumbGate is featured, endorsed, or mentioned by The New Stack, Port, Red Hat, or GitHub.",
+      "Do not claim revenue, customers, or paid traction from this campaign without non-operator buyer provenance.",
+      "Do not lead with proof links before the buyer confirms pain."
+    ],
+    "milestones": [
+      {
+        "window": "24h",
+        "goal": "Publish one X reply and one LinkedIn founder post with tracked follow-up links prepared.",
+        "decisionRule": "Continue only if there is at least one reply, profile click, guide click, or named workflow pain."
+      },
+      {
+        "window": "7d",
+        "goal": "Convert at least one skills-library conversation into a named repeated failure and sprint-intake offer.",
+        "decisionRule": "If there are clicks but no named pain, rewrite the CTA around one repeated review comment."
+      }
+    ],
+    "doNotCountAsSuccess": [
+      "Likes without replies",
+      "Article references without tracked clicks",
+      "Checkout starts without verified customer provenance",
+      "Generic agent-sprawl comments that do not name a workflow"
+    ]
+  },
+  "proofLinks": [
+    "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md",
+    "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+  ]
+}

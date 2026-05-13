@@ -153,6 +153,46 @@ test('post-first-dollar directive downgrades to historical proof language when h
   assert.ok(directive.actions.some((entry) => /current live revenue/i.test(entry)));
 });
 
+test('payment-path activity without customer provenance does not claim revenue', () => {
+  const catalog = buildMotionCatalog(buildRevenueLinks());
+  const directive = deriveRevenueDirective({
+    revenue: { paidOrders: 1, bookedRevenueCents: 1900, customerProvenanceVerified: false },
+    trafficMetrics: {},
+    signups: {},
+    pipeline: {},
+  }, catalog);
+
+  assert.equal(directive.state, 'payment-path-unverified-no-customer-revenue');
+  assert.match(directive.headline, /verified customer revenue is still zero/i);
+  assert.ok(directive.actions.some((entry) => /operator test, refund, or unknown/i.test(entry)));
+});
+
+test('billing verification distinguishes unverified payment-path activity', () => {
+  const unverified = buildBillingVerification({
+    source: 'local-unverified',
+    fallbackReason: 'Hosted operational summary is not configured.',
+    snapshot: {
+      paidOrders: 1,
+      bookedRevenueCents: 1900,
+      customerProvenanceVerified: false,
+    },
+  });
+  const verifiedHistorical = buildBillingVerification({
+    source: 'local',
+    fallbackReason: 'Hosted operational summary is not configured.',
+    snapshot: {
+      paidOrders: 2,
+      bookedRevenueCents: 2000,
+      customerProvenanceVerified: true,
+    },
+  });
+
+  assert.equal(unverified.mode, 'payment-path-unverified');
+  assert.match(unverified.label, /fell back to unverified local metrics/);
+  assert.equal(verifiedHistorical.mode, 'historical-local');
+  assert.match(verifiedHistorical.label, /Customer-provenance-verified booked revenue exists/);
+});
+
 test('historical commercial truth helpers parse, read, apply, and format verified revenue proof', () => {
   const markdown = [
     '# Commercial truth',

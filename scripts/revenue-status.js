@@ -161,6 +161,8 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
   const runtimePresence = hostedAudit?.runtimePresence || {};
   const runtimePresenceKnown = Boolean(hostedAudit?.runtimePresenceKnown !== false);
   const traffic30 = trailing30?.trafficMetrics || {};
+  const ctas30 = trailing30?.ctas || {};
+  const signups30 = trailing30?.signups || {};
   const revenue30 = trailing30?.revenue || {};
 
   const trackingImplemented = Boolean(
@@ -170,7 +172,18 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
   const telemetryIngressWorking = Boolean(publicProbe?.telemetryPing?.status === 204);
   const hostedSummaryWorking = Boolean(today?.status === 200 && trailing30?.status === 200);
   const hostedTrafficObserved = Number(traffic30.visitors || 0) > 0 || Number(traffic30.pageViews || 0) > 0;
-  const hostedRevenueObserved = Number(revenue30.paidOrders || 0) > 0 || Number(revenue30.bookedRevenueCents || 0) > 0;
+  const paymentPathActivityObserved = Number(revenue30.paidOrders || 0) > 0
+    || Number(revenue30.bookedRevenueCents || 0) > 0;
+  const verifiedCustomerRevenueObserved = paymentPathActivityObserved
+    && revenue30.customerProvenanceVerified === true;
+  const checkoutStarts30 = Number(traffic30.checkoutStarts || ctas30.checkoutStarts || 0);
+  const uniqueCheckoutStarters30 = Number(ctas30.uniqueCheckoutStarters || signups30.uniqueLeads || 0);
+  const checkoutCompletions30 = Number(ctas30.successPageViews || 0)
+    + Number(ctas30.paidConfirmations || 0);
+  const checkoutCompletionRate30 = checkoutStarts30 > 0
+    ? checkoutCompletions30 / checkoutStarts30
+    : 0;
+  const botDeflections30 = Number(ctas30.checkoutBotDeflections || 0);
   const gaRuntimeMissing = runtimePresenceKnown && !runtimePresence.THUMBGATE_GA_MEASUREMENT_ID;
   const sprintCheckoutRuntimeMissing = runtimePresenceKnown && (
     !runtimePresence.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL ||
@@ -183,8 +196,12 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
       primaryIssue = 'ga4_runtime_config_gap';
     } else if (sprintCheckoutRuntimeMissing) {
       primaryIssue = 'paid_sprint_checkout_config_gap';
-    } else if (hostedRevenueObserved) {
-      primaryIssue = 'hosted_revenue_observed';
+    } else if (verifiedCustomerRevenueObserved) {
+      primaryIssue = 'verified_customer_revenue_observed';
+    } else if (paymentPathActivityObserved) {
+      primaryIssue = 'payment_path_unverified_no_customer_revenue';
+    } else if (checkoutStarts30 > 0) {
+      primaryIssue = 'checkout_completion_gap';
     } else {
       primaryIssue = 'conversion_or_pricing_gap';
     }
@@ -219,16 +236,41 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
     gaps.push('GA event hooks exist in the page, but the GA loader script is absent');
   }
 
+  const bottlenecks = [];
+  if (hostedTrafficObserved && checkoutStarts30 === 0) {
+    bottlenecks.push('Traffic exists, but no checkout starts were observed in the trailing 30-day window.');
+  }
+  if (checkoutStarts30 > 0 && checkoutCompletions30 === 0) {
+    bottlenecks.push('Checkout starts exist, but no success page views or paid confirmations were observed in the trailing 30-day window.');
+  }
+  if (uniqueCheckoutStarters30 > 0 && !verifiedCustomerRevenueObserved) {
+    bottlenecks.push('Unique checkout starters exist, but verified non-operator customer revenue is still zero.');
+  }
+  if (paymentPathActivityObserved && !verifiedCustomerRevenueObserved) {
+    bottlenecks.push('Payment-path activity exists, but it is not customer revenue until non-operator buyer provenance is verified.');
+  }
+  if (botDeflections30 > 0) {
+    bottlenecks.push('Checkout bot deflections are nonzero, so raw checkout-start counts include bot/noise pressure unless filtered.');
+  }
+
   return {
     trackingImplemented,
     telemetryIngressWorking,
     hostedSummaryWorking,
     hostedTrafficObserved,
-    hostedRevenueObserved,
+    hostedRevenueObserved: paymentPathActivityObserved,
+    paymentPathActivityObserved,
+    verifiedCustomerRevenueObserved,
+    checkoutStarts30,
+    uniqueCheckoutStarters30,
+    checkoutCompletions30,
+    checkoutCompletionRate30,
+    botDeflections30,
     runtimePresenceKnown,
     hostedAuditMethod: hostedAudit?.auditMethod || 'unknown',
     primaryIssue,
     gaps,
+    bottlenecks,
   };
 }
 
@@ -281,7 +323,9 @@ function formatReport(report) {
     `Telemetry ingress working: ${report.diagnosis.telemetryIngressWorking ? 'yes' : 'no'}`,
     `Hosted summary working: ${report.diagnosis.hostedSummaryWorking ? 'yes' : 'no'}`,
     `Hosted traffic observed: ${report.diagnosis.hostedTrafficObserved ? 'yes' : 'no'}`,
-    `Hosted revenue observed: ${report.diagnosis.hostedRevenueObserved ? 'yes' : 'no'}`,
+    `Payment-path activity observed: ${report.diagnosis.paymentPathActivityObserved ? 'yes' : 'no'}`,
+    `Verified customer revenue observed: ${report.diagnosis.verifiedCustomerRevenueObserved ? 'yes' : 'no'}`,
+    `30d checkout completion rate: ${formatRatio(report.diagnosis.checkoutCompletionRate30)}`,
     `Hosted audit method: ${report.diagnosis.hostedAuditMethod}`,
     `Railway runtime inspected: ${report.diagnosis.runtimePresenceKnown ? 'yes' : 'no'}`,
     '',
@@ -302,6 +346,14 @@ function formatReport(report) {
     lines.push('Gaps:');
     for (const gap of report.diagnosis.gaps) {
       lines.push(`- ${gap}`);
+    }
+  }
+
+  if (Array.isArray(report.diagnosis.bottlenecks) && report.diagnosis.bottlenecks.length) {
+    lines.push('');
+    lines.push('Why no money:');
+    for (const bottleneck of report.diagnosis.bottlenecks) {
+      lines.push(`- ${bottleneck}`);
     }
   }
 

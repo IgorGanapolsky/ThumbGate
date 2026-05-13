@@ -84,6 +84,10 @@ The revenue loop emits these operator artifacts in that folder:
 - `gemini-cli-demand-pack.md` for Gemini CLI memory-demand, local-first, and cloud-workflow conversion copy
 - `gemini-cli-demand-pack.json` for the same Gemini operator pack in machine-readable form
 - `gemini-cli-operator-queue.csv` for Gemini-specific queue rows and next asks
+- `skills-library-enforcement-pack.md` for The New Stack skills-library narrative, X reply, LinkedIn post, and platform-DM conversion copy
+- `skills-library-enforcement-pack.json` for the same skills-library operator pack in machine-readable form
+- `skills-library-operator-queue.csv` for skills-library reply, founder-post, and platform-DM next asks
+- `skills-library-channel-drafts.csv` for X, LinkedIn, and DM drafts with tracked CTAs and proof timing
 - `roo-sunset-demand-pack.md` for Roo-to-Cline migration demand, proof sequencing, and paid-intent copy
 - `roo-sunset-demand-pack.json` for the same Roo migration operator pack in machine-readable form
 - `roo-sunset-operator-queue.csv` for Roo migration queue rows and next asks
