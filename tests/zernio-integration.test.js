@@ -185,7 +185,52 @@ describe('zernio publisher', () => {
 
   it('safeLogValue strips control characters from untrusted Zernio values', () => {
     assert.equal(safeLogValue('post_1\r\nFORGED\tline'), 'post_1  FORGED line');
+    assert.equal(safeLogValue('post_1\\r\\nFORGED\\tline'), 'post_1  FORGED line');
     assert.equal(safeLogValue('abcdef', 3), 'abc');
+  });
+
+  it('publishPost logs over-limit platform blocks before dispatch', async () => {
+    const originalError = console.error;
+    const messages = [];
+    console.error = (message) => messages.push(String(message));
+    global.fetch = async () => {
+      throw new Error('fetch should not run for over-limit content');
+    };
+
+    try {
+      const result = await publishPost(
+        'ThumbGate launch update '.repeat(20),
+        [{ platform: 'bluesky', accountId: 'acc_1' }],
+      );
+
+      assert.equal(result.blocked, true);
+      assert.match(messages.join('\n'), /bluesky/);
+      assert.doesNotMatch(messages.join('\n'), /\r|\nFORGED|\t/);
+    } finally {
+      console.error = originalError;
+    }
+  });
+
+  it('publishPost sanitizes duplicate platform names before logging', async () => {
+    const originalLog = console.log;
+    const messages = [];
+    console.log = (message) => messages.push(String(message));
+    global.fetch = async () => ({
+      ok: true,
+      json: async () => ({ id: 'post_dup_1' }),
+    });
+
+    try {
+      const content = 'This is test content long enough to pass the social quality gate check';
+      await publishPost(content, [{ platform: 'twitter\r\nFORGED', accountId: 'acc_1' }]);
+      const second = await publishPost(content, [{ platform: 'twitter\r\nFORGED', accountId: 'acc_1' }]);
+
+      assert.equal(second.blocked, true);
+      assert.match(messages.join('\n'), /twitter  FORGED/);
+      assert.doesNotMatch(messages.join('\n'), /\r|\nFORGED|\t/);
+    } finally {
+      console.log = originalLog;
+    }
   });
 
   it('publishPost throws a typed quota error when the Zernio plan limit is reached', async () => {
