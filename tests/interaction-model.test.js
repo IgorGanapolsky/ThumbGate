@@ -11,6 +11,7 @@ const {
   getInteractionEventsPath,
   loadInteractionEvents,
   normalizeInteractionEvent,
+  normalizeInteractionCheckKey,
   buildInteractionState,
   evaluateInteractionForegroundGate,
   reviewInteractionState,
@@ -23,6 +24,11 @@ function tempFeedbackDir() {
 function event(type, payload, occurredAt = '2026-05-13T15:00:00.000Z') {
   return normalizeInteractionEvent({ type, payload, occurredAt, source: 'test' });
 }
+
+test('normalizeInteractionCheckKey trims separators without backtracking-prone regex', () => {
+  assert.equal(normalizeInteractionCheckKey('  SonarCloud Code Analysis  '), 'sonarcloud_code_analysis');
+  assert.equal(normalizeInteractionCheckKey('___'), 'unknown');
+});
 
 test('interaction event store appends sanitized JSONL events', () => {
   const feedbackDir = tempFeedbackDir();
