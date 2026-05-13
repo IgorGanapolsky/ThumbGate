@@ -423,6 +423,7 @@ Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recal
 
 ## Docs
 
+- [**ThumbGate for Federal Agencies**](docs/FEDERAL.md) — pilot-ready posture, NIST 800-53 control mapping, OMB M-24-10 / EO 14110 alignment, ThumbGate-Core gov deployment mode, public/Core boundary invariants. Landing page: [thumbgate.ai/federal](https://thumbgate-production.up.railway.app/federal).
 - [First Dollar Playbook](docs/FIRST_DOLLAR_PLAYBOOK.md) — turning one painful workflow into the next booked pilot
 - [Commercial Truth](docs/COMMERCIAL_TRUTH.md) — pricing, claims, what we don't say
 - [Changeset Strategy](docs/CHANGESET_STRATEGY.md) — release notes and version bump enforcement
