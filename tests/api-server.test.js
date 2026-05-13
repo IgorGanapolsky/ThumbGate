@@ -1520,6 +1520,50 @@ test('checkout bootstrap route preserves attribution and records first-party tel
   assert.equal(bootstrapEvent.offerCode, 'REDDIT-EARLY');
 });
 
+// Interstitial-on-all-non-confirmed-GETs — eliminates zombie Stripe sessions
+// from raw GETs and gives every visitor a value-preview page with a "Pay
+// $19/mo with Stripe →" button. Pre-change: any GET on /checkout/pro 302'd
+// straight to a fresh cs_live_* session (creating Stripe noise + asking
+// confused humans for money before they saw the offer). Post-change: GETs
+// render the interstitial; only POST or ?confirm=1 triggers a Stripe session.
+
+test('checkout interstitial: GET without confirm=1 (human UA) renders the interstitial HTML, no Stripe session', async () => {
+  const res = await fetch(apiUrl('/checkout/pro?plan_id=pro&billing_cycle=monthly'), {
+    redirect: 'manual',
+    headers: {
+      'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      accept: 'text/html,application/xhtml+xml',
+    },
+  });
+  assert.equal(res.status, 200, 'human GET without confirm must NOT 302 to Stripe');
+  const body = await res.text();
+  assert.match(body, /Start ThumbGate Pro/i);
+  assert.match(body, /\$19/);
+  // Pay button must carry confirm=1 so the click triggers the Stripe path
+  assert.match(body, /\/checkout\/pro\?[^"]*confirm=1/);
+
+  // Telemetry: a human view (not a bot) emits checkout_interstitial_view,
+  // not checkout_bot_deflected.
+  const telemetryEvents = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
+  const interstitialEvent = telemetryEvents.find((entry) => entry.eventType === 'checkout_interstitial_view');
+  assert.ok(interstitialEvent, 'expected checkout_interstitial_view telemetry for human GET');
+});
+
+test('checkout interstitial: GET with confirm=1 (human UA) bypasses interstitial and proceeds to Stripe redirect', async () => {
+  const res = await fetch(
+    apiUrl('/checkout/pro?confirm=1&plan_id=pro&billing_cycle=monthly&customer_email=buyer%40example.com&utm_source=test_interstitial_bypass'),
+    {
+      redirect: 'manual',
+      headers: {
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      },
+    }
+  );
+  assert.equal(res.status, 302, 'confirm=1 must still trigger Stripe-session creation + 302');
+  const location = res.headers.get('location');
+  assert.ok(location, 'confirm=1 must return a Location header');
+});
+
 test('checkout bootstrap falls back to seeded journey cookies when query IDs are absent', async () => {
   const cookieHeader = [
     'thumbgate_visitor_id=visitor_cookie_checkout',
