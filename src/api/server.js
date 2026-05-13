@@ -4679,6 +4679,37 @@ async function addContext(){
         });
 
         if (result.url) {
+          appendBestEffortTelemetry(FEEDBACK_DIR, {
+            eventType: 'stripe_redirect_started',
+            clientType: 'web',
+            installId: bootstrapBody.installId,
+            acquisitionId: analyticsMetadata.acquisitionId,
+            visitorId: analyticsMetadata.visitorId,
+            sessionId: analyticsMetadata.sessionId,
+            traceId,
+            stripeSessionId: result.sessionId,
+            source: analyticsMetadata.source,
+            utmSource: analyticsMetadata.utmSource,
+            utmMedium: analyticsMetadata.utmMedium,
+            utmCampaign: analyticsMetadata.utmCampaign,
+            utmContent: analyticsMetadata.utmContent,
+            utmTerm: analyticsMetadata.utmTerm,
+            creator: analyticsMetadata.creator,
+            community: analyticsMetadata.community,
+            postId: analyticsMetadata.postId,
+            commentId: analyticsMetadata.commentId,
+            campaignVariant: analyticsMetadata.campaignVariant,
+            offerCode: analyticsMetadata.offerCode,
+            landingPath: analyticsMetadata.landingPath,
+            page: '/checkout/pro',
+            ctaId: analyticsMetadata.ctaId,
+            ctaPlacement: analyticsMetadata.ctaPlacement,
+            planId: analyticsMetadata.planId,
+            billingCycle: analyticsMetadata.billingCycle,
+            seatCount: analyticsMetadata.seatCount,
+            referrer: analyticsMetadata.referrer,
+            referrerHost: analyticsMetadata.referrerHost,
+          }, req.headers, 'stripe_redirect_started');
           res.writeHead(302, {
             ...responseHeaders,
             Location: result.url,
