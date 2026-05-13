@@ -68,6 +68,12 @@ const BARE_BOT_EMAIL = 'actions@github.com';
 // concrete recurring legitimate use case appears.
 const ALLOWED_BOT_BRANCH_PREFIXES = [
   'auto/', 'agent/', 'claude/', 'codex/', 'dependabot/', 'renovate/',
+  // trunk-merge/ is Trunk's own merge-queue test-branch namespace. Trunk
+  // adds automated commits (rebases, fixups) to these branches during the
+  // pre-merge test run; those commits are authored as actions@github.com
+  // by the runner Trunk uses, which would otherwise trip this very guard
+  // and prevent any PR from clearing the merge queue.
+  'trunk-merge/',
 ];
 
 async function ghFetch(urlPath) {
