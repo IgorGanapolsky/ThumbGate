@@ -221,9 +221,16 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 249 → 250 (2026-05-12) to ship the offline feedback-quality eval
   // script referenced by `npm run eval:feedback-quality`; otherwise the
   // published package would expose a dead script.
+  // Bumped 250 → 252 (2026-05-13) for the revenue-ROI bundle runtime
+  // additions: scripts/activation-tracker.js (required at runtime by
+  // scripts/feedback-loop.js for the activation_first_rule_promoted ping)
+  // and scripts/plausible-server-events.js (required at runtime by
+  // src/api/server.js for the /checkout/pro funnel events). Both ship in
+  // the public bundle because the packaged runtime loads them on every
+  // server boot; omitting them crashes published `thumbgate serve`.
   assert.ok(
-    manifest.fileCount <= 250,
-    `npm package should stay <= 250 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 252,
+    `npm package should stay <= 252 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -286,9 +293,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // landing-page governance setup intake copy. Observed package is ~3.479 MB.
   // Bumped 3.50 MB -> 3.52 MB (2026-05-07) for the four public Pro upgrade
   // bundle files under config/pro. Observed package is ~3.505 MB.
+  // Bumped 3.52 MB → 3.55 MB (2026-05-13) for the revenue-ROI runtime
+  // additions: scripts/activation-tracker.js (~4 KB) and
+  // scripts/plausible-server-events.js (~5 KB) — both required at runtime
+  // by feedback-loop.js / server.js respectively. Observed package is
+  // ~3.535 MB after this addition. 15 KB headroom for the next main rebase.
   assert.ok(
-    manifest.unpackedSize <= 3_520_000,
-    `npm package should stay <= 3.52 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_550_000,
+    `npm package should stay <= 3.55 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
