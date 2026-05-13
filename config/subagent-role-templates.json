@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "lifecycleGates": {
+    "defaultMaxRuntimeMinutes": 45,
+    "maxConcurrentRuns": 5,
+    "requireOwner": true,
+    "requireTask": true,
+    "requireDisjointWriteScopes": true,
+    "blockAgentToAgentMessagingByDefault": true,
+    "requireEvidenceForTerminalStatus": true
+  },
+  "roles": {
+    "pr_ci_checker": {
+      "description": "Read-only PR check inspector for CI state, failing jobs, and required-check blockers.",
+      "pattern": "fan_out",
+      "mcpProfile": "readonly",
+      "maxRuntimeMinutes": 20,
+      "writeScope": [],
+      "requiredEvidence": ["pr_number", "ci_status", "blocking_checks"]
+    },
+    "pr_review_checker": {
+      "description": "Read-only PR review inspector for unresolved reviews and requested changes.",
+      "pattern": "fan_out",
+      "mcpProfile": "readonly",
+      "maxRuntimeMinutes": 20,
+      "writeScope": [],
+      "requiredEvidence": ["pr_number", "review_state", "unresolved_threads"]
+    },
+    "pr_diff_summarizer": {
+      "description": "Read-only PR diff summarizer that reports blast radius and risk.",
+      "pattern": "fan_out",
+      "mcpProfile": "readonly",
+      "maxRuntimeMinutes": 20,
+      "writeScope": [],
+      "requiredEvidence": ["pr_number", "changed_files", "risk_summary"]
+    },
+    "pr_branch_hygiene": {
+      "description": "Read-only branch hygiene inspector for stale branches, merge base age, and orphan worktrees.",
+      "pattern": "fan_out",
+      "mcpProfile": "readonly",
+      "maxRuntimeMinutes": 20,
+      "writeScope": [],
+      "requiredEvidence": ["branch_name", "merge_base", "worktree_state"]
+    },
+    "ci_debugger": {
+      "description": "Bounded CI repair agent. It may edit only the files named in its assigned write scope.",
+      "pattern": "inline_tool_subagent",
+      "mcpProfile": "default",
+      "maxRuntimeMinutes": 45,
+      "requiredEvidence": ["failing_check", "root_cause", "verification_command"]
+    },
+    "landing_auditor": {
+      "description": "Read-only landing page visual and claim auditor.",
+      "pattern": "inline_tool_subagent",
+      "mcpProfile": "readonly",
+      "maxRuntimeMinutes": 25,
+      "writeScope": [],
+      "requiredEvidence": ["viewport", "screenshot_path", "claim_findings"]
+    },
+    "social_reply_drafter": {
+      "description": "Draft-only social reply agent. It may prepare replies but not publish without an explicit publish approval gate.",
+      "pattern": "persistent_pool",
+      "mcpProfile": "readonly",
+      "maxRuntimeMinutes": 30,
+      "writeScope": [],
+      "externalActions": "draft_only",
+      "requiredEvidence": ["channel", "source_url", "draft_reply"]
+    },
+    "revenue_ops": {
+      "description": "Revenue operations agent for analytics, checkout verification, and buyer-intent triage.",
+      "pattern": "persistent_pool",
+      "mcpProfile": "default",
+      "maxRuntimeMinutes": 60,
+      "externalActions": "approval_required",
+      "requiredEvidence": ["source", "buyer_signal", "revenue_status"]
+    },
+    "agent_team_experimental": {
+      "description": "Experimental multi-agent team pattern. Must stay opt-in and heavily logged.",
+      "pattern": "agent_team",
+      "mcpProfile": "locked",
+      "maxRuntimeMinutes": 30,
+      "allowAgentMessaging": true,
+      "maxAgentMessages": 6,
+      "requiredEvidence": ["team_goal", "message_log", "final_verification"]
+    }
+  }
+}
