@@ -100,7 +100,7 @@ function extractText(message) {
 function extractToolUseSummary(message) {
   if (!message || !Array.isArray(message.content)) return '';
   return message.content
-    .filter((b) => b && b.type === 'tool_use')
+    .filter((b) => b?.type === 'tool_use')
     .map((b) => {
       const name = b.name || 'tool';
       let summary = '';
@@ -171,8 +171,10 @@ function main() {
 // Path-resolve check instead of `require.main === module`. SonarCloud's
 // strict type inference (rule S3403) flags the === form as always-false
 // in CommonJS, and CLAUDE.md "Hard-Won Lessons" pins the path-based form
-// as the portable fix (incident 2026-04-21 / PR #1115).
-if (require.main && require('node:path').resolve(process.argv[1] || '') === __filename) {
+// as the portable fix (incident 2026-04-21 / PR #1115). Resolve BOTH sides
+// so the comparison is between two normalized absolute paths.
+const path = require('node:path');
+if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
   try {
     main();
   } catch {

@@ -36,8 +36,8 @@ EXPECTED_VERSION="$(node -e "console.log(require(process.argv[1]).version)" "${R
 export PROD_URL PROD_DOMAIN EXPECTED_VERSION
 
 RESPONSE="${CLAUDE_RESPONSE:-}"
-if [ -z "$RESPONSE" ]; then
-  if [ -f "$VERIFICATION_MARKER" ]; then
+if [[ -z "$RESPONSE" ]]; then
+  if [[ -f "$VERIFICATION_MARKER" ]]; then
     echo "✅ Last deployment verification: $(cat "$VERIFICATION_MARKER")"
   fi
   exit 0
@@ -96,7 +96,7 @@ node -e '
 ' 2>/dev/null
 NODE_EXIT=$?
 
-if [ "$NODE_EXIT" -eq 0 ] && [ -f "$VERIFICATION_MARKER" ]; then
+if [[ "$NODE_EXIT" -eq 0 ]] && [[ -f "$VERIFICATION_MARKER" ]]; then
   echo "✅ Last deployment verification: $(cat "$VERIFICATION_MARKER")"
 fi
 
