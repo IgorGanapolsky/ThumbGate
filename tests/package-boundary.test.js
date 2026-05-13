@@ -226,9 +226,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // and /gov aliases). Marketing surface; in-scope for the public shell per
   // CLAUDE.md "Public shell: CLI, hook installer, adapter configs, basic
   // local gate runner, public JSON schemas, marketing/docs." See docs/FEDERAL.md.
+  // Bumped 251 → 253 (2026-05-13) to ship memory-scope readiness checks while
+  // preserving one-file merge headroom for release branches.
   assert.ok(
-    manifest.fileCount <= 251,
-    `npm package should stay <= 251 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 253,
+    `npm package should stay <= 253 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

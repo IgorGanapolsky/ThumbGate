@@ -25,6 +25,7 @@ const GUIDE_FILES = [
   'guides/background-agent-governance.html',
   'guides/ai-agent-workflow-migration-checklist.html',
   'guides/ai-agent-governance-sprint.html',
+  'guides/ai-deployment-readiness.html',
   'guides/gpt-5-5-model-evaluation.html',
   'guides/browser-automation-safety.html',
   'guides/native-messaging-host-security.html',
@@ -187,6 +188,22 @@ describe('SEO guide and comparison pages', () => {
     ]);
     assert.ok(html.includes('$499'));
     assert.ok(html.includes('$1500'));
+  });
+
+  it('AI deployment readiness guide converts production rollout demand into paid sprint paths', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/ai-deployment-readiness.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('AI Deployment Readiness'));
+    assert.ok(html.includes('deployment companies'));
+    assert.ok(html.includes('governance and proof layer'));
+    assert.ok(html.includes('npx thumbgate background-governance --check --json'));
+    assert.ok(html.includes('workflow-sprint-intake'));
+    assert.ok(html.includes('Ready to buy the sprint?'));
+    assert.ok(hasCheckoutPath(html, '/00w14neyUcXA5pL5e33sI0e'));
+    assert.ok(hasCheckoutPath(html, '/fZu9AT76saPsg4pbCr3sI0f'));
   });
 
   it('GPT-5.5 model evaluation guide routes teams into benchmark-first model routing', () => {
