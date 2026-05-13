@@ -15,7 +15,7 @@ const GITHUB_API_BASE_URL = 'https://api.github.com/';
 const COMMERCIAL_TRUTH_PATH = path.resolve(__dirname, '..', 'docs', 'COMMERCIAL_TRUTH.md');
 const COMMERCIAL_TRUTH_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md';
 const VERIFICATION_EVIDENCE_LINK = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
-const HISTORICAL_COMMERCIAL_TRUTH_REVENUE_PATTERN = /Verified cumulative booked revenue through (?<asOfDate>[a-z]+ \d{1,2}, \d{4}) is \*\*\$(?<amountUsd>\d+(?:\.\d{2})?)\*\* from `(?<paidOrders>\d+)` reconciled Stripe charges/i;
+const HISTORICAL_COMMERCIAL_TRUTH_REVENUE_PATTERN = /Customer-provenance-verified booked revenue through (?<asOfDate>[a-z]+ \d{1,2}, \d{4}) is \*\*\$(?<amountUsd>\d+(?:\.\d{2})?)\*\* from `(?<paidOrders>\d+)` non-operator customer payments/i;
 const TARGET_SEARCH_QUERIES = [
   'search/repositories?q=Model+Context+Protocol+workflow+automation+sort:updated',
   'search/repositories?q=Model+Context+Protocol+approval+workflow+sort:updated',
@@ -652,6 +652,7 @@ function summarizeCommercialSnapshot(summary = {}) {
     sprintLeads: workflowSprintLeads.total || 0,
     qualifiedSprintLeads: qualifiedWorkflowSprintLeads.total || 0,
     latestPaidAt: revenue.latestPaidAt || null,
+    customerProvenanceVerified: revenue.customerProvenanceVerified === true,
   };
 }
 
@@ -677,7 +678,8 @@ function hasRevenueLoopCommercialSignal(summary = {}) {
 
 function hasRevenueLoopBookedRevenue(summary = {}) {
   const snapshot = summarizeCommercialSnapshot(summary);
-  return snapshot.paidOrders > 0 || snapshot.bookedRevenueCents > 0;
+  return snapshot.customerProvenanceVerified
+    && (snapshot.paidOrders > 0 || snapshot.bookedRevenueCents > 0);
 }
 
 function parseHistoricalCommercialTruthRevenue(markdown = '') {
@@ -728,6 +730,7 @@ function applyHistoricalRevenueProof(summary = {}, historicalProof = null) {
       ...revenue,
       paidOrders: historicalProof.paidOrders,
       bookedRevenueCents: historicalProof.bookedRevenueCents,
+      customerProvenanceVerified: true,
       historicalProof,
     },
   };
@@ -795,8 +798,10 @@ function isHostedRevenueSource(source = '') {
 function buildBillingVerification({ source, fallbackReason, snapshot = {} } = {}) {
   const normalizedSource = normalizeText(source);
   const normalizedFallback = normalizeText(fallbackReason);
-  const hasHistoricalRevenue = Number(snapshot.paidOrders || 0) > 0
+  const hasPaymentPathActivity = Number(snapshot.paidOrders || 0) > 0
     || Number(snapshot.bookedRevenueCents || 0) > 0;
+  const hasVerifiedCustomerRevenue = hasPaymentPathActivity
+    && snapshot.customerProvenanceVerified === true;
 
   if (isHostedRevenueSource(normalizedSource)) {
     return {
@@ -807,12 +812,17 @@ function buildBillingVerification({ source, fallbackReason, snapshot = {} } = {}
     };
   }
 
-  if (hasHistoricalRevenue) {
+  if (hasPaymentPathActivity) {
+    let label = 'Payment-path activity exists, but customer revenue is not verified in this run.';
+    if (hasVerifiedCustomerRevenue) {
+      label = 'Customer-provenance-verified booked revenue exists, but the current hosted billing summary was not verified in this run.';
+    } else if (normalizedSource === 'local-unverified') {
+      label = 'Payment-path activity exists, but customer revenue is not verified because this run fell back to unverified local metrics.';
+    }
+
     return {
-      mode: 'historical-local',
-      label: normalizedSource === 'local-unverified'
-        ? 'Historical booked revenue is verified, but this run fell back to unverified local metrics after hosted billing could not be verified.'
-        : 'Historical booked revenue is verified, but the current hosted billing summary was not verified in this run.',
+      mode: hasVerifiedCustomerRevenue ? 'historical-local' : 'payment-path-unverified',
+      label,
       source: normalizedSource || 'local',
       fallbackReason: normalizedFallback || null,
     };
@@ -924,7 +934,7 @@ async function resolveRevenueLoopSummary(options = {}) {
         summary: applyHistoricalRevenueProof(localResult.summary, historicalProof),
         fallbackReason: [
           normalizeText(localResult.fallbackReason),
-          `Historical commercial proof applied from ${historicalProof.sourceDocument}.`,
+          `Customer-provenance-verified commercial proof applied from ${historicalProof.sourceDocument}.`,
         ].filter(Boolean).join(' '),
         summaryWindow: 'historical-commercial-truth',
       };
@@ -941,7 +951,10 @@ function deriveRevenueDirective(
 ) {
   const snapshot = summarizeCommercialSnapshot(summary);
 
-  if (snapshot.paidOrders > 0 || snapshot.bookedRevenueCents > 0) {
+  if (
+    (snapshot.paidOrders > 0 || snapshot.bookedRevenueCents > 0)
+    && snapshot.customerProvenanceVerified
+  ) {
     const liveHostedRevenue = verification?.mode === 'live-hosted';
     return {
       state: 'post-first-dollar',
@@ -949,16 +962,31 @@ function deriveRevenueDirective(
       primaryMotion: motionCatalog.sprint.key,
       secondaryMotion: motionCatalog.pro.key,
       headline: liveHostedRevenue
-        ? 'Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.'
-        : 'Historical booked revenue is verified, but the current hosted billing summary is unavailable in this run. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.',
+        ? 'Verified customer revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.'
+        : 'Customer-provenance-verified booked revenue exists, but the current hosted billing summary is unavailable in this run. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.',
       actions: [
         'Reply to every qualified lead with one offer: "I will harden one AI-agent workflow for you."',
         'Use the proof pack after the buyer names the repeated workflow pain, not as the opener.',
         'Route buyers who only want a tool to the Pro monthly/annual checkout after the pain is qualified.',
         'Publish only booked revenue and paid-order proof from the billing summary or named pilot agreements.',
         ...(!liveHostedRevenue ? [
-          'When asked for current live revenue, cite the historical commercial proof and disclose that hosted billing was not verified in this run.',
+          'When asked for current live revenue, cite only customer-provenance-verified commercial proof and disclose that hosted billing was not verified in this run.',
         ] : []),
+      ],
+    };
+  }
+
+  if (snapshot.paidOrders > 0 || snapshot.bookedRevenueCents > 0) {
+    return {
+      state: 'payment-path-unverified-no-customer-revenue',
+      objective: 'Verify buyer provenance and convert real customer interest without claiming operator/test payments as revenue.',
+      primaryMotion: motionCatalog.sprint.key,
+      secondaryMotion: motionCatalog.pro.key,
+      headline: 'Payment-path activity exists, but verified customer revenue is still zero. Prove non-operator buyer provenance before claiming traction.',
+      actions: [
+        'Classify every paid provider event as customer, operator test, refund, or unknown before using it in commercial copy.',
+        'Follow up on every checkout start or lead within one business day with one concrete workflow-hardening offer.',
+        'Use Commercial Truth and Verification Evidence only after pain is confirmed to reduce buyer risk.',
       ],
     };
   }

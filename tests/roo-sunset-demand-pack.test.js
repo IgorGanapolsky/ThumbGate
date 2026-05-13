@@ -51,7 +51,7 @@ const REPORT_FIXTURE = {
   generatedAt: '2026-05-03T20:30:00.000Z',
   directive: {
     state: 'post-first-dollar',
-    headline: 'Verified booked revenue exists. Use the Roo shutdown window to create more paid intent without overstating traction.',
+    headline: 'Verified customer revenue is $0. Use the Roo shutdown window to create paid intent without overstating traction.',
   },
   targets: [
     {

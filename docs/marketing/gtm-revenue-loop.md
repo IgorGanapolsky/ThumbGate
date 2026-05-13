@@ -34,7 +34,7 @@ Outbound rule: do not treat posts as sales. A lead only moves when it is tracked
 
 ## GSD Directive
 - Objective: Scale the first-10-customers loop with direct workflow hardening and self-serve follow-up.
-- Headline: Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
+- Headline: Verified customer revenue is $0. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
 - Primary motion: sprint
 - Secondary motion: pro
 

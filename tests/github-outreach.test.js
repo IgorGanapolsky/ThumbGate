@@ -179,7 +179,7 @@ test('report core links inherit the current team pilot CTA when provided', () =>
     generatedAt: '2026-04-27T17:00:00.000Z',
     directive: {
       state: 'post-first-dollar',
-      headline: 'Verified booked revenue exists.',
+      headline: 'Verified customer revenue is $0.',
     },
     currentTruth: {
       teamPilotCta: 'https://thumbgate-production.up.railway.app/#custom-sprint-intake',

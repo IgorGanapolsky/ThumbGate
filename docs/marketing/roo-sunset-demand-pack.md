@@ -11,7 +11,7 @@ Turn Roo shutdown urgency into tracked migration clicks, proof-backed setup dema
 - State: post-first-dollar
 - Headline: Turn Roo shutdown urgency into memory-portable paid intent.
 - Short description: ThumbGate gives Roo migrants one durable asset to keep: local lesson memory that survives the move to Cline and becomes enforceable Pre-Action Checks.
-- Summary: Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
+- Summary: Verified customer revenue is $0. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
 
 ## Canonical Identity
 - Display name: ThumbGate

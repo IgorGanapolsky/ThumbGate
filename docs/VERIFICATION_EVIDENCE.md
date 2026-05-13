@@ -44,6 +44,48 @@ curl -H "Authorization: Bearer YOUR_KEY" \
 
 # Verification log
 
+## May 13, 2026: Secret-backed payment-path and customer-revenue re-audit
+
+Why this matters:
+
+- A local-only audit without secrets falsely looked like current evidence for missing payment instrumentation because `STRIPE_SECRET_KEY`, `THUMBGATE_API_KEY`, Plausible, and Zernio credentials were absent from the local shell.
+- GitHub repository secrets are configured for the revenue workflow, so secret-backed GitHub Actions artifacts are the reliable audit path for Stripe and hosted billing telemetry without exposing secret values.
+- The CEO confirmed the visible Stripe and hosted paid events are operator/test transactions, not customer payments. Customer revenue must stay `$0.00` unless buyer provenance proves a non-operator customer.
+
+Evidence source:
+
+- GitHub Actions run `25810912742` (`Daily Revenue Loop`, dry run) completed successfully on May 13, 2026.
+- Downloaded artifact: `revenue-observability-25810912742`.
+- Artifact files used: `revenue-status.json`, `stripe-live.json`, `plausible.log`, and `bluesky-monitor-status.json`.
+
+Observed hosted payment-path truth, not customer revenue:
+
+- `source`: `hosted-http-api`
+- `diagnosis.primaryIssue`: `hosted_revenue_observed`
+- `diagnosis.hostedRevenueObserved`: `true`
+- Today: `248` visitors, `210` page views, `49` checkout starts, `21` unique leads, `0` paid orders, `$0.00` booked revenue.
+- 30d: `4,084` visitors, `4,094` page views, `330` checkout starts, `735` unique leads, `4` paid orders, `$149.00` booked revenue.
+- Lifetime: `19,236` visitors, `17,335` page views, `1,143` checkout starts, `790` unique leads, `4` paid orders, `$149.00` booked revenue.
+- Latest paid timestamp: `2026-04-20T23:07:00.137Z`.
+
+Observed Stripe live payment telemetry, not customer revenue:
+
+- `status`: `ok`
+- `configured`: `true`
+- Gross lifetime: `$169.00`
+- Net lifetime: `$79.00`
+- Today: `$0.00`, `0` charges
+- Charges: `13` total, `3` paid, `9` refunded, `1` failed
+- Subscriptions: `1` active, `24` cancelled, `25` total, reported MRR `$149.00`
+- Checkout sessions: `50` total, `0` completed in the retrieved window
+
+Correct conclusion:
+
+- Verified customer revenue is `$0.00` as of May 13, 2026.
+- The Stripe and hosted paid events in this audit are operator/test transactions according to CEO correction, so they must not be described as money ThumbGate made.
+- Checkout and payment instrumentation is wired and secret-backed, but payment events alone are not commercial proof.
+- The commercial problem is no proven non-operator customer conversion despite traffic, leads, and checkout starts.
+
 ## April 30, 2026: machine-readable buyer-path schema for acquisition and conversion surfaces
 
 Scope:
@@ -840,9 +882,9 @@ Observed result:
 
 Requirements verified:
 
-- Historical product revenue is now proven through live Stripe reconciliation instead of being hidden behind a false-zero billing summary.
+- Historical payment-path activity was visible through live Stripe reconciliation, but later CEO correction classified those events as operator/test transactions rather than customer revenue.
 - The production checkout fallback no longer leaks buyers to Gumroad; the hosted `/checkout/pro` route now falls back to Stripe.
-- The repo truth surface now matches live production: the MCP has made money historically, but it is not making booked money on March 19, 2026.
+- The repo truth surface now distinguishes payment-path telemetry from customer revenue; customer revenue requires non-operator buyer provenance.
 
 ## March 18, 2026: Open SWE-style internal-agent bootstrap, sandbox lane, and MCP/API parity
 

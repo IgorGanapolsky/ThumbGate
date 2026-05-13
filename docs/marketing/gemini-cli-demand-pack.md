@@ -11,7 +11,7 @@ Turn Gemini CLI memory demand and Google Cloud MCP guardrail demand into tracked
 - State: post-first-dollar
 - Headline: Turn Gemini CLI memory demand into enforced workflow safety.
 - Short description: ThumbGate gives Gemini CLI local-first memory that can become prevention rules and Pre-Action Checks before the next risky MCP call runs.
-- Summary: Gemini CLI demand in ThumbGate is guide-led: memory query first, then enforcement proof, then paid intent. Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
+- Summary: Gemini CLI demand in ThumbGate is guide-led: memory query first, then enforcement proof, then paid intent. Verified customer revenue is $0. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
 
 ## Canonical Identity
 - Display name: ThumbGate

@@ -125,7 +125,7 @@ test('revenue directives switch once interest or paid orders exist', () => {
     pipeline: {},
   }, catalog);
   const postFirstDollar = deriveRevenueDirective({
-    revenue: { paidOrders: 1, bookedRevenueCents: 4900 },
+    revenue: { paidOrders: 1, bookedRevenueCents: 4900, customerProvenanceVerified: true },
     trafficMetrics: {},
     signups: {},
     pipeline: {},
@@ -134,13 +134,13 @@ test('revenue directives switch once interest or paid orders exist', () => {
   assert.equal(pipelineActive.state, 'pipeline-active-no-revenue');
   assert.match(pipelineActive.headline, /paid conversion is still zero/);
   assert.equal(postFirstDollar.state, 'post-first-dollar');
-  assert.match(postFirstDollar.headline, /Verified booked revenue exists/);
+  assert.match(postFirstDollar.headline, /Verified customer revenue exists/);
 });
 
 test('post-first-dollar directive downgrades to historical proof language when hosted billing is not verified', () => {
   const catalog = buildMotionCatalog(buildRevenueLinks());
   const directive = deriveRevenueDirective({
-    revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+    revenue: { paidOrders: 2, bookedRevenueCents: 2000, customerProvenanceVerified: true },
     trafficMetrics: {},
     signups: {},
     pipeline: {},
@@ -149,7 +149,7 @@ test('post-first-dollar directive downgrades to historical proof language when h
   });
 
   assert.equal(directive.state, 'post-first-dollar');
-  assert.match(directive.headline, /Historical booked revenue is verified/);
+  assert.match(directive.headline, /Customer-provenance-verified booked revenue exists/);
   assert.ok(directive.actions.some((entry) => /current live revenue/i.test(entry)));
 });
 
@@ -157,7 +157,7 @@ test('historical commercial truth helpers parse, read, apply, and format verifie
   const markdown = [
     '# Commercial truth',
     '',
-    'Verified cumulative booked revenue through March 19, 2026 is **$20.00** from `2` reconciled Stripe charges.',
+    'Customer-provenance-verified booked revenue through March 19, 2026 is **$20.00** from `2` non-operator customer payments.',
   ].join('\n');
 
   const parsed = parseHistoricalCommercialTruthRevenue(markdown);
@@ -392,14 +392,14 @@ test('resolveRevenueLoopSummary selects the freshest hosted window with commerci
           },
           '30d': {
             status: 200,
-            revenue: { paidOrders: 6, bookedRevenueCents: 16900 },
+            revenue: { paidOrders: 6, bookedRevenueCents: 16900, customerProvenanceVerified: true },
             trafficMetrics: { checkoutStarts: 531 },
             signups: { uniqueLeads: 346 },
             pipeline: {},
           },
           lifetime: {
             status: 200,
-            revenue: { paidOrders: 6, bookedRevenueCents: 16900 },
+            revenue: { paidOrders: 6, bookedRevenueCents: 16900, customerProvenanceVerified: true },
             trafficMetrics: { checkoutStarts: 615 },
             signups: { uniqueLeads: 352 },
             pipeline: {},
@@ -441,14 +441,14 @@ test('resolveRevenueLoopSummary prefers booked revenue over checkout-only daily 
           },
           '30d': {
             status: 200,
-            revenue: { paidOrders: 6, bookedRevenueCents: 16900 },
+            revenue: { paidOrders: 6, bookedRevenueCents: 16900, customerProvenanceVerified: true },
             trafficMetrics: { checkoutStarts: 583 },
             signups: { uniqueLeads: 399 },
             pipeline: {},
           },
           lifetime: {
             status: 200,
-            revenue: { paidOrders: 6, bookedRevenueCents: 16900 },
+            revenue: { paidOrders: 6, bookedRevenueCents: 16900, customerProvenanceVerified: true },
             trafficMetrics: { checkoutStarts: 677 },
             signups: { uniqueLeads: 414 },
             pipeline: {},
@@ -526,7 +526,7 @@ test('resolveRevenueLoopSummary falls back to historical commercial truth revenu
   assert.equal(result.summary.revenue.paidOrders, 2);
   assert.equal(result.summary.revenue.bookedRevenueCents, 2000);
   assert.equal(result.summary.revenue.historicalProof.asOfDate, 'March 19, 2026');
-  assert.match(result.fallbackReason, /Historical commercial proof applied/);
+  assert.match(result.fallbackReason, /Customer-provenance-verified commercial proof applied/);
   assert.equal(deriveRevenueDirective(
     result.summary,
     buildMotionCatalog(buildRevenueLinks()),
@@ -564,7 +564,7 @@ test('resolveRevenueLoopSummary keeps revenue loop moving when local billing thr
   assert.equal(result.summary.revenue.paidOrders, 2);
   assert.equal(result.summary.revenue.bookedRevenueCents, 2000);
   assert.match(result.fallbackReason, /HTTP 401/);
-  assert.match(result.fallbackReason, /Historical commercial proof applied/);
+  assert.match(result.fallbackReason, /Customer-provenance-verified commercial proof applied/);
 });
 
 test('buildBillingVerification keeps local-unverified mode when no historical proof exists', () => {
@@ -611,6 +611,7 @@ test('argument and commercial snapshot helpers stay bounded and explicit', () =>
     sprintLeads: 7,
     qualifiedSprintLeads: 8,
     latestPaidAt: null,
+    customerProvenanceVerified: false,
   });
 });
 
@@ -1554,7 +1555,7 @@ test('operator handoff payload mirrors the ranked queue and sales commands in ma
     generatedAt: '2026-04-26T00:00:00.000Z',
     directive: {
       state: 'post-first-dollar',
-      headline: 'Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.',
+      headline: 'Verified customer revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.',
     },
     snapshot: {
       paidOrders: 2,
@@ -1751,14 +1752,14 @@ test('sales pipeline commands do not leak outreach instruction prefixes', () => 
     source: 'local',
     fallbackReason: null,
     summary: {
-      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000, customerProvenanceVerified: true },
       trafficMetrics: {},
       signups: {},
       pipeline: {},
     },
     motionCatalog: buildMotionCatalog(buildRevenueLinks()),
     directive: deriveRevenueDirective({
-      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000, customerProvenanceVerified: true },
       trafficMetrics: {},
       signups: {},
       pipeline: {},
@@ -1941,14 +1942,14 @@ test('self-serve targets generate self-serve sales-command notes instead of spri
     source: 'local',
     fallbackReason: null,
     summary: {
-      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000, customerProvenanceVerified: true },
       trafficMetrics: {},
       signups: {},
       pipeline: {},
     },
     motionCatalog: catalog,
     directive: deriveRevenueDirective({
-      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000, customerProvenanceVerified: true },
       trafficMetrics: {},
       signups: {},
       pipeline: {},
@@ -1990,14 +1991,14 @@ test('sprint target sales-command notes strip operator phrasing from the pain hy
     source: 'local',
     fallbackReason: null,
     summary: {
-      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000, customerProvenanceVerified: true },
       trafficMetrics: {},
       signups: {},
       pipeline: {},
     },
     motionCatalog: catalog,
     directive: deriveRevenueDirective({
-      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000, customerProvenanceVerified: true },
       trafficMetrics: {},
       signups: {},
       pipeline: {},
@@ -2128,14 +2129,14 @@ test('revenue loop report records billing verification context for historical lo
     source: 'local',
     fallbackReason: 'Hosted operational summary is not configured.',
     summary: {
-      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000, customerProvenanceVerified: true },
       trafficMetrics: { checkoutStarts: 1 },
       signups: {},
       pipeline: {},
     },
     motionCatalog: catalog,
     directive: deriveRevenueDirective({
-      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000, customerProvenanceVerified: true },
       trafficMetrics: { checkoutStarts: 1 },
       signups: {},
       pipeline: {},
@@ -2146,7 +2147,7 @@ test('revenue loop report records billing verification context for historical lo
   });
 
   assert.equal(report.verification.mode, 'historical-local');
-  assert.match(report.verification.label, /Historical booked revenue is verified/);
+  assert.match(report.verification.label, /Customer-provenance-verified booked revenue exists/);
 });
 
 test('operator payload surfaces historical revenue proof when billing falls back to commercial truth', () => {
@@ -2154,11 +2155,12 @@ test('operator payload surfaces historical revenue proof when billing falls back
   const catalog = buildMotionCatalog(links);
   const report = buildRevenueLoopReport({
     source: 'local-unverified',
-    fallbackReason: 'Hosted operational summary is not configured. Historical commercial proof applied from docs/COMMERCIAL_TRUTH.md.',
+    fallbackReason: 'Hosted operational summary is not configured. Customer-provenance-verified commercial proof applied from docs/COMMERCIAL_TRUTH.md.',
     summary: {
       revenue: {
         paidOrders: 2,
         bookedRevenueCents: 2000,
+        customerProvenanceVerified: true,
         historicalProof: {
           asOfDate: 'March 19, 2026',
           paidOrders: 2,
@@ -2172,7 +2174,7 @@ test('operator payload surfaces historical revenue proof when billing falls back
     },
     motionCatalog: catalog,
     directive: deriveRevenueDirective({
-      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000, customerProvenanceVerified: true },
       trafficMetrics: {},
       signups: {},
       pipeline: {},
@@ -2187,7 +2189,7 @@ test('operator payload surfaces historical revenue proof when billing falls back
     snapshotWindow: 'historical-commercial-truth',
   });
 
-  assert.match(payload.summary.billingVerification, /Historical booked revenue is verified/);
+  assert.match(payload.summary.billingVerification, /Customer-provenance-verified booked revenue exists/);
   assert.match(payload.summary.historicalRevenueProof, /March 19, 2026/);
   assert.match(payload.summary.historicalRevenueProof, /\$20\.00/);
   assert.match(markdown, /Revenue window: historical-commercial-truth/);
@@ -2707,7 +2709,7 @@ test('operator send-now export flattens ranked handoff rows for batch ops', () =
     generatedAt: '2026-04-25T00:00:00.000Z',
     directive: {
       state: 'post-first-dollar',
-      headline: 'Verified booked revenue exists.',
+      headline: 'Verified customer revenue exists.',
     },
     verification: {
       label: 'Live hosted billing summary verified for this run.',
@@ -2785,11 +2787,12 @@ test('operator send-now markdown includes historical proof when commercial truth
   const catalog = buildMotionCatalog(links);
   const report = buildRevenueLoopReport({
     source: 'local-unverified',
-    fallbackReason: 'Hosted operational summary is not configured. Historical commercial proof applied from docs/COMMERCIAL_TRUTH.md.',
+    fallbackReason: 'Hosted operational summary is not configured. Customer-provenance-verified commercial proof applied from docs/COMMERCIAL_TRUTH.md.',
     summary: {
       revenue: {
         paidOrders: 2,
         bookedRevenueCents: 2000,
+        customerProvenanceVerified: true,
         historicalProof: {
           asOfDate: 'March 19, 2026',
           paidOrders: 2,
@@ -2803,7 +2806,7 @@ test('operator send-now markdown includes historical proof when commercial truth
     },
     motionCatalog: catalog,
     directive: deriveRevenueDirective({
-      revenue: { paidOrders: 2, bookedRevenueCents: 2000 },
+      revenue: { paidOrders: 2, bookedRevenueCents: 2000, customerProvenanceVerified: true },
       trafficMetrics: {},
       signups: {},
       pipeline: {},
@@ -2818,7 +2821,7 @@ test('operator send-now markdown includes historical proof when commercial truth
     snapshotWindow: 'historical-commercial-truth',
   });
 
-  assert.match(markdown, /Billing verification: Historical booked revenue is verified/);
+  assert.match(markdown, /Billing verification: Customer-provenance-verified booked revenue exists/);
   assert.match(markdown, /Historical revenue proof: 2 paid order\(s\), \$20\.00 booked through March 19, 2026/);
 });
 

@@ -8,7 +8,7 @@ It is the qualification screen and send surface for the current Workflow Hardeni
 
 ## Current Queue
 - Revenue state: post-first-dollar
-- Headline: Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
+- Headline: Verified customer revenue is $0. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
 - Follow-ups now: 0
 - Warm discovery ready: 4
 - Self-serve closes ready: 3

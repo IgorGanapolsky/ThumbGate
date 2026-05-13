@@ -135,7 +135,12 @@ test('run emits formatted analytics snapshot from injected fetchers without netw
       }),
       fetchTelemetry: async () => ({
         latestSeenAt: '2026-03-30T19:40:00.000Z',
-        window: 'all',
+        window: {
+          window: '30d',
+          bounded: true,
+          startLocalDate: '2026-03-01',
+          endLocalDate: '2026-03-30',
+        },
         visitors: { byCreator: {}, bySource: {}, byTrafficChannel: {} },
         ctas: {
           byCreator: {},
@@ -165,6 +170,7 @@ test('run emits formatted analytics snapshot from injected fetchers without netw
   assert.equal(logs.length, 1);
   assert.match(logs[0], /Weekly downloads:\s+42/);
   assert.match(logs[0], /ThumbGate — Unified Analytics Snapshot/);
+  assert.match(logs[0], /Window:\s+30d \(2026-03-01\.\.2026-03-30\)/);
   assert.match(logs[0], /ProductHunt/);
   assert.match(logs[0], /Predictive Insights/);
 });

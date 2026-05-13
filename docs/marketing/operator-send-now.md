@@ -8,7 +8,7 @@ Pair this file with `operator-priority-handoff.md` when you need deeper account 
 
 ## Current Snapshot
 - Revenue state: post-first-dollar
-- Headline: Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
+- Headline: Verified customer revenue is $0. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
 - Billing verification: Live hosted billing summary verified for this run.
 - Paid orders: 4
 - Checkout starts: 78

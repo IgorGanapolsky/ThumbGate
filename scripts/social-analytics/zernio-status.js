@@ -108,6 +108,34 @@ function buildStatus(db, options = {}) {
   };
 }
 
+function buildUnavailableStatus(error, options = {}) {
+  const envWindow = Number(process.env.THUMBGATE_STATUS_WINDOW_HOURS);
+  const windowHours = options.windowHours
+    ?? (Number.isFinite(envWindow) && envWindow > 0 ? envWindow : 24);
+  const now = options.now ?? new Date();
+  const cutoff = new Date(now.getTime() - windowHours * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+  const message = error?.message || String(error || 'unknown error');
+
+  return {
+    generatedAt: now.toISOString(),
+    windowHours,
+    cutoffDate: cutoff,
+    totalRows: 0,
+    healthyPlatforms: 0,
+    expectedPlatforms: EXPECTED_PLATFORMS.length,
+    perPlatform: formatRowsForReport([]),
+    healthy: false,
+    unavailable: true,
+    unavailableReason: message,
+    runtime: {
+      nodeVersion: process.version,
+      nodeModuleVersion: process.versions.modules,
+    },
+  };
+}
+
 function renderStatus(status) {
   const header = [
     '=== Zernio Social Status ===',
@@ -128,31 +156,50 @@ function renderStatus(status) {
     return `${marker} ${platform} ${count}  ${fetched}`;
   });
 
-  const footer = status.healthy
-    ? ['', '✅ Zernio analytics are flowing.']
-    : [
-        '',
-        '❌ NO DATA in the last 24h.',
-        '   Likely causes:',
-        '     • ZERNIO_API_KEY missing or revoked',
-        '     • Zernio 402 "Analytics add-on required" paywall',
-        '     • No accounts connected in Zernio dashboard',
-        '   Run: node scripts/social-analytics/pollers/zernio.js',
-      ];
+  let footer;
+  if (status.unavailable) {
+    footer = [
+      '',
+      '❌ Social analytics database is unavailable.',
+      `   Reason: ${status.unavailableReason}`,
+      `   Runtime: Node ${status.runtime.nodeVersion}, module ABI ${status.runtime.nodeModuleVersion}`,
+      '   Likely causes:',
+      '     • node_modules was installed under a different Node major version',
+      '     • better-sqlite3 native bindings need to be rebuilt',
+      '   Run in a clean worktree with the repo Node runtime: npm ci --onnxruntime-node-install-cuda=skip',
+    ];
+  } else if (status.healthy) {
+    footer = ['', '✅ Zernio analytics are flowing.'];
+  } else {
+    footer = [
+      '',
+      '❌ NO DATA in the last 24h.',
+      '   Likely causes:',
+      '     • ZERNIO_API_KEY missing or revoked',
+      '     • Zernio 402 "Analytics add-on required" paywall',
+      '     • No accounts connected in Zernio dashboard',
+      '   Run: node scripts/social-analytics/pollers/zernio.js',
+    ];
+  }
 
   return [...header, ...rows, ...footer].join('\n');
 }
 
 function main() {
-  const db = initDb(process.env.THUMBGATE_SOCIAL_DB);
+  let db;
   try {
+    db = initDb(process.env.THUMBGATE_SOCIAL_DB);
     const status = buildStatus(db);
     console.log(renderStatus(status));
     if (status.healthy !== true) {
       process.exitCode = 1;
     }
+  } catch (err) {
+    const status = buildUnavailableStatus(err);
+    console.log(renderStatus(status));
+    process.exitCode = 1;
   } finally {
-    db.close();
+    if (db) db.close();
   }
 }
 
@@ -167,5 +214,6 @@ if (isEntrypoint) {
 module.exports = {
   EXPECTED_PLATFORMS,
   buildStatus,
+  buildUnavailableStatus,
   renderStatus,
 };

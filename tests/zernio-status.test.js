@@ -19,6 +19,7 @@ const path = require('node:path');
 const { initDb, upsertMetric } = require('../scripts/social-analytics/store');
 const {
   EXPECTED_PLATFORMS,
+  buildUnavailableStatus,
   buildStatus,
   renderStatus,
 } = require('../scripts/social-analytics/zernio-status');
@@ -106,6 +107,19 @@ test('renderStatus output includes failure-mode hints when unhealthy', () => {
     db.close();
     fs.rmSync(tmp, { recursive: true, force: true });
   }
+});
+
+test('renderStatus output includes native database remediation when unavailable', () => {
+  const status = buildUnavailableStatus(
+    new Error('The module better_sqlite3.node was compiled against a different Node.js version'),
+    { now: new Date('2026-05-13T12:00:00.000Z') }
+  );
+  const rendered = renderStatus(status);
+  assert.equal(status.healthy, false);
+  assert.equal(status.unavailable, true);
+  assert.match(rendered, /Social analytics database is unavailable/);
+  assert.match(rendered, /better-sqlite3 native bindings need to be rebuilt/);
+  assert.match(rendered, /npm ci --onnxruntime-node-install-cuda=skip/);
 });
 
 test('renderStatus output celebrates when healthy', () => {

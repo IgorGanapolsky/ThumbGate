@@ -106,6 +106,18 @@ function resolveProductHuntCount(primaryCounter = {}, secondaryCounter = {}) {
   return getCounterValue(secondaryCounter, 'producthunt');
 }
 
+function formatTelemetryWindow(window) {
+  if (!window) return 'all';
+  if (typeof window === 'string') return window;
+  if (typeof window === 'object' && window.window) {
+    if (window.bounded && window.startLocalDate && window.endLocalDate) {
+      return `${window.window} (${window.startLocalDate}..${window.endLocalDate})`;
+    }
+    return window.window;
+  }
+  return String(window);
+}
+
 async function collectAnalytics(fetchers = {}) {
   const fetchMonthly = fetchers.fetchNpmMonthly || fetchNpmMonthly;
   const fetchWeekly = fetchers.fetchNpmWeekly || fetchNpmWeekly;
@@ -219,8 +231,8 @@ function formatReport(monthly, weekly, github, npmMeta, telemetry = null, billin
   const productHuntCheckouts = telemetry
     ? resolveProductHuntCount(telemetry.ctas.checkoutStartsByTrafficChannel, telemetry.ctas.checkoutStartsBySource)
     : 0;
-  const telemetryWindow = telemetry && telemetry.window ? telemetry.window : 'all';
-  const telemetryLastSeen = telemetry && telemetry.latestSeenAt ? telemetry.latestSeenAt : 'none';
+  const telemetryWindow = formatTelemetryWindow(telemetry?.window);
+  const telemetryLastSeen = telemetry?.latestSeenAt || 'none';
   const creatorRows = formatCreatorRows(telemetry, billingSummary);
   const predictive = buildPredictiveInsights({
     telemetryAnalytics: telemetry || {},

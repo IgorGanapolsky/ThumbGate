@@ -1,7 +1,7 @@
 # Commercial Truth
 
 Status: current
-Updated: April 10, 2026
+Updated: May 13, 2026
 
 This document is the source of truth for product, pricing, traction, and proof claims in this repository.
 
@@ -16,7 +16,9 @@ This document is the source of truth for product, pricing, traction, and proof c
 - The open-source runtime now supports history-aware lesson distillation from up to 8 prior recorded entries in the current Claude auto-capture path, linked 60-second feedback sessions, and reflector rule proposals across CLI, hosted API, Cursor, and Claude Desktop surfaces.
 - The runtime now supports Workflow Sentinel blast-radius scoring plus Docker Sandboxes routing guidance for high-risk local actions, and the hosted path supports signed sandbox dispatch for isolated team automations.
 - Package publishing is governed by Changesets, SemVer, version-sync checks, and verification evidence; release claims should stay inspectable instead of being inferred from a diff.
-- Verified cumulative booked revenue through March 19, 2026 is **$20.00** from `2` reconciled Stripe charges tied to the current product; there is no evidence of any additional same-day booked charge beyond that cumulative total.
+- Verified customer revenue is **$0.00** as of May 13, 2026. The CEO confirmed the Stripe and hosted paid events visible in secret-backed audits are operator/test transactions, not customer payments.
+- Secret-backed audit run `25810912742` proves checkout and payment instrumentation exists: the hosted summary reports `4` payment-path paid events with a `$149.00` booked-field value, and Stripe live reports `$169.00` gross lifetime, `$79.00` net lifetime, `3` paid charges, `9` refunded charges, `1` failed charge, and `1` active subscription. Treat these as payment-path/test telemetry, not customer revenue, until provenance proves a non-operator buyer.
+- The last known payment-path event timestamp in the hosted summary is `2026-04-20T23:07:00.137Z`; do not imply paid customer momentum from it.
 - Engineering verification is strong and should be cited through `docs/VERIFICATION_EVIDENCE.md` and machine-readable proof reports.
 
 ## Product Tiers
@@ -69,9 +71,9 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 ## Proof policy
 
-- Use booked revenue, paid orders, or named pilot agreements for commercial proof.
+- Use customer-provenance-verified booked revenue, paid orders, or named pilot agreements for commercial proof.
 - Use the admin billing summary and CLI CFO output to distinguish `bookedRevenueCents` from `paidOrders`; not every paid provider event carries a verifiable amount by default.
-- Treat Stripe-reconciled charges as booked revenue proof; treat GitHub Marketplace paid events as booked revenue only when the webhook carries plan pricing or plan pricing is configured, otherwise treat them as paid-order proof until invoice amounts are reconciled.
+- Treat Stripe-reconciled charges as payment proof only until provenance proves a non-operator customer; treat GitHub Marketplace paid events as booked revenue only when the webhook carries plan pricing or plan pricing is configured and the buyer is not an operator/test account, otherwise treat them as payment-path proof until invoice amounts and buyer provenance are reconciled.
 - When legacy GitHub Marketplace rows were written before pricing capture shipped, repair them with `npx thumbgate repair-github-marketplace --write` once plan pricing is available; do not invent amounts without webhook evidence or configured plan prices.
 - Treat `workflowSprintLeads` as pipeline evidence only; qualified intake volume is useful for selling, but it is not revenue.
 - Use `docs/VERIFICATION_EVIDENCE.md`, `proof/compatibility/report.json`, and `proof/automation/report.json` for engineering proof.

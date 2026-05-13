@@ -11,7 +11,7 @@ Convert the current warm Reddit workflow-risk queue into replied conversations, 
 - State: post-first-dollar
 - Headline: Turn warm Reddit workflow-risk conversations into sprint-qualified paid intent.
 - Short description: ThumbGate gives warm Reddit DM outreach one honest offer: harden one AI-agent workflow with rollback safety, approval boundaries, and proof after pain is confirmed.
-- Summary: Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
+- Summary: Verified customer revenue is $0. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
 
 ## Canonical Identity
 - Display name: ThumbGate

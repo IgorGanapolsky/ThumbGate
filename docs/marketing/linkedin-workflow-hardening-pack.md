@@ -11,7 +11,7 @@ Turn LinkedIn workflow-risk conversations into tracked guide clicks, qualified w
 - State: post-first-dollar
 - Headline: Turn LinkedIn workflow-risk conversations into sprint-qualified paid intent.
 - Short description: ThumbGate gives founder-led LinkedIn outreach one honest offer: harden one AI-agent workflow with approval boundaries, rollback safety, and proof before wider rollout.
-- Summary: LinkedIn should carry one offer: workflow hardening for teams that already feel rollout risk. Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
+- Summary: LinkedIn should carry one offer: workflow hardening for teams that already feel rollout risk. Verified customer revenue is $0. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
 
 ## Canonical Identity
 - Display name: ThumbGate

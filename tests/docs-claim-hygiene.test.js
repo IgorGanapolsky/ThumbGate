@@ -48,6 +48,30 @@ const staleFreeTierPatterns = [
   /1 agent/i,
 ];
 
+const revenueTruthFiles = [
+  'docs/COMMERCIAL_TRUTH.md',
+  'docs/VERIFICATION_EVIDENCE.md',
+  'docs/OUTREACH_TARGETS.md',
+  'docs/marketing/gtm-revenue-loop.md',
+  'docs/marketing/operator-priority-handoff.md',
+  'docs/marketing/operator-send-now.md',
+  'docs/marketing/gtm-marketplace-copy.md',
+  'docs/marketing/claude-workflow-hardening-pack.md',
+  'docs/marketing/chatgpt-gpt-revenue-pack.md',
+  'docs/marketing/gemini-cli-demand-pack.md',
+  'docs/marketing/linkedin-workflow-hardening-pack.md',
+  'docs/marketing/reddit-dm-workflow-hardening-pack.md',
+  'docs/marketing/roo-sunset-demand-pack.md',
+];
+
+const unverifiedRevenueClaimPatterns = [
+  /Verified booked revenue exists/i,
+  /Historical booked revenue is verified/i,
+  /Historical commercial proof applied/i,
+  /has made money historically/i,
+  /not accurate to say there is no verified revenue/i,
+];
+
 test('active docs avoid brittle hard-coded verification metrics', () => {
   for (const relativePath of activeDocs) {
     const fullPath = path.join(projectRoot, relativePath);
@@ -107,4 +131,26 @@ test('commercial truth labels local enforcement and hosted telemetry boundaries'
   assert.match(truth, /GPT-5\.5 evaluation/i);
   assert.match(truth, /do not silently call provider APIs/i);
   assert.match(truth, /should not claim sub-processor coverage/i);
+});
+
+test('commercial surfaces do not claim revenue without customer provenance', () => {
+  for (const relativePath of revenueTruthFiles) {
+    const text = fs.readFileSync(path.join(projectRoot, relativePath), 'utf8');
+    for (const pattern of unverifiedRevenueClaimPatterns) {
+      assert.doesNotMatch(
+        text,
+        pattern,
+        `${relativePath} should not contain unverified revenue claim matching ${pattern}`,
+      );
+    }
+  }
+});
+
+test('commercial truth requires non-operator customer provenance for revenue proof', () => {
+  const truth = fs.readFileSync(path.join(projectRoot, 'docs/COMMERCIAL_TRUTH.md'), 'utf8');
+
+  assert.match(truth, /Verified customer revenue is \*\*\$0\.00\*\*/i);
+  assert.match(truth, /operator\/test transactions, not customer payments/i);
+  assert.match(truth, /customer-provenance-verified booked revenue/i);
+  assert.match(truth, /non-operator customer/i);
 });
