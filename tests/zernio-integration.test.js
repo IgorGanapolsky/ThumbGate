@@ -106,6 +106,7 @@ describe('zernio publisher', () => {
     isZernioQuotaError,
     publishPost,
     publishToAllPlatforms,
+    safeLogValue,
     schedulePost,
     uploadLocalMedia,
   } = publisher;
@@ -180,6 +181,11 @@ describe('zernio publisher', () => {
     assert.deepEqual(body.platforms, platforms);
 
     assert.equal(result.id, 'post_123');
+  });
+
+  it('safeLogValue strips control characters from untrusted Zernio values', () => {
+    assert.equal(safeLogValue('post_1\r\nFORGED\tline'), 'post_1  FORGED line');
+    assert.equal(safeLogValue('abcdef', 3), 'abc');
   });
 
   it('publishPost throws a typed quota error when the Zernio plan limit is reached', async () => {

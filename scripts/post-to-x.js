@@ -38,6 +38,11 @@ function safeLogValue(value, maxLength = 500) {
     .slice(0, maxLength);
 }
 
+function safeMetricCount(value) {
+  const count = Number(value);
+  return Number.isFinite(count) && count >= 0 ? Math.trunc(count) : 0;
+}
+
 // ---------------------------------------------------------------------------
 // OAuth helpers
 // ---------------------------------------------------------------------------
@@ -250,7 +255,7 @@ async function postThread(tweets, { dryRun = false } = {}) {
 
   console.log(`\n✅ Thread ${dryRun ? 'preview' : 'posted'}! ${tweets.length} tweets.`);
   if (!dryRun) {
-    console.log(`   https://x.com/IgorGanapolsky/status/${previousId}\n`);
+    console.log(`   https://x.com/IgorGanapolsky/status/${safeLogValue(previousId, 80)}\n`);
   }
 }
 
@@ -284,7 +289,7 @@ async function main() {
       results.forEach(t => {
         const metrics = t.public_metrics || {};
         console.log(formatSearchResult(t));
-        console.log(`    ↩ ${metrics.reply_count || 0}  🔁 ${metrics.retweet_count || 0}  ❤️ ${metrics.like_count || 0}\n`);
+        console.log(`    ↩ ${safeMetricCount(metrics.reply_count)}  🔁 ${safeMetricCount(metrics.retweet_count)}  ❤️ ${safeMetricCount(metrics.like_count)}\n`);
       });
     }
   } else if (command === '--reply') {
@@ -374,6 +379,7 @@ module.exports = {
   generateOAuthSignature,
   parseTweetsFromThread,
   formatSearchResult,
+  safeMetricCount,
   safeLogValue,
 };
 
