@@ -21,6 +21,20 @@ test('buildCommercialAlert returns null when revenue does not increase', () => {
     { source: 'local' }
   ), null);
 });
+
+test('safeLogJson strips control characters from remote billing payloads', () => {
+  const rendered = mw.safeLogJson({
+    fallbackReason: 'bad\r\nFORGED',
+    latestPaidOrder: {
+      orderId: 'ord_1\tINJECT',
+    },
+  });
+
+  assert.doesNotMatch(rendered, /\r|\nFORGED|\t/);
+  assert.match(rendered, /bad  FORGED/);
+  assert.match(rendered, /ord_1 INJECT/);
+});
+
 test('checkForCommercialChange persists state and records new paid activity', async () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-money-watch-'));
   const statePath = path.join(tmpDir, 'state.json');
