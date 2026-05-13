@@ -223,9 +223,15 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // published package would expose a dead script.
   // Bumped 250 → 251 (2026-05-13) to ship scripts/public-rate-limiter.js,
   // which src/api/server.js imports at startup for the public HTTP edge.
+  // Bumped 251 → 252 (2026-05-13) after merging main, which ships
+  // public/federal.html, the
+  // federal-agency lead-gen landing page served at /federal (also /government
+  // and /gov aliases). Marketing surface; in-scope for the public shell per
+  // CLAUDE.md "Public shell: CLI, hook installer, adapter configs, basic
+  // local gate runner, public JSON schemas, marketing/docs." See docs/FEDERAL.md.
   assert.ok(
-    manifest.fileCount <= 251,
-    `npm package should stay <= 251 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 252,
+    `npm package should stay <= 252 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -290,6 +296,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // bundle files under config/pro. Observed package is ~3.505 MB.
   // Bumped 3.52 MB -> 3.60 MB (2026-05-13) — CI build reproducibly a few KB
   // over local (line-ending normalization). Headroom-only, no new files.
+  // Bumped (kept at 3.60 MB) (2026-05-13) for public/federal.html, the
+  // federal-agency lead-gen landing page (~22 KB) served at /federal,
+  // /government, and /gov. Observed package is ~3.543 MB after the addition;
+  // still well inside the existing 3.60 MB ceiling, so no further bump needed.
+  // See docs/FEDERAL.md for the positioning brief this surface points to.
   assert.ok(
     manifest.unpackedSize <= 3_600_000,
     `npm package should stay <= 3.60 MB unpacked, got ${manifest.unpackedSize}`
