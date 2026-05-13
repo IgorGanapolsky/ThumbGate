@@ -72,6 +72,11 @@ The revenue loop emits these operator artifacts in that folder:
 - `chatgpt-gpt-revenue-pack.md` for the ChatGPT GPT acquisition lane, trust surfaces, and paid-intent handoff copy
 - `chatgpt-gpt-revenue-pack.json` for the same ChatGPT operator pack in machine-readable form
 - `chatgpt-gpt-operator-queue.csv` for the ChatGPT lane's open-GPT, builder-repair, and trust-boundary next asks
+- `chatgpt-product-feed-readiness-pack.md` for ChatGPT product-feed ad readiness, offer eligibility, and measurement guardrails
+- `chatgpt-product-feed-readiness-pack.json` for the same product-feed readiness pack in machine-readable form
+- `chatgpt-product-feed.csv` for SKU-like ThumbGate offer rows with tracked URLs, images, proof links, and conversion events
+- `chatgpt-product-feed-conversions.csv` for product-feed conversion events and success definitions
+- `chatgpt-product-feed-operator-queue.csv` for advertiser-interest, sample-feed, and conversion-wiring next asks
 - `aiventyx-marketplace-plan.md` for Aiventyx Free, Pro, and Teams marketplace submission copy
 - `aiventyx-marketplace-plan.json` for the same Aiventyx plan in machine-readable form
 - `aiventyx-marketplace-listings.csv` for dashboard-ready Aiventyx listing fields and attribution metadata

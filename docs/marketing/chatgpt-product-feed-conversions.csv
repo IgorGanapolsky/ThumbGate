@@ -1,0 +1,6 @@
+event,source,successDefinition
+chatgpt_product_feed_click,ChatGPT product-feed ad or organic product card,Tracked landing click with offer_id and cta_id preserved.
+install_command_copy,Free CLI and guide rows,User copied or clicked the install command after a product-feed visit.
+checkout_start_pro_monthly,Pro monthly row,A non-bot checkout start with visitor/session attribution.
+workflow_sprint_intake,Workflow Hardening Sprint row,Contactable lead names one repeated AI-agent workflow failure.
+verified_customer_revenue,Billing reconciliation,Non-operator buyer provenance exists; operator/test payments do not count.

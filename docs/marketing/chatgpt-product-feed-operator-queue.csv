@@ -1,0 +1,4 @@
+key,audience,evidence,nextAsk,blocker
+submit_advertiser_interest,OpenAI advertiser access,https://openai.com/advertisers,Register interest with ThumbGate legal/support URLs and product-feed sample ready.,Do not claim access until OpenAI approves the advertiser account.
+upload_offer_sample,Product-feed pilot sample,https://digiday.com/marketing/openai-makes-it-easier-to-run-shopping-ads-in-chatgpt/,Use 8 structured ThumbGate offer rows as the pilot sample; expand only if accepted.,"ThumbGate has service/software offers, not thousands of SKUs; keep feed concise and eligibility-filtered."
+wire_conversion_events,Paid AI measurement,docs/marketing/chatgpt-product-feed-conversions.csv,"Map product-feed offer_id to first-party telemetry, checkout start, sprint intake, and verified customer revenue.",No spend scale-up until conversion events separate operator/test payments from real customer provenance.
