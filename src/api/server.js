@@ -4919,13 +4919,13 @@ async function addContext(){
         fs.accessSync(FEEDBACK_DIR, fs.constants.W_OK);
         checks.feedbackDir = { ok: true };
       } catch (err) {
-        checks.feedbackDir = { ok: false, error: (err && err.code) || 'inaccessible' };
+        checks.feedbackDir = { ok: false, error: err?.code || 'inaccessible' };
         allOk = false;
       }
 
       // Check 2: hosted config resolves the canonical app origin.
       // If appOrigin is missing/empty, redirects + checkout flow break silently.
-      if (hostedConfig && hostedConfig.appOrigin) {
+      if (hostedConfig?.appOrigin) {
         checks.hostedConfig = { ok: true };
       } else {
         checks.hostedConfig = { ok: false, error: 'missing_appOrigin' };
@@ -4934,7 +4934,7 @@ async function addContext(){
 
       // Check 3: build metadata loaded. If BUILD_METADATA.buildSha is empty,
       // Railway didn't inject the deploy SHA — observability is degraded.
-      if (BUILD_METADATA && BUILD_METADATA.buildSha) {
+      if (BUILD_METADATA?.buildSha) {
         checks.buildMetadata = { ok: true };
       } else {
         checks.buildMetadata = { ok: false, error: 'missing_buildSha' };
@@ -4970,7 +4970,7 @@ async function addContext(){
           fs.accessSync(dir, fs.constants.W_OK);
           checks[label] = { ok: true };
         } catch (err) {
-          checks[label] = { ok: false, error: (err && err.code) || 'inaccessible' };
+          checks[label] = { ok: false, error: err?.code || 'inaccessible' };
           allOk = false;
         }
       }

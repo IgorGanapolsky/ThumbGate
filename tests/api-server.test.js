@@ -149,6 +149,28 @@ test('/health surfaces a per-check breakdown (no longer always-green theater)', 
   assert.equal(body.checks.buildMetadata.ok, true);
 });
 
+test('/health returns degraded when feedback dir is not writable', async () => {
+  const originalAccessSync = fs.accessSync;
+  fs.accessSync = (target, mode) => {
+    if (target === tmpFeedbackDir && mode === fs.constants.W_OK) {
+      const error = new Error('feedback dir not writable');
+      error.code = 'EACCES';
+      throw error;
+    }
+    return originalAccessSync(target, mode);
+  };
+
+  try {
+    const res = await fetch(apiUrl('/health'), { headers: authHeader });
+    assert.equal(res.status, 503);
+    const body = await res.json();
+    assert.equal(body.status, 'degraded');
+    assert.deepEqual(body.checks.feedbackDir, { ok: false, error: 'EACCES' });
+  } finally {
+    fs.accessSync = originalAccessSync;
+  }
+});
+
 test('/healthz surfaces a per-check breakdown', async () => {
   const res = await fetch(apiUrl('/healthz'), { headers: authHeader });
   const body = await res.json();
