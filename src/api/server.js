@@ -5007,11 +5007,49 @@ async function addContext(){
     }
 
     if (isGetLikeRequest && pathname === '/health') {
-      sendJson(res, 200, {
-        status: 'ok',
+      // History (2026-05-12): /health used to return status: 'ok' unconditionally
+      // with zero downstream checks. Uptime monitors saw "healthy" when Stripe
+      // was down, when feedback-dir was unwritable, when env was misconfigured.
+      // The fix is shallow but meaningful: probe each critical subsystem and
+      // surface failures with HTTP 503 + a per-check breakdown.
+      const checks = {};
+      let allOk = true;
+
+      // Check 1: feedback dir exists and is writable.
+      try {
+        const { FEEDBACK_DIR } = getFeedbackPaths();
+        fs.accessSync(FEEDBACK_DIR, fs.constants.W_OK);
+        checks.feedbackDir = { ok: true };
+      } catch (err) {
+        checks.feedbackDir = { ok: false, error: err?.code || 'inaccessible' };
+        allOk = false;
+      }
+
+      // Check 2: hosted config resolves the canonical app origin.
+      // If appOrigin is missing/empty, redirects + checkout flow break silently.
+      if (hostedConfig?.appOrigin) {
+        checks.hostedConfig = { ok: true };
+      } else {
+        checks.hostedConfig = { ok: false, error: 'missing_appOrigin' };
+        allOk = false;
+      }
+
+      // Check 3: build metadata loaded. If BUILD_METADATA.buildSha is empty,
+      // Railway didn't inject the deploy SHA — observability is degraded.
+      if (BUILD_METADATA?.buildSha) {
+        checks.buildMetadata = { ok: true };
+      } else {
+        checks.buildMetadata = { ok: false, error: 'missing_buildSha' };
+        allOk = false;
+      }
+
+      const statusCode = allOk ? 200 : 503;
+      sendJson(res, statusCode, {
+        status: allOk ? 'ok' : 'degraded',
         version: pkg.version,
         buildSha: BUILD_METADATA.buildSha,
         uptime: process.uptime(),
+        checks,
         deployment: {
           appOrigin: hostedConfig.appOrigin,
           billingApiBaseUrl: hostedConfig.billingApiBaseUrl,
@@ -5023,11 +5061,26 @@ async function addContext(){
     }
 
     if (isGetLikeRequest && pathname === '/healthz') {
+      // /healthz is the deeper internal probe — verifies feedback log + memory log
+      // paths exist and are writable. Returns 503 when either check fails.
       const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH } = requestFeedbackPaths;
-      sendJson(res, 200, {
-        status: 'ok',
+      const checks = {};
+      let allOk = true;
+      for (const [label, p] of [['feedbackLog', FEEDBACK_LOG_PATH], ['memoryLog', MEMORY_LOG_PATH]]) {
+        try {
+          const dir = path.dirname(p);
+          fs.accessSync(dir, fs.constants.W_OK);
+          checks[label] = { ok: true };
+        } catch (err) {
+          checks[label] = { ok: false, error: err?.code || 'inaccessible' };
+          allOk = false;
+        }
+      }
+      sendJson(res, allOk ? 200 : 503, {
+        status: allOk ? 'ok' : 'degraded',
         feedbackLogPath: FEEDBACK_LOG_PATH,
         memoryLogPath: MEMORY_LOG_PATH,
+        checks,
       }, {}, {
         headOnly: isHeadRequest,
       });
