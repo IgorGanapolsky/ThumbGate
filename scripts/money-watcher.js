@@ -14,6 +14,18 @@ const { ensureParentDir } = require('./fs-utils');
 const DEFAULT_STATE_PATH = path.resolve(__dirname, '..', '.thumbgate', 'commercial-watch-state.json');
 const DEFAULT_ALERT_LOG_PATH = path.resolve(__dirname, '..', '.thumbgate', 'commercial-alerts.jsonl');
 
+function safeLogValue(value, maxLength = 4000) {
+  return String(value ?? '')
+    .replace(/\\[rnt]/g, ' ')
+    .replace(/[\r\n\t]/g, ' ')
+    .replace(/[\u0000-\u001f\u007f]/g, '')
+    .slice(0, maxLength);
+}
+
+function safeLogJson(value, maxLength = 4000) {
+  return safeLogValue(JSON.stringify(value, null, 2), maxLength);
+}
+
 function getCommercialRevenueSnapshot(summary = {}) {
   const revenue = summary && typeof summary === 'object' ? summary.revenue || {} : {};
   return {
@@ -193,7 +205,7 @@ if (require.main === module) {
   const options = parseArgs(process.argv.slice(2));
   const runner = options.once
     ? checkForCommercialChange(options).then((result) => {
-      console.log(JSON.stringify(result, null, 2));
+      console.log(safeLogJson(result));
       return result;
     })
     : watchMoney(options.intervalMs, options);
@@ -213,6 +225,8 @@ module.exports = {
   parseArgs,
   readSnapshotState,
   recordCommercialAlert,
+  safeLogJson,
+  safeLogValue,
   watchMoney,
   writeSnapshotState,
 };
