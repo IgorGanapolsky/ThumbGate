@@ -1,0 +1,155 @@
+name: Verify Deploy and Comment on Merged PR
+
+# Runs AFTER deploy-railway.yml finishes for a push to main.
+# Re-asserts CLAUDE.md's deployment-verification gate (buildSha, health, dashboard,
+# any new /learn or /guides routes added in the merge) and posts the result back
+# on the PR that introduced the merged commit. Makes "is this really deployed?"
+# answerable without a human running curl.
+
+on:
+  workflow_run:
+    workflows: ["Deploy to Railway"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: verify-deploy-comment-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+jobs:
+  verify-and-comment:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    env:
+      PROD_URL: https://thumbgate.ai
+      MERGE_SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 5
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Find PR for merge commit
+        id: find-pr
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+        run: |
+          set -eu
+          PR_NUMBER="$(gh api -H "Accept: application/vnd.github+json" \
+            "repos/${GITHUB_REPOSITORY}/commits/${MERGE_SHA}/pulls" \
+            --jq '.[0].number // ""')"
+          if [ -z "${PR_NUMBER}" ]; then
+            echo "No PR associated with ${MERGE_SHA}; skipping comment."
+            echo "pr=" >> "$GITHUB_OUTPUT"
+          else
+            echo "pr=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Wait for Railway to settle the new build
+        if: steps.find-pr.outputs.pr != ''
+        run: |
+          # Railway typically settles within 2-5 minutes of deploy-railway
+          # finishing. Poll /health for up to 8 minutes for the buildSha to
+          # match the merged commit. Fail loud rather than silently if it
+          # never matches — that itself is signal.
+          ATTEMPTS=0
+          MAX_ATTEMPTS=48
+          MATCH=0
+          while [ "$ATTEMPTS" -lt "$MAX_ATTEMPTS" ]; do
+            HEALTH_JSON="$(curl -sS --max-time 10 "${PROD_URL}/health" || echo '{}')"
+            ACTUAL_SHA="$(printf '%s' "$HEALTH_JSON" | sed -n 's/.*"buildSha":"\([a-f0-9]*\)".*/\1/p')"
+            if [ -n "$ACTUAL_SHA" ] && [ "${ACTUAL_SHA}" = "${MERGE_SHA}" ]; then
+              echo "actual_sha=${ACTUAL_SHA}" >> "$GITHUB_ENV"
+              echo "build_match=true" >> "$GITHUB_ENV"
+              echo "health_json=${HEALTH_JSON}" >> "$GITHUB_ENV"
+              MATCH=1
+              break
+            fi
+            ATTEMPTS=$((ATTEMPTS + 1))
+            sleep 10
+          done
+          if [ "$MATCH" -ne 1 ]; then
+            echo "actual_sha=${ACTUAL_SHA:-unknown}" >> "$GITHUB_ENV"
+            echo "build_match=false" >> "$GITHUB_ENV"
+            echo "health_json=${HEALTH_JSON:-{}}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Probe required public routes
+        if: steps.find-pr.outputs.pr != ''
+        run: |
+          # /health, /dashboard, and / always required.
+          # Any new /learn/* or /guides/* HTML files added in the merge commit
+          # are also probed — these are the most common "the link in a fresh
+          # social post 404s because Railway hadn't rebuilt yet" surface.
+          REQUIRED_ROUTES="/ /health /dashboard"
+
+          NEW_PUBLIC_ROUTES="$(git diff --diff-filter=A --name-only \
+            "${MERGE_SHA}~1" "${MERGE_SHA}" -- \
+            'public/learn/*.html' 'public/guides/*.html' 'public/learn/**/*.html' 'public/guides/**/*.html' \
+            2>/dev/null | sed 's|public||; s|\.html$||' | tr '\n' ' ')"
+
+          ALL_ROUTES="${REQUIRED_ROUTES} ${NEW_PUBLIC_ROUTES}"
+          echo "Probing: ${ALL_ROUTES}"
+
+          FAILED_ROUTES=""
+          PASSED_ROUTES=""
+          for route in ${ALL_ROUTES}; do
+            CODE="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "${PROD_URL}${route}" || echo 'ERR')"
+            if [ "$CODE" = "200" ]; then
+              PASSED_ROUTES="${PASSED_ROUTES}${route}:200 "
+            else
+              FAILED_ROUTES="${FAILED_ROUTES}${route}:${CODE} "
+            fi
+          done
+
+          echo "passed_routes=${PASSED_ROUTES}" >> "$GITHUB_ENV"
+          echo "failed_routes=${FAILED_ROUTES}" >> "$GITHUB_ENV"
+          if [ -z "${FAILED_ROUTES}" ]; then
+            echo "routes_clean=true" >> "$GITHUB_ENV"
+          else
+            echo "routes_clean=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Comment verification result on the PR
+        if: steps.find-pr.outputs.pr != ''
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          PR: ${{ steps.find-pr.outputs.pr }}
+        run: |
+          BUILD_OK="${build_match:-false}"
+          ROUTES_OK="${routes_clean:-false}"
+          if [ "$BUILD_OK" = "true" ] && [ "$ROUTES_OK" = "true" ]; then
+            STATUS="✅ Deploy verified"
+          elif [ "$BUILD_OK" = "true" ] && [ "$ROUTES_OK" = "false" ]; then
+            STATUS="⚠️ Deployed but route probe found failures"
+          elif [ "$BUILD_OK" = "false" ]; then
+            STATUS="❌ Deploy did not settle to merge SHA within 8 min"
+          else
+            STATUS="❓ Unexpected state"
+          fi
+
+          BODY="$(cat <<EOF
+          ## ${STATUS}
+
+          **Merge commit:** \`${MERGE_SHA}\`
+          **Production buildSha:** \`${actual_sha:-unknown}\`
+          **buildSha match:** ${BUILD_OK}
+
+          **/health snapshot:**
+          \`\`\`json
+          ${health_json:-{}}
+          \`\`\`
+
+          **Public-route probes** (200 only counts as pass):
+          - Pass: \`${passed_routes:-none}\`
+          - Fail: \`${failed_routes:-none}\`
+
+          _Generated by \`.github/workflows/verify-deploy-comment.yml\` after \`deploy-railway.yml\` finished. This comment is the CLAUDE.md deployment-verification gate, run automatically so no human has to curl-by-hand before saying "deployed"._
+          EOF
+          )"
+
+          gh pr comment "${PR}" --repo "${GITHUB_REPOSITORY}" --body "${BODY}"
