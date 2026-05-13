@@ -2,16 +2,21 @@
 
 const { describe, it, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
+const { spawnSync } = require('node:child_process');
+const path = require('node:path');
 const {
   percentEncode,
   generateOAuthSignature,
   buildOAuthHeader,
+  formatSearchResult,
   postTweet,
   postThread,
   searchTweets,
   parseTweetsFromThread,
+  safeLogValue,
 } = require('../scripts/post-to-x');
 
+const SCRIPT = path.join(__dirname, '..', 'scripts', 'post-to-x.js');
 const ORIGINAL_FETCH = globalThis.fetch;
 const ORIGINAL_CONSOLE_LOG = console.log;
 const ORIGINAL_CONSOLE_ERROR = console.error;
@@ -47,6 +52,21 @@ describe('percentEncode', () => {
   it('passes through alphanumeric and standard URI-safe chars', () => {
     assert.equal(percentEncode('hello'), 'hello');
     assert.equal(percentEncode('a-b_c.d~e'), 'a-b_c.d~e');
+  });
+});
+
+describe('safeLogValue', () => {
+  it('strips control characters that can forge log lines', () => {
+    assert.equal(safeLogValue('abc\r\nINJECT\tdef'), 'abc  INJECT def');
+  });
+
+  it('truncates long log values', () => {
+    assert.equal(safeLogValue('abcdef', 3), 'abc');
+  });
+
+  it('normalizes nullish log values to an empty string', () => {
+    assert.equal(safeLogValue(null), '');
+    assert.equal(safeLogValue(undefined), '');
   });
 });
 
@@ -215,6 +235,17 @@ describe('searchTweets', () => {
   });
 });
 
+describe('formatSearchResult', () => {
+  it('sanitizes tweet ids and text for console output', () => {
+    const line = formatSearchResult({
+      id: '123\nforged',
+      text: 'hello\r\nworld',
+    });
+
+    assert.equal(line, '  [123 forged] hello  world...');
+  });
+});
+
 describe('postThread', () => {
   beforeEach(() => {
     process.env.X_API_KEY = 'test-api-key';
@@ -278,6 +309,12 @@ describe('postThread', () => {
 });
 
 describe('--dry-run mode', () => {
+  function runDryRun(args) {
+    return spawnSync(process.execPath, [SCRIPT, '--dry-run', ...args], {
+      encoding: 'utf8',
+    });
+  }
+
   it('parseTweetsFromThread extracts tweets without posting', () => {
     const threadContent = [
       '1/3: First tweet of the thread',
@@ -290,5 +327,44 @@ describe('--dry-run mode', () => {
     assert.equal(tweets.length, 3);
     assert.ok(tweets[0].includes('First tweet'));
     assert.ok(tweets[2].includes('Final tweet'));
+  });
+
+  it('sanitizes reply previews and printed reply URLs', () => {
+    const result = runDryRun(['--reply', '123\r\nforged', 'Reply with\nnewline']);
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /Would post \(reply to 123  forged\): Reply with newline/);
+    assert.doesNotMatch(result.stdout, /\nforged/);
+    assert.match(result.stdout, /Reply posted: https:\/\/x\.com\/IgorGanapolsky\/status\/dry-run-/);
+  });
+
+  it('sanitizes search previews without hitting the network', () => {
+    const result = runDryRun(['--search', 'ThumbGate\nforged']);
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /Would search: "ThumbGate forged"/);
+    assert.match(result.stdout, /No results found/);
+  });
+
+  it('prints sanitized direct, scheduled, default, and thread dry-run previews', () => {
+    const direct = runDryRun(['Direct post\nforged']);
+    assert.equal(direct.status, 0, direct.stderr);
+    assert.match(direct.stdout, /Would post: Direct post forged/);
+    assert.match(direct.stdout, /https:\/\/x\.com\/IgorGanapolsky\/status\/dry-run-/);
+
+    const scheduled = runDryRun(['--scheduled']);
+    assert.equal(scheduled.status, 0, scheduled.stderr);
+    assert.match(scheduled.stdout, /Scheduled tweet/);
+    assert.match(scheduled.stdout, /https:\/\/x\.com\/IgorGanapolsky\/status\/dry-run-/);
+
+    const defaultPost = runDryRun([]);
+    assert.equal(defaultPost.status, 0, defaultPost.stderr);
+    assert.match(defaultPost.stdout, /Would post: .*Launched ThumbGate/s);
+    assert.match(defaultPost.stdout, /https:\/\/x\.com\/IgorGanapolsky\/status\/dry-run-/);
+
+    const thread = runDryRun(['--thread']);
+    assert.equal(thread.status, 0, thread.stderr);
+    assert.match(thread.stdout, /Parsed \d+ tweets/);
+    assert.match(thread.stdout, /Thread preview!/);
   });
 });

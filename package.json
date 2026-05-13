@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "1.17.0",
+  "version": "1.18.0",
   "description": "ThumbGate self-improving agent governance: thumbs-up/down turns every mistake into a prevention rule and blocks repeat patterns. 33 pre-action checks, budget enforcement, and self-protection for Claude Code, Cursor, Codex, Gemini CLI, and Amp.",
   "homepage": "https://thumbgate-production.up.railway.app",
   "repository": {
@@ -110,6 +110,7 @@
     "scripts/feedback-loop.js",
     "scripts/feedback-paths.js",
     "scripts/feedback-quality.js",
+    "scripts/feedback_quality_eval.py",
     "scripts/feedback-schema.js",
     "scripts/feedback-session.js",
     "scripts/feedback-to-rules.js",
@@ -346,6 +347,7 @@
     "test:telemetry-tracked-link-slug": "node --test tests/telemetry-tracked-link-slug.test.js",
     "test:prompt-eval": "node --test tests/prompt-eval.test.js",
     "eval:feedback": "node scripts/prompt-eval.js --from-feedback",
+    "eval:feedback-quality": "python3 scripts/feedback_quality_eval.py",
     "test:decision-trace": "node --test tests/decision-trace.test.js",
     "test:feedback-fallback": "node --test tests/feedback-fallback.test.js",
     "test:metaclaw": "node --test tests/metaclaw-features.test.js",
@@ -406,7 +408,7 @@
     "test:e2e": "node --test tests/e2e-pipeline.test.js tests/e2e-product-flows.test.js tests/e2e-coverage-contract.test.js",
     "test:rlaif": "node --test tests/rlaif-self-audit.test.js tests/dpo-optimizer.test.js tests/meta-policy.test.js tests/agent-reward-model.test.js",
     "test:attribution": "node --test tests/feedback-attribution.test.js tests/hybrid-feedback-context.test.js",
-    "test:quality": "node --test tests/validate-feedback.test.js",
+    "test:quality": "node --test tests/validate-feedback.test.js tests/feedback-quality-eval-python.test.js",
     "test:intelligence": "node --test tests/intelligence.test.js",
     "test:training-export": "node --test tests/training-export.test.js tests/databricks-export.test.js",
     "test:deployment": "node --test tests/deployment.test.js tests/deploy-policy.test.js tests/publish-decision.test.js tests/changeset-check.test.js tests/release-notes.test.js tests/sonarcloud-workflow.test.js tests/package-boundary.test.js tests/public-package-boundary.test.js tests/revenue-observability-workflow.test.js",

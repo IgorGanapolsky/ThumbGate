@@ -403,6 +403,27 @@ const TRACKED_LINK_TARGETS = Object.freeze({
     },
     allowCustomerEmail: true,
   },
+  // 2026-05-12: Aiventyx marketplace listing routes its Teams clicks through
+  // /go/teams (best-performing listing at ~62% CTR). Without this slug the
+  // server returned 404 + "Tracked link not found". Every Aiventyx Teams
+  // click between the URL swap and this deploy landed on that error page.
+  // Destination: 3-seat Team self-serve Stripe checkout (the path I shipped
+  // in PR #1877 — plan_id=team + seat_count=3 = $147/mo entry).
+  teams: {
+    path: '/checkout/pro',
+    ctaId: 'go_teams',
+    ctaPlacement: 'link_router',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'link_router',
+      utm_campaign: 'team_self_serve',
+      plan_id: 'team',
+      seat_count: '3',
+      billing_cycle: 'monthly',
+    },
+    allowCustomerEmail: true,
+  },
   install: {
     path: '/guide',
     ctaId: 'go_install',
