@@ -43,6 +43,15 @@ function safeMetricCount(value) {
   return Number.isFinite(count) && count >= 0 ? Math.trunc(count) : 0;
 }
 
+function safeTweetId(value) {
+  const raw = String(value ?? '');
+  if (/^dry-run-\d+$/.test(raw)) {
+    return raw;
+  }
+  const id = raw.replace(/\D/g, '');
+  return id || 'unknown';
+}
+
 // ---------------------------------------------------------------------------
 // OAuth helpers
 // ---------------------------------------------------------------------------
@@ -201,7 +210,8 @@ async function searchTweets(query, { maxResults = 10, dryRun = false } = {}) {
 }
 
 function formatSearchResult(tweet) {
-  return `  [${safeLogValue(tweet.id, 80)}] ${safeLogValue(tweet.text, 100)}...`;
+  const textLength = String(tweet?.text ?? '').length;
+  return `  [${safeTweetId(tweet?.id)}] ${textLength} chars`;
 }
 
 // ---------------------------------------------------------------------------
@@ -255,7 +265,7 @@ async function postThread(tweets, { dryRun = false } = {}) {
 
   console.log(`\n✅ Thread ${dryRun ? 'preview' : 'posted'}! ${tweets.length} tweets.`);
   if (!dryRun) {
-    console.log(`   https://x.com/IgorGanapolsky/status/${safeLogValue(previousId, 80)}\n`);
+    console.log(`   https://x.com/IgorGanapolsky/status/${safeTweetId(previousId)}\n`);
   }
 }
 
@@ -301,7 +311,7 @@ async function main() {
     }
     const id = await postTweet(text, tweetId, { dryRun });
     if (id) {
-      console.log(`\n✅ Reply posted: https://x.com/IgorGanapolsky/status/${safeLogValue(id, 80)}\n`);
+      console.log(`\n✅ Reply posted: https://x.com/IgorGanapolsky/status/${safeTweetId(id)}\n`);
     }
   } else if (command === '--scheduled') {
     const tips = [
@@ -317,7 +327,7 @@ async function main() {
     console.log(`📅 Scheduled tweet (tip #${dayIndex + 1}):`);
     const id = await postTweet(tip, null, { dryRun });
     if (id) {
-      console.log(`\n✅ https://x.com/IgorGanapolsky/status/${safeLogValue(id, 80)}\n`);
+      console.log(`\n✅ https://x.com/IgorGanapolsky/status/${safeTweetId(id)}\n`);
     }
   } else if (command === '--thread') {
     const candidates = [
@@ -345,7 +355,7 @@ async function main() {
   } else if (command) {
     const id = await postTweet(command, null, { dryRun });
     if (id) {
-      console.log(`\n✅ https://x.com/IgorGanapolsky/status/${safeLogValue(id, 80)}\n`);
+      console.log(`\n✅ https://x.com/IgorGanapolsky/status/${safeTweetId(id)}\n`);
     }
   } else {
     const tweet = `🚀 Launched ThumbGate — local-first memory & ThumbGate feedback pipeline for AI agents.
@@ -361,7 +371,7 @@ Pro: $19/mo or $149/yr
 
     const id = await postTweet(tweet, null, { dryRun });
     if (id) {
-      console.log(`\n✅ https://x.com/IgorGanapolsky/status/${safeLogValue(id, 80)}\n`);
+      console.log(`\n✅ https://x.com/IgorGanapolsky/status/${safeTweetId(id)}\n`);
     }
   }
 }
@@ -381,6 +391,7 @@ module.exports = {
   formatSearchResult,
   safeMetricCount,
   safeLogValue,
+  safeTweetId,
 };
 
 if (require.main === module) {
