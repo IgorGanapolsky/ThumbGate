@@ -544,6 +544,35 @@ test('/go/pro 302 redirects to /checkout/pro with caller-provided UTM params pre
   assert.equal(url.searchParams.get('cta_id'), 'go_pro');
 });
 
+test('/go/teams 302 redirects to /checkout/pro with plan_id=team + seat_count=3 (3-seat self-serve)', async () => {
+  // 2026-05-12: Aiventyx marketplace listing best-performer at ~62% CTR routes
+  // its Teams clicks through /go/teams. Pin the contract: redirect to
+  // /checkout/pro with plan_id=team + seat_count=3 so the canonical Aiventyx
+  // URL keeps landing on the 3-seat $147/mo self-serve Stripe checkout.
+  const res = await fetch(apiUrl('/go/teams?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_teams_listing&cta_id=aiventyx_teams_listing&cta_placement=marketplace_listing'), { redirect: 'manual' });
+  assert.equal(res.status, 302);
+  assert.equal(res.headers.get('x-thumbgate-link-slug'), 'teams');
+  const url = new URL(res.headers.get('location'));
+  assert.equal(url.pathname, '/checkout/pro');
+  assert.equal(url.searchParams.get('plan_id'), 'team');
+  assert.equal(url.searchParams.get('seat_count'), '3');
+  assert.equal(url.searchParams.get('billing_cycle'), 'monthly');
+  assert.equal(url.searchParams.get('utm_source'), 'aiventyx');
+  assert.equal(url.searchParams.get('utm_medium'), 'marketplace');
+  assert.equal(url.searchParams.get('cta_id'), 'aiventyx_teams_listing');
+});
+
+test('/go/teams falls back to default UTM attribution when no params are supplied', async () => {
+  const res = await fetch(apiUrl('/go/teams'), { redirect: 'manual' });
+  assert.equal(res.status, 302);
+  const url = new URL(res.headers.get('location'));
+  assert.equal(url.pathname, '/checkout/pro');
+  assert.equal(url.searchParams.get('plan_id'), 'team');
+  assert.equal(url.searchParams.get('seat_count'), '3');
+  assert.equal(url.searchParams.get('utm_campaign'), 'team_self_serve');
+  assert.equal(url.searchParams.get('cta_id'), 'go_teams');
+});
+
 test('/go/pro falls back to default UTM attribution when no params are supplied', async () => {
   const res = await fetch(apiUrl('/go/pro'), { redirect: 'manual' });
   assert.equal(res.status, 302);

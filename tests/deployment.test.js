@@ -525,6 +525,7 @@ test('SonarCloud workflow refreshes main and stamps scans with the package versi
   assert.match(workflow, /npm ci --onnxruntime-node-install-cuda=skip/);
   assert.match(workflow, /Generate LCOV coverage report[\s\S]*?NODE_V8_COVERAGE=\.coverage\/raw node scripts\/test-coverage\.js/);
   assert.match(workflow, /npx c8 report[\s\S]*?--reporter=lcov/);
+  assert.match(workflow, /Generate Python coverage report[\s\S]*?python3 -m coverage xml -o coverage\/python-coverage\.xml/);
   assert.match(workflow, /Read package version[\s\S]*?require\("\.\/package\.json"\)\.version/);
   assert.match(workflow, /Build Sonar mainline analysis version[\s\S]*?sha\.\$SHORT_SHA/);
   assert.match(workflow, /Run SonarCloud scan \(default branch refresh\)[\s\S]*?github\.event_name == 'push' \|\| github\.event_name == 'workflow_dispatch'/);
