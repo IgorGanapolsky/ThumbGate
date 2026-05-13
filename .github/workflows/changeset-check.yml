@@ -3,6 +3,14 @@ name: Changeset Check
 on:
   pull_request:
     branches: [main]
+  # Required-check name "Verify changeset" is in the main branch protection
+  # contexts (8 of 8). Without merge_group support, Trunk's synthetic merge
+  # SHA never gets a "Verify changeset" status report, GitHub fails the
+  # "8 of 8 required status checks are expected" gate, and Trunk drops the
+  # PR from the queue — observed on #1846, #1902, #1943 (Aiventyx Teams).
+  merge_group:
+    branches: [main]
+    types: [checks_requested]
 
 permissions:
   contents: read
