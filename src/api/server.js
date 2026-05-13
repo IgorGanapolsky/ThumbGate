@@ -4546,9 +4546,9 @@ async function addContext(){
       const isConfirmedCheckout = confirmParam === '1'
         || confirmParam === 'true'
         || req.method === 'POST';
-      // Plausible funnel event #1 of 3: page view. Fired before bot deflection
-      // so we get the full top-of-funnel count, with isBot as a prop so the
-      // dashboard can filter human vs. crawler traffic. Fire-and-forget.
+      // Plausible funnel event #1 of 3: page view. Fired before interstitial
+      // deflection so we get the full top-of-funnel count, with isBot as a
+      // prop so the dashboard can filter human vs. crawler traffic. Fire-and-forget.
       recordCheckoutFunnelEvent('view', {
         page: '/checkout/pro',
         referrer: req.headers.referer || req.headers.referrer,
@@ -4566,8 +4566,23 @@ async function addContext(){
           planId: analyticsMetadata.planId,
         },
       }).catch(() => {});
-      if (!isConfirmedCheckout && botClassification.isBot) {
-        const eventType = 'checkout_bot_deflected';
+      // Render the interstitial for ALL non-confirmed GETs (bot or human),
+      // not just bot traffic. Rationale: a raw GET on /checkout/pro currently
+      // 302s straight to a fresh Stripe `cs_live_*` session, regardless of
+      // whether the visitor is a search crawler, a link-preview fetcher, or
+      // a confused human who doesn't yet know what they're paying for.
+      // That created the 50-zombie-sessions / 0-paid pattern the CEO flagged
+      // 2026-05-13. Every visitor now sees the $19/mo confirmation page first
+      // and must click "Pay $19/mo with Stripe →" (which sets confirm=1) to
+      // trigger the Stripe-session creation + redirect. Counter-risk: one
+      // extra click on the human path. Mitigated because the interstitial
+      // also serves as a value-preview ("6 paying customers, MIT open source,
+      // cancel anytime"), which typically lifts conversion more than the
+      // click-friction costs.
+      if (!isConfirmedCheckout) {
+        const eventType = botClassification.isBot
+          ? 'checkout_bot_deflected'
+          : 'checkout_interstitial_view';
         appendBestEffortTelemetry(FEEDBACK_DIR, {
           eventType,
           clientType: 'web',
