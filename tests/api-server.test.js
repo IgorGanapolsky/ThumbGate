@@ -606,6 +606,36 @@ test('privacy policy route covers collection, sharing, retention, and contact de
   assert.match(body, /igor\.ganapolsky@gmail\.com/i);
 });
 
+test('terms of service route covers payment, refunds, acceptable use, and limitation of liability', async () => {
+  const res = await fetch(apiUrl('/terms'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+  const body = await res.text();
+  assert.match(body, /Terms of Service/i);
+  assert.match(body, /Payment/i);
+  assert.match(body, /Refunds/i);
+  assert.match(body, /Acceptable Use/i);
+  assert.match(body, /Limitation of Liability/i);
+  assert.match(body, /igor\.ganapolsky@gmail\.com/i);
+  // Cross-links to /privacy and /support keep the legal triangle navigable.
+  assert.match(body, /href="\/privacy"/);
+  assert.match(body, /href="\/support"/);
+});
+
+test('support page exposes email, GitHub issues, status, and refund paths', async () => {
+  const res = await fetch(apiUrl('/support'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+  const body = await res.text();
+  assert.match(body, /Support/i);
+  assert.match(body, /mailto:igor\.ganapolsky@gmail\.com/i);
+  assert.match(body, /github\.com\/IgorGanapolsky\/ThumbGate\/issues/i);
+  assert.match(body, /\/health/);
+  assert.match(body, /Refunds/i);
+  assert.match(body, /href="\/privacy"/);
+  assert.match(body, /href="\/terms"/);
+});
+
 test('public HEAD routes stay unauthenticated and side-effect free', async () => {
   const telemetryPath = path.join(tmpFeedbackDir, 'telemetry-pings.jsonl');
   const checkoutSessionsPath = process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH;

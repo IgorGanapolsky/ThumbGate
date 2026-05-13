@@ -286,9 +286,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // landing-page governance setup intake copy. Observed package is ~3.479 MB.
   // Bumped 3.50 MB -> 3.52 MB (2026-05-07) for the four public Pro upgrade
   // bundle files under config/pro. Observed package is ~3.505 MB.
+  // Bumped 3.52 MB -> 3.60 MB (2026-05-13) for /terms + /support HTML pages
+  // and the offline feedback_quality_eval.py shipped in the package files
+  // array. Observed package is ~3.518 MB locally; CI is reproducibly a few
+  // KB larger (line-ending normalization), so 3.60 MB gives durable headroom.
   assert.ok(
-    manifest.unpackedSize <= 3_520_000,
-    `npm package should stay <= 3.52 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_600_000,
+    `npm package should stay <= 3.60 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
