@@ -1,0 +1,5 @@
+---
+"thumbgate": minor
+---
+
+Eliminate zombie Stripe sessions: render the `/checkout/pro` interstitial for every non-confirmed GET (bot OR human), not only bot traffic. Before this change a raw GET on `/checkout/pro` 302'd straight to a fresh `cs_live_*` Stripe session — which is what created the 50-zombie-sessions / 0-paid pattern surfaced 2026-05-13 (every crawler, every link-preview fetcher, every confused human GET generated a real Stripe session before any context, email, or button click). After: only `POST` or `?confirm=1` creates a Stripe session. Humans clicking the "Pay $19/mo with Stripe →" button on the interstitial supply `confirm=1` on the next hop, so the conversion path is preserved — they just see what they're paying for before Stripe asks for the card. Telemetry change: when the visitor is not bot-classified, the event fires as `checkout_interstitial_view` instead of `checkout_bot_deflected`, so funnel reports can distinguish bot deflection from intentional human views.
