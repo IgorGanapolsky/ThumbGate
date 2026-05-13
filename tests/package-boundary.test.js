@@ -290,6 +290,7 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // and the offline feedback_quality_eval.py shipped in the package files
   // array. Observed package is ~3.518 MB locally; CI is reproducibly a few
   // KB larger (line-ending normalization), so 3.60 MB gives durable headroom.
+  // (Same bump also applied via #1884 — kept the more descriptive comment.)
   assert.ok(
     manifest.unpackedSize <= 3_600_000,
     `npm package should stay <= 3.60 MB unpacked, got ${manifest.unpackedSize}`
