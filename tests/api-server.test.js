@@ -703,28 +703,28 @@ test('/go/install and /go/teams keep Aiventyx marketplace links alive', async ()
   assert.equal(teamsRes.headers.get('x-thumbgate-link-slug'), 'teams');
   const teamsUrl = new URL(teamsRes.headers.get('location'));
   assert.equal(teamsUrl.origin, 'https://app.example.com');
-  assert.equal(teamsUrl.pathname, '/');
-  assert.equal(teamsUrl.hash, '#workflow-sprint-intake');
+  assert.equal(teamsUrl.pathname, '/checkout/pro');
   assert.equal(teamsUrl.searchParams.get('utm_source'), 'aiventyx');
   assert.equal(teamsUrl.searchParams.get('utm_campaign'), 'aiventyx_teams_listing');
   assert.equal(teamsUrl.searchParams.get('plan_id'), 'team');
+  assert.equal(teamsUrl.searchParams.get('seat_count'), '3');
   assert.equal(teamsUrl.searchParams.get('cta_id'), 'go_teams');
   assert.equal(teamsUrl.searchParams.get('landing_path'), '/go/teams');
 });
 
-test('legacy Aiventyx root Teams URL redirects to the tracked team intake path', async () => {
+test('legacy Aiventyx root Teams URL redirects to the tracked team checkout path', async () => {
   const res = await fetch(apiUrl('/?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_teams_listing'), {
     redirect: 'manual',
   });
   assert.equal(res.status, 302);
   assert.equal(res.headers.get('x-thumbgate-link-slug'), 'teams');
   const url = new URL(res.headers.get('location'));
-  assert.equal(url.pathname, '/');
-  assert.equal(url.hash, '#workflow-sprint-intake');
+  assert.equal(url.pathname, '/checkout/pro');
   assert.equal(url.searchParams.get('utm_source'), 'aiventyx');
   assert.equal(url.searchParams.get('utm_medium'), 'marketplace');
   assert.equal(url.searchParams.get('utm_campaign'), 'aiventyx_teams_listing');
   assert.equal(url.searchParams.get('plan_id'), 'team');
+  assert.equal(url.searchParams.get('seat_count'), '3');
   assert.equal(url.searchParams.get('landing_path'), '/go/teams');
 });
 
