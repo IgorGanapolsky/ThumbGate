@@ -10,6 +10,7 @@ const {
   applyPipelineStateToTargets,
   buildFallbackMessage,
   buildBillingVerification,
+  buildRunSummaryLog,
   buildCheckoutCloseDraft,
   buildOperatorHandoffPayload,
   buildOperatorSendNowPayload,
@@ -39,6 +40,7 @@ const {
   renderTeamOutreachMessagesMarkdown,
   resolveRevenueLoopSummary,
   runRevenueLoop,
+  safeLogValue,
   selectOutreachMotion,
   summarizeCommercialSnapshot,
   writeRevenueLoopOutputs,
@@ -60,6 +62,24 @@ test('motion catalog stays aligned with current commercial truth and proof links
   assert.match(catalog.sprint.cta, /#workflow-sprint-intake$/);
   assert.match(catalog.pro.truth, /COMMERCIAL_TRUTH\.md/);
   assert.match(catalog.pro.proof, /VERIFICATION_EVIDENCE\.md/);
+});
+
+test('safeLogValue strips control characters and truncates revenue-loop CLI summaries', () => {
+  assert.equal(safeLogValue(null), '');
+  assert.equal(safeLogValue('paid\r\norders\t7', 11), 'paid  order');
+});
+
+test('buildRunSummaryLog renders sanitized revenue-loop CLI JSON', () => {
+  const text = buildRunSummaryLog({
+    directive: { state: 'cold-start\r\nforged' },
+    snapshot: { paidOrders: 1, bookedRevenueCents: 1900 },
+    targets: [{}, {}],
+  });
+
+  assert.match(text, /"state": "cold-start  forged"/);
+  assert.match(text, /"paidOrders": 1/);
+  assert.match(text, /"bookedRevenueCents": 1900/);
+  assert.match(text, /"targets": 2/);
 });
 
 test('cold-start directive stays dual-motion and avoids fake traction language', () => {
