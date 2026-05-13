@@ -21,6 +21,7 @@ jobs:
       contents: read
       pull-requests: write
       issues: write
+      id-token: write
     steps:
       - uses: actions/checkout@v6
         with:
@@ -29,12 +30,12 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          model: claude-sonnet-4-20250514
           trigger_phrase: "@claude"
-          direct_prompt: |
+          prompt: |
             Review this PR for:
             1. Security vulnerabilities
             2. Test coverage gaps
             3. Performance issues
             4. Code quality and maintainability
             Be concise. Flag only real issues.
+        continue-on-error: true

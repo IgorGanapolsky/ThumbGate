@@ -192,10 +192,14 @@ function retrieveWithRerankingSync(toolName, actionContext, options = {}) {
 
   if (candidates.length === 0) return [];
 
-  // Fast-path: If top candidate is extremely strong (>= 0.85), skip second heuristic pass
-  // to further reduce tool-call latency.
+  // Fast-path: If top candidate is extremely strong (>= 0.85), skip the second
+  // heuristic pass while preserving the scored result shape expected downstream.
   if (candidates[0].relevanceScore >= 0.85) {
-    const results = candidates.slice(0, maxResults);
+    const results = candidates.slice(0, maxResults).map((candidate) => ({
+      ...candidate,
+      crossEncoderScore: candidate.relevanceScore || 0,
+      combinedScore: candidate.relevanceScore || 0,
+    }));
     if (enableCache) {
       setCachedRetrieval(toolName, actionContext, results, { candidateCount, maxResults, feedbackDir });
     }
