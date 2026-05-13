@@ -58,3 +58,11 @@ test('ai-engineering-stack-guardrails module exports expected API', () => {
   assert.equal(typeof stack.formatAiEngineeringStackGuardrailsPlan, 'function');
   assert.equal(typeof stack.normalizeOptions, 'function');
 });
+
+test('memory-scope-readiness module exports expected API', () => {
+  const readiness = require('../scripts/memory-scope-readiness');
+  assert.equal(typeof readiness.buildMemoryScopeReadinessReport, 'function');
+  assert.equal(typeof readiness.selectRecordsForScope, 'function');
+  assert.equal(typeof readiness.normalizeScope, 'function');
+  assert.equal(typeof readiness.memoryScopeKey, 'function');
+});

@@ -14,6 +14,7 @@ const orchestrationHtml = read('public', 'compare', 'ai-experience-orchestration
 const agentixHtml = read('public', 'compare', 'agentix-labs.html');
 const platformTeamsHtml = read('public', 'use-cases', 'platform-teams.html');
 const regulatedHtml = read('public', 'use-cases', 'regulated-workflows.html');
+const deploymentReadinessHtml = read('public', 'guides', 'ai-deployment-readiness.html');
 
 test('homepage positions ThumbGate as the enforcement layer inside orchestration', () => {
   assert.match(indexHtml, /Enforcement is the missing layer in AI orchestration/i);
@@ -25,6 +26,7 @@ test('homepage positions ThumbGate as the enforcement layer inside orchestration
 
 test('homepage links to new orchestration comparison and buyer workflow pages', () => {
   assert.match(indexHtml, /\/compare\/ai-experience-orchestration/);
+  assert.match(indexHtml, /\/guides\/ai-deployment-readiness/);
   assert.match(indexHtml, /\/use-cases\/platform-teams/);
   assert.match(indexHtml, /\/use-cases\/regulated-workflows/);
 });
@@ -69,4 +71,12 @@ test('regulated workflow page exists without fake compliance claims', () => {
   assert.match(regulatedHtml, /approval boundaries/i);
   assert.match(regulatedHtml, /execution control/i);
   assert.match(regulatedHtml, /does not market itself as a compliance badge/i);
+});
+
+test('deployment readiness guide converts OpenAI-style deployment demand into ThumbGate sprint', () => {
+  assert.match(deploymentReadinessHtml, /AI Deployment Readiness/i);
+  assert.match(deploymentReadinessHtml, /deployment companies/i);
+  assert.match(deploymentReadinessHtml, /governance and proof layer/i);
+  assert.match(deploymentReadinessHtml, /workflow-sprint-intake/);
+  assert.match(deploymentReadinessHtml, /Workflow Hardening Diagnostic/);
 });
