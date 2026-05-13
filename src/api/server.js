@@ -206,6 +206,7 @@ const DASHBOARD_PAGE_PATH = path.resolve(__dirname, '../../public/dashboard.html
 const LESSONS_PAGE_PATH = path.resolve(__dirname, '../../public/lessons.html');
 const GUIDE_PAGE_PATH = path.resolve(__dirname, '../../public/guide.html');
 const CODEX_PLUGIN_PAGE_PATH = path.resolve(__dirname, '../../public/codex-plugin.html');
+const FEDERAL_PAGE_PATH = path.resolve(__dirname, '../../public/federal.html');
 const COMPARE_PAGE_PATH = path.resolve(__dirname, '../../public/compare.html');
 const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
 const NUMBERS_PAGE_PATH = path.resolve(__dirname, '../../public/numbers.html');
@@ -2531,6 +2532,7 @@ function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
     { path: '/pro', changefreq: 'weekly', priority: '0.9' },
+    { path: '/federal', changefreq: 'monthly', priority: '0.7' },
     { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
     { path: '/codex-plugin', changefreq: 'weekly', priority: '0.75' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
@@ -4289,6 +4291,20 @@ async function addContext(){
         });
       } catch (err) {
         sendText(res, 500, err.message || 'Pro page unavailable');
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/federal' || pathname === '/federal.html')) {
+      // Federal positioning page. PUBLIC marketing surface only — describes the
+      // licensed Core deployment profile factually but never promises features
+      // that don't exist in the public shell. See docs/federal-expansion.md +
+      // tests/public-core-boundary.test.js for the boundary contract.
+      try {
+        const html = fs.readFileSync(FEDERAL_PAGE_PATH, 'utf-8');
+        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      } catch {
+        sendJson(res, 404, { error: 'Federal page not found' });
       }
       return;
     }

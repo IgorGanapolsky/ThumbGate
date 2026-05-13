@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+__GOOGLE_SITE_VERIFICATION_META__
+<title>ThumbGate Federal | Pre-action gates for AI coding agents in government workloads</title>
+<meta name="description" content="ThumbGate Federal is the air-gapped, GovCloud-routable deployment of the ThumbGate pre-action gate engine. Built on the same enforcement core that ships in npm install thumbgate, with NIST 800-53 control mapping and FedRAMP-track audit logging available to pilot agencies.">
+<meta name="robots" content="index, follow">
+<meta property="og:title" content="ThumbGate Federal — agentic AI guardrails for government workloads">
+<meta property="og:description" content="Same pre-action gate engine our public npm package ships. Air-gapped deployment, Bedrock GovCloud / Azure Gov LLM routing, NIST 800-53 control mapping, FedRAMP-track audit logs. Contact for pilot.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="__APP_ORIGIN__/federal">
+<link rel="canonical" href="__APP_ORIGIN__/federal">
+<link rel="icon" type="image/png" href="/thumbgate-icon.png">
+<link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
+<meta property="og:image" content="/og.png">
+
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "ThumbGate Federal",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Air-gapped Linux, AWS GovCloud, Azure Government",
+  "description": "Air-gapped, GovCloud-routable deployment of ThumbGate's pre-action gate engine for AI coding agents in government workloads. Same enforcement core as the public npm package, plus NIST 800-53 control mapping, FedRAMP-track audit logging, and Bedrock GovCloud / Azure Gov LLM routing.",
+  "url": "__APP_ORIGIN__/federal",
+  "creator": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "offers": {
+    "@type": "Offer",
+    "name": "Pilot inquiry",
+    "url": "__APP_ORIGIN__/federal#pilot",
+    "availability": "https://schema.org/LimitedAvailability"
+  }
+}
+</script>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --bg: #0a0a0b;
+    --bg-raised: #111113;
+    --bg-card: #161618;
+    --border: #232327;
+    --text: #ececf1;
+    --text-muted: #9a9aa6;
+    --cyan: #22d3ee;
+    --cyan-dim: rgba(34, 211, 238, 0.12);
+    --cyan-glow: rgba(34, 211, 238, 0.22);
+    --green: #4ade80;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+    --mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: var(--font);
+    background:
+      radial-gradient(circle at top, rgba(34, 211, 238, 0.10) 0%, rgba(34, 211, 238, 0) 32%),
+      linear-gradient(180deg, #0a0a0b 0%, #0d1016 48%, #0a0a0b 100%);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+
+  nav { position: sticky; top: 0; z-index: 50; background: rgba(10,10,11,0.86); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 14px 0; }
+  nav .container { display: flex; align-items: center; justify-content: space-between; }
+  .nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; text-decoration: none; color: var(--text); }
+  .nav-logo img { width: 28px; height: 28px; }
+  .nav-logo .badge { font-size: 11px; color: var(--cyan); border: 1px solid var(--cyan); padding: 2px 8px; border-radius: 999px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .nav-right { display: flex; gap: 18px; align-items: center; font-size: 14px; color: var(--text-muted); }
+  .nav-right a { text-decoration: none; }
+  .nav-right a:hover { color: var(--cyan); }
+
+  header.hero { padding: 80px 0 56px; }
+  h1 { font-size: 44px; line-height: 1.12; margin: 0 0 16px; letter-spacing: -0.02em; }
+  h1 span { color: var(--cyan); }
+  .lede { font-size: 19px; color: var(--text-muted); max-width: 720px; margin: 0 0 32px; }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 36px; }
+  .cta-primary, .cta-secondary { display: inline-flex; align-items: center; gap: 10px; padding: 14px 22px; border-radius: 10px; text-decoration: none; font-weight: 600; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+  .cta-primary { background: var(--cyan); color: #001016; }
+  .cta-primary:hover { box-shadow: 0 0 0 4px var(--cyan-glow); transform: translateY(-1px); }
+  .cta-secondary { border: 1px solid var(--border); color: var(--text); }
+  .cta-secondary:hover { border-color: var(--cyan); color: var(--cyan); }
+
+  .trust-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  .trust-pill { font-size: 12px; padding: 4px 12px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-muted); }
+  .trust-pill.in-prog { color: var(--amber); border-color: rgba(251, 191, 36, 0.3); }
+  .trust-pill.live { color: var(--green); border-color: rgba(74, 222, 128, 0.3); }
+
+  section { padding: 56px 0; border-top: 1px solid var(--border); }
+  h2 { font-size: 28px; letter-spacing: -0.01em; margin: 0 0 8px; }
+  .section-lede { color: var(--text-muted); margin: 0 0 28px; max-width: 700px; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 22px; }
+  .card h3 { margin: 0 0 10px; font-size: 16px; color: var(--cyan); }
+  .card p { margin: 0; color: var(--text-muted); font-size: 14px; }
+
+  .matrix { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .matrix th, .matrix td { padding: 12px 14px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  .matrix th { color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .matrix .yes { color: var(--green); }
+  .matrix .gov { color: var(--cyan); }
+  .matrix code { font-family: var(--mono); font-size: 12px; color: var(--text-muted); background: var(--bg-raised); padding: 1px 6px; border-radius: 4px; }
+
+  .control-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+  .control-list li { padding: 10px 14px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px; font-family: var(--mono); font-size: 13px; color: var(--text-muted); }
+  .control-list li b { color: var(--text); font-family: var(--font); display: block; font-size: 12px; }
+
+  .pilot-card { background: linear-gradient(135deg, rgba(34,211,238,0.08), rgba(34,211,238,0.02)); border: 1px solid var(--cyan); border-radius: 14px; padding: 32px; }
+  .pilot-card h2 { color: var(--cyan); margin-bottom: 8px; }
+  .pilot-card p { color: var(--text); }
+  .pilot-card .small { font-size: 13px; color: var(--text-muted); margin-top: 16px; }
+
+  footer { padding: 48px 0 64px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 14px; }
+  footer .footer-links { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 8px; }
+  footer a { text-decoration: none; }
+  footer a:hover { color: var(--cyan); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a class="nav-logo" href="/">
+      <img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" width="28" height="28">
+      <span>ThumbGate</span>
+      <span class="badge">Federal</span>
+    </a>
+    <div class="nav-right">
+      <a href="/">Developer product</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a>
+      <a href="#pilot">Contact</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <h1>Pre-action gates for AI coding agents — <span>air-gapped</span> and <span>GovCloud-routable</span>.</h1>
+    <p class="lede">
+      Federal agencies are deploying AI coding agents (Claude, Copilot, Cursor, Codex) on classified and CUI workloads.
+      ThumbGate is the gate engine that blocks known-bad tool calls <em>before</em> they execute — running entirely
+      on-prem or inside AWS GovCloud / Azure Government, with the same enforcement core that ships in
+      our public <code>npm install thumbgate</code> dev product.
+    </p>
+    <div class="cta-row">
+      <a class="cta-primary" href="#pilot" data-cta="federal_pilot_hero">Contact for pilot →</a>
+      <a class="cta-secondary" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/federal-expansion.md">Read the technical brief</a>
+    </div>
+    <div class="trust-row">
+      <span class="trust-pill live">Public shell live — npm v1.18.0</span>
+      <span class="trust-pill in-prog">NIST 800-53 control mapping — in progress, pilot-gated</span>
+      <span class="trust-pill in-prog">FedRAMP authorization — pre-track, pilot-gated</span>
+      <span class="trust-pill in-prog">CMMC L2 / NIST 800-171 — opening attestation path with first DoD subcontractor pilot</span>
+    </div>
+  </div>
+</header>
+
+<section id="what">
+  <div class="container">
+    <h2>What ThumbGate Federal is</h2>
+    <p class="section-lede">
+      Same engine, additive deployment profile. Not a fork, not a rewrite, not a rebrand.
+    </p>
+    <div class="grid-2">
+      <div class="card">
+        <h3>The same gate engine</h3>
+        <p>Captures thumbs-up / thumbs-down feedback from agent runs, promotes to a local lesson DB, and synthesizes pre-action gates that block known-bad tool calls (file writes, shell commands, network requests, force-pushes) <em>before</em> they execute.</p>
+      </div>
+      <div class="card">
+        <h3>The same MCP surface</h3>
+        <p><code>gate_stats</code>, <code>recall</code>, <code>capture_feedback</code> behave identically whether a developer runs ThumbGate on their laptop or inside an air-gapped GovCloud VPC. Same tool contracts, same response shapes.</p>
+      </div>
+      <div class="card">
+        <h3>Air-gapped deployment</h3>
+        <p>Runs without outbound network access. Lesson DB is local SQLite + FTS5. Vector index is local LanceDB. No SaaS dependency, no Anthropic API call required at runtime when paired with a self-hosted reranker.</p>
+      </div>
+      <div class="card">
+        <h3>GovCloud LLM routing</h3>
+        <p>Routes reranker and synthesis calls through Bedrock GovCloud (Claude on AWS GovCloud) or Azure OpenAI Service for Government when <code>THUMBGATE_DEPLOY=gov</code> is set. Replaces the default Claude reranker without touching the public package.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="boundary">
+  <div class="container">
+    <h2>What ships in the public product vs. what's federal-gated</h2>
+    <p class="section-lede">
+      ThumbGate's public/Core architecture exists exactly for this kind of dual-market split. The dev product
+      keeps shipping under our regular release cadence — federal features land in a licensed Core layer
+      that's only reachable under <code>THUMBGATE_DEPLOY=gov</code>.
+    </p>
+    <table class="matrix">
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th>Public ThumbGate (<code>npm i thumbgate</code>)</th>
+          <th>ThumbGate Federal (licensed Core)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Pre-action gate engine</td><td class="yes">✓ identical</td><td class="yes">✓ identical</td></tr>
+        <tr><td>Feedback capture + lesson DB</td><td class="yes">✓ identical</td><td class="yes">✓ identical</td></tr>
+        <tr><td>PreToolUse hooks (Claude Code / Cursor / Codex / Gemini)</td><td class="yes">✓ identical</td><td class="yes">✓ identical</td></tr>
+        <tr><td>Air-gapped deployment mode</td><td>—</td><td class="gov">✓ federal-gated</td></tr>
+        <tr><td>Bedrock GovCloud / Azure Gov LLM routing</td><td>—</td><td class="gov">✓ federal-gated</td></tr>
+        <tr><td>FedRAMP-track audit log sink (immutable, signed)</td><td>—</td><td class="gov">✓ federal-gated</td></tr>
+        <tr><td>NIST 800-53 control mapping report</td><td>—</td><td class="gov">✓ federal-gated</td></tr>
+        <tr><td>Federal RAG (when an agency names a corpus)</td><td>—</td><td class="gov">✓ federal-gated</td></tr>
+      </tbody>
+    </table>
+    <p class="section-lede" style="margin-top: 28px;">
+      The boundary is enforced by regression tests in <code>tests/public-core-boundary.test.js</code>.
+      Federal features that leak into the public npm package break CI and block merge.
+    </p>
+  </div>
+</section>
+
+<section id="controls">
+  <div class="container">
+    <h2>NIST 800-53 control coverage (target)</h2>
+    <p class="section-lede">
+      Pre-action enforcement maps naturally to several control families. Full mapping document and SSP
+      contributions delivered as part of pilot engagement.
+    </p>
+    <ul class="control-list">
+      <li><b>AC-3</b>Access enforcement (gate blocks unauthorized tool calls before execution)</li>
+      <li><b>AU-2 / AU-12</b>Audit generation (every gate decision logged with input, decision, justification)</li>
+      <li><b>CM-3</b>Configuration change control (rule synthesis is the change record)</li>
+      <li><b>SI-7</b>Software / firmware integrity (gate prevents agent from modifying disallowed paths)</li>
+      <li><b>SI-10</b>Information input validation (gates run against tool-call payload before dispatch)</li>
+      <li><b>IR-4</b>Incident handling (thumbs-down captures incident; prevention rule synthesizes mitigation)</li>
+      <li><b>RA-5</b>Vulnerability scanning (lesson DB serves as known-failure corpus)</li>
+      <li><b>SR-3</b>Supply chain protection (gate engine can block npm install / pip install of disallowed packages)</li>
+    </ul>
+  </div>
+</section>
+
+<section id="channels">
+  <div class="container">
+    <h2>Acquisition paths we can support</h2>
+    <div class="grid-2">
+      <div class="card"><h3>SBIR / STTR</h3><p>Phase I and Phase II topics in AI agent safety, secure software development, and autonomous-system guardrails. AFWERX, ARL, DARPA, NSF I-Corps tracks all relevant.</p></div>
+      <div class="card"><h3>OTA (Other Transaction Authority)</h3><p>Faster than traditional FAR. DoD innovation orgs (DIU, Tradewind, AFWERX) regularly use OTAs for AI tooling pilots.</p></div>
+      <div class="card"><h3>GSA Schedule (in progress)</h3><p>On the roadmap once a first pilot is signed. Pre-GSA, ThumbGate is available through resellers and direct OTAs.</p></div>
+      <div class="card"><h3>Federal resellers</h3><p>Open to partnership conversations with Carahsoft, immixGroup, DLT Solutions, and prime-contractor subcontracting paths.</p></div>
+      <div class="card"><h3>Partnership lanes</h3><p>ThumbGate plugs into Claude Code, Cursor, Copilot, Gemini, Codex. When those vendors have a federal deal, ThumbGate rides alongside as the enforcement layer.</p></div>
+      <div class="card"><h3>State + local (RAMP variants)</h3><p>StateRAMP, TX-RAMP, AZ-RAMP attestation paths considered when state-level pilots emerge before federal.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="pilot">
+  <div class="container">
+    <div class="pilot-card">
+      <h2>Contact for pilot</h2>
+      <p>
+        ThumbGate Federal is offered <strong>only under pilot engagement</strong>. We don't sell the licensed Core
+        binary on a public price card — first-pilot terms are negotiated with the contracting officer or program
+        manager based on agency footprint, attestation requirements, and target deployment timeline.
+      </p>
+      <p style="margin-top: 14px;">
+        If you're a federal program manager, contracting officer, prime-contractor lead, or innovation-org
+        representative evaluating AI agent guardrails for a government workload, reach out directly to
+        the founder: <strong>iganapolsky@gmail.com</strong>.
+      </p>
+      <p class="small">
+        Email subject suggestion: <code>[ThumbGate Federal pilot] &lt;agency or contract vehicle&gt;</code>.
+        Include any RFI / RFQ / SBIR topic ID context — same-day response on weekdays, founder-level conversation.
+        For the public dev product (no federal context), see <a href="/" style="color: var(--cyan);">thumbgate.ai</a> instead.
+      </p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div>ThumbGate Federal — a deployment profile of ThumbGate, the pre-action gate engine for AI coding agents.</div>
+    <div class="footer-links">
+      <a href="/">Public dev product</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/guide">Install guide</a>
+      <a href="/dashboard">Dashboard demo</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/federal-expansion.md">Federal technical brief</a>
+      <a href="/terms">Terms</a>
+      <a href="/support">Support</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Light click telemetry for the federal CTA. Same buyer-intent endpoint the rest
+  // of the site uses, so federal interest shows up in the standard pipeline.
+  addEventListener('click', function(e){
+    var a = e.target.closest('[data-cta]');
+    if (!a || !navigator.sendBeacon) return;
+    try {
+      navigator.sendBeacon('/v1/telemetry/ping', new Blob([JSON.stringify({
+        eventType: 'cta_click',
+        clientType: 'web',
+        page: '/federal',
+        ctaId: a.dataset.cta,
+        ctaPlacement: 'federal_landing'
+      })], { type: 'application/json' }));
+    } catch (_) {}
+  });
+</script>
+
+</body>
+</html>
