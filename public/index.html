@@ -421,6 +421,10 @@ __GA_BOOTSTRAP__
   .first-check-step { border: 1px solid var(--border); border-radius: 10px; background: rgba(10,10,11,0.62); padding: 14px; }
   .first-check-step strong { display: block; color: var(--cyan); margin-bottom: 6px; }
   .first-check-step p { font-size: 13px; line-height: 1.5; margin: 0; }
+  .first-check-paid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+  .first-check-paid a { display: flex; flex-direction: column; gap: 4px; min-height: 78px; justify-content: center; border-radius: 8px; padding: 12px; text-decoration: none; border: 1px solid rgba(74,222,128,0.32); background: rgba(74,222,128,0.08); color: var(--text); }
+  .first-check-paid strong { color: var(--green); font-size: 14px; }
+  .first-check-paid span { color: var(--text-muted); font-size: 12px; line-height: 1.35; }
   .first-check-examples { display: grid; gap: 8px; margin-top: 12px; }
   .first-check-example { font-family: var(--mono); border-radius: 8px; padding: 10px 12px; font-size: 12px; overflow-x: auto; line-height: 1.55; }
   .first-check-example.signal-good { color: var(--green); background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.24); }
@@ -632,6 +636,7 @@ __GA_BOOTSTRAP__
     .steps { grid-template-columns: 1fr; }
     .compatibility-grid { grid-template-columns: 1fr; }
     .first-check-steps { grid-template-columns: 1fr; }
+    .first-check-paid { grid-template-columns: 1fr; }
     .gpt-steps { grid-template-columns: 1fr; }
     .seo-grid { grid-template-columns: 1fr; }
     .autoresearch-grid { grid-template-columns: 1fr; }
@@ -711,6 +716,7 @@ __GA_BOOTSTRAP__
       </div>
       <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="event.preventDefault(); navigator.clipboard.writeText('npx thumbgate init'); this.textContent='Copied ✓ — paste in your repo'; setTimeout(()=>{this.textContent='Install Free CLI'},2000); try{posthog.capture('hero_install_click',{cta:'install_cli'})}catch(_){}" class="btn-gpt-page btn-install-hero" title="Click to copy: npx thumbgate init">Install Free CLI</a>
       <a href="/go/pro?utm_source=website&amp;utm_medium=hero_cta&amp;utm_campaign=pro_upgrade&amp;cta_id=hero_go_pro&amp;cta_placement=hero&amp;plan_id=pro&amp;landing_path=%2F" onclick="try{posthog.capture('hero_pro_click',{cta:'go_pro'})}catch(_){};sendFirstPartyTelemetry('hero_pro_checkout_started',{ctaId:'hero_go_pro',ctaPlacement:'hero',planId:'pro',price:19});sendGa4Event('begin_checkout',{currency:'USD',value:19,items:[{item_id:'pro',item_name:'ThumbGate Pro'}]});" class="btn-pro-page hero-pro">Get Pro — $19/mo</a>
+      <a href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__" onclick="try{posthog.capture('hero_diagnostic_click',{cta:'pay_diagnostic'})}catch(_){};sendFirstPartyTelemetry('hero_diagnostic_checkout_started',{ctaId:'hero_diagnostic_checkout',ctaPlacement:'hero',planId:'diagnostic',price:sprintDiagnosticPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:sprintDiagnosticPriceDollars,items:[{item_id:'workflow_hardening_diagnostic',item_name:'Workflow Hardening Diagnostic'}]});" class="btn-gpt-page hero-diagnostic">Book $499 Diagnostic</a>
     </div>
 
     <div class="hero-trust-bar">
@@ -737,6 +743,20 @@ __GA_BOOTSTRAP__
           <strong>3. The repeat gets blocked</strong>
           <p>The next matching tool call is stopped before execution, with a reason the agent can use to choose a safer plan.</p>
         </div>
+      </div>
+      <div class="first-check-paid" aria-label="Paid activation options">
+        <a href="https://buy.stripe.com/4gM6oHgH2bTw4lH6i73sI0z?utm_source=homepage&amp;utm_medium=first_view_paid_path&amp;utm_campaign=first_rule&amp;utm_content=first_check_card" onclick="sendFirstPartyTelemetry('first_rule_checkout_started',{ctaId:'first_check_first_rule',ctaPlacement:'first_check',planId:'first_rule',price:1});sendGa4Event('begin_checkout',{currency:'USD',value:1,items:[{item_id:'first_failure_rule',item_name:'First repeated-failure rule'}]});">
+          <strong>First rule checkout — $1</strong>
+          <span>Send one repeated failure and get the first prevention rule path.</span>
+        </a>
+        <a href="https://buy.stripe.com/aFa8wPgH29Lo4lH35V3sI0w?utm_source=homepage&amp;utm_medium=first_view_paid_path&amp;utm_campaign=quick_read&amp;utm_content=first_check_card" onclick="sendFirstPartyTelemetry('quick_read_checkout_started',{ctaId:'first_check_quick_read',ctaPlacement:'first_check',planId:'quick_read',price:19});sendGa4Event('begin_checkout',{currency:'USD',value:19,items:[{item_id:'quick_read',item_name:'Workflow quick read'}]});">
+          <strong>Quick read — $19</strong>
+          <span>Fast review of the workflow, failure pattern, and next gate.</span>
+        </a>
+        <a href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__" onclick="sendFirstPartyTelemetry('first_check_diagnostic_checkout_started',{ctaId:'first_check_diagnostic',ctaPlacement:'first_check',planId:'diagnostic',price:sprintDiagnosticPriceDollars});sendGa4Event('begin_checkout',{currency:'USD',value:sprintDiagnosticPriceDollars,items:[{item_id:'workflow_hardening_diagnostic',item_name:'Workflow Hardening Diagnostic'}]});">
+          <strong>Diagnostic — $499</strong>
+          <span>Paid proof plan for one agent workflow that keeps costing review time.</span>
+        </a>
       </div>
     </div>
 

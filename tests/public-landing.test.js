@@ -120,19 +120,18 @@ test('public landing page exposes env-driven paid sprint checkout path', () => {
   assert.doesNotMatch(landingPage, /founder_workflow_diagnostic_checkout_started/);
   assert.doesNotMatch(landingPage, /Pay \$99 diagnostic/);
   assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/7sY4gzgH24r49G17mb3sI0g/);
-  assert.doesNotMatch(landingPage, /First AI Agent Failure Rule/);
-  assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/4gM6oHgH2bTw4lH6i73sI0z/);
+  assert.match(landingPage, /First rule checkout — \$1/);
+  assert.match(landingPage, /https:\/\/buy\.stripe\.com\/4gM6oHgH2bTw4lH6i73sI0z/);
   assert.doesNotMatch(landingPage, /Pay \$1 first rule/);
-  assert.doesNotMatch(landingPage, /first_failure_rule_checkout_started/);
+  assert.match(landingPage, /first_rule_checkout_started/);
   assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/7sYfZhgH29LodWhdKz3sI0v/);
   assert.doesNotMatch(landingPage, /Pay \$99 teardown/);
-  assert.doesNotMatch(landingPage, /AI Agent Failure Quick Read/);
+  assert.match(landingPage, /Quick read — \$19/);
   assert.doesNotMatch(landingPage, /Pay \$19 quick read/);
-  assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
-  assert.doesNotMatch(landingPage, /quick_read_checkout_started/);
-  // Hero CTA pair is intentionally Free + Pro $19/mo for cold-visitor conversion.
-  // The $499 diagnostic still ships via the workflow-sprint-intake paid path below ("Pay for diagnostic" card).
-  assert.doesNotMatch(landingPage, /Pay \$499 diagnostic/);
+  assert.match(landingPage, /https:\/\/buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
+  assert.match(landingPage, /quick_read_checkout_started/);
+  assert.match(landingPage, /Book \$499 Diagnostic/);
+  assert.match(landingPage, /Diagnostic — \$499/);
   assert.match(landingPage, /Get Pro — \$19\/mo/);
   assert.match(landingPage, /Pay for diagnostic/);
   assert.doesNotMatch(landingPage, /Pay \$1500 sprint/);
