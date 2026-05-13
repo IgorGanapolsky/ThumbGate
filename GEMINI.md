@@ -126,3 +126,52 @@ Violations block merge. Pin fixes with regression tests in `tests/public-core-bo
 5. **Dry Run:** Confirm operational readiness for the next session and report before/after branch-worktree cleanup counts.
 6. **Secrets:** Never persist secrets, PATs, or copied credentials into directives, memory, commits, or PR text.
 7. **Confirmation:** Say: **"Done merging PRs. CI passing. System hygiene complete. Ready for next session."** only after evidence is verified.
+
+## Session Hygiene Protocol (CEO ↔ CTO contract)
+
+Adopted 2026-05-12 after a full PR/branch sweep. Persisted here so every future CTO session boots with the same operating contract.
+
+### Session Start Protocol
+1. Read `CLAUDE.md`, `AGENTS.md`, `GEMINI.md` directives top-to-bottom.
+2. Query local lesson DB (`.claude/memory/feedback/*`) and cross-session memory (`~/.claude/projects/-Users-…/memory/MEMORY.md`).
+3. Review **all** open PRs (`gh pr list --state open`) and their CI rollups.
+4. List remote branches (`git branch -r`) and identify orphans (branches with no open PR, closed-not-merged PR, or no PR at all).
+
+### Continuous PR & Branch Hygiene
+- **Mergeable PRs with all SUCCESS checks**: submit `/trunk merge` immediately. Never leave a green PR open.
+- **BEHIND PRs with all SUCCESS checks**: also `/trunk merge` — Trunk rebases against latest main and queues.
+- **Failed `Trunk Merge Queue (main)`**: do NOT spam `/trunk merge` retries. Investigate the integration failure once; if the cause is unclear after one read, document and defer.
+- **DIRTY or stale (≥5 days, closed-not-merged) branches**: delete the remote branch in batches via `git push origin --delete`. Do NOT conflict-resolve stale branches.
+- **Local branches with `[gone]` upstream**: `git branch -D` once their remote is gone (auto after stale-cleanup).
+- **Worktrees marked `prunable`**: `git worktree prune` + `git worktree remove --force` for dirs >5 days old.
+
+### Evidence-Based Communication (non-negotiable)
+- Every claim ships with proof: file counts, command output, CI rollup state, commit SHA.
+- Use **"I believe this is done, verifying now…"** before each verification step, then state the result with evidence.
+- Never say "done", "deployed", "shipped", "live", or "merged" without first running the relevant verification:
+  - PRs: `gh pr view --json reviewDecision,mergeStateStatus,statusCheckRollup` showing CLEAN + SUCCESS + merged=true.
+  - Deploys: the full Deployment Verification Gate (`/health` version grep + `/dashboard` grep + a route-specific 302/200 grep for the change shipped).
+
+### No Manual Handoffs
+- Never instruct the CEO to run a command, click a dashboard, or paste a value if the CTO can do it.
+- The only exceptions: actions that require credentials the CTO cannot legitimately hold (live Stripe `sk_live_` reveal behind 2FA, X passcode, GitHub PAT rotation).
+- For each unavoidable handoff: state exactly what is needed, why I can't do it, and what I do once it's available.
+
+### Secret Handling
+- Never commit secrets to tracked files (incl. directives).
+- Never echo pasted tokens/PATs/secret keys back into the conversation transcript.
+- If a credential leaks into the transcript (chat or tool output): surface immediately, advise rotation, do not reuse.
+- The `gh` CLI's existing OAuth token is the canonical Git authority. Don't replace it with a pasted PAT.
+
+### Honesty Protocol
+- Lying is not allowed. "Code shipped ≠ outcome achieved." Verify against production data before framing as solved.
+- Failures must be surfaced as they happen, not buried under retries.
+- Mistakes get logged to the local lesson DB via `.claude/scripts/feedback/capture-feedback.js`.
+
+### Post-Task Checklist
+- [ ] All open PRs reviewed; mergeable ones submitted to Trunk queue.
+- [ ] Stale orphan branches deleted (remote + local).
+- [ ] Detached/prunable worktrees removed.
+- [ ] CI green on `main` (verified via `gh run list --branch main`).
+- [ ] Lessons logged to lesson DB.
+- [ ] Secrets rotated if any leaked in-session.
