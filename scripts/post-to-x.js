@@ -31,6 +31,18 @@ const SEARCH_URL = 'https://api.twitter.com/2/tweets/search/recent';
 const MAX_RETRIES = 3;
 const RETRY_BASE_MS = 5000;
 
+function safeLogValue(value, maxLength = 500) {
+  return String(value ?? '')
+    .replace(/[\r\n\t]/g, ' ')
+    .replace(/[\u0000-\u001f\u007f]/g, '')
+    .slice(0, maxLength);
+}
+
+function safeMetricCount(value) {
+  const count = Number(value);
+  return Number.isFinite(count) && count >= 0 ? Math.trunc(count) : 0;
+}
+
 // ---------------------------------------------------------------------------
 // OAuth helpers
 // ---------------------------------------------------------------------------
@@ -126,8 +138,8 @@ async function postTweet(text, replyToId, { dryRun = false } = {}) {
   }
 
   if (dryRun) {
-    const label = replyToId ? ` (reply to ${replyToId})` : '';
-    console.log(`  🏜️  [dry-run] Would post${label}: ${text.slice(0, 120)}...`);
+    const label = replyToId ? ` (reply to ${safeLogValue(replyToId, 80)})` : '';
+    console.log(`  🏜️  [dry-run] Would post${label}: ${safeLogValue(text, 120)}...`);
     return `dry-run-${Date.now()}`;
   }
 
@@ -145,11 +157,11 @@ async function postTweet(text, replyToId, { dryRun = false } = {}) {
   const data = await resp.json();
 
   if (!resp.ok) {
-    console.error(`  ✗ Tweet failed (${resp.status}):`, JSON.stringify(data));
+    console.error(`  ✗ Tweet failed (${resp.status}): ${safeLogValue(JSON.stringify(data), 500)}`);
     return null;
   }
 
-  console.log(`  ✓ Posted tweet ${data.data.id}: ${text.slice(0, 60)}...`);
+  console.log(`  ✓ Posted tweet ${safeLogValue(data.data.id, 80)}: ${safeLogValue(text, 60)}...`);
   return data.data.id;
 }
 
@@ -161,7 +173,7 @@ async function searchTweets(query, { maxResults = 10, dryRun = false } = {}) {
   };
 
   if (dryRun) {
-    console.log(`  🏜️  [dry-run] Would search: "${query}" (max ${maxResults})`);
+    console.log(`  🏜️  [dry-run] Would search: "${safeLogValue(query, 160)}" (max ${maxResults})`);
     return [];
   }
 
@@ -181,11 +193,15 @@ async function searchTweets(query, { maxResults = 10, dryRun = false } = {}) {
   const data = await resp.json();
 
   if (!resp.ok) {
-    console.error(`  ✗ Search failed (${resp.status}):`, JSON.stringify(data));
+    console.error(`  ✗ Search failed (${resp.status}): ${safeLogValue(JSON.stringify(data), 500)}`);
     return [];
   }
 
   return data.data || [];
+}
+
+function formatSearchResult(tweet) {
+  return `  [${safeLogValue(tweet.id, 80)}] ${safeLogValue(tweet.text, 100)}...`;
 }
 
 // ---------------------------------------------------------------------------
@@ -239,7 +255,7 @@ async function postThread(tweets, { dryRun = false } = {}) {
 
   console.log(`\n✅ Thread ${dryRun ? 'preview' : 'posted'}! ${tweets.length} tweets.`);
   if (!dryRun) {
-    console.log(`   https://x.com/IgorGanapolsky/status/${previousId}\n`);
+    console.log(`   https://x.com/IgorGanapolsky/status/${safeLogValue(previousId, 80)}\n`);
   }
 }
 
@@ -272,8 +288,8 @@ async function main() {
     } else {
       results.forEach(t => {
         const metrics = t.public_metrics || {};
-        console.log(`  [${t.id}] ${t.text.slice(0, 100)}...`);
-        console.log(`    ↩ ${metrics.reply_count || 0}  🔁 ${metrics.retweet_count || 0}  ❤️ ${metrics.like_count || 0}\n`);
+        console.log(formatSearchResult(t));
+        console.log(`    ↩ ${safeMetricCount(metrics.reply_count)}  🔁 ${safeMetricCount(metrics.retweet_count)}  ❤️ ${safeMetricCount(metrics.like_count)}\n`);
       });
     }
   } else if (command === '--reply') {
@@ -285,7 +301,7 @@ async function main() {
     }
     const id = await postTweet(text, tweetId, { dryRun });
     if (id) {
-      console.log(`\n✅ Reply posted: https://x.com/IgorGanapolsky/status/${id}\n`);
+      console.log(`\n✅ Reply posted: https://x.com/IgorGanapolsky/status/${safeLogValue(id, 80)}\n`);
     }
   } else if (command === '--scheduled') {
     const tips = [
@@ -301,7 +317,7 @@ async function main() {
     console.log(`📅 Scheduled tweet (tip #${dayIndex + 1}):`);
     const id = await postTweet(tip, null, { dryRun });
     if (id) {
-      console.log(`\n✅ https://x.com/IgorGanapolsky/status/${id}\n`);
+      console.log(`\n✅ https://x.com/IgorGanapolsky/status/${safeLogValue(id, 80)}\n`);
     }
   } else if (command === '--thread') {
     const candidates = [
@@ -322,14 +338,14 @@ async function main() {
     }
 
     console.log(`Parsed ${tweets.length} tweets:`);
-    tweets.forEach((t, i) => console.log(`  ${i + 1}. (${t.length}c) ${t.slice(0, 80)}...`));
+    tweets.forEach((t, i) => console.log(`  ${i + 1}. (${t.length}c) ${safeLogValue(t, 80)}...`));
     console.log('');
 
     await postThread(tweets, { dryRun });
   } else if (command) {
     const id = await postTweet(command, null, { dryRun });
     if (id) {
-      console.log(`\n✅ https://x.com/IgorGanapolsky/status/${id}\n`);
+      console.log(`\n✅ https://x.com/IgorGanapolsky/status/${safeLogValue(id, 80)}\n`);
     }
   } else {
     const tweet = `🚀 Launched ThumbGate — local-first memory & ThumbGate feedback pipeline for AI agents.
@@ -345,7 +361,7 @@ Pro: $19/mo or $149/yr
 
     const id = await postTweet(tweet, null, { dryRun });
     if (id) {
-      console.log(`\n✅ https://x.com/IgorGanapolsky/status/${id}\n`);
+      console.log(`\n✅ https://x.com/IgorGanapolsky/status/${safeLogValue(id, 80)}\n`);
     }
   }
 }
@@ -362,6 +378,9 @@ module.exports = {
   percentEncode,
   generateOAuthSignature,
   parseTweetsFromThread,
+  formatSearchResult,
+  safeMetricCount,
+  safeLogValue,
 };
 
 if (require.main === module) {
