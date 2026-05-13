@@ -99,6 +99,8 @@ function launchLocalServer(options = {}) {
     THUMBGATE_LOCAL_API_ORIGIN: origin.origin,
     THUMBGATE_PROJECT_DIR: projectDir,
     THUMBGATE_PRO_MODE: '1',
+    THUMBGATE_BUILD_SHA: env.THUMBGATE_BUILD_SHA || 'local-runtime',
+    THUMBGATE_BUILD_GENERATED_AT: env.THUMBGATE_BUILD_GENERATED_AT || new Date().toISOString(),
   };
 
   if (resolvedKey && resolvedKey.key) {
