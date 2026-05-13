@@ -47,6 +47,7 @@ fs.writeFileSync(
 );
 
 const { startServer, __test__ } = require('../src/api/server');
+const apiServerModulePath = require.resolve('../src/api/server');
 const billing = require('../scripts/billing');
 const gatesEngine = require('../scripts/gates-engine');
 const { listGateTemplates } = require('../scripts/gate-templates');
@@ -171,12 +172,63 @@ test('/health returns degraded when feedback dir is not writable', async () => {
   }
 });
 
+test('/health returns degraded when build metadata is missing', async () => {
+  const originalMetadataPath = process.env.THUMBGATE_BUILD_METADATA_PATH;
+  const missingMetadataPath = path.join(tmpFeedbackDir, 'missing-build-metadata.json');
+  let isolatedHandle;
+
+  process.env.THUMBGATE_BUILD_METADATA_PATH = missingMetadataPath;
+  delete require.cache[apiServerModulePath];
+  const isolatedServerModule = require('../src/api/server');
+
+  try {
+    isolatedHandle = await isolatedServerModule.startServer({ port: 0, host: '127.0.0.1' });
+    const isolatedOrigin = `http://localhost:${isolatedHandle.port}`;
+    const res = await fetch(new URL('/health', isolatedOrigin), { headers: authHeader });
+    assert.equal(res.status, 503);
+    const body = await res.json();
+    assert.equal(body.status, 'degraded');
+    assert.deepEqual(body.checks.buildMetadata, { ok: false, error: 'missing_buildSha' });
+  } finally {
+    if (isolatedHandle) {
+      await new Promise((resolve) => isolatedHandle.server.close(resolve));
+    }
+    if (originalMetadataPath === undefined) delete process.env.THUMBGATE_BUILD_METADATA_PATH;
+    else process.env.THUMBGATE_BUILD_METADATA_PATH = originalMetadataPath;
+    delete require.cache[apiServerModulePath];
+    require('../src/api/server');
+  }
+});
+
 test('/healthz surfaces a per-check breakdown', async () => {
   const res = await fetch(apiUrl('/healthz'), { headers: authHeader });
   const body = await res.json();
   assert.ok(body.checks, '/healthz response must include a `checks` object');
   assert.ok(body.checks.feedbackLog, 'checks.feedbackLog must exist');
   assert.ok(body.checks.memoryLog, 'checks.memoryLog must exist');
+});
+
+test('/healthz returns degraded when a log directory is not writable', async () => {
+  const originalAccessSync = fs.accessSync;
+  fs.accessSync = (target, mode) => {
+    if (target === tmpFeedbackDir && mode === fs.constants.W_OK) {
+      const error = new Error('log dir not writable');
+      error.code = 'EACCES';
+      throw error;
+    }
+    return originalAccessSync(target, mode);
+  };
+
+  try {
+    const res = await fetch(apiUrl('/healthz'), { headers: authHeader });
+    assert.equal(res.status, 503);
+    const body = await res.json();
+    assert.equal(body.status, 'degraded');
+    assert.deepEqual(body.checks.feedbackLog, { ok: false, error: 'EACCES' });
+    assert.deepEqual(body.checks.memoryLog, { ok: false, error: 'EACCES' });
+  } finally {
+    fs.accessSync = originalAccessSync;
+  }
 });
 
 test('PostHog proxy path allowlist blocks sibling-path SSRF attempts', () => {
