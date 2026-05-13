@@ -15,6 +15,7 @@ const {
   parseTweetsFromThread,
   safeMetricCount,
   safeLogValue,
+  safeTweetId,
 } = require('../scripts/post-to-x');
 
 const SCRIPT = path.join(__dirname, '..', 'scripts', 'post-to-x.js');
@@ -77,6 +78,14 @@ describe('safeMetricCount', () => {
     assert.equal(safeMetricCount('5'), 5);
     assert.equal(safeMetricCount('1\nforged'), 0);
     assert.equal(safeMetricCount(-1), 0);
+  });
+});
+
+describe('safeTweetId', () => {
+  it('keeps only digits for tweet URL interpolation', () => {
+    assert.equal(safeTweetId('123\r\nFORGED'), '123');
+    assert.equal(safeTweetId('dry-run-123'), 'dry-run-123');
+    assert.equal(safeTweetId('abc'), 'unknown');
   });
 });
 
@@ -246,13 +255,13 @@ describe('searchTweets', () => {
 });
 
 describe('formatSearchResult', () => {
-  it('sanitizes tweet ids and text for console output', () => {
+  it('logs only a normalized tweet id and text length for search results', () => {
     const line = formatSearchResult({
       id: '123\nforged',
       text: 'hello\r\nworld',
     });
 
-    assert.equal(line, '  [123 forged] hello  world...');
+    assert.equal(line, '  [123] 12 chars');
   });
 });
 
