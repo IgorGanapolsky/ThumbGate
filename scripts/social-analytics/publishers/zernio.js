@@ -23,6 +23,13 @@ const DEFAULT_DEDUP_LOG_PATH = path.join(__dirname, '..', '..', '..', '.thumbgat
 
 loadLocalEnv();
 
+function safeLogValue(value, maxLength = 500) {
+  return String(value ?? '')
+    .replace(/[\r\n\t]/g, ' ')
+    .replace(/[\u0000-\u001f\u007f]/g, '')
+    .slice(0, maxLength);
+}
+
 // ---------------------------------------------------------------------------
 // Dedup — backed by marketing DB (SQLite) with JSON-file fallback
 // ---------------------------------------------------------------------------
@@ -519,7 +526,7 @@ async function schedulePost(content, platforms, scheduledFor, timezone, options 
   for (const p of dedupedPlatforms) {
     recordPost(content, p.platform);
   }
-  console.log(`[zernio:publisher] Post scheduled. id=${data.id ?? 'unknown'}`);
+  console.log(`[zernio:publisher] Post scheduled. id=${safeLogValue(data.id ?? 'unknown', 120)}`);
   return data;
 }
 
@@ -588,7 +595,7 @@ async function publishToAllPlatforms(content, options = {}) {
       });
       published.push({ platform, result });
     } catch (err) {
-      console.error(`[zernio:publisher] Bulk publish failed for ${platform}: ${err.message}`);
+      console.error(`[zernio:publisher] Bulk publish failed for ${safeLogValue(platform, 80)}: ${safeLogValue(err?.message || err, 500)}`);
       errors.push({ error: err.message, platform });
     }
   }
@@ -617,6 +624,7 @@ module.exports = {
   normalizePostResult,
   requestMediaPresign,
   resolveAccountId,
+  safeLogValue,
   uploadLocalMedia,
 };
 
@@ -655,7 +663,7 @@ if (require.main === module) {
         const result = await schedulePost(text, platforms, schedule, timezone, {
           utm: { source: 'zernio', medium, campaign },
         });
-        console.log(`[zernio:publisher] Scheduled. id=${result.id ?? 'unknown'}`);
+        console.log(`[zernio:publisher] Scheduled. id=${safeLogValue(result.id ?? 'unknown', 120)}`);
       } else {
         const result = await publishToAllPlatforms(text, {
           campaign,
@@ -670,7 +678,7 @@ if (require.main === module) {
         }
       }
     } catch (err) {
-      console.error('[zernio:publisher] Failed:', err.message);
+      console.error('[zernio:publisher] Failed:', safeLogValue(err?.message || err, 500));
       process.exit(1);
     }
   })();

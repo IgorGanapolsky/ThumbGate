@@ -13,6 +13,7 @@ const {
   postThread,
   searchTweets,
   parseTweetsFromThread,
+  safeMetricCount,
   safeLogValue,
 } = require('../scripts/post-to-x');
 
@@ -67,6 +68,15 @@ describe('safeLogValue', () => {
   it('normalizes nullish log values to an empty string', () => {
     assert.equal(safeLogValue(null), '');
     assert.equal(safeLogValue(undefined), '');
+  });
+});
+
+describe('safeMetricCount', () => {
+  it('normalizes untrusted metric values before console interpolation', () => {
+    assert.equal(safeMetricCount(12.9), 12);
+    assert.equal(safeMetricCount('5'), 5);
+    assert.equal(safeMetricCount('1\nforged'), 0);
+    assert.equal(safeMetricCount(-1), 0);
   });
 });
 

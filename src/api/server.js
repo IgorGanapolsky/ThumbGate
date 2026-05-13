@@ -209,6 +209,7 @@ const CODEX_PLUGIN_PAGE_PATH = path.resolve(__dirname, '../../public/codex-plugi
 const COMPARE_PAGE_PATH = path.resolve(__dirname, '../../public/compare.html');
 const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
 const NUMBERS_PAGE_PATH = path.resolve(__dirname, '../../public/numbers.html');
+const FEDERAL_PAGE_PATH = path.resolve(__dirname, '../../public/federal.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
 const COMPARE_DIR = path.resolve(__dirname, '../../public/compare');
@@ -2488,10 +2489,19 @@ function renderRobotsTxt(runtimeConfig) {
   return [
     'User-agent: *',
     'Allow: /',
+    // 2026-05-12: every crawler GET on /checkout/pro creates a live Stripe
+    // session even when no human is on the other end. Stripe sees 50 sessions
+    // in 24h, 0 paid, 0 email captured. Disallow so non-human fetchers stop
+    // inflating the "checkout starts" metric and creating zombie sessions.
+    // Real humans still reach checkout via JS-driven clicks (not crawled).
+    'Disallow: /checkout/',
+    'Disallow: /v1/billing/',
     '',
     '# AI crawler access — allow all major LLM crawlers',
     'User-agent: GPTBot',
     'Allow: /',
+    'Disallow: /checkout/',
+    'Disallow: /v1/billing/',
     '',
     'User-agent: ClaudeBot',
     'Allow: /',
@@ -4373,6 +4383,28 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && (pathname === '/federal' || pathname === '/federal.html' || pathname === '/government' || pathname === '/gov')) {
+      // Federal lead-gen page. Routed through servePublicMarketingPage so agency
+      // arrivals via SBIR / GSA / outbound channels capture UTM attribution and
+      // landing_page_view telemetry for downstream pilot-pipeline analysis.
+      // /government and /gov redirect-friendly aliases serve the same page so
+      // common search queries land correctly.
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(FEDERAL_PAGE_PATH, 'utf-8'),
+          extraTelemetry: { pageType: 'federal' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Federal page not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/learn/learn.css') {
       try {
         const cssPath = path.join(LEARN_DIR, 'learn.css');
@@ -4905,11 +4937,49 @@ async function addContext(){
     }
 
     if (isGetLikeRequest && pathname === '/health') {
-      sendJson(res, 200, {
-        status: 'ok',
+      // History (2026-05-12): /health used to return status: 'ok' unconditionally
+      // with zero downstream checks. Uptime monitors saw "healthy" when Stripe
+      // was down, when feedback-dir was unwritable, when env was misconfigured.
+      // The fix is shallow but meaningful: probe each critical subsystem and
+      // surface failures with HTTP 503 + a per-check breakdown.
+      const checks = {};
+      let allOk = true;
+
+      // Check 1: feedback dir exists and is writable.
+      try {
+        const { FEEDBACK_DIR } = getFeedbackPaths();
+        fs.accessSync(FEEDBACK_DIR, fs.constants.W_OK);
+        checks.feedbackDir = { ok: true };
+      } catch (err) {
+        checks.feedbackDir = { ok: false, error: err?.code || 'inaccessible' };
+        allOk = false;
+      }
+
+      // Check 2: hosted config resolves the canonical app origin.
+      // If appOrigin is missing/empty, redirects + checkout flow break silently.
+      if (hostedConfig?.appOrigin) {
+        checks.hostedConfig = { ok: true };
+      } else {
+        checks.hostedConfig = { ok: false, error: 'missing_appOrigin' };
+        allOk = false;
+      }
+
+      // Check 3: build metadata loaded. If BUILD_METADATA.buildSha is empty,
+      // Railway didn't inject the deploy SHA — observability is degraded.
+      if (BUILD_METADATA?.buildSha) {
+        checks.buildMetadata = { ok: true };
+      } else {
+        checks.buildMetadata = { ok: false, error: 'missing_buildSha' };
+        allOk = false;
+      }
+
+      const statusCode = allOk ? 200 : 503;
+      sendJson(res, statusCode, {
+        status: allOk ? 'ok' : 'degraded',
         version: pkg.version,
         buildSha: BUILD_METADATA.buildSha,
         uptime: process.uptime(),
+        checks,
         deployment: {
           appOrigin: hostedConfig.appOrigin,
           billingApiBaseUrl: hostedConfig.billingApiBaseUrl,
@@ -4921,11 +4991,26 @@ async function addContext(){
     }
 
     if (isGetLikeRequest && pathname === '/healthz') {
+      // /healthz is the deeper internal probe — verifies feedback log + memory log
+      // paths exist and are writable. Returns 503 when either check fails.
       const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH } = requestFeedbackPaths;
-      sendJson(res, 200, {
-        status: 'ok',
+      const checks = {};
+      let allOk = true;
+      for (const [label, p] of [['feedbackLog', FEEDBACK_LOG_PATH], ['memoryLog', MEMORY_LOG_PATH]]) {
+        try {
+          const dir = path.dirname(p);
+          fs.accessSync(dir, fs.constants.W_OK);
+          checks[label] = { ok: true };
+        } catch (err) {
+          checks[label] = { ok: false, error: err?.code || 'inaccessible' };
+          allOk = false;
+        }
+      }
+      sendJson(res, allOk ? 200 : 503, {
+        status: allOk ? 'ok' : 'degraded',
         feedbackLogPath: FEEDBACK_LOG_PATH,
         memoryLogPath: MEMORY_LOG_PATH,
+        checks,
       }, {}, {
         headOnly: isHeadRequest,
       });
@@ -5237,6 +5322,62 @@ async function addContext(){
           detail: 'OpenAPI spec not found.',
         });
       }
+      return;
+    }
+
+    // Public terms of service — required by Stripe / Stripe Checkout for the
+    // "Terms of service URL" field in Business → Public details. Mirrors the
+    // /privacy + /support pages: thin HTML, no external deps, no DB hit.
+    if (isGetLikeRequest && pathname === '/terms') {
+      sendHtml(res, 200, `<!DOCTYPE html><html><head><title>Terms of Service — ThumbGate</title></head><body>
+<h1>Terms of Service</h1>
+<p><strong>ThumbGate</strong> (npm: thumbgate)</p>
+<p>Last updated: 2026-05-12</p>
+<h2>The Service</h2>
+<p>ThumbGate provides pre-action gates for AI coding agents: a local CLI (MIT-licensed) and an optional hosted tier at thumbgate-production.up.railway.app. By installing the CLI or paying for a subscription, you agree to these terms.</p>
+<h2>Payment</h2>
+<p>Paid tiers are billed through Stripe. Subscriptions auto-renew until cancelled. One-off purchases (Sprint Diagnostic, Workflow Sprint, Quick Read, Workflow Teardown, First Failure Rule) are charged once.</p>
+<h2>Refunds</h2>
+<p>Pro and Team subscriptions: cancel anytime; we issue a full refund within 7 days of the first charge, prorated thereafter. One-off purchases: refund on request if we cannot deliver the scoped artifact.</p>
+<h2>Acceptable Use</h2>
+<p>You may not use ThumbGate to (a) circumvent the safety controls of other AI providers, (b) generate malware or content that violates third-party terms, or (c) resell the hosted tier without written permission.</p>
+<h2>Disclaimer of Warranty</h2>
+<p>The service is provided "as is", without warranty of any kind. ThumbGate is a guard rail, not a guarantee. We do not warrant that every AI-agent mistake will be prevented.</p>
+<h2>Limitation of Liability</h2>
+<p>Total liability for any claim is limited to the amount you paid in the 12 months preceding the claim.</p>
+<h2>Governing Law</h2>
+<p>These terms are governed by the laws of the State of New York, United States.</p>
+<h2>Changes</h2>
+<p>We may update these terms; material changes will be announced via the email on file at least 14 days before they take effect.</p>
+<h2>Contact</h2><p>igor.ganapolsky@gmail.com</p>
+<p><a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> · <a href="/privacy">Privacy</a> · <a href="/support">Support</a></p>
+</body></html>`, {}, {
+        headOnly: isHeadRequest,
+      });
+      return;
+    }
+
+    // Public support / contact page — required for Stripe Business → Public
+    // details "Customer support URL" field. Single source of truth for how
+    // customers reach us (email, GitHub issues, status page).
+    if (isGetLikeRequest && pathname === '/support') {
+      sendHtml(res, 200, `<!DOCTYPE html><html><head><title>Support — ThumbGate</title></head><body>
+<h1>Support</h1>
+<p><strong>ThumbGate</strong> support, billing, and contact paths.</p>
+<h2>Email</h2>
+<p>For billing questions, refunds, subscription changes, or technical issues with the hosted tier: <a href="mailto:igor.ganapolsky@gmail.com">igor.ganapolsky@gmail.com</a>. We reply within one business day.</p>
+<h2>GitHub Issues</h2>
+<p>For bugs, CLI questions, and feature requests in the open-source CLI: <a href="https://github.com/IgorGanapolsky/ThumbGate/issues">github.com/IgorGanapolsky/ThumbGate/issues</a>.</p>
+<h2>Status</h2>
+<p>Hosted-tier status: check <a href="https://thumbgate-production.up.railway.app/health">/health</a> for current health. Railway-hosted; rebuilds take 2-5 minutes.</p>
+<h2>Refunds</h2>
+<p>Pro / Team subscriptions: 7-day full refund window from first charge. One-off purchases: refund on request if we cannot deliver. Email the address above.</p>
+<h2>Security</h2>
+<p>Disclose vulnerabilities by email; please do not post to public GitHub issues. We acknowledge within 48 hours.</p>
+<p><a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
+</body></html>`, {}, {
+        headOnly: isHeadRequest,
+      });
       return;
     }
 
