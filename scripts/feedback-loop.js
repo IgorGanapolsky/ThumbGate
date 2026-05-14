@@ -1398,7 +1398,20 @@ function captureFeedback(params) {
   if (feedbackEvent.signal === 'negative') {
     try {
       const autoPromote = require('./auto-promote-gates');
-      autoPromote.promote(FEEDBACK_LOG_PATH);
+      const promoteResult = autoPromote.promote(FEEDBACK_LOG_PATH);
+      // First-rule activation telemetry: anonymous ping the first time
+      // a prevention rule auto-promotes for this install. Idempotent —
+      // see scripts/activation-tracker.js. Critical for activation funnel
+      // analytics; no rule content, just install_id + days_to_first_rule.
+      if (promoteResult && Array.isArray(promoteResult.promotions) && promoteResult.promotions.length > 0) {
+        try {
+          const { recordFirstRulePromotion } = require('./activation-tracker');
+          recordFirstRulePromotion({
+            promotionCount: promoteResult.promotions.length,
+            totalGates: promoteResult.totalGates,
+          });
+        } catch { /* activation telemetry is non-critical */ }
+      }
     } catch { /* Gate promotion is non-critical */ }
   }
 
