@@ -49,3 +49,23 @@ Same window as #11 Rob May. Both quote-points are time-sensitive — the freshne
 | # | Target | Sent? | Date | Reply? | Next step |
 |---|---|---|---|---|---|
 | 13 | Stuart Woolley | ☐ | | | Find current contact path on Medium profile, send Pitch above |
+
+---
+
+## PC-2. ultrathink-art (agent-architect-kit) — Bluesky reply, 2026-05-14
+
+**Real-time qualified inbound.** Engaged within 16 minutes of the TNS Bluesky post. Their repo: https://github.com/ultrathink-art/agent-architect-kit
+
+Their thesis (verbatim from the reply): *"Role-based tool restrictions are the closest we've found. Our social agent literally can't see the codebase — enforced at config level, not instruction level. Structural separation beats 'please don't touch the DB' in instructions."*
+
+**Why this is a partner-channel target, not a competitor:**
+- Their primitive is **config-time structural separation** (which tools an agent can SEE)
+- ThumbGate's primitive is **pre-execution behavioral check** (whether an action should EXECUTE given context)
+- Strictly orthogonal — the layered combination (their structural restriction + our PreToolUse check) covers both failure modes
+- ThumbGate already adopted some of their CLAUDE.md patterns (April 2026, pattern-harvest documented in our own CLAUDE.md)
+- Mutual amplification, not zero-sum competition
+
+**Engagement state:** Replied in-thread peer-voice 2026-05-14T21:35Z. Reply posted at `at://...3mltschdrp72c`.
+
+**Next step:** Watch for their counter-reply. If they engage further, escalate to DM with a partnership pitch:
+> "Architect-kit's structural separation + ThumbGate's PreToolUse check are the cleanest layered story I've seen in the agent-safety stack. Would love to (a) co-author a blog post on the layered approach, (b) link from our docs to your repo and vice-versa, (c) explore whether agent-architect-kit's config could emit ThumbGate rules as a build target. 20 min?"
