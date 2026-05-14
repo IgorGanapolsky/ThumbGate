@@ -180,3 +180,105 @@ test('classify_entry uses regex word boundaries (no false positive on substring 
     `'emerged' must NOT match the 'merge' keyword — got ${JSON.stringify(result.emerged_not_merge.categories)}`,
   );
 });
+
+test('normalize_signal handles every alias and reward fallback', () => {
+  // Pin every sentiment alias supported by the shared module so a future
+  // edit to SIGNAL_FIELD_ALIASES / POSITIVE_TOKENS / NEGATIVE_TOKENS
+  // cannot silently drop a shape an adapter is already using.
+  const probe = `
+import json
+import sys
+sys.path.insert(0, ${JSON.stringify(path.dirname(SCRIPT))})
+from feedback_categories import normalize_signal
+
+cases = {
+    'thumbsdown_string': {'signal': 'thumbsdown'},
+    'thumbs_down_underscore': {'signal': 'thumbs_down'},
+    'down_emoji': {'signal': '\u{1f44e}'},
+    'up_emoji': {'feedback': '\u{1f44d}'},
+    'reward_positive_int': {'reward': 1},
+    'reward_negative_float': {'reward': -0.5},
+    'reward_zero': {'reward': 0},
+    'unknown_string': {'signal': 'maybe'},
+    'completely_empty': {},
+}
+print(json.dumps({k: normalize_signal(v) for k, v in cases.items()}))
+`;
+  const proc = spawnSync('python3', ['-c', probe], { encoding: 'utf8' });
+  assert.equal(proc.status, 0, proc.stderr || proc.stdout);
+  const result = JSON.parse(proc.stdout.trim());
+  assert.equal(result.thumbsdown_string, 'negative');
+  assert.equal(result.thumbs_down_underscore, 'negative');
+  assert.equal(result.down_emoji, 'negative');
+  assert.equal(result.up_emoji, 'positive');
+  assert.equal(result.reward_positive_int, 'positive');
+  assert.equal(result.reward_negative_float, 'negative');
+  assert.equal(result.reward_zero, null);
+  assert.equal(result.unknown_string, null);
+  assert.equal(result.completely_empty, null);
+});
+
+test('classify_entry falls back to richContext.domain when no keywords fire', () => {
+  // The richContext.domain fallback exists so adapters that pre-classify
+  // (e.g. an MCP server stamping 'domain: payments' on every entry) still
+  // get a meaningful category instead of 'uncategorized'.
+  const probe = `
+import json
+import sys
+sys.path.insert(0, ${JSON.stringify(path.dirname(SCRIPT))})
+from feedback_categories import classify_entry
+
+cases = {
+    'rich_domain_hits': {
+        'signal': 'positive',
+        'context': 'unclassifiable noise xyzzy',
+        'tags': [],
+        'richContext': {'domain': 'payments'},
+    },
+    'rich_domain_empty_string': {
+        'signal': 'positive',
+        'context': 'unclassifiable noise xyzzy',
+        'tags': [],
+        'richContext': {'domain': ''},
+    },
+    'rich_domain_wrong_type': {
+        'signal': 'positive',
+        'context': 'unclassifiable noise xyzzy',
+        'tags': [],
+        'richContext': {'domain': 123},
+    },
+    'rich_context_not_dict': {
+        'signal': 'positive',
+        'context': 'unclassifiable noise xyzzy',
+        'tags': [],
+        'richContext': 'oops not a dict',
+    },
+    'tags_not_a_list': {
+        'signal': 'positive',
+        'context': 'unclassifiable noise xyzzy',
+        'tags': 'not-a-list',
+    },
+    'dict_in_text_path': {
+        'signal': 'positive',
+        'context': {'nested': 'edit', 'note': 'should serialize via _normalize_text'},
+        'tags': [],
+    },
+    'multi_word_keyword_pull_request': {
+        'signal': 'positive',
+        'context': 'sent a pull request for review',
+        'tags': [],
+    },
+}
+print(json.dumps({k: classify_entry(v) for k, v in cases.items()}))
+`;
+  const proc = spawnSync('python3', ['-c', probe], { encoding: 'utf8' });
+  assert.equal(proc.status, 0, proc.stderr || proc.stdout);
+  const result = JSON.parse(proc.stdout.trim());
+  assert.deepEqual(result.rich_domain_hits, ['payments'], 'richContext.domain must promote to category');
+  assert.deepEqual(result.rich_domain_empty_string, ['uncategorized'], 'empty domain must not promote');
+  assert.deepEqual(result.rich_domain_wrong_type, ['uncategorized'], 'non-string domain must not promote');
+  assert.deepEqual(result.rich_context_not_dict, ['uncategorized'], 'non-dict richContext must not crash');
+  assert.deepEqual(result.tags_not_a_list, ['uncategorized'], 'non-list tags must not crash');
+  assert.ok(result.dict_in_text_path.includes('code_edit'), 'dict context values must be serialized into the search text');
+  assert.ok(result.multi_word_keyword_pull_request.includes('git'), 'multi-word keywords like "pull request" must still match');
+});
