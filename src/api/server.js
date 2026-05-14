@@ -213,6 +213,8 @@ const COMPARE_PAGE_PATH = path.resolve(__dirname, '../../public/compare.html');
 const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
 const NUMBERS_PAGE_PATH = path.resolve(__dirname, '../../public/numbers.html');
 const FEDERAL_PAGE_PATH = path.resolve(__dirname, '../../public/federal.html');
+const PRICING_PAGE_PATH = path.resolve(__dirname, '../../public/pricing.html');
+const CASE_STUDIES_PAGE_PATH = path.resolve(__dirname, '../../public/case-studies.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
 const COMPARE_DIR = path.resolve(__dirname, '../../public/compare');
@@ -2534,7 +2536,10 @@ function renderRobotsTxt(runtimeConfig) {
 function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
-    { path: '/pro', changefreq: 'weekly', priority: '0.9' },
+    { path: '/pricing', changefreq: 'weekly', priority: '0.95' },
+    { path: '/case-studies', changefreq: 'weekly', priority: '0.9' },
+    { path: '/pro', changefreq: 'weekly', priority: '0.85' },
+    { path: '/federal', changefreq: 'monthly', priority: '0.8' },
     { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
     { path: '/codex-plugin', changefreq: 'weekly', priority: '0.75' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
@@ -4404,6 +4409,49 @@ async function addContext(){
         });
       } catch {
         sendJson(res, 404, { error: 'Federal page not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/pricing' || pathname === '/pricing.html')) {
+      // Public pricing page. Single motion: $499 Workflow Hardening Sprint.
+      // Replaces the prior /pricing 401 gate. Pro/Team self-serve paths remain
+      // wired via /checkout/pro for advanced users, but they're not surfaced
+      // on this page — data analysis (May 2026) showed pricing schizophrenia
+      // (4 prices across 2 motions) was killing the funnel.
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(PRICING_PAGE_PATH, 'utf-8'),
+          extraTelemetry: { pageType: 'pricing' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Pricing page not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/case-studies' || pathname === '/case-studies.html' || pathname === '/cases')) {
+      // Public case-studies page. Currently anonymized incident-class
+      // evidence drawn from prevention-rule telemetry. When a named
+      // customer completes a Sprint and consents to attribution, that
+      // case study replaces / sits alongside the anonymized ones.
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(CASE_STUDIES_PAGE_PATH, 'utf-8'),
+          extraTelemetry: { pageType: 'case_studies' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Case studies page not found' });
       }
       return;
     }

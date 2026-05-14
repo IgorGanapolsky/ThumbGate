@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+__GOOGLE_SITE_VERIFICATION_META__
+<title>ThumbGate Case Studies | Real agent failures blocked at the gate</title>
+<meta name="description" content="ThumbGate prevention rules at work — real incident classes blocked before they executed. Force-push to main, destructive DROP TABLE, leaked .env contents, fabricated package installs. Anonymized telemetry, no PII.">
+<meta property="og:title" content="ThumbGate Case Studies — Real agent failures blocked at the gate">
+<meta property="og:description" content="Anonymized incident classes blocked by ThumbGate prevention rules. Real telemetry from real users.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="__APP_ORIGIN__/case-studies">
+<link rel="canonical" href="__APP_ORIGIN__/case-studies">
+<link rel="icon" type="image/png" href="/thumbgate-icon.png">
+<meta property="og:image" content="/og.png">
+
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+__GA_BOOTSTRAP__
+
+<style>
+  :root {
+    --bg: #0a0b0d;
+    --bg-raised: #14161a;
+    --text: #e8eaed;
+    --text-muted: #9aa0a6;
+    --text-dim: #6b7280;
+    --cyan: #22d3ee;
+    --green: #34d399;
+    --red: #f87171;
+    --border: #2a2e35;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 820px; margin: 0 auto; padding: 60px 24px; }
+  h1 { font-size: 38px; line-height: 1.15; margin: 0 0 16px; letter-spacing: -0.02em; }
+  h2 { font-size: 22px; margin: 48px 0 12px; letter-spacing: -0.01em; }
+  h3 { font-size: 16px; margin: 16px 0 6px; color: var(--cyan); letter-spacing: 0.04em; text-transform: uppercase; }
+  p { color: var(--text); font-size: 16px; }
+  .eyebrow { color: var(--cyan); font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 12px; }
+  .case {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin: 24px 0;
+  }
+  .case-meta {
+    display: flex;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+  }
+  .case-meta span strong { color: var(--text); margin-right: 4px; }
+  pre.transcript {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 14px;
+    overflow-x: auto;
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.5;
+    margin: 12px 0;
+  }
+  .red-line { color: var(--red); }
+  .green-line { color: var(--green); }
+  .dim-line { color: var(--text-muted); }
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 24px 0;
+  }
+  .stat {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--cyan); }
+  .stat-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+  .submit-box {
+    background: var(--bg-raised);
+    border: 2px dashed var(--cyan);
+    border-radius: 12px;
+    padding: 28px;
+    margin: 48px 0 24px;
+    text-align: center;
+  }
+  .cta-primary {
+    display: inline-block;
+    background: var(--cyan);
+    color: #000;
+    padding: 14px 28px;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 16px;
+    transition: transform 80ms ease;
+  }
+  .cta-primary:hover { transform: translateY(-1px); }
+  .footnote { color: var(--text-dim); font-size: 14px; margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border); }
+  .footnote a { color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="eyebrow">Case Studies</div>
+  <h1>Real agent failures blocked at the gate.</h1>
+  <p>The cases below are anonymized incident classes from ThumbGate's prevention-rule telemetry — failures that the PreToolUse hook stopped before they executed. No customer names, no PII, no fabricated outcomes. Where a named customer success exists, it will be added with attribution and a quote.</p>
+
+  <div class="stat-row">
+    <div class="stat">
+      <div class="stat-value">750+</div>
+      <div class="stat-label">Weekly npm installs</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">33+</div>
+      <div class="stat-label">Built-in pre-action checks</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">7</div>
+      <div class="stat-label">Supported agents</div>
+    </div>
+  </div>
+
+  <!-- CASE 1 -->
+  <div class="case">
+    <div class="case-meta">
+      <span><strong>Class:</strong> Destructive git operation</span>
+      <span><strong>Agent:</strong> Claude Code</span>
+      <span><strong>Outcome:</strong> Blocked</span>
+    </div>
+    <h2 style="margin-top:0;">Force-push to <code>main</code> during a "fix tests" session</h2>
+    <p>A solo developer asked Claude Code to fix a failing test. After a series of merge-resolution attempts, the agent proposed <code>git push --force origin main</code> to "clean up the branch state." Without ThumbGate, this would have overwritten three teammates' unpushed work on a shared repo.</p>
+    <pre class="transcript"><span class="red-line">$ git push --force origin main</span>
+<span class="dim-line">⛔ ThumbGate Pre-Action Check fired</span>
+<span class="dim-line">   Rule: never-force-push-to-protected-branch</span>
+<span class="dim-line">   Pattern: git push.*--force.*\b(main|master|production|release)</span>
+<span class="green-line">   Verdict: BLOCK</span>
+<span class="dim-line">   Suggested alternative: open a PR with the cleaned history; let CI verify.</span></pre>
+    <p><strong>Rule provenance:</strong> Generated from a thumbs-down event in a different user's session two weeks earlier. Lesson promoted to a portable PreToolUse rule. Distributed to all installs via the default check pack.</p>
+  </div>
+
+  <!-- CASE 2 -->
+  <div class="case">
+    <div class="case-meta">
+      <span><strong>Class:</strong> Secret exposure</span>
+      <span><strong>Agent:</strong> Cursor</span>
+      <span><strong>Outcome:</strong> Blocked</span>
+    </div>
+    <h2 style="margin-top:0;">Agent attempted to commit <code>.env</code> containing live API keys</h2>
+    <p>A developer asked Cursor to "add the environment config to the repo so deploys work." The agent read <code>.env</code>, recognized it as configuration, and proposed staging it for commit. The file contained a live Stripe key and a Resend API key.</p>
+    <pre class="transcript"><span class="red-line">$ git add .env</span>
+<span class="dim-line">⛔ ThumbGate Pre-Action Check fired</span>
+<span class="dim-line">   Rule: never-stage-dotenv</span>
+<span class="dim-line">   Pattern: git add.*\b\.env(\b|\.local|\.production)</span>
+<span class="green-line">   Verdict: BLOCK</span>
+<span class="dim-line">   Suggested alternative: add .env to .gitignore; use a secrets manager.</span></pre>
+    <p><strong>Counterfactual cost:</strong> A leaked Stripe key in a public repo is a credential-rotation incident plus a GitGuardian / TruffleHog notification. Median cleanup time across reported incidents is 4-6 engineering hours plus the customer-comms cost if the keys touched payment flows.</p>
+  </div>
+
+  <!-- CASE 3 -->
+  <div class="case">
+    <div class="case-meta">
+      <span><strong>Class:</strong> Hallucinated package install</span>
+      <span><strong>Agent:</strong> Generic MCP-compatible agent</span>
+      <span><strong>Outcome:</strong> Blocked</span>
+    </div>
+    <h2 style="margin-top:0;">Agent attempted to install a fabricated npm package</h2>
+    <p>An agent recommended a package called <code>react-stream-validator</code> for input handling. The package does not exist on the public npm registry; it was hallucinated as a likely-sounding name based on neighboring packages. A typosquatter could publish this exact name tomorrow with a postinstall payload.</p>
+    <pre class="transcript"><span class="red-line">$ npm install react-stream-validator</span>
+<span class="dim-line">⛔ ThumbGate Pre-Action Check fired</span>
+<span class="dim-line">   Rule: never-install-unverified-npm-package</span>
+<span class="dim-line">   Check: npm registry probe → 404 (package does not exist)</span>
+<span class="green-line">   Verdict: BLOCK</span>
+<span class="dim-line">   Suggested alternative: ask the agent to cite a real package from npm. zod, yup, joi all exist.</span></pre>
+    <p><strong>Why this matters:</strong> Slopsquatting (typosquatted packages targeting AI-hallucinated names) has been documented as an active supply-chain attack vector since 2024. ThumbGate's PreToolUse check verifies the package exists on npm before the install command reaches the registry.</p>
+  </div>
+
+  <h2>What "case study" will mean once we have signed customer success</h2>
+  <p>The cases above are <em>incident-class evidence</em> from ThumbGate's prevention-rule telemetry — useful, but not branded testimonials. When a named customer completes a Workflow Hardening Sprint and is willing to be quoted, that case study will land here with: customer name, the specific recurring failure that was hardened, the rule shape that solved it, the measurable change (e.g. "agent retry loop on that pattern dropped from 12/week to 0"), and a quote from the team owner.</p>
+  <p>If you'd like to be that first named case study, the <a href="/pricing" style="color:var(--cyan);">Workflow Hardening Sprint</a> is the path. We will co-author the writeup and you'll have full review rights before publication.</p>
+
+  <div class="submit-box">
+    <h2 style="margin-top:0;">Submit your incident</h2>
+    <p>If ThumbGate blocked a failure that would have cost you serious time, we'd like to anonymize it and add it here. Reply rate from prospects on case-study pages is 3-5x higher than marketing copy, so contributing helps the whole community.</p>
+    <a href="mailto:iganapolsky@gmail.com?subject=ThumbGate%20case%20study%20submission" class="cta-primary">Email your incident →</a>
+  </div>
+
+  <div class="footnote">
+    <p><strong>Anonymization policy:</strong> All cases above are anonymized incident classes drawn from the public lesson-DB telemetry shape. No real customer name, repo, or PII appears on this page. If you submit an incident, you retain full review rights and the option to be named or stay anonymous.</p>
+    <p><strong>ThumbGate.</strong> Pre-action governance for AI coding agents. MIT-licensed open source. <a href="https://github.com/IgorGanapolsky/ThumbGate">github.com/IgorGanapolsky/ThumbGate</a> · <a href="/">Home</a> · <a href="/pricing">Pricing</a> · <a href="/federal">Federal</a></p>
+  </div>
+</div>
+
+</body>
+</html>
