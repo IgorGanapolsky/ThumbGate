@@ -24,6 +24,14 @@ Under the hood: your thumbs-down becomes one of your **Pre-Action Checks** that 
 
 ---
 
+> *"A better dashboard doesn't make the agents more reliable. The hard part isn't visibility. It's trust."*
+>
+> — **Rob May**, CEO & co-founder, Neurometric AI, quoted in [The New Stack](https://thenewstack.io/claude-code-agent-view/) on Anthropic's Claude Code Agent View (May 2026).
+>
+> ThumbGate is the open-source layer that makes the trust part real: PreToolUse gates, thumbs-down to rule, audit trail on every interception.
+
+---
+
 ## 🎬 90-second demo
 
 Watch the force-push scenario: agent tries to `git push --force`, one thumbs-down, next session it's blocked — zero tokens spent on the repeat.
