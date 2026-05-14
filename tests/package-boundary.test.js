@@ -235,9 +235,19 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   //     readiness checks for the agent-native memory scope work)
   // All three ship in the public bundle because the packaged runtime loads
   // them on every server boot; omitting them crashes published `thumbgate serve`.
+  // Bumped 254 → 256 (2026-05-14) to ship two new public marketing pages:
+  //   • public/pricing.html — the consolidated $499 Workflow Hardening Sprint
+  //     pricing surface served at /pricing (also /pricing.html alias). Replaces
+  //     the prior /pricing 401 gate that surfaced as a funnel-leak in the
+  //     2026-05-14 GTM data analysis. Marketing surface; in-scope for the
+  //     public shell.
+  //   • public/case-studies.html — anonymized incident-class evidence served
+  //     at /case-studies (also /case-studies.html and /cases aliases). Trust
+  //     signal that the agentixlabs.com competitive read flagged as missing.
+  //     Marketing surface; in-scope for the public shell.
   assert.ok(
-    manifest.fileCount <= 254,
-    `npm package should stay <= 254 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 256,
+    `npm package should stay <= 256 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
