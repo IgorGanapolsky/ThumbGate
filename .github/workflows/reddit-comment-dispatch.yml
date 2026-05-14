@@ -1,0 +1,83 @@
+name: Reddit Comment Dispatch
+
+# Manual dispatch path for replying to a single Reddit comment or submission
+# using the ThumbGate-owned REDDIT_* credentials.
+#
+# Built 2026-05-14 to remove the "CEO has to paste the reply into a browser
+# every time" failure mode that was costing engagement-window minutes on
+# high-intent r/ClaudeCode comments. After this lands, replying becomes:
+#
+#   gh workflow run reddit-comment-dispatch.yml \
+#     --repo IgorGanapolsky/ThumbGate \
+#     -f parent_url="https://www.reddit.com/r/ClaudeCode/.../comment/<id>/" \
+#     -f text="Reply body. Markdown allowed."
+#
+# Always use dry_run=true first to verify auth + URL parsing, then re-run
+# with dry_run=false to actually post.
+
+on:
+  workflow_dispatch:
+    inputs:
+      parent_url:
+        description: 'Reddit URL of the comment or submission to reply to (https://www.reddit.com/r/.../comments/.../comment/.../)'
+        required: false
+        type: string
+      parent_fullname:
+        description: 'Reddit fullname (t1_xxx for comment, t3_xxx for submission). Optional — derived from parent_url when present.'
+        required: false
+        type: string
+      text:
+        description: 'Reply body (Reddit-flavored Markdown). Keep under 10000 chars.'
+        required: true
+        type: string
+      dry_run:
+        description: 'Preview the parsed fullname + text without posting.'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reddit-comment-dispatch
+  cancel-in-progress: false
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    env:
+      REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+      REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+      REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
+      REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
+      REDDIT_USER_AGENT: 'thumbgate-comment-dispatcher/1.0 (by /u/${{ secrets.REDDIT_USERNAME }})'
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Post reply
+        env:
+          PARENT_URL: ${{ github.event.inputs.parent_url }}
+          PARENT_FULLNAME: ${{ github.event.inputs.parent_fullname }}
+          TEXT: ${{ github.event.inputs.text }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: |
+          ARGS=()
+          if [ -n "${PARENT_URL}" ]; then
+            ARGS+=("--parent-url=${PARENT_URL}")
+          fi
+          if [ -n "${PARENT_FULLNAME}" ]; then
+            ARGS+=("--parent-fullname=${PARENT_FULLNAME}")
+          fi
+          ARGS+=("--text=${TEXT}")
+          if [ "${DRY_RUN}" = "true" ]; then
+            ARGS+=("--dry-run")
+          fi
+          node scripts/reddit-comment.js "${ARGS[@]}"
