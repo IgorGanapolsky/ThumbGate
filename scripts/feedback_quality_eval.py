@@ -11,63 +11,21 @@ precision/recall yet?
 import argparse
 import json
 import math
-import os
-import re
 import sqlite3
+import sys
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-
-PROJECT_ROOT = Path(__file__).parent.parent
-
-DEFAULT_CATEGORIES = {
-    "code_edit": {
-        "keywords": ["edit", "write", "implement", "refactor", "fix", "update", "create file"],
-        "tools": ["edit", "write", "multiedit"],
-    },
-    "git": {
-        "keywords": ["commit", "push", "branch", "merge", "pr", "pull request", "rebase", "cherry-pick"],
-        "tools": ["bash", "git"],
-    },
-    "testing": {
-        "keywords": ["test", "jest", "coverage", "verify", "verification", "spec", "mock", "assert"],
-        "tools": [],
-    },
-    "review": {
-        "keywords": ["review", "pr comment", "resolve", "thread", "feedback"],
-        "tools": [],
-    },
-    "search": {
-        "keywords": ["search", "find", "grep", "glob", "explore", "where is", "look for", "rg"],
-        "tools": ["grep", "glob", "read", "rg"],
-    },
-    "security": {
-        "keywords": ["security", "secret", "credential", "token", "auth", "injection", "xss"],
-        "tools": [],
-    },
-    "debugging": {
-        "keywords": ["debug", "error", "crash", "stack trace", "log", "diagnose", "investigate"],
-        "tools": [],
-    },
-}
-
-
-def resolve_feedback_dir() -> Path:
-    env_dir = os.environ.get("THUMBGATE_FEEDBACK_DIR")
-    if env_dir:
-        return Path(env_dir)
-
-    local_thumbgate = PROJECT_ROOT / ".thumbgate"
-    if local_thumbgate.exists():
-        return local_thumbgate
-
-    local_legacy = PROJECT_ROOT / ".claude" / "memory" / "feedback"
-    if local_legacy.exists():
-        return local_legacy
-
-    return Path.home() / ".thumbgate" / "projects" / PROJECT_ROOT.name
+sys.path.insert(0, str(Path(__file__).parent))
+from feedback_categories import (  # noqa: E402
+    DEFAULT_CATEGORIES,
+    PROJECT_ROOT,
+    classify_entry,
+    normalize_signal,
+    resolve_feedback_dir,
+)
 
 
 def read_jsonl(path: Path) -> Tuple[List[Dict[str, Any]], int]:
@@ -165,74 +123,6 @@ def load_sqlite_lessons(db_path: Optional[Path]) -> Dict[str, Any]:
         "sourceFeedbackIds": source_ids,
         "error": None,
     }
-
-
-def normalize_signal(entry: Dict[str, Any]) -> Optional[str]:
-    raw = str(entry.get("signal") or entry.get("feedback") or "").strip().lower()
-    if raw in {"positive", "up", "thumbsup", "thumbs_up", "👍"}:
-        return "positive"
-    if raw in {"negative", "down", "thumbsdown", "thumbs_down", "👎"}:
-        return "negative"
-
-    reward = entry.get("reward")
-    if isinstance(reward, (int, float)):
-        if reward > 0:
-            return "positive"
-        if reward < 0:
-            return "negative"
-    return None
-
-
-def normalize_text(*values: Any) -> str:
-    parts = []
-    for value in values:
-        if value is None:
-            continue
-        if isinstance(value, list):
-            parts.extend(str(item) for item in value)
-        elif isinstance(value, dict):
-            parts.append(json.dumps(value, sort_keys=True))
-        else:
-            parts.append(str(value))
-    return " ".join(parts).lower()
-
-
-def contains_keyword(text: str, keyword: str) -> bool:
-    normalized_keyword = keyword.lower().strip()
-    if not normalized_keyword:
-        return False
-    if len(normalized_keyword) <= 3 or re.fullmatch(r"[a-z0-9_+-]+", normalized_keyword):
-        return re.search(rf"(?<![a-z0-9_+-]){re.escape(normalized_keyword)}(?![a-z0-9_+-])", text) is not None
-    return normalized_keyword in text
-
-
-def classify_entry(entry: Dict[str, Any]) -> List[str]:
-    tags = entry.get("tags") if isinstance(entry.get("tags"), list) else []
-    tool = entry.get("toolName") or entry.get("tool_name") or entry.get("last_tool")
-    text = normalize_text(
-        entry.get("context"),
-        entry.get("whatWentWrong"),
-        entry.get("whatToChange"),
-        entry.get("whatWorked"),
-        entry.get("actionReason"),
-        entry.get("failureType"),
-        tags,
-    )
-    tool_text = normalize_text(tool)
-
-    matched = []
-    for category, config in DEFAULT_CATEGORIES.items():
-        keyword_match = any(contains_keyword(text, keyword) for keyword in config["keywords"])
-        tool_match = any(contains_keyword(tool_text, tool_name) for tool_name in config["tools"])
-        if keyword_match or tool_match:
-            matched.append(category)
-
-    if not matched:
-        domain = entry.get("richContext", {}).get("domain") if isinstance(entry.get("richContext"), dict) else None
-        if isinstance(domain, str) and domain:
-            matched.append(domain)
-
-    return matched or ["uncategorized"]
 
 
 def parse_timestamp(value: Any) -> Optional[datetime]:

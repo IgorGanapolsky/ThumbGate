@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
 """
-Thompson Sampling Feedback Model Trainer
+Thompson Sampling Feedback Model Trainer (model-agnostic)
 
 Beta-Bernoulli Thompson Sampling for per-category reliability estimation.
-Reads from feedback-log.jsonl and builds a Bayesian model of Claude's
+Reads from feedback-log.jsonl and builds a Bayesian model of agent
 performance across different task categories.
+
+ThumbGate is model-agnostic by design. The input feedback events are
+tool-call records emitted by the active adapter — Claude Code, Cursor,
+Codex, Gemini, Amp, Cline, OpenCode, or any MCP-compatible agent. The
+trainer makes no assumptions about which model produced the tool call.
+The DPO/KTO export paths emit preference-pair JSONL in the canonical
+format consumed by Llama, Mistral, Qwen, GLM, Phi, and any other
+local model fine-tuning runtime that accepts standard DPO datasets.
 
 Usage:
     python train_from_feedback.py --train              # Full rebuild from JSONL
@@ -12,80 +20,35 @@ Usage:
     python train_from_feedback.py --reliability        # Print reliability table
     python train_from_feedback.py --sample             # Sample from posteriors
     python train_from_feedback.py --snapshot           # Save model snapshot
-    python train_from_feedback.py --dpo-train          # DPO batch optimization (Feb 2026)
+    python train_from_feedback.py --dpo-train          # DPO batch optimization
     python train_from_feedback.py --config config.json # Use custom categories
 
 This script only reads and writes local feedback artifacts under the active ThumbGate feedback directory.
 Those runtime outputs are git-ignored even though this utility is intentionally versioned.
 """
 
+import sys
 import json
 import math
 import random
 import argparse
-import os
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 
-# Configuration
-PROJECT_ROOT = Path(__file__).parent.parent
-
-def resolve_feedback_dir() -> Path:
-    env_dir = os.environ.get("THUMBGATE_FEEDBACK_DIR")
-    if env_dir:
-        return Path(env_dir)
-
-    local_thumbgate = PROJECT_ROOT / ".thumbgate"
-    if local_thumbgate.exists():
-        return local_thumbgate
-
-    local_legacy = PROJECT_ROOT / ".claude" / "memory" / "feedback"
-    if local_legacy.exists():
-        return local_legacy
-
-    return Path.home() / ".thumbgate" / "projects" / PROJECT_ROOT.name
+sys.path.insert(0, str(Path(__file__).parent))
+from feedback_categories import (  # noqa: E402
+    DEFAULT_CATEGORIES,
+    PROJECT_ROOT,
+    classify_entry,
+    is_positive,
+    resolve_feedback_dir,
+)
 
 FEEDBACK_DIR = resolve_feedback_dir()
 FEEDBACK_LOG = FEEDBACK_DIR / "feedback-log.jsonl"
 MODEL_FILE = FEEDBACK_DIR / "feedback_model.json"
 SNAPSHOTS_DIR = FEEDBACK_DIR / "model_snapshots"
-
-# Default categories (overridden by --config)
-DEFAULT_CATEGORIES = {
-    "code_edit": {
-        "keywords": ["edit", "write", "implement", "refactor", "fix", "update", "create file"],
-        "tools": ["Edit", "Write", "MultiEdit"],
-    },
-    "git": {
-        "keywords": ["commit", "push", "branch", "merge", "pr", "pull request", "rebase", "cherry-pick"],
-        "tools": ["Bash"],
-    },
-    "testing": {
-        "keywords": ["test", "jest", "coverage", "reassure", "perf", "spec", "mock", "assert"],
-        "tools": [],
-    },
-    "pr_review": {
-        "keywords": ["review", "pr comment", "resolve", "minimize", "thread", "feedback"],
-        "tools": [],
-    },
-    "search": {
-        "keywords": ["search", "find", "grep", "glob", "explore", "where is", "look for"],
-        "tools": ["Grep", "Glob", "Read"],
-    },
-    "architecture": {
-        "keywords": ["architecture", "design", "pattern", "structure", "fsd", "module", "navigation"],
-        "tools": [],
-    },
-    "security": {
-        "keywords": ["security", "secret", "vulnerability", "injection", "xss", "owasp", "trufflehog"],
-        "tools": [],
-    },
-    "debugging": {
-        "keywords": ["debug", "error", "crash", "stack trace", "log", "diagnose", "investigate"],
-        "tools": [],
-    },
-}
 
 # Time decay configuration (2026 upgrade: exponential decay with half-life)
 # Step decay (legacy)
@@ -187,39 +150,6 @@ def time_decay_weight(timestamp_str: str) -> float:
         return DECAY_WEIGHTS[None]
 
 
-def classify_entry(entry: Dict, categories: Dict) -> List[str]:
-    """Classify a feedback entry into categories based on keywords/tools."""
-    matched = []
-
-    # Build searchable text from entry
-    context = (entry.get("context", "") or "").lower()
-    message = (entry.get("message", "") or "").lower()
-    last_action = (entry.get("last_action", "") or "").lower()
-    last_tool = (entry.get("last_tool", "") or "").lower()
-    tags = entry.get("tags", [])
-    if isinstance(tags, list):
-        tags_str = " ".join(t.lower() for t in tags)
-    else:
-        tags_str = ""
-
-    searchable = f"{context} {message} {last_action} {tags_str}"
-
-    for cat_name, cat_config in categories.items():
-        keywords = cat_config.get("keywords", [])
-        tools = cat_config.get("tools", [])
-
-        # Check keyword match
-        keyword_match = any(kw.lower() in searchable for kw in keywords)
-
-        # Check tool match
-        tool_match = any(t.lower() in last_tool for t in tools) if tools else False
-
-        if keyword_match or tool_match:
-            matched.append(cat_name)
-
-    return matched if matched else ["uncategorized"]
-
-
 def load_feedback_entries() -> List[Dict]:
     """Load all feedback entries from JSONL."""
     if not FEEDBACK_LOG.exists():
@@ -236,18 +166,6 @@ def load_feedback_entries() -> List[Dict]:
             except json.JSONDecodeError:
                 continue
     return entries
-
-
-def is_positive(entry: Dict) -> bool:
-    """Determine if a feedback entry is positive."""
-    if entry.get("reward", 0) > 0:
-        return True
-    # ThumbGate uses signal field: 'positive' or 'negative'
-    signal = entry.get("signal", "").lower()
-    if signal in ("positive", "up", "thumbsup"):
-        return True
-    feedback = entry.get("feedback", "").lower()
-    return feedback in ("positive", "up", "thumbsup")
 
 
 def train_full(categories: Dict) -> Dict:
