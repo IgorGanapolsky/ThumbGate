@@ -129,6 +129,41 @@ LinkedIn: https://www.linkedin.com/in/hamelhusain/
 
 ---
 
+---
+
+## 11. Rob May — CEO & co-founder, Neurometric AI *(NEW — hot, send TODAY)*
+
+LinkedIn: https://www.linkedin.com/in/robmaycareer/ *(verify)*
+Newsletter: InsideAI
+
+> Rob — read your New Stack quote on Claude Code Agent View: *"A better dashboard doesn't make the agents more reliable. The hard part isn't visibility. It's trust."* That's verbatim the thesis behind ThumbGate (OSS, ~750 weekly npm installs). PreToolUse gate intercepts destructive tool calls, captures the human thumbs-down, ships the rule as a reusable block — uniformly across Cursor / Claude Code / Codex.
+>
+> Two asks, take whichever's interesting:
+> (a) 15 min to compare notes on what enterprise teams actually need on top of the visibility layer.
+> (b) Cover ThumbGate in InsideAI — happy to write the explainer or do a Q&A.
+>
+> — Igor (github.com/IgorGanapolsky/ThumbGate)
+
+**Why hot:** he literally said our pitch in The New Stack this month. Highest-EV LinkedIn send on this list. He has a paid newsletter (InsideAI) with thousands of AI execs as subscribers — one mention = compounding distribution.
+
+---
+
+## 12. Meredith Shubel — Author, The New Stack
+
+LinkedIn: https://www.linkedin.com/in/meredith-shubel/ *(verify)*
+
+> Meredith — your piece on Claude Code Agent View landed on the right diagnosis: the missing thing is governance + auditability for trust, not a better dashboard. ThumbGate is the OSS implementation of exactly what Rob May described — PreToolUse gate, thumbs-down → durable prevention rule, audit trail. ~750 weekly npm installs, MIT.
+>
+> Two paths if it's useful:
+> (a) Follow-up brief on the "control plane developers have been waiting for" thesis — happy to walk you through the architecture and the actual blocked-incident telemetry from our user base.
+> (b) Contributed piece for The New Stack from our angle. Headline candidates: *"The Three Gaps Agent View Doesn't Close"* or *"What Policy-as-Code for AI Agents Actually Looks Like."*
+>
+> — Igor (github.com/IgorGanapolsky/ThumbGate)
+
+**Why hot:** the piece concluded *"What's still missing in the broader agentic development stack is the governance and auditability to drive trust for production use."* That's our spec verbatim — she's primed for a follow-up. The New Stack is the right outlet to reach the buyer ICP.
+
+---
+
 ## Send tracker
 
 | # | Sent? | Date | Reply? | Next step |
@@ -143,6 +178,8 @@ LinkedIn: https://www.linkedin.com/in/hamelhusain/
 | 8 | ☐ | | | |
 | 9 | ☐ | | | |
 | 10 | ☐ | | | |
+| 11 | ☐ Rob May | | | |
+| 12 | ☐ Meredith Shubel | | | |
 
 ## Notes
 
