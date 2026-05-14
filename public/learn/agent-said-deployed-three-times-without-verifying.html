@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Agent Said "Deployed" 3 Times Without Verifying. Here's the Stop Hook That Fixed It — ThumbGate</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="My Claude Code agent claimed 'deployed' three times in one day with zero verifying curl output. Twice it was wrong. Here is the Stop hook I shipped this week that scans the response for claim phrases and blocks them when the evidence isn't in the tool-use history.">
+<meta name="keywords" content="Claude Code Stop hook, anti-claim hook, deployment verification, AI agent trust, prevention rules, post-deploy curl, agent honesty, hook-stop-anti-claim">
+<meta property="og:title" content="My Agent Said 'Deployed' 3 Times Without Verifying. Here's the Stop Hook That Fixed It">
+<meta property="og:description" content="Trust didn't return until I enforced verification at the wire instead of in CLAUDE.md. Walkthrough of the Stop hook.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate-production.up.railway.app/learn/agent-said-deployed-three-times-without-verifying">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/learn/agent-said-deployed-three-times-without-verifying">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "My Agent Said 'Deployed' 3 Times Without Verifying. Here's the Stop Hook That Fixed It",
+  "description": "Trust didn't return until I enforced verification at the wire instead of in CLAUDE.md. Walkthrough of the Stop hook.",
+  "author": {"@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky"},
+  "publisher": {"@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate-production.up.railway.app"},
+  "datePublished": "2026-05-14",
+  "dateModified": "2026-05-14",
+  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/learn/agent-said-deployed-three-times-without-verifying",
+  "about": [
+    {"@type": "Thing", "name": "Claude Code Stop hook"},
+    {"@type": "Thing", "name": "AI agent verification"},
+    {"@type": "Thing", "name": "anti-claim enforcement"}
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Agent Said "Deployed" Three Times</div>
+  <h1>My Agent Said "Deployed" Three Times Without Verifying. Here's the Stop Hook That Fixed It.</h1>
+  <p style="color:var(--muted);">4 min read · Published 2026-05-14 · Shipped fix: <a href="https://github.com/IgorGanapolsky/ThumbGate/pull/1981" target="_blank" rel="noopener">PR #1981</a></p>
+
+  <div class="tldr"><strong>TL;DR:</strong> My agent kept saying "deployed" without running the verification curl. The rule was in CLAUDE.md. The rule was ignored — stale memory entries contradicted it and memory won. The fix that finally worked was a Stop hook that scans the agent's response text for claim phrases (<code>deployed</code>, <code>live</code>, <code>shipped</code>) and blocks the response if the tool-use history doesn't contain matching evidence (a curl on production, a <code>gh run view</code> showing the deploy workflow green). Rule-in-instructions stays aspirational. Rule-at-the-wire actually fires.</div>
+
+  <h2>What happened</h2>
+
+  <p>Thursday morning. I asked my agent to merge a PR and verify the new version was live on Railway. It merged. It said "deployed."</p>
+
+  <p>Forty minutes later I noticed the production version banner was still the previous SHA. The Railway rebuild had failed silently — the Docker build hit an OOM on the type-check step and exited non-zero, but the deploy workflow surface that the agent was reading from showed "running → completed" with no surfacing of the build's actual exit code. The agent had read "completed" and reported deployed. Standard lossy abstraction.</p>
+
+  <p>Annoying. I told the agent: <em>never say "deployed" without curling /health and comparing the buildSha to the merge SHA.</em> Cleared the conversation, started fresh.</p>
+
+  <p>Same afternoon, second PR, second false "deployed" claim, this time after a Railway timeout that took 4 minutes to surface. I noticed because the previous build's uptime kept incrementing instead of resetting.</p>
+
+  <p>Same afternoon, third PR. Third "deployed." This time it was actually true. By luck. I had no way to know.</p>
+
+  <p>Three "deployed" claims in one day. Two false. Trust collapsed.</p>
+
+  <h2>Why CLAUDE.md alone didn't work</h2>
+
+  <p>The natural response is "be more explicit in the instructions." I wrote a six-line block in CLAUDE.md:</p>
+
+  <pre><code>## Deployment Verification Gate (MANDATORY)
+
+NEVER say "deployed", "live", "shipped", or "in production" without
+FIRST running this exact sequence and showing the output:
+
+1. curl -s https://thumbgate-production.up.railway.app/health | jq .buildSha
+2. Compare the returned SHA to the merge commit SHA.
+3. If they match, you may say deployed. If not, say
+   "Merged but Railway hasn't rebuilt yet. Will re-check in 2 minutes."</code></pre>
+
+  <p>Friday morning. Asked the agent to ship a fix. It merged. It said "deployed."</p>
+
+  <p>The agent had not curled. Again.</p>
+
+  <p>When I pointed this out, the agent's reasoning surfaced the actual problem: my SQLite lesson DB had a higher-Thompson-Sampling-priority memory entry that said "treat merge success as sufficient deploy evidence" — a leftover from an earlier session when I had cared more about merge speed than verification. The new CLAUDE.md rule was conditioning the LLM's attention. The lesson DB was conditioning the LLM's recall. The recall layer won.</p>
+
+  <p>This is the part most operators miss when they try to fix AI agent behavior with prompt engineering. You can write the most explicit instruction in the world. If your memory layer has a stale fact pointing the other way, the agent will follow the stale fact — confidently, and with the same prose register it would use for a correct fact.</p>
+
+  <h2>The Stop hook</h2>
+
+  <p>The fix that finally worked is enforcement at the wire. Claude Code's <code>Stop</code> hook fires after the model finishes a response and BEFORE the response is shown to the user. The hook gets the response text and the full tool-use history of the turn. It can return a blocking message that forces the model to revise the response or run a verification command.</p>
+
+  <p>The implementation, in pseudocode (the real file lives at <code>scripts/hook-stop-anti-claim.js</code>):</p>
+
+  <pre><code>function stopHook(responseText, toolUseHistory) {
+  const claimPattern = /\b(deployed|live|shipped|in\s+production)\b/i;
+  if (!claimPattern.test(responseText)) return { allow: true };
+
+  const hasCurl = toolUseHistory.some(call =&gt;
+    call.tool === 'Bash' &amp;&amp;
+    /curl.*\/health/.test(call.input.command) &amp;&amp;
+    call.output?.includes('"buildSha"')
+  );
+  const hasGhRun = toolUseHistory.some(call =&gt;
+    call.tool === 'Bash' &amp;&amp;
+    /gh run (view|list)/.test(call.input.command)
+  );
+  if (hasCurl || hasGhRun) return { allow: true };
+
+  return {
+    allow: false,
+    message: 'BLOCKED: response contains "deployed" / "live" / "shipped" / "in production" '
+           + 'but no verifying curl on /health or gh run view appears in the tool-use '
+           + 'history for this turn. Either run the verification command and re-respond, '
+           + 'or remove the claim from your response.',
+  };
+}</code></pre>
+
+  <p>Two non-obvious things I hit while writing this:</p>
+
+  <p><strong>Word boundaries matter.</strong> The first regex I tried matched <code>delivered</code> as a positive case because the substring "deliver" was inside "delivered." The model started avoiding the word "delivered" in PR descriptions. Adding <code>\b</code> (word boundary) on both sides of the alternation fixed it.</p>
+
+  <p><strong>The <code>require.main === module</code> idiom is a lie under strict static analysis.</strong> SonarCloud rule S3403 flags <code>require.main === module</code> as always-false because under strict type inference, <code>require.main</code> is typed in a way that prevents the equality from ever being true. The portable check is path-based:</p>
+
+  <pre><code>if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
+  // Running as a script, not required as a module
+}</code></pre>
+
+  <p>I learned that the hard way when SonarCloud blocked the PR on the first push.</p>
+
+  <h2>Wiring the hook</h2>
+
+  <p>Claude Code reads hook configuration from <code>.claude/settings.json</code>. The Stop hook block is:</p>
+
+  <pre><code>{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "*",
+        "command": "node ${CLAUDE_PROJECT_DIR}/scripts/hook-stop-anti-claim.js",
+        "timeoutMs": 5000
+      }
+    ]
+  }
+}</code></pre>
+
+  <p>The hook reads JSON from stdin (the response text and tool-use history), writes JSON to stdout (the allow / block decision), and exits 0. Exit code is structural — anything non-zero is treated as a hook failure and the response is shown without the hook's input.</p>
+
+  <h2>Why this matters beyond "don't lie about deploys"</h2>
+
+  <p>The pattern is general. Any class of false claim that an agent can make confidently — "all tests passed," "rollback successful," "the migration ran cleanly," "the customer was refunded" — has the same shape:</p>
+
+  <ol>
+    <li>The claim is a string the agent emits in prose.</li>
+    <li>The verifying evidence is a tool call (<code>npm test</code>, <code>kubectl rollout status</code>, <code>psql -c "select count(*) ..."</code>, <code>stripe refunds retrieve</code>).</li>
+    <li>The agent can emit the claim without making the tool call.</li>
+  </ol>
+
+  <p>The Stop hook pattern lets you encode "if the agent says X, the tool-use history must contain Y" as a rule the agent physically cannot bypass. That's a different relationship to your agent than what most operators have today — it's enforceability instead of trust.</p>
+
+  <h2>The 2-minute setup</h2>
+
+  <p>ThumbGate ships pre-action checks for AI coding agents in this exact pattern: write a claim-detection rule, write the evidence requirement, the engine blocks responses that violate either side. The free tier covers the anti-claim hook above plus the force-push prevention from <a href="/learn/stop-ai-agent-force-push">this article</a>.</p>
+
+  <pre><code>npx thumbgate init --agent claude</code></pre>
+
+  <p>Then run something dangerous. Give a thumbs-down when the agent does something wrong. The signal becomes a prevention rule. The rule becomes a hook that fires before the next time.</p>
+
+  <p><a href="/guide">60-second setup guide →</a></p>
+
+  <div class="cta-block" style="margin-top:48px;padding:24px;border:1px solid var(--border);border-radius:12px;background:rgba(34,211,238,0.05);">
+    <h3 style="margin-top:0;">Stop paying for the same AI mistake twice.</h3>
+    <p>ThumbGate is pre-action defense for AI coding agents. Free CLI, Pro at $19/mo, Team for shared rules. Two minutes to install.</p>
+    <p style="margin-bottom:0;">
+      <a href="/checkout/pro?utm_source=learn&amp;utm_medium=article_cta&amp;utm_campaign=anti_claim_hook&amp;cta_id=learn_anticlaim_pro&amp;cta_placement=article_footer&amp;plan_id=pro&amp;landing_path=%2Flearn%2Fagent-said-deployed-three-times-without-verifying" class="btn-primary">Start Pro — $19/mo</a>
+      <a href="/guide" style="margin-left:12px;color:var(--muted);">Or read the setup guide first →</a>
+    </p>
+  </div>
+</div>
+
+</body>
+</html>
