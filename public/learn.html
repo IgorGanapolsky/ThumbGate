@@ -240,9 +240,17 @@
 <div class="container">
   <h1>Learn: AI Agent Safety</h1>
   <p class="hero-sub">Practical guides for developers who use AI coding agents and want them to stop repeating the same mistakes. Every article ends with something you can ship today.</p>
-  <p class="hero-sub" style="font-size:0.85rem;margin-top:-1rem;">Updated: <time datetime="2026-04-20">2026-04-20</time> · by <a href="https://github.com/IgorGanapolsky" style="color:inherit;">Igor Ganapolsky</a></p>
+  <p class="hero-sub" style="font-size:0.85rem;margin-top:-1rem;">Updated: <time datetime="2026-05-14">2026-05-14</time> · by <a href="https://github.com/IgorGanapolsky" style="color:inherit;">Igor Ganapolsky</a></p>
 
   <div class="article-grid">
+    <a href="/learn/zombie-stripe-checkout-sessions" class="article-card" style="border:1px solid rgba(34,211,238,0.45);">
+      <h3>50 Zombie Stripe Sessions, Zero Paid Customers — How One Curl Found the Bug</h3>
+      <p>My Stripe dashboard showed 50+ <code>cs_live_*</code> sessions over six weeks. Conversion: zero. I assumed it was a traffic problem. A 90-second curl on my own checkout URL showed the actual bug — a 302 to a fresh session on every raw GET, before the human had seen a single pixel of marketing. The fix shipped this week as one if-condition. <strong>New · 2026-05-14</strong></p>
+      <span class="article-tag">Stripe</span>
+      <span class="article-tag">Conversion</span>
+      <span class="article-tag">Funnel Diagnosis</span>
+    </a>
+
     <a href="/learn/stop-ai-agent-force-push" class="article-card">
       <h3>How to Stop AI Agents From Force-Pushing to Main</h3>
       <p>Your agent just ran git push --force on main. Again. Here is how to make that physically impossible with a pre-action check that takes two minutes to set up.</p>

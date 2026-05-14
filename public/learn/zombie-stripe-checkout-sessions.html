@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>50 Zombie Stripe Sessions, Zero Paid Customers — How One Curl Found the Bug — ThumbGate</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="My Stripe dashboard showed 50+ cs_live sessions created over six weeks. Conversion rate: zero. I assumed it was a traffic problem. It wasn't. Here is how a single curl on my own checkout URL found the actual bug — and the one-line fix that shipped this week.">
+<meta name="keywords" content="Stripe checkout conversion, cs_live session, zombie checkout sessions, /checkout/pro bug, conversion rate optimization, raw GET interstitial, real-browser UA curl, link preview fetcher, SaaS funnel diagnosis">
+<meta property="og:title" content="50 Zombie Stripe Sessions, Zero Paid Customers — How One Curl Found the Bug">
+<meta property="og:description" content="Six weeks of /checkout/pro sessions. Zero paid. The fix took one if-condition. The diagnosis took 90 seconds of curl.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate-production.up.railway.app/learn/zombie-stripe-checkout-sessions">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/learn/zombie-stripe-checkout-sessions">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "50 Zombie Stripe Sessions, Zero Paid Customers — How One Curl Found the Bug",
+  "description": "Six weeks of /checkout/pro sessions. Zero paid. The fix took one if-condition. The diagnosis took 90 seconds of curl.",
+  "author": {"@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky"},
+  "publisher": {"@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate-production.up.railway.app"},
+  "datePublished": "2026-05-14",
+  "dateModified": "2026-05-14",
+  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/learn/zombie-stripe-checkout-sessions",
+  "about": [
+    {"@type": "Thing", "name": "Stripe checkout conversion"},
+    {"@type": "Thing", "name": "SaaS funnel diagnosis"},
+    {"@type": "Thing", "name": "real-browser UA testing"}
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Zombie Stripe Sessions</div>
+  <h1>50 Zombie Stripe Sessions, Zero Paid Customers — How One Curl Found the Bug</h1>
+  <p style="color:var(--muted);">3 min read · Published 2026-05-14 · Shipped fix: <a href="https://github.com/IgorGanapolsky/ThumbGate/pull/1989" target="_blank" rel="noopener">PR #1989</a></p>
+
+  <div class="tldr"><strong>TL;DR:</strong> My <code>/checkout/pro</code> was 302-ing every raw GET to a fresh Stripe Checkout Session. Bots, link-preview fetchers, and curious humans all minted sessions before they understood what they were paying for. Six weeks. 50+ sessions. Zero paid. The fix was one <code>if</code>-condition — render an interstitial for ALL non-confirmed GETs, not just bot UAs.</div>
+
+  <h2>The Stripe dashboard lied to me for six weeks</h2>
+
+  <p>I run a paid tier on a small SaaS. The funnel on paper looks clean: visitor lands on <code>/checkout/pro</code> → server creates a Stripe Checkout Session → 302 to the hosted Stripe page → either they pay or abandon. Standard.</p>
+
+  <p>My Stripe dashboard kept showing new <code>cs_live_*</code> sessions. Over six weeks: more than fifty. Paid: zero.</p>
+
+  <p>I did what most founders do. I assumed the funnel itself worked and the problem was upstream. Not enough traffic. Wrong audience. Headline copy needs work. I was a day away from spending on ads when I tried the cheapest test in software:</p>
+
+  <pre><code>curl -i -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) \
+  AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36" \
+  https://thumbgate-production.up.railway.app/checkout/pro</code></pre>
+
+  <p>The response:</p>
+
+  <pre><code>HTTP/1.1 302 Found
+Location: https://checkout.stripe.com/c/pay/cs_live_a1...</code></pre>
+
+  <p>A 302 straight to a Stripe Checkout Session. From a raw GET. With a real-browser User-Agent. No interstitial. No "are you sure you want to pay $19/month" page. No value preview. The session was minted before the visitor had even rendered a single pixel of my marketing.</p>
+
+  <h2>Who was minting those 50 sessions, then?</h2>
+
+  <p>Once you see it, you see it everywhere. A list of clients that hit <code>/checkout/pro</code> on a normal day:</p>
+
+  <ul>
+    <li>Slack and Discord link-preview fetchers when someone shares a thumbgate.ai URL in a channel</li>
+    <li>iMessage and SMS link previews</li>
+    <li>Twitter, LinkedIn, Bluesky, Threads card-generators</li>
+    <li>Google's <code>Googlebot</code> and Bing's <code>bingbot</code> crawling the link from a public guide</li>
+    <li>Email-client image proxies prefetching the link</li>
+    <li>A human who clicked the link from a tweet, read the page title in their browser tab, didn't know what they were committing to, and closed the tab</li>
+  </ul>
+
+  <p>Every one of those visits minted a real <code>cs_live_*</code> session. Stripe doesn't care that the visitor never saw a checkout form. The session is real, the metadata is real, the session-creation API call counts against your rate limits, and yes, it shows up in your dashboard as "started."</p>
+
+  <p>This is the part that hurts: I had <em>already</em> added bot deflection. There was a User-Agent classifier in the route. If the UA matched a known crawler, the route would render an interstitial instead of redirecting. It worked. For the bots whose UAs I'd predicted.</p>
+
+  <p>Slack's link-preview fetcher uses a UA that doesn't match the obvious patterns. Neither does Apple's iMessage previewer. Neither does a curious human in Chrome. The bot-deflection logic correctly punted bots — and then promptly minted Stripe sessions for everyone else who arrived without intent.</p>
+
+  <h2>The fix is one line</h2>
+
+  <p>Here is the change, in the server's <code>/checkout/pro</code> handler. Before:</p>
+
+  <pre><code>if (!isConfirmedCheckout &amp;&amp; botClassification.isBot) {
+  // Render interstitial for bots only
+  renderInterstitial(res);
+  return;
+}
+// Otherwise create Stripe session and 302</code></pre>
+
+  <p>After:</p>
+
+  <pre><code>if (!isConfirmedCheckout) {
+  // Render interstitial for ALL non-confirmed GETs (bot or human)
+  const eventType = botClassification.isBot
+    ? 'checkout_bot_deflected'
+    : 'checkout_interstitial_view';
+  renderInterstitial(res);
+  return;
+}
+// Only confirmed checkouts (confirm=1 in the URL) create a Stripe session</code></pre>
+
+  <p>Now every visitor — bot or human — first sees a small page: "ThumbGate Pro — $19/mo. Cancel anytime. Click <em>Pay $19/mo with Stripe →</em> to continue." That button sets <code>?confirm=1</code> in the URL. Only THAT GET creates a Stripe session.</p>
+
+  <p>Cost of the change to humans: one extra click. Gain: the click is the consent signal Stripe was assuming existed but didn't. The interstitial doubles as a 15-second value preview, which generally lifts conversion more than the click-friction costs.</p>
+
+  <h2>How to verify your own funnel right now</h2>
+
+  <p>This took me 90 seconds to diagnose. It should take you that long too.</p>
+
+  <ol>
+    <li>From your terminal, curl your own paid checkout URL with a real-browser User-Agent (the exact command is above — copy it and swap the URL).</li>
+    <li>Read the response. If you see <code>HTTP/1.1 302 Found</code> and <code>Location: https://checkout.stripe.com/...</code>, your funnel has the same bug.</li>
+    <li>The fix has three shapes depending on your stack. Render an interstitial for non-confirmed GETs (what I did). Or require a POST with a CSRF token before session creation. Or gate session creation behind a confirmed email — the visitor types their email, you create the session in the form-submit handler.</li>
+  </ol>
+
+  <h2>What the lesson actually was</h2>
+
+  <p>Bot deflection is necessary but not sufficient. A bad UX redirects humans into the same dead end as bots — the dead end is just polished differently.</p>
+
+  <p>The deeper lesson: before optimizing the funnel you don't have, verify the funnel you do have actually exists. A raw curl on your own URL with a real-browser UA is the cheapest diagnostic in software. I'm embarrassed I waited six weeks to run it.</p>
+
+  <h2>What I shipped this week</h2>
+
+  <ul>
+    <li><a href="https://github.com/IgorGanapolsky/ThumbGate/pull/1989" target="_blank" rel="noopener">PR #1989</a> — the one-line interstitial-for-all-GETs fix described above. Live in production as commit <code>e87299de</code>.</li>
+    <li><a href="https://github.com/IgorGanapolsky/ThumbGate/pull/1981" target="_blank" rel="noopener">PR #1981</a> — Plausible custom events on view / email-submitted / Stripe-redirect with <code>isBot</code> as a prop, so the funnel finally has step-by-step visibility. Pair this with the fix above; without telemetry you cannot tell if the new interstitial is actually lifting conversion or just shifting the bounce point.</li>
+    <li>A Stop hook (<code>scripts/hook-stop-anti-claim.js</code>) that blocks the agent from saying "deployed" or "live" in a response unless a verifying curl appears in the last N tool calls. Trust didn't return to my CTO/CEO loop after the agent claimed "deployed" three times in one day without verification, and the rule-in-CLAUDE.md form of the fix was being ignored by stale memory. The hook enforces at the wire.</li>
+  </ul>
+
+  <h2>The 2-minute setup, if you also want to stop your AI agent from minting zombie checkout sessions on your behalf</h2>
+
+  <p>This article is the story of the fix. The product that produced it is ThumbGate — pre-action checks for AI coding agents. Same idea applied at the agent layer: instead of trusting the agent to do the right thing, write a check that physically prevents the wrong thing.</p>
+
+  <pre><code>npx thumbgate init --agent claude</code></pre>
+
+  <p>That installs the hook config, the prevention-rules database, and the dashboard. The full <a href="/guide">setup guide</a> is 60 seconds. The first time the agent tries to force-push to main or skip your tests, the hook blocks it and adds the lesson to your prevention-rules file so it never happens again.</p>
+
+  <p>If you'd rather just read more before installing, here are three related war-story posts:</p>
+
+  <ul>
+    <li><a href="/learn/stop-ai-agent-force-push">How to Stop AI Agents From Force-Pushing to Main</a></li>
+    <li><a href="/learn/vibe-coding-safety-net">The Vibe Coding Safety Net You're Missing</a></li>
+    <li><a href="/learn/from-prototype-to-production">From Prototype to Production: What Actually Breaks</a></li>
+  </ul>
+
+  <p style="margin-top:32px;color:var(--muted);font-size:14px;">Have your own zombie-session story? Reply on <a href="https://github.com/IgorGanapolsky/ThumbGate/discussions" target="_blank" rel="noopener">GitHub Discussions</a>. I read every one.</p>
+
+  <div class="cta-block" style="margin-top:48px;padding:24px;border:1px solid var(--border);border-radius:12px;background:rgba(34,211,238,0.05);">
+    <h3 style="margin-top:0;">Stop paying for the same AI mistake twice.</h3>
+    <p>ThumbGate is pre-action defense for AI coding agents. Free CLI, Pro at $19/mo, Team for shared rules. Two minutes to install.</p>
+    <p style="margin-bottom:0;">
+      <a href="/checkout/pro?utm_source=learn&amp;utm_medium=article_cta&amp;utm_campaign=zombie_stripe_sessions&amp;cta_id=learn_zombie_pro&amp;cta_placement=article_footer&amp;plan_id=pro&amp;landing_path=%2Flearn%2Fzombie-stripe-checkout-sessions" class="btn-primary">Start Pro — $19/mo</a>
+      <a href="/guide" style="margin-left:12px;color:var(--muted);">Or read the setup guide first →</a>
+    </p>
+  </div>
+</div>
+
+</body>
+</html>
