@@ -121,6 +121,11 @@ const HIGH_ROI_QUERY_SEEDS = [
     'Bottom-of-funnel service query that turns background-agent governance demand into a paid 48-hour Team intake and implementation wedge.',
   ),
   querySeed(
+    'ai deployment readiness',
+    95,
+    'Production AI deployment demand maps directly to ThumbGate readiness audits, pre-action gates, rollout proof, and paid workflow hardening services.',
+  ),
+  querySeed(
     'gpt-5.5 model evaluation',
     94,
     'Fresh frontier-model upgrade query that maps to ThumbGate model candidate benchmarking, dashboard-analysis workloads, and routing governance before teams move expensive work.',
@@ -1064,6 +1069,69 @@ function buildAiAgentGovernanceSprintGuide() {
   };
 }
 
+const AI_DEPLOYMENT_READINESS_GUIDE_SPEC = Object.freeze({
+  slug: 'ai-deployment-readiness',
+  meta: {
+    query: 'ai deployment readiness',
+    title: 'AI Deployment Readiness | Production Workflow Gates Before Rollout',
+    heroTitle: 'AI Deployment Readiness Before Agents Touch Production',
+    heroSummary: 'Deployment-company demand proves the buyer problem: teams need help moving AI into real workflows. ThumbGate is the governance and proof layer that makes one priority workflow ready for production with pre-action gates, rollout evidence, and paid sprint paths.',
+  },
+  takeaways: [
+    'AI deployment readiness is about workflow controls, not just prompts, demos, or model selection.',
+    'The high-ROI starting point is one priority workflow with mapped tools, data, owners, risky actions, and proof-backed gates.',
+    'ThumbGate turns deployment demand into revenue through a $499 diagnostic, a $1500 Workflow Hardening Sprint, and Team seats at $49/seat/mo.',
+  ],
+  sections: [
+    ['paragraphs', 'Why deployment is now the buying category', [
+      'OpenAI-style deployment companies validate a practical market shift: buyers do not only want a model or chatbot. They want AI systems embedded into messy production workflows where data, tools, approvals, and rollback paths already exist.',
+      'That creates a clean ThumbGate wedge. A forward deployment team can map the workflow and build the automation; ThumbGate defines what the automation is allowed to execute, what evidence must exist before it acts, and what proof the buyer can review after rollout.',
+    ]],
+    ['bullets', 'What ThumbGate adds to AI deployment readiness', [
+      'Intake for one workflow owner, one priority workflow, one repeated failure, and one production rollout target.',
+      'A governance map for data access, tools, protected files, risky commands, approval boundaries, review tiers, and rollback expectations.',
+      'Pre-action gates that stop repeated mistakes before the next shell command, PR, release, or production automation step.',
+      'Background-agent risk checks through npx thumbgate background-governance --check --json before unattended work reaches review.',
+      'A proof pack with blocked-repeat examples, run evidence, verification notes, and rollout decisions the buyer can share internally.',
+    ]],
+    ['paragraphs', 'How this makes money', [
+      'The page should convert deployment curiosity into concrete buying motion. The $499 Workflow Hardening Diagnostic validates one repeated failure and produces a readiness map. The $1500 sprint implements the first gates and proof pack. Team seats expand the same enforcement path across more repos and workflow owners.',
+      'This keeps the offer honest. ThumbGate does not claim to be the deployment company or a generic AI consultancy. It is the enforcement, governance, and proof layer that lets deployment work survive contact with production.',
+    ]],
+  ],
+  faq: [
+    [
+      'Is ThumbGate competing with AI deployment companies?',
+      'No. Deployment companies help buyers embed AI into real operations. ThumbGate complements that work by adding the governance and proof layer before AI agents or automations touch production systems.',
+    ],
+    [
+      'What should an AI deployment readiness audit produce?',
+      'A useful audit should produce one workflow map, named owners, tool and data boundaries, risky actions, approval rules, rollback expectations, pre-action gates, and proof that the first rollout can be reviewed.',
+    ],
+    [
+      'Can this start before procurement?',
+      'Yes. Start with one $499 diagnostic or the Workflow Hardening Sprint intake. The point is to prove one workflow before asking a buyer to fund a broad platform rollout.',
+    ],
+  ],
+  relatedPaths: ['/guides/ai-agent-governance-sprint', '/guides/background-agent-governance', '/guides/pre-action-checks'],
+});
+
+function buildAiDeploymentReadinessGuide() {
+  return {
+    ...preActionGuide(AI_DEPLOYMENT_READINESS_GUIDE_SPEC.slug, {
+      ...AI_DEPLOYMENT_READINESS_GUIDE_SPEC.meta,
+      takeaways: AI_DEPLOYMENT_READINESS_GUIDE_SPEC.takeaways,
+      sections: AI_DEPLOYMENT_READINESS_GUIDE_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+      faq: AI_DEPLOYMENT_READINESS_GUIDE_SPEC.faq.map(([question, text]) => answer(question, text)),
+      relatedPaths: AI_DEPLOYMENT_READINESS_GUIDE_SPEC.relatedPaths,
+    }),
+    cta: {
+      label: 'Start deployment readiness intake',
+      href: '/?utm_source=website&utm_medium=seo_page&utm_campaign=ai_deployment_readiness&cta_placement=seo_brief&plan_id=team#workflow-sprint-intake',
+    },
+  };
+}
+
 const MODEL_UPGRADE_EVALUATION_GUIDE_SPEC = Object.freeze({
   slug: 'gpt-5-5-model-evaluation',
   meta: {
@@ -1590,6 +1658,7 @@ const PAGE_BLUEPRINTS = [
   buildPromptTricksToWorkflowRulesGuide(),
   buildBackgroundAgentGovernanceGuide(),
   buildAiAgentGovernanceSprintGuide(),
+  buildAiDeploymentReadinessGuide(),
   buildModelUpgradeEvaluationGuide(),
   {
     query: 'stop ai coding agents from repeating mistakes',
@@ -2102,7 +2171,7 @@ function classifyIntent(query) {
   if (!normalized) return 'informational';
   if (/\b(vs|versus|alternative|compare|comparison|better than)\b/.test(normalized)) return 'comparison';
   if (/\b(price|pricing|buy|checkout|purchase|cost)\b/.test(normalized)) return 'transactional';
-  if (/\b(autoresearch|self-improving|benchmark|reward hacking|agent safety|governance|sprint)\b/.test(normalized)) return 'commercial';
+  if (/\b(autoresearch|self-improving|benchmark|reward hacking|agent safety|governance|deployment readiness|sprint)\b/.test(normalized)) return 'commercial';
   if (/\b(claude code|cursor|codex|gemini|amp|opencode|integration|plugin|setup|install)\b/.test(normalized)) {
     return 'commercial';
   }
@@ -2594,7 +2663,11 @@ function renderWebPageJsonLd(page, runtimeConfig) {
 }
 
 function renderPaidSprintCheckoutCard(page) {
-  if (page.path !== '/guides/ai-agent-governance-sprint') return '';
+  const paidSprintGuidePaths = new Set([
+    '/guides/ai-agent-governance-sprint',
+    '/guides/ai-deployment-readiness',
+  ]);
+  if (!paidSprintGuidePaths.has(page.path)) return '';
 
   return `<div class="sidebar-card paid-sprint-card">
           <h2>Ready to buy the sprint?</h2>

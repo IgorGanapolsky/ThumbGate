@@ -226,16 +226,18 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // and /gov aliases). Marketing surface; in-scope for the public shell per
   // CLAUDE.md "Public shell: CLI, hook installer, adapter configs, basic
   // local gate runner, public JSON schemas, marketing/docs." See docs/FEDERAL.md.
-  // Bumped 251 → 253 (2026-05-13) for the revenue-ROI bundle runtime
-  // additions on top of #1972: scripts/activation-tracker.js (required at
-  // runtime by scripts/feedback-loop.js for the activation_first_rule_promoted
-  // ping) and scripts/plausible-server-events.js (required at runtime by
-  // src/api/server.js for the /checkout/pro funnel events). Both ship in the
-  // public bundle because the packaged runtime loads them on every server
-  // boot; omitting them crashes published `thumbgate serve`.
+  // Bumped 251 → 254 (2026-05-13) to absorb three additive runtime entries:
+  //   • scripts/activation-tracker.js (this branch — required by
+  //     scripts/feedback-loop.js for the activation_first_rule_promoted ping)
+  //   • scripts/plausible-server-events.js (this branch — required by
+  //     src/api/server.js for the /checkout/pro funnel events)
+  //   • scripts/memory-scope-readiness.js (from origin/main — memory-scope
+  //     readiness checks for the agent-native memory scope work)
+  // All three ship in the public bundle because the packaged runtime loads
+  // them on every server boot; omitting them crashes published `thumbgate serve`.
   assert.ok(
-    manifest.fileCount <= 253,
-    `npm package should stay <= 253 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 254,
+    `npm package should stay <= 254 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
