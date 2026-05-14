@@ -187,3 +187,71 @@ LinkedIn: https://www.linkedin.com/in/meredith-shubel/ *(verify)*
 - **Voice rules followed:** Peer-to-peer, no marketing copy, no "transforms your workflow" language, one repo link per message, no asks for warm intros.
 - **Pricing not mentioned:** Intentional. First conversation is qualification, not sale. Drop $499 Sprint or Pilot pricing only when they ask "what does it cost."
 - **Verification needed before sending:** rows 1, 3, 7 — confirm current title on LinkedIn (research agent could not auth-wall verify).
+
+---
+
+# Partner Channel — AI Agent Dev Shops (DIFFERENT MOTION)
+
+**Why this is a separate motion:** Buyers #1-#12 are direct customers (platform leaders who would deploy ThumbGate inside their company). Partner-channel firms are *intermediaries* — AI agent consultancies that ship custom agents to *their* clients. Every shop in this list ships agents to enterprise customers who then have the destructive-tool-call risk. ThumbGate baked into their delivery template = reduces their post-launch support cost AND gives them a "we ship with governance" line in sales decks.
+
+**Different pitch shape:** Mutual-upside / co-marketing, NOT "buy this." Goal is to land on their delivery template.
+
+---
+
+## PC-1. Agentix Labs *(agentixlabs.com)*
+
+Contact path: https://www.agentixlabs.com/contact/ (founder uses WHOIS-private; no public socials in HTML head — go through the contact form first, then ask for an intro to founder/CTO on the call)
+
+**Pitch:**
+
+> Subject: Reducing post-launch agent incidents — partnership?
+>
+> Hi — Agentix Labs ships custom AI agents and voice agents to clients. Every one of those deliveries carries the same post-launch risk: the agent does something destructive on real data and you eat the support cost (and the credibility hit).
+>
+> ThumbGate is the open-source pre-action gate that prevents that. PreToolUse interception, thumbs-down to durable rule, audit trail on every blocked call. ~750 weekly npm installs, MIT-licensed, works across Cursor / Claude Code / Codex / Gemini / Amp.
+>
+> Two-track ask:
+> (a) Bake ThumbGate into your delivery template as the safety layer. Free for your clients (MIT OSS), reduces your post-launch escalations, gives you a clean "we ship with governance" line in your sales calls.
+> (b) Co-author a case study on agent reliability — your delivery experience + our enforcement architecture. Distribution on both sides.
+>
+> 20 min next week to scope?
+>
+> — Igor Ganapolsky, ThumbGate (github.com/IgorGanapolsky/ThumbGate)
+
+**Why this works for them:**
+- Zero install cost (MIT OSS)
+- Lowers their post-launch incident rate (their P&L gain)
+- Gives them a "governance built-in" line vs. competing dev shops (sales asset)
+- Co-marketing reach to the ThumbGate audience (we'll publish the case study)
+
+**Why this works for us:**
+- Distribution into client engagements we'd never source on our own
+- Real customer-win case study (the gap our /case-studies page has)
+- Validates the "OSS layer under enterprise deliveries" positioning
+
+---
+
+## Partner-channel category — expand list (next session)
+
+Other AI agent dev shops / consultancies worth approaching with the same template (need per-shop verification on team size, founder, current focus before pitching):
+
+- **Voiceflow** (voiceflow.com) — voice-agent platform with services arm — Toronto
+- **Vapi** (vapi.ai) — voice agent infrastructure + services
+- **Lindy AI** (lindy.ai) — agent platform + bespoke buildouts — Flo Crivello
+- **Relevance AI** (relevanceai.com) — agent workforce platform with services
+- **Stack AI** (stackai.com) — workflow-builder + services
+- **CrewAI** (crewai.com) — open-source agent framework + enterprise services — João Moura
+- **Promptly** (promptly.io) — agent dev services
+- Any LangChain "Solutions Partner" listed in their public partner directory — they're explicitly the service-led counterpart to LangChain's product
+
+**Verification rule before pitching:** confirm (a) they are services-led (not pure product), (b) team size 5-50, (c) currently shipping client work, (d) founder/CTO contact reachable. Skip any that are now >100 people (Decagon, Sierra, Cognition, etc. — they've graduated to product-co stage and won't partner on OSS dropdown).
+
+---
+
+## Send tracker — Partner Channel
+
+| # | Target | Sent? | Date | Reply? | Next step |
+|---|---|---|---|---|---|
+| PC-1 | Agentix Labs | ☐ | | | Send via /contact form OR find founder LinkedIn |
+| PC-2 | (TBD — verify next session) | | | | |
+| PC-3 | (TBD — verify next session) | | | | |
