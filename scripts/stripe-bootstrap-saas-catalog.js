@@ -186,9 +186,11 @@ const STRIPE_API = 'https://api.stripe.com/v1';
 
 async function stripeRequest(method, route, body, secretKey) {
   const url = `${STRIPE_API}${route}`;
+  // No explicit Stripe-Version header — let Stripe use the version pinned
+  // to the account. Hard-coding a future version (e.g. 2025-09-30.acacia)
+  // breaks with "Invalid Stripe API version" until that version ships.
   const headers = {
     Authorization: `Bearer ${secretKey}`,
-    'Stripe-Version': '2025-09-30.acacia',
   };
   let payload;
   if (body) {
