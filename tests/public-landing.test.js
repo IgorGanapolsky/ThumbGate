@@ -5,6 +5,7 @@ const path = require('node:path');
 
 const landingPagePath = path.join(__dirname, '..', 'public', 'index.html');
 const codexPluginPagePath = path.join(__dirname, '..', 'public', 'codex-plugin.html');
+const servicesPagePath = path.join(__dirname, '..', 'public', 'services.html');
 const buyerIntentScriptPath = path.join(__dirname, '..', 'public', 'js', 'buyer-intent.js');
 
 function readLandingPage() {
@@ -17,6 +18,10 @@ function readBuyerIntentScript() {
 
 function readCodexPluginPage() {
   return fs.readFileSync(codexPluginPagePath, 'utf8');
+}
+
+function readServicesPage() {
+  return fs.readFileSync(servicesPagePath, 'utf8');
 }
 
 test('public landing page keeps FAQPage JSON-LD parity for SEO and GEO', () => {
@@ -106,15 +111,16 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /Start Workflow Hardening Sprint/);
 });
 
-test('public landing page exposes env-driven paid sprint checkout path', () => {
-  const landingPage = readLandingPage();
+test('services page exposes env-driven paid sprint checkout path', () => {
+  // Moved off the homepage 2026-05-14 (PR #2058 — strip 7 offers to 3).
+  // The paid engagement surface now lives at /services so /checkout/pro
+  // top-of-funnel sees one primary offer, not seven.
+  const landingPage = readServicesPage();
 
   assert.match(landingPage, /const sprintDiagnosticCheckoutUrl = '__SPRINT_DIAGNOSTIC_CHECKOUT_URL__';/);
   assert.match(landingPage, /const workflowSprintCheckoutUrl = '__WORKFLOW_SPRINT_CHECKOUT_URL__';/);
   assert.match(landingPage, /data-sprint-paid-path/);
   assert.match(landingPage, /Workflow Hardening Diagnostic/);
-  assert.match(landingPage, /Have one AI-agent failure that keeps repeating\?/);
-  assert.match(landingPage, /one real workflow, one repeated failure pattern, enforceable pre-action gates/);
   assert.match(landingPage, /href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__"/);
   assert.match(landingPage, /href="__WORKFLOW_SPRINT_CHECKOUT_URL__"/);
   assert.doesNotMatch(landingPage, /founder_workflow_diagnostic_checkout_started/);
@@ -130,10 +136,9 @@ test('public landing page exposes env-driven paid sprint checkout path', () => {
   assert.doesNotMatch(landingPage, /Pay \$19 quick read/);
   assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
   assert.doesNotMatch(landingPage, /quick_read_checkout_started/);
-  // Hero CTA pair is intentionally Free + Pro $19/mo for cold-visitor conversion.
-  // The $499 diagnostic still ships via the workflow-sprint-intake paid path below ("Pay for diagnostic" card).
+  // Hero CTA assertions (Get Pro — $19/mo, hero_workflow_sprint_*) used to
+  // live on /index.html; they no longer apply on /services.html.
   assert.doesNotMatch(landingPage, /Pay \$499 diagnostic/);
-  assert.match(landingPage, /Get Pro — \$19\/mo/);
   assert.match(landingPage, /Pay for diagnostic/);
   assert.doesNotMatch(landingPage, /Pay \$1500 sprint/);
   assert.match(landingPage, /Reliable AI Agent Governance Setup/);
@@ -149,18 +154,12 @@ test('public landing page exposes env-driven paid sprint checkout path', () => {
   assert.match(landingPage, /Pay for diagnostic/);
   assert.match(landingPage, /Pay for sprint/);
   assert.doesNotMatch(landingPage, /workflow_teardown_checkout_started/);
-  assert.match(landingPage, /hero_workflow_sprint_diagnostic_checkout/);
-  assert.doesNotMatch(landingPage, /hero_workflow_sprint_checkout/);
-  assert.match(landingPage, /hero_workflow_sprint_recovery_intake/);
   assert.match(landingPage, /workflow_sprint_diagnostic_checkout_started/);
   assert.match(landingPage, /workflow_sprint_checkout_started/);
   assert.match(landingPage, /workflow_sprint_recovery_intake_clicked/);
   assert.match(landingPage, /workflow_sprint_recovery_intake/);
   assert.doesNotMatch(landingPage, /ctaId:'hero_first_failure_rule_checkout'/);
   assert.doesNotMatch(landingPage, /ctaId:'hero_workflow_teardown_checkout'/);
-  assert.match(landingPage, /ctaId: 'hero_workflow_sprint_diagnostic_checkout'/);
-  assert.doesNotMatch(landingPage, /ctaId: 'hero_workflow_sprint_checkout'/);
-  assert.match(landingPage, /ctaId: 'hero_workflow_sprint_recovery_intake'/);
 });
 
 test('public landing page includes Plausible analytics and search engine proof bar', () => {
@@ -281,7 +280,11 @@ test('Codex plugin page keeps proof and follow-on CTAs close to the install path
   assert.match(codexPluginPage, /VERIFICATION_EVIDENCE\.md/);
   assert.match(codexPluginPage, /COMMERCIAL_TRUTH\.md/);
   assert.match(codexPluginPage, /\/checkout\/pro\?utm_source=codex/);
-  assert.match(codexPluginPage, /services#workflow-sprint-intake/);
+  // The Team workflow sprint link points at /services (PR #2058 — homepage
+  // strip moved the sprint section to its own page) and carries the
+  // #workflow-sprint-intake anchor through the querystring. The URL has
+  // the shape `/services?utm_source=codex...#workflow-sprint-intake`.
+  assert.match(codexPluginPage, /href="\/services\?[^"]*#workflow-sprint-intake"/);
   assert.match(codexPluginPage, /Upgrade after one blocked repeat/i);
   assert.match(codexPluginPage, /Team workflow sprint/i);
 });
@@ -472,8 +475,12 @@ test('public landing page labels data processing boundaries for trust review', (
   assert.match(landingPage, /hosted processing surfaces/i);
 });
 
-test('public landing page promotes the Autoresearch safety pack', () => {
-  const landingPage = readLandingPage();
+test('services page promotes the Autoresearch safety pack', () => {
+  // Autoresearch Safety Pack moved to /services 2026-05-14 (PR #2058).
+  // It still terminates in /checkout/pro at $19/mo, but it lives on the
+  // dedicated paid-engagement page so the homepage stops being seven
+  // competing offers for one buyer.
+  const landingPage = readServicesPage();
 
   assert.match(landingPage, /id="autoresearch-pack"/);
   assert.match(landingPage, /Autoresearch Safety Pack/);
@@ -481,7 +488,7 @@ test('public landing page promotes the Autoresearch safety pack', () => {
   assert.match(landingPage, /holdout tests/i);
   assert.match(landingPage, /reward hacking/i);
   assert.match(landingPage, /verification evidence/i);
-  assert.match(landingPage, /cta_id=autoresearch_pro_checkout/);
+  assert.match(landingPage, /cta_id=services_autoresearch_pro_checkout/);
 });
 
 test('public landing page advertises the Codex standalone plugin install path', () => {
