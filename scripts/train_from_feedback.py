@@ -1,10 +1,20 @@
 #!/usr/bin/env python3
 """
-Thompson Sampling Feedback Model Trainer
+Thompson Sampling Feedback Model Trainer (model-agnostic)
 
 Beta-Bernoulli Thompson Sampling for per-category reliability estimation.
-Reads from feedback-log.jsonl and builds a Bayesian model of Claude's
+Reads from feedback-log.jsonl and builds a Bayesian model of agent
 performance across different task categories.
+
+ThumbGate is model-agnostic by design. The input feedback events are
+tool-call records (which tool, which inputs, thumbs-up / thumbs-down,
+context) emitted by the active adapter — Claude Code, Cursor, Codex,
+Gemini, Amp, Cline, OpenCode, or any MCP-compatible agent. The trainer
+makes no assumptions about which model produced the tool call.
+
+The DPO/KTO export paths emit preference-pair JSONL in the canonical
+format consumed by Llama, Mistral, Qwen, GLM, Phi, and any other
+local model fine-tuning runtime that accepts standard DPO datasets.
 
 Usage:
     python train_from_feedback.py --train              # Full rebuild from JSONL
