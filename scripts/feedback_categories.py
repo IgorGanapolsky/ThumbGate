@@ -156,6 +156,31 @@ def _contains_keyword(text: str, keyword: str) -> bool:
     return needle in text
 
 
+def _extract_tool_value(entry: Dict[str, Any]) -> Any:
+    """Pick the first non-empty tool-name field present on the entry."""
+    for field in TOOL_FIELD_ALIASES:
+        candidate = entry.get(field)
+        if candidate:
+            return candidate
+    return None
+
+
+def _category_matches(text: str, tool_text: str, config: Dict[str, List[str]]) -> bool:
+    keywords = config.get("keywords", [])
+    tools = config.get("tools", [])
+    if any(_contains_keyword(text, kw) for kw in keywords):
+        return True
+    return bool(tools) and any(_contains_keyword(tool_text, t) for t in tools)
+
+
+def _fallback_domain(entry: Dict[str, Any]) -> Optional[str]:
+    rich = entry.get("richContext")
+    if not isinstance(rich, dict):
+        return None
+    domain = rich.get("domain")
+    return domain if isinstance(domain, str) and domain else None
+
+
 def classify_entry(entry: Dict[str, Any], categories: Optional[Dict[str, Dict[str, List[str]]]] = None) -> List[str]:
     """Classify a feedback entry into one or more category names.
 
@@ -165,15 +190,7 @@ def classify_entry(entry: Dict[str, Any], categories: Optional[Dict[str, Dict[st
     eval-script writers (toolName / tool_name).
     """
     cats = categories if categories is not None else DEFAULT_CATEGORIES
-
     tags = entry.get("tags") if isinstance(entry.get("tags"), list) else []
-    tool_value: Any = None
-    for field in TOOL_FIELD_ALIASES:
-        candidate = entry.get(field)
-        if candidate:
-            tool_value = candidate
-            break
-
     text = _normalize_text(
         entry.get("context"),
         entry.get("submittedContext"),
@@ -185,24 +202,11 @@ def classify_entry(entry: Dict[str, Any], categories: Optional[Dict[str, Dict[st
         entry.get("failureType"),
         tags,
     )
-    tool_text = _normalize_text(tool_value)
+    tool_text = _normalize_text(_extract_tool_value(entry))
 
-    matched: List[str] = []
-    for name, config in cats.items():
-        keywords = config.get("keywords", [])
-        tools = config.get("tools", [])
-        keyword_match = any(_contains_keyword(text, kw) for kw in keywords)
-        tool_match = any(_contains_keyword(tool_text, t) for t in tools) if tools else False
-        if keyword_match or tool_match:
-            matched.append(name)
-
+    matched = [name for name, config in cats.items() if _category_matches(text, tool_text, config)]
     if matched:
         return matched
 
-    rich = entry.get("richContext") if isinstance(entry.get("richContext"), dict) else None
-    if rich:
-        domain = rich.get("domain")
-        if isinstance(domain, str) and domain:
-            return [domain]
-
-    return ["uncategorized"]
+    fallback = _fallback_domain(entry)
+    return [fallback] if fallback else ["uncategorized"]
