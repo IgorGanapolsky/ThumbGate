@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>I Stripped 7 Offers Off My SaaS Homepage. The Diff Was 110 Lines — ThumbGate</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="My homepage advertised 7 distinct paid offers: Free CLI, Pro $19, Team $147, OpenClaw $97, Diagnostic $499, Sprint $1,500, Setup $3,997. Visitors had to pick which one fit them before they figured out what the product was. Conversion: 297 → 4. Here is the cut I shipped this morning.">
+<meta name="keywords" content="SaaS homepage conversion optimization, offer dilution, pricing page strip, primary call to action, 297 to 4 conversion, SaaS funnel, homepage offer count">
+<meta property="og:title" content="I Stripped 7 Offers Off My SaaS Homepage. The Diff Was 110 Lines">
+<meta property="og:description" content="Every additional offer on a landing page taxes the primary conversion. I had six. Here's the cut.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate-production.up.railway.app/learn/homepage-strip-seven-offers-to-three">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/learn/homepage-strip-seven-offers-to-three">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "I Stripped 7 Offers Off My SaaS Homepage. The Diff Was 110 Lines",
+  "description": "Every additional offer on a landing page taxes the primary conversion. I had six. Here's the cut.",
+  "author": {"@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky"},
+  "publisher": {"@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate-production.up.railway.app"},
+  "datePublished": "2026-05-14",
+  "dateModified": "2026-05-14",
+  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/learn/homepage-strip-seven-offers-to-three",
+  "about": [
+    {"@type": "Thing", "name": "SaaS homepage optimization"},
+    {"@type": "Thing", "name": "offer dilution"},
+    {"@type": "Thing", "name": "conversion rate optimization"}
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Homepage Strip 7 to 3</div>
+  <h1>I Stripped 7 Offers Off My SaaS Homepage. The Diff Was 110 Lines.</h1>
+  <p style="color:var(--muted);">3 min read · Published 2026-05-14 · Shipped fix: <a href="https://github.com/IgorGanapolsky/ThumbGate/pull/2058" target="_blank" rel="noopener">PR #2058</a></p>
+
+  <div class="tldr"><strong>TL;DR:</strong> My SaaS homepage was advertising 7 offers: Free CLI, Pro $19, Team $147, OpenClaw Kit $97, Diagnostic $499, Workflow Sprint $1,500, Setup $3,997. A visitor landing on / had to pick which one fit them before they figured out what the product was. Funnel: 297 sessions → 4 paid attempts. This morning I cut to Free / Pro / Team and moved the other five to <code>/services</code>. The diff was 110 lines removed from <code>public/index.html</code> + one new HTML page + a server-side route change.</div>
+
+  <h2>The diagnosis was three sentences from my CTO</h2>
+
+  <p>I had been staring at the funnel for two weeks. Plausible showed traffic. Stripe showed sessions being created (some of those were the zombie-session bug I <a href="/learn/zombie-stripe-checkout-sessions">wrote about earlier</a>; the rest were real). I had been A/B-testing the hero copy. I had been tweaking the price callout. Conversion: didn't move.</p>
+
+  <p>My CTO read the homepage once and said: "You're selling seven products. Every additional offer on a landing page taxes the primary conversion. You have six."</p>
+
+  <p>Five of those six offers were paid engagements that lived in the wrong place: a Workflow Hardening Diagnostic at $499, an AI Agent Governance Sprint at $1,500, a Reliable Governance Setup at $3,997, an OpenClaw Agent Governance Kit at $97, and an Autoresearch Safety Pack that bottomed out into the Pro plan at $19 via a different CTA path.</p>
+
+  <p>Each of these is a real offer that real buyers do convert on. But none of them is the offer the homepage is supposed to optimize for. The homepage is supposed to optimize for the same person every Tuesday: a Claude Code operator who hit a force-push or a skipped test, googled "stop Claude Code from doing X," landed on thumbgate.ai, and decided in 8 seconds whether to install. That operator does not want a 48-hour governance sprint. They want a 2-minute install of the Pro tier. The other six offers were obstacles.</p>
+
+  <h2>The cut</h2>
+
+  <p>I built <code>public/services.html</code> — a new dedicated page for the paid engagements. Same dark theme as the rest of the site. Same telemetry capture (Plausible page view, UTM attribution, Stripe checkout URL template substitution via the existing <code>servePublicMarketingPage</code> helper). All four intake cards plus the Autoresearch Pack content moved over verbatim.</p>
+
+  <p>Then I changed the server-side route. The old <code>/services</code> was a 302 redirect to the homepage anchor <code>/#workflow-sprint-intake</code>. The new <code>/services</code> serves the new HTML page as a real destination:</p>
+
+  <pre><code>// Before
+if (pathname === '/services') {
+  res.writeHead(302, { Location: '/#workflow-sprint-intake' });
+  res.end();
+}
+
+// After
+if (pathname === '/services' || pathname === '/services.html') {
+  servePublicMarketingPage({
+    req, res, parsed, hostedConfig,
+    renderHtml: () =&gt; fs.readFileSync(SERVICES_PAGE_PATH, 'utf-8'),
+    extraTelemetry: { pageType: 'services' },
+  });
+}</code></pre>
+
+  <p>Then I deleted lines 1038–1064 (the Autoresearch Pack section) and lines 1281–1364 (the Workflow Sprint intake form with all four paid cards) from <code>public/index.html</code>. Replaced each with a one-line HTML comment pointing at <code>/services</code> so future me knows where they went.</p>
+
+  <p>Then I swept the URL <code>/#workflow-sprint-intake</code> to <code>/services#workflow-sprint-intake</code> across 85 files: the homepage's remaining hash anchors, the schema.org Offer URLs, every internal link in <code>tests/</code>, <code>scripts/</code>, <code>docs/marketing/</code>, <code>bin/</code>, <code>plugins/</code>, <code>harnesses/</code>. The sweep is what keeps the GTM revenue catalog, the social-marketing post generators, the Claude/Cursor/Codex marketplace packs, the sales pipeline, and the CLI postinstall output emitting the right URL post-cut. Total diff: 95 files, +1423 / −1116.</p>
+
+  <h2>The non-obvious part was the test sweep</h2>
+
+  <p>If you have any kind of programmatic content generation in your marketing stack, this is where the cost of "just move a section" hides. The new URL is structurally different — fragment-on-homepage versus fragment-on-services-page — and roughly 17 test assertions across 8 test files reference the old shape. Plus runtime URL generators (the script that produces the per-channel social marketing copy, the script that produces the Claude Code marketplace install pack, etc.) emit those URLs in their output.</p>
+
+  <p>If you skip the sweep, the homepage looks clean and the next post your social-marketing pipeline emits points readers at <code>/#workflow-sprint-intake</code> — which is now a fragment that doesn't exist on the homepage anymore. Soft 404 from the user's perspective, no 404 from the server's perspective, and you've just made every link from your distribution channels worse than they were before.</p>
+
+  <p>The sweep itself was four lines of shell:</p>
+
+  <pre><code>grep -rln '/#workflow-sprint-intake' --include='*.js' --include='*.md' \
+  --include='*.html' --include='*.json' --include='*.yaml' . \
+  | grep -v node_modules \
+  | xargs sed -i '' 's|/#workflow-sprint-intake|/services#workflow-sprint-intake|g'</code></pre>
+
+  <p>After the sweep I ran the impacted test files locally — <code>gtm-revenue-loop</code>, <code>claude-workflow-hardening-pack</code>, <code>social-marketing-assets</code>, <code>guide-conversion-path</code>, <code>seo-gsd</code>, <code>utm</code>, <code>post-everywhere-channels</code>, <code>public-static-assets</code>, plus the package-boundary boundary test (because I'd added a new file to the published npm package, which bumped the file-count ceiling). 95 / 95 passed.</p>
+
+  <h2>The deeper lesson is about engineer/founder confusion</h2>
+
+  <p>Most founders, including me, have a list of paid offers. The list grows over time because each offer fits a specific shape of buyer. The mistake is putting them all on the landing page in the order they were invented.</p>
+
+  <p>The fix isn't to delete the offers — every one of these still converts for the right buyer. The fix is to send the unfamiliar visitor to ONE thing, and let the operator who is ready for a deeper engagement find their way to <code>/services</code> via the footer, the docs, an outbound email, or whatever channel they were always going to use.</p>
+
+  <p>The homepage's job is conversion. The services page's job is qualification. Conflating those two pages costs you both jobs.</p>
+
+  <h2>What you can ship today</h2>
+
+  <ol>
+    <li>Count the offers on your own landing page. Be honest. A "free trial" with its own button is an offer. A "talk to sales" link is an offer. An ebook gate is an offer.</li>
+    <li>For each offer except one, ask: <em>does removing this from the landing page reduce conversion for the primary offer?</em> If the honest answer is no or unclear, move it to a sub-page.</li>
+    <li>Sweep your test suite and your content-generation scripts for the URL fragment of every section you moved. Most marketing stacks have a hidden coupling here.</li>
+    <li>Keep the moved pages real, not redirects. A redirect to a fragment on another page is a UX dead-end for users arriving from search or shared links.</li>
+  </ol>
+
+  <h2>How ThumbGate fits</h2>
+
+  <p>This article is about pricing strategy, not enforcement. But the same pattern — "the system is doing what the operator asked, just not what the operator wanted" — applies to AI coding agents. Your agent is following its instructions. Your instructions don't say "stop minting Stripe sessions on raw GETs" or "stop saying deployed without curling." Those rules get written after the third bad outcome, and they get ignored unless you enforce them at the wire.</p>
+
+  <p>ThumbGate is pre-action defense for AI coding agents. Same idea applied to the agent layer.</p>
+
+  <pre><code>npx thumbgate init --agent claude</code></pre>
+
+  <p>2-minute install. First time the agent does something you didn't want, give it a thumbs-down. The signal becomes a prevention rule. The rule becomes a pre-action check that fires before the next time.</p>
+
+  <div class="cta-block" style="margin-top:48px;padding:24px;border:1px solid var(--border);border-radius:12px;background:rgba(34,211,238,0.05);">
+    <h3 style="margin-top:0;">Stop paying for the same AI mistake twice.</h3>
+    <p>Free CLI, Pro at $19/mo, Team for shared rules. Two minutes to install. <a href="/services" style="color:var(--cyan);">Hands-on engagements at /services →</a></p>
+    <p style="margin-bottom:0;">
+      <a href="/checkout/pro?utm_source=learn&amp;utm_medium=article_cta&amp;utm_campaign=homepage_strip&amp;cta_id=learn_strip_pro&amp;cta_placement=article_footer&amp;plan_id=pro&amp;landing_path=%2Flearn%2Fhomepage-strip-seven-offers-to-three" class="btn-primary">Start Pro — $19/mo</a>
+      <a href="/guide" style="margin-left:12px;color:var(--muted);">Or read the setup guide first →</a>
+    </p>
+  </div>
+</div>
+
+</body>
+</html>
