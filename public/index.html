@@ -1378,6 +1378,10 @@ __GA_BOOTSTRAP__
         <div class="faq-a">ThumbGate's intelligence is context, not weights. It doesn't touch the model — it injects past feedback into context so your agent is conditioned by your corrections. Think of it as a behavioral immune system, not a training pipeline. The check blocks are hard enforcement, not soft suggestions.</div>
       </div>
       <div class="faq-item">
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Is ThumbGate a vector database / RAG system?</div>
+        <div class="faq-a">No. ThumbGate is <strong>behavioral governance, not knowledge management</strong>. We don't retrieve — we enforce. The PreToolUse hook intercepts the agent's tool call <em>before</em> it executes, runs it through your local rule pack, and blocks it deterministically. RAG-era infrastructure debates (vector DBs, embeddings, million-token contexts) don't apply to this layer. We do ship LanceDB for advanced features (semantic lesson dedup, similarity reranking) but the core gate decision is rule-based and runs in single-digit milliseconds with zero model calls.</div>
+      </div>
+      <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What's the tech stack?</div>
         <div class="faq-a">SQLite+FTS5 lesson DB for fast full-text search. MemAlign-inspired dual recall (principle-based rules + episodic context). Thompson Sampling for adaptive check sensitivity per failure domain. LanceDB + Apache Arrow for local vector search with Hugging Face embeddings. ContextFS for context assembly. Bayesian belief updates on each memory. PreToolUse hook enforcement blocks known-bad actions before execution. All local-first — no cloud required.</div>
       </div>

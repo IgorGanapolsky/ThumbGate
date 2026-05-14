@@ -18,6 +18,8 @@ Under the hood: your thumbs-down becomes one of your **Pre-Action Checks** that 
 
 > **Mission:** make AI coding affordable by making sure you never pay for the same mistake twice.
 
+> **Architectural class:** behavioral governance, not knowledge management. ThumbGate doesn't retrieve — it enforces. The PreToolUse hook intercepts the agent's tool call *before* it executes, runs it through your local rule pack, and blocks it deterministically. RAG-era infrastructure debates (vector DBs, embeddings, context windows) don't apply to this layer.
+
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
