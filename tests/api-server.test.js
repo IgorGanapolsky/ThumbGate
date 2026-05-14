@@ -735,6 +735,29 @@ test('support page exposes email, GitHub issues, status, and refund paths', asyn
   assert.match(body, /href="\/terms"/);
 });
 
+test('case studies page surfaces the Aiventyx integration with verifiable signal', async () => {
+  // Conversion-optimization surface: until this PR, thumbgate.ai had no
+  // proof page. Buyers saw CLI install commands and bounced. This page
+  // anchors trust with reproducible third-party signal.
+  const res = await fetch(apiUrl('/case-studies'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+  const body = await res.text();
+  assert.match(body, /Case Studies/);
+  // Real third-party signal must be present — no fabricated metrics.
+  assert.match(body, /Aiventyx/i);
+  assert.match(body, /62%/);
+  assert.match(body, /Qaiser/i);
+  // The fix must be described concretely (not aspirationally).
+  assert.match(body, /TRACKED_LINK_TARGETS/);
+  assert.match(body, /\/go\/teams/);
+  // Call to action: live redirect they can verify themselves.
+  assert.match(body, /href="\/go\/teams\?utm_source=case-study"/);
+  // Footer cross-links so this becomes a hub, not a dead end.
+  assert.match(body, /href="\/pricing"/);
+  assert.match(body, /href="\/privacy"/);
+});
+
 test('public HEAD routes stay unauthenticated and side-effect free', async () => {
   const telemetryPath = path.join(tmpFeedbackDir, 'telemetry-pings.jsonl');
   const checkoutSessionsPath = process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH;
