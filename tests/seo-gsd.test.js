@@ -360,6 +360,29 @@ test('AI agent governance sprint page routes bottom-funnel buyers into Team inta
   assert.match(html, /workflow-sprint-intake/);
 });
 
+test('AI deployment readiness page turns deployment demand into sprint intake', () => {
+  const page = findSeoPageByPath('/guides/ai-deployment-readiness');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/ai-deployment-readiness');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'ai deployment readiness');
+  assert.equal(page.intent, 'commercial');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-checks');
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/ai-deployment-readiness',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+  assert.match(html, /AI Deployment Readiness/);
+  assert.match(html, /deployment companies/i);
+  assert.match(html, /governance and proof layer/i);
+  assert.match(html, /npx thumbgate background-governance --check --json/);
+  assert.match(html, /workflow-sprint-intake/);
+  assert.match(html, /Workflow Hardening Diagnostic/);
+});
+
 test('GPT-5.5 model evaluation page is discoverable and commercially classified', () => {
   const page = findSeoPageByPath('/guides/gpt-5-5-model-evaluation');
   const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/gpt-5-5-model-evaluation');
