@@ -321,9 +321,15 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // branch: scripts/activation-tracker.js + scripts/plausible-server-events.js
   // (~9 KB combined). Observed package after all three: ~3.55 MB.
   // See docs/FEDERAL.md and .changeset/high-roi-checkout-deploy-anticlaim-bundle.md.
+  // Bumped 3.60 MB → 3.65 MB (2026-05-14) for public/pricing.html (~7 KB) and
+  // public/case-studies.html (~9 KB) — the two consolidated marketing surfaces
+  // added in feat/pricing-and-case-studies-public. Observed package locally is
+  // ~3.608 MB; 3.65 MB keeps narrow headroom for line-ending normalization
+  // drift on CI. Marketing pages are in-scope for the public shell per
+  // CLAUDE.md "Public shell: ... marketing/docs."
   assert.ok(
-    manifest.unpackedSize <= 3_600_000,
-    `npm package should stay <= 3.60 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_650_000,
+    `npm package should stay <= 3.65 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
