@@ -127,6 +127,25 @@ function main() {
     console.log(`  Action: promoted to reusable memory. Prevention rules will auto-update.`);
     console.log(`  DPO export: run \`npx thumbgate export-dpo\` to generate training pairs.`);
     console.log('');
+
+    // After a thumbs-DOWN, surface the $19 Quick Read offer when the operator
+    // has logged 3+ thumbs-downs in the last 24h. Suppressed for Pro users
+    // and rate-limited to once per 24h. See scripts/upsell-quickread.js.
+    if (feedback === 'down') {
+      try {
+        const { maybePrintUpsell } = require('../../../scripts/upsell-quickread');
+        const { getFeedbackPaths } = require('../../../scripts/feedback-paths');
+        const { isProLicensed } = require('../../../scripts/license');
+        const { FEEDBACK_LOG_PATH } = getFeedbackPaths();
+        maybePrintUpsell({
+          feedbackLogPath: FEEDBACK_LOG_PATH,
+          isPro: isProLicensed(),
+        });
+      } catch {
+        // Upsell is non-essential; never break feedback capture on it.
+      }
+    }
+
     return;
   }
 
