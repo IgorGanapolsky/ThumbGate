@@ -5466,6 +5466,84 @@ async function addContext(){
       return;
     }
 
+    // Public canonical pricing page. The audit flagged "pricing schizophrenia":
+    // sales/pricing.json said $49 / $299, COMMERCIAL_TRUTH.md said $19 / $149,
+    // and there was no buyer-facing surface to reconcile the two. This is now
+    // the single source of truth for what ThumbGate sells, in priority order:
+    // Sprint (proof-pack, sales-led) → Pro (self-serve recurring) → Team
+    // (after qualification). Every paid CTA across the site should funnel
+    // here OR directly into Stripe checkout — never a different price.
+    if (isGetLikeRequest && pathname === '/pricing') {
+      sendHtml(res, 200, `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pricing — ThumbGate</title><meta name="description" content="ThumbGate pricing: free CLI, $499 Sprint proof-pack, $19/mo Pro, $49/seat Team. One source of truth."><style>body{font-family:system-ui,-apple-system,sans-serif;max-width:920px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#1f2937}h1{font-size:36px;margin:0 0 8px;text-align:center}.lede{color:#6b7280;font-size:18px;margin:0 0 40px;text-align:center}.grid{display:grid;grid-template-columns:1fr;gap:20px;margin-bottom:40px}@media(min-width:700px){.grid{grid-template-columns:repeat(2,1fr)}.hero{grid-column:1/-1}}.card{border:1px solid #e5e7eb;border-radius:12px;padding:24px;background:#fff;display:flex;flex-direction:column}.hero{border:2px solid #0f172a;background:linear-gradient(135deg,#fef3c7,#fff)}.tag{display:inline-block;background:#0f172a;color:#fff;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600;letter-spacing:0.5px;margin-bottom:12px}.tag-free{background:#10b981}.tag-pro{background:#3b82f6}.tag-team{background:#8b5cf6}.tag-sprint{background:#0f172a}h2{margin:0 0 4px;font-size:24px}.price{font-size:32px;font-weight:700;margin:8px 0 12px}.price small{font-size:14px;color:#6b7280;font-weight:400}.tagline{color:#374151;margin:0 0 16px}ul{margin:0 0 20px;padding-left:18px}li{margin:6px 0}.cta{display:inline-block;background:#0f172a;color:#fff;padding:12px 24px;border-radius:8px;font-weight:600;text-decoration:none;text-align:center;margin-top:auto}.cta-secondary{background:#fff;color:#0f172a;border:1px solid #0f172a}.cta-free{background:#10b981}footer{margin-top:48px;padding-top:24px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px;text-align:center}footer a{color:#0066cc}</style></head><body>
+<h1>Pricing</h1>
+<p class="lede">Four ways to use ThumbGate. Start free, upgrade when the limit bites, buy the proof-pack when you need a deliverable.</p>
+
+<div class="grid">
+
+<div class="card hero">
+<span class="tag tag-sprint">Sprint — Strongest signal</span>
+<h2>Workflow Hardening Sprint</h2>
+<div class="price">$499 <small>· one-time</small></div>
+<p class="tagline">Buy the proof that ThumbGate actually catches your repeated AI-agent failures. Two-day diagnostic on one workflow, top-5 prevention rules ranked by impact, scoped Pre-Action Check pack delivered as a PR, 60-minute findings review.</p>
+<ul>
+<li>Best path if you need a stakeholder-visible artifact (PR, doc, briefing)</li>
+<li>Single fixed price — no scope creep</li>
+<li>Refund if we can't extract a rule from your failure trace</li>
+</ul>
+<a class="cta" href="mailto:igor.ganapolsky@gmail.com?subject=ThumbGate%20Workflow%20Hardening%20Sprint%20-%20Intake&body=Stack%20(Claude%20Code%2FCursor%2Fother)%3A%0AOne%20repeated%20agent%20failure%20you%20want%20to%20kill%3A%0ATimeline%3A%0A">Email to start a sprint →</a>
+</div>
+
+<div class="card">
+<span class="tag tag-free">Free — Forever</span>
+<h2>ThumbGate CLI</h2>
+<div class="price">$0</div>
+<p class="tagline">MIT-licensed CLI + local PreToolUse hook. Unlimited captures, 5 active prevention rules, local lesson DB. Works with Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode.</p>
+<ul>
+<li>30-second install: <code>npx thumbgate init</code></li>
+<li>No account, no signup, no data leaves your machine</li>
+<li>Hit 5 active rules → upgrade to Pro for unlimited</li>
+</ul>
+<a class="cta cta-free" href="/go/install?utm_source=pricing">Install free CLI →</a>
+</div>
+
+<div class="card">
+<span class="tag tag-pro">Pro — Self-serve recurring</span>
+<h2>ThumbGate Pro</h2>
+<div class="price">$19 <small>/ month</small> · $149 / year</div>
+<p class="tagline">For developers running multiple AI agents who hit the 5-rule wall. Unlimited prevention rules, local dashboard, DPO export for offline preference fine-tuning, lesson search across sessions.</p>
+<ul>
+<li>Unlimited active prevention rules</li>
+<li>Local dashboard + lesson recall</li>
+<li>7-day refund window. Cancel anytime.</li>
+</ul>
+<a class="cta cta-secondary" href="/go/pro?utm_source=pricing">Start Pro →</a>
+</div>
+
+<div class="card">
+<span class="tag tag-team">Team — After qualification</span>
+<h2>ThumbGate Team</h2>
+<div class="price">$49 <small>/ seat / month</small></div>
+<p class="tagline">For engineering teams with shared AI-agent workflows. Shared lesson DB so one engineer's save protects the whole team, org-level policy rollout, audit-ready evidence. 3-seat minimum.</p>
+<ul>
+<li>Shared prevention-rule policy across seats</li>
+<li>Self-serve checkout — no sales call required</li>
+<li>Most teams start with a Sprint first, then scale to seats</li>
+</ul>
+<a class="cta cta-secondary" href="/go/teams?utm_source=pricing">Start Team →</a>
+</div>
+
+</div>
+
+<footer>
+<p>Buy the Sprint if you need a deliverable this week. Install free if you're scouting. Pro if the 5-rule cap bites. Team after you've proved the workflow.</p>
+<p><a href="/">Home</a> · <a href="/case-studies">Case Studies</a> · <a href="/support">Support</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
+</footer>
+</body></html>`, {}, {
+        headOnly: isHeadRequest,
+      });
+      return;
+    }
+
     // Public support / contact page — required for Stripe Business → Public
     // details "Customer support URL" field. Single source of truth for how
     // customers reach us (email, GitHub issues, status page).
