@@ -281,7 +281,7 @@ test('Codex plugin page keeps proof and follow-on CTAs close to the install path
   assert.match(codexPluginPage, /VERIFICATION_EVIDENCE\.md/);
   assert.match(codexPluginPage, /COMMERCIAL_TRUTH\.md/);
   assert.match(codexPluginPage, /\/checkout\/pro\?utm_source=codex/);
-  assert.match(codexPluginPage, /#workflow-sprint-intake/);
+  assert.match(codexPluginPage, /services#workflow-sprint-intake/);
   assert.match(codexPluginPage, /Upgrade after one blocked repeat/i);
   assert.match(codexPluginPage, /Team workflow sprint/i);
 });
@@ -425,7 +425,7 @@ test('public landing page includes Plausible custom event tracking for all CTAs'
   assert.match(landingPage, /fetch\('\/v1\/telemetry\/ping'/);
   assert.match(landingPage, /\/go\/gpt\?utm_source=website/);
   assert.match(landingPage, /\/go\/install\?utm_source=website/);
-  assert.match(landingPage, /#workflow-sprint-intake/);
+  assert.match(landingPage, /services#workflow-sprint-intake/);
 
   // trackClick wires up CTA events by selector and event name
   assert.match(landingPage, /trackClick\('.btn-pro', 'checkout_start'/);

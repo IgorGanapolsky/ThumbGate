@@ -98,7 +98,7 @@ __GA_BOOTSTRAP__
       "price": "49",
       "priceCurrency": "USD",
       "description": "Intake-led team rollout with a workflow hardening sprint, shared enforcement memory, org dashboard visibility, approval boundaries, release confidence, Docker Sandboxes guidance for risky local autonomy, and pilot support for teams shipping AI-generated changes",
-      "url": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+      "url": "https://thumbgate-production.up.railway.app/services#workflow-sprint-intake"
     },
     {
       "@type": "Offer",
@@ -152,7 +152,7 @@ __GA_BOOTSTRAP__
       "name": "Start Workflow Hardening Sprint intake",
       "target": {
         "@type": "EntryPoint",
-        "urlTemplate": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+        "urlTemplate": "https://thumbgate-production.up.railway.app/services#workflow-sprint-intake",
         "actionPlatform": [
           "https://schema.org/DesktopWebPlatform"
         ]
@@ -173,19 +173,19 @@ __GA_BOOTSTRAP__
     "name": "ThumbGate",
     "url": "https://thumbgate-production.up.railway.app"
   },
-  "url": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+  "url": "https://thumbgate-production.up.railway.app/services#workflow-sprint-intake",
   "description": "Founder-led workflow hardening for one AI-agent workflow that needs approval boundaries, rollback safety, and rollout proof before wider team rollout.",
   "offers": {
     "@type": "Offer",
     "name": "Workflow Hardening Sprint intake",
-    "url": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+    "url": "https://thumbgate-production.up.railway.app/services#workflow-sprint-intake"
   },
   "potentialAction": {
     "@type": "CommunicateAction",
     "name": "Book a workflow hardening intake",
     "target": {
       "@type": "EntryPoint",
-      "urlTemplate": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake",
+      "urlTemplate": "https://thumbgate-production.up.railway.app/services#workflow-sprint-intake",
       "actionPlatform": [
         "https://schema.org/DesktopWebPlatform"
       ]
@@ -683,7 +683,7 @@ __GA_BOOTSTRAP__
       <a href="/compare" style="display:none;">Compare</a>
       <a href="/dashboard" style="display:none;">Dashboard Demo</a>
       <a href="#claude-code-section" class="nav-claude" onclick="posthog.capture('nav_claude_click')" style="display:none;">Claude</a>
-      <a href="#workflow-sprint-intake" onclick="posthog.capture('workflow_sprint')" style="display:none;">Start Sprint</a>
+      <a href="/services#workflow-sprint-intake" onclick="posthog.capture('workflow_sprint')" style="display:none;">Start Sprint</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" target="_blank" rel="noopener" onclick="posthog.capture('nav_claude_extension_click',{cta:'install_claude_extension'})" class="nav-cta" style="background:#d97706;display:none;">Claude Extension</a>
       <a href="/go/install?utm_source=website&utm_medium=nav&utm_campaign=install_free&cta_id=nav_install_free&cta_placement=nav" onclick="posthog.capture('nav_cta_click',{cta:'install_free'})" class="nav-cta">Install Free</a>
     </div>
@@ -1035,33 +1035,8 @@ __GA_BOOTSTRAP__
   </div>
 </section>
 
-<section class="autoresearch-pack" id="autoresearch-pack">
-  <div class="container">
-    <div class="autoresearch-panel">
-      <div class="section-label" style="text-align:left;">Autoresearch Safety Pack</div>
-      <h2>Stop self-improving coding loops from hacking the benchmark.</h2>
-      <p>Autoresearch loops run experiments, inspect metrics, and accept better variants. ThumbGate gives those loops a Reliability Gateway: Pre-Action Checks for skipped holdout tests, fake proof, reward hacking, unsafe edits, and promotion without verification evidence.</p>
-      <div class="autoresearch-grid">
-        <div class="autoresearch-card">
-          <h3>Guard the metric</h3>
-          <p>Require primary and holdout checks before an agent can call a variant better. Block cherry-picked runs and missing baselines.</p>
-        </div>
-        <div class="autoresearch-card">
-          <h3>Preserve proof trails</h3>
-          <p>Promotion needs commands, logs, changed files, and verification evidence so the win survives review instead of becoming a vague claim.</p>
-        </div>
-        <div class="autoresearch-card">
-          <h3>Ship into CI</h3>
-          <p>Start with templates for <code>npm test</code>, Playwright duration, bundle size, lint, and CI failures, then add Team checks for shared workflows.</p>
-        </div>
-      </div>
-      <div class="autoresearch-cta">
-        <a class="primary" href="/guides/autoresearch-agent-safety?utm_source=website&utm_medium=autoresearch_pack&utm_campaign=autoresearch_safety&cta_id=autoresearch_guide&cta_placement=autoresearch_pack">Read the Autoresearch guide</a>
-        <a class="secondary" href="/checkout/pro?utm_source=website&utm_medium=autoresearch_pack&utm_campaign=autoresearch_safety&cta_id=autoresearch_pro_checkout&cta_placement=autoresearch_pack&plan_id=pro&landing_path=%2F">Start Pro</a>
-      </div>
-    </div>
-  </div>
-</section>
+<!-- Autoresearch Safety Pack moved to /services 2026-05-14 to cut homepage
+     offer dilution. See /services#autoresearch-pack. -->
 
 <!-- HOW IT WORKS -->
 <section class="how-it-works" id="how-it-works">
@@ -1270,98 +1245,20 @@ __GA_BOOTSTRAP__
           <li>Email support during pilot rollout</li>
         </ul>
         <a href="/checkout/pro?plan_id=team&amp;seat_count=3&amp;confirm=1&amp;utm_source=website&amp;utm_medium=pricing&amp;utm_campaign=team_self_serve&amp;cta_id=pricing_team_self_serve&amp;cta_placement=pricing&amp;landing_path=%2F" onclick="try{posthog.capture('team_self_serve_click',{cta:'team_self_serve',seats:3,price:147})}catch(_){};sendFirstPartyTelemetry('team_self_serve_checkout_started',{ctaId:'pricing_team_self_serve',ctaPlacement:'pricing',planId:'team',seatCount:3,price:147});sendGa4Event('begin_checkout',{currency:'USD',value:147,items:[{item_id:'team_monthly',item_name:'ThumbGate Team (3 seats)',quantity:3}]});" class="btn-team" style="display:block;text-align:center;">Start 3-seat Team — $147/mo</a>
-        <a href="#workflow-sprint-intake" style="display:block;text-align:center;margin-top:8px;font-size:13px;color:var(--text-dim);text-decoration:none;">Or qualify first via Workflow Hardening Sprint intake →</a>
+        <a href="/services#workflow-sprint-intake" style="display:block;text-align:center;margin-top:8px;font-size:13px;color:var(--text-dim);text-decoration:none;">Or qualify first via Workflow Hardening Sprint intake →</a>
         <p style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;">Team is $49/seat/mo with a 3-seat minimum. Self-serve checkout starts you at $147/mo for 3 seats; add more seats from the dashboard. Prefer to qualify the workflow before paying? Start with the intake.</p>
       </div>
     </div>
-    <p style="text-align:center;color:var(--text-muted);font-size:13px;margin:40px 0;">Need a custom diagnostic, sprint, or setup? <a href="#workflow-sprint-intake" style="color:var(--cyan);text-decoration:none;">Send workflow first →</a></p>
+    <p style="text-align:center;color:var(--text-muted);font-size:13px;margin:40px 0;">Need a custom diagnostic, sprint, or setup? <a href="/services#workflow-sprint-intake" style="color:var(--cyan);text-decoration:none;">Send workflow first →</a></p>
   </div>
 </section>
 
-<section class="compatibility" id="workflow-sprint-intake">
-  <div class="container">
-    <div class="section-label">Team Pilot</div>
-    <h2 class="section-title">Start the AI Agent Governance Sprint with one repeat failure</h2>
-    <p style="color:var(--text-dim);max-width:720px;margin:0 auto 16px;">This is the fastest path to first paid value for teams. Start with one repo, one workflow owner, and one blocker. The intake is designed to prove that ThumbGate reduces review churn, rollout risk, or repeated agent mistakes before a wider rollout.</p>
-    <div class="team-intake-panel">
-      <div class="team-intake-panel-head">
-        <div>
-          <h3>Tell us the workflow. Get a proof plan.</h3>
-          <p>The highest-fit Team buyer is already feeling one repeated failure. Start with a paid diagnostic when budget is ready, or use intake when you need qualification first.</p>
-        </div>
-        <span class="team-intake-badge">30-minute intake</span>
-      </div>
-      <div class="team-paid-path" data-sprint-paid-path aria-label="Paid workflow hardening options">
-        <div class="team-paid-card">
-          <div>
-            <h4>Workflow Hardening Diagnostic</h4>
-            <p>Paid triage for one repeated agent or review failure, with a concrete proof plan and go/no-go recommendation.</p>
-          </div>
-          <div>
-            <div class="team-paid-price">$<span data-sprint-diagnostic-price>499</span></div>
-            <a class="team-paid-link" data-sprint-diagnostic-link href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__">Pay for diagnostic</a>
-          </div>
-        </div>
-        <div class="team-paid-card">
-          <div>
-            <h4>AI Agent Governance Sprint</h4>
-            <p>48-hour Workflow Hardening Sprint for one workflow owner, one blocker, approval boundaries, rollback safety, one proof review, and one hardened rollout path.</p>
-          </div>
-          <div>
-            <div class="team-paid-price">$<span data-workflow-sprint-price>1500</span></div>
-            <a class="team-paid-link" data-workflow-sprint-link href="__WORKFLOW_SPRINT_CHECKOUT_URL__">Pay for sprint</a>
-          </div>
-        </div>
-        <div class="team-paid-card">
-          <div>
-            <h4>Reliable AI Agent Governance Setup</h4>
-            <p>Full ThumbGate-powered setup for Claude Code, Cursor, or Codex teams: npx install, custom prevention rules, audit trail, training, and proof reports. Optional ongoing rule management is $297/mo.</p>
-          </div>
-          <div>
-            <div class="team-paid-price">$3,997</div>
-            <a class="team-paid-link" href="#team-pilot-intake-form" onclick="sendFirstPartyTelemetry('governance_setup_intake_clicked',{ctaId:'team_governance_setup_intake',ctaPlacement:'team_paid_path',planId:'team',offer:'reliable_ai_agent_governance_setup',price:3997});sendGa4Event('generate_lead',{currency:'USD',value:3997,method:'governance_setup_intake'});">Request setup</a>
-          </div>
-        </div>
-        <div class="team-paid-card">
-          <div>
-            <h4>OpenClaw Agent Governance Kit</h4>
-            <p>Self-serve digital kit with ThumbGate prevention rules, OpenClaw-compatible workflow prompts, agent registry checklist, proof report template, and Zernio launch copy.</p>
-          </div>
-          <div>
-            <div class="team-paid-price">$97</div>
-            <a rel="nofollow noopener noreferrer" target="_blank" class="team-paid-link" href="https://buy.stripe.com/bJe14naiE9Lo7xT49Z3sI12" onclick="sendFirstPartyTelemetry('openclaw_governance_kit_checkout_started',{ctaId:'team_openclaw_governance_kit_checkout',ctaPlacement:'team_paid_path',planId:'digital_kit',offer:'openclaw_agent_governance_kit',price:97});sendGa4Event('begin_checkout',{currency:'USD',value:97,items:[{item_id:'openclaw_agent_governance_kit',item_name:'OpenClaw Agent Governance Kit'}]});">Buy kit</a>
-          </div>
-        </div>
-      </div>
-      <div class="team-intake-recovery" aria-label="Checkout recovery path for workflow sprint buyers">
-        <div>
-          <strong>Not ready to pay from a checkout page?</strong>
-          <span>Send the workflow first. We can qualify the blocker, confirm the proof plan, and route you to the $499 diagnostic, $1500 sprint, or $3,997 governance setup only when the scope is real.</span>
-        </div>
-        <a href="#team-pilot-intake-form" onclick="sendFirstPartyTelemetry('workflow_sprint_recovery_intake_clicked',{ctaId:'team_workflow_sprint_recovery_intake',ctaPlacement:'team_paid_path_recovery',planId:'team',offer:'workflow_hardening_sprint',reason:'checkout_abandon'});sendGa4Event('generate_lead',{currency:'USD',value:0,method:'workflow_sprint_recovery_intake'});">Send workflow first</a>
-      </div>
-      <form id="team-pilot-intake-form" class="team-form" action="/v1/intake/workflow-sprint" method="POST" data-team-intake-form>
-        <input type="hidden" name="ctaId" value="workflow_sprint_intake">
-        <input type="hidden" name="ctaPlacement" value="team_visible_intake">
-        <input type="hidden" name="planId" value="team">
-        <input type="hidden" name="utmSource" value="website">
-        <input type="hidden" name="utmMedium" value="visible_team_intake">
-        <input type="hidden" name="utmCampaign" value="workflow_hardening_sprint">
-        <input type="hidden" name="page" value="/#workflow-sprint-intake">
-        <input type="email" name="email" placeholder="you@company.com" autocomplete="email" required>
-        <input type="text" name="company" placeholder="Company">
-        <input type="text" name="workflow" placeholder="Workflow to harden (e.g. deploy approvals, migrations, PR review)" required>
-        <input type="text" name="owner" placeholder="Workflow owner" required>
-        <input type="text" name="runtime" placeholder="Current agent/runtime (Claude Code, Codex, Cursor, Gemini...)" required>
-        <textarea class="full" name="blocker" placeholder="What repeat mistake, rollout blocker, or team handoff failure keeps happening?" required></textarea>
-        <textarea class="full" name="note" placeholder="Optional context: team size, repos involved, target rollout date, or what you need to prove internally."></textarea>
-        <div class="full">
-          <button type="submit" class="btn-team">Start Team Pilot Intake</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</section>
+<!-- Workflow Sprint intake (Diagnostic $499 / Sprint $1,500 / Setup $3,997 /
+     OpenClaw Kit $97) moved to /services 2026-05-14 to cut homepage offer
+     dilution. The intake form, checkout cards, and recovery copy now live
+     at /services#workflow-sprint-intake. Homepage CTAs in the Team pricing
+     card + the "Need a custom diagnostic, sprint, or setup?" line link
+     across to /services. -->
 
 <!-- FAQ -->
 <section class="faq" id="faq">
@@ -1391,7 +1288,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">When should I use Pro versus the Workflow Hardening Sprint?</div>
-        <div class="faq-a">Start with the <a href="/guide" style="color:var(--cyan);text-decoration:underline;">setup guide</a> if you only need the local path. Choose Pro after one real blocked repeat when you want your own dashboard, DPO export, and proof-ready exports. Choose the <a href="#workflow-sprint-intake" style="color:var(--cyan);text-decoration:underline;">Workflow Hardening Sprint</a> when one workflow owner needs approval boundaries, rollback safety, and rollout proof before wider rollout.</div>
+        <div class="faq-a">Start with the <a href="/guide" style="color:var(--cyan);text-decoration:underline;">setup guide</a> if you only need the local path. Choose Pro after one real blocked repeat when you want your own dashboard, DPO export, and proof-ready exports. Choose the <a href="/services#workflow-sprint-intake" style="color:var(--cyan);text-decoration:underline;">Workflow Hardening Sprint</a> when one workflow owner needs approval boundaries, rollback safety, and rollout proof before wider rollout.</div>
       </div>
       <div class="faq-item">
         <button class="faq-q" type="button" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How do we keep high-risk autonomous runs off the host?</button>
@@ -1451,7 +1348,7 @@ __GA_BOOTSTRAP__
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;align-items:center;margin-top:12px;opacity:0.7;">
       <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('final_claude_extension_click',{cta:'install_claude_extension'})" style="padding:8px 16px;font-size:12px;background:#d97706;color:#fff;">Install Claude Extension</a>
       <a href="/go/pro?utm_source=website&utm_medium=final_cta&utm_campaign=pro_upgrade&cta_id=final_go_pro&cta_placement=final_cta&plan_id=pro&landing_path=%2F" onclick="posthog.capture('final_pro_click',{cta:'go_pro'})" class="btn-pro" style="padding:8px 16px;font-size:12px;opacity:0.85;">Upgrade to Pro — $19/mo</a>
-      <a href="#workflow-sprint-intake" class="btn-team" style="padding:8px 16px;font-size:12px;">Start Workflow Hardening Sprint</a>
+      <a href="/services#workflow-sprint-intake" class="btn-team" style="padding:8px 16px;font-size:12px;">Start Workflow Hardening Sprint</a>
     </div>
   </div>
 </section>

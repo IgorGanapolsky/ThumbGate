@@ -31,7 +31,7 @@ function makeWarmTarget() {
     evidenceScore: 9,
     evidence: ['warm inbound engagement', 'workflow pain named: stale context'],
     motionReason: 'Warm workflow pain already exists.',
-    cta: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+    cta: 'https://thumbgate-production.up.railway.app/services#workflow-sprint-intake',
     firstTouchDraft: 'I can harden one workflow for you this week.',
     painConfirmedFollowUpDraft: 'If the workflow pain is real, I can send the proof pack.',
     salesCommands: {
@@ -55,7 +55,7 @@ function makeColdTarget() {
     evidenceScore: 14,
     evidence: ['workflow control surface', 'business-system integration', '36 GitHub stars'],
     motionReason: 'Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.',
-    cta: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+    cta: 'https://thumbgate-production.up.railway.app/services#workflow-sprint-intake',
     firstTouchDraft: 'Hey @DGouron, if one approval or rollback step keeps creating trouble, I can harden that workflow for you.',
     painConfirmedFollowUpDraft: 'If the workflow pain is real, I can send the proof pack.',
     salesCommands: {

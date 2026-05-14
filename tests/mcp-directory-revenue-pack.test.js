@@ -32,7 +32,7 @@ const LINKS_FIXTURE = {
   appOrigin: 'https://thumbgate.ai',
   guideLink: 'https://thumbgate.ai/guide',
   proCheckoutLink: 'https://thumbgate.ai/checkout/pro',
-  sprintLink: 'https://thumbgate.ai/#workflow-sprint-intake',
+  sprintLink: 'https://thumbgate.ai/services#workflow-sprint-intake',
   proPriceLabel: '$19/mo or $149/yr',
 };
 

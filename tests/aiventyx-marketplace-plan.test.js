@@ -31,7 +31,7 @@ test('Aiventyx listings cover free, Pro, and Teams without inventing traction', 
   const listings = buildAiventyxListings({
     appOrigin: 'https://thumbgate-production.up.railway.app',
     proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
-    sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+    sprintLink: 'https://thumbgate-production.up.railway.app/services#workflow-sprint-intake',
   });
 
   assert.deepEqual(listings.map((listing) => listing.key), ['free', 'pro', 'teams']);
@@ -39,7 +39,7 @@ test('Aiventyx listings cover free, Pro, and Teams without inventing traction', 
   assert.equal(listings.find((listing) => listing.key === 'pro').pricingModel, '$19/mo or $149/yr');
   assert.match(listings.find((listing) => listing.key === 'free').primaryCTA, /\/go\/install\?/);
   assert.match(listings.find((listing) => listing.key === 'pro').primaryCTA, /\/go\/pro\?/);
-  assert.match(listings.find((listing) => listing.key === 'teams').primaryCTA, /#workflow-sprint-intake/);
+  assert.match(listings.find((listing) => listing.key === 'teams').primaryCTA, /services#workflow-sprint-intake/);
   assert.ok(listings.every((listing) => /utm_source=aiventyx/.test(listing.primaryCTA)));
   assert.ok(listings.every((listing) => /utm_medium=marketplace/.test(listing.primaryCTA)));
   assert.ok(listings.every((listing) => listing.attribution.utmContent === AIVENTYX_CONTENT));
@@ -91,7 +91,7 @@ test('rendered pack is dashboard-ready and anchored to proof links', () => {
     ...buildAiventyxMarketplacePlan({
       appOrigin: 'https://thumbgate-production.up.railway.app',
       proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
-      sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+      sprintLink: 'https://thumbgate-production.up.railway.app/services#workflow-sprint-intake',
     }),
     generatedAt: '2026-04-25T00:00:00.000Z',
   });
@@ -135,7 +135,7 @@ test('CSV export keeps listing submission fields and attribution in one operator
   const csv = renderAiventyxMarketplaceCsv(buildAiventyxMarketplacePlan({
     appOrigin: 'https://thumbgate-production.up.railway.app',
     proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
-    sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+    sprintLink: 'https://thumbgate-production.up.railway.app/services#workflow-sprint-intake',
   }));
 
   assert.match(csv, /^key,name,dashboardStatus,category,pricingModel,primaryCTA,/);
@@ -150,7 +150,7 @@ test('CLI options and report writing produce markdown and JSON artifacts', () =>
   const plan = buildAiventyxMarketplacePlan({
     appOrigin: 'https://thumbgate-production.up.railway.app',
     proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
-    sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+    sprintLink: 'https://thumbgate-production.up.railway.app/services#workflow-sprint-intake',
   });
   const written = writeAiventyxMarketplaceOutputs(plan, {
     ...options,
@@ -187,7 +187,7 @@ test('writeDocs mode also persists checked-in Aiventyx sidecars alongside markdo
     const written = writeAiventyxMarketplaceOutputs(buildAiventyxMarketplacePlan({
       appOrigin: 'https://thumbgate-production.up.railway.app',
       proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
-      sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+      sprintLink: 'https://thumbgate-production.up.railway.app/services#workflow-sprint-intake',
     }), {
       writeDocs: true,
     });

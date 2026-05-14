@@ -120,7 +120,7 @@ Turn `n8n` and `Make.com` template demand into tracked guide clicks, Pro checkou
 - Evidence: HighLevel sells Snapshots as reusable packaged configurations and supports paid marketplace pricing.
 - Proof trigger: They already resell or deploy repeated CRM workflows for clients and care about IP protection, setup speed, or repeatability.
 - Proof asset: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md
-- Next ask: https://thumbgate.ai/#workflow-sprint-intake
+- Next ask: https://thumbgate.ai/services#workflow-sprint-intake
 - Recommended motion: Use the snapshot as the wedge, then sell the guarded rollout as the higher-trust offer.
 
 ## Outreach Drafts
@@ -128,10 +128,10 @@ Turn `n8n` and `Make.com` template demand into tracked guide clicks, Pro checkou
 You probably do not need another generic `n8n` template. You need one automation that is safe enough to run without babysitting every side effect. That is the gap ThumbGate closes: approval boundaries, rollback safety, and proof around the workflow you already want to automate. If you want the self-serve path first, start here: https://thumbgate.ai/guide
 
 ### DM or email — `Make.com` team lead
-I am not pitching a bigger automation stack. I am pitching one guarded workflow your team can trust. If one `Make.com` scenario keeps creating approval, publish, CRM, or customer-reply risk, ThumbGate can wrap that workflow with pre-action checks and proof. If that failure is real, the next step is the Workflow Hardening Sprint intake: https://thumbgate.ai/#workflow-sprint-intake
+I am not pitching a bigger automation stack. I am pitching one guarded workflow your team can trust. If one `Make.com` scenario keeps creating approval, publish, CRM, or customer-reply risk, ThumbGate can wrap that workflow with pre-action checks and proof. If that failure is real, the next step is the Workflow Hardening Sprint intake: https://thumbgate.ai/services#workflow-sprint-intake
 
 ### Pain-confirmed follow-up
-Now that the repeated workflow failure is concrete, use the proof pack first and then pick the right lane. Solo operator: https://thumbgate.ai/checkout/pro . Team workflow owner: https://thumbgate.ai/#workflow-sprint-intake . Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+Now that the repeated workflow failure is concrete, use the proof pack first and then pick the right lane. Solo operator: https://thumbgate.ai/checkout/pro . Team workflow owner: https://thumbgate.ai/services#workflow-sprint-intake . Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
 ### Gumroad product description seed
 This is not a generic automation template pack. It is a guarded workflow kit. You get the workflow asset, the setup notes, and the ThumbGate checks that help stop the wrong action before it runs. If your workflow risk is larger than a solo install can handle, the next step is the Workflow Hardening Sprint.

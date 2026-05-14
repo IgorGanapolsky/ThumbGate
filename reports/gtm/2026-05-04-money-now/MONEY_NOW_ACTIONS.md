@@ -67,27 +67,27 @@ Guardrail reminder: do not publish posts, send messages, invite members, upload 
 ### 8. github_montenegronyc_backporcher
 - Contact: https://numberfortyeight.co/
 - Offer: Workflow Hardening Sprint.
-- Send: Hey @montenegronyc, saw you're shipping `backporcher`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Send: Hey @montenegronyc, saw you're shipping `backporcher`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/services#workflow-sprint-intake
 
 ### 9. github_adqui9608_ai_code_review_agent
 - Contact: https://github.com/Adqui9608
 - Offer: Workflow Hardening Sprint.
-- Send: Hey @Adqui9608, saw you're shipping `ai-code-review-agent`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Send: Hey @Adqui9608, saw you're shipping `ai-code-review-agent`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/services#workflow-sprint-intake
 
 ### 10. github_kamaldhingra_ai_agents_qa_automation
 - Contact: https://github.com/kamaldhingra
 - Offer: Workflow Hardening Sprint.
-- Send: Hey @kamaldhingra, saw you're shipping `AI-Agents-QA-Automation`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Send: Hey @kamaldhingra, saw you're shipping `AI-Agents-QA-Automation`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/services#workflow-sprint-intake
 
 ### 11. github_abhi268170_stagix
 - Contact: https://github.com/Abhi268170
 - Offer: Workflow Hardening Sprint.
-- Send: Hey @Abhi268170, saw you're shipping `Stagix`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Send: Hey @Abhi268170, saw you're shipping `Stagix`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/services#workflow-sprint-intake
 
 ### 12. github_dolutech_engine_context
 - Contact: https://dolutech.com/
 - Offer: Workflow Hardening Sprint.
-- Send: Hey @dolutech, saw you're shipping `engine_context`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- Send: Hey @dolutech, saw you're shipping `engine_context`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/services#workflow-sprint-intake
 
 ## Exact Tracking Commands
 Use the matching `Log after send`, `Log after pain-confirmed reply`, `Log after checkout started`, and `Log after paid` commands from `operator-send-now.md`. Do not advance a lead unless the external action actually happened.

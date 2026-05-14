@@ -156,8 +156,6 @@ test('public marketing directory aliases redirect to canonical pages', async () 
     ['/guides', '/learn'],
     ['/guides/', '/learn'],
     ['/guides.html', '/learn'],
-    ['/services', '/#workflow-sprint-intake'],
-    ['/services.html', '/#workflow-sprint-intake'],
   ];
 
   for (const [pathname, expectedLocation] of cases) {
@@ -167,6 +165,22 @@ test('public marketing directory aliases redirect to canonical pages', async () 
     });
     assert.equal(res.status, 302, `${pathname} should redirect`);
     assert.equal(res.headers.get('location'), expectedLocation);
+  }
+});
+
+test('/services and /services.html serve the real services landing page', async () => {
+  // /services hosts the paid engagement offers (Workflow Hardening Diagnostic,
+  // AI Agent Governance Sprint, Governance Setup, OpenClaw Kit, Autoresearch
+  // Pack) that previously cluttered the homepage. Moved 2026-05-14 to free
+  // /checkout/pro of conversion-taxing offer dilution.
+  for (const pathname of ['/services', '/services.html']) {
+    const res = await fetch(`${origin}${pathname}`, { method: 'GET' });
+    assert.equal(res.status, 200, `${pathname} should serve 200`);
+    assert.match(res.headers.get('content-type') || '', /text\/html/);
+    const html = await res.text();
+    assert.match(html, /workflow-sprint-intake/, `${pathname} should contain workflow-sprint-intake anchor`);
+    assert.match(html, /Workflow Hardening Diagnostic/, `${pathname} should describe the Diagnostic offer`);
+    assert.match(html, /AI Agent Governance Sprint/, `${pathname} should describe the Sprint offer`);
   }
 });
 

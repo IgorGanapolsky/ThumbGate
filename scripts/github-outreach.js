@@ -11,7 +11,7 @@ const DEFAULT_QUEUE_PATH = path.join(__dirname, '..', 'docs', 'marketing', 'gtm-
 const DEFAULT_REPORT_PATH = path.join(__dirname, '..', 'docs', 'marketing', 'gtm-revenue-loop.json');
 const DEFAULT_DOCS_PATH = path.join(__dirname, '..', 'docs', 'OUTREACH_TARGETS.md');
 const DEFAULT_CORE_LINKS = {
-  sprint: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+  sprint: 'https://thumbgate-production.up.railway.app/services#workflow-sprint-intake',
   guide: 'https://thumbgate-production.up.railway.app/guide',
   proof: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
   truth: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md',

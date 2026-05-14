@@ -44,7 +44,7 @@ If you have one workflow owner and one repeated failure that blocks rollout, the
 
 Intake:
 
-- `https://thumbgate-production.up.railway.app/#workflow-sprint-intake`
+- `https://thumbgate-production.up.railway.app/services#workflow-sprint-intake`
 
 Proof (truth + engineering evidence):
 

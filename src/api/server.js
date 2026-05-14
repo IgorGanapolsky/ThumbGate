@@ -213,6 +213,7 @@ const COMPARE_PAGE_PATH = path.resolve(__dirname, '../../public/compare.html');
 const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
 const NUMBERS_PAGE_PATH = path.resolve(__dirname, '../../public/numbers.html');
 const FEDERAL_PAGE_PATH = path.resolve(__dirname, '../../public/federal.html');
+const SERVICES_PAGE_PATH = path.resolve(__dirname, '../../public/services.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
 const COMPARE_DIR = path.resolve(__dirname, '../../public/compare');
@@ -769,7 +770,7 @@ function getMcpSkillManifests(hostedConfig) {
         'Import the policy or runbook.',
         'Ship the gate with dashboard proof.',
       ],
-      intakeUrl: buildPublicUrl(hostedConfig, '/#workflow-sprint-intake'),
+      intakeUrl: buildPublicUrl(hostedConfig, '/services#workflow-sprint-intake'),
       proofUrl: VERIFICATION_EVIDENCE_URL,
     },
     {
@@ -901,7 +902,7 @@ function getMcpApplications(hostedConfig) {
       name: 'workflow-sprint-intake',
       title: 'Workflow Hardening Sprint Intake',
       description: 'Submit a repeated agent failure for a proof-backed sprint.',
-      url: buildPublicUrl(hostedConfig, '/#workflow-sprint-intake'),
+      url: buildPublicUrl(hostedConfig, '/services#workflow-sprint-intake'),
       useWhen: 'Ready to convert mistakes into gates.',
     },
   ];
@@ -3041,7 +3042,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
     : '';
   const sprintDiagnosticPriceDollars = runtimeConfig.sprintDiagnosticPriceDollars || 499;
   const workflowSprintPriceDollars = runtimeConfig.workflowSprintPriceDollars || 1500;
-  const workflowSprintIntakeUrl = `${escapeHtmlAttribute(runtimeConfig.appOrigin)}/#workflow-sprint-intake`;
+  const workflowSprintIntakeUrl = `${escapeHtmlAttribute(runtimeConfig.appOrigin)}/services#workflow-sprint-intake`;
   const recoveryOfferLinks = [
     diagnosticCheckoutUrl
       ? `<a href="${diagnosticCheckoutUrl}" data-recovery-offer="sprint_diagnostic" data-offer-price="${sprintDiagnosticPriceDollars}">Book $${sprintDiagnosticPriceDollars} diagnostic</a>`
@@ -3377,7 +3378,7 @@ function renderWorkflowSprintIntakeResultPage(runtimeConfig, { title, detail, le
       <div class="actions">
         <a href="${proofPackUrl}">Review Proof Pack</a>
         <a class="secondary" href="${sprintBriefUrl}">Review Sprint Brief</a>
-        <a class="secondary" href="${runtimeConfig.appOrigin}/#workflow-sprint-intake">Return to Context Gateway</a>
+        <a class="secondary" href="${runtimeConfig.appOrigin}/services#workflow-sprint-intake">Return to Context Gateway</a>
       </div>
     </div>
   </main>
@@ -4358,11 +4359,26 @@ async function addContext(){
     }
 
     if (isGetLikeRequest && (pathname === '/services' || pathname === '/services.html')) {
-      res.writeHead(302, {
-        Location: '/#workflow-sprint-intake',
-        'Cache-Control': 'no-store',
-      });
-      res.end();
+      // /services hosts the paid engagement offers (Workflow Hardening
+      // Diagnostic $499, AI Agent Governance Sprint $1,500, Governance Setup
+      // $3,997, OpenClaw Kit $97, Autoresearch Safety Pack). Moved off the
+      // homepage 2026-05-14 to stop the 7-offer cognitive load that was
+      // taxing /checkout/pro conversion. Routed through servePublicMarketingPage
+      // so /services landings capture landing_page_view telemetry, UTM
+      // attribution, and template substitution for the Stripe checkout URLs.
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(SERVICES_PAGE_PATH, 'utf-8'),
+          extraTelemetry: { pageType: 'services' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Services page not found' });
+      }
       return;
     }
 
@@ -4604,7 +4620,7 @@ async function addContext(){
           isBot: botClassification.isBot ? 'true' : 'false',
           reason: botClassification.reason,
         }, req.headers, eventType);
-        const workflowIntakeHref = buildCheckoutIntentHref(`${hostedConfig.appOrigin}/#workflow-sprint-intake`, analyticsMetadata, {
+        const workflowIntakeHref = buildCheckoutIntentHref(`${hostedConfig.appOrigin}/services#workflow-sprint-intake`, analyticsMetadata, {
           utmMedium: 'checkout_interstitial_recovery',
           utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_workflow_sprint',
           ctaId: 'checkout_interstitial_workflow_sprint_intake',
@@ -5266,7 +5282,7 @@ async function addContext(){
           acquisitionId: body.acquisitionId || journeyState.acquisitionId,
           visitorId: body.visitorId || journeyState.visitorId,
           sessionId: body.sessionId || journeyState.sessionId,
-          page: body.page || referrerAttribution.page || '/#workflow-sprint-intake',
+          page: body.page || referrerAttribution.page || '/services#workflow-sprint-intake',
           landingPath: body.landingPath || referrerAttribution.landingPath || '/',
           ctaId: body.ctaId || 'workflow_sprint_intake',
           ctaPlacement: body.ctaPlacement || 'workflow_sprint',
@@ -5363,7 +5379,7 @@ async function addContext(){
           ctaId: 'workflow_sprint_intake',
           ctaPlacement: 'workflow_sprint',
           planId: 'sprint',
-          page: referrerAttribution.page || '/#workflow-sprint-intake',
+          page: referrerAttribution.page || '/services#workflow-sprint-intake',
           landingPath: referrerAttribution.landingPath || '/',
           referrerHost: referrerAttribution.referrerHost,
           referrer: referrerAttribution.referrer,

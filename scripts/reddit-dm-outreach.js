@@ -190,7 +190,7 @@ async function main() {
     const billingConfig = resolveHostedBillingConfig({
       requestOrigin: 'https://thumbgate-production.up.railway.app',
     });
-    let messages = buildWarmRedditMessages(`${billingConfig.appOrigin}/#workflow-sprint-intake`);
+    let messages = buildWarmRedditMessages(`${billingConfig.appOrigin}/services#workflow-sprint-intake`);
     if (selectedTargets && !selectedTargets.has('all')) {
       messages = messages.filter((message) => selectedTargets.has(message.to));
     }

@@ -41,7 +41,7 @@ function makeReport() {
         motionLabel: 'Workflow Hardening Sprint',
         motionReason: 'Warm Reddit engager already named a repeated workflow risk.',
         offer: 'workflow_hardening_sprint',
-        cta: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+        cta: 'https://thumbgate-production.up.railway.app/services#workflow-sprint-intake',
         message: 'I can harden one AI-agent workflow for you.',
       },
       {
@@ -57,7 +57,7 @@ function makeReport() {
         motion: 'sprint',
         motionLabel: 'Workflow Hardening Sprint',
         motionReason: 'Target can be approached with one concrete workflow-hardening offer.',
-        cta: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+        cta: 'https://thumbgate-production.up.railway.app/services#workflow-sprint-intake',
         message: 'I can harden one AI-agent workflow for you.',
       },
     ],

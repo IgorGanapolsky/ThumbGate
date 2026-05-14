@@ -28,7 +28,7 @@ function publicRevenueLinks() {
     appOrigin: PUBLIC_BUYER_ORIGIN,
     guideLink: `${PUBLIC_BUYER_ORIGIN}/guide`,
     proCheckoutLink: `${PUBLIC_BUYER_ORIGIN}/checkout/pro`,
-    sprintLink: `${PUBLIC_BUYER_ORIGIN}/#workflow-sprint-intake`,
+    sprintLink: `${PUBLIC_BUYER_ORIGIN}/services#workflow-sprint-intake`,
   });
 }
 

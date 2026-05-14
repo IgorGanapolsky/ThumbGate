@@ -105,7 +105,7 @@ ThumbGate adds physical enforcement via PreToolUse hooks — every mistake becom
 
 🔗 GitHub: https://github.com/IgorGanapolsky/ThumbGate
 🔗 Pro ($19/mo or $149/yr): https://thumbgate-production.up.railway.app/checkout/pro
-🔗 Team workflow sprint intake: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+🔗 Team workflow sprint intake: https://thumbgate-production.up.railway.app/services#workflow-sprint-intake
 🔗 npm: npm install thumbgate
 
 Install: npx thumbgate init --agent claude-code

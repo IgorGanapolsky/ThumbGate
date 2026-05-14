@@ -46,6 +46,7 @@
     "public/lessons.html",
     "public/numbers.html",
     "public/pro.html",
+    "public/services.html",
     "scripts/access-anomaly-detector.js",
     "scripts/activation-tracker.js",
     "scripts/agent-audit-trace.js",

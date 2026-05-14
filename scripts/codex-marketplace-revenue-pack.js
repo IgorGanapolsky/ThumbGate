@@ -40,7 +40,7 @@ function buildCodexRevenueLinks(baseLinks = buildRevenueLinks()) {
     appOrigin: CODEX_PUBLIC_APP_ORIGIN,
     guideLink: `${CODEX_PUBLIC_APP_ORIGIN}/guide`,
     proCheckoutLink: `${CODEX_PUBLIC_APP_ORIGIN}/checkout/pro`,
-    sprintLink: `${CODEX_PUBLIC_APP_ORIGIN}/#workflow-sprint-intake`,
+    sprintLink: `${CODEX_PUBLIC_APP_ORIGIN}/services#workflow-sprint-intake`,
   };
 }
 

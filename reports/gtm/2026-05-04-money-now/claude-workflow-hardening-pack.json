@@ -136,7 +136,7 @@
       "reason": "Warm Reddit engager already named a repeated workflow risk, so the fastest path is a founder-led diagnostic.",
       "evidence": "warm inbound engagement, workflow pain named: rollback risk, already in DMs",
       "sourceUrl": "https://www.reddit.com/user/Deep_Ad1959/",
-      "nextAsk": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+      "nextAsk": "https://thumbgate-production.up.railway.app/services#workflow-sprint-intake"
     },
     {
       "key": "prospect_2",
@@ -146,7 +146,7 @@
       "reason": "Warm Reddit engager already works on advanced agent memory, so discovery should center on one repeated failure pattern.",
       "evidence": "warm inbound engagement, built serious memory systems, workflow pain named: stale context and conflicting facts",
       "sourceUrl": "https://www.reddit.com/user/game-of-kton/",
-      "nextAsk": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+      "nextAsk": "https://thumbgate-production.up.railway.app/services#workflow-sprint-intake"
     },
     {
       "key": "prospect_3",
@@ -156,7 +156,7 @@
       "reason": "Warm Reddit engager already described a mature workflow, so the next step is a targeted diagnostic on one failure mode.",
       "evidence": "warm inbound engagement, mature multi-step workflow described, workflow pain named: review boundaries and context risk",
       "sourceUrl": "https://www.reddit.com/user/leogodin217/",
-      "nextAsk": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+      "nextAsk": "https://thumbgate-production.up.railway.app/services#workflow-sprint-intake"
     },
     {
       "key": "prospect_4",
@@ -166,7 +166,7 @@
       "reason": "Warm Reddit engager already understands the adaptive-gate thesis, so offer one concrete workflow hardening diagnostic.",
       "evidence": "warm inbound engagement, responded to adaptive-gate positioning, workflow pain named: brittle guardrails",
       "sourceUrl": "https://www.reddit.com/user/Enthu-Cutlet-1337/",
-      "nextAsk": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+      "nextAsk": "https://thumbgate-production.up.railway.app/services#workflow-sprint-intake"
     },
     {
       "key": "prospect_5",
@@ -176,7 +176,7 @@
       "reason": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
       "evidence": "workflow control surface, production or platform workflow, business-system integration, agent infrastructure, 13 GitHub stars, updated in the last 7 days",
       "sourceUrl": "https://github.com/montenegronyc/backporcher",
-      "nextAsk": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+      "nextAsk": "https://thumbgate-production.up.railway.app/services#workflow-sprint-intake"
     },
     {
       "key": "prospect_6",
@@ -186,7 +186,7 @@
       "reason": "Lead with one business-system workflow that needs approval boundaries, rollback safety, and proof.",
       "evidence": "workflow control surface, production or platform workflow, business-system integration, agent infrastructure, 8 GitHub stars",
       "sourceUrl": "https://github.com/dolutech/engine_context",
-      "nextAsk": "https://thumbgate-production.up.railway.app/#workflow-sprint-intake"
+      "nextAsk": "https://thumbgate-production.up.railway.app/services#workflow-sprint-intake"
     }
   ],
   "outreachDrafts": [

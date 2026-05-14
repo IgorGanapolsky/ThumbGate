@@ -24,5 +24,5 @@ test('guide explains when to use Pro versus the workflow hardening sprint', () =
   assert.match(GUIDE_HTML, /https:\/\/buy\.stripe\.com\/fZu9AT76saPsg4pbCr3sI0f/);
   assert.match(GUIDE_HTML, /Pay \$1500 sprint/);
   assert.match(GUIDE_HTML, /Send workflow first/);
-  assert.match(GUIDE_HTML, /#workflow-sprint-intake/);
+  assert.match(GUIDE_HTML, /services#workflow-sprint-intake/);
 });

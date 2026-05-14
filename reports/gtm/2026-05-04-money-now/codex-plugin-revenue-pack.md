@@ -143,7 +143,7 @@ Use Commercial Truth and Verification Evidence only after the buyer confirms the
 - Why now: Warm Reddit engager already named a repeated workflow risk, so the fastest path is a founder-led diagnostic.
 - Evidence: warm inbound engagement; workflow pain named: rollback risk; already in DMs
 - Contact: https://www.reddit.com/user/Deep_Ad1959/
-- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- CTA: https://thumbgate-production.up.railway.app/services#workflow-sprint-intake
 - Proof rule: Use proof pack only after the buyer confirms pain.
 - Pipeline lead id: reddit_deep_ad1959_r_cursor
 - Log after send: `npm run sales:pipeline -- advance --lead 'reddit_deep_ad1959_r_cursor' --channel 'reddit_dm' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on rollback risk.'`
@@ -158,7 +158,7 @@ First-touch draft:
 - Why now: Warm Reddit engager already works on advanced agent memory, so discovery should center on one repeated failure pattern.
 - Evidence: warm inbound engagement; built serious memory systems; workflow pain named: stale context and conflicting facts
 - Contact: https://www.reddit.com/user/game-of-kton/
-- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- CTA: https://thumbgate-production.up.railway.app/services#workflow-sprint-intake
 - Proof rule: Use proof pack only after the buyer confirms pain.
 - Pipeline lead id: reddit_game_of_kton_r_cursor
 - Log after send: `npm run sales:pipeline -- advance --lead 'reddit_game_of_kton_r_cursor' --channel 'reddit_dm' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on stale context and conflicting facts.'`
@@ -173,7 +173,7 @@ First-touch draft:
 - Why now: Warm Reddit engager already described a mature workflow, so the next step is a targeted diagnostic on one failure mode.
 - Evidence: warm inbound engagement; mature multi-step workflow described; workflow pain named: review boundaries and context risk
 - Contact: https://www.reddit.com/user/leogodin217/
-- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- CTA: https://thumbgate-production.up.railway.app/services#workflow-sprint-intake
 - Proof rule: Use proof pack only after the buyer confirms pain.
 - Pipeline lead id: reddit_leogodin217_r_claudecode
 - Log after send: `npm run sales:pipeline -- advance --lead 'reddit_leogodin217_r_claudecode' --channel 'reddit_dm' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on review boundaries and context risk.'`
@@ -188,7 +188,7 @@ First-touch draft:
 - Why now: Warm Reddit engager already understands the adaptive-gate thesis, so offer one concrete workflow hardening diagnostic.
 - Evidence: warm inbound engagement; responded to adaptive-gate positioning; workflow pain named: brittle guardrails
 - Contact: https://www.reddit.com/user/Enthu-Cutlet-1337/
-- CTA: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- CTA: https://thumbgate-production.up.railway.app/services#workflow-sprint-intake
 - Proof rule: Use proof pack only after the buyer confirms pain.
 - Pipeline lead id: reddit_enthu_cutlet_1337_r_claudecode
 - Log after send: `npm run sales:pipeline -- advance --lead 'reddit_enthu_cutlet_1337_r_claudecode' --channel 'reddit_dm' --stage 'contacted' --note 'Sent Workflow Hardening Sprint first touch focused on brittle guardrails.'`

@@ -67,7 +67,7 @@ function upgradeNudge() {
   } catch (_) { return; }
   process.stderr.write(
     '\n  Team rollout: start with the Workflow Hardening Sprint\n' +
-    '  https://thumbgate-production.up.railway.app/#workflow-sprint-intake\n' +
+    '  https://thumbgate-production.up.railway.app/services#workflow-sprint-intake\n' +
     `\n  Solo side lane: Pro — ${PRO_PRICE_LABEL}\n` +
     `  ${PRO_CHECKOUT_URL}\n\n`
   );
@@ -937,7 +937,7 @@ function stats() {
     console.log(`  Estimated Operational Loss: $${payload.revenueAtRisk}`);
     console.log('  Action Required: Run "npx thumbgate rules" to generate guardrails.');
     console.log('  Strategic Recommendation: if this is a shared workflow problem, start the Workflow Hardening Sprint.');
-    console.log('  Team intake: https://thumbgate-production.up.railway.app/#workflow-sprint-intake');
+    console.log('  Team intake: https://thumbgate-production.up.railway.app/services#workflow-sprint-intake');
     console.log('  Solo side lane: npx thumbgate pro');
   } else {
     console.log('\n✅ System is currently high-reliability. No immediate revenue loss detected.');

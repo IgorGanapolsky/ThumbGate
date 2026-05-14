@@ -14,7 +14,7 @@
     {
       "motion": "sprint",
       "label": "Workflow Hardening Sprint",
-      "cta": "https://thumbgate.ai/#workflow-sprint-intake"
+      "cta": "https://thumbgate.ai/services#workflow-sprint-intake"
     },
     {
       "motion": "pro",
@@ -94,7 +94,7 @@
       "primaryCta": {
         "motion": "sprint",
         "label": "Workflow Hardening Sprint",
-        "cta": "https://thumbgate.ai/#workflow-sprint-intake"
+        "cta": "https://thumbgate.ai/services#workflow-sprint-intake"
       },
       "secondaryCta": {
         "motion": "guide",
@@ -118,7 +118,7 @@
       "primaryCta": {
         "motion": "sprint",
         "label": "Workflow Hardening Sprint",
-        "cta": "https://thumbgate.ai/#workflow-sprint-intake"
+        "cta": "https://thumbgate.ai/services#workflow-sprint-intake"
       },
       "secondaryCta": {
         "motion": "guide",
@@ -142,7 +142,7 @@
       "primaryCta": {
         "motion": "sprint",
         "label": "Workflow Hardening Sprint",
-        "cta": "https://thumbgate.ai/#workflow-sprint-intake"
+        "cta": "https://thumbgate.ai/services#workflow-sprint-intake"
       },
       "secondaryCta": {
         "motion": "guide",

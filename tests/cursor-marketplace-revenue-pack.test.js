@@ -28,7 +28,7 @@ const LINKS_FIXTURE = {
   appOrigin: 'https://thumbgate-production.up.railway.app',
   guideLink: 'https://thumbgate-production.up.railway.app/guide',
   proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
-  sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+  sprintLink: 'https://thumbgate-production.up.railway.app/services#workflow-sprint-intake',
   proPriceLabel: '$19/mo or $149/yr',
 };
 
@@ -76,7 +76,7 @@ test('tracked Cursor links keep source, medium, and campaign machine-readable', 
   });
   const marketplaceUrl = new URL(buildTrackedCursorLink('https://thumbgate-production.up.railway.app/guide', marketplaceTracking));
   const directoryUrl = new URL(buildTrackedCursorLink('https://thumbgate-production.up.railway.app/guide', directoryTracking));
-  const teamUrl = new URL(buildTrackedCursorLink('https://thumbgate-production.up.railway.app/#workflow-sprint-intake', teamTracking));
+  const teamUrl = new URL(buildTrackedCursorLink('https://thumbgate-production.up.railway.app/services#workflow-sprint-intake', teamTracking));
 
   assert.equal(marketplaceUrl.searchParams.get('utm_source'), 'cursor');
   assert.equal(marketplaceUrl.searchParams.get('utm_medium'), MARKETPLACE_MEDIUM);

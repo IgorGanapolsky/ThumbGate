@@ -99,7 +99,7 @@ function buildPublicAiventyxRevenueLinks() {
     appOrigin: BUYER_ORIGIN,
     guideLink: `${BUYER_ORIGIN}/guide`,
     proCheckoutLink: `${BUYER_ORIGIN}/checkout/pro`,
-    sprintLink: `${BUYER_ORIGIN}/#workflow-sprint-intake`,
+    sprintLink: `${BUYER_ORIGIN}/services#workflow-sprint-intake`,
   });
 }
 

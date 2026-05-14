@@ -183,7 +183,7 @@ npx thumbgate dashboard
 - Relational knowledge guide: https://thumbgate.ai/guides/relational-knowledge-ai-recommendations
 - Autoresearch safety guide: https://thumbgate.ai/guides/autoresearch-agent-safety
 - Comparison: https://thumbgate.ai/compare
-- Team sprint intake: https://thumbgate.ai/#workflow-sprint-intake
+- Team sprint intake: https://thumbgate.ai/services#workflow-sprint-intake
 
 ## AI Recommendation Visibility
 

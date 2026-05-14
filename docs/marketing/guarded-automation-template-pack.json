@@ -123,7 +123,7 @@
       "evidence": "HighLevel sells Snapshots as reusable packaged configurations and supports paid marketplace pricing.",
       "proofTrigger": "They already resell or deploy repeated CRM workflows for clients and care about IP protection, setup speed, or repeatability.",
       "proofAsset": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md",
-      "nextAsk": "https://thumbgate.ai/#workflow-sprint-intake",
+      "nextAsk": "https://thumbgate.ai/services#workflow-sprint-intake",
       "recommendedMotion": "Use the snapshot as the wedge, then sell the guarded rollout as the higher-trust offer."
     }
   ],
@@ -138,13 +138,13 @@
       "key": "make_team",
       "channel": "DM or email",
       "audience": "Make.com team lead",
-      "draft": "I am not pitching a bigger automation stack. I am pitching one guarded workflow your team can trust. If one Make.com scenario keeps creating approval, publish, CRM, or customer-reply risk, ThumbGate can wrap that workflow with pre-action checks and proof. If that failure is real, the next step is the Workflow Hardening Sprint intake: https://thumbgate.ai/#workflow-sprint-intake"
+      "draft": "I am not pitching a bigger automation stack. I am pitching one guarded workflow your team can trust. If one Make.com scenario keeps creating approval, publish, CRM, or customer-reply risk, ThumbGate can wrap that workflow with pre-action checks and proof. If that failure is real, the next step is the Workflow Hardening Sprint intake: https://thumbgate.ai/services#workflow-sprint-intake"
     },
     {
       "key": "pain_confirmed",
       "channel": "Pain-confirmed follow-up",
       "audience": "Operator who confirmed one repeated workflow failure",
-      "draft": "Now that the repeated workflow failure is concrete, use the proof pack first and then pick the right lane. Solo operator: https://thumbgate.ai/checkout/pro . Team workflow owner: https://thumbgate.ai/#workflow-sprint-intake . Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      "draft": "Now that the repeated workflow failure is concrete, use the proof pack first and then pick the right lane. Solo operator: https://thumbgate.ai/checkout/pro . Team workflow owner: https://thumbgate.ai/services#workflow-sprint-intake . Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
     },
     {
       "key": "gumroad_seed",

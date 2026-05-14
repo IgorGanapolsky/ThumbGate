@@ -235,9 +235,15 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   //     readiness checks for the agent-native memory scope work)
   // All three ship in the public bundle because the packaged runtime loads
   // them on every server boot; omitting them crashes published `thumbgate serve`.
+  // Bumped 254 → 255 (2026-05-14) to ship public/services.html — the moved
+  // landing page for paid engagements (Workflow Hardening Diagnostic $499,
+  // AI Agent Governance Sprint $1,500, Reliable AI Agent Governance Setup
+  // $3,997, OpenClaw Kit $97, Autoresearch Safety Pack). Moved off the
+  // homepage to stop the 7-offer cognitive load that was taxing /checkout/pro
+  // conversion. Marketing surface; in-scope for the public shell.
   assert.ok(
-    manifest.fileCount <= 254,
-    `npm package should stay <= 254 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 255,
+    `npm package should stay <= 255 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -310,10 +316,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Kept at 3.60 MB (2026-05-13) for the revenue-ROI runtime additions on this
   // branch: scripts/activation-tracker.js + scripts/plausible-server-events.js
   // (~9 KB combined). Observed package after all three: ~3.55 MB.
+  // Bumped 3.60 MB -> 3.65 MB (2026-05-14) for public/services.html — the
+  // moved landing page for paid engagements (Workflow Hardening Diagnostic,
+  // Sprint, Setup, OpenClaw Kit, Autoresearch). Pulled off the homepage to
+  // stop the 7-offer cognitive load that was taxing /checkout/pro conversion.
   // See docs/FEDERAL.md and .changeset/high-roi-checkout-deploy-anticlaim-bundle.md.
   assert.ok(
-    manifest.unpackedSize <= 3_600_000,
-    `npm package should stay <= 3.60 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_650_000,
+    `npm package should stay <= 3.65 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

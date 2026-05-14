@@ -29,7 +29,7 @@ const LINKS_FIXTURE = {
   appOrigin: 'https://thumbgate.ai',
   guideLink: 'https://thumbgate.ai/guide',
   proCheckoutLink: 'https://thumbgate.ai/checkout/pro',
-  sprintLink: 'https://thumbgate.ai/#workflow-sprint-intake',
+  sprintLink: 'https://thumbgate.ai/services#workflow-sprint-intake',
   proPriceLabel: '$19/mo or $149/yr',
 };
 
@@ -78,7 +78,7 @@ test('default Codex revenue links stay on the branded public domain', () => {
     appOrigin: 'https://thumbgate-production.up.railway.app',
     guideLink: 'https://thumbgate-production.up.railway.app/guide',
     proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
-    sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+    sprintLink: 'https://thumbgate-production.up.railway.app/services#workflow-sprint-intake',
     proPriceLabel: '$19/mo or $149/yr',
   });
   const pack = buildCodexMarketplaceRevenuePack(undefined, ABOUT_FIXTURE, path.join(__dirname, '..'));

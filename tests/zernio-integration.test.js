@@ -411,7 +411,7 @@ describe('zernio publisher', () => {
     };
 
     const result = await publishToAllPlatforms(
-      'Voice agent reliability diagnostic is open now at https://thumbgate.ai/#workflow-sprint-intake',
+      'Voice agent reliability diagnostic is open now at https://thumbgate.ai/services#workflow-sprint-intake',
       {
         campaign: 'voice_agent_reliability_diagnostic',
         medium: 'social',

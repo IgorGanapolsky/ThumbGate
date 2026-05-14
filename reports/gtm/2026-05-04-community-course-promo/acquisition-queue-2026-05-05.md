@@ -67,4 +67,4 @@ CTA (Skool-first):
 
 Paid CTA (only after pain is confirmed):
 
-- Intake: `https://thumbgate-production.up.railway.app/#workflow-sprint-intake`
+- Intake: `https://thumbgate-production.up.railway.app/services#workflow-sprint-intake`

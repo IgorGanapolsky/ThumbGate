@@ -9,7 +9,7 @@ process.env.REDDIT_PASSWORD = process.env.REDDIT_PASSWORD || 'test-password';
 const { buildWarmRedditMessages, markContacted } = require('../scripts/reddit-dm-outreach');
 
 test('reddit warm outreach stays discovery-first and avoids stale incentive language', () => {
-  const messages = buildWarmRedditMessages('https://thumbgate-production.up.railway.app/#workflow-sprint-intake');
+  const messages = buildWarmRedditMessages('https://thumbgate-production.up.railway.app/services#workflow-sprint-intake');
 
   assert.equal(messages.length, 4);
   assert.ok(messages.every((message) => /workflow/i.test(message.text)));
@@ -39,7 +39,7 @@ test('reddit outreach can mark successful warm sends as contacted', () => {
 });
 
 test('reddit warm outreach dry run can be filtered to one target', () => {
-  const messages = buildWarmRedditMessages('https://thumbgate-production.up.railway.app/#workflow-sprint-intake')
+  const messages = buildWarmRedditMessages('https://thumbgate-production.up.railway.app/services#workflow-sprint-intake')
     .filter((message) => new Set(['Deep_Ad1959']).has(message.to));
 
   assert.equal(messages.length, 1);

@@ -38,7 +38,7 @@ const LINKS_FIXTURE = {
   appOrigin: 'https://thumbgate-production.up.railway.app',
   guideLink: 'https://thumbgate-production.up.railway.app/guide',
   proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
-  sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+  sprintLink: 'https://thumbgate-production.up.railway.app/services#workflow-sprint-intake',
   proPriceLabel: '$19/mo or $149/yr',
 };
 

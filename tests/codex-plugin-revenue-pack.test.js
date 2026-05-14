@@ -32,7 +32,7 @@ const LINKS_FIXTURE = {
   appOrigin: 'https://thumbgate-production.up.railway.app',
   guideLink: 'https://thumbgate-production.up.railway.app/guide',
   proCheckoutLink: 'https://thumbgate-production.up.railway.app/checkout/pro',
-  sprintLink: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+  sprintLink: 'https://thumbgate-production.up.railway.app/services#workflow-sprint-intake',
   proPriceLabel: '$19/mo or $149/yr',
 };
 
@@ -58,7 +58,7 @@ function makeReportFixture() {
         evidence: ['warm inbound engagement'],
         motionLabel: 'Workflow Hardening Sprint',
         motionReason: 'Warm workflow pain is already explicit.',
-        cta: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+        cta: 'https://thumbgate-production.up.railway.app/services#workflow-sprint-intake',
         proofPackTrigger: 'Use proof only after pain is confirmed.',
         firstTouchDraft: 'Warm workflow draft.',
         pipelineLeadId: 'reddit_workflow_owner',
@@ -77,7 +77,7 @@ function makeReportFixture() {
         evidence: ['workflow control surface', 'production or platform workflow'],
         motionLabel: 'Workflow Hardening Sprint',
         motionReason: 'Production workflow approvals need proof.',
-        cta: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+        cta: 'https://thumbgate-production.up.railway.app/services#workflow-sprint-intake',
         proofPackTrigger: 'Use proof only after pain is confirmed.',
         firstTouchDraft: 'Production workflow draft.',
         pipelineLeadId: 'github_freema_mcp_jira_stdio',
@@ -188,7 +188,7 @@ test('operator sequences stay evidence-backed and route to real Codex follow-up 
   assert.match(sequences[0].cta, /\/codex-plugin\?/);
   assert.match(sequences[1].cta, /\/guide\?/);
   assert.match(sequences[2].cta, /\/checkout\/pro\?/);
-  assert.match(sequences[3].cta, /#workflow-sprint-intake/);
+  assert.match(sequences[3].cta, /services#workflow-sprint-intake/);
   assert.ok(sequences.every((sequence) => !/guaranteed installs|guaranteed revenue|approved marketplace/i.test(sequence.draft)));
 });
 

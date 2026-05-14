@@ -16,7 +16,7 @@
         "title": "Guarded AI Lead Qualification",
         "tagline": "Qualify inbound leads with approval boundaries before CRM writes.",
         "shortDescription": "A Lindy workflow template that qualifies inbound leads, stops risky side effects before they run, and routes serious operators into ThumbGate for proof-backed workflow hardening.",
-        "cta": "https://thumbgate.ai/#workflow-sprint-intake",
+        "cta": "https://thumbgate.ai/services#workflow-sprint-intake",
         "selfServeFollowOn": "https://thumbgate.ai/checkout/pro"
       }
     },
@@ -33,7 +33,7 @@
         "subtitle": "Stop one automation from making the wrong side effect twice.",
         "currentLiveCta": "https://thumbgate.ai/guide",
         "soloFollowOn": "https://thumbgate.ai/checkout/pro",
-        "teamFollowOn": "https://thumbgate.ai/#workflow-sprint-intake"
+        "teamFollowOn": "https://thumbgate.ai/services#workflow-sprint-intake"
       }
     },
     {
@@ -45,7 +45,7 @@
         "title": "Guarded Client Intake Snapshot",
         "tagline": "Reusable agency workflow with approval boundaries before client-facing actions.",
         "shortDescription": "A HighLevel Snapshot for agencies that want a repeatable intake and nurture flow without repeating the same approval, CRM, or messaging mistake across accounts.",
-        "cta": "https://thumbgate.ai/#workflow-sprint-intake"
+        "cta": "https://thumbgate.ai/services#workflow-sprint-intake"
       }
     }
   ],

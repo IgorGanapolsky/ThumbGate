@@ -39,7 +39,7 @@ Never claim ROI. Always anchor to “one repeated mistake → one prevention rul
 
 “If you have one repeated failure in one AI-agent workflow, I can harden it end-to-end this week: map the workflow, turn the repeated failure into an enforceable Pre-Action Gate, and produce a proof pack you can defend to your team. Worth a 15-minute diagnostic?”
 
-CTA: `https://thumbgate-production.up.railway.app/#workflow-sprint-intake`
+CTA: `https://thumbgate-production.up.railway.app/services#workflow-sprint-intake`
 
 ### 2) Diagnostic close ($499)
 

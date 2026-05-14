@@ -605,7 +605,7 @@ function buildRevenueLinks(config = resolveHostedBillingConfig({
     appOrigin,
     guideLink: `${appOrigin}/guide`,
     proCheckoutLink: `${appOrigin}/checkout/pro`,
-    sprintLink: `${appOrigin}/#workflow-sprint-intake`,
+    sprintLink: `${appOrigin}/services#workflow-sprint-intake`,
     commercialTruthLink: COMMERCIAL_TRUTH_LINK,
     verificationEvidenceLink: VERIFICATION_EVIDENCE_LINK,
     proPriceLabel: '$19/mo or $149/yr',

@@ -59,7 +59,7 @@ test('motion catalog stays aligned with current commercial truth and proof links
   assert.match(links.guideLink, /\/guide$/);
   assert.match(catalog.pro.label, /Pro at \$19\/mo or \$149\/yr/);
   assert.match(catalog.pro.cta, /\/checkout\/pro$/);
-  assert.match(catalog.sprint.cta, /#workflow-sprint-intake$/);
+  assert.match(catalog.sprint.cta, /services#workflow-sprint-intake$/);
   assert.match(catalog.pro.truth, /COMMERCIAL_TRUTH\.md/);
   assert.match(catalog.pro.proof, /VERIFICATION_EVIDENCE\.md/);
 });
@@ -1240,7 +1240,7 @@ test('pipeline-aware targets inherit follow-up stages and drop terminal leads', 
           motion: 'sprint',
           motionLabel: 'Workflow Hardening Sprint',
           motionReason: 'Target can be approached with one concrete workflow-hardening offer.',
-          cta: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+          cta: 'https://thumbgate-production.up.railway.app/services#workflow-sprint-intake',
           message: 'I can harden one AI-agent workflow for you.',
         },
         {
@@ -1253,7 +1253,7 @@ test('pipeline-aware targets inherit follow-up stages and drop terminal leads', 
           motion: 'sprint',
           motionLabel: 'Workflow Hardening Sprint',
           motionReason: 'Target can be approached with one concrete workflow-hardening offer.',
-          cta: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+          cta: 'https://thumbgate-production.up.railway.app/services#workflow-sprint-intake',
           message: 'I can harden one AI-agent workflow for you.',
         },
       ],
@@ -2306,7 +2306,7 @@ test('marketplace copy pack stays tied to current revenue-loop evidence', () => 
   assert.equal(pack.recommendedCtas[0].label, 'Proof-backed setup guide');
   assert.match(pack.recommendedCtas[0].cta, /thumbgate-production\.up\.railway\.app\/guide/);
   assert.equal(pack.recommendedCtas[1].label, catalog.sprint.label);
-  assert.match(pack.recommendedCtas[1].cta, /#workflow-sprint-intake$/);
+  assert.match(pack.recommendedCtas[1].cta, /services#workflow-sprint-intake$/);
   assert.equal(pack.recommendedCtas[2].label, catalog.pro.label);
   assert.match(pack.recommendedCtas[2].cta, /\/checkout\/pro$/);
   assert.ok(pack.topSignals.some((signal) => /Warm discovery workflows/.test(signal.label)));
@@ -2545,7 +2545,7 @@ test('writeRevenueLoopOutputs writes markdown, json, and csv artifacts for opera
     assert.match(marketplaceCopy.headline, /workflow/i);
     assert.equal(marketplaceCopy.recommendedCtas[0].label, 'Proof-backed setup guide');
     assert.match(marketplaceCopy.recommendedCtas[0].cta, /thumbgate-production\.up\.railway\.app\/guide/);
-    assert.match(marketplaceCopy.recommendedCtas[1].cta, /#workflow-sprint-intake$/);
+    assert.match(marketplaceCopy.recommendedCtas[1].cta, /services#workflow-sprint-intake$/);
     assert.match(marketplaceCopy.recommendedCtas[2].cta, /\/checkout\/pro$/);
     assert.ok(Array.isArray(marketplaceCopy.topSignals));
     assert.ok(Array.isArray(marketplaceCopy.listingVariants));
@@ -3164,7 +3164,7 @@ test('runRevenueLoop writes an evidence-backed target queue with discovery warni
     assert.match(report.currentTruth.guideLink, /thumbgate-production\.up\.railway\.app\/guide/);
     assert.ok(Array.isArray(report.marketplaceCopy.topSignals));
     assert.equal(report.marketplaceCopy.recommendedCtas[0].label, 'Proof-backed setup guide');
-    assert.match(report.marketplaceCopy.recommendedCtas[1].cta, /#workflow-sprint-intake$/);
+    assert.match(report.marketplaceCopy.recommendedCtas[1].cta, /services#workflow-sprint-intake$/);
     assert.match(report.marketplaceCopy.recommendedCtas[2].cta, /\/checkout\/pro$/);
     assert.match(report.targets[0].proofPackTrigger, /buyer confirms pain/);
     assert.match(report.targets[0].painConfirmedFollowUpDraft, /VERIFICATION_EVIDENCE/);
@@ -3184,7 +3184,7 @@ test('runRevenueLoop writes an evidence-backed target queue with discovery warni
 });
 
 test('warm discovery targets stay sprint-first and evidence-backed', () => {
-  const warmTargets = getWarmOutboundTargets('https://thumbgate-production.up.railway.app/#workflow-sprint-intake');
+  const warmTargets = getWarmOutboundTargets('https://thumbgate-production.up.railway.app/services#workflow-sprint-intake');
 
   assert.equal(warmTargets.length, 4);
   assert.ok(warmTargets.every((target) => target.temperature === 'warm'));

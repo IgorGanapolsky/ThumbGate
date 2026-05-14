@@ -5,7 +5,7 @@ test('adds utm params', () => { const r = buildUTMLink('https://x.com', { source
 test('requires source', () => { assert.throws(() => buildUTMLink('https://x.com', {}), /source/i); });
 test('instagram source', () => { assert.ok(buildUTMLink('https://x.com', { source: 'instagram', campaign: 'x' }).includes('instagram')); });
 test('tags thumbgate.ai revenue links', () => {
-  const tagged = tagUrlsInText('Buy at https://thumbgate.ai/#workflow-sprint-intake', {
+  const tagged = tagUrlsInText('Buy at https://thumbgate.ai/services#workflow-sprint-intake', {
     source: 'linkedin',
     medium: 'social',
     campaign: 'voice_agent_reliability_diagnostic',

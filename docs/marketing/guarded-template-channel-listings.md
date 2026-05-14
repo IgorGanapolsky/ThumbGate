@@ -42,7 +42,7 @@ Use external template and storefront channels to pull buyers into the current Th
   This template is for operators who already want AI lead qualification but do not want blind automation writing into customer systems. It starts with a useful workflow, then adds the real missing layer: a checkpoint before side effects, a clear review step, and a path to proof.
 
   Use it when the team already has one workflow that feels valuable but still risky. If the template helps and the risk is larger than a solo install, the next step is the Workflow Hardening Sprint.
-- CTA inside description: https://thumbgate.ai/#workflow-sprint-intake
+- CTA inside description: https://thumbgate.ai/services#workflow-sprint-intake
 - Self-serve follow-on: https://thumbgate.ai/checkout/pro
 - Proof links:
   - https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md
@@ -59,7 +59,7 @@ Use external template and storefront channels to pull buyers into the current Th
 - Current live CTA instead of a Gumroad checkout: https://thumbgate.ai/guide
 - Current live paid follow-on:
   - Solo: https://thumbgate.ai/checkout/pro
-  - Team: https://thumbgate.ai/#workflow-sprint-intake
+  - Team: https://thumbgate.ai/services#workflow-sprint-intake
 
 ### GoHighLevel Snapshot listing
 - Status: publishable once the Snapshot exists
@@ -70,7 +70,7 @@ Use external template and storefront channels to pull buyers into the current Th
   This Snapshot is for agencies that already know the workflow they want to reuse. The value is not just speed. The value is getting a reusable configuration with a trust layer around the risky step.
 
   Position ThumbGate as the reason the Snapshot is safer to use in real client operations: approval boundaries, reviewable proof, and a path to a Workflow Hardening Sprint when a live workflow is still brittle.
-- CTA inside description: https://thumbgate.ai/#workflow-sprint-intake
+- CTA inside description: https://thumbgate.ai/services#workflow-sprint-intake
 - Proof links:
   - https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md
   - https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md

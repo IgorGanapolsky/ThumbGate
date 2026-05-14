@@ -140,7 +140,7 @@ test('pro landing page keeps team pilot attribution ahead of the intake anchor',
 
   assert.match(
     proPage,
-    /href="\/#workflow-sprint-intake"/
+    /href="\/services#workflow-sprint-intake"/
   );
-  assert.doesNotMatch(proPage, /href="\/#workflow-sprint-intake\?utm_source=website/);
+  assert.doesNotMatch(proPage, /href="\/services#workflow-sprint-intake\?utm_source=website/);
 });

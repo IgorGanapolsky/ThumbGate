@@ -97,7 +97,7 @@ test('public revenue links route buyers through thumbgate.ai', () => {
   assert.equal(links.appOrigin, 'https://thumbgate.ai');
   assert.equal(links.guideLink, 'https://thumbgate.ai/guide');
   assert.equal(links.proCheckoutLink, 'https://thumbgate.ai/checkout/pro');
-  assert.equal(links.sprintLink, 'https://thumbgate.ai/#workflow-sprint-intake');
+  assert.equal(links.sprintLink, 'https://thumbgate.ai/services#workflow-sprint-intake');
 });
 
 test('rendered markdown and CSV are operator-ready without fake traction claims', () => {

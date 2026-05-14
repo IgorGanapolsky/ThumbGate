@@ -139,7 +139,7 @@ jobs:
 
           Diagnostic: https://buy.stripe.com/00w14neyUcXA5pL5e33sI0e
           Sprint: https://buy.stripe.com/fZu9AT76saPsg4pbCr3sI0f
-          Scope: https://thumbgate.ai/#workflow-sprint-intake
+          Scope: https://thumbgate.ai/services#workflow-sprint-intake
           POST
           node scripts/post-everywhere.js \
             "$POST_FILE" \

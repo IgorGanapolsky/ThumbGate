@@ -47,7 +47,7 @@ function makeReportFixture() {
         motionLabel: 'Workflow Hardening Sprint',
         motionReason: 'Warm Claude workflow pain is already explicit.',
         outreachAngle: 'Lead with one repeated workflow failure inside an already-mature Claude workflow.',
-        cta: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+        cta: 'https://thumbgate-production.up.railway.app/services#workflow-sprint-intake',
       },
       {
         temperature: 'cold',
@@ -63,7 +63,7 @@ function makeReportFixture() {
         motionLabel: 'Workflow Hardening Sprint',
         motionReason: 'Jira workflows need approval boundaries.',
         outreachAngle: 'Lead with approval boundaries, rollback safety, and proof.',
-        cta: 'https://thumbgate-production.up.railway.app/#workflow-sprint-intake',
+        cta: 'https://thumbgate-production.up.railway.app/services#workflow-sprint-intake',
       },
       {
         temperature: 'cold',

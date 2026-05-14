@@ -84,7 +84,7 @@ function buildTrackedUrl(pathname, topic) {
 
 function buildArticleBody(topic, date = new Date()) {
   const numbersUrl = buildTrackedUrl('/numbers', topic);
-  const sprintUrl = buildTrackedUrl('/#workflow-sprint-intake', topic);
+  const sprintUrl = buildTrackedUrl('/services#workflow-sprint-intake', topic);
   const compareUrl = buildTrackedUrl('/compare/agentix-labs', topic);
   const guideUrl = buildTrackedUrl('/guides/pre-action-checks', topic);
 
@@ -240,7 +240,7 @@ function buildVisibilityPlan({ date = new Date(), topic = topicForDate(date) } =
 }
 
 function buildEngagementQueue({ date = new Date(), topic = topicForDate(date) } = {}) {
-  const sprintUrl = buildTrackedUrl('/#workflow-sprint-intake', topic);
+  const sprintUrl = buildTrackedUrl('/services#workflow-sprint-intake', topic);
   return [
     {
       channel: 'medium_comment',

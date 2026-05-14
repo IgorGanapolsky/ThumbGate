@@ -310,7 +310,7 @@ test('postEverywhere applies the requested campaign to tracked URLs', async () =
         '**Title:** Campaign attribution check',
         '**Body:**',
         'One repeated workflow failure is enough to justify a proof run.',
-        'https://thumbgate.ai/#workflow-sprint-intake',
+        'https://thumbgate.ai/services#workflow-sprint-intake',
         '',
       ].join('\n')
     );

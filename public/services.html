@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+__GOOGLE_SITE_VERIFICATION_META__
+<title>ThumbGate Services — Workflow Hardening Sprint, Diagnostic, Setup, OpenClaw Kit</title>
+<meta name="description" content="Hands-on services for teams adopting AI coding agents. Workflow Hardening Diagnostic ($499), 48-hour AI Agent Governance Sprint ($1,500), Reliable AI Agent Governance Setup ($3,997), and the OpenClaw Agent Governance Kit ($97). For teams that have already tried Pro and need a paid engagement to harden one workflow.">
+<meta property="og:title" content="ThumbGate Services — Workflow Hardening, Diagnostic, Setup, OpenClaw Kit">
+<meta property="og:description" content="Paid engagements for teams ready to harden one AI agent workflow. Workflow Hardening Diagnostic ($499), Sprint ($1,500), Governance Setup ($3,997), OpenClaw Kit ($97).">
+<meta property="og:type" content="website">
+<meta property="og:url" content="__APP_ORIGIN__/services">
+<link rel="canonical" href="__APP_ORIGIN__/services">
+<link rel="icon" type="image/png" href="/thumbgate-icon.png">
+<link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
+<meta property="og:image" content="/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://thumbgate-production.up.railway.app/og.png">
+<meta name="thumbgate-version" content="1.18.0">
+<meta name="keywords" content="ThumbGate services, AI agent workflow hardening, AI agent governance sprint, agent governance setup, OpenClaw kit, Claude Code workflow consulting, Cursor team rollout">
+
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+__GA_BOOTSTRAP__
+
+<script>
+  const gaMeasurementId = '__GA_MEASUREMENT_ID__';
+  const serverVisitorId = '__SERVER_VISITOR_ID__';
+  const serverSessionId = '__SERVER_SESSION_ID__';
+  const serverAcquisitionId = '__SERVER_ACQUISITION_ID__';
+  const serverTelemetryCaptured = '__SERVER_TELEMETRY_CAPTURED__' === 'true';
+  const sprintDiagnosticCheckoutUrl = '__SPRINT_DIAGNOSTIC_CHECKOUT_URL__';
+  const workflowSprintCheckoutUrl = '__WORKFLOW_SPRINT_CHECKOUT_URL__';
+  const sprintDiagnosticPriceDollars = Number('__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__') || 499;
+  const workflowSprintPriceDollars = Number('__WORKFLOW_SPRINT_PRICE_DOLLARS__') || 1500;
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "name": "ThumbGate Workflow Hardening Sprint",
+  "provider": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate-production.up.railway.app" },
+  "description": "48-hour paid engagement to harden one AI agent workflow for a team: approval boundaries, rollback safety, one proof review, one hardened rollout path.",
+  "areaServed": "Worldwide",
+  "audience": { "@type": "Audience", "audienceType": "Engineering teams adopting Claude Code, Cursor, Codex, Gemini" },
+  "offers": [
+    { "@type": "Offer", "name": "Workflow Hardening Diagnostic", "price": "499", "priceCurrency": "USD", "url": "https://thumbgate-production.up.railway.app/services#workflow-sprint-intake" },
+    { "@type": "Offer", "name": "AI Agent Governance Sprint", "price": "1500", "priceCurrency": "USD", "url": "https://thumbgate-production.up.railway.app/services#workflow-sprint-intake" },
+    { "@type": "Offer", "name": "Reliable AI Agent Governance Setup", "price": "3997", "priceCurrency": "USD", "url": "https://thumbgate-production.up.railway.app/services#workflow-sprint-intake" },
+    { "@type": "Offer", "name": "OpenClaw Agent Governance Kit", "price": "97", "priceCurrency": "USD", "url": "https://buy.stripe.com/bJe14naiE9Lo7xT49Z3sI12" }
+  ]
+}
+</script>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --bg: #0a0a0b;
+    --bg-raised: #111113;
+    --bg-card: #161618;
+    --border: #232327;
+    --text: #ececf1;
+    --text-muted: #9a9aa6;
+    --text-dim: #c8c8d4;
+    --cyan: #22d3ee;
+    --green: #4ade80;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+  }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; font-family: var(--font); background: radial-gradient(circle at top, rgba(34, 211, 238, 0.16) 0%, rgba(34, 211, 238, 0) 28%), linear-gradient(180deg, #0a0a0b 0%, #0d1016 48%, #0a0a0b 100%); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  .container { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+  nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(12px); background: rgba(10, 10, 11, 0.86); border-bottom: 1px solid rgba(35, 35, 39, 0.92); }
+  nav .container { min-height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+  nav .brand { font-weight: 800; font-size: 18px; letter-spacing: -0.01em; text-decoration: none; color: var(--text); }
+  nav .brand-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--cyan); margin-right: 8px; vertical-align: 1px; }
+  nav .nav-links { display: flex; gap: 22px; align-items: center; }
+  nav .nav-links a { text-decoration: none; color: var(--text-muted); font-size: 14px; }
+  nav .nav-links a:hover { color: var(--text); }
+
+  .hero { padding: 56px 0 24px; }
+  .hero h1 { font-size: 36px; line-height: 1.18; margin: 0 0 14px; letter-spacing: -0.01em; }
+  .hero p.lede { font-size: 17px; color: var(--text-muted); max-width: 720px; margin: 0 0 8px; line-height: 1.55; }
+  .hero .pill { display: inline-block; padding: 4px 10px; border: 1px solid rgba(34,211,238,0.4); color: var(--cyan); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; border-radius: 999px; margin-bottom: 14px; }
+
+  /* Autoresearch pack section */
+  .autoresearch-pack { padding: 24px 0 40px; }
+  .autoresearch-panel { border: 1px solid rgba(34,211,238,0.28); border-radius: 8px; background: linear-gradient(180deg, rgba(17,17,19,0.98) 0%, rgba(10,18,20,0.98) 100%); padding: 28px; }
+  .autoresearch-panel .section-label { color: var(--cyan); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .autoresearch-panel h2 { font-size: 28px; line-height: 1.18; margin-bottom: 12px; }
+  .autoresearch-panel > p { color: var(--text-muted); line-height: 1.65; max-width: 860px; margin-bottom: 22px; }
+  .autoresearch-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 22px 0; }
+  .autoresearch-card { border: 1px solid var(--border); border-radius: 8px; background: rgba(10,10,11,0.62); padding: 18px; }
+  .autoresearch-card h3 { font-size: 16px; margin-bottom: 8px; }
+  .autoresearch-card p { color: var(--text-muted); font-size: 14px; line-height: 1.55; margin: 0; }
+  .autoresearch-cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 18px; }
+  .autoresearch-cta a { display: inline-flex; align-items: center; min-height: 40px; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 700; }
+  .autoresearch-cta .primary { background: var(--cyan); color: #041016; }
+  .autoresearch-cta .secondary { border: 1px solid var(--border); color: var(--text); }
+
+  /* Workflow Sprint intake section */
+  .section-label { color: var(--green); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .section-title { font-size: 28px; line-height: 1.2; margin: 0 0 12px; text-align: center; }
+  .team-intake-panel { max-width: 900px; margin: 24px auto 0; padding: 22px; border: 1px solid rgba(74,222,128,0.28); border-radius: 12px; background: rgba(74,222,128,0.055); box-shadow: inset 0 1px 0 rgba(74,222,128,0.08); }
+  .team-intake-panel-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 16px; }
+  .team-intake-panel h3 { margin: 0 0 6px; font-size: 18px; color: var(--text); }
+  .team-intake-panel p { margin: 0; color: var(--text-dim); font-size: 13px; line-height: 1.55; }
+  .team-intake-badge { flex-shrink: 0; padding: 6px 10px; border: 1px solid rgba(74,222,128,0.35); border-radius: 999px; color: var(--green); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+  .team-paid-path { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0 0 16px; }
+  .team-paid-card { display: flex; flex-direction: column; justify-content: space-between; gap: 12px; min-height: 150px; padding: 16px; border: 1px solid rgba(74,222,128,0.22); border-radius: 10px; background: rgba(0,0,0,0.24); }
+  .team-paid-card h4 { margin: 0 0 6px; color: var(--text); font-size: 15px; }
+  .team-paid-card p { margin: 0; color: var(--text-dim); font-size: 12px; line-height: 1.5; }
+  .team-paid-price { color: var(--green); font-weight: 800; font-size: 18px; }
+  .team-paid-link { display: block; text-align: center; padding: 10px 12px; background: rgba(74,222,128,0.16); color: var(--green); border: 1px solid rgba(74,222,128,0.45); border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 700; }
+  .team-paid-link:hover { border-color: var(--green); transform: translateY(-1px); }
+  .team-intake-recovery { margin: 0 0 16px; padding: 13px 14px; border: 1px solid rgba(34,211,238,0.28); border-radius: 12px; background: rgba(34,211,238,0.08); display: flex; align-items: center; justify-content: space-between; gap: 14px; text-align: left; }
+  .team-intake-recovery strong { display: block; color: var(--text); font-size: 13px; margin-bottom: 2px; }
+  .team-intake-recovery span { display: block; color: var(--text-dim); font-size: 12px; line-height: 1.45; }
+  .team-intake-recovery a { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; min-height: 34px; padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(34,211,238,0.45); color: var(--cyan); background: rgba(17,17,19,0.68); text-decoration: none; font-size: 12px; font-weight: 800; white-space: nowrap; }
+  .team-form { max-width: 860px; margin: 24px auto 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .team-intake-panel .team-form { max-width: none; margin: 0; }
+  .team-form .full { grid-column: 1 / -1; }
+  .team-form input, .team-form textarea { width: 100%; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 14px; font-family: inherit; }
+  .team-form textarea { min-height: 120px; resize: vertical; }
+  .team-form button { width: 100%; }
+  .btn-team { display: block; text-align: center; padding: 12px; background: rgba(74,222,128,0.14); color: var(--green); border: 1px solid rgba(74,222,128,0.4); border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 700; transition: border-color 0.15s, transform 0.15s; cursor: pointer; }
+  .btn-team:hover { border-color: var(--green); transform: translateY(-1px); }
+
+  .breadcrumb { font-size: 13px; color: var(--text-muted); margin: 16px 0 8px; }
+  .breadcrumb a { color: var(--cyan); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+
+  footer { margin-top: 64px; padding: 32px 0; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 13px; }
+  footer .container { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+  footer a { color: var(--text-muted); text-decoration: none; }
+  footer a:hover { color: var(--text); }
+
+  @media (max-width: 720px) {
+    .autoresearch-grid { grid-template-columns: 1fr; }
+    .team-paid-path { grid-template-columns: 1fr; }
+    .team-intake-panel-head { display: block; }
+    .team-form { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="/" class="brand"><span class="brand-dot"></span>ThumbGate</a>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/pro">Pricing</a>
+      <a href="/guide">Setup guide</a>
+      <a href="/services" aria-current="page" style="color: var(--text);">Services</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/">Home</a> → Services</div>
+</div>
+
+<section class="hero">
+  <div class="container">
+    <span class="pill">Hands-on engagements</span>
+    <h1>Hands-on services for teams hardening AI agent workflows.</h1>
+    <p class="lede">If your team has already installed ThumbGate Pro and you need a paid engagement — a diagnostic, a 48-hour sprint, a full setup, or a self-serve kit — start here. Most operators do not need this page. It exists for teams whose budget is ready and whose workflow is named.</p>
+    <p class="lede" style="margin-top:10px;">For the product itself (Free CLI, Pro at $19/mo, Team at $147/mo+), see <a href="/pro" style="color: var(--cyan); text-decoration: underline;">/pro</a>.</p>
+  </div>
+</section>
+
+<section class="autoresearch-pack" id="autoresearch-pack">
+  <div class="container">
+    <div class="autoresearch-panel">
+      <div class="section-label" style="text-align:left;color:var(--cyan);">Autoresearch Safety Pack</div>
+      <h2>Stop self-improving coding loops from hacking the benchmark.</h2>
+      <p>Autoresearch loops run experiments, inspect metrics, and accept better variants. ThumbGate gives those loops a Reliability Gateway: Pre-Action Checks for skipped holdout tests, fake proof, reward hacking, unsafe edits, and promotion without verification evidence.</p>
+      <div class="autoresearch-grid">
+        <div class="autoresearch-card">
+          <h3>Guard the metric</h3>
+          <p>Require primary and holdout checks before an agent can call a variant better. Block cherry-picked runs and missing baselines.</p>
+        </div>
+        <div class="autoresearch-card">
+          <h3>Preserve proof trails</h3>
+          <p>Promotion needs commands, logs, changed files, and verification evidence so the win survives review instead of becoming a vague claim.</p>
+        </div>
+        <div class="autoresearch-card">
+          <h3>Ship into CI</h3>
+          <p>Start with templates for <code>npm test</code>, Playwright duration, bundle size, lint, and CI failures, then add Team checks for shared workflows.</p>
+        </div>
+      </div>
+      <div class="autoresearch-cta">
+        <a class="primary" href="/guides/autoresearch-agent-safety?utm_source=website&utm_medium=services_autoresearch_pack&utm_campaign=autoresearch_safety&cta_id=services_autoresearch_guide&cta_placement=services_autoresearch_pack">Read the Autoresearch guide</a>
+        <a class="secondary" href="/checkout/pro?utm_source=website&utm_medium=services_autoresearch_pack&utm_campaign=autoresearch_safety&cta_id=services_autoresearch_pro_checkout&cta_placement=services_autoresearch_pack&plan_id=pro&landing_path=%2Fservices">Start Pro — $19/mo</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="workflow-sprint-intake">
+  <div class="container">
+    <div class="section-label">Team Pilot</div>
+    <h2 class="section-title">Start the AI Agent Governance Sprint with one repeat failure</h2>
+    <p style="color:var(--text-dim);max-width:720px;margin:0 auto 16px;text-align:center;">This is the fastest path to first paid value for teams. Start with one repo, one workflow owner, and one blocker. The intake is designed to prove that ThumbGate reduces review churn, rollout risk, or repeated agent mistakes before a wider rollout.</p>
+    <div class="team-intake-panel">
+      <div class="team-intake-panel-head">
+        <div>
+          <h3>Tell us the workflow. Get a proof plan.</h3>
+          <p>The highest-fit Team buyer is already feeling one repeated failure. Start with a paid diagnostic when budget is ready, or use intake when you need qualification first.</p>
+        </div>
+        <span class="team-intake-badge">30-minute intake</span>
+      </div>
+      <div class="team-paid-path" data-sprint-paid-path aria-label="Paid workflow hardening options">
+        <div class="team-paid-card">
+          <div>
+            <h4>Workflow Hardening Diagnostic</h4>
+            <p>Paid triage for one repeated agent or review failure, with a concrete proof plan and go/no-go recommendation.</p>
+          </div>
+          <div>
+            <div class="team-paid-price">$<span data-sprint-diagnostic-price>499</span></div>
+            <a class="team-paid-link" data-sprint-diagnostic-link href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__">Pay for diagnostic</a>
+          </div>
+        </div>
+        <div class="team-paid-card">
+          <div>
+            <h4>AI Agent Governance Sprint</h4>
+            <p>48-hour Workflow Hardening Sprint for one workflow owner, one blocker, approval boundaries, rollback safety, one proof review, and one hardened rollout path.</p>
+          </div>
+          <div>
+            <div class="team-paid-price">$<span data-workflow-sprint-price>1500</span></div>
+            <a class="team-paid-link" data-workflow-sprint-link href="__WORKFLOW_SPRINT_CHECKOUT_URL__">Pay for sprint</a>
+          </div>
+        </div>
+        <div class="team-paid-card">
+          <div>
+            <h4>Reliable AI Agent Governance Setup</h4>
+            <p>Full ThumbGate-powered setup for Claude Code, Cursor, or Codex teams: npx install, custom prevention rules, audit trail, training, and proof reports. Optional ongoing rule management is $297/mo.</p>
+          </div>
+          <div>
+            <div class="team-paid-price">$3,997</div>
+            <a class="team-paid-link" href="#team-pilot-intake-form" onclick="sendFirstPartyTelemetry('governance_setup_intake_clicked',{ctaId:'team_governance_setup_intake',ctaPlacement:'services_team_paid_path',planId:'team',offer:'reliable_ai_agent_governance_setup',price:3997});sendGa4Event('generate_lead',{currency:'USD',value:3997,method:'governance_setup_intake'});">Request setup</a>
+          </div>
+        </div>
+        <div class="team-paid-card">
+          <div>
+            <h4>OpenClaw Agent Governance Kit</h4>
+            <p>Self-serve digital kit with ThumbGate prevention rules, OpenClaw-compatible workflow prompts, agent registry checklist, proof report template, and Zernio launch copy.</p>
+          </div>
+          <div>
+            <div class="team-paid-price">$97</div>
+            <a rel="nofollow noopener noreferrer" target="_blank" class="team-paid-link" href="https://buy.stripe.com/bJe14naiE9Lo7xT49Z3sI12" onclick="sendFirstPartyTelemetry('openclaw_governance_kit_checkout_started',{ctaId:'team_openclaw_governance_kit_checkout',ctaPlacement:'services_team_paid_path',planId:'digital_kit',offer:'openclaw_agent_governance_kit',price:97});sendGa4Event('begin_checkout',{currency:'USD',value:97,items:[{item_id:'openclaw_agent_governance_kit',item_name:'OpenClaw Agent Governance Kit'}]});">Buy kit</a>
+          </div>
+        </div>
+      </div>
+      <div class="team-intake-recovery" aria-label="Checkout recovery path for workflow sprint buyers">
+        <div>
+          <strong>Not ready to pay from a checkout page?</strong>
+          <span>Send the workflow first. We can qualify the blocker, confirm the proof plan, and route you to the $499 diagnostic, $1500 sprint, or $3,997 governance setup only when the scope is real.</span>
+        </div>
+        <a href="#team-pilot-intake-form" onclick="sendFirstPartyTelemetry('workflow_sprint_recovery_intake_clicked',{ctaId:'team_workflow_sprint_recovery_intake',ctaPlacement:'services_team_paid_path_recovery',planId:'team',offer:'workflow_hardening_sprint',reason:'checkout_abandon'});sendGa4Event('generate_lead',{currency:'USD',value:0,method:'workflow_sprint_recovery_intake'});">Send workflow first</a>
+      </div>
+      <form id="team-pilot-intake-form" class="team-form" action="/v1/intake/workflow-sprint" method="POST" data-team-intake-form>
+        <input type="hidden" name="ctaId" value="workflow_sprint_intake">
+        <input type="hidden" name="ctaPlacement" value="services_visible_intake">
+        <input type="hidden" name="planId" value="team">
+        <input type="hidden" name="utmSource" value="website">
+        <input type="hidden" name="utmMedium" value="services_visible_intake">
+        <input type="hidden" name="utmCampaign" value="workflow_hardening_sprint">
+        <input type="hidden" name="page" value="/services#workflow-sprint-intake">
+        <input type="email" name="email" placeholder="you@company.com" autocomplete="email" required>
+        <input type="text" name="company" placeholder="Company">
+        <input type="text" name="workflow" placeholder="Workflow to harden (e.g. deploy approvals, migrations, PR review)" required>
+        <input type="text" name="owner" placeholder="Workflow owner" required>
+        <input type="text" name="runtime" placeholder="Current agent/runtime (Claude Code, Codex, Cursor, Gemini...)" required>
+        <textarea class="full" name="blocker" placeholder="What repeat mistake, rollout blocker, or team handoff failure keeps happening?" required></textarea>
+        <textarea class="full" name="note" placeholder="Optional context: team size, repos involved, target rollout date, or what you need to prove internally."></textarea>
+        <div class="full">
+          <button type="submit" class="btn-team">Start Team Pilot Intake</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div>
+      <a href="/">← Back to ThumbGate</a>
+    </div>
+    <div>
+      <a href="/pro">Pricing</a> · <a href="/guide">Setup</a> · <a href="/learn">Guides</a> · <a href="/federal">Federal</a> · <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+function sendFirstPartyTelemetry(eventType, payload) {
+  if (!eventType) return;
+  try {
+    var body = JSON.stringify({
+      eventType: String(eventType),
+      payload: payload || {},
+      page: '/services',
+      visitorId: serverVisitorId,
+      sessionId: serverSessionId,
+      acquisitionId: serverAcquisitionId,
+    });
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon('/telemetry/event', new Blob([body], { type: 'application/json' }));
+    } else {
+      fetch('/telemetry/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body, keepalive: true }).catch(function() {});
+    }
+  } catch (_) {}
+}
+function sendGa4Event(eventName, params) {
+  if (!gaMeasurementId || typeof globalThis.gtag !== 'function') return;
+  globalThis.gtag('event', eventName, params || {});
+}
+function initializePaidSprintPath() {
+  var panel = document.querySelector('[data-sprint-paid-path]');
+  if (!panel) return;
+  var diagnosticLink = document.querySelector('[data-sprint-diagnostic-link]');
+  var sprintLink = document.querySelector('[data-workflow-sprint-link]');
+  var diagnosticPrice = document.querySelector('[data-sprint-diagnostic-price]');
+  var sprintPrice = document.querySelector('[data-workflow-sprint-price]');
+  if (diagnosticPrice) diagnosticPrice.textContent = String(sprintDiagnosticPriceDollars);
+  if (sprintPrice) sprintPrice.textContent = String(workflowSprintPriceDollars);
+  var hasDiagnosticUrl = /^https?:\/\//.test(sprintDiagnosticCheckoutUrl);
+  var hasSprintUrl = /^https?:\/\//.test(workflowSprintCheckoutUrl);
+  if (hasDiagnosticUrl && diagnosticLink) {
+    diagnosticLink.href = sprintDiagnosticCheckoutUrl;
+    diagnosticLink.addEventListener('click', function() {
+      sendFirstPartyTelemetry('workflow_sprint_diagnostic_checkout_started', { ctaId: 'workflow_sprint_diagnostic_checkout', ctaPlacement: 'services_team_paid_path', planId: 'team', offer: 'workflow_hardening_diagnostic', price: sprintDiagnosticPriceDollars });
+      sendGa4Event('begin_checkout', { currency: 'USD', value: sprintDiagnosticPriceDollars, items: [{ item_id: 'workflow_hardening_diagnostic', item_name: 'Workflow Hardening Diagnostic' }] });
+    });
+  } else if (diagnosticLink) {
+    diagnosticLink.setAttribute('href', '#team-pilot-intake-form');
+    diagnosticLink.textContent = 'Request via intake';
+  }
+  if (hasSprintUrl && sprintLink) {
+    sprintLink.href = workflowSprintCheckoutUrl;
+    sprintLink.addEventListener('click', function() {
+      sendFirstPartyTelemetry('workflow_sprint_checkout_started', { ctaId: 'workflow_sprint_checkout', ctaPlacement: 'services_team_paid_path', planId: 'team', offer: 'workflow_hardening_sprint', price: workflowSprintPriceDollars });
+      sendGa4Event('begin_checkout', { currency: 'USD', value: workflowSprintPriceDollars, items: [{ item_id: 'workflow_hardening_sprint', item_name: 'Workflow Hardening Sprint' }] });
+    });
+  } else if (sprintLink) {
+    sprintLink.setAttribute('href', '#team-pilot-intake-form');
+    sprintLink.textContent = 'Request via intake';
+  }
+}
+function initializeTeamIntakeTelemetry() {
+  document.querySelectorAll('[data-team-intake-form]').forEach(function(form) {
+    form.addEventListener('submit', function() {
+      sendFirstPartyTelemetry('workflow_sprint_intake_submit_attempted', { ctaId: 'workflow_sprint_intake', ctaPlacement: 'services_visible_intake', planId: 'team' });
+      sendGa4Event('generate_lead', { currency: 'USD', value: 0, method: 'workflow_sprint_intake' });
+    });
+  });
+}
+document.addEventListener('DOMContentLoaded', function() {
+  initializePaidSprintPath();
+  initializeTeamIntakeTelemetry();
+  sendFirstPartyTelemetry('services_page_view', { page: '/services' });
+});
+</script>
+
+</body>
+</html>
