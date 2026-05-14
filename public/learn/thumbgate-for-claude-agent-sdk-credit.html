@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anthropic Just Gave You a $100/mo Agent SDK Credit. Here's What to Spend It On First — ThumbGate</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Starting June 15, every Claude Max 5x subscriber claims a $100/mo credit for Agent SDK and claude -p usage. Programmatic Claude is now a funded lane separate from your interactive limits. Here is how to spend the first $19 of that credit on enforcement that actually changes outcomes, not on tokens for the next force-push.">
+<meta name="keywords" content="Claude Agent SDK, claude -p, Anthropic monthly credit, $100 SDK credit, programmatic Claude budget, Agent SDK governance, pre-action checks, ThumbGate Pro, claude code automation">
+<meta property="og:title" content="Anthropic Just Gave You a $100/mo Agent SDK Credit. Here's What to Spend It On First">
+<meta property="og:description" content="Programmatic Claude is now a funded lane. ThumbGate Pro is $19/mo — 19% of the new credit, used on the part of the SDK loop that decides what NOT to do.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate-production.up.railway.app/learn/thumbgate-for-claude-agent-sdk-credit">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/learn/thumbgate-for-claude-agent-sdk-credit">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Anthropic Just Gave You a $100/mo Agent SDK Credit. Here's What to Spend It On First",
+  "description": "How to think about the new June 15 Agent SDK credit, and why the first $19 of it should buy enforcement instead of tokens.",
+  "author": {"@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky"},
+  "publisher": {"@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate-production.up.railway.app"},
+  "datePublished": "2026-05-14",
+  "dateModified": "2026-05-14",
+  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/learn/thumbgate-for-claude-agent-sdk-credit",
+  "about": [
+    {"@type": "Thing", "name": "Claude Agent SDK"},
+    {"@type": "Thing", "name": "claude -p"},
+    {"@type": "Thing", "name": "Anthropic monthly credit"}
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Agent SDK Credit</div>
+  <h1>Anthropic Just Gave You a $100/mo Agent SDK Credit. Here's What to Spend It On First.</h1>
+  <p style="color:var(--muted);">3 min read · Published 2026-05-14 · Anthropic announcement: <a href="https://www.anthropic.com" target="_blank" rel="noopener">2026-05-13</a></p>
+
+  <div class="tldr"><strong>TL;DR:</strong> Starting June 15, every Claude Max 5x subscriber claims a $100/mo credit for the Agent SDK and <code>claude&nbsp;-p</code>, including third-party tools built on the SDK. Programmatic usage no longer competes with your interactive limits. That credit changes the unit economics of agentic workflows for the first time — but token spend doesn't fix the agent that force-pushes to main. The first $19 of that credit should buy enforcement. The remaining $81 should fund the loops that the enforcement now makes safe to run unattended.</div>
+
+  <h2>What actually changed</h2>
+
+  <p>Until this month, anyone running <code>claude -p</code> or the Agent SDK was charged against the same interactive limits as their day-to-day Claude Code work. That meant any operator running an autonomous loop — a Ralph Loop, a content cadence, a code-review bot, a custom marketing pipeline — was implicitly paying for it twice: in subscription burn, and in the opportunity cost of every other operator at the company hitting a 429 at 3pm because the autonomous loop ate the quota first.</p>
+
+  <p>Starting June 15, that's separated. A new $100/mo credit applies specifically to Agent SDK and <code>claude&nbsp;-p</code> usage, and explicitly covers third-party tools built on the Agent SDK. Subscription limits stay reserved for interactive Claude Code, Cowork, and chat. If you blow through the $100, continued use draws from extra usage you have to manually enable.</p>
+
+  <p>The blunt version: Anthropic has just published the official lane for programmatic Claude, given it a predictable monthly budget, and signaled that they want third-party tools to live in that lane.</p>
+
+  <h2>What you should NOT do</h2>
+
+  <p>The first instinct, the one I had reading the email, is "great, I can run the agent more." That's the wrong reflex. More agent runs do not produce more revenue. They produce more output, some of which is good and some of which is the same force-push to main you've been getting for six months. The credit makes the cost of bad output lower; it doesn't make the bad output less bad. If anything, lowered cost-per-run accelerates the rate at which an unsupervised agent makes a recoverable problem unrecoverable.</p>
+
+  <p>So before scaling up unattended SDK loops, the first $19 of the new credit should buy the enforcement layer that decides what those loops are not allowed to do.</p>
+
+  <h2>The math, written out</h2>
+
+  <p>$100 credit. ThumbGate Pro is $19/mo. That's 19% of the credit allocated to the layer that:</p>
+
+  <ul>
+    <li>Blocks <code>git push --force</code> on main before the SDK loop fires the tool call</li>
+    <li>Blocks <code>rm -rf</code> on paths outside the workspace</li>
+    <li>Blocks any response that contains the word "deployed" without a verifying curl in the tool-use history (see <a href="/learn/agent-said-deployed-three-times-without-verifying">the full Stop hook walkthrough</a>)</li>
+    <li>Captures every thumbs-down moment as a prevention rule and adds it to the gate before the next session</li>
+    <li>Exports per-step preference pairs as DPO training data, so the next time you fine-tune a local model, your reward signal reflects your real production failure modes</li>
+  </ul>
+
+  <p>The remaining $81 of the credit funds the actual SDK loops — content generation, code review, monitoring, outbound, whatever you want to automate — running against the enforcement layer. The SDK loop is now allowed to be wrong without being expensive. That's the unit-economics shift that didn't exist before June 15.</p>
+
+  <h2>How the wiring actually works</h2>
+
+  <p>ThumbGate runs as a pre-action gate. The Agent SDK has a tool-use lifecycle: model decides to call a tool → tool call goes to the runtime → runtime executes → result returned to the model. ThumbGate inserts before the "runtime executes" step. The gate examines the tool name, arguments, and recent history. If a prevention rule matches, the tool call is blocked, and the model receives the block message instead of the tool result.</p>
+
+  <p>From the model's perspective, the rejected tool call looks like any other tool error — it adjusts and tries a different approach. From the operator's perspective, the dangerous call physically did not run. From the credit-spend perspective, the model spent maybe 200 tokens being told "no" instead of 50,000 tokens recovering from a force-push.</p>
+
+  <p>Installation is the same as any ThumbGate adapter:</p>
+
+  <pre><code># Inside your Agent SDK project:
+npx thumbgate init --agent claude
+
+# That writes the MCP server config, the hook config, and the
+# initial prevention-rules database. The SDK picks them up on
+# next launch.</code></pre>
+
+  <h2>What I'm spending mine on starting June 15</h2>
+
+  <p>I'll be transparent about my own plan, because the playbook only matters if it's the one I run.</p>
+
+  <ol>
+    <li><strong>$19 — ThumbGate Pro on my own account.</strong> I dogfood. The dashboard, DPO export, and review-ready evidence streams catch the failures I haven't seen yet.</li>
+    <li><strong>$40 — autonomous code-review pipeline.</strong> Every push to <code>main</code> on any repo I own gets reviewed by an SDK loop against my prevention rules. The loop drafts review comments and opens follow-up PRs for the highest-confidence findings. ThumbGate gates the loop so the autonomous reviewer cannot itself force-push or merge.</li>
+    <li><strong>$30 — daily content cadence.</strong> The /learn page on this site updates daily from real shipped commits. The SDK loop drafts; I approve. ThumbGate gates the loop so it cannot publish without an explicit thumbs-up signal.</li>
+    <li><strong>$11 — headroom.</strong> First month I won't know where I'll overspend. The leftover absorbs the surprise. If June 30 shows I underused, I'll allocate it to outbound (Reddit / dev.to drafts against the cadence loop).</li>
+  </ol>
+
+  <p>None of those four lines existed as a credit-funded budget before June 15. All four are at the operator scale that gets force-pushed, RMd, or merged-without-tests if the loop isn't gated. That's exactly the wedge.</p>
+
+  <h2>What to do in the next 30 days</h2>
+
+  <ol>
+    <li>If you're on Max 5x, expect the credit-claim notification in early June. There's nothing to do until then.</li>
+    <li>Install the enforcement layer NOW so the gates are warm when you start scaling SDK runs: <code>npx thumbgate init --agent claude</code>. The free CLI covers the basic blocks; Pro unlocks the dashboard and exports.</li>
+    <li>Inventory the one autonomous workflow you've been afraid to leave unattended. Write the three rules that would let you sleep on it. Use ThumbGate's feedback capture (👍 / 👎) to teach the gate from real session output, instead of trying to predict failures up front.</li>
+    <li>When June 15 lands, switch that workflow to SDK / <code>claude&nbsp;-p</code> and let it run. The gates absorb the cost of agent mistakes.</li>
+  </ol>
+
+  <p>The credit changes pricing. The gates change outcomes. The combination is what makes the SDK actually shippable.</p>
+
+  <div class="cta-block" style="margin-top:48px;padding:24px;border:1px solid var(--border);border-radius:12px;background:rgba(34,211,238,0.05);">
+    <h3 style="margin-top:0;">Get the gates warm before June 15.</h3>
+    <p>ThumbGate Pro is $19/mo — 19% of the new Agent SDK credit, applied to the layer that blocks the dangerous tool calls before they fire. Free CLI, two minutes to install.</p>
+    <p style="margin-bottom:0;">
+      <a href="/checkout/pro?utm_source=learn&amp;utm_medium=article_cta&amp;utm_campaign=agent_sdk_credit&amp;cta_id=learn_sdk_pro&amp;cta_placement=article_footer&amp;plan_id=pro&amp;landing_path=%2Flearn%2Fthumbgate-for-claude-agent-sdk-credit" class="btn-primary">Start Pro — $19/mo</a>
+      <a href="/guide" style="margin-left:12px;color:var(--muted);">Or read the setup guide first →</a>
+    </p>
+  </div>
+</div>
+
+</body>
+</html>
