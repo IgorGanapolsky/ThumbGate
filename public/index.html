@@ -43,6 +43,28 @@ __GA_BOOTSTRAP__
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "ThumbGate",
+  "alternateName": "thumbgate",
+  "url": "https://thumbgate-production.up.railway.app",
+  "logo": "https://thumbgate-production.up.railway.app/assets/brand/thumbgate-logo-1200x360.png",
+  "description": "ThumbGate ships pre-action gates for AI coding agents. Open-source CLI plus PreToolUse hooks that capture feedback, promote it to memory, generate prevention rules, and block repeated mistakes before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode.",
+  "founder": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "sameAs": [
+    "https://github.com/IgorGanapolsky/ThumbGate",
+    "https://www.npmjs.com/package/thumbgate",
+    "https://github.com/IgorGanapolsky"
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "ThumbGate",
   "alternateName": "thumbgate",
@@ -672,7 +694,8 @@ __GA_BOOTSTRAP__
     <a href="/" class="nav-logo"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
     <div class="nav-links">
       <a href="#how-it-works">How It Works</a>
-      <a href="#pricing">Pricing</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/case-studies">Case Studies</a>
       <a href="/guides/autoresearch-agent-safety">Autoresearch</a>
       <a href="#faq">FAQ</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
@@ -720,6 +743,10 @@ __GA_BOOTSTRAP__
       <span>Works with MCP-compatible agents</span>
       <span>Verification evidence in GitHub</span>
     </div>
+    <figure style="max-width:760px;margin:32px auto 0;padding:20px 24px;border-left:3px solid var(--cyan);background:rgba(34,211,238,0.04);border-radius:0 8px 8px 0;">
+      <blockquote style="margin:0;font-size:18px;line-height:1.5;color:var(--text);font-style:italic;">&ldquo;A better dashboard doesn&rsquo;t make the agents more reliable. The hard part isn&rsquo;t visibility. It&rsquo;s trust.&rdquo;</blockquote>
+      <figcaption style="margin-top:12px;font-size:13px;color:var(--text-muted);">— Rob May, CEO &amp; co-founder, Neurometric AI, in <a href="https://thenewstack.io/claude-code-agent-view/" target="_blank" rel="noopener" style="color:var(--cyan);">The New Stack</a> on Anthropic&rsquo;s Claude Code Agent View (May 2026). ThumbGate is the open-source layer that makes the trust part real: PreToolUse gates, thumbs-down to rule, audit trail on every interception.</figcaption>
+    </figure>
     <div class="first-check-card" id="first-check">
       <div class="section-label" style="text-align:left;margin-bottom:8px;">First-Dollar Activation Path</div>
       <h2>Block your first repeated AI mistake in 5 minutes.</h2>
@@ -995,6 +1022,7 @@ __GA_BOOTSTRAP__
     </div>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px;">
       <a class="btn-team" href="/compare/ai-experience-orchestration">Compare orchestration vs enforcement →</a>
+      <a class="btn-free" href="/guides/ai-deployment-readiness" style="display:inline-flex;align-items:center;">AI deployment readiness →</a>
       <a class="btn-free" href="/use-cases/platform-teams" style="display:inline-flex;align-items:center;">Platform team rollout →</a>
       <a class="btn-free" href="/use-cases/regulated-workflows" style="display:inline-flex;align-items:center;">Regulated workflow pattern →</a>
     </div>
@@ -1021,6 +1049,7 @@ __GA_BOOTSTRAP__
         <a href="/guides/claude-code-skills-guardrails">Claude Code skills</a>
         <a href="/guides/long-running-agent-context-management">Long-running agent context</a>
         <a href="/guides/reasoning-compression-guardrails">Reasoning compression</a>
+        <a href="/guides/ai-deployment-readiness">AI deployment readiness</a>
         <a href="/guides/browser-automation-safety">Browser automation safety</a>
         <a href="/guides/native-messaging-host-security">Native messaging host security</a>
         <a href="/guides/ai-search-topical-presence">AI search topical presence</a>

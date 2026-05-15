@@ -100,9 +100,9 @@ describe('/checkout/pro bot guard', () => {
     assert.match(body, /checkout_interstitial_workflow_teardown_checkout/);
     assert.match(body, /checkout_interstitial_sprint_diagnostic_checkout/);
     assert.match(body, /checkout_interstitial_workflow_sprint_checkout/);
-    assert.match(body, /https:\/\/buy\.stripe\.com\/4gM6oHgH2bTw4lH6i73sI0z/);
-    assert.match(body, /https:\/\/buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
-    assert.match(body, /https:\/\/buy\.stripe\.com\/7sYfZhgH29LodWhdKz3sI0v/);
+    assert.match(body, /https:\/\/buy\.stripe\.com\/fZu28rfCY6zcbO99uj3sI2G/);
+    assert.match(body, /https:\/\/buy\.stripe\.com\/5kQ7sL76s1eSaK55e33sI2H/);
+    assert.match(body, /https:\/\/buy\.stripe\.com\/8x214n2Qc4r44lHayn3sI2I/);
     assert.match(body, /https:\/\/buy\.stripe\.com\/test-diagnostic/);
     assert.match(body, /https:\/\/buy\.stripe\.com\/test-sprint/);
     assert.doesNotMatch(body, /checkout\.stripe\.com/);
@@ -147,8 +147,11 @@ describe('/checkout/pro bot guard', () => {
       });
       assert.equal(res.status, 200);
       const body = await res.text();
-      assert.match(body, /https:\/\/buy\.stripe\.com\/3cI7sLgH25v8dWh5e33sI0o/);
-      assert.match(body, /https:\/\/buy\.stripe\.com\/8x25kDcqMaPs9G15e33sI0p/);
+      // Bootstrap-generated Payment Links (run 25883541719, 2026-05-14).
+      // Sprint Diagnostic ($499) and Workflow Sprint ($1,500). If these
+      // change, update both this test and src/api/server.js together.
+      assert.match(body, /https:\/\/buy\.stripe\.com\/28E00j3Uge1E2dzgWL3sI2J/);
+      assert.match(body, /https:\/\/buy\.stripe\.com\/6oU00j8aw2iWdWh9uj3sI2K/);
       assert.doesNotMatch(body, /href=""/);
     } finally {
       process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL = diagnosticCheckoutUrl;
@@ -202,7 +205,7 @@ describe('/checkout/pro bot guard', () => {
     }
   });
 
-  it('sends real browsers straight to checkout without the extra intent interstitial or email gate', async () => {
+  it('shows real browsers the intent interstitial before checkout session creation', async () => {
     try { fs.unlinkSync(path.join(ENV.THUMBGATE_FEEDBACK_DIR, 'telemetry-pings.jsonl')); } catch {}
     const res = await fetch(`${origin}/checkout/pro`, {
       redirect: 'manual',
@@ -211,22 +214,21 @@ describe('/checkout/pro bot guard', () => {
         accept: BROWSER_ACCEPT,
       },
     });
-    assert.ok(res.status >= 300 && res.status < 400, `expected checkout redirect, got ${res.status}`);
-    assert.match(res.headers.get('location') || '', /\/success\?/);
+    assert.equal(res.status, 200, `expected checkout interstitial, got ${res.status}`);
+    const body = await res.text();
+    assert.match(body, /Start ThumbGate Pro/);
+    assert.match(body, /\/checkout\/pro\?confirm=1/);
 
     const events = readFunnelEvents();
     assert.equal(
       events.filter((e) => e.eventType === 'checkout_interstitial_view').length,
+      1,
+      'real browsers should see the intent interstitial before Stripe',
+    );
+    assert.equal(
+      events.filter((e) => e.eventType === 'checkout_bootstrap').length,
       0,
-      'real browsers should not be slowed by the intent interstitial',
-    );
-    assert.ok(
-      events.some((e) => e.eventType === 'checkout_email_deferred_to_stripe'),
-      'missing email should be tracked as delegated to Stripe collection',
-    );
-    assert.ok(
-      events.some((e) => e.eventType === 'checkout_bootstrap'),
-      'real browsers should reach checkout session creation',
+      'unconfirmed real browsers must not create checkout sessions',
     );
   });
 

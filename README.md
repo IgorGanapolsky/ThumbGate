@@ -24,6 +24,14 @@ Under the hood: your thumbs-down becomes one of your **Pre-Action Checks** that 
 
 ---
 
+> *"A better dashboard doesn't make the agents more reliable. The hard part isn't visibility. It's trust."*
+>
+> — **Rob May**, CEO & co-founder, Neurometric AI, quoted in [The New Stack](https://thenewstack.io/claude-code-agent-view/) on Anthropic's Claude Code Agent View (May 2026).
+>
+> ThumbGate is the open-source layer that makes the trust part real: PreToolUse gates, thumbs-down to rule, audit trail on every interception.
+
+---
+
 ## 🎬 90-second demo
 
 Watch the force-push scenario: agent tries to `git push --force`, one thumbs-down, next session it's blocked — zero tokens spent on the repeat.
@@ -107,13 +115,26 @@ ThumbGate operates as a 4-layer enforcement stack between your AI agent and your
 Your thumbs-up/down reactions are captured via MCP protocol, CLI, or the ChatGPT GPT surface. Each reaction is stored as a structured lesson with context, timestamp, and severity.
 
 ### Layer 2: Check Engine
-The check engine converts lessons into enforceable rules using pattern matching, semantic similarity (via LanceDB vectors), and Thompson Sampling for adaptive rule selection. Rules stay in local ThumbGate runtime state.
+The check engine converts lessons into enforceable rules. **The runtime gate decision is deterministic** — literal pattern match → AST match → scoped rule lookup. No LLM call on the enforcement path.
+
+Where retrieval is needed (an agent is about to run a destructive command not on the literal block list, but semantically similar to one we've blocked before), ThumbGate uses local CPU-only `bge-small` embeddings via LanceDB's built-in pipeline. No external API call, no inference cost beyond CPU. So **"no LLM in enforcement"** holds: the gate decision uses no LLM; the rule corpus is just searchable via local embeddings.
+
+**Thompson Sampling tunes per-rule confidence weights** for soft-gating rules so high-noise rules quiet down and high-signal rules sharpen. It never decides *whether* a rule fires — a hard rule like "block `git push --force` on main" always fires deterministically. Bandit exploration would be terrifying for hard rules; we don't do it.
+
+Rules stay in local ThumbGate runtime state.
 
 ### Layer 3: Pre-Action Interception
 Before any agent action executes, ThumbGate's `PreToolUse` hook intercepts the command and evaluates it against all active checks. This happens at the MCP protocol level — the agent physically cannot bypass it.
 
-### Layer 4: Multi-Agent Distribution
-Checks are distributed across all connected agents via MCP stdio protocol. One correction in Claude Code protects Cursor, Codex, Gemini CLI, Cline, and any MCP-compatible agent.
+### Layer 4: Multi-Agent Distribution (the actual moat vs hand-rolled hooks)
+Claude Code already ships `permissions.deny` and `PreToolUse` hooks. Cursor and Codex have their own. So why ThumbGate over a hand-written hook?
+
+Two things hand-written hooks structurally cannot do:
+
+1. **Cross-agent propagation.** A `permissions.deny` pattern lives in one agent's config and stays there. ThumbGate's checks distribute across every connected agent over MCP stdio — thumbs-down once in Cursor, the same pattern blocks on Claude Code, Codex, Gemini CLI, Cline, OpenCode, Amp in the next session, no copy-paste between configs.
+2. **Learning loop.** A hand-written hook covers exactly the patterns you wrote. ThumbGate promotes every thumbs-down into a fresh rule, tunes existing rules' confidence weights from outcomes (Thompson Sampling, see Layer 2), and pulls semantically-near patterns into scope via local embeddings. The rule corpus sharpens without an operator hand-writing a regex for every new mistake shape.
+
+Hand-rolled hooks are the right tool for a small, static denylist you maintain by hand. ThumbGate is the right tool when you want corrections from any agent to harden every agent automatically.
 
 Prompt engineering still matters, but it is only the starting point. ThumbGate adds prompt evaluation on top: proof lanes, benchmarks, and self-heal checks tell you whether your prompt and workflow actually held up under execution instead of leaving you to guess from vibes. Run `npx thumbgate eval --from-feedback --write-report=.thumbgate/prompt-eval-proof.md` to turn real thumbs-up/down feedback into reusable eval cases and a buyer-ready proof report.
 
