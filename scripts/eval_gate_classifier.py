@@ -355,6 +355,10 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
 
 def main(argv: Optional[List[str]] = None) -> int:
     args = parse_args(argv)
+    # Fail fast on the missing-deps case so operators see the install hint
+    # before any data-shape error. CI without sklearn must hit this branch
+    # regardless of whether the local feedback log has enough rows.
+    _require_sklearn()
     feedback_dir = resolve_feedback_dir()
     feedback_log = args.feedback_log or feedback_dir / "feedback-log.jsonl"
     output_dir = args.output_dir or feedback_dir / "eval"
