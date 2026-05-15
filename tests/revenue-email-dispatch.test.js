@@ -14,7 +14,7 @@ const {
 test('revenue email campaign includes required commercial compliance footer and paid CTAs', () => {
   const message = renderMessage(CAMPAIGNS.aiventyx_marketplace_followup);
   assert.equal(message.to, 'qaisermehdi3@gmail.com');
-  assert.match(message.text, /buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
+  assert.match(message.text, /buy\.stripe\.com\/5kQ7sL76s1eSaK55e33sI2H/);
   assert.match(message.text, /Max Smith KDP LLC/);
   assert.match(message.text, /Unsubscribe:/);
 });

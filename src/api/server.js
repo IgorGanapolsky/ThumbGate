@@ -5248,6 +5248,114 @@ async function addContext(){
       return;
     }
 
+    // GET /v1/telemetry/export — raw recent telemetry-pings + funnel-events
+    // for the unified-revenue-rollup join. Operator-key gated because the raw
+    // event stream may include user-agent strings and other low-PII data
+    // that we never expose unauthenticated. Returns a bounded window
+    // (default last 24h, capped at 10000 rows per stream) so a misbehaving
+    // caller cannot pull the entire local ledger.
+    if (req.method === 'GET' && pathname === '/v1/telemetry/export') {
+      // Strict auth: raw telemetry export exposes user-agent strings and
+      // first-party event payloads. Unlike /v1/billing/summary (which
+      // returns aggregates only), this endpoint must NEVER fall through
+      // to unauthenticated access when both keys happen to be unset —
+      // that would silently turn an unconfigured dev/preview server into
+      // a public ledger reader. Require BOTH a configured key on the
+      // server AND a token on the request that matches one of them.
+      const requestToken = extractApiKey(req);
+      const adminMatches = !!expectedApiKey && requestToken === expectedApiKey;
+      const operatorMatches = !!expectedOperatorKey && requestToken === expectedOperatorKey;
+      const anyKeyConfigured = !!expectedApiKey || !!expectedOperatorKey;
+      if (!anyKeyConfigured) {
+        sendJson(res, 503, {
+          error: 'Telemetry export disabled — neither THUMBGATE_API_KEY nor THUMBGATE_OPERATOR_KEY is configured on this server',
+        });
+        return;
+      }
+      if (!adminMatches && !operatorMatches) {
+        sendJson(res, 401, { error: 'Unauthorized — operator or admin key required' });
+        return;
+      }
+
+      // Reuse the already-parsed URL object from line ~3654 instead of
+      // re-requiring the legacy 'url' module.
+      const params = parsed.searchParams;
+      const sinceRaw = String(params.get('since') || '').trim();
+      const sinceMs = sinceRaw
+        ? Date.parse(sinceRaw)
+        : Date.now() - 24 * 60 * 60 * 1000;
+      const since = Number.isFinite(sinceMs) ? sinceMs : Date.now() - 24 * 60 * 60 * 1000;
+
+      const limitRaw = Number(params.get('limit'));
+      const limit = Number.isFinite(limitRaw) && limitRaw > 0
+        ? Math.min(Math.floor(limitRaw), 10000)
+        : 1000;
+
+      const sourceRaw = String(params.get('source') || '');
+      const source = ['telemetry', 'funnel', 'both'].includes(sourceRaw) ? sourceRaw : 'both';
+
+      const { FEEDBACK_DIR: exportDir } = getFeedbackPaths();
+      const wantTelemetry = source === 'telemetry' || source === 'both';
+      const wantFunnel = source === 'funnel' || source === 'both';
+
+      const result = {
+        generatedAt: new Date().toISOString(),
+        since: new Date(since).toISOString(),
+        limit,
+        source,
+        telemetry: { rows: [], truncated: false, totalAfterSince: 0 },
+        funnel: { rows: [], truncated: false, totalAfterSince: 0 },
+      };
+
+      function readJsonlSince(p) {
+        try {
+          if (!fs.existsSync(p)) return [];
+          const text = fs.readFileSync(p, 'utf8');
+          const rows = [];
+          for (const line of text.split('\n')) {
+            if (!line) continue;
+            let obj;
+            try { obj = JSON.parse(line); } catch { continue; }
+            const ts = obj.timestamp || obj.receivedAt || obj.ts || null;
+            const parsed = ts ? Date.parse(ts) : NaN;
+            if (Number.isFinite(parsed) && parsed >= since) {
+              rows.push(obj);
+            }
+          }
+          return rows;
+        } catch { return []; }
+      }
+
+      if (wantTelemetry) {
+        const tp = path.join(exportDir, 'telemetry-pings.jsonl');
+        const all = readJsonlSince(tp);
+        result.telemetry.totalAfterSince = all.length;
+        result.telemetry.rows = all.slice(-limit);
+        result.telemetry.truncated = all.length > limit;
+      }
+
+      if (wantFunnel) {
+        // Use the canonical funnel ledger path from scripts/billing.js so
+        // any test override (THUMBGATE_FUNNEL_LEDGER_PATH / _TEST_FUNNEL_LEDGER_PATH)
+        // resolves correctly. Falls back to the feedback dir's funnel-events.jsonl.
+        let funnelPath;
+        try {
+          const billing = require('../../scripts/billing');
+          funnelPath = (billing._FUNNEL_LEDGER_PATH && billing._FUNNEL_LEDGER_PATH())
+            || path.join(exportDir, 'funnel-events.jsonl');
+        } catch {
+          funnelPath = path.join(exportDir, 'funnel-events.jsonl');
+        }
+        const all = readJsonlSince(funnelPath);
+        result.funnel.totalAfterSince = all.length;
+        result.funnel.rows = all.slice(-limit);
+        result.funnel.truncated = all.length > limit;
+      }
+
+      sendJson(res, 200, result);
+      return;
+    }
+
     if (req.method === 'OPTIONS' && pathname === '/v1/intake/workflow-sprint') {
       sendPublicBillingPreflight(res);
       return;
@@ -5466,6 +5574,166 @@ async function addContext(){
 <p>We may update these terms; material changes will be announced via the email on file at least 14 days before they take effect.</p>
 <h2>Contact</h2><p>igor.ganapolsky@gmail.com</p>
 <p><a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> · <a href="/privacy">Privacy</a> · <a href="/support">Support</a></p>
+</body></html>`, {}, {
+        headOnly: isHeadRequest,
+      });
+      return;
+    }
+
+    // Public case studies — proof surface for buyers. Conversion-optimization
+    // surface that was missing: thumbgate.ai had no /case-studies, so visitors
+    // landed on CLI install commands without seeing whether anyone actually
+    // got value. First entry is the Aiventyx Teams listing integration: real
+    // third-party CTR signal (5/8 clicks before the /go/teams fix, end-to-end
+    // verified after).
+    if (isGetLikeRequest && pathname === '/case-studies') {
+      sendHtml(res, 200, `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Case Studies — ThumbGate</title><meta name="description" content="Real integrations of ThumbGate's pre-action checks for AI coding agents. Proof, not promises."><style>body{font-family:system-ui,-apple-system,sans-serif;max-width:780px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#1f2937}h1{font-size:32px;margin:0 0 8px}.lede{color:#6b7280;font-size:18px;margin:0 0 32px}article{border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:24px;background:#fff}article h2{margin:0 0 4px;font-size:22px}.meta{color:#6b7280;font-size:13px;margin-bottom:16px}h3{font-size:15px;margin:20px 0 8px;color:#374151;text-transform:uppercase;letter-spacing:0.5px}.metric{display:inline-block;background:#0f172a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:600;font-size:14px;margin:0 4px 4px 0}p{margin:8px 0}a{color:#0066cc}code{background:#f3f4f6;padding:1px 6px;border-radius:4px;font-size:13.5px}footer{margin-top:48px;padding-top:24px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px}</style></head><body>
+<h1>Case Studies</h1>
+<p class="lede">Real integrations. No fabricated logos, no aspirational numbers — every claim below is reproducible.</p>
+
+<article>
+<h2>Aiventyx marketplace — Teams listing CTR recovery</h2>
+<p class="meta">Integration partner: <a href="https://www.aiventyx.com">Aiventyx</a> · Reported by: Qaiser Mehdi · Verified: 2026-05-13</p>
+
+<h3>The problem</h3>
+<p>Aiventyx is a marketplace for AI tools. ThumbGate's Teams listing was their highest-CTR external surface — <span class="metric">62% CTR</span> (5 clicks on 8 views, May 7–9 window). When their integrator rolled out canonical tracked URLs, every Teams click started landing on:</p>
+<p><code>{"error":"Tracked link not found","allowed":["gpt","pro","install","reddit","linkedin","x","github"]}</code></p>
+<p>The <code>/go/teams</code> slug wasn't registered in our redirector — a 404 was eating every paid-intent click from their strongest external surface.</p>
+
+<h3>The fix</h3>
+<p>Added <code>teams</code> to <code>TRACKED_LINK_TARGETS</code>: HTTP 302 redirect to <code>/checkout/pro?plan_id=team&seat_count=3&billing_cycle=monthly</code> — the 3-seat $147/mo self-serve Stripe Team checkout. Caller-supplied UTMs flow through to Stripe metadata end-to-end.</p>
+
+<h3>The verification</h3>
+<p>Qaiser's own incognito test, May 13 6:04 AM (full email on record):</p>
+<p><code>https://thumbgate.ai/go/teams?utm_source=aiventyx</code><br>
+→ 302 to Stripe checkout<br>
+→ "Subscribe to ThumbGate Team" page loads<br>
+→ $147/mo, 3-seat Team plan confirmed<br>
+→ Aiventyx UTMs intact in URL</p>
+
+<h3>What this proves</h3>
+<p>End-to-end attribution from a third-party marketplace through ThumbGate's redirector into Stripe checkout, with the caller's UTM chain preserved. Two regression tests pin the redirect contract so it can't silently break.</p>
+
+<p><a href="/go/teams?utm_source=case-study">Try the live redirect →</a></p>
+</article>
+
+<footer>
+<p>Want to be the next case study? The product is real, the integration is 30 seconds: <code>npx thumbgate init</code>. If you ship something with ThumbGate and want it documented here, email <a href="mailto:igor.ganapolsky@gmail.com">igor.ganapolsky@gmail.com</a>.</p>
+<p><a href="https://thumbgate.ai">Home</a> · <a href="/pricing">Pricing</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/support">Support</a></p>
+</footer>
+</body></html>`, {}, {
+        headOnly: isHeadRequest,
+      });
+      return;
+    }
+
+        // Public canonical pricing page. The audit flagged "pricing schizophrenia":
+    // sales/pricing.json said $49 / $299, COMMERCIAL_TRUTH.md said $19 / $149,
+    // and there was no buyer-facing surface to reconcile the two. This is now
+    // the single source of truth for what ThumbGate sells, in priority order:
+    // Sprint (proof-pack, sales-led) → Pro (self-serve recurring) → Team
+    // (after qualification). Every paid CTA across the site should funnel
+    // here OR directly into Stripe checkout — never a different price.
+    if (isGetLikeRequest && pathname === '/pricing') {
+      sendHtml(res, 200, `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pricing — ThumbGate</title><meta name="description" content="ThumbGate pricing: free CLI, $19/mo Pro, $49/seat Team, $499 Sprint Diagnostic, $1500 full Workflow Hardening Sprint. Single source of truth across the site."><style>body{font-family:system-ui,-apple-system,sans-serif;max-width:980px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#1f2937}h1{font-size:36px;margin:0 0 8px;text-align:center}.lede{color:#6b7280;font-size:18px;margin:0 0 32px;text-align:center}.grid{display:grid;grid-template-columns:1fr;gap:20px;margin-bottom:24px}@media(min-width:720px){.grid{grid-template-columns:repeat(2,1fr)}.hero{grid-column:1/-1}}.card{border:1px solid #e5e7eb;border-radius:12px;padding:24px;background:#fff;display:flex;flex-direction:column}.hero{border:2px solid #0f172a;background:linear-gradient(135deg,#fef3c7,#fff)}.tag{display:inline-block;background:#0f172a;color:#fff;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600;letter-spacing:0.5px;margin-bottom:12px}.tag-free{background:#10b981}.tag-pro{background:#3b82f6}.tag-team{background:#8b5cf6}.tag-diag{background:#0f172a}.tag-sprint{background:#b91c1c}h2{margin:0 0 4px;font-size:22px}.price{font-size:30px;font-weight:700;margin:8px 0 12px}.price small{font-size:14px;color:#6b7280;font-weight:400}.tagline{color:#374151;margin:0 0 16px;font-size:15px}ul{margin:0 0 20px;padding-left:18px}li{margin:6px 0;font-size:14px}.cta{display:inline-block;background:#0f172a;color:#fff;padding:12px 24px;border-radius:8px;font-weight:600;text-decoration:none;text-align:center;margin-top:auto}.cta-secondary{background:#fff;color:#0f172a;border:1px solid #0f172a}.cta-free{background:#10b981}.micro{border-top:1px solid #e5e7eb;padding-top:24px;margin-top:16px}.micro-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:16px 0}.micro-card{border:1px solid #e5e7eb;border-radius:8px;padding:14px;text-align:center;background:#fafafa}.micro-card .mp{font-size:20px;font-weight:700;color:#0f172a}.micro-card .ml{font-size:13px;color:#6b7280;margin:4px 0 8px}.micro-card a{color:#0066cc;font-size:13px;text-decoration:none}footer{margin-top:32px;padding-top:24px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px;text-align:center}footer a{color:#0066cc}</style></head><body>
+<h1>Pricing</h1>
+<p class="lede">Six paths to ThumbGate. Pick by what you need: an install, a subscription, a team rollout, or a stakeholder-visible artifact.</p>
+
+<div class="grid">
+
+<div class="card hero">
+<span class="tag tag-sprint">Sprint — Full engagement</span>
+<h2>Workflow Hardening Sprint</h2>
+<div class="price">$1,500 <small>· one-time</small></div>
+<p class="tagline">The full hardening engagement for a single AI-agent workflow. Built on top of the Sprint Diagnostic — we apply the diagnostic findings into a shipped Pre-Action Check pack, deploy hooks into your repo, and run the rollout review. Two weeks calendar-time, single fixed price.</p>
+<ul>
+<li>Diagnostic + applied rules + deployed PreToolUse hooks</li>
+<li>Best path if you need the workflow actually fixed, not just diagnosed</li>
+<li>Refund if we can't extract or apply a rule</li>
+</ul>
+<a class="cta" href="mailto:igor.ganapolsky@gmail.com?subject=ThumbGate%20Workflow%20Hardening%20Sprint%20-%20Intake&body=Stack%20(Claude%20Code%2FCursor%2Fother)%3A%0AOne%20repeated%20agent%20failure%20you%20want%20to%20kill%3A%0ATimeline%3A%0A">Email to start the full sprint →</a>
+</div>
+
+<div class="card">
+<span class="tag tag-diag">Diagnostic — Proof first</span>
+<h2>Sprint Diagnostic</h2>
+<div class="price">$499 <small>· one-time</small></div>
+<p class="tagline">Two-day diagnostic on one workflow. Top-5 prevention rules ranked by impact, scoped Pre-Action Check pack delivered as a PR, 60-minute findings review. The lightweight on-ramp to the full sprint.</p>
+<ul>
+<li>Best if you need a stakeholder-visible artifact (PR, doc, briefing)</li>
+<li>Two days fixed scope — no scope creep</li>
+<li>Refund if we can't extract a rule from your failure trace</li>
+</ul>
+<a class="cta" href="https://buy.stripe.com/28E00j3Uge1E2dzgWL3sI2J">Pay $499 diagnostic →</a>
+</div>
+
+<div class="card">
+<span class="tag tag-free">Free — Forever</span>
+<h2>ThumbGate CLI</h2>
+<div class="price">$0</div>
+<p class="tagline">MIT-licensed CLI + local PreToolUse hook. Unlimited captures, 5 active prevention rules, local lesson DB. Works with Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode.</p>
+<ul>
+<li>30-second install: <code>npx thumbgate init</code></li>
+<li>No account, no signup, no data leaves your machine</li>
+<li>Hit 5 active rules → upgrade to Pro for unlimited</li>
+</ul>
+<a class="cta cta-free" href="/go/install?utm_source=pricing">Install free CLI →</a>
+</div>
+
+<div class="card">
+<span class="tag tag-pro">Pro — Self-serve recurring</span>
+<h2>ThumbGate Pro</h2>
+<div class="price">$19 <small>/ month</small> · $149 / year</div>
+<p class="tagline">For developers running multiple AI agents who hit the 5-rule wall. Unlimited prevention rules, local dashboard, DPO export for offline preference fine-tuning, lesson search across sessions.</p>
+<ul>
+<li>Unlimited active prevention rules</li>
+<li>Local dashboard + lesson recall</li>
+<li>7-day refund window. Cancel anytime.</li>
+</ul>
+<a class="cta cta-secondary" href="/go/pro?utm_source=pricing">Start Pro →</a>
+</div>
+
+<div class="card">
+<span class="tag tag-team">Team — After qualification</span>
+<h2>ThumbGate Team</h2>
+<div class="price">$49 <small>/ seat / month</small> · 3-seat min ($147/mo)</div>
+<p class="tagline">For engineering teams with shared AI-agent workflows. Shared lesson DB so one engineer's save protects the whole team, org-level policy rollout, audit-ready evidence.</p>
+<ul>
+<li>Shared prevention-rule policy across seats</li>
+<li>Self-serve checkout — no sales call required</li>
+<li>Most teams start with a Sprint first, then scale to seats</li>
+</ul>
+<a class="cta cta-secondary" href="/go/teams?utm_source=pricing">Start Team →</a>
+</div>
+
+</div>
+
+<div class="micro">
+<h2 style="text-align:center;font-size:20px;margin:0 0 4px;">Micro-purchases — pay for one piece</h2>
+<p style="text-align:center;color:#6b7280;font-size:14px;margin:0 0 8px;">For evaluators who want to validate one specific surface before subscribing.</p>
+<div class="micro-grid">
+<div class="micro-card">
+<div class="mp">$1</div>
+<div class="ml">First Failure Rule</div>
+<a href="https://buy.stripe.com/fZu28rfCY6zcbO99uj3sI2G">Pay $1 →</a>
+</div>
+<div class="micro-card">
+<div class="mp">$19</div>
+<div class="ml">AI Agent Failure Quick Read</div>
+<a href="https://buy.stripe.com/5kQ7sL76s1eSaK55e33sI2H">Pay $19 →</a>
+</div>
+<div class="micro-card">
+<div class="mp">$99</div>
+<div class="ml">Workflow Teardown</div>
+<a href="https://buy.stripe.com/8x214n2Qc4r44lHayn3sI2I">Pay $99 →</a>
+</div>
+</div>
+</div>
+
+<footer>
+<p>One source of truth for ThumbGate pricing. Numbers here override anything stale elsewhere on the site.</p>
+<p><a href="/">Home</a> · <a href="/case-studies">Case Studies</a> · <a href="/support">Support</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
+</footer>
 </body></html>`, {}, {
         headOnly: isHeadRequest,
       });
