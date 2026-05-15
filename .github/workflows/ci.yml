@@ -44,7 +44,12 @@ jobs:
           python-version: "3.12"
 
       - name: Install Python deps
-        run: pip install pytest
+        # scikit-learn + joblib are required by scripts/eval_gate_classifier.py
+        # so tests/eval-gate-classifier.test.js can exercise the actual ML
+        # pipeline (train_and_score, joblib.dump, ROC-AUC, classification_report)
+        # in CI instead of skipping the e2e branch. The package is opt-in for
+        # end users — these installs only affect the CI runner.
+        run: pip install pytest scikit-learn joblib
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
