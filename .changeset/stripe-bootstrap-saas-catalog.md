@@ -1,0 +1,5 @@
+---
+"thumbgate": minor
+---
+
+Add `scripts/stripe-bootstrap-saas-catalog.js` + dispatch workflow that idempotently creates the **full ThumbGate paid catalog** in Stripe Live: persistent `ThumbGate Pro` / `Team` / `Free` SaaS products plus the 5 one-off SKUs currently sold via hardcoded `buy.stripe.com` URLs in `src/api/server.js` (`First Failure Rule` $1, `Quick Read` $19, `Workflow Teardown` $99, `Sprint Diagnostic` $499, `Workflow Sprint` $1,500). Each one-off also gets an auto-generated Payment Link (active=true, `metadata.thumbgate_lookup_key` keyed for idempotency), and the workflow summary prints the new `buy.stripe.com/...` URLs so a follow-up PR can swap the hardcoded constants in `server.js`. Why: the dashboard Product Catalog currently shows only legacy consulting SKUs — no ThumbGate-branded rows — which blocks the Stripe Customer Portal plan-switcher and prevents Payment Links from sitting on stable prices. Keyed by `metadata.thumbgate_tier` + lookup_keys; re-runs converge. Workflow is `workflow_dispatch`-only with a `dry_run` input that defaults to `true`.

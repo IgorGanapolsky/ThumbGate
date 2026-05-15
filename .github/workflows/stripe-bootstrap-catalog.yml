@@ -1,0 +1,49 @@
+name: Stripe Bootstrap SaaS Catalog
+
+# Idempotently creates / updates the persistent ThumbGate Pro / Team / Free
+# products + prices in Stripe Live. Use this when the dashboard Product
+# Catalog drifts from what `scripts/billing.js` builds inline.
+#
+# Runs ONLY on manual dispatch (workflow_dispatch). Never on push or schedule
+# so it can't ratchet the catalog without intent.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (no writes to Stripe)'
+        required: true
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stripe-bootstrap-catalog
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+      - name: Run bootstrap
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          THUMBGATE_PUBLIC_APP_ORIGIN: https://thumbgate-production.up.railway.app
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            node scripts/stripe-bootstrap-saas-catalog.js --dry-run
+          else
+            node scripts/stripe-bootstrap-saas-catalog.js
+          fi

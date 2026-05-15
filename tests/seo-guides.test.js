@@ -160,8 +160,8 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('Pay $19 quick read'));
     assert.ok(html.includes('Pay $1 first rule'));
     assert.ok(html.includes('Pay $499 diagnostic'));
-    assert.ok(hasCheckoutPath(html, '/aFa8wPgH29Lo4lH35V3sI0w'));
-    assert.ok(hasCheckoutPath(html, '/4gM6oHgH2bTw4lH6i73sI0z'));
+    assert.ok(hasCheckoutPath(html, '/5kQ7sL76s1eSaK55e33sI2H'));
+    assert.ok(hasCheckoutPath(html, '/fZu28rfCY6zcbO99uj3sI2G'));
     assert.ok(hasCheckoutPath(html, '/00w14neyUcXA5pL5e33sI0e'));
     assert.ok(html.includes('workflow-sprint-intake'));
     assert.ok(html.includes('Pro $19/mo or $149/yr. Team $49/seat/mo.'));

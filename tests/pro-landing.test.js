@@ -99,9 +99,9 @@ test('pro landing page routes high-intent team buyers to paid diagnostic and spr
   assert.match(proPage, /href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__"/);
   assert.match(proPage, /href="__WORKFLOW_SPRINT_CHECKOUT_URL__"/);
   assert.match(proPage, /Pay \$1 first rule/);
-  assert.match(proPage, /https:\/\/buy\.stripe\.com\/4gM6oHgH2bTw4lH6i73sI0z/);
+  assert.match(proPage, /https:\/\/buy\.stripe\.com\/fZu28rfCY6zcbO99uj3sI2G/);
   assert.match(proPage, /Pay \$19 quick read/);
-  assert.match(proPage, /https:\/\/buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
+  assert.match(proPage, /https:\/\/buy\.stripe\.com\/5kQ7sL76s1eSaK55e33sI2H/);
   assert.match(proPage, /quick_read_checkout_started/);
   assert.match(proPage, /Pay \$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic/);
   assert.match(proPage, /Pay \$__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint/);

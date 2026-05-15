@@ -115,7 +115,7 @@ ThumbGate is an MCP server that turns agent feedback into **enforced prevention 
 - SQLite + FTS5 for lesson storage and retrieval
 - LanceDB for vector similarity (optional, Pro only)
 - ContextFS for rule assembly and context packing
-- Thompson Sampling for multi-armed bandit rule selection
+- Thompson Sampling tunes per-rule confidence weights (not which rule fires — hard rules always fire deterministically)
 
 **No Training Required:** This is not RLHF weight training. It's context engineering + enforcement. Rules are human-readable Markdown files. You can edit them, version them, share them.
 
