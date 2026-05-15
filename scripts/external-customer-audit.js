@@ -39,7 +39,7 @@ function parseArgs(argv = []) {
 
 function parseOwnerEmails(env = process.env) {
   const raw = env.THUMBGATE_OWNER_EMAILS;
-  if (raw && raw.trim()) {
+  if (raw?.trim()) {
     return raw.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
   }
   return [
@@ -63,19 +63,63 @@ function loadStripe(requireFn = require) {
 
 async function listAllPaged(listFn, params = {}, max = 1000) {
   const out = [];
-  let starting_after;
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const page = await listFn({ ...params, limit: 100, ...(starting_after ? { starting_after } : {}) });
-    if (!page || !page.data) break;
+  let startingAfter;
+  while (out.length < max) {
+    const page = await listFn({ ...params, limit: 100, ...(startingAfter ? { starting_after: startingAfter } : {}) });
+    if (!page?.data) break;
     for (const row of page.data) {
       out.push(row);
       if (out.length >= max) return out;
     }
     if (!page.has_more) break;
-    starting_after = page.data[page.data.length - 1].id;
+    startingAfter = page.data[page.data.length - 1].id;
   }
   return out;
+}
+
+function emailOfCustomer(obj) {
+  if (!obj || typeof obj === 'string') return null;
+  if (obj.email) return obj.email;
+  if (obj.customer && typeof obj.customer === 'object') return obj.customer.email || null;
+  return null;
+}
+
+function chargeEmail(charge) {
+  return emailOfCustomer(charge) || charge.billing_details?.email || null;
+}
+
+function partitionCharges(rows, ownerEmails) {
+  const result = { all: [], owner: [], external: [] };
+  for (const ch of rows) {
+    const bucket = isOwnerEmail(chargeEmail(ch), ownerEmails) ? 'owner' : 'external';
+    result.all.push(ch);
+    result[bucket].push(ch);
+  }
+  return result;
+}
+
+function summarizeCharges(rows) {
+  const gross = rows.reduce((s, c) => s + (c.amount || 0), 0);
+  const refunded = rows.reduce((s, c) => s + (c.amount_refunded || 0), 0);
+  const emails = new Set(
+    rows
+      .map(chargeEmail)
+      .filter(Boolean)
+      .map((e) => String(e).toLowerCase().trim())
+  );
+  return {
+    chargeCount: rows.length,
+    uniqueCustomerCount: emails.size,
+    grossCents: gross,
+    refundedCents: refunded,
+    netCents: gross - refunded,
+    gross: dollars(gross),
+    net: dollars(gross - refunded),
+  };
+}
+
+function subsMRR(rows) {
+  return rows.reduce((sum, s) => sum + (s.plan?.amount || 0), 0);
 }
 
 async function runAudit({
@@ -95,6 +139,12 @@ async function runAudit({
       return { configured: false, gap: `Stripe SDK unavailable: ${error.message}`, ownerEmails };
     }
   }
+  // Explicit null guard for static analyzers: at this point the branches
+  // above either assigned `stripe` or returned. Make the precondition
+  // unambiguous so Sonar's reliability check stays at A.
+  if (!stripe?.charges?.list || !stripe?.subscriptions?.list || !stripe?.checkout?.sessions?.list) {
+    return { configured: false, gap: 'Stripe client does not expose the expected list endpoints', ownerEmails };
+  }
 
   const [charges, subscriptions, sessions] = await Promise.all([
     listAllPaged((p) => stripe.charges.list(p), { expand: ['data.customer'] }),
@@ -102,55 +152,12 @@ async function runAudit({
     listAllPaged((p) => stripe.checkout.sessions.list(p), {}),
   ]);
 
-  function emailOfCustomer(obj) {
-    if (!obj) return null;
-    if (typeof obj === 'string') return null;
-    if (obj.email) return obj.email;
-    if (obj.customer && typeof obj.customer === 'object') return obj.customer.email || null;
-    return null;
-  }
-
-  function partitionCharges(rows) {
-    const result = { all: [], owner: [], external: [] };
-    for (const ch of rows) {
-      const email = emailOfCustomer(ch) || (ch.billing_details && ch.billing_details.email) || null;
-      const bucket = isOwnerEmail(email, ownerEmails) ? 'owner' : 'external';
-      result.all.push(ch);
-      result[bucket].push(ch);
-    }
-    return result;
-  }
-
   const paidCharges = charges.filter((c) => c.status === 'succeeded' && !c.refunded);
-  const partitioned = partitionCharges(paidCharges);
-
-  function summarizeCharges(rows) {
-    const gross = rows.reduce((s, c) => s + (c.amount || 0), 0);
-    const refunded = rows.reduce((s, c) => s + (c.amount_refunded || 0), 0);
-    const emails = new Set(
-      rows
-        .map((c) => emailOfCustomer(c) || (c.billing_details && c.billing_details.email))
-        .filter(Boolean)
-        .map((e) => String(e).toLowerCase().trim())
-    );
-    return {
-      chargeCount: rows.length,
-      uniqueCustomerCount: emails.size,
-      grossCents: gross,
-      refundedCents: refunded,
-      netCents: gross - refunded,
-      gross: dollars(gross),
-      net: dollars(gross - refunded),
-    };
-  }
+  const partitioned = partitionCharges(paidCharges, ownerEmails);
 
   const subs = subscriptions.filter((s) => s.status === 'active' || s.status === 'trialing');
   const externalSubs = subs.filter((s) => !isOwnerEmail(emailOfCustomer(s), ownerEmails));
   const ownerSubs = subs.filter((s) => isOwnerEmail(emailOfCustomer(s), ownerEmails));
-
-  function subsMRR(rows) {
-    return rows.reduce((sum, s) => sum + (s.plan && s.plan.amount ? s.plan.amount : 0), 0);
-  }
 
   const completedSessions = sessions.filter((s) => s.status === 'complete');
   const externalCompletedSessions = completedSessions.filter((s) => !isOwnerEmail(s.customer_email || s.customer_details?.email, ownerEmails));
