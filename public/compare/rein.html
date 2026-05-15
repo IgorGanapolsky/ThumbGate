@@ -63,7 +63,7 @@
   <h1>ThumbGate vs Rein</h1>
   <p style="color:var(--muted);">5 min read · For teams evaluating AI-agent runtime governance options</p>
 
-  <div class="tldr"><strong>TL;DR:</strong> Both Rein and ThumbGate intercept agent actions before they fire — that's the shared category. The honest differences: Rein is a <em>generic in-process decorator</em> aimed at production apps in regulated domains (trading, healthcare, legal). ThumbGate is the <em>coding-agent specialist</em> for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, with a feedback loop that learns from thumbs-down corrections, plus MIT (not AGPL) licensing.</div>
+  <div class="tldr"><strong>TL;DR:</strong> Both Rein and ThumbGate intercept agent actions before they fire — that's the shared category. The honest differences: Rein is a <em>generic in-process decorator</em> aimed at production apps in regulated domains (trading, healthcare, legal). ThumbGate is the <em>coding-agent specialist</em> for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, with a feedback loop that learns from thumbs-down corrections, plus MIT licensing on the core CLI + hook layer. <em>Note: Rein's exact license terms are documented at reinai.io; the source we read summarized them as "AGPL" but we have not independently verified — check the primary source before making a distribution decision.</em></div>
 
   <h2>The shared thesis</h2>
   <p>Both projects start from the same observation: most AI agent frameworks optimize for task completion, very few optimize for what happens when the agent does the wrong task. Both insert a gate <em>before</em> the action fires rather than trying to clean up after it.</p>
@@ -109,7 +109,7 @@
       </tr>
       <tr>
         <td><strong>License</strong></td>
-        <td>AGPL. Distribution of any service incorporating Rein triggers the AGPL source-disclosure requirement.</td>
+        <td>Open-source license per <a href="https://reinai.io">reinai.io</a> — verify the exact terms at the source before making a distribution decision. (Our secondary source summarized it as AGPL; we have not independently confirmed.)</td>
         <td>MIT for the CLI and hook layer. Commercial license for Team / Pro features. Open-core, not viral.</td>
       </tr>
       <tr>
@@ -134,7 +134,7 @@
         <li>You're building a production application (not a coding agent) in a regulated domain</li>
         <li>You write your agent in Python and want decorator-level integration</li>
         <li>Your team has policy-authoring resources to write rules upfront</li>
-        <li>AGPL licensing is acceptable for your distribution model</li>
+        <li>Rein's licensing terms (verify at reinai.io) are acceptable for your distribution model</li>
         <li>Per-action stakes are high enough that a decorator wrapper is the right tradeoff</li>
       </ul>
     </div>
