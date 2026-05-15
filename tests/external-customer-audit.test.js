@@ -127,6 +127,47 @@ test('runAudit separates owner vs external checkout completions', async () => {
   assert.equal(report.checkout.completedExternal, 1);
 });
 
+test('runAudit completionRateExternal uses external sessions as denominator', async () => {
+  // Codex P2 finding: dividing external completions by total sessions
+  // (which includes owner sessions) systematically undercounts the real
+  // customer conversion rate. Denominator must be external sessions only.
+  const stripeClient = fakeStripe({
+    sessions: [
+      // 8 owner sessions, 1 completed → owner rate = 12.5%
+      { id: 'o1', status: 'complete', customer_email: 'owner@x.com' },
+      { id: 'o2', status: 'expired', customer_email: 'owner@x.com' },
+      { id: 'o3', status: 'open', customer_email: 'owner@x.com' },
+      { id: 'o4', status: 'expired', customer_email: 'owner@x.com' },
+      { id: 'o5', status: 'expired', customer_email: 'owner@x.com' },
+      { id: 'o6', status: 'expired', customer_email: 'owner@x.com' },
+      { id: 'o7', status: 'expired', customer_email: 'owner@x.com' },
+      { id: 'o8', status: 'expired', customer_email: 'owner@x.com' },
+      // 2 external sessions, 1 completed → external rate = 50.0%
+      { id: 'e1', status: 'complete', customer_email: 'real@somewhere.io' },
+      { id: 'e2', status: 'expired', customer_email: 'real2@somewhere.io' },
+    ],
+  });
+  const report = await runAudit({ stripeClient, ownerEmails: ['owner@x.com'] });
+  assert.equal(report.checkout.totalSessions, 10);
+  assert.equal(report.checkout.externalSessions, 2);
+  assert.equal(report.checkout.completedAll, 2);
+  assert.equal(report.checkout.completedExternal, 1);
+  // Old (buggy) calc would give 1/10 = 10%. Correct gives 1/2 = 50%.
+  assert.equal(report.checkout.completionRateExternal, 0.5);
+  assert.equal(report.checkout.completionRateAll, 0.2);
+});
+
+test('runAudit completionRateExternal returns 0 when no external sessions exist (no divide-by-zero)', async () => {
+  const stripeClient = fakeStripe({
+    sessions: [
+      { id: 'o1', status: 'complete', customer_email: 'owner@x.com' },
+    ],
+  });
+  const report = await runAudit({ stripeClient, ownerEmails: ['owner@x.com'] });
+  assert.equal(report.checkout.externalSessions, 0);
+  assert.equal(report.checkout.completionRateExternal, 0);
+});
+
 test('renderMarkdown highlights the headline "real customers" line', async () => {
   const stripeClient = fakeStripe({
     charges: [

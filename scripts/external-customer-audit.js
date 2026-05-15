@@ -61,7 +61,12 @@ function loadStripe(requireFn = require) {
   return requireFn('stripe');
 }
 
-async function listAllPaged(listFn, params = {}, max = 1000) {
+// Stripe's cursor pagination has no hard stop — we iterate until `has_more`
+// is false. The optional `max` is a runaway-guard only; default 100,000
+// (well above any sane lifetime list for this product) so the audit never
+// silently truncates real data the way an earlier 1000-cap did. Tests can
+// pass a small max to exercise truncation behavior explicitly.
+async function listAllPaged(listFn, params = {}, max = 100000) {
   const out = [];
   let startingAfter;
   while (out.length < max) {
@@ -159,9 +164,14 @@ async function runAudit({
   const externalSubs = subs.filter((s) => !isOwnerEmail(emailOfCustomer(s), ownerEmails));
   const ownerSubs = subs.filter((s) => isOwnerEmail(emailOfCustomer(s), ownerEmails));
 
+  function sessionEmail(s) {
+    return s.customer_email || s.customer_details?.email || null;
+  }
+  const externalSessions = sessions.filter((s) => !isOwnerEmail(sessionEmail(s), ownerEmails));
   const completedSessions = sessions.filter((s) => s.status === 'complete');
-  const externalCompletedSessions = completedSessions.filter((s) => !isOwnerEmail(s.customer_email || s.customer_details?.email, ownerEmails));
+  const externalCompletedSessions = externalSessions.filter((s) => s.status === 'complete');
   const allSessions = sessions.length;
+  const externalSessionsCount = externalSessions.length;
 
   return {
     configured: true,
@@ -183,10 +193,14 @@ async function runAudit({
     },
     checkout: {
       totalSessions: allSessions,
+      externalSessions: externalSessionsCount,
       completedAll: completedSessions.length,
       completedExternal: externalCompletedSessions.length,
       completionRateAll: allSessions ? completedSessions.length / allSessions : 0,
-      completionRateExternal: allSessions ? externalCompletedSessions.length / allSessions : 0,
+      // External rate uses the external denominator — dividing external
+      // completions by total sessions would systematically undercount the
+      // real-customer conversion (Codex P2 finding).
+      completionRateExternal: externalSessionsCount ? externalCompletedSessions.length / externalSessionsCount : 0,
     },
   };
 }
