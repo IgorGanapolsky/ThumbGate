@@ -65,6 +65,22 @@ jobs:
           mkdir -p reports/revenue
           npm run social:poll:plausible | tee reports/revenue/plausible.log
 
+      - name: Unified revenue rollup (Stripe + Plausible joined)
+        id: unified-rollup
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          PLAUSIBLE_API_KEY: ${{ secrets.PLAUSIBLE_API_KEY }}
+          PLAUSIBLE_SITE_ID: ${{ secrets.PLAUSIBLE_SITE_ID }}
+        run: |
+          mkdir -p reports/revenue
+          node scripts/unified-revenue-rollup.js
+          # Render to job summary so the human surface gets the truth at a glance
+          {
+            echo "## Unified Revenue Rollup"
+            echo
+            cat reports/revenue/unified-rollup-latest.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Check npm downloads
         id: npm
         run: |
