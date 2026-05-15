@@ -63,10 +63,6 @@ function extractFlag(argv, prefix) {
   return match ? match.slice(prefix.length) : null;
 }
 
-function dollars(cents) {
-  return Number(cents || 0) / 100;
-}
-
 function formatUsd(value) {
   const num = Number(value || 0);
   return `$${num.toFixed(2)}`;
@@ -97,7 +93,11 @@ async function gatherPlausible({ period = '1d', fetchImpl = fetch, env = process
   try {
     const [aggregate, byPage, bySource] = await Promise.all([
       plausibleQuery('/stats/aggregate', { metrics: 'visitors,pageviews,bounce_rate,visit_duration', period }, ctx),
-      plausibleQuery('/stats/breakdown', { property: 'event:page', metrics: 'visitors,pageviews', period, limit: 50 }, ctx),
+      // Fetch a larger page slice + targeted lookups for our own revenue
+      // surfaces. The Plausible breakdown endpoint hard-caps at 1000 rows
+      // per request, so for huge sites we'd page; today our public surface
+      // count is well under that.
+      plausibleQuery('/stats/breakdown', { property: 'event:page', metrics: 'visitors,pageviews', period, limit: 1000 }, ctx),
       plausibleQuery('/stats/breakdown', { property: 'visit:source', metrics: 'visitors', period, limit: 20 }, ctx),
     ]);
     return {
@@ -172,7 +172,9 @@ function diagnoseFunnel(stripe, surfaces) {
   const pricingHits = surfaces.find((s) => s.surface === '/pricing')?.visitors || 0;
   const caseStudyHits = surfaces.find((s) => s.surface === '/case-studies')?.visitors || 0;
   const checkoutsCompleted = stripe?.checkout?.completed || 0;
-  const cashAvailable = dollars(stripe?.balance?.available || 0);
+  // stripe-live-status.getLiveStatus already converts Stripe cents to
+  // dollars internally, so the balance fields here are already in USD.
+  const cashAvailable = Number(stripe?.balance?.available || 0);
 
   if (cashAvailable === 0 && pricingHits > 0) {
     diagnostics.push({
@@ -215,11 +217,13 @@ function renderMarkdown(snapshot) {
   lines.push('## Cash Truth (Stripe Live API)');
   lines.push('');
   if (snapshot.stripe.configured) {
-    lines.push(`- Available: ${formatUsd(dollars(snapshot.stripe.balance.available))}`);
-    lines.push(`- Pending: ${formatUsd(dollars(snapshot.stripe.balance.pending))}`);
-    lines.push(`- Today gross: ${formatUsd(dollars(snapshot.stripe.revenue.today))} (${snapshot.stripe.revenue.todayChargeCount} charge${snapshot.stripe.revenue.todayChargeCount === 1 ? '' : 's'})`);
-    lines.push(`- Lifetime net: ${formatUsd(dollars(snapshot.stripe.revenue.netLifetime))}`);
-    lines.push(`- Active subs: ${snapshot.stripe.subscriptions.active} (MRR ${formatUsd(dollars(snapshot.stripe.subscriptions.mrr))})`);
+    // stripe-live-status.getLiveStatus returns dollar-denominated values.
+    // Do NOT divide by 100 again here.
+    lines.push(`- Available: ${formatUsd(snapshot.stripe.balance.available)}`);
+    lines.push(`- Pending: ${formatUsd(snapshot.stripe.balance.pending)}`);
+    lines.push(`- Today gross: ${formatUsd(snapshot.stripe.revenue.today)} (${snapshot.stripe.revenue.todayChargeCount} charge${snapshot.stripe.revenue.todayChargeCount === 1 ? '' : 's'})`);
+    lines.push(`- Lifetime net: ${formatUsd(snapshot.stripe.revenue.netLifetime)}`);
+    lines.push(`- Active subs: ${snapshot.stripe.subscriptions.active} (MRR ${formatUsd(snapshot.stripe.subscriptions.mrr)})`);
     lines.push(`- Checkouts completed lifetime: ${snapshot.stripe.checkout.completed} of ${snapshot.stripe.checkout.total} (${snapshot.stripe.checkout.conversionRate})`);
   } else {
     lines.push(`- Stripe: NOT CONFIGURED — ${snapshot.stripe.gap}`);

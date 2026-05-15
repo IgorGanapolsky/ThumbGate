@@ -57,8 +57,10 @@ test('joinSurfaceTraffic returns [] when Plausible is unconfigured', () => {
   assert.deepEqual(joinSurfaceTraffic(null), []);
 });
 
-test('diagnoseFunnel emits "cash_available" win when Stripe shows positive balance', () => {
-  const stripe = { configured: true, balance: { available: 14900, pending: 0 }, checkout: { completed: 1 } };
+test('diagnoseFunnel emits "cash_available" win when Stripe shows positive dollar balance', () => {
+  // stripe-live-status.getLiveStatus returns dollar-denominated values,
+  // not cents. The rollup must trust those numbers as-is.
+  const stripe = { configured: true, balance: { available: 149, pending: 0 }, checkout: { completed: 1 } };
   const surfaces = [{ surface: '/pricing', visitors: 5 }];
   const diagnostics = diagnoseFunnel(stripe, surfaces);
   const cashSignal = diagnostics.find((d) => d.signal === 'cash_available');
@@ -94,8 +96,9 @@ test('renderMarkdown produces a well-formed report that includes cash, surfaces,
     generatedAt: '2026-05-15T13:30:00Z',
     period: '1d',
     stripe: {
+      // Dollar-denominated — stripe-live-status converts cents internally.
       configured: true,
-      balance: { available: 4900, pending: 0, currency: 'USD' },
+      balance: { available: 49, pending: 0, currency: 'USD' },
       revenue: { today: 0, todayChargeCount: 0, netLifetime: 0 },
       subscriptions: { active: 0, mrr: 0 },
       checkout: { completed: 0, total: 0, conversionRate: '0%' },
