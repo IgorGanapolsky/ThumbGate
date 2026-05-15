@@ -8,7 +8,7 @@
 
 **Your AI coding bill has a leak.**
 
-**Stop paying $ for the same AI mistake.**
+**Stop paying for the same AI mistake twice.**
 
 Every retry loop, every hallucinated import, every *"let me try a different approach"* — those are billable tokens on every LLM vendor's bill. Thumbs-down once; ThumbGate blocks that exact mistake on every future call. Across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — any MCP-compatible agent, forever.
 
