@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec-Driven Development for AI Agents — How ThumbGate Enforces the Spec</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Spec-driven development tells AI agents what to build via mission.md, tech-stack.md, and roadmap.md. ThumbGate enforces the spec at the gate layer so agents cannot drift outside scope.">
+<meta name="keywords" content="spec-driven development, spec driven AI coding, mission.md, tech-stack.md, roadmap.md, AI agent spec enforcement, Claude Code spec, Cursor spec workflow, ThumbGate">
+<meta property="og:title" content="Spec-Driven Development for AI Agents — Runtime Enforcement with ThumbGate">
+<meta property="og:description" content="Writing the spec is half the work. The other half is making the agent stay inside it. ThumbGate gates tool calls against your spec so drift is blocked at the hook layer.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate-production.up.railway.app/learn/spec-driven-development">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/learn/spec-driven-development">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Spec-Driven Development for AI Agents — How ThumbGate Enforces the Spec",
+  "description": "Spec-driven development gives AI coding agents a mission, tech-stack, and roadmap to follow. ThumbGate is the runtime enforcement layer that blocks tool calls that drift outside the spec.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate-production.up.railway.app"
+  },
+  "datePublished": "2026-05-14",
+  "dateModified": "2026-05-14",
+  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/learn/spec-driven-development"
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+<style>
+  .spec-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin: 1.5rem 0; }
+  .spec-grid > div { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+  .spec-grid h4 { font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--green); }
+  .spec-grid code { font-size: 0.85rem; }
+  @media (max-width: 800px) { .spec-grid { grid-template-columns: 1fr; } }
+  .layer { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 1.5rem 0; }
+  .layer > div { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+  @media (max-width: 700px) { .layer { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Spec-Driven Development</div>
+  <h1>Spec-Driven Development for AI Agents</h1>
+  <p style="color:var(--muted);">4 min read &middot; For teams moving from vibe-coding to repeatable AI development</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> Spec-driven development gives agents three constitution files — <code>mission.md</code>, <code>tech-stack.md</code>, <code>roadmap.md</code> — plus per-feature plan / requirements / validation docs. The spec only works if the agent cannot drift outside it. ThumbGate is the runtime enforcement layer that blocks tool calls that violate the spec, at the PreToolUse hook layer.</div>
+
+  <h2>The constitution: three files that define your project</h2>
+  <p>Spec-driven development replaces conversational LLM iteration with a small set of source-of-truth documents stored in the repo. The agent reads them, the team reads them, and they get updated together.</p>
+
+  <div class="spec-grid">
+    <div>
+      <h4>mission.md</h4>
+      <p>The <em>why</em>. What this project is, who it serves, what the non-goals are.</p>
+    </div>
+    <div>
+      <h4>tech-stack.md</h4>
+      <p>Approved technical choices, deployment process, the rails the agent must stay on.</p>
+    </div>
+    <div>
+      <h4>roadmap.md</h4>
+      <p>Phases, planned features, current priorities. Updated as work lands.</p>
+    </div>
+  </div>
+
+  <h2>Per-feature artifacts</h2>
+  <p>Each feature gets its own dated directory (<code>2026-05-14-feature-name/</code>) with three files:</p>
+  <ul>
+    <li><strong>plan.md</strong> — numbered task groups</li>
+    <li><strong>requirements.md</strong> — scope, decisions, context</li>
+    <li><strong>validation.md</strong> — how the feature is considered done</li>
+  </ul>
+
+  <h2>Where spec-driven development breaks</h2>
+  <p>The spec only matters if the agent stays inside it. In practice, the agent reads the constitution into context once, then drifts as the conversation grows. Context compaction evicts <code>tech-stack.md</code> before it evicts the last 200 lines of the chat. Long-running sessions touch files the spec never mentioned.</p>
+
+  <div class="callout callout-yellow">
+    <strong>The hard part is not writing the spec. It is enforcing it.</strong>
+  </div>
+
+  <h2>Two layers: the spec, and the gate</h2>
+  <div class="layer">
+    <div>
+      <h4>Layer 1 — The spec</h4>
+      <ul>
+        <li>Human-authored markdown files in the repo</li>
+        <li>Read by the agent at session start</li>
+        <li>Stored as the source of truth</li>
+        <li>Updated by humans during planning</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Layer 2 — The gate</h4>
+      <ul>
+        <li>ThumbGate hooks intercept tool calls before execution</li>
+        <li>Each call is checked against the spec's scope</li>
+        <li>Out-of-scope writes, destructive commands, and dependency drift are blocked</li>
+        <li>The agent gets a structured error and a path back to the spec</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>What ThumbGate actually checks against the spec</h2>
+  <p>ThumbGate ingests the constitution files and uses them as the policy source for PreToolUse checks:</p>
+  <ul>
+    <li><strong>Scope drift:</strong> if <code>tech-stack.md</code> says Postgres but the agent runs <code>npm install mongoose</code>, the install is blocked</li>
+    <li><strong>Path drift:</strong> if the current feature's <code>requirements.md</code> lists <code>src/auth/*</code> as in-scope, writes to <code>src/billing/*</code> require confirmation</li>
+    <li><strong>Validation enforcement:</strong> if <code>validation.md</code> says "no merge without integration tests passing", merge tool calls are gated</li>
+    <li><strong>Phase enforcement:</strong> if <code>roadmap.md</code> marks a feature as "Phase 3" and you are in Phase 1, related code paths are protected</li>
+  </ul>
+
+  <h2>Why prompt rules alone do not work</h2>
+  <p>Spec-driven dev usually starts with <code>CLAUDE.md</code> or <code>.cursorrules</code> referencing the constitution. Those files live inside the agent's context. They compete with the live conversation for attention. When the context window pressures up, prompt rules are the first thing to lose weight.</p>
+  <p>Pre-action checks live <em>outside</em> the agent. They run in a separate process at the hook boundary. The agent cannot reason its way around a closed file handle.</p>
+
+  <div class="callout callout-green">
+    <strong>Mental model:</strong> The spec is the law. ThumbGate is the bailiff.
+  </div>
+
+  <h2>Adoption in two steps</h2>
+  <ol>
+    <li><strong>Write the constitution.</strong> Three files: <code>mission.md</code>, <code>tech-stack.md</code>, <code>roadmap.md</code>. Keep them short.</li>
+    <li><strong>Install the gate.</strong> <code>npx thumbgate init</code> — auto-detects the agent and wires the PreToolUse hooks. Point ThumbGate at the constitution path.</li>
+  </ol>
+  <p>From there, the agent reads the spec into context every session, and ThumbGate enforces it on every tool call.</p>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Stop hoping your agent reads the spec</h2>
+    <p>Spec-driven development is real only when the spec is enforced. Install ThumbGate and let the gate do the policing.</p>
+    <div class="cta-install">$ npx thumbgate init</div>
+  </div>
+
+  <div class="related">
+    <h3>Related guides</h3>
+    <a href="/learn/from-prototype-to-production">From Prototype to Production with AI Agents &rarr;</a>
+    <a href="/learn/vibe-coding-safety-net">The Vibe Coding Safety Net You Are Missing &rarr;</a>
+    <a href="/learn/mcp-pre-action-checks-explained">MCP Pre-Action Checks Explained &rarr;</a>
+    <a href="/pricing">ThumbGate Pricing &rarr;</a>
+  </div>
+</div>
+
+
+  <div class="sticky-cta">
+    <span style="color:var(--muted)">Try it now:</span>
+    <code>npx thumbgate init</code>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+  </div>
+</body>
+</html>

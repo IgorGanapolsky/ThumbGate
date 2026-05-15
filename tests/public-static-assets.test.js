@@ -97,8 +97,8 @@ test('landing page does not render empty revenue links', async () => {
 
   assert.doesNotMatch(html, /href=""/, 'rendered landing page must not contain empty href links');
   assert.doesNotMatch(html, /__SPRINT_DIAGNOSTIC_CHECKOUT_URL__|__WORKFLOW_SPRINT_CHECKOUT_URL__/);
-  assert.match(html, /https:\/\/buy\.stripe\.com\/3cI7sLgH25v8dWh5e33sI0o/);
-  assert.match(html, /https:\/\/buy\.stripe\.com\/8x25kDcqMaPs9G15e33sI0p/);
+  assert.match(html, /https:\/\/buy\.stripe\.com\/28E00j3Uge1E2dzgWL3sI2J/);
+  assert.match(html, /https:\/\/buy\.stripe\.com\/6oU00j8aw2iWdWh9uj3sI2K/);
 });
 
 test('landing page internal links resolve without auth or broken .html aliases', async () => {
