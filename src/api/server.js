@@ -5248,6 +5248,101 @@ async function addContext(){
       return;
     }
 
+    // GET /v1/telemetry/export — raw recent telemetry-pings + funnel-events
+    // for the unified-revenue-rollup join. Operator-key gated because the raw
+    // event stream may include user-agent strings and other low-PII data
+    // that we never expose unauthenticated. Returns a bounded window
+    // (default last 24h, capped at 10000 rows per stream) so a misbehaving
+    // caller cannot pull the entire local ledger.
+    if (req.method === 'GET' && pathname === '/v1/telemetry/export') {
+      // expectedApiKey + expectedOperatorKey are already bound in the
+      // request-handler scope above (lines ~3647-3648). Reuse them rather
+      // than re-resolving — avoids a duplicate env lookup and matches the
+      // pattern used by /v1/billing/summary.
+      if (!isBillingSummaryAuthorized(req, expectedApiKey, expectedOperatorKey)) {
+        sendJson(res, 401, { error: 'Unauthorized — operator or admin key required' });
+        return;
+      }
+
+      // Reuse the already-parsed URL object from line ~3654 instead of
+      // re-requiring the legacy 'url' module.
+      const params = parsed.searchParams;
+      const sinceRaw = String(params.get('since') || '').trim();
+      const sinceMs = sinceRaw
+        ? Date.parse(sinceRaw)
+        : Date.now() - 24 * 60 * 60 * 1000;
+      const since = Number.isFinite(sinceMs) ? sinceMs : Date.now() - 24 * 60 * 60 * 1000;
+
+      const limitRaw = Number(params.get('limit'));
+      const limit = Number.isFinite(limitRaw) && limitRaw > 0
+        ? Math.min(Math.floor(limitRaw), 10000)
+        : 1000;
+
+      const sourceRaw = String(params.get('source') || '');
+      const source = ['telemetry', 'funnel', 'both'].includes(sourceRaw) ? sourceRaw : 'both';
+
+      const { FEEDBACK_DIR: exportDir } = getFeedbackPaths();
+      const wantTelemetry = source === 'telemetry' || source === 'both';
+      const wantFunnel = source === 'funnel' || source === 'both';
+
+      const result = {
+        generatedAt: new Date().toISOString(),
+        since: new Date(since).toISOString(),
+        limit,
+        source,
+        telemetry: { rows: [], truncated: false, totalAfterSince: 0 },
+        funnel: { rows: [], truncated: false, totalAfterSince: 0 },
+      };
+
+      function readJsonlSince(p) {
+        try {
+          if (!fs.existsSync(p)) return [];
+          const text = fs.readFileSync(p, 'utf8');
+          const rows = [];
+          for (const line of text.split('\n')) {
+            if (!line) continue;
+            let obj;
+            try { obj = JSON.parse(line); } catch { continue; }
+            const ts = obj.timestamp || obj.receivedAt || obj.ts || null;
+            const parsed = ts ? Date.parse(ts) : NaN;
+            if (Number.isFinite(parsed) && parsed >= since) {
+              rows.push(obj);
+            }
+          }
+          return rows;
+        } catch { return []; }
+      }
+
+      if (wantTelemetry) {
+        const tp = path.join(exportDir, 'telemetry-pings.jsonl');
+        const all = readJsonlSince(tp);
+        result.telemetry.totalAfterSince = all.length;
+        result.telemetry.rows = all.slice(-limit);
+        result.telemetry.truncated = all.length > limit;
+      }
+
+      if (wantFunnel) {
+        // Use the canonical funnel ledger path from scripts/billing.js so
+        // any test override (THUMBGATE_FUNNEL_LEDGER_PATH / _TEST_FUNNEL_LEDGER_PATH)
+        // resolves correctly. Falls back to the feedback dir's funnel-events.jsonl.
+        let funnelPath;
+        try {
+          const billing = require('../../scripts/billing');
+          funnelPath = (billing._FUNNEL_LEDGER_PATH && billing._FUNNEL_LEDGER_PATH())
+            || path.join(exportDir, 'funnel-events.jsonl');
+        } catch {
+          funnelPath = path.join(exportDir, 'funnel-events.jsonl');
+        }
+        const all = readJsonlSince(funnelPath);
+        result.funnel.totalAfterSince = all.length;
+        result.funnel.rows = all.slice(-limit);
+        result.funnel.truncated = all.length > limit;
+      }
+
+      sendJson(res, 200, result);
+      return;
+    }
+
     if (req.method === 'OPTIONS' && pathname === '/v1/intake/workflow-sprint') {
       sendPublicBillingPreflight(res);
       return;
