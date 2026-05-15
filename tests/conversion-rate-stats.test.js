@@ -199,3 +199,61 @@ test('renderConversionMarkdown handles empty surface list gracefully', () => {
   const md = renderConversionMarkdown([]);
   assert.match(md, /No surfaces measured/);
 });
+
+test('renderConversionMarkdown preserves a non-default credible level in heading and column', () => {
+  // Codex P2: hard-coded "95%" labels lied when the caller passed a
+  // different credibleLevel. Render must reflect what was computed.
+  const ranked = rankSurfaces(
+    [{ surface: '/pricing', successes: 5, trials: 200 }],
+    { credibleLevel: 0.8 }
+  );
+  const md = renderConversionMarkdown(ranked);
+  assert.match(md, /80% CI/);
+  assert.doesNotMatch(md, /95% CI/);
+});
+
+test('estimateConversionRate U-shaped Beta (α<1, β<1) reports a boundary mode, not 0.5', () => {
+  // Codex P2: for α, β both < 1 the posterior is bimodal at the boundaries
+  // with 0.5 the antimode. With α < β both < 1, the spike at 0 dominates.
+  const est = estimateConversionRate({
+    successes: 0,
+    trials: 0,
+    priorAlpha: 0.3,
+    priorBeta: 0.7,
+  });
+  // (α, β) = (0.3, 0.7); 1-α = 0.7, 1-β = 0.3. Spike at 0 is sharper.
+  assert.equal(est.mode, 0);
+
+  // Mirror: α > β both < 1, mode should snap to 1.
+  const est2 = estimateConversionRate({
+    successes: 0,
+    trials: 0,
+    priorAlpha: 0.7,
+    priorBeta: 0.3,
+  });
+  assert.equal(est2.mode, 1);
+});
+
+test('estimateConversionRate symmetric U-shaped Beta (α=β<1) snaps to a boundary, not 0.5', () => {
+  // Beta(0.5, 0.5) — both endpoints equally peaked. Either boundary is
+  // defensible; assert we don't return the antimode at 0.5.
+  const est = estimateConversionRate({
+    successes: 0,
+    trials: 0,
+    priorAlpha: 0.5,
+    priorBeta: 0.5,
+  });
+  assert.ok(est.mode === 0 || est.mode === 1, `expected a boundary mode, got ${est.mode}`);
+});
+
+test('estimateConversionRate uniform Beta(1,1) reports the mean as the mode', () => {
+  // Flat prior + no data → uniform; no unique mode. Convention: mode = mean.
+  const est = estimateConversionRate({
+    successes: 0,
+    trials: 0,
+    priorAlpha: 1,
+    priorBeta: 1,
+  });
+  assert.equal(est.mode, est.mean);
+  assert.equal(est.mode, 0.5);
+});

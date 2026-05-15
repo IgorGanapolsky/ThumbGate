@@ -277,8 +277,17 @@ function estimateConversionRate({
   }
   const { alpha, beta } = posteriorParameters({ successes, trials, priorAlpha, priorBeta });
   const mean = alpha / (alpha + beta);
-  // Mode of Beta(α, β) is (α-1)/(α+β-2) for α, β > 1; otherwise the mode
-  // sits on the boundary and we report it as the closer of 0 or 1.
+  // Mode of Beta(α, β):
+  //   α > 1 AND β > 1                — single interior mode at (α-1)/(α+β-2)
+  //   α ≤ 1 < β, OR β ≤ 1 < α        — boundary mode at the larger-density end
+  //   α < 1 AND β < 1                — BIMODAL: density spikes at both 0 and 1
+  //                                    (U-shaped), with 0.5 as the antimode.
+  //                                    We report the boundary with higher
+  //                                    density. Density at 0 is finite when
+  //                                    α > 1 and zero when α < 1; at α=β<1
+  //                                    the two boundaries are equally peaked
+  //                                    so we tie-break to mean side.
+  //   α == 1 AND β == 1              — flat (uniform); no unique mode, report mean.
   let mode;
   if (alpha > 1 && beta > 1) {
     mode = (alpha - 1) / (alpha + beta - 2);
@@ -286,8 +295,18 @@ function estimateConversionRate({
     mode = 0;
   } else if (alpha > 1 && beta <= 1) {
     mode = 1;
+  } else if (alpha < 1 && beta < 1) {
+    // U-shaped Beta. Compare unnormalized densities at the boundaries via
+    // the log-density limit; whichever end has higher mass is the dominant
+    // mode. For Beta(α, β) with α, β < 1, log f(x) -> +∞ as x -> 0 with
+    // exponent -(1-α), and as x -> 1 with exponent -(1-β). Higher 1-α
+    // means a sharper spike at 0; higher 1-β means a sharper spike at 1.
+    if (1 - alpha > 1 - beta) mode = 0;
+    else if (1 - beta > 1 - alpha) mode = 1;
+    else mode = mean < 0.5 ? 0 : 1;
   } else {
-    mode = 0.5;
+    // α == 1 AND β == 1 — uniform. Mean is as principled as anything.
+    mode = mean;
   }
   const tail = (1 - credibleLevel) / 2;
   const lower = betaQuantile(tail, alpha, beta);
@@ -381,13 +400,20 @@ function rankSurfaces(surfaces, opts = {}) {
  */
 function renderConversionMarkdown(ranked) {
   const lines = [];
-  lines.push('## Per-Surface Conversion (Bayesian beta-binomial, 95% CI)');
+  // Pull the credible level from the first ranked row's estimate so the
+  // heading and column label reflect what the caller actually requested
+  // (instead of hardcoding 95% when, say, a 90% CI was computed).
+  const credibleLevel = ranked.length && ranked[0].estimate
+    ? ranked[0].estimate.credibleLevel
+    : DEFAULT_CREDIBLE_LEVEL;
+  const ciLabel = `${Math.round(credibleLevel * 100)}% CI`;
+  lines.push(`## Per-Surface Conversion (Bayesian beta-binomial, ${ciLabel})`);
   lines.push('');
   if (!ranked.length) {
     lines.push('_No surfaces measured._');
     return lines.join('\n') + '\n';
   }
-  lines.push('| Surface | Trials | Successes | Mean | 95% CI | Verdict |');
+  lines.push(`| Surface | Trials | Successes | Mean | ${ciLabel} | Verdict |`);
   lines.push('| --- | ---: | ---: | ---: | --- | --- |');
   for (const row of ranked) {
     const est = row.estimate;
@@ -397,7 +423,7 @@ function renderConversionMarkdown(ranked) {
     lines.push(`| \`${row.surface}\` | ${row.trials} | ${row.successes} | ${mean}% | [${lo}%, ${hi}%] | ${est.verdict} |`);
   }
   lines.push('');
-  lines.push('Verdicts: `insufficient_data` = <30 trials, prior still dominates. `wide_uncertainty` = 95% CI wider than 10pp. `credible` = narrow enough to act on.');
+  lines.push(`Verdicts: \`insufficient_data\` = <30 trials, prior still dominates. \`wide_uncertainty\` = ${ciLabel} wider than 10pp. \`credible\` = narrow enough to act on.`);
   return lines.join('\n') + '\n';
 }
 
