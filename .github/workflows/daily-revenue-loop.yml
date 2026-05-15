@@ -65,6 +65,40 @@ jobs:
           mkdir -p reports/revenue
           npm run social:poll:plausible | tee reports/revenue/plausible.log
 
+      - name: Unified revenue rollup (Stripe + Plausible joined)
+        id: unified-rollup
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          PLAUSIBLE_API_KEY: ${{ secrets.PLAUSIBLE_API_KEY }}
+          PLAUSIBLE_SITE_ID: ${{ secrets.PLAUSIBLE_SITE_ID }}
+        run: |
+          mkdir -p reports/revenue
+          node scripts/unified-revenue-rollup.js
+          # Render to job summary so the human surface gets the truth at a glance
+          {
+            echo "## Unified Revenue Rollup"
+            echo
+            cat reports/revenue/unified-rollup-latest.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: External customer audit (owner-filtered Stripe truth)
+        id: external-audit
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          THUMBGATE_OWNER_EMAILS: ${{ secrets.THUMBGATE_OWNER_EMAILS }}
+        run: |
+          mkdir -p reports/revenue
+          node scripts/external-customer-audit.js | tee reports/revenue/external-audit.md
+          node scripts/external-customer-audit.js --json > reports/revenue/external-audit.json
+          # Surface the "real customers" line into the job summary so the
+          # number we lead with is the owner-filtered one, not the raw total.
+          {
+            echo
+            echo "## External Customer Audit"
+            echo
+            cat reports/revenue/external-audit.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Check npm downloads
         id: npm
         run: |
