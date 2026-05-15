@@ -115,13 +115,15 @@ ThumbGate operates as a 4-layer enforcement stack between your AI agent and your
 Your thumbs-up/down reactions are captured via MCP protocol, CLI, or the ChatGPT GPT surface. Each reaction is stored as a structured lesson with context, timestamp, and severity.
 
 ### Layer 2: Check Engine
-The check engine converts lessons into enforceable rules using pattern matching, semantic similarity (via LanceDB vectors), and Thompson Sampling for adaptive rule selection. Rules stay in local ThumbGate runtime state.
+The check engine converts lessons into enforceable rules using deterministic pattern matching (regex, AST, structural match) for the **runtime allow/block decision**. Semantic similarity (via LanceDB vectors, embeddings generated at capture time) is used for **offline lesson recall** — "have I seen something like this before?" — never for the enforcement decision itself. Thompson Sampling tunes **per-rule sensitivity** (strict / warn-only / needs_review) based on accumulated thumbs feedback over time; hard-safety rules (e.g. block all destructive SQL on production) bypass the bandit entirely and are always at strict enforcement. Rules stay in local ThumbGate runtime state.
+
+> **No LLM in the enforcement decision path.** Embeddings are generated when feedback is captured (via the configured embedding API), then used only for retrieval. The PreToolUse hook's allow/block decision is closed-form code — no model judges the call at runtime.
 
 ### Layer 3: Pre-Action Interception
 Before any agent action executes, ThumbGate's `PreToolUse` hook intercepts the command and evaluates it against all active checks. This happens at the MCP protocol level — the agent physically cannot bypass it.
 
 ### Layer 4: Multi-Agent Distribution
-Checks are distributed across all connected agents via MCP stdio protocol. One correction in Claude Code protects Cursor, Codex, Gemini CLI, Cline, and any MCP-compatible agent.
+Checks are distributed across all connected agents via MCP stdio protocol. One correction in Claude Code protects Cursor, Codex, Gemini CLI, Cline, and any MCP-compatible agent. **This cross-agent propagation is the primary differentiator over a hand-rolled `permissions.deny` block or a per-repo PreToolUse hook**: a single thumbs-down lesson protects every agent runtime on every machine on the team, not just the codebase where it was authored.
 
 Prompt engineering still matters, but it is only the starting point. ThumbGate adds prompt evaluation on top: proof lanes, benchmarks, and self-heal checks tell you whether your prompt and workflow actually held up under execution instead of leaving you to guess from vibes. Run `npx thumbgate eval --from-feedback --write-report=.thumbgate/prompt-eval-proof.md` to turn real thumbs-up/down feedback into reusable eval cases and a buyer-ready proof report.
 
