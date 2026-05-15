@@ -129,6 +129,12 @@ async function gatherStripe({ liveStatusModule = null } = {}) {
       return { configured: false, gap: `stripe-live-status module unavailable: ${error.message}` };
     }
   }
+  // Static-analysis null guard. If require fails above we already returned,
+  // but Sonar can't prove that — make the precondition explicit so the
+  // reliability rating stays at A.
+  if (!stripeLiveStatus || typeof stripeLiveStatus.getLiveStatus !== 'function') {
+    return { configured: false, gap: 'stripe-live-status module did not export getLiveStatus()' };
+  }
   try {
     const status = await stripeLiveStatus.getLiveStatus();
     const configured = status.configured !== false;
