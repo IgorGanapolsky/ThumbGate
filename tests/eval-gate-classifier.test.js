@@ -62,9 +62,14 @@ test('eval_gate_classifier.py compiles under python3', () => {
 });
 
 test('eval_gate_classifier.py reports a clear error when sklearn is missing', { skip: sklearnAvailable() && 'sklearn IS available locally — cannot test the missing branch' }, () => {
+  // Pass an explicit nonexistent feedback log so the assertion is fully
+  // isolated from whatever .thumbgate/feedback-log.jsonl exists in the
+  // resolved feedback dir (clean CI checkout, dev box with sample data,
+  // anything in between). The script must still surface the missing-deps
+  // hint first, before any data-shape error.
   const probe = spawnSync(
     'python3',
-    [SCRIPT, '--json'],
+    [SCRIPT, '--feedback-log', '/nonexistent/feedback-log.jsonl', '--json'],
     { encoding: 'utf8' },
   );
   assert.notEqual(probe.status, 0, 'should exit non-zero when sklearn missing');
