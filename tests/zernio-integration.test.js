@@ -369,7 +369,7 @@ describe('zernio publisher', () => {
     };
 
     const result = await publishToAllPlatforms(
-      'Voice agent reliability diagnostic is open today at https://buy.stripe.com/3cI7sLgH25v8dWh5e33sI0o',
+      'Voice agent reliability diagnostic is open today at https://buy.stripe.com/28E00j3Uge1E2dzgWL3sI2J',
       {
         campaign: 'voice_agent_reliability_diagnostic',
         medium: 'social',
