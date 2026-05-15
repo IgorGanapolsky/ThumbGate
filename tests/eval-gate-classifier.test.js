@@ -120,7 +120,7 @@ test('eval_gate_classifier.py end-to-end on synthetic dataset', { skip: !sklearn
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
-test('eval_gate_classifier.py refuses to train on too few labeled rows', () => {
+test('eval_gate_classifier.py refuses to train on too few labeled rows', { skip: !sklearnAvailable() && 'sklearn not installed (script exits with install hint before reaching row-count check)' }, () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-classifier-tiny-'));
   const log = path.join(dir, 'feedback-log.jsonl');
   fs.writeFileSync(
