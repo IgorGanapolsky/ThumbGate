@@ -1,0 +1,184 @@
+name: Verify Production Deploy
+
+# Auto-runs the Deployment Verification Gate from CLAUDE.md after every push
+# to main. Replaces the manual curl-and-paste ritual. Posts a green/red comment
+# on the merging PR so "did it actually deploy" stops being a question.
+#
+# Triggers only on pushes that change deployed surfaces (skip docs-only commits).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'public/**'
+      - 'src/**'
+      - 'scripts/**'
+      - 'bin/**'
+      - 'adapters/**'
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: deploy-verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PROD_URL: https://thumbgate-production.up.railway.app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - name: Read expected version
+        id: pkg
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+          printf 'Expected version: %s\n' "$version"
+
+      - name: Wait for Railway rebuild
+        run: sleep 180
+
+      - name: Verify /health serves expected version
+        id: health
+        run: |
+          attempts=0
+          max=12
+          version='${{ steps.pkg.outputs.version }}'
+          until [ $attempts -ge $max ]; do
+            attempts=$((attempts + 1))
+            body="$(curl -fsS --max-time 10 "${PROD_URL}/health" 2>/dev/null || true)"
+            if printf '%s' "$body" | grep -q "\"version\":\"${version}\""; then
+              printf '✅ /health reports version %s\n' "$version"
+              printf 'ok=true\n' >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            printf 'Attempt %d/%d: version not yet visible. Sleeping 15s...\n' "$attempts" "$max"
+            sleep 15
+          done
+          printf '❌ /health did not report version %s after %ds\n' "$version" "$((max * 15))"
+          printf 'ok=false\n' >> "$GITHUB_OUTPUT"
+          exit 1
+
+      - name: Verify /dashboard renders
+        id: dashboard
+        run: |
+          body="$(curl -fsS --max-time 10 "${PROD_URL}/dashboard" 2>/dev/null || true)"
+          if printf '%s' "$body" | grep -q 'ThumbGate Dashboard'; then
+            printf '✅ /dashboard renders\n'
+            printf 'ok=true\n' >> "$GITHUB_OUTPUT"
+          else
+            printf '❌ /dashboard missing sentinel string "ThumbGate Dashboard"\n'
+            printf 'ok=false\n' >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+      - name: Sample-curl /learn/* paths added in this commit
+        id: learn
+        run: |
+          changed="$(git diff --name-only HEAD~1 HEAD | grep -E '^public/(learn|guides|compare)/.*\.html$' || true)"
+          if [ -z "$changed" ]; then
+            printf 'No public/learn|guides|compare/*.html changed in this commit.\n'
+            printf 'checked=0\nfailed=0\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          fail=0
+          checked=0
+          while IFS= read -r file; do
+            route="${file#public}"
+            route="${route%.html}"
+            checked=$((checked + 1))
+            status="$(curl -s -o /dev/null -w '%{http_code}' "${PROD_URL}${route}" || echo '000')"
+            if [ "$status" = "200" ]; then
+              printf '✅ %s → %s\n' "$route" "$status"
+            else
+              printf '❌ %s → %s\n' "$route" "$status"
+              fail=$((fail + 1))
+            fi
+          done <<< "$changed"
+          printf 'checked=%d\nfailed=%d\n' "$checked" "$fail" >> "$GITHUB_OUTPUT"
+          [ "$fail" -eq 0 ]
+
+      - name: Comment on associated PR (success)
+        if: success()
+        uses: actions/github-script@v8
+        env:
+          EXPECTED_VERSION: ${{ steps.pkg.outputs.version }}
+          LEARN_CHECKED: ${{ steps.learn.outputs.checked }}
+        with:
+          script: |
+            const sha = context.sha;
+            const prodUrl = 'https://thumbgate-production.up.railway.app';
+            const resp = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: sha,
+            });
+            if (!resp.data.length) {
+              console.log('No PR associated with merge commit; skipping comment.');
+              return;
+            }
+            const pr = resp.data[0];
+            const checked = parseInt(process.env.LEARN_CHECKED || '0', 10);
+            const lines = [
+              '### ✅ Production deploy verified',
+              '',
+              `- \`${prodUrl}/health\` reports version **${process.env.EXPECTED_VERSION}**`,
+              `- \`${prodUrl}/dashboard\` renders`,
+              `- ${checked} \`public/learn|guides|compare/*.html\` route(s) added in this diff returned HTTP 200`,
+              '',
+              `<sub>Auto-posted by \`.github/workflows/deploy-verify.yml\` after \`${sha.slice(0, 7)}\` merged to main.</sub>`,
+            ];
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: lines.join('\n'),
+            });
+
+      - name: Comment on associated PR (failure)
+        if: failure()
+        uses: actions/github-script@v8
+        env:
+          EXPECTED_VERSION: ${{ steps.pkg.outputs.version }}
+          HEALTH_OK: ${{ steps.health.outputs.ok || 'false' }}
+          DASHBOARD_OK: ${{ steps.dashboard.outputs.ok || 'false' }}
+          LEARN_FAILED: ${{ steps.learn.outputs.failed || '0' }}
+        with:
+          script: |
+            const sha = context.sha;
+            const prodUrl = 'https://thumbgate-production.up.railway.app';
+            const resp = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: sha,
+            });
+            if (!resp.data.length) return;
+            const pr = resp.data[0];
+            const lines = ['### ❌ Production deploy verification FAILED', ''];
+            if (process.env.HEALTH_OK !== 'true') {
+              lines.push(`- \`${prodUrl}/health\` did not report version **${process.env.EXPECTED_VERSION}** within retry budget (12 × 15s)`);
+            }
+            if (process.env.DASHBOARD_OK !== 'true') {
+              lines.push(`- \`${prodUrl}/dashboard\` did not render (missing sentinel)`);
+            }
+            const learnFailed = parseInt(process.env.LEARN_FAILED || '0', 10);
+            if (learnFailed > 0) {
+              lines.push(`- ${learnFailed} \`public/learn|guides|compare/*.html\` route(s) added in this diff returned non-200`);
+            }
+            lines.push('', `Investigate at \`${sha.slice(0, 7)}\`. Workflow run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`);
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: lines.join('\n'),
+            });
