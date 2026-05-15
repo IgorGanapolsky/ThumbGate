@@ -81,6 +81,21 @@ jobs:
             cat reports/revenue/unified-rollup-latest.md
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Stripe checkout diagnostic (account health + failure modes)
+        id: stripe-diag
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: |
+          mkdir -p reports/revenue
+          node scripts/stripe-checkout-diagnostic.js | tee reports/revenue/stripe-checkout-diagnostic.md
+          node scripts/stripe-checkout-diagnostic.js --json > reports/revenue/stripe-checkout-diagnostic.json
+          {
+            echo
+            echo "## Stripe Checkout Diagnostic"
+            echo
+            cat reports/revenue/stripe-checkout-diagnostic.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: External customer audit (owner-filtered Stripe truth)
         id: external-audit
         env:
