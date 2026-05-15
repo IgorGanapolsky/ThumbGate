@@ -25,8 +25,8 @@ const PAID_SPRINT_CAMPAIGN = 'paid_workflow_sprint';
 const VOICE_AGENT_DIAGNOSTIC_CAMPAIGN = 'voice_agent_reliability_diagnostic';
 const SKOOL_OPERATOR_LAB_URL = 'https://www.skool.com/thumbgate-operator-lab-6000';
 const DIAGNOSTIC_CHECKOUT_URL = 'https://buy.stripe.com/00w14neyUcXA5pL5e33sI0e';
-const PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL = 'https://buy.stripe.com/3cI7sLgH25v8dWh5e33sI0o';
-const PAID_SPRINT_IMPLEMENTATION_PAYMENT_URL = 'https://buy.stripe.com/8x25kDcqMaPs9G15e33sI0p';
+const PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL = 'https://buy.stripe.com/28E00j3Uge1E2dzgWL3sI2J';
+const PAID_SPRINT_IMPLEMENTATION_PAYMENT_URL = 'https://buy.stripe.com/6oU00j8aw2iWdWh9uj3sI2K';
 const DEFAULT_LAUNCH_PLATFORMS = ['twitter', 'linkedin', 'instagram'];
 const DEFAULT_OPERATOR_LAB_PLATFORMS = ['linkedin', 'instagram', 'threads', 'bluesky', 'reddit', 'youtube'];
 
