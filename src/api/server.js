@@ -5255,11 +5255,24 @@ async function addContext(){
     // (default last 24h, capped at 10000 rows per stream) so a misbehaving
     // caller cannot pull the entire local ledger.
     if (req.method === 'GET' && pathname === '/v1/telemetry/export') {
-      // expectedApiKey + expectedOperatorKey are already bound in the
-      // request-handler scope above (lines ~3647-3648). Reuse them rather
-      // than re-resolving — avoids a duplicate env lookup and matches the
-      // pattern used by /v1/billing/summary.
-      if (!isBillingSummaryAuthorized(req, expectedApiKey, expectedOperatorKey)) {
+      // Strict auth: raw telemetry export exposes user-agent strings and
+      // first-party event payloads. Unlike /v1/billing/summary (which
+      // returns aggregates only), this endpoint must NEVER fall through
+      // to unauthenticated access when both keys happen to be unset —
+      // that would silently turn an unconfigured dev/preview server into
+      // a public ledger reader. Require BOTH a configured key on the
+      // server AND a token on the request that matches one of them.
+      const requestToken = extractApiKey(req);
+      const adminMatches = !!expectedApiKey && requestToken === expectedApiKey;
+      const operatorMatches = !!expectedOperatorKey && requestToken === expectedOperatorKey;
+      const anyKeyConfigured = !!expectedApiKey || !!expectedOperatorKey;
+      if (!anyKeyConfigured) {
+        sendJson(res, 503, {
+          error: 'Telemetry export disabled — neither THUMBGATE_API_KEY nor THUMBGATE_OPERATOR_KEY is configured on this server',
+        });
+        return;
+      }
+      if (!adminMatches && !operatorMatches) {
         sendJson(res, 401, { error: 'Unauthorized — operator or admin key required' });
         return;
       }

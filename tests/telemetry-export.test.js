@@ -97,6 +97,40 @@ describe('GET /v1/telemetry/export', () => {
     assert.equal(res.status, 401);
   });
 
+  it('returns 503 when neither THUMBGATE_API_KEY nor THUMBGATE_OPERATOR_KEY is configured (dev-mode lock)', async () => {
+    // Codex P2 regression guard: an unconfigured dev/preview server must
+    // not silently fall through to public reads of the raw telemetry
+    // ledger. Spin up a second server instance with both keys cleared
+    // and confirm it refuses with 503 + a helpful diagnostic.
+    const savedAdmin = process.env.THUMBGATE_API_KEY;
+    const savedOperator = process.env.THUMBGATE_OPERATOR_KEY;
+    const savedAllow = process.env.THUMBGATE_ALLOW_INSECURE;
+    delete process.env.THUMBGATE_API_KEY;
+    delete process.env.THUMBGATE_OPERATOR_KEY;
+    // The server normally refuses to boot without THUMBGATE_API_KEY. Dev
+    // mode opts into that explicitly via THUMBGATE_ALLOW_INSECURE=true —
+    // and THAT is the scenario the strict-auth check defends against.
+    process.env.THUMBGATE_ALLOW_INSECURE = 'true';
+    let altHandle;
+    let altOrigin = '';
+    try {
+      altHandle = await startServer({ port: 0, host: '127.0.0.1' });
+      altOrigin = `http://127.0.0.1:${altHandle.port}`;
+      const res = await fetch(`${altOrigin}/v1/telemetry/export`);
+      assert.equal(res.status, 503);
+      const body = await res.json();
+      assert.match(body.error, /Telemetry export disabled/);
+      assert.match(body.error, /THUMBGATE_API_KEY/);
+      assert.match(body.error, /THUMBGATE_OPERATOR_KEY/);
+    } finally {
+      if (altHandle) altHandle.server.close();
+      if (savedAdmin !== undefined) process.env.THUMBGATE_API_KEY = savedAdmin;
+      if (savedOperator !== undefined) process.env.THUMBGATE_OPERATOR_KEY = savedOperator;
+      if (savedAllow === undefined) delete process.env.THUMBGATE_ALLOW_INSECURE;
+      else process.env.THUMBGATE_ALLOW_INSECURE = savedAllow;
+    }
+  });
+
   it('accepts the operator key and returns both telemetry + funnel rows within the default 24h window', async () => {
     const res = await get('/v1/telemetry/export', { Authorization: `Bearer ${ENV.THUMBGATE_OPERATOR_KEY}` });
     assert.equal(res.status, 200);
