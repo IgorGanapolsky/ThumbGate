@@ -311,9 +311,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // branch: scripts/activation-tracker.js + scripts/plausible-server-events.js
   // (~9 KB combined). Observed package after all three: ~3.55 MB.
   // See docs/FEDERAL.md and .changeset/high-roi-checkout-deploy-anticlaim-bundle.md.
+  // Bumped 3.60 MB -> 3.70 MB (2026-05-15) for the unified-revenue-rollup
+  // module (#2090) + Bayesian conversion-rate stats (#2091) + GET
+  // /v1/telemetry/export endpoint (#2092). Observed package ~3.601 MB after
+  // these — the slim headroom buffer needs to grow to avoid threshold-chasing
+  // every observability PR.
   assert.ok(
-    manifest.unpackedSize <= 3_600_000,
-    `npm package should stay <= 3.60 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_700_000,
+    `npm package should stay <= 3.70 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
