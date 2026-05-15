@@ -330,6 +330,7 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     failureCode: pickFirstText(raw.failureCode),
     httpStatus: normalizeInteger(raw.httpStatus),
     userAgent: pickFirstText(raw.userAgent, headers['user-agent']),
+    isBot: pickFirstText(raw.isBot),
     attributionTagged: Boolean(
       pickFirstText(raw.utmSource, raw.utmMedium, raw.utmCampaign, raw.utmContent, raw.utmTerm)
     ),

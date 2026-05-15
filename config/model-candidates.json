@@ -76,9 +76,40 @@
         "medianLatencyMs",
         "costPerAnalysisUsd"
       ]
+    },
+    "tokenizer-brittleness": {
+      "label": "Tokenizer brittleness and byte-level robustness",
+      "summary": "Evaluate models for malformed JSONL, Unicode confusables, stack traces, secrets, SQL snippets, file paths, and code-symbol-heavy inputs before routing log, code, or security workloads.",
+      "desiredStrengths": ["tokenizer-free", "byte-level", "log-robustness", "code-symbols", "security-scanning", "fast-inference"],
+      "targetContextWindow": 64000,
+      "benchmarkCommands": [
+        "npx thumbgate model-candidates --workload=tokenizer-brittleness --json",
+        "node --test tests/model-candidates.test.js --test-name-pattern=tokenizer",
+        "node scripts/gate-eval.js run"
+      ],
+      "metrics": [
+        "caseCoverage",
+        "symbolPreservationRate",
+        "secretDetectionRecall",
+        "jsonlRepairAccuracy",
+        "medianLatencyMs",
+        "memoryBandwidthEstimate"
+      ]
     }
   },
   "candidates": [
+    {
+      "id": "research/fast-byte-latent-transformer",
+      "vendor": "Meta + Stanford + University of Washington",
+      "family": "blt",
+      "provider": "research",
+      "model": "fast-byte-latent-transformer",
+      "contextWindow": 64000,
+      "costClass": "medium",
+      "researchOnly": true,
+      "strengths": ["tokenizer-free", "byte-level", "log-robustness", "code-symbols", "security-scanning", "fast-inference"],
+      "notes": "Research-only candidate inspired by Fast BLT. Use as an evaluation target for tokenizer-free robustness and memory-bandwidth planning; do not route production traffic until a maintained runtime and model weights exist."
+    },
     {
       "id": "self-hosted/deepseek-v4-flash-sglang",
       "vendor": "DeepSeek",

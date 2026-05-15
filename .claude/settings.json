@@ -38,6 +38,10 @@
           },
           {
             "type": "command",
+            "command": "node scripts/hook-stop-anti-claim.js"
+          },
+          {
+            "type": "command",
             "command": "node scripts/meta-agent-loop.js"
           }
         ]

@@ -721,6 +721,33 @@ test('terms of service route covers payment, refunds, acceptable use, and limita
   assert.match(body, /href="\/support"/);
 });
 
+test('pricing page is the single source of truth for what ThumbGate sells', async () => {
+  // Resolves the "pricing schizophrenia" flagged in the audit: sales/pricing.json
+  // said $49/$299, COMMERCIAL_TRUTH.md said $19/$149, and no buyer-facing
+  // surface existed to reconcile. This page MUST stay canonical.
+  const res = await fetch(apiUrl('/pricing'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+  const body = await res.text();
+  // All four tiers present.
+  assert.match(body, /Workflow Hardening Sprint/i);
+  assert.match(body, /\$499/);
+  assert.match(body, /ThumbGate CLI/i);
+  assert.match(body, /ThumbGate Pro/i);
+  assert.match(body, /\$19/);
+  assert.match(body, /\$149/);
+  assert.match(body, /ThumbGate Team/i);
+  assert.match(body, /\$49/);
+  // CTAs route to the canonical paths.
+  assert.match(body, /href="\/go\/install/);
+  assert.match(body, /href="\/go\/pro/);
+  assert.match(body, /href="\/go\/teams/);
+  assert.match(body, /mailto:igor\.ganapolsky@gmail\.com/);
+  // Cross-links so it's a navigation hub, not a dead end.
+  assert.match(body, /href="\/case-studies"/);
+  assert.match(body, /href="\/support"/);
+});
+
 test('support page exposes email, GitHub issues, status, and refund paths', async () => {
   const res = await fetch(apiUrl('/support'));
   assert.equal(res.status, 200);
@@ -733,6 +760,29 @@ test('support page exposes email, GitHub issues, status, and refund paths', asyn
   assert.match(body, /Refunds/i);
   assert.match(body, /href="\/privacy"/);
   assert.match(body, /href="\/terms"/);
+});
+
+test('case studies page surfaces the Aiventyx integration with verifiable signal', async () => {
+  // Conversion-optimization surface: until this PR, thumbgate.ai had no
+  // proof page. Buyers saw CLI install commands and bounced. This page
+  // anchors trust with reproducible third-party signal.
+  const res = await fetch(apiUrl('/case-studies'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+  const body = await res.text();
+  assert.match(body, /Case Studies/);
+  // Real third-party signal must be present — no fabricated metrics.
+  assert.match(body, /Aiventyx/i);
+  assert.match(body, /62%/);
+  assert.match(body, /Qaiser/i);
+  // The fix must be described concretely (not aspirationally).
+  assert.match(body, /TRACKED_LINK_TARGETS/);
+  assert.match(body, /\/go\/teams/);
+  // Call to action: live redirect they can verify themselves.
+  assert.match(body, /href="\/go\/teams\?utm_source=case-study"/);
+  // Footer cross-links so this becomes a hub, not a dead end.
+  assert.match(body, /href="\/pricing"/);
+  assert.match(body, /href="\/privacy"/);
 });
 
 test('public HEAD routes stay unauthenticated and side-effect free', async () => {
@@ -1604,6 +1654,50 @@ test('checkout bootstrap route preserves attribution and records first-party tel
   assert.equal(bootstrapEvent.creator, 'reach_vb');
   assert.equal(bootstrapEvent.community, 'ClaudeCode');
   assert.equal(bootstrapEvent.offerCode, 'REDDIT-EARLY');
+});
+
+// Interstitial-on-all-non-confirmed-GETs — eliminates zombie Stripe sessions
+// from raw GETs and gives every visitor a value-preview page with a "Pay
+// $19/mo with Stripe →" button. Pre-change: any GET on /checkout/pro 302'd
+// straight to a fresh cs_live_* session (creating Stripe noise + asking
+// confused humans for money before they saw the offer). Post-change: GETs
+// render the interstitial; only POST or ?confirm=1 triggers a Stripe session.
+
+test('checkout interstitial: GET without confirm=1 (human UA) renders the interstitial HTML, no Stripe session', async () => {
+  const res = await fetch(apiUrl('/checkout/pro?plan_id=pro&billing_cycle=monthly'), {
+    redirect: 'manual',
+    headers: {
+      'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      accept: 'text/html,application/xhtml+xml',
+    },
+  });
+  assert.equal(res.status, 200, 'human GET without confirm must NOT 302 to Stripe');
+  const body = await res.text();
+  assert.match(body, /Start ThumbGate Pro/i);
+  assert.match(body, /\$19/);
+  // Pay button must carry confirm=1 so the click triggers the Stripe path
+  assert.match(body, /\/checkout\/pro\?[^"]*confirm=1/);
+
+  // Telemetry: a human view (not a bot) emits checkout_interstitial_view,
+  // not checkout_bot_deflected.
+  const telemetryEvents = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
+  const interstitialEvent = telemetryEvents.find((entry) => entry.eventType === 'checkout_interstitial_view');
+  assert.ok(interstitialEvent, 'expected checkout_interstitial_view telemetry for human GET');
+});
+
+test('checkout interstitial: GET with confirm=1 (human UA) bypasses interstitial and proceeds to Stripe redirect', async () => {
+  const res = await fetch(
+    apiUrl('/checkout/pro?confirm=1&plan_id=pro&billing_cycle=monthly&customer_email=buyer%40example.com&utm_source=test_interstitial_bypass'),
+    {
+      redirect: 'manual',
+      headers: {
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      },
+    }
+  );
+  assert.equal(res.status, 302, 'confirm=1 must still trigger Stripe-session creation + 302');
+  const location = res.headers.get('location');
+  assert.ok(location, 'confirm=1 must return a Location header');
 });
 
 test('checkout bootstrap falls back to seeded journey cookies when query IDs are absent', async () => {
