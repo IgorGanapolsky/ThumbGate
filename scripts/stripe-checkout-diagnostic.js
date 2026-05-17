@@ -40,7 +40,11 @@ const path = require('node:path');
 function parseArgs(argv = []) {
   return {
     json: argv.includes('--json'),
-    limit: extractIntFlag(argv, '--limit=', 100),
+    // Default raised from 100 to 10000 to match the audit's uncapped posture.
+    // A diagnostic framed around "lifetime 2000+ sessions" should look at
+    // the lifetime, not a 100-row sample. Caller can pass --limit=N to
+    // restrict for development.
+    limit: extractIntFlag(argv, '--limit=', 10000),
   };
 }
 
@@ -55,7 +59,10 @@ function loadStripe(requireFn = require) {
   return requireFn('stripe');
 }
 
-async function listAllPaged(listFn, params = {}, max = 1000) {
+async function listAllPaged(listFn, params = {}, max = 100000) {
+  // Default raised from 1000 to 100,000 to match external-customer-audit's
+  // uncapped posture (Codex P1). The cap is a runaway-guard, not a silent
+  // truncator. Tests pass a small max to exercise the bound explicitly.
   const out = [];
   let startingAfter;
   while (out.length < max) {
@@ -155,7 +162,7 @@ async function getWebhookHealth(stripe) {
 async function runDiagnostic({
   stripeClient = null,
   secretKey = process.env.STRIPE_SECRET_KEY,
-  limit = 100,
+  limit = 10000,
 } = {}) {
   if (!secretKey && !stripeClient) {
     return { configured: false, gap: 'STRIPE_SECRET_KEY is not set' };
@@ -173,12 +180,29 @@ async function runDiagnostic({
     return { configured: false, gap: 'Stripe client does not expose the expected endpoints' };
   }
 
-  const [sessions, paymentIntents, account, webhooks] = await Promise.all([
+  const [sessions, account, webhooks] = await Promise.all([
     listAllPaged((p) => stripe.checkout.sessions.list(p), {}, limit),
-    listAllPaged((p) => stripe.paymentIntents.list(p), {}, limit),
     getAccountHealth(stripe),
     getWebhookHealth(stripe),
   ]);
+
+  // Codex P1: only analyze PaymentIntents that came from checkout sessions.
+  // The previous version pulled the account's entire paymentIntents.list
+  // — that contaminates the error-rate analysis with intents from other
+  // flows (subscriptions, manual invoices, etc.). Pulling per-session keeps
+  // the error rate tied to checkout flow specifically.
+  const checkoutLinkedIntentIds = sessions
+    .map((s) => (typeof s.payment_intent === 'string' ? s.payment_intent : null))
+    .filter(Boolean);
+  const paymentIntents = await Promise.all(
+    checkoutLinkedIntentIds.slice(0, limit).map(async (id) => {
+      try {
+        return await stripe.paymentIntents.retrieve(id);
+      } catch {
+        return null;
+      }
+    })
+  ).then((arr) => arr.filter(Boolean));
 
   // Cross-link: for the most recent N sessions, look up the associated
   // payment_intent's last_payment_error if any.
@@ -346,7 +370,7 @@ function renderMarkdown(report) {
     lines.push('3. **Zero payment intents have a `last_payment_error`** — buyers are abandoning BEFORE attempting to pay. The funnel is leaking at the Stripe form itself, not at the card-decline step. Look at the recent-sessions table for missing emails (= buyers bailed at email entry) or zero amount_total values (= configuration miss).');
   }
   if (report.webhooks.configured && report.webhooks.endpoints.length === 0) {
-    lines.push('4. **No webhooks configured.** Even successful checkouts will not be recorded in our local ledger; the 0/1000 number may be undercounted. Wire a webhook to `https://thumbgate.ai/v1/billing/webhook` listening for `checkout.session.completed` / `payment_intent.succeeded`.');
+    lines.push('4. **No webhooks configured.** The session counts above come from Stripe API directly and are NOT undercounted by missing webhooks (Codex P2 correction). What missing webhooks DO break: post-completion side effects on our backend — provisioning, trial-welcome emails, local revenue-ledger writes. Wire `https://thumbgate.ai/v1/billing/webhook` listening for `checkout.session.completed` / `payment_intent.succeeded` to close that loop.');
   }
   lines.push('');
   lines.push('## Honest limits of this diagnostic');

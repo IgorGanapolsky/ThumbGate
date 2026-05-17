@@ -14,10 +14,10 @@ test('parseArgs reads --json and --limit', () => {
   assert.equal(parseArgs(['--json']).json, true);
   assert.equal(parseArgs([]).json, false);
   assert.equal(parseArgs(['--limit=50']).limit, 50);
-  assert.equal(parseArgs([]).limit, 100);
+  assert.equal(parseArgs([]).limit, 10000);
   // Negative / non-integer falls back to default
-  assert.equal(parseArgs(['--limit=-1']).limit, 100);
-  assert.equal(parseArgs(['--limit=banana']).limit, 100);
+  assert.equal(parseArgs(['--limit=-1']).limit, 10000);
+  assert.equal(parseArgs(['--limit=banana']).limit, 10000);
 });
 
 test('bucketSessions groups by status and payment_status', () => {
