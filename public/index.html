@@ -733,7 +733,7 @@ __GA_BOOTSTRAP__
         <span class="copy-hint">click to copy</span>
       </div>
       <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="event.preventDefault(); navigator.clipboard.writeText('npx thumbgate init'); this.textContent='Copied ✓ — paste in your repo'; setTimeout(()=>{this.textContent='Install Free CLI'},2000); try{posthog.capture('hero_install_click',{cta:'install_cli'})}catch(_){}" class="btn-gpt-page btn-install-hero" title="Click to copy: npx thumbgate init">Install Free CLI</a>
-      <a href="/go/pro?utm_source=website&amp;utm_medium=hero_cta&amp;utm_campaign=pro_upgrade&amp;cta_id=hero_go_pro&amp;cta_placement=hero&amp;plan_id=pro&amp;landing_path=%2F" onclick="try{posthog.capture('hero_pro_click',{cta:'go_pro'})}catch(_){};sendFirstPartyTelemetry('hero_pro_checkout_started',{ctaId:'hero_go_pro',ctaPlacement:'hero',planId:'pro',price:19});sendGa4Event('begin_checkout',{currency:'USD',value:19,items:[{item_id:'pro',item_name:'ThumbGate Pro'}]});" class="btn-pro-page hero-pro">Get Pro — $19/mo</a>
+      <a href="#workflow-sprint-intake" onclick="try{posthog.capture('hero_sprint_click',{cta:'sprint_intake'})}catch(_){};sendFirstPartyTelemetry('hero_sprint_intake_started',{ctaId:'hero_workflow_sprint',ctaPlacement:'hero',offer:'workflow_sprint'});" class="btn-pro-page hero-pro">Talk to me — Workflow Hardening Sprint →</a>
     </div>
 
     <div class="hero-trust-bar">
