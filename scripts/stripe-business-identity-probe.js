@@ -166,7 +166,7 @@ async function runProbe({ stripeClient = null, secretKey = process.env.STRIPE_SE
   } catch (error) {
     return { configured: false, gap: `accounts.retrieve failed: ${error.message}` };
   }
-  const paymentLinks = await listAllPaged((p) => stripe.paymentLinks.list(p), {}, 50);
+  const paymentLinks = await listAllPaged((p) => stripe.paymentLinks.list(p), {}, 10000);  // Codex P2: was 50, silently truncating accounts with >50 Payment Links
 
   const identity = extractAccountIdentity(account);
   const identityGaps = diagnoseIdentityGaps(identity);
