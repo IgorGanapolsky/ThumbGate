@@ -1,5 +1,0 @@
----
-"thumbgate": minor
----
-
-Add federal agency positioning surface (`docs/FEDERAL.md`, `public/federal.html`, `/federal` route) so SBIR / agency / SI evaluators land on a dedicated page rather than the developer-focused home page. Page is pilot-ready posture only — no FedRAMP claim, no speculative compliance badges. The technical brief maps existing ThumbGate capabilities to NIST 800-53 Rev 5 controls (AC-3, AC-6, AU-2/3/12, CM-3, CM-7, IR-4, RA-5, SI-4, SI-7) and to OMB M-24-10 / EO 14110 inventory and risk-management requirements; defines a two-profile deployment model (public open source unchanged, `THUMBGATE_DEPLOY=gov` mode in ThumbGate-Core for on-prem / GovCloud / Azure Government installs); pins five architectural invariants protecting the developer install path. Two new regression tests added to `tests/public-core-boundary.test.js`: federal lead-gen files must exist, and federal behavior must gate on `THUMBGATE_DEPLOY=gov` only (no env-var sprawl). Route accepts `/federal`, `/federal.html`, `/government`, `/gov` and flows through `servePublicMarketingPage` for UTM attribution on agency arrivals.
