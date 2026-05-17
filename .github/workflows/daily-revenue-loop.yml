@@ -81,19 +81,19 @@ jobs:
             cat reports/revenue/unified-rollup-latest.md
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Stripe business identity probe (what does the buyer see?)
-        id: stripe-identity
+      - name: CI/CD hygiene audit (stale PRs, unread bot threads, broken workflows)
+        id: cicd-hygiene
         env:
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p reports/revenue
-          node scripts/stripe-business-identity-probe.js | tee reports/revenue/stripe-business-identity.md
-          node scripts/stripe-business-identity-probe.js --json > reports/revenue/stripe-business-identity.json
+          node scripts/ci-cd-hygiene-audit.js | tee reports/revenue/cicd-hygiene.md
+          node scripts/ci-cd-hygiene-audit.js --json > reports/revenue/cicd-hygiene.json
           {
             echo
-            echo "## Stripe Business Identity Probe"
+            echo "## CI/CD Hygiene Audit"
             echo
-            cat reports/revenue/stripe-business-identity.md
+            cat reports/revenue/cicd-hygiene.md
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: External customer audit (owner-filtered Stripe truth)
