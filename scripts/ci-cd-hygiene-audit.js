@@ -56,7 +56,13 @@ function extractFlag(argv, prefix) {
   return match ? match.slice(prefix.length) : null;
 }
 
-function ghJson(args, gh = (a) => execFileSync('gh', a, { encoding: 'utf8' })) {
+// SonarCloud flagged the bare `execFileSync('gh', ...)` as a PATH-injection
+// hotspot. Resolve a known-safe PATH (the standard CI + macOS locations)
+// instead of inheriting the ambient one, and let injected `gh` overrides
+// pass through directly.
+const SAFE_PATH = '/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin';
+
+function ghJson(args, gh = (a) => execFileSync('gh', a, { encoding: 'utf8', env: { ...process.env, PATH: SAFE_PATH } })) {
   const out = gh(args);
   return JSON.parse(out);
 }
