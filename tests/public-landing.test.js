@@ -130,10 +130,14 @@ test('public landing page exposes env-driven paid sprint checkout path', () => {
   assert.doesNotMatch(landingPage, /Pay \$19 quick read/);
   assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
   assert.doesNotMatch(landingPage, /quick_read_checkout_started/);
-  // Hero CTA pair is intentionally Free + Pro $19/mo for cold-visitor conversion.
-  // The $499 diagnostic still ships via the workflow-sprint-intake paid path below ("Pay for diagnostic" card).
+  // Hero CTA pair (post 2026-05-14 GTM data analysis): Free CLI + Workflow
+  // Hardening Sprint intake. Previously was "Get Pro — $19/mo" but data showed
+  // 750+ weekly OSS installs converted at 0% to $19/mo self-serve. Sprint
+  // intake matches the actual buyer ICP (platform / devex leaders who buy
+  // fixed-scope engagements). Pro $19/mo remains wired via /checkout/pro and
+  // surfaces from the "Pay for diagnostic" / pricing-section cards below the fold.
   assert.doesNotMatch(landingPage, /Pay \$499 diagnostic/);
-  assert.match(landingPage, /Get Pro — \$19\/mo/);
+  assert.match(landingPage, /Talk to me — Workflow Hardening Sprint/);
   assert.match(landingPage, /Pay for diagnostic/);
   assert.doesNotMatch(landingPage, /Pay \$1500 sprint/);
   assert.match(landingPage, /Reliable AI Agent Governance Setup/);
