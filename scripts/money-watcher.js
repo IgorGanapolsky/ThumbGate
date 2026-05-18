@@ -14,6 +14,54 @@ const { ensureParentDir } = require('./fs-utils');
 const DEFAULT_STATE_PATH = path.resolve(__dirname, '..', '.thumbgate', 'commercial-watch-state.json');
 const DEFAULT_ALERT_LOG_PATH = path.resolve(__dirname, '..', '.thumbgate', 'commercial-alerts.jsonl');
 
+function safeLogValue(value, maxLength = 4000) {
+  return String(value ?? '')
+    .replace(/\\[rnt]/g, ' ')
+    .replace(/[\r\n\t]/g, ' ')
+    .replace(/[\u0000-\u001f\u007f]/g, '')
+    .slice(0, maxLength);
+}
+
+function safeLogJson(value, maxLength = 4000) {
+  return safeLogValue(JSON.stringify(value, null, 2), maxLength);
+}
+
+function safeNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function buildLogSafeSnapshot(summary = {}) {
+  const revenue = summary && typeof summary === 'object' ? summary.revenue || {} : {};
+  return {
+    source: safeLogValue(summary.source, 120),
+    fallbackReason: safeLogValue(summary.fallbackReason, 240),
+    generatedAt: safeLogValue(summary.generatedAt, 80),
+    revenue: {
+      paidOrders: safeNumber(revenue.paidOrders),
+      bookedRevenueCents: safeNumber(revenue.bookedRevenueCents),
+      latestPaidAt: safeLogValue(revenue.latestPaidAt, 80),
+      hasLatestPaidOrder: Boolean(revenue.latestPaidOrder),
+    },
+  };
+}
+
+function buildLogSafeAlert(alert = {}, summary = {}) {
+  return {
+    detectedAt: safeLogValue(alert.detectedAt, 80),
+    source: safeLogValue(alert.source, 120),
+    fallbackReason: safeLogValue(alert.fallbackReason, 240),
+    newPaidOrders: safeNumber(alert.newPaidOrders),
+    newBookedRevenueCents: safeNumber(alert.newBookedRevenueCents),
+    latestPaidAt: safeLogValue(alert.latestPaidAt, 80),
+    hasLatestPaidOrder: Boolean(alert.latestPaidOrder),
+    paidOrders: safeNumber(alert.paidOrders),
+    bookedRevenueCents: safeNumber(alert.bookedRevenueCents),
+    activeKeys: safeNumber(summary.keys?.active),
+    totalUsage: safeNumber(summary.keys?.totalUsage),
+  };
+}
+
 function getCommercialRevenueSnapshot(summary = {}) {
   const revenue = summary && typeof summary === 'object' ? summary.revenue || {} : {};
   return {
@@ -122,11 +170,7 @@ async function watchMoney(intervalMs = 10000, options = {}) {
         recordCommercialAlert(alert, options.alertLogPath || DEFAULT_ALERT_LOG_PATH);
         console.log('\n🚨🚨🚨 COMMERCIAL ALERT: NET-NEW PAID ACTIVITY DETECTED! 🚨🚨🚨');
         console.log('Operational billing summary:');
-        console.log(JSON.stringify({
-          ...alert,
-          activeKeys: summary.keys.active,
-          totalUsage: summary.keys.totalUsage,
-        }, null, 2));
+        console.log(safeLogJson(buildLogSafeAlert(alert, summary)));
 
         process.stdout.write('\x07');
         initialSnapshot = currentSnapshot;
@@ -193,7 +237,7 @@ if (require.main === module) {
   const options = parseArgs(process.argv.slice(2));
   const runner = options.once
     ? checkForCommercialChange(options).then((result) => {
-      console.log(JSON.stringify(result, null, 2));
+      console.log(safeLogJson(buildLogSafeSnapshot(result)));
       return result;
     })
     : watchMoney(options.intervalMs, options);
@@ -213,6 +257,10 @@ module.exports = {
   parseArgs,
   readSnapshotState,
   recordCommercialAlert,
+  buildLogSafeAlert,
+  buildLogSafeSnapshot,
+  safeLogJson,
+  safeLogValue,
   watchMoney,
   writeSnapshotState,
 };

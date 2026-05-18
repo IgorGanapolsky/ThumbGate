@@ -141,6 +141,10 @@ function telemetryPing(installId) {
 
 function proNudge(context) {
   if (process.env.THUMBGATE_NO_NUDGE === '1') return;
+  try {
+    const { isProTier } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
+    if (isProTier()) return;
+  } catch (_) { /* if rate-limiter is unavailable, fall through and nudge */ }
   const messages = [
     `\n  💡 Unlock Pro (${PRO_PRICE_LABEL}): searchable dashboard, DPO export, multi-repo sync\n     ${PRO_CHECKOUT_URL}\n`,
     `\n  💡 Pro tip: export your feedback as DPO training pairs to improve your models.\n     Get Pro: ${PRO_CHECKOUT_URL}\n`,
@@ -1112,7 +1116,6 @@ function pro() {
   }
 
   if (args.upgrade) {
-    const proDir = path.join(PKG_ROOT, 'pro');
     const thumbgateDir = path.join(CWD, '.thumbgate');
     if (!fs.existsSync(thumbgateDir)) fs.mkdirSync(thumbgateDir, { recursive: true });
 
@@ -1122,6 +1125,21 @@ function pro() {
       ['thompson-presets.json', '4 sampling presets'],
       ['reminders-pro.json', '8 reminder templates'],
     ];
+
+    const candidateDirs = [
+      path.join(PKG_ROOT, 'config', 'pro'),
+      path.join(PKG_ROOT, 'pro'),
+    ];
+    const proDir = candidateDirs.find((dir) =>
+      files.every(([file]) => fs.existsSync(path.join(dir, file)))
+    );
+
+    if (!proDir) {
+      console.error('Pro upgrade bundle is missing from this ThumbGate install.');
+      console.error(`Expected files under: ${path.join(PKG_ROOT, 'config', 'pro')}`);
+      console.error('Please upgrade to the latest thumbgate package and retry: npm install -g thumbgate@latest');
+      process.exit(1);
+    }
 
     for (const [file] of files) {
       fs.copyFileSync(path.join(proDir, file), path.join(thumbgateDir, file));
@@ -1143,7 +1161,10 @@ function pro() {
   }
 
   const resolvedKey = resolveProKey();
-  if (resolvedKey && resolvedKey.key) {
+  // creator-dev legitimately returns {key: '', source: 'creator-dev', plan: 'enterprise'}
+  // when THUMBGATE_DEV_KEY is unset — startLocalProDashboard accepts the empty
+  // key in that case (see pro-local-dashboard.js:141), so launch on source too.
+  if (resolvedKey && (resolvedKey.key || resolvedKey.source === 'creator-dev')) {
     return launchDashboard(resolvedKey.key, 'pro_dashboard_launch');
   }
 
@@ -1353,6 +1374,37 @@ function modelCandidatesCmd() {
 
   process.stdout.write(renderModelCandidatesReport(report));
   process.stdout.write(`\nReport path: ${reportPath}\n`);
+}
+
+function benchCmd() {
+  const args = parseArgs(process.argv.slice(3));
+  const { runBenchmark } = require(path.join(PKG_ROOT, 'scripts', 'thumbgate-bench'));
+  const minScore = args['min-score'] ? Number(args['min-score']) : undefined;
+  const report = runBenchmark({
+    suitePath: args.scenarios ? path.resolve(CWD, args.scenarios) : undefined,
+    programbenchSmoke: Boolean(args['programbench-smoke'] || args.programbench),
+    programbenchSuitePath: args['programbench-scenarios']
+      ? path.resolve(CWD, args['programbench-scenarios'])
+      : undefined,
+    outDir: args['out-dir'] ? path.resolve(CWD, args['out-dir']) : undefined,
+    minScore: Number.isFinite(minScore) ? minScore : undefined,
+    useRuntimeState: Boolean(args['use-runtime-state']),
+  });
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    console.log(`ThumbGate Bench: ${report.metrics.score}/100 ${report.passed ? 'PASS' : 'FAIL'}`);
+    if (report.programBench) {
+      console.log(`ProgramBench-style smoke: ${report.programBench.metrics.score}/100 ${report.programBench.passed ? 'PASS' : 'FAIL'}`);
+    }
+    console.log(`Report: ${report.reportPaths.markdown}`);
+    console.log(`JSON: ${report.reportPaths.json}`);
+  }
+
+  if (!report.passed) {
+    process.exitCode = 1;
+  }
 }
 
 function risk() {
@@ -1668,7 +1720,34 @@ function gateStats() {
 
 function harnessAudit() {
   const args = parseArgs(process.argv.slice(3));
-  const { buildHarnessOptimizationAudit } = require(path.join(PKG_ROOT, 'scripts', 'harness-selector'));
+  const {
+    buildHarnessOptimizationAudit,
+    buildHarnessFitAudit,
+    formatHarnessFitAudit,
+    buildSolverWorkflowGovernance,
+    formatSolverWorkflowGovernance,
+  } = require(path.join(PKG_ROOT, 'scripts', 'harness-selector'));
+
+  if (args['harness-fit'] || args.fit) {
+    const audit = buildHarnessFitAudit(args);
+    if (args.json) {
+      console.log(JSON.stringify(audit, null, 2));
+      return;
+    }
+    process.stdout.write(formatHarnessFitAudit(audit));
+    return;
+  }
+
+  if (args['solver-workflow'] || args.solverWorkflow || args.solver) {
+    const audit = buildSolverWorkflowGovernance(args);
+    if (args.json) {
+      console.log(JSON.stringify(audit, null, 2));
+      return;
+    }
+    process.stdout.write(formatSolverWorkflowGovernance(audit));
+    return;
+  }
+
   const audit = buildHarnessOptimizationAudit({
     rootDir: CWD,
     docTokenBudget: args['doc-token-budget'],
@@ -2269,6 +2348,7 @@ function help() {
   console.log('  north-star            Show proof-backed workflow-run progress toward the North Star');
   console.log('  model-fit             Detect local embedding profile and write evidence report');
   console.log('  model-candidates      Rank managed model candidates and benchmark routing plans');
+  console.log('  bench                 Run ThumbGate Bench reports (--programbench-smoke for cleanroom proof)');
   console.log('  risk                  Train or query the boosted local risk scorer');
   console.log('  eval                  Turn feedback into reusable prompt/workflow eval proof');
   console.log('  optimize              [PRO] Prune CLAUDE.md and migrate rules to Pre-Action Checks');
@@ -2495,6 +2575,10 @@ switch (COMMAND) {
   case 'model-candidates':
   case 'managed-models':
     modelCandidatesCmd();
+    break;
+  case 'bench':
+  case 'benchmark':
+    benchCmd();
     break;
   case 'upstream-contributions':
   case 'upstream-contribution-engine':

@@ -26,6 +26,7 @@ import argparse
 import os
 from datetime import datetime
 from pathlib import Path
+from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Any, Optional, Tuple
 
 # Configuration
@@ -87,33 +88,52 @@ DEFAULT_CATEGORIES = {
     },
 }
 
-# Time decay configuration (2026 upgrade: exponential decay with half-life)
-# Step decay (legacy)
-DECAY_WEIGHTS = {
-    7: 1.0,    # < 7 days: full weight
-    30: 0.5,   # 7-30 days: half weight
-    None: 0.25  # > 30 days: quarter weight
-}
-
 # Exponential decay (2026 best practice)
 # Half-life of 7 days: feedback loses half its weight every 7 days
 HALF_LIFE_DAYS = 7.0
-USE_EXPONENTIAL_DECAY = True  # Toggle between step and exponential
 
+@dataclass
+class CategoryModel:
+    """OOP-based Reliability Model for a single category."""
+    alpha: float = 1.0
+    beta: float = 1.0
+    samples: int = 0
+    last_updated: Optional[str] = None
+    
+    def update(self, weight: float, is_positive: bool, timestamp: str):
+        """Bayesian update with time-decay weight."""
+        if is_positive:
+            self.alpha += weight
+        else:
+            self.beta += weight
+        self.samples += 1
+        self.last_updated = timestamp
+
+    @property
+    def reliability(self) -> float:
+        """Posterior mean: alpha / (alpha + beta)."""
+        total = self.alpha + self.beta
+        return self.alpha / total if total > 0 else 0.5
+
+    def sample(self) -> float:
+        """Thompson Sampling: Draw from Beta(alpha, beta)."""
+        return random.betavariate(max(self.alpha, 1e-9), max(self.beta, 1e-9))
+
+    def ci_width(self, z: float = 1.96) -> float:
+        """95% Credible Interval width."""
+        total = self.alpha + self.beta
+        if total > 0 and (total + 1) > 0:
+            variance = (self.alpha * self.beta) / (total**2 * (total + 1))
+            return 2 * z * math.sqrt(variance)
+        return 1.0
 
 def ensure_category(model: Dict[str, Any], category_name: str) -> None:
     """Ensure a category exists with uniform Beta priors."""
     categories = model.setdefault("categories", {})
-    if category_name in categories:
-        return
-
-    categories[category_name] = {
-        "alpha": 1.0,
-        "beta": 1.0,
-        "samples": 0,
-        "last_updated": None,
-    }
-
+    if category_name not in categories:
+        categories[category_name] = CategoryModel()
+    elif isinstance(categories[category_name], dict):
+        categories[category_name] = CategoryModel(**categories[category_name])
 
 def load_config(config_path: Optional[str]) -> Dict:
     """Load category configuration from file or use defaults."""
@@ -123,16 +143,28 @@ def load_config(config_path: Optional[str]) -> Dict:
             return json.loads(path.read_text())
     return DEFAULT_CATEGORIES
 
+def _serialize_model(model: Dict[str, Any]) -> Dict[str, Any]:
+    serialized = model.copy()
+    if "categories" in serialized:
+        serialized["categories"] = {
+            k: asdict(v) if isinstance(v, CategoryModel) else v 
+            for k, v in serialized["categories"].items()
+        }
+    return serialized
 
 def load_model(categories: Optional[Dict[str, Any]] = None) -> Dict:
     """Load existing model or create with uniform priors."""
     if MODEL_FILE.exists():
         try:
-            return json.loads(MODEL_FILE.read_text())
+            model = json.loads(MODEL_FILE.read_text())
+            # Deserialize categories
+            for k, v in model.get("categories", {}).items():
+                if isinstance(v, dict):
+                    model["categories"][k] = CategoryModel(**v)
+            return model
         except json.JSONDecodeError:
             pass
     return create_initial_model(categories or DEFAULT_CATEGORIES)
-
 
 def create_initial_model(categories: Dict) -> Dict:
     """Create model with uniform Beta(1,1) priors for all categories."""
@@ -147,51 +179,31 @@ def create_initial_model(categories: Dict) -> Dict:
         ensure_category(model, cat_name)
     return model
 
-
 def save_model(model: Dict):
     """Save model to disk."""
-    # Resolve and verify path stays within trusted local ThumbGate roots (CodeQL S2083)
     resolved = MODEL_FILE.resolve()
     allowed_roots = [PROJECT_ROOT.resolve(), FEEDBACK_DIR.resolve()]
     if not any(str(resolved).startswith(str(root)) for root in allowed_roots):
         raise ValueError(f"Model path escapes allowed ThumbGate roots: {resolved}")
     resolved.parent.mkdir(parents=True, exist_ok=True)
     model["updated"] = datetime.now().isoformat()
-    resolved.write_text(json.dumps(model, indent=2))
-
+    resolved.write_text(json.dumps(_serialize_model(model), indent=2))
 
 def time_decay_weight(timestamp_str: str) -> float:
-    """Compute time decay weight for a feedback entry.
-
-    2026 Upgrade: Supports both step decay and exponential decay.
-    Exponential decay uses half-life formula: weight = 2^(-age/half_life)
-    """
+    """Compute time decay weight for a feedback entry using exponential decay."""
     try:
         ts_clean = timestamp_str.replace("Z", "").split("+")[0]
         entry_time = datetime.fromisoformat(ts_clean)
     except (ValueError, AttributeError):
-        return DECAY_WEIGHTS[None]
+        return 0.25
 
     age_days = (datetime.now() - entry_time).days
-
-    if USE_EXPONENTIAL_DECAY:
-        # Exponential decay: weight = 2^(-age/half_life)
-        # At age=0: weight=1.0, at age=half_life: weight=0.5, etc.
-        weight = 2 ** (-age_days / HALF_LIFE_DAYS)
-        return max(weight, 0.01)  # Floor at 1% to prevent zero weights
-    else:
-        # Legacy step decay
-        for threshold, weight in sorted(DECAY_WEIGHTS.items(), key=lambda x: (x[0] is None, x[0])):
-            if threshold is not None and age_days < threshold:
-                return weight
-        return DECAY_WEIGHTS[None]
-
+    weight = 2 ** (-age_days / HALF_LIFE_DAYS)
+    return max(weight, 0.01)
 
 def classify_entry(entry: Dict, categories: Dict) -> List[str]:
     """Classify a feedback entry into categories based on keywords/tools."""
     matched = []
-
-    # Build searchable text from entry
     context = (entry.get("context", "") or "").lower()
     message = (entry.get("message", "") or "").lower()
     last_action = (entry.get("last_action", "") or "").lower()
@@ -208,23 +220,17 @@ def classify_entry(entry: Dict, categories: Dict) -> List[str]:
         keywords = cat_config.get("keywords", [])
         tools = cat_config.get("tools", [])
 
-        # Check keyword match
-        keyword_match = any(kw.lower() in searchable for kw in keywords)
-
-        # Check tool match
-        tool_match = any(t.lower() in last_tool for t in tools) if tools else False
-
-        if keyword_match or tool_match:
+        if any(kw.lower() in searchable for kw in keywords):
+            matched.append(cat_name)
+        elif tools and any(t.lower() in last_tool for t in tools):
             matched.append(cat_name)
 
     return matched if matched else ["uncategorized"]
-
 
 def load_feedback_entries() -> List[Dict]:
     """Load all feedback entries from JSONL."""
     if not FEEDBACK_LOG.exists():
         return []
-
     entries = []
     with open(FEEDBACK_LOG) as f:
         for line in f:
@@ -237,47 +243,35 @@ def load_feedback_entries() -> List[Dict]:
                 continue
     return entries
 
-
 def is_positive(entry: Dict) -> bool:
     """Determine if a feedback entry is positive."""
     if entry.get("reward", 0) > 0:
         return True
-    # ThumbGate uses signal field: 'positive' or 'negative'
     signal = entry.get("signal", "").lower()
     if signal in ("positive", "up", "thumbsup"):
         return True
     feedback = entry.get("feedback", "").lower()
     return feedback in ("positive", "up", "thumbsup")
 
-
 def train_full(categories: Dict) -> Dict:
     """Full rebuild: read all entries, compute posteriors."""
     entries = load_feedback_entries()
     model = create_initial_model(categories)
     model["total_entries"] = len(entries)
-
-    # Ensure uncategorized exists
     ensure_category(model, "uncategorized")
 
     for entry in entries:
         weight = time_decay_weight(entry.get("timestamp", ""))
         cats = classify_entry(entry, categories)
         positive = is_positive(entry)
+        timestamp = entry.get("timestamp", "")
 
         for cat in cats:
             ensure_category(model, cat)
-
-            if positive:
-                model["categories"][cat]["alpha"] += weight
-            else:
-                model["categories"][cat]["beta"] += weight
-
-            model["categories"][cat]["samples"] += 1
-            model["categories"][cat]["last_updated"] = entry.get("timestamp")
+            model["categories"][cat].update(weight, positive, timestamp)
 
     save_model(model)
     return model
-
 
 def train_incremental(categories: Dict) -> Dict:
     """Incremental update: process only the latest entry."""
@@ -286,8 +280,6 @@ def train_incremental(categories: Dict) -> Dict:
         return load_model(categories)
 
     model = load_model(categories)
-
-    # Ensure all categories exist
     for cat_name in categories:
         ensure_category(model, cat_name)
     ensure_category(model, "uncategorized")
@@ -296,97 +288,62 @@ def train_incremental(categories: Dict) -> Dict:
     weight = time_decay_weight(latest.get("timestamp", ""))
     cats = classify_entry(latest, categories)
     positive = is_positive(latest)
+    timestamp = latest.get("timestamp", "")
 
     for cat in cats:
         ensure_category(model, cat)
-
-        if positive:
-            model["categories"][cat]["alpha"] += weight
-        else:
-            model["categories"][cat]["beta"] += weight
-
-        model["categories"][cat]["samples"] += 1
-        model["categories"][cat]["last_updated"] = latest.get("timestamp")
+        model["categories"][cat].update(weight, positive, timestamp)
 
     model["total_entries"] = len(entries)
     save_model(model)
     return model
 
-
 def compute_reliability(model: Dict) -> List[Tuple[str, float, float, float, int, float]]:
     """Compute reliability (posterior mean) for each category."""
     results = []
-    for cat_name, params in model.get("categories", {}).items():
-        alpha = params["alpha"]
-        beta_val = params["beta"]
-        samples = params["samples"]
-
-        # Posterior mean of Beta distribution: alpha / (alpha + beta)
-        reliability = alpha / (alpha + beta_val) if (alpha + beta_val) > 0 else 0.5
-
-        # 95% credible interval width (approximate)
-        # For Beta(a,b): variance = ab / ((a+b)^2 * (a+b+1))
-        total = alpha + beta_val
-        if total > 0 and (total + 1) > 0:
-            variance = (alpha * beta_val) / (total * total * (total + 1))
-            ci_width = 2 * 1.96 * math.sqrt(variance)
-        else:
-            ci_width = 1.0
-
-        results.append((cat_name, alpha, beta_val, reliability, samples, ci_width))
-
+    for cat_name, cat_model in model.get("categories", {}).items():
+        if isinstance(cat_model, dict):
+            cat_model = CategoryModel(**cat_model)
+        
+        results.append((
+            cat_name, 
+            cat_model.alpha, 
+            cat_model.beta, 
+            cat_model.reliability, 
+            cat_model.samples, 
+            cat_model.ci_width()
+        ))
     return sorted(results, key=lambda x: -x[3])
-
 
 def sample_posteriors(model: Dict) -> Dict[str, float]:
     """Thompson Sampling: draw from each category's posterior."""
     samples = {}
-    for cat_name, params in model.get("categories", {}).items():
-        alpha = max(params["alpha"], 0.01)
-        beta_val = max(params["beta"], 0.01)
-        samples[cat_name] = random.betavariate(alpha, beta_val)
+    for cat_name, cat_model in model.get("categories", {}).items():
+        if isinstance(cat_model, dict):
+            cat_model = CategoryModel(**cat_model)
+        samples[cat_name] = cat_model.sample()
     return samples
-
 
 def save_snapshot(model: Dict) -> Path:
     """Save a timestamped snapshot for lift comparison."""
     SNAPSHOTS_DIR.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     snapshot_file = SNAPSHOTS_DIR / f"model_{timestamp}.json"
-    snapshot_file.write_text(json.dumps(model, indent=2))
+    snapshot_file.write_text(json.dumps(_serialize_model(model), indent=2))
     return snapshot_file
-
 
 # ============================================
 # META-POLICY RULES (2026 Best Practice)
-# Consolidate repeated mistakes into reusable rules
-# Based on: Meta-Policy Reflexion (arXiv:2509.03990)
 # ============================================
-
 META_POLICY_FILE = FEEDBACK_DIR / "meta_policy_rules.json"
 
-
 def extract_meta_policy_rules(min_occurrences: int = 3) -> List[Dict[str, Any]]:
-    """Extract reusable rules from repeated negative feedback patterns.
-
-    Feb 2026 Upgrade: Recency + intensity weighted confidence.
-    - Recent mistakes weigh more than old ones (exponential decay)
-    - High-intensity feedback (user frustration) boosts confidence faster
-    - Rules include trend analysis (improving vs deteriorating)
-
-    Args:
-        min_occurrences: Minimum times a pattern must appear to become a rule
-
-    Returns:
-        List of meta-policy rules with condition, action, weighted confidence
-    """
     entries = load_feedback_entries()
     negative_entries = [e for e in entries if not is_positive(e)]
 
     if len(negative_entries) < min_occurrences:
         return []
 
-    # Group by category
     category_patterns: Dict[str, List[Dict]] = {}
     for entry in negative_entries:
         cats = classify_entry(entry, DEFAULT_CATEGORIES)
@@ -395,7 +352,6 @@ def extract_meta_policy_rules(min_occurrences: int = 3) -> List[Dict[str, Any]]:
                 category_patterns[cat] = []
             category_patterns[cat].append(entry)
 
-    # Also count positive entries per category for trend analysis
     positive_entries = [e for e in entries if is_positive(e)]
     category_positives: Dict[str, int] = {}
     for entry in positive_entries:
@@ -406,20 +362,18 @@ def extract_meta_policy_rules(min_occurrences: int = 3) -> List[Dict[str, Any]]:
     rules = []
     for category, patterns in category_patterns.items():
         if len(patterns) >= min_occurrences:
-            # Feb 2026: Recency + intensity weighted confidence
             weighted_sum = 0.0
             total_weight = 0.0
-            recent_count = 0  # Last 7 days
+            recent_count = 0  
             recent_positive = 0
 
             for e in patterns:
                 recency = time_decay_weight(e.get("timestamp", ""))
-                intensity = e.get("intensity", 3) / 5.0  # Normalize to 0-1
-                weight = recency * (0.5 + 0.5 * intensity)  # Blend recency + intensity
+                intensity = e.get("intensity", 3) / 5.0
+                weight = recency * (0.5 + 0.5 * intensity)
                 weighted_sum += weight
                 total_weight += 1.0
 
-                # Track recent entries
                 try:
                     ts = e.get("timestamp", "").replace("Z", "").split("+")[0]
                     entry_time = datetime.fromisoformat(ts)
@@ -428,7 +382,6 @@ def extract_meta_policy_rules(min_occurrences: int = 3) -> List[Dict[str, Any]]:
                 except (ValueError, AttributeError):
                     pass
 
-            # Count recent positives for trend
             for e in positive_entries:
                 cats = classify_entry(e, DEFAULT_CATEGORIES)
                 if category in cats:
@@ -440,11 +393,9 @@ def extract_meta_policy_rules(min_occurrences: int = 3) -> List[Dict[str, Any]]:
                     except (ValueError, AttributeError):
                         pass
 
-            # Weighted confidence: base + recency-weighted adjustment
             avg_weighted = weighted_sum / total_weight if total_weight > 0 else 0
             confidence = min(0.95, 0.4 + (avg_weighted * 0.3) + (len(patterns) * 0.05))
 
-            # Trend: improving or deteriorating
             total_positives = category_positives.get(category, 0)
             pos_ratio = total_positives / (total_positives + len(patterns)) if (total_positives + len(patterns)) > 0 else 0
             if recent_count == 0 and recent_positive > 0:
@@ -475,7 +426,6 @@ def extract_meta_policy_rules(min_occurrences: int = 3) -> List[Dict[str, Any]]:
                 ],
             }
 
-            # Category-specific rules
             if category == "git":
                 rule["action"] = "VERIFY git operations before executing - check branch, status, diff"
             elif category == "code_edit":
@@ -489,10 +439,8 @@ def extract_meta_policy_rules(min_occurrences: int = 3) -> List[Dict[str, Any]]:
 
             rules.append(rule)
 
-    # Sort by confidence descending (most urgent first)
     rules.sort(key=lambda r: r["confidence"], reverse=True)
     return rules
-
 
 def save_meta_policy_rules(rules: List[Dict[str, Any]]):
     """Save extracted rules to disk."""
@@ -503,7 +451,6 @@ def save_meta_policy_rules(rules: List[Dict[str, Any]]):
             "rule_count": len(rules),
             "rules": rules,
         }, f, indent=2)
-
 
 def load_meta_policy_rules() -> List[Dict[str, Any]]:
     """Load existing meta-policy rules."""
@@ -516,39 +463,22 @@ def load_meta_policy_rules() -> List[Dict[str, Any]]:
     except (json.JSONDecodeError, KeyError):
         return []
 
-
 # ============================================
 # DPO-STYLE BATCH OPTIMIZATION (Feb 2026)
-# Direct Preference Optimization without explicit reward model.
-# Builds preference pairs from positive/negative feedback,
-# then adjusts category priors more aggressively than
-# simple counting — mimicking DPO's closed-form update.
-#
-# Reference: Rafailov et al. 2023 (arXiv:2305.18290)
 # ============================================
 
 DPO_MODEL_FILE = FEEDBACK_DIR / "dpo_model.json"
-DPO_BETA = 0.1  # Temperature parameter (lower = more aggressive preference following)
-
+DPO_BETA = 0.1
 
 def _override_dpo_beta(value: float):
-    """Override DPO_BETA at module level."""
     global DPO_BETA
     DPO_BETA = value
 
-
 def build_preference_pairs(categories: Dict) -> Dict[str, List[Tuple[Dict, Dict]]]:
-    """Build (chosen, rejected) preference pairs per category.
-
-    For each category, pair the most recent positive entry with the most
-    recent negative entry. This creates implicit preference data without
-    needing explicit A/B comparisons.
-    """
     entries = load_feedback_entries()
     if not entries:
         return {}
 
-    # Classify entries by category and sentiment
     cat_positives: Dict[str, List[Dict]] = {}
     cat_negatives: Dict[str, List[Dict]] = {}
 
@@ -560,7 +490,6 @@ def build_preference_pairs(categories: Dict) -> Dict[str, List[Tuple[Dict, Dict]
             else:
                 cat_negatives.setdefault(cat, []).append(entry)
 
-    # Build pairs: each positive paired with closest-in-time negative
     pairs: Dict[str, List[Tuple[Dict, Dict]]] = {}
     all_cats = set(list(cat_positives.keys()) + list(cat_negatives.keys()))
 
@@ -571,11 +500,9 @@ def build_preference_pairs(categories: Dict) -> Dict[str, List[Tuple[Dict, Dict]
             continue
 
         cat_pairs = []
-        # Sort by timestamp
         pos_sorted = sorted(pos, key=lambda e: e.get("timestamp", ""))
         neg_sorted = sorted(neg, key=lambda e: e.get("timestamp", ""))
 
-        # Pair each positive with the nearest negative (greedy matching)
         used_neg = set()
         for p in pos_sorted:
             best_neg = None
@@ -601,44 +528,20 @@ def build_preference_pairs(categories: Dict) -> Dict[str, List[Tuple[Dict, Dict]
 
     return pairs
 
-
 def dpo_log_ratio(chosen_weight: float, rejected_weight: float, beta: float = DPO_BETA) -> float:
-    """Compute DPO implicit reward difference.
-
-    DPO loss: -log(sigmoid(beta * (log pi(chosen) - log pi(rejected))))
-    We use time-decay weights as proxy for log-probabilities.
-
-    Returns adjustment to apply to category alpha/beta parameters.
-    """
-    # Avoid log(0)
     chosen_weight = max(chosen_weight, 0.01)
     rejected_weight = max(rejected_weight, 0.01)
-
     log_ratio = math.log(chosen_weight) - math.log(rejected_weight)
     sigmoid = 1.0 / (1.0 + math.exp(-beta * log_ratio))
-
-    # Scale adjustment: larger preference gap → larger update
-    adjustment = (sigmoid - 0.5) * 2  # Range: -1 to 1
-    return adjustment
-
+    return (sigmoid - 0.5) * 2
 
 def train_dpo(categories: Dict) -> Dict:
-    """DPO-style batch optimization (Feb 2026 upgrade).
-
-    Instead of simple counting, uses preference pairs to compute
-    direct policy updates. Works alongside Thompson Sampling:
-    - Thompson Sampling: online exploration (per-feedback updates)
-    - DPO: batch exploitation (accumulated preference pairs)
-
-    The DPO adjustment is applied on top of the Thompson model.
-    """
     pairs = build_preference_pairs(categories)
     if not pairs:
         print("No preference pairs found. Need both positive and negative feedback per category.")
         return load_model(categories)
 
     model = load_model(categories)
-
     dpo_adjustments = {}
 
     for cat, cat_pairs in pairs.items():
@@ -649,23 +552,17 @@ def train_dpo(categories: Dict) -> Dict:
         for chosen, rejected in cat_pairs:
             chosen_weight = time_decay_weight(chosen.get("timestamp", ""))
             rejected_weight = time_decay_weight(rejected.get("timestamp", ""))
+            total_adjustment += dpo_log_ratio(chosen_weight, rejected_weight)
 
-            # Compute DPO-style adjustment
-            adj = dpo_log_ratio(chosen_weight, rejected_weight)
-            total_adjustment += adj
-
-        # Average adjustment over all pairs
         avg_adjustment = total_adjustment / len(cat_pairs) if cat_pairs else 0
+        cat_model = model["categories"][cat]
 
-        # Apply DPO adjustment to model parameters
-        # Positive adjustment → boost alpha (more reliable)
-        # Negative adjustment → boost beta (less reliable)
         if avg_adjustment > 0:
-            boost = avg_adjustment * len(cat_pairs) * 0.5  # Scale by pair count
-            model["categories"][cat]["alpha"] += boost
+            boost = avg_adjustment * len(cat_pairs) * 0.5
+            cat_model.alpha += boost
         else:
             penalty = abs(avg_adjustment) * len(cat_pairs) * 0.5
-            model["categories"][cat]["beta"] += penalty
+            cat_model.beta += penalty
 
         dpo_adjustments[cat] = {
             "pairs": len(cat_pairs),
@@ -673,7 +570,6 @@ def train_dpo(categories: Dict) -> Dict:
             "direction": "boost" if avg_adjustment > 0 else "penalize",
         }
 
-    # Save DPO metadata
     dpo_meta = {
         "updated": datetime.now().isoformat(),
         "beta": DPO_BETA,
@@ -687,13 +583,10 @@ def train_dpo(categories: Dict) -> Dict:
     save_model(model)
     return model
 
-
 def print_dpo_results(model: Dict):
-    """Print DPO training results."""
     if not DPO_MODEL_FILE.exists():
         print("\nNo DPO model found. Run --dpo-train first.")
         return
-
     with open(DPO_MODEL_FILE) as f:
         dpo_meta = json.load(f)
 
@@ -722,11 +615,8 @@ def print_dpo_results(model: Dict):
     print("  Run --reliability to see combined effect.")
     print("=" * 60)
 
-
 def print_meta_policy_rules():
-    """Print meta-policy rules for session context."""
     rules = load_meta_policy_rules()
-
     print()
     print("=" * 60)
     print("META-POLICY RULES (Recency + Intensity Weighted)")
@@ -752,11 +642,8 @@ def print_meta_policy_rules():
 
     print("\n" + "=" * 60)
 
-
 def print_reliability_table(model: Dict):
-    """Print formatted reliability table."""
     results = compute_reliability(model)
-
     print()
     print("=" * 78)
     print("THOMPSON SAMPLING RELIABILITY TABLE")
@@ -769,38 +656,29 @@ def print_reliability_table(model: Dict):
     print("  " + "-" * 74)
 
     for cat, alpha, beta_val, reliability, samples, ci_width in results:
-        # Visual bar
         bar_len = int(reliability * 10)
         bar = "#" * bar_len + "-" * (10 - bar_len)
-
         print(f"  {cat:<20s} | {alpha:>7.1f} | {beta_val:>7.1f} | [{bar}] {reliability:>4.0%} | {samples:>7d} | {ci_width:>7.3f}")
 
     print()
     print("=" * 78)
 
-    # Summary
     if results:
         best = results[0]
         worst = results[-1]
         print(f"  Best:  {best[0]} ({best[3]:.0%})")
         print(f"  Worst: {worst[0]} ({worst[3]:.0%})")
         print()
-
-        # Categories needing attention (reliability < 50% with 3+ samples)
         weak = [r for r in results if r[3] < 0.5 and r[4] >= 3]
         if weak:
             print("  Categories needing improvement:")
             for cat, _, _, rel, samp, _ in weak:
                 print(f"    - {cat}: {rel:.0%} ({samp} samples)")
             print()
-
     print("=" * 78)
 
-
 def print_samples(model: Dict):
-    """Print Thompson-sampled probabilities."""
     samples = sample_posteriors(model)
-
     print()
     print("=" * 50)
     print("THOMPSON SAMPLING (Single Draw)")
@@ -814,7 +692,6 @@ def print_samples(model: Dict):
     print()
     print("  (Each run produces different samples - this is expected)")
     print("=" * 50)
-
 
 def main():
     parser = argparse.ArgumentParser(description="Thompson Sampling Feedback Model Trainer (2026)")
@@ -836,9 +713,7 @@ def main():
 
     if args.train:
         model = train_full(categories)
-        # Auto-run DPO batch optimization on full train (Feb 2026: autonomous)
         dpo_model = train_dpo(categories)
-        # Auto-extract meta-policy rules with recency+intensity weighting
         rules = extract_meta_policy_rules()
         save_meta_policy_rules(rules)
         if args.json:
@@ -906,7 +781,6 @@ def main():
             print_meta_policy_rules()
 
     elif args.dpo_train:
-        # Override DPO_BETA via module-level reassignment
         _override_dpo_beta(args.dpo_beta)
         model = train_dpo(categories)
         if args.json:
@@ -923,7 +797,6 @@ def main():
 
     else:
         parser.print_help()
-
 
 if __name__ == "__main__":
     main()

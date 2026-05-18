@@ -21,6 +21,83 @@ test('buildCommercialAlert returns null when revenue does not increase', () => {
     { source: 'local' }
   ), null);
 });
+
+test('safeLogJson strips control characters from remote billing payloads', () => {
+  const rendered = mw.safeLogJson({
+    fallbackReason: 'bad\r\nFORGED',
+    latestPaidOrder: {
+      orderId: 'ord_1\tINJECT',
+    },
+  });
+
+  assert.doesNotMatch(rendered, /\r|\nFORGED|\t/);
+  assert.match(rendered, /bad  FORGED/);
+  assert.match(rendered, /ord_1 INJECT/);
+});
+
+test('buildLogSafeSnapshot omits raw order payloads from console output', () => {
+  const snapshot = mw.buildLogSafeSnapshot({
+    source: 'remote\r\nFORGED',
+    fallbackReason: 'stripe\tfallback',
+    generatedAt: '2026-05-13T14:00:00Z',
+    revenue: {
+      paidOrders: '2',
+      bookedRevenueCents: '4900',
+      latestPaidAt: '2026-05-13T13:00:00Z',
+      latestPaidOrder: { email: 'buyer@example.com', orderId: 'ord_1' },
+    },
+  });
+
+  assert.deepEqual(snapshot, {
+    source: 'remote  FORGED',
+    fallbackReason: 'stripe fallback',
+    generatedAt: '2026-05-13T14:00:00Z',
+    revenue: {
+      paidOrders: 2,
+      bookedRevenueCents: 4900,
+      latestPaidAt: '2026-05-13T13:00:00Z',
+      hasLatestPaidOrder: true,
+    },
+  });
+});
+
+test('buildLogSafeAlert sanitizes alert output and keeps only scalar counters', () => {
+  const output = mw.buildLogSafeAlert({
+    detectedAt: '2026-05-13T14:00:00Z',
+    source: 'stripe\r\nFORGED',
+    fallbackReason: 'webhook\tfallback',
+    newPaidOrders: '1',
+    newBookedRevenueCents: '4900',
+    latestPaidAt: '2026-05-13T13:00:00Z',
+    latestPaidOrder: { email: 'buyer@example.com' },
+    paidOrders: '2',
+    bookedRevenueCents: '9800',
+  }, {
+    keys: {
+      active: '3',
+      totalUsage: '17',
+    },
+  });
+
+  assert.deepEqual(output, {
+    detectedAt: '2026-05-13T14:00:00Z',
+    source: 'stripe  FORGED',
+    fallbackReason: 'webhook fallback',
+    newPaidOrders: 1,
+    newBookedRevenueCents: 4900,
+    latestPaidAt: '2026-05-13T13:00:00Z',
+    hasLatestPaidOrder: true,
+    paidOrders: 2,
+    bookedRevenueCents: 9800,
+    activeKeys: 3,
+    totalUsage: 17,
+  });
+});
+
+test('buildLogSafeAlert defaults malformed numeric fields to zero', () => {
+  assert.equal(mw.buildLogSafeAlert({ newPaidOrders: 'nan' }).newPaidOrders, 0);
+});
+
 test('checkForCommercialChange persists state and records new paid activity', async () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-money-watch-'));
   const statePath = path.join(tmpDir, 'state.json');

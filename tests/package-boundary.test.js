@@ -121,6 +121,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'scripts/statusline-meta.js',
     'scripts/tool-registry.js',
     'skills/thumbgate/SKILL.md',
+    'config/pro/constraints-pro.json',
+    'config/pro/prevention-rules-pro.md',
+    'config/pro/thompson-presets.json',
+    'config/pro/reminders-pro.json',
     '.claude-plugin/plugin.json',
     'README.md',
     'LICENSE',
@@ -208,9 +212,32 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // judge-reward-function, prompting-operating-system, proxy-pointer RAG
   // guardrails, and gemini-embedding-policy required by packaged RAG/vector
   // entrypoints. Keep one-file headroom for release merge churn.
+  // Bumped 242 → 245 (2026-05-06) to ship ThumbGate Bench from the npm
+  // package: scripts/thumbgate-bench.js plus the default and ProgramBench-style
+  // bench fixtures. The CLI now exposes `thumbgate bench --programbench-smoke`.
+  // Bumped 245 → 249 (2026-05-07) to ship the four public Pro upgrade bundle
+  // files under config/pro so `thumbgate pro --upgrade` works from npm without
+  // reintroducing the private top-level pro/ subtree.
+  // Bumped 249 → 250 (2026-05-12) to ship the offline feedback-quality eval
+  // script referenced by `npm run eval:feedback-quality`; otherwise the
+  // published package would expose a dead script.
+  // Bumped 250 → 251 (2026-05-13) to ship public/federal.html, the
+  // federal-agency lead-gen landing page served at /federal (also /government
+  // and /gov aliases). Marketing surface; in-scope for the public shell per
+  // CLAUDE.md "Public shell: CLI, hook installer, adapter configs, basic
+  // local gate runner, public JSON schemas, marketing/docs." See docs/FEDERAL.md.
+  // Bumped 251 → 254 (2026-05-13) to absorb three additive runtime entries:
+  //   • scripts/activation-tracker.js (this branch — required by
+  //     scripts/feedback-loop.js for the activation_first_rule_promoted ping)
+  //   • scripts/plausible-server-events.js (this branch — required by
+  //     src/api/server.js for the /checkout/pro funnel events)
+  //   • scripts/memory-scope-readiness.js (from origin/main — memory-scope
+  //     readiness checks for the agent-native memory scope work)
+  // All three ship in the public bundle because the packaged runtime loads
+  // them on every server boot; omitting them crashes published `thumbgate serve`.
   assert.ok(
-    manifest.fileCount <= 242,
-    `npm package should stay <= 242 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 254,
+    `npm package should stay <= 254 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -268,9 +295,30 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // contribution planning, reward-hacking checks, and ChatGPT ads readiness.
   // Bumped 3.44 MB → 3.45 MB (2026-05-05) for the live $19 quick-read
   // checkout CTA on public buyer paths. The observed package is ~3.440 MB.
+  // Bumped 3.45 MB → 3.50 MB (2026-05-06) for the packaged bench runner,
+  // default ThumbGate Bench fixture, ProgramBench-style smoke fixture, and
+  // landing-page governance setup intake copy. Observed package is ~3.479 MB.
+  // Bumped 3.50 MB -> 3.52 MB (2026-05-07) for the four public Pro upgrade
+  // bundle files under config/pro. Observed package is ~3.505 MB.
+  // Bumped 3.52 MB -> 3.60 MB (2026-05-13) for /terms + /support HTML pages
+  // and the offline feedback_quality_eval.py shipped in the package files
+  // array. Observed package is ~3.518 MB locally; CI is reproducibly a few
+  // KB larger (line-ending normalization), so 3.60 MB gives durable headroom.
+  // Kept at 3.60 MB (2026-05-13) after #1972 added public/federal.html — the
+  // federal-agency lead-gen landing page (~22 KB) served at /federal, /government,
+  // /gov. Observed package is ~3.543 MB after the addition, still under ceiling.
+  // Kept at 3.60 MB (2026-05-13) for the revenue-ROI runtime additions on this
+  // branch: scripts/activation-tracker.js + scripts/plausible-server-events.js
+  // (~9 KB combined). Observed package after all three: ~3.55 MB.
+  // See docs/FEDERAL.md and .changeset/high-roi-checkout-deploy-anticlaim-bundle.md.
+  // Bumped 3.60 MB -> 3.70 MB (2026-05-15) for the unified-revenue-rollup
+  // module (#2090) + Bayesian conversion-rate stats (#2091) + GET
+  // /v1/telemetry/export endpoint (#2092). Observed package ~3.601 MB after
+  // these — the slim headroom buffer needs to grow to avoid threshold-chasing
+  // every observability PR.
   assert.ok(
-    manifest.unpackedSize <= 3_450_000,
-    `npm package should stay <= 3.45 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_700_000,
+    `npm package should stay <= 3.70 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

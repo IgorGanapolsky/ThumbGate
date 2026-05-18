@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>From git init to v1.17.0 in 70 days: an honest ThumbGate build log — ThumbGate</title>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="70 days, 112+ commits, 17 minor releases, ~6,000 npm downloads, $0 customer revenue. What I learned shipping ThumbGate from a one-line repo init to a live production stack at thumbgate.ai.">
+<meta name="keywords" content="ThumbGate, build log, AI agent guardrails, pre-action gates, indie SaaS, npm package, Railway deploy, solo founder, AI coding agents, prototype to production">
+<meta property="og:title" content="From git init to v1.17.0 in 70 days: an honest ThumbGate build log">
+<meta property="og:description" content="The unedited story of taking ThumbGate from a one-line repo init to a live production stack — including what's working, what isn't, and the part where revenue is still zero.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/from-prototype-to-production">
+<meta property="og:image" content="https://thumbgate.ai/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://thumbgate.ai/learn/from-prototype-to-production">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "From git init to v1.17.0 in 70 days: an honest ThumbGate build log",
+  "description": "70 days, 17 minor releases, 6k npm downloads, $0 real revenue. What I learned shipping ThumbGate from a repo init to production.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-05-12",
+  "dateModified": "2026-05-12",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/from-prototype-to-production",
+  "about": [
+    {"@type": "Thing", "name": "indie SaaS build log"},
+    {"@type": "Thing", "name": "AI agent guardrails"},
+    {"@type": "Thing", "name": "shipping in public"}
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+<style>
+  .timeline { border-left: 2px solid var(--border); padding-left: 1.2rem; margin: 1.5rem 0; }
+  .timeline-item { margin-bottom: 1.2rem; position: relative; }
+  .timeline-item::before { content: ''; position: absolute; left: -1.5rem; top: 0.5rem; width: 10px; height: 10px; border-radius: 50%; background: var(--cyan); }
+  .timeline-date { color: var(--cyan); font-family: ui-monospace, monospace; font-size: 0.85rem; }
+  .timeline-title { font-weight: 600; margin: 0.1rem 0; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.8rem; margin: 1.5rem 0; }
+  .stat { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem; }
+  .stat-num { font-family: ui-monospace, monospace; color: var(--green); font-size: 1.4rem; font-weight: 600; }
+  .stat-label { color: var(--muted); font-size: 0.8rem; margin-top: 0.2rem; }
+  .lesson { border-left: 3px solid var(--green); padding: 0.6rem 0.9rem; margin: 1rem 0; background: rgba(0,255,128,0.04); }
+  .honest { border-left: 3px solid #f59e0b; padding: 0.6rem 0.9rem; margin: 1rem 0; background: rgba(245,158,11,0.06); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<main>
+
+<h1>From <code>git init</code> to v1.17.0 in 70 days: an honest ThumbGate build log</h1>
+<p class="meta">Igor Ganapolsky · May 12, 2026 · 8 min read</p>
+
+<p>On <strong>March 3</strong>, the first commit on this repo was three words: <code>chore: initialize repository</code>. Today the live build at <a href="https://thumbgate.ai/health">thumbgate.ai/health</a> reports <code>"version":"1.17.0"</code>. In between, 70 days, 112 commits on the visible branch, 60+ tagged releases, ~6,000 npm downloads, and one expensive lesson: <em>shipping is not the same as selling</em>.</p>
+
+<p>This is the unedited build log — the architecture choices that held, the ones that didn't, and the part where revenue is still zero.</p>
+
+<div class="stats">
+  <div class="stat"><div class="stat-num">70</div><div class="stat-label">days, init → production</div></div>
+  <div class="stat"><div class="stat-num">112+</div><div class="stat-label">commits, this branch</div></div>
+  <div class="stat"><div class="stat-num">17</div><div class="stat-label">minor releases (v1.0 → v1.17)</div></div>
+  <div class="stat"><div class="stat-num">~6k</div><div class="stat-label">npm downloads, last 30d</div></div>
+  <div class="stat"><div class="stat-num">15</div><div class="stat-label">live products in Stripe</div></div>
+  <div class="stat"><div class="stat-num">$0</div><div class="stat-label">cold-traffic revenue</div></div>
+</div>
+
+<h2>The hypothesis</h2>
+
+<p>AI coding agents (Claude Code, Cursor, Codex, Aider, Cline) burn money making the same mistake twice. Force-pushing to <code>main</code>. Editing <code>.env</code> without checking what's already in it. Claiming "deployed" without curling the health endpoint. Calling shell with un-escaped user input.</p>
+
+<p>If you've watched an agent retry the same broken patch four times in a row, you know exactly what I mean.</p>
+
+<p>The hypothesis: <strong>capture the moment of failure, distill it into a rule, and gate the next attempt <em>before</em> the tool call fires</strong>. Not a linter (those run too late). Not a post-action review (the damage is done). A pre-action gate with an opinion.</p>
+
+<h2>The timeline</h2>
+
+<div class="timeline">
+  <div class="timeline-item">
+    <div class="timeline-date">2026-03-03</div>
+    <div class="timeline-title">Repo init. First commit: <code>bootstrap OSS RLHF feedback system</code>.</div>
+    <p>The original framing was "RLHF for coding agents." It was wrong — what I was actually building was context engineering plus enforcement. The pivot took weeks.</p>
+  </div>
+
+  <div class="timeline-item">
+    <div class="timeline-date">2026-03-06</div>
+    <div class="timeline-title">First release: v0.6.8. The version starts at 0.6 because there's a private prototype that predates the public repo.</div>
+  </div>
+
+  <div class="timeline-item">
+    <div class="timeline-date">2026-03-09 → 2026-04-02</div>
+    <div class="timeline-title">~40 patch releases. The architecture stabilizes.</div>
+    <p>SQLite + FTS5 for the lesson database (because it ships in the npm package and survives no-network installs). LanceDB for vectors. Thompson Sampling for which gates to fire when. ContextFS for context assembly. <a href="/learn/agent-harness-pattern">The agent harness pattern</a> as the mental model.</p>
+  </div>
+
+  <div class="timeline-item">
+    <div class="timeline-date">2026-04-08</div>
+    <div class="timeline-title">v1.0.0 cut. The OSS package ships on npm as <code>thumbgate</code>.</div>
+    <p>The same day, v1.1.0 lands the HuggingFace export. The cadence is "release on green CI, don't wait."</p>
+  </div>
+
+  <div class="timeline-item">
+    <div class="timeline-date">2026-04-20</div>
+    <div class="timeline-title">npm downloads peak at 1,334 in a single day.</div>
+    <p>That spike was a Reddit post, not paid traffic. Organic interest exists. Conversion to paid does not, yet.</p>
+  </div>
+
+  <div class="timeline-item">
+    <div class="timeline-date">2026-04-21</div>
+    <div class="timeline-title">X/Twitter retired from active distribution.</div>
+    <p>Active outbound moved to Reddit, LinkedIn, Threads, Bluesky, Instagram, YouTube. All routed through one social-publishing layer (Zernio) so I'm not maintaining six token rotations.</p>
+  </div>
+
+  <div class="timeline-item">
+    <div class="timeline-date">2026-05-11</div>
+    <div class="timeline-title">v1.17.0 ships. Free tier opens up: unlimited feedback captures, 5 active prevention rules (was 3 lifetime + 1 rule).</div>
+    <p>The hard wall on the free tier was killing habit formation. Daily-use lane is now open; Pro gates the dashboard, recall, lesson search, and DPO export.</p>
+  </div>
+
+  <div class="timeline-item">
+    <div class="timeline-date">2026-05-12 (today)</div>
+    <div class="timeline-title">Stripe surface fully reconciled. 15 active products, 14 customer-facing payment links, zero duplicates, every product carries the correct tier logo. Dashboard live.</div>
+  </div>
+</div>
+
+<h2>What's running in production</h2>
+
+<ul>
+  <li><strong>npm package <code>thumbgate</code></strong> — the public shell. CLI, hook installer, adapter configs, JSON schemas. Node ≥18.18, MIT.</li>
+  <li><strong>Railway-hosted API</strong> at <code>thumbgate.ai</code> — health, dashboard, checkout intent, billing summary. Docker rebuild on every push to <code>main</code> (2–5 min). Verified post-deploy by curling <code>/health</code> and grepping the version string.</li>
+  <li><strong>Stripe</strong> — 15 active products (Pro $19/mo + $149/yr; Team $49/seat/mo; plus 13 funnel/diagnostic SKUs from $1 to $1,500). All carry the canonical ThumbGate logo. Checkout sessions verified to mint live <code>cs_live_</code> IDs.</li>
+  <li><strong>SQLite + FTS5 lesson DB</strong> — ships in the package, runs on-device, never phones home.</li>
+  <li><strong>LanceDB vector index</strong> — for semantic lesson recall.</li>
+  <li><strong>Plausible analytics</strong> — privacy-respecting, no cookie banner, no IP logging.</li>
+  <li><strong>Two-repo split</strong>: public <code>ThumbGate</code> (this) is the thin shell; <code>ThumbGate-Core</code> (private) holds the ranking, synthesis, billing intelligence, and org-wide telemetry. Wire protocol between them, never <code>require()</code>.</li>
+</ul>
+
+<h2>Five lessons I'd give my March-3 self</h2>
+
+<div class="lesson">
+  <strong>1. A deployment-verification gate beats a memory note.</strong> I told myself "always curl <code>/health</code> after merge" for weeks. It didn't stick. The fix was a hard rule in <code>CLAUDE.md</code> that blocks the words "done", "deployed", "live", or "shipped" until two grep commands return non-empty output. The day that gate landed was the day I stopped lying to myself about ship status.
+</div>
+
+<div class="lesson">
+  <strong>2. Behavioral rules only work at ZERO/ALWAYS thresholds.</strong> "1 in 5 social posts should mention the product" silently degrades to "every post mentions the product" because the LLM can't count across sessions. Write absolutes: <em>never</em> auto-post replies, <em>always</em> show <code>gh pr view</code> output before claiming done. The middle ground does not exist.
+</div>
+
+<div class="lesson">
+  <strong>3. Memory and instructions decay together.</strong> When you change a rule in <code>CLAUDE.md</code>, also update the lesson DB entry or prevention rule that contradicts it. Otherwise the agent follows stale memory over the new instruction. Memory always wins ties.
+</div>
+
+<div class="lesson">
+  <strong>4. Fix-on-fix commits are a systemic-failure signal.</strong> If a bug takes 3+ commit attempts to land, stop pushing. Read the platform docs. The five-commit CSS chase that turned out to be one line of <code>scroll-snap-type: none</code> on mobile cost me a full afternoon of CI minutes and trust.
+</div>
+
+<div class="lesson">
+  <strong>5. The shape of "production" is fractal.</strong> "Production" was running by week 2 (Railway, dashboard, npm). "Production-ready for paying customers" took until week 10 (clean Stripe, verified deploy gate, kill-stale-payment-links pass, logo on every product). The first one ships in a weekend. The second one is the actual job.
+</div>
+
+<h2>The part that's still broken</h2>
+
+<div class="honest">
+  <strong>Real customer revenue is $0.</strong> Excluding test transactions, no cold-traffic visitor has ever paid for ThumbGate Pro or Team. The npm download trend is real (6k in 30 days), the landing page conversion is not. 50 recent Stripe Checkout sessions started; zero completed.
+</div>
+
+<p>This is honest because pretending otherwise would be the exact kind of "live revenue claim" the deploy-verification gate exists to stop. The product works. The funnel doesn't yet. That's a distribution problem, not a product-doesn't-work problem — but it's still a problem.</p>
+
+<p>The next 30 days are about three things:</p>
+
+<ol>
+  <li><strong>Friction-free first-gate-fires.</strong> If <code>npx thumbgate init</code> doesn't surface a real, named gate inside 60 seconds on a real codebase, install-to-aha is broken. Measuring this with anonymous telemetry on the install flow.</li>
+  <li><strong>Story-driven distribution.</strong> Build logs (like this one) and gate-of-the-week posts. Specific war stories beat feature lists. Verified by Plausible referrer reports, not vibes.</li>
+  <li><strong>Refund-rate triage on the funnel SKUs.</strong> The $1, $5, $19, $49 quick-read tier exists to validate willingness-to-pay at low friction. If those convert, the $1,500 Workflow Hardening Sprint becomes a real consulting funnel.</li>
+</ol>
+
+<h2>The tools I shipped this on</h2>
+
+<p>Solo founder, no team. Stack: <strong>Claude Code</strong> as the primary engineer (CTO mode, autonomous PR/merge/deploy when CI is green); <strong>Cursor</strong> for ad-hoc edits; <strong>Railway</strong> for hosting; <strong>Stripe</strong> for billing; <strong>Resend</strong> for transactional email; <strong>Plausible</strong> for analytics; <strong>Zernio</strong> for cross-platform social publishing.</p>
+
+<p>The single highest-ROI choice was treating Claude Code as a CTO with a strict <code>CLAUDE.md</code> contract — branch from <code>main</code>, push, PR, wait for green CI, merge, verify, deploy. The model handles the work; the gate file handles the discipline.</p>
+
+<h2>Try it</h2>
+
+<p>One-line install:</p>
+
+<pre><code>npx thumbgate init</code></pre>
+
+<p>You'll have a working pre-action gate in your AI coding agent inside 60 seconds, or the install is broken and I want to hear about it.</p>
+
+<p>If you've been burned by an AI agent doing something it shouldn't have, the <a href="/checkout/pro?utm_source=blog&amp;utm_medium=prototype_to_production&amp;utm_campaign=build_log">Pro tier</a> is $19/mo and adds the dashboard, recall, and lesson search. Or just install the free version, get a feel for it, and decide later. The whole thing is MIT.</p>
+
+<p>I'll write the next build log at v2.0.0 — or when the first cold-traffic customer pays, whichever comes first.</p>
+
+<p class="meta">— Igor</p>
+
+<hr>
+
+<p class="meta">More build logs: <a href="/learn/agent-harness-pattern">The agent harness pattern</a> · <a href="/learn/mcp-pre-action-checks-explained">MCP pre-action checks explained</a> · <a href="/learn/stop-ai-agent-force-push">Stop AI agents from force-pushing</a> · <a href="/learn/vibe-coding-safety-net">A safety net for vibe-coding</a></p>
+
+</main>
+
+</body>
+</html>

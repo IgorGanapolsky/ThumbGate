@@ -14,7 +14,7 @@ const {
 test('revenue email campaign includes required commercial compliance footer and paid CTAs', () => {
   const message = renderMessage(CAMPAIGNS.aiventyx_marketplace_followup);
   assert.equal(message.to, 'qaisermehdi3@gmail.com');
-  assert.match(message.text, /buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
+  assert.match(message.text, /buy\.stripe\.com\/5kQ7sL76s1eSaK55e33sI2H/);
   assert.match(message.text, /Max Smith KDP LLC/);
   assert.match(message.text, /Unsubscribe:/);
 });
@@ -40,6 +40,15 @@ test('revenue email dispatch sends through injected transport when confirmed', a
   assert.equal(result.sent, true);
   assert.equal(calls.length, 1);
   assert.equal(calls[0].to, 'qaisermehdi3@gmail.com');
+});
+
+test('revenue email dispatch fails confirmed runs when Resend rejects the send', async () => {
+  await assert.rejects(
+    () => main(['--campaign=aiventyx_marketplace_followup', '--confirm-send'], {
+      sendEmail: async () => ({ sent: false, reason: 'api_error' }),
+    }),
+    /Revenue email was not sent: api_error/,
+  );
 });
 
 test('parseArgs captures campaign and guards', () => {

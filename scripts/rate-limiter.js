@@ -12,28 +12,28 @@ const {
 const USAGE_FILE = path.join(process.env.HOME || '/tmp', '.thumbgate', 'usage-limits.json');
 
 // ──────────────────────────────────────────────────────────
-// NEW: Lifetime caps on free tier — users hit the wall fast
-// and must upgrade to keep using core features.
+// Free tier: generous on captures (habit formation) and rules
+// (5 active gates), gated on Pro-only features (recall, search,
+// exports). Dashboard, exports, and unlimited rules drive Pro.
 // ──────────────────────────────────────────────────────────
 const FREE_TIER_LIMITS = {
-  capture_feedback:   { daily: Infinity, lifetime: 3,  label: 'feedback captures' },
-  prevention_rules:   { daily: Infinity, lifetime: 1,  label: 'prevention rules generated' },
-  recall:             { daily: 0,        lifetime: 0,  label: 'recall queries (Pro only)' },
-  search_lessons:     { daily: 0,        lifetime: 0,  label: 'lesson searches (Pro only)' },
-  search_thumbgate:   { daily: 0,        lifetime: 0,  label: 'ThumbGate searches (Pro only)' },
-  commerce_recall:    { daily: 0,        lifetime: 0,  label: 'commerce recalls (Pro only)' },
-  export_dpo:         { daily: 0,        lifetime: 0,  label: 'DPO exports (Pro only)' },
-  export_databricks:  { daily: 0,        lifetime: 0,  label: 'Databricks exports (Pro only)' },
-  construct_context_pack: { daily: Infinity, lifetime: 3, label: 'context packs' },
+  capture_feedback:   { daily: Infinity, lifetime: Infinity, label: 'feedback captures' },
+  prevention_rules:   { daily: Infinity, lifetime: Infinity, label: 'prevention rules generated' },
+  recall:             { daily: 0,        lifetime: 0,        label: 'recall queries (Pro only)' },
+  search_lessons:     { daily: 0,        lifetime: 0,        label: 'lesson searches (Pro only)' },
+  search_thumbgate:   { daily: 0,        lifetime: 0,        label: 'ThumbGate searches (Pro only)' },
+  commerce_recall:    { daily: 0,        lifetime: 0,        label: 'commerce recalls (Pro only)' },
+  export_dpo:         { daily: 0,        lifetime: 0,        label: 'DPO exports (Pro only)' },
+  export_databricks:  { daily: 0,        lifetime: 0,        label: 'Databricks exports (Pro only)' },
+  construct_context_pack: { daily: Infinity, lifetime: Infinity, label: 'context packs' },
 };
 
-const FREE_TIER_MAX_GATES = 1; // Down from 5 — one auto-promoted gate, then paywall
+const FREE_TIER_MAX_GATES = 5; // 5 active prevention rules on free; Pro is unlimited
 
-const UPGRADE_MESSAGE = `Pro: ${PRO_PRICE_LABEL} — unlimited captures, recall, prevention rules, and dashboard: ${PRO_MONTHLY_PAYMENT_LINK}\n  Team: ${TEAM_PRICE_LABEL} after workflow qualification.`;
+const UPGRADE_MESSAGE = `Pro: ${PRO_PRICE_LABEL} — unlimited rules, recall, lesson search, dashboard, and exports: ${PRO_MONTHLY_PAYMENT_LINK}\n  Team: ${TEAM_PRICE_LABEL} after workflow qualification.`;
 
 const PAYWALL_MESSAGES = {
-  capture_feedback: 'You\'ve used all 3 free feedback captures. Your agent is still making mistakes — upgrade to Pro to capture every one and build real prevention rules.',
-  prevention_rules: 'Free tier includes 1 prevention rule. Your agents need more protection — upgrade to Pro for unlimited rules.',
+  prevention_rules: 'Free tier includes 5 active prevention rules. Promote more or unlock unlimited rules with Pro.',
   recall: 'Recall is a Pro feature. Your past feedback is stored locally — upgrade to search and reuse it.',
   search_lessons: 'Lesson search is a Pro feature. Upgrade to find patterns in your agent\'s mistakes.',
   default: 'This feature requires Pro. Start Pro — card required; billed today.',
@@ -42,6 +42,17 @@ const PAYWALL_MESSAGES = {
 function isProTier(authContext) {
   if (authContext && authContext.tier === 'pro') return true;
   if (process.env.THUMBGATE_API_KEY || process.env.THUMBGATE_PRO_MODE === '1' || process.env.THUMBGATE_NO_RATE_LIMIT === '1') return true;
+  // Creator/dogfooding bypass: when the owner has the dev secret + bypass
+  // configured (env or ~/.config/thumbgate/dev.json), treat the install as Pro
+  // so marketing nudges and rate limits stop firing on the maintainer's own
+  // machine.
+  try {
+    const { isCreatorDev } = require('./pro-local-dashboard');
+    if (isCreatorDev()) return true;
+  } catch (_) {
+    // pro-local-dashboard unavailable in this runtime — fall through to
+    // license/free-tier handling rather than failing the check.
+  }
   try {
     const { isProLicensed } = require('./license');
     if (isProLicensed()) return true;

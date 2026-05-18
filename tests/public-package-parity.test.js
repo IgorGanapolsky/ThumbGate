@@ -53,6 +53,30 @@ describe('public/ package parity', () => {
     );
   });
 
+  test('public Pro upgrade bundle lives under config/pro and ships with the npm config whitelist', () => {
+    assert.ok(
+      pkg.files.includes('config/'),
+      'package.json files must include config/ so the public Pro upgrade bundle ships',
+    );
+    assert.equal(
+      fs.existsSync(path.join(ROOT, 'pro')),
+      false,
+      'public package must not rely on an unpublished top-level pro/ subtree',
+    );
+
+    for (const rel of [
+      'config/pro/constraints-pro.json',
+      'config/pro/prevention-rules-pro.md',
+      'config/pro/thompson-presets.json',
+      'config/pro/reminders-pro.json',
+    ]) {
+      assert.ok(
+        fs.existsSync(path.join(ROOT, rel)),
+        `${rel} must exist so thumbgate pro --upgrade works from npm`,
+      );
+    }
+  });
+
   test('critical shipped HTML files have correct pricing', () => {
     // Guard against $99/seat Team pricing leaking back into any shipped HTML
     const shipped = pkg.files

@@ -8,7 +8,7 @@
 
 **Your AI coding bill has a leak.**
 
-**Stop paying $ for the same AI mistake.**
+**Stop paying for the same AI mistake twice.**
 
 Every retry loop, every hallucinated import, every *"let me try a different approach"* — those are billable tokens on every LLM vendor's bill. Thumbs-down once; ThumbGate blocks that exact mistake on every future call. Across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — any MCP-compatible agent, forever.
 
@@ -21,6 +21,14 @@ Under the hood: your thumbs-down becomes one of your **Pre-Action Checks** that 
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+---
+
+> *"A better dashboard doesn't make the agents more reliable. The hard part isn't visibility. It's trust."*
+>
+> — **Rob May**, CEO & co-founder, Neurometric AI, quoted in [The New Stack](https://thenewstack.io/claude-code-agent-view/) on Anthropic's Claude Code Agent View (May 2026).
+>
+> ThumbGate is the open-source layer that makes the trust part real: PreToolUse gates, thumbs-down to rule, audit trail on every interception.
 
 ---
 
@@ -83,8 +91,8 @@ ThumbGate doesn't make your agent smarter. It makes your agent *cheaper to be wr
 ## Quick Start
 
 ```bash
-npx thumbgate init       # auto-detects your agent, wires everything
-npx thumbgate capture "Never run DROP on production tables"
+npx thumbgate init                                                         # auto-detects your agent, wires everything
+npx thumbgate capture --feedback=down --context="Never run DROP on production tables"
 ```
 
 That single command creates a prevention rule. Next time any AI agent tries to run `DROP` on production:
@@ -107,13 +115,26 @@ ThumbGate operates as a 4-layer enforcement stack between your AI agent and your
 Your thumbs-up/down reactions are captured via MCP protocol, CLI, or the ChatGPT GPT surface. Each reaction is stored as a structured lesson with context, timestamp, and severity.
 
 ### Layer 2: Check Engine
-The check engine converts lessons into enforceable rules using pattern matching, semantic similarity (via LanceDB vectors), and Thompson Sampling for adaptive rule selection. Rules stay in local ThumbGate runtime state.
+The check engine converts lessons into enforceable rules. **The runtime gate decision is deterministic** — literal pattern match → AST match → scoped rule lookup. No LLM call on the enforcement path.
+
+Where retrieval is needed (an agent is about to run a destructive command not on the literal block list, but semantically similar to one we've blocked before), ThumbGate uses local CPU-only `bge-small` embeddings via LanceDB's built-in pipeline. No external API call, no inference cost beyond CPU. So **"no LLM in enforcement"** holds: the gate decision uses no LLM; the rule corpus is just searchable via local embeddings.
+
+**Thompson Sampling tunes per-rule confidence weights** for soft-gating rules so high-noise rules quiet down and high-signal rules sharpen. It never decides *whether* a rule fires — a hard rule like "block `git push --force` on main" always fires deterministically. Bandit exploration would be terrifying for hard rules; we don't do it.
+
+Rules stay in local ThumbGate runtime state.
 
 ### Layer 3: Pre-Action Interception
 Before any agent action executes, ThumbGate's `PreToolUse` hook intercepts the command and evaluates it against all active checks. This happens at the MCP protocol level — the agent physically cannot bypass it.
 
-### Layer 4: Multi-Agent Distribution
-Checks are distributed across all connected agents via MCP stdio protocol. One correction in Claude Code protects Cursor, Codex, Gemini CLI, Cline, and any MCP-compatible agent.
+### Layer 4: Multi-Agent Distribution (the actual moat vs hand-rolled hooks)
+Claude Code already ships `permissions.deny` and `PreToolUse` hooks. Cursor and Codex have their own. So why ThumbGate over a hand-written hook?
+
+Two things hand-written hooks structurally cannot do:
+
+1. **Cross-agent propagation.** A `permissions.deny` pattern lives in one agent's config and stays there. ThumbGate's checks distribute across every connected agent over MCP stdio — thumbs-down once in Cursor, the same pattern blocks on Claude Code, Codex, Gemini CLI, Cline, OpenCode, Amp in the next session, no copy-paste between configs.
+2. **Learning loop.** A hand-written hook covers exactly the patterns you wrote. ThumbGate promotes every thumbs-down into a fresh rule, tunes existing rules' confidence weights from outcomes (Thompson Sampling, see Layer 2), and pulls semantically-near patterns into scope via local embeddings. The rule corpus sharpens without an operator hand-writing a regex for every new mistake shape.
+
+Hand-rolled hooks are the right tool for a small, static denylist you maintain by hand. ThumbGate is the right tool when you want corrections from any agent to harden every agent automatically.
 
 Prompt engineering still matters, but it is only the starting point. ThumbGate adds prompt evaluation on top: proof lanes, benchmarks, and self-heal checks tell you whether your prompt and workflow actually held up under execution instead of leaving you to guess from vibes. Run `npx thumbgate eval --from-feedback --write-report=.thumbgate/prompt-eval-proof.md` to turn real thumbs-up/down feedback into reusable eval cases and a buyer-ready proof report.
 
@@ -132,7 +153,7 @@ The catalog currently includes the April 23, 2026 Tinker additions:
 - `tinker/qwen3.6-27b` for the cheap fast-path
 - `tinker/kimi-k2.6-128k` for long-trace review and multi-agent sessions
 
-Each recommendation ships with the benchmark commands to run next: feedback-derived prompt eval, `gate-eval`, and `thumbgate bench`. That keeps model selection evidence-backed instead of hype-driven.
+Each recommendation ships with the benchmark commands to run next: feedback-derived prompt eval, `gate-eval`, and `thumbgate bench`. For whole-repo clone claims, add `npx thumbgate bench --programbench-smoke` to generate a ProgramBench-style cleanroom proof report without claiming an official ProgramBench score. That keeps model selection evidence-backed instead of hype-driven.
 
 ![Feedback Pipeline](docs/diagrams/feedback_pipeline.png)
 
@@ -146,6 +167,9 @@ Each recommendation ships with the benchmark commands to run next: feedback-deri
 |-------|---------|
 | **Claude Code** | `npx thumbgate init --agent claude-code` |
 | **Cursor** | `npx thumbgate init --agent cursor` |
+| **VS Code / Open VSX** | [plugins/vscode-extension/README.md](plugins/vscode-extension/README.md) |
+| **Antigravity-compatible** | [plugins/antigravity-extension/INSTALL.md](plugins/antigravity-extension/INSTALL.md) |
+| **JetBrains** | [plugins/jetbrains-plugin/README.md](plugins/jetbrains-plugin/README.md) |
 | **Codex** | `npx thumbgate init --agent codex` |
 | **Gemini CLI** | `npx thumbgate init --agent gemini` |
 | **Amp** | `npx thumbgate init --agent amp` |
@@ -229,10 +253,10 @@ ThumbGate sells three concrete outcomes:
 ## CLI Reference
 
 ```bash
-npx thumbgate init       # detect agent, wire hooks
-npx thumbgate doctor     # health check
-npx thumbgate capture    # create a check from text
-npx thumbgate lessons    # see what's been learned
+npx thumbgate init                                              # detect agent, wire hooks
+npx thumbgate doctor                                            # health check
+npx thumbgate capture --feedback=up|down --context="<text>"    # capture a signal as a stored lesson
+npx thumbgate lessons                                           # see what's been learned
 npx thumbgate explore    # terminal explorer for lessons, checks, stats
 npx thumbgate background-governance  # review background-agent run risk
 npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai --json  # evaluate GPT-5.5 routing
@@ -240,6 +264,7 @@ npx thumbgate native-messaging-audit  # inspect local browser bridges and extens
 npx thumbgate dashboard  # open local dashboard
 npx thumbgate serve      # start MCP server on stdio
 npx thumbgate bench      # run reliability benchmark
+npx thumbgate bench --programbench-smoke  # include cleanroom whole-repo proof lane
 ```
 
 ---
@@ -259,9 +284,9 @@ npx thumbgate bench      # run reliability benchmark
 | Org-wide dashboard | — | — | ✅ |
 | Approval + audit proof | — | — | ✅ |
 
-The free tier gives you 3 lifetime feedback captures and 1 auto-promoted prevention rule — enough to prove the enforcement loop works. MCP integrations for all agents (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode) ship free.
+The free tier gives you unlimited feedback captures and up to 5 active auto-promoted prevention rules — generous enough to make ThumbGate part of your daily flow. MCP integrations for all agents (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode) ship free.
 
-Pro ($19/mo or $149/yr) lifts those caps and adds history-aware lesson recall, lesson search, DPO export, and a personal dashboard. Team ($49/seat/mo) adds a shared hosted lesson DB, org dashboard, and shared enforcement across the org. Pro and Team include `open_feedback_session`, `append_feedback_context`, and `finalize_feedback_session` for structured multi-turn feedback capture.
+Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recall, lesson search, DPO export, and a personal dashboard. Team ($49/seat/mo) adds a shared hosted lesson DB, org dashboard, and shared enforcement across the org. Pro and Team include `open_feedback_session`, `append_feedback_context`, and `finalize_feedback_session` for structured multi-turn feedback capture.
 
 **Best first paid motion for teams:** the **Workflow Hardening Sprint** — qualify one repeated failure before committing to a full rollout. **[Start intake →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake)**
 
@@ -350,7 +375,7 @@ curl -X POST http://localhost:3456/v1/dpo/export \
 | Layer | Technology |
 |-------|-----------|
 | **Storage** | SQLite + FTS5, LanceDB vectors, JSONL logs |
-| **Capture** | 3 feedback captures lifetime (free), unlimited (Pro) |
+| **Capture** | Unlimited feedback captures (free + Pro) |
 | **Intelligence** | MemAlign dual recall, Thompson Sampling |
 | **Enforcement** | PreToolUse hook engine, Checks config |
 | **Interfaces** | MCP stdio, HTTP API, CLI (Node.js >=18) |
@@ -373,8 +398,11 @@ Every Changeset is tied to the exact `main` merge commit and generates Verificat
 - **[Open ThumbGate GPT](https://thumbgate-production.up.railway.app/go/gpt?utm_source=github&utm_medium=readme&utm_campaign=readme_gpt)** — ThumbGate GPT: start here. Paste agent actions, get advice + checkpointing. No, users do not have to keep chatting inside the ThumbGate GPT to use ThumbGate — the hard enforcement layer still runs where the work happens.
 - **[Claude Desktop Extension](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb)** — One-click install for Claude Desktop
 - **[Codex Plugin](https://thumbgate-production.up.railway.app/codex-plugin)** — Auto-updating standalone bundle and install page for Codex CLI
+- **[VS Code / Open VSX Extension](plugins/vscode-extension/README.md)** — Marketplace-ready MCP provider and `.vscode/mcp.json` fallback for VS Code-compatible IDEs
+- **[Antigravity-compatible VSIX](plugins/antigravity-extension/INSTALL.md)** — Open VSX/direct VSIX install path while Antigravity-specific marketplace support is still unproven
+- **[JetBrains Plugin Scaffold](plugins/jetbrains-plugin/README.md)** — IntelliJ/PyCharm Marketplace path for the same `thumbgate@latest` runtime
 - **[Perplexity Command Center](docs/PERPLEXITY_MAX_COMMAND_CENTER.md)** — AI-search visibility + lead discovery
-- **[ThumbGate Bench](docs/THUMBGATE_BENCH.md)** — Reliability benchmark for check evaluation
+- **[ThumbGate Bench](docs/THUMBGATE_BENCH.md)** — Reliability benchmark and ProgramBench-style cleanroom proof lane
 - **[Manus AI Skill](skills/thumbgate/SKILL.md)** — ThumbGate integration for Manus AI agents
 
 ---
@@ -408,14 +436,15 @@ Those are suggestions the agent can ignore. ThumbGate checks are enforced — th
 If it supports MCP or pre-action hooks, yes. Claude Code, Claude Desktop, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode all work out of the box.
 
 **Is it free?**
-The free tier gives you 3 lifetime feedback captures and 1 auto-promoted prevention rule — enough to prove the enforcement loop works. MCP integrations ship free for every agent.
+The free tier gives you unlimited feedback captures and up to 5 active auto-promoted prevention rules — generous enough for solo devs to use daily. MCP integrations ship free for every agent.
 
-Pro ($19/mo or $149/yr) lifts those caps and adds history-aware lesson recall, lesson search, and a personal dashboard. Team ($49/seat/mo) adds a shared hosted lesson DB, org dashboard, and shared enforcement.
+Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recall, lesson search, and a personal dashboard. Team ($49/seat/mo) adds a shared hosted lesson DB, org dashboard, and shared enforcement.
 
 ---
 
 ## Docs
 
+- [**ThumbGate for Federal Agencies**](docs/FEDERAL.md) — pilot-ready posture, NIST 800-53 control mapping, OMB M-24-10 / EO 14110 alignment, ThumbGate-Core gov deployment mode, public/Core boundary invariants. Landing page: [thumbgate.ai/federal](https://thumbgate-production.up.railway.app/federal).
 - [First Dollar Playbook](docs/FIRST_DOLLAR_PLAYBOOK.md) — turning one painful workflow into the next booked pilot
 - [Commercial Truth](docs/COMMERCIAL_TRUTH.md) — pricing, claims, what we don't say
 - [Changeset Strategy](docs/CHANGESET_STRATEGY.md) — release notes and version bump enforcement

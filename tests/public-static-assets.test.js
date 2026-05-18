@@ -11,6 +11,7 @@ process.env._TEST_API_KEYS_PATH = path.join(tmp, 'api-keys.json');
 
 const { startServer } = require('../src/api/server');
 const root = path.join(__dirname, '..');
+const publicDir = path.join(root, 'public');
 
 let handle;
 let origin = '';
@@ -87,4 +88,112 @@ test('packaged well-known MCP server card is valid JSON', () => {
   const payload = JSON.parse(fs.readFileSync(path.join(root, '.well-known/mcp/server-card.json'), 'utf8'));
   assert.equal(payload.name, 'thumbgate');
   assert.equal(typeof payload.version, 'string');
+});
+
+test('landing page does not render empty revenue links', async () => {
+  const res = await fetch(`${origin}/`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+
+  assert.doesNotMatch(html, /href=""/, 'rendered landing page must not contain empty href links');
+  assert.doesNotMatch(html, /__SPRINT_DIAGNOSTIC_CHECKOUT_URL__|__WORKFLOW_SPRINT_CHECKOUT_URL__/);
+  assert.match(html, /https:\/\/buy\.stripe\.com\/28E00j3Uge1E2dzgWL3sI2J/);
+  assert.match(html, /https:\/\/buy\.stripe\.com\/6oU00j8aw2iWdWh9uj3sI2K/);
+});
+
+test('landing page internal links resolve without auth or broken .html aliases', async () => {
+  const res = await fetch(`${origin}/`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  const hrefs = Array.from(html.matchAll(/<a\b[^>]*href="([^"]*)"/gi), (match) => match[1])
+    .filter((href) => href && href.startsWith('/'))
+    .map((href) => href.split('#')[0])
+    .filter(Boolean);
+  const uniquePaths = Array.from(new Set(hrefs));
+  const failures = [];
+
+  for (const pathname of uniquePaths) {
+    const target = `${origin}${pathname}`;
+    const linkRes = await fetch(target, {
+      method: 'HEAD',
+      redirect: 'manual',
+      headers: {
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+        accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      },
+    });
+    if (![200, 204, 301, 302, 303, 307, 308].includes(linkRes.status)) {
+      failures.push(`${pathname} -> ${linkRes.status}`);
+    }
+  }
+
+  assert.deepEqual(failures, []);
+});
+
+test('public marketing .html aliases remain live for existing indexed links', async () => {
+  const paths = [
+    '/guide.html',
+    '/codex-plugin.html',
+    '/compare.html',
+    '/learn.html',
+    '/guides/claude-desktop.html',
+    '/guides/claude-code-prevent-repeated-mistakes.html',
+    '/guides/cursor-prevent-repeated-mistakes.html',
+    '/compare/mem0.html',
+    '/learn/agent-harness-pattern.html',
+  ];
+
+  for (const pathname of paths) {
+    const res = await fetch(`${origin}${pathname}`, { method: 'HEAD' });
+    assert.equal(res.status, 200, `${pathname} should resolve`);
+    assert.match(res.headers.get('content-type') || '', /text\/html/);
+  }
+});
+
+test('public marketing directory aliases redirect to canonical pages', async () => {
+  const cases = [
+    ['/lessons/', '/lessons'],
+    ['/guides', '/learn'],
+    ['/guides/', '/learn'],
+    ['/guides.html', '/learn'],
+    ['/services', '/#workflow-sprint-intake'],
+    ['/services.html', '/#workflow-sprint-intake'],
+  ];
+
+  for (const [pathname, expectedLocation] of cases) {
+    const res = await fetch(`${origin}${pathname}`, {
+      method: 'HEAD',
+      redirect: 'manual',
+    });
+    assert.equal(res.status, 302, `${pathname} should redirect`);
+    assert.equal(res.headers.get('location'), expectedLocation);
+  }
+});
+
+test('public sales copy avoids unsupported pricing, traction, and guarantee claims', async () => {
+  const files = [
+    'index.html',
+    'pro.html',
+    'blog.html',
+    'guides/claude-code-prevent-repeated-mistakes.html',
+    'guides/cursor-prevent-repeated-mistakes.html',
+  ];
+  const bannedClaims = [
+    /money-back guarantee/i,
+    /\b(?:money-back|revenue|income|results?) guarantee\b/i,
+    /fastest-growing repo/i,
+    /100K GitHub stars/i,
+    /~?1,700 developers install/i,
+    /Zero of them ever saw a checkout button/i,
+    /100% of npm users/i,
+    /income guarantees?/i,
+    /revenue guarantees?/i,
+  ];
+
+  for (const file of files) {
+    const html = fs.readFileSync(path.join(publicDir, file), 'utf-8');
+    for (const claimPattern of bannedClaims) {
+      assert.doesNotMatch(html, claimPattern, `${file} contains unsupported claim ${claimPattern}`);
+    }
+  }
 });

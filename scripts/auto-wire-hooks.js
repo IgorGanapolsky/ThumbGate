@@ -186,48 +186,69 @@ function hookAlreadyPresent(hookArray, command) {
  *                              (defaults to process.cwd()).
  * @returns {{ hooks: Array, removedPaths: string[] }}
  */
+// Shell-style variable expansion limited to the env vars Claude Code
+// documents for hook commands (CLAUDE_PROJECT_DIR), plus other process env
+// vars. Surrounding ASCII quotes are stripped first so tokens like
+// `"$CLAUDE_PROJECT_DIR"/.claude/hooks/x.sh` resolve correctly.
+function expandShellToken(token, resolveBase) {
+  let s = token;
+  if (s.startsWith('"') && s.includes('"', 1)) {
+    s = s.slice(1, s.indexOf('"', 1)) + s.slice(s.indexOf('"', 1) + 1);
+  } else if (s.startsWith("'") && s.includes("'", 1)) {
+    s = s.slice(1, s.indexOf("'", 1)) + s.slice(s.indexOf("'", 1) + 1);
+  }
+  const lookup = (name) => (name === 'CLAUDE_PROJECT_DIR'
+    ? process.env.CLAUDE_PROJECT_DIR || resolveBase
+    : process.env[name]);
+  s = s.replace(/\$\{([A-Za-z_]\w*)\}/g, (_, n) => {
+    const v = lookup(n);
+    return v == null ? `\${${n}}` : v;
+  });
+  s = s.replace(/\$([A-Za-z_]\w*)/g, (_, n) => {
+    const v = lookup(n);
+    return v == null ? `$${n}` : v;
+  });
+  return s;
+}
+
+// Returns the raw (unexpanded) script-path token if the command points at a
+// missing script file, else null. Anything that doesn't look like a file
+// reference, or contains unresolved $VAR after expansion, returns null —
+// caller treats null as "keep the hook" (err on the side of NOT pruning).
+function staleHookPath(command, resolveBase) {
+  if (!command) return null;
+  const rawFirstToken = command.split(/\s+/)[0];
+  const firstToken = expandShellToken(rawFirstToken, resolveBase);
+  const looksLikePath =
+    firstToken.includes('/') ||
+    firstToken.includes('\\') ||
+    firstToken.endsWith('.sh');
+  if (!looksLikePath) return null;
+  if (firstToken.includes('$')) return null;
+  const resolved = path.isAbsolute(firstToken)
+    ? firstToken
+    : path.resolve(resolveBase, firstToken);
+  return fs.existsSync(resolved) ? null : rawFirstToken;
+}
+
 function pruneStaleFileHooks(hookArray, baseDir) {
   if (!Array.isArray(hookArray)) {
     return { hooks: [], removedPaths: [] };
   }
-
   const resolveBase = baseDir || process.cwd();
   const removedPaths = [];
-
   const hooks = hookArray.filter((entry) => {
     const entryHooks = Array.isArray(entry && entry.hooks) ? entry.hooks : [];
-    let shouldRemove = false;
-
     for (const hook of entryHooks) {
       const command = hook && typeof hook.command === 'string' ? hook.command : '';
-      if (!command) continue;
-
-      // Extract the first token as the potential script path.
-      const firstToken = command.split(/\s+/)[0];
-
-      // Only treat it as a file reference if it looks like a path.
-      const looksLikePath =
-        firstToken.includes('/') ||
-        firstToken.includes('\\') ||
-        firstToken.endsWith('.sh');
-
-      if (!looksLikePath) continue;
-
-      // Resolve the path (absolute or relative to baseDir).
-      const resolved = path.isAbsolute(firstToken)
-        ? firstToken
-        : path.resolve(resolveBase, firstToken);
-
-      if (!fs.existsSync(resolved)) {
-        removedPaths.push(firstToken);
-        shouldRemove = true;
-        break;
+      const stale = staleHookPath(command, resolveBase);
+      if (stale !== null) {
+        removedPaths.push(stale);
+        return false;
       }
     }
-
-    return !shouldRemove;
+    return true;
   });
-
   return { hooks, removedPaths };
 }
 

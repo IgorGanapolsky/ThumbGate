@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Agent Governance — The Four Layers and Where ThumbGate Fits</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="AI agent governance has four layers: prompt rules, decorator wrappers, pre-action hooks, sandbox isolation. Pick the layer that matches your stack — and understand why prompt rules alone fail.">
+<meta name="keywords" content="AI agent governance, runtime governance, pre-action hooks, agent policy enforcement, agent decorator, ThumbGate, agent sandbox, Claude Code governance">
+<meta property="og:title" content="AI Agent Governance — The Four Layers Pattern">
+<meta property="og:description" content="Four governance layers exist for AI agents. Each catches a different failure mode. Picking the right one is the whole game.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate-production.up.railway.app/learn/ai-agent-governance">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/learn/ai-agent-governance">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "AI Agent Governance — The Four Layers and Where ThumbGate Fits",
+  "description": "AI agent governance breaks into four layers: prompt rules, decorator wrappers, pre-action hooks, and sandbox isolation. Each catches a different failure mode; picking the right one for your stack is the whole game.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate-production.up.railway.app"
+  },
+  "datePublished": "2026-05-15",
+  "dateModified": "2026-05-15",
+  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/learn/ai-agent-governance"
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+<style>
+  .layers { display: grid; grid-template-columns: 1fr; gap: 12px; margin: 1.5rem 0; }
+  .layer { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; }
+  .layer h3 { margin-top: 0; }
+  .layer .where { color: var(--muted); font-size: 0.9rem; margin-bottom: 0.5rem; }
+  .layer .catches { color: var(--green); font-weight: 600; font-size: 0.9rem; }
+  .layer .misses { color: var(--red); font-weight: 600; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/pricing">Pricing</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / AI Agent Governance</div>
+  <h1>AI Agent Governance</h1>
+  <p style="color:var(--muted);">6 min read · For teams choosing where to enforce agent behavior</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> AI agent governance has four layers — prompt rules, decorator wrappers, pre-action hooks, and sandbox isolation. Each catches a different class of failure. Prompt rules alone fail because they live inside the agent's context and get evicted under pressure. The layer you actually need depends on whether your stakes are per-call (decorator), per-tool (hook), or per-process (sandbox).</div>
+
+  <h2>What "governance" actually means here</h2>
+  <p>The dominant failure mode of agent frameworks isn't that the agent picked the wrong next step in isolation — it's that the agent took an action you can't undo. Dropped a production table. Force-pushed over a colleague's commit. Wrote credentials to a public log file. Installed a package the team had already rejected.</p>
+  <p>Governance is the layer of code that decides whether an action is allowed <em>before</em> the action runs. The post-hoc audit log is forensics; governance is prevention.</p>
+
+  <h2>The four layers</h2>
+
+  <div class="layers">
+    <div class="layer">
+      <h3>1. Prompt-level rules</h3>
+      <div class="where">Lives in <code>CLAUDE.md</code>, <code>.cursorrules</code>, system prompt, AGENTS.md.</div>
+      <p>Tell the agent what not to do. Cheap, fast, expressive.</p>
+      <p class="catches">Catches: stylistic and intent-level mistakes the agent can recognize.</p>
+      <p class="misses">Misses: anything the agent forgets when context pressure compresses the early instructions out. Misses every action the agent doesn't categorize as "rule-relevant" at decision time.</p>
+    </div>
+
+    <div class="layer">
+      <h3>2. Decorator wrappers</h3>
+      <div class="where">In-process wrapper around the agent's tool functions. Examples: Rein (Python), function decorators in LangChain-style frameworks.</div>
+      <p>Wrap the function. The wrapper checks a policy before forwarding the call to the underlying tool.</p>
+      <p class="catches">Catches: actions through the wrapped function path. Per-call policy enforcement. Audit-trail capture.</p>
+      <p class="misses">Misses: actions that bypass the wrapped function — direct subprocess calls, raw HTTP requests, plugins that skip the framework's tool registry.</p>
+    </div>
+
+    <div class="layer">
+      <h3>3. Pre-action hooks</h3>
+      <div class="where">Out-of-process intercept at the agent runtime's tool-call boundary. Examples: MCP PreToolUse hooks, Claude Code hooks, ThumbGate.</div>
+      <p>The hook runs in a separate process from the agent. The agent emits a tool-call intent; the hook accepts, rejects, or transforms it before the tool itself sees it.</p>
+      <p class="catches">Catches: every tool call the agent runtime mediates. Works across agent CLIs (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode). Survives context-eviction because the hook is not in the agent's context.</p>
+      <p class="misses">Misses: actions taken by tools the runtime doesn't know about (e.g., a sub-process opening its own network socket after the initial allowed call).</p>
+    </div>
+
+    <div class="layer">
+      <h3>4. Sandbox isolation</h3>
+      <div class="where">OS- or VM-level isolation. Examples: Docker / microVMs / seccomp / AppArmor / macOS sandbox profiles.</div>
+      <p>The agent runs inside a sandboxed environment that physically cannot reach production data, the host filesystem outside the project, or arbitrary network endpoints.</p>
+      <p class="catches">Catches: every action the agent might try, including ones the agent runtime doesn't even know about. Last-line defense.</p>
+      <p class="misses">Misses: nothing at the boundary, but operationally heavy. Requires sandbox-friendly tools, controlled mounts, and a usability cost — the agent can't reach things it legitimately needs without explicit grants.</p>
+    </div>
+  </div>
+
+  <h2>Why prompt rules alone fail</h2>
+  <p>Prompt rules live inside the agent's context. Context is finite. As the conversation grows, the early-system instructions are the first thing to lose attention weight when the model decides what to compress. By the time the agent is on hour two of a session, the <code>CLAUDE.md</code> rule that said "never force-push to main" may not even be in the active reasoning frame.</p>
+  <p>Decorator wrappers, pre-action hooks, and sandbox isolation all live <em>outside</em> the agent's context. They cannot be reasoned around by a model under context pressure — they're not part of the model's input at all.</p>
+
+  <div class="callout callout-green">
+    <strong>Mental model:</strong> Prompt rules are speed limit signs. Decorators are speed bumps. Pre-action hooks are physical barriers at the intersection. Sandbox isolation is a chain-link fence around the whole street.
+  </div>
+
+  <h2>Where ThumbGate fits</h2>
+  <p>ThumbGate runs at layer 3 — pre-action hooks. The hook process intercepts tool calls from Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode before they fire. Three things make this layer worth the engineering minutes:</p>
+  <ul>
+    <li><strong>Context-eviction immunity.</strong> The hook runs in a different process. The agent can compress, forget, or hallucinate away the rule, and the rule still fires.</li>
+    <li><strong>Cross-agent portability.</strong> One installation, every agent runtime the team uses. The rule "no force-push to main" applies whether today's session is Claude Code or Cursor.</li>
+    <li><strong>Learning loop.</strong> When you give the agent a thumbs-down on a session-time mistake, the feedback becomes a structured prevention rule that auto-fires the next time the same pattern shows up. No policy-authoring step — the operator's correction <em>is</em> the policy.</li>
+  </ul>
+
+  <h2>Picking the layer that matches your stack</h2>
+
+  <ul>
+    <li><strong>If you're writing prompt rules and they "work most of the time":</strong> add a hook layer. Most of the failures you've already absorbed are this category.</li>
+    <li><strong>If you're a Python production app in a regulated domain:</strong> a decorator-level governance layer (e.g. Rein) is the right tradeoff. Per-call stakes are high enough to justify the integration cost.</li>
+    <li><strong>If you're running AI coding agents (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode):</strong> hook-level governance is the right layer. Your tool-call volume is high; per-call stakes are mixed; learning from feedback dominates.</li>
+    <li><strong>If you're running agents on untrusted code or data:</strong> stack a sandbox layer on top. Hook + sandbox is the strongest combination.</li>
+  </ul>
+
+  <p>These layers are not mutually exclusive. A real production setup typically combines them: prompt rules at the top for intent, a hook layer for tool-call enforcement, a sandbox at the bottom for blast radius.</p>
+
+  <h2>The honest constraint</h2>
+
+  <p>No governance layer is correct if the rules you encode in it are wrong. Layers 2, 3, and 4 enforce policy; they don't generate it. The hard part of governance has never been the enforcement boundary — it's <em>knowing what the agent will get wrong before the agent gets it wrong</em>. That's why ThumbGate emphasizes the feedback loop: most teams can't write the rule until they've watched the agent fail in their codebase. The thumbs-down is the rule's origin.</p>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Pick the layer. Install it once. Move on.</h2>
+    <p>For AI coding agents, the hook layer is where the leverage is. ThumbGate ships as <code>npx thumbgate init</code> and is MIT-licensed at the core.</p>
+    <div class="cta-install">$ npx thumbgate init</div>
+  </div>
+
+  <div class="related">
+    <h3>Related guides</h3>
+    <a href="/compare/rein">ThumbGate vs Rein — different layer, different stack →</a>
+    <a href="/learn/spec-driven-development">Spec-Driven Development for AI Agents →</a>
+    <a href="/learn/vibe-coding-safety-net">The Vibe Coding Safety Net You Are Missing →</a>
+    <a href="/learn/mcp-pre-action-checks-explained">MCP Pre-Action Checks Explained →</a>
+  </div>
+</div>
+
+
+  <div class="sticky-cta">
+    <span style="color:var(--muted)">Try it now:</span>
+    <code>npx thumbgate init</code>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+  </div>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Swarms: One Gate Layer, Every Model — ThumbGate</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Multi-agent swarms multiply repeated mistakes by the number of agents. A shared pre-action gate layer catches the mistake once and prevents it across every agent in the swarm.">
+<meta name="keywords" content="agent swarm, multi-agent system, agent swarm token cost, agent swarm shared memory, multi-model orchestration, MCP pre-action checks, ThumbGate">
+<meta property="og:title" content="Agent Swarms: One Gate Layer, Every Model">
+<meta property="og:description" content="Why multi-agent swarms need shared gates, not duplicated rules — and how a single MCP layer makes Opus, GPT, and Gemini fail the same way only once.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate-production.up.railway.app/learn/agent-swarms-shared-gates">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/learn/agent-swarms-shared-gates">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Agent Swarms: One Gate Layer, Every Model",
+  "description": "Multi-agent swarms multiply repeated mistakes by the number of agents. A shared pre-action gate layer prevents the same mistake across every agent in the swarm.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate-production.up.railway.app"
+  },
+  "datePublished": "2026-05-18",
+  "dateModified": "2026-05-18",
+  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/learn/agent-swarms-shared-gates",
+  "about": [
+    {"@type": "Thing", "name": "agent swarm"},
+    {"@type": "Thing", "name": "multi-agent system"},
+    {"@type": "Thing", "name": "AI agent shared memory"}
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+<style>
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  th, td { text-align: left; padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+  th { color: var(--cyan); font-weight: 600; }
+  .mapping-row td:first-child { color: var(--green); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Agent Swarms: Shared Gates</div>
+  <h1>Agent Swarms: One Gate Layer, Every Model</h1>
+  <p style="color:var(--muted);">6 min read &middot; For teams running multi-agent systems across multiple LLMs</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> A 5-agent swarm without shared memory pays 5&times; the tokens on every repeated mistake. The fix is a single pre-action gate layer that every agent in the swarm consults before tool use — not 5 sets of prompt rules.</div>
+
+  <h2>The swarm token-cost problem</h2>
+  <p>Agent swarms route different parts of a task to different models — one model for front-end work, another for backend, a third for visual reasoning, a fourth for efficient bulk operations. The pitch is real: the right model for the right slice of work, in parallel.</p>
+  <p>The hidden cost is repetition. Each agent in the swarm has its own context window. When one agent makes a mistake — force-pushes to main, deletes a production file, paginates wrong against a rate-limited API — the other agents in the swarm have no idea. They are statistically likely to make the same mistake, because they were trained on the same internet and given the same prompt scaffolding.</p>
+
+  <div class="callout">
+    <strong>The math is unkind:</strong> with N agents and a recurring mistake class, you pay the token cost of that mistake N times per task instead of once. The fix is not better prompting. It is shared state below the agents.
+  </div>
+
+  <h2>Why prompt rules cannot solve this</h2>
+  <p>A natural reflex is to copy the same "do not force-push" rule into every agent's system prompt. This fails for three reasons:</p>
+
+  <ol>
+    <li><strong>Drift.</strong> Each agent's prompt evolves independently. After a few iterations, the rules diverge across the swarm without anyone noticing.</li>
+    <li><strong>Reasoning around.</strong> A long-context agent can rationalize an exception to a prompt rule. There is no enforcement layer to say no.</li>
+    <li><strong>No learning loop.</strong> When agent A makes a new mistake, agents B/C/D never find out. Each agent has to discover the same failure independently.</li>
+  </ol>
+
+  <h2>The shared-gate architecture</h2>
+  <p>The pattern that actually works is one gate layer that every agent consults before any tool call. The gate layer holds a single lesson database, a single set of prevention rules, and a single PreToolUse hook surface.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Concern</th>
+        <th>Per-agent prompt rules</th>
+        <th>Shared gate layer</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="mapping-row">
+        <td>New mistake caught once</td>
+        <td>Other agents still vulnerable</td>
+        <td>All agents protected immediately</td>
+      </tr>
+      <tr class="mapping-row">
+        <td>Rule consistency</td>
+        <td>Drifts across agents over time</td>
+        <td>Single source of truth on disk</td>
+      </tr>
+      <tr class="mapping-row">
+        <td>Enforcement</td>
+        <td>Best-effort — agent can override</td>
+        <td>Hard block at the tool boundary</td>
+      </tr>
+      <tr class="mapping-row">
+        <td>Token cost of repeated failures</td>
+        <td>N&times; per task (one per agent)</td>
+        <td>1&times; per task (gate refuses)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>How ThumbGate implements this</h2>
+  <p>ThumbGate is a single MCP server with a PreToolUse hook. Every agent in the swarm — whether it speaks to Claude, GPT, Gemini, or any other model — issues tool calls through the same MCP layer. The hook fires once per tool call, regardless of which agent issued it.</p>
+
+  <p>Three concrete properties make this work in a swarm:</p>
+
+  <ul>
+    <li><strong>Single feedback directory.</strong> Point every agent at the same <code>.thumbgate/</code> on disk (or set the <code>THUMBGATE_FEEDBACK_DIR</code> environment variable). All lessons, gates, and feedback land in one place.</li>
+    <li><strong>Model-agnostic hook.</strong> The PreToolUse hook does not care which model produced the tool call. It pattern-matches against the call itself.</li>
+    <li><strong>Append-only feedback log.</strong> Concurrent thumbs-up/down captures from different agents are JSONL appends — no contention, no lock-out, no lost lessons.</li>
+  </ul>
+
+  <div class="callout callout-green">
+    <strong>The swarm becomes one learner.</strong> Agent A makes a mistake, you thumbs-down it, the gate is promoted. The next tool call from agent B, C, or D matching that pattern is blocked. You paid once for the lesson; every agent benefits.
+  </div>
+
+  <h2>What this does not solve</h2>
+  <p>Honesty matters here. A shared gate layer is not a swarm orchestrator. It does not route work between agents, decide which model is best for a subtask, or balance load. Those are the swarm framework's job.</p>
+  <p>What the gate layer does is make the swarm cheaper to operate by removing the most expensive failure mode: paying the same mistake-tax N times. If your swarm framework gives you concurrency and the gate layer gives you shared safety memory, the combination is what makes multi-agent systems economically viable for production work.</p>
+
+  <h2>Try it on your swarm</h2>
+  <p>If your swarm runs locally, point every agent at the same project directory:</p>
+
+  <pre><code>cd /path/to/your-project
+npx thumbgate init</code></pre>
+
+  <p>If your agents run as separate processes or containers, share the feedback dir via env var:</p>
+
+  <pre><code>export THUMBGATE_FEEDBACK_DIR=/shared/thumbgate
+# every agent in the swarm reads from and writes to this directory</code></pre>
+
+  <p>That is the entire integration. The gate layer is now in front of every tool call in the swarm, learning from feedback captured anywhere in the swarm.</p>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">One gate layer. Every model in your swarm.</h2>
+    <p>Works with Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent.</p>
+    <div class="cta-install">$ npx thumbgate init</div>
+  </div>
+
+  <div class="related">
+    <h3>Related articles</h3>
+    <a href="/learn/agent-harness-pattern">The Agent Harness Pattern: Why Your AI Needs a Seatbelt &rarr;</a>
+    <a href="/learn/mcp-pre-action-checks-explained">MCP Pre-Action Checks Explained &rarr;</a>
+    <a href="/learn/ai-agent-persistent-memory">AI Agent Persistent Memory: How It Works &rarr;</a>
+  </div>
+</div>
+
+
+  <div class="sticky-cta">
+    <span style="color:var(--muted)">Try it now:</span>
+    <code>npx thumbgate init</code>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+  </div>
+</body>
+</html>

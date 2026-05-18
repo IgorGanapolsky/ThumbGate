@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThumbGate vs Rein — Coding-Agent Governance vs Generic Decorator Governance</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="ThumbGate vs Rein for AI agent governance. Rein is a generic decorator for production apps in regulated domains. ThumbGate is the coding-agent specialist with a learning feedback loop and MIT licensing.">
+<meta name="keywords" content="AI agent governance, Rein, ThumbGate, runtime governance, pre-action hooks, agent decorator, coding agent guardrails">
+<meta property="og:title" content="ThumbGate vs Rein — Coding-Agent Governance vs Generic Decorator Governance">
+<meta property="og:description" content="Both intercept agent actions before damage. Different layers, different domains, different licenses. Honest side-by-side.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate-production.up.railway.app/compare/rein">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/compare/rein">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "ThumbGate vs Rein — Coding-Agent Governance vs Generic Decorator Governance",
+  "description": "Side-by-side comparison of two pre-action governance layers for AI agents. ThumbGate specializes in AI coding agents (Claude Code, Cursor, Codex). Rein is a generic decorator targeted at production apps in regulated domains.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate-production.up.railway.app"
+  },
+  "datePublished": "2026-05-15",
+  "dateModified": "2026-05-15",
+  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/compare/rein"
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+<style>
+  .matrix { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.95rem; }
+  .matrix th, .matrix td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .matrix th { background: var(--bg-card); font-weight: 600; }
+  .matrix td:nth-child(2) { color: var(--muted); }
+  .matrix td:nth-child(3) { color: var(--text); }
+  .verdict { font-weight: 600; color: var(--green); }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 1.5rem 0; }
+  .pair > div { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+  @media (max-width: 700px) { .pair { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/pricing">Pricing</a>
+  <a href="/case-studies">Case Studies</a>
+  <a href="/compare">Compare</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/compare">Compare</a> / ThumbGate vs Rein</div>
+  <h1>ThumbGate vs Rein</h1>
+  <p style="color:var(--muted);">5 min read · For teams evaluating AI-agent runtime governance options</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> Both Rein and ThumbGate intercept agent actions before they fire — that's the shared category. The honest differences: Rein is a <em>generic in-process decorator</em> aimed at production apps in regulated domains (trading, healthcare, legal). ThumbGate is the <em>coding-agent specialist</em> for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, with a feedback loop that learns from thumbs-down corrections, plus MIT licensing on the core CLI + hook layer. <em>Note: Rein's exact license terms are documented at reinai.io; the source we read summarized them as "AGPL" but we have not independently verified — check the primary source before making a distribution decision.</em></div>
+
+  <h2>The shared thesis</h2>
+  <p>Both projects start from the same observation: most AI agent frameworks optimize for task completion, very few optimize for what happens when the agent does the wrong task. Both insert a gate <em>before</em> the action fires rather than trying to clean up after it.</p>
+
+  <p>Below is an honest side-by-side. We're not going to claim ThumbGate "wins" on every dimension — Rein is well-designed software with a legitimate niche. Pick by what you're actually building.</p>
+
+  <h2>Side-by-side</h2>
+
+  <table class="matrix">
+    <thead>
+      <tr><th style="width:28%;">Dimension</th><th style="width:36%;">Rein</th><th style="width:36%;">ThumbGate</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Integration layer</strong></td>
+        <td>In-process Python decorator wrapping the agent's tool functions.</td>
+        <td>Out-of-process PreToolUse hook intercepting tool calls at the agent runtime boundary (Claude Code / Cursor / Codex / Gemini / Amp / Cline / OpenCode).</td>
+      </tr>
+      <tr>
+        <td><strong>Target domain</strong></td>
+        <td>Production apps in regulated domains: trading, healthcare, legal. High-stakes per-action.</td>
+        <td>AI coding agents. High-volume, high-frequency tool calls (file write, shell exec, git push, package install).</td>
+      </tr>
+      <tr>
+        <td><strong>Target user</strong></td>
+        <td>Engineering teams building production agent apps where each decision is consequential.</td>
+        <td>Developers and engineering teams running AI coding assistants who hit the same repeat mistake more than once.</td>
+      </tr>
+      <tr>
+        <td><strong>Core mechanisms</strong></td>
+        <td>Policy checks. Audit trails. Circuit breakers.</td>
+        <td>Pre-action checks. Thumbs-up/down feedback ledger. Auto-generated prevention rules. Lesson DB with semantic recall. Thompson Sampling for gate-policy bandits.</td>
+      </tr>
+      <tr>
+        <td><strong>Learning loop</strong></td>
+        <td>Not in the public framing. Policies are authored.</td>
+        <td>Yes. Thumbs-down feedback in one session auto-promotes to a prevention rule that blocks the same action in future sessions across machines.</td>
+      </tr>
+      <tr>
+        <td><strong>Domain skill packs</strong></td>
+        <td>Not in the public framing.</td>
+        <td>Ships Stripe, Railway, database-migration packs. Each pack is a set of pre-action rules specific to the domain's failure modes.</td>
+      </tr>
+      <tr>
+        <td><strong>License</strong></td>
+        <td>Open-source license per <a href="https://reinai.io">reinai.io</a> — verify the exact terms at the source before making a distribution decision. (Our secondary source summarized it as AGPL; we have not independently confirmed.)</td>
+        <td>MIT for the CLI and hook layer. Commercial license for Team / Pro features. Open-core, not viral.</td>
+      </tr>
+      <tr>
+        <td><strong>Installation</strong></td>
+        <td>Python decorator import.</td>
+        <td><code>npx thumbgate init</code> — auto-detects the agent, wires the hooks, zero workflow change.</td>
+      </tr>
+      <tr>
+        <td><strong>Cost when the agent is wrong</strong></td>
+        <td>Caught at the decorated function boundary.</td>
+        <td>Caught at the PreToolUse hook boundary, before the agent's process even attempts the call.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>When to pick which</h2>
+
+  <div class="pair">
+    <div>
+      <h3 style="margin-top:0;">Use <strong>Rein</strong> if</h3>
+      <ul>
+        <li>You're building a production application (not a coding agent) in a regulated domain</li>
+        <li>You write your agent in Python and want decorator-level integration</li>
+        <li>Your team has policy-authoring resources to write rules upfront</li>
+        <li>Rein's licensing terms (verify at reinai.io) are acceptable for your distribution model</li>
+        <li>Per-action stakes are high enough that a decorator wrapper is the right tradeoff</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="margin-top:0;">Use <strong>ThumbGate</strong> if</h3>
+      <ul>
+        <li>Your agent is Claude Code, Cursor, Codex, Gemini, Amp, Cline, or OpenCode</li>
+        <li>You want the gate to learn from your corrections instead of being authored by hand</li>
+        <li>Your team writes code (vs. authoring policy) and wants thumbs-down feedback as the primary signal</li>
+        <li>You need an MIT-licensed core layer that can be embedded in commercial products</li>
+        <li>You ship Domain Skill Packs as a feature (Stripe, Railway, database migrations)</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Both, side by side, in the same stack</h2>
+
+  <p>The two projects don't conflict. Rein governs your production app's agent at the function boundary. ThumbGate governs your engineering team's coding agents at the PreToolUse boundary. The pre-action gate pattern is the shared category; the specialization differs. A team operating both an AI coding workflow and a regulated production agent can use ThumbGate for the first and Rein for the second.</p>
+
+  <div class="callout callout-green">
+    <strong>Honest framing:</strong> Rein and ThumbGate are not direct alternatives. We share a thesis. We do not share a target user.
+  </div>
+
+  <h2>What the category gets right</h2>
+
+  <p>Both projects are correct that the dominant failure mode of agent frameworks today is "you can't undo an action after the model already took it." Prompt-level rules in <code>CLAUDE.md</code> or <code>.cursorrules</code> are eviction-prone under context pressure. Decorator-level wrappers are tighter. Hook-level intercepts are tighter still. Sandbox isolation is the strongest. Pick the layer that matches your operating model.</p>
+
+  <h2>Adoption in two minutes (ThumbGate)</h2>
+
+  <ol>
+    <li><strong>Install:</strong> <code>npx thumbgate init</code> — the CLI detects your agent and wires PreToolUse hooks. No workflow change.</li>
+    <li><strong>Give feedback when the agent is wrong:</strong> a thumbs-down with context becomes a structured failure record.</li>
+    <li><strong>Prevention rules generate themselves:</strong> after repeated failures in the same domain, ThumbGate auto-promotes a prevention rule that fires the next time the agent tries the same pattern.</li>
+    <li><strong>Pre-action checks block the mistake:</strong> the PreToolUse hook intercepts the call. The agent gets a structured error and a path back to the spec.</li>
+  </ol>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Pick the layer that matches your stack</h2>
+    <p>Building a Python production agent in a regulated domain? Look at Rein. Running AI coding agents and want them to stop repeating the same mistake? Start with ThumbGate.</p>
+    <div class="cta-install">$ npx thumbgate init</div>
+  </div>
+
+  <div class="related">
+    <h3>Related comparisons</h3>
+    <a href="/compare/heidi">ThumbGate vs Heidi (Meterian supply-chain) →</a>
+    <a href="/compare/mem0">ThumbGate vs Mem0 (memory layer) →</a>
+    <a href="/compare">All comparisons →</a>
+  </div>
+</div>
+
+
+  <div class="sticky-cta">
+    <span style="color:var(--muted)">Try it now:</span>
+    <code>npx thumbgate init</code>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+  </div>
+</body>
+</html>

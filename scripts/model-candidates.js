@@ -8,6 +8,35 @@ const { resolveFeedbackDir: resolveSharedFeedbackDir } = require('./feedback-pat
 const ROOT = path.join(__dirname, '..');
 const DEFAULT_CATALOG_PATH = path.join(ROOT, 'config', 'model-candidates.json');
 const DEFAULT_WORKLOAD = 'pretool-gating';
+const TOKENIZER_BRITTLENESS_WORKLOAD = 'tokenizer-brittleness';
+
+const DEFAULT_TOKENIZER_BRITTLENESS_CASES = Object.freeze([
+  {
+    id: 'malformed-jsonl-control-char',
+    input: '{"event":"gate","path":"/tmp/build\\u0000.log","ok":tru',
+    expectedSignals: ['malformed-json', 'control-char', 'file-path'],
+  },
+  {
+    id: 'unicode-confusable-secret',
+    input: 'OPENAI_API_KEY=sk-prоj-confusable-value with Cyrillic о and zero\u200bwidth marker',
+    expectedSignals: ['secret-like', 'unicode-confusable', 'zero-width'],
+  },
+  {
+    id: 'stack-trace-symbols',
+    input: 'TypeError: Cannot read properties of undefined\n    at run (/repo/src/api/server.js:281:17)\n    at async main (/repo/bin/cli.js:42:3)',
+    expectedSignals: ['stack-trace', 'file-path', 'code-symbols'],
+  },
+  {
+    id: 'sql-json-path',
+    input: "select json_extract(payload, '$.checkout.session.id') from billing_events where customer_email like '%@example.com';",
+    expectedSignals: ['sql', 'json-path', 'code-symbols'],
+  },
+  {
+    id: 'mixed-language-code',
+    input: '修复 gate-check: if (状态 !== "通过") throw new Error("阻止 deploy🚫");',
+    expectedSignals: ['non-ascii', 'code-symbols', 'emoji'],
+  },
+]);
 
 const COST_CLASS_SCORES = Object.freeze({
   low: 12,
@@ -43,6 +72,90 @@ function normalizeSlug(value, fallback = '') {
 function parseNumber(value, fallback = 0) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function countCodePoints(value) {
+  return Array.from(String(value || '')).length;
+}
+
+function detectTokenizerBrittlenessSignals(input) {
+  const text = String(input || '');
+  const signals = new Set();
+
+  if (/[\u0000-\u001F\u007F]/u.test(text) || /\\u00[0-1][0-9a-f]/i.test(text)) signals.add('control-char');
+  if (/[\u200B-\u200D\uFEFF]/u.test(text)) signals.add('zero-width');
+  if (/[^\x00-\x7F]/u.test(text)) signals.add('non-ascii');
+  if (/[\u0400-\u04FF]/u.test(text) && /[A-Za-z]/.test(text)) signals.add('unicode-confusable');
+  if (/\p{Extended_Pictographic}/u.test(text)) signals.add('emoji');
+  if (/(api[_-]?key|secret|token|password)\s*[:=]/i.test(text)) signals.add('secret-like');
+  if (/\/[A-Za-z0-9._/-]+(?:\.[A-Za-z0-9]+)?(?::\d+)?/u.test(text)) signals.add('file-path');
+  if (/\bat\s+(?:async\s+)?[\w$.<>-]+\s*\([^)]*:\d+:\d+\)/u.test(text) || /\b(?:TypeError|ReferenceError|SyntaxError):/u.test(text)) signals.add('stack-trace');
+  if (/\b(select|insert|update|delete|from|where|join)\b/i.test(text)) signals.add('sql');
+  if (/\$\.[A-Za-z0-9_[\].-]+/u.test(text)) signals.add('json-path');
+  if (/[{}()[\];=<>!|&$]|\bfunction\b|\bconst\b|\blet\b|\bthrow\b/u.test(text)) signals.add('code-symbols');
+
+  const trimmed = text.trim();
+  const looksJsonLike = trimmed.startsWith('{') || trimmed.startsWith('[') || trimmed.includes('}{');
+  if (looksJsonLike) {
+    try {
+      JSON.parse(trimmed);
+    } catch {
+      signals.add('malformed-json');
+    }
+  }
+
+  return Array.from(signals).sort((a, b) => a.localeCompare(b));
+}
+
+function evaluateTokenizerBrittlenessCases(cases = DEFAULT_TOKENIZER_BRITTLENESS_CASES) {
+  const normalizedCases = Array.isArray(cases) ? cases : DEFAULT_TOKENIZER_BRITTLENESS_CASES;
+  const evaluated = normalizedCases.map((entry, index) => {
+    const input = String(entry && entry.input ? entry.input : '');
+    const expectedSignals = Array.isArray(entry && entry.expectedSignals) ? entry.expectedSignals : [];
+    const signals = detectTokenizerBrittlenessSignals(input);
+    const missingSignals = expectedSignals.filter((signal) => !signals.includes(signal));
+    const byteLength = Buffer.byteLength(input, 'utf8');
+    const codePointLength = countCodePoints(input);
+    return {
+      id: entry && entry.id ? String(entry.id) : `case-${index + 1}`,
+      byteLength,
+      codePointLength,
+      byteToCodePointRatio: codePointLength > 0 ? Number((byteLength / codePointLength).toFixed(2)) : 0,
+      expectedSignals,
+      signals,
+      missingSignals,
+      passed: missingSignals.length === 0,
+    };
+  });
+
+  const coveredSignals = new Set(evaluated.flatMap((entry) => entry.signals));
+  const failed = evaluated.filter((entry) => !entry.passed);
+  return {
+    caseCount: evaluated.length,
+    passed: failed.length === 0,
+    passRate: evaluated.length > 0 ? Number(((evaluated.length - failed.length) / evaluated.length).toFixed(4)) : 1,
+    coveredSignals: Array.from(coveredSignals).sort((a, b) => a.localeCompare(b)),
+    cases: evaluated,
+  };
+}
+
+function buildTokenizerBrittlenessPlan(options = {}) {
+  const evaluation = evaluateTokenizerBrittlenessCases(options.cases);
+  return {
+    name: 'tokenizer-brittleness-readiness',
+    evaluation,
+    routingPolicy: {
+      productionDefault: 'existing-token-models-with-gates',
+      experimentalTarget: 'byte-level-or-tokenizer-free-models',
+      allowProductionRouting: false,
+      reason: 'Fast BLT is a research direction; ThumbGate should first preserve symbols, secrets, paths, JSONL structure, and stack traces through evals before adopting a byte-level runtime.',
+    },
+    recommendations: [
+      'Keep tokenizer-brittleness fixtures in the model benchmark path for log, code, SQL, JSONL, and security workloads.',
+      'Prefer tokenizer-free or byte-level candidates only after they beat current routing on symbol preservation and secret-detection recall.',
+      'Do not add a BLT runtime dependency until maintained weights, serving code, and wall-clock latency evidence exist.',
+    ],
+  };
 }
 
 function resolveFeedbackDir(explicitDir) {
@@ -125,6 +238,17 @@ function buildBenchmarkPlan(candidate, workload) {
   };
 }
 
+function buildReadinessNotes(candidate, workloadId) {
+  const notes = [];
+  if (candidate.researchOnly) {
+    notes.push('research-only: benchmark target, not production routing');
+  }
+  if (workloadId === TOKENIZER_BRITTLENESS_WORKLOAD && !(candidate.strengths || []).includes('tokenizer-free')) {
+    notes.push('requires tokenizer-brittleness eval before code/log/security routing');
+  }
+  return notes;
+}
+
 function recommendCandidates(options = {}) {
   const catalog = options.catalog || loadCatalog(options.catalogPath);
   const workloadId = normalizeSlug(options.workload, DEFAULT_WORKLOAD);
@@ -148,6 +272,7 @@ function recommendCandidates(options = {}) {
         score: scoring.totalScore,
         scoreBreakdown: scoring.scoreBreakdown,
         benchmarkPlan: buildBenchmarkPlan(candidate, { ...workload, id: workloadId }),
+        readinessNotes: buildReadinessNotes(candidate, workloadId),
       };
     })
     .sort((left, right) => {
@@ -189,6 +314,9 @@ function buildModelCandidatesReport(options = {}) {
     summary: recommendation.recommended.length > 0
       ? `${recommendation.recommended[0].id} is the top candidate for ${recommendation.workload.label}.`
       : 'No candidates matched the selected filters.',
+    tokenizerBrittleness: recommendation.workloadId === TOKENIZER_BRITTLENESS_WORKLOAD || options.includeTokenizerBrittleness
+      ? buildTokenizerBrittlenessPlan(options.tokenizerBrittleness)
+      : null,
     catalogVersion: catalog.version || 1,
   };
 }
@@ -226,6 +354,9 @@ function renderModelCandidatesReport(report) {
     `   Cost class: ${candidate.costClass}`,
     `   Matched strengths: ${candidate.matchedStrengths.join(', ') || 'none'}`,
     `   Notes: ${candidate.notes}`,
+    ...(Array.isArray(candidate.readinessNotes) && candidate.readinessNotes.length
+      ? [`   Readiness: ${candidate.readinessNotes.join('; ')}`]
+      : []),
     '   Benchmark commands:',
     ...candidate.benchmarkPlan.commands.map((entry) => `   - ${entry.command}`),
     `   Benchmark metrics: ${candidate.benchmarkPlan.metrics.join(', ')}`,
@@ -233,14 +364,27 @@ function renderModelCandidatesReport(report) {
   ]);
   lines.push(...recommendationLines);
 
+  if (report.tokenizerBrittleness) {
+    lines.push('Tokenizer brittleness readiness:', '');
+    lines.push(`- Cases: ${report.tokenizerBrittleness.evaluation.caseCount}`);
+    lines.push(`- Pass rate: ${report.tokenizerBrittleness.evaluation.passRate}`);
+    lines.push(`- Production routing: ${report.tokenizerBrittleness.routingPolicy.allowProductionRouting ? 'allowed' : 'blocked until benchmarked'}`);
+    lines.push('');
+  }
+
   return `${lines.join('\n').trimEnd()}\n`;
 }
 
 module.exports = {
   DEFAULT_CATALOG_PATH,
+  DEFAULT_TOKENIZER_BRITTLENESS_CASES,
   DEFAULT_WORKLOAD,
+  TOKENIZER_BRITTLENESS_WORKLOAD,
+  buildTokenizerBrittlenessPlan,
   buildBenchmarkPlan,
   buildModelCandidatesReport,
+  detectTokenizerBrittlenessSignals,
+  evaluateTokenizerBrittlenessCases,
   getModelCandidatesReportPath,
   listCandidates,
   loadCatalog,

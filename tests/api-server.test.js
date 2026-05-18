@@ -47,6 +47,7 @@ fs.writeFileSync(
 );
 
 const { startServer, __test__ } = require('../src/api/server');
+const apiServerModulePath = require.resolve('../src/api/server');
 const billing = require('../scripts/billing');
 const gatesEngine = require('../scripts/gates-engine');
 const { listGateTemplates } = require('../scripts/gate-templates');
@@ -130,6 +131,104 @@ test('health endpoint returns ok', async () => {
   const body = await res.json();
   assert.equal(body.status, 'ok');
   assert.equal(body.buildSha, 'test-build-sha');
+});
+
+test('/health surfaces a per-check breakdown (no longer always-green theater)', async () => {
+  // Regression test for the 2026-05-12 audit finding: /health used to return
+  // status: 'ok' unconditionally regardless of feedback-dir / hosted-config /
+  // build-metadata state. It must now expose a `checks` object so uptime
+  // monitors can detect real degradation, not just process liveness.
+  const res = await fetch(apiUrl('/health'), { headers: authHeader });
+  const body = await res.json();
+  assert.ok(body.checks, '/health response must include a `checks` object');
+  assert.ok(body.checks.feedbackDir, 'checks.feedbackDir must exist');
+  assert.ok(body.checks.hostedConfig, 'checks.hostedConfig must exist');
+  assert.ok(body.checks.buildMetadata, 'checks.buildMetadata must exist');
+  // In a healthy test env, all three should be ok=true.
+  assert.equal(body.checks.feedbackDir.ok, true);
+  assert.equal(body.checks.hostedConfig.ok, true);
+  assert.equal(body.checks.buildMetadata.ok, true);
+});
+
+test('/health returns degraded when feedback dir is not writable', async () => {
+  const originalAccessSync = fs.accessSync;
+  fs.accessSync = (target, mode) => {
+    if (target === tmpFeedbackDir && mode === fs.constants.W_OK) {
+      const error = new Error('feedback dir not writable');
+      error.code = 'EACCES';
+      throw error;
+    }
+    return originalAccessSync(target, mode);
+  };
+
+  try {
+    const res = await fetch(apiUrl('/health'), { headers: authHeader });
+    assert.equal(res.status, 503);
+    const body = await res.json();
+    assert.equal(body.status, 'degraded');
+    assert.deepEqual(body.checks.feedbackDir, { ok: false, error: 'EACCES' });
+  } finally {
+    fs.accessSync = originalAccessSync;
+  }
+});
+
+test('/health returns degraded when build metadata is missing', async () => {
+  const originalMetadataPath = process.env.THUMBGATE_BUILD_METADATA_PATH;
+  const missingMetadataPath = path.join(tmpFeedbackDir, 'missing-build-metadata.json');
+  let isolatedHandle;
+
+  process.env.THUMBGATE_BUILD_METADATA_PATH = missingMetadataPath;
+  delete require.cache[apiServerModulePath];
+  const isolatedServerModule = require('../src/api/server');
+
+  try {
+    isolatedHandle = await isolatedServerModule.startServer({ port: 0, host: '127.0.0.1' });
+    const isolatedOrigin = `http://localhost:${isolatedHandle.port}`;
+    const res = await fetch(new URL('/health', isolatedOrigin), { headers: authHeader });
+    assert.equal(res.status, 503);
+    const body = await res.json();
+    assert.equal(body.status, 'degraded');
+    assert.deepEqual(body.checks.buildMetadata, { ok: false, error: 'missing_buildSha' });
+  } finally {
+    if (isolatedHandle) {
+      await new Promise((resolve) => isolatedHandle.server.close(resolve));
+    }
+    if (originalMetadataPath === undefined) delete process.env.THUMBGATE_BUILD_METADATA_PATH;
+    else process.env.THUMBGATE_BUILD_METADATA_PATH = originalMetadataPath;
+    delete require.cache[apiServerModulePath];
+    require('../src/api/server');
+  }
+});
+
+test('/healthz surfaces a per-check breakdown', async () => {
+  const res = await fetch(apiUrl('/healthz'), { headers: authHeader });
+  const body = await res.json();
+  assert.ok(body.checks, '/healthz response must include a `checks` object');
+  assert.ok(body.checks.feedbackLog, 'checks.feedbackLog must exist');
+  assert.ok(body.checks.memoryLog, 'checks.memoryLog must exist');
+});
+
+test('/healthz returns degraded when a log directory is not writable', async () => {
+  const originalAccessSync = fs.accessSync;
+  fs.accessSync = (target, mode) => {
+    if (target === tmpFeedbackDir && mode === fs.constants.W_OK) {
+      const error = new Error('log dir not writable');
+      error.code = 'EACCES';
+      throw error;
+    }
+    return originalAccessSync(target, mode);
+  };
+
+  try {
+    const res = await fetch(apiUrl('/healthz'), { headers: authHeader });
+    assert.equal(res.status, 503);
+    const body = await res.json();
+    assert.equal(body.status, 'degraded');
+    assert.deepEqual(body.checks.feedbackLog, { ok: false, error: 'EACCES' });
+    assert.deepEqual(body.checks.memoryLog, { ok: false, error: 'EACCES' });
+  } finally {
+    fs.accessSync = originalAccessSync;
+  }
 });
 
 test('PostHog proxy path allowlist blocks sibling-path SSRF attempts', () => {
@@ -544,6 +643,35 @@ test('/go/pro 302 redirects to /checkout/pro with caller-provided UTM params pre
   assert.equal(url.searchParams.get('cta_id'), 'go_pro');
 });
 
+test('/go/teams 302 redirects to /checkout/pro with plan_id=team + seat_count=3 (3-seat self-serve)', async () => {
+  // 2026-05-12: Aiventyx marketplace listing best-performer at ~62% CTR routes
+  // its Teams clicks through /go/teams. Pin the contract: redirect to
+  // /checkout/pro with plan_id=team + seat_count=3 so the canonical Aiventyx
+  // URL keeps landing on the 3-seat $147/mo self-serve Stripe checkout.
+  const res = await fetch(apiUrl('/go/teams?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_teams_listing&cta_id=aiventyx_teams_listing&cta_placement=marketplace_listing'), { redirect: 'manual' });
+  assert.equal(res.status, 302);
+  assert.equal(res.headers.get('x-thumbgate-link-slug'), 'teams');
+  const url = new URL(res.headers.get('location'));
+  assert.equal(url.pathname, '/checkout/pro');
+  assert.equal(url.searchParams.get('plan_id'), 'team');
+  assert.equal(url.searchParams.get('seat_count'), '3');
+  assert.equal(url.searchParams.get('billing_cycle'), 'monthly');
+  assert.equal(url.searchParams.get('utm_source'), 'aiventyx');
+  assert.equal(url.searchParams.get('utm_medium'), 'marketplace');
+  assert.equal(url.searchParams.get('cta_id'), 'aiventyx_teams_listing');
+});
+
+test('/go/teams falls back to default UTM attribution when no params are supplied', async () => {
+  const res = await fetch(apiUrl('/go/teams'), { redirect: 'manual' });
+  assert.equal(res.status, 302);
+  const url = new URL(res.headers.get('location'));
+  assert.equal(url.pathname, '/checkout/pro');
+  assert.equal(url.searchParams.get('plan_id'), 'team');
+  assert.equal(url.searchParams.get('seat_count'), '3');
+  assert.equal(url.searchParams.get('utm_campaign'), 'team_self_serve');
+  assert.equal(url.searchParams.get('cta_id'), 'go_teams');
+});
+
 test('/go/pro falls back to default UTM attribution when no params are supplied', async () => {
   const res = await fetch(apiUrl('/go/pro'), { redirect: 'manual' });
   assert.equal(res.status, 302);
@@ -575,6 +703,86 @@ test('privacy policy route covers collection, sharing, retention, and contact de
   assert.match(body, /Data Retention/i);
   assert.match(body, /optional CLI telemetry/i);
   assert.match(body, /igor\.ganapolsky@gmail\.com/i);
+});
+
+test('terms of service route covers payment, refunds, acceptable use, and limitation of liability', async () => {
+  const res = await fetch(apiUrl('/terms'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+  const body = await res.text();
+  assert.match(body, /Terms of Service/i);
+  assert.match(body, /Payment/i);
+  assert.match(body, /Refunds/i);
+  assert.match(body, /Acceptable Use/i);
+  assert.match(body, /Limitation of Liability/i);
+  assert.match(body, /igor\.ganapolsky@gmail\.com/i);
+  // Cross-links to /privacy and /support keep the legal triangle navigable.
+  assert.match(body, /href="\/privacy"/);
+  assert.match(body, /href="\/support"/);
+});
+
+test('pricing page is the single source of truth for what ThumbGate sells', async () => {
+  // Resolves the "pricing schizophrenia" flagged in the audit: sales/pricing.json
+  // said $49/$299, COMMERCIAL_TRUTH.md said $19/$149, and no buyer-facing
+  // surface existed to reconcile. This page MUST stay canonical.
+  const res = await fetch(apiUrl('/pricing'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+  const body = await res.text();
+  // All four tiers present.
+  assert.match(body, /Workflow Hardening Sprint/i);
+  assert.match(body, /\$499/);
+  assert.match(body, /ThumbGate CLI/i);
+  assert.match(body, /ThumbGate Pro/i);
+  assert.match(body, /\$19/);
+  assert.match(body, /\$149/);
+  assert.match(body, /ThumbGate Team/i);
+  assert.match(body, /\$49/);
+  // CTAs route to the canonical paths.
+  assert.match(body, /href="\/go\/install/);
+  assert.match(body, /href="\/go\/pro/);
+  assert.match(body, /href="\/go\/teams/);
+  assert.match(body, /mailto:igor\.ganapolsky@gmail\.com/);
+  // Cross-links so it's a navigation hub, not a dead end.
+  assert.match(body, /href="\/case-studies"/);
+  assert.match(body, /href="\/support"/);
+});
+
+test('support page exposes email, GitHub issues, status, and refund paths', async () => {
+  const res = await fetch(apiUrl('/support'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+  const body = await res.text();
+  assert.match(body, /Support/i);
+  assert.match(body, /mailto:igor\.ganapolsky@gmail\.com/i);
+  assert.match(body, /github\.com\/IgorGanapolsky\/ThumbGate\/issues/i);
+  assert.match(body, /\/health/);
+  assert.match(body, /Refunds/i);
+  assert.match(body, /href="\/privacy"/);
+  assert.match(body, /href="\/terms"/);
+});
+
+test('case studies page surfaces the Aiventyx integration with verifiable signal', async () => {
+  // Conversion-optimization surface: until this PR, thumbgate.ai had no
+  // proof page. Buyers saw CLI install commands and bounced. This page
+  // anchors trust with reproducible third-party signal.
+  const res = await fetch(apiUrl('/case-studies'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+  const body = await res.text();
+  assert.match(body, /Case Studies/);
+  // Real third-party signal must be present — no fabricated metrics.
+  assert.match(body, /Aiventyx/i);
+  assert.match(body, /62%/);
+  assert.match(body, /Qaiser/i);
+  // The fix must be described concretely (not aspirationally).
+  assert.match(body, /TRACKED_LINK_TARGETS/);
+  assert.match(body, /\/go\/teams/);
+  // Call to action: live redirect they can verify themselves.
+  assert.match(body, /href="\/go\/teams\?utm_source=case-study"/);
+  // Footer cross-links so this becomes a hub, not a dead end.
+  assert.match(body, /href="\/pricing"/);
+  assert.match(body, /href="\/privacy"/);
 });
 
 test('public HEAD routes stay unauthenticated and side-effect free', async () => {
@@ -979,6 +1187,62 @@ test('/numbers route writes a discovery/landing_view entry to funnel-events.json
   assert.equal(discoveryEvent.metadata.utmMedium, 'social');
   assert.equal(discoveryEvent.metadata.utmCampaign, 'organic');
   assert.equal(discoveryEvent.metadata.utmContent, 'linkedin_post');
+});
+
+// Federal lead-gen surface — the /federal route family serves
+// public/federal.html (a marketing landing page targeted at federal-agency
+// evaluators). Routes through servePublicMarketingPage so UTM attribution
+// and landing_page_view telemetry capture agency arrivals. The boundary
+// tests in tests/public-core-boundary.test.js pin presence of the assets;
+// these tests pin the HTTP contract.
+test('/federal route returns the federal landing page with positioning content', async () => {
+  const res = await fetch(apiUrl('/federal'));
+  assert.equal(res.status, 200);
+  const body = await res.text();
+  // Sentinel strings from public/federal.html. Each is load-bearing for the
+  // landing-page contract — if any disappear, the federal positioning page
+  // has silently been replaced or stripped.
+  assert.match(body, /For Federal Agencies/i);
+  assert.match(body, /NIST 800-53/);
+  assert.match(body, /THUMBGATE_DEPLOY/);
+});
+
+test('/federal route records landing_page_view telemetry with pageType=federal', async () => {
+  const cookieHeader = [
+    'thumbgate_visitor_id=visitor_federal',
+    'thumbgate_session_id=session_federal',
+    'thumbgate_acquisition_id=acq_federal',
+  ].join('; ');
+  const res = await fetch(
+    apiUrl('/federal?utm_source=sbir&utm_medium=outbound&utm_campaign=fed_pilot'),
+    { headers: { cookie: cookieHeader } }
+  );
+  assert.equal(res.status, 200);
+
+  const telemetryEvents = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
+  const landingEvent = telemetryEvents.find((entry) => (
+    entry.eventType === 'landing_page_view' &&
+    entry.visitorId === 'visitor_federal' &&
+    entry.pageType === 'federal'
+  ));
+  assert.ok(landingEvent, 'expected landing_page_view with pageType=federal in telemetry-pings.jsonl');
+  assert.equal(landingEvent.utmSource, 'sbir');
+  assert.equal(landingEvent.utmMedium, 'outbound');
+  assert.equal(landingEvent.utmCampaign, 'fed_pilot');
+});
+
+test('/federal.html, /government, /gov aliases all serve the federal landing page', async () => {
+  for (const route of ['/federal.html', '/government', '/gov']) {
+    const res = await fetch(apiUrl(route));
+    assert.equal(res.status, 200, `${route} expected 200, got ${res.status}`);
+    const body = await res.text();
+    assert.match(body, /For Federal Agencies/i, `${route} body missing federal sentinel`);
+  }
+});
+
+test('HEAD /federal returns 200 with no body (telemetry parity with /numbers)', async () => {
+  const res = await fetch(apiUrl('/federal'), { method: 'HEAD' });
+  assert.equal(res.status, 200);
 });
 
 test('tracked link router redirects allowlisted marketing slugs and records first-party click telemetry', async () => {
@@ -1390,6 +1654,56 @@ test('checkout bootstrap route preserves attribution and records first-party tel
   assert.equal(bootstrapEvent.creator, 'reach_vb');
   assert.equal(bootstrapEvent.community, 'ClaudeCode');
   assert.equal(bootstrapEvent.offerCode, 'REDDIT-EARLY');
+});
+
+// Interstitial-on-all-non-confirmed-GETs — eliminates zombie Stripe sessions
+// from raw GETs and gives every visitor a value-preview page with a "Pay
+// $19/mo with Stripe →" button. Pre-change: any GET on /checkout/pro 302'd
+// straight to a fresh cs_live_* session (creating Stripe noise + asking
+// confused humans for money before they saw the offer). Post-change: GETs
+// render the interstitial; only POST or ?confirm=1 triggers a Stripe session.
+
+test('checkout interstitial: GET without confirm=1 (human UA) renders the interstitial HTML, no Stripe session', async () => {
+  const res = await fetch(apiUrl('/checkout/pro?plan_id=pro&billing_cycle=monthly'), {
+    redirect: 'manual',
+    headers: {
+      'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      accept: 'text/html,application/xhtml+xml',
+    },
+  });
+  assert.equal(res.status, 200, 'human GET without confirm must NOT 302 to Stripe');
+  const body = await res.text();
+  assert.match(body, /Start ThumbGate Pro/i);
+  assert.match(body, /\$19/);
+  // Pay button must carry confirm=1 so the click triggers the Stripe path
+  assert.match(body, /\/checkout\/pro\?[^"]*confirm=1/);
+  assert.match(body, /Not sure yet\? Send the workflow first/);
+  assert.doesNotMatch(body, /Pay \$1 first rule/);
+  assert.doesNotMatch(body, /Pay \$99 teardown/);
+  assert.doesNotMatch(body, /Book \$499 diagnostic/);
+  assert.doesNotMatch(body, /Start \$1500 sprint/);
+  assert.doesNotMatch(body, /https:\/\/buy\.stripe\.com\//);
+
+  // Telemetry: a human view (not a bot) emits checkout_interstitial_view,
+  // not checkout_bot_deflected.
+  const telemetryEvents = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
+  const interstitialEvent = telemetryEvents.find((entry) => entry.eventType === 'checkout_interstitial_view');
+  assert.ok(interstitialEvent, 'expected checkout_interstitial_view telemetry for human GET');
+});
+
+test('checkout interstitial: GET with confirm=1 (human UA) bypasses interstitial and proceeds to Stripe redirect', async () => {
+  const res = await fetch(
+    apiUrl('/checkout/pro?confirm=1&plan_id=pro&billing_cycle=monthly&customer_email=buyer%40example.com&utm_source=test_interstitial_bypass'),
+    {
+      redirect: 'manual',
+      headers: {
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      },
+    }
+  );
+  assert.equal(res.status, 302, 'confirm=1 must still trigger Stripe-session creation + 302');
+  const location = res.headers.get('location');
+  assert.ok(location, 'confirm=1 must return a Location header');
 });
 
 test('checkout bootstrap falls back to seeded journey cookies when query IDs are absent', async () => {

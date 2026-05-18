@@ -1,74 +1,63 @@
 # Operator Close Packet: 2026-05-06
 
-**Objective:** Make money today.
+Updated: 2026-05-06T20:12:00Z
 
-**Outcome:** Multiple direct offers published through Zernio, one email send attempted and blocked by Resend domain verification, checkout recovery improved in PR #1787, and Stripe payment truth verified.
+## Objective
 
-## Key Actions & Results
+Make money today with direct checkout offers, published social distribution, and proof-backed checkout recovery.
 
-1.  **Stripe Payment Truth Verified:**
-    *   **Action:** Checked live Stripe balance and today's local-day payment window.
-    *   **Result:** **NO NEW MONEY YET.** Live balance is `$0`; today's Stripe charges/payment intents window returned no results.
-    *   **Account:** `acct_1RNcJ1GGBpd520QY` / `Saas Growth Dispatch`
-    *   **Signal:** Recent history still shows prior successful payments and abandoned payment intents, so checkout recovery is the highest-leverage fix.
+## Money Truth
 
-2.  **Zernio Offers Published:**
-    *   **Action:** Posted a direct $499 "Workflow Diagnostic" offer to Bluesky.
-    *   **Result:** **SUCCESS.** Post is live.
-    *   **URL:** `at://did:plc:67posxdluf3h6sri6ciqivzx/app.bsky.feed.post/3ml7gm7ruog24`
-    *   **Stripe Link:** `https://buy.stripe.com/3cI7sLgH25v8dWh5e33sI0o`
-    *   **Additional Evidence:** Zernio workflow `25456340574` published QSR AI Ops Pack to Bluesky and Threads with provider IDs `69fb96e5c22fb6f8230df1c0` and `69fb96ea007491b024ed9323`.
-    *   **Additional Evidence:** Zernio workflow `25456470663` published the $99 AI Phone 24-Hour Call Leak Audit to Bluesky with provider ID `69fb985c7040f5680d975390`.
+- Stripe live balance: $0 available / $0 pending.
+- Stripe charges for 2026-05-06 local day: none found in the latest live charge search.
+- Outcome: offers are live and promoted, but revenue has not landed yet.
 
-3.  **Checkout Recovery Fix Shipped To PR #1787:**
-    *   **Problem:** 30-day revenue plan showed `5,984` visitors, `159` checkout starts, only `4` paid orders, and `0` sprint leads.
-    *   **Action:** Moved the $499 diagnostic and $1500 sprint above lower-price Pro/intake paths on the homepage and checkout recovery pages.
-    *   **Result:** **PUSHED.** Commit `e4c571e0` is on PR #1787.
-    *   **Verification:** `npm run test:public-static-assets`, `npm run test:landing-page-claims`, and `npm run test:checkout-bot-guard` passed locally.
+## OpenClaw Governance Kit Offers
 
-4.  **Revenue Email Attempted:**
-    *   **Action:** Ran `revenue-email-dispatch.yml` for `aiventyx_marketplace_followup` with `confirm_send=true`.
-    *   **Result:** **NOT SENT.** Resend returned `403` because the account can only send test emails until a domain is verified and the From address uses that domain.
-    *   **Run:** `https://github.com/IgorGanapolsky/ThumbGate/actions/runs/25457276415`
+- ThumbGate Prevention Rule Library for OpenClaw - $49 - https://buy.stripe.com/eVq5kDfCY7Dg4lH49Z3sI13
+- ThumbGate Reliable Agent Governance Kit - $97 - https://buy.stripe.com/bJe14naiE9Lo7xT49Z3sI12
+- OpenClaw + ThumbGate Restaurant Ops Starter Kit - $149 - https://buy.stripe.com/fZufZhaiE5v819vdKz3sI14
+- Hardened Multi-Agent Governance Workflow Kit - $149 - https://buy.stripe.com/7sY8wP4Yk7Dg9G10XN3sI15
 
-5.  **Video Autopilot Fixed Earlier Today:**
-    *   **Problem:** The `video-autopilot` workflow was failing silently. Posts to Instagram and TikTok were blocked by a "Too many hashtags" quality gate.
-    *   **Action:** Identified the strict regex in `scripts/social-quality-gate.js` (`{5,}`). Increased the limit to 15.
-    *   **Result:** **FIXED.** The PR was merged, and a new workflow run was triggered. The fix is now live on `main`.
+## OpenClaw Publish Evidence
 
-6.  **LinkedIn Channel Blocked:**
-    *   **Problem:** The `linkedin-post-dispatch` workflow is failing with a 401 Unauthorized error.
-    *   **Root Cause:** The `LINKEDIN_ACCESS_TOKEN` GitHub secret has expired.
-    *   **Action:** Needs browser-based OAuth 2.0 re-authentication or a working Zernio LinkedIn route.
-    *   **Result:** **BLOCKED.** The LinkedIn channel is down until the token is refreshed.
+- Zernio workflow: https://github.com/IgorGanapolsky/ThumbGate/actions/runs/25455185516
+- Copy validation: passed.
+- Bluesky: published, Zernio post id 69fb90df2b334359494a0266.
+- Threads: published, Zernio post id 69fb90e3ec364d75d11db80e.
+- LinkedIn: failed with Zernio 403, "One or more accounts do not belong to this user"; do not retry bulk publish until connected account ownership is fixed.
+- Stripe checkout probes: all four OpenClaw checkout URLs returned HTTP 200 on 2026-05-06.
 
-7.  **Second Same-Day Paid Offer Round Published (16:28-16:31 EDT):**
-    *   **Action:** Published a fresh "repeated repo mistake to blocking guardrail today" offer after the checkout-priority deployment.
-    *   **Threads Result:** **SUCCESS.** Zernio provider ID `69fba47e951b178c1e789058`.
-    *   **Bluesky Result:** **SUCCESS.** Zernio provider ID `69fba4fc82d6939e28140697`.
-    *   **Threads Run:** `https://github.com/IgorGanapolsky/ThumbGate/actions/runs/25459226488`
-    *   **Bluesky Run:** `https://github.com/IgorGanapolsky/ThumbGate/actions/runs/25459226304`
-    *   **Offer:** $499 diagnostic maps one repeated agent failure; $1500 sprint ships the guardrail and proof run.
+## Other Published Offers
 
-8.  **Immediate Engagement Follow-Up Executed:**
-    *   **Action:** Ran Ralph engagement and bounded Bluesky reply publishing after the paid offer posts.
-    *   **Ralph Result:** **SUCCESS.** 37 Bluesky notifications, 12 actionable, 4 prospects queued; Reddit auth still failed with 401; LinkedIn comment monitoring still requires Community Management API approval.
-    *   **Reply Result:** **SUCCESS.** One safe Bluesky reply published.
-    *   **Reply URI:** `at://did:plc:67posxdluf3h6sri6ciqivzx/app.bsky.feed.post/3ml7kewpr5v2s`
-    *   **Runs:** `https://github.com/IgorGanapolsky/ThumbGate/actions/runs/25459490328`, `https://github.com/IgorGanapolsky/ThumbGate/actions/runs/25459490339`
+- Workflow Diagnostic: posted to Bluesky.
+- Workflow Diagnostic URL: at://did:plc:67posxdluf3h6sri6ciqivzx/app.bsky.feed.post/3ml7gm7ruog24
+- Workflow Diagnostic Stripe link: https://buy.stripe.com/3cI7sLgH25v8dWh5e33sI0o
+- QSR AI Ops Pack: Zernio workflow 25456340574 published to Bluesky and Threads with provider ids 69fb96e5c22fb6f8230df1c0 and 69fb96ea007491b024ed9323.
+- AI Phone 24-Hour Call Leak Audit: Zernio workflow 25456470663 published the $99 offer to Bluesky with provider id 69fb985c7040f5680d975390.
 
-9.  **Latest Money Truth (16:34 EDT):**
-    *   **Stripe:** Live available balance remains `$0`; today's local-day payment intent search returned no results.
-    *   **Revenue Plan:** 457 visitors today, 5,980 visitors in 30d, 157 checkout starts in 30d, 4 paid orders in 30d, `$149.00` booked in 30d, 0 sprint leads.
-    *   **Interpretation:** Distribution and conversion routing are live; no same-day payment has cleared yet.
+## Checkout Recovery
 
-## Blocker
+- Problem signal: 30-day revenue plan showed 5,984 visitors, 159 checkout starts, 4 paid orders, and 0 sprint leads.
+- Action: checkout recovery improvements were shipped in PR #1787, moving $499 diagnostic and $1500 sprint paths above lower-price Pro/intake paths.
+- Local verification recorded by mainline packet: `npm run test:public-static-assets`, `npm run test:landing-page-claims`, and `npm run test:checkout-bot-guard`.
 
-*   **Resend:** Domain verification is required before third-party recipients can receive revenue emails.
-*   **LinkedIn:** `LINKEDIN_ACCESS_TOKEN` is expired; avoid claiming LinkedIn distribution until a workflow returns a success URL or provider ID.
+## Blockers
+
+- Resend: external revenue email was attempted in workflow 25457276415 and blocked by Resend 403 until a sending domain is verified and the From address uses that domain.
+- LinkedIn: `LINKEDIN_ACCESS_TOKEN` is expired, and the Zernio LinkedIn route returned account ownership 403. Do not claim LinkedIn distribution until a workflow returns a success URL or provider id.
+
+## Truth Labels
+
+- Do not claim Gumroad sales, Stripe sales, or live OpenClaw runtime validation without command evidence.
+- Use OpenClaw-compatible or OpenClaw-style unless the exact upstream runtime has been tested for that kit.
+- Promise prevention of known repeated failure modes, not absolute safety or unsupervised autonomy.
+- Route larger buyers into the $499 diagnostic or $3,997 governance setup after the digital kit sale.
 
 ## Next Revenue Moves
 
-*   Keep using Zernio for Threads and Bluesky channels that return provider IDs.
-*   Fix Resend domain/From configuration before retrying external email.
-*   Re-check Stripe after social posts and checkout recovery deployment.
+- Merge PR #1777 when queue is green so the OpenClaw governance kit CTA and kit artifacts are available from the main branch.
+- Keep using Zernio for channels that return provider ids.
+- Fix Resend domain/From configuration before retrying external email.
+- Refresh LinkedIn authorization before spending more time on that channel.
+- Re-check Stripe after social posts and checkout recovery deployment.

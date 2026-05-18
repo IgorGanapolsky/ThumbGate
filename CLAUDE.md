@@ -212,34 +212,26 @@ CI runs `--check` on every push. If it fails, files are out of sync.
 
 Policy file: `config/mcp-allowlists.json`
 
-## Product Architecture Split
+## Moat — Hosted Services, Not Closed-Source Intelligence
 
-ThumbGate ships as a two-repo product with an enforced boundary. Do not re-collapse the boundary.
+**Decision (2026-05-18, audit-based):** the moat is hosted infrastructure + adapter compatibility + dashboard + support. Public code is permissive on purpose. See [`MOAT.md`](./MOAT.md) for the full reasoning.
 
-- **Public shell** — `IgorGanapolsky/ThumbGate` (this repo, npm package `thumbgate`, landing page `thumbgate.ai`, Railway production).
-  Surface: CLI, hook installer, adapter configs, basic local gate runner, public JSON schemas, marketing/docs.
-  Visible to installers, recruiters, competitors — keep it thin.
+The previous "two-repo split" framing was aspirational. Audit found 212 of the 216 Core scripts also ship publicly via npm — the boundary doesn't exist in practice. Pretending otherwise produced pricing-page incoherence ("why pay $19/mo when npm install gives me everything?") and wasted engineering cycles debating a boundary that wasn't real.
 
-- **Private core** — `IgorGanapolsky/ThumbGate-Core` (private; not published to npm).
-  Surface: lesson ranking, policy synthesis, multi-agent orchestration, billing intelligence, org visibility, licensed exports.
-  Production-only. Never mirrored into the public repo, never imported into the npm bundle, never required by public CI.
+### Active rules
 
-### Boundary Rules
+1. **Public code is permissive.** New intelligence features (ranking, synthesis, adaptive gates) land in the public repo by default. No more silent migration to Core.
+2. **Bundle ratchet.** `tests/public-bundle-ratchet.test.js` pins the npm bundle file count at the 2026-05-18 baseline (254 files). The number can decrease over time as we remove obsolete scripts; it cannot increase without a deliberate baseline bump + CHANGELOG note.
+3. **Public CI stays Core-independent.** `tests/public-core-boundary.test.js` still enforces that default CI passes without Core API keys or Core imports. This is a real correctness property, not a moat property.
+4. **Pricing copy follows reality.** `/pricing` describes what the subscription buys in terms of hosted state + adapter coverage + support, not "private features you can't see."
 
-1. **No re-expansion.** Any new feature that is "intelligence" (ranking, synthesis, adaptive gates, org analytics, pricing logic) lands in ThumbGate-Core. The public shell gets a thin client stub only.
-2. **Wire protocol, not direct require.** Public code talks to Core over a stable wire (HTTP / gRPC / licensed binary). Never `require('../ThumbGate-Core/...')`.
-3. **Independent CI.** Public repo's default CI matrix must pass with Core absent — no API keys, no network calls to Core. Integration suites that touch Core live in a separate opt-in workflow.
-4. **Dedicated worktrees.** Use `worktrees/public-*` for public-shell work and `worktrees/core-*` for Core work. Never co-mingle changes in one branch.
-5. **Never claim "split complete".** Report measurable deltas only: files removed from public, boundary tests added, public bundle size delta, Core import graph verified empty. "Done" on this workstream requires all four evidence lines.
+### `ThumbGate-Core` repo usage now
 
-### Split Violation Triggers (block merge)
+The private Core repo holds (a) the 4 RLHF-cache scripts that genuinely cannot be public (`hook-rlhf-cache-updater.js`, `hook-verify-before-done.sh`, `prove-subway-upgrades.js`, `rlhf-search.js`) and (b) staging of features before public release. It is not the moat surface.
 
-- A public npm-published script imports Core internals directly.
-- Public README or landing page describes a feature that only exists in Core.
-- Public CI requires a Core API key to pass a non-integration suite.
-- `package.json` in the public repo lists Core as a runtime dependency.
+### Re-evaluation trigger
 
-When you fix a violation, pin the fix with a regression test in `tests/public-core-boundary.test.js`.
+If someone forks ThumbGate and ships a hosted competitor that gets meaningful traction, the moat assumption is wrong and we revisit. Until then: hosted-services moat, permissive public code, no theater.
 
 ## Session Handoff
 
@@ -271,3 +263,52 @@ npm run pr:manage
 # 3. Verify main is green
 gh run list --branch main --limit 3
 ```
+
+## Session Hygiene Protocol (CEO ↔ CTO contract)
+
+Adopted 2026-05-12 after a full PR/branch sweep. Persisted here so every future CTO session boots with the same operating contract.
+
+### Session Start Protocol
+1. Read `CLAUDE.md`, `AGENTS.md`, `GEMINI.md` directives top-to-bottom.
+2. Query local lesson DB (`.claude/memory/feedback/*`) and cross-session memory (`~/.claude/projects/-Users-…/memory/MEMORY.md`).
+3. Review **all** open PRs (`gh pr list --state open`) and their CI rollups.
+4. List remote branches (`git branch -r`) and identify orphans (branches with no open PR, closed-not-merged PR, or no PR at all).
+
+### Continuous PR & Branch Hygiene
+- **Mergeable PRs with all SUCCESS checks**: submit `/trunk merge` immediately. Never leave a green PR open.
+- **BEHIND PRs with all SUCCESS checks**: also `/trunk merge` — Trunk rebases against latest main and queues.
+- **Failed `Trunk Merge Queue (main)`**: do NOT spam `/trunk merge` retries. Investigate the integration failure once; if the cause is unclear after one read, document and defer.
+- **DIRTY or stale (≥5 days, closed-not-merged) branches**: delete the remote branch in batches via `git push origin --delete`. Do NOT conflict-resolve stale branches.
+- **Local branches with `[gone]` upstream**: `git branch -D` once their remote is gone (auto after stale-cleanup).
+- **Worktrees marked `prunable`**: `git worktree prune` + `git worktree remove --force` for dirs >5 days old.
+
+### Evidence-Based Communication (non-negotiable)
+- Every claim ships with proof: file counts, command output, CI rollup state, commit SHA.
+- Use **"I believe this is done, verifying now…"** before each verification step, then state the result with evidence.
+- Never say "done", "deployed", "shipped", "live", or "merged" without first running the relevant verification:
+  - PRs: `gh pr view --json reviewDecision,mergeStateStatus,statusCheckRollup` showing CLEAN + SUCCESS + merged=true.
+  - Deploys: the full Deployment Verification Gate (`/health` version grep + `/dashboard` grep + a route-specific 302/200 grep for the change shipped).
+
+### No Manual Handoffs
+- Never instruct the CEO to run a command, click a dashboard, or paste a value if the CTO can do it.
+- The only exceptions: actions that require credentials the CTO cannot legitimately hold (live Stripe `sk_live_` reveal behind 2FA, X passcode, GitHub PAT rotation).
+- For each unavoidable handoff: state exactly what is needed, why I can't do it, and what I do once it's available.
+
+### Secret Handling
+- Never commit secrets to tracked files (incl. directives).
+- Never echo pasted tokens/PATs/secret keys back into the conversation transcript.
+- If a credential leaks into the transcript (chat or tool output): surface immediately, advise rotation, do not reuse.
+- The `gh` CLI's existing OAuth token is the canonical Git authority. Don't replace it with a pasted PAT.
+
+### Honesty Protocol
+- Lying is not allowed. "Code shipped ≠ outcome achieved." Verify against production data before framing as solved.
+- Failures must be surfaced as they happen, not buried under retries.
+- Mistakes get logged to the local lesson DB via `.claude/scripts/feedback/capture-feedback.js`.
+
+### Post-Task Checklist
+- [ ] All open PRs reviewed; mergeable ones submitted to Trunk queue.
+- [ ] Stale orphan branches deleted (remote + local).
+- [ ] Detached/prunable worktrees removed.
+- [ ] CI green on `main` (verified via `gh run list --branch main`).
+- [ ] Lessons logged to lesson DB.
+- [ ] Secrets rotated if any leaked in-session.

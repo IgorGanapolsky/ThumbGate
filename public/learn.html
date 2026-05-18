@@ -73,6 +73,12 @@
       {
         "@type": "ListItem",
         "position": 6,
+        "url": "https://thumbgate.ai/learn/from-prototype-to-production",
+        "name": "From git init to v1.17.0 in 70 days: an honest ThumbGate build log"
+      },
+      {
+        "@type": "ListItem",
+        "position": 7,
         "url": "https://thumbgate.ai/guides/stop-repeated-ai-agent-mistakes",
         "name": "How to Stop AI Coding Agents From Repeating Mistakes"
       },
@@ -123,6 +129,12 @@
         "position": 14,
         "url": "https://thumbgate.ai/guides/relational-knowledge-ai-recommendations",
         "name": "Relational Knowledge in AI Recommendations"
+      },
+      {
+        "@type": "ListItem",
+        "position": 15,
+        "url": "https://thumbgate.ai/guides/ai-deployment-readiness",
+        "name": "AI Deployment Readiness Before Production Rollout"
       }
     ]
   }
@@ -254,12 +266,27 @@
       <span class="article-tag">PreToolUse</span>
       <span class="article-tag">Technical</span>
     </a>
+    <a href="/learn/ai-agent-governance" class="article-card">
+      <h3>AI Agent Governance — The Four Layers Pattern</h3>
+      <p>AI agent governance has four layers: prompt rules, decorator wrappers, pre-action hooks, sandbox isolation. Each catches a different failure mode. Pick the layer that matches your stack — and understand why prompt rules alone fail.</p>
+      <span class="article-tag">Governance</span>
+      <span class="article-tag">Architecture</span>
+      <span class="article-tag">Pattern</span>
+    </a>
     <a href="/learn/agent-harness-pattern" class="article-card">
       <h3>The Agent Harness Pattern: Why Your AI Needs a Seatbelt</h3>
       <p>Tsinghua researchers formalized agent harnesses as first-class objects with contracts, verification checks, and durable state. ThumbGate implements this pattern in production today.</p>
       <span class="article-tag">Research</span>
       <span class="article-tag">Agent Harness</span>
       <span class="article-tag">NLAH</span>
+    </a>
+
+    <a href="/learn/agent-swarms-shared-gates" class="article-card">
+      <h3>Agent Swarms: One Gate Layer, Every Model</h3>
+      <p>A 5-agent swarm without shared memory pays 5&times; the tokens on every repeated mistake. Here is how a single MCP gate layer makes Opus, GPT, and Gemini fail the same way only once.</p>
+      <span class="article-tag">Agent Swarms</span>
+      <span class="article-tag">Multi-Agent</span>
+      <span class="article-tag">Shared Memory</span>
     </a>
 
     <a href="/learn/ai-agent-persistent-memory" class="article-card">
@@ -269,11 +296,27 @@
       <span class="article-tag">SQLite+FTS5</span>
       <span class="article-tag">Session Persistence</span>
     </a>
+
+    <a href="/learn/from-prototype-to-production" class="article-card">
+      <h3>From git init to v1.17.0 in 70 days: an honest ThumbGate build log</h3>
+      <p>70 days, 112 commits, 17 minor releases, 6k npm downloads, $0 cold-traffic revenue. The unedited story of taking ThumbGate from a one-line repo init to live production — including the part that's still broken.</p>
+      <span class="article-tag">Build Log</span>
+      <span class="article-tag">Indie SaaS</span>
+      <span class="article-tag">Shipping in Public</span>
+    </a>
   </div>
 
   <h2>Popular buyer questions</h2>
   <p class="section-intro">These are the high-intent guides for buyers who already know the pain and want to understand where ThumbGate fits fast.</p>
   <div class="article-grid">
+    <a href="/guides/ai-deployment-readiness" class="article-card">
+      <h3>AI Deployment Readiness Before Production Rollout</h3>
+      <p>Use one priority workflow to map tools, data, controls, pre-action gates, and proof before an AI deployment team ships into production.</p>
+      <span class="article-tag">Deployment</span>
+      <span class="article-tag">Readiness</span>
+      <span class="article-tag">Sprint</span>
+    </a>
+
     <a href="/guides/ai-search-topical-presence" class="article-card">
       <h3>AI Search Topical Presence</h3>
       <p>Why AI assistants recommend the tools they repeatedly see tied to a buyer problem, and how ThumbGate builds that association with proof-backed pages.</p>

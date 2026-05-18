@@ -16,6 +16,7 @@ const {
   patternToGateId,
   buildGateRule,
   extractPatternKey,
+  normalizeCommandSignature,
   isNegative,
   MAX_AUTO_GATES,
   WARN_THRESHOLD,
@@ -93,8 +94,10 @@ test('getAutoGatesPath: resolves inside the active feedback directory', () => {
   }
 });
 
-test('threshold constants preserve the 2 warn / 3 block contract', () => {
-  assert.strictEqual(WARN_THRESHOLD, 2);
+test('threshold constants: 1 warn (first-capture activation) / 3 block (escalation)', () => {
+  // WARN_THRESHOLD was 2; lowered to 1 so cold buyers see a working gate after their
+  // first 👎 (activation-loop fix). Hard block still requires 3 captures to avoid noise.
+  assert.strictEqual(WARN_THRESHOLD, 1);
   assert.strictEqual(BLOCK_THRESHOLD, 3);
 });
 
@@ -389,4 +392,242 @@ test('runCli: supports force-block without falling through to a second entrypoin
   const gate = data.gates.find((entry) => entry.pattern === 'pipeline-regression');
   assert.ok(gate);
   assert.strictEqual(gate.action, 'block');
+});
+
+// ============================================================
+// Rule TTL / expiry (Reddit reviewer @MomSausageandPeppers, 2026-05-13)
+// ============================================================
+
+const {
+  expireGates,
+  recordGateFire,
+  getRuleTtlDays,
+  getRuleTtlMs,
+  DEFAULT_RULE_TTL_DAYS,
+} = require('../scripts/auto-promote-gates');
+
+test('buildGateRule sets expiresAt for auto-promoted gates (default 90 day TTL)', () => {
+  const group = {
+    key: 'destructive',
+    latestContext: 'rm -rf production',
+    count: 2,
+    source: 'auto-promote',
+  };
+  const gate = buildGateRule(group);
+  assert.ok(gate.expiresAt, 'auto-promoted gates must have expiresAt set');
+  const expiresMs = Date.parse(gate.expiresAt);
+  const promotedMs = Date.parse(gate.promotedAt);
+  const deltaDays = (expiresMs - promotedMs) / (24 * 60 * 60 * 1000);
+  assert.ok(deltaDays > 89 && deltaDays < 91, `default TTL should be ~90 days, got ${deltaDays}`);
+  assert.equal(gate.lastFiredAt, null);
+});
+
+test('buildGateRule sets expiresAt=null for MANUAL force-promoted gates', () => {
+  const group = {
+    key: 'manual-override',
+    latestContext: 'manual-override',
+    count: 'MANUAL',
+    manualAction: 'block',
+    source: 'force-promote',
+  };
+  const gate = buildGateRule(group);
+  assert.equal(gate.expiresAt, null, 'force-promoted gates are permanent (expiresAt=null)');
+});
+
+test('expireGates drops gates whose expiresAt is past and lastFiredAt is also stale', () => {
+  const longAgo = new Date(Date.now() - 200 * 24 * 60 * 60 * 1000).toISOString(); // 200d ago
+  const data = {
+    version: 1,
+    gates: [
+      { id: 'stale', expiresAt: longAgo, lastFiredAt: null, pattern: 'stale-rule' },
+      { id: 'fresh', expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), pattern: 'fresh-rule' },
+      { id: 'permanent', expiresAt: null, pattern: 'permanent-rule' },
+    ],
+    promotionLog: [],
+  };
+  const { data: result, expired } = expireGates(data);
+  const keptIds = result.gates.map((g) => g.id);
+  assert.ok(!keptIds.includes('stale'), 'stale gate should be expired');
+  assert.ok(keptIds.includes('fresh'), 'fresh gate should be kept');
+  assert.ok(keptIds.includes('permanent'), 'permanent (null expiresAt) gate should be kept');
+  assert.equal(expired.length, 1);
+  assert.equal(expired[0].id, 'stale');
+  assert.ok(result.promotionLog.some((p) => p.type === 'expired' && p.gateId === 'stale'));
+});
+
+test('expireGates keeps gates that fired recently even if original expiresAt is past', () => {
+  const longAgoExpiry = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(); // 30d past
+  const recentFire = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();      // 5d ago
+  const data = {
+    version: 1,
+    gates: [
+      { id: 'high-signal', expiresAt: longAgoExpiry, lastFiredAt: recentFire, pattern: 'still-useful' },
+    ],
+    promotionLog: [],
+  };
+  const { data: result, expired } = expireGates(data);
+  assert.equal(expired.length, 0, 'high-signal gate should not expire');
+  const renewed = result.gates.find((g) => g.id === 'high-signal');
+  assert.ok(renewed, 'gate should still be present');
+  // expiresAt should have been pushed forward
+  assert.ok(Date.parse(renewed.expiresAt) > Date.parse(longAgoExpiry));
+});
+
+test('expireGates tolerates malformed input without throwing', () => {
+  assert.doesNotThrow(() => expireGates(null));
+  assert.doesNotThrow(() => expireGates(undefined));
+  assert.doesNotThrow(() => expireGates({ gates: 'not-an-array' }));
+});
+
+test('recordGateFire updates lastFiredAt and pushes expiresAt forward', () => {
+  const originalExpiry = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString();
+  const data = {
+    version: 1,
+    gates: [{ id: 'gate-x', expiresAt: originalExpiry, lastFiredAt: null, pattern: 'p' }],
+    promotionLog: [],
+  };
+  const updated = recordGateFire(data, 'gate-x');
+  assert.ok(updated.lastFiredAt, 'lastFiredAt must be set after fire');
+  // After fire, expiresAt should be ~90d from now (push forward), not the original 10d
+  const newExpiryMs = Date.parse(updated.expiresAt);
+  const originalExpiryMs = Date.parse(originalExpiry);
+  assert.ok(newExpiryMs > originalExpiryMs, 'expiresAt must be pushed forward after fire');
+});
+
+test('recordGateFire on a permanent gate keeps expiresAt=null', () => {
+  const data = {
+    version: 1,
+    gates: [{ id: 'manual-gate', expiresAt: null, lastFiredAt: null, pattern: 'p' }],
+    promotionLog: [],
+  };
+  const updated = recordGateFire(data, 'manual-gate');
+  assert.equal(updated.expiresAt, null, 'permanent gate stays permanent after fire');
+  assert.ok(updated.lastFiredAt);
+});
+
+test('recordGateFire returns null for unknown gate ID', () => {
+  const data = { version: 1, gates: [], promotionLog: [] };
+  assert.equal(recordGateFire(data, 'nope'), null);
+});
+
+test('getRuleTtlDays defaults to 90 and honors THUMBGATE_RULE_TTL_DAYS', () => {
+  const savedEnv = process.env.THUMBGATE_RULE_TTL_DAYS;
+  try {
+    delete process.env.THUMBGATE_RULE_TTL_DAYS;
+    assert.equal(getRuleTtlDays(), 90);
+    assert.equal(DEFAULT_RULE_TTL_DAYS, 90);
+
+    process.env.THUMBGATE_RULE_TTL_DAYS = '30';
+    assert.equal(getRuleTtlDays(), 30);
+    assert.equal(getRuleTtlMs(), 30 * 24 * 60 * 60 * 1000);
+
+    process.env.THUMBGATE_RULE_TTL_DAYS = '-5';
+    assert.equal(getRuleTtlDays(), 90, 'negative TTL falls back to default');
+
+    process.env.THUMBGATE_RULE_TTL_DAYS = 'banana';
+    assert.equal(getRuleTtlDays(), 90, 'non-numeric TTL falls back to default');
+  } finally {
+    if (savedEnv === undefined) delete process.env.THUMBGATE_RULE_TTL_DAYS;
+    else process.env.THUMBGATE_RULE_TTL_DAYS = savedEnv;
+  }
+});
+
+// --- Command-signature normalization (Reddit critique: command-equality matching) ---
+
+test('normalizeCommandSignature: collapses whitespace + case', () => {
+  assert.strictEqual(
+    normalizeCommandSignature('  RM   -rf   node_modules  '),
+    'rm -rf node_modules'
+  );
+});
+
+test('normalizeCommandSignature: strips leading ./ on path tokens', () => {
+  assert.strictEqual(
+    normalizeCommandSignature('rm -rf ./node_modules'),
+    normalizeCommandSignature('rm -rf node_modules')
+  );
+});
+
+test('normalizeCommandSignature: strips outer quotes/backticks per token', () => {
+  assert.strictEqual(
+    normalizeCommandSignature('rm -rf "node_modules"'),
+    normalizeCommandSignature('rm -rf node_modules')
+  );
+  assert.strictEqual(
+    normalizeCommandSignature("git push 'origin' main"),
+    normalizeCommandSignature('git push origin main')
+  );
+  assert.strictEqual(
+    normalizeCommandSignature('echo `whoami`'),
+    normalizeCommandSignature('echo whoami')
+  );
+});
+
+test('normalizeCommandSignature: strips /Users/<name>/ and /home/<name>/ prefixes', () => {
+  assert.strictEqual(
+    normalizeCommandSignature('cat /Users/igor/workspace/repo/README.md'),
+    'cat ~/workspace/repo/readme.md'
+  );
+  assert.strictEqual(
+    normalizeCommandSignature('cat /home/alice/notes.txt'),
+    'cat ~/notes.txt'
+  );
+});
+
+test('normalizeCommandSignature: strips :line and :line:col refs', () => {
+  assert.strictEqual(
+    normalizeCommandSignature('edit src/foo.js:42'),
+    normalizeCommandSignature('edit src/foo.js')
+  );
+  assert.strictEqual(
+    normalizeCommandSignature('edit src/foo.js:42:7'),
+    normalizeCommandSignature('edit src/foo.js')
+  );
+});
+
+test('normalizeCommandSignature: does NOT reorder flags (semantics preserved)', () => {
+  // Different flag order = different intent; we must NOT collapse these.
+  assert.notStrictEqual(
+    normalizeCommandSignature('git push origin main --force'),
+    normalizeCommandSignature('git push --force origin main')
+  );
+});
+
+test('normalizeCommandSignature: does NOT collapse && chains', () => {
+  // Multi-step commands must not collapse with single steps.
+  assert.notStrictEqual(
+    normalizeCommandSignature('rm x && rm y'),
+    normalizeCommandSignature('rm x')
+  );
+});
+
+test('normalizeCommandSignature: empty/null input → empty string', () => {
+  assert.strictEqual(normalizeCommandSignature(''), '');
+  assert.strictEqual(normalizeCommandSignature(null), '');
+  assert.strictEqual(normalizeCommandSignature(undefined), '');
+});
+
+test('extractPatternKey: variants of rm -rf node_modules produce the same gate key', () => {
+  const variants = [
+    'rm -rf node_modules',
+    'rm -rf ./node_modules',
+    'rm -rf "node_modules"',
+    '  RM   -rf   node_modules  ',
+    'rm -rf node_modules:42',
+  ];
+  const keys = variants.map((ctx) => extractPatternKey({ context: ctx }));
+  // Every variant should collapse to the same key.
+  for (const k of keys) {
+    assert.strictEqual(k, keys[0], `expected all variants to match: ${JSON.stringify(keys)}`);
+  }
+  assert.ok(keys[0] && keys[0].includes('rm -rf node_modules'));
+});
+
+test('extractPatternKey: still prefers tags when present', () => {
+  const k = extractPatternKey({
+    tags: ['feedback', 'destructive-fs', 'negative'],
+    context: 'rm -rf node_modules',
+  });
+  // Tag-based key wins over command normalization.
+  assert.strictEqual(k, 'destructive-fs');
 });
