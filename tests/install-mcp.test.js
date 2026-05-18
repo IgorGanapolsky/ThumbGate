@@ -24,6 +24,8 @@ const {
   isAlreadyInstalled,
   buildMcpConfig,
   installMcp,
+  installHooks,
+  installMcpAndHooks,
   parseFlags,
 } = require('../scripts/install-mcp');
 
@@ -367,6 +369,134 @@ describe('install-mcp', () => {
     } finally {
       process.env.HOME = origHome;
       fs.rmSync(isolatedDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// install-mcp + hooks integration
+// ---------------------------------------------------------------------------
+// The headline UX in README/landing-page is a single command. Prior to this
+// suite, `install-mcp` only wrote mcpServers and silently left the gate hooks
+// unwired, leaving every user with a half-installed system. These tests pin
+// the unified install path: by default, install-mcp wires BOTH the MCP server
+// and the Claude Code lifecycle hooks. `--no-hooks` opts out for callers that
+// only want the server entry.
+
+describe('install-mcp + hooks integration', () => {
+  test('parseFlags detects --no-hooks flag', () => {
+    assert.equal(parseFlags(['--no-hooks']).noHooks, true);
+    assert.equal(parseFlags([]).noHooks, undefined);
+  });
+
+  test('installMcpAndHooks wires both server entry and Claude hook lifecycles', () => {
+    const isolatedDir = makeTmpDir();
+    const origHome = process.env.HOME;
+    process.env.HOME = isolatedDir;
+    try {
+      const result = installMcpAndHooks({});
+      assert.equal(result.mcp.installed, true, 'MCP server should be installed');
+      assert.ok(!result.hooks.error, `hook wiring should not error: ${result.hooks.error || ''}`);
+
+      // Hooks land in settings.local.json per Claude Code's per-machine
+      // override convention; the MCP entry + statusLine land in settings.json.
+      const mcpSettings = JSON.parse(
+        fs.readFileSync(path.join(isolatedDir, '.claude', 'settings.json'), 'utf8')
+      );
+      assert.ok(
+        mcpSettings.mcpServers && mcpSettings.mcpServers[MCP_SERVER_KEY],
+        'MCP server entry must be present in settings.json'
+      );
+
+      const hookSettingsPath = path.join(isolatedDir, '.claude', 'settings.local.json');
+      assert.ok(fs.existsSync(hookSettingsPath), 'hook settings.local.json must exist');
+      const hookSettings = JSON.parse(fs.readFileSync(hookSettingsPath, 'utf8'));
+      assert.ok(hookSettings.hooks, 'hooks block must exist in settings.local.json');
+
+      // Every Claude lifecycle this installer is responsible for must land.
+      for (const lifecycle of ['PreToolUse', 'UserPromptSubmit', 'PostToolUse', 'SessionStart']) {
+        assert.ok(
+          Array.isArray(hookSettings.hooks[lifecycle]) && hookSettings.hooks[lifecycle].length > 0,
+          `expected hooks.${lifecycle} to be wired`
+        );
+      }
+    } finally {
+      process.env.HOME = origHome;
+      fs.rmSync(isolatedDir, { recursive: true, force: true });
+    }
+  });
+
+  test('installMcpAndHooks respects --no-hooks (MCP only, no hook writes)', () => {
+    const isolatedDir = makeTmpDir();
+    const origHome = process.env.HOME;
+    process.env.HOME = isolatedDir;
+    try {
+      const result = installMcpAndHooks({ noHooks: true });
+      assert.equal(result.mcp.installed, true, 'MCP server should still be installed');
+      assert.equal(result.hooks.skipped, true, 'hooks should be marked skipped');
+      assert.equal(result.hooks.wired, false, 'hooks should not be wired');
+
+      const hookSettingsPath = path.join(isolatedDir, '.claude', 'settings.local.json');
+      // Either the file doesn't exist, or it exists with no hooks block.
+      if (fs.existsSync(hookSettingsPath)) {
+        const hookSettings = JSON.parse(fs.readFileSync(hookSettingsPath, 'utf8'));
+        assert.equal(
+          hookSettings.hooks,
+          undefined,
+          '--no-hooks must NOT write a hooks block to settings.local.json'
+        );
+      }
+    } finally {
+      process.env.HOME = origHome;
+      fs.rmSync(isolatedDir, { recursive: true, force: true });
+    }
+  });
+
+  test('installMcpAndHooks is idempotent across both MCP and hook surfaces', () => {
+    const isolatedDir = makeTmpDir();
+    const origHome = process.env.HOME;
+    process.env.HOME = isolatedDir;
+    try {
+      const first = installMcpAndHooks({});
+      assert.equal(first.mcp.installed, true);
+      assert.ok(!first.hooks.error);
+
+      const second = installMcpAndHooks({});
+      // MCP install reports `installed: false` with reason already-installed on
+      // re-run; the hook wiring should likewise be a no-op (no added entries).
+      assert.equal(second.mcp.installed, false);
+      assert.equal(second.mcp.reason, 'already-installed');
+      assert.ok(!second.hooks.error);
+      assert.equal(
+        (second.hooks.added || []).length,
+        0,
+        're-run should not add hook entries that were already wired'
+      );
+    } finally {
+      process.env.HOME = origHome;
+      fs.rmSync(isolatedDir, { recursive: true, force: true });
+    }
+  });
+
+  test('installHooks returns a structured failure rather than throwing', () => {
+    // Confirm the contract: callers should always get {wired, settingsPath,
+    // added, error?}. We force the error path by pointing HOME at a path
+    // where mkdir will fail (an existing regular file).
+    const tmpFile = path.join(makeTmpDir(), 'home-as-file');
+    fs.writeFileSync(tmpFile, 'not-a-dir');
+    const origHome = process.env.HOME;
+    process.env.HOME = tmpFile;
+    try {
+      const result = installHooks({});
+      // Either the helper recovered (wired: true/false) or it captured the
+      // error — both are fine; the contract is "do not throw".
+      assert.equal(typeof result, 'object');
+      assert.equal('wired' in result, true);
+      assert.equal('settingsPath' in result, true);
+      assert.equal('added' in result, true);
+    } finally {
+      process.env.HOME = origHome;
+      fs.rmSync(tmpFile, { force: true });
     }
   });
 });

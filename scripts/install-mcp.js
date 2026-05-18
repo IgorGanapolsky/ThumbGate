@@ -2,19 +2,33 @@
 'use strict';
 
 /**
- * install-mcp.js — Wire the ThumbGate MCP server into Claude Code settings.
+ * install-mcp.js — Wire the ThumbGate MCP server (and PreToolUse hooks) into
+ * Claude Code settings.
  *
  * Usage:
  *   node scripts/install-mcp.js            # global install (~/.claude/settings.json)
  *   node scripts/install-mcp.js --project  # project-level install (.claude/settings.json)
+ *   node scripts/install-mcp.js --no-hooks # MCP only, skip hook wiring
+ *   node scripts/install-mcp.js --dry-run  # preview without writing
  *
  * Idempotent: re-running does not duplicate the entry.
  * Creates a .bak backup before modifying any settings file.
+ *
+ * By default this command performs BOTH steps a Claude Code install needs:
+ *   1. Add the `thumbgate` MCP server to settings.json (or project .claude/settings.json)
+ *   2. Wire PreToolUse / UserPromptSubmit / PostToolUse / SessionStart hooks
+ *      via wireClaudeHooks() from auto-wire-hooks.js
+ *
+ * Prior to this change, `install-mcp` only handled step 1, silently leaving
+ * the gate-enforcement hooks unwired. The single-command UX in the README and
+ * landing page (`npx thumbgate init --agent claude-code`) expects both steps,
+ * and this matches it.
  */
 
 const fs = require('fs');
 const path = require('path');
 const { resolveMcpEntry } = require('./mcp-config');
+const { wireClaudeHooks } = require('./auto-wire-hooks');
 
 const MCP_SERVER_KEY = 'thumbgate';
 const LEGACY_MCP_SERVER_KEYS = ['mcp-memory-gateway', 'rlhf'];
@@ -35,6 +49,7 @@ function parseFlags(argv) {
   for (const arg of argv) {
     if (arg === '--project') flags.project = true;
     if (arg === '--dry-run') flags.dryRun = true;
+    if (arg === '--no-hooks') flags.noHooks = true;
   }
   return flags;
 }
@@ -149,6 +164,65 @@ function installMcp(flags) {
   return { installed: true, path: settingsPath, backup: backupPath || null };
 }
 
+/**
+ * installHooks — wire the Claude Code PreToolUse/UserPromptSubmit/PostToolUse/
+ * SessionStart hooks. Delegates to wireClaudeHooks() so we stay in sync with
+ * how `thumbgate init --agent=claude-code` writes them. Failures are reported
+ * but do not throw, so a partial install (MCP succeeded, hooks failed) still
+ * leaves the user with a functioning MCP server.
+ *
+ * @param {{ project?: boolean, dryRun?: boolean }} flags
+ * @returns {{ wired: boolean, settingsPath: string|null, added: Array, error?: string }}
+ */
+function installHooks(flags) {
+  try {
+    const wireOptions = { dryRun: Boolean(flags.dryRun) };
+    if (flags.project) {
+      wireOptions.projectDir = process.cwd();
+    }
+    const result = wireClaudeHooks(wireOptions);
+    return {
+      wired: Boolean(result && result.changed),
+      settingsPath: (result && result.settingsPath) || null,
+      added: (result && result.added) || [],
+    };
+  } catch (err) {
+    return {
+      wired: false,
+      settingsPath: null,
+      added: [],
+      error: err && err.message ? err.message : String(err),
+    };
+  }
+}
+
+/**
+ * installMcpAndHooks — top-level entry that combines MCP server install and
+ * hook wiring into one operation. Maintained alongside the bare `installMcp`
+ * for back-compat with callers that only want the MCP wiring.
+ */
+function installMcpAndHooks(flags = {}) {
+  const mcpResult = installMcp(flags);
+  if (flags.noHooks) {
+    return { mcp: mcpResult, hooks: { wired: false, skipped: true } };
+  }
+
+  const hooksResult = installHooks(flags);
+  if (hooksResult.error) {
+    console.warn(`  Hooks: skipped (${hooksResult.error})`);
+  } else if (hooksResult.wired) {
+    console.log(`ThumbGate hooks wired.`);
+    if (hooksResult.settingsPath) console.log(`  Path: ${hooksResult.settingsPath}`);
+    for (const entry of hooksResult.added) {
+      console.log(`  ${entry.lifecycle}: ${entry.command}`);
+    }
+  } else if (hooksResult.added.length === 0) {
+    console.log('ThumbGate hooks already wired.');
+  }
+
+  return { mcp: mcpResult, hooks: hooksResult };
+}
+
 // Exported for testing
 module.exports = {
   MCP_SERVER_KEY,
@@ -160,10 +234,14 @@ module.exports = {
   isAlreadyInstalled,
   buildMcpConfig,
   installMcp,
+  installHooks,
+  installMcpAndHooks,
   parseFlags,
 };
 
-if (require.main === module) {
+// Use a path-based main check per CLAUDE.md (SonarCloud S3403 — require.main
+// can be unreliable under some module loaders).
+if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
   const flags = parseFlags(process.argv.slice(2));
-  installMcp(flags);
+  installMcpAndHooks(flags);
 }
