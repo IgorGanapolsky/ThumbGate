@@ -110,7 +110,7 @@ jobs:
 
       - name: Comment on associated PR (success)
         if: success()
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           EXPECTED_VERSION: ${{ steps.pkg.outputs.version }}
           LEARN_CHECKED: ${{ steps.learn.outputs.checked }}
@@ -147,7 +147,7 @@ jobs:
 
       - name: Comment on associated PR (failure)
         if: failure()
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           EXPECTED_VERSION: ${{ steps.pkg.outputs.version }}
           HEALTH_OK: ${{ steps.health.outputs.ok || 'false' }}
