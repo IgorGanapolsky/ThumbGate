@@ -212,34 +212,26 @@ CI runs `--check` on every push. If it fails, files are out of sync.
 
 Policy file: `config/mcp-allowlists.json`
 
-## Product Architecture Split
+## Moat — Hosted Services, Not Closed-Source Intelligence
 
-ThumbGate ships as a two-repo product with an enforced boundary. Do not re-collapse the boundary.
+**Decision (2026-05-18, audit-based):** the moat is hosted infrastructure + adapter compatibility + dashboard + support. Public code is permissive on purpose. See [`MOAT.md`](./MOAT.md) for the full reasoning.
 
-- **Public shell** — `IgorGanapolsky/ThumbGate` (this repo, npm package `thumbgate`, landing page `thumbgate.ai`, Railway production).
-  Surface: CLI, hook installer, adapter configs, basic local gate runner, public JSON schemas, marketing/docs.
-  Visible to installers, recruiters, competitors — keep it thin.
+The previous "two-repo split" framing was aspirational. Audit found 212 of the 216 Core scripts also ship publicly via npm — the boundary doesn't exist in practice. Pretending otherwise produced pricing-page incoherence ("why pay $19/mo when npm install gives me everything?") and wasted engineering cycles debating a boundary that wasn't real.
 
-- **Private core** — `IgorGanapolsky/ThumbGate-Core` (private; not published to npm).
-  Surface: lesson ranking, policy synthesis, multi-agent orchestration, billing intelligence, org visibility, licensed exports.
-  Production-only. Never mirrored into the public repo, never imported into the npm bundle, never required by public CI.
+### Active rules
 
-### Boundary Rules
+1. **Public code is permissive.** New intelligence features (ranking, synthesis, adaptive gates) land in the public repo by default. No more silent migration to Core.
+2. **Bundle ratchet.** `tests/public-bundle-ratchet.test.js` pins the npm bundle file count at the 2026-05-18 baseline (254 files). The number can decrease over time as we remove obsolete scripts; it cannot increase without a deliberate baseline bump + CHANGELOG note.
+3. **Public CI stays Core-independent.** `tests/public-core-boundary.test.js` still enforces that default CI passes without Core API keys or Core imports. This is a real correctness property, not a moat property.
+4. **Pricing copy follows reality.** `/pricing` describes what the subscription buys in terms of hosted state + adapter coverage + support, not "private features you can't see."
 
-1. **No re-expansion.** Any new feature that is "intelligence" (ranking, synthesis, adaptive gates, org analytics, pricing logic) lands in ThumbGate-Core. The public shell gets a thin client stub only.
-2. **Wire protocol, not direct require.** Public code talks to Core over a stable wire (HTTP / gRPC / licensed binary). Never `require('../ThumbGate-Core/...')`.
-3. **Independent CI.** Public repo's default CI matrix must pass with Core absent — no API keys, no network calls to Core. Integration suites that touch Core live in a separate opt-in workflow.
-4. **Dedicated worktrees.** Use `worktrees/public-*` for public-shell work and `worktrees/core-*` for Core work. Never co-mingle changes in one branch.
-5. **Never claim "split complete".** Report measurable deltas only: files removed from public, boundary tests added, public bundle size delta, Core import graph verified empty. "Done" on this workstream requires all four evidence lines.
+### `ThumbGate-Core` repo usage now
 
-### Split Violation Triggers (block merge)
+The private Core repo holds (a) the 4 RLHF-cache scripts that genuinely cannot be public (`hook-rlhf-cache-updater.js`, `hook-verify-before-done.sh`, `prove-subway-upgrades.js`, `rlhf-search.js`) and (b) staging of features before public release. It is not the moat surface.
 
-- A public npm-published script imports Core internals directly.
-- Public README or landing page describes a feature that only exists in Core.
-- Public CI requires a Core API key to pass a non-integration suite.
-- `package.json` in the public repo lists Core as a runtime dependency.
+### Re-evaluation trigger
 
-When you fix a violation, pin the fix with a regression test in `tests/public-core-boundary.test.js`.
+If someone forks ThumbGate and ships a hosted competitor that gets meaningful traction, the moat assumption is wrong and we revisit. Until then: hosted-services moat, permissive public code, no theater.
 
 ## Session Handoff
 
