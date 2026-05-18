@@ -392,3 +392,141 @@ test('runCli: supports force-block without falling through to a second entrypoin
   assert.ok(gate);
   assert.strictEqual(gate.action, 'block');
 });
+
+// ============================================================
+// Rule TTL / expiry (Reddit reviewer @MomSausageandPeppers, 2026-05-13)
+// ============================================================
+
+const {
+  expireGates,
+  recordGateFire,
+  getRuleTtlDays,
+  getRuleTtlMs,
+  DEFAULT_RULE_TTL_DAYS,
+} = require('../scripts/auto-promote-gates');
+
+test('buildGateRule sets expiresAt for auto-promoted gates (default 90 day TTL)', () => {
+  const group = {
+    key: 'destructive',
+    latestContext: 'rm -rf production',
+    count: 2,
+    source: 'auto-promote',
+  };
+  const gate = buildGateRule(group);
+  assert.ok(gate.expiresAt, 'auto-promoted gates must have expiresAt set');
+  const expiresMs = Date.parse(gate.expiresAt);
+  const promotedMs = Date.parse(gate.promotedAt);
+  const deltaDays = (expiresMs - promotedMs) / (24 * 60 * 60 * 1000);
+  assert.ok(deltaDays > 89 && deltaDays < 91, `default TTL should be ~90 days, got ${deltaDays}`);
+  assert.equal(gate.lastFiredAt, null);
+});
+
+test('buildGateRule sets expiresAt=null for MANUAL force-promoted gates', () => {
+  const group = {
+    key: 'manual-override',
+    latestContext: 'manual-override',
+    count: 'MANUAL',
+    manualAction: 'block',
+    source: 'force-promote',
+  };
+  const gate = buildGateRule(group);
+  assert.equal(gate.expiresAt, null, 'force-promoted gates are permanent (expiresAt=null)');
+});
+
+test('expireGates drops gates whose expiresAt is past and lastFiredAt is also stale', () => {
+  const longAgo = new Date(Date.now() - 200 * 24 * 60 * 60 * 1000).toISOString(); // 200d ago
+  const data = {
+    version: 1,
+    gates: [
+      { id: 'stale', expiresAt: longAgo, lastFiredAt: null, pattern: 'stale-rule' },
+      { id: 'fresh', expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), pattern: 'fresh-rule' },
+      { id: 'permanent', expiresAt: null, pattern: 'permanent-rule' },
+    ],
+    promotionLog: [],
+  };
+  const { data: result, expired } = expireGates(data);
+  const keptIds = result.gates.map((g) => g.id);
+  assert.ok(!keptIds.includes('stale'), 'stale gate should be expired');
+  assert.ok(keptIds.includes('fresh'), 'fresh gate should be kept');
+  assert.ok(keptIds.includes('permanent'), 'permanent (null expiresAt) gate should be kept');
+  assert.equal(expired.length, 1);
+  assert.equal(expired[0].id, 'stale');
+  assert.ok(result.promotionLog.some((p) => p.type === 'expired' && p.gateId === 'stale'));
+});
+
+test('expireGates keeps gates that fired recently even if original expiresAt is past', () => {
+  const longAgoExpiry = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(); // 30d past
+  const recentFire = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();      // 5d ago
+  const data = {
+    version: 1,
+    gates: [
+      { id: 'high-signal', expiresAt: longAgoExpiry, lastFiredAt: recentFire, pattern: 'still-useful' },
+    ],
+    promotionLog: [],
+  };
+  const { data: result, expired } = expireGates(data);
+  assert.equal(expired.length, 0, 'high-signal gate should not expire');
+  const renewed = result.gates.find((g) => g.id === 'high-signal');
+  assert.ok(renewed, 'gate should still be present');
+  // expiresAt should have been pushed forward
+  assert.ok(Date.parse(renewed.expiresAt) > Date.parse(longAgoExpiry));
+});
+
+test('expireGates tolerates malformed input without throwing', () => {
+  assert.doesNotThrow(() => expireGates(null));
+  assert.doesNotThrow(() => expireGates(undefined));
+  assert.doesNotThrow(() => expireGates({ gates: 'not-an-array' }));
+});
+
+test('recordGateFire updates lastFiredAt and pushes expiresAt forward', () => {
+  const originalExpiry = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString();
+  const data = {
+    version: 1,
+    gates: [{ id: 'gate-x', expiresAt: originalExpiry, lastFiredAt: null, pattern: 'p' }],
+    promotionLog: [],
+  };
+  const updated = recordGateFire(data, 'gate-x');
+  assert.ok(updated.lastFiredAt, 'lastFiredAt must be set after fire');
+  // After fire, expiresAt should be ~90d from now (push forward), not the original 10d
+  const newExpiryMs = Date.parse(updated.expiresAt);
+  const originalExpiryMs = Date.parse(originalExpiry);
+  assert.ok(newExpiryMs > originalExpiryMs, 'expiresAt must be pushed forward after fire');
+});
+
+test('recordGateFire on a permanent gate keeps expiresAt=null', () => {
+  const data = {
+    version: 1,
+    gates: [{ id: 'manual-gate', expiresAt: null, lastFiredAt: null, pattern: 'p' }],
+    promotionLog: [],
+  };
+  const updated = recordGateFire(data, 'manual-gate');
+  assert.equal(updated.expiresAt, null, 'permanent gate stays permanent after fire');
+  assert.ok(updated.lastFiredAt);
+});
+
+test('recordGateFire returns null for unknown gate ID', () => {
+  const data = { version: 1, gates: [], promotionLog: [] };
+  assert.equal(recordGateFire(data, 'nope'), null);
+});
+
+test('getRuleTtlDays defaults to 90 and honors THUMBGATE_RULE_TTL_DAYS', () => {
+  const savedEnv = process.env.THUMBGATE_RULE_TTL_DAYS;
+  try {
+    delete process.env.THUMBGATE_RULE_TTL_DAYS;
+    assert.equal(getRuleTtlDays(), 90);
+    assert.equal(DEFAULT_RULE_TTL_DAYS, 90);
+
+    process.env.THUMBGATE_RULE_TTL_DAYS = '30';
+    assert.equal(getRuleTtlDays(), 30);
+    assert.equal(getRuleTtlMs(), 30 * 24 * 60 * 60 * 1000);
+
+    process.env.THUMBGATE_RULE_TTL_DAYS = '-5';
+    assert.equal(getRuleTtlDays(), 90, 'negative TTL falls back to default');
+
+    process.env.THUMBGATE_RULE_TTL_DAYS = 'banana';
+    assert.equal(getRuleTtlDays(), 90, 'non-numeric TTL falls back to default');
+  } finally {
+    if (savedEnv === undefined) delete process.env.THUMBGATE_RULE_TTL_DAYS;
+    else process.env.THUMBGATE_RULE_TTL_DAYS = savedEnv;
+  }
+});
