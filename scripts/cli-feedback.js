@@ -14,7 +14,15 @@
  */
 
 const { captureFeedback } = require('./feedback-loop');
-const { distillFromHistory } = require('./history-distiller');
+const { loadOptionalModule } = require('./private-core-boundary');
+// `history-distiller` is a PRIVATE_CORE_MODULE — present in this checkout and
+// in ThumbGate-Core, but intentionally excluded from the public npm tarball.
+// The hard `require('./history-distiller')` form crashed `hook-auto-capture`
+// in published 1.19.0 with MODULE_NOT_FOUND. Public-shell fallback returns
+// null distillation; caller already handles a null distillResult.
+const { distillFromHistory } = loadOptionalModule('./history-distiller', () => ({
+  distillFromHistory: () => null,
+}));
 const { getRecentLesson, getLessonStats } = require('./lesson-inference');
 
 const G = '\x1b[32m';

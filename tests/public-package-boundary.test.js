@@ -319,6 +319,38 @@ test('public shell keeps routing, recall, and verification operational without T
   });
 });
 
+test('cli-feedback loads and runs in public-tarball state (regression: 1.19.0 hook-auto-capture crash)', async () => {
+  // Repro for the 2026-05-18 production breakage:
+  //   thumbgate@1.19.0 → UserPromptSubmit hook → `hook-auto-capture` →
+  //   require('scripts/cli-feedback.js') → require('./history-distiller')
+  //   → MODULE_NOT_FOUND because history-distiller.js is a PRIVATE_CORE_MODULE
+  //   intentionally excluded from the public npm tarball.
+  // Fix: cli-feedback.js now uses `loadOptionalModule` with a null-distill
+  // fallback, matching the pattern feedback-loop.js and src/api/server.js
+  // already use. This test forces the public-tarball state and asserts the
+  // module loads + the public surface works.
+  await withTempFeedbackDir(async () => {
+    await withBoundaryFallbackModule('../scripts/cli-feedback', async (cliFeedback) => {
+      assert.equal(typeof cliFeedback.processInlineFeedback, 'function',
+        'processInlineFeedback must be exported even without history-distiller');
+      const result = cliFeedback.processInlineFeedback({
+        signal: 'down',
+        context: 'Regression: public tarball missing private-core distiller',
+        chatHistory: [
+          { role: 'user', content: 'Block force-push to main.' },
+          { role: 'assistant', content: 'Pushed anyway.' },
+        ],
+      });
+      // distillResult MAY be null in public-shell state (no private-core
+      // distiller). That is the documented fallback contract.
+      assert.equal(result.distillResult === null || typeof result.distillResult === 'object',
+        true, 'distillResult is null or an object in fallback state');
+      // feedbackResult should always be present (captureFeedback is in the public shell).
+      assert.ok(result.feedbackResult, 'feedbackResult must be present even when distillation is absent');
+    });
+  });
+});
+
 test('public shell feedback and API server degrade safely when private-core modules are unavailable', async () => {
   await withTempFeedbackDir(async (feedbackDir) => {
     await withBoundaryFallbackModule('../scripts/feedback-loop', async (feedbackLoop) => {
