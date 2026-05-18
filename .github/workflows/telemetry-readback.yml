@@ -1,0 +1,42 @@
+name: Telemetry Readback
+
+on:
+  workflow_dispatch:
+    inputs:
+      since:
+        description: 'window (e.g. 24h, 7d, or ISO timestamp)'
+        type: string
+        required: false
+        default: '7d'
+  schedule:
+    # Daily at 13:00 UTC = 09:00 ET. Lines up with the daily-revenue-loop window.
+    - cron: '0 13 * * *'
+
+concurrency:
+  group: telemetry-readback
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  readback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Pull funnel-snapshot via /v1/telemetry/export
+        env:
+          THUMBGATE_API_KEY: ${{ secrets.THUMBGATE_API_KEY }}
+          THUMBGATE_APP_ORIGIN: https://thumbgate-production.up.railway.app
+          SINCE: ${{ inputs.since || '7d' }}
+        run: |
+          node scripts/telemetry-readback.js --since "$SINCE"
+          echo ""
+          echo "=== JSON (operator-debuggable) ==="
+          node scripts/telemetry-readback.js --since "$SINCE" --json | head -120
