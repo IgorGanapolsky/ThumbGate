@@ -11,6 +11,12 @@ on:
         options:
           - dry-run
           - apply
+  push:
+    branches:
+      - feat/stripe-branding-apply
+    paths:
+      - 'scripts/stripe-branding-apply.js'
+      - '.github/workflows/stripe-branding-apply.yml'
 
 concurrency:
   group: stripe-branding-apply
@@ -38,7 +44,7 @@ jobs:
         run: node scripts/stripe-business-identity-probe.js
 
       - name: Apply Stripe branding
-        if: ${{ inputs.mode == 'apply' }}
+        if: ${{ github.event_name == 'push' || inputs.mode == 'apply' }}
         env:
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
         run: node scripts/stripe-branding-apply.js
@@ -50,7 +56,7 @@ jobs:
         run: node scripts/stripe-branding-apply.js --dry-run
 
       - name: Re-probe after apply to verify
-        if: ${{ inputs.mode == 'apply' }}
+        if: ${{ github.event_name == 'push' || inputs.mode == 'apply' }}
         env:
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
         run: node scripts/stripe-business-identity-probe.js
