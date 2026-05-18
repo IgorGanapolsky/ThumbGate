@@ -49,7 +49,10 @@ function isProTier(authContext) {
   try {
     const { isCreatorDev } = require('./pro-local-dashboard');
     if (isCreatorDev()) return true;
-  } catch (_) {}
+  } catch (_) {
+    // pro-local-dashboard unavailable in this runtime — fall through to
+    // license/free-tier handling rather than failing the check.
+  }
   try {
     const { isProLicensed } = require('./license');
     if (isProLicensed()) return true;
