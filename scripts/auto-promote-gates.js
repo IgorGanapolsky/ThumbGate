@@ -13,6 +13,22 @@ const WARN_THRESHOLD = 1;
 const BLOCK_THRESHOLD = 3; // 3+ repeated failures hard-block the action
 const WINDOW_DAYS = 30;
 
+// Default TTL on auto-promoted gates. Reddit reviewer @MomSausageandPeppers
+// (2026-05-13) flagged that without expiry, "accidental dislikes become policy
+// forever." Gates expire 90 days after promotion UNLESS they keep firing —
+// every fire refreshes lastFiredAt, and expireGates() keeps any gate fired
+// within the last TTL window regardless of original promotion date. Manual
+// force-promote bypasses TTL (operator says "permanent"). Override via
+// THUMBGATE_RULE_TTL_DAYS env var.
+const DEFAULT_RULE_TTL_DAYS = 90;
+function getRuleTtlDays() {
+  const raw = Number(process.env.THUMBGATE_RULE_TTL_DAYS);
+  return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_RULE_TTL_DAYS;
+}
+function getRuleTtlMs() {
+  return getRuleTtlDays() * 24 * 60 * 60 * 1000;
+}
+
 const NEG_SIGNALS = new Set(['negative', 'negative_strong', 'down', 'thumbs_down']);
 
 function getFeedbackLogPath() {
@@ -147,9 +163,16 @@ function buildGateRule(group) {
     : group.key.startsWith('constraint:')
       ? 'repeated constraint violation'
       : 'repeated pattern';
-  
+
   const occurrencesText = group.count === 'MANUAL' ? 'manual' : `${group.count} occurrences`;
   const suggestedMessage = `Auto-promoted ${kind}: "${context}" (${occurrencesText} in ${WINDOW_DAYS} days)`;
+
+  // TTL: auto-promoted rules expire after the configured window unless
+  // refreshed by a fresh fire. Manual force-promote bypasses TTL — operator
+  // says "permanent" by going through the force path.
+  const nowMs = Date.now();
+  const isManual = group.count === 'MANUAL';
+  const expiresAt = isManual ? null : new Date(nowMs + getRuleTtlMs()).toISOString();
 
   return {
     id: patternToGateId(group.key),
@@ -160,8 +183,80 @@ function buildGateRule(group) {
     severity,
     occurrences: group.count,
     promotedAt: new Date().toISOString(),
+    expiresAt,
+    lastFiredAt: null,
     source: group.source || 'auto-promote',
   };
+}
+
+/**
+ * Drop expired gates from the data and return the gates removed.
+ *
+ * A gate is expired when its `expiresAt` is in the past AND its
+ * `lastFiredAt` (if set) is also outside the TTL window — high-signal
+ * gates that keep firing get continuously renewed and never expire.
+ *
+ * `expiresAt: null` is treated as "permanent" (used by force-promote /
+ * legacy gates without TTL data).
+ */
+function expireGates(data, now = Date.now()) {
+  const safeData = data && typeof data === 'object'
+    ? { version: data.version || 1, gates: Array.isArray(data.gates) ? data.gates : [], promotionLog: Array.isArray(data.promotionLog) ? data.promotionLog : [] }
+    : { version: 1, gates: [], promotionLog: [] };
+  const ttlMs = getRuleTtlMs();
+  const kept = [];
+  const expired = [];
+  for (const gate of safeData.gates) {
+    if (!gate || typeof gate !== 'object') continue;
+    // No expiresAt → treat as permanent (manual force-promote, legacy gates).
+    if (gate.expiresAt == null) {
+      kept.push(gate);
+      continue;
+    }
+    const expiresMs = Date.parse(gate.expiresAt);
+    if (!Number.isFinite(expiresMs)) {
+      kept.push(gate);
+      continue;
+    }
+    // If last fire is within TTL window, refresh the gate (extend expiresAt).
+    const lastFiredMs = gate.lastFiredAt ? Date.parse(gate.lastFiredAt) : NaN;
+    if (Number.isFinite(lastFiredMs) && now - lastFiredMs < ttlMs) {
+      kept.push({ ...gate, expiresAt: new Date(lastFiredMs + ttlMs).toISOString() });
+      continue;
+    }
+    if (now < expiresMs) {
+      kept.push(gate);
+    } else {
+      expired.push({ id: gate.id, expiresAt: gate.expiresAt, lastFiredAt: gate.lastFiredAt });
+    }
+  }
+  safeData.gates = kept;
+  if (expired.length > 0) {
+    safeData.promotionLog.push(
+      ...expired.map((e) => ({ type: 'expired', gateId: e.id, expiredAt: e.expiresAt, timestamp: new Date(now).toISOString() }))
+    );
+  }
+  return { data: safeData, expired };
+}
+
+/**
+ * Mark a gate as fired now. Refreshes lastFiredAt AND extends expiresAt by
+ * the full TTL — a gate that keeps catching repeats sharpens, doesn't
+ * decay. Caller passes the gate ID; returns the updated gate (or null).
+ */
+function recordGateFire(data, gateId, now = Date.now()) {
+  if (!data || !Array.isArray(data.gates)) return null;
+  const idx = data.gates.findIndex((g) => g && g.id === gateId);
+  if (idx === -1) return null;
+  const gate = data.gates[idx];
+  const lastFiredAtIso = new Date(now).toISOString();
+  const updated = {
+    ...gate,
+    lastFiredAt: lastFiredAtIso,
+    expiresAt: gate.expiresAt == null ? null : new Date(now + getRuleTtlMs()).toISOString(),
+  };
+  data.gates[idx] = updated;
+  return updated;
 }
 
 function forcePromote(context, action = 'block') {
@@ -202,9 +297,15 @@ function promote(feedbackLogPath) {
   const logPath = feedbackLogPath || getFeedbackLogPath();
   const entries = readJSONL(logPath);
   const groups = groupNegativeFeedback(entries, WINDOW_DAYS);
-  const data = loadAutoGates();
-  const existingIds = new Set(data.gates.map((g) => g.id));
-  const promotions = [];
+  // Expire stale gates BEFORE running the promotion loop so an expiring
+  // gate that's about to be re-promoted gets a fresh TTL via the normal
+  // path rather than carrying a near-stale expiresAt.
+  const { data: expiredData, expired } = expireGates(loadAutoGates());
+  const data = expiredData;
+  if (expired.length > 0) {
+    saveAutoGates(data);
+  }
+  const promotions = expired.map((e) => ({ type: 'expired', gateId: e.id, expiredAt: e.expiresAt }));
 
   for (const group of Object.values(groups)) {
     if (group.count < WARN_THRESHOLD) continue;
@@ -299,8 +400,13 @@ module.exports = {
   buildGateRule,
   extractPatternKey,
   isNegative,
+  expireGates,
+  recordGateFire,
+  getRuleTtlDays,
+  getRuleTtlMs,
   MAX_AUTO_GATES,
   WARN_THRESHOLD,
   BLOCK_THRESHOLD,
   WINDOW_DAYS,
+  DEFAULT_RULE_TTL_DAYS,
 };
