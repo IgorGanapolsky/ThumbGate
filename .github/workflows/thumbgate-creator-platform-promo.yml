@@ -68,6 +68,14 @@ jobs:
             --offer="${{ github.event.inputs.offer }}" \
             --platforms="${{ github.event.inputs.platforms }}"
 
+      - name: Require Zernio API key
+        if: github.event.inputs.mode != 'preview'
+        run: |
+          if [ -z "${ZERNIO_API_KEY}" ]; then
+            echo "ZERNIO_API_KEY is required for publish/schedule modes." >&2
+            exit 1
+          fi
+
       - name: Publish campaign
         if: github.event.inputs.mode == 'publish'
         run: |
