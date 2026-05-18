@@ -1,0 +1,56 @@
+name: Stripe Branding Apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'apply or dry-run'
+        type: choice
+        required: true
+        default: 'dry-run'
+        options:
+          - dry-run
+          - apply
+
+concurrency:
+  group: stripe-branding-apply
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Probe current Stripe branding
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: node scripts/stripe-business-identity-probe.js
+
+      - name: Apply Stripe branding
+        if: ${{ inputs.mode == 'apply' }}
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: node scripts/stripe-branding-apply.js
+
+      - name: Dry-run plan (no writes)
+        if: ${{ inputs.mode == 'dry-run' }}
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: node scripts/stripe-branding-apply.js --dry-run
+
+      - name: Re-probe after apply to verify
+        if: ${{ inputs.mode == 'apply' }}
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: node scripts/stripe-business-identity-probe.js
