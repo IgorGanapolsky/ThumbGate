@@ -118,7 +118,7 @@ async function probePublicFunnel({ appOrigin, fetchImpl = globalThis.fetch, time
   } catch (error) {
     return {
       ok: false,
-      error: error?.name === 'AbortError'
+      error: error && error.name === 'AbortError'
         ? `timeout_after_${timeoutMs}ms`
         : (error?.message || String(error)),
     };
@@ -183,14 +183,11 @@ async function buildRevenueObservabilityDoctor({
 
   const criticalFailures = checks.filter((check) => !check.ok && check.severity === 'critical');
   const highFailures = checks.filter((check) => !check.ok && check.severity === 'high');
-  let verdict;
-  if (criticalFailures.length) {
-    verdict = 'blocked';
-  } else if (highFailures.length) {
-    verdict = 'degraded';
-  } else {
-    verdict = 'ready';
-  }
+  const verdict = criticalFailures.length
+    ? 'blocked'
+    : highFailures.length
+      ? 'degraded'
+      : 'ready';
 
   return {
     generatedAt: new Date().toISOString(),
@@ -252,7 +249,7 @@ module.exports = {
   formatDoctorReport,
 };
 
-if (require('node:path').resolve(process.argv[1] || '') === require('node:path').resolve(__filename)) {
+if (require.main === module) {
   main().catch((error) => {
     process.stderr.write(`${error?.message || String(error)}\n`);
     process.exit(1);
