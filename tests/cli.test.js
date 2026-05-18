@@ -536,40 +536,43 @@ describe('bin/cli.js', () => {
     assert.ok(stat.mode & 0o100, 'CLI should have executable bit set');
   });
 
-  test('help command exits 0 and lists subcommands', () => {
+  test('help command exits 0 and shows curated short surface', () => {
     const result = runCliSync(['help']);
     assert.strictEqual(result.status, 0, `Expected exit 0, got ${result.status}\n${result.stderr}`);
     assert.ok(result.stdout.includes('thumbgate'), 'Help should include CLI name');
-    assert.ok(result.stdout.includes('init'), 'Help should mention init');
-    assert.ok(result.stdout.includes('capture'), 'Help should mention capture');
-    assert.ok(result.stdout.includes('cfo'), 'Help should mention cfo');
-    assert.ok(result.stdout.includes('repair-github-marketplace'), 'Help should mention repair-github-marketplace');
-    assert.ok(result.stdout.includes('model-fit'), 'Help should mention model-fit');
-    assert.ok(result.stdout.includes('gemini-embedding-plan'), 'Help should mention gemini-embedding-plan');
-    assert.ok(result.stdout.includes('agent-design-governance'), 'Help should mention agent-design-governance');
-    assert.ok(result.stdout.includes('proactive-agent-eval-guardrails'), 'Help should mention proactive-agent-eval-guardrails');
-    assert.ok(result.stdout.includes('reward-hacking-guardrails'), 'Help should mention reward-hacking-guardrails');
-    assert.ok(result.stdout.includes('oss-pr-opportunity-scout'), 'Help should mention oss-pr-opportunity-scout');
-    assert.ok(result.stdout.includes('chatgpt-ads-readiness-pack'), 'Help should mention chatgpt-ads-readiness-pack');
-    assert.ok(result.stdout.includes('model-candidates'), 'Help should mention model-candidates');
-    assert.ok(result.stdout.includes('upstream-contributions'), 'Help should mention upstream-contributions');
-    assert.ok(result.stdout.includes('deepseek-v4-runtime-guardrails'), 'Help should mention deepseek-v4-runtime-guardrails');
-    assert.ok(result.stdout.includes('risk'), 'Help should mention risk');
-    assert.ok(result.stdout.includes('export-dpo'), 'Help should mention export-dpo');
-    assert.ok(result.stdout.includes('export-databricks'), 'Help should mention export-databricks');
-    assert.ok(result.stdout.includes('lessons'), 'Help should mention lessons');
-    assert.ok(result.stdout.includes('stats'), 'Help should mention stats');
-    assert.ok(result.stdout.includes('north-star'), 'Help should mention north-star');
-    assert.ok(result.stdout.includes('eval'), 'Help should mention eval');
-    assert.ok(result.stdout.includes('rules'), 'Help should mention rules');
-    assert.ok(result.stdout.includes('self-heal'), 'Help should mention self-heal');
-    assert.ok(result.stdout.includes('prove'), 'Help should mention prove');
-    assert.ok(result.stdout.includes('doctor'), 'Help should mention doctor');
-    assert.ok(result.stdout.includes('dispatch'), 'Help should mention dispatch');
-    assert.ok(result.stdout.includes('background-governance'), 'Help should mention background-governance');
-    assert.ok(result.stdout.includes('analytics'), 'Help should mention analytics');
-    assert.ok(result.stdout.includes('gate-check'), 'Help should mention gate-check');
-    assert.ok(result.stdout.includes('statusline-render'), 'Help should mention statusline-render');
+    // Core commands a first-time user should see immediately.
+    for (const cmd of ['init', 'capture', 'stats', 'lessons', 'explore', 'dashboard', 'doctor', 'pro']) {
+      assert.ok(result.stdout.includes(cmd), `Default help should mention ${cmd}`);
+    }
+    // Hint to discover the rest, instead of dumping ~70 commands.
+    assert.ok(result.stdout.includes('help all'), 'Default help should point at `thumbgate help all`');
+    // Short surface should NOT include the deep-niche commands that previously
+    // dominated the wall of text — those live behind `help all` now.
+    assert.ok(!result.stdout.includes('proactive-agent-eval-guardrails'),
+      'Default help should not include deep-niche subcommands');
+    assert.ok(!result.stdout.includes('repair-github-marketplace'),
+      'Default help should not include legacy/specialist subcommands');
+  });
+
+  test('help all exits 0 and lists the full subcommand surface', () => {
+    const result = runCliSync(['help', 'all']);
+    assert.strictEqual(result.status, 0, `Expected exit 0, got ${result.status}\n${result.stderr}`);
+    assert.ok(result.stdout.includes('thumbgate'), 'Help should include CLI name');
+    // Every previously-asserted subcommand must still be discoverable via `help all`.
+    const expected = [
+      'init', 'capture', 'cfo', 'repair-github-marketplace', 'model-fit',
+      'gemini-embedding-plan', 'agent-design-governance',
+      'proactive-agent-eval-guardrails', 'reward-hacking-guardrails',
+      'oss-pr-opportunity-scout', 'chatgpt-ads-readiness-pack',
+      'model-candidates', 'upstream-contributions',
+      'deepseek-v4-runtime-guardrails', 'risk', 'export-dpo',
+      'export-databricks', 'lessons', 'stats', 'north-star', 'eval',
+      'rules', 'self-heal', 'prove', 'doctor', 'dispatch',
+      'background-governance', 'analytics', 'gate-check', 'statusline-render',
+    ];
+    for (const cmd of expected) {
+      assert.ok(result.stdout.includes(cmd), `\`help all\` should mention ${cmd}`);
+    }
   });
 
   test('eval command turns local feedback into reusable proof JSON', () => {

@@ -2299,6 +2299,36 @@ function startApi() {
 
 function help() {
   const v = pkgVersion();
+  const helpArgs = process.argv.slice(3);
+  const showAll = helpArgs.includes('all')
+    || helpArgs.includes('--all')
+    || helpArgs.includes('--full');
+
+  // Default `thumbgate help` shows a curated short list. The full ~70-command
+  // surface lives behind `thumbgate help all` so first-time users aren't hit
+  // with a wall of text. (Pre-2026-05-18 default: dump everything.)
+  if (!showAll) {
+    console.log(`thumbgate v${v}  — pre-action checks for AI coding agents`);
+    console.log('');
+    console.log('Common commands:');
+    console.log('  init                                              Detect agent and wire ThumbGate hooks');
+    console.log('  capture --feedback=up|down --context="<text>"    Capture a thumbs signal as a stored lesson');
+    console.log('  stats                                             Approval rate, recent trend, blocked-pattern count');
+    console.log('  lessons [query]                                   Search promoted lessons');
+    console.log('  explore                                           Interactive TUI for lessons, gates, stats');
+    console.log('  dashboard                                         Open the local ThumbGate dashboard');
+    console.log('  doctor                                            Audit runtime isolation + bootstrap context');
+    console.log('  pro                                               ThumbGate Pro (dashboard, exports, sync)');
+    console.log('');
+    console.log('More:');
+    console.log('  thumbgate help all     Full subcommand surface (~70 commands)');
+    console.log('  thumbgate <cmd> --help Per-command flags (where supported)');
+    console.log('');
+    console.log('Docs: https://github.com/IgorGanapolsky/ThumbGate');
+    proNudge();
+    return;
+  }
+
   const { groupedCommands, commandHelpLine } = require(path.join(PKG_ROOT, 'scripts', 'cli-schema'));
   const groups = groupedCommands();
   const GROUP_LABELS = {
@@ -2310,7 +2340,7 @@ function help() {
     advanced:  'Advanced',
   };
 
-  console.log(`thumbgate v${v}  — pre-action checks for AI coding agents`);
+  console.log(`thumbgate v${v}  — pre-action checks for AI coding agents (full command surface)`);
   console.log('');
 
   for (const [groupKey, label] of Object.entries(GROUP_LABELS)) {
