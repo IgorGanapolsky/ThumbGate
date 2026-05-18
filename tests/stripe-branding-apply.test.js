@@ -70,7 +70,7 @@ test('parseArgs: --dry-run and --json toggle flags', () => {
   assert.deepStrictEqual(parseArgs(['--json', '--dry-run']), { dryRun: true, json: true });
 });
 
-test('applyBranding: empty account plans uploads and patches every missing field', async () => {
+test('applyBranding: empty account patches text fields (file uploads opt-in by default)', async () => {
   const { stripe, state } = makeStripeMock(ACCOUNT_EMPTY);
   const result = await applyBranding({
     stripe,
@@ -85,23 +85,39 @@ test('applyBranding: empty account plans uploads and patches every missing field
 
   assert.equal(result.changed, true);
   const fields = result.actions.map((a) => a.field).sort();
+  // File-upload fields are gated behind THUMBGATE_STRIPE_UPLOAD_FILES=1
   assert.deepStrictEqual(fields, [
     'business_profile.product_description',
     'business_profile.support_email',
-    'settings.branding.icon',
-    'settings.branding.logo',
   ]);
 
-  // Exactly one update call, with everything bundled
+  // One update call with text fields bundled, no file uploads
   assert.equal(state.updates.length, 1);
   assert.equal(state.updates[0].patch.business_profile.support_email, DEFAULTS.supportEmail);
   assert.ok(state.updates[0].patch.business_profile.product_description.length > 50);
-  assert.match(state.updates[0].patch.settings.branding.logo, /^file_business_logo_mock_/);
-  assert.match(state.updates[0].patch.settings.branding.icon, /^file_business_icon_mock_/);
+  assert.equal(state.uploads.length, 0);
+});
 
-  // Two file uploads, one for each purpose
-  const purposes = state.uploads.map((u) => u.purpose).sort();
-  assert.deepStrictEqual(purposes, ['business_icon', 'business_logo']);
+test('applyBranding: with THUMBGATE_STRIPE_UPLOAD_FILES=1, also uploads logo + icon', async () => {
+  process.env.THUMBGATE_STRIPE_UPLOAD_FILES = '1';
+  try {
+    const { stripe, state } = makeStripeMock(ACCOUNT_EMPTY);
+    const result = await applyBranding({
+      stripe,
+      options: {
+        logoPath: path.resolve(__dirname, '..', 'public/assets/brand/thumbgate-logo-1200x360.png'),
+        iconPath: path.resolve(__dirname, '..', 'public/assets/brand/thumbgate-icon-512.png'),
+        supportEmail: DEFAULTS.supportEmail,
+        productDescription: DEFAULTS.productDescription,
+        dryRun: false,
+      },
+    });
+    assert.equal(result.changed, true);
+    const purposes = state.uploads.map((u) => u.purpose).sort();
+    assert.deepStrictEqual(purposes, ['business_icon', 'business_logo']);
+  } finally {
+    delete process.env.THUMBGATE_STRIPE_UPLOAD_FILES;
+  }
 });
 
 test('applyBranding: fully populated account is a no-op', async () => {

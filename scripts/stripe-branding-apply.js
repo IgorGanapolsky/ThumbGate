@@ -117,22 +117,37 @@ async function applyBranding({ stripe, options }) {
   let logoFileId = null;
   let iconFileId = null;
 
-  if (!current.logo) {
+  // File-upload path is skipped by default because the Node SDK multipart
+  // format kept hitting bare 400s with no `param`. The text-only fields
+  // (support_email + product_description) ship the bulk of the buyer-trust
+  // signal and don't need file uploads. Set THUMBGATE_STRIPE_UPLOAD_FILES=1
+  // to re-enable once the SDK format is sorted.
+  const uploadFiles = process.env.THUMBGATE_STRIPE_UPLOAD_FILES === '1';
+
+  if (!current.logo && uploadFiles) {
     if (options.dryRun) {
       actions.push({ field: 'settings.branding.logo', from: null, to: '(would upload)' });
     } else {
-      logoFileId = await uploadFile(stripe, options.logoPath, 'business_logo');
-      settingsBrandingPatch.logo = logoFileId;
-      actions.push({ field: 'settings.branding.logo', from: null, to: logoFileId });
+      try {
+        logoFileId = await uploadFile(stripe, options.logoPath, 'business_logo');
+        settingsBrandingPatch.logo = logoFileId;
+        actions.push({ field: 'settings.branding.logo', from: null, to: logoFileId });
+      } catch (e) {
+        actions.push({ field: 'settings.branding.logo', from: null, to: `SKIPPED (upload failed: ${e.message})` });
+      }
     }
   }
-  if (!current.icon) {
+  if (!current.icon && uploadFiles) {
     if (options.dryRun) {
       actions.push({ field: 'settings.branding.icon', from: null, to: '(would upload)' });
     } else {
-      iconFileId = await uploadFile(stripe, options.iconPath, 'business_icon');
-      settingsBrandingPatch.icon = iconFileId;
-      actions.push({ field: 'settings.branding.icon', from: null, to: iconFileId });
+      try {
+        iconFileId = await uploadFile(stripe, options.iconPath, 'business_icon');
+        settingsBrandingPatch.icon = iconFileId;
+        actions.push({ field: 'settings.branding.icon', from: null, to: iconFileId });
+      } catch (e) {
+        actions.push({ field: 'settings.branding.icon', from: null, to: `SKIPPED (upload failed: ${e.message})` });
+      }
     }
   }
 
