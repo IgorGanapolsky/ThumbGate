@@ -137,6 +137,39 @@
         .audience .col.no h3 { color: var(--warn); }
         .audience ul { list-style: none; padding: 0; margin: 0; }
         .audience li { padding: 6px 0; font-size: 14px; color: var(--text); }
+        .recent {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;
+        }
+        .recent .card {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 16px;
+            background: var(--bg-soft);
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .recent .card .cat {
+            font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+            color: var(--text-mute); font-weight: 700;
+        }
+        .recent .card .low {
+            font-size: 14px; color: var(--text); font-weight: 600;
+        }
+        .recent .card .low span { color: var(--accent); }
+        .recent .card .obs {
+            font-size: 14px; color: var(--text-dim); line-height: 1.5;
+        }
+        .recent .card .fix {
+            font-size: 14px; color: var(--text); border-top: 1px dashed var(--border);
+            padding-top: 8px;
+        }
+        .recent .card .fix b { font-weight: 600; }
+        .recent .card .date {
+            font-size: 11px; color: var(--text-mute);
+            letter-spacing: 0.04em;
+        }
+        @media (max-width: 720px) {
+            .recent { grid-template-columns: 1fr; }
+        }
         .about {
             border-left: 3px solid var(--accent);
             padding: 4px 0 4px 16px;
@@ -278,6 +311,43 @@
                     <span class="note">DIY &mdash; the audit IS the plan. Or done-with-you: a $499 14-day sprint with a refund window if the fix doesn&rsquo;t land.</span>
                 </li>
             </ul>
+        </section>
+
+        <!-- Recent audits -->
+        <section aria-label="Recent audits">
+            <h2><span class="kicker">Recent audits</span>Three I ran this week</h2>
+            <p class="fineprint" style="margin-bottom: 16px;">
+                Public-side observations, not paid engagements. Names anonymized.
+            </p>
+            <div class="recent">
+                <div class="card">
+                    <div class="cat">Luxury Buckhead brokerage, $2M+ tier</div>
+                    <div class="low">Lowest-scoring check: <span>pricing &amp; commission transparency (0/3)</span></div>
+                    <div class="obs">
+                        No price-band or service-tier framing anywhere on the agent page. Every price-shopper inquiry routes to a live qualifying call before they ever see a number, including the $400K starter-home shoppers who&rsquo;ll never close at this tier.
+                    </div>
+                    <div class="fix"><b>What I&rsquo;d build:</b> a single &ldquo;I work primarily in the $1M+ tier&rdquo; line plus a two-question pre-qualifier (price band + pre-approval) on the inbound form, so sub-$1M inquiries self-deselect before they touch operator time.</div>
+                    <div class="date">Audited 2026-05-18</div>
+                </div>
+                <div class="card">
+                    <div class="cat">Independent residential+commercial DeKalb-Fulton agency</div>
+                    <div class="low">Lowest-scoring check: <span>qualification (0/3)</span></div>
+                    <div class="obs">
+                        Every inbound form is 4 fields (name, phone, email, message) with zero qualifying questions. A residential buyer and a commercial tenant looking at 3,000 sqft of retail land in the same intake, get the same questions, and get sorted by whoever reads the inbox first.
+                    </div>
+                    <div class="fix"><b>What I&rsquo;d build:</b> a split inbound router with a residential tree (price band + pre-approval + timeline + buyer-or-seller) and a commercial tree (lease-or-purchase + sqft band + use-case + timeline), each SMS-backing the prospect inside 60 seconds.</div>
+                    <div class="date">Audited 2026-05-18</div>
+                </div>
+                <div class="card">
+                    <div class="cat">Compass-affiliated Buckhead luxury solo agent</div>
+                    <div class="low">Lowest-scoring check: <span>qualification (1/3)</span></div>
+                    <div class="obs">
+                        The only qualifier across four entry points is a single &ldquo;Interest&rdquo; dropdown on the legacy site, and the agent-page CTA is even thinner (name plus message). Every late-night inquiry pulls a human into a comp-pull before anyone knows if the prospect is pre-approved or just browsing.
+                    </div>
+                    <div class="fix"><b>What I&rsquo;d build:</b> a personal pre-approval + budget pre-qualifier layer that fires before the corporate auto-reply, routes hot leads straight to mobile with a transcript, and parks tire-kickers in a tagged nurture queue.</div>
+                    <div class="date">Audited 2026-05-18</div>
+                </div>
+            </div>
         </section>
 
         <!-- Who this is for -->
