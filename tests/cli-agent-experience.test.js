@@ -341,8 +341,10 @@ describe('agent-first CLI experience', () => {
   // help includes new commands
   // -------------------------------------------------------------------------
 
-  test('help lists status, demo, and explore subcommands', () => {
-    const result = runCliSync(['help'], { cwd: tmpDir });
+  test('help all lists status, demo, and explore subcommands', () => {
+    // These specialist + sub-mode commands live in the full surface now;
+    // default `help` is curated to 8 common commands. (Shortened 2026-05-18.)
+    const result = runCliSync(['help', 'all'], { cwd: tmpDir });
     assert.equal(result.status, 0);
     assert.match(result.stdout, /status/);
     assert.match(result.stdout, /demo/);
