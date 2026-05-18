@@ -81,19 +81,19 @@ jobs:
             cat reports/revenue/unified-rollup-latest.md
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Stripe checkout diagnostic (account health + failure modes)
-        id: stripe-diag
+      - name: Stripe business identity probe (what does the buyer see?)
+        id: stripe-identity
         env:
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
         run: |
           mkdir -p reports/revenue
-          node scripts/stripe-checkout-diagnostic.js | tee reports/revenue/stripe-checkout-diagnostic.md
-          node scripts/stripe-checkout-diagnostic.js --json > reports/revenue/stripe-checkout-diagnostic.json
+          node scripts/stripe-business-identity-probe.js | tee reports/revenue/stripe-business-identity.md
+          node scripts/stripe-business-identity-probe.js --json > reports/revenue/stripe-business-identity.json
           {
             echo
-            echo "## Stripe Checkout Diagnostic"
+            echo "## Stripe Business Identity Probe"
             echo
-            cat reports/revenue/stripe-checkout-diagnostic.md
+            cat reports/revenue/stripe-business-identity.md
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: External customer audit (owner-filtered Stripe truth)
