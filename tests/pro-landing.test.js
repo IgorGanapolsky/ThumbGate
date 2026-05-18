@@ -30,14 +30,16 @@ test('pro landing page uses checkout routes for monthly and annual conversions',
   const proPage = readProPage();
 
   assert.match(proPage, /Start Pro Now/i);
-  assert.match(proPage, /Pay \$19 quick read/i);
-  assert.match(proPage, /pro_page_hero_quick_read_checkout/);
-  assert.match(proPage, /pro_page_nav_quick_read_checkout/);
   assert.match(proPage, /\/checkout\/pro\?/);
+  assert.match(proPage, /pro_page_primary/);
+  assert.match(proPage, /pro_page_nav/);
   assert.match(proPage, /pricing_pro/);
   assert.match(proPage, /billing_cycle=annual/);
   assert.match(proPage, /\$19\/mo/);
   assert.match(proPage, /\$149\/yr/);
+  assert.doesNotMatch(proPage, /Pay \$19 quick read/i);
+  assert.doesNotMatch(proPage, /pro_page_hero_quick_read_checkout/);
+  assert.doesNotMatch(proPage, /pro_page_nav_quick_read_checkout/);
 });
 
 test('pro landing page keeps the pricing section focused on the $19 Pro checkout', () => {
@@ -90,29 +92,29 @@ test('pro landing page tracks paid CTAs without unsupported claims', () => {
   assert.doesNotMatch(proPage, /no credit card/i);
 });
 
-test('pro landing page routes high-intent team buyers to paid diagnostic and sprint checkout', () => {
+test('pro landing page keeps services out of the Pro buyer path', () => {
   const proPage = readProPage();
 
-  assert.match(proPage, /data-pro-paid-recovery/);
-  assert.match(proPage, /data-first-rule-link/);
-  assert.match(proPage, /data-quick-read-link/);
-  assert.match(proPage, /href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__"/);
-  assert.match(proPage, /href="__WORKFLOW_SPRINT_CHECKOUT_URL__"/);
-  assert.match(proPage, /Pay \$1 first rule/);
-  assert.match(proPage, /https:\/\/buy\.stripe\.com\/fZu28rfCY6zcbO99uj3sI2G/);
-  assert.match(proPage, /Pay \$19 quick read/);
-  assert.match(proPage, /https:\/\/buy\.stripe\.com\/5kQ7sL76s1eSaK55e33sI2H/);
-  assert.match(proPage, /quick_read_checkout_started/);
-  assert.match(proPage, /Pay \$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic/);
-  assert.match(proPage, /Pay \$__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint/);
-  assert.match(proPage, /pro_page_sprint_diagnostic_checkout/);
-  assert.match(proPage, /pro_page_workflow_sprint_checkout/);
-  assert.match(proPage, /first_failure_rule_checkout_started/);
-  assert.match(proPage, /quick_read_checkout_started/);
-  assert.match(proPage, /workflow_sprint_diagnostic_checkout_started/);
-  assert.match(proPage, /workflow_sprint_checkout_started/);
-  assert.match(proPage, /initializeProPaidRecovery/);
-  assert.match(proPage, /sendGa4Event\('begin_checkout'/);
+  assert.match(proPage, /Team diagnostics and custom services are handled through intake, not this buyer path/);
+  assert.match(proPage, /Book a Team Pilot Call/);
+  assert.doesNotMatch(proPage, /data-pro-paid-recovery/);
+  assert.doesNotMatch(proPage, /data-first-rule-link/);
+  assert.doesNotMatch(proPage, /data-quick-read-link/);
+  assert.doesNotMatch(proPage, /data-sprint-diagnostic-link/);
+  assert.doesNotMatch(proPage, /data-workflow-sprint-link/);
+  assert.doesNotMatch(proPage, /href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__"/);
+  assert.doesNotMatch(proPage, /href="__WORKFLOW_SPRINT_CHECKOUT_URL__"/);
+  assert.doesNotMatch(proPage, /Pay \$1 first rule/);
+  assert.doesNotMatch(proPage, /Pay \$19 quick read/);
+  assert.doesNotMatch(proPage, /Pay \$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic/);
+  assert.doesNotMatch(proPage, /Pay \$__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint/);
+  assert.doesNotMatch(proPage, /https:\/\/buy\.stripe\.com\/fZu28rfCY6zcbO99uj3sI2G/);
+  assert.doesNotMatch(proPage, /https:\/\/buy\.stripe\.com\/5kQ7sL76s1eSaK55e33sI2H/);
+  assert.doesNotMatch(proPage, /first_failure_rule_checkout_started/);
+  assert.doesNotMatch(proPage, /quick_read_checkout_started/);
+  assert.doesNotMatch(proPage, /workflow_sprint_diagnostic_checkout_started/);
+  assert.doesNotMatch(proPage, /workflow_sprint_checkout_started/);
+  assert.doesNotMatch(proPage, /initializeProPaidRecovery/);
 });
 
 test('pro landing page captures buyer email and reuses it for checkout', () => {

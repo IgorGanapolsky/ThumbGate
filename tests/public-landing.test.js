@@ -342,9 +342,11 @@ test('public landing page includes an explicit Team rollout lane with shared wor
   assert.match(landingPage, /checkout_abandon/);
   assert.match(landingPage, /workflow_sprint_intake_started/);
   assert.match(landingPage, /workflow_sprint_intake_submit_attempted/);
-  assert.doesNotMatch(
-    landingPage,
-    /<details[^>]*>[\s\S]*?<form[^>]+action="\/v1\/intake\/workflow-sprint"/,
+  const formIndex = landingPage.indexOf('action="/v1/intake/workflow-sprint"');
+  const openDetailsIndex = landingPage.lastIndexOf('<details', formIndex);
+  const closeDetailsIndex = landingPage.lastIndexOf('</details>', formIndex);
+  assert.ok(
+    openDetailsIndex === -1 || closeDetailsIndex > openDetailsIndex,
     'Team intake must be visible without a disclosure click'
   );
 });

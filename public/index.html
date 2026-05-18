@@ -1318,6 +1318,11 @@ __GA_BOOTSTRAP__
         </div>
         <span class="team-intake-badge">30-minute intake</span>
       </div>
+      <details style="border:1px solid var(--border);border-radius:14px;padding:18px 22px;background:var(--bg-raised);margin:18px 0;">
+        <summary style="cursor:pointer;font-size:16px;font-weight:600;color:var(--cyan);list-style:none;display:flex;align-items:center;gap:8px;">
+          <span style="display:inline-block;transition:transform 0.15s;">▸</span>
+          Need consulting, a one-off diagnostic, or a hardening sprint? View paid services &amp; kits
+        </summary>
       <div class="team-paid-path" data-sprint-paid-path aria-label="Paid workflow hardening options">
         <div class="team-paid-card">
           <div>
@@ -1360,6 +1365,7 @@ __GA_BOOTSTRAP__
           </div>
         </div>
       </div>
+      </details>
       <div class="team-intake-recovery" aria-label="Checkout recovery path for workflow sprint buyers">
         <div>
           <strong>Not ready to pay from a checkout page?</strong>
@@ -1840,6 +1846,27 @@ async function handleProCheckout() {
   }
   globalThis.location.assign(checkoutUrl);
 }
+
+// Conversion-path safety: /services redirects to /#workflow-sprint-intake.
+// Modern browsers auto-open a <details> containing the hash target, but
+// older Safari/Firefox/Chrome (<2020) do not. Force-open any ancestor
+// <details> of the hash target so high-intent buyers always see the
+// paid intake content on arrival.
+function openDetailsForHash() {
+  var hash = globalThis.location.hash;
+  if (!hash || hash.length < 2) return;
+  var target;
+  try { target = document.querySelector(hash); } catch (_) { return; }
+  if (!target) return;
+  var el = target;
+  while (el && el !== document.body) {
+    if (el.tagName === 'DETAILS') { el.open = true; }
+    el = el.parentElement;
+  }
+  target.scrollIntoView({ behavior: 'auto', block: 'start' });
+}
+globalThis.addEventListener('DOMContentLoaded', openDetailsForHash);
+globalThis.addEventListener('hashchange', openDetailsForHash);
 </script>
 </body>
 </html>

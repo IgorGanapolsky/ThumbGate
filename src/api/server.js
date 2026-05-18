@@ -1499,50 +1499,11 @@ function buildCheckoutIntentHref(baseUrl, metadata = {}, overrides = {}) {
 
 function renderCheckoutIntentPage({
   confirmHref,
-  firstRuleCheckoutHref,
-  quickReadCheckoutHref,
-  workflowTeardownCheckoutHref,
   workflowIntakeHref,
-  teamOptionsHref,
-  diagnosticCheckoutHref,
-  sprintCheckoutHref,
-  sprintDiagnosticPriceDollars = 499,
-  workflowSprintPriceDollars = 1500,
 }) {
   const safeConfirmHref = escapeHtmlAttribute(confirmHref);
-  const safeFirstRuleCheckoutHref = firstRuleCheckoutHref
-    ? escapeHtmlAttribute(firstRuleCheckoutHref)
-    : '';
-  const safeQuickReadCheckoutHref = quickReadCheckoutHref
-    ? escapeHtmlAttribute(quickReadCheckoutHref)
-    : '';
-  const safeWorkflowTeardownCheckoutHref = workflowTeardownCheckoutHref
-    ? escapeHtmlAttribute(workflowTeardownCheckoutHref)
-    : '';
   const safeWorkflowIntakeHref = escapeHtmlAttribute(workflowIntakeHref);
-  const safeTeamOptionsHref = escapeHtmlAttribute(teamOptionsHref);
-  const safeDiagnosticCheckoutHref = diagnosticCheckoutHref
-    ? escapeHtmlAttribute(diagnosticCheckoutHref)
-    : '';
-  const safeSprintCheckoutHref = sprintCheckoutHref
-    ? escapeHtmlAttribute(sprintCheckoutHref)
-    : '';
-  const diagnosticAction = safeDiagnosticCheckoutHref
-    ? `<a data-i="sprint_diagnostic_checkout" href="${safeDiagnosticCheckoutHref}">Book $${sprintDiagnosticPriceDollars} diagnostic</a>`
-    : '';
-  const sprintAction = safeSprintCheckoutHref
-    ? `<a data-i="workflow_sprint_checkout" href="${safeSprintCheckoutHref}">Start $${workflowSprintPriceDollars} sprint</a>`
-    : '';
-  const firstRuleAction = safeFirstRuleCheckoutHref
-    ? `<a data-i="first_failure_rule_checkout" href="${safeFirstRuleCheckoutHref}">Pay $1 first rule</a>`
-    : '';
-  const quickReadAction = safeQuickReadCheckoutHref
-    ? `<a data-i="quick_read_checkout" href="${safeQuickReadCheckoutHref}">Pay $19 quick read</a>`
-    : '';
-  const teardownAction = safeWorkflowTeardownCheckoutHref
-    ? `<a data-i="workflow_teardown_checkout" href="${safeWorkflowTeardownCheckoutHref}">Pay $99 teardown</a>`
-    : '';
-  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Confirm — ThumbGate Pro</title><style>body{background:#0a0a0a;color:#eee;font-family:system-ui,-apple-system,sans-serif;line-height:1.5}main{max-width:520px;margin:8vh auto;padding:0 20px}.brand{display:flex;align-items:center;gap:10px;margin-bottom:24px;font-size:14px;color:#94a3b8}.brand-mark{width:24px;height:24px;background:#22d3ee;border-radius:6px;display:inline-block}h1{font-size:24px;margin:0 0 8px;color:#fff}.price{font-size:32px;font-weight:700;color:#22d3ee;margin:8px 0 4px}.price small{font-size:14px;color:#94a3b8;font-weight:400}p{color:#cbd5e1;margin:8px 0}a{display:block;text-decoration:none}a.primary{background:#22d3ee;color:#000;padding:16px;text-align:center;border-radius:8px;font-weight:700;font-size:16px;margin:20px 0 10px}a.secondary{border:1px solid #374151;color:#cbd5e1;padding:12px;text-align:center;border-radius:8px;margin:8px 0;font-size:14px}.trust{margin:24px 0;padding:16px;border:1px solid #1f2937;border-radius:8px;background:#0f172a}.trust-item{font-size:13px;color:#cbd5e1;padding:4px 0;display:flex;gap:8px}.trust-item::before{content:"✓";color:#22d3ee;font-weight:700}details{margin-top:32px;font-size:13px;color:#94a3b8}details summary{cursor:pointer;padding:8px 0}details a{border:1px solid #374151;color:#94a3b8;padding:10px;text-align:center;border-radius:6px;margin:6px 0;font-size:13px}.back{text-align:center;color:#64748b;font-size:12px;margin-top:24px}.back a{color:#64748b;display:inline}</style><main><div class="brand"><span class="brand-mark"></span><span>ThumbGate</span></div><h1>Start ThumbGate Pro</h1><div class="price">$19<small>/mo</small></div><p>Block every repeat AI-agent mistake. Local-first. MIT-licensed CLI included. Cancel anytime.</p><a class="primary" data-i="pro_checkout_confirmed" href="${safeConfirmHref}">Pay $19/mo with Stripe →</a><div class="trust"><div class="trust-item">6 paying customers, 18,000+ installs verified on npm</div><div class="trust-item">Cancel anytime — instant refund within 7 days</div><div class="trust-item">MIT open source · no vendor lock-in</div><div class="trust-item">Works with Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode</div></div><details><summary>Other paid paths (diagnostic, sprint, teardown, single-rule)</summary>${diagnosticAction.replace('<a ', '<a class="secondary" ')}${sprintAction.replace('<a ', '<a class="secondary" ')}${teardownAction.replace('<a ', '<a class="secondary" ')}${quickReadAction.replace('<a ', '<a class="secondary" ')}${firstRuleAction.replace('<a ', '<a class="secondary" ')}<a class="secondary" data-i="workflow_sprint_intake" href="${safeWorkflowIntakeHref}">Send workflow first (intake)</a><a class="secondary" data-i="team_paid_path" href="${safeTeamOptionsHref}">See all options</a></details><p class="back"><a href="/">← Back to thumbgate.ai</a></p></main><script>addEventListener('click',e=>{let a=e.target.closest('[data-i]');if(a&&navigator.sendBeacon)navigator.sendBeacon('/v1/telemetry/ping',new Blob([JSON.stringify({eventType:'checkout_interstitial_cta_clicked',clientType:'web',page:'/checkout/pro',ctaId:a.dataset.i,ctaPlacement:'checkout_interstitial'})],{type:'application/json'}))})</script></html>`;
+  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Confirm — ThumbGate Pro</title><style>body{background:#0a0a0a;color:#eee;font-family:system-ui,-apple-system,sans-serif;line-height:1.5}main{max-width:520px;margin:8vh auto;padding:0 20px}.brand{display:flex;align-items:center;gap:10px;margin-bottom:24px;font-size:14px;color:#94a3b8}.brand-mark{width:24px;height:24px;background:#22d3ee;border-radius:6px;display:inline-block}h1{font-size:24px;margin:0 0 8px;color:#fff}.price{font-size:32px;font-weight:700;color:#22d3ee;margin:8px 0 4px}.price small{font-size:14px;color:#94a3b8;font-weight:400}p{color:#cbd5e1;margin:8px 0}a{display:block;text-decoration:none}a.primary{background:#22d3ee;color:#000;padding:16px;text-align:center;border-radius:8px;font-weight:700;font-size:16px;margin:20px 0 10px}a.secondary{border:1px solid #374151;color:#cbd5e1;padding:12px;text-align:center;border-radius:8px;margin:8px 0 0;font-size:14px}.trust{margin:24px 0;padding:16px;border:1px solid #1f2937;border-radius:8px;background:#0f172a}.trust-item{font-size:13px;color:#cbd5e1;padding:4px 0;display:flex;gap:8px}.trust-item::before{content:"✓";color:#22d3ee;font-weight:700}.choice-note{font-size:13px;color:#94a3b8;margin-top:14px}.back{text-align:center;color:#64748b;font-size:12px;margin-top:24px}.back a{color:#64748b;display:inline}</style><main><div class="brand"><span class="brand-mark"></span><span>ThumbGate</span></div><h1>Start ThumbGate Pro</h1><div class="price">$19<small>/mo</small></div><p>Block every repeat AI-agent mistake. Local-first. MIT-licensed CLI included. Cancel anytime.</p><a class="primary" data-i="pro_checkout_confirmed" href="${safeConfirmHref}">Pay $19/mo with Stripe →</a><a class="secondary" data-i="workflow_sprint_intake" href="${safeWorkflowIntakeHref}">Not sure yet? Send the workflow first</a><p class="choice-note">One checkout path here. Diagnostics, sprints, kits, and custom services live outside the Pro checkout so the buyer is not asked to choose between unrelated offers.</p><div class="trust"><div class="trust-item">6 paying customers, 18,000+ installs verified on npm</div><div class="trust-item">Cancel anytime — instant refund within 7 days</div><div class="trust-item">MIT open source · no vendor lock-in</div><div class="trust-item">Works with Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode</div></div><p class="back"><a href="/">← Back to thumbgate.ai</a></p></main><script>addEventListener('click',e=>{let a=e.target.closest('[data-i]');if(a&&navigator.sendBeacon)navigator.sendBeacon('/v1/telemetry/ping',new Blob([JSON.stringify({eventType:'checkout_interstitial_cta_clicked',clientType:'web',page:'/checkout/pro',ctaId:a.dataset.i,ctaPlacement:'checkout_interstitial'})],{type:'application/json'}))})</script></html>`;
 }
 
 function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneyState(req, parsed)) {
@@ -4617,67 +4578,9 @@ async function addContext(){
           ctaPlacement: 'checkout_interstitial',
           planId: 'team',
         });
-        const teamOptionsHref = buildCheckoutIntentHref(`${hostedConfig.appOrigin}/guides/ai-agent-governance-sprint`, analyticsMetadata, {
-          utmMedium: 'checkout_interstitial_paid_path',
-          utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_team_paid_path',
-          ctaId: 'checkout_interstitial_team_paid_path',
-          ctaPlacement: 'checkout_interstitial',
-          planId: 'team',
-        });
-        const firstRuleCheckoutHref = buildCheckoutIntentHref(FIRST_FAILURE_RULE_CHECKOUT_URL, analyticsMetadata, {
-          utmMedium: 'checkout_interstitial_paid_path',
-          utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_first_failure_rule',
-          ctaId: 'checkout_interstitial_first_failure_rule_checkout',
-          ctaPlacement: 'checkout_interstitial',
-          planId: 'first_failure_rule',
-        });
-        const quickReadCheckoutHref = buildCheckoutIntentHref(QUICK_READ_CHECKOUT_URL, analyticsMetadata, {
-          utmMedium: 'checkout_interstitial_paid_path',
-          utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_quick_read',
-          ctaId: 'checkout_interstitial_quick_read_checkout',
-          ctaPlacement: 'checkout_interstitial',
-          planId: 'quick_read',
-        });
-        const workflowTeardownCheckoutHref = buildCheckoutIntentHref(WORKFLOW_TEARDOWN_CHECKOUT_URL, analyticsMetadata, {
-          utmMedium: 'checkout_interstitial_paid_path',
-          utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_workflow_teardown',
-          ctaId: 'checkout_interstitial_workflow_teardown_checkout',
-          ctaPlacement: 'checkout_interstitial',
-          planId: 'workflow_teardown',
-        });
-        const diagnosticCheckoutHref = buildCheckoutIntentHref(
-          hostedConfig.sprintDiagnosticCheckoutUrl || SPRINT_DIAGNOSTIC_CHECKOUT_URL,
-          analyticsMetadata,
-          {
-            utmMedium: 'checkout_interstitial_paid_path',
-            utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_diagnostic',
-            ctaId: 'checkout_interstitial_sprint_diagnostic_checkout',
-            ctaPlacement: 'checkout_interstitial',
-            planId: 'sprint_diagnostic',
-          }
-        );
-        const sprintCheckoutHref = buildCheckoutIntentHref(
-          hostedConfig.workflowSprintCheckoutUrl || WORKFLOW_SPRINT_CHECKOUT_URL,
-          analyticsMetadata,
-          {
-            utmMedium: 'checkout_interstitial_paid_path',
-            utmCampaign: analyticsMetadata.utmCampaign || 'checkout_interstitial_workflow_sprint',
-            ctaId: 'checkout_interstitial_workflow_sprint_checkout',
-            ctaPlacement: 'checkout_interstitial',
-            planId: 'workflow_sprint',
-          }
-        );
         const html = renderCheckoutIntentPage({
           confirmHref: buildCheckoutConfirmHref(parsed),
-          firstRuleCheckoutHref,
-          quickReadCheckoutHref,
-          workflowTeardownCheckoutHref,
           workflowIntakeHref,
-          teamOptionsHref,
-          diagnosticCheckoutHref,
-          sprintCheckoutHref,
-          sprintDiagnosticPriceDollars: hostedConfig.sprintDiagnosticPriceDollars || 499,
-          workflowSprintPriceDollars: hostedConfig.workflowSprintPriceDollars || 1500,
           botClassification,
         });
         sendHtml(res, 200, html, responseHeaders);

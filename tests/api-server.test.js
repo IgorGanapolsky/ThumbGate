@@ -1677,6 +1677,12 @@ test('checkout interstitial: GET without confirm=1 (human UA) renders the inters
   assert.match(body, /\$19/);
   // Pay button must carry confirm=1 so the click triggers the Stripe path
   assert.match(body, /\/checkout\/pro\?[^"]*confirm=1/);
+  assert.match(body, /Not sure yet\? Send the workflow first/);
+  assert.doesNotMatch(body, /Pay \$1 first rule/);
+  assert.doesNotMatch(body, /Pay \$99 teardown/);
+  assert.doesNotMatch(body, /Book \$499 diagnostic/);
+  assert.doesNotMatch(body, /Start \$1500 sprint/);
+  assert.doesNotMatch(body, /https:\/\/buy\.stripe\.com\//);
 
   // Telemetry: a human view (not a bot) emits checkout_interstitial_view,
   // not checkout_bot_deflected.
