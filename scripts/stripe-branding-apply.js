@@ -74,7 +74,7 @@ async function uploadFile(stripe, filePath, purpose) {
     file: {
       data: fs.readFileSync(filePath),
       name: path.basename(filePath),
-      type: 'application/octet-stream',
+      type: filePath.toLowerCase().endsWith('.png') ? 'image/png' : (filePath.toLowerCase().endsWith('.svg') ? 'image/svg+xml' : 'application/octet-stream'),
     },
   });
   return file.id;
