@@ -86,6 +86,12 @@ describe('/checkout/pro confirmation gate (closes 0/50 conversion leak)', () => 
     assert.match(body, /Start ThumbGate Pro/);
     assert.match(body, /Pay \$19\/mo with Stripe/);
     assert.match(body, /\/checkout\/pro\?confirm=1/, 'interstitial must include the confirm link as the primary CTA');
+    assert.match(body, /Not sure yet\? Send the workflow first/);
+    assert.doesNotMatch(body, /Pay \$1 first rule/);
+    assert.doesNotMatch(body, /Pay \$99 teardown/);
+    assert.doesNotMatch(body, /Book \$499 diagnostic/);
+    assert.doesNotMatch(body, /Start \$1500 sprint/);
+    assert.doesNotMatch(body, /https:\/\/buy\.stripe\.com\//, 'Pro interstitial must not expose unrelated Payment Links');
     assert.doesNotMatch(body, /checkout\.stripe\.com/, 'interstitial must not pre-leak a Stripe URL');
 
     const events = readTelemetry();
