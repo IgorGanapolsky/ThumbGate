@@ -42,6 +42,14 @@ const PAYWALL_MESSAGES = {
 function isProTier(authContext) {
   if (authContext && authContext.tier === 'pro') return true;
   if (process.env.THUMBGATE_API_KEY || process.env.THUMBGATE_PRO_MODE === '1' || process.env.THUMBGATE_NO_RATE_LIMIT === '1') return true;
+  // Creator/dogfooding bypass: when the owner has the dev secret + bypass
+  // configured (env or ~/.config/thumbgate/dev.json), treat the install as Pro
+  // so marketing nudges and rate limits stop firing on the maintainer's own
+  // machine.
+  try {
+    const { isCreatorDev } = require('./pro-local-dashboard');
+    if (isCreatorDev()) return true;
+  } catch (_) {}
   try {
     const { isProLicensed } = require('./license');
     if (isProLicensed()) return true;

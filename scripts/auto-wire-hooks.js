@@ -194,6 +194,38 @@ function pruneStaleFileHooks(hookArray, baseDir) {
   const resolveBase = baseDir || process.cwd();
   const removedPaths = [];
 
+  // Shell-style variable expansion limited to the env vars Claude Code
+  // documents for hook commands (CLAUDE_PROJECT_DIR) plus the common HOME
+  // shorthand. Anything else falls through and the caller has to decide.
+  const shellExpand = (token) => {
+    // Strip surrounding ASCII double/single quotes around the whole token
+    // (e.g. `"$CLAUDE_PROJECT_DIR"/.claude/hooks/x.sh` → drop the leading "
+    // and any trailing " that pairs with it).
+    let s = token;
+    if (s.startsWith('"') && s.includes('"', 1)) {
+      s = s.slice(1, s.indexOf('"', 1)) + s.slice(s.indexOf('"', 1) + 1);
+    } else if (s.startsWith("'") && s.includes("'", 1)) {
+      s = s.slice(1, s.indexOf("'", 1)) + s.slice(s.indexOf("'", 1) + 1);
+    }
+    // Expand ${VAR} and $VAR (alnum + underscore) using overrides+process.env,
+    // with `CLAUDE_PROJECT_DIR` defaulting to the resolve base.
+    const lookup = (name) => {
+      if (name === 'CLAUDE_PROJECT_DIR') {
+        return process.env.CLAUDE_PROJECT_DIR || resolveBase;
+      }
+      return process.env[name];
+    };
+    s = s.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (_, n) => {
+      const v = lookup(n);
+      return v == null ? `\${${n}}` : v;
+    });
+    s = s.replace(/\$([A-Za-z_][A-Za-z0-9_]*)/g, (_, n) => {
+      const v = lookup(n);
+      return v == null ? `$${n}` : v;
+    });
+    return s;
+  };
+
   const hooks = hookArray.filter((entry) => {
     const entryHooks = Array.isArray(entry && entry.hooks) ? entry.hooks : [];
     let shouldRemove = false;
@@ -203,7 +235,8 @@ function pruneStaleFileHooks(hookArray, baseDir) {
       if (!command) continue;
 
       // Extract the first token as the potential script path.
-      const firstToken = command.split(/\s+/)[0];
+      const rawFirstToken = command.split(/\s+/)[0];
+      const firstToken = shellExpand(rawFirstToken);
 
       // Only treat it as a file reference if it looks like a path.
       const looksLikePath =
@@ -213,13 +246,18 @@ function pruneStaleFileHooks(hookArray, baseDir) {
 
       if (!looksLikePath) continue;
 
+      // If expansion left any unresolved $VAR, the token is ambiguous —
+      // err on the side of NOT pruning (a stale hook is less harmful than
+      // silently deleting a user-authored hook we can't verify).
+      if (firstToken.includes('$')) continue;
+
       // Resolve the path (absolute or relative to baseDir).
       const resolved = path.isAbsolute(firstToken)
         ? firstToken
         : path.resolve(resolveBase, firstToken);
 
       if (!fs.existsSync(resolved)) {
-        removedPaths.push(firstToken);
+        removedPaths.push(rawFirstToken);
         shouldRemove = true;
         break;
       }
