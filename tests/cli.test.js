@@ -941,8 +941,13 @@ describe('bin/cli.js', () => {
   });
 
   test('help command shows Pro nudge on stderr', () => {
+    // proNudge gates on isProTier(); CI sets THUMBGATE_API_KEY at the workflow
+    // level, so we must build an explicitly-unlicensed env to exercise the
+    // unlicensed code path. Otherwise this test silently asserts on the wrong
+    // branch (it was the inverse bug to ProNudge skipping isProTier — fixed
+    // together with that nudge gate).
     const result = runCliSync(['help'], {
-      env: { ...process.env, THUMBGATE_NO_NUDGE: undefined },
+      env: unlicensedProEnv(testHomeDir, { THUMBGATE_NO_NUDGE: '' }),
     });
     assert.strictEqual(result.status, 0);
     assert.ok(result.stderr.includes('Pro'), 'Pro nudge should appear on stderr');
@@ -950,10 +955,28 @@ describe('bin/cli.js', () => {
 
   test('THUMBGATE_NO_NUDGE=1 suppresses Pro nudge', () => {
     const result = runCliSync(['help'], {
-      env: { ...process.env, THUMBGATE_NO_NUDGE: '1' },
+      env: unlicensedProEnv(testHomeDir, { THUMBGATE_NO_NUDGE: '1' }),
     });
     assert.strictEqual(result.status, 0);
     assert.ok(!result.stderr.includes('Pro'), 'Pro nudge should be suppressed when THUMBGATE_NO_NUDGE=1');
+  });
+
+  test('Pro nudge is suppressed when env signals a Pro tier', () => {
+    // Regression: pre-2026-05-18 proNudge ignored isProTier() entirely, so it
+    // nagged paying customers on every stats/lessons/summary/help call. After
+    // the fix, an explicit Pro signal (any of THUMBGATE_API_KEY, _PRO_MODE,
+    // _NO_RATE_LIMIT, or a creator-dev install) must suppress the nudge.
+    const result = runCliSync(['help'], {
+      env: unlicensedProEnv(testHomeDir, {
+        THUMBGATE_API_KEY: 'tg_pro_test_paid_customer',
+        THUMBGATE_NO_NUDGE: '',
+      }),
+    });
+    assert.strictEqual(result.status, 0);
+    assert.ok(
+      !result.stderr.includes('💡 ThumbGate Pro') && !result.stderr.includes('💡 Unlock Pro') && !result.stderr.includes('💡 Pro tip'),
+      `Pro nudge must be suppressed for Pro-tier env; got stderr:\n${result.stderr}`,
+    );
   });
 
   test('pro command includes hosted link', () => {
