@@ -141,6 +141,10 @@ function telemetryPing(installId) {
 
 function proNudge(context) {
   if (process.env.THUMBGATE_NO_NUDGE === '1') return;
+  try {
+    const { isProTier } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
+    if (isProTier()) return;
+  } catch (_) { /* if rate-limiter is unavailable, fall through and nudge */ }
   const messages = [
     `\n  💡 Unlock Pro (${PRO_PRICE_LABEL}): searchable dashboard, DPO export, multi-repo sync\n     ${PRO_CHECKOUT_URL}\n`,
     `\n  💡 Pro tip: export your feedback as DPO training pairs to improve your models.\n     Get Pro: ${PRO_CHECKOUT_URL}\n`,
@@ -1157,7 +1161,10 @@ function pro() {
   }
 
   const resolvedKey = resolveProKey();
-  if (resolvedKey && resolvedKey.key) {
+  // creator-dev legitimately returns {key: '', source: 'creator-dev', plan: 'enterprise'}
+  // when THUMBGATE_DEV_KEY is unset — startLocalProDashboard accepts the empty
+  // key in that case (see pro-local-dashboard.js:141), so launch on source too.
+  if (resolvedKey && (resolvedKey.key || resolvedKey.source === 'creator-dev')) {
     return launchDashboard(resolvedKey.key, 'pro_dashboard_launch');
   }
 

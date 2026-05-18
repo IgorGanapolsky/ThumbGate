@@ -91,8 +91,8 @@ ThumbGate doesn't make your agent smarter. It makes your agent *cheaper to be wr
 ## Quick Start
 
 ```bash
-npx thumbgate init       # auto-detects your agent, wires everything
-npx thumbgate capture "Never run DROP on production tables"
+npx thumbgate init                                                         # auto-detects your agent, wires everything
+npx thumbgate capture --feedback=down --context="Never run DROP on production tables"
 ```
 
 That single command creates a prevention rule. Next time any AI agent tries to run `DROP` on production:
@@ -253,10 +253,10 @@ ThumbGate sells three concrete outcomes:
 ## CLI Reference
 
 ```bash
-npx thumbgate init       # detect agent, wire hooks
-npx thumbgate doctor     # health check
-npx thumbgate capture    # create a check from text
-npx thumbgate lessons    # see what's been learned
+npx thumbgate init                                              # detect agent, wire hooks
+npx thumbgate doctor                                            # health check
+npx thumbgate capture --feedback=up|down --context="<text>"    # capture a signal as a stored lesson
+npx thumbgate lessons                                           # see what's been learned
 npx thumbgate explore    # terminal explorer for lessons, checks, stats
 npx thumbgate background-governance  # review background-agent run risk
 npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai --json  # evaluate GPT-5.5 routing
