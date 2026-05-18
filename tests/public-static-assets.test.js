@@ -197,3 +197,17 @@ test('public sales copy avoids unsupported pricing, traction, and guarantee clai
     }
   }
 });
+
+test('/checkout/pro interstitial does not assert paying-customer counts or inflated install numbers', async () => {
+  // Audit 2026-05-18: the live /checkout/pro interstitial advertised
+  // "6 paying customers, 18,000+ installs verified on npm." Verified
+  // ground truth: external paying customers = 0 (the only Stripe charge
+  // was a founder self-purchase) and real npm last-30-days downloads
+  // were 5,257. Both numbers were false trust signals on a buyer-
+  // facing surface. Banned forever.
+  const res = await fetch(`${origin}/checkout/pro`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  assert.doesNotMatch(html, /\d+\s+paying customers/i, '/checkout/pro must not assert a paying-customer count');
+  assert.doesNotMatch(html, /18[,]?000\+?\s+installs/i, '/checkout/pro must not assert an inflated 18,000+ installs claim');
+});
