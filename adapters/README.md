@@ -1,5 +1,6 @@
 # Adapter Bundles
 
+- `xai-grok/README.md`: xAI Grok Build CLI — auto-detects Claude Code conventions (AGENTS.md, hooks, MCP, Skills). Use the existing `claude/.mcp.json`; no new config needed.
 - `chatgpt/openapi.yaml`: import into GPT Actions.
 - `gemini/function-declarations.json`: Gemini function-calling definitions.
 - `mcp/server-stdio.js`: underlying local MCP stdio server implementation.
