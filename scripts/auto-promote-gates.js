@@ -82,15 +82,54 @@ function isNegative(entry) {
   return NEG_SIGNALS.has(sig);
 }
 
+/**
+ * Normalize a captured command/context string so trivial variants collapse
+ * to the same gate signature.
+ *
+ * Reddit critique (MomSausageandPeppers, 2026-05-17): "commands are matched
+ * by string equality, so `rm -rf node_modules` and `rm -rf ./node_modules`
+ * create separate gates."
+ *
+ * Conservative — only collapse variants that are *unambiguously* the same
+ * intent. Does NOT reorder flags, strip `&&` chains, or canonicalize
+ * subcommands (each can change semantics).
+ *
+ *  1. Lowercase
+ *  2. Strip `/Users/<name>` and `/home/<name>` home-dir prefixes (→ `~`)
+ *  3. Drop `:LINE` and `:LINE:COL` refs
+ *  4. Per-token: strip one layer of matching outer quotes/backticks
+ *  5. Per-token: drop leading `./`
+ *  6. Collapse whitespace + trim
+ */
+function normalizeCommandSignature(input) {
+  let text = String(input || '');
+  if (!text) return '';
+  text = text.toLowerCase();
+  text = text.replace(/\/users\/[^\s/]+/g, '~').replace(/\/home\/[^\s/]+/g, '~');
+  text = text.replace(/:\d+(?::\d+)?\b/g, '');
+  const tokens = text.split(/\s+/).filter(Boolean).map((tok) => {
+    let t = tok;
+    if (t.length >= 2) {
+      const first = t[0];
+      const last = t[t.length - 1];
+      if ((first === '"' || first === "'" || first === '`') && first === last) {
+        t = t.slice(1, -1);
+      }
+    }
+    if (t.startsWith('./')) t = t.slice(2);
+    return t;
+  }).filter(Boolean);
+  return tokens.join(' ').trim();
+}
+
 function extractPatternKey(entry) {
   // Use tags as primary grouping key; fall back to context normalization
   const tags = (entry.tags || []).filter((t) => !['feedback', 'negative', 'positive'].includes(t));
   if (tags.length > 0) return tags.sort().join('+');
 
-  const ctx = (entry.context || entry.whatWentWrong || '').toLowerCase().trim();
+  const ctx = (entry.context || entry.whatWentWrong || '').trim();
   if (ctx.length < 10) return null;
-  // Normalize paths and numbers for grouping
-  return ctx.replace(/\/Users\/[^\s/]+/g, '~').replace(/:[0-9]+/g, '').replace(/\s+/g, ' ').slice(0, 100);
+  return normalizeCommandSignature(ctx).slice(0, 100);
 }
 
 function extractDiagnosticKeys(entry) {
@@ -399,6 +438,7 @@ module.exports = {
   patternToGateId,
   buildGateRule,
   extractPatternKey,
+  normalizeCommandSignature,
   isNegative,
   expireGates,
   recordGateFire,
