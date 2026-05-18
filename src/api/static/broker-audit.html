@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Broker Lead-Flow Audit — Free 20-min review</title>
+    <meta name="description" content="A 20-minute audit on your Zillow + agent-page lead flow. 1-page PDF, no follow-up calls unless you ask.">
+    <style>
+        :root {
+            --bg: #ffffff;
+            --bg-soft: #f6f7f9;
+            --panel: #ffffff;
+            --border: #e4e7ec;
+            --border-strong: #cfd4dc;
+            --text: #11141b;
+            --text-dim: #555c6a;
+            --text-mute: #8a93a3;
+            --accent: #1463ff;
+            --accent-press: #0e4ed1;
+            --warn: #b35900;
+            --radius: 10px;
+        }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.55;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+        }
+        .wrap { max-width: 720px; margin: 0 auto; padding: 56px 22px 64px; }
+        .brand {
+            display: inline-flex; align-items: center; gap: 10px;
+            color: var(--text-mute); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 28px;
+        }
+        .brand .dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--accent);
+        }
+        h1 {
+            font-size: 38px; line-height: 1.1; letter-spacing: -0.02em;
+            margin: 0 0 14px; font-weight: 800;
+        }
+        .lead {
+            color: var(--text-dim); font-size: 17px; margin: 0 0 24px;
+            max-width: 620px;
+        }
+        .cta-row {
+            display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+            margin: 4px 0 14px;
+        }
+        a.primary {
+            display: inline-block; padding: 14px 22px;
+            background: var(--accent);
+            color: #ffffff; text-decoration: none; font-weight: 700; font-size: 16px;
+            border-radius: 8px;
+            border: 1px solid var(--accent);
+            transition: background 0.15s ease;
+        }
+        a.primary:hover { background: var(--accent-press); border-color: var(--accent-press); }
+        a.primary:focus-visible { outline: 3px solid #9bb8ff; outline-offset: 2px; }
+        .fineprint {
+            color: var(--text-dim); font-size: 14px;
+            margin: 6px 0 0; max-width: 620px;
+        }
+        .fineprint strong { color: var(--text); font-weight: 600; }
+        section {
+            margin-top: 44px;
+        }
+        h2 {
+            font-size: 20px; letter-spacing: -0.01em;
+            margin: 0 0 14px; font-weight: 700;
+        }
+        h2 .kicker {
+            display: block;
+            font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+            color: var(--text-mute); font-weight: 700;
+            margin-bottom: 4px;
+        }
+        ol.checks {
+            list-style: none; padding: 0; margin: 0;
+            border-top: 1px solid var(--border);
+        }
+        ol.checks li {
+            display: grid; grid-template-columns: 36px 1fr 64px; gap: 14px;
+            padding: 16px 0; border-bottom: 1px solid var(--border);
+            align-items: baseline;
+        }
+        ol.checks .num {
+            font-variant-numeric: tabular-nums;
+            font-weight: 700; color: var(--accent);
+            font-size: 15px;
+        }
+        ol.checks .body .name { font-weight: 600; color: var(--text); }
+        ol.checks .body .desc { color: var(--text-dim); font-size: 14px; margin-top: 2px; }
+        ol.checks .score {
+            text-align: right;
+            color: var(--text-mute);
+            font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        ul.deliverable {
+            list-style: none; padding: 0; margin: 0;
+        }
+        ul.deliverable li {
+            padding: 10px 0 10px 24px; position: relative;
+            color: var(--text);
+            border-bottom: 1px dashed var(--border);
+        }
+        ul.deliverable li:last-child { border-bottom: none; }
+        ul.deliverable li::before {
+            content: ""; position: absolute; left: 4px; top: 18px;
+            width: 8px; height: 8px; border-radius: 2px;
+            background: var(--accent);
+        }
+        ul.deliverable li .label { font-weight: 600; }
+        ul.deliverable li .note { display: block; color: var(--text-dim); font-size: 14px; margin-top: 2px; }
+        .audience {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+        }
+        .audience .col {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 18px;
+            background: var(--bg-soft);
+        }
+        .audience .col h3 {
+            font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+            margin: 0 0 10px; color: var(--text-mute); font-weight: 700;
+        }
+        .audience .col.no h3 { color: var(--warn); }
+        .audience ul { list-style: none; padding: 0; margin: 0; }
+        .audience li { padding: 6px 0; font-size: 14px; color: var(--text); }
+        .about {
+            border-left: 3px solid var(--accent);
+            padding: 4px 0 4px 16px;
+            color: var(--text-dim);
+            font-size: 16px;
+        }
+        .about strong { color: var(--text); font-weight: 600; }
+        .about a { color: var(--accent); text-decoration: none; border-bottom: 1px solid #c8d8ff; }
+        .about a:hover { border-bottom-color: var(--accent); }
+        .footer-cta {
+            margin-top: 56px;
+            padding: 28px 24px;
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius);
+            background: var(--bg-soft);
+            text-align: center;
+        }
+        .footer-cta h2 {
+            margin: 0 0 6px; font-size: 22px;
+        }
+        .footer-cta p {
+            color: var(--text-dim); margin: 0 0 16px; font-size: 15px;
+        }
+        .footer-meta {
+            margin-top: 40px;
+            padding-top: 18px;
+            border-top: 1px solid var(--border);
+            color: var(--text-mute); font-size: 13px;
+            display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center;
+            justify-content: space-between;
+        }
+        .footer-meta a {
+            color: var(--text-dim); text-decoration: none;
+            border-bottom: 1px dotted var(--border-strong);
+        }
+        .footer-meta a:hover { color: var(--text); }
+        @media (max-width: 540px) {
+            .wrap { padding: 32px 16px 48px; }
+            h1 { font-size: 28px; }
+            .lead { font-size: 15px; }
+            a.primary { width: 100%; text-align: center; }
+            .audience { grid-template-columns: 1fr; gap: 12px; }
+            ol.checks li { grid-template-columns: 28px 1fr; }
+            ol.checks .score { grid-column: 2; text-align: left; padding-top: 4px; }
+        }
+    </style>
+</head>
+<body>
+    <main class="wrap">
+        <div class="brand">
+            <span class="dot" aria-hidden="true"></span>
+            <span>ThumbGate &middot; Broker Lead-Flow Audit</span>
+        </div>
+
+        <!-- Above the fold -->
+        <h1>Stop losing $2M+ inbound leads to slow response time.</h1>
+        <p class="lead">
+            I run a 20-minute audit on your Zillow + agent-page lead flow, deliver a 1-page PDF,
+            and show you exactly where leads are leaking. Free. No follow-up calls unless you ask.
+        </p>
+
+        <div class="cta-row">
+            <a class="primary" href="https://calendly.com/iganapolsky/broker-audit">Book a free 20-min audit</a>
+        </div>
+        <p class="fineprint">
+            <strong>5-minute Zillow response = 21x conversion vs. 30-min response.</strong>
+            Most brokers don&rsquo;t know where their inbound dies.
+        </p>
+
+        <!-- What the audit covers -->
+        <section aria-label="What the audit covers">
+            <h2><span class="kicker">What the audit covers</span>6 checks, scored 0&ndash;3</h2>
+            <ol class="checks">
+                <li>
+                    <span class="num">1.</span>
+                    <div class="body">
+                        <div class="name">Inbound capture</div>
+                        <div class="desc">Zillow, agent-page, IDX, Google Business Profile, and referral routes &mdash; is every channel actually wired to a human?</div>
+                    </div>
+                    <span class="score">score 0&ndash;3</span>
+                </li>
+                <li>
+                    <span class="num">2.</span>
+                    <div class="body">
+                        <div class="name">Response speed</div>
+                        <div class="desc">Minutes from inquiry to first human reply &mdash; measured, not guessed.</div>
+                    </div>
+                    <span class="score">score 0&ndash;3</span>
+                </li>
+                <li>
+                    <span class="num">3.</span>
+                    <div class="body">
+                        <div class="name">Qualification</div>
+                        <div class="desc">Pre-approval, price band, timeline, and exclusivity captured before the second touch.</div>
+                    </div>
+                    <span class="score">score 0&ndash;3</span>
+                </li>
+                <li>
+                    <span class="num">4.</span>
+                    <div class="body">
+                        <div class="name">Follow-up cadence</div>
+                        <div class="desc">D+1 / D+7 / D+30 / D+90 &mdash; written, scheduled, and actually firing.</div>
+                    </div>
+                    <span class="score">score 0&ndash;3</span>
+                </li>
+                <li>
+                    <span class="num">5.</span>
+                    <div class="body">
+                        <div class="name">Pricing &amp; scope transparency</div>
+                        <div class="desc">Commission and scope visibility before the first showing &mdash; not after the offer.</div>
+                    </div>
+                    <span class="score">score 0&ndash;3</span>
+                </li>
+                <li>
+                    <span class="num">6.</span>
+                    <div class="body">
+                        <div class="name">Lost-lead recovery</div>
+                        <div class="desc">6- and 12-month re-touch plus life-event triggers (marriage, baby, job move) for everyone who ghosted.</div>
+                    </div>
+                    <span class="score">score 0&ndash;3</span>
+                </li>
+            </ol>
+        </section>
+
+        <!-- What you get -->
+        <section aria-label="What you get">
+            <h2><span class="kicker">What you get</span>A 1-page PDF, then your call</h2>
+            <ul class="deliverable">
+                <li>
+                    <span class="label">A 1-page PDF.</span>
+                    <span class="note">No fluff. Scored, ranked, ready to act on the same day.</span>
+                </li>
+                <li>
+                    <span class="label">The single highest-impact fix called out by name.</span>
+                    <span class="note">Not five things. The one that moves the needle first.</span>
+                </li>
+                <li>
+                    <span class="label">Two paths after the PDF.</span>
+                    <span class="note">DIY &mdash; the audit IS the plan. Or done-with-you: a $499 14-day sprint with a refund window if the fix doesn&rsquo;t land.</span>
+                </li>
+            </ul>
+        </section>
+
+        <!-- Who this is for -->
+        <section aria-label="Who this is for">
+            <h2><span class="kicker">Who this is for</span>Independent brokers, residential</h2>
+            <div class="audience">
+                <div class="col">
+                    <h3>Good fit</h3>
+                    <ul>
+                        <li>Independent residential brokers, luxury or near-luxury ($500k+ avg listing).</li>
+                        <li>NJ / PA / Atlanta metro &mdash; close enough for an in-person sprint if you want it.</li>
+                        <li>Already using Zillow, Realtor.com, or IDX, and feel inbound is leaking.</li>
+                    </ul>
+                </div>
+                <div class="col no">
+                    <h3>Not for</h3>
+                    <ul>
+                        <li>Corporate-franchise agents whose tech stack is locked by HQ.</li>
+                        <li>Teams with no inbound channel turned on yet &mdash; this audit is for fixing leaks, not building pipes.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Igor -->
+        <section aria-label="About">
+            <h2><span class="kicker">About</span>Who&rsquo;s running the audit</h2>
+            <p class="about">
+                <strong>Igor Ganapolsky.</strong> Senior engineer. Built lead-flow infrastructure for a GHL solar broker last week
+                and a Miami restaurant booking flow before that. Currently running a knowledge-to-cash RAG pipeline in
+                production for cold outbound on Resend + Stripe with payment-intent attribution.
+                <br>
+                <a href="https://github.com/igorganapolsky">github.com/igorganapolsky</a>
+            </p>
+        </section>
+
+        <!-- Footer CTA -->
+        <div class="footer-cta">
+            <h2>Book your free 20-min audit</h2>
+            <p>One call. One PDF. Zero follow-up unless you ask for it.</p>
+            <a class="primary" href="https://calendly.com/iganapolsky/broker-audit">Book a free 20-min audit</a>
+        </div>
+
+        <div class="footer-meta">
+            <span>Support: <a href="mailto:support@thumbgate.ai">support@thumbgate.ai</a> &middot; fallback <a href="mailto:iganapolsky@gmail.com">iganapolsky@gmail.com</a></span>
+            <span>ThumbGate</span>
+        </div>
+    </main>
+</body>
+</html>

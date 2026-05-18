@@ -4719,6 +4719,25 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/broker-audit') {
+      // Public-facing broker lead-flow audit landing page. Wedge for the
+      // real-estate broker outreach. Static HTML served from src/api/static.
+      try {
+        const html = fs.readFileSync(
+          path.resolve(__dirname, 'static/broker-audit.html'),
+          'utf8'
+        );
+        if (isHeadRequest) {
+          sendHtml(res, 200, html, {}, { headOnly: true });
+          return;
+        }
+        sendHtml(res, 200, html);
+      } catch (_e) {
+        sendJson(res, 500, { error: 'broker-audit page unavailable' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/.well-known/mcp.json') {
       sendJson(res, 200, getMcpDiscoveryManifest(hostedConfig), {}, {
         headOnly: isHeadRequest,
