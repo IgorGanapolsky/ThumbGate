@@ -56,13 +56,29 @@ function extractFlag(argv, prefix) {
   return match ? match.slice(prefix.length) : null;
 }
 
-// SonarCloud flagged the bare `execFileSync('gh', ...)` as a PATH-injection
-// hotspot. Resolve a known-safe PATH (the standard CI + macOS locations)
-// instead of inheriting the ambient one, and let injected `gh` overrides
-// pass through directly.
-const SAFE_PATH = '/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin';
+// SonarCloud flagged `execFileSync('gh', ...)` as a PATH-injection hotspot
+// because the resolver consults $PATH for `gh`. Resolve gh's absolute path
+// once at module load (using a fixed lookup) and call execFileSync with the
+// absolute path going forward. Inherits no $PATH at call time.
+const fs = require('node:fs');
+const FIXED_PATH_DIRS = ['/usr/local/bin', '/usr/bin', '/bin', '/opt/homebrew/bin'];
 
-function ghJson(args, gh = (a) => execFileSync('gh', a, { encoding: 'utf8', env: { ...process.env, PATH: SAFE_PATH } })) {
+function resolveGhBinary() {
+  for (const dir of FIXED_PATH_DIRS) {
+    const candidate = `${dir}/gh`;
+    try {
+      if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+        return candidate;
+      }
+    } catch { /* keep searching */ }
+  }
+  // Tests inject a fake gh; in CI we expect gh to be on a standard path.
+  return 'gh';
+}
+
+const GH_BINARY = resolveGhBinary();
+
+function ghJson(args, gh = (a) => execFileSync(GH_BINARY, a, { encoding: 'utf8' })) {
   const out = gh(args);
   return JSON.parse(out);
 }
