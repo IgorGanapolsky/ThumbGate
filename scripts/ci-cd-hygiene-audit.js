@@ -144,11 +144,21 @@ function listOpenPrs({ repo, gh } = {}) {
   }));
 }
 
-function listRecentRuns({ repo, days = 7, gh } = {}) {
-  return ghJson([
-    'run', 'list', '--repo', repo, '--limit', '100',
+function listRecentRuns({ repo, days = 7, gh, now = new Date() } = {}) {
+  // Codex P2: `gh run list --limit 100` fetches the last 100 runs with no
+  // date filter — so "broken workflows" was previously over a variable
+  // wall-clock window (hours on a busy repo, weeks on a quiet one).
+  // Pull the last 500 and filter to the explicit window so the signal
+  // means what the report claims.
+  const all = ghJson([
+    'run', 'list', '--repo', repo, '--limit', '500',
     '--json', 'name,conclusion,createdAt',
   ], gh);
+  const cutoff = now.getTime() - days * 24 * 60 * 60 * 1000;
+  return all.filter((r) => {
+    const t = new Date(r.createdAt).getTime();
+    return Number.isFinite(t) && t >= cutoff;
+  });
 }
 
 function unresolvedThreadsForPr({ prNumber, repo, gh } = {}) {

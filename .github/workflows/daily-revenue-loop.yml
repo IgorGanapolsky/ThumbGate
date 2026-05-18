@@ -85,9 +85,15 @@ jobs:
         id: cicd-hygiene
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Codex P1: --strict so the step exits 1 when the merge backlog
+        # reaches the trip threshold. Without it, the workflow never
+        # surfaces hygiene-failure status — defeating the alarm.
+        # `continue-on-error: true` so the rest of the daily loop still
+        # runs, but the step itself goes red in the UI.
+        continue-on-error: true
         run: |
           mkdir -p reports/revenue
-          node scripts/ci-cd-hygiene-audit.js | tee reports/revenue/cicd-hygiene.md
+          node scripts/ci-cd-hygiene-audit.js --strict | tee reports/revenue/cicd-hygiene.md
           node scripts/ci-cd-hygiene-audit.js --json > reports/revenue/cicd-hygiene.json
           {
             echo
