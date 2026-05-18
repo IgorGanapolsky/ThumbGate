@@ -210,6 +210,9 @@ async function main(argv) {
     if (error.raw) {
       process.stderr.write(`  stripe error code: ${error.raw.code || 'unknown'}\n`);
       process.stderr.write(`  stripe error type: ${error.raw.type || 'unknown'}\n`);
+      process.stderr.write(`  stripe error param: ${error.raw.param || 'unknown'}\n`);
+      process.stderr.write(`  stripe error doc_url: ${error.raw.doc_url || 'unknown'}\n`);
+      process.stderr.write(`  stripe raw: ${JSON.stringify(error.raw)}\n`);
     }
     process.exit(1);
   }
