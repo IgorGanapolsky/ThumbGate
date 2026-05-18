@@ -96,7 +96,7 @@ async function probePublicFunnel({ appOrigin, fetchImpl = globalThis.fetch, time
     const confirmRedirects = confirm.status >= 300 && confirm.status < 400;
 
     return {
-      ok: root.ok && checkout.ok && confirmRedirects && checkoutHasFocusedProCta && !checkoutLeaksServiceLinks,
+      ok: root.ok && checkout.ok && confirmRedirects && checkoutHasFocusedProCta && checkoutHasFallback && !checkoutLeaksServiceLinks,
       root: {
         status: root.status,
         ok: root.ok,
