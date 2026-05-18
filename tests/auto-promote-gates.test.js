@@ -16,6 +16,7 @@ const {
   patternToGateId,
   buildGateRule,
   extractPatternKey,
+  normalizeCommandSignature,
   isNegative,
   MAX_AUTO_GATES,
   WARN_THRESHOLD,
@@ -529,4 +530,104 @@ test('getRuleTtlDays defaults to 90 and honors THUMBGATE_RULE_TTL_DAYS', () => {
     if (savedEnv === undefined) delete process.env.THUMBGATE_RULE_TTL_DAYS;
     else process.env.THUMBGATE_RULE_TTL_DAYS = savedEnv;
   }
+});
+
+// --- Command-signature normalization (Reddit critique: command-equality matching) ---
+
+test('normalizeCommandSignature: collapses whitespace + case', () => {
+  assert.strictEqual(
+    normalizeCommandSignature('  RM   -rf   node_modules  '),
+    'rm -rf node_modules'
+  );
+});
+
+test('normalizeCommandSignature: strips leading ./ on path tokens', () => {
+  assert.strictEqual(
+    normalizeCommandSignature('rm -rf ./node_modules'),
+    normalizeCommandSignature('rm -rf node_modules')
+  );
+});
+
+test('normalizeCommandSignature: strips outer quotes/backticks per token', () => {
+  assert.strictEqual(
+    normalizeCommandSignature('rm -rf "node_modules"'),
+    normalizeCommandSignature('rm -rf node_modules')
+  );
+  assert.strictEqual(
+    normalizeCommandSignature("git push 'origin' main"),
+    normalizeCommandSignature('git push origin main')
+  );
+  assert.strictEqual(
+    normalizeCommandSignature('echo `whoami`'),
+    normalizeCommandSignature('echo whoami')
+  );
+});
+
+test('normalizeCommandSignature: strips /Users/<name>/ and /home/<name>/ prefixes', () => {
+  assert.strictEqual(
+    normalizeCommandSignature('cat /Users/igor/workspace/repo/README.md'),
+    'cat ~/workspace/repo/readme.md'
+  );
+  assert.strictEqual(
+    normalizeCommandSignature('cat /home/alice/notes.txt'),
+    'cat ~/notes.txt'
+  );
+});
+
+test('normalizeCommandSignature: strips :line and :line:col refs', () => {
+  assert.strictEqual(
+    normalizeCommandSignature('edit src/foo.js:42'),
+    normalizeCommandSignature('edit src/foo.js')
+  );
+  assert.strictEqual(
+    normalizeCommandSignature('edit src/foo.js:42:7'),
+    normalizeCommandSignature('edit src/foo.js')
+  );
+});
+
+test('normalizeCommandSignature: does NOT reorder flags (semantics preserved)', () => {
+  // Different flag order = different intent; we must NOT collapse these.
+  assert.notStrictEqual(
+    normalizeCommandSignature('git push origin main --force'),
+    normalizeCommandSignature('git push --force origin main')
+  );
+});
+
+test('normalizeCommandSignature: does NOT collapse && chains', () => {
+  // Multi-step commands must not collapse with single steps.
+  assert.notStrictEqual(
+    normalizeCommandSignature('rm x && rm y'),
+    normalizeCommandSignature('rm x')
+  );
+});
+
+test('normalizeCommandSignature: empty/null input → empty string', () => {
+  assert.strictEqual(normalizeCommandSignature(''), '');
+  assert.strictEqual(normalizeCommandSignature(null), '');
+  assert.strictEqual(normalizeCommandSignature(undefined), '');
+});
+
+test('extractPatternKey: variants of rm -rf node_modules produce the same gate key', () => {
+  const variants = [
+    'rm -rf node_modules',
+    'rm -rf ./node_modules',
+    'rm -rf "node_modules"',
+    '  RM   -rf   node_modules  ',
+    'rm -rf node_modules:42',
+  ];
+  const keys = variants.map((ctx) => extractPatternKey({ context: ctx }));
+  // Every variant should collapse to the same key.
+  for (const k of keys) {
+    assert.strictEqual(k, keys[0], `expected all variants to match: ${JSON.stringify(keys)}`);
+  }
+  assert.ok(keys[0] && keys[0].includes('rm -rf node_modules'));
+});
+
+test('extractPatternKey: still prefers tags when present', () => {
+  const k = extractPatternKey({
+    tags: ['feedback', 'destructive-fs', 'negative'],
+    context: 'rm -rf node_modules',
+  });
+  // Tag-based key wins over command normalization.
+  assert.strictEqual(k, 'destructive-fs');
 });
