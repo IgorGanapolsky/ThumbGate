@@ -549,6 +549,15 @@ function evaluatePretoolFromState(state, toolName, toolInput) {
   const normInput = normalize(toolInput || '');
   const normTool = (toolName || '').toLowerCase();
 
+  // PostgreSQL AI Guardrail (Google AI DB mandate)
+  if (normTool.includes('sql') || normInput.includes('psql') || normInput.includes('postgres') || normInput.includes('select ') || normInput.includes('drop ') || normInput.includes('update ') || normInput.includes('alter ')) {
+    const { evaluatePostgresQuery } = require('./postgres-guard');
+    const pgRes = evaluatePostgresQuery(toolInput || '');
+    if (pgRes.mode !== 'allow') {
+      return { mode: pgRes.mode, reason: pgRes.reason, source: 'postgres-guard' };
+    }
+  }
+
   for (const pattern of state.recurringNegativePatterns || []) {
     if (hasTwoKeywordHits(normInput, pattern.words || [])) {
       const mode = pattern.count >= 3 ? 'block' : 'warn';
