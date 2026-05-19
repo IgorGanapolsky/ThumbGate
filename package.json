@@ -652,7 +652,8 @@
     "test:public-bundle-ratchet": "node --test tests/public-bundle-ratchet.test.js",
     "test:stripe-payment-link-update": "node --test tests/stripe-payment-link-update.test.js",
     "test:verify-marketing-pages-deployed": "node --test tests/verify-marketing-pages-deployed.test.js",
-    "verify:marketing-pages": "node scripts/verify-marketing-pages-deployed.js"
+    "verify:marketing-pages": "node scripts/verify-marketing-pages-deployed.js",
+    "test:stripe-webhook-cleanup": "node --test tests/stripe-webhook-cleanup.test.js"
   },
   "keywords": [
     "mcp",

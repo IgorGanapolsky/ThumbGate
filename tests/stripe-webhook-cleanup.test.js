@@ -124,3 +124,85 @@ test('renderHuman: shows WOULD DELETE in dry-run, DELETED after apply, keep for 
   const out2 = renderHuman(applied);
   assert.match(out2, /DELETED.*we_b/);
 });
+
+test('renderHuman: surfaces per-deletion error suffix when Stripe del() failed', () => {
+  // Stripe del() can fail per-endpoint (permissions, rate-limit, missing
+  // endpoint). applyCleanup records the error onto the result; renderHuman
+  // surfaces it inline so the operator can act. Without this branch in the
+  // test surface, the error path is invisible in dry-run vs apply output.
+  const failed = [
+    { id: 'we_dead', url: 'https://rlhf-feedback-loop-old.run.app/v1/billing/webhook', status: 'disabled', eventCount: 1, action: 'delete', reason: 'orphan', deleted: false, error: 'rate_limited: retry after 60s' },
+  ];
+  const out = renderHuman(failed);
+  assert.match(out, /WOULD DELETE.*we_dead/);
+  assert.match(out, /ERROR: rate_limited: retry after 60s/);
+});
+
+test('applyCleanup: records error and deleted:false when Stripe del() throws', async () => {
+  // Defense in depth: a single bad endpoint must not abort the whole run.
+  // Stripe occasionally returns 404 for an endpoint that was just deleted
+  // by a concurrent operator, or 429 under rate limit. Each must be
+  // captured on the item without exiting the loop.
+  const stripeBroken = {
+    webhookEndpoints: {
+      del: async (id) => {
+        const err = new Error(id === 'we_blowup' ? 'No such webhook endpoint' : 'unexpected');
+        if (id === 'we_blowup') throw err;
+        return { id, deleted: true };
+      },
+    },
+  };
+  const plan = [
+    { id: 'we_ok',     url: 'https://rlhf-feedback-loop-x.run.app/v1/billing/webhook', status: 'disabled', eventCount: 1, action: 'delete', reason: 'orphan' },
+    { id: 'we_blowup', url: 'https://rlhf-feedback-loop-y.run.app/v1/billing/webhook', status: 'disabled', eventCount: 1, action: 'delete', reason: 'orphan' },
+    { id: 'we_kept',   url: KEEP_URL, status: 'enabled', eventCount: 4, action: 'keep', reason: 'canonical' },
+  ];
+  const results = await applyCleanup(stripeBroken, plan);
+
+  assert.strictEqual(results.length, 3, 'every item still emitted, no short-circuit on error');
+
+  const ok = results.find((r) => r.id === 'we_ok');
+  assert.strictEqual(ok.deleted, true);
+  assert.strictEqual(ok.error, undefined);
+
+  const broken = results.find((r) => r.id === 'we_blowup');
+  assert.strictEqual(broken.deleted, false, 'failed delete must not be marked deleted:true');
+  assert.match(broken.error, /No such webhook endpoint/);
+
+  const kept = results.find((r) => r.id === 'we_kept');
+  assert.strictEqual(kept.deleted, false, 'keep items emit deleted:false (never attempted)');
+  assert.strictEqual(kept.error, undefined);
+});
+
+test('planCleanup: paginates correctly when Stripe returns has_more', async () => {
+  // Stripe webhookEndpoints.list returns at most 100 per page. planCleanup
+  // must follow `has_more` + `starting_after` until exhausted, or it
+  // silently drops endpoints from the cleanup plan.
+  const total = 150;
+  const endpoints = Array.from({ length: total }, (_, i) => ({
+    id: `we_${String(i).padStart(3, '0')}`,
+    // First endpoint is the canonical enabled webhook; the rest are
+    // disabled orphan rlhf-feedback-loop URLs that the cleaner must
+    // see in the plan even though they appear past the first page.
+    status: i === 0 ? 'enabled' : 'disabled',
+    url: i === 0 ? KEEP_URL : `https://rlhf-feedback-loop-${i}.example.com/v1/billing/webhook`,
+    enabled_events: [],
+  }));
+  let listCalls = 0;
+  const stripePaged = {
+    webhookEndpoints: {
+      list: async ({ limit = 100, starting_after } = {}) => {
+        listCalls += 1;
+        const start = starting_after ? endpoints.findIndex((e) => e.id === starting_after) + 1 : 0;
+        const page = endpoints.slice(start, start + limit);
+        return { data: page, has_more: start + page.length < endpoints.length };
+      },
+    },
+  };
+  const plan = await planCleanup(stripePaged);
+  assert.strictEqual(plan.length, total, 'every endpoint reaches the plan');
+  assert.ok(listCalls >= 2, `expected at least 2 list calls for ${total} endpoints, got ${listCalls}`);
+  // Spot check: first endpoint stays kept (canonical URL), rest are deletes (orphan pattern).
+  assert.strictEqual(plan[0].action, 'keep');
+  assert.strictEqual(plan[total - 1].action, 'delete');
+});
