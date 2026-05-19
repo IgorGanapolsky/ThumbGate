@@ -19,6 +19,32 @@ function destructiveTool(tool) {
   };
 }
 
+const GOAL_CONTRACT_SCHEMA = {
+  type: 'object',
+  description: 'Optional agent handoff contract. Use this when a worker/orchestrator/reviewer loop needs explicit done criteria before a done/fixed/shipped claim is allowed.',
+  properties: {
+    goal: { type: 'string', description: 'The operator-visible goal this claim is trying to close.' },
+    doneWhen: {
+      type: 'array',
+      items: { type: 'string' },
+      description: 'Human-readable acceptance criteria for the task.',
+    },
+    proveBy: {
+      type: 'array',
+      items: { type: 'string' },
+      description: 'Tracked action ids required before the claim can pass, such as tests_passed, review_completed, ci_green, deploy_verified, or operator_approved.',
+    },
+    mustNotChange: {
+      type: 'array',
+      items: { type: 'string' },
+      description: 'Protected areas or constraints the agents must preserve while completing the goal.',
+    },
+    workerAgent: { type: 'string', description: 'Agent responsible for implementation.' },
+    reviewerAgent: { type: 'string', description: 'Agent responsible for independent verification.' },
+    orchestratorAgent: { type: 'string', description: 'Agent responsible for routing and deciding whether done can be claimed.' },
+  },
+};
+
 const TOOLS = [
   readOnlyTool({
     name: 'capture_feedback',
@@ -843,6 +869,7 @@ const TOOLS = [
       required: ['claim'],
       properties: {
         claim: { type: 'string', description: 'The claim text to verify' },
+        goalContract: GOAL_CONTRACT_SCHEMA,
       },
     },
   }),
@@ -1291,6 +1318,7 @@ const TOOLS = [
         claim: { type: 'string', description: 'The completion claim text to verify (e.g. "Fix shipped", "Tests passing")' },
         mode: { type: 'string', enum: ['blocking', 'advisory'], description: 'blocking (default) returns blocking=true when evidence missing; advisory returns blocking=false' },
         sessionId: { type: 'string', description: 'Optional session id to associate with the gate decision' },
+        goalContract: GOAL_CONTRACT_SCHEMA,
       },
     },
   }),
