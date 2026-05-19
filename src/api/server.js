@@ -4333,6 +4333,29 @@ async function addContext(){
       return;
     }
 
+    // Natural marketing URLs for the Workflow Hardening Sprint. Outbound
+    // messages, social posts, and word-of-mouth all refer to "the sprint"
+    // or "workflow hardening" — recipients who type or paste the natural
+    // URLs currently hit the generic API 401 JSON error and bounce.
+    // Redirect them to the canonical intake anchor instead.
+    if (isGetLikeRequest && (
+      pathname === '/sprint'
+      || pathname === '/sprint.html'
+      || pathname === '/workflow-hardening'
+      || pathname === '/workflow-hardening.html'
+      || pathname === '/workflow-hardening-sprint'
+      || pathname === '/workflow-hardening-sprint.html'
+      || pathname === '/workflow-sprint'
+      || pathname === '/workflow-sprint.html'
+    )) {
+      res.writeHead(302, {
+        Location: '/#workflow-sprint-intake',
+        'Cache-Control': 'no-store',
+      });
+      res.end();
+      return;
+    }
+
     if (isGetLikeRequest && (pathname === '/numbers' || pathname === '/numbers.html')) {
       // Route through servePublicMarketingPage so landing_page_view telemetry
       // + funnel-events.jsonl `discovery/landing_view` get captured with UTM
