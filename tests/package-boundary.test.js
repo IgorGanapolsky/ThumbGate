@@ -235,16 +235,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   //     readiness checks for the agent-native memory scope work)
   // All three ship in the public bundle because the packaged runtime loads
   // them on every server boot; omitting them crashes published `thumbgate serve`.
-  // Bumped 254 → 256 (2026-05-19). Two additive files, both required by
-  // the post-deploy verification workflow:
-  //   • scripts/verify-marketing-pages-deployed.js (the probe)
-  //   • config/post-deploy-marketing-pages.json    (sentinel manifest;
-  //     captured by the existing "config/" directory entry in files[])
-  // Shipping in the public bundle means external operators self-hosting
-  // ThumbGate get the same regression guard against their deployment.
+  // Bumped 254 → 257 (2026-05-19). Three additive files landing concurrently:
+  //   • scripts/verify-marketing-pages-deployed.js (post-deploy probe)
+  //   • config/post-deploy-marketing-pages.json    (sentinel manifest)
+  //   • public/agent-manager.html                  (ICP landing page after
+  //                                                  Anthropic named the role)
   assert.ok(
-    manifest.fileCount <= 256,
-    `npm package should stay <= 256 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 257,
+    `npm package should stay <= 257 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
