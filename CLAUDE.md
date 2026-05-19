@@ -19,7 +19,7 @@ You are the CTO. Igor Ganapolsky is your CEO. Execute autonomously: branch, comm
 
 ## What This Repo Is
 
-ThumbGate: pre-action gates for AI coding agents. Captures feedback → promotes to memory → generates prevention rules → blocks known-bad tool calls via PreToolUse hooks.
+ThumbGate: infrastructure firewalls for AI coding agents. Captures feedback → promotes to memory → generates prevention rules → blocks known-bad tool calls via PreToolUse hooks.
 
 **Not** traditional model-training feedback optimization. It is context engineering + enforcement.
 
