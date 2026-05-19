@@ -1459,7 +1459,14 @@ test('journey cookies are marked secure on forwarded HTTPS requests', async () =
 });
 
 test('success page serves hosted onboarding shell and records first-party telemetry', async () => {
-  const res = await fetch(apiUrl('/success?session_id=test_checkout_success&trace_id=trace_success_page&acquisition_id=acq_success_page&visitor_id=visitor_success_page&visitor_session_id=session_success_page&install_id=inst_success_page&utm_source=reddit&utm_medium=organic_social&utm_campaign=success_launch&community=ClaudeCode&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2Fpricing&referrer_host=www.reddit.com'));
+  // session_id uses the Stripe `cs_test_` prefix so the post-2026-05-19
+  // /success noise gate counts this as a verified conversion. A
+  // synthetic placeholder like `test_checkout_success` would emit
+  // `checkout_success_page_view_unverified` and not satisfy the
+  // canonical-event assertion below. The cs_test_ prefix is exactly
+  // what Stripe appends on its post-payment redirect in test mode, so
+  // this fixture is also closer to production behavior.
+  const res = await fetch(apiUrl('/success?session_id=cs_test_checkout_success&trace_id=trace_success_page&acquisition_id=acq_success_page&visitor_id=visitor_success_page&visitor_session_id=session_success_page&install_id=inst_success_page&utm_source=reddit&utm_medium=organic_social&utm_campaign=success_launch&community=ClaudeCode&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&landing_path=%2Fpricing&referrer_host=www.reddit.com'));
   assert.equal(res.status, 200);
   assert.match(String(res.headers.get('content-type')), /text\/html/);
 

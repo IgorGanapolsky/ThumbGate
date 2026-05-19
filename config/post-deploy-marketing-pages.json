@@ -1,0 +1,46 @@
+{
+  "$comment": "Sentinel manifest for post-deploy verification of top-level marketing pages. Each entry is curled against the live production URL after every push to main; if the sentinel string is missing from the response body, the deploy is flagged as broken and the workflow comments on the associated PR. Adding a new top-level marketing page? Add it here so the deploy-verify workflow catches a route regression before a real visitor does. Keep sentinel strings short and stable (visible body copy, not styling classes or hashed assets).",
+  "version": 1,
+  "pages": [
+    {
+      "route": "/",
+      "sentinel": "Stop paying for the same AI mistake twice",
+      "description": "Home page hero (lifeblood — never regress)"
+    },
+    {
+      "route": "/pro",
+      "sentinel": "ThumbGate Pro",
+      "description": "Pro landing page"
+    },
+    {
+      "route": "/dashboard",
+      "sentinel": "ThumbGate Dashboard",
+      "description": "Dashboard demo (already enforced by /dashboard step; included here for symmetry with PR comment surface)"
+    },
+    {
+      "route": "/federal",
+      "sentinel": "ThumbGate",
+      "description": "Federal lead-gen page (SBIR / GSA arrivals)"
+    },
+    {
+      "route": "/numbers",
+      "sentinel": "ThumbGate",
+      "description": "First-party numbers / data transparency page"
+    },
+    {
+      "route": "/llm-context.md",
+      "sentinel": "## What ThumbGate Is",
+      "description": "Canonical declarative summary AI crawlers read"
+    },
+    {
+      "route": "/robots.txt",
+      "sentinel": "User-agent",
+      "description": "Crawl directives (mandatory per Google's 2026-05-15 AI features guide)"
+    },
+    {
+      "route": "/sitemap.xml",
+      "sentinel": "<urlset",
+      "description": "XML sitemap for search-engine discoverability"
+    }
+  ]
+}

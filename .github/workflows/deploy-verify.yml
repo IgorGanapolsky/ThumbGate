@@ -82,6 +82,34 @@ jobs:
             exit 1
           fi
 
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
+      - name: Verify top-level marketing pages still match sentinels
+        id: marketing
+        run: |
+          # Reads config/post-deploy-marketing-pages.json and curls each
+          # entry against PROD_URL, asserting the configured sentinel
+          # string is present in the response body. Adding a new
+          # top-level marketing page? Append to the JSON manifest, not
+          # this workflow file.
+          set +e
+          report="$(node scripts/verify-marketing-pages-deployed.js --json --prod-url="${PROD_URL}")"
+          exit_code=$?
+          set -e
+          printf '%s\n' "$report"
+          {
+            printf 'exit_code=%d\n' "$exit_code"
+            verdict="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).verdict)' "$report")"
+            passed="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).passedCount))' "$report")"
+            failed="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).failedCount))' "$report")"
+            total="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).totalRoutes))' "$report")"
+            printf 'verdict=%s\npassed=%s\nfailed=%s\ntotal=%s\n' "$verdict" "$passed" "$failed" "$total"
+          } >> "$GITHUB_OUTPUT"
+          exit $exit_code
+
       - name: Sample-curl /learn/* paths added in this commit
         id: learn
         run: |
@@ -114,6 +142,8 @@ jobs:
         env:
           EXPECTED_VERSION: ${{ steps.pkg.outputs.version }}
           LEARN_CHECKED: ${{ steps.learn.outputs.checked }}
+          MARKETING_PASSED: ${{ steps.marketing.outputs.passed }}
+          MARKETING_TOTAL: ${{ steps.marketing.outputs.total }}
         with:
           script: |
             const sha = context.sha;
@@ -129,11 +159,14 @@ jobs:
             }
             const pr = resp.data[0];
             const checked = parseInt(process.env.LEARN_CHECKED || '0', 10);
+            const marketingPassed = parseInt(process.env.MARKETING_PASSED || '0', 10);
+            const marketingTotal = parseInt(process.env.MARKETING_TOTAL || '0', 10);
             const lines = [
               '### ✅ Production deploy verified',
               '',
               `- \`${prodUrl}/health\` reports version **${process.env.EXPECTED_VERSION}**`,
               `- \`${prodUrl}/dashboard\` renders`,
+              `- **${marketingPassed}/${marketingTotal}** top-level marketing pages match their sentinel manifest (\`config/post-deploy-marketing-pages.json\`)`,
               `- ${checked} \`public/learn|guides|compare/*.html\` route(s) added in this diff returned HTTP 200`,
               '',
               `<sub>Auto-posted by \`.github/workflows/deploy-verify.yml\` after \`${sha.slice(0, 7)}\` merged to main.</sub>`,
@@ -153,6 +186,8 @@ jobs:
           HEALTH_OK: ${{ steps.health.outputs.ok || 'false' }}
           DASHBOARD_OK: ${{ steps.dashboard.outputs.ok || 'false' }}
           LEARN_FAILED: ${{ steps.learn.outputs.failed || '0' }}
+          MARKETING_VERDICT: ${{ steps.marketing.outputs.verdict || 'unknown' }}
+          MARKETING_FAILED: ${{ steps.marketing.outputs.failed || '0' }}
         with:
           script: |
             const sha = context.sha;
@@ -170,6 +205,10 @@ jobs:
             }
             if (process.env.DASHBOARD_OK !== 'true') {
               lines.push(`- \`${prodUrl}/dashboard\` did not render (missing sentinel)`);
+            }
+            const marketingFailed = parseInt(process.env.MARKETING_FAILED || '0', 10);
+            if (marketingFailed > 0 || process.env.MARKETING_VERDICT === 'fail') {
+              lines.push(`- **${marketingFailed}** top-level marketing page(s) failed sentinel check — see workflow log for which route(s) and the missing sentinel`);
             }
             const learnFailed = parseInt(process.env.LEARN_FAILED || '0', 10);
             if (learnFailed > 0) {

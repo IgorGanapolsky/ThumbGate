@@ -444,6 +444,57 @@ function buildCheckoutProductData({ name, description, appOrigin, planId }) {
   };
 }
 
+/**
+ * Verify an ACTIVE Stripe product exists for the given plan name before
+ * we let buildSubscriptionPriceData create inline price_data under it.
+ *
+ * Stripe matches product_data by `name`. If only an archived product
+ * matches, new prices created via that path inherit active=false and the
+ * generated checkout URL renders "Something went wrong / The page you
+ * were looking for could not be found." for the buyer. Stripe Dashboard
+ * shows the session as `open` with no email captured — looks like the
+ * buyer abandoned, but they were never given a working page.
+ *
+ * Failing here surfaces the misconfiguration at the first checkout
+ * attempt instead of silently breaking every buyer for days.
+ *
+ * Verified incident: ThumbGate#2188 (May 2026) — 20 sessions abandoned in
+ * 7 days, all because the only product named "ThumbGate Pro" matching the
+ * inline product_data was archived (prod_UXxOHAfbDsPyRb), while an active
+ * product with the same name existed (prod_UW82THPxfNvwKT) that should
+ * have been used instead.
+ */
+async function verifyActiveProductForPlan(stripe, planId) {
+  const expectedName = planId === 'team' ? 'ThumbGate Team' : 'ThumbGate Pro';
+  let products;
+  try {
+    products = await stripe.products.list({ limit: 100 });
+  } catch (err) {
+    // Network/transient failures shouldn't block checkout creation.
+    // The original session.create call will surface real Stripe errors.
+    return;
+  }
+  const matching = (products && products.data ? products.data : [])
+    .filter((p) => p && p.name === expectedName);
+  if (matching.length === 0) {
+    // No product with this name exists; Stripe will create a new one when
+    // session.create fires with inline product_data. Safe path.
+    return;
+  }
+  const active = matching.find((p) => p.active === true);
+  if (!active) {
+    const archived = matching[0];
+    throw new Error(
+      `Refusing to create checkout session: Stripe product named "${expectedName}" ` +
+      `exists only in archived state (id=${archived.id}, active=false). New prices ` +
+      `created via inline product_data would inherit active=false, rendering ` +
+      `"page not found" on Stripe checkout for every buyer. Fix: reactivate the ` +
+      `archived product in Stripe Dashboard, or rename the active product to ` +
+      `match "${expectedName}". See ThumbGate#2188 for the May 2026 incident.`
+    );
+  }
+}
+
 function buildSubscriptionPriceData(checkoutSelection, appOrigin) {
   const isTeam = checkoutSelection.planId === 'team';
   const annual = checkoutSelection.billingCycle === 'annual';
@@ -2525,6 +2576,18 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
   }
 
   const stripe = getStripeClient();
+
+  // Defensive guard against ThumbGate#2188:
+  // When buildSubscriptionPriceData passes inline `product_data` to Stripe,
+  // Stripe name-matches existing products. If the only existing product with
+  // that name is ARCHIVED (active=false), the new price inherits active=false
+  // and every Stripe checkout page renders "page not found" for the buyer.
+  // That bug burnt 20+ silent abandoned sessions in May 2026. Fail fast
+  // instead of letting the broken page ship.
+  if (!packId) {
+    await verifyActiveProductForPlan(stripe, checkoutSelection.planId);
+  }
+
   const sessionPayload = buildCheckoutSessionPayload({
     successUrl,
     cancelUrl,
@@ -3127,6 +3190,7 @@ module.exports = {
   _buildTrialActivationEmail: buildTrialActivationEmail,
   _sendTrialActivationEmail: sendTrialActivationEmail,
   _resolveSubscriptionCheckoutSelection: resolveSubscriptionCheckoutSelection,
+  _verifyActiveProductForPlan: verifyActiveProductForPlan,
   _API_KEYS_PATH: () => CONFIG.API_KEYS_PATH,
   _FUNNEL_LEDGER_PATH: () => CONFIG.FUNNEL_LEDGER_PATH,
   _REVENUE_LEDGER_PATH: () => CONFIG.REVENUE_LEDGER_PATH,
