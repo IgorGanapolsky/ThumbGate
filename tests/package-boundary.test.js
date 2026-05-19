@@ -243,8 +243,8 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Shipping in the public bundle means external operators self-hosting
   // ThumbGate get the same regression guard against their deployment.
   assert.ok(
-    manifest.fileCount <= 256,
-    `npm package should stay <= 256 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 257,
+    `npm package should stay <= 257 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

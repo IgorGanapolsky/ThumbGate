@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThumbGate Evals — Pre-Action Check Benchmarks, RLAIF Rewards, and Adapter Proofs</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="ThumbGate ships measurable evals for every layer of its enforcement stack: deterministic pre-action benchmark, prompt-quality scoring, RLAIF judge reward, Bayesian conversion-rate analysis, ProgramBench cleanroom proofs, adapter compatibility lanes, and 5,361 unit/integration test cases gating every release.">
+<meta property="og:title" content="ThumbGate Evals">
+<meta property="og:description" content="Every layer of ThumbGate's enforcement stack is measured: bench scenarios, RLAIF judge reward, Bayesian conversion analysis, ProgramBench smoke lane, and 5,361 unit/integration tests gating every release.">
+<meta property="og:type" content="article">
+<meta property="og:image" content="https://thumbgate-production.up.railway.app/og.png">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/evals">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "ThumbGate Evals",
+  "description": "Every layer of ThumbGate's enforcement stack ships with a measurable eval: deterministic pre-action benchmark, prompt-quality scoring, RLAIF judge reward, Bayesian conversion-rate analysis, ProgramBench cleanroom proofs, adapter compatibility lanes, and 5,361 unit/integration test cases gating every release.",
+  "datePublished": "2026-05-19",
+  "dateModified": "2026-05-19",
+  "author": { "@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky" },
+  "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate-production.up.railway.app" },
+  "about": [
+    { "@type": "Thing", "name": "Pre-Action Check evaluation" },
+    { "@type": "Thing", "name": "AI agent governance benchmark" },
+    { "@type": "Thing", "name": "RLAIF judge reward" },
+    { "@type": "Thing", "name": "Bayesian conversion-rate analysis" }
+  ]
+}
+</script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root { --bg:#0a0a0b; --card:#161618; --border:#222225; --text:#e8e8ec; --muted:#8b8b94; --cyan:#22d3ee; --green:#22c55e; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+  .container { max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  nav { padding: 1rem 2rem; border-bottom: 1px solid var(--border); display:flex; gap:1.5rem; flex-wrap:wrap; }
+  nav a { color: var(--muted); text-decoration:none; font-size:0.9rem; }
+  nav .brand { color: var(--text); font-weight:700; }
+  .pill { display:inline-block; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--cyan); background:rgba(34,211,238,0.08); border:1px solid rgba(34,211,238,0.2); padding:4px 12px; border-radius:100px; margin-top:1.5rem; font-weight:600; }
+  h1 { font-size:2.2rem; line-height:1.15; margin:1rem 0 1rem; }
+  h2 { font-size:1.45rem; margin:2.4rem 0 1rem; color:var(--cyan); }
+  h3 { margin:0.4rem 0 0.4rem; font-size:1.05rem; color:var(--text); }
+  p, li { margin-bottom:0.75rem; }
+  ul, ol { padding-left:1.25rem; }
+  code { background:#1f2024; padding:1px 6px; border-radius:4px; font-size:0.9em; color:var(--cyan); }
+  .card { background: var(--card); border:1px solid var(--border); border-radius:12px; padding:1.25rem 1.4rem; margin:1rem 0; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1rem; margin:1rem 0; }
+  .cta { display:inline-block; background:var(--cyan); color:#000; padding:0.8rem 1.2rem; border-radius:8px; text-decoration:none; font-weight:700; }
+  .secondary { color:var(--cyan); text-decoration:underline; margin-left:1rem; }
+  .table-clean { width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.93rem; }
+  .table-clean th, .table-clean td { border-bottom:1px solid var(--border); padding:0.55rem 0.5rem; text-align:left; vertical-align:top; }
+  .table-clean th { color:var(--cyan); font-weight:600; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.05em; }
+  .table-clean td.num { text-align:right; font-variant-numeric:tabular-nums; font-family: ui-monospace, monospace; }
+  .verdict-ok { color:var(--green); font-weight:600; }
+  .quote { border-left:3px solid var(--cyan); padding:0.6rem 1rem; margin:1rem 0; color:var(--muted); font-style:italic; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="brand">ThumbGate</a>
+  <a href="/guide">Guide</a>
+  <a href="/dashboard">Dashboard demo</a>
+  <a href="/agent-manager">Agent Manager</a>
+  <a href="/#workflow-sprint-intake">Workflow Hardening Sprint</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+<div class="container">
+  <span class="pill">First-of-its-kind evals for pre-action enforcement</span>
+  <h1>Every layer of the ThumbGate enforcement stack ships with a measurable eval.</h1>
+  <p>If the gate doesn't have an eval, it's a guess. Each lane below is a real artifact in this repository — you can read the JSON, run the script, and reproduce the number. Nothing here is marketing math.</p>
+
+  <h2>1. Deterministic pre-action benchmark — <code>bench/thumbgate-bench.json</code></h2>
+  <p>Ten ground-truth scenarios across seven services (github, sqlite, filesystem, npm, railway, shell, git). Each scenario specifies a tool call and an expected decision; ThumbGate's evaluator must reproduce the decision byte-for-byte. The bench is intentionally small and deterministic so a regression is unambiguous.</p>
+  <table class="table-clean">
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Scenarios</td><td class="num">10</td></tr>
+      <tr><td>Services covered</td><td class="num">7</td></tr>
+      <tr><td>Expected <code>deny</code> outcomes</td><td class="num">7</td></tr>
+      <tr><td>Expected <code>allow</code> outcomes</td><td class="num">3</td></tr>
+      <tr><td>Run command</td><td><code>npm run thumbgate:bench</code></td></tr>
+      <tr><td>Failure policy</td><td>Any wrong decision fails CI. No partial credit.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>2. ProgramBench-style cleanroom smoke lane — <code>bench/programbench-smoke.json</code></h2>
+  <p>Three whole-repo clone tasks adapted from the ProgramBench methodology. Each task spins up an isolated working tree, runs ThumbGate against a real edit sequence, and verifies the gates fire without leaking state between cleanroom runs. Not an official ProgramBench score — a smoke lane that proves the gate works against real repo-scale workflows.</p>
+  <ul>
+    <li>3 cleanroom tasks</li>
+    <li>Run command: <code>npm run thumbgate:bench:programbench</code></li>
+    <li>Documented at <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/THUMBGATE_BENCH.md" target="_blank" rel="noopener">docs/THUMBGATE_BENCH.md</a></li>
+  </ul>
+
+  <h2>3. Prompt evaluation suite — <code>bench/prompt-eval-suite.json</code></h2>
+  <p>Six prompt evaluations against expected outputs, gated by an explicit success-criteria block. Methodology mirrors Anthropic's published prompt evaluation guidance: test against expected answers, compare versions, review outputs for errors.</p>
+  <table class="table-clean">
+    <thead><tr><th>Criterion</th><th>Threshold</th></tr></thead>
+    <tbody>
+      <tr><td>Minimum aggregate score</td><td class="num">80 / 100</td></tr>
+      <tr><td>Allow regressions vs prior run</td><td>No</td></tr>
+      <tr><td>Run command</td><td><code>npm run test:prompt-eval</code></td></tr>
+    </tbody>
+  </table>
+
+  <h2>4. RLAIF judge reward — <code>scripts/judge-reward-function.js</code></h2>
+  <p>The reward signal used to align ThumbGate's lesson-promotion behavior. The judge scores agent outputs along separately-tracked dimensions (safety, helpfulness, calibration, evidence) and produces a single scalar reward per step. The reward function is auditable — every block decision in production carries the rule that fired, the evidence that triggered it, and (when applicable) the judge score.</p>
+  <p>Per-step scoring is durable: every check decision (block / approve / log) becomes a DPO or KTO training signal exportable via <code>npm run feedback:export:dpo</code> for fine-tuning your local model on what your team actually wants.</p>
+
+  <h2>5. Bayesian conversion-rate analysis — <code>scripts/conversion-rate-stats.js</code></h2>
+  <p>Beta-binomial posterior with credible intervals for every funnel surface — useful when comparing two CTAs, two checkout copy variants, or two prevention-rule promotion thresholds. The Bayesian A/B harness (<code>scripts/ab-experiment-framework.js</code>) layers on top: deterministic SHA-256 variant assignment, MC-sampled posterior decision rule, practical-significance threshold (default 5% relative), and loss-bound stopping criterion. Verdicts: <code>ship_a</code> | <code>ship_b</code> | <code>inconclusive_stop</code> | <code>continue</code>.</p>
+  <ul>
+    <li>24 unit tests in <code>tests/conversion-rate-stats.test.js</code> — pin the posterior parameter math, credible-interval bounds, and U-shaped Beta mode handling.</li>
+    <li>11 unit tests in <code>tests/ab-experiment-framework.test.js</code> — variant assignment determinism, weight calibration, decision correctness under clear-winner / tied-at-scale / low-sample regimes.</li>
+  </ul>
+
+  <h2>6. Adapter compatibility proof lanes — <code>scripts/prove-adapters.js</code></h2>
+  <p>Each supported agent runtime (Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode) has a dedicated proof lane. The lane installs ThumbGate against the runtime's current hook/plugin API, fires a known-bad tool call, and verifies the block. When a runtime ships a breaking change, the lane goes red and we know within a CI cycle — not after a customer reports it.</p>
+  <ul>
+    <li>4 adapter proofs + automation proof suite (<code>scripts/prove-automation.js</code>)</li>
+    <li>Run commands: <code>npm run prove:adapters</code> · <code>npm run prove:automation</code></li>
+  </ul>
+
+  <h2>7. Whole-suite gating — <code>npm test</code></h2>
+  <p>Every release pushes through the full test chain before it ships to npm or Railway. The chain is brittle on purpose: a single failing assertion blocks the deploy. This is the floor — bench, prompt eval, conversion-rate math, and adapter proofs all sit on top.</p>
+  <table class="table-clean">
+    <thead><tr><th>Surface</th><th>Count</th></tr></thead>
+    <tbody>
+      <tr><td>Test files in <code>tests/</code></td><td class="num">442</td></tr>
+      <tr><td>Individual <code>it()</code> / <code>test()</code> declarations</td><td class="num">5,361</td></tr>
+      <tr><td>Public-bundle file count ceiling</td><td class="num">256 (ratcheted)</td></tr>
+      <tr><td>Adapter runtimes proven</td><td>Claude · Cursor · Codex · Gemini · Amp · Cline · OpenCode</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Why the evals matter for the buyer, not the engineer</h2>
+  <p>An AI agent governance product without evals is a credibility problem. The Agent Manager owning CLAUDE.md, the plugin marketplace, permissions policy, and which skills ship cannot rely on a vendor that promises enforcement without proving it. The evals above are how the buyer verifies, before purchase, that the enforcement layer they're about to put underneath their agent runtime is real.</p>
+  <div class="quote">"First-of-its-kind benchmark for AI memory systems that reason about user track records" is the bar for advice-quality calibration. ThumbGate's bar is the same idea applied at the tool-call boundary: every gate decision is gradeable, every block is reproducible, every adapter is proven against the current runtime.</div>
+
+  <div class="card">
+    <p><strong>Run the evals yourself.</strong> The bench files live in <code>bench/</code>; the proof scripts live in <code>scripts/prove-*</code>; the test suite is wired into <code>npm test</code>. Nothing here requires a hosted account.</p>
+    <p>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/THUMBGATE_BENCH.md" target="_blank" rel="noopener" class="cta">Read THUMBGATE_BENCH.md</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener" class="secondary">Verification evidence →</a>
+      <a href="/agent-manager" class="secondary">Agent Manager positioning →</a>
+    </p>
+  </div>
+
+  <h2>Related</h2>
+  <ul>
+    <li><a href="/agent-manager">ThumbGate for the Agent Manager</a> — who actually consumes these evals.</li>
+    <li><a href="/numbers">/numbers</a> — live unified revenue + funnel rollup.</li>
+    <li><a href="/compare">Comparisons</a> — how ThumbGate's enforcement stack differs from spec-based, prompt-based, and orchestration-based alternatives.</li>
+  </ul>
+</div>
+</body>
+</html>

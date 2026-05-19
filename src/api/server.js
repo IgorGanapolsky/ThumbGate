@@ -2502,6 +2502,7 @@ function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
     { path: '/pro', changefreq: 'weekly', priority: '0.9' },
+    { path: '/evals', changefreq: 'weekly', priority: '0.85' },
     { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
     { path: '/codex-plugin', changefreq: 'weekly', priority: '0.75' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
@@ -4394,6 +4395,29 @@ async function addContext(){
         });
       } catch {
         sendJson(res, 404, { error: 'Federal page not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/evals' || pathname === '/evals.html')) {
+      // ICP page surfacing ThumbGate's actual eval rigor (bench, prompt
+      // eval suite, RLAIF judge reward, Bayesian conversion math,
+      // adapter proof lanes, whole-suite gating). Routed through
+      // servePublicMarketingPage so arrivals capture UTM attribution
+      // and landing_page_view telemetry under pageType 'evals'.
+      // Modeled on the existing /federal handler.
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(path.join(PUBLIC_DIR, 'evals.html'), 'utf-8'),
+          extraTelemetry: { pageType: 'evals' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Evals page not found' });
       }
       return;
     }
