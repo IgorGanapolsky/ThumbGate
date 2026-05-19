@@ -168,10 +168,18 @@ Adopted 2026-05-12 after a full PR/branch sweep. Persisted here so every future 
 - Failures must be surfaced as they happen, not buried under retries.
 - Mistakes get logged to the local lesson DB via `.claude/scripts/feedback/capture-feedback.js`.
 
+### Continuous Learning
+- Record every trade and lesson in RAG.
+- Log mistakes in both RAG and ML pipeline.
+- Query RAG at session start; update RAG at session end.
+- Self-assess: Is RAG helping or hindering? Is our ML pipeline useful? Report status.
+
 ### Post-Task Checklist
 - [ ] All open PRs reviewed; mergeable ones submitted to Trunk queue.
 - [ ] Stale orphan branches deleted (remote + local).
 - [ ] Detached/prunable worktrees removed.
 - [ ] CI green on `main` (verified via `gh run list --branch main`).
-- [ ] Lessons logged to lesson DB.
+- [ ] Lessons logged to lesson DB / RAG.
+- [ ] Mistakes logged to RAG.
+- [ ] RAG self-assessment reported.
 - [ ] Secrets rotated if any leaked in-session.
