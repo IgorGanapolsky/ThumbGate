@@ -19,10 +19,10 @@ Turn existing marketplace visibility into tracked Pro conversions and qualified 
 - Primary CTA: https://thumbgate.ai/go/install?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_free_listing&utm_content=dashboard&campaign_variant=free&offer_code=AIVENTYX-FREE&cta_id=aiventyx_free_listing&cta_placement=marketplace_listing&landing_path=%2F
 - Conversion goal: install_or_free_usage
 - Buyer: Solo builders evaluating local AI coding reliability.
-- Headline: Turn AI-agent feedback into reusable pre-action gates.
+- Headline: Turn AI-agent feedback into reusable infrastructure firewalls.
 - Attribution: utm_source=aiventyx, utm_medium=marketplace, utm_campaign=aiventyx_free_listing, offer_code=AIVENTYX-FREE
 
-ThumbGate captures thumbs up/down style corrections from AI coding sessions, turns them into searchable lessons, and regenerates pre-action gates so agents check known failure patterns before they act. Use the free package when you want local feedback capture, memory search, and CLI-first reliability checks for a single operator.
+ThumbGate captures thumbs up/down style corrections from AI coding sessions, turns them into searchable lessons, and regenerates infrastructure firewalls so agents check known failure patterns before they act. Use the free package when you want local feedback capture, memory search, and CLI-first reliability checks for a single operator.
 
 Proof: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md | https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 

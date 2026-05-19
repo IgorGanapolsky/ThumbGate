@@ -179,6 +179,66 @@
         .about strong { color: var(--text); font-weight: 600; }
         .about a { color: var(--accent); text-decoration: none; border-bottom: 1px solid #c8d8ff; }
         .about a:hover { border-bottom-color: var(--accent); }
+        #audit-form {
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius);
+            padding: 22px 22px 20px;
+            background: var(--bg-soft);
+            display: flex; flex-direction: column; gap: 12px;
+        }
+        #audit-form label {
+            display: flex; flex-direction: column; gap: 6px;
+            font-size: 14px; font-weight: 600; color: var(--text);
+        }
+        #audit-form input[type=text],
+        #audit-form input[type=email],
+        #audit-form input[type=url],
+        #audit-form textarea {
+            font-family: inherit; font-size: 15px;
+            padding: 10px 12px;
+            border: 1px solid var(--border-strong);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            font-weight: 400;
+        }
+        #audit-form input:focus,
+        #audit-form textarea:focus {
+            outline: 2px solid var(--accent);
+            outline-offset: 1px;
+            border-color: var(--accent);
+        }
+        #audit-form button[type=submit] {
+            display: inline-block; padding: 14px 22px;
+            background: var(--accent);
+            color: #ffffff; font-weight: 700; font-size: 16px;
+            border-radius: 8px;
+            border: 1px solid var(--accent);
+            cursor: pointer;
+            transition: background 0.15s ease;
+            margin-top: 4px;
+        }
+        #audit-form button[type=submit]:hover { background: var(--accent-press); border-color: var(--accent-press); }
+        .retainer-cta {
+            margin-top: 28px;
+            padding: 20px 22px;
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+            border-radius: var(--radius);
+            background: var(--bg);
+        }
+        .retainer-cta h3 {
+            margin: 0 0 8px; font-size: 17px; font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+        .retainer-cta p {
+            margin: 0; color: var(--text-dim); font-size: 15px;
+        }
+        .retainer-cta a {
+            color: var(--accent); text-decoration: none;
+            border-bottom: 1px solid #c8d8ff; font-weight: 600;
+        }
+        .retainer-cta a:hover { border-bottom-color: var(--accent); }
         .footer-cta {
             margin-top: 56px;
             padding: 28px 24px;
@@ -216,6 +276,10 @@
             ol.checks .score { grid-column: 2; text-align: left; padding-top: 4px; }
         }
     </style>
+    <script>
+      !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_session_recording opt_out_session_recording has_opted_in_session_recording has_opted_out_session_recording clear_opt_in_out_session_recording get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording getSessionReplayUrl loadToolbar".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+      posthog.init('__POSTHOG_API_KEY__', {api_host:'/ingest', ui_host:'https://us.posthog.com', person_profiles:'identified_only', capture_pageview:true, capture_pageleave:true, autocapture:true})
+    </script>
 </head>
 <body>
     <main class="wrap">
@@ -233,7 +297,7 @@
         </p>
 
         <div class="cta-row">
-            <a class="primary" href="mailto:iganapolsky@gmail.com?subject=Free%20broker%20audit&body=Hi%20Igor%2C%0A%0APlease%20send%20me%20the%20free%20audit.%20My%20brokerage%20%2F%20page%20URL%3A%20%0A%0A">Email Igor for the free audit</a>
+            <a class="primary" href="#audit-form">Request the free audit</a>
             <a class="primary" style="background: var(--bg-soft); color: var(--text); border-color: var(--border-strong);" href="https://buy.stripe.com/9B600jaiE7Dg6tPayn3sI2L?client_reference_id=site_zillow-leak-finder">Skip the queue: $49 fast-lane (24h SLA)</a>
         </div>
         <p class="fineprint">
@@ -378,6 +442,32 @@
             </div>
         </section>
 
+        <!-- Get the free audit (primary conversion) -->
+        <section aria-label="Get the free audit">
+            <h2><span class="kicker">Request the audit</span>Get the free audit</h2>
+            <p class="fineprint" style="margin-bottom: 16px;">
+                1-page PDF showing exactly where leads are leaking. Free path: 24&ndash;72h.
+                $49 fast-lane: 24h guaranteed, refund if it doesn&rsquo;t surface 2+ specific leaks.
+            </p>
+            <form id="audit-form" action="/v1/intake/broker-audit" method="POST" onsubmit="if(window.posthog)posthog.capture('audit_form_submit',{plan:'free'});">
+                <label>Your name <input type="text" name="name" required></label>
+                <label>Brokerage <input type="text" name="brokerage" required></label>
+                <label>Your website <input type="url" name="website" required placeholder="https://..."></label>
+                <label>Best email <input type="email" name="email" required></label>
+                <label>What&rsquo;s the #1 lead leak you suspect?
+                    <textarea name="suspected_leak" rows="3"></textarea>
+                </label>
+                <input type="hidden" name="source" value="broker-audit-landing">
+                <button type="submit">Request free audit (24-48h turnaround)</button>
+                <p style="font-size:0.85em;color:var(--text-mute);margin-top:8px;">Or skip the queue &rarr; <a href="https://buy.stripe.com/9B600jaiE7Dg6tPayn3sI2L?client_reference_id=site_broker-audit-form-bypass">$49 fast-lane (24h SLA)</a></p>
+            </form>
+
+            <section class="retainer-cta">
+                <h3>After the audit: $497/mo Speed-to-Lead Retainer</h3>
+                <p>If the audit surfaces 2+ leaks worth fixing, the next step is a monthly engagement: I patch the leaks, instrument your funnel, and report weekly. <a href="https://buy.stripe.com/6oU28r9eA1eS8BX21R3sI2M?client_reference_id=site_broker-audit-retainer" onclick="if(window.posthog)posthog.capture('retainer_click');">See plan &amp; subscribe &rarr;</a></p>
+            </section>
+        </section>
+
         <!-- About Igor -->
         <section aria-label="About">
             <h2><span class="kicker">About</span>Who&rsquo;s running the audit</h2>
@@ -390,14 +480,9 @@
             </p>
         </section>
 
-        <!-- Footer CTA -->
+        <!-- Footer CTA (fallback only) -->
         <div class="footer-cta">
-            <h2>Get the free audit</h2>
-            <p>1-page PDF showing exactly where leads are leaking. Free path: 24&ndash;72h. $49 fast-lane: 24h guaranteed, refund if it doesn&rsquo;t surface 2+ specific leaks.</p>
-            <div class="cta-row" style="justify-content: center;">
-                <a class="primary" href="mailto:iganapolsky@gmail.com?subject=Free%20broker%20audit&body=Hi%20Igor%2C%0A%0APlease%20send%20me%20the%20free%20audit.%20My%20brokerage%20%2F%20page%20URL%3A%20%0A%0A">Email Igor for the free audit</a>
-                <a class="primary" style="background: var(--bg-soft); color: var(--text); border-color: var(--border-strong);" href="https://buy.stripe.com/9B600jaiE7Dg6tPayn3sI2L?client_reference_id=site_zillow-leak-finder">Skip the queue: $49 fast-lane</a>
-            </div>
+            <p>Ready? <a href="#audit-form">Jump back to the audit form &uarr;</a> &middot; or, if forms don&rsquo;t work for you, fallback <a href="mailto:iganapolsky@gmail.com?subject=Free%20broker%20audit&body=Hi%20Igor%2C%0A%0APlease%20send%20me%20the%20free%20audit.%20My%20brokerage%20%2F%20page%20URL%3A%20%0A%0A">email Igor directly</a>.</p>
         </div>
 
         <div class="footer-meta">

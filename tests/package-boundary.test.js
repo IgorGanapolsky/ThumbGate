@@ -135,6 +135,7 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   const requiredPublicFiles = [
     'public/lessons.html',
     'public/index.html',
+    'public/pricing.html',
   ];
   const forbiddenPrefixes = [
     'public/js/',
@@ -240,9 +241,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   //   • config/post-deploy-marketing-pages.json    (sentinel manifest)
   //   • public/agent-manager.html                  (ICP landing page after
   //                                                  Anthropic named the role)
+  // Bumped 257 → 258 (2026-05-19) to ship public/pricing.html. The hosted API
+  // serves /pricing from this template, and npm-installed `thumbgate serve`
+  // must not degrade the buyer path to a missing static asset.
   assert.ok(
-    manifest.fileCount <= 257,
-    `npm package should stay <= 257 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 258,
+    `npm package should stay <= 258 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
