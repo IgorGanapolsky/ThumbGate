@@ -2326,6 +2326,7 @@ function help() {
     console.log('  dashboard                                         Open the local ThumbGate dashboard');
     console.log('  doctor                                            Audit runtime isolation + bootstrap context');
     console.log('  pro                                               ThumbGate Pro (dashboard, exports, sync)');
+    console.log('  subscribe <email>                                 Get the 5-min setup guide + weekly tips by email');
     console.log('');
     console.log('More:');
     console.log('  thumbgate help all     Full subcommand surface (~70 commands)');
@@ -2870,6 +2871,86 @@ switch (COMMAND) {
   case 'compact':
     compact();
     break;
+  case 'subscribe': {
+    // Capture an installer's email so we can send the 5-minute setup
+    // guide + weekly tips. Drops to /v1/marketing/install-email on the
+    // hosted endpoint; the server fires sendNewsletterWelcomeEmail via
+    // Resend and persists the address for follow-up.
+    //
+    // Usage:
+    //   npx thumbgate subscribe you@company.com
+    //   npx thumbgate subscribe --email=you@company.com
+    //
+    // Never prompts interactively — postinstall must stay non-interactive
+    // for CI safety. This is the deliberate opt-in path the banner points
+    // at; if the operator runs it, they want the email.
+    const args = process.argv.slice(3);
+    let email = '';
+    for (const arg of args) {
+      if (arg.startsWith('--email=')) email = arg.slice('--email='.length).trim();
+      else if (!arg.startsWith('--')) email = arg.trim();
+    }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      console.error('Usage: npx thumbgate subscribe <email>');
+      console.error('       npx thumbgate subscribe --email=you@company.com');
+      console.error('');
+      console.error('We send a 5-minute setup guide + weekly tips. One-click unsubscribe.');
+      process.exit(1);
+    }
+    const endpoint = process.env.THUMBGATE_INSTALL_EMAIL_ENDPOINT
+      || 'https://thumbgate.ai/v1/marketing/install-email';
+    const payload = JSON.stringify({
+      email,
+      source: 'cli_subscribe',
+      installId: (() => {
+        try {
+          const configPath = path.join(CWD, '.thumbgate', 'config.json');
+          if (!fs.existsSync(configPath)) return null;
+          return (JSON.parse(fs.readFileSync(configPath, 'utf8')).installId) || null;
+        } catch { return null; }
+      })(),
+      cliVersion: pkgVersion(),
+    });
+    const url = new URL(endpoint);
+    const transport = url.protocol === 'https:' ? require('node:https') : require('node:http');
+    const req = transport.request({
+      method: 'POST',
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
+      path: url.pathname + url.search,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+        'User-Agent': `thumbgate-cli/${pkgVersion()}`,
+      },
+      timeout: 8000,
+    }, (res) => {
+      let body = '';
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          console.log(`✓ Subscribed ${email}.`);
+          console.log('  Check your inbox in ~30 seconds for the setup guide.');
+          console.log('  Unsubscribe link is in every email.');
+          process.exit(0);
+        } else {
+          console.error(`✗ Subscribe failed: HTTP ${res.statusCode}${body ? ` — ${body.slice(0, 200)}` : ''}`);
+          process.exit(2);
+        }
+      });
+    });
+    req.on('error', (err) => {
+      console.error(`✗ Subscribe failed: ${err.message}`);
+      console.error('  Network issue? Try again, or email igor.ganapolsky@gmail.com directly.');
+      process.exit(3);
+    });
+    req.on('timeout', () => {
+      req.destroy(new Error('timeout after 8000ms'));
+    });
+    req.write(payload);
+    req.end();
+    break;
+  }
   case 'checkin': {
     // User check-in command — asks how it's going after install
     const thumbgateDir = path.join(CWD, '.thumbgate');

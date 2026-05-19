@@ -5315,6 +5315,141 @@ async function addContext(){
       return;
     }
 
+    if (req.method === 'OPTIONS' && pathname === '/v1/marketing/install-email') {
+      // CORS preflight for the npm postinstall email-capture endpoint.
+      // The endpoint is called from `npx thumbgate subscribe <email>` so
+      // the CLI gets the right CORS headers if it ever hits the proxy
+      // path; in practice CLI hits the server directly so this is mostly
+      // defense-in-depth.
+      sendPublicBillingPreflight(res);
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/marketing/install-email') {
+      // Email-capture wedge for npm installers. The `subscribe` CLI
+      // subcommand POSTs { email, source, installId, cliVersion } here;
+      // we validate the email, persist it to a dedicated capture ledger
+      // (telemetry sanitizer would strip the email as PII), emit a
+      // privacy-clean telemetry ping for funnel attribution, and fire
+      // a Resend newsletter welcome (if RESEND_API_KEY is configured).
+      // No auth required — this is a public opt-in surface.
+      const { FEEDBACK_DIR } = getFeedbackPaths();
+      let body = '';
+      let total = 0;
+      let oversize = false;
+      const MAX_BODY = 2048;
+      req.on('data', (chunk) => {
+        total += chunk.length;
+        if (total > MAX_BODY) {
+          oversize = true;
+          return; // stop appending; let 'end' fire naturally to send 413
+        }
+        body += chunk;
+      });
+      req.on('end', async () => {
+        if (oversize) {
+          sendJson(res, 413, { error: 'payload_too_large' });
+          return;
+        }
+        let parsed;
+        try {
+          parsed = body ? JSON.parse(body) : {};
+        } catch {
+          sendJson(res, 400, { error: 'invalid_json' });
+          return;
+        }
+        const rawEmail = typeof parsed.email === 'string' ? parsed.email.trim() : '';
+        // RFC 5321-bounded email shape — same regex shape as the CLI side
+        // to keep the contract honest.
+        const emailValid = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{1,64}$/.test(rawEmail);
+        if (!emailValid) {
+          sendJson(res, 400, { error: 'invalid_email' });
+          return;
+        }
+        const source = typeof parsed.source === 'string' && parsed.source.length <= 64
+          ? parsed.source
+          : 'cli_subscribe';
+        const installId = typeof parsed.installId === 'string' && parsed.installId.length <= 128
+          ? parsed.installId
+          : null;
+        const cliVersion = typeof parsed.cliVersion === 'string' && parsed.cliVersion.length <= 32
+          ? parsed.cliVersion
+          : null;
+
+        // Persist the capture to a dedicated ledger. The standard
+        // telemetry sanitizer in scripts/telemetry-analytics.js
+        // intentionally strips arbitrary fields (PII protection), so
+        // we cannot rely on appendBestEffortTelemetry to preserve the
+        // email. The capture ledger lives alongside other feedback
+        // artifacts and is the source of truth for the marketing drip.
+        try {
+          const fsModule = require('node:fs');
+          const pathModule = require('node:path');
+          const captureDir = pathModule.resolve(FEEDBACK_DIR);
+          fsModule.mkdirSync(captureDir, { recursive: true });
+          const capturePath = pathModule.join(captureDir, 'marketing-install-emails.jsonl');
+          fsModule.appendFileSync(capturePath, JSON.stringify({
+            capturedAt: new Date().toISOString(),
+            email: rawEmail,
+            source,
+            installId,
+            cliVersion,
+            remoteAddr: req.socket?.remoteAddress || null,
+            userAgent: req.headers['user-agent'] || null,
+          }) + '\n', 'utf-8');
+        } catch (err) {
+          // Capture failure is recoverable — we still want to fire the
+          // welcome email and surface the failure to ops via diagnostic.
+          try {
+            const { appendDiagnosticRecord } = require('../../scripts/feedback-loop');
+            appendDiagnosticRecord({
+              source: 'install_email_capture',
+              step: 'capture_persist',
+              context: 'failed to persist install-email capture to ledger',
+              metadata: { error: err?.message || 'unknown' },
+            });
+          } catch (_) {}
+        }
+
+        // Privacy-clean telemetry ping for funnel attribution (no email).
+        appendBestEffortTelemetry(FEEDBACK_DIR, {
+          eventType: 'marketing_install_email_captured',
+          clientType: 'cli',
+          source,
+          installId,
+          cliVersion,
+          utmSource: source,
+          utmMedium: 'npm_postinstall',
+          utmCampaign: 'install_email_capture',
+        }, req.headers, 'marketing_install_email_captured');
+
+        // Fire Resend welcome. If RESEND_API_KEY is unset the mailer
+        // returns { sent: false, reason: 'no_api_key' } and the
+        // capture still succeeds — the operator can drip later from
+        // the captured ledger.
+        let mailerResult = { sent: false, reason: 'not_attempted' };
+        try {
+          const { sendNewsletterWelcomeEmail } = require('../../scripts/mailer');
+          mailerResult = await sendNewsletterWelcomeEmail({
+            to: rawEmail,
+            source,
+            installId,
+            cliVersion,
+          });
+        } catch (err) {
+          mailerResult = { sent: false, reason: `mailer_error:${err.message || 'unknown'}` };
+        }
+
+        sendJson(res, 200, {
+          ok: true,
+          captured: true,
+          mailerSent: !!mailerResult.sent,
+          mailerReason: mailerResult.reason || null,
+        });
+      });
+      return;
+    }
+
     if (req.method === 'OPTIONS' && pathname === '/v1/intake/workflow-sprint') {
       sendPublicBillingPreflight(res);
       return;
