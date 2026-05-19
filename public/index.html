@@ -1301,7 +1301,32 @@ __GA_BOOTSTRAP__
         <p style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;">Team is $49/seat/mo with a 3-seat minimum. Self-serve checkout starts you at $147/mo for 3 seats; add more seats from the dashboard. Prefer to qualify the workflow before paying? Start with the intake.</p>
       </div>
     </div>
-    <p style="text-align:center;color:var(--text-muted);font-size:13px;margin:40px 0;">Need a custom diagnostic, sprint, or setup? <a href="#workflow-sprint-intake" style="color:var(--cyan);text-decoration:none;">Send workflow first →</a></p>
+    <div style="max-width:1080px;margin:24px auto 0;">
+      <div class="price-card regulated" style="border:1px solid var(--cyan);background:linear-gradient(180deg, rgba(34,211,238,0.04), transparent);padding:24px 28px;">
+        <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:24px;justify-content:space-between;">
+          <div style="flex:1 1 420px;min-width:280px;">
+            <div class="tier" style="color:var(--cyan);">Regulated</div>
+            <div style="font-size:14px;color:var(--text-muted);margin:4px 0 12px;letter-spacing:0.04em;text-transform:uppercase;">Banking · Insurance · Healthcare · Public sector</div>
+            <div style="font-size:18px;color:var(--text);margin-bottom:6px;font-weight:700;">Contact sales</div>
+            <div class="price-sub" style="margin-bottom:14px;">For teams operating AI coding agents under DORA, the EU AI Act, HIPAA, or comparable audit pressure. Cheaper than the <a href="/learn/regulated-agent-execution-boundary" style="color:var(--cyan);text-decoration:underline;">$1.4M build estimate</a> The New Stack put on DIY agent platforms.</div>
+            <ul style="margin-bottom:0;">
+              <li><strong>Audit-grade decision trail</strong> — every PreToolUse evaluation logged with the rule that fired, ready for SIEM export</li>
+              <li><strong>Immutable rule provenance</strong> — each prevention rule traceable to the feedback event that generated it</li>
+              <li><strong>Self-managed deployment</strong> — air-gapped or VPC-hosted; no agent state leaves your boundary</li>
+              <li><strong>DORA / EU AI Act evidence packaging</strong> — machine-readable reports aligned to Article 6, 28, and high-risk provider monitoring obligations</li>
+              <li><strong>SSO + role separation</strong> — operator, reviewer, and auditor roles enforced at the gate layer</li>
+              <li><strong>Workflow Hardening Sprint included</strong> — a paid diagnostic that proves the boundary against one of your real repeated-failure cases before broader rollout</li>
+              <li><strong>Quarterly red-team review</strong> — prompt-injection and policy-bypass exercises with written findings</li>
+            </ul>
+          </div>
+          <div style="flex:0 0 260px;min-width:240px;display:flex;flex-direction:column;gap:10px;">
+            <a href="#workflow-sprint-intake?tier=regulated" onclick="try{posthog.capture('regulated_intake_click',{cta:'regulated_contact_sales',placement:'pricing'})}catch(_){};sendFirstPartyTelemetry('regulated_intake_started',{ctaId:'pricing_regulated_intake',ctaPlacement:'pricing',planId:'regulated'});" class="btn-team" style="display:block;text-align:center;background:var(--cyan);color:#06121a;font-weight:800;">Start regulated intake →</a>
+            <a href="/learn/regulated-agent-execution-boundary" style="display:block;text-align:center;padding:10px 14px;font-size:13px;color:var(--cyan);border:1px solid var(--cyan);border-radius:8px;text-decoration:none;">Read the build-vs-buy thesis first</a>
+            <p style="font-size:11px;color:var(--text-muted);margin:0;text-align:center;line-height:1.5;">Pricing is workflow-scoped. Typical engagements start at $4,800/mo for the boundary layer plus a one-time $7,500 Workflow Hardening Sprint. Annual pre-pay available.</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 

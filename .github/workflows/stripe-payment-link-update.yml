@@ -1,0 +1,51 @@
+name: Stripe Payment Link Update
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'apply or dry-run'
+        type: choice
+        required: true
+        default: 'dry-run'
+        options:
+          - dry-run
+          - apply
+  push:
+    branches:
+      - feat/stripe-payment-link-attribution
+    paths:
+      - 'scripts/stripe-payment-link-update.js'
+      - '.github/workflows/stripe-payment-link-update.yml'
+
+concurrency:
+  group: stripe-payment-link-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Dry-run on every push (no writes)
+        if: ${{ github.event_name == 'push' || inputs.mode == 'dry-run' }}
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: node scripts/stripe-payment-link-update.js --dry-run
+
+      - name: Apply (only via explicit workflow_dispatch with mode=apply)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'apply' }}
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: node scripts/stripe-payment-link-update.js
