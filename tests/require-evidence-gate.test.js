@@ -29,6 +29,8 @@ test('require_evidence_for_claim tool is registered with the expected shape', ()
   assert.equal(tool.annotations.readOnlyHint, true);
   assert.ok(tool.inputSchema.required.includes('claim'));
   assert.deepEqual(tool.inputSchema.properties.mode.enum, ['blocking', 'advisory']);
+  assert.equal(tool.inputSchema.properties.goalContract.type, 'object');
+  assert.equal(tool.inputSchema.properties.goalContract.properties.proveBy.items.type, 'string');
 });
 
 test('distribute_context_to_agents tool is registered with the expected shape', () => {
@@ -90,6 +92,57 @@ test('require_evidence_for_claim returns blocking=false when no claim pattern ma
   assert.equal(response.matchedChecks, false);
   assert.equal(response.blocking, false);
   assert.deepEqual(response.checks, []);
+});
+
+test('require_evidence_for_claim blocks goal contract until handoff evidence exists', async () => {
+  clearSessionActions();
+  const response = await callTool('require_evidence_for_claim', {
+    claim: 'ready for handoff',
+    goalContract: {
+      goal: 'Ship the checkout fix',
+      doneWhen: ['Focused tests pass', 'Independent review is complete'],
+      proveBy: ['tests_passed', 'review_completed'],
+      mustNotChange: ['Stripe product ids', 'public package exports'],
+      workerAgent: 'codex-worker',
+      reviewerAgent: 'codex-reviewer',
+      orchestratorAgent: 'leader-agent',
+    },
+  });
+
+  assert.equal(response.blocking, true);
+  assert.equal(response.verified, false);
+  assert.equal(response.matchedChecks, true);
+  assert.deepEqual(response.missingActions.sort(), ['review_completed', 'tests_passed']);
+  assert.equal(response.goalContract.matched, true);
+  assert.equal(response.goalContract.goal, 'Ship the checkout fix');
+  assert.equal(response.goalContract.handoff.workerAgent, 'codex-worker');
+  assert.deepEqual(response.goalContract.mustNotChange, ['Stripe product ids', 'public package exports']);
+  const contractCheck = response.checks.find((check) => check.claim === 'goal_contract');
+  assert.ok(contractCheck);
+  assert.equal(contractCheck.passed, false);
+});
+
+test('require_evidence_for_claim unblocks goal contract after required evidence is tracked', async () => {
+  clearSessionActions();
+  trackAction('tests_passed', { source: 'node --test tests/checkout.test.js' });
+  trackAction('review_completed', { source: 'codex-reviewer' });
+
+  const response = await callTool('require_evidence_for_claim', {
+    claim: 'ready for handoff',
+    goalContract: {
+      goal: 'Ship the checkout fix',
+      proveBy: ['tests_passed', 'review_completed'],
+      workerAgent: 'codex-worker',
+      reviewerAgent: 'codex-reviewer',
+      orchestratorAgent: 'leader-agent',
+    },
+  });
+
+  assert.equal(response.blocking, false);
+  assert.equal(response.verified, true);
+  assert.deepEqual(response.missingActions, []);
+  assert.equal(response.goalContract.passed, true);
+  clearSessionActions();
 });
 
 test('distribute_context_to_agents returns one pack shared across workers', async () => {
