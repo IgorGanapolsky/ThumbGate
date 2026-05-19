@@ -97,12 +97,20 @@ async function applyCleanup(stripe, plan) {
   return results;
 }
 
+function verbFor(item) {
+  if (item.deleted) return 'DELETED';
+  if (item.action === 'delete') return 'WOULD DELETE';
+  return 'keep';
+}
+
 function renderHuman(items) {
   const lines = [];
   for (const it of items) {
-    const verb = it.deleted ? 'DELETED' : (it.action === 'delete' ? 'WOULD DELETE' : 'keep');
-    lines.push(`${verb.padEnd(12)} ${it.id}  status=${it.status}  events=${it.eventCount}  ${it.url}`);
-    lines.push(`             reason: ${it.reason}` + (it.error ? `  ERROR: ${it.error}` : ''));
+    const verb = verbFor(it);
+    const reasonSuffix = it.error ? `  ERROR: ${it.error}` : '';
+    lines.push(
+      `${verb.padEnd(12)} ${it.id}  status=${it.status}  events=${it.eventCount}  ${it.url}\n             reason: ${it.reason}${reasonSuffix}`
+    );
   }
   return lines.join('\n');
 }
