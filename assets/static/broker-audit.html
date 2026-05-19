@@ -449,7 +449,7 @@
                 1-page PDF showing exactly where leads are leaking. Free path: 24&ndash;72h.
                 $49 fast-lane: 24h guaranteed, refund if it doesn&rsquo;t surface 2+ specific leaks.
             </p>
-            <form id="audit-form" action="/v1/intake/broker-audit" method="POST" onsubmit="if(window.posthog)posthog.capture('audit_form_submit',{plan:'free'});">
+            <form id="audit-form" action="https://site-gamma-one-15.vercel.app/api/audit-form" method="POST" onsubmit="if(window.posthog)posthog.capture('audit_form_submit',{plan:'free'});">
                 <label>Your name <input type="text" name="name" required></label>
                 <label>Brokerage <input type="text" name="brokerage" required></label>
                 <label>Your website <input type="url" name="website" required placeholder="https://..."></label>
