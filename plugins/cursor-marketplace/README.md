@@ -116,7 +116,7 @@ When the user only gives a quick `thumbs_down`, `wrong`, or `correct`, the Curso
 
 ThumbGate gives Cursor agents a practical guardrail layer:
 
-- **Pre-Action Gates** block known-bad actions before tool use
+- **Infrastructure Firewalls** block known-bad actions before tool use
 - **Prevention rules** auto-generated from repeated failures
 - **Context packs** keep relevant project history in scope
 - **Feedback capture** with structured up/down signals and history-aware lesson proposals
@@ -125,3 +125,5 @@ ThumbGate gives Cursor agents a practical guardrail layer:
 Verification evidence for shipped behavior lives in `docs/VERIFICATION_EVIDENCE.md`.
 Release and promotion rules live in `docs/CURSOR_PLUGIN_OPERATIONS.md`.
 Proof-backed setup path: https://thumbgate-production.up.railway.app/guide
+
+ion.up.railway.app/guide

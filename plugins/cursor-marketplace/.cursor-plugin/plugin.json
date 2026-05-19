@@ -1,7 +1,7 @@
 {
   "name": "thumbgate",
   "displayName": "ThumbGate",
-  "description": "👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.",
+  "description": "The Infrastructure Firewall for AI Coding Agents. Turn feedback into rules that physically block dangerous agent tool calls before they hit the disk.",
   "version": "1.20.0",
   "author": {
     "name": "Igor Ganapolsky"
