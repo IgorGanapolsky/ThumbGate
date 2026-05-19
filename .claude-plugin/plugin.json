@@ -1,22 +1,31 @@
 {
   "name": "thumbgate",
-  "description": "Type 👍 or 👎 on any agent action. ThumbGate captures it, distills a lesson, and blocks the pattern from repeating. One thumbs-down = the agent physically cannot make that mistake again. 33 pre-action checks, budget enforcement, self-protection, and NIST/SOC2 compliance tags.",
+  "description": "One \ud83d\udc4e becomes a hard rule the agent cannot bypass. Captures thumbs-down feedback, distills it into PreToolUse Pre-Action Checks, enforced across every future Claude Code session.",
   "version": "1.20.0",
   "author": {
-    "name": "Igor Ganapolsky"
+    "name": "Igor Ganapolsky",
+    "email": "ig5973700@gmail.com",
+    "url": "https://thumbgate.ai"
   },
   "homepage": "https://thumbgate-production.up.railway.app",
   "repository": "https://github.com/IgorGanapolsky/ThumbGate",
   "license": "MIT",
+  "category": "developer-tools",
   "keywords": [
+    "guardrails",
+    "pretooluse",
+    "hooks",
+    "feedback",
+    "rlhf",
+    "dpo",
+    "agent-safety",
+    "workflow-hardening",
     "claude-desktop",
     "desktop-extension",
     "mcp",
     "pre-action-checks",
     "ai-agent-safety",
-    "memory",
-    "guardrails",
-    "workflow-hardening"
+    "memory"
   ],
   "skills": "./skills/",
   "mcpServers": {
