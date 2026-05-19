@@ -23,6 +23,7 @@
  *   npx thumbgate background-governance  # background-agent run report + risk check
  *   npx thumbgate cfo           # local operational billing summary
  *   npx thumbgate pro           # solo dashboard + exports side lane
+   npx thumbgate audit <file>  # audit AI bill for repeat mistakes
  */
 
 'use strict';
@@ -2845,6 +2846,29 @@ switch (COMMAND) {
       console.log(JSON.stringify(demoOutput, null, 2));
     } else {
       process.stdout.write(demoOutput);
+    }
+    break;
+  }
+  case 'audit': {
+    const auditFile = process.argv[3];
+    if (!auditFile) {
+      console.error('Usage: npx thumbgate audit <path-to-transcript.txt>');
+      process.exit(1);
+    }
+    const { runAudit } = require(path.join(PKG_ROOT, 'scripts', 'audit'));
+    const { results, totalWaste, error } = runAudit(auditFile);
+    if (error) {
+      console.error(error);
+      process.exit(1);
+    }
+    console.log('\n🔍 AI Bill Audit Results\n');
+    if (results.length === 0) {
+      console.log('✅ No repeat-offender patterns found. Your sessions are efficient!');
+    } else {
+      console.table(results);
+      console.log('\n💰 Total estimated monthly waste: $' + totalWaste);
+      console.log('\nBlock these mistakes permanently with ThumbGate Pro:');
+      console.log(PRO_CHECKOUT_URL);
     }
     break;
   }
