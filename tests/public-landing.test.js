@@ -106,17 +106,17 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /Start Workflow Hardening Sprint/);
 });
 
-test('public landing page exposes env-driven paid sprint checkout path', () => {
+test('public landing page keeps Team services intake-led instead of exposing a paid-service price ladder', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /const sprintDiagnosticCheckoutUrl = '__SPRINT_DIAGNOSTIC_CHECKOUT_URL__';/);
-  assert.match(landingPage, /const workflowSprintCheckoutUrl = '__WORKFLOW_SPRINT_CHECKOUT_URL__';/);
-  assert.match(landingPage, /data-sprint-paid-path/);
-  assert.match(landingPage, /Workflow Hardening Diagnostic/);
   assert.match(landingPage, /Have one AI-agent failure that keeps repeating\?/);
   assert.match(landingPage, /one real workflow, one repeated failure pattern, enforceable pre-action gates/);
-  assert.match(landingPage, /href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__"/);
-  assert.match(landingPage, /href="__WORKFLOW_SPRINT_CHECKOUT_URL__"/);
+  assert.doesNotMatch(landingPage, /const sprintDiagnosticCheckoutUrl/);
+  assert.doesNotMatch(landingPage, /const workflowSprintCheckoutUrl/);
+  assert.doesNotMatch(landingPage, /__SPRINT_DIAGNOSTIC_CHECKOUT_URL__/);
+  assert.doesNotMatch(landingPage, /__WORKFLOW_SPRINT_CHECKOUT_URL__/);
+  assert.doesNotMatch(landingPage, /data-sprint-paid-path/);
+  assert.doesNotMatch(landingPage, /Workflow Hardening Diagnostic/);
   assert.doesNotMatch(landingPage, /founder_workflow_diagnostic_checkout_started/);
   assert.doesNotMatch(landingPage, /Pay \$99 diagnostic/);
   assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/7sY4gzgH24r49G17mb3sI0g/);
@@ -130,39 +130,35 @@ test('public landing page exposes env-driven paid sprint checkout path', () => {
   assert.doesNotMatch(landingPage, /Pay \$19 quick read/);
   assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
   assert.doesNotMatch(landingPage, /quick_read_checkout_started/);
-  // Hero CTA pair (post 2026-05-14 GTM data analysis): Free CLI + Workflow
-  // Hardening Sprint intake. Previously was "Get Pro — $19/mo" but data showed
-  // 750+ weekly OSS installs converted at 0% to $19/mo self-serve. Sprint
-  // intake matches the actual buyer ICP (platform / devex leaders who buy
-  // fixed-scope engagements). Pro $19/mo remains wired via /checkout/pro and
-  // surfaces from the "Pay for diagnostic" / pricing-section cards below the fold.
+  // Hero CTA pair: Free CLI + Workflow Hardening Sprint intake. Pro $19/mo
+  // remains wired via /checkout/pro, but services are no longer exposed as
+  // competing direct checkout paths on the homepage.
   assert.doesNotMatch(landingPage, /Pay \$499 diagnostic/);
   assert.match(landingPage, /Talk to me — Workflow Hardening Sprint/);
-  assert.match(landingPage, /Pay for diagnostic/);
   assert.doesNotMatch(landingPage, /Pay \$1500 sprint/);
-  assert.match(landingPage, /Reliable AI Agent Governance Setup/);
-  assert.match(landingPage, /\$3,997/);
-  assert.match(landingPage, /\$297\/mo/);
-  assert.match(landingPage, /governance_setup_intake_clicked/);
-  assert.match(landingPage, /OpenClaw Agent Governance Kit/);
-  assert.match(landingPage, /https:\/\/buy\.stripe\.com\/bJe14naiE9Lo7xT49Z3sI12/);
-  assert.match(landingPage, /openclaw_governance_kit_checkout_started/);
-  assert.match(landingPage, /team_openclaw_governance_kit_checkout/);
-  assert.match(landingPage, /Buy kit/);
+  assert.doesNotMatch(landingPage, /Reliable AI Agent Governance Setup/);
+  assert.doesNotMatch(landingPage, /\$3,997/);
+  assert.doesNotMatch(landingPage, /\$297\/mo/);
+  assert.doesNotMatch(landingPage, /governance_setup_intake_clicked/);
+  assert.doesNotMatch(landingPage, /OpenClaw Agent Governance Kit/);
+  assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/bJe14naiE9Lo7xT49Z3sI12/);
+  assert.doesNotMatch(landingPage, /openclaw_governance_kit_checkout_started/);
+  assert.doesNotMatch(landingPage, /team_openclaw_governance_kit_checkout/);
+  assert.doesNotMatch(landingPage, /Buy kit/);
   assert.match(landingPage, /Send workflow first/);
-  assert.match(landingPage, /Pay for diagnostic/);
-  assert.match(landingPage, /Pay for sprint/);
+  assert.doesNotMatch(landingPage, /Pay for diagnostic/);
+  assert.doesNotMatch(landingPage, /Pay for sprint/);
   assert.doesNotMatch(landingPage, /workflow_teardown_checkout_started/);
-  assert.match(landingPage, /hero_workflow_sprint_diagnostic_checkout/);
+  assert.doesNotMatch(landingPage, /hero_workflow_sprint_diagnostic_checkout/);
   assert.doesNotMatch(landingPage, /hero_workflow_sprint_checkout/);
   assert.match(landingPage, /hero_workflow_sprint_recovery_intake/);
-  assert.match(landingPage, /workflow_sprint_diagnostic_checkout_started/);
-  assert.match(landingPage, /workflow_sprint_checkout_started/);
+  assert.doesNotMatch(landingPage, /workflow_sprint_diagnostic_checkout_started/);
+  assert.doesNotMatch(landingPage, /workflow_sprint_checkout_started/);
   assert.match(landingPage, /workflow_sprint_recovery_intake_clicked/);
   assert.match(landingPage, /workflow_sprint_recovery_intake/);
   assert.doesNotMatch(landingPage, /ctaId:'hero_first_failure_rule_checkout'/);
   assert.doesNotMatch(landingPage, /ctaId:'hero_workflow_teardown_checkout'/);
-  assert.match(landingPage, /ctaId: 'hero_workflow_sprint_diagnostic_checkout'/);
+  assert.match(landingPage, /ctaId: 'hero_workflow_sprint'/);
   assert.doesNotMatch(landingPage, /ctaId: 'hero_workflow_sprint_checkout'/);
   assert.match(landingPage, /ctaId: 'hero_workflow_sprint_recovery_intake'/);
 });
@@ -216,6 +212,11 @@ test('public landing page positions ThumbGate as agent governance for AI coding 
   assert.match(landingPage, /workflow governance/i);
   assert.match(landingPage, /Workflow Hardening Sprint/i);
   assert.match(landingPage, /CLI-first/i);
+  assert.match(landingPage, /Persistent Agent Skills/i);
+  assert.match(landingPage, /Reusable instructions are the new baseline\. Enforcement is the moat\./);
+  assert.match(landingPage, /Grok-style skills are training users to expect persistent expertise/i);
+  assert.match(landingPage, /Persistent skills tell an agent what you prefer\. ThumbGate checks whether the next action follows those preferences/i);
+  assert.match(landingPage, /Every fired rule carries the source lesson, decision trace, and audit evidence/i);
   assert.match(landingPage, /Claude Code/);
   assert.match(landingPage, /Cursor/);
   assert.match(landingPage, /Codex/);
@@ -337,9 +338,9 @@ test('public landing page includes an explicit Team rollout lane with shared wor
   assert.match(landingPage, /name="utmMedium" value="visible_team_intake"/);
   assert.match(landingPage, /name="planId" value="team"/);
   assert.match(landingPage, /name="ctaId" value="workflow_sprint_intake"/);
-  assert.match(landingPage, /Not ready to pay from a checkout page\?/);
+  assert.match(landingPage, /Team checkout happens after scope\./);
   assert.match(landingPage, /team_workflow_sprint_recovery_intake/);
-  assert.match(landingPage, /checkout_abandon/);
+  assert.match(landingPage, /scope_first/);
   assert.match(landingPage, /workflow_sprint_intake_started/);
   assert.match(landingPage, /workflow_sprint_intake_submit_attempted/);
   const formIndex = landingPage.indexOf('action="/v1/intake/workflow-sprint"');
@@ -357,6 +358,8 @@ test('public landing page includes FAQ section with accordion interaction', () =
   assert.match(landingPage, /id="faq"/);
   assert.match(landingPage, /Common questions/);
   assert.match(landingPage, /How is ThumbGate different from model-training feedback loops\?/);
+  assert.match(landingPage, /How is ThumbGate different from persistent agent skills\?/);
+  assert.match(landingPage, /lessons become portable skill context/i);
   assert.match(landingPage, /What's the tech stack\?/);
   assert.match(landingPage, /What AI agents and editors does this work with\?/);
   assert.match(landingPage, /Do I need a cloud account\?/);
@@ -654,17 +657,16 @@ test('public landing page includes pay-now Pro path and email capture gate', () 
   assert.doesNotMatch(landingPage, /props:\s*\{\s*email:/);
 });
 
-test('public landing page Team card exposes both self-serve checkout AND intake-led path (without claiming a free trial)', () => {
+test('public landing page Team card is intake-led without a blind team checkout or free trial claim', () => {
   const landingPage = readLandingPage();
 
-  // Self-serve checkout for 3-seat Team at $147/mo (existing STRIPE_PRICE_ID_TEAM_MONTHLY).
-  assert.match(landingPage, /Start 3-seat Team — \$147\/mo/);
-  assert.match(landingPage, /plan_id=team/);
-  assert.match(landingPage, /seat_count=3/);
-  assert.match(landingPage, /pricing_team_self_serve/);
-  // Intake remains as a fallback for qualification-first buyers.
-  assert.match(landingPage, /Or qualify first via Workflow Hardening Sprint intake/);
-  assert.match(landingPage, /Team is \$49\/seat\/mo with a 3-seat minimum\./);
+  assert.match(landingPage, /Send team workflow first/);
+  assert.match(landingPage, /pricing_team_intake/);
+  assert.match(landingPage, /Team is \$49\/seat\/mo with a 3-seat minimum/);
+  assert.match(landingPage, /team rollouts start through intake/i);
+  assert.doesNotMatch(landingPage, /Start 3-seat Team — \$147\/mo/);
+  assert.doesNotMatch(landingPage, /pricing_team_self_serve/);
+  assert.doesNotMatch(landingPage, /team_self_serve_checkout_started/);
   // Still must not claim a free trial.
   assert.doesNotMatch(landingPage, /Both start with a 7-day free trial/);
   assert.doesNotMatch(landingPage, /free trial/i);
