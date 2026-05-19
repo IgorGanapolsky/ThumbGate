@@ -39,9 +39,39 @@ const PAYWALL_MESSAGES = {
   default: 'This feature requires Pro. Start Pro — card required; billed today.',
 };
 
+const TRIAL_DAYS = 14;
+
+function getInstallAgeDays() {
+  try {
+    const { INSTALL_ID_PATH } = require('./cli-telemetry');
+    if (!fs.existsSync(INSTALL_ID_PATH)) return null;
+    const created = fs.statSync(INSTALL_ID_PATH).birthtimeMs || fs.statSync(INSTALL_ID_PATH).mtimeMs;
+    if (!Number.isFinite(created) || created <= 0) return null;
+    return (Date.now() - created) / (1000 * 60 * 60 * 24);
+  } catch (_) {
+    return null;
+  }
+}
+
+function isInTrialPeriod() {
+  if (process.env.CI || process.env.GITHUB_ACTIONS) return false;
+  if (process.env.THUMBGATE_NO_TRIAL === '1') return false;
+  const age = getInstallAgeDays();
+  if (age === null) return false;
+  if (age < 0.0007) return false; // <1 minute old — just-created install, not a real trial
+  return age < TRIAL_DAYS;
+}
+
+function trialDaysRemaining() {
+  const age = getInstallAgeDays();
+  if (age === null) return 0;
+  return Math.max(0, Math.ceil(TRIAL_DAYS - age));
+}
+
 function isProTier(authContext) {
   if (authContext && authContext.tier === 'pro') return true;
-  if (process.env.THUMBGATE_API_KEY || process.env.THUMBGATE_PRO_MODE === '1' || process.env.THUMBGATE_NO_RATE_LIMIT === '1') return true;
+  if (process.env.THUMBGATE_API_KEY) return true;
+  if (process.env.THUMBGATE_NO_RATE_LIMIT === '1') return true;
   // Creator/dogfooding bypass: when the owner has the dev secret + bypass
   // configured (env or ~/.config/thumbgate/dev.json), treat the install as Pro
   // so marketing nudges and rate limits stop firing on the maintainer's own
@@ -57,6 +87,8 @@ function isProTier(authContext) {
     const { isProLicensed } = require('./license');
     if (isProLicensed()) return true;
   } catch (_) {}
+  // 14-day reverse trial: new installs get full Pro access
+  if (isInTrialPeriod()) return true;
   return false;
 }
 
@@ -180,11 +212,14 @@ module.exports = {
   checkLimit,
   getUsage,
   isProTier,
+  isInTrialPeriod,
+  trialDaysRemaining,
   loadUsage,
   saveUsage,
   todayKey,
   FREE_TIER_LIMITS,
   FREE_TIER_MAX_GATES,
+  TRIAL_DAYS,
   UPGRADE_MESSAGE,
   PAYWALL_MESSAGES,
   USAGE_FILE,

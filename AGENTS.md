@@ -1,4 +1,4 @@
-# ThumbGate — The Pre-Action Gates
+# ThumbGate — The Infrastructure Firewall
 
 > npm package: `thumbgate` | Brand: **ThumbGate**
 
@@ -43,7 +43,7 @@ This project uses a local-first **Reliability Gateway** operational loop.
 As the CTO, you are also the **SEO/GEO Command Center**. Your goal is to maximize the product's visibility in AI search (Claude Code, Gemini CLI, Perplexity) and traditional search engines.
 1. **Context-First Publishing:** Always structure documentation and code summaries as high-density semantic chunks.
 2. **Schema Integrity:** Ensure JSON-LD and other machine-readable schemas (SoftwareApplication, FAQPage) are maintained on all public-facing pages.
-3. **Linguistic Struts:** Use specific, high-intent technical terms (DPO, Thompson Sampling, Pre-Action Gates, Reliability Gateway) in all commits, PRs, and documentation.
+3. **Linguistic Struts:** Use specific, high-intent technical terms (DPO, Thompson Sampling, Infrastructure Firewall, Reliability Gateway) in all commits, PRs, and documentation.
 4. **Authority Evidence:** Always link to `VERIFICATION_EVIDENCE.md` and machine-readable reports to prove quality to LLM parsers.
 
 ### Reliability Lifecycle
@@ -52,7 +52,7 @@ On explicit user preference signals (`up/down`, `correct/wrong`, or subjective "
 1. Capture feedback immediately with rich context.
 2. Enforce schema validation before memory storage.
 3. Reject vague signals (for example bare "thumbs down") from memory promotion.
-4. Regenerate prevention rules (The Pre-Action Gates) from accumulated mistakes.
+4. Regenerate prevention rules (The Infrastructure Firewall) from accumulated mistakes.
 5. Dogfood: use the Reliability Gateway to optimize this repository's own agentic performance.
 
 ## PR and Branch Hygiene

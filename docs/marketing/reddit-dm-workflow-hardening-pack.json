@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-04T15:07:22.568Z",
+  "generatedAt": "2026-05-04T15:13:16.404Z",
   "objective": "Convert the current warm Reddit workflow-risk queue into replied conversations, diagnostics, and the first paid Workflow Hardening Sprint.",
   "state": "post-first-dollar",
   "headline": "Turn warm Reddit workflow-risk conversations into sprint-qualified paid intent.",
@@ -30,7 +30,7 @@
   "surfaces": [
     {
       "name": "Workflow Hardening Sprint intake",
-      "url": "https://thumbgate.ai/?utm_source=reddit&utm_medium=reddit_dm&utm_campaign=reddit_sprint_intake&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=REDDIT-SPRINT_INTAKE&cta_id=reddit_sprint_intake&cta_placement=pack_surface&surface=reddit_dm_sprint#workflow-sprint-intake",
+      "url": "https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=reddit_dm&utm_campaign=reddit_sprint_intake&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=REDDIT-SPRINT_INTAKE&cta_id=reddit_sprint_intake&cta_placement=pack_surface&surface=reddit_dm_sprint#workflow-sprint-intake",
       "operatorUse": "Primary CTA after the buyer confirms one repeated workflow failure worth a 15-minute diagnostic.",
       "buyerSignal": "Warm Reddit engager who already described a real workflow risk and wants help fixing it.",
       "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
@@ -67,13 +67,13 @@
       "label": "Workflow Hardening Sprint",
       "pricing": "Discovery-led sprint, then Team at $49/seat/mo with a 3-seat minimum after qualification",
       "buyer": "Warm buyers who already named a repeated workflow failure and want one proof-backed fix loop.",
-      "cta": "https://thumbgate.ai/?utm_source=reddit&utm_medium=reddit_dm&utm_campaign=reddit_follow_on_sprint&utm_content=workflow_sprint&campaign_variant=team_follow_on&offer_code=REDDIT-FOLLOW_ON_SPRINT&cta_id=reddit_follow_on_sprint&cta_placement=post_reply&surface=reddit_dm_follow_on#workflow-sprint-intake"
+      "cta": "https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=reddit_dm&utm_campaign=reddit_follow_on_sprint&utm_content=workflow_sprint&campaign_variant=team_follow_on&offer_code=REDDIT-FOLLOW_ON_SPRINT&cta_id=reddit_follow_on_sprint&cta_placement=post_reply&surface=reddit_dm_follow_on#workflow-sprint-intake"
     },
     {
       "label": "ThumbGate Pro",
       "pricing": "$19/mo or $149/yr",
       "buyer": "Warm solo operators who asked for the self-serve path after the workflow discussion.",
-      "cta": "https://thumbgate.ai/checkout/pro?utm_source=reddit&utm_medium=reddit_dm&utm_campaign=reddit_follow_on_pro&utm_content=pro&campaign_variant=solo_follow_on&offer_code=REDDIT-FOLLOW_ON_PRO&cta_id=reddit_follow_on_pro&cta_placement=post_reply&plan_id=pro&surface=reddit_dm_follow_on"
+      "cta": "https://thumbgate-production.up.railway.app/checkout/pro?utm_source=reddit&utm_medium=reddit_dm&utm_campaign=reddit_follow_on_pro&utm_content=pro&campaign_variant=solo_follow_on&offer_code=REDDIT-FOLLOW_ON_PRO&cta_id=reddit_follow_on_pro&cta_placement=post_reply&plan_id=pro&surface=reddit_dm_follow_on"
     }
   ],
   "operatorQueue": [

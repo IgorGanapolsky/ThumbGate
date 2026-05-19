@@ -643,19 +643,18 @@ test('/go/pro 302 redirects to /checkout/pro with caller-provided UTM params pre
   assert.equal(url.searchParams.get('cta_id'), 'go_pro');
 });
 
-test('/go/teams 302 redirects to /checkout/pro with plan_id=team + seat_count=3 (3-seat self-serve)', async () => {
-  // 2026-05-12: Aiventyx marketplace listing best-performer at ~62% CTR routes
-  // its Teams clicks through /go/teams. Pin the contract: redirect to
-  // /checkout/pro with plan_id=team + seat_count=3 so the canonical Aiventyx
-  // URL keeps landing on the 3-seat $147/mo self-serve Stripe checkout.
+test('/go/teams 302 redirects to Team workflow intake with caller-provided UTM params preserved', async () => {
+  // 2026-05-19: Team is scope-first. The shortlink stays alive for marketplace
+  // and outreach URLs, but must not reintroduce blind 3-seat checkout.
   const res = await fetch(apiUrl('/go/teams?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_teams_listing&cta_id=aiventyx_teams_listing&cta_placement=marketplace_listing'), { redirect: 'manual' });
   assert.equal(res.status, 302);
   assert.equal(res.headers.get('x-thumbgate-link-slug'), 'teams');
   const url = new URL(res.headers.get('location'));
-  assert.equal(url.pathname, '/checkout/pro');
+  assert.equal(url.pathname, '/');
+  assert.equal(url.hash, '#workflow-sprint-intake');
   assert.equal(url.searchParams.get('plan_id'), 'team');
-  assert.equal(url.searchParams.get('seat_count'), '3');
-  assert.equal(url.searchParams.get('billing_cycle'), 'monthly');
+  assert.equal(url.searchParams.get('seat_count'), null);
+  assert.equal(url.searchParams.get('billing_cycle'), null);
   assert.equal(url.searchParams.get('utm_source'), 'aiventyx');
   assert.equal(url.searchParams.get('utm_medium'), 'marketplace');
   assert.equal(url.searchParams.get('cta_id'), 'aiventyx_teams_listing');
@@ -665,10 +664,11 @@ test('/go/teams falls back to default UTM attribution when no params are supplie
   const res = await fetch(apiUrl('/go/teams'), { redirect: 'manual' });
   assert.equal(res.status, 302);
   const url = new URL(res.headers.get('location'));
-  assert.equal(url.pathname, '/checkout/pro');
+  assert.equal(url.pathname, '/');
+  assert.equal(url.hash, '#workflow-sprint-intake');
   assert.equal(url.searchParams.get('plan_id'), 'team');
-  assert.equal(url.searchParams.get('seat_count'), '3');
-  assert.equal(url.searchParams.get('utm_campaign'), 'team_self_serve');
+  assert.equal(url.searchParams.get('seat_count'), null);
+  assert.equal(url.searchParams.get('utm_campaign'), 'team_intake');
   assert.equal(url.searchParams.get('cta_id'), 'go_teams');
 });
 
@@ -729,22 +729,25 @@ test('pricing page is the single source of truth for what ThumbGate sells', asyn
   assert.equal(res.status, 200);
   assert.match(String(res.headers.get('content-type')), /text\/html/);
   const body = await res.text();
-  // All four tiers present.
-  assert.match(body, /Workflow Hardening Sprint/i);
-  assert.match(body, /\$499/);
+  // Three coherent tiers present; consulting and kit checkout are intentionally
+  // kept out of the pricing table so cold buyers see one purchase decision.
   assert.match(body, /ThumbGate CLI/i);
   assert.match(body, /ThumbGate Pro/i);
   assert.match(body, /\$19/);
   assert.match(body, /\$149/);
   assert.match(body, /ThumbGate Team/i);
   assert.match(body, /\$49/);
+  assert.doesNotMatch(body, /Workflow Hardening Sprint/i);
+  assert.doesNotMatch(body, /\$499|\$1,500|\$97/);
+  assert.doesNotMatch(body, /buy\.stripe\.com/);
+  assert.doesNotMatch(body, /mailto:igor\.ganapolsky@gmail\.com/);
+  assert.doesNotMatch(body, /self-serve checkout on every subscription plan/i);
   // CTAs route to the canonical paths.
   assert.match(body, /href="\/go\/install/);
-  assert.match(body, /href="\/go\/pro/);
-  assert.match(body, /href="\/go\/teams/);
-  assert.match(body, /mailto:igor\.ganapolsky@gmail\.com/);
+  assert.match(body, /href="\/checkout\/pro/);
+  assert.match(body, /pricing_team_intake/);
+  assert.match(body, /#workflow-sprint-intake/);
   // Cross-links so it's a navigation hub, not a dead end.
-  assert.match(body, /href="\/case-studies"/);
   assert.match(body, /href="\/support"/);
 });
 
@@ -2629,6 +2632,73 @@ test('workflow sprint intake validation failure records failure telemetry and wr
   assert.equal(failure.ctaId, 'workflow_sprint_intake');
 });
 
+test('broker audit intake captures form leads first-party and records telemetry', async () => {
+  const body = new URLSearchParams({
+    name: 'Ava Broker',
+    brokerage: 'Northside Realty',
+    website: 'https://northside.example/leads',
+    email: 'Ava@Example.com',
+    suspected_leak: 'Zillow leads are getting a slow first response.',
+  }).toString();
+
+  const res = await fetch(apiUrl('/v1/intake/broker-audit'), {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/x-www-form-urlencoded',
+      referer: 'https://thumbgate.ai/broker-audit?utm_source=linkedin&utm_medium=organic_social&utm_campaign=broker_audit_launch',
+    },
+    body,
+  });
+
+  assert.equal(res.status, 201);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+  const html = await res.text();
+  assert.match(html, /Broker audit request received/);
+  assert.match(html, /Lead ID:/);
+
+  const leads = readJsonl(path.join(tmpFeedbackDir, 'broker-audit-leads.jsonl'));
+  const lead = leads.find((entry) => entry.contact.email === 'ava@example.com');
+  assert.ok(lead);
+  assert.match(lead.leadId, /^broker_audit_lead_/);
+  assert.equal(lead.contact.name, 'Ava Broker');
+  assert.equal(lead.contact.brokerage, 'Northside Realty');
+  assert.equal(lead.contact.website, 'https://northside.example/leads');
+  assert.equal(lead.qualification.suspectedLeak, 'Zillow leads are getting a slow first response.');
+  assert.equal(lead.attribution.utmSource, 'linkedin');
+  assert.equal(lead.attribution.utmCampaign, 'broker_audit_launch');
+
+  const telemetry = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
+  assert.ok(telemetry.some((entry) => (
+    entry.eventType === 'broker_audit_lead_submitted' &&
+    entry.ctaId === 'broker_audit_form' &&
+    entry.utmSource === 'linkedin'
+  )));
+});
+
+test('broker audit intake rejects invalid leads and writes no broker lead', async () => {
+  const before = readJsonl(path.join(tmpFeedbackDir, 'broker-audit-leads.jsonl')).length;
+  const res = await fetch(apiUrl('/v1/intake/broker-audit'), {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      referer: 'https://thumbgate.ai/broker-audit?utm_source=direct',
+    },
+    body: JSON.stringify({
+      name: 'Missing Email',
+      brokerage: 'Example Realty',
+      website: 'javascript:alert(1)',
+      email: 'not-an-email',
+    }),
+  });
+
+  assert.equal(res.status, 400);
+  const after = readJsonl(path.join(tmpFeedbackDir, 'broker-audit-leads.jsonl')).length;
+  assert.equal(after, before);
+
+  const telemetry = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
+  assert.ok(telemetry.some((entry) => entry.eventType === 'broker_audit_lead_failed'));
+});
+
 test('workflow sprint advance endpoint requires the static admin key', async () => {
   const intakeRes = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
     method: 'POST',
@@ -3879,9 +3949,13 @@ test('/broker-audit serves the public landing page with telemetry script', async
   assert.match(String(res.headers.get('content-type')), /text\/html/);
 
   const body = await res.text();
-  // Title + framing: free-audit primary, $49 fast-lane secondary
+  // Title + framing: free-audit primary, $49 fast-lane secondary.
   assert.match(body, /Free 20-Minute Broker Lead-Flow Audit/);
-  assert.match(body, /Email Igor for the free audit/);
+  assert.match(body, /action="https:\/\/site-gamma-one-15\.vercel\.app\/api\/audit-form"/);
+  assert.doesNotMatch(body, /REPLACE_ME/);
+  assert.doesNotMatch(body, /phc_[A-Za-z0-9]+/);
+  assert.match(body, /api_host:'\/ingest'/);
+  assert.match(body, /Request free audit/);
   assert.match(body, /\$49 fast-lane/);
   // Stripe link wired to the verified plink
   assert.match(body, /buy\.stripe\.com\/9B600jaiE7Dg6tPayn3sI2L/);

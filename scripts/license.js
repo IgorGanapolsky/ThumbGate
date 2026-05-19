@@ -80,7 +80,6 @@ module.exports = {
   verifyLicense,
   isProLicensed,
   activateLicense,
-  generateLicenseKey,
   isValidKey,
   VALID_PREFIXES,
   LICENSE_PATH,

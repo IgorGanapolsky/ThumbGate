@@ -1059,6 +1059,7 @@ function captureFeedback(params) {
         : null),
     structuredRule: structuredRule || null,
     ...(reflection && { reflection }),
+    gateAction: params.gateAction || null,
     timestamp: now,
   };
 
@@ -1398,7 +1399,7 @@ function captureFeedback(params) {
   if (feedbackEvent.signal === 'negative') {
     try {
       const autoPromote = require('./auto-promote-gates');
-      const promoteResult = autoPromote.promote(FEEDBACK_LOG_PATH);
+      const promoteResult = autoPromote.promote(FEEDBACK_LOG_PATH, { gateAction: feedbackEvent.gateAction });
       // First-rule activation telemetry: anonymous ping the first time
       // a prevention rule auto-promotes for this install. Idempotent —
       // see scripts/activation-tracker.js. Critical for activation funnel

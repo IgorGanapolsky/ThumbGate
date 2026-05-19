@@ -1,6 +1,6 @@
 # MCP Directory Repair Pack
 
-Updated: 2026-05-04T19:55:16.759Z
+Updated: 2026-05-19T22:24:55.683Z
 
 This is a sales operator artifact. It is not proof of directory approval, ranking, installs, or revenue by itself.
 

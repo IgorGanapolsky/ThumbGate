@@ -37,20 +37,18 @@ describe('postinstall banner', () => {
     assert.equal(stdout, '', 'stdout should be empty');
   });
 
-  it('includes checkout URL in stderr output', () => {
+  it('includes trial banner and upgrade URL in stderr output', () => {
     const { stderr, exitCode } = runPostinstall();
     assert.equal(exitCode, 0);
-    const checkoutUrl = extractHttpUrls(stderr).find((candidate) => candidate === PRO_MONTHLY_PAYMENT_LINK);
-    assert.equal(checkoutUrl, PRO_MONTHLY_PAYMENT_LINK, 'should include checkout URL');
     assert.ok(stderr.includes('ThumbGate'), 'should mention ThumbGate');
     assert.ok(stderr.includes('npx thumbgate'), 'should include quick start');
-    assert.match(stderr, /Workflow Hardening[\s\S]*Sprint/i);
-    assert.match(stderr, /Hosted lesson sync/i);
-    assert.match(stderr, /Org dashboard/i);
-    assert.match(stderr, /thumbgate\.ai\/dashboard/i);
-    assert.match(stderr, /Team: \$49\/seat\/mo/i);
+    assert.match(stderr, /14-day Pro trial/i, 'should mention reverse trial');
+    assert.match(stderr, /thumbgate\.ai\/dashboard/i, 'should include dashboard URL');
+    assert.match(stderr, /Unlimited prevention rules/i, 'should list trial features');
+    assert.match(stderr, /Lesson search/i, 'should mention lesson search');
+    assert.match(stderr, /DPO export/i, 'should mention DPO export');
+    assert.match(stderr, /thumbgate\.ai\/go\/pro/i, 'should include upgrade URL');
     assert.doesNotMatch(stderr, /optional hosted API key/i);
-    assert.match(stderr, /\$19\/mo or \$149\/yr/i);
   });
 
   it('exits silently in CI', () => {

@@ -12,19 +12,8 @@ test('license module exports required functions', () => {
     assert.equal(typeof license.verifyLicense, 'function');
     assert.equal(typeof license.isProLicensed, 'function');
     assert.equal(typeof license.activateLicense, 'function');
-    assert.equal(typeof license.generateLicenseKey, 'function');
     assert.equal(typeof license.getLicensePath, 'function');
-  } finally {
-    restore();
-  }
-});
-
-test('generateLicenseKey produces valid tg_pro_ format', () => {
-  const { moduleExports: license, restore } = loadWithIsolatedLicenseEnv(LICENSE_MODULE_ID);
-  try {
-    const key = license.generateLicenseKey('test@example.com');
-    assert.ok(key.startsWith('tg_pro_'));
-    assert.ok(key.length > 10);
+    assert.equal(typeof license.generateLicenseKey, 'undefined', 'generateLicenseKey must not be exported (prevents license forging)');
   } finally {
     restore();
   }

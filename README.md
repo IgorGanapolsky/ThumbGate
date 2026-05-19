@@ -6,17 +6,23 @@
   </a>
 </p>
 
-**Your AI coding bill has a leak.**
+**AI agents repeat mistakes. You pay for every retry.**
 
-**Stop paying for the same AI mistake twice.**
+ThumbGate remembers what went wrong and permanently blocks it before it happens again. One thumbs-down becomes a prevention rule that fires across every session, every agent, every model — before a single token is spent on the repeat.
 
-Every retry loop, every hallucinated import, every *"let me try a different approach"* — those are billable tokens on every LLM vendor's bill. Thumbs-down once; ThumbGate blocks that exact mistake on every future call. Across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — any MCP-compatible agent, forever.
+```
+  Agent tries:   rm -rf tests/
+  ThumbGate:     ⛔ BLOCKED — "Never delete test directories"
+                 Pattern matched: rm.*-rf.*tests
+                 Source: your thumbs-down from last Tuesday
+                 Tokens spent on this repeat: 0
+```
 
-Under the hood: your thumbs-down becomes one of your **Pre-Action Checks** that physically blocks the pattern **permanently** on every future call — across every session, every model, every agent. It is **self-improving agent governance**: every correction promotes a fresh prevention rule, and your library of prevention rules grows stronger with every lesson. Works with Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and any MCP-compatible agent. The monthly Anthropic / OpenAI bill stops paying for the same lesson over and over — local-first enforcement, zero tokens spent on repeats.
+```bash
+npx thumbgate init   # auto-detects your agent, wires hooks, 30 seconds
+```
 
-> **Prevent expensive AI mistakes. Make AI stop repeating mistakes. Turn a smart assistant into a reliable operator.**
-
-> **Mission:** make AI coding affordable by making sure you never pay for the same mistake twice.
+Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and any MCP-compatible agent. Free tier: 5 active prevention rules. [Pro: $19/mo](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme) — unlimited rules, dashboard, DPO export.
 
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
@@ -48,7 +54,7 @@ If someone is not already bought into ThumbGate, do not lead with architecture. 
 
 1. **Show the pain:** open the **[ThumbGate GPT](https://thumbgate-production.up.railway.app/go/gpt?utm_source=github&utm_medium=readme&utm_campaign=first_dollar_activation&cta_id=readme_first_dollar_open_gpt&cta_placement=readme_first_dollar)** and paste the bad answer, risky command, deploy, PR action, or agent plan before it runs again.
 2. **Capture the lesson:** type `thumbs down:` or `thumbs up:` with one concrete sentence. Native ChatGPT rating buttons are not the ThumbGate capture path; typed feedback is.
-3. **Enforce the repeat:** run `npx thumbgate init` where the agent executes so the lesson can become a Pre-Action Check instead of another reminder.
+3. **Enforce the repeat:** run `npx thumbgate init` where the agent executes so the lesson can become one of your Pre-Action Checks instead of another reminder.
 4. **Upgrade only after proof:** Solo Pro is for the dashboard, DPO export, proof-ready evidence, and higher capture limits after one real blocked repeat. Team starts with the Workflow Hardening Sprint around one repeated failure, one owner, and one proof review.
 
 The buying question is simple: **what repeated AI mistake would be worth blocking before the next tool call?**

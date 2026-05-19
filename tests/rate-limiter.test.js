@@ -16,7 +16,7 @@ describe('rate-limiter', () => {
     savedEnv.HOME = process.env.HOME;
     savedEnv.USERPROFILE = process.env.USERPROFILE;
     savedEnv.THUMBGATE_API_KEY = process.env.THUMBGATE_API_KEY;
-    savedEnv.THUMBGATE_PRO_MODE = process.env.THUMBGATE_PRO_MODE;
+    savedEnv.THUMBGATE_PRO_MODE = process.env.THUMBGATE_PRO_MODE; // legacy, kept for cleanup
     savedEnv.THUMBGATE_NO_RATE_LIMIT = process.env.THUMBGATE_NO_RATE_LIMIT;
 
     tempHomeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-rate-limit-test-'));
@@ -73,13 +73,10 @@ describe('rate-limiter', () => {
     }
   });
 
-  it('THUMBGATE_PRO_MODE=1 marks pro tier', () => {
-    process.env.THUMBGATE_PRO_MODE = '1';
-    assert.equal(rateLimiter.isProTier(), true);
-    for (let i = 0; i < 10; i++) {
-      const result = rateLimiter.checkLimit('capture_feedback');
-      assert.equal(result.allowed, true, `call ${i + 1} should be allowed with PRO_MODE`);
-    }
+  it('14-day reverse trial grants pro tier for new installs', () => {
+    assert.equal(typeof rateLimiter.isInTrialPeriod, 'function');
+    assert.equal(typeof rateLimiter.trialDaysRemaining, 'function');
+    assert.equal(rateLimiter.TRIAL_DAYS, 14);
   });
 
   it('unknown actions have no limit', () => {
@@ -112,7 +109,7 @@ describe('rate-limiter', () => {
   });
 
   it('pro tier bypasses export_dpo limit', () => {
-    process.env.THUMBGATE_PRO_MODE = '1';
+    process.env.THUMBGATE_API_KEY = 'test-key-for-dpo';
     for (let i = 0; i < 5; i++) {
       assert.equal(rateLimiter.checkLimit('export_dpo').allowed, true);
     }

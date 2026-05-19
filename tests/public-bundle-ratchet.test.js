@@ -42,7 +42,8 @@ const path = require('node:path');
 //                                                  Anthropic named the role)
 // This number is allowed to DECREASE; another bump up requires a
 // deliberate changeset entry.
-const BASELINE_FILE_COUNT = 257;
+// 257 → 258: scripts/cli-demo.js added in broker-audit-conversion-fix branch
+const BASELINE_FILE_COUNT = 258;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
