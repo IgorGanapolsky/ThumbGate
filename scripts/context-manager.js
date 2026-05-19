@@ -111,13 +111,41 @@ function assembleGuards(toolName, toolInput) {
   }
 }
 
-function assembleContextPack(query, agentProfile) {
+function assembleContextPack(query, agentProfile, options = {}) {
+  const { guards } = options;
   try {
     ensureContextFs();
+
+    // 1. Proactive Governance: Filter what the agent sees based on prevention rules
+    let structuredQuery = query;
+    if (guards && guards.mode === 'block') {
+      structuredQuery = `${query} (Active Block Policy: ${guards.reason})`;
+    }
+
+    // 2. Elevate Thompson Sampling to Architecture Level
+    let strategy = null;
+    try {
+      const ts = require('./thompson-sampling');
+      const model = ts.loadModel();
+      const bestCategory = ts.argmaxPosteriors(model);
+      
+      // Route between context-building strategies based on TS posterior mean
+      if (bestCategory === 'architecture' || bestCategory === 'infra') {
+        strategy = 'hierarchical';
+      } else if (bestCategory === 'observability' || bestCategory === 'debugging') {
+        strategy = 'summarize-then-expand';
+      } else {
+        strategy = 'semantic';
+      }
+    } catch (e) {
+      // Fallback to default routing
+    }
+
     return constructContextPack({
-      query,
+      query: structuredQuery,
       maxItems: Math.min(8, Math.ceil(agentProfile.contextBudget / 1000)),
       maxChars: agentProfile.contextBudget,
+      strategy
     });
   } catch {
     return null;
@@ -228,6 +256,12 @@ function assembleUnifiedContext(params = {}) {
       })),
       visibility: contextPack.visibility || null,
       cached: !!(contextPack.cache && contextPack.cache.hit),
+      layers: {
+        localState: session || null,
+        graphState: codeGraph || null,
+        policyState: guards || null,
+        sessionState: contextPack.items ? contextPack.items.filter(i => i.namespace === 'session') : []
+      }
     } : null,
     codeGraph: codeGraph || null,
     assembledAt: new Date().toISOString(),
@@ -306,6 +340,12 @@ function formatUnifiedContext(ctx) {
 
   // Context pack
   if (ctx.contextPack) {
+    lines.push(`### Context Architecture Layers`);
+    lines.push(`- Local State: ${ctx.contextPack.layers.localState ? 'Active' : 'Empty'}`);
+    lines.push(`- Graph State: ${ctx.contextPack.layers.graphState ? 'Active' : 'Empty'}`);
+    lines.push(`- Policy State: ${ctx.contextPack.layers.policyState ? ctx.contextPack.layers.policyState.mode : 'Empty'}`);
+    lines.push(`- Session State: ${ctx.contextPack.layers.sessionState.length} items`);
+    lines.push('');
     lines.push(`### Context Pack (${ctx.contextPack.itemCount} items)`);
     ctx.contextPack.items.forEach((item) => {
       lines.push(`- [${item.namespace}] ${item.title} (score: ${item.score})`);

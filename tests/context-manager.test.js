@@ -196,6 +196,7 @@ describe('context-manager', () => {
           ],
           visibility: null,
           cached: false,
+          layers: { localState: null, graphState: null, policyState: null, sessionState: [] }
         },
         codeGraph: '3 files affected: server.js, db.js, test.js',
       };
