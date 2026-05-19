@@ -33,11 +33,7 @@ __GA_BOOTSTRAP__
   const serverSessionId = '__SERVER_SESSION_ID__';
   const serverAcquisitionId = '__SERVER_ACQUISITION_ID__';
   const serverTelemetryCaptured = '__SERVER_TELEMETRY_CAPTURED__' === 'true';
-  const sprintDiagnosticCheckoutUrl = '__SPRINT_DIAGNOSTIC_CHECKOUT_URL__';
-  const workflowSprintCheckoutUrl = '__WORKFLOW_SPRINT_CHECKOUT_URL__';
   const proPriceDollars = Number('__PRO_PRICE_DOLLARS__') || 19;
-  const sprintDiagnosticPriceDollars = Number('__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__') || 499;
-  const workflowSprintPriceDollars = Number('__WORKFLOW_SPRINT_PRICE_DOLLARS__') || 1500;
 </script>
 
 <script type="application/ld+json">
@@ -575,14 +571,6 @@ __GA_BOOTSTRAP__
   .team-intake-panel h3 { margin: 0 0 6px; font-size: 18px; color: var(--text); }
   .team-intake-panel p { margin: 0; color: var(--text-dim); font-size: 13px; line-height: 1.55; }
   .team-intake-badge { flex-shrink: 0; padding: 6px 10px; border: 1px solid rgba(74,222,128,0.35); border-radius: 999px; color: var(--green); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
-  .team-paid-path { display: none; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0 0 16px; }
-  .team-paid-path.visible { display: grid; }
-  .team-paid-card { display: flex; flex-direction: column; justify-content: space-between; gap: 12px; min-height: 150px; padding: 16px; border: 1px solid rgba(74,222,128,0.22); border-radius: 10px; background: rgba(0,0,0,0.24); }
-  .team-paid-card h4 { margin: 0 0 6px; color: var(--text); font-size: 15px; }
-  .team-paid-card p { margin: 0; color: var(--text-dim); font-size: 12px; line-height: 1.5; }
-  .team-paid-price { color: var(--green); font-weight: 800; font-size: 18px; }
-  .team-paid-link { display: block; text-align: center; padding: 10px 12px; background: rgba(74,222,128,0.16); color: var(--green); border: 1px solid rgba(74,222,128,0.45); border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 700; }
-  .team-paid-link:hover { border-color: var(--green); transform: translateY(-1px); }
   .team-intake-recovery { margin: 0 0 16px; padding: 13px 14px; border: 1px solid rgba(34,211,238,0.28); border-radius: 12px; background: rgba(34,211,238,0.08); display: flex; align-items: center; justify-content: space-between; gap: 14px; text-align: left; }
   .team-intake-recovery strong { display: block; color: var(--text); font-size: 13px; margin-bottom: 2px; }
   .team-intake-recovery span { display: block; color: var(--text-dim); font-size: 12px; line-height: 1.45; }
@@ -660,7 +648,6 @@ __GA_BOOTSTRAP__
     .pricing-grid { grid-template-columns: 1fr; }
     .team-intake-panel-head { display: block; }
     .team-intake-badge { display: inline-block; margin-bottom: 10px; }
-    .team-paid-path { grid-template-columns: 1fr; }
     .team-intake-recovery { align-items: stretch; flex-direction: column; text-align: center; }
     .team-intake-recovery a { width: 100%; }
     .team-form { grid-template-columns: 1fr; }
@@ -795,9 +782,9 @@ __GA_BOOTSTRAP__
         update the test assertions in the same PR.
       -->
       <div hidden aria-hidden="true" data-thumbgate-test-anchors style="display:none">
-        <span data-cta="hero_workflow_sprint_diagnostic_checkout">ctaId: 'hero_workflow_sprint_diagnostic_checkout' ctaId: 'hero_workflow_sprint_recovery_intake' workflow_sprint_checkout_started workflow_sprint_recovery_intake_clicked hero_workflow_sprint_recovery_intake</span>
+        <span data-cta="hero_workflow_sprint_intake">ctaId: 'hero_workflow_sprint' ctaId: 'hero_workflow_sprint_recovery_intake' workflow_sprint_intake_started workflow_sprint_recovery_intake_clicked hero_workflow_sprint_recovery_intake</span>
         <span data-anchor="dashboard-preview">dashboard-preview What your Pro dashboard looks like check:no-force-push</span>
-        <span data-anchor="team-intake-form">Start Team Pilot Intake id="team-pilot-intake-form" data-team-intake-form name="ctaPlacement" value="team_visible_intake" name="utmMedium" value="visible_team_intake" name="planId" value="team" name="ctaId" value="workflow_sprint_intake" Not ready to pay from a checkout page? team_workflow_sprint_recovery_intake checkout_abandon workflow_sprint_intake_started workflow_sprint_intake_submit_attempted</span>
+        <span data-anchor="team-intake-form">Start Team Pilot Intake id="team-pilot-intake-form" data-team-intake-form name="ctaPlacement" value="team_visible_intake" name="utmMedium" value="visible_team_intake" name="planId" value="team" name="ctaId" value="workflow_sprint_intake" Team checkout happens after scope. team_workflow_sprint_recovery_intake scope_first workflow_sprint_intake_started workflow_sprint_intake_submit_attempted pricing_team_intake team_intake_started</span>
         <span data-anchor="chatgpt-context">No, you do not have to chat inside the GPT forever. ChatGPT is the discovery and memory surface. Do not rely on ChatGPT's native rating buttons for ThumbGate memory. Explore GPTs choose the GPT by Igor Ganapolsky Programming Do I have to chat inside the ThumbGate GPT for enforcement? capture thumbs-up/down lessons Real blocking for coding agents still runs locally adapters/chatgpt/INSTALL.md Native ChatGPT rating buttons are not the ThumbGate capture path. thumbs up: this review named exact files, commands, and tests. thumbs down: the answer ignored my request.</span>
       </div>
     </div>
@@ -1090,6 +1077,28 @@ __GA_BOOTSTRAP__
   </div>
 </section>
 
+<section class="compatibility" id="persistent-skills">
+  <div class="container">
+    <div class="section-label">Persistent Agent Skills</div>
+    <h2 class="section-title">Reusable instructions are the new baseline. Enforcement is the moat.</h2>
+    <p style="text-align:center;font-size:16px;color:var(--text-muted);max-width:880px;margin:0 auto 28px;line-height:1.7;">Grok-style skills are training users to expect persistent expertise across every surface. ThumbGate turns that expectation into a governed reliability layer: capture the correction once, export it as a portable skill or lesson bundle, then prove the next risky tool call was blocked before it ran.</p>
+    <div class="agent-grid">
+      <div class="agent-card">
+        <h3>Portable skill memory</h3>
+        <p>Thumbs-up/down lessons become reusable rules and skill-pack context that can move across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and MCP-compatible agents.</p>
+      </div>
+      <div class="agent-card">
+        <h3>Instructions plus teeth</h3>
+        <p>Persistent skills tell an agent what you prefer. ThumbGate checks whether the next action follows those preferences and blocks high-risk repeats before execution.</p>
+      </div>
+      <div class="agent-card">
+        <h3>Proof for teams</h3>
+        <p>Every fired rule carries the source lesson, decision trace, and audit evidence, so teams can review which skill worked instead of trusting a hidden chatbot memory.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- HOW IT WORKS -->
 <section class="how-it-works" id="how-it-works">
   <div class="container">
@@ -1296,9 +1305,8 @@ __GA_BOOTSTRAP__
           <li>Workflow hardening sprint intake for approval boundaries and rollback safety</li>
           <li>Email support during pilot rollout</li>
         </ul>
-        <a href="/checkout/pro?plan_id=team&amp;seat_count=3&amp;utm_source=website&amp;utm_medium=pricing&amp;utm_campaign=team_self_serve&amp;cta_id=pricing_team_self_serve&amp;cta_placement=pricing&amp;landing_path=%2F" onclick="try{posthog.capture('team_self_serve_click',{cta:'team_self_serve',seats:3,price:147})}catch(_){};sendFirstPartyTelemetry('team_self_serve_checkout_started',{ctaId:'pricing_team_self_serve',ctaPlacement:'pricing',planId:'team',seatCount:3,price:147});sendGa4Event('begin_checkout',{currency:'USD',value:147,items:[{item_id:'team_monthly',item_name:'ThumbGate Team (3 seats)',quantity:3}]});" class="btn-team" style="display:block;text-align:center;">Start 3-seat Team — $147/mo</a>
-        <a href="#workflow-sprint-intake" style="display:block;text-align:center;margin-top:8px;font-size:13px;color:var(--text-dim);text-decoration:none;">Or qualify first via Workflow Hardening Sprint intake →</a>
-        <p style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;">Team is $49/seat/mo with a 3-seat minimum. Self-serve checkout starts you at $147/mo for 3 seats; add more seats from the dashboard. Prefer to qualify the workflow before paying? Start with the intake.</p>
+        <a href="#workflow-sprint-intake" onclick="try{posthog.capture('team_intake_click',{cta:'team_intake',seats:3,price:0})}catch(_){};sendFirstPartyTelemetry('team_intake_started',{ctaId:'pricing_team_intake',ctaPlacement:'pricing',planId:'team',seatCount:3,price:0});sendGa4Event('generate_lead',{currency:'USD',value:0,method:'team_workflow_intake'});" class="btn-team" style="display:block;text-align:center;">Send team workflow first →</a>
+        <p style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;">Team is $49/seat/mo with a 3-seat minimum, but team rollouts start through intake so the workflow, shared rules, and rollout proof are explicit before checkout.</p>
       </div>
     </div>
     <div style="max-width:1080px;margin:24px auto 0;">
@@ -1307,15 +1315,15 @@ __GA_BOOTSTRAP__
           <div style="flex:1 1 420px;min-width:280px;">
             <div class="tier" style="color:var(--cyan);">Regulated</div>
             <div style="font-size:14px;color:var(--text-muted);margin:4px 0 12px;letter-spacing:0.04em;text-transform:uppercase;">Banking · Insurance · Healthcare · Public sector</div>
-            <div style="font-size:18px;color:var(--text);margin-bottom:6px;font-weight:700;">Contact sales</div>
-            <div class="price-sub" style="margin-bottom:14px;">For teams operating AI coding agents under DORA, the EU AI Act, HIPAA, or comparable audit pressure. Cheaper than the <a href="/learn/regulated-agent-execution-boundary" style="color:var(--cyan);text-decoration:underline;">$1.4M build estimate</a> The New Stack put on DIY agent platforms.</div>
+            <div style="font-size:18px;color:var(--text);margin-bottom:6px;font-weight:700;">Regulated workflow review</div>
+            <div class="price-sub" style="margin-bottom:14px;">For teams operating AI coding agents under DORA, the EU AI Act, HIPAA, or comparable audit pressure. Pricing is scoped after intake because the buyer needs evidence, deployment boundaries, and approval ownership before checkout.</div>
             <ul style="margin-bottom:0;">
               <li><strong>Audit-grade decision trail</strong> — every PreToolUse evaluation logged with the rule that fired, ready for SIEM export</li>
               <li><strong>Immutable rule provenance</strong> — each prevention rule traceable to the feedback event that generated it</li>
               <li><strong>Self-managed deployment</strong> — air-gapped or VPC-hosted; no agent state leaves your boundary</li>
               <li><strong>DORA / EU AI Act evidence packaging</strong> — machine-readable reports aligned to Article 6, 28, and high-risk provider monitoring obligations</li>
               <li><strong>SSO + role separation</strong> — operator, reviewer, and auditor roles enforced at the gate layer</li>
-              <li><strong>Workflow Hardening Sprint included</strong> — a paid diagnostic that proves the boundary against one of your real repeated-failure cases before broader rollout</li>
+              <li><strong>Workflow proof plan included</strong> — a scoped review that proves the boundary against one of your real repeated-failure cases before broader rollout</li>
               <li><strong>Quarterly red-team review</strong> — prompt-injection and policy-bypass exercises with written findings</li>
             </ul>
           </div>
@@ -1339,64 +1347,16 @@ __GA_BOOTSTRAP__
       <div class="team-intake-panel-head">
         <div>
           <h3>Tell us the workflow. Get a proof plan.</h3>
-          <p>The highest-fit Team buyer is already feeling one repeated failure. Start with a paid diagnostic when budget is ready, or use intake when you need qualification first.</p>
+          <p>The highest-fit Team buyer is already feeling one repeated failure. Send the workflow first so the next step is scoped around the real blocker instead of a blind checkout.</p>
         </div>
         <span class="team-intake-badge">30-minute intake</span>
       </div>
-      <details style="border:1px solid var(--border);border-radius:14px;padding:18px 22px;background:var(--bg-raised);margin:18px 0;">
-        <summary style="cursor:pointer;font-size:16px;font-weight:600;color:var(--cyan);list-style:none;display:flex;align-items:center;gap:8px;">
-          <span style="display:inline-block;transition:transform 0.15s;">▸</span>
-          Need consulting, a one-off diagnostic, or a hardening sprint? View paid services &amp; kits
-        </summary>
-      <div class="team-paid-path" data-sprint-paid-path aria-label="Paid workflow hardening options">
-        <div class="team-paid-card">
-          <div>
-            <h4>Workflow Hardening Diagnostic</h4>
-            <p>Paid triage for one repeated agent or review failure, with a concrete proof plan and go/no-go recommendation.</p>
-          </div>
-          <div>
-            <div class="team-paid-price">$<span data-sprint-diagnostic-price>499</span></div>
-            <a class="team-paid-link" data-sprint-diagnostic-link href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__">Pay for diagnostic</a>
-          </div>
-        </div>
-        <div class="team-paid-card">
-          <div>
-            <h4>AI Agent Governance Sprint</h4>
-            <p>48-hour Workflow Hardening Sprint for one workflow owner, one blocker, approval boundaries, rollback safety, one proof review, and one hardened rollout path.</p>
-          </div>
-          <div>
-            <div class="team-paid-price">$<span data-workflow-sprint-price>1500</span></div>
-            <a class="team-paid-link" data-workflow-sprint-link href="__WORKFLOW_SPRINT_CHECKOUT_URL__">Pay for sprint</a>
-          </div>
-        </div>
-        <div class="team-paid-card">
-          <div>
-            <h4>Reliable AI Agent Governance Setup</h4>
-            <p>Full ThumbGate-powered setup for Claude Code, Cursor, or Codex teams: npx install, custom prevention rules, audit trail, training, and proof reports. Optional ongoing rule management is $297/mo.</p>
-          </div>
-          <div>
-            <div class="team-paid-price">$3,997</div>
-            <a class="team-paid-link" href="#team-pilot-intake-form" onclick="sendFirstPartyTelemetry('governance_setup_intake_clicked',{ctaId:'team_governance_setup_intake',ctaPlacement:'team_paid_path',planId:'team',offer:'reliable_ai_agent_governance_setup',price:3997});sendGa4Event('generate_lead',{currency:'USD',value:3997,method:'governance_setup_intake'});">Request setup</a>
-          </div>
-        </div>
-        <div class="team-paid-card">
-          <div>
-            <h4>OpenClaw Agent Governance Kit</h4>
-            <p>Self-serve digital kit with ThumbGate prevention rules, OpenClaw-compatible workflow prompts, agent registry checklist, proof report template, and Zernio launch copy.</p>
-          </div>
-          <div>
-            <div class="team-paid-price">$97</div>
-            <a rel="nofollow noopener noreferrer" target="_blank" class="team-paid-link" href="https://buy.stripe.com/bJe14naiE9Lo7xT49Z3sI12" onclick="sendFirstPartyTelemetry('openclaw_governance_kit_checkout_started',{ctaId:'team_openclaw_governance_kit_checkout',ctaPlacement:'team_paid_path',planId:'digital_kit',offer:'openclaw_agent_governance_kit',price:97});sendGa4Event('begin_checkout',{currency:'USD',value:97,items:[{item_id:'openclaw_agent_governance_kit',item_name:'OpenClaw Agent Governance Kit'}]});">Buy kit</a>
-          </div>
-        </div>
-      </div>
-      </details>
       <div class="team-intake-recovery" aria-label="Checkout recovery path for workflow sprint buyers">
         <div>
-          <strong>Not ready to pay from a checkout page?</strong>
-          <span>Send the workflow first. We can qualify the blocker, confirm the proof plan, and route you to the $499 diagnostic, $1500 sprint, or $3,997 governance setup only when the scope is real.</span>
+          <strong>Team checkout happens after scope.</strong>
+          <span>Send the workflow first. We will qualify the blocker, confirm whether Pro, Team, or a scoped rollout is the right next step, and keep the purchase path tied to real evidence.</span>
         </div>
-        <a href="#team-pilot-intake-form" onclick="sendFirstPartyTelemetry('workflow_sprint_recovery_intake_clicked',{ctaId:'team_workflow_sprint_recovery_intake',ctaPlacement:'team_paid_path_recovery',planId:'team',offer:'workflow_hardening_sprint',reason:'checkout_abandon'});sendGa4Event('generate_lead',{currency:'USD',value:0,method:'workflow_sprint_recovery_intake'});">Send workflow first</a>
+        <a href="#team-pilot-intake-form" onclick="sendFirstPartyTelemetry('workflow_sprint_recovery_intake_clicked',{ctaId:'team_workflow_sprint_recovery_intake',ctaPlacement:'team_intake_recovery',planId:'team',offer:'workflow_hardening_sprint',reason:'scope_first'});sendGa4Event('generate_lead',{currency:'USD',value:0,method:'workflow_sprint_recovery_intake'});">Send workflow first</a>
       </div>
       <form id="team-pilot-intake-form" class="team-form" action="/v1/intake/workflow-sprint" method="POST" data-team-intake-form>
         <input type="hidden" name="ctaId" value="workflow_sprint_intake">
@@ -1434,6 +1394,10 @@ __GA_BOOTSTRAP__
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How is ThumbGate different from model-training feedback loops?</div>
         <div class="faq-a">ThumbGate's intelligence is context, not weights. It doesn't touch the model — it injects past feedback into context so your agent is conditioned by your corrections. Think of it as a behavioral immune system, not a training pipeline. The check blocks are hard enforcement, not soft suggestions.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How is ThumbGate different from persistent agent skills?</div>
+        <div class="faq-a">Persistent agent skills are reusable instructions. ThumbGate uses the same market shift but adds the missing enforcement loop: lessons become portable skill context, Pre-Action Checks block repeated failures before tool execution, and the dashboard shows evidence for which rule fired and why.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What's the tech stack?</div>
@@ -1615,55 +1579,6 @@ function sendGa4Event(eventName, params) {
   globalThis.gtag('event', eventName, params || {});
 }
 
-function initializePaidSprintPath() {
-  var panel = document.querySelector('[data-sprint-paid-path]');
-  if (!panel) return;
-  var diagnosticLink = document.querySelector('[data-sprint-diagnostic-link]');
-  var sprintLink = document.querySelector('[data-workflow-sprint-link]');
-  var diagnosticPrice = document.querySelector('[data-sprint-diagnostic-price]');
-  var sprintPrice = document.querySelector('[data-workflow-sprint-price]');
-  if (diagnosticPrice) diagnosticPrice.textContent = String(sprintDiagnosticPriceDollars);
-  if (sprintPrice) sprintPrice.textContent = String(workflowSprintPriceDollars);
-  var hasDiagnosticUrl = /^https?:\/\//.test(sprintDiagnosticCheckoutUrl);
-  var hasSprintUrl = /^https?:\/\//.test(workflowSprintCheckoutUrl);
-  if (!hasDiagnosticUrl && !hasSprintUrl) return;
-  panel.classList.add('visible');
-  if (hasDiagnosticUrl && diagnosticLink) {
-    diagnosticLink.href = sprintDiagnosticCheckoutUrl;
-    diagnosticLink.addEventListener('click', function() {
-      sendFirstPartyTelemetry('workflow_sprint_diagnostic_checkout_started', {
-        ctaId: 'workflow_sprint_diagnostic_checkout',
-        ctaPlacement: 'team_paid_path',
-        planId: 'team',
-        offer: 'workflow_hardening_diagnostic',
-        price: sprintDiagnosticPriceDollars,
-      });
-      sendGa4Event('begin_checkout', {
-        currency: 'USD',
-        value: sprintDiagnosticPriceDollars,
-        items: [{ item_id: 'workflow_hardening_diagnostic', item_name: 'Workflow Hardening Diagnostic' }],
-      });
-    });
-  }
-  if (hasSprintUrl && sprintLink) {
-    sprintLink.href = workflowSprintCheckoutUrl;
-    sprintLink.addEventListener('click', function() {
-      sendFirstPartyTelemetry('workflow_sprint_checkout_started', {
-        ctaId: 'workflow_sprint_checkout',
-        ctaPlacement: 'team_paid_path',
-        planId: 'team',
-        offer: 'workflow_hardening_sprint',
-        price: workflowSprintPriceDollars,
-      });
-      sendGa4Event('begin_checkout', {
-        currency: 'USD',
-        value: workflowSprintPriceDollars,
-        items: [{ item_id: 'workflow_hardening_sprint', item_name: 'Workflow Hardening Sprint' }],
-      });
-    });
-  }
-}
-
 function initializeTeamIntakeTelemetry() {
   document.querySelectorAll('[data-team-intake-form]').forEach(function(form) {
     var started = false;
@@ -1688,7 +1603,7 @@ function initializeTeamIntakeTelemetry() {
       });
       sendGa4Event('generate_lead', {
         currency: 'USD',
-        value: workflowSprintPriceDollars,
+        value: 0,
         method: 'workflow_sprint_intake',
       });
     });
@@ -1828,8 +1743,7 @@ function copyInstall(el) {
       { selector: '#pro-checkout-link', ctaId: 'pricing_pro_checkout', ctaPlacement: 'pricing', planId: 'pro' },
       { selector: '.price-card.pro .btn-pro', ctaId: 'pricing_pro_monthly', ctaPlacement: 'pricing', planId: 'pro' },
       { selector: '.hero-actions .btn-pro-page', ctaId: 'hero_workflow_intake', ctaPlacement: 'hero', planId: 'team' },
-      { selector: '.hero-paid-actions .diagnostic', ctaId: 'hero_workflow_sprint_diagnostic_checkout', ctaPlacement: 'hero_paid_path', planId: 'team' },
-      { selector: '.hero-paid-actions .intake', ctaId: 'hero_workflow_sprint_recovery_intake', ctaPlacement: 'hero_paid_path', planId: 'team' },
+      { selector: '.hero-actions .hero-pro', ctaId: 'hero_workflow_sprint_recovery_intake', ctaPlacement: 'hero', planId: 'team' },
       { selector: '.sticky-cta .btn-pro', ctaId: 'sticky_go_pro', ctaPlacement: 'sticky_cta', planId: 'pro' },
       { selector: '.price-card.team .btn-team', ctaId: 'team_workflow_sprint', ctaPlacement: 'pricing', planId: 'team' },
       { selector: '#team-pilot-intake-form', ctaId: 'workflow_sprint_intake', ctaPlacement: 'team_visible_intake', planId: 'team' }
@@ -1839,7 +1753,6 @@ function copyInstall(el) {
 </script>
 <script>
 initializeBuyerIntentForms();
-initializePaidSprintPath();
 initializeTeamIntakeTelemetry();
 
 async function handleProCheckout() {
@@ -1864,6 +1777,11 @@ async function handleProCheckout() {
   if (typeof plausible === 'function') {
     plausible('pro_email_captured', { props: { page: 'homepage', intent: 'checkout' } });
   }
+  sendGa4Event('begin_checkout', {
+    currency: 'USD',
+    value: proPriceDollars,
+    items: [{ item_id: 'pro_monthly', item_name: 'ThumbGate Pro Monthly' }],
+  });
   try {
     await buyerIntent.submitNewsletterSignup(normalizedEmail);
   } catch (_err) {
