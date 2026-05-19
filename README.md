@@ -458,6 +458,12 @@ Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recal
 
 ---
 
+## Other projects by Igor
+
+If you're a senior software engineer whose resume is getting silence after 30+ applications — I built **[Ralph Resume OS](https://igorganapolsky.github.io/Resume/ralph-resume-os/)**, an autonomous job-search system, on the same pre-action-gating philosophy as ThumbGate. The $49 [ApplyOps Truth Snapshot](https://igorganapolsky.github.io/Resume/applyops/) returns an ATS-fit score, AI-tell scan, title-match check, and four-bullet rewrite in 24 hours.
+
+---
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
