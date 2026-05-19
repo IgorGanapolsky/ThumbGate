@@ -4841,10 +4841,30 @@ async function addContext(){
 
       const { FEEDBACK_DIR } = getFeedbackPaths();
       const journeyState = resolveJourneyState(req, parsed);
+      // Only count `/success` toward the conversion funnel when (a) the URL
+      // carries the `session_id` query param Stripe appends on its post-
+      // payment redirect (always prefixed `cs_`), AND (b) the requester is
+      // not classified as a bot. Without these gates the audit's
+      // `checkoutSuccessPageViews` is dominated by direct navigation,
+      // monitoring probes, bot crawls, and copy-pasted shared links —
+      // masking signal. 2026-05-19 audit showed 6 successViews / 0 paid
+      // confirmations over 30d for exactly this reason. Unverified hits
+      // still emit telemetry but under a different eventType so they do
+      // not inflate the conversion metric.
+      const sessionIdParam = parsed?.searchParams?.get('session_id') || '';
+      const successBotClass = classifyRequester(req.headers);
+      const isCountedSuccess = sessionIdParam.startsWith('cs_') && !successBotClass.isBot;
+      const successEventType = isCountedSuccess
+        ? 'checkout_success_page_view'
+        : 'checkout_success_page_view_unverified';
       appendBestEffortTelemetry(FEEDBACK_DIR, {
-        eventType: 'checkout_success_page_view',
+        eventType: successEventType,
+        sessionIdPresent: sessionIdParam ? 'true' : 'false',
+        sessionIdShape: sessionIdParam.startsWith('cs_') ? 'cs_prefix' : (sessionIdParam ? 'other' : 'missing'),
+        isBot: successBotClass.isBot ? 'true' : 'false',
+        botReason: successBotClass.isBot ? successBotClass.reason : undefined,
         ...buildCheckoutPageTelemetryMetadata(parsed, req, journeyState, '/success'),
-      }, req.headers, 'checkout_success_page_view');
+      }, req.headers, successEventType);
       sendHtml(
         res,
         200,
