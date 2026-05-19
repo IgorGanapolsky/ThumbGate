@@ -2502,6 +2502,7 @@ function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
     { path: '/pro', changefreq: 'weekly', priority: '0.9' },
+    { path: '/policy-vault', changefreq: 'weekly', priority: '0.9' },
     { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
     { path: '/codex-plugin', changefreq: 'weekly', priority: '0.75' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
@@ -4394,6 +4395,29 @@ async function addContext(){
         });
       } catch {
         sendJson(res, 404, { error: 'Federal page not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/policy-vault' || pathname === '/policy-vault.html')) {
+      // ICP page for the vault-layer / policy-aware enforcement
+      // category forming in 2026. Maps the eight canonical vault-layer
+      // prescriptions to ThumbGate's surface area and explicitly names
+      // the two prescriptions (short-lived credential minting + HSM
+      // broker) as out of scope. Routed through servePublicMarketingPage
+      // for UTM attribution and pageType 'policy_vault' telemetry.
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(path.join(PUBLIC_DIR, 'policy-vault.html'), 'utf-8'),
+          extraTelemetry: { pageType: 'policy_vault' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Policy vault page not found' });
       }
       return;
     }

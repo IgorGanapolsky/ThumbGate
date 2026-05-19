@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThumbGate as the AI Agent Policy Vault — Identity-Aware Pre-Action Enforcement at the Tool-Call Boundary</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="The emerging architecture for AI agent governance is a policy-aware vault between agents and legacy systems: identity, context, delegation, short-lived credentials, telemetry. ThumbGate's PreToolUse hooks cover six of the eight prescriptions deterministically at the tool-call boundary.">
+<meta property="og:title" content="ThumbGate as the AI Agent Policy Vault">
+<meta property="og:description" content="Six of the eight vault-layer prescriptions for AI agent governance are already covered by ThumbGate at the tool-call boundary. The other two require an HSM-backed credential broker — out of scope, honestly named.">
+<meta property="og:type" content="article">
+<meta property="og:image" content="https://thumbgate-production.up.railway.app/og.png">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/policy-vault">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "ThumbGate as the AI Agent Policy Vault",
+  "description": "The emerging architecture for AI agent governance is a policy-aware vault between agents and legacy systems. ThumbGate's PreToolUse hooks cover identity-aware, deterministic enforcement at the tool-call boundary — six of the eight prescriptions in the canonical vault-layer playbook, with the credential-minting two explicitly named out of scope.",
+  "datePublished": "2026-05-19",
+  "dateModified": "2026-05-19",
+  "author": { "@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky" },
+  "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate-production.up.railway.app" },
+  "about": [
+    { "@type": "Thing", "name": "AI agent policy vault" },
+    { "@type": "Thing", "name": "ABAC / PBAC for AI agents" },
+    { "@type": "Thing", "name": "Tool-call boundary enforcement" },
+    { "@type": "Thing", "name": "Identity-aware AI agent governance" }
+  ]
+}
+</script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root { --bg:#0a0a0b; --card:#161618; --border:#222225; --text:#e8e8ec; --muted:#8b8b94; --cyan:#22d3ee; --green:#22c55e; --amber:#f59e0b; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+  .container { max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  nav { padding: 1rem 2rem; border-bottom: 1px solid var(--border); display:flex; gap:1.5rem; flex-wrap:wrap; }
+  nav a { color: var(--muted); text-decoration:none; font-size:0.9rem; }
+  nav .brand { color: var(--text); font-weight:700; }
+  .pill { display:inline-block; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--cyan); background:rgba(34,211,238,0.08); border:1px solid rgba(34,211,238,0.2); padding:4px 12px; border-radius:100px; margin-top:1.5rem; font-weight:600; }
+  h1 { font-size:2.2rem; line-height:1.15; margin:1rem 0 1rem; }
+  h2 { font-size:1.45rem; margin:2.4rem 0 1rem; color:var(--cyan); }
+  h3 { margin:0.4rem 0 0.4rem; font-size:1.05rem; color:var(--text); }
+  p, li { margin-bottom:0.75rem; }
+  ul, ol { padding-left:1.25rem; }
+  code { background:#1f2024; padding:1px 6px; border-radius:4px; font-size:0.9em; color:var(--cyan); }
+  .card { background: var(--card); border:1px solid var(--border); border-radius:12px; padding:1.25rem 1.4rem; margin:1rem 0; }
+  .cta { display:inline-block; background:var(--cyan); color:#000; padding:0.8rem 1.2rem; border-radius:8px; text-decoration:none; font-weight:700; }
+  .secondary { color:var(--cyan); text-decoration:underline; margin-left:1rem; }
+  .table-clean { width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.93rem; }
+  .table-clean th, .table-clean td { border-bottom:1px solid var(--border); padding:0.65rem 0.5rem; text-align:left; vertical-align:top; }
+  .table-clean th { color:var(--cyan); font-weight:600; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.05em; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:0.72rem; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; }
+  .badge-covered { background:rgba(34,197,94,0.15); color:var(--green); border:1px solid rgba(34,197,94,0.3); }
+  .badge-partial { background:rgba(245,158,11,0.15); color:var(--amber); border:1px solid rgba(245,158,11,0.3); }
+  .badge-scope  { background:rgba(139,139,148,0.15); color:var(--muted); border:1px solid rgba(139,139,148,0.3); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1rem; margin:1rem 0; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="brand">ThumbGate</a>
+  <a href="/guide">Guide</a>
+  <a href="/dashboard">Dashboard demo</a>
+  <a href="/agent-manager">Agent Manager</a>
+  <a href="/long-running-agents">Long-running agents</a>
+  <a href="/evals">Evals</a>
+  <a href="/#workflow-sprint-intake">Workflow Hardening Sprint</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+<div class="container">
+  <span class="pill">Identity-aware enforcement · Tool-call boundary</span>
+  <h1>The AI-agent policy vault is the new last-mile control. ThumbGate covers six of the eight prescriptions deterministically.</h1>
+  <p>The emerging architecture for AI agent governance has settled on one shape: a policy-aware vault sits between agents and legacy systems, enforces identity / context / delegation, mints short-lived credentials, logs telemetry, and constrains tool-chain composition. The canonical playbook has eight prescriptions. ThumbGate covers six at the tool-call boundary today. The other two — short-lived credential minting and an HSM-backed credential broker — are out of scope. We say so honestly so the buyer knows what they get and what they still need to source elsewhere.</p>
+
+  <h2>The eight prescriptions, mapped to ThumbGate's surface area</h2>
+  <table class="table-clean">
+    <thead><tr><th>Prescription</th><th>Coverage</th><th>How ThumbGate does it</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>1. Map the last-mile surface</strong><br>Inventory every tool, API, DB, queue an agent can call.</td>
+        <td><span class="badge badge-covered">Covered</span></td>
+        <td><code>bench/thumbgate-bench.json</code> already classifies tool calls by service (github, sqlite, filesystem, npm, railway, shell, git). Each adapter (<code>adapters/claude</code>, <code>adapters/cursor</code>, <code>adapters/codex</code>, <code>adapters/gemini</code>, <code>adapters/amp</code>, <code>adapters/cline</code>, <code>adapters/opencode</code>) inventories the runtime's tool surface explicitly.</td>
+      </tr>
+      <tr>
+        <td><strong>2. Identity, context, delegation explicit</strong><br>User id, agent id, delegation id, session context on every call.</td>
+        <td><span class="badge badge-covered">Covered</span></td>
+        <td>Every PreToolUse hook sees the full request envelope: <code>visitorId</code>, <code>sessionId</code>, <code>installId</code>, <code>acquisitionId</code>, <code>traceId</code>, plus the raw tool input. Telemetry preserves attribution end-to-end through <code>checkout_bot_deflected</code>, <code>checkout_bootstrap</code>, and per-step funnel events.</td>
+      </tr>
+      <tr>
+        <td><strong>3. Vault / gateway in front of legacy</strong><br>Agents do not call legacy directly; route through a policy-enforced layer.</td>
+        <td><span class="badge badge-covered">Covered</span></td>
+        <td>The PreToolUse hook <em>is</em> the gateway. Every tool call is evaluated against the lesson DB before execution. The gate sits at the runtime, not at the orchestrator — the agent physically cannot bypass it once it routes through ThumbGate.</td>
+      </tr>
+      <tr>
+        <td><strong>4. ABAC / PBAC policies</strong><br>Subject + agent + resource + action + context decide allow / deny.</td>
+        <td><span class="badge badge-covered">Covered</span></td>
+        <td>Prevention rules in <code>config/pro/prevention-rules-pro.md</code> + the lesson DB are the policy store. Each rule carries a matcher (tool name, file path, command pattern) and a deny reason the agent receives in its trace. Self-protection rules deny the agent's own attempts to modify ThumbGate.</td>
+      </tr>
+      <tr>
+        <td><strong>5. Replace shared keys with short-lived credentials</strong><br>Mint scoped, ephemeral creds; rotate continuously.</td>
+        <td><span class="badge badge-scope">Out of scope</span></td>
+        <td><strong>Honest boundary:</strong> ThumbGate does not mint credentials. That is the job of HashiCorp Vault, AWS STS, GCP STS, or a comparable credential broker. ThumbGate consumes the identity context produced by that layer; we do not replace it. The vault-layer playbook needs both: a credential broker, and an enforcement layer like ThumbGate at the tool-call boundary.</td>
+      </tr>
+      <tr>
+        <td><strong>6. Telemetry + feedback loops</strong><br>Log every decision; tighten policies based on what fires.</td>
+        <td><span class="badge badge-covered">Covered</span></td>
+        <td>Append-only audit trail: every check decision (block / approve / log) is recorded with timestamp, tool call, matched check ID, severity, and human override status. The feedback loop is the product: a 👎 on an agent action distills into a prevention rule, which becomes a pre-action check, which prevents the next repeat. Per-step DPO/KTO export at <code>npm run feedback:export:dpo</code>.</td>
+      </tr>
+      <tr>
+        <td><strong>7. Constrain tool chaining</strong><br>Enforce allowed sequences; require approval for sensitive chains.</td>
+        <td><span class="badge badge-partial">Partial</span></td>
+        <td>Per-call enforcement is deterministic and complete. Chain-level enforcement — &ldquo;<code>read_invoice</code> → <code>update_payment_method</code> requires fresh user approval&rdquo; — exists in the Team-tier approval-boundary feature and the Workflow Hardening Sprint pattern, but is not auto-derived from a tool graph. This is on the roadmap. For now, chains are gated by per-call rules and by Team-tier approval boundaries on irreversible actions.</td>
+      </tr>
+      <tr>
+        <td><strong>8. Threat model the agent as a potential attacker</strong><br>Rogue agent, prompt injection, overbroad permissions.</td>
+        <td><span class="badge badge-covered">Covered</span></td>
+        <td>Four self-protection checks deny the governed agent from disabling ThumbGate, modifying check rules, killing governance processes, or overriding enforcement env vars. Compliance mapping carries NIST SP800-53, SOC2, OWASP Top 10, and CWE tags on 13 check rules. A compromised or prompt-injected agent cannot disable its own guardrails — that is the canonical &ldquo;rogue agent&rdquo; defense.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Where this leaves the architecture diagram</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Credential broker (e.g., HashiCorp Vault, AWS STS)</h3>
+      <p>Mints short-lived credentials with narrow scope and short TTL. Owns the long-lived secrets that ThumbGate does <em>not</em> hold.</p>
+    </div>
+    <div class="card">
+      <h3>ThumbGate PreToolUse hook</h3>
+      <p>Decides allow / deny per tool call against the policy store. Logs the decision. Deterministic, replay-safe, audit-ready. Sits between the agent runtime and the credential broker's resulting API call.</p>
+    </div>
+    <div class="card">
+      <h3>Legacy system</h3>
+      <p>The thing that should not be reachable from an agent without both a policy check (ThumbGate) and a short-lived credential (broker). Together they form the deterministic last-mile.</p>
+    </div>
+  </div>
+
+  <h2>Why deterministic at the tool-call boundary, not at the prompt</h2>
+  <p>Model-level safety controls are statistical. They produce a residual error rate, which (as analysts in <a href="https://thenewstack.io/google-remy-agent-infrastructure/" target="_blank" rel="noopener">The New Stack's Remy coverage</a> note) translates directly into incident exposure when the agent runs continuously. Prompt-side filters can be bypassed by prompt injection. The tool-call boundary is the last point where the runtime owns the decision — the agent has chosen what to do, but the call has not yet executed. That is where deterministic, attribute-based, allow-list / deny-list enforcement actually lives.</p>
+
+  <h2>How to start</h2>
+  <ol>
+    <li><strong>Inventory.</strong> Run <code>npx thumbgate native-messaging-audit</code> to surface local agent connectors. Open <code>npx thumbgate background-governance</code> to see which agents are running, with what blast radius.</li>
+    <li><strong>Wire the gateway.</strong> <code>npx thumbgate init</code> installs PreToolUse hooks for the agent runtime in use. After this, every tool call routes through the policy store. No agent code changes required.</li>
+    <li><strong>Promote one repeated failure to a rule.</strong> Thumbs-down a real mistake; ThumbGate distills it into a Pre-Action Check. The next attempt is blocked at the boundary. Repeat for every &ldquo;dangerous operation&rdquo; identified in step 1.</li>
+    <li><strong>Run the Workflow Hardening Sprint.</strong> For approval boundaries, org-wide rule library, shared lesson DB across team seats, and audit-ready evidence — the path from local proof to managed rollout.</li>
+  </ol>
+
+  <div class="card">
+    <p><strong>The vault-layer category is real and forming fast.</strong> ThumbGate is the deterministic enforcement leg of it. We do not pretend to be the credential broker; we name that boundary explicitly so the buyer knows exactly what to source where.</p>
+    <p>
+      <a href="/#workflow-sprint-intake" class="cta">Start the Workflow Hardening Sprint</a>
+      <a href="/checkout/pro?utm_source=website&utm_medium=policy_vault_page&utm_campaign=pro_upgrade&cta_id=policy_vault_pro_checkout&cta_placement=policy_vault_page&plan_id=pro" class="secondary">Or start Pro at $19/mo →</a>
+    </p>
+  </div>
+
+  <h2>Related</h2>
+  <ul>
+    <li><a href="/long-running-agents">ThumbGate for long-running agents</a> — why continuous, autonomous execution needs deterministic gates.</li>
+    <li><a href="/agent-manager">ThumbGate for the Agent Manager</a> — the named role that operationalizes this policy layer.</li>
+    <li><a href="/evals">/evals</a> — the measurement surface that proves the gate fires correctly.</li>
+    <li><a href="/use-cases/regulated-workflows">Regulated workflows</a> — DORA / EU AI Act / HIPAA framing.</li>
+  </ul>
+</div>
+</body>
+</html>

@@ -231,4 +231,27 @@ Security-relevant capabilities in ThumbGate v1.4.0:
 
 For enterprise security teams evaluating AI coding agent governance: ThumbGate provides the enforcement layer that CLAUDE.md rules, prompt engineering, and post-hoc code review cannot — pre-execution blocking with full audit trail and compliance mapping.
 
-*Last updated: 2026-04-13*
+## Why ThumbGate Uses Grep-Style Full-Text Search By Default, Not Vector Search
+
+A May 2026 paper by Sen et al., *Is Grep All You Need? How Agent Harnesses Reshape Agentic Search* (arXiv:2605.15184), benchmarked grep against vector search across in-house, Claude Code, and Codex agent harnesses on the 116-question LongMemEval-S subset. The finding: grep generally yields higher accuracy than semantic vector search for agentic memory retrieval. Across the harnesses tested — Chronos, Claude Code, Codex CLI, Gemini CLI — every model (Claude Opus 4.6, Claude Haiku 4.5, GPT-5.4, Gemini 3.1 Pro, Gemini 3.1 Flash-Lite) scored higher with grep than with vector under both standard and programmatic tool-calling configurations.
+
+ThumbGate has shipped exactly this architecture since the first release. The default lesson database is SQLite with the FTS5 full-text-search extension — effectively grep over the operator's captured corrections. Vector search via LanceDB exists as an optional Pro tier capability, not the default retrieval path. The reasoning is the same as the paper's: when an agent is searching its own memory for an exact rule, a known-bad pattern, or a literal code path, byte-equal full-text match outperforms approximate vector similarity. Vector earns its place for semantic recall on conversational memory; grep earns its place on prevention rules, tool-call patterns, and operator corrections.
+
+Note the paper's own caveat (per Jerry Liu, LlamaIndex CEO, in his May 2026 commentary on the result): the benchmark tests conversational memory, not a static enterprise document corpus. ThumbGate's domain — repeated agent failures captured as discrete rules — matches the conversational-memory shape far more than it matches the 10-K / legal-contract / SOP shape, so the validation transfers cleanly.
+
+## ThumbGate as the AI Agent Policy Vault Layer
+
+The emerging architecture for enterprise AI agent governance is a policy-aware vault between agents and legacy systems: identity-aware, context-aware, delegation-aware, with short-lived credentials and continuous telemetry. The canonical eight-prescription playbook has settled in industry analysis through May 2026. ThumbGate covers six of the eight at the tool-call boundary today (see /policy-vault for the prescription-by-prescription mapping):
+
+1. **Map the last-mile surface** — covered via `bench/thumbgate-bench.json` (10 scenarios, 7 services) and the adapter matrix (Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode).
+2. **Identity, context, delegation explicit** — every PreToolUse hook sees `visitorId`, `sessionId`, `installId`, `acquisitionId`, `traceId`, plus the raw tool input.
+3. **Vault / gateway in front of legacy** — the PreToolUse hook IS the gateway. Every tool call is evaluated against the lesson DB before execution; the agent cannot bypass it once routed through ThumbGate.
+4. **ABAC / PBAC policies** — prevention rules in `config/pro/prevention-rules-pro.md` + the lesson DB are the policy store. Each rule carries a matcher and a deny reason the agent receives in its trace.
+5. **Replace shared keys with short-lived credentials** — *out of scope*. Credential minting is HashiCorp Vault / AWS STS / GCP STS territory. ThumbGate consumes the identity context produced by that layer; we do not replace it. The vault-layer playbook needs both: a credential broker AND a tool-call-boundary enforcement layer like ThumbGate.
+6. **Telemetry + feedback loops** — append-only audit trail on every block / approve / log decision. The feedback loop is the product: thumbs-down → distilled rule → pre-action check → next-repeat blocked. DPO/KTO export at `npm run feedback:export:dpo`.
+7. **Constrain tool chaining** — partial. Per-call enforcement is deterministic and complete. Chain-level enforcement exists in the Team-tier approval-boundary feature and the Workflow Hardening Sprint pattern, but is not auto-derived from a tool graph. This is on the roadmap.
+8. **Threat model the agent as a potential attacker** — covered. Four self-protection checks deny the governed agent from disabling ThumbGate, modifying check rules, killing governance processes, or overriding enforcement env vars. Compliance tags on 13 rules: NIST SP800-53, SOC2, OWASP Top 10, CWE.
+
+ThumbGate names the boundary at prescription 5 honestly: we are the deterministic enforcement leg of the vault-layer architecture, not the credential broker. The buyer needs both, sourced together, to close the last-mile control surface.
+
+*Last updated: 2026-05-19*

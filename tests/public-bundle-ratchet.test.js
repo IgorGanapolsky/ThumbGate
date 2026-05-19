@@ -43,7 +43,7 @@ const path = require('node:path');
 // operators self-hosting ThumbGate get the same regression guard.
 // This number is allowed to DECREASE; another bump up requires a
 // deliberate changeset entry.
-const BASELINE_FILE_COUNT = 256;
+const BASELINE_FILE_COUNT = 257;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
