@@ -34,8 +34,16 @@ const assert = require('node:assert/strict');
 const { execSync } = require('node:child_process');
 const path = require('node:path');
 
-// 2026-05-18 audit baseline. This number is allowed to DECREASE.
-const BASELINE_FILE_COUNT = 254;
+// 2026-05-19 bump (was 254 from 2026-05-18 audit). Two additive files,
+// both required by the post-deploy verification workflow:
+//   • scripts/verify-marketing-pages-deployed.js (the probe)
+//   • config/post-deploy-marketing-pages.json    (the sentinel manifest)
+// The probe runs in .github/workflows/deploy-verify.yml after every
+// push to main; shipping both in the public npm bundle means external
+// operators self-hosting ThumbGate get the same regression guard.
+// This number is allowed to DECREASE; another bump up requires a
+// deliberate changeset entry.
+const BASELINE_FILE_COUNT = 256;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
