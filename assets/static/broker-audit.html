@@ -417,7 +417,17 @@
           var key = 'tg_broker_audit_sid';
           var existing = sessionStorage.getItem(key);
           if (existing) return existing;
-          var sid = 'ba_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+          var rand;
+          if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+            rand = window.crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+          } else if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+            var buf = new Uint8Array(8);
+            window.crypto.getRandomValues(buf);
+            rand = Array.from(buf).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+          } else {
+            return null;
+          }
+          var sid = 'ba_' + Date.now().toString(36) + '_' + rand;
           sessionStorage.setItem(key, sid);
           return sid;
         } catch (_) { return null; }
@@ -467,16 +477,25 @@
       send(basePayload('broker_audit_page_view', null));
 
       // CTA click delegation
+      function classifyCta(rawHref) {
+        try {
+          if (!rawHref) return null;
+          if (/^mailto:/i.test(rawHref)) {
+            var mailto = rawHref.replace(/^mailto:/i, '').split('?')[0].toLowerCase();
+            return mailto === 'support@thumbgate.ai' ? 'email_support' : 'email_free_audit';
+          }
+          var u = new URL(rawHref, window.location.href);
+          if (u.protocol === 'https:' && u.host === 'buy.stripe.com') {
+            return 'stripe_49_fast_lane';
+          }
+          return null;
+        } catch (_) { return null; }
+      }
       document.addEventListener('click', function (e) {
         var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
         if (!a) return;
         var href = a.getAttribute('href') || '';
-        var ctaId = null;
-        if (href.indexOf('buy.stripe.com') !== -1) {
-          ctaId = 'stripe_49_fast_lane';
-        } else if (href.toLowerCase().indexOf('mailto:') === 0) {
-          ctaId = href.indexOf('support@thumbgate.ai') !== -1 ? 'email_support' : 'email_free_audit';
-        }
+        var ctaId = classifyCta(href);
         if (!ctaId) return;
         send(basePayload('broker_audit_cta_clicked', {
           ctaId: ctaId,
